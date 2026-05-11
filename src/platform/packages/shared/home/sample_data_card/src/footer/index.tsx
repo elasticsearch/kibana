@@ -9,10 +9,11 @@
 
 import React, { useCallback } from 'react';
 import type { SampleDataSet, InstalledStatus } from '@kbn/home-sample-data-types';
-import { INSTALLED_STATUS, UNINSTALLED_STATUS } from '../constants';
+import { INSTALLED_STATUS, UNINSTALLED_STATUS, INSTALLING_STATUS } from '../constants';
 
 import { DisabledFooter } from './disabled_footer';
 import { InstallFooter } from './install_footer';
+import { InstallingAsyncFooter } from './installing_async_footer';
 import { RemoveFooter } from './remove_footer';
 
 /**
@@ -39,6 +40,15 @@ export const Footer = ({ sampleDataSet, onAction }: Props) => {
     if (sampleDataSet.status === UNINSTALLED_STATUS) {
       return (
         <InstallFooter onInstall={(id) => onAction(id, INSTALLED_STATUS)} {...sampleDataSet} />
+      );
+    }
+
+    if (sampleDataSet.status === INSTALLING_STATUS) {
+      return (
+        <InstallingAsyncFooter
+          onInstall={(id) => onAction(id, INSTALLED_STATUS)}
+          {...sampleDataSet}
+        />
       );
     }
 

@@ -7,3 +7,4 @@
 
 export const STATUS_API_PATH = '/internal/sample_data_ingest/status';
 export const INSTALL_API_PATH = '/internal/sample_data_ingest/install';
+export const UNINSTALL_API_PATH = '/internal/sample_data_ingest/uninstall';

@@ -33,6 +33,7 @@ type NotifyFn = (notification: NotifyInput) => void;
 
 interface Services {
   fetchSampleDataSets: () => Promise<SampleDataSet[]>;
+  fetchDocumentationSampleDataSet: () => Promise<SampleDataSet | null>;
   notifyError: NotifyFn;
   logClick: (metric: string) => void;
 }
@@ -51,12 +52,13 @@ export const SampleDataTabProvider: FC<PropsWithChildren<SampleDataTabServices>>
   children,
   ...services
 }) => {
-  const { fetchSampleDataSets, notifyError, logClick } = services;
+  const { fetchSampleDataSets, fetchDocumentationSampleDataSet, notifyError, logClick } = services;
 
   return (
     <Context.Provider
       value={{
         fetchSampleDataSets,
+        fetchDocumentationSampleDataSet,
         notifyError,
         logClick,
       }}
@@ -80,6 +82,13 @@ interface KibanaDependencies {
   // TODO: clintandrewhall - This is using a type from the home plugin.  I'd prefer we
   // use the type directly from Kibana instead.
   trackUiMetric: (type: string, eventNames: string | string[], count?: number) => void;
+  /**
+   * Optional sample data ingest plugin API for fetching the documentation sample data set.
+   * If not provided, the documentation sample data set will not be included in the list.
+   */
+  sampleDataIngest?: {
+    getSampleDataSet: () => Promise<SampleDataSet | null>;
+  };
 }
 
 /**
@@ -93,11 +102,18 @@ export type SampleDataTabKibanaDependencies = KibanaDependencies & SampleDataCar
 export const SampleDataTabKibanaProvider: FC<
   PropsWithChildren<SampleDataTabKibanaDependencies>
 > = ({ children, ...dependencies }) => {
-  const { coreStart, trackUiMetric } = dependencies;
+  const { coreStart, trackUiMetric, sampleDataIngest } = dependencies;
   const { http, notifications } = coreStart;
 
   const value: Services = {
     fetchSampleDataSets: async () => (await http.get(URL_SAMPLE_DATA_API)) as SampleDataSet[],
+    fetchDocumentationSampleDataSet: async () => {
+      // Use the sample_data_ingest plugin if available
+      if (sampleDataIngest) {
+        return sampleDataIngest.getSampleDataSet();
+      }
+      return null;
+    },
     notifyError: (input) => notifications.toasts.addDanger(input),
     logClick: (eventName) => trackUiMetric('click', eventName),
   };

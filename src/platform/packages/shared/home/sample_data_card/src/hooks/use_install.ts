@@ -12,12 +12,15 @@ import { i18n } from '@kbn/i18n';
 
 import type { SampleDataSet } from '@kbn/home-sample-data-types';
 import { useServices } from '../services';
-import { pollForInstallation } from './poll_sample_data_status';
+import { pollForInstallation, pollForCustomInstallation } from './poll_sample_data_status';
 
 /**
  * Parameters for the `useInstall` React hook.
  */
-export type Params = Pick<SampleDataSet, 'id' | 'defaultIndex' | 'name'> & {
+export type Params = Pick<
+  SampleDataSet,
+  'id' | 'defaultIndex' | 'name' | 'customInstall' | 'customStatusCheck'
+> & {
   /** Handler to invoke when the Sample Data Set is successfully installed. */
   onInstall: (id: string) => void;
 };
@@ -28,12 +31,14 @@ export type Params = Pick<SampleDataSet, 'id' | 'defaultIndex' | 'name'> & {
  * in the process of being installed.
  *
  * After installation, this hook polls the status endpoint until the data is confirmed
- * as installed
+ * as installed.
  */
 export const useInstall = ({
   id,
   defaultIndex,
   name,
+  customInstall,
+  customStatusCheck,
   onInstall,
 }: Params): [() => void, boolean] => {
   const { installSampleDataSet, fetchSampleDataSets, notifyError, notifySuccess } = useServices();
@@ -43,16 +48,26 @@ export const useInstall = ({
     try {
       setIsInstalling(true);
 
-      // Call the install API (bulk insert without refresh)
-      await installSampleDataSet(id, defaultIndex);
+      if (customInstall) {
+        // Use the custom install handler if provided
+        await customInstall();
 
-      // Poll until ES index is refreshed and status shows installed
-      await pollForInstallation(id, fetchSampleDataSets, {
-        maxAttempts: 20,
-        initialDelayMs: 1000,
-        minTimeout: 1000,
-        factor: 1.5,
-      });
+        // Poll until installation is complete using custom status check if available
+        if (customStatusCheck) {
+          await pollForCustomInstallation(customStatusCheck);
+        }
+      } else {
+        // Call the default install API (bulk insert without refresh)
+        await installSampleDataSet(id, defaultIndex);
+
+        // Poll until ES index is refreshed and status shows installed
+        await pollForInstallation(id, fetchSampleDataSets, {
+          maxAttempts: 20,
+          initialDelayMs: 1000,
+          minTimeout: 1000,
+          factor: 1.5,
+        });
+      }
 
       setIsInstalling(false);
 
@@ -84,6 +99,8 @@ export const useInstall = ({
     id,
     defaultIndex,
     name,
+    customInstall,
+    customStatusCheck,
     onInstall,
   ]);
 

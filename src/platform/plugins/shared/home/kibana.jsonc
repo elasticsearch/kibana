@@ -18,7 +18,8 @@
     "optionalPlugins": [
       "usageCollection",
       "customIntegrations",
-      "cloud"
+      "cloud",
+      "sampleDataIngest"
     ],
     "requiredBundles": [
       "kibanaReact"

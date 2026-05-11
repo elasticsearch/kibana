@@ -12,12 +12,15 @@ import { i18n } from '@kbn/i18n';
 
 import type { SampleDataSet } from '@kbn/home-sample-data-types';
 import { useServices } from '../services';
-import { pollForRemoval } from './poll_sample_data_status';
+import { pollForRemoval, pollForCustomRemoval } from './poll_sample_data_status';
 
 /**
  * Parameters for the `useRemove` React hook.
  */
-export type Params = Pick<SampleDataSet, 'id' | 'defaultIndex' | 'name'> & {
+export type Params = Pick<
+  SampleDataSet,
+  'id' | 'defaultIndex' | 'name' | 'customRemove' | 'customStatusCheck'
+> & {
   /** Handler to invoke when the Sample Data Set is successfully removed. */
   onRemove: (id: string) => void;
 };
@@ -30,7 +33,14 @@ export type Params = Pick<SampleDataSet, 'id' | 'defaultIndex' | 'name'> & {
  * After removal, this hook polls the status endpoint until the data is confirmed
  * as uninstalled
  */
-export const useRemove = ({ id, defaultIndex, name, onRemove }: Params): [() => void, boolean] => {
+export const useRemove = ({
+  id,
+  defaultIndex,
+  name,
+  customRemove,
+  customStatusCheck,
+  onRemove,
+}: Params): [() => void, boolean] => {
   const { removeSampleDataSet, fetchSampleDataSets, notifyError, notifySuccess } = useServices();
   const [isRemoving, setIsRemoving] = React.useState(false);
 
@@ -38,15 +48,25 @@ export const useRemove = ({ id, defaultIndex, name, onRemove }: Params): [() => 
     try {
       setIsRemoving(true);
 
-      await removeSampleDataSet(id, defaultIndex);
+      if (customRemove) {
+        // Use the custom remove handler if provided
+        await customRemove();
 
-      // Poll until removal is confirmed
-      await pollForRemoval(id, fetchSampleDataSets, {
-        maxAttempts: 20,
-        initialDelayMs: 500,
-        minTimeout: 500,
-        factor: 1.5,
-      });
+        // Poll until removal is complete using custom status check if available
+        if (customStatusCheck) {
+          await pollForCustomRemoval(customStatusCheck);
+        }
+      } else {
+        await removeSampleDataSet(id, defaultIndex);
+
+        // Poll until removal is confirmed
+        await pollForRemoval(id, fetchSampleDataSets, {
+          maxAttempts: 20,
+          initialDelayMs: 500,
+          minTimeout: 500,
+          factor: 1.5,
+        });
+      }
 
       setIsRemoving(false);
 
@@ -78,6 +98,8 @@ export const useRemove = ({ id, defaultIndex, name, onRemove }: Params): [() => 
     id,
     defaultIndex,
     name,
+    customRemove,
+    customStatusCheck,
     onRemove,
   ]);
 

@@ -19,5 +19,10 @@ export const INSTALLED_STATUS = 'installed';
  */
 export const UNINSTALLED_STATUS = 'not_installed';
 
+/**
+ * DataSetStatusType for a data set that is currently being installed.
+ */
+export const INSTALLING_STATUS = 'installing';
+
 // Corresponds to src/platform/plugins/shared/home/server/services/sample_data/routes
 export const SAMPLE_DATA_API = '/api/sample_data';

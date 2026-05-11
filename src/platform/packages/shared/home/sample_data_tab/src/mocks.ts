@@ -31,6 +31,7 @@ export const getStoryServices = (params: Params) => {
       const data = getSampleDataCardMockDataSet(params);
       return [data, data, data];
     },
+    fetchDocumentationSampleDataSet: async () => null,
     logClick: () => {},
   };
 

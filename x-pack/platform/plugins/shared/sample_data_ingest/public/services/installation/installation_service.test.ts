@@ -7,7 +7,7 @@
 
 import { httpServiceMock } from '@kbn/core/public/mocks';
 import { InstallationService } from './installation_service';
-import { STATUS_API_PATH, INSTALL_API_PATH } from '../../../common';
+import { STATUS_API_PATH, INSTALL_API_PATH, UNINSTALL_API_PATH } from '../../../common';
 
 describe('InstallationService', () => {
   let http: ReturnType<typeof httpServiceMock.createSetupContract>;
@@ -49,6 +49,13 @@ describe('InstallationService', () => {
 
       const response = await service.install();
       expect(response).toEqual(expected);
+    });
+  });
+  describe('#uninstall', () => {
+    it('calls the endpoint with the right parameters', async () => {
+      await service.uninstall();
+      expect(http.delete).toHaveBeenCalledTimes(1);
+      expect(http.delete).toHaveBeenCalledWith(UNINSTALL_API_PATH);
     });
   });
 });

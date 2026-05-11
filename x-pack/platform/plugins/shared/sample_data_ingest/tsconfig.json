@@ -8,7 +8,9 @@
     "public/**/*",
     "server/**/*",
   ],
-  "exclude": ["target/**/*"],
+  "exclude": [
+    "target/**/*"
+  ],
   "kbn_references": [
     "@kbn/core",
     "@kbn/logging",
@@ -21,5 +23,6 @@
     "@kbn/licensing-types",
     "@kbn/task-manager-plugin",
     "@kbn/fs",
+    "@kbn/home-sample-data-types",
   ]
 }

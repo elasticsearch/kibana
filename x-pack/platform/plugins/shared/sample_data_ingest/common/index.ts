@@ -7,6 +7,8 @@
 
 import { defaultInferenceEndpoints } from '@kbn/inference-common';
 
+export const SAMPLE_DATA_INGEST_PLUGIN_ID = 'sampleDataIngest';
+
 /**
  * The id of the inference endpoint we're creating for our product doc indices.
  */
@@ -21,5 +23,5 @@ export {
   type InstalledResponse,
   DatasetSampleType,
 } from './types';
-export { STATUS_API_PATH, INSTALL_API_PATH } from './routes';
+export { STATUS_API_PATH, INSTALL_API_PATH, UNINSTALL_API_PATH } from './routes';
 export { getSampleDataIndexName } from './utils';

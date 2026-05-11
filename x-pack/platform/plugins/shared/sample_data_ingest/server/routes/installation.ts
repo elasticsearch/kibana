@@ -10,6 +10,7 @@ import { i18n } from '@kbn/i18n';
 import {
   INSTALL_API_PATH,
   STATUS_API_PATH,
+  UNINSTALL_API_PATH,
   DatasetSampleType,
   type StatusResponse,
   type InstallingResponse,
@@ -147,6 +148,54 @@ export const registerInstallationRoutes = ({
           body: {
             message: i18n.translate('xpack.sampleDataIngest.server.getStatus.errorMessage', {
               defaultMessage: 'Failed to get status due to an exception.',
+            }),
+          },
+        });
+      }
+    }
+  );
+
+  router.delete(
+    {
+      path: UNINSTALL_API_PATH,
+      security: {
+        authz: {
+          enabled: false,
+          reason: 'This route delegates authorization to the scoped ES client',
+        },
+      },
+      validate: false,
+      options: {
+        access: 'internal',
+      },
+    },
+    async (ctx, req, res) => {
+      const { sampleDataManager, logger } = getServices();
+      const sampleType = DatasetSampleType.elasticsearch;
+      const core = await ctx.core;
+      const esClient = core.elasticsearch.client.asCurrentUser;
+      const soClient = core.savedObjects.client;
+
+      try {
+        await sampleDataManager.removeSampleData({
+          sampleType,
+          esClient,
+          soClient,
+        });
+
+        return res.ok({
+          body: {
+            status: InstallationStatus.Uninstalled,
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to uninstall sample data', e);
+
+        return res.customError({
+          statusCode: e?.meta && e.meta?.statusCode ? e.meta?.statusCode : 500,
+          body: {
+            message: i18n.translate('xpack.sampleDataIngest.server.uninstallSample.errorMessage', {
+              defaultMessage: 'Failed to uninstall sample data due to an exception.',
             }),
           },
         });

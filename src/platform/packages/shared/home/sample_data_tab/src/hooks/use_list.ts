@@ -19,18 +19,28 @@ import { useServices } from '../services';
  * currently being fetched, as well as a method to refresh the list on demand.
  */
 export const useList = (): [SampleDataSet[], typeof refresh, boolean] => {
-  const { fetchSampleDataSets, notifyError } = useServices();
+  const { fetchSampleDataSets, fetchDocumentationSampleDataSet, notifyError } = useServices();
   const [isLoading, setIsLoading] = useState(false);
   const [sampleDataSets, setSampleDataSets] = useState<SampleDataSet[]>([]);
 
   const refresh = useCallback(async () => {
     try {
       setIsLoading(true);
-      const sets = await fetchSampleDataSets();
+
+      // Fetch sample data from both sources in parallel
+      const [sets, documentationSampleDataSet] = await Promise.all([
+        fetchSampleDataSets(),
+        fetchDocumentationSampleDataSet(),
+      ]);
+
+      // Combine results if the documentation sample data set is available
+      const allSets =
+        documentationSampleDataSet !== null ? [...sets, documentationSampleDataSet] : sets;
+
       setIsLoading(false);
 
       setSampleDataSets(
-        sets.sort((a, b) => {
+        allSets.sort((a, b) => {
           return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
         })
       );
@@ -44,7 +54,7 @@ export const useList = (): [SampleDataSet[], typeof refresh, boolean] => {
       setIsLoading(false);
       setSampleDataSets([]);
     }
-  }, [fetchSampleDataSets, notifyError]);
+  }, [fetchSampleDataSets, fetchDocumentationSampleDataSet, notifyError]);
 
   useEffect(() => {
     refresh();

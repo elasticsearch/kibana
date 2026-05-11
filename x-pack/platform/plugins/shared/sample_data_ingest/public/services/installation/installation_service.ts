@@ -9,6 +9,7 @@ import type { HttpSetup } from '@kbn/core-http-browser';
 import {
   STATUS_API_PATH,
   INSTALL_API_PATH,
+  UNINSTALL_API_PATH,
   type StatusResponse,
   type InstalledResponse,
   type InstallingResponse,
@@ -27,5 +28,9 @@ export class InstallationService {
 
   async install(): Promise<InstallingResponse | InstalledResponse> {
     return await this.http.post<InstallingResponse | InstalledResponse>(INSTALL_API_PATH);
+  }
+
+  async uninstall(): Promise<void> {
+    await this.http.delete(UNINSTALL_API_PATH);
   }
 }
