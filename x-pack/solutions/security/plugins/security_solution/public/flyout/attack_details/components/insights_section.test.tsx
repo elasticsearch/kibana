@@ -7,61 +7,24 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { EuiProvider } from '@elastic/eui';
+import type { AttackDiscoveryAlert } from '@kbn/elastic-assistant-common';
 import { AttackDetailsContext } from '../context';
-import {
-  INSIGHTS_CORRELATIONS_TEST_ID,
-  INSIGHTS_ENTITIES_TEST_ID,
-  INSIGHTS_SECTION_TEST_ID,
-} from '../constants/test_ids';
-import { AttackDetailsLeftPanelKey } from '../constants/panel_keys';
 import { InsightsSection } from './insights_section';
-import { useExpandSection } from '../../../flyout_v2/shared/hooks/use_expand_section';
-import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 
-jest.mock('@kbn/i18n-react', () => ({
-  FormattedMessage: ({ defaultMessage, id }: { defaultMessage: string; id: string }) => (
-    <span data-testid={id}>{defaultMessage}</span>
+jest.mock('../../../flyout_v2/attack/main/components/insights_section', () => ({
+  InsightsSection: ({ attack }: { attack: AttackDiscoveryAlert }) => (
+    <div data-test-subj="v2-insights-section" data-attack-id={(attack as unknown as { id: string }).id} />
   ),
 }));
 
-jest.mock('../../../flyout_v2/shared/hooks/use_expand_section', () => ({
-  useExpandSection: jest.fn(),
-}));
-
-jest.mock('@kbn/expandable-flyout', () => ({
-  useExpandableFlyoutApi: jest.fn(),
-}));
-
-jest.mock('../hooks/use_attack_entities_counts', () => ({
-  useAttackEntitiesCounts: jest.fn().mockReturnValue({
-    relatedUsers: 0,
-    relatedHosts: 0,
-    loading: false,
-    error: false,
-  }),
-}));
-
-jest.mock('../hooks/use_original_alert_ids', () => ({
-  useOriginalAlertIds: jest.fn().mockReturnValue(['alert-1', 'alert-2']),
-}));
-
-jest.mock('../../../flyout_v2/shared/components/expandable_section', () => ({
-  ExpandableSection: ({
-    children,
-    'data-test-subj': dataTestSubj,
-  }: {
-    children: React.ReactNode;
-    'data-test-subj'?: string;
-  }) => <section data-test-subj={dataTestSubj}>{children}</section>,
-}));
-
-const mockOpenLeftPanel = jest.fn();
+const buildAttack = (id = 'attack-1'): AttackDiscoveryAlert =>
+  ({ id, alertIds: ['a', 'b'] } as unknown as AttackDiscoveryAlert);
 
 const mockContextValue = {
   attackId: 'attack-1',
   indexName: '.alerts-default',
+  attack: buildAttack(),
   getFieldsData: () => null,
   browserFields: {},
   dataFormattedForFieldBrowser: [],
@@ -69,83 +32,40 @@ const mockContextValue = {
   refetch: jest.fn().mockResolvedValue(undefined),
 };
 
-const renderWithEui = (ui: React.ReactElement) =>
+const renderWithContext = (attack: AttackDiscoveryAlert | null = buildAttack()) =>
   render(
     <EuiProvider>
       <AttackDetailsContext.Provider
         value={
-          mockContextValue as unknown as React.ComponentProps<
+          { ...mockContextValue, attack } as unknown as React.ComponentProps<
             typeof AttackDetailsContext.Provider
           >['value']
         }
       >
-        {ui}
+        <InsightsSection />
       </AttackDetailsContext.Provider>
     </EuiProvider>
   );
 
-describe('InsightsSection', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.mocked(useExpandSection).mockReturnValue(true);
-    jest.mocked(useExpandableFlyoutApi).mockReturnValue({
-      openLeftPanel: mockOpenLeftPanel,
-      openFlyout: jest.fn(),
-      openRightPanel: jest.fn(),
-      openPreviewPanel: jest.fn(),
-      closeRightPanel: jest.fn(),
-      closePreviewPanel: jest.fn(),
-      closeFlyout: jest.fn(),
-      closeLeftPanel: jest.fn(),
-    } as unknown as ReturnType<typeof useExpandableFlyoutApi>);
+describe('InsightsSection (legacy wrapper)', () => {
+  it('renders v2 InsightsSection when attack is available', () => {
+    renderWithContext();
+
+    expect(screen.getByTestId('v2-insights-section')).toBeInTheDocument();
   });
 
-  it('renders the Insights section with test id', () => {
-    renderWithEui(<InsightsSection />);
+  it('renders nothing when attack is null', () => {
+    renderWithContext(null);
 
-    expect(screen.getByTestId(INSIGHTS_SECTION_TEST_ID)).toBeInTheDocument();
+    expect(screen.queryByTestId('v2-insights-section')).not.toBeInTheDocument();
   });
 
-  it('renders Entities overview with link that opens left panel on click', async () => {
-    const user = userEvent.setup();
-    renderWithEui(<InsightsSection />);
+  it('passes the attack from context to the v2 component', () => {
+    renderWithContext(buildAttack('my-attack'));
 
-    const titleLink = screen.getByTestId(`${INSIGHTS_ENTITIES_TEST_ID}TitleLink`);
-    expect(titleLink).toBeInTheDocument();
-
-    await user.click(titleLink);
-
-    expect(mockOpenLeftPanel).toHaveBeenCalledWith({
-      id: AttackDetailsLeftPanelKey,
-      params: { attackId: 'attack-1', indexName: '.alerts-default' },
-      path: { tab: 'insights', subTab: 'entity' },
-    });
-  });
-
-  it('renders Correlations overview with Related alerts count and clickable title', () => {
-    renderWithEui(<InsightsSection />);
-
-    expect(screen.getByTestId(INSIGHTS_CORRELATIONS_TEST_ID)).toBeInTheDocument();
-    expect(screen.getByText('Correlation')).toBeInTheDocument();
-    expect(screen.getByText('Related alerts')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByTestId(`${INSIGHTS_CORRELATIONS_TEST_ID}TitleLink`)).toBeInTheDocument();
-    expect(
-      screen.queryByTestId(`${INSIGHTS_CORRELATIONS_TEST_ID}TitleText`)
-    ).not.toBeInTheDocument();
-  });
-
-  it('renders Correlations overview title link that opens left panel on Correlation sub-tab', async () => {
-    const user = userEvent.setup();
-    renderWithEui(<InsightsSection />);
-
-    const titleLink = screen.getByTestId(`${INSIGHTS_CORRELATIONS_TEST_ID}TitleLink`);
-    await user.click(titleLink);
-
-    expect(mockOpenLeftPanel).toHaveBeenCalledWith({
-      id: AttackDetailsLeftPanelKey,
-      params: { attackId: 'attack-1', indexName: '.alerts-default' },
-      path: { tab: 'insights', subTab: 'correlation' },
-    });
+    expect(screen.getByTestId('v2-insights-section')).toHaveAttribute(
+      'data-attack-id',
+      'my-attack'
+    );
   });
 });
