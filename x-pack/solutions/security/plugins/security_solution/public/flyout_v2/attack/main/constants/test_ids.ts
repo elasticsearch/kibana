@@ -27,3 +27,5 @@ export const HEADER_SUMMARY_PANEL_TEST_ID =
   `${ATTACK_FLYOUT_V2_PREFIX}-header-summary-panel` as const;
 export const INSIGHTS_CORRELATIONS_TEST_ID =
   `${ATTACK_FLYOUT_V2_PREFIX}-overview-insights-correlations` as const;
+export const INSIGHTS_ENTITIES_TEST_ID =
+  `${ATTACK_FLYOUT_V2_PREFIX}-overview-insights-entities` as const;
