@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useRef, useState } from 'react';
 import {
   EuiButton,
   EuiFlyout,
@@ -20,9 +20,15 @@ import { ResponseActionsLog } from '../../endpoint_response_actions_list/respons
 import { UX_MESSAGES } from '../../endpoint_response_actions_list/translations';
 
 export const ActionLogButton = memo<EndpointResponderExtensionComponentProps>((props) => {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [showActionLogFlyout, setShowActionLogFlyout] = useState<boolean>(false);
   const toggleActionLog = useCallback(() => {
     setShowActionLogFlyout((prevState) => {
+      // When closing, restore focus to the trigger button so EUI's focus trap
+      // doesn't return focus to <body> (which surfaces the global SkipLink).
+      if (prevState) {
+        window.requestAnimationFrame(() => buttonRef.current?.focus());
+      }
       return !prevState;
     });
   }, []);
@@ -34,6 +40,7 @@ export const ActionLogButton = memo<EndpointResponderExtensionComponentProps>((p
   return (
     <>
       <EuiButton
+        buttonRef={buttonRef}
         onClick={toggleActionLog}
         disabled={showActionLogFlyout}
         iconType="listBullet"
@@ -51,6 +58,7 @@ export const ActionLogButton = memo<EndpointResponderExtensionComponentProps>((p
           paddingSize="l"
           aria-labelledby={responderActionLogFlyoutTitleId}
           data-test-subj="responderActionLogFlyout"
+          session="never"
         >
           <EuiFlyoutHeader hasBorder>
             <EuiTitle size="m">

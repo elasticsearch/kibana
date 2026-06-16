@@ -9,7 +9,6 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import type { EcsSecurityExtension as Ecs } from '@kbn/securitysolution-ecs';
-import type { TimelineEventsDetailsItem } from '@kbn/timelines-plugin/common';
 import { useEventDetails } from '../../../../flyout/document_details/shared/hooks/use_event_details';
 import { TakeActionButton } from './take_action_button';
 import { TakeAction } from './take_action';
@@ -23,11 +22,14 @@ jest.mock('./take_action_button', () => ({
 const mockUseEventDetails = useEventDetails as jest.Mock;
 const mockTakeActionButton = TakeActionButton as unknown as jest.Mock;
 
-const createMockHit = (raw: Partial<DataTableRecord['raw']> = {}): DataTableRecord =>
+const createMockHit = (
+  raw: Partial<DataTableRecord['raw']> = {},
+  flattened: DataTableRecord['flattened'] = { 'host.name': 'test-host', 'user.name': null }
+): DataTableRecord =>
   ({
     id: 'test-id',
     raw: { _id: 'test-event-id', _index: 'test-index', ...raw },
-    flattened: {},
+    flattened,
     isAnchor: false,
   } as DataTableRecord);
 
@@ -36,18 +38,12 @@ const mockRefetchFlyoutData = jest.fn().mockResolvedValue(undefined);
 const mockOnAlertUpdated = jest.fn();
 const mockOnShowNotes = jest.fn();
 
-const mockDataFormattedForFieldBrowser: TimelineEventsDetailsItem[] = [
-  { field: 'host.name', values: ['test-host'], originalValue: ['test-host'], isObjectArray: false },
-  { field: 'user.name', values: null, originalValue: null, isObjectArray: false },
-];
-
 describe('<TakeAction />', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseEventDetails.mockReturnValue({
       loading: false,
       dataAsNestedObject: mockEcsData,
-      dataFormattedForFieldBrowser: mockDataFormattedForFieldBrowser,
       refetchFlyoutData: mockRefetchFlyoutData,
     });
   });
@@ -78,7 +74,6 @@ describe('<TakeAction />', () => {
     mockUseEventDetails.mockReturnValue({
       loading: false,
       dataAsNestedObject: null,
-      dataFormattedForFieldBrowser: mockDataFormattedForFieldBrowser,
       refetchFlyoutData: mockRefetchFlyoutData,
     });
 
@@ -95,7 +90,7 @@ describe('<TakeAction />', () => {
     expect(queryByTestId('take-action-button-mock')).not.toBeInTheDocument();
   });
 
-  it('should render a disabled Take action button when dataFormattedForFieldBrowser is null', () => {
+  it('should render TakeActionButton when dataFormattedForFieldBrowser is null', () => {
     mockUseEventDetails.mockReturnValue({
       loading: false,
       dataAsNestedObject: mockEcsData,
@@ -111,9 +106,8 @@ describe('<TakeAction />', () => {
       />
     );
 
-    expect(getByTestId(FLYOUT_FOOTER_DROPDOWN_BUTTON_TEST_ID)).toBeDisabled();
-    expect(getByTestId(FLYOUT_FOOTER_DROPDOWN_BUTTON_TEST_ID)).toHaveTextContent('Take action');
-    expect(queryByTestId('take-action-button-mock')).not.toBeInTheDocument();
+    expect(getByTestId('take-action-button-mock')).toBeInTheDocument();
+    expect(queryByTestId(FLYOUT_FOOTER_DROPDOWN_BUTTON_TEST_ID)).not.toBeInTheDocument();
   });
 
   it('should render TakeActionButton when data is available', () => {
@@ -157,41 +151,6 @@ describe('<TakeAction />', () => {
         onAlertUpdated,
         onShowNotes: mockOnShowNotes,
       }),
-      expect.anything()
-    );
-  });
-
-  it('should compute nonEcsData from dataFormattedForFieldBrowser and pass it to TakeActionButton', () => {
-    render(
-      <TakeAction
-        hit={createMockHit()}
-        onAlertUpdated={mockOnAlertUpdated}
-        onShowNotes={mockOnShowNotes}
-      />
-    );
-
-    expect(mockTakeActionButton).toHaveBeenCalledWith(
-      expect.objectContaining({
-        nonEcsData: [
-          { field: 'host.name', value: ['test-host'] },
-          { field: 'user.name', value: null },
-        ],
-      }),
-      expect.anything()
-    );
-  });
-
-  it('should forward dataFormattedForFieldBrowser as detailsData to TakeActionButton', () => {
-    render(
-      <TakeAction
-        hit={createMockHit()}
-        onAlertUpdated={mockOnAlertUpdated}
-        onShowNotes={mockOnShowNotes}
-      />
-    );
-
-    expect(mockTakeActionButton).toHaveBeenCalledWith(
-      expect.objectContaining({ detailsData: mockDataFormattedForFieldBrowser }),
       expect.anything()
     );
   });

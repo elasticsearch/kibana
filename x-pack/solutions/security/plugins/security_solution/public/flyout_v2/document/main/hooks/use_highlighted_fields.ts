@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { TimelineEventsDetailsItem } from '@kbn/timelines-plugin/common';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import { useMemo } from 'react';
 import { find, isEmpty } from 'lodash/fp';
@@ -15,6 +14,7 @@ import { useAlertResponseActionsSupport } from '../../../../common/hooks/endpoin
 import { isResponseActionsAlertAgentIdField } from '../../../../common/lib/endpoint';
 import { getHighlightedFieldsToDisplay } from '../../../../common/components/event_details/get_alert_summary_rows';
 import { EVENT_SOURCE_FIELD_NAME } from '../../../../timelines/components/timeline/body/renderers/constants';
+import { getTimelineEventsDetailsFromRecord } from '../utils/get_timeline_events_details_from_record';
 
 export interface UseHighlightedFieldsParams {
   /**
@@ -55,22 +55,12 @@ export const useHighlightedFields = ({
   investigationFields,
   type,
 }: UseHighlightedFieldsParams): UseHighlightedFieldsResult => {
-  // Build TimelineEventsDetailsItem[] from DataTableRecord for internal use
+  // Build TimelineEventsDetailsItem[] from DataTableRecord for internal use.
   // We do this to avoid increasing scope as useAlertResponseActionsSupport is used in many places
-  const dataFormattedForFieldBrowser = useMemo<TimelineEventsDetailsItem[]>(() => {
-    return Object.entries(hit.flattened).map(([field, value]) => ({
-      field,
-      values: Array.isArray(value)
-        ? value.map(String)
-        : value != null
-        ? [String(value)]
-        : undefined,
-      originalValue: value,
-      isObjectArray: Array.isArray(value) && value.length > 0 && typeof value[0] === 'object',
-      // Derive category from field path to keep downstream category lookups working.
-      category: field.split('.')[0],
-    }));
-  }, [hit]);
+  const dataFormattedForFieldBrowser = useMemo(
+    () => getTimelineEventsDetailsFromRecord(hit),
+    [hit]
+  );
 
   // TODO eventually convert useAlertResponseActionsSupport to support hit
   const responseActionsSupport = useAlertResponseActionsSupport(dataFormattedForFieldBrowser);
