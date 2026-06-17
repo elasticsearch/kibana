@@ -8,22 +8,21 @@
  */
 
 import {
-  EuiButton,
-  EuiButtonEmpty,
   EuiFilterGroup,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiPageHeader,
   EuiPageTemplate,
   useEuiTheme,
 } from '@elastic/eui';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { FormattedMessage } from '@kbn/i18n-react';
+import { AppHeader } from '@kbn/app-header';
+import type { AppMenuConfig } from '@kbn/core-chrome-app-menu-components';
+import { i18n } from '@kbn/i18n';
 import type { WorkflowsSearchParams } from '@kbn/workflows';
 import { WORKFLOW_EXECUTION_STATS_BAR_SETTING_ID } from '@kbn/workflows/common/constants';
 import { useWorkflows, useWorkflowsCapabilities } from '@kbn/workflows-ui';
-import { PLUGIN_ID } from '../../../common';
+import { PLUGIN_ID, WORKFLOWS_DOCUMENTATION_URL } from '../../../common';
 import { useWorkflowFiltersOptions } from '../../entities/workflows/model/use_workflow_stats';
 import { ImportWorkflowsFlyout } from '../../features/import_workflows/ui/import_workflows_flyout';
 import { WorkflowExecutionStatsBar } from '../../features/workflow_executions_stats/ui';
@@ -107,66 +106,50 @@ export function WorkflowsPage() {
   // Check if we should show empty state
   const shouldShowEmptyState = shouldShowWorkflowsEmptyState(workflows, search);
 
+  const appMenu = useMemo<AppMenuConfig>(
+    () => ({
+      primaryActionItem: canCreateWorkflow
+        ? {
+            id: 'createWorkflow',
+            label: i18n.translate('workflows.createWorkflowButton', {
+              defaultMessage: 'Create workflow',
+            }),
+            iconType: 'plus',
+            run: navigateToCreateWorkflow,
+            testId: 'createWorkflowButton',
+          }
+        : undefined,
+      items: canImportWorkflows
+        ? [
+            {
+              id: 'importWorkflows',
+              order: 1,
+              label: i18n.translate('workflows.importWorkflowsButton', {
+                defaultMessage: 'Import',
+              }),
+              iconType: 'download',
+              overflow: true,
+              run: () => setShowImportFlyout(true),
+              testId: 'importWorkflowsButton',
+            },
+          ]
+        : [],
+    }),
+    [canCreateWorkflow, canImportWorkflows, navigateToCreateWorkflow]
+  );
+
   return (
     <EuiPageTemplate
       offset={0}
       css={{ backgroundColor: euiTheme.colors.backgroundBasePlain }}
       data-test-subj="workflowsPage"
     >
-      {/* negative margin to compensate for header's bottom padding and reduce space between header and content */}
-      <EuiPageTemplate.Header
-        bottomBorder={false}
-        css={{ marginBottom: `-${euiTheme.size.l}` }}
-        restrictWidth={false}
-      >
-        <EuiFlexGroup justifyContent={'spaceBetween'}>
-          <EuiFlexItem>
-            <EuiPageHeader
-              pageTitle={
-                <FormattedMessage id="workflows.pageTitle" defaultMessage="Workflows" ignoreTag />
-              }
-            />
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiFlexGroup gutterSize="s">
-              {canImportWorkflows ? (
-                <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty
-                    iconType="importAction"
-                    size="m"
-                    onClick={() => setShowImportFlyout(true)}
-                    data-test-subj="importWorkflowsButton"
-                  >
-                    <FormattedMessage
-                      id="workflows.importWorkflowsButton"
-                      defaultMessage="Import"
-                      ignoreTag
-                    />
-                  </EuiButtonEmpty>
-                </EuiFlexItem>
-              ) : null}
-              {canCreateWorkflow ? (
-                <EuiFlexItem grow={false}>
-                  <EuiButton
-                    iconType="plusInCircle"
-                    color="primary"
-                    size="m"
-                    fill
-                    onClick={navigateToCreateWorkflow}
-                    data-test-subj="createWorkflowButton"
-                  >
-                    <FormattedMessage
-                      id="workflows.createWorkflowButton"
-                      defaultMessage="Create workflow"
-                      ignoreTag
-                    />
-                  </EuiButton>
-                </EuiFlexItem>
-              ) : null}
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiPageTemplate.Header>
+      <AppHeader
+        title={i18n.translate('workflows.pageTitle', { defaultMessage: 'Workflows' })}
+        menu={appMenu}
+        docLink={WORKFLOWS_DOCUMENTATION_URL}
+        showAddIntegrations
+      />
       <EuiPageTemplate.Section restrictWidth={false}>
         {!shouldShowEmptyState && (
           <>

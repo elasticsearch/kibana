@@ -8,7 +8,7 @@
  */
 
 import { EuiProvider } from '@elastic/eui';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { I18nProvider } from '@kbn/i18n-react';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
@@ -21,6 +21,13 @@ jest.mock('@kbn/kibana-react-plugin/public', () => ({
 }));
 
 const mockUseKibana = useKibana as jest.MockedFunction<typeof useKibana>;
+
+// Force the app menu to render at the xl breakpoint so the primary action button
+// (create) renders inline instead of collapsing into the overflow popover.
+jest.mock('@elastic/eui', () => ({
+  ...jest.requireActual('@elastic/eui'),
+  useIsWithinBreakpoints: (breakpoints: string[]) => breakpoints.includes('xl'),
+}));
 
 jest.mock('@kbn/workflows-ui', () => {
   const actual = jest.requireActual('@kbn/workflows-ui');
@@ -124,19 +131,24 @@ describe('WorkflowsPage authorization', () => {
     },
   ])(
     'header: $label — Create=$expectCreate, Import=$expectImport',
-    ({ createWorkflow, updateWorkflow, expectCreate, expectImport }) => {
+    async ({ createWorkflow, updateWorkflow, expectCreate, expectImport }) => {
       mockCapabilities(createWorkflow, updateWorkflow);
 
       renderPage();
 
+      // The app menu renders through a React.lazy boundary, so wait for it to resolve.
+      await screen.findByTestId('appHeader');
+
       if (expectCreate) {
-        expect(screen.getByTestId('createWorkflowButton')).toBeInTheDocument();
+        expect(await screen.findByTestId('createWorkflowButton')).toBeInTheDocument();
       } else {
         expect(screen.queryByTestId('createWorkflowButton')).not.toBeInTheDocument();
       }
 
       if (expectImport) {
-        expect(screen.getByTestId('importWorkflowsButton')).toBeInTheDocument();
+        // Import is an overflow menu item; open the overflow popover to reveal it.
+        fireEvent.click(await screen.findByTestId('app-menu-overflow-button'));
+        expect(await screen.findByTestId('importWorkflowsButton')).toBeInTheDocument();
       } else {
         expect(screen.queryByTestId('importWorkflowsButton')).not.toBeInTheDocument();
       }
