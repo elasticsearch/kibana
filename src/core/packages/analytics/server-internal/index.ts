@@ -8,3 +8,4 @@
  */
 
 export { AnalyticsService } from './src/analytics_service';
+export type { InternalAnalyticsServiceSetup } from './src/contracts';

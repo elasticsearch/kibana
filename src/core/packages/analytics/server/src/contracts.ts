@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { Observable } from 'rxjs';
 import type { AnalyticsClient } from '@elastic/ebt/client';
 
 /**
@@ -31,4 +32,15 @@ export type AnalyticsServiceSetup = Omit<AnalyticsClient, 'flush' | 'shutdown'>;
 export type AnalyticsServiceStart = Pick<
   AnalyticsClient,
   'optIn' | 'reportEvent' | 'telemetryCounter$'
->;
+> & {
+  /**
+   * An Observable that emits the user's global opt-in preference.
+   *
+   * Pushes `true` when sending usage to Elastic is enabled, and `false` when the user explicitly
+   * opted out. It withholds emissions until the opt-in status is known (e.g. while a previously
+   * opted-out user has not chosen yet after a major/minor upgrade).
+   *
+   * @track-adoption
+   */
+  isOptedIn$: Observable<boolean>;
+};

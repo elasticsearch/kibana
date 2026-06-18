@@ -9,12 +9,11 @@
 
 import { Subject } from 'rxjs';
 import type { PublicMethodsOf } from '@kbn/utility-types';
+import type { AnalyticsServiceStart, AnalyticsServicePreboot } from '@kbn/core-analytics-server';
 import type {
-  AnalyticsServiceSetup,
-  AnalyticsServiceStart,
-  AnalyticsServicePreboot,
-} from '@kbn/core-analytics-server';
-import type { AnalyticsService } from '@kbn/core-analytics-server-internal';
+  AnalyticsService,
+  InternalAnalyticsServiceSetup,
+} from '@kbn/core-analytics-server-internal';
 import { lazyObject } from '@kbn/lazy-object';
 
 type AnalyticsServiceContract = PublicMethodsOf<AnalyticsService>;
@@ -31,7 +30,7 @@ const createAnalyticsServicePreboot = (): jest.Mocked<AnalyticsServicePreboot> =
   });
 };
 
-const createAnalyticsServiceSetup = (): jest.Mocked<AnalyticsServiceSetup> => {
+const createAnalyticsServiceSetup = (): jest.Mocked<InternalAnalyticsServiceSetup> => {
   return lazyObject({
     optIn: jest.fn(),
     reportEvent: jest.fn(),
@@ -40,6 +39,7 @@ const createAnalyticsServiceSetup = (): jest.Mocked<AnalyticsServiceSetup> => {
     removeContextProvider: jest.fn(),
     registerShipper: jest.fn(),
     telemetryCounter$: new Subject(),
+    registerOptInStatus$: jest.fn(),
   });
 };
 
@@ -48,6 +48,7 @@ const createAnalyticsServiceStart = (): jest.Mocked<AnalyticsServiceStart> => {
     optIn: jest.fn(),
     reportEvent: jest.fn(),
     telemetryCounter$: new Subject(),
+    isOptedIn$: new Subject(),
   });
 };
 

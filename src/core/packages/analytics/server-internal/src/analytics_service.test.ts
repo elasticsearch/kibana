@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { firstValueFrom, Observable } from 'rxjs';
+import { firstValueFrom, Observable, Subject } from 'rxjs';
 import { createTestEnv, createTestPackageInfo } from '@kbn/config-mocks';
 import { mockCoreContext } from '@kbn/core-base-server-mocks';
 import { analyticsClientMock } from './analytics_service.test.mocks';
@@ -208,14 +208,57 @@ describe('AnalyticsService', () => {
       reportEvent: expect.any(Function),
       optIn: expect.any(Function),
       telemetryCounter$: expect.any(Observable),
+      registerOptInStatus$: expect.any(Function),
     });
   });
 
-  test('setup should expose only the APIs report and opt-in', () => {
+  test('start should expose reportEvent, opt-in and the opt-in status observable', () => {
     expect(analyticsService.start()).toStrictEqual({
       reportEvent: expect.any(Function),
       optIn: expect.any(Function),
       telemetryCounter$: expect.any(Observable),
+      isOptedIn$: expect.any(Observable),
+    });
+  });
+
+  describe('opt-in status', () => {
+    test('drives the analytics client global consent from the registered observable', () => {
+      const { registerOptInStatus$ } = analyticsService.setup();
+      const isOptedIn$ = new Subject<boolean>();
+      registerOptInStatus$(isOptedIn$);
+
+      isOptedIn$.next(true);
+      expect(analyticsClientMock.optIn).toHaveBeenLastCalledWith({ global: { enabled: true } });
+
+      isOptedIn$.next(false);
+      expect(analyticsClientMock.optIn).toHaveBeenLastCalledWith({ global: { enabled: false } });
+    });
+
+    test('re-exposes the registered opt-in status via start().isOptedIn$', async () => {
+      const { registerOptInStatus$ } = analyticsService.setup();
+      const isOptedIn$ = new Subject<boolean>();
+      registerOptInStatus$(isOptedIn$);
+
+      isOptedIn$.next(true);
+
+      // Late subscribers (e.g. consumers reading at `start`) get the latest known value.
+      await expect(firstValueFrom(analyticsService.start().isOptedIn$)).resolves.toBe(true);
+    });
+
+    test('a second registration replaces the previous source of truth', () => {
+      const { registerOptInStatus$ } = analyticsService.setup();
+      const first$ = new Subject<boolean>();
+      const second$ = new Subject<boolean>();
+
+      registerOptInStatus$(first$);
+      registerOptInStatus$(second$);
+
+      // Emissions from the superseded observable are ignored.
+      first$.next(true);
+      expect(analyticsClientMock.optIn).not.toHaveBeenCalled();
+
+      second$.next(false);
+      expect(analyticsClientMock.optIn).toHaveBeenLastCalledWith({ global: { enabled: false } });
     });
   });
 });

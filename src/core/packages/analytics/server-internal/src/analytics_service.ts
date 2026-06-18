@@ -7,21 +7,24 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { of } from 'rxjs';
+import { of, ReplaySubject, type Observable, type Subscription } from 'rxjs';
 import apm from 'elastic-apm-node';
 import { trace } from '@opentelemetry/api';
 import type { AnalyticsClient } from '@elastic/ebt/client';
 import { createAnalytics } from '@elastic/ebt/client';
 import { registerPerformanceMetricEventType } from '@kbn/ebt-tools';
 import type { CoreContext } from '@kbn/core-base-server-internal';
-import type {
-  AnalyticsServiceSetup,
-  AnalyticsServiceStart,
-  AnalyticsServicePreboot,
-} from '@kbn/core-analytics-server';
+import type { AnalyticsServiceStart, AnalyticsServicePreboot } from '@kbn/core-analytics-server';
+import type { InternalAnalyticsServiceSetup } from './contracts';
 
 export class AnalyticsService {
   private readonly analyticsClient: AnalyticsClient;
+  /**
+   * Source of truth for the user's global opt-in preference, fed by the registered producer
+   * (the platform-owned telemetry service). Exposed via `isOptedIn$` on the start contract.
+   */
+  private readonly isOptedIn$ = new ReplaySubject<boolean>(1);
+  private optInStatusSubscription?: Subscription;
 
   constructor(core: CoreContext) {
     this.analyticsClient = createAnalytics({
@@ -36,6 +39,21 @@ export class AnalyticsService {
     registerPerformanceMetricEventType(this.analyticsClient);
   }
 
+  /**
+   * Registers the observable that becomes the source of truth for the global opt-in status.
+   * Each emission both feeds the consumer-facing `isOptedIn$` and drives the analytics client's
+   * global consent.
+   * @internal Only meant to be called by the platform-owned telemetry producer.
+   */
+  private registerOptInStatus$ = (isOptedIn$: Observable<boolean>): void => {
+    // A new registration replaces any previous source of truth.
+    this.optInStatusSubscription?.unsubscribe();
+    this.optInStatusSubscription = isOptedIn$.subscribe((isOptedIn) => {
+      this.analyticsClient.optIn({ global: { enabled: isOptedIn } });
+      this.isOptedIn$.next(isOptedIn);
+    });
+  };
+
   public preboot(): AnalyticsServicePreboot {
     return {
       optIn: this.analyticsClient.optIn,
@@ -48,7 +66,7 @@ export class AnalyticsService {
     };
   }
 
-  public setup(): AnalyticsServiceSetup {
+  public setup(): InternalAnalyticsServiceSetup {
     return {
       optIn: this.analyticsClient.optIn,
       registerContextProvider: this.analyticsClient.registerContextProvider,
@@ -57,6 +75,7 @@ export class AnalyticsService {
       registerShipper: this.analyticsClient.registerShipper,
       reportEvent: this.analyticsClient.reportEvent,
       telemetryCounter$: this.analyticsClient.telemetryCounter$,
+      registerOptInStatus$: this.registerOptInStatus$,
     };
   }
 
@@ -65,10 +84,13 @@ export class AnalyticsService {
       optIn: this.analyticsClient.optIn,
       reportEvent: this.analyticsClient.reportEvent,
       telemetryCounter$: this.analyticsClient.telemetryCounter$,
+      isOptedIn$: this.isOptedIn$.asObservable(),
     };
   }
 
   public async stop() {
+    this.optInStatusSubscription?.unsubscribe();
+    this.isOptedIn$.complete();
     await this.analyticsClient.shutdown();
   }
 

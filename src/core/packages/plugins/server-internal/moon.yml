@@ -24,6 +24,7 @@ dependsOn:
   - '@kbn/utils'
   - '@kbn/core-base-common'
   - '@kbn/core-base-server-internal'
+  - '@kbn/core-analytics-server-internal'
   - '@kbn/core-elasticsearch-server-internal'
   - '@kbn/core-node-server'
   - '@kbn/core-saved-objects-base-server-internal'

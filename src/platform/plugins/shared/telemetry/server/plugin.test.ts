@@ -15,12 +15,13 @@ import { telemetryCollectionManagerPluginMock } from '@kbn/telemetry-collection-
 import { buildShipperHeaders } from '../common/ebt_v3_endpoint';
 import { TelemetryPlugin } from './plugin';
 import type { NodeRoles } from '@kbn/core-node-server';
-import { Observable } from 'rxjs';
+import type { InternalAnalyticsServiceSetup } from '@kbn/core-analytics-server-internal';
+import { firstValueFrom, Observable } from 'rxjs';
 
 describe('TelemetryPlugin', () => {
   describe('setup', () => {
     describe('when initial config does not allow changing opt in status', () => {
-      it('calls analytics optIn', () => {
+      it('registers the opt-in status as the source of truth for Core Analytics', async () => {
         const initializerContext = coreMock.createPluginInitializerContext({
           optIn: true,
           allowChangingOptInStatus: false,
@@ -32,10 +33,17 @@ describe('TelemetryPlugin', () => {
           telemetryCollectionManager: telemetryCollectionManagerPluginMock.createSetupContract(),
         });
 
-        expect(coreSetupMock.analytics.optIn).toHaveBeenCalledTimes(1);
-        expect(coreSetupMock.analytics.optIn).toHaveBeenCalledWith({
-          global: { enabled: true },
-        });
+        // The plugin no longer drives `analytics.optIn` directly: it hands its opt-in observable
+        // to Core, which owns the consent and re-exposes it via `analytics.isOptedIn$`.
+        // `registerOptInStatus$` lives on the internal-only contract, so we cast to reach it.
+        const analytics =
+          coreSetupMock.analytics as unknown as jest.Mocked<InternalAnalyticsServiceSetup>;
+        expect(analytics.optIn).not.toHaveBeenCalled();
+        expect(analytics.registerOptInStatus$).toHaveBeenCalledTimes(1);
+
+        const registeredIsOptedIn$ = analytics.registerOptInStatus$.mock
+          .calls[0][0] as Observable<boolean>;
+        await expect(firstValueFrom(registeredIsOptedIn$)).resolves.toBe(true);
       });
     });
 

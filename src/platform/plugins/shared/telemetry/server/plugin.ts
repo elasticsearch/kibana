@@ -40,6 +40,7 @@ import type {
   Logger,
 } from '@kbn/core/server';
 import type { SecurityPluginStart } from '@kbn/security-plugin/server';
+import type { InternalAnalyticsServiceSetup } from '@kbn/core-analytics-server-internal';
 import { SavedObjectsClient } from '@kbn/core/server';
 
 import apm from 'elastic-apm-node';
@@ -92,7 +93,8 @@ export interface TelemetryPluginStart {
    * Resolves `false` if the user explicitly opted out of sending usage data to Elastic
    * or did not choose to opt-in or out -yet- after a minor or major upgrade (only when previously opted-out).
    *
-   * @deprecated Use {@link TelemetryPluginStart.isOptedIn$ | isOptedIn$} instead.
+   * @deprecated Subscribe to `core.analytics.isOptedIn$` instead. The opt-in status is now owned by
+   * the Core Analytics service, so consumers no longer need to depend on the `telemetry` plugin.
    */
   getIsOptedIn: () => Promise<boolean>;
 
@@ -106,7 +108,8 @@ export interface TelemetryPluginStart {
    * haven't chosen yet to opt-in or out after a minor or major upgrade. In that case, pushing the new
    * value waits until the user decides.
    *
-   * @track-adoption
+   * @deprecated Subscribe to `core.analytics.isOptedIn$` instead. The opt-in status is now owned by
+   * the Core Analytics service, so consumers no longer need to depend on the `telemetry` plugin.
    */
   isOptedIn$: Observable<boolean>;
 }
@@ -184,9 +187,14 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
       );
     });
 
-    if (this.isOptedIn !== undefined) {
-      analytics.optIn({ global: { enabled: this.isOptedIn } });
-    }
+    // Register the telemetry opt-in status as the source of truth for the Core Analytics service.
+    // Core both re-exposes it via `analytics.isOptedIn$` and uses it to drive the analytics client's
+    // global consent, so the telemetry plugin no longer needs to call `analytics.optIn` directly.
+    //
+    // `registerOptInStatus$` is intentionally kept off the public `AnalyticsServiceSetup` contract:
+    // only this platform-owned producer is meant to drive the global opt-in status, so we reach it by
+    // casting to the internal contract.
+    (analytics as InternalAnalyticsServiceSetup).registerOptInStatus$(this.isOptedIn$);
 
     const currentKibanaVersion = this.currentKibanaVersion;
 
@@ -267,8 +275,6 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
   ) {
     const { analytics, savedObjects } = core;
 
-    this.isOptedIn$.subscribe((enabled) => analytics.optIn({ global: { enabled } }));
-
     const savedObjectsInternalRepository = savedObjects.createInternalRepository([
       TELEMETRY_SAVED_OBJECT_TYPE,
     ]);
@@ -284,7 +290,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
 
     return {
       getIsOptedIn: async () => this.isOptedIn === true,
-      isOptedIn$: this.isOptedIn$,
+      isOptedIn$: analytics.isOptedIn$,
     };
   }
 

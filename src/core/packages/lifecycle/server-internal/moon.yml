@@ -19,6 +19,7 @@ project:
 dependsOn:
   - '@kbn/core-logging-server-internal'
   - '@kbn/core-analytics-server'
+  - '@kbn/core-analytics-server-internal'
   - '@kbn/core-preboot-server-internal'
   - '@kbn/core-http-context-server-internal'
   - '@kbn/core-http-server-internal'

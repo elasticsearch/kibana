@@ -37,6 +37,7 @@
     "@kbn/core-user-profile-browser-mocks",
     "@kbn/core-analytics-browser",
     "@kbn/core-analytics-server",
+    "@kbn/core-analytics-server-internal",
     "@kbn/core-elasticsearch-server",
     "@kbn/logging",
     "@kbn/core-security-server",

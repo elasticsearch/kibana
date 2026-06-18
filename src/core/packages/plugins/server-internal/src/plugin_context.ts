@@ -20,6 +20,7 @@ import type {
 } from '@kbn/core-http-request-handler-context-server';
 import { CoreRouteHandlerContext } from '@kbn/core-http-request-handler-context-server-internal';
 import type { InternalCoreStart } from '@kbn/core-lifecycle-server-internal';
+import type { InternalAnalyticsServiceSetup } from '@kbn/core-analytics-server-internal';
 import type { PluginWrapper } from './plugin';
 import type {
   PluginsServicePrebootSetupDeps,
@@ -197,6 +198,9 @@ export function createPluginSetupContext<TPlugin, TPluginDependencies>({
   const router = deps.http.createRouter('', plugin.opaqueId);
 
   return {
+    // `registerOptInStatus$` is intentionally absent from the public `AnalyticsServiceSetup`, but it
+    // is carried at runtime so the platform-owned telemetry producer can reach it by casting to
+    // `InternalAnalyticsServiceSetup`. The cast keeps the public `CoreSetup.analytics` type clean.
     analytics: {
       optIn: deps.analytics.optIn,
       registerContextProvider: deps.analytics.registerContextProvider,
@@ -205,7 +209,8 @@ export function createPluginSetupContext<TPlugin, TPluginDependencies>({
       registerShipper: deps.analytics.registerShipper,
       reportEvent: deps.analytics.reportEvent,
       telemetryCounter$: deps.analytics.telemetryCounter$,
-    },
+      registerOptInStatus$: deps.analytics.registerOptInStatus$,
+    } as InternalAnalyticsServiceSetup,
     capabilities: {
       registerProvider: deps.capabilities.registerProvider,
       registerSwitcher: deps.capabilities.registerSwitcher,
@@ -358,6 +363,7 @@ export function createPluginStartContext<TPlugin, TPluginDependencies>({
       optIn: deps.analytics.optIn,
       reportEvent: deps.analytics.reportEvent,
       telemetryCounter$: deps.analytics.telemetryCounter$,
+      isOptedIn$: deps.analytics.isOptedIn$,
     },
     capabilities: {
       resolveCapabilities: deps.capabilities.resolveCapabilities,
