@@ -72,7 +72,6 @@ export default function ({ loadTestFile, getService, getPageObjects }: FtrProvid
     });
 
     loadTestFile(require.resolve('./pie'));
-    loadTestFile(require.resolve('./metric'));
     loadTestFile(require.resolve('./xy'));
   });
 }

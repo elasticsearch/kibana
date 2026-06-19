@@ -10,6 +10,19 @@
 import type { ScoutPage } from '..';
 import { EuiComboBoxWrapper, expect } from '..';
 
+const normalizeComputedColor = (color: string | undefined): string | undefined => {
+  if (!color) {
+    return undefined;
+  }
+
+  const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+  if (rgbMatch) {
+    return `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, 1)`;
+  }
+
+  return color;
+};
+
 export class LensApp {
   private readonly lensApp;
   private readonly chartSwitchPopover;
@@ -272,5 +285,133 @@ export class LensApp {
 
   getEditInLensButton() {
     return this.page.getByTestId('navigateToLensEditorLink');
+  }
+
+  /**
+   * Waits for the Lens visualization workspace to finish rendering.
+   * Polls `data-rendering-count` on the visualization container until it
+   * stabilises across two consecutive reads (500 ms apart).
+   */
+  async waitForVisualization(chartSubj = 'lnsVisualizationContainer') {
+    const container = this.page.testSubj.locator(chartSubj);
+    await container.waitFor({ state: 'visible', timeout: 30_000 });
+
+    await this.page.waitForFunction(
+      (subj: string) => {
+        const el = document.querySelector(`[data-test-subj="${subj}"]`);
+        if (!el) return false;
+        const count = el.getAttribute('data-rendering-count');
+        if (count === null) return true;
+        if (count === '0') return false;
+        const prev = el.getAttribute('data-lns-prev-count');
+        el.setAttribute('data-lns-prev-count', count);
+        return prev === count;
+      },
+      chartSubj,
+      { timeout: 30_000, polling: 500 }
+    );
+  }
+
+  /**
+   * Asserts the number of layers in the Lens editor.
+   * When there is only 1 layer the unified-tabs row is hidden.
+   */
+  async assertLayerCount(expectedCount: number) {
+    const layerPanels = this.page.locator('[data-test-subj^="lns-layerPanel-"]');
+    await expect(layerPanels).toHaveCount(1);
+
+    const tabs = this.page.locator('[data-test-subj^="unifiedTabs_tab_"]');
+    if (expectedCount <= 1) {
+      await expect(tabs).toHaveCount(0);
+    } else {
+      await expect(tabs).toHaveCount(expectedCount);
+    }
+  }
+
+  /** Returns all dimension-trigger button locators currently rendered in the editor. */
+  getDimensionTriggers() {
+    return this.page.testSubj.locator('lns-dimensionTrigger').all();
+  }
+
+  /**
+   * Hovers over a dimension-trigger button so that metric tiles are in their
+   * default (un-hovered) state before asserting colors.
+   */
+  async hoverOverDimensionButton(index = 0) {
+    const triggers = await this.getDimensionTriggers();
+    if (triggers[index]) {
+      await triggers[index].hover();
+    }
+    // Move the pointer off the metric tiles so hover styles do not affect color assertions.
+    await this.page.locator('[data-test-subj^="lns-layerPanel-"]').first().hover();
+  }
+
+  /**
+   * Reads the current state of every metric tile inside `[data-test-subj="mtrVis"]`.
+   * The returned shape matches the FTR `lens.getMetricVisualizationData()` output.
+   */
+  async getMetricVisualizationData() {
+    const tiles = await this.page.locator('[data-test-subj="mtrVis"] .echChart li').all();
+    const showingBar = (await this.page.locator('.echSingleMetricProgress').count()) > 0;
+
+    return Promise.all(
+      tiles.map(async (tile) => {
+        const getText = async (selector: string) => {
+          const el = tile.locator(selector);
+          if ((await el.count()) === 0) return undefined;
+          return el.evaluate((node) => (node as HTMLElement).innerText);
+        };
+        const getColor = async (selector: string) => {
+          const el = tile.locator(selector);
+          if ((await el.count()) === 0) return undefined;
+          const color = await el.evaluate((node) => getComputedStyle(node).backgroundColor);
+          return normalizeComputedColor(color);
+        };
+
+        return {
+          title: await getText('h2'),
+          subtitle: await getText('.echMetricText__subtitle'),
+          extraText: await getText('.echMetricText__extraBlock'),
+          value: await getText('.echMetricText__valueBlock'),
+          color: await getColor('.echMetric'),
+          trendlineColor: await (async () => {
+            const el = tile.locator('.echSingleMetricSparkline__svg > rect');
+            if ((await el.count()) === 0) return undefined;
+            return (await el.getAttribute('fill')) ?? undefined;
+          })(),
+          showingTrendline: (await tile.locator('.echSingleMetricSparkline').count()) > 0,
+          showingBar,
+        };
+      })
+    );
+  }
+
+  /** Opens the palette panel for the currently active dimension. */
+  async openPalettePanel() {
+    await this.page.testSubj.click('lns_colorEditing_trigger');
+    await this.page.testSubj.locator('lns-palettePanelFlyout').waitFor({
+      state: 'visible',
+      timeout: 10_000,
+    });
+  }
+
+  /** Reads color-stop values and colors from the currently open palette panel. */
+  async getPaletteColorStops() {
+    const stopInputs = await this.page
+      .locator('[data-test-subj^="lnsPalettePanel_dynamicColoring_range_value_"]')
+      .all();
+    const colorAnchors = await this.page.testSubj.locator('euiColorPickerAnchor').all();
+
+    return Promise.all(
+      stopInputs.map(async (input, i) => ({
+        stop: await input.getAttribute('value'),
+        color:
+          colorAnchors[i] != null
+            ? normalizeComputedColor(
+                await colorAnchors[i].evaluate((node) => getComputedStyle(node).backgroundColor)
+              )
+            : undefined,
+      }))
+    );
   }
 }
