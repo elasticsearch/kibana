@@ -31,6 +31,7 @@ import { MigrationSource } from '../../common/types';
 
 jest.mock('../api', () => ({
   createDashboardMigration: jest.fn(),
+  deleteDashboardMigration: jest.fn(),
   upsertDashboardMigrationResources: jest.fn(),
   startDashboardMigration: jest.fn(),
   stopDashboardMigration: jest.fn(),
@@ -80,6 +81,7 @@ const mockStartDashboardMigration = api.startDashboardMigration as jest.Mock;
 const mockStopDashboardMigration = api.stopDashboardMigration as jest.Mock;
 const mockAddDashboardsToDashboardMigration = api.addDashboardsToDashboardMigration as jest.Mock;
 const mockCreateDashboardMigration = api.createDashboardMigration as jest.Mock;
+const mockDeleteDashboardMigration = api.deleteDashboardMigration as jest.Mock;
 const mockUpsertDashboardMigrationResources = api.upsertDashboardMigrationResources as jest.Mock;
 
 const defaultMigrationStats = {
@@ -215,6 +217,41 @@ describe('SiemDashboardMigrationsService', () => {
         body: body.slice(CREATE_MIGRATION_BODY_BATCH_SIZE),
       });
       expect(migrationId).toBe('mig-1');
+    });
+
+    it('should delete migration when a batch fails, after all parallel batches have settled', async () => {
+      const body = new Array(CREATE_MIGRATION_BODY_BATCH_SIZE * 3).fill({
+        dashboard: 'dashboard',
+      });
+      const batchError = new Error('Invalid dashboard data');
+      mockCreateDashboardMigration.mockResolvedValueOnce({ migration_id: 'mig-1' });
+      mockDeleteDashboardMigration.mockResolvedValue(undefined);
+
+      let resolveBatch2: () => void;
+      const batch2Promise = new Promise<void>((resolve) => {
+        resolveBatch2 = resolve;
+      });
+
+      let callCount = 0;
+      mockAddDashboardsToDashboardMigration.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.reject(batchError);
+        }
+        if (callCount === 2) {
+          return batch2Promise;
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const createPromise = service.createDashboardMigration(body, 'test', MigrationSource.SPLUNK);
+
+      // Batch 2 is still in-flight; resolve it now to let allSettled complete
+      resolveBatch2!();
+
+      await expect(createPromise).rejects.toThrow('Invalid dashboard data');
+      expect(mockDeleteDashboardMigration).toHaveBeenCalledWith({ migrationId: 'mig-1' });
+      expect(mockAddDashboardsToDashboardMigration).toHaveBeenCalledTimes(3);
     });
   });
 

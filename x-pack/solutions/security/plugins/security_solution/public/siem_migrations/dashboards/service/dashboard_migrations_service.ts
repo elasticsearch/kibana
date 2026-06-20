@@ -87,7 +87,13 @@ export class SiemDashboardMigrationsService extends SiemMigrationsServiceBase<Da
       const dashboardsBatch = dashboards.slice(i, i + CREATE_MIGRATION_BODY_BATCH_SIZE);
       batches.push(api.addDashboardsToDashboardMigration({ migrationId, body: dashboardsBatch }));
     }
-    await Promise.all(batches);
+    const results = await Promise.allSettled(batches);
+    const rejected = results.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    );
+    if (rejected) {
+      throw rejected.reason;
+    }
   }
 
   /** Creates a dashboard migration with a name and adds the dashboards to it, returning the migration ID */
@@ -107,11 +113,12 @@ export class SiemDashboardMigrationsService extends SiemMigrationsServiceBase<Da
       throw emptyDashboardError;
     }
 
+    let migrationId: string | undefined;
     try {
-      // create the migration
-      const { migration_id: migrationId } = await api.createDashboardMigration({
+      const { migration_id } = await api.createDashboardMigration({
         name: migrationName,
       });
+      migrationId = migration_id;
 
       await this.addDashboardsToMigration(migrationId, data);
 
@@ -122,8 +129,11 @@ export class SiemDashboardMigrationsService extends SiemMigrationsServiceBase<Da
       });
       return migrationId;
     } catch (error) {
+      if (migrationId) {
+        await api.deleteDashboardMigration({ migrationId }).catch(() => {});
+      }
       this.telemetry.reportSetupMigrationCreated({
-        migrationId: undefined,
+        migrationId,
         count: dashboardsCount,
         error,
         vendor,

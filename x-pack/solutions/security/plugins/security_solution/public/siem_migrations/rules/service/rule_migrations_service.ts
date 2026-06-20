@@ -150,16 +150,17 @@ export class SiemRulesMigrationsService extends SiemMigrationsServiceBase<RuleMi
       throw emptyRulesError;
     }
 
+    let migrationId: string | undefined;
     try {
       if (vendor === MigrationSource.QRADAR) {
         if (!rules.xml) {
           throw new Error(i18n.EMPTY_RULES_ERROR);
         }
 
-        // create the migration
-        const { migration_id: migrationId } = await api.createRuleMigration({
+        const { migration_id } = await api.createRuleMigration({
           name: migrationName,
         });
+        migrationId = migration_id;
         const { count } = await this.addQradarRulesToMigration(migrationId, rules);
         this.telemetry.reportSetupMigrationCreated({ migrationId, count, vendor });
 
@@ -182,10 +183,10 @@ export class SiemRulesMigrationsService extends SiemMigrationsServiceBase<RuleMi
           throw new Error(i18n.EMPTY_RULES_ERROR);
         }
 
-        // create the migration
-        const { migration_id: migrationId } = await api.createRuleMigration({
+        const { migration_id } = await api.createRuleMigration({
           name: migrationName,
         });
+        migrationId = migration_id;
         await this.addRulesToMigration(migrationId, rules);
         this.telemetry.reportSetupMigrationCreated({
           migrationId,
@@ -196,6 +197,9 @@ export class SiemRulesMigrationsService extends SiemMigrationsServiceBase<RuleMi
         return migrationId;
       }
     } catch (error) {
+      if (migrationId) {
+        await api.deleteMigration({ migrationId }).catch(() => {});
+      }
       this.telemetry.reportSetupMigrationCreated({ count: 0, error, vendor });
       throw error;
     }
