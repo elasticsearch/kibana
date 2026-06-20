@@ -60,6 +60,7 @@ export interface UpdateRuleInMemoryOpts<Params extends RuleParams> {
   shouldInvalidateApiKeys: boolean;
   paramsModifier?: ParamsModifier<Params>;
   shouldIncrementRevision?: ShouldIncrementRevision<Params>;
+  legacyActionsMigratedRuleIds: string[];
 }
 
 export async function updateRuleInMemory<Params extends RuleParams>(
@@ -75,6 +76,7 @@ export async function updateRuleInMemory<Params extends RuleParams>(
     username,
     shouldInvalidateApiKeys,
     shouldIncrementRevision = () => true,
+    legacyActionsMigratedRuleIds,
   }: UpdateRuleInMemoryOpts<Params>
 ): Promise<void> {
   context.logger.info(`Updating rule in memory for rule: ${rule.id}`);
@@ -135,9 +137,12 @@ export async function updateRuleInMemory<Params extends RuleParams>(
     updatedRule.revision += 1;
   }
 
-  // If neither attributes nor parameters were updated, mark
-  // the rule as skipped and continue to the next rule.
-  if (isAttributesUpdateSkipped && isParamsUpdateSkipped) {
+  // If neither attributes nor parameters were updated and the rule did not have
+  // legacy actions migrated in-memory, mark the rule as skipped. Rules with
+  // migrated legacy actions must always be saved because the legacy sidecar SO
+  // has already been deleted by bulkMigrateLegacyActions.
+  const hasLegacyActionsMigrated = legacyActionsMigratedRuleIds.includes(rule.id);
+  if (isAttributesUpdateSkipped && isParamsUpdateSkipped && !hasLegacyActionsMigrated) {
     skipped.push({
       id: rule.id,
       name: rule.attributes.name,

@@ -136,6 +136,7 @@ async function updateRuleAttributesAndParamsInMemory<Params extends RuleParams>(
   username,
   shouldInvalidateApiKeys,
   shouldIncrementRevision = () => true,
+  legacyActionsMigratedRuleIds,
 }: UpdateOperationOpts & {
   context: RulesClientContext;
   shouldInvalidateApiKeys: boolean;
@@ -156,6 +157,7 @@ async function updateRuleAttributesAndParamsInMemory<Params extends RuleParams>(
       paramsModifier,
       shouldInvalidateApiKeys,
       shouldIncrementRevision,
+      legacyActionsMigratedRuleIds,
       updateAttributesFn: async ({ domainRule, ruleActions, ruleType }) => {
         const result = await getUpdatedAttributesFromOperations({
           context,
