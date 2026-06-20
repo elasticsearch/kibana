@@ -39,7 +39,13 @@ export const parsePluginZipFile = async (archive: ZipArchive): Promise<ParsedPlu
   const commands = await readCommands(archive, manifest);
   const unmanagedAssets = detectUnmanagedAssets(archive, manifest);
 
-  const allSkills = [...skills, ...commands];
+  // Many Claude plugins ship a command with the same name as a skill
+  // (the command just loads the skill). Drop such commands to avoid
+  // name collisions.
+  const skillNames = new Set(skills.map((s) => s.dirName));
+  const dedupedCommands = commands.filter((cmd) => !skillNames.has(cmd.dirName));
+
+  const allSkills = [...skills, ...dedupedCommands];
 
   const seen = new Set<string>();
   for (const skill of allSkills) {
