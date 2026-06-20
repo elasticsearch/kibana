@@ -1,90 +1,117 @@
 # BINARY OPERATORS
 
-Binary operators perform comparisons and arithmetic operations between two fields or values. If either field is multivalued, the result is `null`. For comparison operators, if one side is a constant and the other is a field in the index with both a mapping-index and doc-values, the operation is pushed to the underlying search index. Division between two integer types yields an integer result, rounding towards zero; for floating point division, cast one argument to `DOUBLE`.
+Binary operators are used to compare values or perform arithmetic operations between two fields or values. If either field is multivalued, the result is `null`.
 
 ## Syntax
 
-`<field_or_value> <operator> <field_or_value>`
+`<field or value> <operator> <field or value>`
 
 ### Parameters
 
-#### <field_or_value>
+#### <field or value>
 
-Represents the left or right operand for the binary operation. Can be a field or a constant value.
+The left-hand side operand for the binary operation.
 
 #### <operator>
 
-The binary operator to apply. Supported operators include:
-- Equality: `==`
-- Inequality: `!=`
-- Less than: `<`
-- Less than or equal to: `<=`
-- Greater than: `>`
-- Greater than or equal to: `>=`
-- Add: `+`
-- Subtract: `-`
-- Multiply: `*`
-- Divide: `/`
-- Modulus: `%`
+The binary operator to use. Supported operators include:
+- Equality `==`
+- Inequality `!=`
+- Less than `<`
+- Less than or equal to `<=`
+- Greater than `>`
+- Greater than or equal to `>=`
+- Add `+`
+- Subtract `-`
+- Multiply `*`
+- Divide `/`
+- Modulus `%`
+
+#### <field or value>
+
+The right-hand side operand for the binary operation.
 
 ## Examples
 
-Checks if the values in columns `a` and `b` are equal and stores the result in a new column `is_equal`.
+Filters employees whose department is "Engineering".
+
 ```esql
-ROW a = 5, b = 5
-| EVAL is_equal = a == b
+FROM employees
+| WHERE department == "Engineering"
 ```
 
-Checks if the values in columns `a` and `b` are not equal and stores the result in a new column `is_unequal`.
+Filters employees whose salary is not 50,000.
+
 ```esql
-ROW a = 5, b = 3
-| EVAL is_unequal = a != b
+FROM employees
+| WHERE salary != 50000
 ```
 
-Checks if the value in column `a` is less than the value in column `b` and stores the result in a new column `is_less`.
+Filters employees younger than 30.
+
 ```esql
-ROW a = 2, b = 5
-| EVAL is_less = a < b
+FROM employees
+| WHERE age < 30
 ```
 
-Adds the values in columns `a` and `b` and stores the result in a new column `sum`.
+Filters employees with five or fewer years of experience.
+
 ```esql
-ROW a = 2, b = 3
-| EVAL sum = a + b
+FROM employees
+| WHERE years_experience <= 5
 ```
 
-Subtracts the value in column `b` from the value in column `a` and stores the result in a new column `difference`.
+Filters employees with a salary greater than 100,000.
+
 ```esql
-ROW a = 5, b = 3
-| EVAL difference = a - b
+FROM employees
+| WHERE salary > 100000
 ```
 
-Multiplies the values in columns `a` and `b` and stores the result in a new column `product`.
+Filters employees aged 40 or older.
+
 ```esql
-ROW a = 2, b = 3
-| EVAL product = a * b
+FROM employees
+| WHERE age >= 40
 ```
 
-Divides the value in column `a` by the value in column `b` and stores the result in a new column `quotient`.
+Creates a new column `total` by adding the `salary` and `bonus` fields.
+
 ```esql
-ROW a = 6, b = 2
-| EVAL quotient = a / b
+FROM employees
+| EVAL total = salary + bonus
 ```
 
-Divides the value in column `a` by the value in column `b` after casting `b` to `DOUBLE` to get a floating point result, and stores it in a new column `float_quotient`.
+Creates a new column `difference` by subtracting `deductions` from `salary`.
+
 ```esql
-ROW a = 7, b = 2
-| EVAL float_quotient = a / b::DOUBLE
+FROM employees
+| EVAL difference = salary - deductions
 ```
 
-Calculates the remainder when the value in column `a` is divided by the value in column `b` and stores it in a new column `remainder`.
+Creates a new column `double_salary` by multiplying `salary` by 2.
+
 ```esql
-ROW a = 7, b = 3
-| EVAL remainder = a % b
+FROM employees
+| EVAL double_salary = salary * 2
+```
+
+Creates a new column `ratio` by dividing `salary` by 1,000.
+
+```esql
+FROM employees
+| EVAL ratio = salary / 1000
+```
+
+Creates a new column `remainder` by calculating the remainder of `salary` divided by 1,000.
+
+```esql
+FROM employees
+| EVAL remainder = salary % 1000
 ```
 
 ## Limitations
 
-- If either operand is multivalued, the result is `null`.
-- Division between two integer types yields an integer result, rounding towards zero. For floating point division, cast one argument to `DOUBLE`.
-- For comparison operators, the operation is pushed to the underlying search index only if one side is a constant and the other is a field in the index with both a mapping-index and doc-values.
+- If either field is multivalued, the result is `null`.
+- For division `/`, dividing two integer types yields an integer result, rounding towards 0. For floating point division, cast one of the arguments to `DOUBLE`.
+- Comparisons are pushed to the underlying search index only if one side is a constant and the other is a field in the index with both a mapping-index and doc-values.

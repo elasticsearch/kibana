@@ -580,7 +580,7 @@
     }
   },
   "reference/query-languages/esql/functions-operators/operators.md": {
-    "hash": "1a58fa1f1a2470f5bad0e702683bbf7b7700c98ae444d1cc0537c9e096544d2a",
+    "hash": "69deb007bd5918d89975078e7361207e1c2f4cadb51ddc306db1dc9ee2a63d22",
     "outputFiles": [
       "esql-binary operators.txt",
       "esql-unary operators.txt",
@@ -590,7 +590,7 @@
     ],
     "sections": {
       "esql-binary operators.txt": {
-        "hash": "c24fc594b509b9460b45cd7703b5c33d892b2f25aaa19802bc3227bdeab8deb6"
+        "hash": "4f097d73426755d4c3a0714be3eb9ee9822d02d7559b58d8539638f72365ff8f"
       },
       "esql-unary operators.txt": {
         "hash": "61fdbf0a7875d3b2ed832566e6d33b2cca6dddaf26745aa19d1fa67d77c61187"
@@ -602,7 +602,7 @@
         "hash": "4455744ec0b64c2fc1f3539fdc7946dccbf3a1ed74e1bcf0719183505b4b11da"
       },
       "esql-infix operators.txt": {
-        "hash": "c945b4ce944f723066df76b2fe48af0609a9d25fe6649d527f0b634a4e27a582"
+        "hash": "e542cc3274e4534f46428d90f72544307019f657b012ecd3b5af5d94256a3733"
       }
     }
   },

@@ -1,116 +1,135 @@
 # INFIX OPERATORS
 
-Infix operators provide convenient ways to perform type casting, pattern matching, and value comparisons directly within queries. These operators include cast (`::`), `IN`, `LIKE`, `RLIKE`, and match (`:`).
+This page describes the infix operators available for filtering, pattern matching, type casting, and full-text search. These operators provide concise syntax for common operations such as type conversion, list membership, wildcard and regex pattern matching, and semantic search.
 
 ## Syntax
 
-`<expression> :: <type>`
-`<expression> IN (<value1>, <value2>, ...)`
-`<expression> LIKE <pattern or patterns>`
-`<expression> RLIKE <pattern or patterns>`
-`<field> : <query>`
+- Cast: `expression::type`
+- IN: `expression IN (value1, value2, ...)`
+- LIKE: `expression LIKE pattern` or `expression LIKE (pattern1, pattern2, ...)`
+- RLIKE: `expression RLIKE pattern` or `expression RLIKE (pattern1, pattern2, ...)`
+- Match: `field:query_string`
 
 ### Parameters
 
 #### Cast (`::`)
 
-Provides an alternative syntax for type conversion, allowing you to cast values to a specific type.
+The cast operator provides an alternative syntax to the TO_<type> conversion functions, allowing you to convert values between types.
 
 #### IN
 
-Tests whether a field or expression equals any element in a list of literals, fields, or expressions.
+The IN operator tests whether a field or expression equals any element in a list of literals, fields, or expressions.
 
 #### LIKE
 
-Filters data based on string patterns using wildcards. The left-hand side is typically a field or literal, and the right-hand side is the pattern. Supports `*` (zero or more characters) and `?` (one character) wildcards. Patterns can be single or multiple, and escaping is supported using backslash `\` or triple quotes `"""`.
+LIKE filters data based on string patterns using wildcards. The left-hand side is typically a field or expression, and the right-hand side is the pattern or list of patterns. Supported wildcards:
+- `*` matches zero or more characters.
+- `?` matches exactly one character.
+
+LIKE is case-sensitive and matches the exact string indexed. Escaping special characters such as `*` and `.` requires a backslash (`\`), which itself must be escaped in string literals.
 
 #### RLIKE
 
-Filters data using regular expression patterns. The left-hand side is typically a field or literal, and the right-hand side is the regex pattern. Supports single or multiple patterns, and escaping is supported using backslash `\` or triple quotes `"""`.
+RLIKE filters data based on string patterns using regular expressions. The left-hand side is typically a field or expression, and the right-hand side is the regex pattern or list of patterns. Pattern matching is case-sensitive and matches the exact string indexed. Escaping special regex characters (e.g., `.`, `*`, `(`) requires a backslash (`\`), which itself must be escaped in string literals.
 
-#### Match (`:`)
+#### Match operator (`:`)
 
-Performs a match query on the specified field, returning true if the provided query matches the row. Equivalent to the match function.
+The match operator performs a full-text search on the specified field using a query string. Returns true if the provided query matches the row. It is equivalent to the match function and supports multi-valued columns.
 
 ## Examples
 
-Concatenates a version string by casting and combining values, then casting the result to a VERSION type.
+Convert a string to an integer, increment it, convert back to a string, concatenate with a version suffix, and cast the result to a version type:
 ```esql
 ROW ver = CONCAT(("0"::INT + 1)::STRING, ".2.3")::VERSION
 ```
 
-Checks if the result of subtracting `a` from `c` is present in a list of values, including literals and expressions.
+Check if the result of subtracting 'a' from 'c' is present in a list of values:
 ```esql
 ROW a = 1, b = 4, c = 3
 | WHERE c-a IN (3, b / 2, a)
 ```
 
-Filters employees whose first name matches the pattern `?b*`, where `?` is any single character and `*` is any sequence of characters.
+Filter employees whose first name starts with any character followed by 'b' using a LIKE pattern:
 ```esql
 FROM employees
 | WHERE first_name LIKE """?b*"""
 | KEEP first_name, last_name
 ```
 
-Matches the string "foo * bar" by escaping the `*` character in the pattern.
+Find rows where the 'message' field contains the literal string "foo * bar" using LIKE with escaped asterisk:
 ```esql
 ROW message = "foo * bar"
 | WHERE message LIKE "foo \\* bar"
 ```
 
-Matches the string "foo * bar" using triple quotes to simplify escaping of the `*` character.
+Use triple-quoted strings with LIKE to match a message containing a literal asterisk, reducing the need for escaping:
 ```esql
 ROW message = "foo * bar"
 | WHERE message LIKE """foo \* bar"""
 ```
 
-Returns true if the `message` field matches any of the patterns "foo*" or "bar?".
+Check if the 'message' field matches any of several LIKE patterns:
 ```esql
 ROW message = "foobar"
 | WHERE message like ("foo*", "bar?")
 ```
 
-Filters employees using a pattern provided as a query parameter for the `first_name` field.
+Filter employees by a LIKE pattern provided as a REST query placeholder:
 ```esql
 FROM employees
 | WHERE first_name LIKE ?pattern
 | KEEP first_name, last_name
 ```
 
-Filters employees whose first name matches the regular expression `.leja.*`.
+Filter employees whose first name matches a regex pattern using RLIKE:
 ```esql
 FROM employees
 | WHERE first_name RLIKE """.leja.*"""
 | KEEP first_name, last_name
 ```
 
-Matches the string "foo ( bar" by escaping the `(` character in the regex pattern.
+Find rows where the 'message' field contains the literal string "foo ( bar" using RLIKE with escaped parenthesis:
 ```esql
 ROW message = "foo ( bar"
 | WHERE message RLIKE "foo \\( bar"
 ```
 
-Matches the string "foo ( bar" using triple quotes to simplify escaping of the `(` character in the regex pattern.
+Use triple-quoted strings with RLIKE to match a message containing a literal parenthesis, reducing the need for escaping:
 ```esql
 ROW message = "foo ( bar"
 | WHERE message RLIKE """foo \( bar"""
 ```
 
-Returns true if the `message` field matches any of the regex patterns "foo.*" or "bar.".
+Check if the 'message' field matches any of several regex patterns using RLIKE:
 ```esql
 ROW message = "foobar"
 | WHERE message RLIKE ("foo.*", "bar.")
 ```
 
-Filters employees using a regex pattern provided as a query parameter for the `first_name` field.
+Filter employees by a RLIKE pattern provided as a REST query placeholder:
 ```esql
 FROM employees
 | WHERE first_name RLIKE ?pattern
 | KEEP first_name, last_name
 ```
 
-Filters books where the `author` field matches the value "Faulkner".
+Search for books where the author field matches "Faulkner" using the match operator:
 ```esql
 FROM books
 | WHERE author:"Faulkner"
+```
+
+Filter employees whose job positions match "Internship" using the match operator and display their employee number and job positions:
+```esql
+FROM employees
+| WHERE job_positions:"Internship"
+| KEEP emp_no, job_positions
+```
+
+Perform a semantic search for book titles related to "Shakespeare", sort results by relevance score, and display the score and title:
+```esql
+FROM books METADATA _score
+| WHERE semantic_title:"Shakespeare"
+| SORT _score DESC
+| KEEP _score, semantic_title
 ```

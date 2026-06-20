@@ -235,14 +235,7 @@ new relevance scores. `FUSE` enables hybrid search to combine and score results 
     </spatial-functions>
 
     <operators>
-        Binary operators: ==, !=, <, <=, >, >=, +, -, *, /, %
-        Logical operators: AND, OR, NOT
-        Predicates: IS NULL, IS NOT NULL
-        Unary operators: -
-        IN: test if a field or expression is in a list of literals
-        LIKE: filter data based on string patterns using wildcards
-        RLIKE: filter data based on string patterns using regular expressions
-        Cast (`::`): provides a convenient alternative syntax to the `TO_<type>` conversion functions
+
     </operators>
 
 
