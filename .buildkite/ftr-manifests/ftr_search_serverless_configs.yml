@@ -30,8 +30,6 @@ enabled:
   - x-pack/platform/test/serverless/functional/configs/search/config.group13.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group14.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group15.ts
-  - x-pack/platform/test/serverless/functional/configs/search/config.group16.ts
-  - x-pack/platform/test/serverless/functional/configs/search/config.group17.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group18.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group19.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group20.ts

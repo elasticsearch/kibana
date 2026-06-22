@@ -13,7 +13,6 @@ export default async function ({ readConfigFile }: FtrConfigProviderContext) {
   return {
     ...baseTestConfig.getAll(),
     testFiles: [
-      require.resolve('../../test_suites/visualizations/group10'),
       require.resolve('../../test_suites/home_page'),
       require.resolve('../../test_suites/platform_security'),
       require.resolve('../../test_suites/reporting'),

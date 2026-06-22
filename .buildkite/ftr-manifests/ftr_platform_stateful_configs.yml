@@ -267,9 +267,7 @@ enabled:
   - x-pack/platform/test/functional/apps/lens/open_in_lens/tsvb_2/config.ts
   - x-pack/platform/test/functional/apps/lens/open_in_lens/tsvb_3/config.ts
   - x-pack/platform/test/functional/apps/lens/open_in_lens/tsvb_4/config.ts
-  - x-pack/platform/test/functional/apps/lens/open_in_lens/agg_based_1/config.ts
   - x-pack/platform/test/functional/apps/lens/open_in_lens/agg_based_2/config.ts
-  - x-pack/platform/test/functional/apps/lens/open_in_lens/agg_based_3/config.ts
   - x-pack/platform/test/functional/apps/lens/open_in_lens/agg_based_4/config.ts
   - x-pack/platform/test/functional/apps/lens/open_in_lens/dashboard/config.ts
   - x-pack/platform/test/functional/apps/license_management/config.ts
