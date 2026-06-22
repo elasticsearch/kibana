@@ -6,7 +6,12 @@
  */
 
 import type { DebugState } from '@elastic/charts';
-import type { BrowserContext, PageObjects, ScoutPage } from '@kbn/scout';
+import { MISSING_TOKEN } from '@kbn/field-formats-common';
+import type { PageObjects, ScoutPage } from '@kbn/scout';
+
+interface ElasticChartDebugContext {
+  addInitScript: (script: () => void) => Promise<{ dispose: () => Promise<void> }>;
+}
 
 const CONVERT_TO_LENS_ACTION = 'embeddablePanelAction-ACTION_EDIT_IN_LENS';
 
@@ -75,7 +80,7 @@ export async function loadDashboardInEditMode(
 }
 
 /** Enables elastic-charts debug state for subsequent page loads in this browser context. */
-export async function enableElasticChartDebug(context: BrowserContext): Promise<void> {
+export async function enableElasticChartDebug(context: ElasticChartDebugContext): Promise<void> {
   await context.addInitScript(() => {
     (window as unknown as { _echDebugStateFlag?: boolean })._echDebugStateFlag = true;
   });
@@ -100,4 +105,25 @@ export async function getChartDebugData(
   }
 
   return JSON.parse(debugJson) as DebugState;
+}
+
+/** Reads pie slice labels from an elastic-charts partition debug state. */
+export function getPieChartLabels(debugState: DebugState): string[] {
+  const slices = debugState?.partition?.[0]?.partitions ?? [];
+
+  return slices.map((slice) => formatPieSliceLabel(slice.name));
+}
+
+function formatPieSliceLabel(name: string | number): string {
+  if (name === MISSING_TOKEN) {
+    return 'Missing';
+  }
+  if (name === '__other__') {
+    return 'Other';
+  }
+  if (typeof name === 'number') {
+    return name.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  return name;
 }

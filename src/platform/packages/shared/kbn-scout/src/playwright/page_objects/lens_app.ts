@@ -333,6 +333,52 @@ export class LensApp {
     return this.page.testSubj.locator('lns-dimensionTrigger').all();
   }
 
+  /** Returns the visible label of a dimension trigger inside a dimension panel. */
+  async getDimensionTriggerText(dimension: string, index = 0): Promise<string> {
+    const trigger = this.page
+      .testSubj.locator(`${dimension} > lns-dimensionTrigger`)
+      .nth(index);
+    await expect(trigger).toBeVisible();
+    const text = await trigger.innerText();
+    // Lens inserts zero-width spaces around dots in field names for line-breaking.
+    return text.replace(/\u200b/g, '').trim();
+  }
+
+  /** Returns the chart type label shown in the chart switcher popover. */
+  async getChartSwitchType(): Promise<string> {
+    await expect(this.chartSwitchPopover).toBeVisible();
+    return (await this.chartSwitchPopover.innerText()).trim();
+  }
+
+  async openStyleSettingsFlyout() {
+    if (await this.closeDimensionEditorButton.isVisible()) {
+      await this.closeDimensionEditor();
+    }
+
+    await this.page.locator('button[data-test-subj="style"]').click();
+    await expect(this.page.locator('#lnsDimensionContainerTitle')).toBeVisible();
+  }
+
+  async closeStyleSettingsFlyout() {
+    const backButton = this.page.testSubj.locator('lns-indexPattern-dimensionContainerBack');
+    if (await backButton.isVisible()) {
+      await backButton.click();
+      await expect(backButton).toBeHidden();
+    }
+  }
+
+  /** Reads the selected donut hole size from the style settings flyout. */
+  async getDonutHoleSize(): Promise<string> {
+    await this.openStyleSettingsFlyout();
+    const comboBox = new EuiComboBoxWrapper(this.page, 'lnsEmptySizeRatioOption');
+    const selectedOptions = await comboBox.getSelectedMultiOptions();
+    if (selectedOptions.length > 0) {
+      return selectedOptions[0];
+    }
+
+    return comboBox.getSelectedValue();
+  }
+
   /**
    * Hovers over a dimension-trigger button so that metric tiles are in their
    * default (un-hovered) state before asserting colors.
