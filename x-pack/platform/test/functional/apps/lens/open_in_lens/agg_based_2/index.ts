@@ -70,6 +70,5 @@ export default function ({ loadTestFile, getService, getPageObjects }: FtrProvid
     });
 
     loadTestFile(require.resolve('./xy'));
-    loadTestFile(require.resolve('./gauge'));
   });
 }
