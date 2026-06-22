@@ -153,7 +153,7 @@ export class LensApp {
     palette?: { mode: 'legacy' | 'colorMapping'; id: string };
     keepOpen?: boolean;
   }) {
-    await this.openDimensionEditor(opts.dimension);
+    await this.openDimensionSelector(opts.dimension);
     await this.selectOperation(opts.operation);
     if (opts.field) {
       await this.selectField(opts.field);
@@ -167,7 +167,7 @@ export class LensApp {
   }
 
   async openDimensionEditorFor(dimension: string) {
-    await this.openDimensionEditor(dimension);
+    await this.openDimensionSelector(dimension);
   }
 
   async closeDimensionEditorPanel() {
@@ -216,9 +216,39 @@ export class LensApp {
     ).toBeHidden();
   }
 
-  private async openDimensionEditor(dimension: string) {
+  private async openDimensionSelector(dimension: string) {
     await this.page.testSubj.locator(dimension).click();
     await expect(this.closeDimensionEditorButton).toBeVisible();
+  }
+
+  /**
+   * Opens a dimension editor flyout from a dimension trigger inside a layer panel.
+   * Matches the FTR `lens.openDimensionEditor(dimension, layerIndex, dimensionIndex)` API.
+   */
+  async openDimensionEditor(dimension: string, layerIndex = 0, dimensionIndex = 0) {
+    const editors = await this.page.testSubj
+      .locator(`lns-layerPanel-${layerIndex} > ${dimension}`)
+      .all();
+    const editor = editors[dimensionIndex];
+    if (!editor) {
+      throw new Error(
+        `Dimension editor not found at index ${dimensionIndex} for "${dimension}" in layer ${layerIndex}`
+      );
+    }
+    await editor.click();
+    await expect(this.closeDimensionEditorButton).toBeVisible();
+  }
+
+  /** Returns the selected option labels from an EUI combo box test subject. */
+  async getComboBoxSelectedOptions(comboBoxTestSubj: string): Promise<string[]> {
+    const comboBox = new EuiComboBoxWrapper(this.page, comboBoxTestSubj);
+    const selectedOptions = await comboBox.getSelectedMultiOptions();
+    if (selectedOptions.length > 0) {
+      return selectedOptions;
+    }
+
+    const value = await comboBox.getSelectedValue();
+    return value ? [value] : [];
   }
 
   private async closeDimensionEditor() {
@@ -333,15 +363,22 @@ export class LensApp {
     return this.page.testSubj.locator('lns-dimensionTrigger').all();
   }
 
+  /** Returns visible labels for all dimension triggers inside a dimension panel. */
+  async getDimensionTriggersTexts(dimension: string): Promise<string[]> {
+    const triggers = await this.page.testSubj.locator(`${dimension} > lns-dimensionTrigger`).all();
+    const texts = await Promise.all(triggers.map((trigger) => trigger.innerText()));
+    // Lens inserts zero-width spaces around dots in field names for line-breaking.
+    return texts.map((text) => text.replace(/\u200b/g, '').trim());
+  }
+
   /** Returns the visible label of a dimension trigger inside a dimension panel. */
   async getDimensionTriggerText(dimension: string, index = 0): Promise<string> {
-    const trigger = this.page
-      .testSubj.locator(`${dimension} > lns-dimensionTrigger`)
-      .nth(index);
-    await expect(trigger).toBeVisible();
-    const text = await trigger.innerText();
-    // Lens inserts zero-width spaces around dots in field names for line-breaking.
-    return text.replace(/\u200b/g, '').trim();
+    const dimensionTexts = await this.getDimensionTriggersTexts(dimension);
+    const text = dimensionTexts[index];
+    if (text === undefined) {
+      throw new Error(`Dimension trigger not found at index ${index} for "${dimension}"`);
+    }
+    return text;
   }
 
   /** Returns the chart type label shown in the chart switcher popover. */
@@ -389,7 +426,10 @@ export class LensApp {
       await triggers[index].hover();
     }
     // Move the pointer off the metric tiles so hover styles do not affect color assertions.
-    await this.page.locator('[data-test-subj^="lns-layerPanel-"]').first().hover();
+    const layerPanels = await this.page.locator('[data-test-subj^="lns-layerPanel-"]').all();
+    if (layerPanels[0]) {
+      await layerPanels[0].hover();
+    }
   }
 
   /**
