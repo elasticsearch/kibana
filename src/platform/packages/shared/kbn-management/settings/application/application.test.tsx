@@ -96,6 +96,7 @@ describe('Settings application', () => {
           settings={{
             client: uiSettingsServiceMock.createStartContract(),
             globalClient: uiSettingsServiceMock.createStartContract(),
+            metadata: { getAll: jest.fn().mockResolvedValue({}) },
           }}
           history={history}
           sectionRegistry={{

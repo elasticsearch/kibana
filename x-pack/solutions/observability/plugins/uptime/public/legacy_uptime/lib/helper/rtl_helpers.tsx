@@ -137,6 +137,7 @@ export const mockCore: () => Partial<CoreStart> = () => {
         get$: setSetting$,
       },
       globalClient: defaultCore.settings.globalClient,
+      metadata: { getAll: jest.fn().mockResolvedValue({}) },
     },
     usageCollection: {
       reportUiCounter: () => {},

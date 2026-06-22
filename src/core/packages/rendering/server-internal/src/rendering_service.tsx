@@ -22,6 +22,7 @@ import type { UserStorageServiceStart } from '@kbn/core-user-storage-server';
 import {
   type DarkModeValue,
   type ThemeName,
+  type UiSettingsRuntimeEntry,
   parseDarkModeValue,
   parseThemeNameValue,
   type UiSettingsParams,
@@ -197,6 +198,7 @@ export class RenderingService {
     // call ES via `asCurrentUser`, which would 401 on an unauthenticated request).
     const [
       defaultSettings,
+      globalSettingsDefaultValues = {},
       settingsUserValues = {},
       globalSettingsUserValues = {},
       userSettingDarkMode,
@@ -204,9 +206,10 @@ export class RenderingService {
       userStorageValues = {},
     ] = await Promise.all(
       isAnonymousPage
-        ? [uiSettings.client?.getRegistered() ?? {}]
+        ? [uiSettings.client?.getRegistered() ?? {}, uiSettings.globalClient?.getRegistered() ?? {}]
         : ([
             withAsyncDefaultValues(request, uiSettings.client?.getRegistered()),
+            withAsyncDefaultValues(request, uiSettings.globalClient?.getRegistered()),
             uiSettings.client?.getUserProvided(true),
             uiSettings.globalClient?.getUserProvided(true),
             // dark mode
@@ -217,6 +220,7 @@ export class RenderingService {
             this.fetchUserStorageValues(request),
           ] as [
             ReturnType<typeof withAsyncDefaultValues>,
+            ReturnType<typeof withAsyncDefaultValues>,
             Promise<Record<string, UserProvidedValues>>,
             Promise<Record<string, UserProvidedValues>>,
             Promise<DarkModeValue> | undefined,
@@ -226,11 +230,11 @@ export class RenderingService {
     );
 
     const settings = {
-      defaults: defaultSettings,
+      defaults: toRuntimeDefaults(defaultSettings),
       user: settingsUserValues,
     };
     const globalSettings = {
-      defaults: uiSettings.globalClient?.getRegistered() ?? {},
+      defaults: toRuntimeDefaults(globalSettingsDefaultValues),
       user: globalSettingsUserValues,
     };
 
@@ -465,4 +469,21 @@ const withAsyncDefaultValues = async (
   );
 
   return updatedSettings;
+};
+
+/**
+ * Strip full UiSettingsParams down to the minimal fields needed by the browser
+ * runtime client: value, type, and readonlyMode.
+ */
+const toRuntimeDefaults = (
+  fullDefaults: Readonly<Record<string, Omit<UiSettingsParams, 'schema'>>>
+): Record<string, UiSettingsRuntimeEntry> => {
+  const slim: Record<string, UiSettingsRuntimeEntry> = {};
+  for (const [key, def] of Object.entries(fullDefaults)) {
+    const entry: UiSettingsRuntimeEntry = { value: def.value };
+    if (def.type) entry.type = def.type;
+    if (def.readonlyMode) entry.readonlyMode = def.readonlyMode;
+    slim[key] = entry;
+  }
+  return slim;
 };

@@ -36,5 +36,6 @@ export const getSettings = () => {
   return {
     client: uiSettings,
     globalClient: uiSettings,
+    metadata: { getAll: async () => ({}) },
   };
 };

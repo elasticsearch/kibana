@@ -11,7 +11,11 @@ import { firstValueFrom } from 'rxjs';
 import * as UiSharedDepsSrc from '@kbn/ui-shared-deps-src';
 import type { IConfigService } from '@kbn/config';
 import type { BrowserLoggingConfig } from '@kbn/core-logging-common-internal';
-import type { ThemeName, UiSettingsParams, UserProvidedValues } from '@kbn/core-ui-settings-common';
+import type {
+  ThemeName,
+  UiSettingsRuntimeEntry,
+  UserProvidedValues,
+} from '@kbn/core-ui-settings-common';
 import {
   config as loggingConfigDef,
   type LoggingConfigWithBrowserType,
@@ -22,7 +26,7 @@ export const getSettingValue = <T>(
   settingName: string,
   settings: {
     user?: Record<string, UserProvidedValues<unknown>>;
-    defaults: Readonly<Record<string, Omit<UiSettingsParams, 'schema'>>>;
+    defaults: Readonly<Record<string, UiSettingsRuntimeEntry>>;
   },
   convert: (raw: unknown) => T
 ): T => {

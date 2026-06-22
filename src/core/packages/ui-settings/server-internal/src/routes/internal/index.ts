@@ -10,12 +10,14 @@
 import type { InternalUiSettingsRouter } from '../../internal_types';
 import { registerInternalDeleteRoute } from './delete';
 import { registerInternalGetRoute } from './get';
+import { registerInternalGetMetadataRoute } from './get_metadata';
 import { registerInternalSetManyRoute } from './set_many';
 import { registerInternalSetRoute } from './set';
 import { registerInternalValidateRoute } from './validate';
 
 export function registerInternalRoutes(router: InternalUiSettingsRouter) {
   registerInternalGetRoute(router);
+  registerInternalGetMetadataRoute(router);
   registerInternalDeleteRoute(router);
   registerInternalSetRoute(router);
   registerInternalSetManyRoute(router);

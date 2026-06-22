@@ -10,5 +10,5 @@
 import { getSettingsMock } from '@kbn/management-settings-utilities/mocks/settings.mock';
 
 export const useApplicationStory = () => {
-  return { getAllowlistedSettings: getSettingsMock };
+  return { getAllowlistedSettings: () => Promise.resolve(getSettingsMock()) };
 };

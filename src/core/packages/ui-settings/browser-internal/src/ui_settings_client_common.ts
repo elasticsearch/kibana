@@ -12,19 +12,15 @@ import type { Observable } from 'rxjs';
 import { Subject, concat, defer, of } from 'rxjs';
 import { filter, map } from 'rxjs';
 
-import type { UserProvidedValues } from '@kbn/core-ui-settings-common';
-import type {
-  IUiSettingsClient,
-  UiSettingsState,
-  PublicUiSettingsParams,
-} from '@kbn/core-ui-settings-browser';
+import type { UiSettingsRuntimeEntry, UserProvidedValues } from '@kbn/core-ui-settings-common';
+import type { IUiSettingsClient, UiSettingsRuntimeState } from '@kbn/core-ui-settings-browser';
 
 import type { UiSettingsApi } from './ui_settings_api';
 
 export interface UiSettingsClientParams {
   api: UiSettingsApi;
-  defaults: Record<string, PublicUiSettingsParams>;
-  initialSettings?: UiSettingsState;
+  defaults: Record<string, UiSettingsRuntimeEntry>;
+  initialSettings?: UiSettingsRuntimeState;
   done$: Observable<unknown>;
 }
 
@@ -33,8 +29,8 @@ export abstract class UiSettingsClientCommon implements IUiSettingsClient {
   protected readonly updateErrors$ = new Subject<Error>();
 
   protected readonly api: UiSettingsApi;
-  protected readonly defaults: Record<string, PublicUiSettingsParams>;
-  protected cache: Record<string, PublicUiSettingsParams & UserProvidedValues>;
+  protected readonly defaults: Record<string, UiSettingsRuntimeEntry>;
+  protected cache: Record<string, UiSettingsRuntimeEntry & UserProvidedValues>;
 
   constructor(params: UiSettingsClientParams) {
     this.api = params.api;

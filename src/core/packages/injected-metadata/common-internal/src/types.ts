@@ -85,12 +85,12 @@ export interface InjectedMetadata {
   uiPlugins: InjectedMetadataPlugin[];
   legacyMetadata: {
     uiSettings: {
-      defaults: Record<string, any>; // unreferencing UiSettingsParams here
-      user: Record<string, any>; // unreferencing UserProvidedValues here
+      defaults: Record<string, any>; // UiSettingsRuntimeEntry (value, type, readonlyMode)
+      user: Record<string, any>; // UserProvidedValues (userValue, isOverridden)
     };
     globalUiSettings: {
-      defaults: Record<string, any>; // unreferencing UiSettingsParams here
-      user: Record<string, any>; // unreferencing UserProvidedValues here
+      defaults: Record<string, any>; // UiSettingsRuntimeEntry (value, type, readonlyMode)
+      user: Record<string, any>; // UserProvidedValues (userValue, isOverridden)
     };
   };
   customBranding: Pick<CustomBranding, 'logo' | 'customizedLogo' | 'pageTitle'>;

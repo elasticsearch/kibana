@@ -43,17 +43,13 @@ export const ConnectorSelector: React.FC<ConnectorSelectorProps> = ({
 }) => {
   const navigateToApp = useNavigateToApp();
   const {
-    services: { http, uiSettings },
+    services: { http },
   } = useKibana();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const { data: dataConnectors, isLoading } = useLoadConnectors({
     http,
     featureId: 'workplace_ai',
-    settings: {
-      client: uiSettings,
-      globalClient: uiSettings,
-    },
   });
 
   const connectors = useMemo(() => dataConnectors ?? [], [dataConnectors]);

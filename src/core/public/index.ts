@@ -43,7 +43,10 @@ export type {
 } from '@kbn/core-feature-flags-browser';
 export type {
   UiSettingsState,
+  UiSettingsRuntimeState,
+  UiSettingsMetadataState,
   IUiSettingsClient,
+  IUiSettingsMetadataClient,
   PublicUiSettingsParams,
 } from '@kbn/core-ui-settings-browser';
 export type { Capabilities } from '@kbn/core-capabilities-common';

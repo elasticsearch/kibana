@@ -52,11 +52,13 @@ export const createSettingsApplicationServicesMock = (
 ): SettingsApplicationServices => ({
   ...createFormServicesMock(),
   getAllowlistedSettings: (scope: UiSettingsScope) =>
-    scope === 'namespace'
-      ? getSettingsMock(undefined, undefined, settingsSolution)
-      : hasGlobalSettings
-      ? getGlobalSettingsMock(undefined, undefined, settingsSolution)
-      : {},
+    Promise.resolve(
+      scope === 'namespace'
+        ? getSettingsMock(undefined, undefined, settingsSolution)
+        : hasGlobalSettings
+        ? getGlobalSettingsMock(undefined, undefined, settingsSolution)
+        : {}
+    ),
   getSections: () => [],
   getCapabilities: getSettingsCapabilitiesMock,
   setBadge: jest.fn(),

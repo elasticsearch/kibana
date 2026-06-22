@@ -14,6 +14,7 @@ import {
   EuiSpacer,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiLoadingSpinner,
   Query,
   EuiTabs,
   EuiCallOut,
@@ -70,8 +71,19 @@ export const SettingsApplication = () => {
     addUrlToHistory(search);
   };
 
-  const [spaceAllFields, globalAllFields] = useScopeFields();
-  const [spaceFilteredFields, globalFilteredFields] = useScopeFields(query);
+  const {
+    spaceFields: spaceAllFields,
+    globalFields: globalAllFields,
+    isLoading: allFieldsLoading,
+  } = useScopeFields();
+  const {
+    spaceFields: spaceFilteredFields,
+    globalFields: globalFilteredFields,
+    isLoading: filteredFieldsLoading,
+  } = useScopeFields(query);
+  const isLoading = allFieldsLoading || filteredFieldsLoading;
+
+  const [selectedTabId, setSelectedTabId] = useState(SPACE_SETTINGS_TAB_ID);
 
   const {
     spaceSettings: { save: canSaveSpaceSettings },
@@ -79,6 +91,10 @@ export const SettingsApplication = () => {
   } = getCapabilities();
   if (!canSaveSpaceSettings || (!canSaveGlobalSettings && canShowGlobalSettings)) {
     setBadge(readOnlyBadge);
+  }
+
+  if (isLoading) {
+    return <EuiLoadingSpinner size="xl" />;
   }
 
   // Only enabled the Global settings tab if there are any global settings
@@ -108,7 +124,6 @@ export const SettingsApplication = () => {
     };
   }
 
-  const [selectedTabId, setSelectedTabId] = useState(SPACE_SETTINGS_TAB_ID);
   const selectedTab = tabs[selectedTabId];
 
   return (

@@ -7,11 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type {
-  IUiSettingsClient,
-  PublicUiSettingsParams,
-  UserProvidedValues,
-} from '@kbn/core/public';
+import type { IUiSettingsClient } from '@kbn/core/public';
 import type { UiSettingsCommon } from '../common';
 
 export class UiSettingsPublicToCommon implements UiSettingsCommon {
@@ -23,9 +19,7 @@ export class UiSettingsPublicToCommon implements UiSettingsCommon {
     return Promise.resolve(this.uiSettings.get(key));
   }
 
-  getAll<T = unknown>(): Promise<
-    Record<string, (PublicUiSettingsParams & UserProvidedValues<T>) | undefined>
-  > {
+  getAll(): Promise<Record<string, unknown>> {
     return Promise.resolve(this.uiSettings.getAll());
   }
 

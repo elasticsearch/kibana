@@ -43,7 +43,9 @@ const getSettingsApplicationStory = ({ hasGlobalSettings }: StoryProps) => (
     showDanger={action('showDanger')}
     links={{ deprecationKey: 'link/to/deprecation/docs' }}
     getAllowlistedSettings={(scope: UiSettingsScope) =>
-      scope === 'namespace' ? getSettingsMock() : hasGlobalSettings ? getGlobalSettingsMock() : {}
+      Promise.resolve(
+        scope === 'namespace' ? getSettingsMock() : hasGlobalSettings ? getGlobalSettingsMock() : {}
+      )
     }
     getSections={() => []}
     // @ts-ignore

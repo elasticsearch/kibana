@@ -17,7 +17,7 @@ import {
   type FormServices,
 } from '@kbn/management-settings-components-form';
 import type { SettingsCapabilities, UiSettingMetadata } from '@kbn/management-settings-types';
-import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
+import type { IUiSettingsClient, IUiSettingsMetadataClient } from '@kbn/core-ui-settings-browser';
 import { normalizeSettings } from '@kbn/management-settings-utilities';
 import type { Subscription } from 'rxjs';
 import type { ApplicationStart, ScopedHistory } from '@kbn/core-application-browser';
@@ -36,7 +36,7 @@ export interface Services {
   getAllowlistedSettings: (
     scope: UiSettingsScope,
     solution: SolutionView | undefined
-  ) => Record<string, UiSettingMetadata>;
+  ) => Promise<Record<string, UiSettingMetadata>>;
   getSections: (scope: UiSettingsScope) => RegistryEntry[];
   getToastsService: () => ToastsStart;
   getCapabilities: () => SettingsCapabilities;
@@ -53,14 +53,12 @@ export type SettingsApplicationServices = Services & FormServices;
 
 export interface KibanaDependencies {
   settings: {
-    client: Pick<
-      IUiSettingsClient,
-      'getAll' | 'isCustom' | 'isOverridden' | 'getUpdate$' | 'validateValue'
-    >;
+    client: Pick<IUiSettingsClient, 'isCustom' | 'isOverridden' | 'getUpdate$' | 'validateValue'>;
     globalClient: Pick<
       IUiSettingsClient,
-      'getAll' | 'isCustom' | 'isOverridden' | 'getUpdate$' | 'validateValue'
+      'isCustom' | 'isOverridden' | 'getUpdate$' | 'validateValue'
     >;
+    metadata: IUiSettingsMetadataClient;
   };
   history: ScopedHistory;
   sectionRegistry: SectionRegistryStart;
@@ -148,17 +146,20 @@ export const SettingsApplicationKibanaProvider: FC<
     chrome,
     spaces,
   } = dependencies;
-  const { client, globalClient } = settings;
+  const { client, globalClient, metadata } = settings;
 
   const getScopeClient = (scope: UiSettingsScope) => {
     return scope === 'namespace' ? client : globalClient;
   };
 
-  const getAllowlistedSettings = (scope: UiSettingsScope, solution: SolutionView | undefined) => {
+  const getAllowlistedSettings = async (
+    scope: UiSettingsScope,
+    solution: SolutionView | undefined
+  ) => {
     const { filterSettings } = application.capabilities;
-    const scopeClient = getScopeClient(scope);
+    const allSettings = await metadata.getAll(scope);
     const rawSettings = Object.fromEntries(
-      Object.entries(scopeClient.getAll()).filter(
+      Object.entries(allSettings).filter(
         ([settingId, settingDef]) =>
           !settingDef.readonly &&
           !client.isCustom(settingId) &&

@@ -13,6 +13,7 @@ export type {
   DeprecationSettings,
   UiSettingsSolutions,
   UiSettingsParams,
+  UiSettingsRuntimeEntry,
   UserProvidedValues,
   UiSettingsScope,
   GetUiSettingsContext,

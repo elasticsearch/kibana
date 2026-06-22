@@ -15,6 +15,7 @@ import type { SettingsStart, SettingsSetup } from '@kbn/core-ui-settings-browser
 import { UiSettingsApi } from './ui_settings_api';
 import { UiSettingsClient } from './ui_settings_client';
 import { UiSettingsGlobalClient } from './ui_settings_global_client';
+import { UiSettingsMetadataClient } from './ui_settings_metadata_client';
 
 export interface SettingsServiceDeps {
   http: InternalHttpSetup;
@@ -26,6 +27,7 @@ export class SettingsService {
   private uiSettingsApi?: UiSettingsApi;
   private uiSettingsClient?: UiSettingsClient;
   private uiSettingsGlobalClient?: UiSettingsGlobalClient;
+  private metadataClient?: UiSettingsMetadataClient;
   private done$ = new Subject();
 
   public setup({ http, injectedMetadata }: SettingsServiceDeps): SettingsSetup {
@@ -49,19 +51,23 @@ export class SettingsService {
       done$: this.done$,
     });
 
+    this.metadataClient = new UiSettingsMetadataClient(http);
+
     return {
       client: this.uiSettingsClient,
       globalClient: this.uiSettingsGlobalClient,
+      metadata: this.metadataClient,
     };
   }
 
   public start(): SettingsStart {
-    if (!this.uiSettingsClient || !this.uiSettingsGlobalClient) {
+    if (!this.uiSettingsClient || !this.uiSettingsGlobalClient || !this.metadataClient) {
       throw new Error('#setup must be called before start');
     }
     return {
       client: this.uiSettingsClient,
       globalClient: this.uiSettingsGlobalClient,
+      metadata: this.metadataClient,
     };
   }
 
