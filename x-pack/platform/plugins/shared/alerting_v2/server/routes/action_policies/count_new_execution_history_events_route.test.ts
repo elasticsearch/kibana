@@ -30,7 +30,25 @@ const buildRoute = (request: KibanaRequest, mocks: ReturnType<typeof createMocks
   );
 
 describe('CountNewExecutionHistoryEventsRoute', () => {
-  it('forwards the since query to the client', async () => {
+  it('forwards since, search and outcome from the query to the client', async () => {
+    const mocks = createMocks();
+    const since = '2026-05-05T10:00:00.000Z';
+    const request = httpServerMock.createKibanaRequest({
+      query: { since, search: 'foo', outcome: 'all' },
+    });
+    const route = buildRoute(request as unknown as KibanaRequest, mocks);
+
+    await route.handle();
+
+    expect(mocks.executionHistoryClient.countNewEventsSince).toHaveBeenCalledWith({
+      request,
+      since,
+      search: 'foo',
+      outcome: 'all',
+    });
+  });
+
+  it('passes undefined search/outcome when not in the query (defaults applied by client)', async () => {
     const mocks = createMocks();
     const since = '2026-05-05T10:00:00.000Z';
     const request = httpServerMock.createKibanaRequest({ query: { since } });
@@ -41,6 +59,8 @@ describe('CountNewExecutionHistoryEventsRoute', () => {
     expect(mocks.executionHistoryClient.countNewEventsSince).toHaveBeenCalledWith({
       request,
       since,
+      search: undefined,
+      outcome: undefined,
     });
   });
 

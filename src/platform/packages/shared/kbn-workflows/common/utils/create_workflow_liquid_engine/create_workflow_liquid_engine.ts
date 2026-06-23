@@ -76,6 +76,8 @@ const removeDisallowedLiquidTags = (engine: Liquid): void => {
  * which are merged with the enforced defaults.
  */
 export const createWorkflowLiquidEngine = (options?: LiquidOptions): Liquid => {
+  const { parseLimit = 150_000, renderLimit = 1_000, memoryLimit = 15_000_000 } = options ?? {};
+
   const engine = new Liquid({
     ...options,
     // Only expose own properties of objects in templates (no prototype chain access)
@@ -86,12 +88,12 @@ export const createWorkflowLiquidEngine = (options?: LiquidOptions): Liquid => {
     relativeReference: false,
     // Use an empty in-memory template store
     templates: {},
-    // Max total characters allowed in a single parse() call (150k)
-    parseLimit: 150_000,
-    // Max time in ms allowed for a single render() call (1s)
-    renderLimit: 1_000,
-    // Max object allocations (array ops, string ops) per render (15M)
-    memoryLimit: 15_000_000,
+    // Default max total characters allowed in a single parse() call
+    parseLimit,
+    // Default max time in ms allowed for a single render() call
+    renderLimit,
+    // Default max object allocations (array ops, string ops) per render
+    memoryLimit,
   });
   removeDisallowedLiquidTags(engine);
   return engine;

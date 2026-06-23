@@ -56,6 +56,7 @@ export const StepDetailPage = () => {
         <MonitorDetailsLinkPortal
           configId={data.details.journey.config_id}
           name={data.details.journey.monitor.name!}
+          remoteName={remoteName}
         />
       )}
       <EuiFlexGroup gutterSize="m">

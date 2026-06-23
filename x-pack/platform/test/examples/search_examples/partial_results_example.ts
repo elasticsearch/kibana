@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+// Serverless test (remove during Scout migration): x-pack/platform/test/serverless/functional/test_suites/examples/search_examples/partial_results_example.ts
 import expect from '@kbn/expect';
 import type { FtrProviderContext } from '../../functional/ftr_provider_context';
 

@@ -7,8 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { EsWorkflowExecution, EsWorkflowStepExecution } from '@kbn/workflows';
+import type {
+  EsWorkflowExecution,
+  EsWorkflowStepExecution,
+  WorkflowTokenUsage,
+} from '@kbn/workflows';
 import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
+import { sumTokenUsage } from '../utils';
 
 /** Context for the step that failed during this run; used to build workflow_execution_failed event. */
 export interface FailedStepContext {
@@ -139,6 +144,24 @@ export class WorkflowExecutionState {
       ...(this.workflowDocumentChanges || {}),
       ...workflowExecution,
     };
+  }
+
+  /**
+   * Accumulates a step's normalized token usage into the per-execution total.
+   * Called once per token-consuming step as it finishes (success or failure
+   * with partial counts). The new total is written through
+   * `updateWorkflowExecution`, so it is included in the next workflow-doc
+   * flush and persisted to `.workflows-executions`. No-op when `usage` is
+   * absent, so executions with zero `ai.*` steps keep `usage` unset.
+   */
+  public accumulateUsage(usage: WorkflowTokenUsage | undefined): void {
+    if (!usage) {
+      return;
+    }
+    const accumulated = sumTokenUsage(this.workflowExecution.usage, usage);
+    if (accumulated) {
+      this.updateWorkflowExecution({ usage: accumulated });
+    }
   }
 
   public getAllStepExecutions(): StepExecutionMetadata[] {

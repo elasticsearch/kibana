@@ -26,7 +26,6 @@ import type {
   UpdateObservableRequest,
   UserActionInternalFindResponse,
   FindCasesContainingAllAlertsResponse,
-  BulkAddObservablesRequest,
   FindCasesContainingAllDocumentsRequest,
   UpdateSummary,
   CasesPatchResponse,
@@ -64,7 +63,6 @@ import {
   getCaseUpdateObservableUrl,
   getCaseDeleteObservableUrl,
   getCaseSimilarCasesUrl,
-  getBulkCreateObservablesUrl,
 } from '../../common/api';
 import {
   CASE_REPORTERS_URL,
@@ -705,21 +703,6 @@ export const deleteObservable = async (
     method: 'DELETE',
     signal,
   });
-};
-
-export const bulkPostObservables = async (
-  request: BulkAddObservablesRequest,
-  signal?: AbortSignal
-): Promise<CaseUI> => {
-  const response = await KibanaServices.get().http.fetch<Case>(
-    getBulkCreateObservablesUrl(request.caseId),
-    {
-      method: 'POST',
-      body: JSON.stringify({ caseId: request.caseId, observables: request.observables }),
-      signal,
-    }
-  );
-  return convertCaseToCamelCase(decodeCaseResponse(response));
 };
 
 export const getSimilarCases = async ({

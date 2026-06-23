@@ -9,7 +9,7 @@ import React from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { EuiButtonGroup, EuiFormRow, type EuiButtonGroupOptionProps } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { FieldStatsInitializerViewType } from '../grid_embeddable/types';
+import { FieldStatsInitializerViewType } from '../../../../../common/embeddables/types';
 
 const viewTypeOptions: EuiButtonGroupOptionProps[] = [
   {

@@ -7,10 +7,8 @@
 
 import React from 'react';
 
-import type { ShallowWrapper } from 'enzyme';
-import { shallow } from 'enzyme';
-
-import { EuiFormRow } from '@elastic/eui';
+import { screen } from '@testing-library/react';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { setMockActions, setMockValues } from '../../../../__mocks__';
 import { EditingColumn } from './editing_column';
@@ -44,12 +42,11 @@ describe('EditingColumn', () => {
   });
 
   it('renders', () => {
-    const wrapper = shallow(<EditingColumn {...requiredProps} />);
-    expect(wrapper.isEmptyRender()).toBe(false);
+    renderWithKibanaRenderContext(<EditingColumn {...requiredProps} />);
+    expect(screen.getByTestId('editing-view')).toBeInTheDocument();
   });
 
   describe('when there is a form error for this field', () => {
-    let wrapper: ShallowWrapper;
     beforeEach(() => {
       setMockValues({
         ...mockValues,
@@ -57,44 +54,36 @@ describe('EditingColumn', () => {
           foo: 'I am an error for foo and should be displayed',
         },
       });
-
-      wrapper = shallow(
-        <EditingColumn
-          {...{
-            ...requiredProps,
-            column: {
-              ...column,
-              field: 'foo',
-            },
-          }}
-        />
-      );
     });
 
     it('renders field errors for this field if any are present', () => {
-      expect(shallow(wrapper.find(EuiFormRow).prop('helpText') as any).html()).toContain(
-        'I am an error for foo and should be displayed'
+      renderWithKibanaRenderContext(
+        <EditingColumn {...requiredProps} column={{ ...column, field: 'foo' }} />
       );
+      expect(screen.getByText('I am an error for foo and should be displayed')).toBeInTheDocument();
     });
 
     it('renders as invalid', () => {
-      expect(wrapper.find(EuiFormRow).prop('isInvalid')).toBe(true);
+      renderWithKibanaRenderContext(
+        <EditingColumn {...requiredProps} column={{ ...column, field: 'foo' }} />
+      );
+      // isInvalid is forwarded to editingRender as the third argument
+      expect(column.editingRender.mock.calls[0][2]).toMatchObject({ isInvalid: true });
     });
   });
 
   describe('when there is a form error for this row', () => {
-    let wrapper: ShallowWrapper;
     beforeEach(() => {
       setMockValues({
         ...mockValues,
         rowErrors: ['I am an error for this row'],
       });
-
-      wrapper = shallow(<EditingColumn {...requiredProps} />);
     });
 
     it('renders as invalid', () => {
-      expect(wrapper.find(EuiFormRow).prop('isInvalid')).toBe(true);
+      renderWithKibanaRenderContext(<EditingColumn {...requiredProps} />);
+      // isInvalid is forwarded to editingRender as the third argument
+      expect(column.editingRender.mock.calls[0][2]).toMatchObject({ isInvalid: true });
     });
   });
 
@@ -104,8 +93,8 @@ describe('EditingColumn', () => {
       editingItemValue: null,
     });
 
-    const wrapper = shallow(<EditingColumn {...requiredProps} />);
-    expect(wrapper.isEmptyRender()).toBe(true);
+    const { container } = renderWithKibanaRenderContext(<EditingColumn {...requiredProps} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('renders the column\'s "editing" view (editingRender)', () => {
@@ -115,7 +104,7 @@ describe('EditingColumn', () => {
       fieldErrors: { foo: ['I am an error for foo'] },
     });
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <EditingColumn
         {...{
           ...requiredProps,
@@ -127,7 +116,7 @@ describe('EditingColumn', () => {
         }}
       />
     );
-    expect(wrapper.find('[data-test-subj="editing-view"]').exists()).toBe(true);
+    expect(screen.getByTestId('editing-view')).toBeInTheDocument();
 
     expect(column.editingRender).toHaveBeenCalled();
     // The render function is provided with the item currently being edited for rendering

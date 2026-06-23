@@ -38,19 +38,28 @@ const baseRule: RuleApiResponse = {
   updatedAt: '2026-03-04T12:00:00.000Z',
 };
 
-const renderSidebar = () =>
+import type { RuleSidebarProps } from './rule_sidebar';
+
+const renderSidebar = (props: RuleSidebarProps = {}) =>
   render(
     <I18nProvider>
       <RuleProvider rule={baseRule}>
-        <RuleSidebar />
+        <RuleSidebar {...props} />
       </RuleProvider>
     </I18nProvider>
   );
 
 describe('RuleSidebar', () => {
-  it('renders the tab group with three tabs', () => {
+  it('renders two tabs by default (no query preview)', () => {
     renderSidebar();
     expect(screen.getByTestId('sidebarTabGroup')).toBeInTheDocument();
+    expect(screen.getByText('Conditions')).toBeInTheDocument();
+    expect(screen.queryByText('Query preview')).not.toBeInTheDocument();
+    expect(screen.getByText('Runbook')).toBeInTheDocument();
+  });
+
+  it('renders three tabs when showQueryPreview is true', () => {
+    renderSidebar({ showQueryPreview: true });
     expect(screen.getByText('Conditions')).toBeInTheDocument();
     expect(screen.getByText('Query preview')).toBeInTheDocument();
     expect(screen.getByText('Runbook')).toBeInTheDocument();
@@ -63,8 +72,8 @@ describe('RuleSidebar', () => {
     expect(screen.queryByTestId('mockRunbookTab')).not.toBeInTheDocument();
   });
 
-  it('switches to query preview tab when clicked', () => {
-    renderSidebar();
+  it('switches to query preview tab when clicked (showQueryPreview)', () => {
+    renderSidebar({ showQueryPreview: true });
     fireEvent.click(screen.getByText('Query preview'));
     expect(screen.getByTestId('mockPreviewTab')).toBeInTheDocument();
     expect(screen.queryByTestId('mockConditionsTab')).not.toBeInTheDocument();
@@ -80,7 +89,7 @@ describe('RuleSidebar', () => {
   });
 
   it('switches back to conditions from query preview', () => {
-    renderSidebar();
+    renderSidebar({ showQueryPreview: true });
     fireEvent.click(screen.getByText('Query preview'));
     expect(screen.getByTestId('mockPreviewTab')).toBeInTheDocument();
 

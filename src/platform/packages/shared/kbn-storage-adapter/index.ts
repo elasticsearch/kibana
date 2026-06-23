@@ -61,9 +61,20 @@ export type StorageClientSearchResponse<
   TSearchRequest extends Omit<SearchRequest, 'index'>
 > = InferSearchResponseOf<TDocument, TSearchRequest>;
 
+/**
+ * Optimistic concurrency metadata for bulk `index` actions.
+ * elasticsearch requires `if_seq_no` and `if_primary_term` together — omit both for unconditional writes.
+ */
+export type StorageClientBulkIndexOccMetadata =
+  | { if_seq_no?: never; if_primary_term?: never }
+  | { if_seq_no: number; if_primary_term: number };
+
 export type StorageClientBulkOperation<TDocument extends { _id?: string }> =
   | {
-      index: { document: Omit<TDocument, '_id'>; _id?: string };
+      index: {
+        document: Omit<TDocument, '_id'>;
+        _id?: string;
+      } & StorageClientBulkIndexOccMetadata;
     }
   | {
       /**

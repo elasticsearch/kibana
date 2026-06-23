@@ -5,22 +5,21 @@
  * 2.0.
  */
 
-import '../../../__mocks__/shallow_useeffect.mock';
-
 import { setMockValues, setMockActions } from '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen, waitFor } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { AnalyticsCollection } from '../../../../../common/types/analytics';
 
-import { LicensingCallout } from '../../../shared/licensing_callout/licensing_callout';
-
-import { AnalyticsCollectionTable } from './analytics_collection_table';
-
 import { AnalyticsOverview } from './analytics_overview';
-import { AnalyticsOverviewEmptyPage } from './analytics_overview_empty_page';
+
+jest.mock('../../utils/find_or_create_data_view', () => ({
+  findOrCreateDataView: jest.fn().mockResolvedValue(undefined),
+}));
 
 const mockValues = {
   analyticsCollections: [
@@ -44,29 +43,36 @@ describe('AnalyticsOverview', () => {
   });
 
   describe('empty state', () => {
-    it('renders when analytics collections are empty on inital query', () => {
+    it('renders when analytics collections are empty on inital query', async () => {
       setMockValues({
         ...mockValues,
         analyticsCollections: [],
         hasNoAnalyticsCollections: true,
       });
       setMockActions(mockActions);
-      const wrapper = shallow(<AnalyticsOverview />);
 
-      expect(mockActions.fetchAnalyticsCollections).toHaveBeenCalled();
-      expect(wrapper.find(AnalyticsCollectionTable)).toHaveLength(0);
-      expect(wrapper.find(AnalyticsOverviewEmptyPage)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AnalyticsOverview />);
+
+      await waitFor(() => {
+        expect(mockActions.fetchAnalyticsCollections).toHaveBeenCalled();
+      });
+      expect(screen.getByText('Create your first Collection')).toBeInTheDocument();
+      expect(screen.queryByText('Analytics Collection 1')).not.toBeInTheDocument();
     });
 
     it('renders with Data', async () => {
       setMockValues(mockValues);
       setMockActions(mockActions);
 
-      const wrapper = shallow(<AnalyticsOverview />);
+      renderWithKibanaRenderContext(<AnalyticsOverview />);
 
-      expect(wrapper.find(AnalyticsCollectionTable)).toHaveLength(1);
-      expect(wrapper.find(LicensingCallout)).toHaveLength(0);
-      expect(mockActions.fetchAnalyticsCollections).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockActions.fetchAnalyticsCollections).toHaveBeenCalled();
+      });
+      expect(screen.getByText('Analytics Collection 1')).toBeInTheDocument();
+      expect(
+        screen.queryByText('Behavioral Analytics require a Platinum license or higher')
+      ).not.toBeInTheDocument();
     });
 
     it('renders Platinum license callout when not Cloud or Platinum', async () => {
@@ -76,11 +82,17 @@ describe('AnalyticsOverview', () => {
         isCloud: false,
       });
       setMockActions(mockActions);
-      const wrapper = shallow(<AnalyticsOverview />);
 
-      expect(wrapper.find(AnalyticsCollectionTable)).toHaveLength(0);
-      expect(wrapper.find(AnalyticsOverviewEmptyPage)).toHaveLength(0);
-      expect(wrapper.find(LicensingCallout)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AnalyticsOverview />);
+
+      expect(
+        screen.getByText(
+          'Behavioral Analytics require a Platinum license or higher and are not available to Standard license self-managed deployments. You need to upgrade to use this feature.',
+          { exact: false }
+        )
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Analytics Collection 1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Create your first Collection')).not.toBeInTheDocument();
     });
 
     it('Does not render Platinum license callout when Cloud', async () => {
@@ -90,9 +102,14 @@ describe('AnalyticsOverview', () => {
         isCloud: true,
       });
       setMockActions(mockActions);
-      const wrapper = shallow(<AnalyticsOverview />);
 
-      expect(wrapper.find(LicensingCallout)).toHaveLength(0);
+      renderWithKibanaRenderContext(<AnalyticsOverview />);
+
+      expect(
+        screen.queryByText('Behavioral Analytics require a Platinum license or higher', {
+          exact: false,
+        })
+      ).not.toBeInTheDocument();
     });
   });
 });

@@ -11,6 +11,7 @@ import React from 'react';
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { ContentListItem } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import type { ColumnBuilderContext } from '../types';
 import { column } from '../part';
 import { getColumnLayoutProps, pickAttribute, type ColumnLayoutProps } from '../layout';
@@ -84,7 +85,7 @@ export const buildUpdatedAtColumn = (
       maxWidth: pickAttribute(attributes, 'maxWidth', resolvedWidth),
       truncateText: pickAttribute(attributes, 'truncateText', undefined),
     }),
-    'data-test-subj': 'content-list-table-column-updatedAt',
+    'data-test-subj': CONTENT_LIST_TEST_SUBJECTS.columnUpdatedAt,
     render: (_value: Date | undefined, item: ContentListItem) => {
       return <UpdatedAtCell updatedAt={item.updatedAt} />;
     },

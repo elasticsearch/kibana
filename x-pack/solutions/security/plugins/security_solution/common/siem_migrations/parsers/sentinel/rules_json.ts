@@ -6,12 +6,20 @@
  */
 
 import type { SentinelArmResource } from '../../model/vendor/rules/sentinel.gen';
-import type { SentinelRule } from './types';
+import {
+  SENTINEL_NRT_RULE_KIND,
+  SENTINEL_SCHEDULED_RULE_KIND,
+  type SentinelRule,
+  type SentinelRuleKind,
+} from './types';
+
+const isSupportedSentinelRuleKind = (kind: string | undefined): kind is SentinelRuleKind =>
+  kind === SENTINEL_SCHEDULED_RULE_KIND || kind === SENTINEL_NRT_RULE_KIND;
 
 /**
  * Processes pre-validated Sentinel ARM template resources into SentinelRule objects.
  *
- * Only "Scheduled" rule kinds are extracted, as these map to detection rules.
+ * Only "Scheduled" and "NRT" rule kinds are extracted, as these map to detection rules.
  * The resources array is expected to be already validated by the API schema.
  */
 export class SentinelRulesParser {
@@ -22,7 +30,7 @@ export class SentinelRulesParser {
   }
 
   /**
-   * Returns all valid Scheduled Analytics Rules from the resources.
+   * Returns all valid Scheduled and NRT Analytics Rules from the resources.
    */
   public getRules(): SentinelRule[] {
     return this.resources
@@ -31,8 +39,8 @@ export class SentinelRulesParser {
   }
 
   private processResource(resource: SentinelArmResource): SentinelRule | undefined {
-    // Only process Scheduled analytics rules
-    if (resource.kind !== 'Scheduled') {
+    // Only process Sentinel analytics rule kinds that share the KQL detection path.
+    if (!isSupportedSentinelRuleKind(resource.kind)) {
       return undefined;
     }
 
@@ -41,7 +49,7 @@ export class SentinelRulesParser {
       return undefined;
     }
 
-    const { displayName, description, query, severity } = properties;
+    const { displayName, description, query, queryFrequency, queryPeriod, severity } = properties;
 
     if (!displayName || !query) {
       return undefined;
@@ -51,10 +59,13 @@ export class SentinelRulesParser {
 
     return {
       id,
+      kind: resource.kind,
       displayName,
       description: description ?? '',
       query,
       severity: severity ?? 'medium',
+      queryFrequency,
+      queryPeriod,
       tactics: properties.tactics,
       techniques: properties.techniques,
     };

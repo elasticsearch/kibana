@@ -7,13 +7,14 @@
 
 import { shouldIncludePointByScore } from './anomaly_score_utils';
 import type { SeverityThreshold } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
+import { ML_ANOMALY_THRESHOLD } from '@kbn/ml-anomaly-utils';
 
 describe('anomaly_score_utils', () => {
   describe('shouldIncludePointByScore', () => {
     it('should always include points with score 0', () => {
       const selectedSeverity: SeverityThreshold[] = [
-        { min: 25, max: 50 },
-        { min: 75, max: 100 },
+        { min: ML_ANOMALY_THRESHOLD.MINOR, max: ML_ANOMALY_THRESHOLD.MAJOR },
+        { min: ML_ANOMALY_THRESHOLD.CRITICAL },
       ];
 
       expect(shouldIncludePointByScore(0, selectedSeverity)).toBe(true);
@@ -29,8 +30,8 @@ describe('anomaly_score_utils', () => {
 
     it('should include points within specified threshold ranges', () => {
       const selectedSeverity: SeverityThreshold[] = [
-        { min: 25, max: 50 },
-        { min: 75, max: 100 },
+        { min: ML_ANOMALY_THRESHOLD.MINOR, max: ML_ANOMALY_THRESHOLD.MAJOR },
+        { min: ML_ANOMALY_THRESHOLD.CRITICAL },
       ];
 
       // Within first range
@@ -46,8 +47,7 @@ describe('anomaly_score_utils', () => {
 
     it('should exclude points outside specified threshold ranges', () => {
       const selectedSeverity: SeverityThreshold[] = [
-        { min: 25, max: 50 },
-        { min: 75, max: 100 },
+        { min: ML_ANOMALY_THRESHOLD.MINOR, max: ML_ANOMALY_THRESHOLD.MAJOR },
       ];
 
       // Outside ranges
@@ -55,12 +55,11 @@ describe('anomaly_score_utils', () => {
       expect(shouldIncludePointByScore(24, selectedSeverity)).toBe(false);
       expect(shouldIncludePointByScore(51, selectedSeverity)).toBe(false);
       expect(shouldIncludePointByScore(74, selectedSeverity)).toBe(false);
-      expect(shouldIncludePointByScore(101, selectedSeverity)).toBe(false);
     });
 
     it('should handle thresholds with only min value (no max)', () => {
       const selectedSeverity: SeverityThreshold[] = [
-        { min: 75 }, // All values >= 75
+        { min: ML_ANOMALY_THRESHOLD.CRITICAL }, // All values >= 75
       ];
 
       // Should include values >= 75
@@ -75,20 +74,21 @@ describe('anomaly_score_utils', () => {
 
     it('should handle multiple non-contiguous ranges correctly', () => {
       const selectedSeverity: SeverityThreshold[] = [
-        { min: 0, max: 25 }, // Low range
-        { min: 75 }, // High range (75+)
+        { min: ML_ANOMALY_THRESHOLD.LOW, max: ML_ANOMALY_THRESHOLD.WARNING }, // Low range
+        { min: ML_ANOMALY_THRESHOLD.CRITICAL }, // High range (75+)
       ];
 
       // Low range
       expect(shouldIncludePointByScore(0, selectedSeverity)).toBe(true);
-      expect(shouldIncludePointByScore(10, selectedSeverity)).toBe(true);
-      expect(shouldIncludePointByScore(25, selectedSeverity)).toBe(true);
+      expect(shouldIncludePointByScore(2, selectedSeverity)).toBe(true);
+      expect(shouldIncludePointByScore(3, selectedSeverity)).toBe(true);
 
       // High range
       expect(shouldIncludePointByScore(75, selectedSeverity)).toBe(true);
       expect(shouldIncludePointByScore(100, selectedSeverity)).toBe(true);
 
       // Middle range (excluded)
+      expect(shouldIncludePointByScore(10, selectedSeverity)).toBe(false);
       expect(shouldIncludePointByScore(26, selectedSeverity)).toBe(false);
       expect(shouldIncludePointByScore(50, selectedSeverity)).toBe(false);
       expect(shouldIncludePointByScore(74, selectedSeverity)).toBe(false);

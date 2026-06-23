@@ -52,6 +52,7 @@ export enum RuleAuditAction {
   FILL_GAPS = 'rule_fill_gaps',
   GET_RULES_WITH_GAPS = 'rule_get_rules_with_gaps',
   GET_GAPS_SUMMARY_BY_RULE_IDS = 'rule_get_gaps_summary_by_rule_ids',
+  BULK_CREATE = 'rule_bulk_create',
 }
 
 export enum AdHocRunAuditAction {
@@ -164,6 +165,7 @@ const ruleEventVerbs: Record<RuleAuditAction, VerbsTuple> = {
     'getting gaps summary by rule ids',
     'got gaps summary by rule ids',
   ],
+  rule_bulk_create: ['bulk create', 'bulk creating', 'bulk created'],
 };
 
 const adHocRunEventVerbs: Record<AdHocRunAuditAction, VerbsTuple> = {
@@ -211,6 +213,7 @@ const ruleEventTypes: Record<RuleAuditAction, ArrayElement<EcsEvent['type']>> = 
   rule_fill_gaps: 'change',
   rule_get_rules_with_gaps: 'access',
   rule_get_gaps_summary_by_rule_ids: 'access',
+  rule_bulk_create: 'creation',
 };
 
 const adHocRunEventTypes: Record<AdHocRunAuditAction, ArrayElement<EcsEvent['type']>> = {

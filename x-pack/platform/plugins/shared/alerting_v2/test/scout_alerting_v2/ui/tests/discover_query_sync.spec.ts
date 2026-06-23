@@ -9,7 +9,9 @@ import { expect } from '@kbn/scout/ui';
 import { test } from '../fixtures';
 
 const TEST_INDEX = 'test-discover-query-sync';
-const UPDATED_QUERY = `FROM ${TEST_INDEX}`;
+const INITIAL_INDEX = 'logs-*';
+const UPDATED_QUERY = `FROM ${TEST_INDEX} | WHERE message != ""`;
+const UPDATED_ALERT_CONDITION = 'WHERE message != ""';
 
 /*
  * Custom-role auth (`browserAuth.loginWithCustomRole`) is not yet supported on
@@ -42,30 +44,42 @@ test.describe('Discover query sync — Rule flyout', { tag: '@local-stateful-cla
   });
 
   test('flyout query updates when the Discover query changes', async ({ pageObjects }) => {
-    await test.step('switch to ES|QL and open rule flyout', async () => {
+    await test.step('switch to ES|QL, run an initial query, and open rule flyout', async () => {
       await pageObjects.ruleForm.switchToEsqlMode();
+      await pageObjects.discover.writeAndSubmitEsqlQuery(
+        'FROM logs-* | WHERE message != "" | LIMIT 10'
+      );
+      await pageObjects.discover.waitUntilSearchingHasFinished();
       await pageObjects.ruleForm.openRulesFlyoutFromDiscover();
       await expect(pageObjects.ruleForm.flyout).toBeVisible();
     });
 
-    await test.step('verify flyout does not yet contain the updated query', async () => {
-      await expect(pageObjects.ruleForm.flyout).not.toContainText(UPDATED_QUERY);
+    await test.step('verify flyout reflects the initial Discover query', async () => {
+      await expect(pageObjects.ruleForm.flyout).toContainText(`FROM ${INITIAL_INDEX}`);
+      await expect(pageObjects.ruleForm.flyout).not.toContainText(TEST_INDEX);
     });
 
     await test.step('type the new query in Discover without submitting', async () => {
       await pageObjects.ruleForm.setDiscoverQueryWithFlyoutOpen(UPDATED_QUERY);
     });
 
-    await test.step('verify flyout still does not contain the updated query', async () => {
-      await expect(pageObjects.ruleForm.flyout).not.toContainText(UPDATED_QUERY);
+    await test.step('verify flyout still reflects the initial query before submit', async () => {
+      await expect(pageObjects.ruleForm.flyout).toContainText(`FROM ${INITIAL_INDEX}`);
+      await expect(pageObjects.ruleForm.flyout).not.toContainText(TEST_INDEX);
     });
 
     await test.step('click search to submit the query', async () => {
       await pageObjects.ruleForm.submitDiscoverQuery();
+      await pageObjects.discover.waitUntilSearchingHasFinished();
     });
 
     await test.step('verify flyout reflects the updated query', async () => {
-      await expect(pageObjects.ruleForm.flyout).toContainText(UPDATED_QUERY);
+      await expect(pageObjects.ruleForm.flyout).toContainText(`FROM ${TEST_INDEX}`, {
+        timeout: 30_000,
+      });
+      await expect(pageObjects.ruleForm.flyout).toContainText(UPDATED_ALERT_CONDITION, {
+        timeout: 30_000,
+      });
     });
   });
 });

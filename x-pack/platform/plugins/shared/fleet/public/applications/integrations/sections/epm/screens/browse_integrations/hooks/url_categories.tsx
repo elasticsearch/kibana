@@ -28,6 +28,37 @@ export function useUrlCategories(): UrlCategories {
   );
 }
 
+export function useUrlDefaultCategories(): string[] {
+  const { search } = useLocation();
+  return useMemo(() => {
+    return new URLSearchParams(search).getAll('category').filter(Boolean);
+  }, [search]);
+}
+
+export function useSetUrlDefaultCategories() {
+  const history = useHistory();
+  const { search } = useLocation();
+
+  return useCallback(
+    (categories: string[], options?: { replace?: boolean }) => {
+      const basePath = pagePathGetters
+        .integrations_all({ category: '', subCategory: '' })[1]
+        .split('?')[0];
+      const params = new URLSearchParams(search);
+      params.delete('category');
+      categories.filter(Boolean).forEach((cat) => params.append('category', cat));
+      const qs = params.toString();
+      const fullUrl = qs ? `${basePath}?${qs}` : basePath;
+      if (options?.replace) {
+        history.replace(fullUrl);
+      } else {
+        history.push(fullUrl);
+      }
+    },
+    [history, search]
+  );
+}
+
 export function useSetUrlCategory() {
   const history = useHistory();
   const { search } = useLocation();
@@ -41,6 +72,7 @@ export function useSetUrlCategory() {
 
       const existingSearch = new URLSearchParams(search);
       existingSearch.delete('view');
+      existingSearch.delete('category');
       const [basePath] = url.split('?');
 
       const qs = existingSearch.toString();

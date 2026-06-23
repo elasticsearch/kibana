@@ -14,6 +14,7 @@ import type { InstallContext } from '../_state_machine_package_install';
 
 import { stepSaveKnowledgeBase, cleanupKnowledgeBaseStep } from './step_save_knowledge_base';
 import { getIntegrationKnowledgeSetting } from '../../get_integration_knowledge_setting';
+import { getPackageKnowledgeBase } from '../../get';
 
 // Mock the app context service
 jest.mock('../../../../app_context', () => ({
@@ -49,6 +50,10 @@ jest.mock('../../../../license', () => ({
 
 jest.mock('../../get_integration_knowledge_setting', () => ({
   getIntegrationKnowledgeSetting: jest.fn().mockResolvedValue(true),
+}));
+
+jest.mock('../../get', () => ({
+  getPackageKnowledgeBase: jest.fn().mockResolvedValue(undefined),
 }));
 
 let esClient: jest.Mocked<ElasticsearchClient>;
@@ -386,7 +391,12 @@ describe('stepSaveKnowledgeBase', () => {
       });
     });
 
-    it('should use saveKnowledgeBaseContentToIndex for reinstalls of same version', async () => {
+    it('should skip saveKnowledgeBaseContentToIndex but still ensure es references when knowledge base already indexed for same version', async () => {
+      (getPackageKnowledgeBase as jest.Mock).mockResolvedValueOnce({
+        package: { name: 'test-package' },
+        items: [{ fileName: 'guide.md', content: '# Guide', version: '1.0.0' }],
+      });
+
       const entries: ArchiveEntry[] = [
         {
           path: 'test-package-1.0.0/docs/knowledge_base/guide.md',
@@ -397,13 +407,34 @@ describe('stepSaveKnowledgeBase', () => {
       const mockArchiveIterator = createMockArchiveIterator(entries);
       const context = createMockContext(mockArchiveIterator);
 
-      // Mock existing installed package with same version
-      context.installedPkg = {
-        attributes: {
-          name: 'test-package',
-          version: '1.0.0', // Same version as new package
+      await stepSaveKnowledgeBase(context);
+
+      expect(saveKnowledgeBaseContentToIndex).not.toHaveBeenCalled();
+      // The es asset references must still be ensured so installed_es stays consistent even when
+      // the indexed content survived a saved-object reset (e.g. an install rollback).
+      const { optimisticallyAddEsAssetReferences } = jest.requireMock('../../es_assets_reference');
+      expect(optimisticallyAddEsAssetReferences).toHaveBeenCalledWith(
+        savedObjectsClient,
+        'test-package',
+        [{ id: 'test-package-guide.md', type: 'knowledge_base' }]
+      );
+    });
+
+    it('should re-index when knowledge base exists but is at an older version', async () => {
+      (getPackageKnowledgeBase as jest.Mock).mockResolvedValueOnce({
+        package: { name: 'test-package' },
+        items: [{ fileName: 'guide.md', content: '# Guide', version: '0.9.0' }],
+      });
+
+      const entries: ArchiveEntry[] = [
+        {
+          path: 'test-package-1.0.0/docs/knowledge_base/guide.md',
+          buffer: Buffer.from('# Guide', 'utf8'),
         },
-      } as any;
+      ];
+
+      const mockArchiveIterator = createMockArchiveIterator(entries);
+      const context = createMockContext(mockArchiveIterator);
 
       await stepSaveKnowledgeBase(context);
 
@@ -411,12 +442,7 @@ describe('stepSaveKnowledgeBase', () => {
         esClient,
         pkgName: 'test-package',
         pkgVersion: '1.0.0',
-        knowledgeBaseContent: [
-          {
-            fileName: 'guide.md',
-            content: '# Guide',
-          },
-        ],
+        knowledgeBaseContent: [{ fileName: 'guide.md', content: '# Guide' }],
       });
     });
   });

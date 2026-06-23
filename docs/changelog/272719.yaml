@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/272719
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+- AI and machine Learning
+title: Fix Agent Builder tool telemetry hashing
+description: Fixes Agent Builder tool telemetry so built-in tools are reported with their real tool IDs instead of anonymized hashes.

@@ -24,6 +24,11 @@ dependsOn:
   - '@kbn/custom-icons'
   - '@kbn/ebt-click'
   - '@kbn/apm-types'
+  - '@kbn/core-http-browser'
+  - '@kbn/deeplinks-observability'
+  - '@kbn/share-plugin'
+  - '@kbn/react-hooks'
+  - '@kbn/core'
 tags:
   - shared-browser
   - package

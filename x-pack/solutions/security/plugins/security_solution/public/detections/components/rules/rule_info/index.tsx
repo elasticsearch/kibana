@@ -10,6 +10,9 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { UNKNOWN_TEXT } from './translations';
 import { FormattedDate } from '../../../../common/components/formatted_date';
 
+export * from './rule_version';
+export * from './rule_revision';
+
 interface CreatedByProps {
   createdBy?: string;
   createdAt?: string;

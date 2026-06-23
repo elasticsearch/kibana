@@ -15,6 +15,7 @@ import type { z } from '@kbn/zod/v4';
 import { generateWorkflowId } from '../../../common/lib/import';
 import { validateWorkflowYaml } from '../../../common/lib/validate_workflow_yaml';
 import { updateWorkflowYamlFields } from '../../../common/lib/yaml';
+import { INITIAL_WORKFLOW_VERSION } from '../../lib/workflow_version';
 import type { WorkflowProperties } from '../../storage/workflow_storage';
 
 /** Derives a list of trigger type ids from a workflow definition. */
@@ -48,6 +49,7 @@ export const prepareWorkflowDocumentFromYaml = (params: {
   now: Date;
   spaceId: string;
   triggerDefinitions?: Array<{ id: string; eventSchema: z.ZodType }>;
+  versioningEnabled?: boolean;
 }): { id: string; workflowData: WorkflowProperties; definition?: WorkflowYaml } => {
   const {
     id: providedId,
@@ -57,6 +59,7 @@ export const prepareWorkflowDocumentFromYaml = (params: {
     now,
     spaceId,
     triggerDefinitions,
+    versioningEnabled = false,
   } = params;
 
   let workflowToCreate: EsWorkflowCreate = {
@@ -97,6 +100,7 @@ export const prepareWorkflowDocumentFromYaml = (params: {
     lifecycle: null,
     valid: workflowToCreate.valid,
     deleted_at: null,
+    ...(versioningEnabled ? { version: INITIAL_WORKFLOW_VERSION } : {}),
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
   };

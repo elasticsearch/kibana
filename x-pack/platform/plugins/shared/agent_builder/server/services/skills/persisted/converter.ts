@@ -6,6 +6,7 @@
  */
 
 import type { InternalSkillDefinition } from '@kbn/agent-builder-server/skills';
+import { MOUNT_POINTS } from '../../execution/filesystem/mount_points';
 import type { SkillPersistedDefinition } from './client';
 
 export const convertPersistedSkill = (
@@ -13,7 +14,7 @@ export const convertPersistedSkill = (
 ): InternalSkillDefinition => ({
   id: skill.id,
   name: skill.name,
-  basePath: skill.base_path ?? '/skills',
+  basePath: skill.base_path ?? MOUNT_POINTS.skills,
   description: skill.description,
   content: skill.content,
   readonly: !!skill.plugin_id,

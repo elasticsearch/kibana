@@ -30,6 +30,36 @@ describe('legacy_decoder', () => {
     });
   });
 
+  it('decodes filter as query text', () => {
+    expect(decodeLegacyParams({ filter: 'graph' }, validSortFields)).toEqual({
+      state: { queryText: 'graph' },
+      consumed: ['filter'],
+    });
+  });
+
+  it('preserves s and title over filter precedence', () => {
+    expect(
+      decodeLegacyParams({ s: 'search', title: 'dashboard', filter: 'graph' }, validSortFields)
+    ).toEqual({
+      state: { queryText: 'search' },
+      consumed: ['s', 'title', 'filter'],
+    });
+
+    expect(decodeLegacyParams({ title: 'dashboard', filter: 'graph' }, validSortFields)).toEqual({
+      state: { queryText: 'dashboard' },
+      consumed: ['title', 'filter'],
+    });
+  });
+
+  it('combines filter free text with createdBy and favorites', () => {
+    expect(
+      decodeLegacyParams(
+        { filter: 'graph', created_by: 'jane@example.com', favorites: 'true' },
+        validSortFields
+      )?.state.queryText
+    ).toBe('graph createdBy:"jane@example.com" is:starred');
+  });
+
   it('decodes created_by values with EUI query escaping', () => {
     expect(
       decodeLegacyParams({ created_by: ['jane@example.com', 'Jane Doe'] }, validSortFields)?.state

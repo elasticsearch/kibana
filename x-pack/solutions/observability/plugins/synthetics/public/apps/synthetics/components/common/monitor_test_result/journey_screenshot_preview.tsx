@@ -120,6 +120,9 @@ export const JourneyScreenshotPreview: React.FC<StepImagePopoverProps> = ({
         anchorPosition="leftDown"
         button={renderScreenshotImage(size)}
         isOpen={isImagePopoverOpen}
+        aria-label={i18n.translate('xpack.synthetics.journeyScreenshotPreview.popoverAriaLabel', {
+          defaultMessage: 'Screenshot preview',
+        })}
       >
         {renderScreenshotImage(POPOVER_SCREENSHOT_SIZE)}
       </EuiPopover>

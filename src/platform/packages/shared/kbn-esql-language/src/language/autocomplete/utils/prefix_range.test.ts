@@ -10,6 +10,7 @@
 import { computePrefixRange, attachReplacementRanges, type PrefixResult } from './prefix_range';
 import { ReplacementRangeStrategyKind } from './prefix_range';
 import type { ISuggestionItem } from '../../../commands/registry/types';
+import { getEsqlLexerTokens } from '../../shared/lexer_scope';
 
 describe('computePrefixRange', () => {
   const expectPrefix = (
@@ -133,10 +134,19 @@ describe('attachReplacementRanges', () => {
       sortText: text,
       ...(rangeToReplace ? { rangeToReplace } : {}),
     } as ISuggestionItem);
+  const attachRanges = (
+    innerText: string,
+    suggestions: ISuggestionItem[],
+    options: Omit<Parameters<typeof attachReplacementRanges>[2], 'tokens'> = {}
+  ) =>
+    attachReplacementRanges(innerText, suggestions, {
+      ...options,
+      tokens: getEsqlLexerTokens(innerText),
+    });
 
   it('attaches range to suggestions without rangeToReplace', () => {
     const suggestions = [makeSuggestion('data'), makeSuggestion('duration')];
-    const result = attachReplacementRanges('FROM a | KEEP event.data.fi', suggestions);
+    const result = attachRanges('FROM a | KEEP event.data.fi', suggestions);
 
     for (const suggestion of result) {
       expect(suggestion.rangeToReplace).toEqual({ start: 14, end: 27 });
@@ -146,20 +156,20 @@ describe('attachReplacementRanges', () => {
   it('preserves existing rangeToReplace', () => {
     const explicitRange = { start: 5, end: 10 };
     const suggestions = [makeSuggestion('IS NOT NULL', explicitRange), makeSuggestion('data')];
-    const result = attachReplacementRanges('FROM a | KEEP event.data.fi', suggestions);
+    const result = attachRanges('FROM a | KEEP event.data.fi', suggestions);
 
     expect(result[0].rangeToReplace).toEqual(explicitRange);
     expect(result[1].rangeToReplace).toEqual({ start: 14, end: 27 });
   });
 
   it('returns empty array unchanged', () => {
-    const result = attachReplacementRanges('FROM a | KEEP fi', []);
+    const result = attachRanges('FROM a | KEEP fi', []);
     expect(result).toEqual([]);
   });
 
   it('uses overlap range for multi-token operators like IS NOT NULL', () => {
     const suggestions = [makeSuggestion('IS NOT NULL'), makeSuggestion('IS NULL')];
-    const result = attachReplacementRanges('FROM a | WHERE foo IS N', suggestions);
+    const result = attachRanges('FROM a | WHERE foo IS N', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 19, end: 23 });
     expect(result[1].rangeToReplace).toEqual({ start: 19, end: 23 });
@@ -167,7 +177,7 @@ describe('attachReplacementRanges', () => {
 
   it('uses overlap range for NULLS FIRST when prefix matches', () => {
     const suggestions = [makeSuggestion('NULLS FIRST'), makeSuggestion('NULLS LAST')];
-    const result = attachReplacementRanges('FROM a | SORT field NULLS F', suggestions);
+    const result = attachRanges('FROM a | SORT field NULLS F', suggestions);
 
     // NULLS FIRST overlaps with "NULLS F" at end of query
     expect(result[0].rangeToReplace).toEqual({ start: 20, end: 27 });
@@ -177,7 +187,7 @@ describe('attachReplacementRanges', () => {
 
   it('does not use overlap range for single-token field suggestions', () => {
     const suggestions = [makeSuggestion('event.dataset'), makeSuggestion('tags')];
-    const result = attachReplacementRanges(
+    const result = attachRanges(
       'FROM a | FUSE linear KEY BY agent.keyword, event.dat',
       suggestions
     );
@@ -188,7 +198,7 @@ describe('attachReplacementRanges', () => {
 
   it('falls back to prefix range when no overlap exists', () => {
     const suggestions = [makeSuggestion('field1')];
-    const result = attachReplacementRanges('FROM a | WHERE x > ', suggestions);
+    const result = attachRanges('FROM a | WHERE x > ', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 19, end: 19 });
   });
@@ -204,7 +214,7 @@ describe('attachReplacementRanges', () => {
       },
     ];
 
-    const result = attachReplacementRanges('ignored', suggestions);
+    const result = attachRanges('ignored', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 2, end: 3 });
   });
@@ -221,7 +231,7 @@ describe('attachReplacementRanges', () => {
       },
     ];
 
-    const result = attachReplacementRanges('ignored', suggestions);
+    const result = attachRanges('ignored', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 11, end: 13 });
   });
@@ -238,7 +248,7 @@ describe('attachReplacementRanges', () => {
       },
     ];
 
-    const result = attachReplacementRanges('ignored', suggestions);
+    const result = attachRanges('ignored', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 11, end: 14 });
   });
@@ -255,7 +265,7 @@ describe('attachReplacementRanges', () => {
       },
     ];
 
-    const result = attachReplacementRanges('ignored', suggestions);
+    const result = attachRanges('ignored', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 52, end: 57 });
   });
@@ -272,7 +282,7 @@ describe('attachReplacementRanges', () => {
       },
     ];
 
-    const result = attachReplacementRanges('ignored', suggestions);
+    const result = attachRanges('ignored', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 5, end: 16 });
   });
@@ -287,7 +297,7 @@ describe('attachReplacementRanges', () => {
       },
     ];
 
-    const result = attachReplacementRanges('FROM a | SORT field ', suggestions);
+    const result = attachRanges('FROM a | SORT field ', suggestions);
 
     expect(result[0].rangeToReplace).toEqual({ start: 19, end: 20 });
   });
@@ -302,7 +312,7 @@ describe('attachReplacementRanges', () => {
       },
     ];
 
-    const result = attachReplacementRanges('FR', suggestions, {
+    const result = attachRanges('FR', suggestions, {
       fullText: 'FROM kibana_sample_data_logs | STATS count = COUNT(*)',
       offset: 2,
     });

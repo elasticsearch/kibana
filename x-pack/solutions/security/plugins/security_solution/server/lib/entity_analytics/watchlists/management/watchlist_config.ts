@@ -11,6 +11,7 @@ import type {
   SavedObject,
   SavedObjectsClientContract,
   SavedObjectReference,
+  SecurityServiceStart,
 } from '@kbn/core/server';
 import type { SetOptional } from 'type-fest';
 import type {
@@ -25,6 +26,7 @@ import { generateWatchlistEntityIndexMappings } from '../entities/mappings';
 import { watchlistConfigTypeName } from './saved_object/watchlist_config_type';
 import { createOrUpdateIndex } from '../../utils/create_or_update_index';
 import { watchlistEntitySourceTypeName } from '../entity_sources/infra';
+import { invalidateEntitySourceApiKey } from '../entity_sources/entity_source_api_key';
 
 export const MAX_PER_PAGE = 10_000;
 
@@ -37,6 +39,7 @@ interface WatchlistConfigClientDeps {
    * only attached when using the internal client.
    */
   internalEsClient?: ElasticsearchClient;
+  securityServiceStart?: SecurityServiceStart;
   namespace: string;
   logger: Logger;
 }
@@ -178,8 +181,24 @@ export class WatchlistConfigClient {
   }
 
   async delete(id: string) {
-    // Cascade-delete linked entity sources to prevent orphans
+    const securityServiceStart = this.deps.securityServiceStart;
+
+    // Step 1: Fetch all entity source linked to the watchlist
     const entitySourceIds = await this.getEntitySourceIds(id);
+    const indexSourcesApiKeyIdMap = new Map<string, string>();
+    if (securityServiceStart && entitySourceIds.length > 0) {
+      const soResults = await this.deps.soClient.bulkGet<MonitoringEntitySource>(
+        entitySourceIds.map((sourceId) => ({ type: watchlistEntitySourceTypeName, id: sourceId }))
+      );
+
+      soResults.saved_objects.forEach((so) => {
+        if (!so.error && so.attributes.type === 'index' && !!so.attributes.apiKeyId) {
+          indexSourcesApiKeyIdMap.set(so.id, so.attributes.apiKeyId);
+        }
+      });
+    }
+
+    // Step 2: Cascade-delete linked entity sources to prevent orphans
     const results = await Promise.allSettled(
       entitySourceIds.map((sourceId) =>
         this.deps.soClient.delete(watchlistEntitySourceTypeName, sourceId, {
@@ -188,12 +207,28 @@ export class WatchlistConfigClient {
       )
     );
 
+    const successfullyDeletedSourceIds: string[] = [];
     for (const [i, result] of results.entries()) {
+      const sourceId = entitySourceIds[i];
       if (result.status === 'rejected') {
         this.deps.logger.warn(
-          `Failed to delete entity source '${entitySourceIds[i]}' while deleting watchlist '${id}': ${result.reason.message}`
+          `Failed to delete entity source '${sourceId}' while deleting watchlist '${id}': ${result.reason.message}`
         );
+      } else {
+        successfullyDeletedSourceIds.push(sourceId);
       }
+    }
+
+    // Step 3: Invalidate API keys for successfully deleted entity sources
+    if (securityServiceStart && successfullyDeletedSourceIds.length > 0) {
+      await Promise.allSettled(
+        successfullyDeletedSourceIds.flatMap((sourceId) => {
+          const apiKeyId = indexSourcesApiKeyIdMap.get(sourceId);
+          return apiKeyId
+            ? [invalidateEntitySourceApiKey(securityServiceStart, apiKeyId, this.deps.logger)]
+            : [];
+        })
+      );
     }
 
     return this.deps.soClient.delete(watchlistConfigTypeName, id, { refresh: 'wait_for' });

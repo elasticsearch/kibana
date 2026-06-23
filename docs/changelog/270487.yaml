@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/270487
+issues:
+- https://github.com/elastic/kibana/issues/257369
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Fix support for per-integration overrides for OTel integrations

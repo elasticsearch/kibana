@@ -84,16 +84,18 @@ const FilterForValueButton: React.FC<FilterForValueProps> = React.memo(
             {FILTER_FOR_VALUE}
           </Component>
         ) : (
-          <EuiButtonIcon
-            aria-label={FILTER_FOR_VALUE}
-            buttonRef={defaultFocusedButtonRef}
-            className="timelines__hoverActionButton"
-            data-test-subj="filter-for-value"
-            iconSize="s"
-            iconType="plusCircle"
-            onClick={filterForValueFn}
-            size={size}
-          />
+          <EuiToolTip content={FILTER_FOR_VALUE} disableScreenReaderOutput>
+            <EuiButtonIcon
+              aria-label={FILTER_FOR_VALUE}
+              buttonRef={defaultFocusedButtonRef}
+              className="timelines__hoverActionButton"
+              data-test-subj="filter-for-value"
+              iconSize="s"
+              iconType="plusCircle"
+              onClick={filterForValueFn}
+              size={size}
+            />
+          </EuiToolTip>
         ),
       [Component, defaultFocusedButtonRef, filterForValueFn, size]
     );

@@ -17,7 +17,7 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
-import { euiStyled } from '@kbn/kibana-react-plugin/common';
+import styled from '@emotion/styled';
 import { useTestIdGenerator } from '../../hooks/use_test_id_generator';
 import type {
   ResponseActionEndpointRunScriptOutputContent,
@@ -94,7 +94,7 @@ export const EXECUTE_OUTPUT_FILE_TRUNCATED_MESSAGE = i18n.translate(
   }
 );
 
-const StyledEuiText = euiStyled(EuiText)`
+const StyledEuiText = styled(EuiText)`
   white-space: pre-wrap;
   line-break: anywhere;
 `;

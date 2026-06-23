@@ -13,14 +13,19 @@ import { executeWorkflow } from './execute_workflow';
 type WorkflowApi = WorkflowsServerPluginSetup['management'];
 
 const mockSetAttribute = jest.fn();
+const mockUpdateName = jest.fn();
 const mockSpanFactory = jest.fn((_name: string, _opts: unknown, fn: (span?: unknown) => unknown) =>
-  fn({ setAttribute: mockSetAttribute })
+  fn({ setAttribute: mockSetAttribute, updateName: mockUpdateName })
 );
 
 jest.mock('@kbn/inference-tracing', () => ({
   withActiveInferenceSpan: (...args: unknown[]) =>
     (mockSpanFactory as unknown as (...a: unknown[]) => unknown)(...args),
   ElasticGenAIAttributes: { InferenceSpanKind: 'InferenceSpanKind' },
+  GenAISemanticConventions: {
+    GenAIOperationName: 'gen_ai.operation.name',
+    GenAIWorkflowName: 'gen_ai.workflow.name',
+  },
 }));
 
 jest.mock('./get_execution_state', () => ({
@@ -85,7 +90,7 @@ describe('executeWorkflow', () => {
       completionTimeoutSec: 120,
       metadata: { agent_id: 'agent-abc' },
     });
-    expect(mockSetAttribute).toHaveBeenCalledWith('elastic.workflow.name', 'Test Workflow');
+    expect(mockSetAttribute).toHaveBeenCalledWith('gen_ai.workflow.name', 'Test Workflow');
   });
 
   it('passes undefined metadata to executeWorkflow when not provided', async () => {
@@ -161,7 +166,7 @@ describe('executeWorkflow', () => {
       })
     );
     expect(mockSpanFactory).toHaveBeenCalledWith(
-      'Workflow: ephemeral',
+      'invoke_workflow ephemeral',
       expect.objectContaining({
         attributes: expect.not.objectContaining({ 'elastic.workflow.id': expect.anything() }),
       }),
@@ -188,7 +193,7 @@ describe('executeWorkflow', () => {
       })
     );
     expect(mockSpanFactory).toHaveBeenCalledWith(
-      'Workflow: preview-id',
+      'invoke_workflow preview-id',
       expect.objectContaining({
         attributes: expect.objectContaining({ 'elastic.workflow.id': 'preview-id' }),
       }),

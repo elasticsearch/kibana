@@ -590,8 +590,10 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
         version: '1',
         validate: {
           request: {
-            params: schema.object({ indexPattern: schema.string() }),
-            query: schema.maybe(schema.object({ rollup: schema.maybe(schema.string()) })),
+            params: schema.object({ indexPattern: schema.string({ maxLength: 10000 }) }),
+            query: schema.maybe(
+              schema.object({ rollup: schema.maybe(schema.string({ maxLength: 10000 })) })
+            ),
           },
         },
       },

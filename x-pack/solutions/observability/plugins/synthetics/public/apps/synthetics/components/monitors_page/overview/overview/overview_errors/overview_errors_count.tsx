@@ -13,6 +13,7 @@ import type { ClientPluginsStart } from '../../../../../../../plugin';
 import { ERRORS_LABEL } from '../../../../monitor_details/monitor_summary/monitor_errors_count';
 import { useMonitorFilters } from '../../../hooks/use_monitor_filters';
 import { useMonitorQueryFilters } from '../../../hooks/use_monitor_query_filters';
+import { useOverviewDataViewIndexPatterns } from '../../../hooks/use_overview_data_view_index_patterns';
 
 interface MonitorErrorsCountProps {
   from: string;
@@ -26,14 +27,23 @@ export const OverviewErrorsCount = ({ from, to }: MonitorErrorsCountProps) => {
   const { euiTheme } = useEuiTheme();
 
   const filters = useMonitorFilters({});
+  const queryFilters = useMonitorQueryFilters();
   const time = useMemo(() => ({ from, to }), [from, to]);
+  const { dataTypesIndexPatterns, loading } = useOverviewDataViewIndexPatterns();
+
+  // Wait for the CCS index pattern to resolve before mounting the embeddable;
+  // it latches its first data view title (see useOverviewDataViewIndexPatterns).
+  if (loading) {
+    return null;
+  }
 
   return (
     <ExploratoryViewEmbeddable
       id="overviewErrorsCount"
       align="left"
       customHeight="70px"
-      dslFilters={useMonitorQueryFilters()}
+      dslFilters={queryFilters}
+      dataTypesIndexPatterns={dataTypesIndexPatterns}
       reportType={ReportTypes.SINGLE_METRIC}
       attributes={[
         {

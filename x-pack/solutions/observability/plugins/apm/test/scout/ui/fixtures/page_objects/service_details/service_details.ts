@@ -16,6 +16,7 @@ import { DashboardsTab } from './dashboards_tab';
 import { MetricsTab } from './metrics_tab';
 import { InfrastructureTab } from './infrastructure_tab';
 import { EXTENDED_TIMEOUT } from '../../constants';
+import { waitForSearchBarReady } from '../../page_helpers';
 
 export class ServiceDetailsPage {
   public readonly SERVICE_NAME = testData.SERVICE_OPBEANS_JAVA;
@@ -71,9 +72,7 @@ export class ServiceDetailsPage {
         rangeTo: overrides.rangeTo ?? testData.END_DATE,
       })}`
     );
-    await this.page
-      .getByTestId('superDatePickerToggleQuickMenuButton')
-      .waitFor({ state: 'visible', timeout: EXTENDED_TIMEOUT });
+    await waitForSearchBarReady(this.page);
     await this.page
       .getByTestId('apmMainTemplateServiceAgentLoader')
       .waitFor({ state: 'hidden', timeout: EXTENDED_TIMEOUT });

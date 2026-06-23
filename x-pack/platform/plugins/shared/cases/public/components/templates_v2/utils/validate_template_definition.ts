@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import { ParsedTemplateDefinitionSchema } from '../../../../common/types/domain/template/v1';
 import {
   TEMPLATE_DEFINITION_EMPTY,

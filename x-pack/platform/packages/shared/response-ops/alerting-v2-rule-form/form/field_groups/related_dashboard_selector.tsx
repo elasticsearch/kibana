@@ -152,6 +152,7 @@ const RelatedDashboardsComboBox = ({
 
   return (
     <EuiComboBox
+      compressed
       async
       fullWidth
       isLoading={isLoading}

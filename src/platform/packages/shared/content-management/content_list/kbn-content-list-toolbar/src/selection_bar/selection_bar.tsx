@@ -16,6 +16,10 @@ import {
   useContentListSelection,
   useDeleteConfirmation,
 } from '@kbn/content-list-provider';
+import {
+  CONTENT_LIST_TEST_SUBJECTS,
+  getContentListSelectionBarSubjects,
+} from '@kbn/content-list-common';
 
 export interface SelectionBarProps {
   /** Optional `data-test-subj` attribute for testing. */
@@ -38,7 +42,7 @@ export interface SelectionBarProps {
  * @internal Rendered automatically by {@link ContentListToolbar}.
  */
 export const SelectionBar = ({
-  'data-test-subj': dataTestSubj = 'contentListSelectionBar',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.selectionBar,
 }: SelectionBarProps) => {
   const { labels, item: itemConfig } = useContentListConfig();
   const { selectedItems, selectedCount, clearSelection } = useContentListSelection();
@@ -87,7 +91,7 @@ export const SelectionBar = ({
         color="danger"
         iconType="trash"
         onClick={() => requestDelete(selectedItems)}
-        data-test-subj={`${dataTestSubj}-deleteButton`}
+        data-test-subj={getContentListSelectionBarSubjects(dataTestSubj).deleteButton}
       >
         {buttonLabel}
       </EuiButton>

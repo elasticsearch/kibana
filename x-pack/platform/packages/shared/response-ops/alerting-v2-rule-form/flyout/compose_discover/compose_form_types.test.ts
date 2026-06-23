@@ -45,7 +45,7 @@ describe('getBreachQuery', () => {
       base: '',
       breach: { segment: ALERT_SEGMENT },
     };
-    expect(getBreachQuery(query)).toBe(ALERT_SEGMENT);
+    expect(getBreachQuery(query)).toBe(`| ${ALERT_SEGMENT}`);
   });
 
   it('returns just base when composed breach segment is empty', () => {
@@ -53,6 +53,24 @@ describe('getBreachQuery', () => {
       format: 'composed',
       base: BASE,
       breach: { segment: '' },
+    };
+    expect(getBreachQuery(query)).toBe(BASE);
+  });
+
+  it('does not duplicate the pipe when the breach segment already starts with |', () => {
+    const query: ComposedQuery = {
+      format: 'composed',
+      base: BASE,
+      breach: { segment: '| WHERE count > 100' },
+    };
+    expect(getBreachQuery(query)).toBe(`${BASE}\n| WHERE count > 100`);
+  });
+
+  it('ignores whitespace-only breach segments', () => {
+    const query: ComposedQuery = {
+      format: 'composed',
+      base: BASE,
+      breach: { segment: '   ' },
     };
     expect(getBreachQuery(query)).toBe(BASE);
   });
@@ -113,6 +131,16 @@ describe('getRecoverQuery', () => {
       breach: { segment: '' },
       recovery: { segment: RECOVERY_SEGMENT },
     };
-    expect(getRecoverQuery(query)).toBe(RECOVERY_SEGMENT);
+    expect(getRecoverQuery(query)).toBe(`| ${RECOVERY_SEGMENT}`);
+  });
+
+  it('does not duplicate the pipe when the recovery segment already starts with |', () => {
+    const query: ComposedQuery = {
+      format: 'composed',
+      base: BASE,
+      breach: { segment: ALERT_SEGMENT },
+      recovery: { segment: '| WHERE count < 100' },
+    };
+    expect(getRecoverQuery(query)).toBe(`${BASE}\n| WHERE count < 100`);
   });
 });

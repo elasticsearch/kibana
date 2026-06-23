@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/271550
+issues:
+- https://github.com/elastic/kibana/issues/271487
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix delete all limit for deprecated prebuilt rules

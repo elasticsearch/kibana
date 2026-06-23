@@ -293,11 +293,11 @@ steps:
         env:
           KBN_EVALS: '1'
           FTR_EIS_CCM: '1'
-          EVAL_SUITE_ID: 'entity-analytics'
+          EVAL_SUITE_ID: 'entity-analytics-v2'
           EVAL_FANOUT: '1'
           EVAL_INCLUDE_EIS_MODELS: '1'
           EVAL_MODEL_GROUPS: *weekly_eis_core_models
-          EVAL_SERVER_CONFIG_SET: 'evals_entity_analytics'
+          EVAL_SERVER_CONFIG_SET: 'evals_entity_analytics_v2'
         timeout_in_minutes: 60
         agents:
           image: family/kibana-ubuntu-2404
@@ -409,6 +409,29 @@ steps:
           EVAL_FANOUT: '1'
           EVAL_INCLUDE_EIS_MODELS: '1'
           EVAL_MODEL_GROUPS: *weekly_eis_core_models
+        timeout_in_minutes: 60
+        agents:
+          image: family/kibana-ubuntu-2404
+          imageProject: elastic-images-prod
+          provider: gcp
+          machineType: n2-standard-8
+          preemptible: true
+        retry:
+          automatic:
+            - exit_status: '-1'
+              limit: 3
+
+      - label: 'Evals: SIEM Readiness'
+        key: kbn-evals-weekly-siem-readiness
+        command: bash .buildkite/scripts/steps/evals/run_suite.sh
+        env:
+          KBN_EVALS: '1'
+          FTR_EIS_CCM: '1'
+          EVAL_SUITE_ID: 'siem-readiness'
+          EVAL_FANOUT: '1'
+          EVAL_INCLUDE_EIS_MODELS: '1'
+          EVAL_MODEL_GROUPS: *weekly_eis_core_models
+          EVAL_SERVER_CONFIG_SET: 'evals_tracing'
         timeout_in_minutes: 60
         agents:
           image: family/kibana-ubuntu-2404

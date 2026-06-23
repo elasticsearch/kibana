@@ -15,6 +15,7 @@ const createRiskScoreDataClientMock = () =>
     tearDown: jest.fn(),
     getRiskInputsIndex: jest.fn(),
     upgradeIfNeeded: jest.fn(),
+    getRiskScoreHistory: jest.fn().mockResolvedValue([]),
   } as unknown as jest.Mocked<RiskScoreDataClient>);
 
 export const riskScoreDataClientMock = { create: createRiskScoreDataClientMock };

@@ -31,6 +31,7 @@ import { setTestStepModalOpenStepId } from '../../../entities/workflows/store/wo
 import { ExecutionGraph } from '../../../features/debug_graph/execution_graph';
 import { useKibana } from '../../../hooks/use_kibana';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
+import { useWorkflowsExperimentalUiSetting } from '../../../hooks/use_workflows_experimental_ui_setting';
 
 const WorkflowYAMLEditor = React.lazy(() =>
   import('../../../widgets/workflow_yaml_editor').then((module) => ({
@@ -113,14 +114,11 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     ]
   );
 
-  // UI settings
-  const isVisualEditorEnabled = useKibana().services.uiSettings?.get<boolean>(
-    WORKFLOWS_UI_VISUAL_EDITOR_SETTING_ID,
-    false
+  const isVisualEditorEnabled = useWorkflowsExperimentalUiSetting(
+    WORKFLOWS_UI_VISUAL_EDITOR_SETTING_ID
   );
-  const isExecutionGraphEnabled = useKibana().services.uiSettings?.get<boolean>(
-    WORKFLOWS_UI_EXECUTION_GRAPH_SETTING_ID,
-    false
+  const isExecutionGraphEnabled = useWorkflowsExperimentalUiSetting(
+    WORKFLOWS_UI_EXECUTION_GRAPH_SETTING_ID
   );
 
   return (

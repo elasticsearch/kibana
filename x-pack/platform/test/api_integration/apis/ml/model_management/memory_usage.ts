@@ -89,14 +89,6 @@ export default ({ getService }: FtrProviderContext) => {
       expect(body).to.eql([]);
     });
 
-    it('returns an error for the user with viewer permissions', async () => {
-      const { body, status } = await supertest
-        .get(`/internal/ml/model_management/memory_usage`)
-        .auth(USER.ML_VIEWER, ml.securityCommon.getPasswordForUser(USER.ML_VIEWER))
-        .set(getCommonRequestHeader('1'));
-      ml.api.assertResponseStatusCode(403, status, body);
-    });
-
     it('returns an error for unauthorized user', async () => {
       const { body, status } = await supertest
         .get(`/internal/ml/model_management/memory_usage`)

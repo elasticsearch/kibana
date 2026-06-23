@@ -6,8 +6,10 @@
  */
 
 import type { ComponentType } from 'react';
-import type { CreateRuleFormFlyoutProps } from './create_rule_form_flyout';
+import type { CreateRuleOptionsFlyoutProps } from './create_rule_options_flyout';
+
+export type { CreateRuleOptionsFlyoutLegacyItem } from './create_rule_options_flyout';
 
 export interface AlertingV2PublicStart {
-  DynamicRuleFormFlyout: ComponentType<CreateRuleFormFlyoutProps>;
+  CreateRuleOptionsFlyout: ComponentType<CreateRuleOptionsFlyoutProps>;
 }

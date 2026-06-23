@@ -28,8 +28,9 @@ The plan answers _what_ and _why_; this file answers _how_.
 - `parallel_tests/`: ingest via `parallel_tests/global.setup.ts` + `globalSetupHook` (don't use `esArchiver` in spec files).
 - Use the correct Scout package for the test location (`@kbn/scout` vs `@kbn/scout-security`/`@kbn/scout-oblt`/`@kbn/scout-search`) and import `expect` from `/ui` or `/api`.
 - **TypeScript layout for Scout tests** (pick one; see **Where Scout tests are typechecked** under step 6): either fold `test/scout/**/*` into the **plugin root** `tsconfig.json` and add Scout `kbn_references` (like `discover_enhanced`), or keep **dedicated** `test/scout/{ui,api}/tsconfig.json` files. Only the latter forbids relative imports into `server/` / `public/`.
-- Replace FTR config nesting / per-suite server args with `uiSettings` / `scoutSpace.uiSettings` and (when needed) `apiServices.core.settings(...)`.
+- **Prefer Scout's default servers config**: replace FTR config nesting / per-suite server args with `uiSettings` / `scoutSpace.uiSettings` and (when needed) `apiServices.core.settings(...)` runtime settings. Only create a custom server config set when the plan calls for it (a setting that must apply at Kibana boot) — custom configs run only in local pipelines (no Cloud) and add CI cost.
 - Auth/roles are fixture-driven: `browserAuth` (UI), `requestAuth` (API key), `samlAuth` (cookie / `cookieHeader`), plus custom roles. Avoid FTR-style role mutation. For Scout **API** tests, see **Scout API auth (`cookieHeader` vs API key)** under step 4.
+- **Prefer default Cloud-compatible roles over custom ones.** For general user flows, use the least-privileged built-in role (`browserAuth.loginAsViewer()` → `loginAsPrivilegedUser()` → `loginAsAdmin()`). Reach for `loginWithCustomRole(roleDescriptor)` only when the test specifically validates permission-scoped behavior that no built-in role expresses — don't port FTR custom roles 1:1, as many were scoped incidentally and work fine on a default role. `loginAs(role)` (built-in role by name) is stateful-only and isn't supported on serverless (ensure the tests aren't targeting serverless).
 
 ## Core workflow
 
@@ -58,6 +59,8 @@ FTR **deployment-agnostic** configs often load the same files under both statefu
 - **Platform modules** (`src/platform/**`, `x-pack/platform/**`): `tags.deploymentAgnostic` is appropriate when the original intent was "run everywhere."
 
 API and UI specs should both carry tags that match the intended `run-tests` / CI targets; see step 9.
+
+**Prefer tags inline.** Avoid wrapping tags in a named constant unless the same tag set is reused across multiple suites. Never change an existing tag constant's value to fit a different suite. Apply per-issue tag instructions inline and only to the tests specified.
 
 ### 3) Translate the test structure
 
@@ -102,7 +105,8 @@ test('create and edit entity', async () => {
 - Replace other FTR services with Scout fixtures (`pageObjects`, `browserAuth`, `apiServices`, `kbnClient`, `esArchiver`).
 - Use `apiServices`/`kbnClient` for setup/teardown and verifying side effects.
 - **Audit FTR before/after hooks carefully**—don't copy them verbatim. Review every call in `before`/`beforeEach`/`after`/`afterEach` and verify it is still correct for Scout: replace FTR-specific APIs with their Scout equivalents, remove unnecessary calls (e.g. FTR service initialization that Scout fixtures handle automatically), and add any missing setup or cleanup that the FTR suite neglected. Ensure every resource created in `beforeAll`/`beforeEach` has matching cleanup in `afterAll`/`afterEach`—FTR suites frequently lack proper teardown. Place `kbnClient.savedObjects.cleanStandardList()` (or `scoutSpace.savedObjects.cleanStandardList()`) in **`afterAll`**, not `beforeAll`; `beforeAll` cleanup masks missing teardown and hides leaked state from previous runs.
-- Replace webdriver waits with Playwright/page object methods.
+- Replace FTR webdriver waits (`retry.waitFor`, `testSubjects.existOrFail`, `find.*` with timeouts) with `locator.waitFor({ state: 'visible' })` / `page.testSubj.waitForSelector(..., { state: 'visible' })` to synchronize. Reserve `await expect(locator).toBeVisible()` for spec assertions on Scout's default timeouts — don't use it as a wait or pass `{ timeout }` overrides without a justifying comment.
+- **Page objects — before writing any page object code:** (1) read the FTR page object's actual source; never infer a method's selectors or steps from its name (this is what produces hallucinated, non-existent methods). (2) Check for an existing equivalent in `src/platform/packages/shared/kbn-scout/src/playwright/page_objects/` (and the solution package, e.g. `@kbn/scout-oblt`) and reuse it rather than recreating it locally. (3) When a method is genuinely missing, place it per the plan's exists/wrong-scope/missing classification: contribute it to the global `kbn-scout` package (exported from that dir's `index.ts`) if it drives platform-wide UI (Discover, Dashboard, Lens, etc.); only keep it in the plugin's `test/scout*/ui/fixtures/page_objects/` (registered in that fixtures `index.ts`) if it's plugin-specific.
 - Move UI selectors/actions into Scout page objects; register new page objects in the plugin fixtures index.
 - If the test needs API setup/cleanup, add a scoped API service and use it in `beforeAll/afterAll`.
 - Replace per-suite FTR config flags with `uiSettings` / `scoutSpace.uiSettings`, and (when needed) `apiServices.core.settings(...)`.
@@ -130,7 +134,7 @@ For general Scout API auth patterns (`requestAuth`, `samlAuth`, common headers, 
 ### 6) Add helpers and constants
 
 - Put shared helpers in `test/scout*/ui/fixtures/helpers.ts` (or API helpers in API fixtures).
-- Add test-subject constants in `fixtures/constants.ts` for reuse across tests and page objects.
+- Add test-subject constants in `fixtures/constants.ts` for reuse across tests and page objects. For other shared values (archive paths, time ranges, etc.), follow the plan's "Shared constants to extract" list rather than introducing new constants during execution.
 - For `parallel_tests/` ingestion, use `parallel_tests/global.setup.ts` + `globalSetupHook` (no `esArchiver` in spec files).
 - For suite-wide Elasticsearch/Kibana state reset (e.g. reverting feature flags or global `uiSettings`, dropping hand-indexed data that affects other Scout configs sharing the cluster), use the **optional** `globalTeardownHook` in `parallel_tests/global.teardown.ts`. Picked up automatically when `runGlobalSetup: true` — no extra config flag. Use `esClient.indices.delete` / `deleteDataStream` / `deleteByQuery`, `kbnClient.uiSettings.unset(...)`, and `apiServices.core.settings(...)` to reset state. Per-test/per-suite cleanup still belongs in `afterEach`/`afterAll`.
 

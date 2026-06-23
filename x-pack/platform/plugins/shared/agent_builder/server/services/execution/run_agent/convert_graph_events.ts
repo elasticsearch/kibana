@@ -6,7 +6,6 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { isArray } from 'lodash';
 import type { StreamEvent as LangchainStreamEvent } from '@langchain/core/tracers/log_stream';
 import type { AIMessageChunk } from '@langchain/core/messages';
 import type { OperatorFunction } from 'rxjs';
@@ -31,8 +30,6 @@ import {
   toolIdentifierFromToolCall,
 } from '@kbn/agent-builder-genai-utils/langchain';
 import type { Logger } from '@kbn/logging';
-import type { RunToolReturn } from '@kbn/agent-builder-server';
-import { createErrorResult } from '@kbn/agent-builder-server';
 import { AgentPromptRequestSourceType } from '@kbn/agent-builder-common/agents';
 import { isAskUserQuestionPrompt } from '@kbn/agent-builder-common/agents/prompts';
 import { createUserQuestionAskedEvent } from '@kbn/agent-builder-common/chat';
@@ -40,7 +37,7 @@ import { internalTools } from '@kbn/agent-builder-common';
 import type { ToolManager } from '@kbn/agent-builder-server/runner';
 import type { StateType } from './state';
 import { BROWSER_TOOL_PREFIX, steps, tags } from './constants';
-import type { ToolCallResult } from './actions';
+import { extractToolReturn } from './utils/extract_tool_return';
 import {
   isBackgroundExecutionCompleteAction,
   isExecuteToolAction,
@@ -279,27 +276,4 @@ export const convertGraphEvents = ({
       })
     );
   };
-};
-
-export const extractToolReturn = (message: ToolCallResult): RunToolReturn => {
-  if (message.artifact) {
-    if (!isArray(message.artifact.results)) {
-      throw new Error(
-        `Artifact is not a structured tool artifact. Received artifact=${JSON.stringify(
-          message.artifact
-        )}`
-      );
-    }
-
-    return message.artifact as RunToolReturn;
-  } else {
-    // langchain tool validation error (such as schema errors) are out of our control and don't emit artifacts...
-    if (message.content.startsWith('Error:')) {
-      return {
-        results: [createErrorResult(message.content)],
-      };
-    } else {
-      throw new Error(`No artifact attached to tool message: ${JSON.stringify(message)}`);
-    }
-  }
 };

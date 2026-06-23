@@ -200,6 +200,7 @@ export const useSendMessageMutation = ({
         setPendingMessage(vars.conversationId, vars.message);
         hasInsertedOptimisticListRow = await insertSidebarConversationListRow({
           queryClient,
+          conversationsService,
           agentId: vars.agentId,
           conversationId: vars.conversationId,
           title: optimisticConversationListTitle,

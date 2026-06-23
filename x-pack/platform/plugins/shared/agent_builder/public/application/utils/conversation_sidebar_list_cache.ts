@@ -8,6 +8,7 @@
 import type { QueryClient } from '@kbn/react-query';
 import type { ConversationWithoutRounds } from '@kbn/agent-builder-common';
 
+import type { ConversationsService } from '../../services/conversations/conversations_service';
 import { queryKeys } from '../query_keys';
 
 const agentConversationListKey = (agentId: string) => queryKeys.conversations.byAgent(agentId);
@@ -30,11 +31,13 @@ const buildSidebarConversationListRow = (p: {
 
 export const insertSidebarConversationListRow = async ({
   queryClient,
+  conversationsService,
   agentId,
   conversationId,
   title,
 }: {
   queryClient: QueryClient;
+  conversationsService: ConversationsService;
   agentId: string;
   conversationId: string;
   title: string;
@@ -45,6 +48,21 @@ export const insertSidebarConversationListRow = async ({
     title,
   });
   const key = agentConversationListKey(agentId);
+
+  // Ensure the server list is in cache before we prepend — otherwise `cancelQueries`
+  // below kills the in-flight GET and the sidebar ends up showing only the new row.
+  if (queryClient.getQueryData<ConversationWithoutRounds[]>(key) === undefined) {
+    try {
+      await queryClient.fetchQuery({
+        queryKey: key,
+        queryFn: () => conversationsService.list({ agentId }),
+      });
+    } catch {
+      // Proceed with the optimistic insert even if the prefetch fails — the next
+      // explicit refresh of the sidebar will pick up the server state.
+    }
+  }
+
   await queryClient.cancelQueries({ queryKey: key });
 
   let inserted = false;

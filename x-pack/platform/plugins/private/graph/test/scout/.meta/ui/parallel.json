@@ -1,0 +1,61 @@
+{
+  "sha1": "b0e34319799b784437d153cebd4696c13f4a81e7",
+  "tests": [
+    {
+      "id": "90fff840c08261e-5a00ec1e729ddb6",
+      "title": "Graph listing page - delete flow select all and delete removes all graphs and shows empty state",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/graph/test/scout/ui/parallel_tests/graph_listing_delete.spec.ts",
+        "line": 38,
+        "column": 12
+      }
+    },
+    {
+      "id": "70d770ad7acd174-9bd08cd9c3bf599",
+      "title": "Graph listing page renders the page header and saved graphs",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/graph/test/scout/ui/parallel_tests/graph_listing.spec.ts",
+        "line": 39,
+        "column": 12
+      }
+    },
+    {
+      "id": "70d770ad7acd174-318a4ff4acaad8a",
+      "title": "Graph listing page search filters items by title",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/graph/test/scout/ui/parallel_tests/graph_listing.spec.ts",
+        "line": 45,
+        "column": 12
+      }
+    },
+    {
+      "id": "70d770ad7acd174-089037f25c70e0f",
+      "title": "Graph listing page create graph button navigates to the workspace editor",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/graph/test/scout/ui/parallel_tests/graph_listing.spec.ts",
+        "line": 54,
+        "column": 12
+      }
+    }
+  ]
+}

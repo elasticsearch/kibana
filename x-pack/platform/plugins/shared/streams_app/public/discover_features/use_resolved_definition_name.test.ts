@@ -144,7 +144,11 @@ describe('useResolvedDefinitionName', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.value).toEqual({ name: 'logs.fallback', existsLocally: false });
+    expect(result.current.value).toEqual({
+      name: 'logs.fallback',
+      existsLocally: false,
+      remoteProject: 'unknown',
+    });
   });
 
   it('returns undefined when neither index nor fallback are provided', async () => {

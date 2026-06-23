@@ -97,7 +97,13 @@ export const PageViewLogInContext: React.FC = () => {
           }
         `}
       />
-      <EuiModal onClose={closeModal} maxWidth={false}>
+      <EuiModal
+        onClose={closeModal}
+        maxWidth={false}
+        aria-label={i18n.translate('xpack.infra.logs.viewInContext.modalAriaLabel', {
+          defaultMessage: 'View log in context',
+        })}
+      >
         <LogInContextWrapper width={vw - MODAL_MARGIN * 2} height={vh - MODAL_MARGIN * 2}>
           <EuiFlexGroup direction="column" responsive={false} wrap={false} css={{ height: '100%' }}>
             <EuiFlexItem grow={false}>

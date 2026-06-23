@@ -21,12 +21,13 @@ import {
   EuiSelectable,
   EuiToolTip,
 } from '@elastic/eui';
-import { DEFAULT_DSL_OPTIONS_LIST_STATE } from '@kbn/controls-constants';
+import { ControlValuesSource, DEFAULT_DSL_OPTIONS_LIST_STATE } from '@kbn/controls-constants';
 import type { OptionsListSortingType } from '@kbn/controls-schemas';
 import { useBatchedPublishingSubjects, type PublishingSubject } from '@kbn/presentation-publishing';
 
 import { getCompatibleSortingTypes } from '../../../../../common/options_list/suggestions_sorting';
 import { isDSLOptionsListApi } from '../../../utils';
+import type { DataControlApi } from '../../types';
 import { useOptionsListContext } from '../options_list_context_provider';
 import { OptionsListStrings } from '../options_list_strings';
 import type { DSLOptionsListComponentApi } from '../types';
@@ -54,6 +55,9 @@ const panelStyle = {
   width: '224px',
 };
 
+const isDataControlApi = (api: unknown): api is Pick<DataControlApi, 'valuesSource$'> =>
+  typeof api === 'object' && api !== null && 'valuesSource$' in api;
+
 export const OptionsListPopoverSortingButton = ({
   showOnlySelected,
 }: {
@@ -65,19 +69,23 @@ export const OptionsListPopoverSortingButton = ({
 
   const conditionalApiSubjects: [
     DSLOptionsListComponentApi['sort$'] | PublishingSubject<undefined>,
-    DSLOptionsListComponentApi['field$'] | PublishingSubject<undefined>
+    DSLOptionsListComponentApi['field$'] | PublishingSubject<undefined>,
+    PublishingSubject<ControlValuesSource | undefined>
   ] = useMemo(() => {
     const isDSLControl = isDSLOptionsListApi(componentApi);
     return [
       isDSLControl ? componentApi.sort$ : new BehaviorSubject(undefined),
       isDSLControl ? componentApi.field$ : new BehaviorSubject(undefined),
+      isDataControlApi(componentApi)
+        ? componentApi.valuesSource$
+        : new BehaviorSubject<ControlValuesSource | undefined>(ControlValuesSource.FIELD),
     ];
   }, [componentApi]);
 
-  const [sort, field] = useBatchedPublishingSubjects(...conditionalApiSubjects);
+  const [sort, field, valuesSource] = useBatchedPublishingSubjects(...conditionalApiSubjects);
 
-  const [sortByOptions, setSortByOptions] = useState<SortByItem[]>(() => {
-    return getCompatibleSortingTypes(field?.type).map((key) => {
+  const sortByOptions = useMemo(() => {
+    return getCompatibleSortingTypes(field?.type, valuesSource).map((key) => {
       return {
         onFocusBadge: false,
         data: { sortBy: key },
@@ -86,12 +94,11 @@ export const OptionsListPopoverSortingButton = ({
         label: OptionsListStrings.editorAndPopover.sortBy[key].getSortByLabel(field?.type),
       } as SortByItem;
     });
-  });
+  }, [field?.type, sort?.by, valuesSource]);
 
   const onSortByChange = useCallback(
     (updatedOptions: SortByItem[]) => {
       if (!isDSLOptionsListApi(componentApi)) return;
-      setSortByOptions(updatedOptions);
       const selectedOption = updatedOptions.find(({ checked }) => checked === 'on');
       if (selectedOption) {
         componentApi.setSort({
@@ -105,33 +112,32 @@ export const OptionsListPopoverSortingButton = ({
   );
 
   const SortButton = () => (
-    <EuiButtonIcon
-      size="xs"
-      display="empty"
-      color="text"
-      iconType={sort?.direction === 'asc' ? 'sortAscending' : 'sortDescending'}
-      isDisabled={showOnlySelected}
-      className="optionsList__sortButton"
-      data-test-subj="optionsListControl__sortingOptionsButton"
-      onClick={() => setIsSortingPopoverOpen(!isSortingPopoverOpen)}
-      aria-label={OptionsListStrings.popover.getSortPopoverDescription()}
-    />
+    <EuiToolTip
+      position="top"
+      content={
+        showOnlySelected
+          ? OptionsListStrings.popover.getSortDisabledTooltip()
+          : OptionsListStrings.popover.getSortPopoverTitle()
+      }
+      disableScreenReaderOutput
+    >
+      <EuiButtonIcon
+        size="xs"
+        display="empty"
+        color="text"
+        iconType={sort?.direction === 'asc' ? 'sortAscending' : 'sortDescending'}
+        isDisabled={showOnlySelected}
+        className="optionsList__sortButton"
+        data-test-subj="optionsListControl__sortingOptionsButton"
+        onClick={() => setIsSortingPopoverOpen(!isSortingPopoverOpen)}
+        aria-label={OptionsListStrings.popover.getSortPopoverDescription()}
+      />
+    </EuiToolTip>
   );
 
   return (
     <EuiPopover
-      button={
-        <EuiToolTip
-          position="top"
-          content={
-            showOnlySelected
-              ? OptionsListStrings.popover.getSortDisabledTooltip()
-              : OptionsListStrings.popover.getSortPopoverTitle()
-          }
-        >
-          <SortButton />
-        </EuiToolTip>
-      }
+      button={<SortButton />}
       panelPaddingSize="none"
       isOpen={isSortingPopoverOpen}
       aria-labelledby="optionsList_sortingOptions"

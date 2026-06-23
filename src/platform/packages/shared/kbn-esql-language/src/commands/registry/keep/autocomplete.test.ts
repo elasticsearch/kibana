@@ -35,13 +35,12 @@ describe('KEEP Autocomplete', () => {
   it('suggests available fields after KEEP', async () => {
     const columns = mockContext.columns;
 
-    keepExpectSuggestions(
-      'FROM a | KEEP ',
-      Array.from(columns.values()).map((column) => column.name)
-    );
+    keepExpectSuggestions('FROM a | KEEP ', [
+      ...Array.from(columns.values()).map((column) => column.name),
+    ]);
   });
 
   it('suggests command and pipe after a field has been used in KEEP', async () => {
-    keepExpectSuggestions('FROM logs* | KEEP doubleField ', ['| ', ',']);
+    keepExpectSuggestions('FROM logs* | KEEP doubleField ', ['| ', ',', '\n']);
   });
 });

@@ -12,7 +12,7 @@ import type {
   SignificantEventsQueriesGenerationResult,
 } from '@kbn/streams-schema';
 import { generatedSignificantEventQuerySchema } from '@kbn/streams-schema';
-import { sortForQueriesTable } from '../../../../lib/sig_events/utils';
+import { sortQueryLinksForTable } from '../../../../lib/sig_events/utils';
 import { STREAMS_API_PRIVILEGES } from '../../../../../common/constants';
 import { generateKIQueries } from '../../../../lib/sig_events/ki_queries_generation_service';
 import { createServerRoute } from '../../../create_server_route';
@@ -20,7 +20,13 @@ import { assertSignificantEventsAccess } from '../../../utils/assert_significant
 import { getRequestAbortSignal } from '../../../utils/get_request_abort_signal';
 import { queryStatusSchema, toRuleUnbackedFilter } from '../../../utils/query_status';
 import { BUCKET_SIZE_PATTERN } from '../../../../lib/sig_events/helpers/fill_bucket_gaps';
-import { readSignificantEventsFromAlertsIndices } from '../../../../lib/sig_events/read_significant_events_from_alerts_indices';
+import {
+  computeOccurrences,
+  fetchQueryLinks,
+  getQueryOccurrences,
+  toSignificantEventResponse,
+  type QueryOccurrences,
+} from '../../../../lib/sig_events/read_significant_events_from_alerts_indices';
 import { resolveAlertsSource } from '../../../utils/resolve_alerts_source';
 import { searchModeSchema } from '../../../utils/search_mode';
 import type { PersistQueriesResult } from '../../../../lib/sig_events/persist_queries';
@@ -338,7 +344,7 @@ const getDiscoveryQueriesRoute = createServerRoute({
       alertingV2RulesClient: await getAlertingV2RulesClient(),
     });
     const kiClient = await getKnowledgeIndicatorClient();
-    const { significant_events: queries } = await readSignificantEventsFromAlertsIndices(
+    const queryLinks = await fetchQueryLinks(
       {
         from,
         to,
@@ -349,21 +355,32 @@ const getDiscoveryQueriesRoute = createServerRoute({
         searchMode,
         alertsSource,
       },
-      { kiClient, scopedClusterClient }
+      kiClient
     );
 
-    const sortedQueries = sortForQueriesTable(queries);
-    const total = queries.length;
+    // Paginate links first, then fetch occurrences for the page's rules only —
+    // not the full (up to 10k) set.
+    const total = queryLinks.length;
     const start = (page - 1) * perPage;
-    const queriesPage = start >= total ? [] : sortedQueries.slice(start, start + perPage);
+    const pageLinks =
+      start >= total ? [] : sortQueryLinksForTable(queryLinks).slice(start, start + perPage);
+    const pageRuleIds = [...new Set(pageLinks.map((link) => link.rule_id))];
+
+    const occurrences = await computeOccurrences(
+      { ruleIds: pageRuleIds, from, to, bucketSize },
+      { scopedClusterClient }
+    );
+    const queryOccurrences: QueryOccurrences = { queryLinks: pageLinks, ...occurrences };
+    const queriesPage = pageLinks.map((queryLink) =>
+      toSignificantEventResponse({ queryLink, queryOccurrences })
+    );
 
     return { queries: queriesPage, page, perPage, total };
   },
 });
 
-// Uses baseRequestParamsSchema (no searchMode) intentionally: the histogram
-// is an aggregate summary, not a list of individual queries. It always uses
-// the default search mode so occurrences reflect the best-available ranking.
+// baseRequestParamsSchema (no searchMode): the histogram is an aggregate,
+// always default-ranked, not a list of individual queries.
 const getDiscoveryQueriesOccurrencesRoute = createServerRoute({
   endpoint: 'GET /internal/streams/_queries/_occurrences',
   params: z.object({
@@ -405,18 +422,17 @@ const getDiscoveryQueriesOccurrencesRoute = createServerRoute({
       alertingV2RulesClient: await getAlertingV2RulesClient(),
     });
     const kiClient = await getKnowledgeIndicatorClient();
-    const { aggregated_occurrences: aggregatedOccurrenceBuckets } =
-      await readSignificantEventsFromAlertsIndices(
-        {
-          from,
-          to,
-          bucketSize,
-          query,
-          streamNames,
-          alertsSource,
-        },
-        { kiClient, scopedClusterClient }
-      );
+    const { aggregatedOccurrences: aggregatedOccurrenceBuckets } = await getQueryOccurrences(
+      {
+        from,
+        to,
+        bucketSize,
+        query,
+        streamNames,
+        alertsSource,
+      },
+      { kiClient, scopedClusterClient }
+    );
 
     const occurrencesHistogram = aggregatedOccurrenceBuckets.map((bucket) => ({
       x: bucket.date,
@@ -503,6 +519,7 @@ const generateQueriesRoute = createServerRoute({
         logger: logger.get('significant_events_queries_generation'),
         signal: getRequestAbortSignal(request),
         telemetry,
+        agentBuilderTools: server.agentBuilder?.tools,
       }
     );
 

@@ -1,0 +1,133 @@
+openapi: 3.0.0
+info:
+  version: '1'
+  title: Risk Score History API
+  description: Retrieve historical risk score changes for an entity.
+paths:
+  /api/risk_score/history:
+    get:
+      x-labels: [ess, serverless]
+      x-codegen-enabled: true
+      operationId: GetRiskScoreHistory
+      summary: Get risk score history for an entity
+      description: >-
+        Returns time-ordered historical risk score entries from the
+        risk score time-series index for a given entity.
+      parameters:
+        - name: entity_type
+          in: query
+          required: true
+          description: The type of entity to retrieve history for.
+          schema:
+            $ref: '../common/common.schema.yaml#/components/schemas/IdentifierType'
+        - name: entity_id
+          in: query
+          required: true
+          description: The identifier of the entity to retrieve history for.
+          schema:
+            type: string
+            maxLength: 1000
+        - name: from
+          in: query
+          required: false
+          description: Start of the time range, in date-math syntax. Defaults to 90 days ago.
+          schema:
+            type: string
+            maxLength: 100
+            default: 'now-90d'
+        - name: to
+          in: query
+          required: false
+          description: End of the time range, in date-math syntax. Defaults to now.
+          schema:
+            type: string
+            maxLength: 100
+            default: 'now'
+        - name: score_type
+          in: query
+          required: false
+          description: Filter entries by the type of score recorded (`base`, `propagated`, or `resolution`).
+          schema:
+            type: string
+            enum: [base, propagated, resolution]
+        - name: page_size
+          in: query
+          required: false
+          description: Maximum number of history entries to return per request.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoreHistoryResponse'
+              examples:
+                riskScoreHistory:
+                  summary: Risk score history for a user
+                  value:
+                    entity_id: alice
+                    entity_type: user
+                    entries:
+                      - '@timestamp': '2026-05-20T12:00:00.000Z'
+                        calculated_score_norm: 72.4
+                        calculated_level: High
+                        calculated_score: 145.2
+                        score_type: base
+                        category_1_score: 102.0
+                        category_1_count: 18
+        '400':
+          description: Invalid request
+
+components:
+  schemas:
+    RiskScoreHistoryEntry:
+      type: object
+      required:
+        - '@timestamp'
+        - calculated_score_norm
+        - calculated_level
+      properties:
+        '@timestamp':
+          type: string
+          format: date-time
+          maxLength: 33
+        calculated_score_norm:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+        calculated_level:
+          $ref: '../common/common.schema.yaml#/components/schemas/EntityRiskLevels'
+        calculated_score:
+          type: number
+          format: double
+        score_type:
+          type: string
+          enum: [base, propagated, resolution]
+        category_1_score:
+          type: number
+          format: double
+        category_1_count:
+          type: integer
+
+    RiskScoreHistoryResponse:
+      type: object
+      required:
+        - entity_id
+        - entity_type
+        - entries
+      properties:
+        entity_id:
+          type: string
+          maxLength: 1000
+        entity_type:
+          $ref: '../common/common.schema.yaml#/components/schemas/IdentifierType'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskScoreHistoryEntry'

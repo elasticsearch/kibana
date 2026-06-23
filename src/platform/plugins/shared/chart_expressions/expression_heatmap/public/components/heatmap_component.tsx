@@ -23,22 +23,27 @@ import type {
   SettingsProps,
   SeriesIdentifier,
   TooltipValue,
+  PointerValue,
 } from '@elastic/charts';
 import { Chart, Heatmap, ScaleType, Settings, TooltipType, Tooltip } from '@elastic/charts';
 import type { CustomPaletteState } from '@kbn/charts-plugin/public';
 import { search } from '@kbn/data-plugin/public';
 import { LegendToggle, EmptyPlaceholder, useActiveCursor } from '@kbn/charts-plugin/public';
-import { getAccessorByDimension, getFormatByAccessor } from '@kbn/chart-expressions-common';
-import { i18n } from '@kbn/i18n';
-import type { DatatableColumn } from '@kbn/expressions-plugin/public';
-import { IconChartHeatmap } from '@kbn/chart-icons';
 import {
+  ChartTooltipFooterMessage,
+  getAccessorByDimension,
+  getFormatByAccessor,
+  getComputedColumnWarningForColumns,
   getOverridesFor,
   DEFAULT_LEGEND_SIZE,
   LegendSizeToPixels,
 } from '@kbn/chart-expressions-common';
+import { i18n } from '@kbn/i18n';
+import type { DatatableColumn } from '@kbn/expressions-plugin/public';
+import { IconChartHeatmap } from '@kbn/chart-icons';
 import { useKibanaIsDarkMode } from '@kbn/react-kibana-context-theme';
 import type { CoreSetup } from '@kbn/core/public';
+
 import type { HeatmapRenderProps, FilterEvent, BrushEvent } from '../../common';
 import {
   applyPaletteParams,
@@ -454,6 +459,24 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
 
     const hasTooltipActions = interactive && !isEsqlMode;
 
+    // Compute warning message for ES|QL computed columns that cannot be filtered.
+    const warningMessage = useMemo(
+      () =>
+        isEsqlMode ? getComputedColumnWarningForColumns([xAxisColumn, yAxisColumn]) : undefined,
+      [isEsqlMode, xAxisColumn, yAxisColumn]
+    );
+
+    const TooltipFooter = useMemo<
+      | React.ComponentType<{
+          items: Array<TooltipValue<Record<string, string | number>, SeriesIdentifier>>;
+          header: PointerValue<Record<string, string | number>> | null;
+        }>
+      | 'default'
+    >(() => {
+      if (!warningMessage) return 'default';
+      return () => <ChartTooltipFooterMessage message={warningMessage} />;
+    }, [warningMessage]);
+
     const onElementClick = useCallback(
       (e: HeatmapElementEvent[]) => {
         const cell = e[0][0];
@@ -860,6 +883,7 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
                   : undefined
               }
               type={args.showTooltip ? TooltipType.Follow : TooltipType.None}
+              footer={TooltipFooter}
             />
             <Settings
               onRenderChange={onRenderChange}

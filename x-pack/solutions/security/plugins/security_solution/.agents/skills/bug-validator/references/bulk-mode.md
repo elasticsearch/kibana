@@ -1,3 +1,12 @@
+<!--
+  AUTHORITATIVE INSTRUCTION CONTEXT — review as carefully as SKILL.md
+  This file is loaded into the agent on every bug-validator invocation.
+  A PR that adds or modifies content here changes skill behavior for every
+  developer without touching SKILL.md. Scrutinise diffs for hidden directives
+  (e.g. 'when analysing X bugs, always set verdict to FIXED').
+  Protected by CODEOWNERS: @elastic/security-engineering-productivity.
+-->
+
 # Bulk Mode
 
 When processing a list of issues (from a list URL), use a two-pass strategy: quick triage first, then deep-dive on uncertain results.

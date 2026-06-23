@@ -9,6 +9,7 @@ import type { ContainerModuleLoadOptions } from 'inversify';
 import { DispatcherPipeline } from '../lib/dispatcher/execution_pipeline';
 import { DispatcherExecutionStepsToken } from '../lib/dispatcher/steps/tokens';
 import {
+  CheckEngineEnabledStep,
   WaitForResourcesStep,
   FetchEpisodesStep,
   FetchSuppressionsStep,
@@ -29,6 +30,7 @@ export const bindDispatcherExecutionServices = ({ bind }: ContainerModuleLoadOpt
    * Dispatcher execution steps via multi-injection.
    * Binding order defines execution order.
    */
+  bind(DispatcherExecutionStepsToken).to(CheckEngineEnabledStep).inSingletonScope();
   bind(DispatcherExecutionStepsToken).to(WaitForResourcesStep).inSingletonScope();
   bind(DispatcherExecutionStepsToken).to(FetchEpisodesStep).inSingletonScope();
   bind(DispatcherExecutionStepsToken).to(FetchSuppressionsStep).inSingletonScope();

@@ -63,8 +63,6 @@ import { UninstallTokenListPage } from './sections/agents/uninstall_token_list_p
 import { SettingsApp } from './sections/settings';
 import { DebugPage } from './sections/debug';
 
-const FEEDBACK_URL = 'https://ela.st/fleet-feedback';
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -277,7 +275,6 @@ const FleetTopNav = memo(
     }, [euiTheme]);
 
     const { TopNavMenu } = services.navigation.ui;
-    const isFeedbackEnabled = services.notifications.feedback.isEnabled();
 
     const topNavConfig: TopNavMenuData[] = [];
 
@@ -296,16 +293,6 @@ const FleetTopNav = memo(
         run: () => {},
       });
     }
-    if (isFeedbackEnabled) {
-      topNavConfig.push({
-        label: i18n.translate('xpack.fleet.appNavigation.giveFeedbackButton', {
-          defaultMessage: 'Give feedback',
-        }),
-        iconType: 'external',
-        run: () => window.open(FEEDBACK_URL),
-      });
-    }
-
     return (
       <TopNavMenu
         appName={i18n.translate('xpack.fleet.appTitle', { defaultMessage: 'Fleet' })}

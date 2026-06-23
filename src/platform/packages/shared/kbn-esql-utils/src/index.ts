@@ -48,6 +48,8 @@ export {
   getSourceCommandFromESQLQuery,
 } from './utils/get_index_pattern_from_query';
 export type { ESQLIndexPatterns } from './utils/get_index_pattern_from_query';
+export { classifyESQLSource, isSingleSource } from './utils/classify_esql_source';
+export type { ESQLSourceKind } from './utils/classify_esql_source';
 export { queryCannotBeSampled } from './utils/query_cannot_be_sampled';
 export { appendToESQLQuery } from './utils/append_to_query/utils';
 export { appendStatsByToQuery } from './utils/append_to_query/append_stats_by';

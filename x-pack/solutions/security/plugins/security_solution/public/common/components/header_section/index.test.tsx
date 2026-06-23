@@ -11,7 +11,7 @@ import 'jest-styled-components';
 // Make sure expect().toHaveStyleRule is using emotion's matchers
 import { matchers as emotionMatchers } from '@emotion/jest';
 expect.extend(emotionMatchers);
-import { render, screen, renderHook } from '@testing-library/react';
+import { render, screen, renderHook, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { TestProviders } from '../../mock';
@@ -79,7 +79,7 @@ describe('HeaderSection', () => {
     expect(screen.queryByText(tooltipTitle)).not.toBeInTheDocument();
     expect(screen.queryByText(tooltipContent)).not.toBeInTheDocument();
 
-    await userEvent.hover(tooltip);
+    fireEvent.mouseOver(tooltip);
 
     expect(await screen.findByText(tooltipTitle)).toBeInTheDocument();
     expect(await screen.findByText(tooltipContent)).toBeInTheDocument();

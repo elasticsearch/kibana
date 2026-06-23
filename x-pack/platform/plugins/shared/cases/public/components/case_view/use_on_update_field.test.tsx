@@ -249,9 +249,10 @@ describe('useOnUpdateField', () => {
       );
     });
 
-    it('normalizes camelCase extendedFields keys to snake_case before merging', () => {
-      // The server returns extendedFields with camelCase keys (via convertToCamelCase).
-      // processExtendedFields must convert them back to snake_case before sending the PATCH.
+    it('sends only the incoming extended fields without client-side merge', () => {
+      // The server merges extended_fields with existing values so that concurrent saves
+      // from GlobalCaseFields and TemplateFields do not overwrite each other.
+      // The client must send only its own section's fields — not the full merged object.
       const caseWithCamelCaseFields: CaseUI = {
         ...basicCase,
         extendedFields: { riskScoreAsKeyword: 'low' },
@@ -271,16 +272,14 @@ describe('useOnUpdateField', () => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           updateKey: CASE_EXTENDED_FIELDS,
-          updateValue: {
-            risk_score_as_keyword: 'low',
-            severity_as_keyword: 'high',
-          },
+          updateValue: { severity_as_keyword: 'high' },
         }),
         expect.anything()
       );
     });
 
-    it('merges with existing extended fields', () => {
+    it('does not include existing extended fields from caseData in the update payload', () => {
+      // Merge is done server-side; the client sends only the changed section's fields.
       const caseWithExtendedFields: CaseUI = {
         ...basicCase,
         extendedFields: { existing_field: 'existing_value' },
@@ -300,10 +299,7 @@ describe('useOnUpdateField', () => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           updateKey: CASE_EXTENDED_FIELDS,
-          updateValue: {
-            existing_field: 'existing_value',
-            impact_as_text: 'high',
-          },
+          updateValue: { impact_as_text: 'high' },
         }),
         expect.anything()
       );

@@ -42,4 +42,18 @@ export class ListingTable {
     await this.searchBox.click();
     await this.waitUntilTableIsLoaded();
   }
+
+  /**
+   * Filters the listing by the given title. Wraps `title` in quotes so that
+   * names containing special characters (e.g. `"(1)"`) are matched literally rather
+   * than tokenized by the saved-object search syntax.
+   */
+  async searchForItemTitle(title: string) {
+    await this.searchFor(`"${title}"`);
+  }
+
+  async clearSearchFilter() {
+    await this.page.testSubj.click('clearSearchButton');
+    await this.waitUntilTableIsLoaded();
+  }
 }

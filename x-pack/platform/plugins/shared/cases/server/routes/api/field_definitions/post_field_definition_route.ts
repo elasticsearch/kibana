@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { parse as yamlParse } from 'yaml';
 import { CreateFieldDefinitionInputSchema } from '../../../../common/types/domain/field_definition/v1';
 import { INTERNAL_FIELD_DEFINITIONS_URL } from '../../../../common/constants';
 import { createCaseError } from '../../../common/error';
@@ -33,7 +33,7 @@ export const postFieldDefinitionRoute = createCasesRoute({
 
       // Validate that the definition YAML is valid
       try {
-        yaml.load(input.definition);
+        yamlParse(input.definition);
       } catch (yamlError) {
         return response.badRequest({
           body: { message: `Invalid YAML definition: ${yamlError}` },

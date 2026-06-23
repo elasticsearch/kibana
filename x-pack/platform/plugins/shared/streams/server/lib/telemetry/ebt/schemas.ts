@@ -10,7 +10,6 @@ import type {
   StreamEndpointLatencyProps,
   StreamsDescriptionGeneratedProps,
   StreamsSignificantEventsQueriesGeneratedProps,
-  StreamsInsightsGeneratedProps,
   StreamsStateErrorProps,
   StreamsProcessingPipelineSuggestedProps,
   StreamsFeaturesIdentifiedProps,
@@ -18,6 +17,8 @@ import type {
   StreamsAgentToolKiIdentificationStartedProps,
   StreamsAgentToolEventCreateProps,
   StreamsAgentToolEventStatusUpdateProps,
+  StreamsCodeAnalysisGroundingProps,
+  StreamsOnboardingScheduledProps,
 } from './types';
 
 const streamsEndpointLatencySchema: RootSchema<StreamEndpointLatencyProps> = {
@@ -108,6 +109,12 @@ const streamsSignificantEventsQueriesGeneratedSchema: RootSchema<StreamsSignific
         description: 'The number of significant events queries generated',
       },
     },
+    connector_id: {
+      type: 'keyword',
+      _meta: {
+        description: 'The ID of the LLM connector used for the inference',
+      },
+    },
     input_tokens_used: {
       type: 'long',
       _meta: {
@@ -118,6 +125,18 @@ const streamsSignificantEventsQueriesGeneratedSchema: RootSchema<StreamsSignific
       type: 'long',
       _meta: {
         description: 'The number of output tokens used for the generation request',
+      },
+    },
+    cached_tokens_used: {
+      type: 'long',
+      _meta: {
+        description: 'Cached tokens used for the generation request',
+      },
+    },
+    duration_ms: {
+      type: 'long',
+      _meta: {
+        description: 'Duration of the query generation operation in milliseconds',
       },
     },
     stream_type: {
@@ -182,28 +201,6 @@ const streamsSignificantEventsQueriesGeneratedSchema: RootSchema<StreamsSignific
     },
   };
 
-const streamsInsightsGeneratedSchema: RootSchema<StreamsInsightsGeneratedProps> = {
-  input_tokens_used: {
-    type: 'long',
-    _meta: {
-      description: 'The number of input tokens used for the generation request',
-    },
-  },
-  output_tokens_used: {
-    type: 'long',
-    _meta: {
-      description: 'The number of output tokens used for the generation request',
-    },
-  },
-  cached_tokens_used: {
-    type: 'long',
-    _meta: {
-      description: 'The number of cached tokens used for the generation request',
-      optional: true,
-    },
-  },
-};
-
 const streamsProcessingPipelineSuggestedSchema: RootSchema<StreamsProcessingPipelineSuggestedProps> =
   {
     duration_ms: {
@@ -243,6 +240,12 @@ const streamsFeaturesIdentifiedSchema: RootSchema<StreamsFeaturesIdentifiedProps
     type: 'keyword',
     _meta: {
       description: 'UUID identifying the full identification run (shared across iterations)',
+    },
+  },
+  connector_id: {
+    type: 'keyword',
+    _meta: {
+      description: 'The ID of the LLM connector used for the inference',
     },
   },
   iteration: {
@@ -477,6 +480,47 @@ const streamsAgentToolEventStatusUpdateSchema: RootSchema<StreamsAgentToolEventS
     },
   };
 
+const streamsCodeAnalysisGroundingSchema: RootSchema<StreamsCodeAnalysisGroundingProps> = {
+  stream_name: {
+    type: 'keyword',
+    _meta: {
+      description: 'The name of the Stream',
+    },
+  },
+  stream_type: {
+    type: 'keyword',
+    _meta: {
+      description: 'The type of the stream: wired or classic',
+    },
+  },
+  status: {
+    type: 'keyword',
+    _meta: {
+      description:
+        'Outcome of code_analysis grounding: feature, no_match, no_candidates, no_strings, or unavailable',
+    },
+  },
+  repository: {
+    type: 'keyword',
+    _meta: {
+      description: 'The repository/index selected to ground the stream against',
+      optional: true,
+    },
+  },
+  candidate_count: {
+    type: 'long',
+    _meta: {
+      description: 'The number of candidate code repositories considered',
+    },
+  },
+  verified_count: {
+    type: 'long',
+    _meta: {
+      description: 'The number of distinctive log strings verified against the selected code',
+    },
+  },
+};
+
 const streamsSignificantEventsDiscoveryTriggeredSchema = {
   execution_id: {
     type: 'keyword' as const,
@@ -488,17 +532,58 @@ const streamsSignificantEventsDiscoveryTriggeredSchema = {
   },
 };
 
+const streamsOnboardingScheduledSchema: RootSchema<StreamsOnboardingScheduledProps> = {
+  stream_name: {
+    type: 'keyword',
+    _meta: {
+      description: 'The name of the stream being onboarded',
+    },
+  },
+  execution_id: {
+    type: 'keyword',
+    _meta: {
+      description:
+        'The workflow execution ID for this onboarding run; join key to workflow_execution_completed/_failed/_cancelled engine events and to streams-features-identified / streams-significant-events-queries-generated events',
+    },
+  },
+  workflow_id: {
+    type: 'keyword',
+    _meta: {
+      description: 'The managed workflow ID that was triggered (system-streams-ki-onboarding)',
+    },
+  },
+  space_id: {
+    type: 'keyword',
+    _meta: {
+      description: 'The Kibana space in which the workflow execution was created',
+    },
+  },
+  skip_features: {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether the features identification step was skipped for this run',
+    },
+  },
+  skip_queries: {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether the queries generation step was skipped for this run',
+    },
+  },
+};
+
 export {
   streamsEndpointLatencySchema,
   streamsStateErrorSchema,
   streamsDescriptionGeneratedSchema,
   streamsSignificantEventsQueriesGeneratedSchema,
-  streamsInsightsGeneratedSchema,
   streamsProcessingPipelineSuggestedSchema,
   streamsFeaturesIdentifiedSchema,
   streamsAgentBuilderKnowledgeIndicatorCreatedSchema,
   streamsAgentToolKiIdentificationStartedSchema,
   streamsAgentToolEventCreateSchema,
   streamsAgentToolEventStatusUpdateSchema,
+  streamsCodeAnalysisGroundingSchema,
   streamsSignificantEventsDiscoveryTriggeredSchema,
+  streamsOnboardingScheduledSchema,
 };

@@ -18,3 +18,7 @@ export const asCodeResponseSchema = schema.object({
     namespaces: schema.maybe(schema.arrayOf(schema.string({ maxLength: 1000 }), { maxSize: 100 })),
   }),
 });
+
+export const savedDataViewSpecSchemaWithoutId = savedDataViewSpecSchema.extends({
+  id: schema.never(),
+});

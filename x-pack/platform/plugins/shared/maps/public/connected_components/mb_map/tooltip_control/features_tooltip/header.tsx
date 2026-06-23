@@ -10,10 +10,11 @@ import React, { Component, Fragment } from 'react';
 import { i18n } from '@kbn/i18n';
 import {
   EuiButtonIcon,
-  EuiHorizontalRule,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiHorizontalRule,
   EuiTextColor,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { IVectorLayer } from '../../../../classes/layers/vector_layer';
 
@@ -77,14 +78,21 @@ export class Header extends Component<Props, State> {
 
       items.push(
         <EuiFlexItem grow={false} key="closeButton">
-          <EuiButtonIcon
-            onClick={this.props.onClose}
-            iconType="cross"
-            aria-label={i18n.translate('xpack.maps.tooltip.closeAriaLabel', {
+          <EuiToolTip
+            content={i18n.translate('xpack.maps.tooltip.closeAriaLabel', {
               defaultMessage: 'Close tooltip',
             })}
-            data-test-subj="mapTooltipCloseButton"
-          />
+            disableScreenReaderOutput
+          >
+            <EuiButtonIcon
+              onClick={this.props.onClose}
+              iconType="cross"
+              aria-label={i18n.translate('xpack.maps.tooltip.closeAriaLabel', {
+                defaultMessage: 'Close tooltip',
+              })}
+              data-test-subj="mapTooltipCloseButton"
+            />
+          </EuiToolTip>
         </EuiFlexItem>
       );
     }

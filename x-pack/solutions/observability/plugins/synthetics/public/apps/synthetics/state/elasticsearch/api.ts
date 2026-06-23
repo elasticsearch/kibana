@@ -12,15 +12,20 @@ import { FETCH_STATUS } from '@kbn/observability-shared-plugin/public';
 import { getInspectResponse } from '@kbn/observability-shared-plugin/common';
 import { kibanaService } from '../../../../utils/kibana_service';
 import { apiService } from '../../../../utils/api_service';
+import { applyExcludedDataTiersToParams } from '../../utils/excluded_data_tiers';
 
 export const executeEsQueryAPI = async ({
-  params,
+  params: rawParams,
   name,
 }: {
   params: estypes.SearchRequest;
   name: string;
 }) => {
   const data = kibanaService.startPlugins.data;
+
+  // Inject the `observability:searchExcludedDataTiers` exclusion so redux-backed
+  // queries skip the same tiers as the server-side `SyntheticsEsClient`.
+  const params = applyExcludedDataTiersToParams(rawParams);
 
   const addInspectorRequest = apiService.addInspectorRequest;
 

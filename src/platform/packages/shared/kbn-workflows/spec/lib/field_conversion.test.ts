@@ -15,7 +15,9 @@ import {
   extractNormalizedInputsFromYaml,
   getInputsFromDefinition,
   normalizeFieldsToJsonSchema,
+  resolveRef,
 } from './field_conversion';
+import { builtinWorkflowInputDefinitions } from '../builtin_workflow_input_definitions';
 import type { WorkflowYaml } from '../schema';
 import type { JsonModelSchemaType } from '../schema/common/json_model_schema';
 import type { LegacyWorkflowInputSchema } from '../schema/triggers/manual_trigger_schema';
@@ -769,6 +771,61 @@ describe('applyInputDefaults', () => {
         notifyTeams: ['SOC', 'Management'],
       },
     });
+  });
+});
+
+describe('resolveRef (#/kibana/definitions/...)', () => {
+  const testBuiltinId = 'TestBuiltinPayload';
+  let registrySnapshot: typeof builtinWorkflowInputDefinitions;
+
+  beforeEach(() => {
+    registrySnapshot = { ...builtinWorkflowInputDefinitions };
+  });
+
+  afterEach(() => {
+    for (const key of Object.keys(builtinWorkflowInputDefinitions)) {
+      delete builtinWorkflowInputDefinitions[key];
+    }
+    Object.assign(builtinWorkflowInputDefinitions, registrySnapshot);
+  });
+
+  it('resolves a registered built-in and applyInputDefaults uses it', () => {
+    builtinWorkflowInputDefinitions[testBuiltinId] = {
+      type: 'object',
+      properties: {
+        token: { type: 'string', default: 'abc' },
+      },
+      required: ['token'],
+      additionalProperties: false,
+    };
+
+    const inputsSchema = normalizeFieldsToJsonSchema({
+      properties: {
+        payload: { $ref: '#/kibana/definitions/TestBuiltinPayload' },
+      },
+      required: ['payload'],
+      additionalProperties: false,
+    });
+
+    expect(resolveRef('#/kibana/definitions/TestBuiltinPayload', inputsSchema)).toEqual(
+      builtinWorkflowInputDefinitions[testBuiltinId]
+    );
+    expect(applyInputDefaults(undefined, inputsSchema)).toEqual({
+      payload: { token: 'abc' },
+    });
+  });
+
+  it('returns null for an unknown built-in id', () => {
+    const inputsSchema = normalizeFieldsToJsonSchema({
+      properties: {
+        x: { $ref: '#/kibana/definitions/DoesNotExist' },
+      },
+    });
+    expect(resolveRef('#/kibana/definitions/DoesNotExist', inputsSchema)).toBeNull();
+  });
+
+  it('returns null when the id contains a slash (invalid ref shape)', () => {
+    expect(resolveRef('#/kibana/definitions/a/b', undefined)).toBeNull();
   });
 });
 

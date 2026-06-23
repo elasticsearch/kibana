@@ -48,7 +48,6 @@ dependsOn:
   - '@kbn/es-query'
   - '@kbn/zod-helpers'
   - '@kbn/inference-common'
-  - '@kbn/inference-prompt-utils'
   - '@kbn/std'
   - '@kbn/core-http-server'
   - '@kbn/core-saved-objects-api-server'
@@ -103,6 +102,7 @@ dependsOn:
   - '@kbn/sample-log-parser'
   - '@kbn/workflows-extensions'
   - '@kbn/agent-context-layer-plugin'
+  - '@kbn/traced-es-client'
 tags:
   - plugin
   - prod

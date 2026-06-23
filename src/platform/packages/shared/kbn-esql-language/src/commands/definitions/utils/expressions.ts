@@ -19,7 +19,11 @@ import {
 } from '@elastic/esql';
 import type { ESQLAstItem, ESQLFunction, ESQLSingleAstItem } from '@elastic/esql/types';
 import type { InlineCastingType, PromQLFunctionParamType, SupportedDataType } from '../types';
-import { getFunctionDefinition, getFunctionForInlineCast } from './functions';
+import {
+  getFunctionDefinition,
+  getFunctionForInlineCast,
+  isTypeConversionFunction,
+} from './functions';
 import { getMatchingSignatures } from './signatures';
 import { getColumnForASTNode } from './shared';
 import type { ESQLColumnData } from '../../registry/types';
@@ -152,7 +156,7 @@ export function getExpressionType(
       fnDefinition.signatures,
       argTypes,
       literalMask,
-      false
+      isTypeConversionFunction(fnDefinition.name)
     );
 
     if (matchingSignatures.length > 0 && argTypes.includes('null')) {

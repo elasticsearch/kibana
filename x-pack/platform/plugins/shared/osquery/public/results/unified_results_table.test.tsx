@@ -376,5 +376,21 @@ describe('UnifiedResultsTable', () => {
         expect.objectContaining({ total: 7 })
       );
     });
+
+    it('does NOT call clearFilters when the component unmounts (tab-switch-style unmount)', () => {
+      setupMocks({ rows: [], total: 5 });
+      useActionResultsMock.mockReturnValue({
+        data: { aggregations: { totalResponded: 1, totalRowCount: 5 } },
+        isFetched: true,
+        isError: false,
+      } as never);
+
+      const { unmount } = render(<UnifiedResultsTable {...defaultProps} />);
+
+      mockClearFilters.mockClear();
+      unmount();
+
+      expect(mockClearFilters).not.toHaveBeenCalled();
+    });
   });
 });

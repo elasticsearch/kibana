@@ -13,6 +13,8 @@ import { apm } from '@elastic/apm-rum';
 import { type Client, OpenFeature, type Provider } from '@openfeature/web-sdk';
 import { coreContextMock } from '@kbn/core-base-browser-mocks';
 import type { FeatureFlagsSetup, FeatureFlagsStart } from '@kbn/core-feature-flags-browser';
+import { httpServiceMock } from '@kbn/core-http-browser-mocks';
+import type { HttpSetupMock } from '@kbn/core-http-browser-mocks';
 import { injectedMetadataServiceMock } from '@kbn/core-injected-metadata-browser-mocks';
 import type { InternalInjectedMetadataSetup } from '@kbn/core-injected-metadata-browser-internal';
 import { FeatureFlagsService } from '..';
@@ -27,12 +29,17 @@ describe('FeatureFlagsService Browser', () => {
   let featureFlagsService: FeatureFlagsService;
   let featureFlagsClient: Client;
   let injectedMetadata: jest.Mocked<InternalInjectedMetadataSetup>;
+  let http: HttpSetupMock;
+
+  const createSetupDeps = () => ({ http, injectedMetadata });
 
   beforeEach(() => {
     const getClientSpy = jest.spyOn(OpenFeature, 'getClient');
     featureFlagsService = new FeatureFlagsService(coreContextMock.create());
     featureFlagsClient = getClientSpy.mock.results[0].value;
     injectedMetadata = injectedMetadataServiceMock.createSetupContract();
+    http = httpServiceMock.createSetupContract();
+    http.post.mockResolvedValue(undefined);
   });
 
   afterEach(async () => {
@@ -45,7 +52,7 @@ describe('FeatureFlagsService Browser', () => {
   describe('provider handling', () => {
     test('appends a provider (without awaiting)', () => {
       expect.assertions(1);
-      const { setProvider } = featureFlagsService.setup({ injectedMetadata });
+      const { setProvider } = featureFlagsService.setup(createSetupDeps());
       const spy = jest.spyOn(OpenFeature, 'setProviderAndWait');
       const fakeProvider = { metadata: { name: 'fake provider' } } as Provider;
       setProvider(fakeProvider);
@@ -53,7 +60,7 @@ describe('FeatureFlagsService Browser', () => {
     });
 
     test('throws an error if called twice', () => {
-      const { setProvider } = featureFlagsService.setup({ injectedMetadata });
+      const { setProvider } = featureFlagsService.setup(createSetupDeps());
       const fakeProvider = { metadata: { name: 'fake provider' } } as Provider;
       setProvider(fakeProvider);
       expect(() => setProvider(fakeProvider)).toThrowErrorMatchingInlineSnapshot(
@@ -62,7 +69,7 @@ describe('FeatureFlagsService Browser', () => {
     });
 
     test('awaits initialization in the start context', async () => {
-      const { setProvider } = featureFlagsService.setup({ injectedMetadata });
+      const { setProvider } = featureFlagsService.setup(createSetupDeps());
       let externalResolve: Function = () => void 0;
       const spy = jest.spyOn(OpenFeature, 'setProviderAndWait').mockImplementationOnce(async () => {
         await new Promise((resolve) => {
@@ -80,7 +87,7 @@ describe('FeatureFlagsService Browser', () => {
     });
 
     test('do not hold for too long during initialization', async () => {
-      const { setProvider } = featureFlagsService.setup({ injectedMetadata });
+      const { setProvider } = featureFlagsService.setup(createSetupDeps());
       const spy = jest.spyOn(OpenFeature, 'setProviderAndWait').mockImplementationOnce(async () => {
         await new Promise(() => {}); // never resolves
       });
@@ -107,7 +114,7 @@ describe('FeatureFlagsService Browser', () => {
       let setProviderSpy: jest.SpyInstance<Promise<void>>;
 
       beforeEach(() => {
-        const setup = featureFlagsService.setup({ injectedMetadata });
+        const setup = featureFlagsService.setup(createSetupDeps());
         setProvider = setup.setProvider;
         setProviderSpy = jest.spyOn(OpenFeature, 'setProviderAndWait');
         apmSpy = jest.spyOn(apm, 'startTransaction');
@@ -162,20 +169,20 @@ describe('FeatureFlagsService Browser', () => {
     });
 
     test('appends context to the provider', async () => {
-      const { appendContext } = featureFlagsService.setup({ injectedMetadata });
+      const { appendContext } = featureFlagsService.setup(createSetupDeps());
       await appendContext({ kind: 'multi' });
       expect(setContextSpy).toHaveBeenCalledWith({ kind: 'multi' });
     });
 
     test('appends context to the provider (start method)', async () => {
-      featureFlagsService.setup({ injectedMetadata });
+      featureFlagsService.setup(createSetupDeps());
       const { appendContext } = await featureFlagsService.start();
       await appendContext({ kind: 'multi' });
       expect(setContextSpy).toHaveBeenCalledWith({ kind: 'multi' });
     });
 
     test('full multi context pass-through', async () => {
-      const { appendContext } = featureFlagsService.setup({ injectedMetadata });
+      const { appendContext } = featureFlagsService.setup(createSetupDeps());
       const context = {
         kind: 'multi' as const,
         kibana: {
@@ -190,7 +197,7 @@ describe('FeatureFlagsService Browser', () => {
     });
 
     test('appends to the existing context', async () => {
-      const { appendContext } = featureFlagsService.setup({ injectedMetadata });
+      const { appendContext } = featureFlagsService.setup(createSetupDeps());
       const initialContext = {
         kind: 'multi' as const,
         kibana: {
@@ -214,7 +221,7 @@ describe('FeatureFlagsService Browser', () => {
     });
 
     test('converts single-contexts to multi-context', async () => {
-      const { appendContext } = featureFlagsService.setup({ injectedMetadata });
+      const { appendContext } = featureFlagsService.setup(createSetupDeps());
       await appendContext({ kind: 'organization', key: 'organization-1' });
       expect(setContextSpy).toHaveBeenCalledWith({
         kind: 'multi',
@@ -225,7 +232,7 @@ describe('FeatureFlagsService Browser', () => {
     });
 
     test('if no `kind` provided, it defaults to the kibana context', async () => {
-      const { appendContext } = featureFlagsService.setup({ injectedMetadata });
+      const { appendContext } = featureFlagsService.setup(createSetupDeps());
       await appendContext({ key: 'key-1', has_data: false });
       expect(setContextSpy).toHaveBeenCalledWith({
         kind: 'multi',
@@ -252,7 +259,7 @@ describe('FeatureFlagsService Browser', () => {
         },
         initialFeatureFlags: {},
       });
-      featureFlagsService.setup({ injectedMetadata });
+      featureFlagsService.setup(createSetupDeps());
       startContract = await featureFlagsService.start();
       apmSpy = jest.spyOn(apm, 'addLabels');
     });
@@ -262,18 +269,27 @@ describe('FeatureFlagsService Browser', () => {
       const value = false;
       expect(startContract.getBooleanValue('my-flag', value)).toEqual(value);
       expect(apmSpy).toHaveBeenCalledWith({ 'flag_my-flag': value });
+      expect(http.post).toHaveBeenCalledWith('/internal/feature-flags/my-flag/counter', {
+        body: JSON.stringify({ value }),
+      });
     });
 
     test('get string flag', () => {
       const value = 'my-default';
       expect(startContract.getStringValue('my-flag', value)).toEqual(value);
       expect(apmSpy).toHaveBeenCalledWith({ 'flag_my-flag': value });
+      expect(http.post).toHaveBeenCalledWith('/internal/feature-flags/my-flag/counter', {
+        body: JSON.stringify({ value }),
+      });
     });
 
     test('get number flag', () => {
       const value = 42;
       expect(startContract.getNumberValue('my-flag', value)).toEqual(value);
       expect(apmSpy).toHaveBeenCalledWith({ 'flag_my-flag': value });
+      expect(http.post).toHaveBeenCalledWith('/internal/feature-flags/my-flag/counter', {
+        body: JSON.stringify({ value }),
+      });
     });
 
     test('observe a boolean flag', async () => {
@@ -358,12 +374,18 @@ describe('FeatureFlagsService Browser', () => {
       const getBooleanValueSpy = jest.spyOn(featureFlagsClient, 'getBooleanValue');
       expect(startContract.getBooleanValue('my-overridden-flag', false)).toEqual(true);
       expect(apmSpy).toHaveBeenCalledWith({ 'flag_my-overridden-flag': true });
+      expect(http.post).toHaveBeenCalledWith('/internal/feature-flags/my-overridden-flag/counter', {
+        body: JSON.stringify({ value: true }),
+      });
       expect(getBooleanValueSpy).not.toHaveBeenCalled();
 
       // Only to prove the spy works
       expect(startContract.getBooleanValue('another-flag', false)).toEqual(false);
       expect(getBooleanValueSpy).toHaveBeenCalledTimes(1);
       expect(getBooleanValueSpy).toHaveBeenCalledWith('another-flag', false);
+      expect(http.post).toHaveBeenCalledWith('/internal/feature-flags/another-flag/counter', {
+        body: JSON.stringify({ value: false }),
+      });
     });
 
     test('overrides with dotted names', async () => {

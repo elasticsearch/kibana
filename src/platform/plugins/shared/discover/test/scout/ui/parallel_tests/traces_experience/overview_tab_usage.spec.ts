@@ -250,7 +250,7 @@ spaceTest.describe(
         );
 
         await spaceTest.step('switch back to original tab', async () => {
-          await pageObjects.discover.navigateToTabByName('Untitled');
+          await pageObjects.unifiedTabs.navigateToTabByName('Untitled');
         });
 
         await spaceTest.step(
@@ -335,7 +335,7 @@ spaceTest.describe(
         );
 
         await spaceTest.step('switch back to original tab', async () => {
-          await pageObjects.discover.navigateToTabByName('Untitled');
+          await pageObjects.unifiedTabs.navigateToTabByName('Untitled');
         });
 
         await spaceTest.step(
@@ -350,7 +350,7 @@ spaceTest.describe(
         );
 
         await spaceTest.step('switch back to original tab', async () => {
-          await pageObjects.discover.navigateToTabByName('Untitled');
+          await pageObjects.unifiedTabs.navigateToTabByName('Untitled');
         });
 
         await spaceTest.step(
@@ -365,7 +365,7 @@ spaceTest.describe(
         );
 
         await spaceTest.step('switch back to original tab', async () => {
-          await pageObjects.discover.navigateToTabByName('Untitled');
+          await pageObjects.unifiedTabs.navigateToTabByName('Untitled');
         });
 
         await spaceTest.step(

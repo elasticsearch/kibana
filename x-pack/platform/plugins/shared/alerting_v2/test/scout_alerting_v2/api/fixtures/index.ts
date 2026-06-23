@@ -14,6 +14,8 @@ import {
   getMaintenanceWindowsApiService,
   getRuleExecutionsApiService,
   getRulesApiService,
+  getTaskManagerService,
+  getTelemetryService,
   type ActionPoliciesApiService,
   type AlertActionsApiService,
   type DispatcherApiService,
@@ -21,6 +23,8 @@ import {
   type RuleExecutionsApiService,
   type RulesApiService,
   type RuleEventsApiService,
+  type TaskManagerService,
+  type TelemetryService,
 } from '../../common/services';
 import { getRuleEventsApiService } from '../../common/services/rule_events_api_service';
 import type { SourceIndexApiService } from '../../common/services/source_index_api_service';
@@ -35,6 +39,8 @@ export interface AlertingApiServices {
   sourceIndex: SourceIndexApiService;
   ruleExecutions: RuleExecutionsApiService;
   dispatcher: DispatcherApiService;
+  taskManager: TaskManagerService;
+  telemetry: TelemetryService;
 }
 
 export interface AlertingApiServicesFixture extends ApiServicesFixture {
@@ -54,16 +60,21 @@ export const buildAlertingApiServices = ({
   esClient: EsClient;
   kbnClient: KbnClient;
   log: ScoutLogger;
-}): AlertingApiServices => ({
-  rules: getRulesApiService({ kbnClient, log }),
-  ruleEvents: getRuleEventsApiService({ esClient, log }),
-  alertActions: getAlertActionsApiService({ esClient, log }),
-  actionPolicies: getActionPoliciesApiService({ kbnClient, log }),
-  maintenanceWindows: getMaintenanceWindowsApiService({ kbnClient, log }),
-  sourceIndex: getSourceIndexApiService({ esClient, log }),
-  ruleExecutions: getRuleExecutionsApiService({ esClient, log }),
-  dispatcher: getDispatcherApiService({ esClient, log }),
-});
+}): AlertingApiServices => {
+  const taskManager = getTaskManagerService({ kbnClient, log });
+  return {
+    rules: getRulesApiService({ kbnClient, log }),
+    ruleEvents: getRuleEventsApiService({ esClient, log }),
+    alertActions: getAlertActionsApiService({ esClient, log }),
+    actionPolicies: getActionPoliciesApiService({ kbnClient, log }),
+    maintenanceWindows: getMaintenanceWindowsApiService({ kbnClient, log }),
+    sourceIndex: getSourceIndexApiService({ esClient, log }),
+    ruleExecutions: getRuleExecutionsApiService({ esClient, log }),
+    dispatcher: getDispatcherApiService({ esClient, log }),
+    taskManager,
+    telemetry: getTelemetryService({ esClient, log, taskManager }),
+  };
+};
 
 export const apiTest = baseApiTest.extend<{}, { apiServices: AlertingApiServicesFixture }>({
   apiServices: [
@@ -125,7 +136,6 @@ export {
 } from '../../common/urls';
 export { expectNoBulkTruncationMetadata } from '../../common/assertions';
 export {
-  ACTION_POLICY_CREATED_BY_MAX_LENGTH,
   ACTION_POLICY_PER_PAGE_MAX,
   ACTION_POLICY_SEARCH_MAX_LENGTH,
   ACTION_POLICY_TAG_MAX_LENGTH,

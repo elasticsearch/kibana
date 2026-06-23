@@ -1,0 +1,479 @@
+openapi: 3.0.0
+info:
+  title: Anomaly Summary API
+  version: '2023-10-31'
+
+paths:
+  /internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_overview:
+    post:
+      x-labels: [ess, serverless]
+      x-codegen-enabled: true
+      operationId: GetAnomalyOverview
+      summary: Get anomaly overview for an entity
+      description: Returns time-bucketed anomaly counts and tactic distribution for a given entity.
+      parameters:
+        - name: entity_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [user, host]
+          description: Entity type — determines which EUID runtime mapping is used when searching the anomalies index
+        - name: entity_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 1000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnomalyOverviewRequestBody'
+      responses:
+        '200':
+          description: Anomaly overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalyOverviewResponse'
+              example:
+                entityId: admin
+                entityType: user
+                anomalyByTimeBucket:
+                  - timestamp: '2024-01-15T00:00:00.000Z'
+                    maxScore: 87.4
+                    threatTactics:
+                      - Discovery
+                      - Lateral Movement
+                  - timestamp: '2024-01-16T00:00:00.000Z'
+                    maxScore: 42.1
+                    threatTactics:
+                      - Discovery
+                recentAnomalies:
+                  - jobId: security-ml-rare-process-by-host
+                    jobName: Rare Process by Host
+                    timestamp: '2024-01-16T14:23:00.000Z'
+                    anomalousValue: cmd.exe
+                  - jobId: security-ml-high-count-network-events
+                    jobName: High Count Network Events
+                    timestamp: '2024-01-15T09:11:00.000Z'
+                    anomalousValue: '1423'
+                tacticCounts:
+                  Discovery: 8
+                  Lateral Movement: 3
+                totalAnomaliesCount: 11
+                from: 1705276800000
+                to: 1705622400000
+
+  /internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_summary:
+    post:
+      x-labels: [ess, serverless]
+      x-codegen-enabled: true
+      operationId: GetAnomalySummary
+      summary: Get anomaly summary for an entity
+      description: Queries ML anomaly records on demand, enriches them with baseline data, and returns results for a given entity.
+      parameters:
+        - name: entity_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [user, host]
+          description: Entity type — determines which EUID runtime mapping is used when searching the anomalies index
+        - name: entity_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 1000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnomalySummaryRequestBody'
+      responses:
+        '200':
+          description: Anomaly summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalySummaryResponse'
+              example:
+                entity_id: admin
+                entity_type: user
+                total: 2
+                page: 1
+                page_size: 100
+                anomalies:
+                  - jobId: security-ml-rare-process-by-host
+                    jobName: Rare Process by Host
+                    threatTactics:
+                      - Discovery
+                    threatTechniques:
+                      - T1057
+                    detectorIndex: 0
+                    detectorFunction: rare
+                    fieldName: process.name
+                    byFieldName: null
+                    byFieldValue: null
+                    overFieldName: host.name
+                    overFieldValue: web-server-01
+                    partitionFieldName: null
+                    partitionFieldValue: null
+                    recordScore: 87.4
+                    timestamp: '2024-01-15T14:00:00.000Z'
+                    actual: [1]
+                    typical: [0.002]
+                    baselineValues:
+                      - bash
+                      - sh
+                      - python3
+                    anomalousValue: cmd.exe
+                    anomalousValueCount: 1
+                  - jobId: security-ml-high-count-network-events
+                    jobName: High Count Network Events
+                    threatTactics:
+                      - Lateral Movement
+                    threatTechniques: []
+                    detectorIndex: 0
+                    detectorFunction: high_count
+                    fieldName: null
+                    byFieldName: null
+                    byFieldValue: null
+                    overFieldName: user.name
+                    overFieldValue: admin
+                    partitionFieldName: null
+                    partitionFieldValue: null
+                    recordScore: 42.1
+                    timestamp: '2024-01-16T09:00:00.000Z'
+                    actual: [1423]
+                    typical: [12.5]
+                    baselineValues:
+                      - '10'
+                      - '11'
+                      - '14'
+                    anomalousValue: '1423'
+                    anomalousValueCount: 1423
+
+components:
+  schemas:
+    AnomalySummaryRequestBody:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Page number (1-indexed)
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+          description: Number of results per page
+        from:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Start time as epoch milliseconds; only anomalies at or after this timestamp are returned
+        to:
+          type: integer
+          format: int64
+          minimum: 0
+          description: End time as epoch milliseconds; only anomalies at or before this timestamp are returned
+        min_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Minimum record_score (inclusive); omit to use the default threshold of 1
+        max_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Maximum record_score (inclusive); omit to return all scores up to 100
+        job_ids:
+          type: array
+          maxItems: 200
+          items:
+            type: string
+            maxLength: 150
+          description: Filter results to the specified ML job IDs; returns all jobs when omitted
+        threat_tactics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 150
+          description: Filter results to jobs associated with the specified MITRE ATT&CK tactic names; returns all jobs when omitted
+        sort:
+          type: array
+          items:
+            type: object
+            required: [field, order]
+            properties:
+              field:
+                type: string
+                enum: ['timestamp', 'record_score', 'job_id']
+              order:
+                type: string
+                enum: ['asc', 'desc']
+          description: Sort criteria applied in order.
+
+    AnomalySummaryEntry:
+      type: object
+      required:
+        - jobId
+        - detectorIndex
+        - detectorFunction
+        - fieldName
+        - byFieldName
+        - byFieldValue
+        - overFieldName
+        - overFieldValue
+        - partitionFieldName
+        - partitionFieldValue
+        - recordScore
+        - timestamp
+        - actual
+        - typical
+        - baselineValues
+      properties:
+        jobId:
+          type: string
+          maxLength: 150
+        jobName:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Human-readable display name for the ML job (from custom_settings.security_app_display_name)
+        threatTactics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 150
+          description: MITRE ATT&CK tactic names associated with this job
+        threatTechniques:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 150
+          description: MITRE ATT&CK technique names associated with this job
+        detectorIndex:
+          type: number
+        detectorFunction:
+          type: string
+          maxLength: 50
+          description: ML detector function (e.g. rare, high_count, time_of_day)
+        fieldName:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: The field the detector analyses (ML field_name)
+        byFieldName:
+          type: string
+          maxLength: 100
+          nullable: true
+        byFieldValue:
+          type: string
+          maxLength: 100
+          nullable: true
+        overFieldName:
+          type: string
+          maxLength: 100
+          nullable: true
+        overFieldValue:
+          type: string
+          maxLength: 100
+          nullable: true
+        partitionFieldName:
+          type: string
+          maxLength: 100
+          nullable: true
+        partitionFieldValue:
+          type: string
+          maxLength: 100
+          nullable: true
+        recordScore:
+          type: number
+        timestamp:
+          type: string
+          maxLength: 100
+          description: ISO-8601 timestamp of the anomaly bucket
+        actual:
+          type: array
+          items:
+            type: number
+        typical:
+          type: array
+          items:
+            type: number
+        baselineValues:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 200
+          description: Baseline distribution values for the anomaly bucket
+        anomalousValue:
+          type: string
+          maxLength: 200
+          description: The anomalous value observed by the detector
+        anomalousValueCount:
+          type: number
+          description: Count of anomalous events in the bucket
+
+    AnomalySummaryResponse:
+      type: object
+      required:
+        - entity_id
+        - anomalies
+        - total
+        - page
+        - page_size
+      properties:
+        entity_id:
+          type: string
+          maxLength: 200
+        entity_type:
+          type: string
+          maxLength: 100
+        anomalies:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnomalySummaryEntry'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+
+    AnomalyOverviewRequestBody:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Start time as epoch milliseconds; defaults to now-30d when omitted
+        to:
+          type: integer
+          format: int64
+          minimum: 0
+          description: End time as epoch milliseconds; defaults to now when omitted
+        min_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Minimum record_score (inclusive); omit to use the default threshold of 1
+        max_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Maximum record_score (inclusive); omit to return all scores up to 100
+        threat_tactics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 150
+          description: Filter results to jobs associated with the specified MITRE ATT&CK tactic names; returns all tactics when omitted
+
+    AnomalyOverviewEntry:
+      type: object
+      required:
+        - timestamp
+        - maxScore
+        - threatTactics
+      properties:
+        timestamp:
+          type: string
+          maxLength: 100
+          description: ISO-8601 start of the time bucket
+        maxScore:
+          type: number
+          description: Highest anomaly record_score within this time bucket
+        threatTactics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 150
+          description: MITRE ATT&CK tactic names for all jobs that fired in this bucket
+
+    AnomalyOverviewHit:
+      type: object
+      required:
+        - jobId
+        - jobName
+        - timestamp
+        - anomalousValue
+      properties:
+        jobId:
+          type: string
+          maxLength: 150
+        jobName:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Human-readable display name for the ML job
+        timestamp:
+          type: string
+          maxLength: 100
+          description: ISO-8601 timestamp of the anomaly record
+        anomalousValue:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: The anomalous value observed by the detector
+
+    AnomalyOverviewResponse:
+      type: object
+      required:
+        - entityId
+        - anomalyByTimeBucket
+        - recentAnomalies
+        - tacticCounts
+        - totalAnomaliesCount
+        - from
+        - to
+      properties:
+        entityId:
+          type: string
+          maxLength: 200
+        entityType:
+          type: string
+          maxLength: 100
+        anomalyByTimeBucket:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnomalyOverviewEntry'
+        recentAnomalies:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/AnomalyOverviewHit'
+          description: Up to 3 most recent individual anomaly records, sorted by timestamp then score descending
+        tacticCounts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Number of anomaly records associated with each MITRE ATT&CK tactic
+        totalAnomaliesCount:
+          type: integer
+          description: Total number of anomaly records returned
+        from:
+          type: integer
+          format: int64
+          description: Effective start of the query time range as epoch milliseconds
+        to:
+          type: integer
+          format: int64
+          description: Effective end of the query time range as epoch milliseconds

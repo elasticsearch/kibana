@@ -8,7 +8,8 @@
 import type { IndicesDataStream, IndicesIndexTemplate } from '@elastic/elasticsearch/lib/api/types';
 import type { ElasticsearchClient } from '@kbn/core/server';
 
-const DATA_STREAM_INDEX_PATTERN = 'logs-*-*,metrics-*-*,traces-*-*,synthetics-*-*,profiling-*';
+const DATA_STREAM_INDEX_PATTERN =
+  'logs-*-*,metrics-*-*,traces-*-*,synthetics-*-*,profiling-*,profiles-*';
 
 export interface MeteringStatsResponse {
   datastreams: MeteringStats[];
@@ -48,7 +49,7 @@ class DataStreamService {
 
   public async getAllFleetDataStreamNames(esClient: ElasticsearchClient): Promise<string[]> {
     const res = await esClient.transport.request<DataStreamNamesResponse>({
-      path: `/_data_streams/${DATA_STREAM_INDEX_PATTERN}`,
+      path: `/_data_stream/${DATA_STREAM_INDEX_PATTERN}`,
       method: 'GET',
       querystring: { filter_path: 'data_streams.name' },
     });

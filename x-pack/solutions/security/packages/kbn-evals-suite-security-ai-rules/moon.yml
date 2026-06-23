@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/evals-suite-security-ai-rules'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/security-detection-engine'
+  defaultOwner: '@elastic/security-detection-engineering'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/evals-suite-security-ai-rules'
   description: Moon project for @kbn/evals-suite-security-ai-rules
   channel: ''
-  owner: '@elastic/security-detection-engine'
+  owner: '@elastic/security-detection-engineering'
   sourceRoot: x-pack/solutions/security/packages/kbn-evals-suite-security-ai-rules
 dependsOn:
   - '@kbn/evals'

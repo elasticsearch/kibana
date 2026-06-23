@@ -5,10 +5,30 @@
  * 2.0.
  */
 
-import { esFieldTypeToKibanaFieldType } from '@kbn/field-types';
+import { esFieldTypeToKibanaFieldType, KBN_FIELD_TYPES } from '@kbn/field-types';
 import { getIndexPatternFromESQLQuery } from '@kbn/esql-utils';
 import type { ParsedPanel } from '../../../../../../../../../../common/siem_migrations/parsers/types';
 import type { EsqlColumn } from '../../types';
+
+const kbnFieldTypeValues = new Set<string>(Object.values(KBN_FIELD_TYPES));
+
+/**
+ * Converts a field type string to a valid Kibana field type.
+ * First attempts to map as an Elasticsearch field type (e.g. "double" -> "number").
+ * If that yields "unknown", checks whether the input is already a valid Kibana
+ * field type (e.g. "number") and uses it directly. This handles LLM responses
+ * that return Kibana types instead of Elasticsearch types.
+ */
+export const toKibanaFieldType = (type: string): string => {
+  const mapped = esFieldTypeToKibanaFieldType(type);
+  if (mapped !== KBN_FIELD_TYPES.UNKNOWN) {
+    return mapped;
+  }
+  if (kbnFieldTypeValues.has(type)) {
+    return type;
+  }
+  return KBN_FIELD_TYPES.UNKNOWN;
+};
 
 interface ColumnInfo {
   columnId: string;
@@ -97,22 +117,14 @@ function parseColumns(extractedColumns: EsqlColumn[]): {
   const columnList: ColumnInfo[] = [];
   const columnNames: string[] = [];
   extractedColumns.forEach(({ name: columnName, type }, index) => {
-    if (index === 0) {
-      columnList.push({
-        columnId: columnName,
-        fieldName: columnName,
-        meta: { type: esFieldTypeToKibanaFieldType(type) },
-        /* The first column is mostly a metric so here we are making that assumption
-         * unless we have better way to do this. */
-        inMetricDimension: true,
-      });
-    } else {
-      columnList.push({
-        columnId: columnName,
-        fieldName: columnName,
-        meta: { type: 'string' },
-      });
-    }
+    columnList.push({
+      columnId: columnName,
+      fieldName: columnName,
+      meta: { type: toKibanaFieldType(type) },
+      /* The first column is mostly a metric so here we are making that assumption
+       * unless we have better way to do this. */
+      ...(index === 0 ? { inMetricDimension: true } : {}),
+    });
     columnNames.push(columnName);
   });
 

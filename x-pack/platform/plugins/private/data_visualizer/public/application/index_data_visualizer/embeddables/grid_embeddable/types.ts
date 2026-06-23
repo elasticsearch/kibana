@@ -11,6 +11,7 @@ import type { DataView, DataViewField } from '@kbn/data-views-plugin/public';
 import type { SavedSearch } from '@kbn/saved-search-plugin/public';
 import type { BehaviorSubject, Observable } from 'rxjs';
 import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
+import type { FieldStatsTableEmbeddableState } from '@kbn/data-visualizer-server-schemas/embeddables/field_stats';
 import type { DataVisualizerTableState } from '../../../../../common/types';
 import type { SamplingOption } from '../../../../../common/types/field_stats';
 import type { DATA_VISUALIZER_INDEX_VIEWER } from '../../constants/index_data_visualizer_viewer';
@@ -19,13 +20,6 @@ import type { DataVisualizerStartDependencies } from '../../../common/types/data
 import type { ESQLQuery } from '../../search_strategy/requests/esql_utils';
 import type { DataVisualizerTableItem } from '../../../common/components/stats_table/types';
 import type { FieldStatsComponentType } from '../../constants/field_stats_component_type';
-import type { FieldStatisticsTableEmbeddableState } from '../../../../../common/embeddables/types';
-
-export { FieldStatsInitializerViewType } from '../../../../../common/embeddables/types';
-export type {
-  FieldStatsInitialState,
-  FieldStatisticsTableEmbeddableState,
-} from '../../../../../common/embeddables/types';
 
 export interface FieldStatisticTableEmbeddableProps {
   /**
@@ -119,12 +113,12 @@ export type ESQLDataVisualizerGridEmbeddableState = Omit<
 export type OnAddFilter = (field: DataViewField | string, value: string, type: '+' | '-') => void;
 export interface FieldStatisticsTableEmbeddableParentApi {
   executionContext?: { value: string };
-  embeddableState$: BehaviorSubject<FieldStatisticsTableEmbeddableState>;
+  embeddableState$: BehaviorSubject<FieldStatsTableEmbeddableState>;
   overrideServices?: Partial<DataVisualizerStartDependencies>;
   onAddFilter?: OnAddFilter;
 }
 
-export type DataVisualizerGridEmbeddableApi = Partial<FieldStatisticsTableEmbeddableState>;
+export type DataVisualizerGridEmbeddableApi = Partial<FieldStatsTableEmbeddableState>;
 
 export type ESQLDefaultLimitSizeOption = '5000' | '10000' | '100000';
 

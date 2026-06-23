@@ -37,17 +37,35 @@ describe('offsetRangeToMonacoRange', () => {
 
   test('returns undefined if the start is past the end of the expression', () => {
     const expression = 'FROM test | WHERE test == 1 | LIMIT 1';
-    const range = { start: 37, end: 37 };
+    const range = { start: 38, end: 38 };
     const monacoRange = offsetRangeToMonacoRange(expression, range);
 
     expect(monacoRange).toEqual(undefined);
   });
 
-  test('should not create a range if start and end are equal', () => {
+  test('cursor at end of expression returns an empty insert-only range', () => {
+    const expression = 'FROM test | WHERE test == 1 | LIMIT 1';
+    const range = { start: 37, end: 37 };
+    const monacoRange = offsetRangeToMonacoRange(expression, range);
+
+    expect(monacoRange).toEqual({
+      startColumn: 38,
+      endColumn: 38,
+      startLineNumber: 1,
+      endLineNumber: 1,
+    });
+  });
+
+  test('empty range in the middle of an expression returns an insert-only position', () => {
     const expression = 'FROM test | WHERE test == | LIMIT 1';
     const range = { start: 26, end: 26 };
     const monacoRange = offsetRangeToMonacoRange(expression, range);
 
-    expect(monacoRange).toEqual(undefined);
+    expect(monacoRange).toEqual({
+      startColumn: 27,
+      endColumn: 27,
+      startLineNumber: 1,
+      endLineNumber: 1,
+    });
   });
 });

@@ -7,15 +7,12 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiText, EuiTitle } from '@elastic/eui';
-
-import { MLModelTypeBadge } from '../ml_model_type_badge';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { MLInferencePipelineOption } from './pipeline_select_logic';
-import { PipelineSelectOption, PipelineSelectOptionDisabled } from './pipeline_select_option';
-
+import { PipelineSelectOption } from './pipeline_select_option';
 import { MODEL_REDACTED_VALUE } from './utils';
 
 describe('PipelineSelectOption', () => {
@@ -33,49 +30,34 @@ describe('PipelineSelectOption', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
   it('renders pipeline selection option', () => {
-    const wrapper = shallow(<PipelineSelectOption label={label} pipeline={pipeline} />);
-    expect(wrapper.find(EuiTitle)).toHaveLength(1);
-    expect(wrapper.find(MLModelTypeBadge)).toHaveLength(1);
+    renderWithKibanaRenderContext(<PipelineSelectOption label={label} pipeline={pipeline} />);
+    expect(screen.getByRole('heading', { name: pipeline.pipelineName })).toBeInTheDocument();
+    expect(screen.getByText('my-model-type')).toBeInTheDocument();
   });
+
   it('does not render model type badge if model type is unknown', () => {
-    const wrapper = shallow(
-      <PipelineSelectOption
-        label={label}
-        pipeline={{
-          ...pipeline,
-          modelType: '',
-        }}
-      />
+    renderWithKibanaRenderContext(
+      <PipelineSelectOption label={label} pipeline={{ ...pipeline, modelType: '' }} />
     );
-    expect(wrapper.find(MLModelTypeBadge)).toHaveLength(0);
+    expect(screen.queryByText('my-model-type')).not.toBeInTheDocument();
   });
+
   it("redacts model ID if it's unavailable", () => {
-    const wrapper = shallow(
-      <PipelineSelectOption
-        label={label}
-        pipeline={{
-          ...pipeline,
-          modelId: '',
-        }}
-      />
+    renderWithKibanaRenderContext(
+      <PipelineSelectOption label={label} pipeline={{ ...pipeline, modelId: '' }} />
     );
-    expect(wrapper.find(EuiText)).toHaveLength(2);
-    expect(wrapper.find(EuiText).at(0).children().text()).toEqual(MODEL_REDACTED_VALUE);
+    expect(screen.getByText(MODEL_REDACTED_VALUE)).toBeInTheDocument();
   });
+
   it('renders disable warning text if the pipeline is disabled', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <PipelineSelectOption
         label={label}
-        pipeline={{
-          ...pipeline,
-          disabled: true,
-          disabledReason: 'my-reason',
-        }}
+        pipeline={{ ...pipeline, disabled: true, disabledReason: 'my-reason' }}
       />
     );
-    expect(wrapper.find(PipelineSelectOptionDisabled)).toHaveLength(1);
-    const disabledWarning = wrapper.find(PipelineSelectOptionDisabled).at(0);
-    expect(disabledWarning.render().text()).toMatch('my-reason');
+    expect(screen.getByText('my-reason')).toBeInTheDocument();
   });
 });

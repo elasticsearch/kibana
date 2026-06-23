@@ -202,20 +202,16 @@ export class GraphPageObject extends FtrService {
     return await this.testSubjects.exists('saveGraphSuccess', { timeout: 10000 });
   }
 
-  async getSearchFilter() {
-    const searchFilter = await this.find.allByCssSelector(
-      '[data-test-subj="graphLandingPage"] .euiFieldSearch'
-    );
-    return searchFilter[0];
-  }
-
   async searchForWorkspaceWithName(name: string) {
     await this.retry.try(async () => {
-      const searchFilter = await this.getSearchFilter();
-      await searchFilter.clearValue();
-      await searchFilter.click();
-      await searchFilter.type(name);
+      const searchBox = await this.testSubjects.find('contentListToolbar-searchBox');
+      await searchBox.clearValue();
+      await searchBox.click();
+      await searchBox.type(name);
       await this.common.pressEnterKey();
+      // `EuiBasicTable` adds the `.euiBasicTable-loading` class while
+      // `loading={isFetching}` is `true`. Waiting for it to disappear ensures the
+      // post-search render has settled before any subsequent assertions or clicks.
       await this.find.waitForDeletedByCssSelector('.euiBasicTable-loading', 5000);
     });
 
@@ -225,7 +221,7 @@ export class GraphPageObject extends FtrService {
   async goToListingPage() {
     await this.retry.try(async () => {
       await this.testSubjects.click('breadcrumb graphHomeBreadcrumb first');
-      await this.testSubjects.existOrFail('graphLandingPage', { timeout: 3000 });
+      await this.testSubjects.existOrFail('kibana-content-list-page-header', { timeout: 3000 });
     });
   }
 
@@ -239,24 +235,6 @@ export class GraphPageObject extends FtrService {
     }
     // let force simulation settle down before continuing
     await this.common.sleep(5000);
-  }
-
-  async deleteGraph(name: string) {
-    await this.testSubjects.click('checkboxSelectAll');
-    await this.clickDeleteSelectedWorkspaces();
-    await this.common.clickConfirmOnModal();
-    await this.testSubjects.find('graphCreateGraphPromptButton');
-  }
-
-  async getWorkspaceCount() {
-    const workspaceTitles = await this.find.allByCssSelector(
-      '[data-test-subj^="graphListingTitleLink"]'
-    );
-    return workspaceTitles.length;
-  }
-
-  async clickDeleteSelectedWorkspaces() {
-    await this.testSubjects.click('deleteSelectedItems');
   }
 
   async getVennTerm1() {

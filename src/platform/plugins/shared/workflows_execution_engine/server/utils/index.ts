@@ -18,3 +18,4 @@ export { TimeoutAbortedError, abortableTimeout } from './abortable_timeout/abort
 export { isTemplateExpression } from './templates';
 export { isTextContentType, readResponseStream } from './http_response';
 export type { ReadStreamResult } from './http_response';
+export { extractTokenUsage, sumTokenUsage } from './token_usage/token_usage';

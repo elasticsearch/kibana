@@ -21,6 +21,12 @@ test.describe(
       await inventoryPage.goToTime(DATE_WITH_HOSTS_DATA);
     });
 
+    test.afterEach(async ({ kbnClient }) => {
+      // `beforeEach` writes `hideAnnouncements` via `updateGlobal` (global settings).
+      // `unset` only deletes the per-space value, so restore the default globally instead.
+      await kbnClient.uiSettings.updateGlobal({ hideAnnouncements: false });
+    });
+
     test('Render and dismiss k8s tour', async ({ pageObjects: { inventoryPage } }) => {
       await test.step('display k8s tour with proper message', async () => {
         await expect(inventoryPage.k8sTourText).toBeVisible();

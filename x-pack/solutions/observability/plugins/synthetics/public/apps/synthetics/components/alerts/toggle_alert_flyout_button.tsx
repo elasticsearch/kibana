@@ -148,6 +148,9 @@ export const ToggleAlertFlyoutButton = () => {
         isOpen={isOpen}
         ownFocus
         panelPaddingSize="none"
+        aria-label={i18n.translate('xpack.synthetics.toggleAlertFlyoutButton.popoverAriaLabel', {
+          defaultMessage: 'Alerts and rules menu',
+        })}
       >
         <EuiContextMenu initialPanelId={0} panels={panels} />
       </EuiPopover>

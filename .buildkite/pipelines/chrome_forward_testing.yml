@@ -431,7 +431,7 @@ steps:
     agents:
       enableNestedVirtualization: true
       machineType: n2-highmem-4
-      diskSizeGb: 120
+      diskSizeGb: 125
     depends_on:
       - build
     timeout_in_minutes: 75
@@ -446,7 +446,7 @@ steps:
     agents:
       enableNestedVirtualization: true
       machineType: n2-highmem-4
-      diskSizeGb: 120
+      diskSizeGb: 125
     depends_on:
       - build
     timeout_in_minutes: 75

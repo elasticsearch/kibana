@@ -1,0 +1,19 @@
+{
+  "slug": "siem-readiness",
+  "name": "SIEM Readiness",
+  "owners": ["@JordanSh"],
+  "paths": [
+    "x-pack/solutions/security/packages/siem-readiness/**",
+    "x-pack/solutions/security/plugins/security_solution/public/siem_readiness/**",
+    "x-pack/solutions/security/plugins/security_solution/server/lib/siem_readiness/**",
+    "x-pack/solutions/security/plugins/security_solution/server/agent_builder/tools/siem_readiness/**",
+    "x-pack/solutions/security/plugins/security_solution/server/agent_builder/skills/siem_readiness/**",
+    "x-pack/solutions/security/plugins/security_solution/public/common/lib/telemetry/events/siem_readiness/**"
+  ],
+  "files": [
+    {
+      "path": "siem-readiness.md",
+      "description": "Primary domain knowledge"
+    }
+  ]
+}

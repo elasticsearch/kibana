@@ -36,6 +36,7 @@ describe('updateAssetCriticalityMappings', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockLogger.info).toHaveBeenCalledWith('Migrating Asset Criticality mappings');
@@ -50,6 +51,7 @@ describe('updateAssetCriticalityMappings', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockisMappingsMigrationRequired).toHaveBeenCalled();

@@ -13,7 +13,7 @@ import type { MapParameters } from '../../definitions/utils/autocomplete/map_exp
 import { getCommandMapExpressionSuggestions } from '../../definitions/utils/autocomplete/map_expression';
 import {
   commaCompleteItem,
-  pipeCompleteItem,
+  newLineAndPipeCompleteItems,
   withCompleteItem,
   minMaxValueCompleteItem,
   noneValueCompleteItem,
@@ -263,7 +263,7 @@ async function withOptionAutocomplete(innerText: string, command: ESQLAstFuseCom
  * It also suggests a pipe to chain another command after the `FUSE` command.
  */
 function fuseArgumentsAutocomplete(command: ESQLAstFuseCommand): ISuggestionItem[] {
-  const suggestions: ISuggestionItem[] = [pipeCompleteItem];
+  const suggestions: ISuggestionItem[] = [...newLineAndPipeCompleteItems];
 
   const { scoreBy, keyBy, groupBy, withOption } = extractFuseArgs(command);
 

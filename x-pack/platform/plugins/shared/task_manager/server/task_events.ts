@@ -43,19 +43,18 @@ export function startTaskTimer(): () => TaskTiming {
   return () => ({ start, stop: Date.now() });
 }
 
-export function startTaskTimerWithEventLoopMonitoring(
-  eventLoopDelayConfig: EventLoopDelayConfig
-): () => TaskTiming {
-  const stopTaskTimer = startTaskTimer();
+/**
+ * Starts event-loop delay (ELD) monitoring and returns a stop function.
+ * The stop function disables the histogram and returns the max block time in ms.
+ * It must be called exactly once — calling it disables the histogram as a side effect.
+ */
+export function startEventLoopMonitoring(eventLoopDelayConfig: EventLoopDelayConfig): () => number {
   const eldHistogram = eventLoopDelayConfig.monitor ? monitorEventLoopDelay() : null;
   eldHistogram?.enable();
-
   return () => {
-    const { start, stop } = stopTaskTimer();
     eldHistogram?.disable();
-    const eldMax = eldHistogram?.max ?? 0;
-    const eventLoopBlockMs = Math.round(eldMax / 1000 / 1000); // original in nanoseconds
-    return { start, stop, eventLoopBlockMs };
+    const eldMaxNs = eldHistogram?.max ?? 0;
+    return Math.round(eldMaxNs / 1_000_000);
   };
 }
 

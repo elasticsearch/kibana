@@ -9,13 +9,17 @@ import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
+import { I18nProvider } from '@kbn/i18n-react';
 import { AlertEpisodesListPage } from './alert_episodes_list_page';
 import type { CustomBulkActions } from '@kbn/unified-data-table';
 import { httpServiceMock } from '@kbn/core-http-browser-mocks';
 import { UnifiedDataTable } from '@kbn/unified-data-table';
 import { fetchAlertingEpisodes } from '@kbn/alerting-v2-episodes-ui/apis/fetch_alerting_episodes';
 import { useAlertingEpisodesDataView } from '@kbn/alerting-v2-episodes-ui/hooks/use_alerting_episodes_data_view';
+import { useEpisodesKpisQuery } from '@kbn/alerting-v2-episodes-ui/hooks/use_episodes_kpis_query';
 import { queryKeys } from '@kbn/alerting-v2-episodes-ui/query_keys';
+import userEvent from '@testing-library/user-event';
+import { DEFAULT_EPISODES_LIST_FILTER } from './utils/episodes_list_url_state';
 import { createMockSpaces } from '../../../common/utils/test_utils';
 import {
   createEpisodeActions,
@@ -35,6 +39,8 @@ jest.mock('@kbn/alerting-v2-episodes-ui/apis/fetch_alerting_episodes');
 // gets a ready dataView without going through the full data-view construction path.
 jest.mock('@kbn/alerting-v2-episodes-ui/hooks/use_alerting_episodes_data_view');
 
+jest.mock('@kbn/alerting-v2-episodes-ui/hooks/use_episodes_kpis_query');
+
 jest.mock('@kbn/alerting-v2-episodes-ui/actions', () => ({
   createEpisodeActions: jest.fn(() => []),
 }));
@@ -49,14 +55,24 @@ jest.mock('./components/episodes_kpis', () => ({
   EpisodesKpis: () => null,
 }));
 
-// Capture the onRefresh prop from EpisodesFilterBar so tests can invoke it directly.
-// Typed as returning unknown so tests can await the result (invalidateEpisodeQueries returns a Promise).
+// Capture filter-bar props so tests can drive refresh + filter changes from outside the component.
+// onRefresh is typed as returning unknown so tests can await the result (invalidateEpisodeQueries returns a Promise).
 let capturedFilterBarOnRefresh: (() => unknown) | undefined;
+let capturedFilterBarOnFilterChange: ((update: any) => void) | undefined;
 jest.mock('./components/episodes_filter_bar', () => ({
-  EpisodesFilterBar: jest.fn(({ onRefresh }: { onRefresh?: () => unknown }) => {
-    capturedFilterBarOnRefresh = onRefresh;
-    return null;
-  }),
+  EpisodesFilterBar: jest.fn(
+    ({
+      onRefresh,
+      onFilterChange,
+    }: {
+      onRefresh?: () => unknown;
+      onFilterChange?: (update: any) => void;
+    }) => {
+      capturedFilterBarOnRefresh = onRefresh;
+      capturedFilterBarOnFilterChange = onFilterChange;
+      return null;
+    }
+  ),
 }));
 
 jest.mock('./components/episodes_histogram', () => ({
@@ -142,6 +158,24 @@ mockHttp.post.mockResolvedValue({ rules: [] });
 
 const mockCreateEpisodeActions = jest.mocked(createEpisodeActions);
 
+const mockedUseEpisodesKpisQuery = jest.mocked(useEpisodesKpisQuery);
+
+// The page calls useEpisodesKpisQuery twice: filtered (filterState defined)
+// and total (filterState undefined). Differentiate by that arg.
+const defaultKpisImpl: typeof useEpisodesKpisQuery = ({ filterState }) => ({
+  data: {
+    alertsCount: filterState ? 3 : 10,
+    firingRules: 0,
+    assignedToMe: 0,
+    unassigned: 0,
+    acknowledged: 0,
+    snoozed: 0,
+  },
+  isLoading: false,
+  isError: false,
+});
+mockedUseEpisodesKpisQuery.mockImplementation(defaultKpisImpl);
+
 const getCapturedBulkActions = (): CustomBulkActions => {
   const calls = mockUnifiedDataTable.mock.calls;
   const lastCall = calls[calls.length - 1][0];
@@ -151,11 +185,13 @@ const getCapturedBulkActions = (): CustomBulkActions => {
 const renderPage = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <QueryClientProvider client={queryClient}>
-        <AlertEpisodesListPage />
-      </QueryClientProvider>
-    </MemoryRouter>
+    <I18nProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <AlertEpisodesListPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    </I18nProvider>
   );
 };
 
@@ -306,5 +342,54 @@ describe('query invalidation', () => {
 
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.kpisAll() });
     mockInvalidateQueries.mockRestore();
+  });
+});
+
+describe('episode count + reset filters toolbar', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    capturedFilterBarOnFilterChange = undefined;
+    mockCreateEpisodeActions.mockReturnValue([]);
+    jest.mocked(useAlertingEpisodesDataView).mockReturnValue(mockDataView as any);
+    jest.mocked(fetchAlertingEpisodes).mockResolvedValue(mockEpisodes as any);
+    mockHttp.post.mockResolvedValue({ rules: [] });
+    mockedUseEpisodesKpisQuery.mockImplementation(defaultKpisImpl);
+  });
+
+  it('renders "Showing X of Y alerts" with filtered and total counts', async () => {
+    renderPage();
+    const node = await screen.findByTestId('alertEpisodesItemCount');
+    expect(node.textContent).toMatch(/^Showing\s+3\s+of\s+10\s+alerts$/);
+  });
+
+  it('fires useEpisodesKpisQuery both with and without filterState', () => {
+    renderPage();
+    const calls = mockedUseEpisodesKpisQuery.mock.calls.map(([args]) => args);
+    expect(calls.some((c) => c.filterState !== undefined)).toBe(true);
+    expect(calls.some((c) => c.filterState === undefined)).toBe(true);
+  });
+
+  it('disables the reset filters button when filter state equals the default', async () => {
+    renderPage();
+    const button = await screen.findByTestId('episodesFilterBar-resetFilters');
+    expect(button).toBeDisabled();
+  });
+
+  it('enables the reset button after filterState diverges and disables it again on click', async () => {
+    renderPage();
+    await waitFor(() => expect(capturedFilterBarOnFilterChange).toBeDefined());
+
+    await act(async () => {
+      capturedFilterBarOnFilterChange!({ ...DEFAULT_EPISODES_LIST_FILTER, ruleId: 'rule-1' });
+    });
+
+    const button = await screen.findByTestId('episodesFilterBar-resetFilters');
+    expect(button).toBeEnabled();
+
+    await userEvent.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('episodesFilterBar-resetFilters')).toBeDisabled();
+    });
   });
 });

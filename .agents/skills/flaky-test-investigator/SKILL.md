@@ -63,6 +63,9 @@ Work through all of these questions:
   - _Why it matters:_ concentrated failures point to a specific cause tied to that window (a bad commit, an infrastructure incident, a dependency change).
 - **When did the test last fail?**
   - _Why it matters:_ if the last failure was 2–3 weeks ago and there are no new comments on the `failed-test` issue, the flakiness may have already resolved itself — intentionally or as a side effect of unrelated changes.
+- **Does the test still exist on the branch that's failing?** A test can be deleted or migrated (e.g. FTR → Scout) on `main` while it still runs on a release branch. Identify the branch of the most recent failure and inspect the file there, not on `main`.
+  - _Why it matters:_ if the file is gone from `main`, the failure is branch-local — a fix (if any) belongs on the release branch, and reasoning from `main`'s code will be wrong.
+  - Don't spend time on tests that no longer exist (the CI build may have not picked up the latest branch changes). Acknowledge the deletion and move on.
 - **Are other tests in the same suite or config failing with similar or identical errors?**
   - _Why it matters:_ shared failure modes point to shared building blocks (page objects, fixtures, setup) and usually call for a structural change rather than a per-test patch.
 - **Did it fail on a specific version branch?**

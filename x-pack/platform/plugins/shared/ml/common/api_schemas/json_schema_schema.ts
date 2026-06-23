@@ -18,7 +18,7 @@ export const getJsonSchemaQuerySchema = schema.object({
   /**
    * API Method
    */
-  method: schema.string(),
+  method: schema.string({ maxLength: 10000 }),
 });
 
 export type SupportedPath = TypeOf<typeof getJsonSchemaQuerySchema>['path'];

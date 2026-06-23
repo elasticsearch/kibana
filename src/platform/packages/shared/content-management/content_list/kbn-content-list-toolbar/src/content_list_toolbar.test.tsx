@@ -301,6 +301,27 @@ describe('ContentListToolbar', () => {
       });
     });
 
+    it('keeps focus in the search box when a parse error appears', async () => {
+      const Wrapper = createWrapper();
+      render(
+        <Wrapper>
+          <ContentListToolbar />
+        </Wrapper>
+      );
+
+      const searchBox = await screen.findByTestId('contentListToolbar-searchBox');
+      searchBox.focus();
+      expect(searchBox).toHaveFocus();
+
+      // Typing a special character `[` triggers a parse error in the EUI parser.
+      fireEvent.change(searchBox, { target: { value: '[' } });
+      await screen.findByTestId('contentListToolbar-searchParseError');
+
+      // The input must not have been remounted, so focus is retained.
+      expect(searchBox).toBeInTheDocument();
+      expect(searchBox).toHaveFocus();
+    });
+
     it('uses the configured search placeholder', async () => {
       const Wrapper = createWrapper({ searchPlaceholder: 'Search dashboards...' });
       render(

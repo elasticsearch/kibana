@@ -67,7 +67,6 @@ export function modelManagementRoutes({
       security: {
         authz: {
           requiredPrivileges: [
-            'ml:canViewMlNodes',
             'ml:canGetDataFrameAnalytics',
             'ml:canGetJobs',
             'ml:canGetTrainedModels',
@@ -84,7 +83,7 @@ export function modelManagementRoutes({
           request: {
             query: schema.object({
               type: schema.maybe(itemTypeLiterals),
-              node: schema.maybe(schema.string()),
+              node: schema.maybe(schema.string({ maxLength: 10000 })),
               showClosedJobs: schema.maybe(schema.boolean()),
             }),
           },

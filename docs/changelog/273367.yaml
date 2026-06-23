@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/273367
+issues:
+- https://github.com/elastic/kibana/issues/273366
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+title: Include all-environment SLOs in the SLO overview flyout link

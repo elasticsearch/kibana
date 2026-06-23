@@ -79,6 +79,7 @@ export const TitleActions = React.memo<TitleActionsProps>(({ shareAction, favori
             size="xs"
             css={styles.iconButton}
             aria-label={SHARE_ARIA_LABEL}
+            isDisabled={shareAction.isDisabled}
             data-test-subj={`appHeaderShare ${shareAction.testId ?? ''}`.trim()}
             onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
               shareAction.onClick(event.currentTarget)

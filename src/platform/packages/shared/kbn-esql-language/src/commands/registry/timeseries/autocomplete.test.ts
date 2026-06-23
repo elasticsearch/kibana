@@ -122,7 +122,7 @@ describe('TS Autocomplete', () => {
       const extensionsSuggestions = getRecommendedQueriesTemplatesFromExtensions(
         editorExtensions.recommendedQueries
       ).map((s) => s.text);
-      const expected = ['METADATA ', ',', '| ', ...extensionsSuggestions].sort();
+      const expected = ['\n', 'METADATA ', ',', '| ', ...extensionsSuggestions].sort();
 
       await tsExpectSuggestions('ts time_series_index ', expected);
     });
@@ -137,9 +137,14 @@ describe('TS Autocomplete', () => {
     });
 
     test('on <kbd>SPACE</kbd> after "METADATA" column suggests command and pipe operators', async () => {
-      await tsExpectSuggestions('ts time_series_index metadata _index ', [',', '| ']);
-      await tsExpectSuggestions('ts time_series_index metadata _index, _source ', [',', '| ']);
+      await tsExpectSuggestions('ts time_series_index metadata _index ', ['\n', ',', '| ']);
+      await tsExpectSuggestions('ts time_series_index metadata _index, _source ', [
+        '\n',
+        ',',
+        '| ',
+      ]);
       await tsExpectSuggestions(`ts time_series_index metadata ${METADATA_FIELDS.join(', ')} `, [
+        '\n',
         '| ',
       ]);
     });
@@ -176,7 +181,13 @@ describe('TS Autocomplete', () => {
     );
 
     test('standalone suggestion appears after space alongside other suggestions', async () => {
-      const expected = ['METADATA ', ',', '| ', ...extensionSuggestions.map((s) => s.text)].sort();
+      const expected = [
+        '\n',
+        'METADATA ',
+        ',',
+        '| ',
+        ...extensionSuggestions.map((s) => s.text),
+      ].sort();
 
       await expectSuggestions(
         'ts timeseries_index ',

@@ -16,15 +16,7 @@ import type { DataControlState } from '@kbn/controls-schemas';
 
 import { coreServices } from '../../services/kibana_services';
 
-export const openDataControlEditor = <State extends DataControlState = DataControlState>({
-  initialState,
-  parentApi,
-  setLastUsedDataViewId,
-  controlId,
-  controlType,
-  initialDefaultPanelTitle,
-  onUpdate,
-}: {
+export interface OpenDataControlEditorParams<State extends DataControlState = DataControlState> {
   initialState: Partial<State>;
   parentApi: unknown;
   setLastUsedDataViewId?: (dataViewId: string) => void;
@@ -33,7 +25,40 @@ export const openDataControlEditor = <State extends DataControlState = DataContr
   controlType?: string;
   initialDefaultPanelTitle?: string;
   onUpdate?: (newState: Partial<State & SerializedTitles>) => void;
-}) => {
+}
+
+export interface ReopenDataControlEditorOverrides<
+  State extends DataControlState = DataControlState
+> {
+  initialState?: Partial<State>;
+  controlType?: string;
+  initialDefaultPanelTitle?: string;
+}
+
+export const openDataControlEditor = <State extends DataControlState = DataControlState>(
+  params: OpenDataControlEditorParams<State>
+) => {
+  const {
+    initialState,
+    parentApi,
+    setLastUsedDataViewId,
+    controlId,
+    controlType,
+    initialDefaultPanelTitle,
+    onUpdate,
+  } = params;
+
+  // Re-opens the editor with optional state overrides. Used after closing a child ESQL variable
+  // control editor.
+  const reopenEditor = (overrides: ReopenDataControlEditorOverrides<State> = {}) => {
+    openDataControlEditor<State>({
+      ...params,
+      initialState: { ...initialState, ...overrides.initialState },
+      controlType: overrides.controlType ?? controlType,
+      initialDefaultPanelTitle: overrides.initialDefaultPanelTitle ?? initialDefaultPanelTitle,
+    });
+  };
+
   const onCancel = (newState: Partial<State>, closeFlyout: () => void) => {
     if (deepEqual(initialState, newState)) {
       closeFlyout();
@@ -68,7 +93,7 @@ export const openDataControlEditor = <State extends DataControlState = DataContr
     core: coreServices,
     parentApi,
     loadContent: async ({ closeFlyout }) => {
-      const { DataControlEditor } = await import('./data_control_editor');
+      const { DataControlEditor } = await import('./editor/data_control_editor');
       return (
         <DataControlEditor<State>
           ariaLabelledBy="control-editor-title-input"
@@ -85,6 +110,7 @@ export const openDataControlEditor = <State extends DataControlState = DataContr
             closeFlyout();
             if (setLastUsedDataViewId && dataViewId) setLastUsedDataViewId(dataViewId);
           }}
+          reopenEditor={reopenEditor}
         />
       );
     },

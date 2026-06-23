@@ -494,6 +494,10 @@ export const CreatePackagePolicySinglePage: CreatePackagePolicyParams = ({
     packagePolicy.package?.name ?? '',
     'package-policy-replace-define-step'
   );
+  const createBottomExtensionView = useUIExtension(
+    packagePolicy.package?.name ?? '',
+    'package-policy-create-bottom'
+  );
 
   // PLI auth blocks are registered to UI Extension context and are used to display upselling components.
   // Upselling components are rendered conditionally based on their availability from the PLI upselling service.
@@ -616,6 +620,13 @@ export const CreatePackagePolicySinglePage: CreatePackagePolicyParams = ({
               submitAttempted={formState === 'INVALID'}
               isAgentlessSelected={isAgentlessSelected}
               varGroupSelections={varGroupSelections}
+              bottomExtension={
+                createBottomExtensionView && packagePolicy.package?.name ? (
+                  <ExtensionWrapper>
+                    <createBottomExtensionView.Component newPolicy={packagePolicy} />
+                  </ExtensionWrapper>
+                ) : undefined
+              }
             />
           )}
 
@@ -643,6 +654,7 @@ export const CreatePackagePolicySinglePage: CreatePackagePolicyParams = ({
       validationResults,
       formState,
       extensionView,
+      createBottomExtensionView,
       integrationToEnable,
       isAgentlessSelected,
       handleExtensionViewOnChange,

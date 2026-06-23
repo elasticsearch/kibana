@@ -80,6 +80,9 @@ export const WaffleAccountsControls = (props: Props) => {
       anchorPosition="downLeft"
       panelPaddingSize="none"
       closePopover={closePopover}
+      aria-label={i18n.translate('xpack.infra.waffle.accountControls.ariaLabel', {
+        defaultMessage: 'Account',
+      })}
     >
       <EuiContextMenu initialPanelId={0} panels={panels} />
     </EuiPopover>

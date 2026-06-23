@@ -9,13 +9,14 @@
 
 import * as React from 'react';
 import {
-  EuiCopy,
   EuiButtonIcon,
+  EuiCopy,
   EuiFlexGroup,
   EuiFlexItem,
   EuiPanel,
   EuiScreenReaderOnly,
   EuiText,
+  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
@@ -75,23 +76,33 @@ export const CopyInput: React.FC<CopyInputProps> = ({
           )}
           <EuiCopy textToCopy={value}>
             {(copy) => (
-              <EuiButtonIcon
-                onClick={(event: React.MouseEvent<HTMLAnchorElement>) => {
-                  onCopyClick?.(event);
-                  copy();
-                  onCopySuccess?.();
-                }}
-                iconType="copy"
-                size="m"
-                color={'text'}
-                aria-describedby={hasScreenReaderHint ? screenReaderHintId : undefined}
-                aria-label={i18n.translate(
+              <EuiToolTip
+                content={i18n.translate(
                   'cloud.connectionDetails.components.copyInput.copyBtn.label',
                   {
                     defaultMessage: 'Copy to clipboard',
                   }
                 )}
-              />
+                disableScreenReaderOutput
+              >
+                <EuiButtonIcon
+                  onClick={(event: React.MouseEvent<HTMLAnchorElement>) => {
+                    onCopyClick?.(event);
+                    copy();
+                    onCopySuccess?.();
+                  }}
+                  iconType="copy"
+                  size="m"
+                  color={'text'}
+                  aria-describedby={hasScreenReaderHint ? screenReaderHintId : undefined}
+                  aria-label={i18n.translate(
+                    'cloud.connectionDetails.components.copyInput.copyBtn.label',
+                    {
+                      defaultMessage: 'Copy to clipboard',
+                    }
+                  )}
+                />
+              </EuiToolTip>
             )}
           </EuiCopy>
         </EuiFlexItem>

@@ -7,6 +7,7 @@
 
 import { EuiImage, EuiPopover } from '@elastic/eui';
 import React from 'react';
+import { i18n } from '@kbn/i18n';
 import { euiStyled } from '@kbn/kibana-react-plugin/common';
 import { LoadingImageState } from './no_image_available';
 import type { ScreenshotRefImageData } from '../../../../../../../common/runtime_types';
@@ -131,6 +132,9 @@ export const StepImagePopover: React.FC<StepImagePopoverProps> = ({
   );
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.stepImagePopover.popoverAriaLabel', {
+        defaultMessage: 'Step image preview',
+      })}
       anchorPosition="leftDown"
       button={
         <StepImageComponent

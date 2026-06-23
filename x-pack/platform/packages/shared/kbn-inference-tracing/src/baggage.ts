@@ -24,3 +24,5 @@ export const EXECUTION_ID_BAGGAGE_KEY = 'kibana.evals.execution_id';
  * within a suite run, enabling per-experiment trace filtering.
  */
 export const EVAL_EXPERIMENT_ID_BAGGAGE_KEY = 'kibana.evals.experiment_id';
+
+export const CONVERSATION_ID_BAGGAGE_KEY = 'gen_ai.conversation.id';

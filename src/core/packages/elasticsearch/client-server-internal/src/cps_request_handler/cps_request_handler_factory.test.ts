@@ -56,6 +56,45 @@ describe('getRequestHandlerFactory', () => {
     });
   });
 
+  describe("projectRouting: 'expression'", () => {
+    it('injects the caller-supplied expression verbatim', () => {
+      const factory = getRequestHandlerFactory(true);
+      const request = httpServerMock.createKibanaRequest({ spaceId: 'my-space' });
+      const handler = factory({
+        projectRouting: 'expression',
+        value: '_alias:*',
+        request,
+        logger: mockLogger,
+      });
+      const params = makeSearchParams();
+
+      handler({ scoped: true }, params, {}, mockLogger);
+
+      expect((params.body as Record<string, unknown>).project_routing).toBe('_alias:*');
+    });
+
+    it('ignores the active space NPRE when an expression is provided', () => {
+      const factory = getRequestHandlerFactory(true);
+      const request = httpServerMock.createKibanaRequest({ spaceId: 'my-space' });
+      const handler = factory({
+        projectRouting: 'expression',
+        value: '@kibana_space_other_default',
+        request,
+        logger: mockLogger,
+      });
+      const params = makeSearchParams();
+
+      handler({ scoped: true }, params, {}, mockLogger);
+
+      expect((params.body as Record<string, unknown>).project_routing).toBe(
+        '@kibana_space_other_default'
+      );
+      expect((params.body as Record<string, unknown>).project_routing).not.toBe(
+        getSpaceNPRE(asSpaceId('my-space'))
+      );
+    });
+  });
+
   describe('timing context', () => {
     it('sets timing context for internal user', () => {
       const factory = getRequestHandlerFactory(true);

@@ -51,11 +51,11 @@ ${
     : ''
 }
 
-DATASET RULES:
-1. The 'dataset' field must contain: { type: "esql", query: ${esqlQueryJson} }
-2. For ES|QL column bindings use { column: '<esql column name>', ...other options }
-3. All field names must match those available in the ES|QL query result
-4. Follow the schema definition strictly
+DATA SOURCE RULES:
+1. The ES|QL query is owned and injected by the system automatically. DO NOT output a 'data_source' field, and do not restate, copy, or modify the query anywhere in the config.
+2. The configuration is built around this query; its result columns are the only columns available to bind: ${esqlQueryJson}
+3. For ES|QL column bindings use { column: '<esql column name>', ...other options }, and every bound column must be one produced by that query.
+4. Follow the schema definition strictly, with the single exception that you must omit the 'data_source' field.
 
 TITLE RULES:
 - Omit the 'title' field when the chart already displays the information within itself (e.g. metric, gauge, tagcloud, waffle charts show their value and label directly).

@@ -169,6 +169,27 @@ describe('Workflow routes', () => {
       expect(response.ok).toHaveBeenCalledWith({ body: list });
     });
 
+    it('should pass sortField and sortOrder to api.getWorkflows', async () => {
+      mockApi.getWorkflows.mockResolvedValue({ workflows: [], total: 0 });
+      const request = httpServerMock.createKibanaRequest({
+        query: { sortField: 'enabled', sortOrder: 'asc' },
+      });
+      (request as any).authzResult = { [WorkflowsManagementApiActions.read]: true };
+      const response = mockResponse();
+      const context = createLicensingContext() as any;
+
+      await routeHandlers[key].handler(context, request, response);
+
+      expect(mockApi.getWorkflows).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sortField: 'enabled',
+          sortOrder: 'asc',
+        }),
+        'default-space',
+        { includeExecutionHistory: false }
+      );
+    });
+
     it('should include execution history when user has readExecution privilege', async () => {
       const list = { workflows: [], total: 0 };
       mockApi.getWorkflows.mockResolvedValue(list);

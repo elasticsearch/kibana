@@ -34,9 +34,17 @@ interface EndpointActionFailureMessageProps {
   'data-test-subj'?: string;
 }
 
+interface AgentErrorInfo {
+  name: string;
+  errors: string[];
+  wasCanceled: boolean;
+  cancelType: string; // Either `manual` or `action`
+  cancelActionId: string; // value may be an empty string
+}
+
 // logic for determining agent host/errors info
 const getAgentErrors = (action: MaybeImmutable<ActionDetails>, agentId?: string) => {
-  const allAgentErrors: Array<{ name: string; errors: string[] }> = [];
+  const allAgentErrors: Array<AgentErrorInfo> = [];
 
   if (action.outputs || (action.errors && action.errors.length)) {
     const agentList = agentId ? [agentId] : action.agents;
@@ -51,7 +59,13 @@ const getAgentErrors = (action: MaybeImmutable<ActionDetails>, agentId?: string)
         !!endpointAgentOutput.content &&
         !!endpointAgentOutput.content.code;
 
-      const agentErrorInfo: { name: string; errors: string[] } = { name: '', errors: [] };
+      const agentErrorInfo: AgentErrorInfo = {
+        name: '',
+        errors: [],
+        wasCanceled: agentState?.wasCanceled ?? action.wasCanceled,
+        cancelType: endpointAgentOutput?.content?.canceled_by || '',
+        cancelActionId: endpointAgentOutput?.content?.canceled_id || '',
+      };
 
       if (
         hasOutputCode &&
@@ -83,54 +97,112 @@ const getAgentErrors = (action: MaybeImmutable<ActionDetails>, agentId?: string)
 export const EndpointActionFailureMessage = memo<EndpointActionFailureMessageProps>(
   ({ action, agentId, 'data-test-subj': dataTestSubj }) => {
     const getTestId = useTestIdGenerator(dataTestSubj);
+    const allAgentErrors = useMemo(() => getAgentErrors(action, agentId), [action, agentId]);
+    const errorCount = useMemo(
+      () => allAgentErrors.map((agentErrorInfo) => agentErrorInfo.errors).flat().length,
+      [allAgentErrors]
+    );
+    const isMultiAgentAction = Boolean(errorCount && !agentId && action.agents.length > 1);
+    const isPendingOrSuccessful: boolean = useMemo(() => {
+      const actionInfoState = agentId ? action.agentState[agentId] : action;
+      return !actionInfoState.isCompleted || actionInfoState.wasSuccessful;
+    }, [action, agentId]);
 
-    return useMemo(() => {
-      if (!action.isCompleted || action.wasSuccessful) {
-        return null;
-      }
+    if (isPendingOrSuccessful) {
+      return null;
+    }
 
-      const allAgentErrors = getAgentErrors(action, agentId);
+    return (
+      <div data-test-subj={getTestId('response-action-failure-info')}>
+        <FormattedMessage
+          id="xpack.securitySolution.endpointResponseActions.actionError.errorMessage"
+          defaultMessage="The following { errorCount, plural, =1 {error was} other {errors were}} encountered:"
+          values={{ errorCount }}
+        />
 
-      const errorCount = allAgentErrors
-        .map((agentErrorInfo) => agentErrorInfo.errors)
-        .flat().length;
-      const isMultiAgentAction = errorCount && !agentId && action.agents.length > 1;
+        <EuiSpacer size="s" />
 
-      return (
-        <div data-test-subj={getTestId('response-action-failure-info')}>
-          <FormattedMessage
-            id="xpack.securitySolution.endpointResponseActions.actionError.errorMessage"
-            defaultMessage="The following { errorCount, plural, =1 {error was} other {errors were}} encountered:"
-            values={{ errorCount }}
-          />
-          <EuiSpacer size="s" />
-          <>
-            {!errorCount ? (
+        <>
+          {!errorCount ? (
+            action.wasCanceled ? (
+              <CanceledMessage
+                cancelActionId=""
+                cancelType="action"
+                data-test-subj={getTestId('canceledMessage')}
+              />
+            ) : (
               <FormattedMessage
                 id="xpack.securitySolution.endpointActionFailureMessage.unknownFailure"
                 defaultMessage="An unknown error occurred"
               />
-            ) : isMultiAgentAction ? (
-              allAgentErrors.map((agentErrorInfo) => (
-                <div key={agentErrorInfo.name}>
-                  <KeyValueDisplay
-                    name={ERROR_INFO_LABELS.host}
-                    value={agentErrorInfo.name.length ? agentErrorInfo.name : emptyValue}
-                  />
-                  <KeyValueDisplay
-                    name={ERROR_INFO_LABELS.errors}
-                    value={agentErrorInfo.errors.join(' | ')}
-                  />
-                  <EuiSpacer size="s" />
-                </div>
-              ))
-            ) : (
-              <>{allAgentErrors[0].errors.join(' | ')}</>
-            )}
-          </>
-        </div>
-      );
-    }, [action, agentId, getTestId]);
+            )
+          ) : isMultiAgentAction ? (
+            allAgentErrors.map((agentErrorInfo) => (
+              <div key={agentErrorInfo.name}>
+                <KeyValueDisplay
+                  name={ERROR_INFO_LABELS.host}
+                  value={agentErrorInfo.name.length ? agentErrorInfo.name : emptyValue}
+                />
+                <KeyValueDisplay
+                  name={ERROR_INFO_LABELS.errors}
+                  value={
+                    <>
+                      {agentErrorInfo.wasCanceled && (
+                        <CanceledMessage
+                          cancelType={agentErrorInfo.cancelType || 'action'}
+                          cancelActionId={agentErrorInfo.cancelActionId}
+                          data-test-subj={getTestId('canceledMessage')}
+                        />
+                      )}
+                      {agentErrorInfo.errors.join(' | ')}
+                    </>
+                  }
+                />
+                <EuiSpacer size="s" />
+              </div>
+            ))
+          ) : (
+            <>
+              {allAgentErrors[0].wasCanceled && (
+                <CanceledMessage
+                  cancelType={allAgentErrors[0].cancelType || 'action'}
+                  cancelActionId={allAgentErrors[0].cancelActionId}
+                  data-test-subj={getTestId('canceledMessage')}
+                />
+              )}
+              {allAgentErrors[0].errors.join(' | ')}
+            </>
+          )}
+        </>
+      </div>
+    );
   }
 );
 EndpointActionFailureMessage.displayName = 'EndpointActionFailureMessage';
+
+/** @private */
+interface CanceledMessageProps {
+  cancelType: string;
+  cancelActionId: string; // Could be an empty string.
+  'data-test-subj'?: string;
+}
+
+/** @private */
+const CanceledMessage = memo<CanceledMessageProps>(
+  ({ cancelType, cancelActionId, 'data-test-subj': dataTestSubj }) => {
+    if (!cancelType && !cancelActionId) {
+      return null;
+    }
+
+    return (
+      <div data-test-subj={dataTestSubj}>
+        <FormattedMessage
+          id="xpack.securitySolution.endpointActionFailureMessage.canceledMessage"
+          defaultMessage="Canceled {cancelType, select, manual {manually on the host} other {{hasCancelActionId, select, true {by action id: {cancelActionId}} other {}}}}"
+          values={{ cancelType, hasCancelActionId: !!cancelActionId, cancelActionId }}
+        />
+      </div>
+    );
+  }
+);
+CanceledMessage.displayName = 'CanceledMessage';

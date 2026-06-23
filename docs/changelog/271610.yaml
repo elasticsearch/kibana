@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/271610
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix orphaned workflow scheduled tasks after workflow deletion
+description: Workflow scheduled tasks are now removed when a workflow is deleted, preventing "Workflow not found" errors. A self-healing task also cleans up any previously orphaned tasks.

@@ -32,8 +32,8 @@ export const createExampleRootProfileProvider = (): RootProfileProvider => ({
       },
     }),
     /**
-     * The `getAppMenu` extension point gives access to AppMenuRegistry with methods `registerCustomItem` and
-     * `registerCustomPopoverItem`.
+     * The `getAppMenu` extension point gives access to AppMenuRegistry with methods like `registerCustomItem` and
+     * `registerPopoverItem`.
      * The extension also provides the essential params like current dataView, adHocDataViews etc when defining a custom action implementation.
      * And it supports opening custom flyouts and any other modals on the click.
      * `getAppMenu` can be configured in both root and data source profiles.
@@ -70,7 +70,7 @@ export const createExampleRootProfileProvider = (): RootProfileProvider => ({
                 order: 2,
                 label: 'Custom action 12 (from Root profile)',
                 testId: 'example-custom-root-action12',
-                run: ({ context: { onFinishAction } }) => {
+                render: ({ context: { onFinishAction } }) => {
                   // This is an example of a custom action that opens a flyout or any other custom modal.
                   // To do so, simply return a React element and call onFinishAction when you're done.
                   return (

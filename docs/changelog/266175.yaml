@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/266175
+issues:
+- https://github.com/elastic/kibana/issues/239910
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Add "Load more matching samples" for conditions

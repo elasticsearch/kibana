@@ -104,7 +104,7 @@ test.describe(
     // === Navigation Cards Tests ===
     test('navigation cards should navigate to correct places', async ({ pageObjects, page }) => {
       const navigationCards = await pageObjects.homepage.getNavigationCards();
-      await expect(navigationCards).toHaveCount(5);
+      await expect(navigationCards).toHaveCount(6);
 
       const navCardTests = [
         {
@@ -126,6 +126,10 @@ test.describe(
         {
           cardTestId: 'searchHomepageNavLinks-dataManagement',
           expectedUrl: 'index_management',
+        },
+        {
+          cardTestId: 'searchHomepageNavLinks-workflows',
+          expectedUrl: 'workflows',
         },
       ];
 

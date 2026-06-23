@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import { createEsParams, useEsSearch } from '@kbn/observability-shared-plugin/public';
+import { createEsParams } from '@kbn/observability-shared-plugin/public';
+import { useSyntheticsEsSearch } from '../../../hooks/use_synthetics_es_search';
 import { getSyntheticsCcsIndex } from '../../../../../../common/get_synthetics_indices';
 import { useGetUrlParams } from '../../../hooks';
 import type { MarkerItems } from './waterfall/context/waterfall_context';
@@ -24,7 +25,7 @@ export const useStepWaterfallMetrics = ({ checkGroup, hasNavigationRequest, step
   const { remoteName } = useGetUrlParams();
   const index = getSyntheticsCcsIndex(remoteName);
 
-  const { data, loading } = useEsSearch(
+  const { data, loading } = useSyntheticsEsSearch(
     hasNavigationRequest
       ? createEsParams({
           index,

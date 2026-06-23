@@ -90,7 +90,7 @@ describe('SpanDetail', () => {
   it('renders tool input/output sections', () => {
     const span = buildSpanNode({
       attributes: {
-        'elastic.tool.parameters': { query: 'test' },
+        'gen_ai.tool.call.arguments': { query: 'test' },
         'output.value': { result: 'success' },
       },
     });

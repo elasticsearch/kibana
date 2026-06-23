@@ -49,6 +49,7 @@ describe('MemoryDumpResponseActionOutputResult component', () => {
     action.agentState['agent-2'] = {
       isCompleted: true,
       wasSuccessful: true,
+      wasCanceled: false,
       errors: undefined,
       completedAt: new Date().toISOString(),
     };
@@ -92,6 +93,7 @@ describe('MemoryDumpResponseActionOutputResult component', () => {
     action.agentState[agentId!] = {
       isCompleted: false,
       wasSuccessful: false,
+      wasCanceled: false,
       errors: undefined,
       completedAt: undefined,
     };
@@ -108,6 +110,7 @@ describe('MemoryDumpResponseActionOutputResult component', () => {
     action.agentState[agentId!] = {
       isCompleted: true,
       wasSuccessful: false,
+      wasCanceled: false,
       errors: ['Error info A'],
       completedAt: new Date().toISOString(),
     };

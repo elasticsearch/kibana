@@ -37,9 +37,12 @@ import {
 } from 'rxjs';
 import { get } from 'lodash';
 import type { InitialFeatureFlagsGetter } from '@kbn/core-feature-flags-server/src/contracts';
+import type { InternalHttpServiceSetup } from '@kbn/core-http-server-internal';
+import { schema } from '@kbn/config-schema';
 import { createOpenFeatureLogger } from './create_open_feature_logger';
 import { setProviderWithRetries } from './set_provider_with_retries';
 import { type FeatureFlagsConfig, featureFlagsConfig } from './feature_flags_config';
+import { incrementCounter } from './increment_counter';
 
 /**
  * Core-internal contract for the setup lifecycle step.
@@ -55,6 +58,10 @@ export interface InternalFeatureFlagsSetup extends FeatureFlagsSetup {
    * and to work-around air-gapped environments.
    */
   getInitialFeatureFlags: () => Promise<Record<string, unknown>>;
+}
+
+export interface FeatureFlagsSetupDeps {
+  http: InternalHttpServiceSetup;
 }
 
 /**
@@ -83,7 +90,7 @@ export class FeatureFlagsService {
   /**
    * Setup lifecycle method
    */
-  public setup(): InternalFeatureFlagsSetup {
+  public setup({ http }: FeatureFlagsSetupDeps): InternalFeatureFlagsSetup {
     // Register "overrides" to be changed via the dynamic config endpoint (enabled in test environments only)
     this.core.configService.addDynamicConfigPaths(featureFlagsConfig.path, ['overrides']);
 
@@ -92,6 +99,8 @@ export class FeatureFlagsService {
       .subscribe(({ overrides = {} }) => {
         this.overrides$.next(getFlattenedObject(overrides));
       });
+
+    this.registerCounterRoute(http);
 
     return {
       getOverrides: () => this.overrides$.value,
@@ -216,7 +225,10 @@ export class FeatureFlagsService {
         : // We have to bind the evaluation or the client will lose its internal context
           await evaluationFn.bind(this.featureFlagsClient)(flagName, fallbackValue);
     addSpanLabels({ [`flag_${flagName.replaceAll('.', '_')}`]: value });
-    // TODO: increment usage counter
+
+    // Report the counter for the flag evaluation.
+    incrementCounter(flagName, value);
+
     return value;
   }
 
@@ -238,5 +250,43 @@ export class FeatureFlagsService {
     this.context = deepMerge(this.context, formattedContextToAppend);
     OpenFeature.setContext(this.context);
     this.contextChanged$.next();
+  }
+
+  private registerCounterRoute(http: InternalHttpServiceSetup): void {
+    http.createRouter('').post(
+      {
+        path: '/internal/feature-flags/{flagName}/counter',
+        validate: {
+          params: schema.object({
+            flagName: schema.string({ minLength: 1, maxLength: 255 }),
+          }),
+          body: schema.object({
+            value: schema.oneOf([
+              schema.boolean(),
+              schema.number(),
+              schema.string({ maxLength: 5000 }),
+            ]),
+          }),
+        },
+        security: {
+          authz: {
+            enabled: false,
+            reason: 'Any authenticated user should have access to the configuration',
+          },
+          authc: {
+            enabled: true,
+          },
+        },
+        options: {
+          access: 'internal',
+        },
+      },
+      (context, request, response) => {
+        const { flagName } = request.params;
+        const { value } = request.body;
+        incrementCounter(flagName, value);
+        return response.accepted();
+      }
+    );
   }
 }

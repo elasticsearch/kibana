@@ -9,7 +9,7 @@
 
 import type { FC } from 'react';
 import React, { useState } from 'react';
-import { EuiButtonIcon, EuiPopover } from '@elastic/eui';
+import { EuiButtonIcon, EuiPopover, EuiToolTip } from '@elastic/eui';
 import { strings } from './action_strings';
 import type { FilterItemActionsProps } from './types';
 import { FilterItemActions } from './actions';
@@ -24,12 +24,14 @@ export const MinimisedFilterItemActions: FC<FilterItemActionsProps> = (props) =>
   const closePopover = () => setIsPopoverOpen(false);
 
   const button = (
-    <EuiButtonIcon
-      iconType="boxesVertical"
-      color="text"
-      aria-label={strings.getMoreActionsLabel()}
-      onClick={onMoreActionsButtonClick}
-    />
+    <EuiToolTip content={strings.getMoreActionsLabel()} disableScreenReaderOutput>
+      <EuiButtonIcon
+        iconType="boxesVertical"
+        color="text"
+        aria-label={strings.getMoreActionsLabel()}
+        onClick={onMoreActionsButtonClick}
+      />
+    </EuiToolTip>
   );
 
   return (

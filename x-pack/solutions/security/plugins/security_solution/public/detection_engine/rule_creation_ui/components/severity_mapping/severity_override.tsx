@@ -188,7 +188,7 @@ function SeverityMappingRow({
           />
         </EuiFlexItemComboBoxColumn>
         <EuiFlexItemIconColumn>
-          <EuiIcon type="sortRight" />
+          <EuiIcon type="sortRight" aria-hidden={true} />
         </EuiFlexItemIconColumn>
         <EuiFlexItemSeverityColumn>
           {severityOptions.find((o) => o.value === severityMappingItem.severity)?.inputDisplay}

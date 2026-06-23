@@ -11,7 +11,7 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { distinctUntilChanged, filter, map, pairwise } from 'rxjs';
 
-import { type UseEuiTheme, transparentize } from '@elastic/eui';
+import { EuiToolTip, transparentize, type UseEuiTheme } from '@elastic/eui';
 import {
   EuiButtonIcon,
   EuiIcon,
@@ -307,16 +307,23 @@ export const GridSectionHeader = React.memo(({ sectionId }: GridSectionHeaderPro
                 <>
                   {!isActive && (
                     <EuiFlexItem grow={false} css={[styles.floatToRight]}>
-                      <EuiButtonIcon
-                        data-no-drag
-                        iconType="trash"
-                        color="danger"
-                        className="kbnGridLayout--deleteSectionIcon"
-                        onClick={confirmDeleteSection}
-                        aria-label={i18n.translate('kbnGridLayout.section.deleteSection', {
+                      <EuiToolTip
+                        content={i18n.translate('kbnGridLayout.section.deleteSection', {
                           defaultMessage: 'Delete section',
                         })}
-                      />
+                        disableScreenReaderOutput
+                      >
+                        <EuiButtonIcon
+                          data-no-drag
+                          iconType="trash"
+                          color="danger"
+                          className="kbnGridLayout--deleteSectionIcon"
+                          onClick={confirmDeleteSection}
+                          aria-label={i18n.translate('kbnGridLayout.section.deleteSection', {
+                            defaultMessage: 'Delete section',
+                          })}
+                        />
+                      </EuiToolTip>
                     </EuiFlexItem>
                   )}
                   <EuiFlexItem

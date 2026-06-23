@@ -41,14 +41,18 @@ export class DatePicker {
    * container (useful when the only DateRangePicker lives inside a panel).
    */
   private async isNewDateRangePicker(containerLocator?: Locator): Promise<boolean> {
-    try {
-      await this.getTestSubjLocator('dateRangePickerControlButton', containerLocator).waitFor({
-        timeout: 5000,
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    const root = containerLocator ?? this.page;
+    const newPicker = root.getByTestId('dateRangePickerControlButton');
+    const legacyPicker = root.getByTestId('superDatePickerToggleQuickMenuButton');
+    // Wait until either variant has mounted. `waitFor` is not a strict-mode
+    // action, so it tolerates pages that render multiple pickers (e.g. several
+    // data source cards in a flyout); `getAttribute` on the combined locator
+    // would throw there — see the sibling note in `waitToBeHidden()`.
+    await newPicker.or(legacyPicker).waitFor({ timeout: 10_000 });
+    // `count()` likewise never throws on multiple matches. The variant is
+    // globally flag-driven, so any `dateRangePickerControlButton` on the page
+    // means the new picker is active.
+    return (await newPicker.count()) > 0;
   }
 
   private getTestSubjLocator(selector: string, containerLocator?: Locator) {
@@ -219,7 +223,13 @@ export class DatePicker {
     if (await this.isNewDateRangePicker()) {
       await this.page.testSubj.locator('dateRangePickerControlButton').click();
       await this.page.testSubj.locator('dateRangePickerMainPanel').waitFor();
-      const presetItem = this.page.testSubj.locator(`dateRangePickerPresetItem-${option}`);
+      // The new picker's `toTestSubj` replaces every whitespace run with an
+      // underscore, whereas EUI's legacy quick-menu only replaces the first
+      // space. Callers pass the legacy form (e.g. "Last_15 minutes"), so
+      // normalise the remaining whitespace here for the new picker.
+      const presetItem = this.page.testSubj.locator(
+        `dateRangePickerPresetItem-${option.replace(/\s+/g, '_')}`
+      );
       await expect(presetItem).toBeVisible();
       await presetItem.click();
     } else {
@@ -306,6 +316,41 @@ export class DatePicker {
     return { start, end };
   }
 
+  /**
+   * Returns the human-readable time range label shown by whichever picker is
+   * active.
+   *
+   * - New DateRangePicker: the value-display node renders the full label
+   *   (e.g. "Last 24 hours", "30 days ago → 10 days ago").
+   * - Legacy EuiSuperDatePicker: joins the start/end popover button labels when
+   *   an explicit start/end range is shown, otherwise returns the quick-range
+   *   "show dates" label.
+   */
+  async getTimeRangeText(containerLocator?: Locator): Promise<string> {
+    if (await this.isNewDateRangePicker(containerLocator)) {
+      const valueDisplay = this.getTestSubjLocator('dateRangePickerValueDisplay', containerLocator);
+      return (await valueDisplay.innerText()).trim();
+    }
+
+    const startButton = this.getTestSubjLocator(
+      'superDatePickerstartDatePopoverButton',
+      containerLocator
+    );
+    if (await startButton.isVisible()) {
+      const start = (await startButton.innerText()).trim();
+      const end = (
+        await this.getTestSubjLocator(
+          'superDatePickerendDatePopoverButton',
+          containerLocator
+        ).innerText()
+      ).trim();
+      return `${start} - ${end}`;
+    }
+    return (
+      await this.getTestSubjLocator('superDatePickerShowDatesButton', containerLocator).innerText()
+    ).trim();
+  }
+
   async startAutoRefresh(interval: number, dateUnit: DateUnitSelector = DateUnitSelector.Seconds) {
     if (await this.isNewDateRangePicker()) {
       await this.page.testSubj.locator('dateRangePickerControlButton').click();
@@ -341,23 +386,29 @@ export class DatePicker {
   }
 
   async waitToBeHidden() {
-    if (await this.isNewDateRangePicker()) {
-      await this.page.testSubj
-        .locator('dateRangePickerCustomRangePanel')
-        .waitFor({ state: 'hidden' });
-    } else {
-      await this.page.testSubj.locator('superDatePickerAbsoluteTab').waitFor({ state: 'hidden' });
-    }
+    // Wait for both picker variants' popovers to be hidden. We don't call
+    // `isNewDateRangePicker()` first because pages can render multiple pickers
+    // (e.g. several data source cards in a flyout) which trip its strict-mode
+    // check. Both popover bodies are unmounted on close, so the locators
+    // resolve to zero elements and `waitFor({ state: 'hidden' })` succeeds.
+    await this.page.testSubj
+      .locator('dateRangePickerCustomRangePanel')
+      .waitFor({ state: 'hidden' });
+    await this.page.testSubj.locator('superDatePickerAbsoluteTab').waitFor({ state: 'hidden' });
   }
 
   async timePickerExists(): Promise<boolean> {
-    if (await this.isNewDateRangePicker()) {
-      return await this.page.testSubj
-        .locator('dateRangePickerControlButton')
-        .isVisible({ timeout: 1000 })
-        .catch(() => false);
-    } else {
-      return await this.quickMenuButton.isVisible({ timeout: 1000 }).catch(() => false);
-    }
+    // Some views have no time picker at all (e.g. a data view without a time
+    // field), so this must resolve to `false` rather than throw. Don't delegate
+    // to `isNewDateRangePicker()`: it waits up to 10s for a picker to mount and
+    // throws when none does. Probe both variant markers directly with a short,
+    // non-throwing wait — either one present means a time picker exists.
+    const anyPicker = this.page.testSubj
+      .locator('dateRangePickerControlButton')
+      .or(this.quickMenuButton);
+    return anyPicker
+      .waitFor({ state: 'visible', timeout: 1000 })
+      .then(() => true)
+      .catch(() => false);
   }
 }

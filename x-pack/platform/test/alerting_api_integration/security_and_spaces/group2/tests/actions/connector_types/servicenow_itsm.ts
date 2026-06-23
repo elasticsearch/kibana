@@ -717,13 +717,13 @@ export default function serviceNowITSMTest({ getService }: FtrProviderContext) {
                 id: simulatedActionId,
                 provider: 'actions',
                 actions: new Map([
-                  ['execute-start', { equal: 1 }],
-                  ['execute', { equal: 1 }],
+                  ['execute-start', { equal: 11 }],
+                  ['execute', { equal: 11 }],
                 ]),
               });
             });
 
-            const executeEvent = events[1];
+            const executeEvent = events[events.length - 1];
             expect(executeEvent?.kibana?.action?.execution?.usage?.request_body_bytes).to.be(283);
           });
         });

@@ -9,7 +9,7 @@
 import type { ESQLAstAllCommands } from '@elastic/esql/types';
 import type { ICommandCallbacks } from '../types';
 import { type ISuggestionItem, type ICommandContext } from '../types';
-import { pipeCompleteItem } from '../complete_items';
+import { newLineAndPipeCompleteItems } from '../complete_items';
 
 export async function autocomplete(
   query: string,
@@ -20,7 +20,7 @@ export async function autocomplete(
 ): Promise<ISuggestionItem[]> {
   const innerText = query.substring(0, cursorPosition);
   if (/MV_EXPAND\s+\S+\s+$/i.test(innerText)) {
-    return [pipeCompleteItem];
+    return newLineAndPipeCompleteItems;
   }
 
   const columnSuggestions =

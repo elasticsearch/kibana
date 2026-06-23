@@ -14,12 +14,13 @@ import type { DocLinks } from '@kbn/doc-links';
 import { loadYaml } from '@kbn/yaml-loader';
 
 import { AGENT_LOG_LEVELS, DEFAULT_LOG_LEVEL } from '../constants';
+import { isValidDuration } from '../services/validate_duration';
 
 import type { SettingsConfig } from './types';
 
 export const zodStringWithDurationValidation = z
   .string()
-  .refine((val) => val.match(/^(\d+[s|m|h])?$/), {
+  .refine((val) => !val || isValidDuration(val), {
     message: i18n.translate(
       'xpack.fleet.settings.agentPolicyAdvanced.downloadTimeoutValidationMessage',
       {

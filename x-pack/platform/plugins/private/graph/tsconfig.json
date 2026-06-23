@@ -1,4 +1,3 @@
-
 {
   "extends": "@kbn/tsconfig-base/tsconfig.json",
   "compilerOptions": {
@@ -10,7 +9,7 @@
     "common/**/*",
     "public/**/*",
     "server/**/*",
-    "test/**/*",
+    "test/scout/**/*",
     "../../../../../typings/**/*",
   ],
   "kbn_references": [
@@ -42,20 +41,21 @@
     "@kbn/core-saved-objects-server",
     "@kbn/content-management-plugin",
     "@kbn/object-versioning",
-    "@kbn/content-management-table-list-view-table",
-    "@kbn/content-management-table-list-view",
+    "@kbn/content-list",
+    "@kbn/content-list-page",
+    "@kbn/content-list-provider-client",
+    "@kbn/content-management-table-list-view-common",
     "@kbn/core-ui-settings-browser",
     "@kbn/react-kibana-mount",
     "@kbn/content-management-utils",
     "@kbn/logging",
-    "@kbn/content-management-table-list-view-common",
     "@kbn/visualization-utils",
-    "@kbn/react-kibana-context-render",
     "@kbn/core-saved-objects-api-server",
     "@kbn/licensing-types",
     "@kbn/kql",
     "@kbn/unified-search-plugin",
     "@kbn/scout",
+    "@kbn/content-list-provider",
   ],
   "exclude": [
     "target/**/*",

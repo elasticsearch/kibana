@@ -8,13 +8,14 @@
 import { inject, injectable } from 'inversify';
 import { PluginStart } from '@kbn/core-di';
 import type { KibanaRequest } from '@kbn/core/server';
-import { fromKueryExpression } from '@kbn/es-query';
+import { escapeQuotes, fromKueryExpression } from '@kbn/es-query';
 import type {
   IEvent,
   IEventLogClientService,
   IEventLogger,
   IValidatedEvent,
 } from '@kbn/event-log-plugin/server';
+import type { PolicyExecutionOutcome } from '@kbn/alerting-v2-schemas';
 import { ACTION_POLICY_SAVED_OBJECT_TYPE } from '../../../saved_objects';
 import {
   ACTION_POLICY_EVENT_ACTIONS,
@@ -26,9 +27,42 @@ import { EventLoggerToken } from './tokens';
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_PAGE = 1;
 
-const EXECUTION_HISTORY_AUTH_FILTER = fromKueryExpression(
-  `event.provider: ${ACTION_POLICY_EVENT_PROVIDER} AND (event.action: ${ACTION_POLICY_EVENT_ACTIONS.DISPATCHED} OR event.action: ${ACTION_POLICY_EVENT_ACTIONS.THROTTLED})`
-);
+interface ExecutionHistoryFilterParams {
+  outcome?: PolicyExecutionOutcome;
+  policyIds?: string[];
+  ruleIds?: string[];
+}
+
+export const buildExecutionHistoryAuthFilter = ({
+  outcome,
+  policyIds,
+  ruleIds,
+}: ExecutionHistoryFilterParams = {}) => {
+  const outcomeExpr =
+    outcome === undefined
+      ? `(event.action: ${ACTION_POLICY_EVENT_ACTIONS.DISPATCHED} OR event.action: ${ACTION_POLICY_EVENT_ACTIONS.THROTTLED})`
+      : `event.action: ${outcome}`;
+
+  const parts: string[] = [`event.provider: ${ACTION_POLICY_EVENT_PROVIDER}`, outcomeExpr];
+
+  const idTerms = [...(policyIds ?? []), ...(ruleIds ?? [])];
+  if (idTerms.length > 0) {
+    // `kibana.saved_objects` is mapped as a nested field, so the id clause must use KQL nested
+    // syntax (`parent: { child: ... }`). The spillover field `dispatcher.rule_ids` is a flat
+    // keyword and is queried directly.
+    const quoted = idTerms.map(quoteKqlValue).join(' OR ');
+    const ruleIdQuoted = (ruleIds ?? []).map(quoteKqlValue).join(' OR ');
+    const ruleSpilloverClause =
+      ruleIdQuoted.length > 0
+        ? ` OR kibana.alerting_v2.dispatcher.rule_ids: (${ruleIdQuoted})`
+        : '';
+    parts.push(`(kibana.saved_objects: { id: (${quoted}) }${ruleSpilloverClause})`);
+  }
+
+  return fromKueryExpression(parts.join(' AND '));
+};
+
+const quoteKqlValue = (value: string): string => `"${escapeQuotes(value)}"`;
 
 export interface FindActionPolicyExecutionEventsParams {
   request: KibanaRequest;
@@ -36,6 +70,9 @@ export interface FindActionPolicyExecutionEventsParams {
   startDate: string;
   page?: number;
   perPage?: number;
+  outcome?: PolicyExecutionOutcome;
+  policyIds?: string[];
+  ruleIds?: string[];
 }
 
 export interface FindActionPolicyExecutionEventsResult {
@@ -49,6 +86,9 @@ export interface CountActionPolicyExecutionEventsSinceParams {
   request: KibanaRequest;
   spaceId: string;
   since: string;
+  outcome?: PolicyExecutionOutcome;
+  policyIds?: string[];
+  ruleIds?: string[];
 }
 
 export interface CountActionPolicyExecutionEventsSinceResult {
@@ -83,13 +123,16 @@ export class EventLogService implements EventLogServiceContract {
     startDate,
     page = DEFAULT_PAGE,
     perPage = DEFAULT_PAGE_SIZE,
+    outcome,
+    policyIds,
+    ruleIds,
   }: FindActionPolicyExecutionEventsParams): Promise<FindActionPolicyExecutionEventsResult> {
     const client = this.clientService.getClient(request);
 
     const result = await client.findEventsWithAuthFilter(
       ACTION_POLICY_SAVED_OBJECT_TYPE,
       [],
-      EXECUTION_HISTORY_AUTH_FILTER,
+      buildExecutionHistoryAuthFilter({ outcome, policyIds, ruleIds }),
       spaceId,
       {
         page,
@@ -111,13 +154,16 @@ export class EventLogService implements EventLogServiceContract {
     request,
     spaceId,
     since,
+    outcome,
+    policyIds,
+    ruleIds,
   }: CountActionPolicyExecutionEventsSinceParams): Promise<CountActionPolicyExecutionEventsSinceResult> {
     const client = this.clientService.getClient(request);
 
     const result = await client.findEventsWithAuthFilter(
       ACTION_POLICY_SAVED_OBJECT_TYPE,
       [],
-      EXECUTION_HISTORY_AUTH_FILTER,
+      buildExecutionHistoryAuthFilter({ outcome, policyIds, ruleIds }),
       spaceId,
       {
         page: 1,

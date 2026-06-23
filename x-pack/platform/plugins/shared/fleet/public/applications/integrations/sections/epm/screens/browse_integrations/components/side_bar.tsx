@@ -75,7 +75,7 @@ export const UPDATE_FAILED_CATEGORY = {
 export interface Props {
   isLoading?: boolean;
   categories: CategoryFacet[];
-  selectedCategory: string;
+  selectedCategories: string[];
   onCategoryChange: (category: CategoryFacet) => void;
 }
 
@@ -96,17 +96,19 @@ export interface SidebarProps extends Props {
   CreateIntegrationCardButton?: React.ComponentType;
   hasCreatedIntegrations?: boolean;
   isLoadingCreatedIntegrations?: boolean;
+  manageIntegrationsHref?: string;
   onManageIntegrationsClick?: (ev: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   isLoading,
   categories,
-  selectedCategory,
+  selectedCategories,
   onCategoryChange,
   CreateIntegrationCardButton,
   hasCreatedIntegrations,
   isLoadingCreatedIntegrations,
+  manageIntegrationsHref,
   onManageIntegrationsClick,
 }) => {
   const { euiTheme } = useEuiTheme();
@@ -118,6 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {hasCreatedIntegrations ? (
             <EuiLink
               color="text"
+              href={manageIntegrationsHref}
               onClick={onManageIntegrationsClick}
               data-test-subj="manageCreatedIntegrationsLink"
               css={{
@@ -149,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <CategoryFacets
         isLoading={isLoading}
         categories={categories}
-        selectedCategory={selectedCategory}
+        selectedCategories={selectedCategories}
         onCategoryChange={onCategoryChange}
       />
     </StickySidebar>
@@ -159,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 export function CategoryFacets({
   isLoading,
   categories,
-  selectedCategory,
+  selectedCategories,
   onCategoryChange,
 }: Props) {
   const controls = (
@@ -175,7 +178,11 @@ export function CategoryFacets({
           return (
             <EuiFacetButton
               data-test-subj={`epmList.categories.${category.id}`}
-              isSelected={category.id === selectedCategory}
+              isSelected={
+                selectedCategories.length === 0
+                  ? category.id === ''
+                  : selectedCategories.includes(category.id)
+              }
               key={category.id}
               id={category.id}
               style={{

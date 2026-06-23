@@ -62,7 +62,24 @@ import type { ClearAlertFlappingHistoryParams } from './lib/clear_alert_flapping
 import { clearAlertFlappingHistory } from './lib/clear_alert_flapping_history';
 import type { IsExistingAlertParams } from './lib/is_existing_alert';
 import { isExistingAlert } from './lib/is_existing_alert';
-export const TOTAL_FIELDS_LIMIT = 2500;
+/**
+ * Default field limit for alerts-as-data (`.alerts-*`) indices, their index
+ * templates and component templates.
+ *
+ * Usage:
+ * - `AlertsService` uses it only as a fallback when `totalFieldsLimit` is not
+ *   provided (e.g. in tests). In production the value comes from
+ *   `xpack.alerting.alertsService.totalFieldsLimit` (see `config.ts`), so keep
+ *   that config default in sync with this constant.
+ * - Re-exported from `@kbn/alerting-plugin/server` and consumed directly by
+ *   `rule_registry` (`resource_installer.ts`) when installing its own
+ *   technical/component templates, and by the AAD integration tests.
+ *
+ * Note: other plugins (alerting_v2, security_solution siem_migrations /
+ * workflow_insights, elastic_assistant, ecs_data_quality_dashboard) define
+ * their own local field-limit constants and are NOT affected by this value.
+ */
+export const TOTAL_FIELDS_LIMIT = 2800;
 const LEGACY_ALERT_CONTEXT = 'legacy-alert';
 export const ECS_CONTEXT = `ecs`;
 export const ECS_COMPONENT_TEMPLATE_NAME = getComponentTemplateName({ name: ECS_CONTEXT });
@@ -75,6 +92,12 @@ interface AlertsServiceParams {
   dataStreamAdapter: DataStreamAdapter;
   elasticsearchAndSOAvailability$: Observable<boolean>;
   isServerless: boolean;
+  /**
+   * Field limit applied to alerts-as-data indices/templates. Defaults to
+   * `TOTAL_FIELDS_LIMIT` when not provided (e.g. in tests). In production this
+   * is sourced from `xpack.alerting.alertsService.totalFieldsLimit`.
+   */
+  totalFieldsLimit?: number;
 }
 
 export interface CreateAlertsClientParams extends LegacyAlertsClientParams {
@@ -135,6 +158,14 @@ interface IAlertsService {
 export type PublicAlertsService = Pick<IAlertsService, 'getContextInitializationPromise'>;
 export type PublicFrameworkAlertsService = PublicAlertsService & {
   enabled: () => boolean;
+  /**
+   * Field limit applied to alerts-as-data (`.alerts-*`) resources, sourced from
+   * `xpack.alerting.alertsService.totalFieldsLimit`. Consumed by `rule_registry`
+   * so its technical/component templates and indices use the same configurable
+   * limit as the alerting framework. Optional so existing mocks remain valid;
+   * consumers fall back to `TOTAL_FIELDS_LIMIT` when it is not provided.
+   */
+  getTotalFieldsLimit?: () => number;
 };
 
 export class AlertsService implements IAlertsService {
@@ -145,12 +176,14 @@ export class AlertsService implements IAlertsService {
   private registeredContexts: Map<string, IRuleTypeAlerts> = new Map();
   private commonInitPromise: Promise<InitializationPromise>;
   private dataStreamAdapter: DataStreamAdapter;
+  private totalFieldsLimit: number;
 
   constructor(private readonly options: AlertsServiceParams) {
     this.initialized = false;
 
     this.isServerless = options.isServerless;
     this.dataStreamAdapter = options.dataStreamAdapter;
+    this.totalFieldsLimit = options.totalFieldsLimit ?? TOTAL_FIELDS_LIMIT;
 
     // Kick off initialization of common assets and save the promise
     this.commonInitPromise = this.initializeCommon(
@@ -357,7 +390,7 @@ export class AlertsService implements IAlertsService {
             logger: this.options.logger,
             esClient,
             template: getComponentTemplate({ fieldMap: alertFieldMap, includeSettings: true }),
-            totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+            totalFieldsLimit: this.totalFieldsLimit,
           }),
         () =>
           createOrUpdateComponentTemplate({
@@ -368,7 +401,7 @@ export class AlertsService implements IAlertsService {
               name: LEGACY_ALERT_CONTEXT,
               includeSettings: true,
             }),
-            totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+            totalFieldsLimit: this.totalFieldsLimit,
           }),
         () =>
           createOrUpdateComponentTemplate({
@@ -379,7 +412,7 @@ export class AlertsService implements IAlertsService {
               name: ECS_CONTEXT,
               includeSettings: true,
             }),
-            totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+            totalFieldsLimit: this.totalFieldsLimit,
           }),
       ];
 
@@ -455,7 +488,7 @@ export class AlertsService implements IAlertsService {
             logger: this.options.logger,
             esClient,
             template: componentTemplate,
-            totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+            totalFieldsLimit: this.totalFieldsLimit,
           })
       );
       componentTemplateRefs.push(componentTemplate.name);
@@ -481,7 +514,7 @@ export class AlertsService implements IAlertsService {
             indexPatterns: indexTemplateAndPattern,
             kibanaVersion: this.options.kibanaVersion,
             namespace,
-            totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+            totalFieldsLimit: this.totalFieldsLimit,
             dataStreamAdapter: this.dataStreamAdapter,
           }),
         }),
@@ -489,7 +522,7 @@ export class AlertsService implements IAlertsService {
         await createConcreteWriteIndex({
           logger: this.options.logger,
           esClient,
-          totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+          totalFieldsLimit: this.totalFieldsLimit,
           indexPatterns: indexTemplateAndPattern,
           dataStreamAdapter: this.dataStreamAdapter,
         }),

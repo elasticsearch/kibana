@@ -1,5 +1,5 @@
 {
-  "sha1": "a19ae6d7fa00476c5193331baf632e58492f5ac5",
+  "sha1": "115bf47edbb568febae0b7f96023658db84dc10c",
   "tests": [
     {
       "id": "fbc74590a1185af-3e73699777c3b59",
@@ -146,6 +146,54 @@
       }
     },
     {
+      "id": "ac68e3762339a89-73532f99c291a58",
+      "title": "Kubernetes Onboarding Kubernetes card navigates to the OTel Kubernetes flow",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/kubernetes_flow.spec.ts",
+        "line": 20,
+        "column": 9
+      }
+    },
+    {
+      "id": "ac68e3762339a89-a2c7ce3359b6f7b",
+      "title": "Kubernetes Onboarding navigating to /otel-kubernetes redirects to /kubernetes without deprecated ingestion param",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/kubernetes_flow.spec.ts",
+        "line": 30,
+        "column": 9
+      }
+    },
+    {
+      "id": "ac68e3762339a89-86879ebe1541a2a",
+      "title": "Kubernetes Onboarding Kubernetes step controls expose expected branch UI",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/kubernetes_flow.spec.ts",
+        "line": 40,
+        "column": 9
+      }
+    },
+    {
       "id": "bd77233fbb28a70-b95459eaf733782",
       "title": "Onboarding UI Validation validates main page structure and navigation",
       "expectedStatus": "passed",
@@ -175,7 +223,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/onboarding_ui_validation.spec.ts",
-        "line": 87,
+        "line": 86,
         "column": 7
       }
     },
@@ -193,7 +241,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/onboarding_ui_validation.spec.ts",
-        "line": 103,
+        "line": 102,
         "column": 7
       }
     },
@@ -211,7 +259,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/onboarding_ui_validation.spec.ts",
-        "line": 121,
+        "line": 120,
         "column": 7
       }
     },
@@ -229,7 +277,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/onboarding_ui_validation.spec.ts",
-        "line": 139,
+        "line": 138,
         "column": 7
       }
     },
@@ -243,7 +291,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/onboarding_ui_validation.spec.ts",
-        "line": 175,
+        "line": 173,
         "column": 7
       }
     },
@@ -292,38 +340,6 @@
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/wired_streams_auto_detect.spec.ts",
         "line": 63,
-        "column": 9
-      }
-    },
-    {
-      "id": "e1ab92206d8acec-0e80c07f0161c16",
-      "title": "Wired Streams - Elastic Agent Kubernetes Flow shows ingestion selector with correct options",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/wired_streams_elastic_agent_kubernetes.spec.ts",
-        "line": 28,
-        "column": 9
-      }
-    },
-    {
-      "id": "e1ab92206d8acec-99b05466d3c6123",
-      "title": "Wired Streams - Elastic Agent Kubernetes Flow command includes wired streams config when Wired Streams mode is selected",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/wired_streams_elastic_agent_kubernetes.spec.ts",
-        "line": 49,
         "column": 9
       }
     },
@@ -420,22 +436,6 @@
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/wired_streams_otel_host.spec.ts",
         "line": 53,
-        "column": 9
-      }
-    },
-    {
-      "id": "13fea49ba796590-306b56360167eea",
-      "title": "Wired Streams - OTel Kubernetes Flow shows ingestion selector with correct options",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/ui/tests/wired_streams_otel_kubernetes.spec.ts",
-        "line": 28,
         "column": 9
       }
     }

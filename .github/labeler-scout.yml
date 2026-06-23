@@ -1,0 +1,5 @@
+'reviewer:scout':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/test/scout*/**'
+          - '**/kbn-scout*/**'

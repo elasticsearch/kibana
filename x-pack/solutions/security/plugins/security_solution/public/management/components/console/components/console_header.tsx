@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { EuiButtonEmpty, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';

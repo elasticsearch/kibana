@@ -6,9 +6,9 @@
  */
 
 import type { CoreRequestHandlerContext } from '@kbn/core/server';
-import { SECURITY_EXTENSION_ID } from '@kbn/core-saved-objects-server';
+import { watchlistEntitySourceTypeName } from '../entity_sources/infra';
 
-export const getRequestSavedObjectClient = (core: CoreRequestHandlerContext) =>
+export const getWatchlistSavedObjectClient = (core: CoreRequestHandlerContext) =>
   core.savedObjects.getClient({
-    excludedExtensions: [SECURITY_EXTENSION_ID],
+    includedHiddenTypes: [watchlistEntitySourceTypeName],
   });

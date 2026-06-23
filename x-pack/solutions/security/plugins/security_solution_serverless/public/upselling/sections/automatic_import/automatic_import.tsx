@@ -57,7 +57,7 @@ export const AutomaticImport = React.memo<IntegrationsAssistantProps>(({ require
           label: requiredProductType,
         }}
         isDisabled={true}
-        icon={<EuiIcon size="xl" type="lock" />}
+        icon={<EuiIcon size="xl" type="lock" aria-hidden={true} />}
         title={
           <h3>
             <strong>{TIER_REQUIRED(requiredProductType)}</strong>

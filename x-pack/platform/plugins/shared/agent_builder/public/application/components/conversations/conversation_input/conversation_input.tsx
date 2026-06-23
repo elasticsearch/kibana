@@ -53,6 +53,7 @@ const InputContainer: React.FC<
 interface ConversationInputProps {
   onSubmit?: () => void;
   onEditorFocus?: () => void;
+  onSubmitOverride?: (message: string) => void;
 }
 
 const disabledPlaceholder = (agentId?: string) =>
@@ -91,6 +92,7 @@ const getMessageEditorAriaLabel = ({
 export const ConversationInput: React.FC<ConversationInputProps> = ({
   onSubmit,
   onEditorFocus,
+  onSubmitOverride,
 }) => {
   const { pendingMessage, error, isResuming, isResponseLoading } = useConversationStream();
   const { isFetched } = useAgentBuilderAgents();
@@ -187,7 +189,11 @@ export const ConversationInput: React.FC<ConversationInputProps> = ({
       }
       return;
     }
-    submitMessage(content);
+    if (onSubmitOverride) {
+      onSubmitOverride(content);
+    } else {
+      submitMessage(content);
+    }
     messageEditorController.clear();
     onSubmit?.();
   };

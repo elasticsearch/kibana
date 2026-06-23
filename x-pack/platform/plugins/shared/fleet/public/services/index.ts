@@ -31,6 +31,7 @@ export {
   isPackageLimited,
   doesAgentPolicyAlreadyIncludePackage,
   isValidNamespace,
+  isValidDuration,
   LicenseService,
   isAgentUpgradeable,
   getNotUpgradeableMessage,

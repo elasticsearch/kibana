@@ -21,73 +21,81 @@ export const CreateAgentlessPolicyRequestSchema = {
       },
     }),
   }),
-  body: SimplifiedCreatePackagePolicyRequestBodySchema.extends({
-    // Remove all properties that are not relevant for agentless policies
-    policy_id: undefined,
-    policy_ids: undefined,
-    supports_agentless: undefined,
-    output_id: undefined,
-    policy_template: schema.maybe(
-      schema.string({
-        meta: {
-          description:
-            'The policy template to use for the agentless package policy. If not provided, the default policy template will be used.',
-        },
-      })
-    ),
-    // Only available for agentless integration policies.
-    // On standard package policies this field is rejected by server-side validation.
-    global_data_tags: schema.maybe(
-      schema.arrayOf(
+  body: SimplifiedCreatePackagePolicyRequestBodySchema.extends(
+    {
+      // Remove all properties that are not relevant for agentless policies
+      policy_id: undefined,
+      policy_ids: undefined,
+      supports_agentless: undefined,
+      output_id: undefined,
+      policy_template: schema.maybe(
+        schema.string({
+          meta: {
+            description:
+              'The policy template to use for the agentless package policy. If not provided, the default policy template is used.',
+          },
+        })
+      ),
+      // Only available for agentless integration policies.
+      // On standard package policies this field is rejected by server-side validation.
+      global_data_tags: schema.maybe(
+        schema.arrayOf(
+          schema.object({
+            name: schema.string({
+              meta: { description: 'Name of the custom field. The name cannot contain spaces.' },
+            }),
+            value: schema.oneOf([schema.string(), schema.number()], {
+              meta: { description: 'Value of the custom field.' },
+            }),
+          }),
+          {
+            maxSize: 100,
+          }
+        )
+      ),
+      // Cloud connector configuration - all connector settings go here
+      cloud_connector: schema.maybe(
         schema.object({
-          name: schema.string({
-            meta: { description: 'The name of the custom field. Cannot contain spaces.' },
+          enabled: schema.boolean({
+            defaultValue: false,
+            meta: { description: 'Set to `true` to enable cloud connectors for this policy.' },
           }),
-          value: schema.oneOf([schema.string(), schema.number()], {
-            meta: { description: 'The value of the custom field.' },
-          }),
-        }),
-        {
-          maxSize: 100,
-        }
-      )
-    ),
-    // Cloud connector configuration - all connector settings go here
-    cloud_connector: schema.maybe(
-      schema.object({
-        enabled: schema.boolean({
-          defaultValue: false,
-          meta: { description: 'Whether cloud connectors are enabled for this policy.' },
-        }),
-        cloud_connector_id: schema.maybe(
-          schema.string({
-            meta: {
-              description:
-                'ID of an existing cloud connector to reuse. If not provided, a new connector will be created.',
-            },
-          })
-        ),
-        name: schema.maybe(
-          schema.string({
-            minLength: 1,
-            maxLength: 255,
-            meta: {
-              description:
-                'Optional name for the cloud connector. If not provided, will be auto-generated from credentials.',
-            },
-          })
-        ),
-        target_csp: schema.maybe(
-          schema.oneOf([schema.literal('aws'), schema.literal('azure'), schema.literal('gcp')], {
-            meta: {
-              description:
-                'Target cloud service provider. If not provided, will be auto-detected from inputs.',
-            },
-          })
-        ),
-      })
-    ),
-  }),
+          cloud_connector_id: schema.maybe(
+            schema.string({
+              meta: {
+                description:
+                  'ID of an existing cloud connector to reuse. If not provided, a new connector is created.',
+              },
+            })
+          ),
+          name: schema.maybe(
+            schema.string({
+              minLength: 1,
+              maxLength: 255,
+              meta: {
+                description:
+                  'Name for the cloud connector. If not provided, a name is generated automatically from the credentials.',
+              },
+            })
+          ),
+          target_csp: schema.maybe(
+            schema.oneOf([schema.literal('aws'), schema.literal('azure'), schema.literal('gcp')], {
+              meta: {
+                description:
+                  'Target cloud service provider. If not provided, the provider is detected automatically from the inputs.',
+              },
+            })
+          ),
+        })
+      ),
+    },
+    // Distinct meta.id so this extension does not silently overwrite the
+    // `simplified_create_package_policy_request` named component in the OAS
+    // shared schemas map. ObjectType.extends() inherits `meta.id` from the
+    // base when the caller does not provide a fresh one, and the OAS bundler's
+    // shared registry is last-write-wins on collisions.
+    { meta: { id: 'create_agentless_policy_request' } }
+  ),
 };
 
 export const DeleteAgentlessPolicyRequestSchema = {

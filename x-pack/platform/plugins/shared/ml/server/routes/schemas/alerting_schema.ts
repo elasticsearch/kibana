@@ -17,7 +17,7 @@ export const mlAnomalyDetectionAlertPreviewRequest = schema.object({
   /**
    * Relative time range to look back from now, e.g. 1y, 8m, 15d
    */
-  timeRange: schema.string(),
+  timeRange: schema.string({ maxLength: 10000 }),
   /**
    * Number of top hits to return
    */

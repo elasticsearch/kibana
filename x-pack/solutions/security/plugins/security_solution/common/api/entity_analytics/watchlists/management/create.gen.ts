@@ -30,11 +30,11 @@ export const CreateWatchlistRequestBody = lazySchema(() =>
     /**
      * Unique name for the watchlist
      */
-    name: z.string(),
+    name: z.string().max(256),
     /**
      * Description of the watchlist
      */
-    description: z.string().optional(),
+    description: z.string().max(1000).optional(),
     /**
      * Risk score modifier associated with the watchlist
      */
@@ -51,27 +51,28 @@ export const CreateWatchlistRequestBody = lazySchema(() =>
         z
           .object({
             type: EntitySourceType,
-            name: z.string(),
-            indexPattern: z.string().optional(),
+            name: z.string().max(256),
+            indexPattern: z.string().max(1000).optional(),
             /**
              * Required when type is entity_analytics_integration. One of entityanalytics_okta, entityanalytics_ad.
              */
-            integrationName: z.string().optional(),
+            integrationName: z.string().max(256).optional(),
             enabled: z.boolean().optional(),
             /**
              * Field used to query the entity store for index-type sources
              */
-            identifierField: z.string().optional(),
+            identifierField: z.string().max(256).optional(),
             /**
              * KQL query used to filter data from the provided index patterns
              */
-            queryRule: z.string().optional(),
-            matchers: z.array(Matcher).optional(),
+            queryRule: z.string().max(4096).optional(),
+            matchers: z.array(Matcher).max(100).optional(),
             filter: Filter.optional(),
             range: DateRange.optional(),
           })
           .strict()
       )
+      .max(100)
       .optional(),
   })
 );

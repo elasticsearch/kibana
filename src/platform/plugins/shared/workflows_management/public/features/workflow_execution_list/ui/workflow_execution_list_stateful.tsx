@@ -22,6 +22,7 @@ import { useKibana } from '../../../hooks/use_kibana';
 import { useSerialPolling } from '../../../hooks/use_serial_polling';
 import { useTelemetry } from '../../../hooks/use_telemetry';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
+import { useWorkflowsExperimentalUiSetting } from '../../../hooks/use_workflows_experimental_ui_setting';
 
 export interface ExecutionListFiltersQueryParams {
   statuses: ExecutionStatus[];
@@ -40,11 +41,10 @@ interface WorkflowExecutionListProps {
 }
 
 export function WorkflowExecutionList({ workflowId }: WorkflowExecutionListProps) {
-  const { uiSettings, notifications } = useKibana().services;
+  const { notifications } = useKibana().services;
   const api = useWorkflowsApi();
   const telemetry = useTelemetry();
-  const showExecutor =
-    uiSettings?.get<boolean>(WORKFLOWS_UI_SHOW_EXECUTOR_SETTING_ID, false) ?? false;
+  const showExecutor = useWorkflowsExperimentalUiSetting(WORKFLOWS_UI_SHOW_EXECUTOR_SETTING_ID);
   const [filters, setFilters] = useState<ExecutionListFiltersQueryParams>(DEFAULT_FILTERS);
   const [isCancelInProgress, setIsCancelInProgress] = useState(false);
 

@@ -20,6 +20,7 @@ const connector = (id: string, name: string, actionTypeId: string): ConnectorIte
   isDeprecated: false,
   isSystemAction: false,
   isConnectorTypeDeprecated: false,
+  subActions: [],
 });
 
 const ALL_CONNECTORS: ConnectorItem[] = [

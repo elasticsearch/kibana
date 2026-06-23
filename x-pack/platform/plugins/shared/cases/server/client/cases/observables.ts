@@ -51,6 +51,86 @@ const ensureUpdateAuthorized = async (
   });
 };
 
+/**
+ * License-agnostic core that dedupes, caps, persists, and records a user action
+ * for a set of observables on a case. Callers MUST enforce the Platinum license
+ * gate and call notifyUsage themselves.
+ *
+ * Skips both the patchCase write and the user action write when no new
+ * observables were added (idempotency — avoids a no-op SO write on every
+ * re-extraction of the same alert).
+ *
+ * @param prefetchedCase - Optional already-fetched SO to avoid an extra getCase
+ *   round-trip. When provided, `caseId` is ignored for the initial fetch.
+ */
+export const applyObservablesToCase = async (
+  caseId: string,
+  observables: ObservablePost[],
+  clientArgs: CasesClientArgs,
+  prefetchedCase?: CaseSavedObjectTransformed
+) => {
+  const {
+    services: { caseService, userActionService },
+    user,
+  } = clientArgs;
+
+  if (observables.length === 0) {
+    return;
+  }
+
+  const retrievedCase = prefetchedCase ?? (await caseService.getCase({ id: caseId }));
+
+  const currentObservables = retrievedCase.attributes.observables ?? [];
+  const updatedObservablesMap = new Map<string, Observable>();
+  currentObservables.forEach((observable) => {
+    processObservables(updatedObservablesMap, observable);
+  });
+
+  observables.forEach((observable) => processObservables(updatedObservablesMap, observable));
+
+  const finalObservables = Array.from(updatedObservablesMap.values()).slice(
+    0,
+    MAX_OBSERVABLES_PER_CASE
+  );
+
+  const newObservablesCount = finalObservables.length - currentObservables.length;
+
+  // Nothing new was added — skip both the patch write and the user action to
+  // avoid a no-op SO write on every idempotent re-extraction (e.g. the same
+  // alert being attached multiple times).
+  if (newObservablesCount <= 0) {
+    return;
+  }
+
+  const patchedCase = await caseService.patchCase({
+    caseId: retrievedCase.id,
+    originalCase: retrievedCase,
+    updatedAttributes: {
+      observables: finalObservables,
+      total_observables: finalObservables.length,
+    },
+  });
+
+  await userActionService.creator.createUserAction({
+    userAction: {
+      type: UserActionTypes.observables,
+      caseId: retrievedCase.id,
+      owner: retrievedCase.attributes.owner,
+      user,
+      payload: {
+        observables: { count: newObservablesCount, actionType: 'add' },
+      },
+    },
+  });
+
+  return {
+    ...retrievedCase,
+    ...patchedCase,
+    attributes: { ...retrievedCase.attributes, ...patchedCase?.attributes },
+    references: retrievedCase.references,
+  };
+};
+
 export const addObservable = async (
   caseId: string,
   params: AddObservableRequest,
@@ -296,9 +376,8 @@ export const bulkAddObservables = async (
   casesClient: CasesClient
 ) => {
   const {
-    services: { caseService, licensingService, userActionService },
+    services: { caseService, licensingService },
     authorization,
-    user,
   } = clientArgs;
 
   const hasPlatinumLicenseOrGreater = await licensingService.isAtLeastPlatinum();
@@ -325,54 +404,18 @@ export const bulkAddObservables = async (
       )
     );
 
-    const currentObservables = retrievedCase.attributes.observables ?? [];
-    const updatedObservablesMap = new Map<string, Observable>();
-    currentObservables.forEach((observable) => {
-      processObservables(updatedObservablesMap, observable);
-    });
-
-    paramArgs.observables.forEach((observable) =>
-      processObservables(updatedObservablesMap, observable)
+    const theCase = await applyObservablesToCase(
+      paramArgs.caseId,
+      paramArgs.observables,
+      clientArgs,
+      retrievedCase
     );
-
-    const finalObservables = Array.from(updatedObservablesMap.values()).slice(
-      0,
-      MAX_OBSERVABLES_PER_CASE
-    );
-
-    const updatedCase = await caseService.patchCase({
-      caseId: retrievedCase.id,
-      originalCase: retrievedCase,
-      updatedAttributes: {
-        observables: finalObservables,
-        total_observables: finalObservables.length,
-      },
-    });
-
-    const newObservablesCount = finalObservables.length - currentObservables.length;
-
-    await userActionService.creator.createUserAction({
-      userAction: {
-        type: UserActionTypes.observables,
-        caseId: retrievedCase.id,
-        owner: retrievedCase.attributes.owner,
-        user,
-        payload: {
-          observables: { count: newObservablesCount, actionType: 'add' },
-        },
-      },
-    });
-
-    const res = flattenCaseSavedObject({
-      savedObject: {
-        ...retrievedCase,
-        ...updatedCase,
-        attributes: { ...retrievedCase.attributes, ...updatedCase?.attributes },
-        references: retrievedCase.references,
-      },
-    });
-
-    return decodeOrThrow(CaseRt)(res);
+    if (theCase) {
+      const res = flattenCaseSavedObject({ savedObject: theCase });
+      return decodeOrThrow(CaseRt)(res);
+    } else {
+      throw Boom.badRequest(`Failed to add observable`);
+    }
   } catch (error) {
     throw Boom.badRequest(`Failed to add observable: ${error}`);
   }

@@ -16,27 +16,30 @@ import { createDeletionDetectionService } from './deletion_detection/deletion_de
 export type IndexSyncService = ReturnType<typeof createIndexSyncService>;
 
 export const createIndexSyncService = ({
-  esClient,
+  internalEsClient,
+  dataEsClient,
   crudClient,
   logger,
   descriptorClient,
   watchlist,
 }: {
-  esClient: ElasticsearchClient;
+  internalEsClient: ElasticsearchClient;
+  dataEsClient: ElasticsearchClient;
   crudClient: CRUDClient;
   logger: Logger;
   descriptorClient: WatchlistEntitySourceClient;
   watchlist: { name: string; id: string; index: string };
 }) => {
   const updateDetectionService = createUpdateDetectionService({
-    esClient,
+    internalEsClient,
+    dataEsClient,
     crudClient,
     logger,
     descriptorClient,
     watchlist,
   });
   const deletionDetectionService = createDeletionDetectionService({
-    esClient,
+    esClient: internalEsClient,
     crudClient,
     logger,
     descriptorClient,

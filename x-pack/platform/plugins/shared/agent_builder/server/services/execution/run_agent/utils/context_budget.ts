@@ -7,9 +7,7 @@
 
 import type { InferenceConnector } from '@kbn/inference-common';
 import { getContextWindowSize } from '@kbn/inference-common';
-import { estimateTokens } from '@kbn/agent-builder-genai-utils/tools/utils/token_count';
 import type { CompactionSummary } from '@kbn/agent-builder-common';
-import type { ProcessedConversationRound } from './prepare_conversation';
 
 /**
  * Fraction of the context window reserved for system prompt, output generation,
@@ -48,59 +46,24 @@ export const computeContextBudget = (connector: InferenceConnector): ContextBudg
   return { totalBudget, historyBudget, triggerThreshold };
 };
 
-/**
- * Message structure overhead per round: role markers, JSON structure
- * for tool calls, separator tokens, etc. Rough empirical estimate.
- */
-const PER_ROUND_OVERHEAD_TOKENS = 50;
+const sumTokens = (counts: number[]): number => counts.reduce((total, count) => total + count, 0);
 
 /**
- * Estimates the token count for a single processed conversation round,
- * including message structure overhead.
- */
-export const estimateRoundTokens = (round: ProcessedConversationRound): number => {
-  let tokens = PER_ROUND_OVERHEAD_TOKENS;
-
-  // User message + attachments
-  tokens += estimateTokens(round.input.message);
-  for (const attachment of round.input.attachments) {
-    tokens += estimateTokens(attachment.representation.value);
-  }
-
-  // Tool call steps
-  for (const step of round.steps) {
-    tokens += estimateTokens(step);
-  }
-
-  // Assistant response
-  tokens += estimateTokens(round.response.message);
-
-  return tokens;
-};
-
-/**
- * Estimates the total token count for all conversation rounds.
- */
-export const estimateConversationTokens = (rounds: ProcessedConversationRound[]): number => {
-  return rounds.reduce((total, round) => total + estimateRoundTokens(round), 0);
-};
-
-/**
- * Determines whether compaction should be triggered given the current
- * conversation rounds, context budget, and any existing compaction summary.
+ * Determines whether compaction should be triggered given precomputed per-round
+ * token counts, the context budget, and any existing compaction summary.
  *
- * When an existing summary is provided, the effective token count is the
- * summary's token cost plus only the rounds not yet covered by the summary,
- * rather than the raw total of all stored rounds.
+ * When an existing summary is provided, the effective token count is the summary's
+ * token cost plus only the rounds not yet covered by the summary, rather than the
+ * raw total of all stored rounds.
  */
 export const shouldTriggerCompaction = (
-  rounds: ProcessedConversationRound[],
+  perRoundTokenCounts: number[],
   budget: ContextBudget,
   existingSummary?: CompactionSummary
 ): boolean => {
   const effectiveTokens = existingSummary
     ? existingSummary.token_count +
-      estimateConversationTokens(rounds.slice(existingSummary.summarized_round_count))
-    : estimateConversationTokens(rounds);
+      sumTokens(perRoundTokenCounts.slice(existingSummary.summarized_round_count))
+    : sumTokens(perRoundTokenCounts);
   return effectiveTokens > budget.triggerThreshold;
 };

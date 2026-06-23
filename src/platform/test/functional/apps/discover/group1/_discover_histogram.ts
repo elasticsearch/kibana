@@ -7,6 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+// Serverless test (remove during Scout migration): x-pack/platform/test/serverless/functional/test_suites/discover/group1/_discover_histogram.ts
+
 import expect from '@kbn/expect';
 import type { TimeStrings } from '../../../page_objects/common_page';
 import type { FtrProviderContext } from '../ftr_provider_context';

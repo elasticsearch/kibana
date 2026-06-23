@@ -51,7 +51,7 @@ const createWrapper = () => {
 describe('useUpdateRule', () => {
   const mockUpdateRule = jest.fn();
   const mockAddSuccess = jest.fn();
-  const mockAddDanger = jest.fn();
+  const mockAddError = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -63,7 +63,7 @@ describe('useUpdateRule', () => {
         return { updateRule: mockUpdateRule } as any;
       }
       if (service === 'notifications') {
-        return { toasts: { addSuccess: mockAddSuccess, addDanger: mockAddDanger } } as any;
+        return { toasts: { addSuccess: mockAddSuccess, addError: mockAddError } } as any;
       }
       return undefined as any;
     });
@@ -78,19 +78,47 @@ describe('useUpdateRule', () => {
     await waitFor(() => {
       expect(mockUpdateRule).toHaveBeenCalledWith('rule-1', { metadata: { name: 'My CPU Alert' } });
       expect(mockAddSuccess).toHaveBeenCalledWith('Rule "My CPU Alert" updated successfully');
-      expect(mockAddDanger).not.toHaveBeenCalled();
+      expect(mockAddError).not.toHaveBeenCalled();
     });
   });
 
-  it('should show a danger toast when update fails', async () => {
-    mockUpdateRule.mockRejectedValue(new Error('update failed'));
+  it('should surface the server error message in the modal and a friendly status in the toast', async () => {
+    const httpError = Object.assign(new Error('Conflict'), {
+      stack: 'Error: Forbidden\n    at fetch',
+      body: { message: 'forbidden action' },
+      response: { status: 403 } as Response,
+    });
+    mockUpdateRule.mockRejectedValue(httpError);
     const { result } = renderHook(() => useUpdateRule(), { wrapper: createWrapper() });
 
     result.current.mutate({ id: 'rule-1', payload: {} });
 
     await waitFor(() => {
-      expect(mockAddDanger).toHaveBeenCalledWith(expect.any(String));
+      expect(mockAddError).toHaveBeenCalledTimes(1);
+      const [enrichedError, options] = mockAddError.mock.calls[0];
+      expect(enrichedError.message).toBe('forbidden action');
+      expect(enrichedError.stack).toBe('Error: Forbidden\n    at fetch');
+      expect(options).toEqual({
+        title: 'Edits not saved',
+        toastMessage:
+          'Your role needs additional privileges to save rules. Contact your administrator for help.',
+      });
       expect(mockAddSuccess).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should fall back to the raw error message when the status is unknown', async () => {
+    const error = new Error('Network down');
+    mockUpdateRule.mockRejectedValue(error);
+    const { result } = renderHook(() => useUpdateRule(), { wrapper: createWrapper() });
+
+    result.current.mutate({ id: 'rule-1', payload: {} });
+
+    await waitFor(() => {
+      expect(mockAddError).toHaveBeenCalledWith(error, {
+        title: 'Edits not saved',
+        toastMessage: 'Network down',
+      });
     });
   });
 });

@@ -7,34 +7,39 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { parseDocument } from 'yaml';
+import { parseDocument, isScalar, stringify } from 'yaml';
 
 /**
- * Updates a field in YAML while preserving comments, formatting, and blank lines.
- * This is useful when updating workflow metadata (like enabled, name, description, tags)
- * without losing user's formatting and comments.
+ * Updates a field in YAML by `fieldPath` (e.g. `enabled`, `metadata.author`).
  *
- * @param yamlString - The original YAML string
- * @param fieldPath - The dot-notated path to the field to update (e.g., 'enabled', 'name', 'parent.child')
- * @param value - The new value for the field
- * @returns The updated YAML string with formatting preserved
+ * For an existing scalar field with a primitive value, the new value is
+ * spliced into the source at the scalar's byte range, leaving every other
+ * byte (indentation, quoting, comments, blank lines, block scalars, trailing
+ * newlines) untouched. For a missing field or a non-scalar value, we fall
+ * back to `doc.setIn` + `doc.toString()`, which can normalize formatting.
  */
 export function updateYamlField(yamlString: string, fieldPath: string, value: unknown): string {
   try {
     const doc = parseDocument(yamlString, { keepSourceTokens: true });
-
-    // Convert dot-notated string to array (e.g., 'parent.child' -> ['parent', 'child'])
     const pathArray = fieldPath.split('.');
 
-    // Update the field in the document
-    // If the field doesn't exist, it will be added
-    doc.setIn(pathArray, value);
+    const existingNode = doc.getIn(pathArray, true);
 
-    // Convert back to string, preserving formatting
+    if (isScalar(existingNode) && Array.isArray(existingNode.range) && isPrimitive(value)) {
+      const [start, end] = existingNode.range;
+      const serialized = stringify(value, { lineWidth: 0 }).replace(/\n+$/, '');
+      return yamlString.slice(0, start) + serialized + yamlString.slice(end);
+    }
+
+    doc.setIn(pathArray, value);
     return doc.toString();
-  } catch (error) {
-    // If parsing fails, return original YAML
-    // This should not happen in normal operation, but provides a fallback
+  } catch {
     return yamlString;
   }
 }
+
+const isPrimitive = (value: unknown): boolean =>
+  value === null ||
+  typeof value === 'string' ||
+  typeof value === 'number' ||
+  typeof value === 'boolean';

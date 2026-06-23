@@ -136,7 +136,14 @@ export function DependencyEditor({
   );
 
   return (
-    <EuiPopover button={button} isOpen={isOpen} closePopover={handleSubmit}>
+    <EuiPopover
+      aria-label={i18n.translate('xpack.slo.dependencyEditor.popoverAriaLabel', {
+        defaultMessage: 'Dependency editor',
+      })}
+      button={button}
+      isOpen={isOpen}
+      closePopover={handleSubmit}
+    >
       <div style={{ width: 400 }}>
         <EuiForm component="form">
           <EuiFormRow

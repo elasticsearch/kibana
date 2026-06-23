@@ -31,7 +31,7 @@ If you use the latter method, you must provide a valid list of Slack channels. D
 
 - {applies_to}`stack: ga 9.3+` In the **Allowed channel names** field, you can enter up to 500 channels. Channel names must include a `#` at the front, for example: `#alert-notifications`. If you don't specify allowed channels, you can enter any channel name when configuring the Slack action for a rule.
 
-- {applies_to}`stack: ga 9.0-9.2`: In the **Channel IDs** field, enter the names of the Slack channels you want to message.
+- {applies_to}`stack: ga 9.0-9.2`: In the **Channel IDs** field, enter the IDs of the Slack channels you want to message.
 
 When you create a rule, each action can communicate with one of the specified channels. For Slack setup details, go to [Configure a Slack account](#configuring-slack).
 
@@ -44,14 +44,88 @@ You can test connectors as you're creating or editing the connector in {{kib}}. 
 :screenshot:
 :::
 
-For the web API type of connector, you must choose one of the channel IDs. You can then test either plain text or block kit messages:
+For the Web API type of connector, you must choose one of the channel IDs or names. You can then test either plain text or Block Kit messages:
 
 :::{image} ../images/slack-api-connector-test.png
 :alt: Slack web API connector test
 :screenshot:
 :::
 
-After you add block kit messages you can click a link to preview them in the Slack block kit builder.
+After you add Block Kit messages, you can click a link to preview them in the Slack Block Kit Builder.
+
+## Action parameters [slack-action-parameters]
+
+Webhook Slack connectors have the following action parameter:
+
+Message
+:   The text to send to the connector's webhook channel.
+
+Web API Slack connectors have the following actions:
+
+Post message
+:   Send a plain text message to a Slack channel.
+    - `channelNames` (optional): Slack channel names. Channel names must start with `#`, for example `#alerts`. Only one channel is supported. Takes priority over `channelIds` and `channels`.
+    - `channelIds` (optional): Slack channel IDs, for example `C123ABC456`. Only one channel is supported.
+    - `channels` (optional, deprecated): Legacy channel values. Use `channelNames` or `channelIds` instead.
+    - `text` (required): Message text.
+
+Post Block Kit
+:   Send a Slack [Block Kit](https://api.slack.com/block-kit) message to a Slack channel.
+    - `channelNames` (optional): Slack channel names. Channel names must start with `#`, for example `#alerts`. Only one channel is supported. Takes priority over `channelIds` and `channels`.
+    - `channelIds` (optional): Slack channel IDs, for example `C123ABC456`. Only one channel is supported.
+    - `channels` (optional, deprecated): Legacy channel values. Use `channelNames` or `channelIds` instead.
+    - `text` (required): A JSON string that contains the Block Kit payload. The JSON object must include a top-level `blocks` property. In workflow YAML, use a block scalar (`|`) when the payload spans multiple lines.
+
+Validate channel ID
+:   Validate whether a Slack channel ID can be used by the connector.
+    - `channelId` (optional): Slack channel ID to validate.
+
+## Workflows examples [slack-workflow-examples]
+
+Send a plain text message:
+
+```yaml
+steps:
+  - name: post_message_to_slack
+    type: slack_api.postMessage
+    connector-id: <connector-id>
+    with:
+      channelNames:
+        - '#alerts'
+      text: 'Workflow finished successfully'
+```
+
+Send a Block Kit message. The `text` field is a JSON string that contains the Slack `blocks` payload:
+
+```yaml
+steps:
+  - name: post_digest_to_slack
+    type: slack_api.postBlockkit
+    connector-id: <connector-id>
+    with:
+      channelIds:
+        - C123ABC456
+      text: |
+        {
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "Daily report",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Summary*"
+              }
+            }
+          ]
+        }
+```
 
 ## Connector networking configuration [slack-connector-networking-configuration]
 

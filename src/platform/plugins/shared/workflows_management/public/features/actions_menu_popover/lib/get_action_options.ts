@@ -92,6 +92,18 @@ export function getActionOptions(
     options: [],
   };
 
+  const kibanaSecurityGroup: ActionGroup = {
+    iconType: 'securityApp',
+    id: 'kibana.security',
+    label: i18n.translate('workflows.actionsMenu.kibanaSecurity', {
+      defaultMessage: 'Security',
+    }),
+    description: i18n.translate('workflows.actionsMenu.kibanaSecurityDescription', {
+      defaultMessage: 'Work with Security data and features directly from your workflow',
+    }),
+    options: [],
+  };
+
   const kibanaGroup: ActionGroup = {
     iconType: 'logoKibana',
     id: 'kibana',
@@ -102,7 +114,7 @@ export function getActionOptions(
       defaultMessage: 'Work with Kibana data and features directly from your workflow',
     }),
     options: [],
-    nestedGroups: [kibanaCasesGroup],
+    nestedGroups: [kibanaCasesGroup, kibanaSecurityGroup],
   };
   const externalGroup: ActionOptionData = {
     iconType: 'plugs',
@@ -258,6 +270,7 @@ export function getActionOptions(
     [StepCategory.Ai]: aiGroup,
     [StepCategory.Kibana]: kibanaGroup,
     [StepCategory.KibanaCases]: kibanaCasesGroup,
+    [StepCategory.KibanaSecurity]: kibanaSecurityGroup,
     [StepCategory.Data]: dataTransformationGroup,
     [StepCategory.FlowControl]: flowControlGroup,
   };

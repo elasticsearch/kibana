@@ -132,7 +132,7 @@ export function NotificationAction({
           <EuiFlexGroup alignItems="center" gutterSize="xs" component="span" responsive={false}>
             <EuiSpacer size="xs" />
             <EuiFlexItem grow={false}>
-              <EuiIcon size="s" type="bell" color="subdued" />
+              <EuiIcon size="s" type="bell" color="subdued" aria-hidden={true} />
             </EuiFlexItem>
             {isRuleAction ? (
               <FrequencyDescription frequency={action.frequency} />

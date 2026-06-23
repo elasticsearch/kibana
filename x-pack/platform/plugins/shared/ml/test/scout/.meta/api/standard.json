@@ -1,5 +1,5 @@
 {
-  "sha1": "2c953d44e9fb9fffd16ea3e52031000dae79b414",
+  "sha1": "2fd013cb86d878dfb51ef7931ea6a4b1672ccd01",
   "tests": [
     {
       "id": "993254e341ff769-79593c552c24fe9",
@@ -69,6 +69,363 @@
         "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/feature_controls.spec.ts",
         "line": 102,
         "column": 10
+      }
+    },
+    {
+      "id": "351e9651e626bd9-6bf549a22a105d0",
+      "title": "create_filters should successfully create new filter",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/create_filters.spec.ts",
+        "line": 32,
+        "column": 12
+      }
+    },
+    {
+      "id": "351e9651e626bd9-14801d38f51db9d",
+      "title": "create_filters should not create new filter for user without required permission",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/create_filters.spec.ts",
+        "line": 55,
+        "column": 12
+      }
+    },
+    {
+      "id": "351e9651e626bd9-fec920d84edd97e",
+      "title": "create_filters should not create new filter for unauthorized user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/create_filters.spec.ts",
+        "line": 77,
+        "column": 12
+      }
+    },
+    {
+      "id": "351e9651e626bd9-4236691e2190f17",
+      "title": "create_filters should return 400 bad request if invalid filterId",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/create_filters.spec.ts",
+        "line": 99,
+        "column": 12
+      }
+    },
+    {
+      "id": "351e9651e626bd9-2ffaddf1f57ffb9",
+      "title": "create_filters should return 400 bad request if invalid items",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/create_filters.spec.ts",
+        "line": 121,
+        "column": 12
+      }
+    },
+    {
+      "id": "bd4fa8be972711e-ea3cd74aa97b7e6",
+      "title": "delete_filters should delete filter by id",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/delete_filters.spec.ts",
+        "line": 56,
+        "column": 12
+      }
+    },
+    {
+      "id": "bd4fa8be972711e-02a55907b115686",
+      "title": "delete_filters should not delete filter for user without required permission",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/delete_filters.spec.ts",
+        "line": 76,
+        "column": 12
+      }
+    },
+    {
+      "id": "bd4fa8be972711e-56d23515f2f514a",
+      "title": "delete_filters should not delete filter for unauthorized user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/delete_filters.spec.ts",
+        "line": 101,
+        "column": 12
+      }
+    },
+    {
+      "id": "bd4fa8be972711e-d31e3e4e5701f5b",
+      "title": "delete_filters should not allow user to delete filter if invalid filterId",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/delete_filters.spec.ts",
+        "line": 123,
+        "column": 12
+      }
+    },
+    {
+      "id": "b0161514557a447-7f71ccb7056df8d",
+      "title": "get_filters_stats should fetch all filters stats",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters_stats.spec.ts",
+        "line": 77,
+        "column": 12
+      }
+    },
+    {
+      "id": "b0161514557a447-26d37a5b270aeee",
+      "title": "get_filters_stats should not allow retrieving filters stats for user without required permission",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters_stats.spec.ts",
+        "line": 117,
+        "column": 12
+      }
+    },
+    {
+      "id": "b0161514557a447-e5916c2ebc3aefc",
+      "title": "get_filters_stats should not allow retrieving filters stats for unauthorized user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters_stats.spec.ts",
+        "line": 132,
+        "column": 12
+      }
+    },
+    {
+      "id": "0d77818e8cca6fc-52dfb554b4039e1",
+      "title": "get_filters should fetch all filters",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters.spec.ts",
+        "line": 43,
+        "column": 12
+      }
+    },
+    {
+      "id": "0d77818e8cca6fc-bd987a11542876f",
+      "title": "get_filters should not allow to retrieve filters for user without required permission",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters.spec.ts",
+        "line": 58,
+        "column": 12
+      }
+    },
+    {
+      "id": "0d77818e8cca6fc-f59f2b423b77ad7",
+      "title": "get_filters should not allow to retrieve filters for unauthorized user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters.spec.ts",
+        "line": 73,
+        "column": 12
+      }
+    },
+    {
+      "id": "0d77818e8cca6fc-57b2486f42d5609",
+      "title": "get_filters should fetch single filter by id",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters.spec.ts",
+        "line": 88,
+        "column": 12
+      }
+    },
+    {
+      "id": "0d77818e8cca6fc-ef552dba5c61d17",
+      "title": "get_filters should return 404 if filterId does not exist",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/get_filters.spec.ts",
+        "line": 103,
+        "column": 12
+      }
+    },
+    {
+      "id": "66b4c8d5bd07b91-634bd97f22890ab",
+      "title": "update_filters should update filter by id",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/update_filters.spec.ts",
+        "line": 62,
+        "column": 12
+      }
+    },
+    {
+      "id": "66b4c8d5bd07b91-155778cb074261d",
+      "title": "update_filters should not allow to update filter for user without required permission",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/update_filters.spec.ts",
+        "line": 78,
+        "column": 12
+      }
+    },
+    {
+      "id": "66b4c8d5bd07b91-852c65a6c44c912",
+      "title": "update_filters should not allow to update filter for unauthorized user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/update_filters.spec.ts",
+        "line": 106,
+        "column": 12
+      }
+    },
+    {
+      "id": "66b4c8d5bd07b91-33afc0023eb2fdd",
+      "title": "update_filters should return appropriate error if invalid filterId",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/ml/test/scout/api/tests/filters/update_filters.spec.ts",
+        "line": 134,
+        "column": 12
       }
     }
   ]

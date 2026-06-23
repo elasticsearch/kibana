@@ -12,6 +12,9 @@ describe('config validation', () => {
     const config: Record<string, unknown> = {};
     expect(configSchema.validate(config)).toMatchInlineSnapshot(`
       Object {
+        "alertsService": Object {
+          "totalFieldsLimit": 2800,
+        },
         "cancelAlertsOnRuleTimeout": true,
         "enableFrameworkAlerts": true,
         "healthCheck": Object {

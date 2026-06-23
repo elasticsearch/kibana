@@ -23,11 +23,15 @@ import {
   useEuiTheme,
   type EuiThemeComputed,
 } from '@elastic/eui';
-import type { AgentAcl, AgentAclEntry, AgentDefinition } from '@kbn/agent-builder-common';
+import type {
+  AgentAccessControl,
+  AgentAccessControlEntry,
+  AgentDefinition,
+} from '@kbn/agent-builder-common';
 import { AccessForm } from './access_form';
-import { VisibilityContextStrip } from './visibility_context_strip';
-import { useAgentAcl } from '../../../hooks/agents/use_agent_acl';
-import { useUpdateAgentAcl } from '../../../hooks/agents/use_update_agent_acl';
+import { AccessControlModeContextStrip } from './access_control_mode_context_strip';
+import { useAgentAccessControl } from '../../../hooks/agents/use_agent_access_control';
+import { useUpdateAgentAccessControl } from '../../../hooks/agents/use_update_agent_access_control';
 import {
   accessFlyoutCancel,
   accessFlyoutHiddenBody,
@@ -44,7 +48,7 @@ interface AccessFlyoutProps {
   onClose: () => void;
 }
 
-const entriesSignature = (entries: AgentAclEntry[]): string =>
+const entriesSignature = (entries: AgentAccessControlEntry[]): string =>
   JSON.stringify(
     [...entries]
       .map((e) => ({ type: e.type, name: e.name, role: e.role }))
@@ -79,18 +83,18 @@ const LoadingSkeleton: React.FC = () => {
 export const AccessFlyout: React.FC<AccessFlyoutProps> = ({ agent, onClose }) => {
   const flyoutTitleId = `agentBuilderAclFlyoutTitle_${agent.id}`;
 
-  const { data, isLoading, isError } = useAgentAcl(agent.id);
-  const [draft, setDraft] = useState<AgentAcl | null>(null);
+  const { data, isLoading, isError } = useAgentAccessControl(agent.id);
+  const [draft, setDraft] = useState<AgentAccessControl | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
 
   // Seed the draft once when the server responds. After that, dirty state lives in `draft`.
   useEffect(() => {
-    if (data?.acl && draft === null) {
-      setDraft(data.acl);
+    if (data?.access_control && draft === null) {
+      setDraft(data.access_control);
     }
   }, [data, draft]);
 
-  const updateMutation = useUpdateAgentAcl({
+  const updateMutation = useUpdateAgentAccessControl({
     agentId: agent.id,
     onSuccess: () => {
       setSaveErrorMessage(null);
@@ -104,8 +108,8 @@ export const AccessFlyout: React.FC<AccessFlyoutProps> = ({ agent, onClose }) =>
   const isBusy = isLoading || updateMutation.isLoading;
   const isDirty =
     draft !== null &&
-    data?.acl != null &&
-    entriesSignature(draft.entries) !== entriesSignature(data.acl.entries);
+    data?.access_control != null &&
+    entriesSignature(draft.entries) !== entriesSignature(data.access_control.entries);
 
   const handleSave = () => {
     if (!draft) return;
@@ -129,7 +133,7 @@ export const AccessFlyout: React.FC<AccessFlyoutProps> = ({ agent, onClose }) =>
         </EuiCallOut>
       );
     }
-    if (!data.can_manage) {
+    if (!data.permissions.update_access_control) {
       // The user can read the agent but not manage its ACL. Server has already redacted
       // entries — this is its own first-class state, not an error. Be honest about it.
       return (
@@ -185,8 +189,8 @@ export const AccessFlyout: React.FC<AccessFlyoutProps> = ({ agent, onClose }) =>
       </EuiFlyoutHeader>
       <EuiFlyoutBody
         banner={
-          !isLoading && draft !== null && !isError && data?.can_manage ? (
-            <VisibilityContextStrip agent={agent} />
+          !isLoading && draft !== null && !isError && data?.permissions.update_access_control ? (
+            <AccessControlModeContextStrip agent={agent} />
           ) : undefined
         }
       >
@@ -204,7 +208,7 @@ export const AccessFlyout: React.FC<AccessFlyoutProps> = ({ agent, onClose }) =>
               fill
               onClick={handleSave}
               isLoading={updateMutation.isLoading}
-              isDisabled={!isDirty || isBusy || !data?.can_manage}
+              isDisabled={!isDirty || isBusy || !data?.permissions.update_access_control}
               data-test-subj="agentBuilderAclSaveButton"
             >
               {accessFlyoutSave}

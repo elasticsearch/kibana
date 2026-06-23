@@ -14,6 +14,7 @@ export interface CreateCsvReportParams {
   title: string;
   objectType: string;
   browserTimezone: string;
+  version: string;
   columns: string[];
   searchSource: {
     index: {

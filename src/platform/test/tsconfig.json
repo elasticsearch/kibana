@@ -19,6 +19,7 @@
   "exclude": ["target/**/*", "*/plugins/**/*", "plugins/**/*"],
   "kbn_references": [
     "@kbn/core",
+    "@kbn/content-list-common",
     "@kbn/dashboard-plugin",
     "@kbn/expressions-plugin",
     "@kbn/saved-objects-management-plugin",
@@ -75,6 +76,7 @@
     "@kbn/unified-data-table",
     "@kbn/session-notifications-plugin",
     "@kbn/ui-actions-plugin",
-    "@kbn/deeplinks-analytics"
+    "@kbn/deeplinks-analytics",
+    "@kbn/unified-tabs"
   ]
 }

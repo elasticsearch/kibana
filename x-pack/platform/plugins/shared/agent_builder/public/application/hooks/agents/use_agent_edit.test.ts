@@ -6,12 +6,16 @@
  */
 
 import { act, renderHook } from '@testing-library/react';
-import { AgentAclRole, AgentVisibility } from '@kbn/agent-builder-common';
+import { AgentAccessControlRole, AgentAccessControlMode } from '@kbn/agent-builder-common';
 import { useAgentEdit, type AgentEditState } from './use_agent_edit';
 
 const mockCreate = jest.fn();
 const mockUpdate = jest.fn();
-const mockUpdateAcl = jest.fn();
+const mockUpdateAccessControl = jest.fn();
+type MockAgent = AgentEditState & {
+  permissions?: { update_agent: boolean; update_access_control: boolean };
+};
+let mockAgent: MockAgent | undefined;
 
 jest.mock('@kbn/react-query', () => ({
   // Run the mutationFn directly so the payload passed to the service is observable.
@@ -28,12 +32,16 @@ jest.mock('react-router-dom-v5-compat', () => ({
 
 jest.mock('../use_agent_builder_service', () => ({
   useAgentBuilderServices: () => ({
-    agentService: { create: mockCreate, update: mockUpdate, updateAcl: mockUpdateAcl },
+    agentService: {
+      create: mockCreate,
+      update: mockUpdate,
+      updateAccessControl: mockUpdateAccessControl,
+    },
   }),
 }));
 
 jest.mock('./use_agent_by_id', () => ({
-  useAgentBuilderAgentById: () => ({ agent: undefined, isLoading: false, error: undefined }),
+  useAgentBuilderAgentById: () => ({ agent: mockAgent, isLoading: false, error: undefined }),
 }));
 
 jest.mock('../tools/use_tools', () => ({
@@ -63,20 +71,28 @@ const baseConfiguration: AgentEditState['configuration'] = {
 describe('useAgentEdit submit (create/clone branch)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAgent = undefined;
     mockCreate.mockResolvedValue({ id: 'cloned-agent' });
+    mockUpdate.mockResolvedValue({ id: 'existing-agent' });
+    mockUpdateAccessControl.mockResolvedValue({
+      access_mode: AgentAccessControlMode.Private,
+      entries: [],
+    });
   });
 
-  it('strips acl, created_by and avatar_icon from the create payload when cloning', async () => {
+  it('strips access control entries, created_by and avatar_icon from the create payload when cloning', async () => {
     const cloneData: AgentEditState = {
       id: 'cloned-agent',
       name: 'Cloned Agent',
       description: 'A clone of an existing agent',
-      visibility: AgentVisibility.Public,
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+      },
       labels: ['support'],
       avatar_color: '#FFFFFF',
       avatar_symbol: 'CA',
       avatar_icon: 'logoElastic',
-      acl: { entries: [{ type: 'user', name: 'alice', role: AgentAclRole.Editor }] },
       created_by: { id: 'u1', username: 'bob' },
       configuration: baseConfiguration,
     };
@@ -91,18 +107,18 @@ describe('useAgentEdit submit (create/clone branch)', () => {
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
     const payload = mockCreate.mock.calls[0][0];
-    expect(payload).not.toHaveProperty('acl');
     expect(payload).not.toHaveProperty('created_by');
     expect(payload).not.toHaveProperty('avatar_icon');
     expect(payload).toMatchObject({
       id: 'cloned-agent',
       name: 'Cloned Agent',
       description: 'A clone of an existing agent',
-      visibility: AgentVisibility.Public,
+      access_control: { access_mode: AgentAccessControlMode.Private },
       labels: ['support'],
       avatar_color: '#FFFFFF',
       avatar_symbol: 'CA',
     });
+    expect(payload.access_control).not.toHaveProperty('entries');
   });
 
   it('preserves the standard create fields for a brand-new agent', async () => {
@@ -110,7 +126,7 @@ describe('useAgentEdit submit (create/clone branch)', () => {
       id: 'new-agent',
       name: 'New Agent',
       description: 'A new agent',
-      visibility: AgentVisibility.Private,
+      access_control: { access_mode: AgentAccessControlMode.Private, entries: [] },
       labels: [],
       avatar_color: '',
       avatar_symbol: '',
@@ -129,7 +145,124 @@ describe('useAgentEdit submit (create/clone branch)', () => {
     expect(mockCreate.mock.calls[0][0]).toMatchObject({
       id: 'new-agent',
       name: 'New Agent',
-      visibility: AgentVisibility.Private,
+      access_control: { access_mode: AgentAccessControlMode.Private },
     });
+    expect(mockCreate.mock.calls[0][0].access_control).not.toHaveProperty('entries');
+  });
+
+  it('strips access control entries from regular update payloads', async () => {
+    const updateData: AgentEditState = {
+      id: 'existing-agent',
+      name: 'Existing Agent',
+      description: 'An existing agent',
+      access_control: {
+        access_mode: AgentAccessControlMode.Shared,
+        entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+      },
+      labels: [],
+      avatar_color: '',
+      avatar_symbol: '',
+      configuration: baseConfiguration,
+    };
+
+    const { result } = renderHook(() =>
+      useAgentEdit({
+        editingAgentId: 'existing-agent',
+        onSaveSuccess: jest.fn(),
+        onSaveError: jest.fn(),
+      })
+    );
+
+    await act(async () => {
+      await result.current.submit(updateData);
+    });
+
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    const payload = mockUpdate.mock.calls[0][1];
+    expect(payload).toMatchObject({
+      access_control: { access_mode: AgentAccessControlMode.Shared },
+    });
+    expect(payload.access_control).not.toHaveProperty('entries');
+    expect(mockUpdateAccessControl).not.toHaveBeenCalled();
+  });
+
+  it('updates access control entries separately from regular update payloads', async () => {
+    mockAgent = {
+      id: 'existing-agent',
+      name: 'Existing Agent',
+      description: 'An existing agent',
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [
+          { type: 'user', name: 'bob', role: AgentAccessControlRole.User },
+          { type: 'user', name: 'alice', role: AgentAccessControlRole.Editor },
+        ],
+      },
+      labels: [],
+      avatar_color: '',
+      avatar_symbol: '',
+      configuration: baseConfiguration,
+    };
+
+    const updateData: AgentEditState = {
+      ...mockAgent,
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useAgentEdit({
+        editingAgentId: 'existing-agent',
+        onSaveSuccess: jest.fn(),
+        onSaveError: jest.fn(),
+      })
+    );
+
+    await act(async () => {
+      await result.current.submit(updateData);
+    });
+
+    expect(mockUpdateAccessControl).toHaveBeenCalledTimes(1);
+    expect(mockUpdateAccessControl).toHaveBeenCalledWith('existing-agent', {
+      entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+    });
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockUpdate.mock.invocationCallOrder[0]).toBeLessThan(
+      mockUpdateAccessControl.mock.invocationCallOrder[0]
+    );
+    expect(mockUpdate.mock.calls[0][1].access_control).toEqual({
+      access_mode: AgentAccessControlMode.Private,
+    });
+    expect(mockUpdate.mock.calls[0][1].access_control).not.toHaveProperty('entries');
+  });
+
+  it('exposes permissions separately from editable form state', async () => {
+    mockAgent = {
+      id: 'existing-agent',
+      name: 'Existing Agent',
+      description: 'An existing agent',
+      access_control: { access_mode: AgentAccessControlMode.Private, entries: [] },
+      labels: [],
+      avatar_color: '',
+      avatar_symbol: '',
+      configuration: baseConfiguration,
+      permissions: { update_agent: true, update_access_control: false },
+    };
+
+    const { result } = renderHook(() =>
+      useAgentEdit({
+        editingAgentId: 'existing-agent',
+        onSaveSuccess: jest.fn(),
+        onSaveError: jest.fn(),
+      })
+    );
+
+    expect(result.current.permissions).toEqual({
+      update_agent: true,
+      update_access_control: false,
+    });
+    expect(result.current.state).not.toHaveProperty('permissions');
   });
 });

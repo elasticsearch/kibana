@@ -1,5 +1,5 @@
 {
-  "sha1": "1f64f92def0d9b9bad1301449ea6972489da50e1",
+  "sha1": "9d58493d56d08ec156b9dca742f157c04c1bab6a",
   "tests": [
     {
       "id": "e7ca8c886a58426-d57f60fe1d6db3b",
@@ -11,7 +11,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 47,
+        "line": 66,
         "column": 7
       }
     },
@@ -25,7 +25,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 65,
+        "line": 84,
         "column": 7
       }
     },
@@ -39,7 +39,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 76,
+        "line": 95,
         "column": 7
       }
     },
@@ -53,7 +53,21 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 86,
+        "line": 105,
+        "column": 7
+      }
+    },
+    {
+      "id": "e7ca8c886a58426-cd9616071db0523",
+      "title": "Home page Data streams - renders storage size units in uppercase",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
+        "line": 116,
         "column": 7
       }
     },
@@ -67,7 +81,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 97,
+        "line": 170,
         "column": 7
       }
     },
@@ -81,7 +95,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 108,
+        "line": 181,
         "column": 7
       }
     },
@@ -95,7 +109,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 123,
+        "line": 196,
         "column": 7
       }
     },

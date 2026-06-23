@@ -11,7 +11,13 @@ import {
   getEuidEsqlFilterBasedOnDocument,
   getFieldEvaluationsEsql,
   getFieldEvaluationsEsqlFromDefinition,
+  collectRankingFields,
+  buildRankingCaseEsql,
+  buildSourcePickerEsql,
+  buildDestinationFieldEsql,
+  buildOneFieldEvaluationEsql,
 } from './esql';
+import type { EuidRankingBranch, FieldEvaluation } from '../definitions/entity_schema';
 import { getEntityDefinition } from '../definitions/registry';
 
 const normalize = (s: string) =>
@@ -229,9 +235,11 @@ describe('getFieldEvaluationsEsql', () => {
       expect(result).toContain('_src_entity_source0 = MV_FIRST(TO_STRING(event.module))');
       expect(result).toContain('_src_entity_source1 = MV_FIRST(TO_STRING(event.dataset))');
       expect(result).toContain('_src_entity_source2 = MV_FIRST(TO_STRING(data_stream.dataset))');
-      expect(result).toContain('_src_entity_source = CASE(');
+      // Multi-source picker uses COALESCE of single-arm CaseEagerEvaluators
+      expect(result).toContain('_src_entity_source = COALESCE(');
+      // entity.source has no whenClauses -> 2-arm CASE (already CaseEagerEvaluator)
       expect(result).toContain('entity.source = CASE(');
-      expect(result).toContain('NULL, _src_entity_source)');
+      expect(result).toContain('_src_entity_source)');
     }
   );
 
@@ -239,6 +247,7 @@ describe('getFieldEvaluationsEsql', () => {
     const result = getFieldEvaluationsEsqlFromDefinition(getEntityDefinition('user', 'default'));
 
     expect(result).toBeDefined();
+    // entity.source has no whenClauses -> 2-arm CASE (already CaseEagerEvaluator)
     expect(result).toContain('entity.source = CASE(');
     // entity.namespace is now emitted by getEuidEsqlEvaluation, not here
     expect(result).not.toContain('entity.namespace');
@@ -248,7 +257,8 @@ describe('getFieldEvaluationsEsql', () => {
   it('getEuidEsqlEvaluation includes entity.namespace for user', () => {
     const result = getEuidEsqlEvaluation('user', 'entity.id');
 
-    expect(result).toContain('entity.namespace = CASE(');
+    // Destination now uses COALESCE of single-arm CaseEagerEvaluators
+    expect(result).toContain('entity.namespace = COALESCE(');
     expect(result).toContain('_src_entity_namespace');
     expect(result).toContain('"local"');
     expect(result).toContain('"unknown"');
@@ -350,5 +360,245 @@ describe('getEuidEsqlFilterBasedOnDocument user local namespace', () => {
       expect(result).not.toMatch(/entity\.namespace\s*==/);
       expect(result).not.toMatch(/entity\.confidence\s*==/);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Builder helpers (unit-level documentation tests)
+// ---------------------------------------------------------------------------
+
+describe('collectRankingFields', () => {
+  it('returns an empty set for a single-arm single-field branch (no _present columns needed)', () => {
+    const branches: EuidRankingBranch[] = [{ ranking: [[{ field: 'service.name' }]] }];
+
+    expect(collectRankingFields(branches)).toEqual(new Set());
+  });
+
+  it('returns all fields for a multi-arm branch', () => {
+    const branches: EuidRankingBranch[] = [
+      { ranking: [[{ field: 'host.id' }], [{ field: 'host.name' }], [{ field: 'host.hostname' }]] },
+    ];
+
+    expect(collectRankingFields(branches)).toEqual(
+      new Set(['host.id', 'host.name', 'host.hostname'])
+    );
+  });
+
+  it('extracts only EuidFields from composed arms, excluding separators', () => {
+    const branches: EuidRankingBranch[] = [
+      { ranking: [[{ field: 'user.name' }, { sep: '@' }, { field: 'host.id' }]] },
+    ];
+
+    expect(collectRankingFields(branches)).toEqual(new Set(['user.name', 'host.id']));
+  });
+
+  it('collects fields across multiple branches', () => {
+    const branches: EuidRankingBranch[] = [
+      { ranking: [[{ field: 'user.name' }, { sep: '@' }, { field: 'host.id' }]] },
+      { ranking: [[{ field: 'user.email' }], [{ field: 'user.name' }]] },
+    ];
+
+    expect(collectRankingFields(branches)).toEqual(new Set(['user.name', 'host.id', 'user.email']));
+  });
+});
+
+describe('buildRankingCaseEsql', () => {
+  it('returns a bare _present_or_null column ref for a single-arm single-field ranking', () => {
+    const ranking = [[{ field: 'host.id' }]];
+    const aliases = new Map([['host.id', 'host_id_present_or_null']]);
+
+    expect(buildRankingCaseEsql(ranking, aliases)).toBe('host_id_present_or_null');
+  });
+
+  it('falls back to TO_STRING(<field>) when the field is not in the alias map', () => {
+    const ranking = [[{ field: 'host.id' }]];
+
+    expect(buildRankingCaseEsql(ranking, new Map())).toBe('TO_STRING(host.id)');
+  });
+
+  it('returns CONCAT for a single composed arm (NULL when any component is absent)', () => {
+    const ranking = [[{ field: 'user.name' }, { sep: '@' }, { field: 'host.id' }]];
+    const aliases = new Map([
+      ['user.name', 'user_name_present_or_null'],
+      ['host.id', 'host_id_present_or_null'],
+    ]);
+
+    expect(buildRankingCaseEsql(ranking, aliases)).toBe(
+      'CONCAT(user_name_present_or_null, "@", host_id_present_or_null)'
+    );
+  });
+
+  it('returns COALESCE of arms for a multi-arm ranking, preserving priority order', () => {
+    const ranking = [
+      [{ field: 'host.id' }],
+      [{ field: 'host.name' }],
+      [{ field: 'host.hostname' }],
+    ];
+    const aliases = new Map([
+      ['host.id', 'host_id_present_or_null'],
+      ['host.name', 'host_name_present_or_null'],
+      ['host.hostname', 'host_hostname_present_or_null'],
+    ]);
+
+    expect(buildRankingCaseEsql(ranking, aliases)).toBe(
+      'COALESCE(host_id_present_or_null, host_name_present_or_null, host_hostname_present_or_null)'
+    );
+  });
+
+  it('throws on an empty ranking', () => {
+    expect(() => buildRankingCaseEsql([], new Map())).toThrow('No euid fields found');
+  });
+
+  it('throws when a single arm starts with a separator', () => {
+    expect(() => buildRankingCaseEsql([[{ sep: '@' }]], new Map())).toThrow(
+      'Separator found in single field'
+    );
+  });
+});
+
+describe('buildSourcePickerEsql', () => {
+  it('returns a COALESCE of single-arm CASEs, one per source variable', () => {
+    expect(buildSourcePickerEsql('_src_entity_source', 2)).toBe(
+      'COALESCE(' +
+        'CASE(_src_entity_source0 IS NOT NULL AND _src_entity_source0 != "", _src_entity_source0), ' +
+        'CASE(_src_entity_source1 IS NOT NULL AND _src_entity_source1 != "", _src_entity_source1)' +
+        ')'
+    );
+  });
+
+  it('works for count=1 (degenerate single-arm COALESCE)', () => {
+    expect(buildSourcePickerEsql('_src', 1)).toBe(
+      'COALESCE(CASE(_src0 IS NOT NULL AND _src0 != "", _src0))'
+    );
+  });
+
+  it('throws for count=0 (would produce invalid COALESCE())', () => {
+    expect(() => buildSourcePickerEsql('_src', 0)).toThrow(
+      'buildSourcePickerEsql requires at least one source variable'
+    );
+  });
+});
+
+describe('buildDestinationFieldEsql', () => {
+  it('no whenClauses -> simple 2-arm CASE (fallback then pass-through)', () => {
+    const { expression, conditionPrecomputes } = buildDestinationFieldEsql(
+      '_src',
+      '_eval_dest',
+      '"default"',
+      []
+    );
+
+    expect(conditionPrecomputes).toEqual([]);
+    expect(expression).toBe('CASE(_src IS NULL OR _src == "", "default", _src)');
+  });
+
+  it('sourceMatchesAny whenClause -> COALESCE with IN list, no precompute columns emitted', () => {
+    const { expression, conditionPrecomputes } = buildDestinationFieldEsql(
+      '_src',
+      '_eval_dest',
+      '"unknown"',
+      [{ sourceMatchesAny: ['okta', 'entityanalytics_okta'], then: 'okta' }]
+    );
+
+    expect(conditionPrecomputes).toEqual([]);
+    expect(expression).toBe(
+      'COALESCE(' +
+        'CASE(COALESCE(_src IN ("okta", "entityanalytics_okta"), FALSE), "okta"), ' +
+        'CASE(_src IS NULL OR _src == "", "unknown"), ' +
+        '_src' +
+        ')'
+    );
+  });
+
+  it('condition whenClause -> emits one precompute column and references it in the COALESCE arm', () => {
+    const { expression, conditionPrecomputes } = buildDestinationFieldEsql(
+      '_src',
+      '_eval_dest',
+      '"unknown"',
+      [{ condition: { field: 'event.kind', eq: 'asset' }, then: 'local' }]
+    );
+
+    expect(conditionPrecomputes).toEqual([
+      { colName: '_eval_dest_arm0', esql: 'TO_STRING(event.kind) == "asset"' },
+    ]);
+    expect(expression).toBe(
+      'COALESCE(' +
+        'CASE(COALESCE(_eval_dest_arm0, FALSE), "local"), ' +
+        'CASE(_src IS NULL OR _src == "", "unknown"), ' +
+        '_src' +
+        ')'
+    );
+  });
+});
+
+describe('buildOneFieldEvaluationEsql', () => {
+  it('single source, no whenClauses -> one source assignment then destination CASE', () => {
+    const evaluation: FieldEvaluation = {
+      destination: 'entity.source',
+      sources: [{ field: 'event.module' }],
+      fallbackValue: null,
+      whenClauses: [],
+    };
+
+    const result = normalize(buildOneFieldEvaluationEsql(evaluation));
+
+    expect(result).toBe(
+      '_src_entity_source = MV_FIRST(TO_STRING(event.module)),\n' +
+        'entity.source = CASE(_src_entity_source IS NULL OR _src_entity_source == "", NULL, _src_entity_source)'
+    );
+  });
+
+  it('multiple sources -> per-source numbered assignments, a picker, then destination', () => {
+    const evaluation: FieldEvaluation = {
+      destination: 'entity.namespace',
+      sources: [
+        { field: 'event.module' },
+        { firstChunkOfField: 'data_stream.dataset', splitBy: '.' },
+      ],
+      fallbackValue: 'unknown',
+      whenClauses: [],
+    };
+
+    const result = normalize(buildOneFieldEvaluationEsql(evaluation));
+
+    expect(result).toContain('_src_entity_namespace0 = MV_FIRST(TO_STRING(event.module))');
+    expect(result).toContain(
+      '_src_entity_namespace1 = MV_FIRST(SPLIT(MV_FIRST(TO_STRING(data_stream.dataset)), "."))'
+    );
+    expect(result).toContain(
+      '_src_entity_namespace = COALESCE(CASE(_src_entity_namespace0 IS NOT NULL'
+    );
+    expect(result).toContain('entity.namespace = CASE(_src_entity_namespace IS NULL');
+  });
+
+  it('condition whenClause -> precompute boolean column appears before destination assignment', () => {
+    const evaluation: FieldEvaluation = {
+      destination: 'entity.namespace',
+      sources: [{ field: 'event.module' }],
+      fallbackValue: 'unknown',
+      whenClauses: [{ condition: { field: 'event.kind', eq: 'asset' }, then: 'local' }],
+    };
+
+    const result = normalize(buildOneFieldEvaluationEsql(evaluation));
+    const precomputePos = result.indexOf(
+      '_eval_entity_namespace_arm0 = (TO_STRING(event.kind) == "asset")'
+    );
+    const destinationPos = result.indexOf('entity.namespace = COALESCE(');
+
+    expect(precomputePos).toBeGreaterThan(-1);
+    expect(destinationPos).toBeGreaterThan(precomputePos);
+  });
+
+  it('throws when sources is empty', () => {
+    const evaluation: FieldEvaluation = {
+      destination: 'entity.source',
+      sources: [],
+      fallbackValue: null,
+      whenClauses: [],
+    };
+
+    expect(() => buildOneFieldEvaluationEsql(evaluation)).toThrow(
+      'buildOneFieldEvaluationEsql: field evaluation "entity.source" has no sources'
+    );
   });
 });

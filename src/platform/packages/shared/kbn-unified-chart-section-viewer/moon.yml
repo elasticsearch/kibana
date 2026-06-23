@@ -51,6 +51,7 @@ dependsOn:
   - '@kbn/discover-shared-plugin'
   - '@kbn/logging'
   - '@kbn/logging-mocks'
+  - '@kbn/std'
 tags:
   - shared-browser
   - package

@@ -38,9 +38,6 @@ describe('Actions Component', () => {
     (useSelector as jest.Mock).mockReturnValue([]);
     (useParams as jest.Mock).mockReturnValue({ monitorId: 'test-monitor-id' });
     (useLocation as jest.Mock).mockReturnValue({ search: '?test=true' });
-  });
-
-  it('renders all default action items', () => {
     (useKibana as jest.Mock).mockReturnValue({
       services: {
         notifications: {
@@ -76,13 +73,45 @@ describe('Actions Component', () => {
         },
       },
     });
+  });
+
+  it('renders all default action items', () => {
     render(<Actions />);
 
-    // Open the popover
     fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
 
     expect(screen.getByText('Edit monitor')).toBeInTheDocument();
     expect(screen.getByText('Refresh')).toBeInTheDocument();
     expect(screen.getByText('Run test manually')).toBeInTheDocument();
+  });
+
+  describe('remote (CCS) monitor', () => {
+    beforeEach(() => {
+      (useLocation as jest.Mock).mockReturnValue({ search: '?remoteName=cluster-1' });
+    });
+
+    it('disables Edit monitor', () => {
+      render(<Actions />);
+
+      fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+      expect(screen.getByTestId('syntheticsEditMonitorContextItem')).toBeDisabled();
+    });
+
+    it('disables Run test manually', () => {
+      render(<Actions />);
+
+      fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+      expect(screen.getByTestId('syntheticsRunTestManuallyButton')).toBeDisabled();
+    });
+
+    it('keeps Refresh enabled', () => {
+      render(<Actions />);
+
+      fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+      expect(screen.getByTestId('syntheticsRefreshContextItem')).not.toBeDisabled();
+    });
   });
 });

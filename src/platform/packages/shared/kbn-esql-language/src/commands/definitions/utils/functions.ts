@@ -429,3 +429,9 @@ export const buildColumnSuggestions = (
 export function getFunctionForInlineCast(castingType: InlineCastingType): string | undefined {
   return inlineCastsMapping[castingType];
 }
+
+export function isTypeConversionFunction(functionName: string): boolean {
+  const lower = functionName.toLowerCase();
+
+  return Object.values<string>(inlineCastsMapping).includes(lower);
+}

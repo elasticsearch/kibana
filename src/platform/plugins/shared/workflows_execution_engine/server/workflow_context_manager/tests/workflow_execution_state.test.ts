@@ -1156,4 +1156,44 @@ describe('WorkflowExecutionState', () => {
       });
     });
   });
+
+  describe('accumulateUsage', () => {
+    it('sets the per-execution usage from the first reporting step', () => {
+      underTest.accumulateUsage({ inputTokens: 100, outputTokens: 50, totalTokens: 150 });
+
+      expect(underTest.getWorkflowExecution().usage).toEqual({
+        inputTokens: 100,
+        outputTokens: 50,
+        totalTokens: 150,
+      });
+    });
+
+    it('sums usage across multiple steps', () => {
+      underTest.accumulateUsage({ inputTokens: 100, outputTokens: 50, totalTokens: 150 });
+      underTest.accumulateUsage({ inputTokens: 200, outputTokens: 80, totalTokens: 280 });
+
+      expect(underTest.getWorkflowExecution().usage).toEqual({
+        inputTokens: 300,
+        outputTokens: 130,
+        totalTokens: 430,
+      });
+    });
+
+    it('persists the accumulated usage on the next workflow-doc flush', async () => {
+      underTest.accumulateUsage({ inputTokens: 100, outputTokens: 50, totalTokens: 150 });
+      await underTest.flushWorkflowDoc();
+
+      expect(workflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'test-workflow-execution-id',
+          usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+        })
+      );
+    });
+
+    it('is a no-op when usage is undefined (steps that report nothing)', () => {
+      underTest.accumulateUsage(undefined);
+      expect(underTest.getWorkflowExecution().usage).toBeUndefined();
+    });
+  });
 });

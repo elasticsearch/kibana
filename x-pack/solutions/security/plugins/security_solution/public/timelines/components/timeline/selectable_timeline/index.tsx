@@ -157,7 +157,11 @@ const SelectableTimelineComponent: React.FC<SelectableTimelineProps> = ({
         responsive={false}
       >
         <EuiFlexItem grow={false}>
-          <EuiIcon type={`${option.checked === 'on' ? 'check' : 'empty'}`} color="primary" />
+          <EuiIcon
+            type={`${option.checked === 'on' ? 'check' : 'empty'}`}
+            color="primary"
+            aria-hidden={true}
+          />
         </EuiFlexItem>
         <TimelineContentItem grow={true}>
           <EuiFlexGroup gutterSize="none" direction="column" responsive={false}>
@@ -178,6 +182,7 @@ const SelectableTimelineComponent: React.FC<SelectableTimelineProps> = ({
         <EuiFlexItem grow={false}>
           <EuiIcon
             type={`${option.favorite != null && isEmpty(option.favorite) ? 'star' : 'starFill'}`}
+            aria-hidden={true}
           />
         </EuiFlexItem>
       </EuiFlexGroup>

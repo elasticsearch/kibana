@@ -24,10 +24,6 @@ jest.mock('../watchlist_config', () => ({
   })),
 }));
 
-jest.mock('../../shared/utils', () => ({
-  getRequestSavedObjectClient: jest.fn(() => 'mock-so-client'),
-}));
-
 import { updateWatchlistRoute } from './update';
 
 describe('PUT /api/entity_analytics/watchlists/{id} - updateWatchlistRoute', () => {

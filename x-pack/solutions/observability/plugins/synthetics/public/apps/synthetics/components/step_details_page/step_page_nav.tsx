@@ -102,6 +102,9 @@ export const StepPageNavigation = ({ testRunPage }: { testRunPage?: boolean }) =
           {startedAtWrapped}
         </EuiButtonEmpty>
       }
+      aria-label={i18n.translate('xpack.synthetics.stepPageNavigation.popoverAriaLabel', {
+        defaultMessage: 'Check navigation menu',
+      })}
     >
       <EuiFlexGroup alignItems="center" justifyContent="flexEnd" responsive={false}>
         <EuiFlexItem grow={false}>

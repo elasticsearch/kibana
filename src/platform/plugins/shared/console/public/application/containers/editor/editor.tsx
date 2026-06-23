@@ -29,9 +29,11 @@ import {
   useRequestActionContext,
   useEditorActionContext,
   useEditorReadContext,
+  OutputFilterContextProvider,
 } from '../../contexts';
 import { OutputPanel } from './output_panel';
 import { InputPanel } from './input_panel';
+import { OutputFilterControls, OutputFilterExpandedPanel } from './components';
 import { getResponseWithMostSevereStatusCode } from '../../../lib/utils';
 import { useStyles } from './editor_styles';
 import { PanelStorage } from './panel_storage';
@@ -111,7 +113,7 @@ export const Editor = memo(({ loading, inputEditorValue, setInputEditorValue }: 
   const isLoading = loading || requestInFlight;
 
   return (
-    <>
+    <OutputFilterContextProvider>
       {fetchingAutocompleteEntities ? (
         <div css={styles.requestProgressBarContainer}>
           <EuiProgress size="xs" color="accent" position="absolute" />
@@ -196,10 +198,7 @@ export const Editor = memo(({ loading, inputEditorValue, setInputEditorValue }: 
                 hasShadow={false}
                 css={styles.fullHeightPanel}
               >
-                <EuiSplitPanel.Inner
-                  paddingSize="none"
-                  css={[styles.consoleEditorPanel, styles.outputPanelCentered]}
-                >
+                <EuiSplitPanel.Inner paddingSize="none" css={styles.outputPanelContent}>
                   <OutputPanel loading={isLoading} />
                 </EuiSplitPanel.Inner>
 
@@ -207,7 +206,7 @@ export const Editor = memo(({ loading, inputEditorValue, setInputEditorValue }: 
                   <EuiSplitPanel.Inner
                     grow={false}
                     paddingSize="s"
-                    css={[styles.consoleEditorPanel, styles.actionsPanelWithBackground]}
+                    css={styles.actionsPanelWithBackground}
                   >
                     <EuiFlexGroup gutterSize="none" responsive={false}>
                       <EuiFlexItem grow={false}>
@@ -221,17 +220,25 @@ export const Editor = memo(({ loading, inputEditorValue, setInputEditorValue }: 
                         </EuiButtonEmpty>
                       </EuiFlexItem>
 
-                      <EuiFlexItem>
+                      <EuiFlexItem />
+
+                      <EuiFlexItem grow={false}>
+                        <OutputFilterControls />
+                      </EuiFlexItem>
+
+                      <EuiFlexItem grow={false} style={{ marginLeft: 8 }}>
                         <NetworkRequestStatusBar />
                       </EuiFlexItem>
                     </EuiFlexGroup>
                   </EuiSplitPanel.Inner>
                 )}
+
+                <OutputFilterExpandedPanel />
               </EuiSplitPanel.Outer>
             </EuiResizablePanel>
           </>
         )}
       </EuiResizableContainer>
-    </>
+    </OutputFilterContextProvider>
   );
 });

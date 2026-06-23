@@ -24,8 +24,6 @@ export interface InheritLifecycleSectionProps {
   checkboxId?: string;
   /** Optional prefix used to generate a checkbox id when `checkboxId` is omitted. */
   checkboxIdPrefix?: string;
-  /** Optional test subject applied to the checkbox. */
-  checkboxDataTestSubj?: string;
   /** Optional test subject applied to the link. */
   linkDataTestSubj?: string;
 }

@@ -28,11 +28,13 @@ export interface AppHeaderShellProps {
   tabs?: ReactNode;
   sticky?: boolean;
   padding?: AppHeaderPadding;
+  borderless?: boolean;
 }
 
-// Resolves the horizontal-only padding contract. Vertical padding is standardized internally
+// Resolves the outer spacing contract: horizontal padding for the scalar values, and the breakout
+// margin for the `bleed` variant. The header's internal vertical padding is standardized separately
 // (see `useHeaderStyles`) so the header keeps a consistent height regardless of this prop.
-const resolveHorizontalPadding = (
+const resolvePadding = (
   sticky: boolean,
   padding: AppHeaderPadding | undefined,
   euiTheme: ReturnType<typeof useEuiTheme>['euiTheme']
@@ -43,12 +45,13 @@ const resolveHorizontalPadding = (
     return { paddingInline: undefined, bleedMargin: undefined };
   }
 
-  if (resolved === 'm') {
-    return { paddingInline: euiTheme.size.m, bleedMargin: undefined };
+  if (resolved === 's' || resolved === 'm') {
+    return { paddingInline: euiTheme.size[resolved], bleedMargin: undefined };
   }
 
-  // `{ bleed }`: pull the header out to its padded container's edges (negative margin) and
-  // re-inset the content by the same amount so it stays aligned with the page gutter.
+  // `{ bleed }`: pull the header out to its padded container's top/left/right edges (negative margin)
+  // and re-inset the content by the same amount so it stays aligned with the page gutter. The value
+  // mirrors the container's symmetric padding, so it applies equally to the sides and the top.
   const value = resolved.bleed === 'l' ? euiTheme.size.l : euiTheme.size.m;
   return { paddingInline: value, bleedMargin: value };
 };
@@ -58,12 +61,13 @@ const useHeaderStyles = (
   padding: AppHeaderPadding | undefined,
   hasTabs: boolean,
   hasTitleAppend: boolean,
-  hasMetadata: boolean
+  hasMetadata: boolean,
+  borderless: boolean
 ) => {
   const { euiTheme } = useEuiTheme();
 
   return useMemo(() => {
-    const { paddingInline, bleedMargin } = resolveHorizontalPadding(sticky, padding, euiTheme);
+    const { paddingInline, bleedMargin } = resolvePadding(sticky, padding, euiTheme);
 
     // Vertical padding is internal (independent of the `padding` prop). The primary row floors at a
     // consistent 48px regardless of title size; content is centered within it.
@@ -95,8 +99,11 @@ const useHeaderStyles = (
         margin-top: -${bleedMargin};
       `}
       background: ${euiTheme.colors.backgroundBasePlain};
-      border-bottom: ${euiTheme.border.thin};
-      margin-bottom: -${euiTheme.border.width.thin};
+      ${!borderless &&
+      css`
+        border-bottom: ${euiTheme.border.thin};
+        margin-bottom: -${euiTheme.border.width.thin};
+      `}
 
       &:hover .titleActionsReveal,
       &:focus-within .titleActionsReveal {
@@ -111,8 +118,11 @@ const useHeaderStyles = (
       gap: ${euiTheme.size.m};
       min-width: 0;
       min-height: ${APPLICATION_TOP_BAR_MIN_HEIGHT_PX}px;
-      padding-block-start: ${paddingBlock};
-      padding-block-end: ${bottomPad(hasTabs || hasMetadata)};
+      ${!hasTitleAppend &&
+      css`
+        padding-block-start: ${paddingBlock};
+        padding-block-end: ${bottomPad(hasTabs || hasMetadata)};
+      `}
     `;
 
     const titleCluster = css`
@@ -145,7 +155,6 @@ const useHeaderStyles = (
       align-items: center;
       flex: 1 1 0;
       min-width: 0;
-      overflow: hidden;
     `;
 
     const trailingSlot = css`
@@ -189,7 +198,7 @@ const useHeaderStyles = (
       metadataRow,
       tabsRow,
     };
-  }, [sticky, padding, euiTheme, hasTabs, hasTitleAppend, hasMetadata]);
+  }, [sticky, padding, euiTheme, hasTabs, hasTitleAppend, hasMetadata, borderless]);
 };
 
 export const AppHeaderShell = React.memo<AppHeaderShellProps>(
@@ -203,9 +212,10 @@ export const AppHeaderShell = React.memo<AppHeaderShellProps>(
     tabs,
     sticky = true,
     padding,
+    borderless = false,
   }) => {
     const hasTitleAppend = titleAppend != null;
-    const styles = useHeaderStyles(sticky, padding, !!tabs, hasTitleAppend, !!metadata);
+    const styles = useHeaderStyles(sticky, padding, !!tabs, hasTitleAppend, !!metadata, borderless);
 
     return (
       <div css={styles.root} data-test-subj="appHeader">

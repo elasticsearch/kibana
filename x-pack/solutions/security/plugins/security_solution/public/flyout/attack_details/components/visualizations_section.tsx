@@ -14,7 +14,7 @@ import { ExpandableSection } from '../../../flyout_v2/shared/components/expandab
 import { FLYOUT_STORAGE_KEYS } from '../constants/local_storage';
 import { AttackChain } from '../../../attack_discovery/pages/results/attack_discovery_panel/tabs/attack_discovery_tab/attack/attack_chain';
 import { useAttackDetailsContext } from '../context';
-import { SectionPanel } from './section_panel';
+import { SectionPanel } from '../../../flyout_v2/attack/main/components/section_panel';
 
 const KEY = 'visualizations';
 

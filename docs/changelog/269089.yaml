@@ -1,0 +1,7 @@
+prs:
+- https://github.com/elastic/kibana/pull/269089
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Add find-security-rules skill for Agent Builder

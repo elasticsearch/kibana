@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from '@kbn/react-query';
 import type { CreateWatchlistRequestBodyInput } from '../../../../../common/api/entity_analytics/watchlists/management/create.gen';
 import { useKibana } from '../../../../common/lib/kibana';
 import { useEntityAnalyticsRoutes } from '../../../../entity_analytics/api/api';
+import { getApiErrorMessage } from '../utils';
 
 export interface UseCreateWatchlistOptions {
   watchlist: CreateWatchlistRequestBodyInput;
@@ -62,6 +63,7 @@ export const useCreateWatchlist = ({
             defaultMessage: 'Failed to create watchlist',
           }
         ),
+        toastMessage: getApiErrorMessage(error),
       });
     },
   });

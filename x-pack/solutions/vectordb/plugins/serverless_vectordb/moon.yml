@@ -38,6 +38,7 @@ dependsOn:
   - '@kbn/deeplinks-management'
   - '@kbn/ai-assistant-common'
   - '@kbn/management-settings-ids'
+  - '@kbn/alerting-v2-utils'
   - '@kbn/data-views-plugin'
 tags:
   - plugin

@@ -143,6 +143,18 @@
       "lifecycle": "postinstall",
       "required": false,
       "reason": "Builds native for @swc/core, used by proxy at src/dev/build to optimize assets.  Prebuilds are sufficient."
+    },
+    {
+      "path": "@mongodb-js/zstd",
+      "lifecycle": "install",
+      "required": false,
+      "reason": "Optional native dependency of just-bash (used by agent_builder's bash tool) for .tar.zst archive support. just-bash lazy-loads it and falls back gracefully when missing."
+    },
+    {
+      "path": "node-liblzma",
+      "lifecycle": "postinstall",
+      "required": false,
+      "reason": "Optional native dependency of just-bash (used by agent_builder's bash tool) for .tar.xz/.tar.lzma archive support. just-bash lazy-loads it and falls back gracefully when missing."
     }
   ]
 }

@@ -5,12 +5,11 @@
  * 2.0.
  */
 
-import '../../__mocks__/shallow_useeffect.mock';
 import { mockTelemetryActions } from '../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { SendEnterpriseSearchTelemetry } from '.';
 
@@ -20,7 +19,7 @@ describe('Telemetry component helpers', () => {
   });
 
   it('SendEnterpriseSearchTelemetry', () => {
-    shallow(<SendEnterpriseSearchTelemetry action="viewed" metric="page" />);
+    renderWithKibanaRenderContext(<SendEnterpriseSearchTelemetry action="viewed" metric="page" />);
 
     expect(mockTelemetryActions.sendTelemetry).toHaveBeenCalledWith({
       action: 'viewed',

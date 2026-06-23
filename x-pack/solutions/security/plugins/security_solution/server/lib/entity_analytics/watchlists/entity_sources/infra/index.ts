@@ -8,7 +8,9 @@
 export {
   watchlistEntitySourceTypeName,
   watchlistEntitySourceType,
+  WatchlistEntitySourceApiKeyEncryptionParams,
   MANAGED_SOURCES_VERSION,
+  type EntitySourceApiKeyFields,
 } from './entity_source_type';
 
 export {

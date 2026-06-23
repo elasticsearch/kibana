@@ -18,8 +18,8 @@ import {
   mmrLimitKeywordSuggestion,
   mmrLimitValueSuggestions,
   mmrQueryVectorSuggestion,
+  newLineAndPipeCompleteItems,
   onCompleteItem,
-  pipeCompleteItem,
   withCompleteItem,
 } from '../complete_items';
 import type { ICommandCallbacks, ICommandContext, ISuggestionItem } from '../types';
@@ -87,7 +87,7 @@ export async function autocomplete(
       return mmrLimitValueSuggestions();
 
     case MmrPosition.AFTER_LIMIT_VALUE:
-      return [withCompleteItem, pipeCompleteItem];
+      return [withCompleteItem, ...newLineAndPipeCompleteItems];
 
     case MmrPosition.AFTER_WITH_KEYWORD:
       return [mmrLambdaMapSuggestion];
@@ -110,7 +110,7 @@ export async function autocomplete(
     }
 
     case MmrPosition.AFTER_COMMAND:
-      return [pipeCompleteItem];
+      return newLineAndPipeCompleteItems;
 
     default:
       return [];

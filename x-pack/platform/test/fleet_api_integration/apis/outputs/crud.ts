@@ -1836,6 +1836,7 @@ export default function (providerContext: FtrProviderContext) {
           hosts: ['https://test.fr:443'],
           is_default: false,
           is_default_monitoring: false,
+          preset: 'balanced',
           ssl: {
             certificate: 'CERTIFICATE',
             key: 'KEY',

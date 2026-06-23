@@ -7,12 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { DEFAULT_DATA_CONTROL_STATE } from './control_constants';
+import { ControlValuesSource, DEFAULT_DATA_CONTROL_STATE } from './control_constants';
 
 export const MAX_OPTIONS_LIST_REQUEST_SIZE = 1000;
 
 export const DEFAULT_DSL_OPTIONS_LIST_STATE = {
   ...DEFAULT_DATA_CONTROL_STATE,
+  values_source: ControlValuesSource.FIELD,
   sort: {
     by: '_count',
     direction: 'desc',

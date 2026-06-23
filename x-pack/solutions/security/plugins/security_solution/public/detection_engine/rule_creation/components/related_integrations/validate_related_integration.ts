@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import semver from 'semver';
 import type { RelatedIntegration } from '../../../../../common/api/detection_engine';
 import type { FormData, ERROR_CODE, ValidationFunc } from '../../../../shared_imports';
 import * as i18n from './translations';
@@ -28,7 +29,8 @@ export function validateRelatedIntegration(
     };
   }
 
-  if (!SEMVER_PATTERN.test(value.version)) {
+  // Accept any valid semver range-set, e.g. `^8.2.0 || ^9.0.0`, `>=8.2.0`, `~1.2.3`
+  if (!semver.validRange(value.version)) {
     return {
       code: 'ERR_FIELD_FORMAT',
       path: `${path}.version`,
@@ -36,5 +38,3 @@ export function validateRelatedIntegration(
     };
   }
 }
-
-const SEMVER_PATTERN = /^(\~|\^)?\d+\.\d+\.\d+$/;

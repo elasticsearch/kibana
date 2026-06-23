@@ -16,35 +16,40 @@ import { generateObservabilityAlerts } from '../../fixtures/alerts_data';
 // The three FTR `it` blocks shared a single browser journey (each step mutated the
 // status control and re-checked the row count), so they are combined into one test
 // with `test.step` boundaries.
-test.describe('Observability alerts - status controls', { tag: [...tags.stateful.classic] }, () => {
-  test.beforeAll(async ({ esClient }) => {
-    await generateObservabilityAlerts(esClient);
-  });
-
-  test.beforeEach(async ({ browserAuth, pageObjects }) => {
-    await browserAuth.loginAsViewer();
-    await pageObjects.alertsTablePage.goto();
-  });
-
-  test('filters the alerts table by status', async ({ pageObjects }) => {
-    const { alertsTablePage, alertControls } = pageObjects;
-
-    await test.step('is filtered to only show active alerts by default', async () => {
-      await expect.poll(() => alertsTablePage.getRowCount()).toBe(ALERT_COUNTS.ACTIVE);
+// Failing: See https://github.com/elastic/kibana/issues/274168
+test.describe.skip(
+  'Observability alerts - status controls',
+  { tag: [...tags.stateful.classic] },
+  () => {
+    test.beforeAll(async ({ esClient }) => {
+      await generateObservabilityAlerts(esClient);
     });
 
-    await test.step('shows all alerts once the status filter is cleared', async () => {
-      await alertControls.clearControlSelections(ALERT_STATUS_CONTROL_ID);
-      await alertsTablePage.waitForTableToLoad();
-      await expect.poll(() => alertsTablePage.getRowCount()).toBe(ALERT_COUNTS.ALL);
+    test.beforeEach(async ({ browserAuth, pageObjects }) => {
+      await browserAuth.loginAsViewer();
+      await pageObjects.alertsTablePage.goto();
     });
 
-    await test.step('shows only recovered alerts when selected via the filter', async () => {
-      await alertControls.openOptionsListPopover(ALERT_STATUS_CONTROL_ID);
-      await alertControls.selectOption('recovered');
-      await alertControls.ensurePopoverIsClosed(ALERT_STATUS_CONTROL_ID);
-      await alertsTablePage.waitForTableToLoad();
-      await expect.poll(() => alertsTablePage.getRowCount()).toBe(ALERT_COUNTS.RECOVERED);
+    test('filters the alerts table by status', async ({ pageObjects }) => {
+      const { alertsTablePage, alertControls } = pageObjects;
+
+      await test.step('is filtered to only show active alerts by default', async () => {
+        await expect.poll(() => alertsTablePage.getRowCount()).toBe(ALERT_COUNTS.ACTIVE);
+      });
+
+      await test.step('shows all alerts once the status filter is cleared', async () => {
+        await alertControls.clearControlSelections(ALERT_STATUS_CONTROL_ID);
+        await alertsTablePage.waitForTableToLoad();
+        await expect.poll(() => alertsTablePage.getRowCount()).toBe(ALERT_COUNTS.ALL);
+      });
+
+      await test.step('shows only recovered alerts when selected via the filter', async () => {
+        await alertControls.openOptionsListPopover(ALERT_STATUS_CONTROL_ID);
+        await alertControls.selectOption('recovered');
+        await alertControls.ensurePopoverIsClosed(ALERT_STATUS_CONTROL_ID);
+        await alertsTablePage.waitForTableToLoad();
+        await expect.poll(() => alertsTablePage.getRowCount()).toBe(ALERT_COUNTS.RECOVERED);
+      });
     });
-  });
-});
+  }
+);

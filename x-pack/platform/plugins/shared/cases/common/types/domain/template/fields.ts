@@ -41,6 +41,8 @@ export const DisplaySchema = z.object({
 export const ValidationSchema = z.object({
   required: z.boolean().optional(),
   required_when: ConditionSchema.optional(),
+  /** When true, the field must be filled in before a case can be moved to closed status. */
+  required_on_close: z.boolean().optional(),
   pattern: z
     .object({
       regex: z.string(),

@@ -6,7 +6,6 @@
  */
 
 import type { DefaultEmbeddableApi } from '@kbn/embeddable-plugin/public';
-import type { AggregateQuery } from '@kbn/es-query';
 import type {
   HasEditCapabilities,
   PublishesBlockingError,
@@ -15,22 +14,19 @@ import type {
   PublishesTimeRange,
 } from '@kbn/presentation-publishing';
 import type { BehaviorSubject } from 'rxjs';
-import type {
-  FieldStatisticsTableEmbeddableState,
-  FieldStatsInitializerViewType,
-  FieldStatsInitialState,
-} from '../grid_embeddable/types';
+import type { FieldStatsTableEmbeddableState } from '@kbn/data-visualizer-server-schemas/embeddables/field_stats';
+import type { FieldStatsInitialState } from '../../../../../common/embeddables/types';
 
 export interface FieldStatsControlsApi {
-  viewType$: BehaviorSubject<FieldStatsInitializerViewType>;
-  dataViewId$: BehaviorSubject<string>;
-  query$: BehaviorSubject<AggregateQuery>;
+  viewType$: BehaviorSubject<NonNullable<FieldStatsInitialState['view_type']>>;
+  dataViewId$: BehaviorSubject<string | undefined>;
+  query$: BehaviorSubject<FieldStatsInitialState['query']>;
   showDistributions$: BehaviorSubject<boolean>;
-  updateUserInput: (update: Partial<FieldStatsInitialState>) => void;
+  updateUserInput: (update: FieldStatsInitialState) => void;
 }
 
 export type FieldStatisticsTableEmbeddableApi =
-  DefaultEmbeddableApi<FieldStatisticsTableEmbeddableState> &
+  DefaultEmbeddableApi<FieldStatsTableEmbeddableState> &
     HasEditCapabilities &
     PublishesDataViews &
     PublishesTimeRange &

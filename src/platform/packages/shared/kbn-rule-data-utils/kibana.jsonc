@@ -2,8 +2,7 @@
   "type": "shared-common",
   "id": "@kbn/rule-data-utils",
   "owner": [
-    "@elastic/security-detection-rule-management",
-    "@elastic/security-detection-engine",
+    "@elastic/security-detection-engineering",
     "@elastic/response-ops",
     "@elastic/actionable-obs-team"
   ],

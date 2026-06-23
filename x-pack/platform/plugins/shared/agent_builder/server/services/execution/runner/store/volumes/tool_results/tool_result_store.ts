@@ -11,7 +11,7 @@ import type {
   WritableToolResultStore,
   ToolResultWithMeta,
 } from '@kbn/agent-builder-server/runner';
-import { MemoryVolume } from '../../filesystem';
+import { MemoryVolume } from '../../memory_volume';
 import { extractConversationToolResults, createToolCallEntry, getToolCallEntryPath } from './utils';
 
 export const createResultStore = ({ conversation }: { conversation?: Conversation }) => {
@@ -24,12 +24,8 @@ export class ToolResultStoreImpl implements WritableToolResultStore {
   private readonly volume: MemoryVolume;
 
   constructor({ toolResults = [] }: { toolResults?: ToolResultWithMeta[] }) {
-    this.volume = new MemoryVolume('tool_results');
+    this.volume = new MemoryVolume();
     toolResults.forEach((result) => this.add(result));
-  }
-
-  getVolume() {
-    return this.volume;
   }
 
   add(result: ToolResultWithMeta): void {
@@ -63,10 +59,23 @@ export class ToolResultStoreImpl implements WritableToolResultStore {
     return this.results.get(resultId)!.result;
   }
 
+  async getEntry(path: string) {
+    return this.volume.get(path);
+  }
+  async listEntries(dirPath: string) {
+    return this.volume.list(dirPath);
+  }
+  async entryExists(path: string) {
+    return this.volume.exists(path);
+  }
+
   asReadonly(): ToolResultStore {
     return {
       has: (resultId) => this.has(resultId),
       get: (resultId) => this.get(resultId),
+      getEntry: (path) => this.getEntry(path),
+      listEntries: (dirPath) => this.listEntries(dirPath),
+      entryExists: (path) => this.entryExists(path),
     };
   }
 }

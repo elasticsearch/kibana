@@ -51,6 +51,16 @@ const querySchema = schema.object({
       meta: { description: 'Filter by managed status. Defaults to "unmanaged".' },
     })
   ),
+  sortField: schema.maybe(
+    schema.oneOf([schema.literal('name'), schema.literal('enabled')], {
+      meta: { description: 'Field to sort by.' },
+    })
+  ),
+  sortOrder: schema.maybe(
+    schema.oneOf([schema.literal('asc'), schema.literal('desc')], {
+      meta: { description: 'Sort direction.' },
+    })
+  ),
 });
 
 export function registerGetWorkflowsRoute({ router, api, spaces }: RouteDependencies) {
@@ -101,6 +111,8 @@ function prepareParams({
   tags,
   query,
   managed,
+  sortField,
+  sortOrder,
 }: TypeOf<typeof querySchema>): GetWorkflowsParams {
   return {
     query,
@@ -110,5 +122,7 @@ function prepareParams({
     createdBy: createdBy != null && !Array.isArray(createdBy) ? [createdBy] : createdBy,
     tags: tags != null && !Array.isArray(tags) ? [tags] : tags,
     managedFilter: managed,
+    sortField,
+    sortOrder,
   };
 }

@@ -8,8 +8,8 @@
 import { schema } from '@kbn/config-schema';
 
 export const startDatafeedSchema = schema.object({
-  start: schema.maybe(schema.oneOf([schema.number(), schema.string()])),
-  end: schema.maybe(schema.oneOf([schema.number(), schema.string()])),
+  start: schema.maybe(schema.oneOf([schema.number(), schema.string({ maxLength: 10000 })])),
+  end: schema.maybe(schema.oneOf([schema.number(), schema.string({ maxLength: 10000 })])),
   timeout: schema.maybe(schema.any()),
 });
 
@@ -31,27 +31,27 @@ export const indicesOptionsSchema = schema.object({
   // retaining the deprecated ignore_throttled in case an older jobs are used
   // we don't want to fail the schema validation if this is present
   ignore_throttled: schema.maybe(schema.boolean()),
-  failure_store: schema.maybe(schema.string()),
+  failure_store: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export const datafeedConfigSchema = schema.object({
-  datafeed_id: schema.maybe(schema.string()),
-  feed_id: schema.maybe(schema.string()),
+  datafeed_id: schema.maybe(schema.string({ maxLength: 10000 })),
+  feed_id: schema.maybe(schema.string({ maxLength: 10000 })),
   aggregations: schema.maybe(schema.any()),
   aggs: schema.maybe(schema.any()),
   chunking_config: schema.maybe(
     schema.object({
       mode: schema.oneOf([schema.literal('auto'), schema.literal('manual'), schema.literal('off')]),
-      time_span: schema.maybe(schema.oneOf([schema.string(), schema.number()])),
+      time_span: schema.maybe(schema.oneOf([schema.string({ maxLength: 10000 }), schema.number()])),
     })
   ),
-  frequency: schema.maybe(schema.string()),
-  indices: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 10000 })),
-  indexes: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 10000 })),
-  job_id: schema.maybe(schema.string()),
+  frequency: schema.maybe(schema.string({ maxLength: 10000 })),
+  indices: schema.maybe(schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 })),
+  indexes: schema.maybe(schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 })),
+  job_id: schema.maybe(schema.string({ maxLength: 10000 })),
   query: schema.maybe(schema.any()),
   max_empty_searches: schema.maybe(schema.number()),
-  query_delay: schema.maybe(schema.string()),
+  query_delay: schema.maybe(schema.string({ maxLength: 10000 })),
   script_fields: schema.maybe(schema.any()),
   runtime_mappings: schema.maybe(schema.any()),
   scroll_size: schema.maybe(schema.number()),
@@ -59,6 +59,6 @@ export const datafeedConfigSchema = schema.object({
   indices_options: schema.maybe(indicesOptionsSchema),
 });
 
-export const datafeedIdSchema = schema.object({ datafeedId: schema.string() });
+export const datafeedIdSchema = schema.object({ datafeedId: schema.string({ maxLength: 10000 }) });
 
 export const deleteDatafeedQuerySchema = schema.object({ force: schema.maybe(schema.boolean()) });

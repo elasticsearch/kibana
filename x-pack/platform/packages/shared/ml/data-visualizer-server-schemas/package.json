@@ -1,0 +1,7 @@
+{
+  "name": "@kbn/data-visualizer-server-schemas",
+  "private": true,
+  "version": "1.0.0",
+  "license": "Elastic License 2.0",
+  "sideEffects": false
+}

@@ -114,12 +114,7 @@ export {
 } from './cases_webhook';
 
 // Slack API connector schemas
-export {
-  SlackApiPostMessageParamsSchema,
-  SlackApiGetChannelsParamsSchema,
-  SlackApiGetUsersParamsSchema,
-  SlackApiResponseSchema,
-} from './slack_api';
+export { SlackApiResponseSchema } from './slack_api';
 
 // Tines connector schemas
 export {

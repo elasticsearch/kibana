@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { schema } from '@kbn/config-schema';
 import type { SavedObjectsType } from '@kbn/core/server';
 import { ALERTING_CASES_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-server';
 import { CASE_CONFIGURE_SAVED_OBJECT } from '../../common/constants';
@@ -95,4 +96,13 @@ export const caseConfigureSavedObjectType: SavedObjectsType = {
     },
   },
   migrations: configureMigrations,
+  modelVersions: {
+    '1': {
+      changes: [],
+      schemas: {
+        forwardCompatibility: (attrs) => attrs,
+        create: schema.object({}, { unknowns: 'allow' }),
+      },
+    },
+  },
 };

@@ -27,6 +27,9 @@ export function WaterfallMarkerIcon({ field, label }: { field: string; label: st
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.waterfallMarkerIcon.popoverAriaLabel', {
+        defaultMessage: 'Waterfall marker metrics',
+      })}
       isOpen={isOpen}
       closePopover={() => setIsOpen(false)}
       anchorPosition="downLeft"

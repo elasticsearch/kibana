@@ -72,7 +72,7 @@ const buildContainer = () => {
           </EuiTitle>
         </EuiFlyoutHeader>
         <EuiFlyoutBody>
-          <EuiCallOut title="Storybook stub" color="primary" iconType="iInCircle">
+          <EuiCallOut title="Storybook stub" color="primary" iconType="info">
             <p>Action type: {initialConnector?.actionTypeId ?? 'any'}</p>
           </EuiCallOut>
           <EuiButton

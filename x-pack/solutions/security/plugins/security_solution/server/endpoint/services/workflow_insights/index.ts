@@ -132,7 +132,10 @@ class SecurityWorkflowInsightsService {
    * Basic CRUD operations
    */
 
-  public async create(insight: SecurityWorkflowInsight): Promise<WriteResponseBase | void> {
+  public async create(
+    insight: SecurityWorkflowInsight,
+    spaceId: string
+  ): Promise<WriteResponseBase | void> {
     await this.isInitialized;
 
     const insightToCreate = cloneDeep(insight);
@@ -140,7 +143,7 @@ class SecurityWorkflowInsightsService {
     const remediationExists = await checkIfRemediationExists({
       insight: insightToCreate,
       exceptionListsClient: this.endpointContext.getExceptionListsClient(),
-      endpointMetadataClient: this.endpointContext.getEndpointMetadataService(),
+      endpointMetadataClient: this.endpointContext.getEndpointMetadataService(spaceId),
     });
 
     if (remediationExists) {
@@ -246,7 +249,8 @@ class SecurityWorkflowInsightsService {
           request.body.endpointIds,
           request.body.insightType,
           request.body.apiConfig.connectorId,
-          request.body.apiConfig.model
+          request.body.apiConfig.model,
+          this.endpointContext.getActiveSpaceId(request)
         )
     );
     registerCallback(CallbackIds.DefendInsightsPreCreate, this.onBeforeCreate.bind(this));
@@ -296,7 +300,8 @@ class SecurityWorkflowInsightsService {
     endpointIds: string[],
     insightType: WorkflowInsightType,
     connectorId: string,
-    model: string = ''
+    model: string = '',
+    spaceId: string
   ) {
     await this.isInitialized;
 
@@ -310,7 +315,7 @@ class SecurityWorkflowInsightsService {
 
     const workflowInsights = await buildWorkflowInsights({
       defendInsights,
-      endpointMetadataService: this.endpointContext.getEndpointMetadataService(),
+      endpointMetadataService: this.endpointContext.getEndpointMetadataService(spaceId),
       esClient: this.esClient,
       options: {
         insightType,
@@ -322,7 +327,9 @@ class SecurityWorkflowInsightsService {
 
     const uniqueInsights = getUniqueInsights(workflowInsights);
 
-    const results = await Promise.all(uniqueInsights.map((insight) => this.create(insight)));
+    const results = await Promise.all(
+      uniqueInsights.map((insight) => this.create(insight, spaceId))
+    );
 
     try {
       const telemetry = this.endpointContext.getTelemetryService();

@@ -27,7 +27,7 @@ const addDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Adds the two operands element-wise. For vector–vector operations, the metric name is dropped.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -111,7 +111,7 @@ const andDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Returns elements from the left vector that have matching label sets in the right vector. Values and metric name come from the left-hand side.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -144,7 +144,7 @@ const divDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Divides the left operand by the right operand element-wise. For vector–vector operations, the metric name is dropped.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -228,7 +228,7 @@ const eqDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Compares elements for equality. By default, acts as a filter. With the bool modifier, returns 0 or 1.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -312,7 +312,7 @@ const gtDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Compares elements where the left operand is greater than the right. By default, acts as a filter. With the bool modifier, returns 0 or 1.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -396,7 +396,7 @@ const gteDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Compares elements where the left operand is greater than or equal to the right. By default, acts as a filter. With the bool modifier, returns 0 or 1.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -480,7 +480,7 @@ const ltDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Compares elements where the left operand is less than the right. By default, acts as a filter. With the bool modifier, returns 0 or 1.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -564,7 +564,7 @@ const lteDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Compares elements where the left operand is less than or equal to the right. By default, acts as a filter. With the bool modifier, returns 0 or 1.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -648,7 +648,7 @@ const modDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Returns the remainder of dividing the left operand by the right operand element-wise. For vector–vector operations, the metric name is dropped.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -732,7 +732,7 @@ const mulDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Multiplies the two operands element-wise. For vector–vector operations, the metric name is dropped.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -816,7 +816,7 @@ const negDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Negates the instant vector or scalar by inverting the sign of each sample value.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -854,7 +854,7 @@ const neqDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Compares elements for inequality. By default, acts as a filter. With the bool modifier, returns 0 or 1.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -938,7 +938,7 @@ const orDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Returns all elements from the left vector plus elements from the right vector that have no matching label sets in the left.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -971,7 +971,7 @@ const powDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Raises the left operand to the power of the right operand element-wise. For vector–vector operations, the metric name is dropped.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -1055,7 +1055,7 @@ const subDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Subtracts the right operand from the left operand element-wise. For vector–vector operations, the metric name is dropped.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -1139,7 +1139,7 @@ const unlessDefinition: PromQLFunctionDefinition = {
     defaultMessage:
       'Returns elements from the left vector that have no matching label sets in the right vector.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [

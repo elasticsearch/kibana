@@ -24,7 +24,7 @@ import {
   isColumn,
   Walker,
 } from '@elastic/esql';
-import { commaCompleteItem, pipeCompleteItem } from '../complete_items';
+import { commaCompleteItem, newLineCompleteItem, pipeCompleteItem } from '../complete_items';
 import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
 import type { ISuggestionItem } from '../types';
 import { getFunctionDefinition } from '../../definitions/utils/functions';
@@ -203,5 +203,5 @@ export const getCommaAndPipe = (
     commaSuggestion.preserveTypedPrefix = true;
   }
 
-  return [pipeSuggestion, commaSuggestion];
+  return [newLineCompleteItem, pipeSuggestion, commaSuggestion];
 };

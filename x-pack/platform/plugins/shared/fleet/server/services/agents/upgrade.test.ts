@@ -18,6 +18,7 @@ import * as agentNamespaces from '../spaces/agent_namespaces';
 import { sendUpgradeAgentsActions } from './upgrade';
 import { createClientMock } from './action.mock';
 import { getRollingUpgradeOptions, upgradeBatch } from './upgrade_action_runner';
+import * as upgradeActionRunner from './upgrade_action_runner';
 import * as crud from './crud';
 
 jest.mock('./versions', () => {
@@ -214,5 +215,128 @@ describe('sendUpgradeAgentsActions kuery construction', () => {
         kuery: `(namespaces:custom_space) AND (${kuery})`,
       })
     );
+  });
+});
+
+describe('sendUpgradeAgentsActions kuery path — cheap count and sync/async branching', () => {
+  let upgradeMocks: ReturnType<typeof createClientMock>;
+  let mockGetAgentsByKuery: jest.SpyInstance;
+  let mockOpenPointInTime: jest.SpyInstance;
+  let mockUpgradeBatch: jest.SpyInstance;
+  let mockUpgradeActionRunner: jest.SpyInstance;
+
+  beforeEach(async () => {
+    upgradeMocks = createClientMock();
+    appContextService.start(
+      createAppContextStartContractMock({}, false, {
+        internal: upgradeMocks.soClient,
+        withoutSpaceExtensions: upgradeMocks.soClient,
+      })
+    );
+    mockGetAgentsByKuery = jest.spyOn(crud, 'getAgentsByKuery');
+    mockOpenPointInTime = jest.spyOn(crud, 'openPointInTime').mockResolvedValue('pit-id');
+    mockUpgradeBatch = jest
+      .spyOn(upgradeActionRunner, 'upgradeBatch')
+      .mockResolvedValue({ actionId: 'test-action-id' });
+    mockUpgradeActionRunner = jest
+      .spyOn(upgradeActionRunner, 'UpgradeActionRunner')
+      .mockImplementation(
+        () =>
+          ({
+            runActionAsyncTask: jest.fn().mockResolvedValue({ actionId: 'async-action-id' }),
+          } as any)
+      );
+  });
+
+  afterEach(() => {
+    mockGetAgentsByKuery.mockRestore();
+    mockOpenPointInTime.mockRestore();
+    mockUpgradeBatch.mockRestore();
+    mockUpgradeActionRunner.mockRestore();
+    appContextService.stop();
+  });
+
+  it('uses perPage:0 for the initial count query', async () => {
+    const { soClient, esClient } = upgradeMocks;
+    mockGetAgentsByKuery.mockResolvedValue({ agents: [], total: 0, page: 1, perPage: 0 });
+
+    await sendUpgradeAgentsActions(soClient, esClient, {
+      kuery: 'status:online',
+      version: '8.5.0',
+    });
+
+    expect(mockGetAgentsByKuery).toHaveBeenNthCalledWith(
+      1,
+      esClient,
+      soClient,
+      expect.objectContaining({ perPage: 0 })
+    );
+  });
+
+  it('runs inline and fetches agents when total <= batchSize', async () => {
+    const { soClient, esClient } = upgradeMocks;
+    const agents = [{ id: 'agent-1' } as any];
+    mockGetAgentsByKuery
+      .mockResolvedValueOnce({ agents: [], total: 5, page: 1, perPage: 0 }) // count
+      .mockResolvedValueOnce({ agents, total: 5, page: 1, perPage: SO_SEARCH_LIMIT }); // fetch
+
+    await sendUpgradeAgentsActions(soClient, esClient, {
+      kuery: 'status:online',
+      version: '8.5.0',
+    });
+
+    expect(mockGetAgentsByKuery).toHaveBeenNthCalledWith(
+      2,
+      esClient,
+      soClient,
+      expect.objectContaining({ perPage: SO_SEARCH_LIMIT })
+    );
+    expect(mockUpgradeBatch).toHaveBeenCalledWith(
+      esClient,
+      agents,
+      expect.anything(),
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockUpgradeActionRunner).not.toHaveBeenCalled();
+  });
+
+  it('schedules async task and returns actionId immediately when total > batchSize', async () => {
+    const { soClient, esClient } = upgradeMocks;
+    const batchSize = 100;
+    mockGetAgentsByKuery.mockResolvedValueOnce({ agents: [], total: 500, page: 1, perPage: 0 });
+
+    const result = await sendUpgradeAgentsActions(soClient, esClient, {
+      kuery: 'status:online',
+      version: '8.5.0',
+      batchSize,
+    });
+
+    expect(result).toEqual({ actionId: 'async-action-id' });
+    expect(mockGetAgentsByKuery).toHaveBeenCalledTimes(1);
+    expect(mockUpgradeActionRunner).toHaveBeenCalledWith(
+      esClient,
+      soClient,
+      expect.objectContaining({ batchSize, total: 500 }),
+      expect.anything()
+    );
+    expect(mockUpgradeBatch).not.toHaveBeenCalled();
+  });
+
+  it('runs inline when total equals batchSize (boundary)', async () => {
+    const { soClient, esClient } = upgradeMocks;
+    const batchSize = 100;
+    mockGetAgentsByKuery
+      .mockResolvedValueOnce({ agents: [], total: 100, page: 1, perPage: 0 }) // count
+      .mockResolvedValueOnce({ agents: [], total: 100, page: 1, perPage: batchSize }); // fetch
+
+    await sendUpgradeAgentsActions(soClient, esClient, {
+      kuery: 'status:online',
+      version: '8.5.0',
+      batchSize,
+    });
+
+    expect(mockUpgradeBatch).toHaveBeenCalled();
+    expect(mockUpgradeActionRunner).not.toHaveBeenCalled();
   });
 });

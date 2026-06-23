@@ -90,20 +90,22 @@ const getAllowedEntityIds = (
 ): string[] => entityStoreEntityIdsByType[entityType] ?? [];
 
 export const createUpdateDetectionService = ({
-  esClient,
+  internalEsClient,
+  dataEsClient,
   crudClient,
   logger,
   descriptorClient,
   watchlist,
 }: {
-  esClient: ElasticsearchClient;
+  internalEsClient: ElasticsearchClient; // for writes to watchlist indices
+  dataEsClient: ElasticsearchClient; // for reads against the source data index
   crudClient: CRUDClient;
   logger: Logger;
   descriptorClient?: WatchlistEntitySourceClient;
   watchlist: { name: string; id: string; index: string };
 }) => {
   const syncMarkersService = descriptorClient
-    ? createWatchlistSyncMarkersService(descriptorClient, esClient)
+    ? createWatchlistSyncMarkersService(descriptorClient, internalEsClient)
     : undefined;
 
   const detectForIntegrationEntityType = async (
@@ -126,7 +128,7 @@ export const createUpdateDetectionService = ({
         source.queryRule,
         source.range
       );
-      const response = await esClient.search<never, EntitiesAggregation>({
+      const response = await dataEsClient.search<never, EntitiesAggregation>({
         index: source.indexPattern,
         ...query,
       });
@@ -180,7 +182,7 @@ export const createUpdateDetectionService = ({
         source.queryRule,
         source.range
       );
-      const response = await esClient.search<never, IndexSourceAggregation>({
+      const response = await dataEsClient.search<never, IndexSourceAggregation>({
         index: source.indexPattern,
         ...query,
       });
@@ -269,7 +271,7 @@ export const createUpdateDetectionService = ({
     }
 
     await applyBulkUpsert({
-      esClient,
+      esClient: internalEsClient,
       crudClient,
       logger,
       entities: allEntities,

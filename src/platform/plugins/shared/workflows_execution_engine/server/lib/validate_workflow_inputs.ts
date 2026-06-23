@@ -50,7 +50,9 @@ export const validateWorkflowInputs = async (
     return true;
   }
   const renderContext = buildInputDefaultRenderContext(workflowExecution, coreStart, dependencies);
-  const templateEngine = new WorkflowTemplatingEngine();
+  const templateEngine = new WorkflowTemplatingEngine({
+    liquidSettings: workflowExecution.workflowDefinition.settings?.liquid,
+  });
   let inputsWithDefaults: Record<string, unknown> | undefined;
   try {
     inputsWithDefaults = applyInputDefaults(renderContext.inputs, normalizedSchema, (value) =>

@@ -177,6 +177,200 @@ describe('RiskScoreDataClient', () => {
     });
   });
 
+  describe('getRiskScoreHistory', () => {
+    const mockSearchHits = (
+      hits: Array<{ timestamp: string; entityType: string; risk: Record<string, unknown> }>
+    ) => ({
+      hits: {
+        hits: hits.map((h) => ({
+          _source: {
+            '@timestamp': h.timestamp,
+            [h.entityType]: {
+              risk: {
+                '@timestamp': h.timestamp,
+                ...h.risk,
+              },
+            },
+          },
+        })),
+      },
+    });
+
+    const defaultParams = {
+      entityType: 'host',
+      entityId: 'host:test-id',
+      range: { gte: 'now-90d', lte: 'now' } as const,
+      pageSize: 100,
+    };
+
+    it('returns mapped history entries from ES hits', async () => {
+      esClient.search.mockResolvedValueOnce(
+        mockSearchHits([
+          {
+            timestamp: '2026-01-01T00:00:00.000Z',
+            entityType: 'host',
+            risk: {
+              calculated_score_norm: 42,
+              calculated_level: 'Low',
+            },
+          },
+          {
+            timestamp: '2026-01-02T00:00:00.000Z',
+            entityType: 'host',
+            risk: {
+              calculated_score_norm: 78,
+              calculated_level: 'High',
+              calculated_score: 150.5,
+              score_type: 'base',
+            },
+          },
+        ]) as never
+      );
+
+      const result = await riskScoreDataClient.getRiskScoreHistory(defaultParams);
+
+      expect(result).toEqual([
+        {
+          '@timestamp': '2026-01-01T00:00:00.000Z',
+          calculated_score_norm: 42,
+          calculated_level: 'Low',
+        },
+        {
+          '@timestamp': '2026-01-02T00:00:00.000Z',
+          calculated_score_norm: 78,
+          calculated_level: 'High',
+          calculated_score: 150.5,
+          score_type: 'base',
+        },
+      ]);
+    });
+
+    it('queries the time-series index with correct filters', async () => {
+      esClient.search.mockResolvedValueOnce(mockSearchHits([]) as never);
+
+      await riskScoreDataClient.getRiskScoreHistory(defaultParams);
+
+      const searchCall = esClient.search.mock.calls[0][0] as Record<string, unknown>;
+      const filters = (searchCall.query as { bool: { filter: Array<Record<string, unknown>> } })
+        .bool.filter;
+
+      expect(filters).toEqual(
+        expect.arrayContaining([
+          { term: { 'host.risk.id_field': 'entity.id' } },
+          { term: { 'host.risk.id_value': 'host:test-id' } },
+          { range: { '@timestamp': { gte: 'now-90d', lte: 'now' } } },
+        ])
+      );
+    });
+
+    it('includes score_type filter when provided', async () => {
+      esClient.search.mockResolvedValueOnce(mockSearchHits([]) as never);
+
+      await riskScoreDataClient.getRiskScoreHistory({
+        ...defaultParams,
+        scoreType: 'propagated',
+      });
+
+      const searchCall = esClient.search.mock.calls[0][0] as Record<string, unknown>;
+      const filters = (searchCall.query as { bool: { filter: Array<Record<string, unknown>> } })
+        .bool.filter;
+
+      expect(filters).toEqual(
+        expect.arrayContaining([{ term: { 'host.risk.score_type': 'propagated' } }])
+      );
+    });
+
+    it('handles base score_type with OR for missing field', async () => {
+      esClient.search.mockResolvedValueOnce(mockSearchHits([]) as never);
+
+      await riskScoreDataClient.getRiskScoreHistory({
+        ...defaultParams,
+        scoreType: 'base',
+      });
+
+      const searchCall = esClient.search.mock.calls[0][0] as Record<string, unknown>;
+      const filters = (searchCall.query as { bool: { filter: Array<Record<string, unknown>> } })
+        .bool.filter;
+
+      expect(filters).toEqual(
+        expect.arrayContaining([
+          {
+            bool: {
+              should: [
+                { term: { 'host.risk.score_type': 'base' } },
+                { bool: { must_not: { exists: { field: 'host.risk.score_type' } } } },
+              ],
+              minimum_should_match: 1,
+            },
+          },
+        ])
+      );
+    });
+
+    it('caps page size at 1000', async () => {
+      esClient.search.mockResolvedValueOnce(mockSearchHits([]) as never);
+
+      await riskScoreDataClient.getRiskScoreHistory({
+        ...defaultParams,
+        pageSize: 5000,
+      });
+
+      const searchCall = esClient.search.mock.calls[0][0] as Record<string, unknown>;
+      expect(searchCall.size).toBe(1000);
+    });
+
+    it('excludes hits with missing _source', async () => {
+      esClient.search.mockResolvedValueOnce({
+        hits: { hits: [{ _source: undefined }] },
+      } as never);
+
+      const result = await riskScoreDataClient.getRiskScoreHistory(defaultParams);
+
+      expect(result).toEqual([]);
+    });
+
+    it('uses shared RISK_SCORE_HISTORY_PAGE_SIZE_MAX constant for cap', async () => {
+      esClient.search.mockResolvedValueOnce({ hits: { hits: [] } } as never);
+
+      await riskScoreDataClient.getRiskScoreHistory({
+        ...defaultParams,
+        pageSize: 500,
+      });
+
+      const searchCall = esClient.search.mock.calls[0][0] as Record<string, unknown>;
+      expect(searchCall.size).toBe(500);
+    });
+
+    it('uses user entity type for field paths', async () => {
+      esClient.search.mockResolvedValueOnce(mockSearchHits([]) as never);
+
+      await riskScoreDataClient.getRiskScoreHistory({
+        ...defaultParams,
+        entityType: 'user',
+        entityId: 'user:alice',
+      });
+
+      const searchCall = esClient.search.mock.calls[0][0] as Record<string, unknown>;
+      const filters = (searchCall.query as { bool: { filter: Array<Record<string, unknown>> } })
+        .bool.filter;
+
+      expect(filters).toEqual(
+        expect.arrayContaining([
+          { term: { 'user.risk.id_field': 'entity.id' } },
+          { term: { 'user.risk.id_value': 'user:alice' } },
+        ])
+      );
+    });
+
+    it('returns empty array when no hits', async () => {
+      esClient.search.mockResolvedValueOnce({ hits: { hits: [] } } as never);
+
+      const result = await riskScoreDataClient.getRiskScoreHistory(defaultParams);
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('getDailyAverageRiskScoreNormSeries', () => {
     const mockAggResponse = (
       buckets: Array<{ key: string; scores: number[] }> = []

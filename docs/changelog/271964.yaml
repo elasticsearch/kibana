@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/271964
+issues:
+- https://github.com/elastic/kibana/issues/255276
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Sync agent logging level dropdown with polled metadata

@@ -22,21 +22,23 @@ describe('esqlValidate', () => {
 
       const result = await esqlValidate(model, 'FROM missing', callbacks, undefined);
 
-      expect(result).toEqual({
-        errors: [
-          {
-            code: 'unknownDataSource',
-            message: 'Unknown data source "missing"',
-            startColumn: 6,
-            startLineNumber: 1,
-            endColumn: 13,
-            endLineNumber: 1,
-            severity: monaco.MarkerSeverity.Error,
-            _source: 'client',
+      expect(result.errors).toEqual([
+        expect.objectContaining({
+          code: 'unknownDataSource',
+          message: 'Unknown data source "missing"',
+          location: {
+            min: 5,
+            max: 11,
           },
-        ],
-        warnings: [],
-      });
+          startColumn: 6,
+          startLineNumber: 1,
+          endColumn: 13,
+          endLineNumber: 1,
+          severity: monaco.MarkerSeverity.Error,
+          _source: 'client',
+        }),
+      ]);
+      expect(result.warnings).toEqual([]);
     });
   });
 

@@ -6,7 +6,10 @@
  */
 
 import type { HttpStart } from '@kbn/core/public';
-import { ALERTING_V2_ACTION_POLICY_EXECUTION_HISTORY_API_PATH } from '../constants';
+import {
+  ALERTING_V2_ACTION_POLICY_EXECUTION_HISTORY_API_PATH,
+  ALERTING_V2_ACTION_POLICY_EXECUTION_HISTORY_COUNT_API_PATH,
+} from '../constants';
 import { ExecutionHistoryApi } from './execution_history_api';
 
 describe('ExecutionHistoryApi', () => {
@@ -29,13 +32,18 @@ describe('ExecutionHistoryApi', () => {
     );
   });
 
-  it('forwards page and perPage as query params', async () => {
+  it('forwards page, perPage, search and outcome as query params', async () => {
     const { api, http } = buildApi();
 
-    await api.listExecutionHistory({ page: 3, perPage: 25 });
+    await api.listExecutionHistory({
+      page: 3,
+      perPage: 25,
+      search: 'foo',
+      outcome: 'throttled',
+    });
 
     expect(http.get).toHaveBeenCalledWith(ALERTING_V2_ACTION_POLICY_EXECUTION_HISTORY_API_PATH, {
-      query: { page: 3, perPage: 25 },
+      query: { page: 3, perPage: 25, search: 'foo', outcome: 'throttled' },
     });
   });
 
@@ -45,7 +53,7 @@ describe('ExecutionHistoryApi', () => {
     await api.listExecutionHistory();
 
     expect(http.get).toHaveBeenCalledWith(ALERTING_V2_ACTION_POLICY_EXECUTION_HISTORY_API_PATH, {
-      query: { page: undefined, perPage: undefined },
+      query: { page: undefined, perPage: undefined, search: undefined, outcome: undefined },
     });
   });
 
@@ -67,5 +75,14 @@ describe('ExecutionHistoryApi', () => {
     http.get.mockRejectedValueOnce(new Error('boom'));
 
     await expect(api.listExecutionHistory()).rejects.toThrow('boom');
+  });
+
+  it('forwards search and outcome to countNewSince', async () => {
+    const { api, http } = buildApi();
+    await api.countNewSince('2026-01-01T00:00:00.000Z', { search: 'foo', outcome: 'throttled' });
+    expect(http.get).toHaveBeenCalledWith(
+      ALERTING_V2_ACTION_POLICY_EXECUTION_HISTORY_COUNT_API_PATH,
+      { query: { since: '2026-01-01T00:00:00.000Z', search: 'foo', outcome: 'throttled' } }
+    );
   });
 });

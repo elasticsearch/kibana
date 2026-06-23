@@ -8,13 +8,14 @@
 import type { ChangeEvent } from 'react';
 import React, { Component, Fragment } from 'react';
 import {
+  EuiButtonEmpty,
   EuiButtonIcon,
+  EuiFieldText,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiButtonEmpty,
-  EuiSuperSelect,
-  EuiFieldText,
   EuiSpacer,
+  EuiSuperSelect,
+  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FieldIcon } from '@kbn/react-field';
@@ -134,19 +135,23 @@ export class MVTFieldConfigEditor extends Component<Props, State> {
 
   _renderFieldButtonDelete(index: number) {
     return (
-      <EuiButtonIcon
-        iconType="trash"
-        color="danger"
-        onClick={() => {
-          this._removeField(index);
-        }}
-        title={i18n.translate('xpack.maps.mvtSource.trashButtonTitle', {
+      <EuiToolTip
+        content={i18n.translate('xpack.maps.mvtSource.trashButtonTitle', {
           defaultMessage: 'Remove field',
         })}
-        aria-label={i18n.translate('xpack.maps.mvtSource.trashButtonAriaLabel', {
-          defaultMessage: 'Remove field',
-        })}
-      />
+        disableScreenReaderOutput
+      >
+        <EuiButtonIcon
+          iconType="trash"
+          color="danger"
+          onClick={() => {
+            this._removeField(index);
+          }}
+          aria-label={i18n.translate('xpack.maps.mvtSource.trashButtonAriaLabel', {
+            defaultMessage: 'Remove field',
+          })}
+        />
+      </EuiToolTip>
     );
   }
 

@@ -46,3 +46,10 @@ export enum DataGridDensity {
   EXPANDED = 'expanded',
   NORMAL = 'normal',
 }
+
+export enum UnifiedHistogramSuggestionType {
+  unsupported = 'unsupported',
+  lensSuggestion = 'lensSuggestion',
+  histogramForESQL = 'histogramForESQL',
+  histogramForDataView = 'histogramForDataView',
+}

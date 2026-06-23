@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useRef } from 'react';
+import React from 'react';
 import {
   EuiCheckbox,
   EuiFlexGroup,
@@ -61,30 +61,6 @@ export const EditFailedDataLifecycleFlyoutBody = ({
     prefix: 'editFailedDataLifecycle-failureStore',
   });
 
-  // When inheriting lifecycle, the source-of-truth is upstream (template / parent).
-  // Consumers may still update their local selection state while the flyout is open,
-  // but while inheriting the UI should keep reflecting the inherited value.
-  const inheritedFailureStoreValueRef = useRef<boolean | undefined>(undefined);
-  const inheritedRetentionContentRef = useRef<React.ReactNode | undefined>(undefined);
-  if (inheritLifecycle && inheritedFailureStoreValueRef.current === undefined) {
-    inheritedFailureStoreValueRef.current = failureStore.value;
-  }
-  const effectiveFailureStoreEnabled = inheritLifecycle
-    ? inheritedFailureStoreValueRef.current ?? failureStore.value
-    : failureStore.value;
-
-  if (
-    inheritLifecycle &&
-    effectiveFailureStoreEnabled &&
-    inheritedRetentionContentRef.current === undefined &&
-    retentionContent
-  ) {
-    inheritedRetentionContentRef.current = retentionContent;
-  }
-  const retentionContentForUi = inheritLifecycle
-    ? inheritedRetentionContentRef.current ?? retentionContent
-    : retentionContent;
-
   const styles = getEditFailedDataLifecycleFlyoutBodyStyles({ euiTheme });
 
   return (
@@ -108,7 +84,7 @@ export const EditFailedDataLifecycleFlyoutBody = ({
             <EuiFlexItem grow={false}>
               <EuiCheckbox
                 id={failureStoreCheckboxId}
-                checked={effectiveFailureStoreEnabled}
+                checked={failureStore.value}
                 onChange={(e) => failureStore.onChange(e.target.checked)}
                 label={strings.enableFailureStoreLabel}
                 disabled={inheritLifecycle}
@@ -123,11 +99,11 @@ export const EditFailedDataLifecycleFlyoutBody = ({
             </EuiFlexItem>
           </EuiFlexGroup>
 
-          {effectiveFailureStoreEnabled && retentionContentForUi && (
+          {failureStore.value && retentionContent && (
             <>
               <EuiSpacer size="m" />
               <React.Fragment key={inheritLifecycle ? 'inherited' : 'local'}>
-                {retentionContentForUi}
+                {retentionContent}
               </React.Fragment>
             </>
           )}

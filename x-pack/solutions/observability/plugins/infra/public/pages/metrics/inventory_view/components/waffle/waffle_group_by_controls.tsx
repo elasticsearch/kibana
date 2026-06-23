@@ -171,6 +171,9 @@ export const WaffleGroupByControls = ({
       panelPaddingSize="none"
       closePopover={closePopover}
       anchorPosition="downCenter"
+      aria-label={i18n.translate('xpack.infra.waffle.groupByControls.ariaLabel', {
+        defaultMessage: 'Group by',
+      })}
     >
       <EuiContextMenu
         css={css`

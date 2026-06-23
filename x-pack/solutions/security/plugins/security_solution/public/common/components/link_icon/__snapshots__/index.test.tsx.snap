@@ -9,6 +9,7 @@ exports[`LinkIcon it renders 1`] = `
   iconSide="right"
 >
   <EuiIcon
+    aria-hidden={true}
     size="xxl"
     type="warning"
   />

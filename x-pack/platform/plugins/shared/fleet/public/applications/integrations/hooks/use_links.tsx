@@ -25,6 +25,7 @@ export function useLinks() {
       pkgName: string,
       pkgVersion: string
     ): string | undefined => {
+      if (!img) return undefined;
       const sourcePath = img.src
         ? `/package/${pkgName}/${pkgVersion}${img.src}`
         : 'path' in img && img.path;

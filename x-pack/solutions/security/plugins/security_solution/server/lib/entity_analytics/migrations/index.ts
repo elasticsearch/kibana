@@ -26,6 +26,7 @@ export interface EntityAnalyticsMigrationsParams {
   auditLogger: AuditLogger | undefined;
   kibanaVersion: string;
   experimentalFeatures?: ExperimentalFeatures;
+  hasEncryptionKey: boolean;
 }
 
 /**

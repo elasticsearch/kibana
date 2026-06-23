@@ -28,6 +28,7 @@ const getInput = (testSubj: string) => {
 };
 
 type TestHttpSetup = ReturnType<typeof setupEnvironment>['httpSetup'];
+type TestHttpRequestsMockHelpers = ReturnType<typeof setupEnvironment>['httpRequestsMockHelpers'];
 
 const renderPipelinesCreate = async (httpSetup: TestHttpSetup, queryParams: string = '') => {
   const history = createMemoryHistory({
@@ -43,14 +44,23 @@ const renderPipelinesCreate = async (httpSetup: TestHttpSetup, queryParams: stri
 
   await screen.findByTestId('pipelineForm');
   await screen.findByTestId('descriptionField');
+  // Wait for the processors editor context to mount and register its onUpdate handler.
+  // pipelineProcessorsMoveAnnouncement lives inside PipelineProcessorsContextProvider
+  // alongside the onUpdate useEffect, so its presence guarantees the effect has run.
+  await screen.findByTestId('pipelineProcessorsMoveAnnouncement');
 };
 
-// Failing: See https://github.com/elastic/kibana/issues/253406
-// Failing: See https://github.com/elastic/kibana/issues/253362
-describe.skip('<PipelinesCreate />', () => {
-  const { httpSetup, httpRequestsMockHelpers } = setupEnvironment();
+describe('<PipelinesCreate />', () => {
+  // Each test gets a fresh httpSetup + mockResponses Map so mock state can't leak
+  // between tests. jest.clearAllMocks() only clears call history, not the Map.
+  let httpSetup!: TestHttpSetup;
+  let httpRequestsMockHelpers!: TestHttpRequestsMockHelpers;
 
   beforeEach(() => {
+    const env = setupEnvironment();
+    httpSetup = env.httpSetup;
+    httpRequestsMockHelpers = env.httpRequestsMockHelpers;
+
     jest.clearAllMocks();
   });
 
@@ -122,19 +132,10 @@ describe.skip('<PipelinesCreate />', () => {
       target: { value: JSON.stringify(metaData) },
     });
 
-    const postCallsBefore = httpSetup.post.mock.calls.length;
     fireEvent.click(screen.getByTestId('submitButton'));
+    await waitFor(() => expect(httpSetup.post).toHaveBeenCalled());
 
-    await waitFor(() => expect(httpSetup.post.mock.calls.length).toBeGreaterThan(postCallsBefore));
-    const createRequest = httpSetup.post.mock.results[postCallsBefore]?.value as
-      | Promise<unknown>
-      | undefined;
-    expect(createRequest).toBeDefined();
-    await waitFor(async () => {
-      await createRequest;
-    });
-
-    expect(httpSetup.post).toHaveBeenLastCalledWith(
+    expect(httpSetup.post).toHaveBeenCalledWith(
       API_BASE_PATH,
       expect.objectContaining({
         body: JSON.stringify({

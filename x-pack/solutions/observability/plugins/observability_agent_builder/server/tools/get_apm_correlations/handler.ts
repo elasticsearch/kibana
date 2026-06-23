@@ -5,23 +5,32 @@
  * 2.0.
  */
 
+import { chunk } from 'lodash';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import type { IScopedClusterClient } from '@kbn/core-elasticsearch-server';
 import type { Logger } from '@kbn/core/server';
 import {
   AGENT_NAME,
   AT_TIMESTAMP,
+  CLOUD_ACCOUNT_ID,
+  CLOUD_AVAILABILITY_ZONE,
+  CLOUD_PROVIDER,
   CLOUD_REGION,
   CONTAINER_ID,
   EVENT_OUTCOME,
   HOST_NAME,
+  KUBERNETES_DEPLOYMENT_NAME,
   KUBERNETES_NAMESPACE,
+  KUBERNETES_NODE_NAME,
   KUBERNETES_POD_NAME,
   PROCESSOR_EVENT,
   SERVICE_ENVIRONMENT,
   SERVICE_NAME,
   TRANSACTION_DURATION,
   USER_AGENT_NAME,
+  THROUGHPUT_BUCKET_COUNT,
+  THROUGHPUT_CORRELATION_THRESHOLD,
+  THROUGHPUT_TOP_VALUES_PER_FIELD,
 } from '@kbn/apm-types';
 import type {
   ObservabilityAgentBuilderCoreSetup,
@@ -30,7 +39,8 @@ import type {
 import { getObservabilityDataSources } from '../../utils/get_observability_data_sources';
 import { kqlFilter, timeRangeFilter } from '../../utils/dsl_filters';
 import { parseDatemath } from '../../utils/time';
-type CorrelationsMetric = 'latency' | 'failure_rate';
+
+type CorrelationsMetric = 'latency' | 'failure_rate' | 'throughput' | 'infra_metrics';
 
 const DEFAULT_FIELD_CANDIDATES = [
   SERVICE_NAME,
@@ -43,6 +53,40 @@ const DEFAULT_FIELD_CANDIDATES = [
   AGENT_NAME,
   USER_AGENT_NAME,
 ] as const;
+
+const INFRA_DEFAULT_FIELD_CANDIDATES = [
+  HOST_NAME,
+  CONTAINER_ID,
+  KUBERNETES_POD_NAME,
+  KUBERNETES_NAMESPACE,
+  KUBERNETES_DEPLOYMENT_NAME,
+  KUBERNETES_NODE_NAME,
+  CLOUD_AVAILABILITY_ZONE,
+  CLOUD_REGION,
+  CLOUD_PROVIDER,
+  CLOUD_ACCOUNT_ID,
+] as const;
+
+// Matches CHUNK_SIZE in apm/server/routes/correlations/queries/fetch_throughput_correlations.ts
+const THROUGHPUT_CHUNK_SIZE = 10;
+
+function computeIntervalMs(start: number, end: number): number {
+  const rangeMs = end - start;
+  return Math.max(60_000, Math.ceil(rangeMs / THROUGHPUT_BUCKET_COUNT / 60_000) * 60_000);
+}
+
+function computePearsonCorrelation(x: number[], y: number[]): number {
+  const n = x.length;
+  if (n < 3) return 0;
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((acc, xi, i) => acc + xi * y[i], 0);
+  const sumX2 = x.reduce((acc, xi) => acc + xi * xi, 0);
+  const sumY2 = y.reduce((acc, yi) => acc + yi * yi, 0);
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+  return denominator === 0 ? 0 : numerator / denominator;
+}
 
 const APM_TIME_FIELD = AT_TIMESTAMP;
 const PROCESSOR_EVENT_TRANSACTION = 'transaction';
@@ -188,28 +232,182 @@ export async function getToolHandler({
       : overallCountResp.hits.total?.value ?? 0;
 
   if (overallTotalHits === 0) {
-    return {
+    const emptyBase = {
       metric,
       timeRange: { start, end },
       kqlFilter: kqlFilterValue,
       totalTransactions: 0,
+      correlations: [],
+    };
+    if (metric === 'throughput') {
+      return emptyBase;
+    }
+    return {
+      ...emptyBase,
       subset: {
         totalTransactions: 0,
         definition:
-          metric === 'latency'
-            ? { metric: 'latency', percentileThreshold, durationThresholdUs: undefined }
-            : { metric: 'failure_rate' },
+          metric === 'failure_rate'
+            ? { metric: 'failure_rate' as const }
+            : { metric, percentileThreshold, durationThresholdUs: undefined },
       },
-      correlations: [],
     };
   }
 
+  // --- Throughput: Pearson correlation on RPM timeseries ---
+  if (metric === 'throughput') {
+    const intervalMs = computeIntervalMs(startTime, endTime);
+    const intervalString = `${intervalMs / 1000}s`;
+
+    const overallRpmResp = await esClient.asCurrentUser.search({
+      index: indices,
+      size: 0,
+      query: toBoolFilter(overallFilters),
+      aggs: {
+        timeseries: {
+          date_histogram: {
+            field: APM_TIME_FIELD,
+            fixed_interval: intervalString,
+            min_doc_count: 0,
+            extended_bounds: { min: startTime, max: endTime },
+          },
+          aggs: { rpm: { rate: { unit: 'minute' as const } } },
+        },
+      },
+    });
+
+    const overallBuckets = (overallRpmResp.aggregations?.timeseries as any)?.buckets ?? [];
+    const overallBucketKeys: number[] = overallBuckets.map((b: any) => b.key as number);
+    const overallRpm: number[] = overallBuckets.map(
+      (b: any) => (b.rpm as { value: number }).value ?? 0
+    );
+    const overallMeanRpm = overallRpm.reduce((a, b) => a + b, 0) / (overallRpm.length || 1);
+
+    if (overallBuckets.length < 3) {
+      return {
+        metric,
+        timeRange: { start, end },
+        kqlFilter: kqlFilterValue,
+        totalTransactions: overallTotalHits,
+        correlations: [],
+        warning:
+          'Time range too short for throughput correlation — at least 3 time buckets (~3 minutes) are required.',
+      };
+    }
+
+    const throughputCandidates = (
+      fieldCandidates?.length ? fieldCandidates : [...DEFAULT_FIELD_CANDIDATES]
+    ).slice(0, 25);
+
+    const correlations: Array<{ field: string; values: unknown[] }> = [];
+
+    for (const field of throughputCandidates) {
+      const termsResp = await esClient.asCurrentUser.search({
+        index: indices,
+        size: 0,
+        query: toBoolFilter(overallFilters),
+        aggs: { field_values: { terms: { field, size: THROUGHPUT_TOP_VALUES_PER_FIELD } } },
+      });
+
+      const termBuckets = ((termsResp.aggregations?.field_values as any)?.buckets ?? []) as Array<{
+        key: string | number;
+      }>;
+
+      if (termBuckets.length === 0) continue;
+
+      const fieldValues: unknown[] = [];
+
+      for (const bucketChunk of chunk(termBuckets, THROUGHPUT_CHUNK_SIZE)) {
+        const settled = await Promise.allSettled(
+          bucketChunk.map(async (bucket) => {
+            const fieldValue = bucket.key;
+            const filteredFilters = [...overallFilters, { term: { [field]: fieldValue } }];
+
+            const filteredResp = await esClient.asCurrentUser.search({
+              index: indices,
+              size: 0,
+              query: toBoolFilter(filteredFilters),
+              aggs: {
+                timeseries: {
+                  date_histogram: {
+                    field: APM_TIME_FIELD,
+                    fixed_interval: intervalString,
+                    min_doc_count: 0,
+                    extended_bounds: { min: startTime, max: endTime },
+                  },
+                  aggs: { rpm: { rate: { unit: 'minute' as const } } },
+                },
+              },
+            });
+
+            const filteredByKey = new Map<number, number>(
+              ((filteredResp.aggregations?.timeseries as any)?.buckets ?? []).map((b: any) => [
+                b.key as number,
+                (b.rpm as { value: number }).value ?? 0,
+              ])
+            );
+            const filteredRpm = overallBucketKeys.map((k) => filteredByKey.get(k) ?? 0);
+
+            if (filteredRpm.every((v) => v === 0)) return;
+
+            // Correlate filtered against the residual (overall minus filtered) to avoid the
+            // inclusion bias that results from correlating a subset against its own superset.
+            const residualRpm = overallRpm.map((v, i) => Math.max(0, v - filteredRpm[i]));
+            const correlation = computePearsonCorrelation(filteredRpm, residualRpm);
+            if (Math.abs(correlation) < THROUGHPUT_CORRELATION_THRESHOLD) return;
+
+            const filteredMeanRpm =
+              filteredRpm.reduce((a, b) => a + b, 0) / (filteredRpm.length || 1);
+
+            fieldValues.push({
+              value: fieldValue,
+              correlation: roundTo(correlation, 3),
+              rpmDelta: roundTo(filteredMeanRpm - overallMeanRpm, 3),
+              rpmBaseline: roundTo(overallMeanRpm, 3),
+            });
+          })
+        );
+        const failedCount = settled.filter((r) => r.status === 'rejected').length;
+        if (failedCount > 0) {
+          logger.warn(
+            `[throughput correlations] ${failedCount} timeseries queries failed for field "${field}"`
+          );
+        }
+      }
+
+      if (fieldValues.length > 0) {
+        (fieldValues as Array<{ correlation: number }>).sort(
+          (a, b) => Math.abs(b.correlation) - Math.abs(a.correlation)
+        );
+        fieldValues.splice(limit);
+        correlations.push({ field, values: fieldValues });
+      }
+    }
+
+    return {
+      metric,
+      timeRange: { start, end },
+      kqlFilter: kqlFilterValue,
+      totalTransactions: overallTotalHits,
+      correlations,
+    };
+  }
+
+  // --- Latency, failure_rate, infra_metrics: significant_terms approach ---
+  // Note: infra_metrics here uses significant_terms (KL-divergence scoring), whereas
+  // fetchCorrelations in the APM plugin uses a K-S test via fetchSignificantCorrelations.
+  // The two produce different scores for the same data; this is intentional — this handler
+  // cannot import from the APM plugin (no plugin dependency). Document divergence in tool desc.
   let subsetFilters: QueryDslQueryContainer[] = [];
   let subsetDefinition:
-    | { metric: 'latency'; percentileThreshold: number; durationThresholdUs: number }
+    | {
+        metric: 'latency' | 'infra_metrics';
+        percentileThreshold: number;
+        durationThresholdUs: number;
+      }
     | { metric: 'failure_rate' };
 
-  if (metric === 'latency') {
+  if (metric === 'latency' || metric === 'infra_metrics') {
     const percentileKey = `${percentileThreshold}`;
     const percentileResp = await esClient.asCurrentUser.search({
       index: indices,
@@ -241,13 +439,9 @@ export async function getToolHandler({
 
     subsetFilters = [
       ...overallFilters,
-      {
-        range: {
-          [TRANSACTION_DURATION]: { gte: durationThresholdUs },
-        },
-      },
+      { range: { [TRANSACTION_DURATION]: { gte: durationThresholdUs } } },
     ];
-    subsetDefinition = { metric: 'latency', percentileThreshold, durationThresholdUs };
+    subsetDefinition = { metric, percentileThreshold, durationThresholdUs };
   } else {
     subsetFilters = [...overallFilters, { term: { [EVENT_OUTCOME]: 'failure' } }];
     subsetDefinition = { metric: 'failure_rate' };
@@ -265,9 +459,12 @@ export async function getToolHandler({
       ? subsetCountResp.hits.total
       : subsetCountResp.hits.total?.value ?? 0;
 
-  const candidates = (
-    fieldCandidates?.length ? fieldCandidates : [...DEFAULT_FIELD_CANDIDATES]
-  ).slice(0, 25);
+  const defaultCandidates =
+    metric === 'infra_metrics'
+      ? [...INFRA_DEFAULT_FIELD_CANDIDATES]
+      : [...DEFAULT_FIELD_CANDIDATES];
+
+  const candidates = (fieldCandidates?.length ? fieldCandidates : defaultCandidates).slice(0, 25);
 
   const correlations = await getCorrelations({
     esClient,

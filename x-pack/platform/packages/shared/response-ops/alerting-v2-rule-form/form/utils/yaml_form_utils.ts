@@ -7,11 +7,12 @@
 
 import { i18n } from '@kbn/i18n';
 import { dump, load } from 'js-yaml';
-import type { FormValues, StateTransition } from '../types';
+import type { FormValues, StateTransition, RuleQuery } from '../types';
 import {
   deriveAlertDelayModeFromStateTransition,
   deriveRecoveryDelayModeFromStateTransition,
-} from './rule_request_mappers';
+} from '../types';
+import { mergeArtifactsByType, splitArtifactsByType } from './artifact_mappers';
 
 export type YamlParseResult = { values: FormValues; error: null } | { values: null; error: string };
 
@@ -41,10 +42,21 @@ interface YamlStateTransition {
   recovering_timeframe?: string;
 }
 
-interface YamlQuery {
+interface YamlComposedQuery {
+  format: 'composed';
+  base: string;
+  breach: { segment: string };
+  recovery?: { segment: string };
+}
+
+interface YamlStandaloneQuery {
   format: 'standalone';
   breach: { query: string };
+  recovery?: { query: string };
+  no_data?: { query: string };
 }
+
+type YamlQuery = YamlComposedQuery | YamlStandaloneQuery;
 
 interface YamlRuleObject {
   kind: string;
@@ -52,24 +64,11 @@ interface YamlRuleObject {
   time_field: string;
   schedule: { every: string; lookback: string };
   query: YamlQuery;
+  recovery_strategy?: string;
   grouping?: { fields: string[] };
   state_transition?: YamlStateTransition;
   artifacts?: Array<{ id: string; type: string; value: string }>;
 }
-
-/**
- * Lenient extractor for the YAML `query.breach` field. Accepts the canonical
- * nested object (`{ query: '…' }`) as well as legacy/handwritten strings so
- * that pasting an older payload doesn't blow up the parser.
- */
-const extractBreachQuery = (value: unknown): string => {
-  if (typeof value === 'string') return value;
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const { query } = value as { query?: unknown };
-    if (typeof query === 'string') return query;
-  }
-  return '';
-};
 
 const serializeStateTransition = (st?: StateTransition): YamlStateTransition | undefined => {
   if (!st) return undefined;
@@ -81,17 +80,35 @@ const serializeStateTransition = (st?: StateTransition): YamlStateTransition | u
   return Object.keys(out).length ? out : undefined;
 };
 
+const serializeQuery = (query: RuleQuery): YamlQuery => {
+  if (query.format === 'composed') {
+    return {
+      format: 'composed',
+      base: query.base,
+      breach: { segment: query.breach.segment },
+      ...(query.recovery ? { recovery: { segment: query.recovery.segment } } : {}),
+    };
+  }
+  return {
+    format: 'standalone',
+    breach: { query: query.breach.query },
+    ...(query.recovery ? { recovery: { query: query.recovery.query } } : {}),
+    ...(query.no_data ? { no_data: { query: query.no_data.query } } : {}),
+  };
+};
+
 /**
  * Convert FormValues to YAML-compatible object (snake_case keys for API compatibility).
  *
  * Note: `metadata.enabled` is intentionally NOT serialized. The API's `metadataSchema`
  * is strict and only accepts { name, description?, owner?, tags? }; `enabled` lives at
  * the top level of the update/response schemas, never under metadata, and is not part
- * of the create payload at all. The form keeps its own `metadata.enabled` for the
- * Enabled toggle UI; that's stripped by the request mappers before the API call.
+ * of the create payload at all.
  */
 export const formValuesToYamlObject = (values: FormValues): YamlRuleObject => {
   const st = serializeStateTransition(values.stateTransition);
+  const hasRecovery = values.query.recovery != null;
+  const allArtifacts = mergeArtifactsByType(values);
 
   return {
     kind: values.kind,
@@ -106,13 +123,54 @@ export const formValuesToYamlObject = (values: FormValues): YamlRuleObject => {
       every: values.schedule.every,
       lookback: values.schedule.lookback,
     },
-    query: {
-      format: 'standalone',
-      breach: { query: values.query.breach },
-    },
+    query: serializeQuery(values.query),
+    ...(hasRecovery ? { recovery_strategy: 'query' } : {}),
     ...(values.grouping?.fields?.length && { grouping: { fields: values.grouping.fields } }),
     ...(st && { state_transition: st }),
-    ...(values.artifacts?.length && { artifacts: values.artifacts }),
+    ...(allArtifacts?.length && { artifacts: allArtifacts }),
+  };
+};
+
+/**
+ * Lenient extractor for a nested `{ query: string }` or `{ segment: string }` block.
+ * Also accepts a bare string for backward compatibility with hand-written YAML.
+ */
+const extractNestedString = (value: unknown, key: 'query' | 'segment'): string => {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const nested = (value as Record<string, unknown>)[key];
+    if (typeof nested === 'string') return nested;
+  }
+  return '';
+};
+
+const parseQuery = (queryObj: Record<string, unknown> | undefined): RuleQuery => {
+  if (!queryObj) {
+    return { format: 'standalone', breach: { query: '' } };
+  }
+
+  const format = queryObj.format;
+
+  if (format === 'composed') {
+    const base = typeof queryObj.base === 'string' ? queryObj.base : '';
+    const breachSegment = extractNestedString(queryObj.breach, 'segment');
+    const recoverySegment = extractNestedString(queryObj.recovery, 'segment');
+    return {
+      format: 'composed',
+      base,
+      breach: { segment: breachSegment },
+      ...(recoverySegment ? { recovery: { segment: recoverySegment } } : {}),
+    };
+  }
+
+  const breachQuery = extractNestedString(queryObj.breach, 'query');
+  const recoveryQuery = extractNestedString(queryObj.recovery, 'query');
+  const noDataQuery = extractNestedString(queryObj.no_data, 'query');
+  return {
+    format: 'standalone',
+    breach: { query: breachQuery },
+    ...(recoveryQuery ? { recovery: { query: recoveryQuery } } : {}),
+    ...(noDataQuery ? { no_data: { query: noDataQuery } } : {}),
   };
 };
 
@@ -151,7 +209,8 @@ export const parseYamlToFormValues = (yamlString: string): YamlParseResult => {
   const schedule = obj.schedule as Record<string, unknown> | undefined;
   const queryObj = obj.query as Record<string, unknown> | undefined;
   const grouping = obj.grouping as Record<string, unknown> | undefined;
-  const artifacts = parseArtifacts(obj.artifacts);
+  const parsedArtifacts = parseArtifacts(obj.artifacts);
+  const artifactSlices = splitArtifactsByType(parsedArtifacts);
   const stateTransitionObj = obj.state_transition as Record<string, unknown> | undefined;
   const stateTransition: StateTransition | undefined = stateTransitionObj
     ? {
@@ -174,7 +233,6 @@ export const parseYamlToFormValues = (yamlString: string): YamlParseResult => {
       }
     : undefined;
 
-  // Validate kind
   const kind = obj.kind;
   if (kind !== undefined && kind !== 'alert' && kind !== 'signal') {
     return {
@@ -202,13 +260,11 @@ export const parseYamlToFormValues = (yamlString: string): YamlParseResult => {
         every: typeof schedule?.every === 'string' ? schedule.every : '5m',
         lookback: typeof schedule?.lookback === 'string' ? schedule.lookback : '1m',
       },
-      query: {
-        breach: extractBreachQuery(queryObj?.breach),
-      },
+      query: parseQuery(queryObj),
       grouping: Array.isArray(grouping?.fields)
         ? { fields: grouping.fields as string[] }
         : undefined,
-      artifacts,
+      ...artifactSlices,
       stateTransition,
       stateTransitionAlertDelayMode: deriveAlertDelayModeFromStateTransition(stateTransition),
       stateTransitionRecoveryDelayMode: deriveRecoveryDelayModeFromStateTransition(stateTransition),

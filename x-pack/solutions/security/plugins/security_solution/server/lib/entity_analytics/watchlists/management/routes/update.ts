@@ -20,7 +20,6 @@ import { WATCHLISTS_URL } from '../../../../../../common/entity_analytics/watchl
 import type { EntityAnalyticsRoutesDeps } from '../../../types';
 import { withMinimumLicense } from '../../../utils/with_minimum_license';
 import { WatchlistConfigClient } from '../watchlist_config';
-import { getRequestSavedObjectClient } from '../../shared/utils';
 import {
   buildWatchlistApiCallSuccessFields,
   reportWatchlistApiCallError,
@@ -60,7 +59,7 @@ export const updateWatchlistRoute = (
 
             const watchlistClient = new WatchlistConfigClient({
               namespace: secSol.getSpaceId(),
-              soClient: getRequestSavedObjectClient(core),
+              soClient: core.savedObjects.client,
               esClient: core.elasticsearch.client.asCurrentUser,
               logger,
             });

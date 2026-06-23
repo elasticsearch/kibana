@@ -5,13 +5,24 @@
  * 2.0.
  */
 
-import type { ElasticsearchClient, Logger, SavedObjectsClientContract } from '@kbn/core/server';
+import type {
+  ElasticsearchClient,
+  Logger,
+  SavedObjectsClientContract,
+  StartServicesAccessor,
+} from '@kbn/core/server';
 import type { SortResults } from '@elastic/elasticsearch/lib/api/types';
 import { CRUDClient } from '@kbn/entity-store/server/domain/crud/crud_client';
 import { getEntitiesAlias, ENTITY_LATEST } from '@kbn/entity-store/server';
+import { getFakeKibanaRequest } from '@kbn/security-plugin/server/authentication/api_keys/fake_kibana_request';
+import type { StartPlugins } from '../../../../plugin';
 import type { MonitoringEntitySource } from '../../../../../common/api/entity_analytics/watchlists/data_source/common.gen';
-import { WatchlistEntitySourceClient } from './infra';
-import type { IntegrationType } from './infra';
+import {
+  type IntegrationType,
+  WatchlistEntitySourceClient,
+  watchlistEntitySourceTypeName,
+  type EntitySourceApiKeyFields,
+} from './infra';
 import { WatchlistConfigClient } from '../management/watchlist_config';
 import type { IdentityProvider, WatchlistsByEuid } from '../entities/service';
 import { createWatchlistEntitiesService } from '../entities/service';
@@ -84,19 +95,62 @@ export const createEntitySourcesService = ({
   soClient,
   logger,
   namespace,
+  getStartServices,
+  hasEncryptionKey,
 }: {
   esClient: ElasticsearchClient;
   soClient: SavedObjectsClientContract;
   logger: Logger;
   namespace: string;
+  getStartServices: StartServicesAccessor<StartPlugins>;
+  hasEncryptionKey: boolean;
 }) => {
   const watchlistClient = new WatchlistConfigClient({ esClient, soClient, logger, namespace });
-  const descriptorClient = new WatchlistEntitySourceClient({ soClient, namespace });
+  const descriptorClient = new WatchlistEntitySourceClient({
+    soClient,
+    namespace,
+    esClient,
+    getStartServices,
+    logger,
+    hasEncryptionKey,
+  });
   const crudClient = new CRUDClient({ logger, esClient, namespace });
   const watchlistEntitiesService = createWatchlistEntitiesService({
     esClient,
     namespace,
   });
+
+  /** Returns a scoped ES client for reading from a given index source*/
+  const getSourceEsClient = async (
+    source: MonitoringEntitySource
+  ): Promise<ElasticsearchClient | undefined> => {
+    const [coreStart, pluginsStart] = await getStartServices();
+    const esoClient = pluginsStart.encryptedSavedObjects?.getClient({
+      includedHiddenTypes: [watchlistEntitySourceTypeName],
+    });
+    const coreElasticsearchClient = coreStart.elasticsearch.client;
+    if (!esoClient) return;
+
+    try {
+      const decrypted = await esoClient.getDecryptedAsInternalUser<EntitySourceApiKeyFields>(
+        watchlistEntitySourceTypeName,
+        source.id,
+        { namespace }
+      );
+
+      const { apiKeyId, apiKey } = decrypted.attributes;
+      if (!apiKeyId || !apiKey) return;
+
+      const apiKeyFakeRequest = getFakeKibanaRequest({ id: apiKeyId, api_key: apiKey });
+      return coreElasticsearchClient.asScoped(apiKeyFakeRequest).asCurrentUser;
+    } catch (err) {
+      logger.warn(
+        `[WatchlistSync] Failed to get scoped client for source ${source.id}: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    }
+  };
 
   /** Returns true and logs if the abort signal has fired. Use as: `if (isAborted(signal, 'context')) break/return;` */
   const isAborted = (signal: AbortSignal | undefined, context: string): boolean => {
@@ -255,18 +309,25 @@ export const createEntitySourcesService = ({
 
     const { sources } = await descriptorClient.list({});
 
-    const indexSyncService = createIndexSyncService({
-      esClient,
-      crudClient,
-      logger,
-      descriptorClient,
-      watchlist: meta,
-    });
-
     await Promise.all(
       sources
         .filter((s) => sourceIds.includes(s.id))
         .map(async (source) => {
+          const dataEsClient = source.type === 'index' ? await getSourceEsClient(source) : esClient;
+          if (!dataEsClient) {
+            logger.warn(`[WatchlistSync] Skipping index source ${source.id}: no API key stored.`);
+            return;
+          }
+
+          const indexSyncService = createIndexSyncService({
+            internalEsClient: esClient,
+            dataEsClient,
+            crudClient,
+            logger,
+            descriptorClient,
+            watchlist: meta,
+          });
+
           const identity = buildIdentityProvider(source);
           let prevMaxEntityId: string | undefined;
           let lastWatchlistsByEuid: WatchlistsByEuid = new Map();

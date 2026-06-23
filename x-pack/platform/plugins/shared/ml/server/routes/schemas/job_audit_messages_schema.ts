@@ -8,16 +8,16 @@
 import { schema } from '@kbn/config-schema';
 
 export const jobAuditMessagesJobIdSchema = schema.object({
-  jobId: schema.maybe(schema.string({ meta: { description: 'Job ID' } })),
+  jobId: schema.maybe(schema.string({ maxLength: 10000, meta: { description: 'Job ID' } })),
 });
 
 export const jobAuditMessagesQuerySchema = schema.object({
-  from: schema.maybe(schema.string()),
-  start: schema.maybe(schema.string()),
-  end: schema.maybe(schema.string()),
+  from: schema.maybe(schema.string({ maxLength: 10000 })),
+  start: schema.maybe(schema.string({ maxLength: 10000 })),
+  end: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export const clearJobAuditMessagesBodySchema = schema.object({
-  jobId: schema.string(),
-  notificationIndices: schema.arrayOf(schema.string(), { maxSize: 10000 }),
+  jobId: schema.string({ maxLength: 10000 }),
+  notificationIndices: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
 });

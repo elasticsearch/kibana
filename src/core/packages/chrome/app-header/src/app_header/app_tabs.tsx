@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { EuiNotificationBadge, EuiTab, EuiTabs } from '@elastic/eui';
+import { EuiNotificationBadge, EuiTab, EuiTabs, EuiToolTip } from '@elastic/eui';
 import type { AppHeaderTab } from '../types';
 
 export interface AppTabsProps {
@@ -27,6 +27,7 @@ export const AppTabs = React.memo<AppTabsProps>(({ tabs }) => {
           onClick={tab.onClick}
           href={tab.href}
           data-test-subj={tab['data-test-subj']}
+          disabled={tab.disabled}
           append={
             tab.badge !== undefined ? (
               <EuiNotificationBadge color="subdued" size="m">
@@ -35,7 +36,13 @@ export const AppTabs = React.memo<AppTabsProps>(({ tabs }) => {
             ) : undefined
           }
         >
-          {tab.label}
+          {tab.toolTipContent !== undefined ? (
+            <EuiToolTip content={tab.toolTipContent} position="bottom">
+              <span tabIndex={0}>{tab.label}</span>
+            </EuiToolTip>
+          ) : (
+            tab.label
+          )}
         </EuiTab>
       ))}
     </EuiTabs>

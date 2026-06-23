@@ -29,6 +29,11 @@ import {
   WORKFLOWS_STEP_EXECUTIONS_INDEX,
 } from '../../common';
 import { buildTimeRangeFilter } from '../api/lib/build_time_range_filter';
+import {
+  buildWorkflowExecutionsSearchQuery,
+  buildWorkflowExecutionsSpaceFilter,
+  emptyWorkflowExecutionsSearchResponse,
+} from '../api/lib/build_workflow_executions_search_query';
 import { isIndexNotFoundError } from '../api/lib/es_error_helpers';
 import { getChildWorkflowExecutions } from '../api/lib/get_child_workflow_executions';
 import { getWorkflowExecution } from '../api/lib/get_workflow_execution';
@@ -41,7 +46,10 @@ import type {
   GetStepExecutionParams,
   SearchStepExecutionsParams,
 } from '../api/workflows_management_api';
-import type { SearchWorkflowExecutionsParams } from '../api/workflows_management_service';
+import type {
+  SearchExecutionsViewParams,
+  SearchWorkflowExecutionsParams,
+} from '../api/workflows_management_service';
 
 const DEFAULT_PAGE_SIZE = 100;
 
@@ -92,12 +100,7 @@ export class WorkflowExecutionQueryService {
   ): Promise<WorkflowExecutionListDto> {
     const must: estypes.QueryDslQueryContainer[] = [
       ...(params.workflowId ? [{ term: { workflowId: params.workflowId } }] : []),
-      {
-        bool: {
-          should: [{ term: { spaceId } }, { bool: { must_not: { exists: { field: 'spaceId' } } } }],
-          minimum_should_match: 1,
-        },
-      },
+      buildWorkflowExecutionsSpaceFilter(spaceId),
     ];
 
     if (params.statuses) {
@@ -168,6 +171,28 @@ export class WorkflowExecutionQueryService {
       sort,
       collapse: params.collapse ? { field: params.collapse } : undefined,
     });
+  }
+
+  async searchExecutionsView(
+    params: SearchExecutionsViewParams,
+    spaceId: string
+  ): Promise<estypes.SearchResponse<unknown>> {
+    try {
+      return await this.deps.esClient.search({
+        index: WORKFLOWS_EXECUTIONS_INDEX,
+        query: buildWorkflowExecutionsSearchQuery(params.query, spaceId),
+        sort: params.sort,
+        from: params.from,
+        size: params.size,
+        track_total_hits: params.trackTotalHits ?? true,
+      });
+    } catch (error) {
+      if (isIndexNotFoundError(error)) {
+        return emptyWorkflowExecutionsSearchResponse();
+      }
+      this.deps.logger.error(`Failed to search workflow executions view: ${error}`);
+      throw error;
+    }
   }
 
   async getWorkflowExecutionHistory(

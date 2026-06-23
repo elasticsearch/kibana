@@ -87,6 +87,7 @@ export function createStreamsSignificantEventsQueriesGenerationTask(taskContext:
                     logger: taskLogger,
                     signal: runContext.abortController.signal,
                     telemetry: taskContext.telemetry,
+                    agentBuilderTools: taskContext.server.agentBuilder?.tools,
                   }
                 );
 

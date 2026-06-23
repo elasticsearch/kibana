@@ -207,13 +207,14 @@ export class EndpointActionsClient extends ResponseActionsClientImpl {
               400
             );
           }
-        }
 
-        if (actionToCancel.isCompleted) {
-          throw new ResponseActionsClientError(
-            `Action [${actionRequest.parameters.id}] is already completed and cannot be canceled.`,
-            400
-          );
+          // Check to ensure that this endpoint's response is still pending
+          if (actionToCancel.agentState[endpointId].isCompleted) {
+            throw new ResponseActionsClientError(
+              `Action [${actionRequest.parameters.id}] is already completed for agent [${endpointId}] and cannot be canceled.`,
+              400
+            );
+          }
         }
 
         if (!isResponseActionCancelable(actionToCancel.command, this.agentType)) {

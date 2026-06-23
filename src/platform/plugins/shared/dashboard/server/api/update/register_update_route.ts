@@ -45,6 +45,10 @@ export function registerUpdateRoute(
   updateRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () =>
+          (await import('../oas_examples')).updateDashboardOASOperationObject,
+      },
       validate: () => ({
         request: {
           params: schema.object({

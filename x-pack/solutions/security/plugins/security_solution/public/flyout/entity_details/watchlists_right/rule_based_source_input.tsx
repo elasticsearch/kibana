@@ -7,7 +7,9 @@
 
 import React, { useEffect, useMemo, type FC } from 'react';
 import {
+  EuiButton,
   EuiButtonGroup,
+  EuiCallOut,
   EuiComboBox,
   EuiFlexGroup,
   EuiFlexItem,
@@ -18,16 +20,22 @@ import {
   EuiText,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 import { useDebounceFn } from '@kbn/react-hooks';
+import { useMutation, useQueryClient } from '@kbn/react-query';
 import type { DataView } from '@kbn/data-views-plugin/public';
 import type { Filter, Query } from '@kbn/es-query';
 import type { FilterManager, SavedQuery } from '@kbn/data-plugin/public';
 import { useDataView } from '../../../data_view_manager/hooks/use_data_view';
 import type { CreateWatchlistRequestBodyInput } from '../../../../common/api/entity_analytics/watchlists/management/create.gen';
+import type { MonitoringEntitySource } from '../../../../common/api/entity_analytics/watchlists/data_source/common.gen';
 import { QueryBar } from '../../../common/components/query_bar';
 import { useFetchWatchlistIndices } from './hooks/use_fetch_watchlist_indices';
+import { getApiErrorMessage } from './utils';
 import { ENTITY_FIELD_OPTIONS, useRuleBasedSourceState } from './hooks/use_rule_based_source_state';
 import { useDataViewSetup } from './hooks/use_data_view_setup';
+import { useEntityAnalyticsRoutes } from '../../../entity_analytics/api/api';
+import { useKibana } from '../../../common/lib/kibana';
 import {
   WATCHLIST_ENTITY_FIELD_ARIA_LABEL,
   WATCHLIST_ENTITY_FIELD_PLACEHOLDER,
@@ -97,6 +105,8 @@ const FilterQueryRow: FC<FilterQueryRowProps> = ({
 
 export interface RuleBasedSourceInputProps {
   watchlistName: string;
+  watchlistId?: string;
+  indexSourceWithMissingApiKey?: MonitoringEntitySource;
   isEditMode: boolean;
   isManaged?: boolean;
   onFieldChange: <K extends keyof CreateWatchlistRequestBodyInput>(
@@ -109,6 +119,8 @@ export interface RuleBasedSourceInputProps {
 
 export const RuleBasedSourceInput: React.FC<RuleBasedSourceInputProps> = ({
   watchlistName,
+  watchlistId,
+  indexSourceWithMissingApiKey,
   isEditMode,
   isManaged = false,
   onFieldChange,
@@ -117,6 +129,37 @@ export const RuleBasedSourceInput: React.FC<RuleBasedSourceInputProps> = ({
 }) => {
   const { dataView, status } = useDataView(PageScope.default);
   const { filters, filterManager } = useDataViewSetup();
+
+  const queryClient = useQueryClient();
+  const { updateWatchlistEntitySource } = useEntityAnalyticsRoutes();
+  const {
+    notifications: { toasts },
+  } = useKibana().services;
+
+  const refreshApiKeyMutation = useMutation({
+    mutationFn: () => {
+      if (!watchlistId || !indexSourceWithMissingApiKey) {
+        throw new Error('Missing watchlist id or index source');
+      }
+      return updateWatchlistEntitySource({
+        watchlistId,
+        entitySourceId: indexSourceWithMissingApiKey.id,
+        body: { type: indexSourceWithMissingApiKey.type },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['watchlist-entity-sources', watchlistId]);
+    },
+    onError: (error: Error) => {
+      toasts.addError(error, {
+        title: i18n.translate(
+          'xpack.securitySolution.entityAnalytics.watchlists.flyout.reauthorizeErrorTitle',
+          { defaultMessage: 'Failed to re-authorize' }
+        ),
+        toastMessage: getApiErrorMessage(error),
+      });
+    },
+  });
 
   const {
     filterQuery,
@@ -193,6 +236,41 @@ export const RuleBasedSourceInput: React.FC<RuleBasedSourceInputProps> = ({
       </EuiFormRow>
       <EuiSpacer size="m" />
 
+      {!isNone && !isEntityStore && !!indexSourceWithMissingApiKey && !!watchlistId && (
+        <>
+          <EuiCallOut
+            announceOnMount
+            title={
+              <FormattedMessage
+                id="xpack.securitySolution.entityAnalytics.watchlists.flyout.missingApiKeyTitle"
+                defaultMessage="Sync paused — re-authorization required"
+              />
+            }
+            color="warning"
+            iconType="warning"
+          >
+            <p>
+              <FormattedMessage
+                id="xpack.securitySolution.entityAnalytics.watchlists.flyout.missingApiKeyDescription"
+                defaultMessage="This data source is not authorized to read from the configured index. Re-authorize to resume sync."
+              />
+            </p>
+            <EuiButton
+              size="s"
+              color="warning"
+              isLoading={refreshApiKeyMutation.isLoading}
+              onClick={() => refreshApiKeyMutation.mutate()}
+            >
+              <FormattedMessage
+                id="xpack.securitySolution.entityAnalytics.watchlists.flyout.refreshApiKeyButton"
+                defaultMessage="Re-authorize"
+              />
+            </EuiButton>
+          </EuiCallOut>
+          <EuiSpacer size="m" />
+        </>
+      )}
+
       {!isNone && !isEntityStore && (
         <EuiFormRow
           label={WATCHLIST_INDEX_PATTERN_LABEL}
@@ -200,8 +278,8 @@ export const RuleBasedSourceInput: React.FC<RuleBasedSourceInputProps> = ({
           isInvalid={validation.errors.indexPattern}
         >
           <EuiComboBox
-            isLoading={isLoadingIndices && !indicesError}
             isInvalid={validation.errors.indexPattern}
+            isLoading={isLoadingIndices && !indicesError}
             fullWidth
             aria-label={WATCHLIST_INDEX_PATTERN_PLACEHOLDER}
             placeholder={WATCHLIST_INDEX_PATTERN_PLACEHOLDER}

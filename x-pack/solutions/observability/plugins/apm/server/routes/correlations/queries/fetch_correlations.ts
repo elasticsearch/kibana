@@ -21,9 +21,11 @@ import { getPrioritizedFieldValuePairs } from '../../../../common/correlations/u
 import { DEFAULT_PERCENTILE_THRESHOLD } from '../../../../common/correlations/constants';
 import { getOverallLatencyDistribution } from '../../latency_distribution/get_overall_latency_distribution';
 import { fetchDurationFieldCandidates } from './fetch_duration_field_candidates';
+import { fetchInfraFieldCandidates } from './fetch_infra_field_candidates';
 import { fetchFieldValuePairs } from './fetch_field_value_pairs';
 import { fetchSignificantCorrelations } from './fetch_significant_correlations';
 import { fetchPValues } from './fetch_p_values';
+import { fetchThroughputCorrelations } from './fetch_throughput_correlations';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
 import { getEventTypeFromEntityType } from '../utils';
 
@@ -71,6 +73,8 @@ export async function fetchCorrelations({
   config,
 }: FetchCorrelationsParams): Promise<CorrelationsResponse> {
   const isFailureRateMetric = metric === 'failure_rate';
+  const isThroughputMetric = metric === 'throughput';
+  const isInfraMetric = metric === 'infra_metrics';
   const entityType = scopeToEntityType(scope);
   const eventType = getEventTypeFromEntityType(entityType);
 
@@ -118,6 +122,17 @@ export async function fetchCorrelations({
   let fieldCandidates: string[];
   if (providedFieldCandidates && providedFieldCandidates.length > 0) {
     fieldCandidates = providedFieldCandidates;
+  } else if (isInfraMetric) {
+    const candidatesResponse = await fetchInfraFieldCandidates({
+      apmEventClient,
+      eventType,
+      start,
+      end,
+      environment,
+      kuery,
+      query,
+    });
+    fieldCandidates = candidatesResponse.fieldCandidates;
   } else {
     const candidatesResponse = await fetchDurationFieldCandidates({
       apmEventClient,
@@ -212,6 +227,43 @@ export async function fetchCorrelations({
       return String(a.fieldValue).localeCompare(String(b.fieldValue));
     });
     fallbackResult = bestFallback;
+  } else if (isThroughputMetric) {
+    // For throughput, fetch field value pairs then compute Pearson correlation on RPM timeseries
+    const fieldCandidateChunks = chunk(fieldCandidates, CHUNK_SIZE);
+
+    for (const fieldCandidateChunk of fieldCandidateChunks) {
+      const fieldValuePairResponse = await fetchFieldValuePairs({
+        apmEventClient,
+        eventType,
+        start,
+        end,
+        environment,
+        kuery,
+        query,
+        fieldCandidates: fieldCandidateChunk,
+      });
+
+      if (fieldValuePairResponse.fieldValuePairs.length > 0) {
+        fieldValuePairs.push(...fieldValuePairResponse.fieldValuePairs);
+      }
+    }
+
+    const prioritizedFieldValuePairs = getPrioritizedFieldValuePairs(fieldValuePairs);
+
+    const throughputResponse = await fetchThroughputCorrelations({
+      apmEventClient,
+      entityType,
+      start,
+      end,
+      environment,
+      kuery,
+      query,
+      fieldValuePairs: prioritizedFieldValuePairs,
+    });
+
+    correlations.push(...throughputResponse.throughputCorrelations);
+    if (throughputResponse.ccsWarning) ccsWarning = true;
+    if (throughputResponse.fallbackResult) fallbackResult = throughputResponse.fallbackResult;
   } else {
     // For transaction_duration, use significant correlations approach
     // Get field value pairs (with internal chunking)

@@ -5,288 +5,73 @@
  * 2.0.
  */
 
+import type { InternalSkillDefinition } from '@kbn/agent-builder-server/skills';
 import { getSkillsInstructions } from './skills';
-import type { IFileStore } from '@kbn/agent-builder-server/runner';
-import { FileEntryType } from '@kbn/agent-builder-server/runner/filestore';
-import type { FileEntry } from '@kbn/agent-builder-server/runner/filestore';
-import type { SkillFileEntry } from '../../../runner/store/volumes/skills/types';
+
+const skill = (overrides: Partial<InternalSkillDefinition>): InternalSkillDefinition =>
+  ({
+    id: 'platform.core.test-skill',
+    name: 'test-skill',
+    description: 'A test skill',
+    basePath: 'skills/platform/core',
+    referencedContent: [],
+    ...overrides,
+  } as unknown as InternalSkillDefinition);
 
 describe('getSkillsInstructions', () => {
-  const createMockFileStore = (): jest.Mocked<IFileStore> => ({
-    read: jest.fn(),
-    ls: jest.fn(),
-    glob: jest.fn(),
-    grep: jest.fn(),
-  });
-
-  const createSkillFileEntry = (
-    path: string,
-    skillName: string,
-    skillDescription: string
-  ): SkillFileEntry => ({
-    type: 'file',
-    path,
-    content: {
-      raw: {},
-      plain_text: `---\nname: ${skillName}\ndescription: ${skillDescription}\n---\n\nBody content`,
-    },
-    metadata: {
-      type: FileEntryType.skill,
-      id: skillName,
-      token_count: 10,
-      readonly: true,
-      skill_name: skillName,
-      skill_description: skillDescription,
-      skill_id: skillName,
-    },
-  });
-
-  const createNonSkillFileEntry = (path: string): FileEntry => ({
-    type: 'file',
-    path,
-    content: {
-      raw: {},
-    },
-    metadata: {
-      type: FileEntryType.toolResult,
-      id: path,
-      token_count: 10,
-      readonly: false,
-    },
-  });
-
   describe('when no skills are available', () => {
-    it('returns message indicating no skills are available', async () => {
-      const filesystem = createMockFileStore();
-      filesystem.glob.mockResolvedValue([]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
+    it('returns the no-skills marker', () => {
+      const result = getSkillsInstructions({ skills: [] });
       expect(result).toContain('## SKILLS');
       expect(result).toContain('No skills are currently available');
       expect(result).toContain('Load a skill to get detailed instructions');
     });
-
-    it('returns formatted message when glob returns empty array', async () => {
-      const filesystem = createMockFileStore();
-      filesystem.glob.mockResolvedValue([]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      const lines = result.split('\n');
-      expect(lines[0]).toBe('## SKILLS');
-      expect(lines[1]).toBe(
-        'Load a skill to get detailed instructions for a specific task. No skills are currently available.'
-      );
-    });
   });
 
   describe('when skills are available', () => {
-    it('returns formatted skills list', async () => {
-      const filesystem = createMockFileStore();
-      const skill1 = createSkillFileEntry(
-        '/skills/platform/core/test-skill/SKILL.md',
-        'test-skill',
-        'A test skill'
-      );
-      const skill2 = createSkillFileEntry(
-        '/skills/security/alerts/alert-skill/SKILL.md',
-        'alert-skill',
-        'An alert skill'
-      );
-      filesystem.glob.mockResolvedValue([skill1, skill2]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
+    it('renders one line per skill in markdown list format', () => {
+      const result = getSkillsInstructions({
+        skills: [
+          skill({
+            id: 'platform.core.alpha',
+            name: 'alpha',
+            description: 'Alpha skill',
+          }),
+        ],
+      });
       expect(result).toContain('## SKILLS');
+      expect(result).toMatch(/- alpha \(.+SKILL\.md\): Alpha skill/);
+    });
+
+    it('sorts skills by name', () => {
+      const result = getSkillsInstructions({
+        skills: [
+          skill({ id: 'a.z', name: 'z-skill' }),
+          skill({ id: 'a.a', name: 'a-skill' }),
+          skill({ id: 'a.m', name: 'm-skill' }),
+        ],
+      });
+      const aIdx = result.indexOf('a-skill');
+      const mIdx = result.indexOf('m-skill');
+      const zIdx = result.indexOf('z-skill');
+      expect(aIdx).toBeLessThan(mIdx);
+      expect(mIdx).toBeLessThan(zIdx);
+    });
+
+    it('includes guidance for loading skills', () => {
+      const result = getSkillsInstructions({
+        skills: [skill({})],
+      });
       expect(result).toContain(
         'Always check the skill list above before acting on a user request.'
       );
     });
 
-    it('includes skill entries in markdown list format', async () => {
-      const filesystem = createMockFileStore();
-      const skill = createSkillFileEntry(
-        '/skills/platform/core/test-skill/SKILL.md',
-        'test-skill',
-        'A test skill description'
-      );
-      filesystem.glob.mockResolvedValue([skill]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain(
-        '- test-skill (/skills/platform/core/test-skill/SKILL.md): A test skill description'
-      );
-    });
-
-    it('sorts skills by path', async () => {
-      const filesystem = createMockFileStore();
-      const skill1 = createSkillFileEntry(
-        '/skills/platform/core/z-skill/SKILL.md',
-        'z-skill',
-        'Z skill'
-      );
-      const skill2 = createSkillFileEntry(
-        '/skills/platform/core/a-skill/SKILL.md',
-        'a-skill',
-        'A skill'
-      );
-      const skill3 = createSkillFileEntry(
-        '/skills/platform/core/m-skill/SKILL.md',
-        'm-skill',
-        'M skill'
-      );
-      filesystem.glob.mockResolvedValue([skill1, skill2, skill3]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      const aIndex = result.indexOf('a-skill');
-      const mIndex = result.indexOf('m-skill');
-      const zIndex = result.indexOf('z-skill');
-
-      expect(aIndex).toBeLessThan(mIndex);
-      expect(mIndex).toBeLessThan(zIndex);
-    });
-
-    it('filters out non-skill file entries', async () => {
-      const filesystem = createMockFileStore();
-      const skill = createSkillFileEntry(
-        '/skills/platform/core/test-skill/SKILL.md',
-        'test-skill',
-        'A test skill'
-      );
-      const nonSkill = createNonSkillFileEntry('some/other/file.md');
-      filesystem.glob.mockResolvedValue([skill, nonSkill]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain('test-skill');
-      expect(result).not.toContain('some/other/file.md');
-    });
-
-    it('handles multiple skills with different paths', async () => {
-      const filesystem = createMockFileStore();
-      const skill1 = createSkillFileEntry(
-        '/skills/platform/core/core-skill/SKILL.md',
-        'core-skill',
-        'Core skill'
-      );
-      const skill2 = createSkillFileEntry(
-        '/skills/security/alerts/alert-skill/SKILL.md',
-        'alert-skill',
-        'Alert skill'
-      );
-      const skill3 = createSkillFileEntry(
-        '/skills/observability/monitoring/monitor-skill/SKILL.md',
-        'monitor-skill',
-        'Monitor skill'
-      );
-      filesystem.glob.mockResolvedValue([skill1, skill2, skill3]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain('core-skill');
-      expect(result).toContain('alert-skill');
-      expect(result).toContain('monitor-skill');
-    });
-
-    it('includes all skill metadata in the list entry', async () => {
-      const filesystem = createMockFileStore();
-      const skill = createSkillFileEntry(
-        '/skills/platform/core/complex-skill/SKILL.md',
-        'complex-skill',
-        'A complex skill with a longer description that explains what it does'
-      );
-      filesystem.glob.mockResolvedValue([skill]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain(
-        '- complex-skill (/skills/platform/core/complex-skill/SKILL.md): A complex skill with a longer description that explains what it does'
-      );
-    });
-
-    it('does not distinguish between user-created and builtin skills', async () => {
-      const filesystem = createMockFileStore();
-      const userSkill = createSkillFileEntry(
-        '/skills/incident-triage/SKILL.md',
-        'incident-triage',
-        'Triage security incidents'
-      );
-      const builtinSkill = createSkillFileEntry(
-        '/skills/platform/core/data-exploration/SKILL.md',
-        'data-exploration',
-        'Explore data'
-      );
-      filesystem.glob.mockResolvedValue([userSkill, builtinSkill]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain('incident-triage');
-      expect(result).toContain('data-exploration');
-      expect(result).not.toContain('HIGHEST PRIORITY');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('handles empty skill description', async () => {
-      const filesystem = createMockFileStore();
-      const skill = createSkillFileEntry(
-        'skills/platform/core/empty-desc/SKILL.md',
-        'empty-desc',
-        ''
-      );
-      filesystem.glob.mockResolvedValue([skill]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain('- empty-desc (skills/platform/core/empty-desc/SKILL.md): ');
-    });
-
-    it('handles skills with special characters in description', async () => {
-      const filesystem = createMockFileStore();
-      const skill = createSkillFileEntry(
-        'skills/platform/core/special/SKILL.md',
-        'special',
-        'Description with "quotes" and <tags> and &ampersands'
-      );
-      filesystem.glob.mockResolvedValue([skill]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain('Description with "quotes" and <tags> and &ampersands');
-    });
-
-    it('handles very long skill descriptions', async () => {
-      const filesystem = createMockFileStore();
-      const longDescription = 'a'.repeat(500);
-      const skill = createSkillFileEntry(
-        'skills/platform/core/long/SKILL.md',
-        'long',
-        longDescription
-      );
-      filesystem.glob.mockResolvedValue([skill]);
-
-      const result = await getSkillsInstructions({ filesystem });
-
-      expect(result).toContain(longDescription);
-    });
-
-    it('calls glob with correct pattern', async () => {
-      const filesystem = createMockFileStore();
-      filesystem.glob.mockResolvedValue([]);
-
-      await getSkillsInstructions({ filesystem });
-
-      expect(filesystem.glob).toHaveBeenCalledWith('/**/SKILL.md');
-    });
-
-    it('handles glob errors gracefully', async () => {
-      const filesystem = createMockFileStore();
-      filesystem.glob.mockRejectedValue(new Error('Glob error'));
-
-      await expect(getSkillsInstructions({ filesystem })).rejects.toThrow('Glob error');
+    it('renders the empty-description case without choking', () => {
+      const result = getSkillsInstructions({
+        skills: [skill({ description: '' })],
+      });
+      expect(result).toMatch(/- test-skill \(.+SKILL\.md\): /);
     });
   });
 });

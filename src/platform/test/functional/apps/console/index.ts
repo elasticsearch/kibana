@@ -31,6 +31,7 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
       loadTestFile(require.resolve('./_text_input'));
       loadTestFile(require.resolve('./_settings'));
       loadTestFile(require.resolve('./_output_panel'));
+      loadTestFile(require.resolve('./_output_filter'));
       loadTestFile(require.resolve('./_onboarding_tour'));
     }
   });

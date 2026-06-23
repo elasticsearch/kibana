@@ -87,7 +87,7 @@ export const suggest = async (
   offset?: number
 ): Promise<ISuggestionItem[]> => {
   const cursorPosition = offset ?? query.length;
-  const { innerText, root, command } = findAutocompleteAstPosition(query, cursorPosition);
+  const { innerText, root, command, tokens } = findAutocompleteAstPosition(query, cursorPosition);
   const headerConstruction = root?.header?.find((cmd) => cmd.name === commandName);
   const targetCommand = headerConstruction ?? command;
 
@@ -105,7 +105,10 @@ export const suggest = async (
     cursorPosition
   );
 
-  return attachReplacementRanges(innerText, suggestions, { commandContext: contextWithRoot });
+  return attachReplacementRanges(innerText, suggestions, {
+    commandContext: contextWithRoot,
+    tokens,
+  });
 };
 
 export const expectSuggestions = async (

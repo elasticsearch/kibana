@@ -46,10 +46,10 @@ const getApmCorrelationsSchema = z.object({
       'KQL filter to scope transactions to a specific service, endpoint, environment, host, or trace. Examples: \'service.name: "frontend"\', \'service.name: "checkout" AND transaction.name: "POST /api/cart"\', \'trace.id: "abc123"\'.'
     ),
   metric: z
-    .enum(['latency', 'failure_rate'])
+    .enum(['latency', 'failure_rate', 'throughput', 'infra_metrics'])
     .default('latency')
     .describe(
-      'Metric to correlate on. "latency" finds dimensions that are over-represented among slow transactions. "failure_rate" finds dimensions over-represented among failed transactions.'
+      'Metric to correlate on. "latency" finds dimensions over-represented among slow transactions. "failure_rate" finds dimensions over-represented among failed transactions. "throughput" finds dimensions whose presence correlates with changes in transaction rate (RPM) — useful for finding which attributes are associated with traffic spikes or drops. "infra_metrics" finds infrastructure entities (hosts, pods, containers, cloud regions) over-represented among slow transactions.'
     ),
   percentileThreshold: z
     .number()
@@ -58,7 +58,7 @@ const getApmCorrelationsSchema = z.object({
     .optional()
     .default(95)
     .describe(
-      'For metric="latency": defines what "slow" means using a percentile of transaction duration. Example: 95 means "slow transactions are those at or above the p95 duration". Ignored for metric="failure_rate".'
+      'For metric="latency" and metric="infra_metrics": defines what "slow" means using a percentile of transaction duration. Example: 95 means "slow transactions are those at or above the p95 duration". Ignored for metric="failure_rate" and metric="throughput".'
     ),
   fieldCandidates: z
     .array(z.string())
@@ -66,7 +66,7 @@ const getApmCorrelationsSchema = z.object({
     .max(MAX_FIELD_CANDIDATES)
     .optional()
     .describe(
-      `Fields to test for correlations (keyword fields recommended). If omitted, the tool uses a small set of common APM dimensions. Hard limit: ${MAX_FIELD_CANDIDATES}. Use ${OBSERVABILITY_GET_INDEX_INFO_TOOL_ID} to discover valid fields and values before expanding this list.`
+      `Fields to test for correlations (keyword fields recommended). If omitted, defaults to common APM dimensions for latency/failure_rate/throughput, or infrastructure fields (host.name, container.id, kubernetes.*, cloud.*) for infra_metrics. Hard limit: ${MAX_FIELD_CANDIDATES}. Use ${OBSERVABILITY_GET_INDEX_INFO_TOOL_ID} to discover valid fields and values before expanding this list.`
     ),
   limit: z
     .number()
@@ -92,12 +92,14 @@ export function createGetApmCorrelationsTool({
   const toolDefinition: BuiltinToolDefinition<typeof getApmCorrelationsSchema> = {
     id: OBSERVABILITY_GET_APM_CORRELATIONS_TOOL_ID,
     type: ToolType.builtin,
-    description: `Analyzes APM transaction correlations to identify which dimensions are most associated with slow or failed transactions.
+    description: `Analyzes APM transaction correlations to identify which dimensions are most associated with slow, failed, or throughput-anomalous transactions, or which infrastructure entities host slow transactions.
 
 This is a "unified correlations" style tool intended to support investigations where you already have a scoped set of transactions and want to find what stands out within them.
 
 When to use this tool:
-- After ${OBSERVABILITY_GET_TRACE_METRICS_TOOL_ID} identifies a high-latency or high-failure service/endpoint, to find *which attributes* (host, version, cloud region, etc.) are over-represented in slow/failed transactions.
+- After ${OBSERVABILITY_GET_TRACE_METRICS_TOOL_ID} identifies a high-latency or high-failure service/endpoint, to find *which attributes* (host, version, cloud region, etc.) are over-represented in slow/failed transactions (metric="latency" or metric="failure_rate").
+- To investigate traffic spikes or drops and find which service attributes correlate with throughput changes (metric="throughput").
+- To identify which specific infrastructure entities (hosts, pods, containers, cloud regions) are associated with slowness (metric="infra_metrics").
 - To generate candidate hypotheses for root cause analysis (for example: "slow requests are concentrated on a single host.name" or "failures are correlated with a specific user_agent.name").
 
 When NOT to use this tool:
@@ -105,7 +107,9 @@ When NOT to use this tool:
 - If you need the raw trace details, use observability.get_traces.
 
 Notes:
-- "latency" correlations use a percentileThreshold (default p95) to define the slow subset.
+- "latency" and "infra_metrics" correlations use a percentileThreshold (default p95) to define the slow subset. Scoring uses significant_terms (KL-divergence); this differs from the Kibana UI which uses a K-S test — scores are not directly comparable.
+- "throughput" computes Pearson correlation between overall RPM and per-field-value RPM timeseries; results with |correlation| < 0.3 are excluded. Requires at least a ~3-minute time range to produce meaningful results.
+- "infra_metrics" automatically uses infrastructure field candidates (host.name, container.id, kubernetes.pod.name, etc.) unless fieldCandidates is specified.
 - Results are best-effort and may be less useful when fieldCandidates include high-cardinality fields or fields without keyword mappings.`,
     schema: getApmCorrelationsSchema,
     tags: ['observability', 'apm', 'correlations', 'trace'],

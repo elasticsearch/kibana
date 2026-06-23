@@ -154,6 +154,9 @@ export const WaffleMetricControls = ({
         anchorPosition="downLeft"
         panelPaddingSize="none"
         closePopover={handleClose}
+        aria-label={i18n.translate('xpack.infra.waffle.metricPopover.ariaLabel', {
+          defaultMessage: 'Metric',
+        })}
       >
         {mode === 'pick' ? (
           <MetricsContextMenu

@@ -21,6 +21,10 @@ export const STREAMS_SIG_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID =
 export const STREAMS_SIG_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID =
   'streams_sig_events_discovery' as const;
 
+/** Root cause investigation. */
+export const STREAMS_SIG_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID =
+  'streams_sig_events_investigation' as const;
+
 /** Parent feature for Streams (Inference Feature Registry). */
 export const STREAMS_INFERENCE_PARENT_FEATURE_ID = 'streams' as const;
 

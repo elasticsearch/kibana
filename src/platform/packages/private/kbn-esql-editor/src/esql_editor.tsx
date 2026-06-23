@@ -751,7 +751,7 @@ const ESQLEditorInternal = function ESQLEditor({
                   isNlToEsqlEnabled
                     ? i18n.translate('esqlEditor.placeholder', {
                         defaultMessage:
-                          "Start typing ES|QL, or write a // comment and press {commandKey}+J to describe what you're looking for",
+                          "Start typing ES|QL, or describe what you're looking for in a // comment, then press {commandKey}+J to generate the query",
                         values: { commandKey: isMac ? '⌘' : 'Ctrl' },
                       })
                     : i18n.translate('esqlEditor.placeholder.basic', {
@@ -831,7 +831,7 @@ const ESQLEditorInternal = function ESQLEditor({
                   // Add Tab keybinding rules for inline suggestions
                   addTabKeybindingRules();
 
-                  editor.onMouseDown((e) => {
+                  const mouseDownDisposable = editor.onMouseDown((e) => {
                     if (datePickerOpenStatusRef.current) {
                       setPopoverPosition({});
                     }
@@ -843,7 +843,7 @@ const ESQLEditorInternal = function ESQLEditor({
                     }
                   });
 
-                  editor.onDidFocusEditorText(() => {
+                  const focusDisposable = editor.onDidFocusEditorText(() => {
                     // Skip triggering suggestions on initial focus to avoid interfering
                     // with editor initialization and automated tests
                     // Also skip when date picker is open to prevent overlap
@@ -854,7 +854,10 @@ const ESQLEditorInternal = function ESQLEditor({
                     isFirstFocusRef.current = false;
                   });
 
-                  trackSuggestionPopupState(editor, isSuggestionPopupOpenRef);
+                  const suggestionPopupDisposable = trackSuggestionPopupState(
+                    editor,
+                    isSuggestionPopupOpenRef
+                  );
 
                   // on CMD/CTRL + / comment out the entire line
                   editor.addCommand(
@@ -875,11 +878,11 @@ const ESQLEditorInternal = function ESQLEditor({
                       setEditorHeight(EDITOR_MAX_HEIGHT);
                     }
                   }
-                  editor.onDidLayoutChange((layoutInfoEvent) => {
+                  const layoutChangeDisposable = editor.onDidLayoutChange((layoutInfoEvent) => {
                     onLayoutChangeRef.current(layoutInfoEvent);
                   });
 
-                  editor.onDidChangeModelContent(async () => {
+                  const modelContentDisposable = editor.onDidChangeModelContent(async () => {
                     trackInputLatencyOnKeystroke(editor.getValue() ?? '');
                     await addLookupIndicesDecorator();
                     if (enableResourceBrowser) {
@@ -887,6 +890,15 @@ const ESQLEditorInternal = function ESQLEditor({
                     }
                     maybeTriggerSuggestions();
                   });
+
+                  const listenerDisposables = [
+                    mouseDownDisposable,
+                    focusDisposable,
+                    layoutChangeDisposable,
+                    modelContentDisposable,
+                    suggestionPopupDisposable,
+                  ];
+                  editorCommandDisposables.current.get(currentEditor)?.push(...listenerDisposables);
 
                   // Auto-focus the editor and move the cursor to the end.
                   if (!disableAutoFocus) {

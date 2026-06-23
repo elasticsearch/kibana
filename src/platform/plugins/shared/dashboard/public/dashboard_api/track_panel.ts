@@ -16,6 +16,7 @@ import {
   getViewportBoundaries,
   getScrollPosition,
 } from '@kbn/core-chrome-layout-utils';
+import type { ViewMode } from '@kbn/presentation-publishing';
 import { apiPublishesRelatedPanels } from '@kbn/presentation-publishing';
 import type { DashboardChildren } from './layout_manager/types';
 
@@ -23,7 +24,8 @@ export const highlightAnimationDuration = 2000;
 
 export function initializeTrackPanel(
   untilLoaded: (id: string) => Promise<undefined>,
-  children$: Observable<DashboardChildren>
+  children$: Observable<DashboardChildren>,
+  viewMode$: BehaviorSubject<ViewMode>
 ) {
   const expandedPanelId$ = new BehaviorSubject<string | undefined>(undefined);
   const focusedPanelId$ = new BehaviorSubject<string | undefined>(undefined);
@@ -46,13 +48,14 @@ export function initializeTrackPanel(
     children$,
     focusedPanelId$,
     relatedPanelsIndicatorId$,
+    viewMode$,
   ])
     .pipe(
       // Get the relatedPanels$ subject of the focused panel and use it to determine blurred panels
-      map(([children, focusedPanelId, relatedPanelsIndicatorId]) => {
+      map(([children, focusedPanelId, relatedPanelsIndicatorId, viewMode]) => {
         // To decide whether to blur a panel, a panel in focus takes precedence over something indicating related panels
         const idToCompareForBlur = focusedPanelId ?? relatedPanelsIndicatorId;
-        if (!idToCompareForBlur) {
+        if (!idToCompareForBlur || viewMode !== 'edit') {
           return of({
             focusedChildId: '',
             relatedPanels: [],

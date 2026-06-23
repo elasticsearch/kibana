@@ -40,7 +40,7 @@ export const AugmentMessageCodeBlockButton = ({ currentConversation, codeBlockDe
       ]}
       keepDataView={true}
     >
-      <EuiIcon type="timeline" />
+      <EuiIcon type="timeline" aria-hidden={true} />
     </SendToTimelineButton>
   );
 

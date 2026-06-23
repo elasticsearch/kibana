@@ -237,7 +237,7 @@ describe('dataFindStepDefinition', () => {
       expect(result.error?.message).toContain('Expected items to be an array');
     });
 
-    it('should continue searching even if one item evaluation fails', async () => {
+    it('should skip non-object items with a warning and keep searching', async () => {
       const config = {
         items: [null, { status: 'active', id: 2 }],
       };
@@ -248,6 +248,8 @@ describe('dataFindStepDefinition', () => {
       const context = createMockContext(config, input);
       const result = await dataFindStepDefinition.handler(context);
 
+      // A `null` item cannot satisfy an `item.<field>` condition; it is skipped
+      // with a warning and the search continues to the next, matching item.
       expect(result.output).toEqual({ item: { status: 'active', id: 2 }, index: 1 });
       expect(context.logger.warn).toHaveBeenCalled();
     });

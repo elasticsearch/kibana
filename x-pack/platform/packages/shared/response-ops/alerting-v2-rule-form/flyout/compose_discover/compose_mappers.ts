@@ -11,6 +11,7 @@ import {
   mergeArtifactsByType,
   splitArtifactsByType,
 } from '../../form/utils/artifact_mappers';
+import type { FormValues } from '../../form/types';
 import type { ComposeFormValues } from './compose_form_types';
 
 const DELAY_IMMEDIATE = 'immediate';
@@ -164,6 +165,12 @@ const deriveRecoveryDelayMode = (
   if (st?.recoveringCount != null && st.recoveringCount > 0) return 'recoveries';
   return DELAY_IMMEDIATE;
 };
+
+/** Bridge YAML parse output into compose form values for the Discover flyout. */
+export const mapYamlFormValuesToComposeFormValues = (parsed: FormValues): ComposeFormValues => ({
+  ...parsed,
+  ...splitArtifactsByType(parsed.artifacts),
+});
 
 export const mapRuleToComposeFormValues = (rule: RuleResponse): ComposeFormValues => {
   const stateTransition: ComposeFormValues['stateTransition'] = rule.state_transition

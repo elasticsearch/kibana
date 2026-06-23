@@ -70,13 +70,33 @@ export const generateFieldHintCases = (fields: readonly string[], entityIdVar: s
  * CONCAT("{", "\"required\":true", formatJsonProperty('optional', 'val'), "}")
  * ```
  */
+/**
+ * Wraps a string-valued ES|QL expression so its result can be safely embedded as a JSON
+ * string value. Escapes the two JSON-significant characters at query time:
+ *   - backslash  \  ->  \\
+ *   - double quote "  ->  \"
+ * Backslash is escaped first so the backslashes added when escaping quotes are not doubled again.
+ *
+ * Without this, identity values containing a backslash (e.g. Windows/AD `DOMAIN\user` EUIDs such
+ * as `user:AzureAD\FelixRoessel@...`) or a double quote produce invalid JSON that fails
+ * `JSON.parse` downstream in parse_records, 500-ing the whole graph request.
+ *
+ * REPLACE uses Java regex for the pattern and Java replacement semantics for the third argument,
+ * which is why the escape/replacement strings carry doubled backslashes. Returns null when the
+ * input expression is null, preserving the COALESCE null-handling of the callers.
+ */
+export const escapeJsonStringValueEsql = (esqlExpr: string): string =>
+  String.raw`REPLACE(REPLACE(${esqlExpr}, "\\\\", "\\\\\\\\"), "\"", "\\\\\"")`;
+
 export const concatJsonObjectPropertyEsqlExprSafe = (
   propertyName: string,
   esqlVariable: string
 ): string => {
   // CONCAT returns null if any argument is null, so if valueVar is null,
   // the entire CONCAT returns null, and COALESCE returns empty string
-  return `COALESCE(CONCAT("\\"${propertyName}\\":\\"", ${esqlVariable}, "\\""), "")`;
+  return `COALESCE(CONCAT("\\"${propertyName}\\":\\"", ${escapeJsonStringValueEsql(
+    esqlVariable
+  )}, "\\""), "")`;
 };
 
 export const concatJsonObjectPropertyString = (
@@ -94,7 +114,7 @@ export const concatJsonObjectPropertyEsqlExprAsString = (
   propertyName: string,
   esqlExpr: string
 ): string => {
-  return `CONCAT("\\"${propertyName}\\":\\"", ${esqlExpr}, "\\"")`;
+  return `CONCAT("\\"${propertyName}\\":\\"", ${escapeJsonStringValueEsql(esqlExpr)}, "\\"")`;
 };
 
 export const JSON_OBJECT_SEPARATOR = '","';

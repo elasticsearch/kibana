@@ -111,6 +111,9 @@ export const AlertDropdown = () => {
     <>
       <EuiPopover
         panelPaddingSize="none"
+        aria-label={i18n.translate('xpack.infra.alerting.logs.alertDropdownAriaLabel', {
+          defaultMessage: 'Alerts and rules',
+        })}
         button={
           <EuiHeaderLink
             color="primary"

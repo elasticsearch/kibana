@@ -27,7 +27,10 @@ export async function kibanaRequest(
       Authorization: generateAuthHeader(config),
       'kbn-xsrf': 'true',
       'x-elastic-internal-origin': 'create-sigevents-snapshots',
-      'elastic-api-version': '2023-10-31',
+      // Public (/api/) and internal routes use different version schemes: public routes
+      // are dated, internal versioned routes use integers. Unversioned internal routes
+      // ignore the header, so sending '1' for everything under /internal/ is safe.
+      'elastic-api-version': path.startsWith('/internal/') ? '1' : '2023-10-31',
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });

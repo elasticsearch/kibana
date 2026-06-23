@@ -9,6 +9,7 @@
 
 import { i18n } from '@kbn/i18n';
 import type { ContentListItem } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import type { EditActionProps, ActionOutput, ActionBuilderContext } from '../types';
 
 /** Default i18n-translated label for the edit action. */
@@ -86,7 +87,7 @@ export const buildEditAction = (
     type: 'icon',
     isPrimary: true,
     enabled,
-    'data-test-subj': 'content-list-table-action-edit',
+    'data-test-subj': CONTENT_LIST_TEST_SUBJECTS.actionEdit,
     ...(getItemActionHref
       ? { href: (item) => getItemActionHref(item) }
       : { onClick: (item) => onItemAction!(item) }),

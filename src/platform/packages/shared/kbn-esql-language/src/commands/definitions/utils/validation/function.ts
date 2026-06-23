@@ -14,9 +14,17 @@ import {
   isInlineCast,
   isParamLiteral,
 } from '@elastic/esql';
-import type { ESQLAst, ESQLAstAllCommands, ESQLAstItem, ESQLFunction } from '@elastic/esql/types';
+import type {
+  ESQLAst,
+  ESQLAstAllCommands,
+  ESQLAstItem,
+  ESQLColumn,
+  ESQLFunction,
+  ESQLIdentifier,
+} from '@elastic/esql/types';
 import type { PromQLFunction } from '@elastic/esql';
 import { errors, getFunctionDefinition } from '..';
+import { isTypeConversionFunction } from '../functions';
 import { FunctionDefinitionTypes } from '../../../../..';
 import { getLocationInfo } from '../../../registry/location';
 import { isTimeseriesSourceCommand } from '../timeseries_check';
@@ -194,8 +202,11 @@ class FunctionValidator {
     }
 
     // Validate column arguments
-    const columnsToValidate = [];
+    const columnsToValidate: Array<ESQLColumn | ESQLIdentifier> = [];
     const flatArgs = this.fn.args.flat();
+    const skipUnsupportedOrConflictingColumnValidation = isTypeConversionFunction(
+      this.definition.name
+    );
     for (let i = 0; i < flatArgs.length; i++) {
       const arg = flatArgs[i];
       if (
@@ -208,7 +219,9 @@ class FunctionValidator {
     }
 
     const columnMessages = columnsToValidate.flatMap((arg) => {
-      return new ColumnValidator(arg, this.context, this.parentCommand.name).validate();
+      return new ColumnValidator(arg, this.context, this.parentCommand.name, {
+        skipUnsupportedOrConflictingColumnValidation,
+      }).validate();
     });
 
     this.report(...columnMessages);

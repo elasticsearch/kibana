@@ -25,6 +25,9 @@ jest.mock('../../application/breadcrumb_context', () => ({
   useSetBreadcrumbs: () => jest.fn(),
 }));
 
+let mockAgentBuilderShow = true;
+let mockExperimentalFeaturesEnabled = true;
+
 jest.mock('@kbn/core-di-browser', () => ({
   useService: (token: unknown) => {
     if (token === 'application') {
@@ -32,6 +35,19 @@ jest.mock('@kbn/core-di-browser', () => ({
         navigateToUrl: mockNavigateToUrl,
         navigateToApp: mockNavigateToApp,
         getUrlForApp: mockGetUrlForApp,
+        capabilities: {
+          agentBuilder: { show: mockAgentBuilderShow },
+        },
+      };
+    }
+    if (token === 'uiSettings') {
+      return {
+        get: (id: string) => {
+          if (id === 'agentBuilder:experimentalFeatures') {
+            return mockExperimentalFeaturesEnabled;
+          }
+          return undefined;
+        },
       };
     }
     if (token === 'chrome') {
@@ -155,6 +171,8 @@ const renderPage = () => {
 describe('RulesListPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAgentBuilderShow = true;
+    mockExperimentalFeaturesEnabled = true;
     mockUseDeleteRule.mockReturnValue({
       mutate: mockDeleteMutate,
       isLoading: false,
@@ -817,6 +835,45 @@ describe('RulesListPage', () => {
       path: '/agents/elastic-ai-agent/conversations/new',
       state: { initialMessage: CREATE_WITH_AGENT_INITIAL_PROMPT },
     });
+  });
+
+  it('hides agent builder options when agent builder is not available', async () => {
+    mockAgentBuilderShow = false;
+    mockExperimentalFeaturesEnabled = false;
+
+    mockUseFetchRules.mockReturnValue({
+      data: { items: mockRules, total: 2, page: 1, perPage: 20 },
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    renderPage();
+
+    fireEvent.click(screen.getByTestId('createRulePopoverButton'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('createEsqlRuleButton')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId('createWithAgentButton')).not.toBeInTheDocument();
+  });
+
+  it('hides agent builder options in empty state when agent builder is not available', () => {
+    mockAgentBuilderShow = false;
+    mockExperimentalFeaturesEnabled = false;
+
+    mockUseFetchRules.mockReturnValue({
+      data: { items: [], total: 0, page: 1, perPage: 20 },
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    renderPage();
+
+    expect(screen.getByTestId('createEsqlRuleCard')).toBeInTheDocument();
+    expect(screen.queryByTestId('createWithAgentCard')).not.toBeInTheDocument();
   });
 
   it('shows delete confirmation modal when delete action is clicked', async () => {

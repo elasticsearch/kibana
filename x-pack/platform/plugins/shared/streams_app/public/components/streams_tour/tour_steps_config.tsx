@@ -96,31 +96,12 @@ const ATTACHMENTS_STEP: Omit<TourStepConfig, 'step' | 'stepsTotal'> = {
   maxWidth: 360,
 };
 
-const ADVANCED_STEP: Omit<TourStepConfig, 'step' | 'stepsTotal'> = {
-  stepId: 'advanced',
-  subtitle: TOUR_SUBTITLE,
-  title: i18n.translate('xpack.streams.tour.advanced.title', {
-    defaultMessage: 'Fine-tune this stream',
-  }),
-  content: (
-    <EuiText size="s" css={tightContentCss}>
-      {i18n.translate('xpack.streams.tour.advanced.content', {
-        defaultMessage:
-          'Review the underlying configuration of your stream, and add useful information for Streams AI components.',
-      })}
-    </EuiText>
-  ),
-  anchorPosition: 'downCenter',
-  maxWidth: 360,
-};
-
 export function getTourStepsConfig(): TourStepConfig[] {
   const baseSteps: Array<Omit<TourStepConfig, 'step' | 'stepsTotal'>> = [
     STREAMS_LIST_STEP,
     RETENTION_STEP,
     PROCESSING_STEP,
     ATTACHMENTS_STEP,
-    ADVANCED_STEP,
   ];
 
   const stepsTotal = baseSteps.length;

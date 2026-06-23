@@ -35,6 +35,8 @@ export type {
   ConversationSidebarRef,
   OpenConversationSidebarReturn,
   PublicEmbeddableConversationProps,
+  PublicEmbeddableConversationInputProps,
+  EmbeddableConversationInputRef,
 } from '@kbn/agent-builder-browser';
 
 /* eslint-disable @typescript-eslint/no-empty-interface*/

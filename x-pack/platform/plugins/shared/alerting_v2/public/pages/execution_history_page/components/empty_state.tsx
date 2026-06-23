@@ -32,6 +32,29 @@ export const PoliciesEmptyState = () => (
   />
 );
 
+export const FilteredEmptyState = () => (
+  <EuiEmptyPrompt
+    data-test-subj="executionHistoryFilteredEmptyPrompt"
+    iconType="search"
+    title={
+      <h2>
+        <FormattedMessage
+          id="xpack.alertingV2.executionHistory.filteredEmptyTitle"
+          defaultMessage="No matches for the current search and filters."
+        />
+      </h2>
+    }
+    body={
+      <p>
+        <FormattedMessage
+          id="xpack.alertingV2.executionHistory.filteredEmptyBody"
+          defaultMessage="Try a different search term or change the outcome filter."
+        />
+      </p>
+    }
+  />
+);
+
 export const RulesPlaceholder = () => (
   <EuiEmptyPrompt
     iconType="visGauge"

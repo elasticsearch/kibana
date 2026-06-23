@@ -17,6 +17,7 @@ import {
   EuiPanel,
   EuiText,
   EuiTitle,
+  EuiToolTip,
   useEuiTheme,
   type CriteriaWithPagination,
   type EuiBasicTableColumn,
@@ -232,19 +233,20 @@ export function QueriesTable() {
         render: (_: unknown, item: SignificantEventQueryRow) => {
           const isSelected = selectedQuery?.query.id === item.query.id;
           return (
-            <EuiButtonIcon
-              data-test-subj="queriesDiscoveryDetailsButton"
-              iconType={isSelected ? 'minimize' : 'maximize'}
-              aria-label={DETAILS_BUTTON_ARIA_LABEL}
-              onClick={() => handleSelectQuery(item)}
-            />
+            <EuiToolTip content={DETAILS_BUTTON_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                data-test-subj="queriesDiscoveryDetailsButton"
+                iconType={isSelected ? 'minimize' : 'maximize'}
+                aria-label={DETAILS_BUTTON_ARIA_LABEL}
+                onClick={() => handleSelectQuery(item)}
+              />
+            </EuiToolTip>
           );
         },
       },
       {
         field: 'query.title',
         name: TITLE_COLUMN,
-        truncateText: true,
         render: (_: unknown, item: SignificantEventQueryRow) => (
           <EuiLink onClick={() => handleSelectQuery(item)}>{item.query.title}</EuiLink>
         ),
@@ -260,7 +262,7 @@ export function QueriesTable() {
       {
         field: 'occurrences',
         name: LAST_OCCURRED_COLUMN,
-        width: '240px',
+        width: '180px',
         render: (_: unknown, item: SignificantEventQueryRow) => {
           if (item.query.type === QUERY_TYPE_STATS && !item.rule_backed) {
             return (
@@ -275,8 +277,7 @@ export function QueriesTable() {
       {
         field: 'occurrences',
         name: OCCURRENCES_COLUMN,
-        width: '160px',
-        align: 'center',
+        width: '120px',
         render: (_: unknown, item: SignificantEventQueryRow) => {
           return (
             <SparkPlot
@@ -411,6 +412,7 @@ export function QueriesTable() {
           }}
           showDatePicker
           showQueryInput
+          enableDateRangePicker
           submitButtonStyle="iconOnly"
         />
       </EuiFlexItem>

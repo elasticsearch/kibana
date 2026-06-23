@@ -86,6 +86,9 @@ export const ContextMenuActions = React.memo<Props>(
 
     return (
       <EuiPopover
+        aria-label={i18n.translate('xpack.fleet.contextMenuActions.popoverAriaLabel', {
+          defaultMessage: 'Actions menu',
+        })}
         anchorPosition="downRight"
         panelPaddingSize="none"
         button={

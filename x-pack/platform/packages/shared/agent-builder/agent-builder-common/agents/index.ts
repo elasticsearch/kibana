@@ -15,32 +15,21 @@ export {
   type AgentResearchStepConfiguration,
   type AgentAnswerStepConfiguration,
 } from './definition';
-export { VISIBILITY_ICON, VISIBILITY_BADGE_COLOR, AgentVisibility } from './visibility';
 export {
-  canCurrentUserEditAgent,
-  isAgentOwner,
-  canChangeAgentVisibility,
-  hasAgentReadAccess,
-  hasAgentUseAccess,
-  hasAgentWriteAccess,
-  canDeleteAgent,
-  canManageAgentAcl,
-  getEffectiveAgentRole,
-  type EffectiveAgentRole,
-  type AgentAuthzArgs,
-} from './access_control';
-export {
-  AgentAclRole,
-  AGENT_ACL_MAX_ENTRIES,
-  AGENT_ACL_PRINCIPAL_NAME_MAX_LENGTH,
-  isAgentAclRole,
-  aclRoleMeets,
-  maxAclRole,
-  getEmptyAgentAcl,
-  type AgentAcl,
-  type AgentAclEntry,
-  type AgentAclPrincipalType,
-} from './acl';
+  ACCESS_CONTROL_MODE_ICON,
+  ACCESS_CONTROL_MODE_BADGE_COLOR,
+  AgentAccessControlMode,
+  AgentAccessControlRole,
+  AGENT_ACCESS_CONTROL_MAX_ENTRIES,
+  AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH,
+  isAgentAccessControlRole,
+  accessControlRoleMeets,
+  maxAccessControlRole,
+  getDefaultAgentAccessControl,
+  type AgentAccessControl,
+  type AgentAccessControlEntry,
+  type AgentAccessControlPrincipalType,
+} from './access_control/types';
 export { agentIdRegexp, agentIdMaxLength, validateAgentId } from './agent_ids';
 export {
   type AgentCapabilities,

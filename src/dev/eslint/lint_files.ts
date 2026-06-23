@@ -23,6 +23,9 @@ export interface LintFilesResult {
   warningCount: number;
 }
 
+// Mirrors ESLint CLI's `--quiet` behavior: only autofix errors, never warnings.
+const errorOnlyFixPredicate = (message: { severity: number }) => message.severity === 2;
+
 /**
  * Lints a list of files with eslint. Reports are written to the log.
  * Returns a result with `failedFiles` populated when errors are found.
@@ -35,7 +38,7 @@ export async function lintFiles(
   const eslint = new ESLint({
     cache: true,
     cwd: REPO_ROOT,
-    fix,
+    fix: fix ? errorOnlyFixPredicate : false,
   });
 
   const paths = files.map((file) => file.getRelativePath());

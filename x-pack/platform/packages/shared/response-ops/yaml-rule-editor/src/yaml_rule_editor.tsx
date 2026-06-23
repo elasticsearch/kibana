@@ -79,14 +79,18 @@ export const YamlRuleEditor: React.FC<YamlRuleEditorProps> = ({
   isReadOnly = false,
   height = 'clamp(320px, calc(100vh - 500px), 750px)',
   dataTestSubj = 'alertingV2YamlRuleEditor',
+  onValidate,
 }) => {
   const editorSuggestDisposable = useRef<monaco.IDisposable | null>(null);
   const editorValidationDisposable = useRef<monaco.IDisposable | null>(null);
   const editorBlurDisposable = useRef<monaco.IDisposable | null>(null);
-  // Hold the latest onBlur in a ref so the Monaco listener (set up once on mount)
-  // always calls the current callback without re-attaching on every render.
+  // Hold the latest callbacks in refs so the Monaco listeners (set up once on
+  // mount) always invoke the current callback without re-attaching on every
+  // render.
   const onBlurRef = useRef(onBlur);
   onBlurRef.current = onBlur;
+  const onValidateRef = useRef(onValidate);
+  onValidateRef.current = onValidate;
 
   // Update the Monaco language configuration when property names change
   useEffect(() => {
@@ -239,10 +243,10 @@ export const YamlRuleEditor: React.FC<YamlRuleEditorProps> = ({
       });
 
       // Set up validation markers
-      buildYamlValidationMarkers(model);
+      onValidateRef.current?.(buildYamlValidationMarkers(model) > 0);
       editorValidationDisposable.current?.dispose();
       editorValidationDisposable.current = editor.onDidChangeModelContent(() => {
-        buildYamlValidationMarkers(model);
+        onValidateRef.current?.(buildYamlValidationMarkers(model) > 0);
       });
 
       // Forward blur to the consumer via the ref so the latest onBlur is invoked.

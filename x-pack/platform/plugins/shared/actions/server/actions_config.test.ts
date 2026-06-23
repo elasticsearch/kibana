@@ -461,7 +461,19 @@ describe('getProxySettings', () => {
   });
 });
 
+jest.mock('fs', () => {
+  const actual = jest.requireActual<typeof import('fs')>('fs');
+  return { ...actual, readFileSync: jest.fn().mockImplementation(actual.readFileSync) };
+});
+
+import { readFileSync } from 'fs';
+const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+
 describe('getSSLSettings', () => {
+  beforeEach(() => {
+    mockReadFileSync.mockClear();
+  });
+
   test('returns proper verificationMode value, based on the SSL proxy configuration', () => {
     const configTrue: ActionsConfig = {
       ...defaultActionsConfig,
@@ -480,6 +492,119 @@ describe('getSSLSettings', () => {
     };
     sslSettings = getActionsConfigurationUtilities(configFalse).getSSLSettings();
     expect(sslSettings.verificationMode).toBe('none');
+  });
+});
+
+describe('getEARSSSLSettings', () => {
+  beforeEach(() => {
+    mockReadFileSync.mockClear();
+  });
+
+  const configWithEarsSsl = (ssl: NonNullable<NonNullable<ActionsConfig['auth']['ears']>['ssl']>) =>
+    ({
+      ...defaultActionsConfig,
+      auth: {
+        ...defaultActionsConfig.auth,
+        ears: { enabled: true, enableExperimental: false, ssl },
+      },
+    } as ActionsConfig);
+
+  test('returns verificationMode from the EARS ssl configuration', () => {
+    let sslSettings = getActionsConfigurationUtilities(
+      configWithEarsSsl({ verificationMode: 'full' })
+    ).getEARSSSLSettings();
+    expect(sslSettings.verificationMode).toBe('full');
+
+    sslSettings = getActionsConfigurationUtilities(
+      configWithEarsSsl({ verificationMode: 'none' })
+    ).getEARSSSLSettings();
+    expect(sslSettings.verificationMode).toBe('none');
+  });
+
+  test('reads cert and key buffers from configured EARS ssl file paths', () => {
+    mockReadFileSync
+      .mockReturnValueOnce(Buffer.from('cert-pem'))
+      .mockReturnValueOnce(Buffer.from('key-pem'));
+
+    const sslSettings = getActionsConfigurationUtilities(
+      configWithEarsSsl({
+        verificationMode: 'full',
+        certificate: '/path/to/cert.pem',
+        key: '/path/to/key.pem',
+      })
+    ).getEARSSSLSettings();
+
+    expect(sslSettings.cert).toEqual(Buffer.from('cert-pem'));
+    expect(sslSettings.key).toEqual(Buffer.from('key-pem'));
+    expect(mockReadFileSync).toHaveBeenNthCalledWith(1, '/path/to/cert.pem');
+    expect(mockReadFileSync).toHaveBeenNthCalledWith(2, '/path/to/key.pem');
+  });
+
+  test('returns undefined cert and key when EARS ssl paths are not configured', () => {
+    const sslSettings = getActionsConfigurationUtilities(defaultActionsConfig).getEARSSSLSettings();
+
+    expect(sslSettings.cert).toBeUndefined();
+    expect(sslSettings.key).toBeUndefined();
+    expect(mockReadFileSync).not.toHaveBeenCalled();
+  });
+
+  test('caches the SSL settings and reads files only once across multiple calls', () => {
+    mockReadFileSync
+      .mockReturnValueOnce(Buffer.from('cert-pem'))
+      .mockReturnValueOnce(Buffer.from('key-pem'));
+
+    const configUtils = getActionsConfigurationUtilities(
+      configWithEarsSsl({
+        verificationMode: 'full',
+        certificate: '/path/to/cert.pem',
+        key: '/path/to/key.pem',
+      })
+    );
+
+    const first = configUtils.getEARSSSLSettings();
+    const second = configUtils.getEARSSSLSettings();
+
+    expect(first).toBe(second);
+    expect(mockReadFileSync).toHaveBeenCalledTimes(2);
+  });
+
+  test('throws a descriptive config error when the EARS ssl.certificate file cannot be read', () => {
+    mockReadFileSync.mockImplementationOnce(() => {
+      throw new Error("ENOENT: no such file or directory, open '/path/to/missing-cert.pem'");
+    });
+
+    const sslConfigUtils = getActionsConfigurationUtilities(
+      configWithEarsSsl({
+        verificationMode: 'full',
+        certificate: '/path/to/missing-cert.pem',
+        key: '/path/to/key.pem',
+      })
+    );
+
+    expect(() => sslConfigUtils.getEARSSSLSettings()).toThrow(
+      "EARS SSL configuration error: failed to read certificate file: ENOENT: no such file or directory, open '/path/to/missing-cert.pem'"
+    );
+  });
+
+  test('throws a descriptive config error when the EARS ssl.key file cannot be read', () => {
+    mockReadFileSync
+      // certificate reads fine, key cannot be read
+      .mockReturnValueOnce(Buffer.from('cert-pem'))
+      .mockImplementationOnce(() => {
+        throw new Error("EACCES: permission denied, open '/path/to/key.pem'");
+      });
+
+    const sslConfigUtils = getActionsConfigurationUtilities(
+      configWithEarsSsl({
+        verificationMode: 'full',
+        certificate: '/path/to/cert.pem',
+        key: '/path/to/key.pem',
+      })
+    );
+
+    expect(() => sslConfigUtils.getEARSSSLSettings()).toThrow(
+      "EARS SSL configuration error: failed to read key file: EACCES: permission denied, open '/path/to/key.pem'"
+    );
   });
 });
 

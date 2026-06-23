@@ -16,7 +16,7 @@ import {
   EuiSpacer,
   EuiTitle,
 } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import classnames from 'classnames';
 import type { EuiPageHeaderProps } from '@elastic/eui/src/components/page/page_header/page_header';
 import { useTestIdGenerator } from '../../../../../hooks/use_test_id_generator';

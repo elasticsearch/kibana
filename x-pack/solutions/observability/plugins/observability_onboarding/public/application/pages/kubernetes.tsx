@@ -41,14 +41,14 @@ export const KubernetesPage = () => {
                   'xpack.observability_onboarding.experimentalOnboardingFlow.customHeader.kubernetes.caption.description',
                   {
                     defaultMessage:
-                      'This installation is tailored for configuring and collecting metrics and logs by deploying a new Elastic Agent within your host.',
+                      'This installation is tailored for configuring and collecting metrics and logs by deploying a new Elastic Agent within your Kubernetes cluster.',
                   }
                 )
               : i18n.translate(
                   'xpack.observability_onboarding.logsEssential.experimentalOnboardingFlow.customHeader.kubernetes.caption.description',
                   {
                     defaultMessage:
-                      'This installation is tailored for configuring and collecting logs by deploying a new Elastic Agent within your host.',
+                      'This installation is tailored for configuring and collecting logs by deploying a new Elastic Agent within your Kubernetes cluster.',
                   }
                 )
           }

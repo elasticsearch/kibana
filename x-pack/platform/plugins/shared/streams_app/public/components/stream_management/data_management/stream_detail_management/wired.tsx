@@ -18,7 +18,6 @@ import { Wrapper } from './wrapper';
 import { MissingDataStreamCallout } from './missing_data_stream_callout';
 import { PendingRootDataStreamCallout } from './pending_root_data_stream_callout';
 import { useStreamsDetailManagementTabs } from './use_streams_detail_management_tabs';
-import { WiredAdvancedView } from './advanced_view/wired_advanced_view';
 import { StreamDetailDataQuality } from '../../../stream_data_quality';
 import { StreamsAppPageTemplate } from '../../../streams_app_page_template';
 import { WiredStreamBadge } from '../../../stream_badges';
@@ -32,7 +31,6 @@ const wiredStreamManagementSubTabs = [
   'processing',
   'schema',
   'lifecycle',
-  'advanced',
   'significantEvents',
   'dataQuality',
   'attachments',
@@ -41,6 +39,7 @@ const wiredStreamManagementSubTabs = [
 type WiredStreamManagementSubTab = (typeof wiredStreamManagementSubTabs)[number];
 
 const tabRedirects: Record<string, { newTab: WiredStreamManagementSubTab }> = {
+  advanced: { newTab: 'overview' },
   schemaEditor: { newTab: 'schema' },
   retention: { newTab: 'lifecycle' },
   route: { newTab: 'partitioning' },
@@ -242,22 +241,6 @@ export function WiredStreamDetailManagement({
       }),
     },
     ...otherTabs,
-    ...(definition.privileges.manage
-      ? {
-          advanced: {
-            content: (
-              <WiredAdvancedView
-                definition={definition}
-                refreshDefinition={refreshDefinition}
-                isDraft={isDraft}
-              />
-            ),
-            label: i18n.translate('xpack.streams.streamDetailView.advancedTab', {
-              defaultMessage: 'Advanced',
-            }),
-          },
-        }
-      : {}),
   };
 
   const redirectConfig = tabRedirects[tab];

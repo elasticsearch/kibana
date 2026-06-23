@@ -37,12 +37,14 @@ export interface YamlRuleFormProps {
   /** Setter for the lifted YAML buffer. */
   setYamlText: (yaml: string) => void;
   /**
-   * Synchronous commit for blur events. In the compose-discover flyout the RHF
-   * form uses `ComposeFormValues`, so a raw `reset(FormValues)` would corrupt it.
-   * The flyout passes a callback that routes through `formValuesFromYamlToCompose`.
-   * When absent (standalone context), blur falls back to `useFormContext().reset()`.
+   * Synchronous commit for blur events. The compose-discover flyout passes a
+   * callback that also syncs the sandbox state after resetting the RHF form.
+   * When absent, blur falls back to `useFormContext().reset()`.
    */
   onBlurSync?: (values: FormValues) => void;
+  /** Forwarded to the editor; fires with `true` when the YAML buffer has
+   *  schema/syntax markers, `false` when clean. */
+  onValidate?: (hasErrors: boolean) => void;
 }
 
 /**
@@ -68,6 +70,7 @@ export const YamlRuleForm = ({
   yamlText,
   setYamlText,
   onBlurSync,
+  onValidate,
 }: YamlRuleFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const { reset } = useFormContext<FormValues>();
@@ -155,6 +158,7 @@ export const YamlRuleForm = ({
             value={yamlText}
             onChange={handleYamlChange}
             onBlur={handleBlur}
+            onValidate={onValidate}
             esqlCallbacks={esqlCallbacks}
             isReadOnly={isReadOnly}
             dataTestSubj="ruleV2FormYamlEditor"

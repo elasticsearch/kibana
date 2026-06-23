@@ -28,18 +28,14 @@ import type {
 } from '@kbn/workflows/server/types';
 import type { WorkflowsExecutionEnginePluginStart } from '@kbn/workflows-execution-engine/server';
 import { updateYamlField } from '@kbn/workflows-yaml';
+import { WorkflowChangeHistoryAction } from './workflow_change_history_constants';
 import type { WorkflowCrudService } from './workflow_crud_service';
+import { maybeApplyWorkflowVersion } from '../lib/workflow_version';
+import { isRetryableWorkflowWriteConflict } from '../lib/workflow_write_conflicts';
 import type { WorkflowProperties } from '../storage/workflow_storage';
 
 const MANAGED_WORKFLOW_SYSTEM_USER = 'elastic/kibana';
 const MAX_MANAGED_INSTALL_RETRIES = 2;
-const VERSION_CONFLICT_STATUS = 409;
-
-const isVersionConflictError = (error: unknown): boolean => {
-  if (!error || typeof error !== 'object') return false;
-  const e = error as { statusCode?: number; meta?: { statusCode?: number } };
-  return e.statusCode === VERSION_CONFLICT_STATUS || e.meta?.statusCode === VERSION_CONFLICT_STATUS;
-};
 
 const computeDefinitionHash = (yaml: string): string => {
   return createHash('sha256').update(yaml.trim()).digest('hex');
@@ -139,7 +135,7 @@ export class ManagedWorkflowsService {
         await this.installManagedWorkflowOnce(id, options, registeredPluginId);
         return;
       } catch (error) {
-        if (!isVersionConflictError(error) || attempt === MAX_MANAGED_INSTALL_RETRIES) {
+        if (!isRetryableWorkflowWriteConflict(error) || attempt === MAX_MANAGED_INSTALL_RETRIES) {
           throw error;
         }
 
@@ -190,8 +186,18 @@ export class ManagedWorkflowsService {
         spaceId,
         now,
       });
-      await this.deps.crudService.indexWorkflowDocument(workflowDocumentId, document, {
-        create: true,
+      const versioningEnabled = this.deps.crudService.isWorkflowVersioningEnabled();
+      const documentWithVersion = maybeApplyWorkflowVersion(document, undefined, versioningEnabled);
+      const savedDocument = await this.deps.crudService.createWorkflowDocument(
+        workflowDocumentId,
+        spaceId,
+        documentWithVersion
+      );
+      await this.deps.crudService.logWorkflowChangesAfterWrite({
+        workflows: [{ id: workflowDocumentId, document: savedDocument }],
+        action: WorkflowChangeHistoryAction.workflowInstall,
+        spaceId,
+        timestamp: now,
       });
       return;
     }
@@ -229,9 +235,22 @@ export class ManagedWorkflowsService {
       enabled,
       createdAt: existing.created_at,
     });
-    await this.deps.crudService.indexWorkflowDocument(workflowDocumentId, document, {
-      ifSeqNo: existingDocument.seqNo,
-      ifPrimaryTerm: existingDocument.primaryTerm,
+    const versioningEnabled = this.deps.crudService.isWorkflowVersioningEnabled();
+    const documentWithVersion = maybeApplyWorkflowVersion(document, existing, versioningEnabled);
+    const savedDocument = await this.deps.crudService.writeWorkflowDocumentWithOcc(
+      workflowDocumentId,
+      spaceId,
+      {
+        document: documentWithVersion,
+        ifSeqNo: existingDocument.seqNo,
+        ifPrimaryTerm: existingDocument.primaryTerm,
+      }
+    );
+    await this.deps.crudService.logWorkflowChangesAfterWrite({
+      workflows: [{ id: workflowDocumentId, document: savedDocument }],
+      action: WorkflowChangeHistoryAction.workflowUpdate,
+      spaceId,
+      timestamp: now,
     });
   }
 

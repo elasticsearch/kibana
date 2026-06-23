@@ -220,6 +220,7 @@ const AlertsTableContent = typedForwardRef(
       configurationStorage: configurationStorageProp,
       isMutedAlertsEnabled = true,
       showCsvExportButton = false,
+      kibanaVersion,
       services,
       ...publicDataGridProps
     }: AlertsTableProps<AC>,
@@ -549,6 +550,7 @@ const AlertsTableContent = typedForwardRef(
           alertDetailsNavigation,
           openLinksInNewTab,
           services: memoizedServices,
+          kibanaVersion,
           expandedAlertIndex,
           onExpandedAlertIndexChange: updateExpandedAlertIndex,
           renderExpandedAlertView,
@@ -587,6 +589,7 @@ const AlertsTableContent = typedForwardRef(
         alertDetailsNavigation,
         openLinksInNewTab,
         memoizedServices,
+        kibanaVersion,
         expandedAlertIndex,
         updateExpandedAlertIndex,
         renderExpandedAlertView,

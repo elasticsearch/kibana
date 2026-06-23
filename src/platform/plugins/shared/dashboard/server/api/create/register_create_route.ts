@@ -45,6 +45,10 @@ export function registerCreateRoute(
   createRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () =>
+          (await import('../oas_examples')).createDashboardOASOperationObject,
+      },
       validate: () => ({
         request: {
           body: getDashboardStateSchema(isDashboardAppRequest),

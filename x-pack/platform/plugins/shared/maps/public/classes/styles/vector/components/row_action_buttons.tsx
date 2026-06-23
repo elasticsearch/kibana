@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { i18n } from '@kbn/i18n';
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 
 const ADD_BUTTON_TITLE = i18n.translate('xpack.maps.addBtnTitle', {
   defaultMessage: 'Add',
@@ -29,21 +29,23 @@ export const RowActionButtons = ({
   return (
     <div>
       {showDeleteButton ? (
-        <EuiButtonIcon
-          iconType="trash"
-          color="danger"
-          aria-label={DELETE_BUTTON_TITLE}
-          title={DELETE_BUTTON_TITLE}
-          onClick={onRemove}
-        />
+        <EuiToolTip content={DELETE_BUTTON_TITLE} disableScreenReaderOutput>
+          <EuiButtonIcon
+            iconType="trash"
+            color="danger"
+            aria-label={DELETE_BUTTON_TITLE}
+            onClick={onRemove}
+          />
+        </EuiToolTip>
       ) : null}
-      <EuiButtonIcon
-        iconType="plusCircle"
-        color="primary"
-        aria-label={ADD_BUTTON_TITLE}
-        title={ADD_BUTTON_TITLE}
-        onClick={onAdd}
-      />
+      <EuiToolTip content={ADD_BUTTON_TITLE} disableScreenReaderOutput>
+        <EuiButtonIcon
+          iconType="plusCircle"
+          color="primary"
+          aria-label={ADD_BUTTON_TITLE}
+          onClick={onAdd}
+        />
+      </EuiToolTip>
     </div>
   );
 };

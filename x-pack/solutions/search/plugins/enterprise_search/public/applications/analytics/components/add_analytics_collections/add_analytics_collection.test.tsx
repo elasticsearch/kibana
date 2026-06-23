@@ -5,16 +5,15 @@
  * 2.0.
  */
 
-import '../../../__mocks__/shallow_useeffect.mock';
+import '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { fireEvent, screen } from '@testing-library/react';
 
-import { EuiButton } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { AddAnalyticsCollection } from './add_analytics_collection';
-import { AddAnalyticsCollectionModal } from './add_analytics_collection_modal';
 
 describe('AddAnalyticsCollection', () => {
   beforeEach(() => {
@@ -22,16 +21,17 @@ describe('AddAnalyticsCollection', () => {
   });
 
   it('renders', () => {
-    const wrapper = shallow(<AddAnalyticsCollection />);
+    renderWithKibanaRenderContext(<AddAnalyticsCollection />);
 
-    expect(wrapper.find(EuiButton)).toHaveLength(1);
-    expect(wrapper.find(AddAnalyticsCollectionModal)).toHaveLength(0);
+    expect(screen.getByText('Create collection')).toBeInTheDocument();
+    expect(screen.queryByText('Name your Collection')).not.toBeInTheDocument();
   });
 
   it('show render modal after click on button', () => {
-    const wrapper = shallow(<AddAnalyticsCollection />);
+    renderWithKibanaRenderContext(<AddAnalyticsCollection />);
 
-    (wrapper.find(EuiButton).prop('onClick') as Function)?.();
-    expect(wrapper.find(AddAnalyticsCollectionModal)).toHaveLength(1);
+    fireEvent.click(screen.getByText('Create collection'));
+
+    expect(screen.getByText('Name your Collection')).toBeInTheDocument();
   });
 });

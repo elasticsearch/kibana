@@ -74,7 +74,11 @@ import type {
   CustomFieldsConfiguration,
 } from '../../../common/types/domain';
 import { CaseStatuses, AttachmentType } from '../../../common/types/domain';
-import { validateCustomFields, validateExtendedFieldsInRequest } from './validators';
+import {
+  validateCustomFields,
+  validateExtendedFieldsInRequest,
+  resolveGlobalFields,
+} from './validators';
 import { emptyCasesAssigneesSanitizer } from './sanitizers';
 /**
  * Throws an error if any of the requests attempt to update the owner of a case.
@@ -450,6 +454,7 @@ export const bulkUpdate = async (
       notificationService,
       attachmentService,
       templatesService,
+      fieldDefinitionsService,
     },
     user,
     logger,
@@ -577,9 +582,30 @@ export const bulkUpdate = async (
 
     await validateCustomFieldsInRequest({ casesToUpdate, customFieldsConfigurationMap });
 
+    // Pre-resolve global fields once per owner to avoid N SO queries inside Promise.all.
+    const uniqueOwnersWithExtendedFields = [
+      ...casesToUpdate.reduce((owners, { updateReq, originalCase }) => {
+        if (updateReq.extended_fields) owners.add(originalCase.attributes.owner);
+        return owners;
+      }, new Set<string>()),
+    ];
+    const globalFieldsByOwner = new Map(
+      await Promise.all(
+        uniqueOwnersWithExtendedFields.map(async (owner) => {
+          const fields = await resolveGlobalFields(owner, fieldDefinitionsService);
+          return [owner, fields] as const;
+        })
+      )
+    );
+
     await Promise.all(
       casesToUpdate.map(({ updateReq, originalCase }) =>
-        validateExtendedFieldsInRequest({ updateReq, originalCase, templatesService })
+        validateExtendedFieldsInRequest({
+          updateReq,
+          originalCase,
+          templatesService,
+          globalFields: globalFieldsByOwner.get(originalCase.attributes.owner) ?? [],
+        })
       )
     );
 
@@ -814,6 +840,25 @@ const createPatchCasesPayload = ({
         updateCaseAttributes,
         customFieldsConfigurationMap.get(originalCase.attributes.owner)
       );
+
+      // Merge incoming extended_fields on top of existing so that concurrent saves
+      // from GlobalCaseFields and TemplateFields (two independent form instances)
+      // don't clobber each other's values.
+      //
+      // Intentional: ALL existing keys are preserved — including any template-specific
+      // keys that remain on the SO after a template is cleared. Orphaned keys are
+      // harmless: the UI only renders fields that have a matching definition, and
+      // validation rejects future writes of non-global keys without a template.
+      // Preserving them also allows values to survive a template re-application.
+      if (
+        trimmedCaseAttributes.extended_fields &&
+        typeof trimmedCaseAttributes.extended_fields === 'object'
+      ) {
+        trimmedCaseAttributes.extended_fields = {
+          ...(originalCase.attributes.extended_fields ?? {}),
+          ...trimmedCaseAttributes.extended_fields,
+        };
+      }
 
       return {
         caseId,

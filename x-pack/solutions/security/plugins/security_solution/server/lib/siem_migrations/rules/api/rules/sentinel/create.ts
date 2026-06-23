@@ -62,7 +62,7 @@ export const registerSiemRuleMigrationsCreateSentinelRulesRoute = (
 
             if (!sentinelRules || sentinelRules.length === 0) {
               return res.badRequest({
-                body: { message: 'No Scheduled rules found in the provided JSON export' },
+                body: { message: 'No Scheduled or NRT rules found in the provided JSON export' },
               });
             }
 

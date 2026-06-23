@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { useFetchGraphData } from '@kbn/cloud-security-posture-graph/src/hooks';
 import {
   GRAPH_PREVIEW,
@@ -36,6 +36,9 @@ jest.mock('@kbn/cloud-security-posture-common/utils/ui_metrics', () => ({
 }));
 jest.mock('@kbn/cloud-security-posture-graph', () => ({
   Graph: () => <div data-test-subj="securitySolutionFlyoutGraphPreview" />,
+}));
+jest.mock('../../../shared/components/graph_preview', () => ({
+  GraphPreview: () => <div data-test-subj="securitySolutionFlyoutGraphPreview" />,
 }));
 
 const mockUseUpsellingComponent = useUpsellingComponent as jest.Mock;
@@ -86,12 +89,12 @@ describe('<GraphPreviewContainer />', () => {
     });
   });
 
-  it('renders the graph and a clickable header link when navigation is enabled', async () => {
+  it('renders the graph and a clickable header link when navigation is enabled', () => {
     mockUseGraphPreview.mockReturnValue(previewAvailable);
 
-    const { findByTestId, getByTestId } = renderContainer();
+    const { getByTestId } = renderContainer();
 
-    expect(await findByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
+    expect(getByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
     expect(
       getByTestId(EXPANDABLE_PANEL_HEADER_TITLE_LINK_TEST_ID(GRAPH_PREVIEW_TEST_ID))
     ).toBeInTheDocument();
@@ -103,24 +106,24 @@ describe('<GraphPreviewContainer />', () => {
     ).toBeInTheDocument();
   });
 
-  it('calls onShowGraph when the header link is clicked', async () => {
+  it('calls onShowGraph when the header link is clicked', () => {
     mockUseGraphPreview.mockReturnValue(previewAvailable);
 
-    const { findByTestId, getByTestId } = renderContainer();
+    const { getByTestId } = renderContainer();
 
-    expect(await findByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
-    getByTestId(EXPANDABLE_PANEL_HEADER_TITLE_LINK_TEST_ID(GRAPH_PREVIEW_TEST_ID)).click();
+    expect(getByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
+    fireEvent.click(getByTestId(EXPANDABLE_PANEL_HEADER_TITLE_LINK_TEST_ID(GRAPH_PREVIEW_TEST_ID)));
     expect(mockOnShowGraph).toHaveBeenCalled();
   });
 
-  it('hides the header link when disableNavigation is true', async () => {
+  it('hides the header link when disableNavigation is true', () => {
     mockUseGraphPreview.mockReturnValue(previewAvailable);
 
-    const { findByTestId, getByTestId, queryByTestId } = renderContainer({
+    const { getByTestId, queryByTestId } = renderContainer({
       disableNavigation: true,
     });
 
-    expect(await findByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
+    expect(getByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
     expect(
       queryByTestId(EXPANDABLE_PANEL_HEADER_TITLE_LINK_TEST_ID(GRAPH_PREVIEW_TEST_ID))
     ).not.toBeInTheDocument();
@@ -129,33 +132,33 @@ describe('<GraphPreviewContainer />', () => {
     ).toBeInTheDocument();
   });
 
-  it('hides the header link when onShowGraph is not provided', async () => {
+  it('hides the header link when onShowGraph is not provided', () => {
     mockUseGraphPreview.mockReturnValue(previewAvailable);
 
-    const { findByTestId, queryByTestId } = renderContainer({ onShowGraph: undefined });
+    const { getByTestId, queryByTestId } = renderContainer({ onShowGraph: undefined });
 
-    expect(await findByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
+    expect(getByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
     expect(
       queryByTestId(EXPANDABLE_PANEL_HEADER_TITLE_LINK_TEST_ID(GRAPH_PREVIEW_TEST_ID))
     ).not.toBeInTheDocument();
   });
 
-  it('hides the header icon when showIcon is false', async () => {
+  it('hides the header icon when showIcon is false', () => {
     mockUseGraphPreview.mockReturnValue(previewAvailable);
 
-    const { findByTestId, queryByTestId } = renderContainer({ showIcon: false });
+    const { getByTestId, queryByTestId } = renderContainer({ showIcon: false });
 
-    expect(await findByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
+    expect(getByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
     expect(
       queryByTestId(EXPANDABLE_PANEL_HEADER_TITLE_ICON_TEST_ID(GRAPH_PREVIEW_TEST_ID))
     ).not.toBeInTheDocument();
   });
 
-  it('tracks ui metric when shouldShowGraph is true', async () => {
+  it('tracks ui metric when shouldShowGraph is true', () => {
     mockUseGraphPreview.mockReturnValue(previewAvailable);
 
-    const { findByTestId } = renderContainer();
-    await findByTestId(GRAPH_PREVIEW_TEST_ID);
+    const { getByTestId } = renderContainer();
+    expect(getByTestId(GRAPH_PREVIEW_TEST_ID)).toBeInTheDocument();
 
     expect(uiMetricServiceMock.trackUiMetric).toHaveBeenCalledWith(
       METRIC_TYPE.LOADED,

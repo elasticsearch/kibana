@@ -79,10 +79,6 @@ export async function cleanSeedData(
     log.info(`clean: deleted ${queryIds.length} query/queries from stream "${ctx.streamName}"`);
   }
 
-  // Insights — wipe directly via ES (avoids the Kibana list+bulk-delete round-trip
-  // which triggers a route-level bug when no query params are present).
-  await deleteByMatchAll(esClient, '.kibana_streams_insights-*', log);
-
   log.info('clean: deleting seeded task docs');
   await cleanTasks(ctx, esClient, log);
 

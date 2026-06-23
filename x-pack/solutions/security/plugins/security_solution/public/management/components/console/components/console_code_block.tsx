@@ -9,10 +9,10 @@ import type { ReactNode } from 'react';
 import React, { memo } from 'react';
 import type { EuiTextProps } from '@elastic/eui';
 import { EuiText } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 
 const CodeBlock = styled(EuiText)`
-  font-family: ${(props) => props.theme.eui.euiCodeFontFamily};
+  font-family: ${(props) => props.theme.euiTheme.font.familyCode};
 `;
 
 export const ConsoleCodeBlock = memo<{

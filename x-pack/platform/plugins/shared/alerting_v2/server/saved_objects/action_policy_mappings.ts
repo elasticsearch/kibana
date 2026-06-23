@@ -9,41 +9,15 @@ import type { SavedObjectsTypeMappingDefinition } from '@kbn/core-saved-objects-
 
 /**
  * Mappings for the action policy saved object.
+ * For the full list of mappings, see:
+ * https://github.com/elastic/kibana/blob/main/x-pack/plugins/alerting_v2/server/saved_objects/schemas/action_policy_saved_object_attributes/v1.ts
  */
 export const actionPolicyMappings: SavedObjectsTypeMappingDefinition = {
   dynamic: false,
   properties: {
     name: { type: 'text', fields: { keyword: { type: 'keyword', ignore_above: 256 } } },
-    description: { type: 'text', fields: { keyword: { type: 'keyword', ignore_above: 256 } } },
+    description: { type: 'text' },
     enabled: { type: 'boolean' },
-    groupBy: { type: 'keyword' },
-    tags: { type: 'keyword' },
-    groupingMode: { type: 'keyword' },
-    destinations: {
-      type: 'object',
-      properties: {
-        type: { type: 'keyword' },
-        id: { type: 'keyword' },
-      },
-    },
-    throttle: {
-      type: 'object',
-      properties: {
-        strategy: { type: 'keyword' },
-      },
-    },
-    snoozedUntil: { type: 'date' },
-    auth: {
-      type: 'object',
-      properties: {
-        apiKey: { type: 'binary' },
-        owner: { type: 'keyword' },
-        createdByUser: { type: 'boolean' },
-      },
-    },
-    createdBy: { type: 'keyword' },
-    createdAt: { type: 'date' },
-    updatedBy: { type: 'keyword' },
-    updatedAt: { type: 'date' },
+    tags: { type: 'keyword', ignore_above: 128 },
   },
 };

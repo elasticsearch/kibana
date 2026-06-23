@@ -32,6 +32,7 @@ import type { SignalFilter } from './use_services_step';
 
 interface ServicesStepProps {
   onNext: () => void;
+  onBack?: () => void;
 }
 
 const SIGNAL_FILTER_OPTIONS = [
@@ -58,7 +59,7 @@ function categoryColor(category: string): string {
   return CATEGORY_COLORS[Math.max(0, index)];
 }
 
-export function ServicesStep({ onNext }: ServicesStepProps) {
+export function ServicesStep({ onNext, onBack }: ServicesStepProps) {
   const {
     signalFilter,
     setSignalFilter,
@@ -230,7 +231,17 @@ export function ServicesStep({ onNext }: ServicesStepProps) {
 
       <EuiSpacer size="l" />
 
-      <EuiFlexGroup justifyContent="flexEnd">
+      <EuiFlexGroup justifyContent="spaceBetween">
+        <EuiFlexItem grow={false}>
+          {onBack && (
+            <EuiButtonEmpty iconType="arrowLeft" iconSide="left" onClick={onBack}>
+              <FormattedMessage
+                id="xpack.ingestHub.servicesStep.backButton"
+                defaultMessage="Back"
+              />
+            </EuiButtonEmpty>
+          )}
+        </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiButton
             fill

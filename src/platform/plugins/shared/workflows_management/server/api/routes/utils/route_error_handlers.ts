@@ -19,6 +19,7 @@ import {
   isWorkflowConflictError,
   isWorkflowValidationError,
 } from '@kbn/workflows-yaml';
+import { WorkflowChangeHistoryDisabledError } from '../../../lib/workflow_change_history_disabled_error';
 import { WorkflowForbiddenError } from '../../workflow_forbidden_error';
 
 /**
@@ -76,6 +77,14 @@ export function handleRouteError(
 
   if (error instanceof WorkflowForbiddenError) {
     return response.forbidden({
+      body: {
+        message: error.message,
+      },
+    });
+  }
+
+  if (error instanceof WorkflowChangeHistoryDisabledError) {
+    return response.badRequest({
       body: {
         message: error.message,
       },

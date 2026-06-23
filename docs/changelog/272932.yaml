@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272932
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Search and data
+title: Fix agent policy deploy timeouts when deploying many policies
+description: "Batch Fleet's deploy agent policies background task into bounded chunks of 50 policies each, preventing timeout failures when deploying thousands of policies."

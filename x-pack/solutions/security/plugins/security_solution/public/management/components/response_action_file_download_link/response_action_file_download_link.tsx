@@ -85,7 +85,7 @@ const TruncatedTextInfo = memo<TruncatedTextInfoProps>(
         <EuiSpacer size="m" />
         <EuiFlexGroup gutterSize="s" justifyContent="flexStart" alignItems="center">
           <EuiFlexItem grow={false}>
-            <EuiIcon size={alertIconSize} type="warning" color="warning" />
+            <EuiIcon size={alertIconSize} type="warning" color="warning" aria-hidden={true} />
           </EuiFlexItem>
           <EuiFlexItem>
             <EuiText size={textSize} color="warning" data-test-subj={dataTestSubj}>

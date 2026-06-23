@@ -72,7 +72,7 @@ describe('REGISTERED_DOMAIN > autocomplete', () => {
   it('suggests pipe after complete command', async () => {
     await registeredDomainExpectSuggestions(
       'FROM index | REGISTERED_DOMAIN prefix = host ',
-      ['| '],
+      ['\n', '| '],
       mockCallbacks
     );
   });

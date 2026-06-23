@@ -17,6 +17,7 @@ import {
   EuiPopover,
   EuiPopoverTitle,
   EuiText,
+  EuiToolTip,
   useEuiTheme,
   useGeneratedHtmlId,
 } from '@elastic/eui';
@@ -103,19 +104,21 @@ export const LibrarySortFilterButton: React.FC<LibrarySortFilterButtonProps> = (
       anchorPosition="downRight"
       aria-labelledby={sortTitleId}
       button={
-        <EuiButtonIcon
-          display="base"
-          iconType="filter"
-          aria-label={labels.buttonAriaLabel}
-          color="text"
-          size="m"
-          onClick={() => setIsOpen((o) => !o)}
-          {...getEbtProps({
-            element: AGENT_BUILDER_UI_EBT.element.flyout,
-            action: AGENT_BUILDER_UI_EBT.action.libraryPanel.SORT_FILTER_OPEN,
-            detail: ebtEntityType ?? '',
-          })}
-        />
+        <EuiToolTip content={labels.buttonAriaLabel} disableScreenReaderOutput>
+          <EuiButtonIcon
+            display="base"
+            iconType="filter"
+            aria-label={labels.buttonAriaLabel}
+            color="text"
+            size="m"
+            onClick={() => setIsOpen((o) => !o)}
+            {...getEbtProps({
+              element: AGENT_BUILDER_UI_EBT.element.flyout,
+              action: AGENT_BUILDER_UI_EBT.action.libraryPanel.SORT_FILTER_OPEN,
+              detail: ebtEntityType ?? '',
+            })}
+          />
+        </EuiToolTip>
       }
       isOpen={isOpen}
       closePopover={() => setIsOpen(false)}

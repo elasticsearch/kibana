@@ -157,7 +157,7 @@ export class TaskScheduling {
         ? agent.currentTraceparent
         : '';
     const modifiedTasks = await Promise.all(
-      taskInstances.map(async (taskInstance, i) => {
+      taskInstances.map(async (taskInstance, i, arr) => {
         const { taskInstance: modifiedTask } = await this.middleware.beforeSave({
           ...omit(options, 'apiKey', 'request'),
           taskInstance: ensureDeprecatedFieldsAreCorrected(taskInstance, this.logger),
@@ -165,10 +165,10 @@ export class TaskScheduling {
         const enabled = modifiedTask.enabled ?? true;
         let scheduling: Partial<{ runAt: Date; scheduledAt: Date }> = {};
         if (enabled) {
-          // Run the first task now. Run all other tasks a random number of ms in the future,
-          // with a maximum of 5 minutes or the task interval, whichever is smaller.
+          // Run now if there is only a single task.
+          // Otherwise add jitter to avoid them firing together.
           scheduling =
-            i === 0
+            arr.length === 1
               ? { runAt: new Date(), scheduledAt: new Date() }
               : addJitter(modifiedTask.schedule?.interval) ?? {};
         }
@@ -216,11 +216,11 @@ export class TaskScheduling {
       store: this.store,
       getTasks: async (ids) => await this.bulkGetTasksHelper(ids),
       filter: (task) => !task.enabled,
-      map: (task, i) => {
+      map: (task, i, arr) => {
         if (runSoon) {
-          // Run the first task now. Run all other tasks a random number of ms in the future,
-          // with a maximum of 5 minutes or the task interval, whichever is smaller.
-          return i === 0
+          // Run now if there is only a single task.
+          // Otherwise add jitter to avoid them firing together.
+          return arr.length === 1
             ? { ...task, enabled: true, runAt: new Date(), scheduledAt: new Date() }
             : { ...task, enabled: true, ...addJitter(task.schedule?.interval ?? '0s') };
         }

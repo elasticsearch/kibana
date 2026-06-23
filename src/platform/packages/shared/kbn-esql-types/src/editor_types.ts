@@ -110,6 +110,7 @@ export interface ESQLFieldWithMetadata {
   userDefined: false;
   isEcs?: boolean;
   hasConflict?: boolean;
+  originalTypes?: string[];
   isUnmappedField?: boolean;
   metadata?: {
     description?: string;
@@ -133,6 +134,7 @@ interface KQLInESQLSuggestion {
   label: string;
   kind: KQLInESQLSuggestionType;
   detail?: string;
+  range: { start: number; end: number };
 }
 
 export interface ESQLCallbacks {

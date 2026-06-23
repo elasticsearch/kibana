@@ -7,7 +7,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import { EuiButtonIcon, EuiPanel } from '@elastic/eui';
+import { EuiButtonIcon, EuiPanel, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { TrackApplicationView } from '@kbn/usage-collection-plugin/public';
 import { DRAW_SHAPE } from '../../../../../common/constants';
@@ -54,126 +54,156 @@ export function FeatureEditTools(props: Props) {
       >
         {props.pointsOnly ? null : (
           <>
-            <EuiButtonIcon
-              className={classNames({
-                'mapToolbarOverlay__buttonIcon-empty': !drawLineSelected,
-              })}
-              key="line"
-              size="s"
-              onClick={() => toggleDrawShape(DRAW_SHAPE.LINE)}
-              iconType={VectorLineIcon}
-              aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawLineLabel', {
+            <EuiToolTip
+              content={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawLineTitle', {
                 defaultMessage: 'Draw line',
               })}
-              title={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawLineTitle', {
-                defaultMessage: 'Draw line',
-              })}
-              aria-pressed={drawLineSelected}
-              isSelected={drawLineSelected}
-              display={drawLineSelected ? 'fill' : 'empty'}
-              isDisabled={isWaiting}
-            />
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                className={classNames({
+                  'mapToolbarOverlay__buttonIcon-empty': !drawLineSelected,
+                })}
+                key="line"
+                size="s"
+                onClick={() => toggleDrawShape(DRAW_SHAPE.LINE)}
+                iconType={VectorLineIcon}
+                aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawLineLabel', {
+                  defaultMessage: 'Draw line',
+                })}
+                aria-pressed={drawLineSelected}
+                isSelected={drawLineSelected}
+                display={drawLineSelected ? 'fill' : 'empty'}
+                isDisabled={isWaiting}
+              />
+            </EuiToolTip>
 
-            <EuiButtonIcon
-              className={classNames({
-                'mapToolbarOverlay__buttonIcon-empty': !drawPolygonSelected,
-              })}
-              key="polygon"
-              size="s"
-              onClick={() => toggleDrawShape(DRAW_SHAPE.POLYGON)}
-              iconType="vectorTriangle"
-              aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawPolygonLabel', {
+            <EuiToolTip
+              content={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawPolygonTitle', {
                 defaultMessage: 'Draw polygon',
               })}
-              title={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawPolygonTitle', {
-                defaultMessage: 'Draw polygon',
-              })}
-              aria-pressed={drawPolygonSelected}
-              isSelected={drawPolygonSelected}
-              display={drawPolygonSelected ? 'fill' : 'empty'}
-              isDisabled={isWaiting}
-            />
-            <EuiButtonIcon
-              className={classNames({
-                'mapToolbarOverlay__buttonIcon-empty': !drawCircleSelected,
-              })}
-              key="circle"
-              size="s"
-              onClick={() => toggleDrawShape(DRAW_SHAPE.DISTANCE)}
-              iconType={VectorCircleIcon}
-              aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawCircleLabel', {
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                className={classNames({
+                  'mapToolbarOverlay__buttonIcon-empty': !drawPolygonSelected,
+                })}
+                key="polygon"
+                size="s"
+                onClick={() => toggleDrawShape(DRAW_SHAPE.POLYGON)}
+                iconType="vectorTriangle"
+                aria-label={i18n.translate(
+                  'xpack.maps.toolbarOverlay.featureDraw.drawPolygonLabel',
+                  {
+                    defaultMessage: 'Draw polygon',
+                  }
+                )}
+                aria-pressed={drawPolygonSelected}
+                isSelected={drawPolygonSelected}
+                display={drawPolygonSelected ? 'fill' : 'empty'}
+                isDisabled={isWaiting}
+              />
+            </EuiToolTip>
+            <EuiToolTip
+              content={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawCircleTitle', {
                 defaultMessage: 'Draw circle',
               })}
-              title={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawCircleTitle', {
-                defaultMessage: 'Draw circle',
-              })}
-              aria-pressed={drawCircleSelected}
-              isSelected={drawCircleSelected}
-              display={drawCircleSelected ? 'fill' : 'empty'}
-              isDisabled={isWaiting}
-            />
-            <EuiButtonIcon
-              className={classNames({
-                'mapToolbarOverlay__buttonIcon-empty': !drawBBoxSelected,
-              })}
-              key="boundingBox"
-              size="s"
-              onClick={() => toggleDrawShape(DRAW_SHAPE.BOUNDS)}
-              iconType={VectorSquareIcon}
-              aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawBBoxLabel', {
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                className={classNames({
+                  'mapToolbarOverlay__buttonIcon-empty': !drawCircleSelected,
+                })}
+                key="circle"
+                size="s"
+                onClick={() => toggleDrawShape(DRAW_SHAPE.DISTANCE)}
+                iconType={VectorCircleIcon}
+                aria-label={i18n.translate(
+                  'xpack.maps.toolbarOverlay.featureDraw.drawCircleLabel',
+                  {
+                    defaultMessage: 'Draw circle',
+                  }
+                )}
+                aria-pressed={drawCircleSelected}
+                isSelected={drawCircleSelected}
+                display={drawCircleSelected ? 'fill' : 'empty'}
+                isDisabled={isWaiting}
+              />
+            </EuiToolTip>
+            <EuiToolTip
+              content={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawBBoxTitle', {
                 defaultMessage: 'Draw bounding box',
               })}
-              title={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawBBoxTitle', {
-                defaultMessage: 'Draw bounding box',
-              })}
-              aria-pressed={drawBBoxSelected}
-              isSelected={drawBBoxSelected}
-              display={drawBBoxSelected ? 'fill' : 'empty'}
-              isDisabled={isWaiting}
-            />
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                className={classNames({
+                  'mapToolbarOverlay__buttonIcon-empty': !drawBBoxSelected,
+                })}
+                key="boundingBox"
+                size="s"
+                onClick={() => toggleDrawShape(DRAW_SHAPE.BOUNDS)}
+                iconType={VectorSquareIcon}
+                aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawBBoxLabel', {
+                  defaultMessage: 'Draw bounding box',
+                })}
+                aria-pressed={drawBBoxSelected}
+                isSelected={drawBBoxSelected}
+                display={drawBBoxSelected ? 'fill' : 'empty'}
+                isDisabled={isWaiting}
+              />
+            </EuiToolTip>
           </>
         )}
-        <EuiButtonIcon
-          className={classNames({
-            'mapToolbarOverlay__buttonIcon-empty': !drawPointSelected,
-          })}
-          key="point"
-          size="s"
-          onClick={() => toggleDrawShape(DRAW_SHAPE.POINT)}
-          iconType="dot"
-          aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawPointLabel', {
+        <EuiToolTip
+          content={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawPointTitle', {
             defaultMessage: 'Draw point',
           })}
-          title={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawPointTitle', {
-            defaultMessage: 'Draw point',
-          })}
-          aria-pressed={drawPointSelected}
-          isSelected={drawPointSelected}
-          display={drawPointSelected ? 'fill' : 'empty'}
-          isDisabled={isWaiting}
-        />
-        <EuiButtonIcon
-          className={classNames({
-            'mapToolbarOverlay__buttonIcon-empty': !deleteSelected,
-          })}
-          key="delete"
-          size="s"
-          onClick={() => toggleDrawShape(DRAW_SHAPE.DELETE)}
-          iconType="trash"
-          aria-label={i18n.translate(
-            'xpack.maps.toolbarOverlay.featureDraw.deletePointOrShapeLabel',
-            {
-              defaultMessage: 'Delete point or shape',
-            }
-          )}
-          title={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.deletePointOrShapeTitle', {
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            className={classNames({
+              'mapToolbarOverlay__buttonIcon-empty': !drawPointSelected,
+            })}
+            key="point"
+            size="s"
+            onClick={() => toggleDrawShape(DRAW_SHAPE.POINT)}
+            iconType="dot"
+            aria-label={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.drawPointLabel', {
+              defaultMessage: 'Draw point',
+            })}
+            aria-pressed={drawPointSelected}
+            isSelected={drawPointSelected}
+            display={drawPointSelected ? 'fill' : 'empty'}
+            isDisabled={isWaiting}
+          />
+        </EuiToolTip>
+        <EuiToolTip
+          content={i18n.translate('xpack.maps.toolbarOverlay.featureDraw.deletePointOrShapeTitle', {
             defaultMessage: 'Delete point or shape',
           })}
-          aria-pressed={deleteSelected}
-          isSelected={deleteSelected}
-          display={deleteSelected ? 'fill' : 'empty'}
-          isDisabled={isWaiting}
-        />
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            className={classNames({
+              'mapToolbarOverlay__buttonIcon-empty': !deleteSelected,
+            })}
+            key="delete"
+            size="s"
+            onClick={() => toggleDrawShape(DRAW_SHAPE.DELETE)}
+            iconType="trash"
+            aria-label={i18n.translate(
+              'xpack.maps.toolbarOverlay.featureDraw.deletePointOrShapeLabel',
+              {
+                defaultMessage: 'Delete point or shape',
+              }
+            )}
+            aria-pressed={deleteSelected}
+            isSelected={deleteSelected}
+            display={deleteSelected ? 'fill' : 'empty'}
+            isDisabled={isWaiting}
+          />
+        </EuiToolTip>
       </EuiPanel>
     </TrackApplicationView>
   );

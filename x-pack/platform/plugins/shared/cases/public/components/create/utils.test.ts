@@ -14,6 +14,7 @@ import {
 import { getInitialCaseValue } from '../../../common/utils/get_initial_case_value';
 import { ConnectorTypes, CaseSeverity, CustomFieldTypes } from '../../../common/types/domain';
 import { GENERAL_CASES_OWNER } from '../../../common';
+import { CASE_EXTENDED_FIELDS } from '../../../common/constants';
 import { casesConfigurationsMock } from '../../containers/configure/mock';
 import { createMockActionConnector } from '@kbn/alerts-ui-shared/src/common/test_utils/connector.mock';
 
@@ -285,7 +286,7 @@ describe('utils', () => {
       expect(
         createFormSerializer([], casesConfigurationsMock, {
           ...dataToSerialize,
-          extended_fields: extendedFields,
+          [CASE_EXTENDED_FIELDS]: extendedFields,
         })
       ).toEqual({ ...serializedFormData, extended_fields: extendedFields });
     });

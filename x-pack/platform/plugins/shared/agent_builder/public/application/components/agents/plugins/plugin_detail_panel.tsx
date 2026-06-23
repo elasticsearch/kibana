@@ -22,6 +22,7 @@ import {
   EuiSpacer,
   EuiText,
   EuiTitle,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
@@ -183,15 +184,20 @@ const PluginIdFooter: React.FC<{ pluginId: string }> = ({ pluginId }) => {
       <EuiFlexItem grow={false}>
         <EuiCopy textToCopy={pluginId}>
           {(copy) => (
-            <EuiButtonIcon
-              iconType="copyClipboard"
-              onClick={copy}
-              aria-label={labels.agentPlugins.pluginDetailIdCopyLabel}
-              size="xs"
-              css={css`
-                color: ${euiTheme.colors.textSubdued};
-              `}
-            />
+            <EuiToolTip
+              content={labels.agentPlugins.pluginDetailIdCopyLabel}
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                iconType="copyClipboard"
+                onClick={copy}
+                aria-label={labels.agentPlugins.pluginDetailIdCopyLabel}
+                size="xs"
+                css={css`
+                  color: ${euiTheme.colors.textSubdued};
+                `}
+              />
+            </EuiToolTip>
           )}
         </EuiCopy>
       </EuiFlexItem>

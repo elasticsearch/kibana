@@ -9,7 +9,7 @@ import React, { memo, useMemo } from 'react';
 import { css } from '@emotion/react';
 import { EuiBadge, EuiFlexGroup, EuiFlexItem, EuiText, useEuiTheme } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { SectionPanel } from './section_panel';
+import { SectionPanel } from '../../../flyout_v2/attack/main/components/section_panel';
 import { useOriginalAlertIds } from '../hooks/use_original_alert_ids';
 import { useNavigateToAttackDetailsLeftPanel } from '../hooks/use_navigate_to_attack_details_left_panel';
 import { CORRELATION_TAB_ID } from '../constants/left_panel_paths';

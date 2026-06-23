@@ -748,30 +748,6 @@ describe('ActionPolicyClient', () => {
       expect(callArgs).not.toHaveProperty('defaultSearchOperator');
     });
 
-    it('builds KQL filter for destinationType', async () => {
-      mockSavedObjectsClient.find.mockResolvedValueOnce(makeFindResponse([]));
-
-      await client.findActionPolicies({ destinationType: 'workflow' });
-
-      expect(mockSavedObjectsClient.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filter: expect.objectContaining({ type: 'function' }),
-        })
-      );
-    });
-
-    it('builds KQL filter for createdBy', async () => {
-      mockSavedObjectsClient.find.mockResolvedValueOnce(makeFindResponse([]));
-
-      await client.findActionPolicies({ createdBy: 'user-123' });
-
-      expect(mockSavedObjectsClient.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filter: expect.objectContaining({ type: 'function' }),
-        })
-      );
-    });
-
     it('builds KQL filter for enabled=true', async () => {
       mockSavedObjectsClient.find.mockResolvedValueOnce(makeFindResponse([]));
 
@@ -845,15 +821,28 @@ describe('ActionPolicyClient', () => {
       );
     });
 
-    it('maps sort field createdAt without transformation', async () => {
+    it('maps sort field createdAt to the saved object root created_at', async () => {
       mockSavedObjectsClient.find.mockResolvedValueOnce(makeFindResponse([]));
 
       await client.findActionPolicies({ sortField: 'createdAt', sortOrder: 'desc' });
 
       expect(mockSavedObjectsClient.find).toHaveBeenCalledWith(
         expect.objectContaining({
-          sortField: 'createdAt',
+          sortField: 'created_at',
           sortOrder: 'desc',
+        })
+      );
+    });
+
+    it('maps sort field updatedAt to the saved object root updated_at', async () => {
+      mockSavedObjectsClient.find.mockResolvedValueOnce(makeFindResponse([]));
+
+      await client.findActionPolicies({ sortField: 'updatedAt', sortOrder: 'asc' });
+
+      expect(mockSavedObjectsClient.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sortField: 'updated_at',
+          sortOrder: 'asc',
         })
       );
     });

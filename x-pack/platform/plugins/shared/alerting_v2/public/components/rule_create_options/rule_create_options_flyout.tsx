@@ -14,18 +14,20 @@ import {
   EuiFlyoutBody,
   EuiFlyoutHeader,
   EuiTitle,
+  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { RuleCreateOptionsPanel } from './rule_create_options_panel';
+import { RuleCreateOptionsPanel, type LegacyRuleTypeItem } from './rule_create_options_panel';
 
 const FLYOUT_TITLE_ID = 'ruleCreateOptionsFlyoutTitle';
 
 export interface RuleCreateOptionsFlyoutProps {
   onClose: () => void;
   onCreateEsqlRule: () => void;
-  onCreateWithAgent: () => void;
+  onCreateWithAgent?: () => void;
   onCreateThresholdAlert?: () => void;
+  legacyRuleTypes?: LegacyRuleTypeItem[];
 }
 
 export const RuleCreateOptionsFlyout = ({
@@ -33,6 +35,7 @@ export const RuleCreateOptionsFlyout = ({
   onCreateEsqlRule,
   onCreateWithAgent,
   onCreateThresholdAlert,
+  legacyRuleTypes,
 }: RuleCreateOptionsFlyoutProps) => {
   return (
     <EuiFlyout
@@ -57,15 +60,22 @@ export const RuleCreateOptionsFlyout = ({
             </EuiTitle>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="cross"
-              color="text"
-              onClick={onClose}
-              aria-label={i18n.translate('xpack.alertingV2.ruleCreateOptionsFlyout.close', {
+            <EuiToolTip
+              content={i18n.translate('xpack.alertingV2.ruleCreateOptionsFlyout.close', {
                 defaultMessage: 'Close',
               })}
-              data-test-subj="ruleCreateOptionsFlyoutCloseButton"
-            />
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                iconType="cross"
+                color="text"
+                onClick={onClose}
+                aria-label={i18n.translate('xpack.alertingV2.ruleCreateOptionsFlyout.close', {
+                  defaultMessage: 'Close',
+                })}
+                data-test-subj="ruleCreateOptionsFlyoutCloseButton"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiFlyoutHeader>
@@ -75,6 +85,7 @@ export const RuleCreateOptionsFlyout = ({
           onCreateEsqlRule={onCreateEsqlRule}
           onCreateWithAgent={onCreateWithAgent}
           onCreateThresholdAlert={onCreateThresholdAlert}
+          legacyRuleTypes={legacyRuleTypes}
         />
       </EuiFlyoutBody>
     </EuiFlyout>

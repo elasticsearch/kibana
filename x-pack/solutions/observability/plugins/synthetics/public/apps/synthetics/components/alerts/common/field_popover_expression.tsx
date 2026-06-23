@@ -9,6 +9,7 @@ import type { ReactNode } from 'react';
 import React from 'react';
 import type { EuiExpressionProps } from '@elastic/eui';
 import { EuiExpression, EuiPopover } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
 import { ALL_VALUE } from '@kbn/slo-schema';
 import { isEmpty } from 'lodash';
 import { allOptionText } from './fields';
@@ -68,6 +69,9 @@ export function FieldPopoverExpression({
           />
         }
         repositionOnScroll
+        aria-label={i18n.translate('xpack.synthetics.fieldPopoverExpression.popoverAriaLabel', {
+          defaultMessage: 'Field selection options',
+        })}
       >
         <div style={{ width: 300 }}>{children}</div>
       </EuiPopover>

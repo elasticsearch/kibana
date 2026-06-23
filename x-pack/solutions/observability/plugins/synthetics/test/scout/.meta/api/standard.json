@@ -1,5 +1,5 @@
 {
-  "sha1": "bd4c1d0063ce1f0a9860b990f0c7d3083f5ed43f",
+  "sha1": "d44fa85a41db589a1f3532e07db138243abba3b4",
   "tests": [
     {
       "id": "0e89de24e8ff3a8-faf07b914e53ca6",
@@ -141,8 +141,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/auto_upgrade_policies.spec.ts",
-        "line": 81,
-        "column": 12
+        "line": 82,
+        "column": 15
       }
     },
     {
@@ -169,8 +169,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/create_monitor_private_location.spec.ts",
-        "line": 94,
-        "column": 12
+        "line": 95,
+        "column": 15
       }
     },
     {
@@ -3817,16 +3817,30 @@
       }
     },
     {
-      "id": "4fbd64e81cfcfd7-05aebefd9ed0ded",
-      "title": "SyncGlobalParams pending Scout port (comparePolicies sample data) — see file header",
-      "expectedStatus": "skipped",
+      "id": "b696ee43142090b-4770f9051e3c862",
+      "title": "SyncGlobalParamsSpaces syncs space-scoped params into the right monitor policy and keeps policy/monitor counts in lock-step",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/sync_global_params_spaces.spec.ts",
+        "line": 74,
+        "column": 12
+      }
+    },
+    {
+      "id": "4fbd64e81cfcfd7-e3b46c114927d9a",
+      "title": "SyncGlobalParams syncs a global param into a private-location monitor policy and removes it on delete",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@local-serverless-observability_complete"
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/sync_global_params.spec.ts",
-        "line": 37,
+        "line": 72,
         "column": 12
       }
     },

@@ -947,6 +947,57 @@ describe('installAssetsForInputPackagePolicy', () => {
       );
     });
 
+    it('should not install any index templates for a profiles input package', async () => {
+      const OTEL_PKG_INFO_PROFILES = {
+        type: 'input',
+        name: 'profiling_otel',
+        version: '1.0.0',
+        policy_templates: [
+          {
+            name: 'profilingreceiver',
+            type: 'profiles',
+            input: 'otelcol',
+          },
+        ],
+      };
+      jest.mocked(getInstalledPackageWithAssets).mockResolvedValue({
+        installation: {
+          name: 'profiling_otel',
+          version: '1.0.0',
+        },
+        packageInfo: OTEL_PKG_INFO_PROFILES,
+        assetsMap: new Map(),
+        paths: [],
+      } as any);
+      const mockedLogger = jest.mocked(appContextService.getLogger());
+
+      await installAssetsForInputPackagePolicy({
+        pkgInfo: OTEL_PKG_INFO_PROFILES as any,
+        soClient: savedObjectsClientMock.create(),
+        esClient: {} as ElasticsearchClient,
+        force: false,
+        logger: mockedLogger,
+        packagePolicy: {
+          inputs: [
+            {
+              name: 'profilingreceiver',
+              type: 'otelcol',
+              streams: [
+                {
+                  data_stream: { type: 'profiles' },
+                  vars: { 'data_stream.dataset': { value: 'profilingreceiver' } },
+                },
+              ],
+            },
+          ],
+        } as any,
+      });
+
+      // profiles is owned end-to-end by Universal Profiling; Fleet must not create data streams
+      // for it (elastic/package-spec#1191).
+      expect(jest.mocked(installIndexTemplatesAndPipelines)).not.toHaveBeenCalled();
+    });
+
     it('should respect data_stream.type var when dynamic_signal_types is true', async () => {
       jest.mocked(getInstalledPackageWithAssets).mockResolvedValue({
         installation: {

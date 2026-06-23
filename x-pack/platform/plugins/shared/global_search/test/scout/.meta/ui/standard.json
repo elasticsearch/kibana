@@ -1,5 +1,5 @@
 {
-  "sha1": "332591b9388a3598288edf72e3a0d6b81a6bf41f",
+  "sha1": "ef77c4e945042708f19f73bae351b4f68b4d4ec9",
   "tests": [
     {
       "id": "d421c5332514126-a4adeccca38aa8c",
@@ -53,7 +53,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 66,
+        "line": 70,
         "column": 7
       }
     },
@@ -67,7 +67,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 86,
+        "line": 90,
         "column": 7
       }
     },
@@ -81,7 +81,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 98,
+        "line": 106,
         "column": 7
       }
     },
@@ -95,7 +95,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 114,
+        "line": 126,
         "column": 7
       }
     },
@@ -109,7 +109,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 124,
+        "line": 136,
         "column": 7
       }
     },
@@ -123,7 +123,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 135,
+        "line": 147,
         "column": 7
       }
     },
@@ -137,7 +137,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 145,
+        "line": 157,
         "column": 7
       }
     },
@@ -151,7 +151,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 158,
+        "line": 174,
         "column": 7
       }
     },
@@ -165,7 +165,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 164,
+        "line": 180,
         "column": 7
       }
     },
@@ -179,7 +179,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 170,
+        "line": 186,
         "column": 7
       }
     },
@@ -193,7 +193,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 178,
+        "line": 194,
         "column": 7
       }
     },
@@ -207,7 +207,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/global_search/test/scout/ui/tests/global_search_bar.spec.ts",
-        "line": 184,
+        "line": 200,
         "column": 7
       }
     },

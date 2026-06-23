@@ -16,5 +16,10 @@
     // TODO: LatencyAggregationType lives in x-pack — evaluate whether it should
     // move to @kbn/apm-types-shared (a src package) before this stabilises.
     "@kbn/apm-types",
+    "@kbn/core-http-browser",
+    "@kbn/deeplinks-observability",
+    "@kbn/share-plugin",
+    "@kbn/react-hooks",
+    "@kbn/core",
   ]
 }

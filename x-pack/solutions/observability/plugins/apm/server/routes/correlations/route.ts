@@ -345,7 +345,12 @@ const pValuesTransactionsRoute = createApmServerRoute({
 
 const entityTypeRt = t.union([t.literal('transaction'), t.literal('exit_span')]);
 
-const metricRt = t.union([t.literal('latency'), t.literal('failure_rate')]);
+const metricRt = t.union([
+  t.literal('latency'),
+  t.literal('failure_rate'),
+  t.literal('throughput'),
+  t.literal('infra_metrics'),
+]);
 
 /**
  * Unified correlations API
@@ -378,6 +383,9 @@ const unifiedCorrelationsRoute = createApmServerRoute({
         metric: metricRt,
       }),
       t.partial({
+        serviceName: t.string,
+        transactionName: t.string,
+        transactionType: t.string,
         fieldCandidates: t.array(t.string),
         durationMin: toNumberRt,
         durationMax: toNumberRt,
@@ -385,6 +393,7 @@ const unifiedCorrelationsRoute = createApmServerRoute({
         includeHistogram: toBooleanRt,
         kuery: t.string,
       }),
+      t.partial(environmentRt.props),
       rangeRt,
     ]),
   }),
@@ -405,25 +414,34 @@ const unifiedCorrelationsRoute = createApmServerRoute({
         start,
         end,
         kuery = '',
+        serviceName,
+        transactionName,
+        transactionType,
         fieldCandidates,
         durationMin,
         durationMax,
         percentileThreshold,
         includeHistogram = false,
+        environment = ENVIRONMENT_ALL_VALUE,
       },
     } = resources.params;
 
     const scope: 'transactions' | 'exitSpans' =
       entityType === 'exit_span' ? 'exitSpans' : 'transactions';
 
-    const query =
-      scope === 'exitSpans'
-        ? {
-            bool: {
-              filter: [{ exists: { field: SPAN_DESTINATION_SERVICE_RESOURCE } }],
-            },
-          }
-        : { bool: { filter: [] as object[] } };
+    const scopeFilter =
+      scope === 'exitSpans' ? [{ exists: { field: SPAN_DESTINATION_SERVICE_RESOURCE } }] : [];
+
+    const query = {
+      bool: {
+        filter: [
+          ...scopeFilter,
+          ...termQuery(SERVICE_NAME, serviceName),
+          ...termQuery(TRANSACTION_TYPE, transactionType),
+          ...termQuery(TRANSACTION_NAME, transactionName),
+        ] as object[],
+      },
+    };
 
     return fetchCorrelations({
       apmEventClient,
@@ -431,7 +449,7 @@ const unifiedCorrelationsRoute = createApmServerRoute({
       scope,
       start,
       end,
-      environment: ENVIRONMENT_ALL_VALUE,
+      environment,
       kuery,
       query,
       fieldCandidates,

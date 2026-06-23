@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { dump as yamlDump } from 'js-yaml';
+import { stringify as yamlDump } from 'yaml';
 import { useQueryClient } from '@kbn/react-query';
 import { postTemplate, patchTemplate } from '../api/api';
 import { casesQueriesKeys } from '../../../containers/constants';
@@ -43,7 +43,7 @@ const buildDefinitionYaml = (template: ParsedTemplateEntry): string => {
     definition.fields = template.definition.fields;
   }
 
-  return yamlDump(definition, { lineWidth: -1 });
+  return yamlDump(definition, { lineWidth: 0 });
 };
 
 export const useImportTemplates = () => {

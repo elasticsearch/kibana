@@ -7,11 +7,11 @@
 
 import type { ToolCallWithResult, ToolResult } from '@kbn/agent-builder-common';
 import { ToolResultType } from '@kbn/agent-builder-common';
-import type { IFileStore, FileEntry } from '@kbn/agent-builder-server/runner/filestore';
+import type { FileEntry } from '@kbn/agent-builder-server/runner/filestore';
+import type { ToolResultStore } from '@kbn/agent-builder-server/runner';
 import type { ToolManager } from '@kbn/agent-builder-server/runner/tool_manager';
 import type { ToolRegistry } from '@kbn/agent-builder-server';
 import { createResultTransformer, FS_TOOL_CALL_TOKEN_THRESHOLD } from './create_result_transformer';
-import type { ProcessedConversation } from './prepare_conversation';
 
 describe('createResultTransformer', () => {
   const makeToolCallWithResult = (
@@ -25,12 +25,14 @@ describe('createResultTransformer', () => {
     results,
   });
 
-  const createMockFileStore = (entries: Map<string, FileEntry>): IFileStore => ({
-    read: jest.fn(async (path: string) => entries.get(path)),
-    ls: jest.fn(),
-    glob: jest.fn(),
-    grep: jest.fn(),
-  });
+  const createMockResultStore = (entries: Map<string, FileEntry>): ToolResultStore =>
+    ({
+      has: jest.fn(),
+      get: jest.fn(),
+      getEntry: jest.fn(async (path: string) => entries.get(path)),
+      listEntries: jest.fn(async () => []),
+      entryExists: jest.fn(async (path: string) => entries.has(path)),
+    } as unknown as ToolResultStore);
 
   const createFileEntry = (
     path: string,
@@ -60,15 +62,6 @@ describe('createResultTransformer', () => {
       list: jest.fn(async () => []),
     } as unknown as ToolRegistry);
 
-  const createMockProcessedConversation = (): ProcessedConversation =>
-    ({
-      previousRounds: [],
-      nextInput: {},
-      attachmentTypes: [],
-      attachments: [],
-      attachmentStateManager: {} as any,
-    } as unknown as ProcessedConversation);
-
   const createMockToolManager = (
     summarizers: Map<
       string,
@@ -92,14 +85,13 @@ describe('createResultTransformer', () => {
       };
 
       const toolRegistry = createMockToolRegistry(new Map([['search', toolWithSummarizer as any]]));
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
@@ -122,14 +114,13 @@ describe('createResultTransformer', () => {
       const toolRegistry = createMockToolRegistry(
         new Map([['search', toolWithNullSummarizer as any]])
       );
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
@@ -148,14 +139,13 @@ describe('createResultTransformer', () => {
       const toolRegistry = createMockToolRegistry(
         new Map([['search', toolWithoutSummarizer as any]])
       );
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
@@ -170,14 +160,13 @@ describe('createResultTransformer', () => {
 
     it('falls back to original results when tool is not found', async () => {
       const toolRegistry = createMockToolRegistry(new Map());
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'unknown-tool', [
@@ -211,14 +200,13 @@ describe('createResultTransformer', () => {
 
       const toolManager = createMockToolManager(new Map([['search', managerSummarizer]]));
       const toolRegistry = createMockToolRegistry(new Map([['search', registrySummarizer as any]]));
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager,
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
@@ -246,14 +234,13 @@ describe('createResultTransformer', () => {
 
       const toolManager = createMockToolManager(new Map());
       const toolRegistry = createMockToolRegistry(new Map([['search', registrySummarizer as any]]));
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager,
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
@@ -275,21 +262,18 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/tool_calls/search/call-1/result-1.json',
-        createFileEntry(
-          '/tool_calls/search/call-1/result-1.json',
-          FS_TOOL_CALL_TOKEN_THRESHOLD + 100,
-          { large: 'data' }
-        )
+        '/search/call-1/result-1.json',
+        createFileEntry('/search/call-1/result-1.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
+          large: 'data',
+        })
       );
-      const filestore = createMockFileStore(entries);
+      const resultStore = createMockResultStore(entries);
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
         conversationTokenThreshold: 0,
       });
 
@@ -312,17 +296,16 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/tool_calls/search/call-1/result-1.json',
-        createFileEntry('/tool_calls/search/call-1/result-1.json', 100, { small: 'data' })
+        '/search/call-1/result-1.json',
+        createFileEntry('/search/call-1/result-1.json', 100, { small: 'data' })
       );
-      const filestore = createMockFileStore(entries);
+      const resultStore = createMockResultStore(entries);
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
         conversationTokenThreshold: 0,
       });
 
@@ -339,14 +322,13 @@ describe('createResultTransformer', () => {
 
     it('keeps results when not found in filestore', async () => {
       const toolRegistry = createMockToolRegistry(new Map([['search', {} as any]]));
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
         conversationTokenThreshold: 0,
       });
 
@@ -360,37 +342,36 @@ describe('createResultTransformer', () => {
       expect(result[0].data).toEqual({ some: 'data' });
     });
 
-    it('does not apply filestore substitution when filestoreEnabled is false', async () => {
+    it('forces filestore substitution when the forceFilestoreSubstitution option is set', async () => {
       const toolRegistry = createMockToolRegistry(new Map([['search', {} as any]]));
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/tool_calls/search/call-1/result-1.json',
-        createFileEntry(
-          '/tool_calls/search/call-1/result-1.json',
-          FS_TOOL_CALL_TOKEN_THRESHOLD + 100,
-          { large: 'data' }
-        )
+        '/search/call-1/result-1.json',
+        createFileEntry('/search/call-1/result-1.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
+          large: 'data',
+        })
       );
-      const filestore = createMockFileStore(entries);
+      const resultStore = createMockResultStore(entries);
 
+      // Conversation gate is off (estimate well below threshold), but the caller forces it on.
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
+        conversationTokenThreshold: 1_000_000,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
         { tool_result_id: 'result-1', type: ToolResultType.other, data: { large: 'data' } },
       ]);
 
-      const result = await transformer(toolCall);
+      const withoutForce = await transformer(toolCall);
+      expect(withoutForce[0].type).toBe(ToolResultType.other);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].type).toBe(ToolResultType.other);
-      expect(result[0].data).toEqual({ large: 'data' });
+      const withForce = await transformer(toolCall, { forceFilestoreSubstitution: true });
+      expect(withForce[0].type).toBe(ToolResultType.fileReference);
     });
   });
 
@@ -411,21 +392,18 @@ describe('createResultTransformer', () => {
       // Even if we have large file entries, summarized results should not be substituted
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/tool_calls/search/call-1/summarized.json',
-        createFileEntry(
-          '/tool_calls/search/call-1/summarized.json',
-          FS_TOOL_CALL_TOKEN_THRESHOLD + 1000,
-          { summary: 'Summarized data' }
-        )
+        '/search/call-1/summarized.json',
+        createFileEntry('/search/call-1/summarized.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 1000, {
+          summary: 'Summarized data',
+        })
       );
-      const filestore = createMockFileStore(entries);
+      const resultStore = createMockResultStore(entries);
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
         conversationTokenThreshold: 0,
       });
 
@@ -449,14 +427,13 @@ describe('createResultTransformer', () => {
       };
 
       const toolRegistry = createMockToolRegistry(new Map([['search', toolWithSummarizer as any]]));
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
@@ -487,14 +464,13 @@ describe('createResultTransformer', () => {
       };
 
       const toolRegistry = createMockToolRegistry(new Map([['search', toolWithSummarizer as any]]));
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: false,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', [
@@ -513,14 +489,13 @@ describe('createResultTransformer', () => {
   describe('empty and edge cases', () => {
     it('returns empty array for empty results', async () => {
       const toolRegistry = createMockToolRegistry(new Map());
-      const filestore = createMockFileStore(new Map());
+      const resultStore = createMockResultStore(new Map());
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
       });
 
       const toolCall = makeToolCallWithResult('call-1', 'search', []);
@@ -536,17 +511,16 @@ describe('createResultTransformer', () => {
       const entries = new Map<string, FileEntry>();
       // Token count of 200 - above custom threshold of 100
       entries.set(
-        '/tool_calls/search/call-1/result-1.json',
-        createFileEntry('/tool_calls/search/call-1/result-1.json', 200, { some: 'data' })
+        '/search/call-1/result-1.json',
+        createFileEntry('/search/call-1/result-1.json', 200, { some: 'data' })
       );
-      const filestore = createMockFileStore(entries);
+      const resultStore = createMockResultStore(entries);
 
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
         conversationTokenThreshold: 0,
         toolCallTokenThreshold: 100,
       });
@@ -565,22 +539,19 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/tool_calls/search/call-1/result-1.json',
-        createFileEntry(
-          '/tool_calls/search/call-1/result-1.json',
-          FS_TOOL_CALL_TOKEN_THRESHOLD + 100,
-          { large: 'data' }
-        )
+        '/search/call-1/result-1.json',
+        createFileEntry('/search/call-1/result-1.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
+          large: 'data',
+        })
       );
-      const filestore = createMockFileStore(entries);
+      const resultStore = createMockResultStore(entries);
 
       // conversationTokenThreshold is very high — empty conversation won't exceed it
       const transformer = createResultTransformer({
-        processedConversation: createMockProcessedConversation(),
+        conversationTokenEstimate: 1,
         toolRegistry,
         toolManager: createMockToolManager(),
-        filestore,
-        filestoreEnabled: true,
+        resultStore,
         conversationTokenThreshold: 1_000_000,
       });
 

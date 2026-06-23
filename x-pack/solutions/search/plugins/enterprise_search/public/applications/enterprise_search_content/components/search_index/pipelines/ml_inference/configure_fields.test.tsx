@@ -5,19 +5,26 @@
  * 2.0.
  */
 
-import { setMockValues } from '../../../../../__mocks__/kea_logic';
+import { setMockActions, setMockValues } from '../../../../../__mocks__/kea_logic';
+
+jest.mock('./multi_field_selector', () => ({
+  MultiFieldMapping: () => <div data-test-subj="multiFieldMapping" />,
+  SelectedFieldMappings: () => <div data-test-subj="selectedFieldMappings" />,
+}));
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { ConfigureFields } from './configure_fields';
-import { MultiFieldMapping, SelectedFieldMappings } from './multi_field_selector';
 
 describe('ConfigureFields', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setMockValues({});
+    setMockActions({ makeRequest: jest.fn() });
   });
 
   const mockValues = {
@@ -30,18 +37,18 @@ describe('ConfigureFields', () => {
       ...mockValues,
       isTextExpansionModelSelected: true,
     });
-    const wrapper = shallow(<ConfigureFields />);
-    expect(wrapper.find(MultiFieldMapping)).toHaveLength(1);
-    expect(wrapper.find(SelectedFieldMappings)).toHaveLength(1);
+    renderWithKibanaRenderContext(<ConfigureFields />);
+    expect(screen.getByTestId('multiFieldMapping')).toBeInTheDocument();
+    expect(screen.getByTestId('selectedFieldMappings')).toBeInTheDocument();
   });
+
   it('only renders field mappings in read-only mode', () => {
     setMockValues({
       ...mockValues,
-      isTextExpansionModelSelected: true,
       addInferencePipelineModal: { configuration: { existingPipeline: true } },
     });
-    const wrapper = shallow(<ConfigureFields />);
-    expect(wrapper.find(MultiFieldMapping)).toHaveLength(0);
-    expect(wrapper.find(SelectedFieldMappings)).toHaveLength(1);
+    renderWithKibanaRenderContext(<ConfigureFields />);
+    expect(screen.queryByTestId('multiFieldMapping')).not.toBeInTheDocument();
+    expect(screen.getByTestId('selectedFieldMappings')).toBeInTheDocument();
   });
 });

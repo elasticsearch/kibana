@@ -5,21 +5,16 @@
  * 2.0.
  */
 
-import '../../../__mocks__/shallow_useeffect.mock';
-
 import { setMockValues, setMockActions } from '../../../__mocks__/kea_logic';
 import { mockUseParams } from '../../../__mocks__/react_router';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen, waitFor } from '@testing-library/react';
 
-import { EuiEmptyPrompt } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { AnalyticsCollection } from '../../../../../common/types/analytics';
-import { EnterpriseSearchAnalyticsPageTemplate } from '../layout/page_template';
-
-import { AnalyticsCollectionIntegrateView } from './analytics_collection_integrate/analytics_collection_integrate_view';
 
 import { AnalyticsCollectionView } from './analytics_collection_view';
 
@@ -43,28 +38,29 @@ describe('AnalyticsView', () => {
     mockUseParams.mockReturnValue({ name: '1' });
   });
 
-  it('renders when analytics collection is empty on initial query', () => {
+  it('renders when analytics collection is empty on initial query', async () => {
     setMockValues({
       ...mockValues,
       analyticsCollection: null,
     });
     setMockActions(mockActions);
-    const wrapper = shallow(<AnalyticsCollectionView />);
 
-    expect(mockActions.fetchAnalyticsCollection).toHaveBeenCalled();
+    renderWithKibanaRenderContext(<AnalyticsCollectionView />);
 
-    expect(wrapper.find(AnalyticsCollectionIntegrateView)).toHaveLength(0);
-    expect(wrapper.find(EnterpriseSearchAnalyticsPageTemplate)).toHaveLength(1);
+    await waitFor(() => {
+      expect(mockActions.fetchAnalyticsCollection).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText('Embed onto site')).not.toBeInTheDocument();
+    expect(screen.getByText('You may have deleted this analytics collection')).toBeInTheDocument();
   });
 
   it('render deleted state for deleted analytics collection', async () => {
     setMockValues({ ...mockValues, analyticsCollection: null });
     setMockActions(mockActions);
 
-    const wrapper = shallow(<AnalyticsCollectionView />);
+    renderWithKibanaRenderContext(<AnalyticsCollectionView />);
 
-    expect(wrapper?.find(EnterpriseSearchAnalyticsPageTemplate).find(EuiEmptyPrompt)).toHaveLength(
-      1
-    );
+    expect(screen.getByText('You may have deleted this analytics collection')).toBeInTheDocument();
   });
 });

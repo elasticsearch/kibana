@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '@kbn/i18n-react';
 import type { PolicyExecutionHistoryItem } from '../../services/execution_history_api';
@@ -109,13 +109,14 @@ const mockFetchResult = (
       page: number;
       perPage: number;
       totalEvents: number;
+      searchMatches: { policies: number; rules: number; cap: number } | null;
     };
     isFetching: boolean;
     isError: boolean;
   }> = {}
 ) => {
   mockUseFetchExecutionHistory.mockReturnValue({
-    data: { items: [], page: 1, perPage: 50, totalEvents: 0 },
+    data: { items: [], page: 1, perPage: 50, totalEvents: 0, searchMatches: null },
     isFetching: false,
     isError: false,
     refetch: mockRefetch,
@@ -141,7 +142,7 @@ describe('ExecutionHistoryPage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: /execution history/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Policies' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /policies/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('renders the experimental badge in the page header', () => {
@@ -151,7 +152,7 @@ describe('ExecutionHistoryPage', () => {
     expect(screen.getByTestId('alertingV2ExperimentalBadge')).toBeInTheDocument();
   });
 
-  it('renders the denormalization info tooltip next to the title', () => {
+  it('renders the denormalization info tooltip next to the Policies tab', () => {
     mockFetchResult();
     renderPage();
 
@@ -183,6 +184,7 @@ describe('ExecutionHistoryPage', () => {
         page: 1,
         perPage: 50,
         totalEvents: 1,
+        searchMatches: null,
       },
     });
     renderPage();
@@ -199,6 +201,7 @@ describe('ExecutionHistoryPage', () => {
         page: 1,
         perPage: 50,
         totalEvents: 1,
+        searchMatches: null,
       },
     });
     renderPage();
@@ -222,6 +225,7 @@ describe('ExecutionHistoryPage', () => {
         page: 1,
         perPage: 50,
         totalEvents: 1,
+        searchMatches: null,
       },
     });
     renderPage();
@@ -255,6 +259,7 @@ describe('ExecutionHistoryPage', () => {
         page: 1,
         perPage: 50,
         totalEvents: 1,
+        searchMatches: null,
       },
     });
     renderPage();
@@ -275,6 +280,7 @@ describe('ExecutionHistoryPage', () => {
         page: 1,
         perPage: 50,
         totalEvents: 1,
+        searchMatches: null,
       },
     });
     renderPage();
@@ -295,6 +301,7 @@ describe('ExecutionHistoryPage', () => {
         page: 1,
         perPage: 50,
         totalEvents: 1,
+        searchMatches: null,
       },
     });
     renderPage();
@@ -304,11 +311,74 @@ describe('ExecutionHistoryPage', () => {
     expect(workflowLink).toHaveAttribute('target', '_blank');
   });
 
-  it('queries with default page=1 and perPage=100', () => {
+  it('queries with default page=1, perPage=100, outcome=all and no search', () => {
     mockFetchResult();
     renderPage();
 
-    expect(mockUseFetchExecutionHistory).toHaveBeenCalledWith({ page: 1, perPage: 100 });
+    expect(mockUseFetchExecutionHistory).toHaveBeenCalledWith({
+      page: 1,
+      perPage: 100,
+      search: undefined,
+      outcome: 'all',
+    });
+  });
+
+  it('renders the search bar and outcome filter above the table', () => {
+    mockFetchResult();
+    renderPage();
+
+    expect(screen.getByTestId('executionHistorySearchBar')).toBeInTheDocument();
+    expect(screen.getByTestId('executionHistoryOutcomeFilter')).toBeInTheDocument();
+  });
+
+  it('changing the outcome filter resets to page 1 and refetches with the new outcome', async () => {
+    mockFetchResult();
+    renderPage();
+
+    await userEvent.selectOptions(
+      screen.getByTestId('executionHistoryOutcomeFilter'),
+      'dispatched'
+    );
+
+    await waitFor(() => {
+      expect(mockUseFetchExecutionHistory).toHaveBeenLastCalledWith({
+        page: 1,
+        perPage: 100,
+        search: undefined,
+        outcome: 'dispatched',
+      });
+    });
+  });
+
+  it('typing in the search bar debounces and forwards the trimmed search term', async () => {
+    mockFetchResult();
+    renderPage();
+
+    await userEvent.type(screen.getByTestId('executionHistorySearchBar'), '  cpu  ');
+
+    await waitFor(
+      () => {
+        expect(mockUseFetchExecutionHistory).toHaveBeenLastCalledWith({
+          page: 1,
+          perPage: 100,
+          search: 'cpu',
+          outcome: 'all',
+        });
+      },
+      { timeout: 2000 }
+    );
+  });
+
+  it('shows the filtered empty state when search or outcome is active and there are no rows', async () => {
+    mockFetchResult();
+    renderPage();
+
+    await userEvent.selectOptions(screen.getByTestId('executionHistoryOutcomeFilter'), 'throttled');
+
+    expect(screen.getByTestId('executionHistoryFilteredEmptyPrompt')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/No policy execution activity in the last 24 hours/i)
+    ).not.toBeInTheDocument();
   });
 
   it('shows the new-events banner when count > 0', () => {

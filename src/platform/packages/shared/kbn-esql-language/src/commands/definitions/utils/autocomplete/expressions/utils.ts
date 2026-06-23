@@ -207,14 +207,23 @@ export async function getKqlSuggestionsIfApplicable(
   const cursorPositionInKql = kqlQuery.length;
 
   try {
-    // Get KQL suggestions from the autocomplete service
     const suggestions = await getKqlSuggestions(kqlQuery, cursorPositionInKql);
 
     if (!suggestions || suggestions.length === 0) {
       return null;
     }
 
-    return suggestions;
+    const startOffset = innerText.length - kqlQuery.length;
+
+    return suggestions.map(({ range, ...suggestion }) => ({
+      ...suggestion,
+      // Exception to the standard attachReplacementRanges path (no strategy / prefix resolver):
+      // KQL provider already owns the replace range; we shift to ES|QL coords — lexer sees """…""" as one token.
+      rangeToReplace: {
+        start: startOffset + range.start,
+        end: startOffset + range.end,
+      },
+    }));
   } catch (error) {
     return null;
   }

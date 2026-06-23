@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/264426
+issues:
+- https://github.com/elastic/kibana/issues/204508
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Dashboards and visualizations
+- Alerting and reporting
+title: Highlight related dashboard panels on click

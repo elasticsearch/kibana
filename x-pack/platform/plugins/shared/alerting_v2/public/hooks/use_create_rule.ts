@@ -11,6 +11,8 @@ import { useService, CoreStart } from '@kbn/core-di-browser';
 import type { CreateRuleData } from '@kbn/alerting-v2-schemas';
 import { RulesApi } from '../services/rules_api';
 import { ruleKeys } from './query_key_factory';
+import { enrichHttpErrorMessage } from '../utils/enrich_http_error';
+import { getFriendlyRuleHttpErrorToastMessage } from '../utils/friendly_http_error';
 
 export const useCreateRule = () => {
   const rulesApi = useService(RulesApi);
@@ -29,12 +31,13 @@ export const useCreateRule = () => {
       queryClient.invalidateQueries(ruleKeys.lists());
       queryClient.invalidateQueries(ruleKeys.tags());
     },
-    onError: () => {
-      toasts.addDanger(
-        i18n.translate('xpack.alertingV2.hooks.useCreateRule.errorMessage', {
-          defaultMessage: 'Failed to create rule',
-        })
-      );
+    onError: (error: Error) => {
+      toasts.addError(enrichHttpErrorMessage(error), {
+        title: i18n.translate('xpack.alertingV2.hooks.useCreateRule.errorMessage', {
+          defaultMessage: 'Rule not created',
+        }),
+        toastMessage: getFriendlyRuleHttpErrorToastMessage(error),
+      });
     },
   });
 };

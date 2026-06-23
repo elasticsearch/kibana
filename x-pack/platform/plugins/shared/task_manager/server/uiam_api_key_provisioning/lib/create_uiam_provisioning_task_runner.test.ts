@@ -37,7 +37,7 @@ describe('createUiamProvisioningTaskRunner', () => {
   it('returns state and runAt and strips telemetry; reports event with telemetry', async () => {
     const runTask = jest.fn(
       async (): Promise<UiamProvisioningRunTaskOutcome> => ({
-        state: { runs: 3, plaintextUiamKeysRepaired: true },
+        state: { runs: 3 },
         runAt: new Date('2026-01-01T00:00:00.000Z'),
         telemetry: {
           total: 1,
@@ -59,7 +59,7 @@ describe('createUiamProvisioningTaskRunner', () => {
     const out = await run();
 
     expect(out).toEqual({
-      state: { runs: 3, plaintextUiamKeysRepaired: true },
+      state: { runs: 3 },
       runAt: new Date('2026-01-01T00:00:00.000Z'),
     });
     expect(reportProvisioningRunEvent).toHaveBeenCalledWith(

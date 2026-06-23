@@ -17,7 +17,7 @@ import type {
   WorkflowStatsDto,
 } from '@kbn/workflows';
 import { buildWorkflowFilters } from '@kbn/workflows/server';
-import type { WorkflowListItemDto } from '@kbn/workflows/types/v1';
+import type { WorkflowListItemDto, WorkflowSortField } from '@kbn/workflows/types/v1';
 
 import type { WorkflowSearchDeps } from './types';
 import { WORKFLOWS_EXECUTIONS_INDEX } from '../../common';
@@ -31,6 +31,11 @@ import {
 import type { GetWorkflowAggsOptions, GetWorkflowsParams } from '../api/workflows_management_api';
 import type { WorkflowProperties } from '../storage/workflow_storage';
 import { workflowIndexName } from '../storage/workflow_storage';
+
+const ES_SORT_FIELDS: Record<WorkflowSortField, string> = {
+  name: 'name.keyword',
+  enabled: 'enabled',
+};
 
 interface WorkflowAggBucket {
   key: string | number | boolean;
@@ -127,7 +132,17 @@ export class WorkflowSearchService {
     spaceId: string,
     options?: { includeExecutionHistory?: boolean }
   ): Promise<WorkflowListDto> {
-    const { size = 100, page = 1, enabled, createdBy, tags, query, managedFilter } = params;
+    const {
+      size = 100,
+      page = 1,
+      enabled,
+      createdBy,
+      tags,
+      query,
+      managedFilter,
+      sortField,
+      sortOrder = 'asc',
+    } = params;
     const from = (page - 1) * size;
 
     const { must, must_not } = buildWorkflowFilters({
@@ -148,6 +163,13 @@ export class WorkflowSearchService {
       must.push(buildWorkflowTextSearchClause(query));
     }
 
+    const esSort = sortField
+      ? [
+          { [ES_SORT_FIELDS[sortField]]: { order: sortOrder } },
+          { updated_at: { order: 'desc' as const } },
+        ]
+      : [{ updated_at: { order: 'desc' as const } }];
+
     const searchResponse = await this.deps.workflowStorage.getClient().search({
       size,
       from,
@@ -155,7 +177,7 @@ export class WorkflowSearchService {
       query: {
         bool: { must, must_not },
       },
-      sort: [{ updated_at: { order: 'desc' } }],
+      sort: esSort,
     });
 
     const workflows = searchResponse.hits.hits

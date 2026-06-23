@@ -11,6 +11,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const a11y = getService('a11y');
   const testSubjects = getService('testSubjects');
   const retry = getService('retry');
+  const contentList = getService('contentList');
   const inspector = getService('inspector');
   const { common, header, home, maps } = getPageObjects(['common', 'header', 'home', 'maps']);
 
@@ -98,10 +99,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
     it('maps listing page', async function () {
       await common.navigateToApp('maps');
-      await retry.waitFor(
-        'maps workpads visible',
-        async () => await testSubjects.exists('listingTable-isLoaded')
-      );
+      await contentList.waitForReady();
       await a11y.testAppSnapshot();
     });
 
@@ -111,7 +109,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     });
 
     it('provides bulk delete', async function () {
-      await testSubjects.click('deleteSelectedItems');
+      await testSubjects.click('contentListToolbar-selectionBar-deleteButton');
       await a11y.testAppSnapshot();
       await retry.waitFor(
         'maps cancel button exists',

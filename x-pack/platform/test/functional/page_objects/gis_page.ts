@@ -13,6 +13,13 @@ function escapeLayerName(layerName: string) {
   return layerName.split(' ').join('_');
 }
 
+// Mirror the legacy `listingTable.searchForItemWithName` escaping: EUI Query
+// syntax rejects `[...]` tokens, and map fixtures historically searched with
+// the first `-` collapsed to a space.
+function escapeMapSearchTerm(name: string) {
+  return name.replace('-', ' ').replace(/ *\[[^)]*\] */g, '');
+}
+
 export class GisPageObject extends FtrService {
   private readonly common = this.ctx.getPageObject('common');
   private readonly header = this.ctx.getPageObject('header');
@@ -28,7 +35,7 @@ export class GisPageObject extends FtrService {
   private readonly comboBox = this.ctx.getService('comboBox');
   private readonly renderable = this.ctx.getService('renderable');
   private readonly browser = this.ctx.getService('browser');
-  private readonly listingTable = this.ctx.getService('listingTable');
+  private readonly contentList = this.ctx.getService('contentList');
   private readonly monacoEditor = this.ctx.getService('monacoEditor');
   private readonly dashboardPanelActions = this.ctx.getService('dashboardPanelActions');
 
@@ -149,7 +156,7 @@ export class GisPageObject extends FtrService {
 
     await this.retry.try(async () => {
       await this.searchForMapWithName(name);
-      await this.listingTable.clickItemLink('map', name);
+      await this.contentList.clickItemByName(name);
       await this.header.waitUntilLoadingHasFinished();
       // check Map landing page is not present
       await this.testSubjects.missingOrFail('mapLandingPage', { timeout: 10000 });
@@ -160,9 +167,7 @@ export class GisPageObject extends FtrService {
 
   async deleteSavedMaps(search: string) {
     await this.searchForMapWithName(search);
-    await this.listingTable.checkListingSelectAllCheckbox();
-    await this.listingTable.clickDeleteSelected();
-    await this.common.clickConfirmOnModal();
+    await this.contentList.selectAllAndDelete();
 
     await this.header.waitUntilLoadingHasFinished();
   }
@@ -246,7 +251,7 @@ export class GisPageObject extends FtrService {
 
     await this.gotoMapListingPage();
 
-    await this.listingTable.searchForItemWithName(name);
+    await this.contentList.search(escapeMapSearchTerm(name));
 
     await this.header.waitUntilLoadingHasFinished();
   }
@@ -275,10 +280,9 @@ export class GisPageObject extends FtrService {
   }
 
   async searchAndExpectItemsCount(name: string, count: number) {
-    await this.gotoMapListingPage();
-
     this.log.debug(`searchAndExpectItemsCount: ${name}`);
-    await this.listingTable.searchAndExpectItemsCount('map', name, count);
+    await this.searchForMapWithName(name);
+    await this.contentList.expectItemCount(count);
   }
 
   async setView(lat: number, lon: number, zoom: number) {

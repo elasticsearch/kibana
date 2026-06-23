@@ -85,4 +85,7 @@ export const DEFAULT_TRANSLATION_FIELDS = {
   interval: '5m',
 } as const;
 
+export const SENTINEL_DEFAULT_QUERY_FREQUENCY = '1m';
+export const SENTINEL_RULE_KIND_ANNOTATION_KEY = 'sentinel_rule_kind';
+
 export const SIEM_RULE_MIGRATION_INDEX_PATTERN_PLACEHOLDER = '[indexPattern]';

@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { EuiExpression, EuiPopover } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
 
 interface AlertExpressionPopoverProps {
   'aria-label': string;
@@ -42,6 +43,9 @@ export const AlertExpressionPopover: React.FC<AlertExpressionPopoverProps> = ({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.alertExpressionPopover.popoverAriaLabel', {
+        defaultMessage: 'Alert expression details',
+      })}
       id={id}
       anchorPosition="downLeft"
       button={

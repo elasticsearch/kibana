@@ -23,6 +23,8 @@ import { LogoIcon } from '../shared/logo_icon';
 import { usePricingFeature } from '../quickstart_flows/shared/use_pricing_feature';
 import { useManagedOtlpServiceAvailability } from '../shared/use_managed_otlp_service_availability';
 
+export const AWS_CLOUDWATCH_OTEL_CARD_ID = 'aws-cloudwatch-otel-virtual';
+
 export function useCustomCards(
   createCollectionCardHandler: (query: string) => () => void
 ): IntegrationCardItem[] {
@@ -51,11 +53,7 @@ export function useCustomCards(
 
   const { href: autoDetectUrl } = reactRouterNavigate(history, `/auto-detect/${location.search}`);
   const { href: otelLogsUrl } = reactRouterNavigate(history, `/otel-logs/${location.search}`);
-  const { href: kubernetesUrl } = reactRouterNavigate(history, `/kubernetes/${location.search}`);
-  const { href: otelKubernetesUrl } = reactRouterNavigate(
-    history,
-    `/otel-kubernetes/${location.search}`
-  );
+  const { href: otelKubernetesUrl } = reactRouterNavigate(history, `/kubernetes${location.search}`);
   const { href: firehoseUrl } = reactRouterNavigate(history, `/firehose/${location.search}`);
   const { href: otelApmQuickstartUrl } = reactRouterNavigate(
     history,
@@ -65,6 +63,7 @@ export function useCustomCards(
     history,
     `/cloudforwarder/${location.search}`
   );
+  const { href: awsCloudwatchOtelUrl } = reactRouterNavigate(history, `/aws${location.search}`);
 
   const apmUrl = `${getUrlForApp?.('apm')}/${isServerless ? 'onboarding' : 'tutorial'}`;
   const otelApmUrl = isManagedOtlpServiceAvailable ? otelApmQuickstartUrl : apmUrl;
@@ -235,53 +234,6 @@ export function useCustomCards(
       isQuickstart: true,
     },
     {
-      id: 'kubernetes-quick-start',
-      name: 'kubernetes-quick-start',
-      type: 'virtual',
-      title: metricsOnboardingEnabled
-        ? i18n.translate(
-            'xpack.observability_onboarding.useCustomCardsForCategory.kubernetesTitle',
-            {
-              defaultMessage: 'Elastic Agent: Logs & Metrics',
-            }
-          )
-        : i18n.translate(
-            'xpack.observability_onboarding.logsEssential.useCustomCardsForCategory.kubernetesTitle',
-            {
-              defaultMessage: 'Elastic Agent: Logs',
-            }
-          ),
-      description: metricsOnboardingEnabled
-        ? i18n.translate(
-            'xpack.observability_onboarding.useCustomCardsForCategory.kubernetesDescription',
-            {
-              defaultMessage: 'Collect logs and metrics from Kubernetes using Elastic Agent',
-            }
-          )
-        : i18n.translate(
-            'xpack.observability_onboarding.logsEssential.useCustomCardsForCategory.kubernetesDescription',
-            {
-              defaultMessage: 'Collect logs from Kubernetes using Elastic Agent',
-            }
-          ),
-      extraLabelsBadges: [
-        <ExtraLabelBadgeWrapper>
-          <LogoIcon logo="kubernetes" size="m" />
-        </ExtraLabelBadgeWrapper>,
-      ],
-      categories: ['observability'],
-      icons: [
-        {
-          type: 'eui',
-          src: 'agentApp',
-        },
-      ],
-      url: kubernetesUrl,
-      version: '',
-      integration: '',
-      isQuickstart: true,
-    },
-    {
       id: 'otel-kubernetes',
       name: 'otel-kubernetes-virtual',
       type: 'virtual',
@@ -431,6 +383,32 @@ export function useCustomCards(
       isCollectionCard: true,
       onCardClick: createCollectionCardHandler('azure'),
     },
+    {
+      id: AWS_CLOUDWATCH_OTEL_CARD_ID,
+      name: 'aws-cloudwatch-otel',
+      type: 'virtual',
+      title: i18n.translate(
+        'xpack.observability_onboarding.useCustomCardsForCategory.awsCloudwatchOtelTitle',
+        { defaultMessage: 'AWS' }
+      ),
+      description: i18n.translate(
+        'xpack.observability_onboarding.useCustomCardsForCategory.awsCloudwatchOtelDescription',
+        {
+          defaultMessage: 'Collect signals from AWS with OpenTelemetry',
+        }
+      ),
+      categories: ['observability'],
+      icons: [
+        {
+          type: 'eui',
+          src: 'logoAWS',
+        },
+      ],
+      url: awsCloudwatchOtelUrl,
+      version: '',
+      integration: '',
+      isQuickstart: true,
+    },
     ...(isIngestHubOnboardingEnabled
       ? [
           {
@@ -456,7 +434,7 @@ export function useCustomCards(
             type: 'virtual',
             title: i18n.translate(
               'xpack.observability_onboarding.useCustomCardsForCategory.awsTitle',
-              { defaultMessage: 'AWS' }
+              { defaultMessage: 'AWS collection' }
             ),
             description: i18n.translate(
               'xpack.observability_onboarding.useCustomCardsForCategory.awsDescription',

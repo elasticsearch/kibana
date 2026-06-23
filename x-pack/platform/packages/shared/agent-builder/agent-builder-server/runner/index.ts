@@ -65,14 +65,12 @@ export type { TodoStateManager } from './todo_state_manager';
 export { createTodoStateManager } from './todo_state_manager';
 export { FileEntryType } from './filestore';
 export type {
-  IToolFileStore,
-  IFileStore,
-  LsEntry,
   FsEntry,
   DirEntry,
-  DirEntryWithChildren,
-  GrepMatch,
   FileEntry,
   FileEntryMetadata,
   FileEntryContent,
 } from './filestore';
+export type { FileEntryAccessor } from './file_entry_accessor';
+export type { IFilesystemService } from './filesystem_service';
+export type { IBashService, BashExecResult } from './bash_service';

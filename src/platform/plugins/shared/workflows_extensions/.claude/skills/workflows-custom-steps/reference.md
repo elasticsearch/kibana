@@ -6,6 +6,8 @@ Extended templates and patterns that are too long to fit in `SKILL.md`. Read thi
 
 A minimal end-to-end step ("process a message") across the common, server, and public layers. Copy and rename for a real step.
 
+> **Key casing:** workflow-owned config keys are kebab-case (`connector-id`); workflow-owned input keys under `with:` are kebab-case or snake_case (`max_count`, `dry-run`) — **never camelCase** (`maxCount`). Only inherited OpenAPI/connector shapes keep their original case. See SKILL.md → [Workflow YAML naming conventions](SKILL.md#workflow-yaml-naming-conventions-read-first).
+
 ### `common/step_types/process_message.ts`
 
 ```ts
@@ -553,7 +555,7 @@ Reuse the local plugin's test style; common minimum:
 - **Common Zod schemas**: a snapshot or fixture round-trip per schema with at least one happy-path object and one rejection case (e.g. wrong type, missing required field).
 - **Server handler**: a Jest unit test mocking `StepHandlerContext` (or the plugin's own helper) — assert the happy path produces the expected `output`, and at least one error path throws / returns the expected `ExecutionError.type`.
 - **Public registration**: there is already a precedent of `register_workflow_steps.test.ts` in `security_solution` — assert each step is registered (including async loaders) and that conditional registrations respect their flags.
-- **Approval test** (Scout API): runs in CI; locally, run it to get the new ID + hash before updating `APPROVED_STEP_DEFINITIONS`.
+- **Approval test** (Scout API): runs in CI; locally, run it to get the `echo … > approved_step_definitions/<step.id>.txt` command(s) you need to run from the kibana directory to add or update each per-step approval file. See [STEPS.md → Step Definition Approval Process](../../dev_docs/STEPS.md#step-definition-approval-process).
 
 Avoid snapshotting the entire definition unless behavior changes; the i18n strings churn.
 
@@ -574,6 +576,6 @@ Useful files to grep for real-world patterns:
 | `connectorIdSelection` example | `x-pack/platform/plugins/shared/agent_builder/public/step_types/run_agent_step.ts` |
 | `BaseStepDefinition` + `StepCategory` | `src/platform/packages/shared/kbn-workflows/spec/step_definition_types.ts` |
 | `ExecutionError` | `src/platform/packages/shared/kbn-workflows/server/errors/execution_error.ts` |
-| Approval fixture | `src/platform/plugins/shared/workflows_extensions/test/scout/api/fixtures/approved_step_definitions.ts` |
+| Approval fixtures (one file per step) | `src/platform/plugins/shared/workflows_extensions/test/scout/api/fixtures/approved_step_definitions/` |
 | Factory-style server steps | `x-pack/platform/plugins/shared/cases/server/workflows/steps/` |
 | Feature-flagged loader | `x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/register_workflow_steps.ts` |

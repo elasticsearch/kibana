@@ -18,7 +18,6 @@ import {
   type StepContext,
   type WorkflowContext,
 } from '@kbn/workflows';
-import { parseJsPropertyAccess } from '@kbn/workflows/common/utils';
 import type { GraphNodeUnion, WorkflowGraph } from '@kbn/workflows/graph';
 import { buildWorkflowContext } from './build_workflow_context';
 import type { StepIoService } from './step_io_service';
@@ -235,26 +234,6 @@ export class WorkflowContextManager {
         )} (type: ${typeof condition}), but expected boolean or string. ` +
         `When using templating syntax, the expression must evaluate to a boolean or string (KQL expression).`
     );
-  }
-
-  public readContextPath(propertyPath: string): { pathExists: boolean; value: unknown } {
-    const propertyPathSegments = parseJsPropertyAccess(propertyPath);
-    let result: unknown = this.getContext();
-
-    for (const segment of propertyPathSegments) {
-      if (result === null || result === undefined || typeof result !== 'object') {
-        return { pathExists: false, value: undefined }; // Path not found in context
-      }
-
-      const resultAsRecord = result as Record<string, unknown>;
-      if (!(segment in resultAsRecord)) {
-        return { pathExists: false, value: undefined }; // Path not found in context
-      }
-
-      result = resultAsRecord[segment];
-    }
-
-    return { pathExists: true, value: result };
   }
 
   /**

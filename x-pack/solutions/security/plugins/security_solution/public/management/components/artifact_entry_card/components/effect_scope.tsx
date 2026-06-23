@@ -67,7 +67,7 @@ export const EffectScope = memo<EffectScopeProps>(
         data-test-subj={dataTestSubj}
       >
         <EuiFlexItem grow={false}>
-          <EuiIcon type={icon} size="s" />
+          <EuiIcon type={icon} size="s" aria-hidden={true} />
         </EuiFlexItem>
         <EuiFlexItem grow={false} data-test-subj={getTestId('value')}>
           <TextValueDisplay size="xs">{label}</TextValueDisplay>

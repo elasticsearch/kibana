@@ -50,6 +50,7 @@ export function buildInputDefaultRenderContext(
       url: executionUrl,
       executedBy: workflowExecution.executedBy ?? 'unknown',
       triggeredBy: workflowExecution.triggeredBy,
+      usage: workflowExecution.usage,
     },
     workflow: {
       id: workflowExecution.workflowId,

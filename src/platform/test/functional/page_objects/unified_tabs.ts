@@ -67,6 +67,11 @@ export class UnifiedTabsPageObject extends FtrService {
     );
   }
 
+  public async getTabsBarHeight() {
+    const tabsBar = await this.testSubjects.find('unifiedTabs_tabsBar');
+    return (await tabsBar.getSize()).height;
+  }
+
   public async getTabLabels() {
     const tabElements = await this.getTabElements();
     return await Promise.all(

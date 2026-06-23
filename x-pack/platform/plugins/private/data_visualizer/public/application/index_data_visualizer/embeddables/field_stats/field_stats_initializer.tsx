@@ -32,17 +32,16 @@ import type { AggregateQuery } from '@kbn/es-query';
 import { css } from '@emotion/react';
 import { useDataVisualizerKibana } from '../../../kibana_context';
 import { FieldStatsESQLEditor } from './field_stats_esql_editor';
-import type {
-  FieldStatisticsTableEmbeddableState,
-  FieldStatsInitialState,
-} from '../grid_embeddable/types';
-import { FieldStatsInitializerViewType } from '../grid_embeddable/types';
+import type { FieldStatsInitialState } from '../../../../../common/embeddables/types';
+import { FieldStatsInitializerViewType } from '../../../../../common/embeddables/types';
 import { isESQLQuery } from '../../search_strategy/requests/esql_utils';
 import { DataSourceTypeSelector } from './field_stats_initializer_view_type';
 import { getReasonIfFieldStatsUnavailableForQuery } from '../../utils/get_reason_fieldstats_unavailable_for_esql_query';
 
+type FieldStatsInitializerInput = FieldStatsInitialState & { title?: string };
+
 export interface FieldStatsInitializerProps {
-  initialInput?: Partial<FieldStatisticsTableEmbeddableState>;
+  initialInput?: FieldStatsInitializerInput;
   onCreate: (props: FieldStatsInitialState) => Promise<void>;
   onCancel: () => void;
   onPreview: (update: Partial<FieldStatsInitialState>) => Promise<void>;
@@ -77,28 +76,30 @@ export const FieldStatisticsInitializer: FC<FieldStatsInitializerProps> = ({
     http,
   } = useDataVisualizerKibana().services;
 
-  const [dataViewId, setDataViewId] = useState(initialInput?.dataViewId ?? '');
-  const [viewType, setViewType] = useState(
-    initialInput?.viewType ?? FieldStatsInitializerViewType.DATA_VIEW
+  const [dataViewId, setDataViewId] = useState(initialInput?.data_view_id ?? '');
+  const [viewType, setViewType] = useState<FieldStatsInitializerViewType>(
+    initialInput?.view_type === FieldStatsInitializerViewType.ESQL
+      ? FieldStatsInitializerViewType.ESQL
+      : FieldStatsInitializerViewType.DATA_VIEW
   );
   const [esqlQuery, setQuery] = useState<AggregateQuery>(initialInput?.query ?? defaultESQLQuery);
   const isEsqlEnabled = useMemo(() => uiSettings.get(ENABLE_ESQL), [uiSettings]);
 
   useEffect(() => {
-    if (initialInput?.viewType === undefined) {
+    if (initialInput?.view_type === undefined) {
       // By default, if ES|QL is enabled, then use ES|QL
       setViewType(
         isEsqlEnabled ? FieldStatsInitializerViewType.ESQL : FieldStatsInitializerViewType.DATA_VIEW
       );
     }
-  }, [isEsqlEnabled, initialInput?.viewType]);
+  }, [isEsqlEnabled, initialInput?.view_type]);
 
   const isEsqlMode = viewType === FieldStatsInitializerViewType.ESQL;
   const updatedProps = useMemo(() => {
     return {
-      viewType,
+      view_type: viewType,
       title: initialInput?.title ?? defaultTitle,
-      dataViewId,
+      data_view_id: dataViewId,
       query: isEsqlMode ? esqlQuery : undefined,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,8 +124,8 @@ export const FieldStatisticsInitializer: FC<FieldStatsInitializerProps> = ({
       const supported = getReasonIfFieldStatsUnavailableForQuery(query) === undefined;
       if (supported) {
         await onPreview({
-          viewType,
-          dataViewId: adhocDataView?.id,
+          view_type: viewType,
+          data_view_id: adhocDataView?.id,
           query,
         });
       }
@@ -226,7 +227,7 @@ export const FieldStatisticsInitializer: FC<FieldStatsInitializerProps> = ({
             />
           ) : null}
 
-          {initialInput?.viewType === FieldStatsInitializerViewType.ESQL && !isEsqlEnabled ? (
+          {initialInput?.view_type === FieldStatsInitializerViewType.ESQL && !isEsqlEnabled ? (
             <>
               <DataSourceTypeSelector value={viewType} onChange={setViewType} />
             </>

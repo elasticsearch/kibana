@@ -2540,6 +2540,86 @@ describe('EPM template', () => {
 
       expect(esClient.indices.rollover).not.toHaveBeenCalled();
     });
+    it('should not rollover on total_fields limit error and should throw', async () => {
+      const esClient = elasticsearchServiceMock.createElasticsearchClient();
+      esClient.indices.getDataStream.mockResponse({
+        data_streams: [{ name: 'test.prefix1-default' }],
+      } as any);
+      esClient.indices.simulateTemplate.mockImplementation(() => {
+        throw new errors.ResponseError({
+          statusCode: 400,
+          body: {
+            error: {
+              type: 'illegal_argument_exception',
+              reason: 'Limit of total fields [2500] has been exceeded',
+            },
+          },
+        } as any);
+      });
+      const logger = loggerMock.create();
+      await expect(
+        updateCurrentWriteIndices(esClient, logger, [
+          {
+            templateName: 'test',
+            indexTemplate: {
+              index_patterns: ['test.*-*'],
+              template: {
+                settings: { index: {} },
+                mappings: { properties: {} },
+              },
+            } as any,
+          },
+        ])
+      ).rejects.toThrow();
+
+      // Rollover must NOT be triggered for total_fields errors — it cannot fix them.
+      expect(esClient.transport.request).not.toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/test.prefix1-default/_rollover' })
+      );
+    });
+
+    it('should not rollover on total_fields limit error and should not throw when ignoreMappingUpdateErrors is set', async () => {
+      const esClient = elasticsearchServiceMock.createElasticsearchClient();
+      esClient.indices.getDataStream.mockResponse({
+        data_streams: [{ name: 'test.prefix1-default' }],
+      } as any);
+      esClient.indices.simulateTemplate.mockImplementation(() => {
+        throw new errors.ResponseError({
+          statusCode: 400,
+          body: {
+            error: {
+              type: 'illegal_argument_exception',
+              reason: 'Limit of total fields [2500] has been exceeded',
+            },
+          },
+        } as any);
+      });
+      const logger = loggerMock.create();
+      await expect(
+        updateCurrentWriteIndices(
+          esClient,
+          logger,
+          [
+            {
+              templateName: 'test',
+              indexTemplate: {
+                index_patterns: ['test.*-*'],
+                template: {
+                  settings: { index: {} },
+                  mappings: { properties: {} },
+                },
+              } as any,
+            },
+          ],
+          { ignoreMappingUpdateErrors: true }
+        )
+      ).resolves.not.toThrow();
+
+      expect(esClient.transport.request).not.toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/test.prefix1-default/_rollover' })
+      );
+    });
+
     it('should not rollover on unexpected error', async () => {
       const esClient = elasticsearchServiceMock.createElasticsearchClient();
       esClient.indices.getDataStream.mockResponse({

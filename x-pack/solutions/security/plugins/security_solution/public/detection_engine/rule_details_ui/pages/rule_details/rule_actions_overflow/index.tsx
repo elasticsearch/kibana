@@ -22,8 +22,12 @@ import type { TimeRange } from '../../../../rule_gaps/types';
 import { APP_UI_ID, SecurityPageName } from '../../../../../../common';
 import { DuplicateOptions } from '../../../../../../common/detection_engine/rule_management/constants';
 import { BulkActionTypeEnum } from '../../../../../../common/api/detection_engine/rule_management';
-import { getRulesUrl } from '../../../../../common/components/link_to/redirect_to_detection_engine';
+import {
+  getRulesUrl,
+  getRuleChangesHistoryUrl,
+} from '../../../../../common/components/link_to/redirect_to_detection_engine';
 import { useBoolState } from '../../../../../common/hooks/use_bool_state';
+import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
 import { SINGLE_RULE_ACTIONS } from '../../../../../common/lib/apm/user_actions';
 import { useStartTransaction } from '../../../../../common/lib/apm/use_start_transaction';
 import { useKibana } from '../../../../../common/lib/kibana';
@@ -99,10 +103,32 @@ const RuleActionsOverflowComponent = ({
     state: { doesBaseVersionExist },
   } = useRuleCustomizationsContext();
 
+  const isRuleChangesHistoryEnabled = useIsExperimentalFeatureEnabled('ruleChangesHistoryEnabled');
+
   const actions = useMemo(
     () =>
       rule != null
         ? [
+            ...(isRuleChangesHistoryEnabled
+              ? [
+                  <EuiContextMenuItem
+                    key={i18nActions.RULE_CHANGES_HISTORY}
+                    icon="clock"
+                    data-test-subj="rules-details-history"
+                    onClick={() => {
+                      closePopover();
+                      // We can't use SecurityPageName.rulesChangesHistory here for
+                      // deepLinkId as deep linking doesn't support path parameters.
+                      navigateToApp(APP_UI_ID, {
+                        deepLinkId: SecurityPageName.rules,
+                        path: getRuleChangesHistoryUrl(rule.id),
+                      });
+                    }}
+                  >
+                    {i18nActions.RULE_CHANGES_HISTORY}
+                  </EuiContextMenuItem>,
+                ]
+              : []),
             <EuiContextMenuItem
               key={i18nActions.DUPLICATE_RULE}
               icon="copy"
@@ -248,6 +274,7 @@ const RuleActionsOverflowComponent = ({
         : [],
     [
       rule,
+      isRuleChangesHistoryEnabled,
       canDuplicateRuleWithActions,
       canEditRules,
       canReadRules,

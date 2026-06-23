@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/272089
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Show the security rule name in the integration assets accordion

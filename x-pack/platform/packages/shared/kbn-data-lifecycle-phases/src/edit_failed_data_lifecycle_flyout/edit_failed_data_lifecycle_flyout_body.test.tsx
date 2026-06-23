@@ -62,50 +62,49 @@ describe('EditFailedDataLifecycleFlyoutBody', () => {
     expect(screen.getByTestId('failedRetentionInput')).toBeInTheDocument();
   });
 
-  it('keeps showing the inherited retention content while inheriting, even if content changes', () => {
+  it('renders the failure store value the consumer provides while inheriting', () => {
+    // The consumer is the source of truth while inheriting and feeds the resolved value.
     const { rerender } = renderWithTheme(
       <EditFailedDataLifecycleFlyoutBody
         inherit={{ value: true, onChange: () => {}, label: 'Inherit lifecycle' }}
-        failureStore={{ value: true, onChange: () => {} }}
-        retentionContent={<div data-test-subj="failedRetentionPinned">inherited</div>}
-      />
-    );
-
-    rerender(
-      <EditFailedDataLifecycleFlyoutBody
-        inherit={{ value: true, onChange: () => {}, label: 'Inherit lifecycle' }}
-        failureStore={{ value: true, onChange: () => {} }}
-        retentionContent={<div data-test-subj="failedRetentionPinned">local</div>}
-      />
-    );
-
-    expect(screen.getByTestId('failedRetentionPinned')).toHaveTextContent('inherited');
-  });
-
-  it('restores the pinned inherited failure store value when re-enabling inherit', () => {
-    const { rerender } = renderWithTheme(
-      <EditFailedDataLifecycleFlyoutBody
-        inherit={{ value: true, onChange: () => {}, label: 'Inherit lifecycle' }}
-        failureStore={{ value: true, onChange: () => {} }}
-      />
-    );
-
-    // Consumer toggles inherit off and changes local failure store value.
-    rerender(
-      <EditFailedDataLifecycleFlyoutBody
-        inherit={{ value: false, onChange: () => {}, label: 'Inherit lifecycle' }}
         failureStore={{ value: false, onChange: () => {} }}
       />
     );
 
-    // Re-enable inherit: UI should still reflect the pinned inherited value (true).
+    expect(
+      screen.getByTestId('editFailedDataLifecycle-enableFailureStoreCheckbox')
+    ).not.toBeChecked();
+
+    // Consumer pushes the resolved inherited value (enabled).
     rerender(
       <EditFailedDataLifecycleFlyoutBody
         inherit={{ value: true, onChange: () => {}, label: 'Inherit lifecycle' }}
-        failureStore={{ value: false, onChange: () => {} }}
+        failureStore={{ value: true, onChange: () => {} }}
       />
     );
 
     expect(screen.getByTestId('editFailedDataLifecycle-enableFailureStoreCheckbox')).toBeChecked();
+  });
+
+  it('renders the retention content the consumer provides', () => {
+    const { rerender } = renderWithTheme(
+      <EditFailedDataLifecycleFlyoutBody
+        inherit={{ value: true, onChange: () => {}, label: 'Inherit lifecycle' }}
+        failureStore={{ value: true, onChange: () => {} }}
+        retentionContent={<div data-test-subj="failedRetentionContent">inherited</div>}
+      />
+    );
+
+    expect(screen.getByTestId('failedRetentionContent')).toHaveTextContent('inherited');
+
+    rerender(
+      <EditFailedDataLifecycleFlyoutBody
+        inherit={{ value: true, onChange: () => {}, label: 'Inherit lifecycle' }}
+        failureStore={{ value: true, onChange: () => {} }}
+        retentionContent={<div data-test-subj="failedRetentionContent">updated</div>}
+      />
+    );
+
+    expect(screen.getByTestId('failedRetentionContent')).toHaveTextContent('updated');
   });
 });

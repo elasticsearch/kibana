@@ -28,6 +28,7 @@ export interface EntityAnalyticsRoutesDeps {
   getStartServices: StartServicesAccessor<StartPlugins>;
   telemetrySender: ITelemetryEventsSender;
   ml: SetupPlugins['ml'];
+  hasEncryptionKey: boolean;
 }
 
 export interface CalculateRiskScoreAggregations {

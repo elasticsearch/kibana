@@ -240,8 +240,12 @@ export class TimePickerPageObject extends FtrService {
     const tz = await this.getConfiguredTimezone();
     // Try the legacy format first; fall back to moment's auto-detection
     // so callers can pass dates in any format (e.g. custom dateFormat).
-    const parsed = moment.tz(fromTime, TimePickerPageObject.LEGACY_DATE_FORMAT, true, tz);
-    const expectedFromISO = (parsed.isValid() ? parsed : moment.tz(fromTime, tz)).toISOString();
+    const parsedFrom = moment.tz(fromTime, TimePickerPageObject.LEGACY_DATE_FORMAT, true, tz);
+    const parsedTo = moment.tz(toTime, TimePickerPageObject.LEGACY_DATE_FORMAT, true, tz);
+    const expectedFromISO = (
+      parsedFrom.isValid() ? parsedFrom : moment.tz(fromTime, tz)
+    ).toISOString();
+    const expectedToISO = (parsedTo.isValid() ? parsedTo : moment.tz(toTime, tz)).toISOString();
     await this.retry.waitFor(`date range to be set to ${rangeText}`, async () => {
       // Tooltips can sometimes hide the picker, so move mouse directly to it instead of direct click
       const picker = await this.testSubjects.find('dateRangePickerControlButton');
@@ -259,7 +263,8 @@ export class TimePickerPageObject extends FtrService {
       this.log.debug(
         `Validating date range - expected ISO: '${expectedFromISO}', actual: '${actualRange}'`
       );
-      return actualRange != null && actualRange.includes(expectedFromISO);
+      const expectedRange = `${expectedFromISO} to ${expectedToISO}`;
+      return actualRange === expectedRange;
     });
     // Ensure the popover is fully closed before returning, so it doesn't
     // overlay other elements and intercept clicks.
@@ -321,6 +326,15 @@ export class TimePickerPageObject extends FtrService {
   }
 
   public async isOff() {
+    // The new picker renders a hidden `kbnQueryBar-datePicker-disabled` span
+    // whenever the time filter is off (no-time-field data view, isDisabled
+    // prop, or auto-refresh-only mode); the legacy picker renders it visibly
+    // inside the SuperDatePicker's isDisabled.display node.
+    if (await this.testSubjects.exists('kbnQueryBar-datePicker-disabled', { allowHidden: true })) {
+      return true;
+    }
+    // Legacy auto-refresh-only mode doesn't render the span; the
+    // SuperDatePicker collapses to a readOnly EuiAutoRefresh control instead.
     return await this.find.existsByCssSelector('.euiAutoRefresh .euiFormControlLayout-readOnly');
   }
 

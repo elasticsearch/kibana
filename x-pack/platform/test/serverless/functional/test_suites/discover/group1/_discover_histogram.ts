@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+// Original test (remove during Scout migration): src/platform/test/functional/apps/discover/group1/_discover_histogram.ts
+
 import expect from '@kbn/expect';
 import type { TimeStrings } from '@kbn/test-suites-src/functional/page_objects/common_page';
 import type { FtrProviderContext } from '../../../ftr_provider_context';

@@ -36,6 +36,16 @@ uiSettings.overrides:
   workflows:ui:enabled: false
 ```
 
+Experimental Workflows features are gated behind a separate Advanced Setting:
+
+```yml
+uiSettings.overrides:
+  workflows:experimentalFeatures: true
+  workflows:ui:visualEditor:enabled: true
+  workflows:ui:executionGraph:enabled: true
+  workflows:ui:showExecutor:enabled: true
+```
+
 If running in Serverless or Cloud dev environments, you can disable it via API:
 
 ```bash

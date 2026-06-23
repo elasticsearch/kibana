@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/securitysolution-exception-list-components'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/security-detection-engine'
+  defaultOwner: '@elastic/security-detection-engineering'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/securitysolution-exception-list-components'
   description: Moon project for @kbn/securitysolution-exception-list-components
   channel: ''
-  owner: '@elastic/security-detection-engine'
+  owner: '@elastic/security-detection-engineering'
   sourceRoot: x-pack/solutions/security/packages/kbn-securitysolution-exception-list-components
 dependsOn:
   - '@kbn/securitysolution-io-ts-list-types'

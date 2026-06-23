@@ -5,17 +5,17 @@
  * 2.0.
  */
 
-import {
-  ATTACK_DISCOVERY_ADHOC_ALERTS_INDEX_PREFIX,
-  ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX,
-} from '@kbn/elastic-assistant-common';
 import { buildRouteValidationWithZod } from '@kbn/zod-helpers/v4';
 import { ALERTS_API_READ } from '@kbn/security-solution-features/constants';
 
 import { SearchAttacksRequestBody } from '../../../../../common/api/detection_engine/attacks';
 import { DETECTION_ENGINE_ATTACKS_SEARCH_URL } from '../../../../../common/constants';
 import type { SecuritySolutionPluginRouter } from '../../../../types';
-import { searchAlertsHandler } from '../common/search_alerts_handler';
+import { buildSiemResponse } from '../utils';
+import { searchAlerts } from '../common/operations/search_alerts';
+import { validateSearchAlertsParams } from '../common/validators/validate_search_alerts_params';
+import { getAttackAlertsIndex } from '../common/index_patterns/get_attack_alerts_index';
+import { withSiemErrorHandling } from '../with_siem_error_handling';
 
 export const searchAttacksRoute = (router: SecuritySolutionPluginRouter) => {
   router.versioned
@@ -38,15 +38,16 @@ export const searchAttacksRoute = (router: SecuritySolutionPluginRouter) => {
         },
       },
       async (context, request, response) => {
-        const getIndexPattern = async () => {
-          const spaceId = (await context.securitySolution).getSpaceId();
-          return [
-            `${ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX}-${spaceId}`, // scheduled attack index
-            `${ATTACK_DISCOVERY_ADHOC_ALERTS_INDEX_PREFIX}-${spaceId}`, // adhoc attack index
-          ];
-        };
+        const params = request.body;
 
-        return searchAlertsHandler({ context, request, response, getIndexPattern });
+        const validationError = validateSearchAlertsParams(params);
+        if (validationError) {
+          return buildSiemResponse(response).error({ statusCode: 400, body: validationError });
+        }
+
+        const index = await getAttackAlertsIndex({ context });
+
+        return withSiemErrorHandling(response, () => searchAlerts({ context, index, params }));
       }
     );
 };

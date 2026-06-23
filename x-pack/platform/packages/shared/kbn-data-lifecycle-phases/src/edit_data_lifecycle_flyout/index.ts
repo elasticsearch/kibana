@@ -13,3 +13,4 @@ export {
   type DataLifecycleApplyPayload,
 } from './types';
 export type { DataLifecycleMethod, IlmPolicyForFlyout, IlmPolicyPhaseForFlyout } from './types';
+export { getIlmPolicySummaryStats, type IlmPolicySummaryStats } from './ilm_policy_summary_stats';

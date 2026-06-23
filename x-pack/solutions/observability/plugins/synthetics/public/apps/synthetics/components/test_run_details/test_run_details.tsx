@@ -20,6 +20,7 @@ import { StepTabs } from './step_tabs';
 import { useJourneySteps } from '../monitor_details/hooks/use_journey_steps';
 import { StepDurationPanel } from '../monitor_details/monitor_summary/step_duration_panel';
 import { TestRunSteps } from './test_run_steps';
+import { useGetUrlParams } from '../../hooks';
 import { useTestRunDetailsBreadcrumbs } from './hooks/use_test_run_details_breadcrumbs';
 
 export const TestRunDetails = () => {
@@ -38,6 +39,7 @@ export const TestRunDetails = () => {
 
   const { monitorId } = useParams<{ monitorId: string }>();
   const selectedLocation = useSelectedLocation();
+  const { remoteName } = useGetUrlParams();
 
   const stateId = stepsData?.details?.summary?.state?.id;
 
@@ -106,6 +108,7 @@ export const TestRunDetails = () => {
         configId={monitorId}
         name={stepsData?.details?.journey.monitor.name ?? ''}
         locationId={selectedLocation?.id}
+        remoteName={remoteName}
       />
     </>
   );

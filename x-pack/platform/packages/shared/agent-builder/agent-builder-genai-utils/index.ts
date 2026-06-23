@@ -15,6 +15,7 @@ export {
   partitionByCcs,
   getFieldsFromFieldCaps,
   getIndexFields,
+  validateEsqlQuery,
   type IndexFieldsResult,
   type IndexFieldType,
   type MappingField,

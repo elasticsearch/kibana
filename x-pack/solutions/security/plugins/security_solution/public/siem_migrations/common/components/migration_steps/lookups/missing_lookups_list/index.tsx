@@ -210,14 +210,16 @@ const OmitLookupButton = React.memo<OmitLookupButtonProps>(
 
     const button = useMemo(
       () => (
-        <EuiButtonIcon
-          onClick={onClick}
-          iconType="cross"
-          color="text"
-          aria-label={CONFIGS[migrationSource].label}
-          data-test-subj={testId}
-          isDisabled={isDisabled}
-        />
+        <EuiToolTip content={CONFIGS[migrationSource].label} disableScreenReaderOutput>
+          <EuiButtonIcon
+            onClick={onClick}
+            iconType="cross"
+            color="text"
+            aria-label={CONFIGS[migrationSource].label}
+            data-test-subj={testId}
+            isDisabled={isDisabled}
+          />
+        </EuiToolTip>
       ),
       [onClick, migrationSource, testId, isDisabled]
     );

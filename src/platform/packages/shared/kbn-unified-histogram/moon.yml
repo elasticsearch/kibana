@@ -52,6 +52,7 @@ dependsOn:
   - '@kbn/control-group-renderer'
   - '@kbn/controls-schemas'
   - '@kbn/react-hooks'
+  - '@kbn/ebt-click'
 tags:
   - shared-browser
   - package

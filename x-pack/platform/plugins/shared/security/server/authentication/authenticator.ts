@@ -246,12 +246,22 @@ export class Authenticator {
   private readonly logger: Logger;
 
   /**
+   * Dedicated logger for session invalidation events, allowing them to be managed
+   * independently of general authenticator logs.
+   */
+  private readonly sessionInvalidationLogger: Logger;
+
+  /**
    * Instantiates Authenticator and bootstrap configured providers.
    * @param options Authenticator options.
    */
   constructor(private readonly options: Readonly<AuthenticatorOptions>) {
     this.session = this.options.session;
     this.logger = this.options.loggers.get('authenticator');
+    this.sessionInvalidationLogger = this.options.loggers.get(
+      'authenticator',
+      'session_invalidation'
+    );
 
     const providerCommonOptions = {
       client: this.options.clusterClient,
@@ -592,6 +602,7 @@ export class Authenticator {
       sessionValue?.provider.name ??
       request.url.searchParams.get(LOGOUT_PROVIDER_QUERY_STRING_PARAMETER);
     if (suggestedProviderName) {
+      this.sessionInvalidationLogger.debug('Invalidating session: explicit logout request.');
       await this.invalidateSessionValue({ request, sessionValue });
 
       // Provider name may be passed in a query param and sourced from the browser's local storage;
@@ -746,6 +757,9 @@ export class Authenticator {
       this.logger.warn(
         `Attempted to retrieve session for the "${existingSession.value.provider.type}/${existingSession.value.provider.name}" provider, but it is not configured.`
       );
+      this.sessionInvalidationLogger.warn(
+        `Invalidating session: provider "${existingSession.value.provider.type}/${existingSession.value.provider.name}" is no longer configured.`
+      );
       await this.invalidateSessionValue({ request, sessionValue: existingSession.value });
       return { error: new SessionUnexpectedError(), value: null };
     }
@@ -807,6 +821,9 @@ export class Authenticator {
     // attempt didn't fail.
     if (authenticationResult.shouldClearState()) {
       this.logger.debug('Authentication provider requested to invalidate existing session.');
+      this.sessionInvalidationLogger.debug(
+        'Invalidating session: authentication provider explicitly requested state clear.'
+      );
       await this.invalidateSessionValue({ request, sessionValue: existingSessionValue });
       return null;
     }
@@ -821,6 +838,9 @@ export class Authenticator {
     if (authenticationResult.failed()) {
       if (ownsSession && getErrorStatusCode(authenticationResult.error) === 401) {
         this.logger.warn('Authentication attempt failed, existing session will be invalidated.');
+        this.sessionInvalidationLogger.warn(
+          'Invalidating session: 401 authentication failure for session-owning provider.'
+        );
         await this.invalidateSessionValue({ request, sessionValue: existingSessionValue });
       }
       return null;
@@ -858,6 +878,9 @@ export class Authenticator {
       this.logger.warn(
         'Authentication provider has changed, existing session will be invalidated.'
       );
+      this.sessionInvalidationLogger.warn(
+        'Invalidating session: authentication provider changed since session was created.'
+      );
       await this.invalidateSessionValue({ request, sessionValue: existingSessionValue });
       existingSessionValue = null;
     } else if (sessionHasBeenAuthenticated) {
@@ -866,6 +889,9 @@ export class Authenticator {
       ) {
         this.logger.debug(
           'Session is authenticated, existing unauthenticated session will be invalidated.'
+        );
+        this.sessionInvalidationLogger.debug(
+          'Invalidating intermediate session: login succeeded and provider requires a fresh session.'
         );
         await this.invalidateSessionValue({
           request,
@@ -881,6 +907,9 @@ export class Authenticator {
       existingSessionValue = null;
     } else if (usernameHasChanged) {
       this.logger.warn('Username has changed, existing session will be invalidated.');
+      this.sessionInvalidationLogger.warn(
+        'Invalidating session: authenticated username changed from previous session.'
+      );
       await this.invalidateSessionValue({ request, sessionValue: existingSessionValue });
       existingSessionValue = null;
     }

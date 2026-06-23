@@ -416,7 +416,7 @@ export const regionmapESQLAttributesWithEms = {
             timeField: '@timestamp',
           },
           '5644872f-3b96-4074-a92d-dd613ceff2a2': {
-            index: 'e3465e67bdeced2befff9f9dca7ecf9dca7ecf9c48504cad68a10efd881f4c7dd5ade28a',
+            index: 'e3465e67bdeced2befff9f9dca7ecf9c48504cad68a10efd881f4c7dd5ade28a',
             query: {
               esql: 'FROM kibana_sample_data_logs | LIMIT 10',
             },

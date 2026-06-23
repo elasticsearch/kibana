@@ -8,7 +8,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import { i18n } from '@kbn/i18n';
-import { EuiButtonIcon, EuiPanel } from '@elastic/eui';
+import { EuiButtonIcon, EuiPanel, EuiToolTip } from '@elastic/eui';
 
 export interface Props {
   isTimesliderOpen: boolean;
@@ -35,20 +35,24 @@ export function TimesliderToggleButton(props: Props) {
 
   return (
     <EuiPanel paddingSize="none" className="mapToolbarOverlay__button">
-      <EuiButtonIcon
-        className={classNames({
+      <EuiToolTip
+        content={label}
+        disableScreenReaderOutput
+        anchorClassName={classNames({
           'mapToolbarOverlay__buttonIcon-empty': !props.isTimesliderOpen,
         })}
-        size="s"
-        onClick={onClick}
-        data-test-subj="timesliderToggleButton"
-        iconType="clockControl"
-        aria-label={label}
-        title={label}
-        color="text"
-        isSelected={props.isTimesliderOpen}
-        display={props.isTimesliderOpen ? 'fill' : 'empty'}
-      />
+      >
+        <EuiButtonIcon
+          size="s"
+          onClick={onClick}
+          data-test-subj="timesliderToggleButton"
+          iconType="clockControl"
+          aria-label={label}
+          color="text"
+          isSelected={props.isTimesliderOpen}
+          display={props.isTimesliderOpen ? 'fill' : 'empty'}
+        />
+      </EuiToolTip>
     </EuiPanel>
   );
 }

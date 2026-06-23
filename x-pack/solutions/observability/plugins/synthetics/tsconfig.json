@@ -73,6 +73,7 @@
     "@kbn/alerts-as-data-utils",
     "@kbn/exploratory-view-plugin",
     "@kbn/observability-shared-plugin",
+    "@kbn/observability-utils-common",
     "@kbn/core-http-server",
     "@kbn/std",
     "@kbn/core-saved-objects-server-mocks",

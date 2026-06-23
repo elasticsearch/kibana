@@ -1,0 +1,13 @@
+prs:
+- https://github.com/elastic/kibana/pull/271562
+issues:
+- https://github.com/elastic/kibana/issues/239902
+- https://github.com/elastic/kibana/issues/179436
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Fix Dev Tools Console request logging and host path prefix handling
+description: Dev Tools Console requests are now logged by the `elasticsearch.query` debug logger (method, path, and response status; the request body itself is not included, since Console streams proxied request bodies). Console also now honors a URL path prefix in `elasticsearch.hosts` for proxied requests, matching the rest of Kibana.

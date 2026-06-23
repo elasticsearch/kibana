@@ -63,6 +63,7 @@ describe('options list control transforms', () => {
             "val",
           ],
           "use_global_filters": true,
+          "values_source": "field",
         }
       `);
     });
@@ -86,6 +87,7 @@ describe('options list control transforms', () => {
           "ignore_validations": false,
           "title": "Test",
           "use_global_filters": true,
+          "values_source": "field",
         }
       `);
     });

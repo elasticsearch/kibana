@@ -11,6 +11,7 @@ import React from 'react';
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import type { ContentListItem } from '@kbn/content-list-provider';
 import { i18n } from '@kbn/i18n';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import type { ColumnBuilderContext } from '../types';
 import { column } from '../part';
 import { getColumnLayoutProps, pickAttribute, type ColumnLayoutProps } from '../layout';
@@ -81,7 +82,7 @@ export const buildCreatedByColumn = (
     // never free-form text — center it horizontally in the column so it
     // doesn't visually float to the left of the header.
     align: 'center',
-    'data-test-subj': 'content-list-table-column-createdBy',
+    'data-test-subj': CONTENT_LIST_TEST_SUBJECTS.columnCreatedBy,
     render: (value: string | undefined, record: ContentListItem) => {
       return <CreatedByCell createdBy={value} managed={!!record.managed} />;
     },

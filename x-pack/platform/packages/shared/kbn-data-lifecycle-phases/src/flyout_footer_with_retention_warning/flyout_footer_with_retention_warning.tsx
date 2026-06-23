@@ -96,13 +96,22 @@ export const FlyoutFooterWithRetentionWarning = ({
         css={styles.padding}
       >
         <EuiFlexItem grow={false}>
-          <EuiButtonEmpty onClick={onCancel} flush="left">
+          <EuiButtonEmpty
+            onClick={onCancel}
+            flush="left"
+            data-test-subj="dataLifecycleFlyoutCancelButton"
+          >
             {cancelLabel}
           </EuiButtonEmpty>
         </EuiFlexItem>
 
         <EuiFlexItem grow={false}>
-          <EuiButton fill onClick={onApply} disabled={isApplyDisabled}>
+          <EuiButton
+            fill
+            onClick={onApply}
+            disabled={isApplyDisabled}
+            data-test-subj="dataLifecycleFlyoutApplyButton"
+          >
             {applyLabel}
           </EuiButton>
         </EuiFlexItem>

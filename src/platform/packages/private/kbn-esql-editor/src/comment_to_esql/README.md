@@ -24,8 +24,8 @@ After a short pause (400 ms), an inline italic dimmed hint appears next to the c
 
 | When the cursor is on… | Hint shown |
 | --- | --- |
-| an empty line in a non-empty editor | `Type // and press ⌘+J to ask AI to add a step` |
-| a `//` line | `Press ⌘+J to generate` |
+| an empty line in a non-empty editor | `Type // and describe what you want, then press ⌘+J to generate it using AI` |
+| a `//` line | `Describe what you want, then press ⌘+J to generate it using AI` |
 
 Hints disappear on cursor move or edit, and stay hidden while a review is open or a generation is running. The empty-editor case is excluded — the editor's own placeholder covers it.
 

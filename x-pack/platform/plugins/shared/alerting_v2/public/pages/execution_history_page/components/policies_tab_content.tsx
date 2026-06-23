@@ -5,14 +5,14 @@
  * 2.0.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   EuiBadge,
+  EuiBadgeGroup,
   EuiBasicTable,
-  EuiFlexGroup,
-  EuiFlexItem,
   EuiLink,
   EuiSpacer,
+  EuiText,
   type CriteriaWithPagination,
   type EuiBasicTableColumn,
 } from '@elastic/eui';
@@ -20,14 +20,18 @@ import { i18n } from '@kbn/i18n';
 import moment from 'moment';
 import { CoreStart, useService } from '@kbn/core-di-browser';
 import { WORKFLOWS_APP_ID } from '@kbn/deeplinks-workflows';
+import type { PolicyExecutionOutcomeFilter } from '@kbn/alerting-v2-schemas';
 import { useCountNewExecutionHistoryEvents } from '../../../hooks/use_count_new_execution_history_events';
 import { useFetchExecutionHistory } from '../../../hooks/use_fetch_execution_history';
 import type { PolicyExecutionHistoryItem } from '../../../services/execution_history_api';
-import { PoliciesEmptyState } from './empty_state';
+import { ExecutionHistorySearchBar } from './execution_history_search_bar';
+import { FilteredEmptyState, PoliciesEmptyState } from './empty_state';
 import { ExecutionHistoryErrorState } from './error_state';
 import { NewEventsBanner } from './new_events_banner';
+import { TruncatedCallout } from './truncated_callout';
 
 const DEFAULT_PER_PAGE = 100;
+const DEFAULT_OUTCOME: PolicyExecutionOutcomeFilter = 'all';
 
 const buildColumns = (
   onPolicyClick: (policyId: string) => void,
@@ -91,21 +95,21 @@ const buildColumns = (
     render: (workflows: PolicyExecutionHistoryItem['workflows']) => {
       if (workflows.length === 0) return null;
       return (
-        <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
+        <EuiBadgeGroup gutterSize="xs">
           {workflows.map((w) => (
-            <EuiFlexItem key={w.id} grow={false}>
-              <EuiBadge
-                color="hollow"
-                iconType="workflow"
-                href={getWorkflowUrl(w.id)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {w.name ?? w.id}
-              </EuiBadge>
-            </EuiFlexItem>
+            <EuiBadge
+              key={w.id}
+              color="hollow"
+              iconType="workflow"
+              href={getWorkflowUrl(w.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ maxWidth: '100%' }}
+            >
+              {w.name ?? w.id}
+            </EuiBadge>
           ))}
-        </EuiFlexGroup>
+        </EuiBadgeGroup>
       );
     },
   },
@@ -119,16 +123,25 @@ interface Props {
 export const PoliciesTabContent = ({ onPolicyClick, onRuleClick }: Props) => {
   const [page, setPage] = useState(0);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
+  const [search, setSearch] = useState('');
+  const [outcome, setOutcome] = useState<PolicyExecutionOutcomeFilter>(DEFAULT_OUTCOME);
   const [lastSeenAt, setLastSeenAt] = useState(() => new Date().toISOString());
   const [isLoadingNewEvents, setIsLoadingNewEvents] = useState(false);
+
+  const trimmedSearch = search.trim();
+  const searchParam = trimmedSearch.length > 0 ? trimmedSearch : undefined;
 
   const { data, isFetching, isError, refetch } = useFetchExecutionHistory({
     page: page + 1,
     perPage,
+    search: searchParam,
+    outcome,
   });
 
   const { data: newCountData } = useCountNewExecutionHistoryEvents({
     since: lastSeenAt,
+    search: searchParam,
+    outcome,
     enabled: !isError,
   });
   const newEventsCount = newCountData?.count ?? 0;
@@ -151,6 +164,16 @@ export const PoliciesTabContent = ({ onPolicyClick, onRuleClick }: Props) => {
     refetch();
   };
 
+  const onSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setPage(0);
+  }, []);
+
+  const onOutcomeChange = useCallback((value: PolicyExecutionOutcomeFilter) => {
+    setOutcome(value);
+    setPage(0);
+  }, []);
+
   const onTableChange = ({
     page: tablePage,
   }: CriteriaWithPagination<PolicyExecutionHistoryItem>) => {
@@ -163,6 +186,7 @@ export const PoliciesTabContent = ({ onPolicyClick, onRuleClick }: Props) => {
   const items = data?.items ?? [];
   const totalEvents = data?.totalEvents ?? 0;
   const showBanner = newEventsCount > 0 && !isError;
+  const isFiltered = searchParam !== undefined || outcome !== DEFAULT_OUTCOME;
 
   if (isError) {
     return <ExecutionHistoryErrorState onRetry={() => refetch()} />;
@@ -176,6 +200,20 @@ export const PoliciesTabContent = ({ onPolicyClick, onRuleClick }: Props) => {
 
   return (
     <>
+      <ExecutionHistorySearchBar
+        onSearchChange={onSearchChange}
+        outcome={outcome}
+        onOutcomeChange={onOutcomeChange}
+      />
+      <EuiSpacer size="m" />
+      <EuiText size="s">
+        <p>
+          {i18n.translate('xpack.alertingV2.executionHistory.policiesTab.description', {
+            defaultMessage: 'Showing dispatcher decisions from the last 24 hours.',
+          })}
+        </p>
+      </EuiText>
+      <EuiSpacer size="m" />
       {showBanner && (
         <>
           <NewEventsBanner
@@ -186,11 +224,12 @@ export const PoliciesTabContent = ({ onPolicyClick, onRuleClick }: Props) => {
           <EuiSpacer size="m" />
         </>
       )}
+      <TruncatedCallout data={data} searchParam={searchParam} />
       <EuiBasicTable<PolicyExecutionHistoryItem>
         items={items}
         columns={columns}
         loading={isFetching}
-        noItemsMessage={<PoliciesEmptyState />}
+        noItemsMessage={isFiltered ? <FilteredEmptyState /> : <PoliciesEmptyState />}
         pagination={{
           pageIndex: page,
           pageSize: perPage,

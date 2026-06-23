@@ -101,6 +101,10 @@ export const TableView = (props: Props) => {
             closePopover={closePopover}
             anchorPosition="rightCenter"
             zIndex={0}
+            aria-label={i18n.translate('xpack.infra.tableView.nodePopover.ariaLabel', {
+              defaultMessage: 'Host details {nodeName}',
+              values: { nodeName: value },
+            })}
           >
             <NodeContextMenu
               node={item.node}

@@ -44,6 +44,10 @@ export function registerSearchRoute(
   searchRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () =>
+          (await import('../oas_examples')).searchDashboardOASOperationObject,
+      },
       validate: {
         request: {
           query: searchRequestParamsSchema,

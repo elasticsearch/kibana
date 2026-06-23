@@ -22,6 +22,8 @@ import {
   isStateTransitionAllowed,
   isSignalUsingStandaloneFormat,
   isSignalQueryBreachOnly,
+  isRecoveryQueryConsistentWithStrategy,
+  isRecoveryQueryProvidedForStrategy,
 } from '@kbn/alerting-v2-schemas';
 import { buildRulePayload } from '../../../../common/agent_builder/rule_mappers';
 
@@ -171,10 +173,8 @@ export const executeRuleOperations = async (
         break;
       }
 
-      case 'set_query':
+      case 'set_query': {
         if (esClient) {
-          // Validate the root query (the one with the FROM clause) so column
-          // metadata is available for downstream set_grouping validation.
           lastQueryColumns = await validateEsqlQuery(esClient, getRootEsqlQuery(op.query));
         }
         next = {
@@ -185,7 +185,20 @@ export const executeRuleOperations = async (
             : {}),
           ...(op.no_data_strategy !== undefined ? { no_data_strategy: op.no_data_strategy } : {}),
         };
+
+        if (!isRecoveryQueryConsistentWithStrategy(next)) {
+          throw new RuleOperationValidationError(
+            'query.recovery is only allowed when recovery_strategy is "query".'
+          );
+        }
+        if (!isRecoveryQueryProvidedForStrategy(next)) {
+          throw new RuleOperationValidationError(
+            'recovery_strategy "query" requires a recovery block in the query ' +
+              '(recovery: { segment } for composed, recovery: { query } for standalone).'
+          );
+        }
         break;
+      }
 
       case 'set_grouping': {
         if (lastQueryColumns && lastQueryColumns.length > 0) {

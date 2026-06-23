@@ -2,7 +2,7 @@
   "type": "shared-common",
   "id": "@kbn/openapi-generator",
   "owner": [
-    "@elastic/security-detection-rule-management"
+    "@elastic/security-detection-engineering"
   ],
   "group": "platform",
   "visibility": "shared",

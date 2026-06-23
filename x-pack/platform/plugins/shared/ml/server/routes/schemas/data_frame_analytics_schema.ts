@@ -11,34 +11,41 @@ import type { CreateDataViewApiResponseSchema } from '@kbn/ml-data-view-utils/ty
 import { runtimeMappingsSchema } from './runtime_mappings_schema';
 
 export const dataFrameAnalyticsJobConfigSchema = schema.object({
-  description: schema.maybe(schema.string()),
+  description: schema.maybe(schema.string({ maxLength: 10000 })),
   _meta: schema.maybe(schema.object({}, { unknowns: 'allow' })),
   dest: schema.object({
-    index: schema.string(),
-    results_field: schema.maybe(schema.string()),
+    index: schema.string({ maxLength: 10000 }),
+    results_field: schema.maybe(schema.string({ maxLength: 10000 })),
   }),
   source: schema.object({
-    index: schema.oneOf([schema.string(), schema.arrayOf(schema.string(), { maxSize: 10000 })]),
+    index: schema.oneOf([
+      schema.string({ maxLength: 10000 }),
+      schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
+    ]),
     query: schema.maybe(schema.any()),
     runtime_mappings: runtimeMappingsSchema,
     _source: schema.maybe(
       schema.object({
         /** Fields to include in results */
-        includes: schema.maybe(schema.arrayOf(schema.maybe(schema.string()), { maxSize: 10000 })),
+        includes: schema.maybe(
+          schema.arrayOf(schema.maybe(schema.string({ maxLength: 10000 })), { maxSize: 10000 })
+        ),
         /** Fields to exclude from results */
-        excludes: schema.maybe(schema.arrayOf(schema.maybe(schema.string()), { maxSize: 10000 })),
+        excludes: schema.maybe(
+          schema.arrayOf(schema.maybe(schema.string({ maxLength: 10000 })), { maxSize: 10000 })
+        ),
       })
     ),
   }),
   allow_lazy_start: schema.maybe(schema.boolean()),
   analysis: schema.any(),
   analyzed_fields: schema.any(),
-  model_memory_limit: schema.string(),
+  model_memory_limit: schema.string({ maxLength: 10000 }),
   max_num_threads: schema.maybe(schema.number()),
 });
 
 export const dataFrameAnalyticsEvaluateSchema = schema.object({
-  index: schema.string(),
+  index: schema.string({ maxLength: 10000 }),
   query: schema.maybe(schema.any()),
   evaluation: schema.maybe(
     schema.object({
@@ -50,23 +57,26 @@ export const dataFrameAnalyticsEvaluateSchema = schema.object({
 });
 
 export const dataFrameAnalyticsExplainSchema = schema.object({
-  description: schema.maybe(schema.string()),
+  description: schema.maybe(schema.string({ maxLength: 10000 })),
   dest: schema.maybe(schema.any()),
   /** Source */
   source: schema.object({
-    index: schema.oneOf([schema.string(), schema.arrayOf(schema.string(), { maxSize: 10000 })]),
+    index: schema.oneOf([
+      schema.string({ maxLength: 10000 }),
+      schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
+    ]),
     query: schema.maybe(schema.any()),
     runtime_mappings: runtimeMappingsSchema,
   }),
   analysis: schema.any(),
   analyzed_fields: schema.maybe(schema.any()),
-  model_memory_limit: schema.maybe(schema.string()),
+  model_memory_limit: schema.maybe(schema.string({ maxLength: 10000 })),
   max_num_threads: schema.maybe(schema.number()),
   _meta: schema.maybe(schema.object({}, { unknowns: 'allow' })),
 });
 
 export const dataFrameAnalyticsIdSchema = schema.object({
-  analyticsId: schema.string({ meta: { description: 'Analytics ID' } }),
+  analyticsId: schema.string({ maxLength: 10000, meta: { description: 'Analytics ID' } }),
 });
 
 export const dataFrameAnalyticsQuerySchema = schema.object({
@@ -81,8 +91,8 @@ export const deleteDataFrameAnalyticsJobSchema = schema.object({
 });
 
 export const dataFrameAnalyticsJobUpdateSchema = schema.object({
-  description: schema.maybe(schema.string()),
-  model_memory_limit: schema.maybe(schema.string()),
+  description: schema.maybe(schema.string({ maxLength: 10000 })),
+  model_memory_limit: schema.maybe(schema.string({ maxLength: 10000 })),
   allow_lazy_start: schema.maybe(schema.boolean()),
   max_num_threads: schema.maybe(schema.number()),
   _meta: schema.maybe(schema.object({}, { unknowns: 'allow' })),
@@ -93,20 +103,23 @@ export const stopsDataFrameAnalyticsJobQuerySchema = schema.object({
 });
 
 export const dataFrameAnalyticsJobsExistSchema = schema.object({
-  analyticsIds: schema.arrayOf(schema.string(), { maxSize: 10000 }),
+  analyticsIds: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
   allSpaces: schema.maybe(schema.boolean()),
 });
 
 export const dataFrameAnalyticsMapQuerySchema = schema.maybe(
-  schema.object({ treatAsRoot: schema.maybe(schema.any()), type: schema.maybe(schema.string()) })
+  schema.object({
+    treatAsRoot: schema.maybe(schema.any()),
+    type: schema.maybe(schema.string({ maxLength: 10000 })),
+  })
 );
 
 export const dataFrameAnalyticsNewJobCapsParamsSchema = schema.object({
-  indexPattern: schema.string(),
+  indexPattern: schema.string({ maxLength: 10000 }),
 });
 
 export const dataFrameAnalyticsNewJobCapsQuerySchema = schema.maybe(
-  schema.object({ rollup: schema.maybe(schema.string()) })
+  schema.object({ rollup: schema.maybe(schema.string({ maxLength: 10000 })) })
 );
 
 interface DataFrameAnalyticsJobsCreated {

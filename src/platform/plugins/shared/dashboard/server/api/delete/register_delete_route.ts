@@ -44,6 +44,10 @@ export function registerDeleteRoute(
   deleteRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () =>
+          (await import('../oas_examples')).deleteDashboardOASOperationObject,
+      },
       validate: {
         request: {
           params: schema.object({
@@ -89,7 +93,6 @@ export function registerDeleteRoute(
               },
             });
           }
-
           if (e.isBoom && e.output.statusCode === 403) {
             logRequest(logger, req, 'debug', e.message);
             return res.forbidden({ body: { message: e.message } });

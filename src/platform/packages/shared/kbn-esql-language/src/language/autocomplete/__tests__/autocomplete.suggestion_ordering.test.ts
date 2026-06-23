@@ -26,7 +26,7 @@ describe('Suggestion Ordering', () => {
 
       const metadataIndex = suggestions.findIndex((s) => s.text === 'METADATA ');
 
-      expect(metadataIndex).toBe(2);
+      expect(metadataIndex).toBe(3);
     });
   });
 
@@ -68,10 +68,11 @@ describe('Suggestion Ordering', () => {
       const orderedTexts = suggestions.map((s) => s.text);
 
       expect(orderedTexts[0]).toBe('WITH { $0 }');
-      expect(orderedTexts[1]).toBe('| ');
-      expect(orderedTexts[2]).toBe('linear ');
-      expect(orderedTexts[3]).toBe('rrf ');
-      expect(orderedTexts.indexOf('SCORE BY ')).toBeGreaterThan(3);
+      expect(orderedTexts[1]).toBe('\n');
+      expect(orderedTexts[2]).toBe('| ');
+      expect(orderedTexts[3]).toBe('linear ');
+      expect(orderedTexts[4]).toBe('rrf ');
+      expect(orderedTexts.indexOf('SCORE BY ')).toBeGreaterThan(4);
     });
   });
 });

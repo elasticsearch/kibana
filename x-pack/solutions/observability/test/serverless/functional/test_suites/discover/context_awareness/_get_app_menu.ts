@@ -74,12 +74,11 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         const alertsButton = await testSubjects.find('discoverAlertsButton');
         await alertsButton.click();
 
-        const createRuleButton = await testSubjects.find('discoverAppMenuCustomThresholdRule');
-        await createRuleButton.click();
-
-        const ruleTitleElement = await testSubjects.find('ruleDefinitionHeaderRuleTypeName');
-
         await retry.try(async () => {
+          const createRuleButton = await testSubjects.find('discoverAppMenuCustomThresholdRule');
+          await createRuleButton.click();
+
+          const ruleTitleElement = await testSubjects.find('ruleDefinitionHeaderRuleTypeName');
           expect(await ruleTitleElement.getVisibleText()).to.equal('Custom threshold');
         });
       });
@@ -90,12 +89,11 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         const alertsButton = await testSubjects.find('discoverAlertsButton');
         await alertsButton.click();
 
-        const createSLOButton = await testSubjects.find('discoverAppMenuCreateSlo');
-        await createSLOButton.click();
-
-        const sloTitleElement = await testSubjects.find('addSLOFlyoutTitle');
-
         await retry.try(async () => {
+          const createSLOButton = await testSubjects.find('discoverAppMenuCreateSlo');
+          await createSLOButton.click();
+
+          const sloTitleElement = await testSubjects.find('addSLOFlyoutTitle');
           expect(await sloTitleElement.getVisibleText()).to.equal('Create SLO');
         });
       });

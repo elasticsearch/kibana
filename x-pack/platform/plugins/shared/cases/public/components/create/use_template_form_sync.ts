@@ -7,7 +7,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import { useFormContext, useFormData } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
 import type { ParsedTemplate } from '../../../common/types/domain/template/v1';
 import { CASE_EXTENDED_FIELDS } from '../../../common/constants';
@@ -37,11 +37,19 @@ interface UseTemplateFormSyncReturn {
  * - Extended (template-defined) fields are written to the inner react-hook-form
  *   instance owned by `CreateCaseTemplateFields` and mirrored back to the
  *   parent's `extendedFields` field by that component.
+ * - `globalFieldKeys` contains the snake_case keys of `isGlobal` field
+ *   definitions; their values are preserved across template changes and resets.
  */
-export const useTemplateFormSync = (innerForm: UseFormReturn): UseTemplateFormSyncReturn => {
+export const useTemplateFormSync = (
+  innerForm: UseFormReturn,
+  globalFieldKeys: ReadonlySet<string>
+): UseTemplateFormSyncReturn => {
   const { setFieldValue } = useFormContext();
   const [{ templateId }] = useFormData<{ templateId?: string }>({ watch: ['templateId'] });
-  const { data: template, isLoading } = useGetTemplate(templateId || undefined);
+  const { data: template, isLoading: isTemplateLoading } = useGetTemplate(templateId || undefined);
+  // A disabled query (no templateId) can sit in "loading" state indefinitely in react-query v4;
+  // treat it as not-loading so the create form renders global fields without a template selected.
+  const isLoading = Boolean(templateId) && isTemplateLoading;
   const { data: fieldDefsData, isLoading: isLoadingFieldDefs } = useGetFieldDefinitions({
     owner: template?.owner,
   });
@@ -59,8 +67,15 @@ export const useTemplateFormSync = (innerForm: UseFormReturn): UseTemplateFormSy
         setFieldValue('severity', 'low');
         setFieldValue('category', null);
 
-        // Clear all extended-field values from the inner RHF form.
-        innerForm.reset({ [CASE_EXTENDED_FIELDS]: {} });
+        // Clear template-specific extended-field values but preserve global field values.
+        const current =
+          (innerForm.getValues() as Record<string, Record<string, unknown>>)?.[
+            CASE_EXTENDED_FIELDS
+          ] ?? {};
+        const preserved = Object.fromEntries(
+          Object.entries(current).filter(([k]) => globalFieldKeys.has(k))
+        );
+        innerForm.reset({ [CASE_EXTENDED_FIELDS]: preserved });
       }
       return;
     }
@@ -134,7 +149,14 @@ export const useTemplateFormSync = (innerForm: UseFormReturn): UseTemplateFormSy
         field.metadata?.default
       );
     }
-    innerForm.reset({ [CASE_EXTENDED_FIELDS]: nextExtended });
+    // Preserve current values for global fields when template changes.
+    const current =
+      (innerForm.getValues() as Record<string, Record<string, unknown>>)?.[CASE_EXTENDED_FIELDS] ??
+      {};
+    const preserved = Object.fromEntries(
+      Object.entries(current).filter(([k]) => globalFieldKeys.has(k))
+    );
+    innerForm.reset({ [CASE_EXTENDED_FIELDS]: { ...nextExtended, ...preserved } });
     appliedRef.current = key;
   }, [
     templateId,
@@ -145,6 +167,7 @@ export const useTemplateFormSync = (innerForm: UseFormReturn): UseTemplateFormSy
     innerForm,
     fieldDefsData,
     isLoadingFieldDefs,
+    globalFieldKeys,
   ]);
 
   return { template, isLoading };

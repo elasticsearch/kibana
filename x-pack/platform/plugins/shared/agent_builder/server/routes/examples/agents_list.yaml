@@ -12,6 +12,10 @@ responses:
                 type: chat
                 name: Elastic AI Agent
                 description: Elastic AI Agent
+                access_control: null
+                permissions:
+                  update_agent: false
+                  update_access_control: false
                 configuration:
                   tools:
                   - tool_ids:
@@ -29,6 +33,15 @@ responses:
                 - department-search
                 avatar_color: "#BFDBFF"
                 avatar_symbol: SI
+                access_control:
+                  access_mode: private
+                  entries:
+                  - type: user
+                    name: alice
+                    role: manager
+                permissions:
+                  update_agent: true
+                  update_access_control: true
                 configuration:
                   instructions: You are a custom agent that wants to help searching data using all
                     indices starting with prefix "content-".

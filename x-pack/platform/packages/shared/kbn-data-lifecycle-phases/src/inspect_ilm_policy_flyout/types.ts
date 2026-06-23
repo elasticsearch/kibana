@@ -44,4 +44,11 @@ export interface InspectIlmPolicyFlyoutProps {
   primaryAction: InspectIlmPolicyFlyoutPrimaryAction;
   /** Flyout display mode. Defaults to push. */
   type?: EuiFlyoutProps['type'];
+  /** Optional container to constrain push behavior (EuiFlyout container). */
+  container?: EuiFlyoutProps['container'];
+  /**
+   * Whether the flyout should take over focus (modal-like).
+   * Defaults to true.
+   */
+  ownFocus?: EuiFlyoutProps['ownFocus'];
 }

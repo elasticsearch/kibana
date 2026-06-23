@@ -48,8 +48,7 @@ spaceTest.describe(
       }
     );
 
-    // TODO: Unskip when Workflows sidenav visibility bug is fixed
-    spaceTest.skip(
+    spaceTest(
       'should only see Data Management in primary sidenav',
       async ({ page, pageObjects }) => {
         const { collapsibleNav } = pageObjects;

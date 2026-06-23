@@ -24,12 +24,14 @@ import {
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { capitalize } from 'lodash';
-import { usePhaseColors } from '@kbn/data-lifecycle-phases';
+import {
+  FrozenDefaultRepositoryRequiredCallout,
+  FrozenEnterpriseRequiredCallout,
+  usePhaseColors,
+} from '@kbn/data-lifecycle-phases';
 import { formatBytes } from '../../helpers/format_bytes';
 import { LifecyclePhaseButton } from './lifecycle_phase_button';
 import { isZeroAge } from '../../../../../../util/format_size_units';
-import { FrozenEnterpriseRequiredCallout } from './frozen_enterprise_required_callout';
-import { FrozenDefaultRepositoryRequiredCallout } from './frozen_default_repository_required_callout';
 
 interface BaseLifecyclePhaseProps {
   color?: string;

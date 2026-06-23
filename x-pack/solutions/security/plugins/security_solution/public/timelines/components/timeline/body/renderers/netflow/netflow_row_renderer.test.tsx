@@ -25,14 +25,21 @@ jest.mock('../../../../../../common/lib/kibana');
 jest.mock('../../../../../../common/components/links/link_props');
 
 describe('netflowRowRenderer', () => {
-  test('renders correctly against snapshot', () => {
+  test('renders key netflow fields from mock data', () => {
     const children = netflowRowRenderer.renderRow({
       data: getMockNetflowData(),
       scopeId: TimelineId.test,
     });
 
-    const { asFragment } = render(<TestProviders>{children}</TestProviders>);
-    expect(asFragment()).toMatchSnapshot();
+    render(<TestProviders>{children}</TestProviders>);
+
+    expect(screen.getByText('192.168.1.2')).toBeInTheDocument(); // source.ip
+    expect(screen.getByText('10.1.2.3')).toBeInTheDocument(); // destination.ip
+    expect(screen.getByText('http')).toBeInTheDocument(); // network.protocol
+    expect(screen.getByText('tcp')).toBeInTheDocument(); // network.transport
+    expect(screen.getByText('we.live.in.a')).toBeInTheDocument(); // network.community_id
+    expect(screen.getByText('rat')).toBeInTheDocument(); // process.name
+    expect(screen.getByText('first.last')).toBeInTheDocument(); // user.name
   });
 
   describe('#isInstance', () => {

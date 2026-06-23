@@ -16,6 +16,7 @@ describe('getKiIdentificationStatusToolHandler', () => {
         getWorkflowExecutions: jest.fn().mockResolvedValue({ results: [] }),
         getWorkflowExecution: jest.fn().mockResolvedValue(null),
       } as never,
+      telemetry: { trackOnboardingScheduled: jest.fn() } as never,
     });
 
     const result = await getKiIdentificationStatusToolHandler({

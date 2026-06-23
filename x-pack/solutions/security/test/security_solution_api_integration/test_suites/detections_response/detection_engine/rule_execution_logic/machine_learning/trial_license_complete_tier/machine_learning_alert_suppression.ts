@@ -42,6 +42,7 @@ import {
   setupMlModulesWithRetry,
 } from '../../../../utils';
 import { deleteAllExceptions } from '../../../../../lists_and_exception_lists/utils';
+import { EntityStoreV2EnrichmentSetup } from '../../entity_store_v2_enrichment_setup';
 
 export default ({ getService }: FtrProviderContext) => {
   const supertest = getService('supertest');
@@ -50,6 +51,7 @@ export default ({ getService }: FtrProviderContext) => {
   const log = getService('log');
   const config = getService('config');
   const retry = getService('retry');
+  const entityStoreV2 = EntityStoreV2EnrichmentSetup(getService);
 
   const isServerless = config.get('serverless');
   const dataPathBuilder = new EsArchivePathBuilder(isServerless);
@@ -1100,21 +1102,25 @@ export default ({ getService }: FtrProviderContext) => {
         });
       });
 
-      describe('@skipInServerlessMKI with enrichments', () => {
+      describe('with enrichments', () => {
         before(async () => {
-          await esArchiver.load('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
-          await esArchiver.load(
-            'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-          );
+          await entityStoreV2.setup({
+            hosts: [
+              {
+                host: { name: 'zeek-newyork-sha-aa8df15' },
+                entity: {
+                  id: 'host:zeek-newyork-sha-aa8df15',
+                  type: 'host',
+                  risk: { calculated_level: 'Low', calculated_score_norm: 23 },
+                },
+                asset: { criticality: 'medium_impact' },
+              },
+            ],
+          });
         });
 
         after(async () => {
-          await esArchiver.unload(
-            'x-pack/solutions/security/test/fixtures/es_archives/entity/risks'
-          );
-          await esArchiver.unload(
-            'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-          );
+          await entityStoreV2.teardown();
         });
 
         beforeEach(async () => {
@@ -1122,7 +1128,6 @@ export default ({ getService }: FtrProviderContext) => {
           const anomalyWithKnownEntities = {
             ...baseAnomaly,
             timestamp,
-            user: { name: 'root' },
             host: { name: 'zeek-newyork-sha-aa8df15' },
           };
           await indexListOfDocuments([anomalyWithKnownEntities]);
@@ -1154,7 +1159,6 @@ export default ({ getService }: FtrProviderContext) => {
           const fullAlert = previewAlerts[0]._source;
 
           expect(fullAlert?.['host.asset.criticality']).toBe('medium_impact');
-          expect(fullAlert?.['user.asset.criticality']).toBe('extreme_impact');
         });
       });
     });

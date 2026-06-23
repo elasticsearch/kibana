@@ -29,8 +29,6 @@ export const createNavigationTree = async (
   services: Services,
   chatExperience: AIChatExperience = AIChatExperience.Classic
 ): Promise<NavigationTreeDefinition> => {
-  const showAlertingV2 = Boolean(services.application.capabilities.alertingVTwo);
-
   const showAgentBuilder = chatExperience === AIChatExperience.Agent;
   const agentBuilderNavAtTop = services.featureFlags.getBooleanValue(
     AGENT_BUILDER_NAV_AT_TOP_FLAG,
@@ -156,7 +154,7 @@ export const createNavigationTree = async (
         title: i18nStrings.devTools,
         icon: 'code',
       },
-      createManagementFooterItemsTree(chatExperience, showAlertingV2),
+      createManagementFooterItemsTree(services, chatExperience),
     ],
   };
 };

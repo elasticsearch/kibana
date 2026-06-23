@@ -5,26 +5,25 @@
  * 2.0.
  */
 
-import type { AggregateQuery } from '@kbn/es-query';
-import type { SerializedTimeRange } from '@kbn/presentation-publishing';
-import type { SerializedTitles } from '@kbn/presentation-publishing-schemas';
+import type { FieldStatsTableEmbeddableState } from '@kbn/data-visualizer-server-schemas/embeddables/field_stats';
 
 export enum FieldStatsInitializerViewType {
   DATA_VIEW = 'dataview',
   ESQL = 'esql',
 }
 
-export interface FieldStatsInitialState {
-  dataViewId?: string;
-  viewType?: FieldStatsInitializerViewType;
-  query?: AggregateQuery;
-  showDistributions?: boolean;
-}
-export type FieldStatisticsTableEmbeddableState = FieldStatsInitialState &
-  SerializedTitles &
-  SerializedTimeRange & {};
-
-export type StoredFieldStatisticsTableEmbeddableState = Omit<
-  FieldStatisticsTableEmbeddableState,
-  'dataViewId'
+// data_view_id is persisted as a saved-object reference, so it is absent from stored state.
+// Distributive omit keeps the ES|QL branch's `query` while removing only data_view_id.
+type DistributiveOmit<T, K extends PropertyKey> = T extends T ? Omit<T, K> : never;
+export type StoredFieldStatisticsTableEmbeddableState = DistributiveOmit<
+  FieldStatsTableEmbeddableState,
+  'data_view_id'
 >;
+
+// Loose editing/UI shape — the editor holds fields independently while toggling modes.
+export interface FieldStatsInitialState {
+  view_type?: FieldStatsTableEmbeddableState['view_type'];
+  data_view_id?: string;
+  query?: { esql: string };
+  show_distributions?: boolean;
+}

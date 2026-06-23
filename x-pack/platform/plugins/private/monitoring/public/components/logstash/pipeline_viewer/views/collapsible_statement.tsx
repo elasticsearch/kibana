@@ -9,7 +9,7 @@ import React from 'react';
 import { css } from '@emotion/react';
 
 import type { UseEuiTheme } from '@elastic/eui';
-import { EuiButtonIcon, EuiFlexGroup, EuiFlexItem, logicalCSS } from '@elastic/eui';
+import { EuiButtonIcon, EuiFlexGroup, EuiFlexItem, EuiToolTip, logicalCSS } from '@elastic/eui';
 
 const collapsibleStatementStyle = ({ euiTheme }: UseEuiTheme) => css`
   ${logicalCSS('padding-left', euiTheme.size.m)}
@@ -50,13 +50,15 @@ export function CollapsibleStatement({
       responsive={false}
     >
       <EuiFlexItem key={id} grow={false}>
-        <EuiButtonIcon
-          aria-label="collapse"
-          color="text"
-          iconType={getToggleIconType(isCollapsed)}
-          onClick={toggleClicked}
-          size="s"
-        />
+        <EuiToolTip content="collapse" disableScreenReaderOutput>
+          <EuiButtonIcon
+            aria-label="collapse"
+            color="text"
+            iconType={getToggleIconType(isCollapsed)}
+            onClick={toggleClicked}
+            size="s"
+          />
+        </EuiToolTip>
       </EuiFlexItem>
       {children}
     </EuiFlexGroup>

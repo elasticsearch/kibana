@@ -62,15 +62,17 @@ export class ActionResponderService extends BaseRunningService {
 
               log.verbose(`${this.logPrefix}.run() tokens found in action:`, tokens);
 
-              const fleetResponse = await sendFleetActionResponse(esClient, action, {
-                // If an Endpoint state token was found, then force the Fleet response to `success`
-                // so that we can actually generate an endpoint response below.
-                state: tokens.state ? 'success' : tokens.fleet.state,
-              });
+              if (tokens.state !== 'pending') {
+                const fleetResponse = await sendFleetActionResponse(esClient, action, {
+                  // If an Endpoint state token was found, then force the Fleet response to `success`
+                  // so that we can actually generate an endpoint response below.
+                  state: tokens.state ? 'success' : tokens.fleet.state,
+                });
 
-              // If not a fleet response error, then also sent the Endpoint Response
-              if (!fleetResponse.error) {
-                await sendEndpointActionResponse(esClient, action, { state: tokens.state });
+                // If not a fleet response error, then also sent the Endpoint Response
+                if (!fleetResponse.error) {
+                  await sendEndpointActionResponse(esClient, action, { state: tokens.state });
+                }
               }
             }
           }
@@ -84,7 +86,7 @@ export class ActionResponderService extends BaseRunningService {
 }
 
 interface CommentTokens {
-  state: 'success' | 'failure' | undefined;
+  state: 'success' | 'failure' | 'pending' | undefined;
   fleet: {
     state: 'success' | 'failure' | undefined;
   };

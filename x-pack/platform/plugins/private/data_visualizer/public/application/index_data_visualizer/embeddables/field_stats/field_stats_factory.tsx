@@ -32,6 +32,7 @@ import {
   switchMap,
   distinctUntilChanged,
   merge,
+  filter as filterObservable,
 } from 'rxjs';
 import { openLazyFlyout } from '@kbn/presentation-util';
 import type { DataView } from '@kbn/data-views-plugin/public';
@@ -46,10 +47,10 @@ import { ENABLE_ESQL, getESQLAdHocDataview } from '@kbn/esql-utils';
 import { ACTION_GLOBAL_APPLY_FILTER } from '@kbn/unified-search-plugin/public';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { ON_APPLY_FILTER } from '@kbn/ui-actions-plugin/common/trigger_ids';
+import type { FieldStatsTableEmbeddableState } from '@kbn/data-visualizer-server-schemas/embeddables/field_stats';
 import type { DataVisualizerTableState } from '../../../../../common/types';
 import type { DataVisualizerPluginStart } from '../../../../plugin';
-import type { FieldStatisticsTableEmbeddableState } from '../grid_embeddable/types';
-import { FieldStatsInitializerViewType } from '../grid_embeddable/types';
+import { FieldStatsInitializerViewType } from '../../../../../common/embeddables/types';
 import { initializeFieldStatsControls } from './initialize_field_stats_controls';
 import type { DataVisualizerStartDependencies } from '../../../common/types/data_visualizer_plugin';
 import type { FieldStatisticsTableEmbeddableApi } from './types';
@@ -105,7 +106,7 @@ export const getFieldStatsChartEmbeddableFactory = (
   >
 ) => {
   const factory: EmbeddablePublicDefinition<
-    FieldStatisticsTableEmbeddableState,
+    FieldStatsTableEmbeddableState,
     FieldStatisticsTableEmbeddableApi
   > = {
     type: FIELD_STATS_EMBEDDABLE_TYPE,
@@ -142,13 +143,19 @@ export const getFieldStatsChartEmbeddableFactory = (
       const { onError, dataLoading$, blockingError$ } = dataLoadingApi;
 
       const validDataViewId: string | undefined =
-        isDefined(state.dataViewId) && state.dataViewId !== '' ? state.dataViewId : undefined;
+        state.view_type === FieldStatsInitializerViewType.DATA_VIEW &&
+        isDefined(state.data_view_id) &&
+        state.data_view_id !== ''
+          ? state.data_view_id
+          : undefined;
+      const query =
+        state.view_type === FieldStatsInitializerViewType.ESQL ? state.query : undefined;
       let initialDataView: DataView | undefined;
       try {
-        const dataView = isESQLQuery(state.query)
+        const dataView = isESQLQuery(query)
           ? await getESQLAdHocDataview({
               dataViewsService: deps.data.dataViews,
-              query: state.query.esql,
+              query: query.esql,
               http: deps.http,
             })
           : validDataViewId
@@ -157,7 +164,7 @@ export const getFieldStatsChartEmbeddableFactory = (
         initialDataView = dataView;
       } catch (error) {
         // Only need to publish blocking error if viewtype is data view, and no data view found
-        if (state.viewType === FieldStatsInitializerViewType.DATA_VIEW) {
+        if (state.view_type === FieldStatsInitializerViewType.DATA_VIEW) {
           onError(error);
         }
       }
@@ -172,7 +179,9 @@ export const getFieldStatsChartEmbeddableFactory = (
           fieldStatsControlsApi.dataViewId$
             .pipe(
               skip(1),
-              skipWhile((dataViewId) => !dataViewId),
+              filterObservable(
+                (dataViewId): dataViewId is string => isDefined(dataViewId) && dataViewId !== ''
+              ),
               switchMap(async (dataViewId) => {
                 try {
                   return await deps.data.dataViews.get(dataViewId);
@@ -191,14 +200,15 @@ export const getFieldStatsChartEmbeddableFactory = (
 
       const { toasts } = deps.notifications;
 
-      const stateApi = initializeStateApi<FieldStatisticsTableEmbeddableState>({
+      const stateApi = initializeStateApi<FieldStatsTableEmbeddableState>({
         uuid,
         parentApi,
-        serializeState: () => ({
-          ...titleManager.getLatestState(),
-          ...timeRangeManager.getLatestState(),
-          ...serializeFieldStatsChartState(),
-        }),
+        serializeState: () =>
+          ({
+            ...titleManager.getLatestState(),
+            ...timeRangeManager.getLatestState(),
+            ...serializeFieldStatsChartState(),
+          } as FieldStatsTableEmbeddableState),
         anyStateChange$: merge(
           titleManager.anyStateChange$,
           timeRangeManager.anyStateChange$,

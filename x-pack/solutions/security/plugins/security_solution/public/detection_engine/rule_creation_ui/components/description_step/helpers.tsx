@@ -331,7 +331,7 @@ export const buildSeverityDescription = (severity: AboutStepSeverity): ListItems
                   </EuiToolTip>
                 </OverrideValueColumn>
                 <EuiFlexItem grow={false}>
-                  <EuiIcon type="sortRight" />
+                  <EuiIcon type="sortRight" aria-hidden={true} />
                 </EuiFlexItem>
                 <EuiFlexItem>
                   <SeverityBadge
@@ -369,7 +369,7 @@ export const buildRiskScoreDescription = (riskScore: AboutStepRiskScore): ListIt
                   </EuiToolTip>
                 </OverrideColumn>
                 <EuiFlexItem grow={false}>
-                  <EuiIcon type={'sortRight'} />
+                  <EuiIcon type={'sortRight'} aria-hidden={true} />
                 </EuiFlexItem>
                 <EuiFlexItem>{ALERT_RISK_SCORE}</EuiFlexItem>
               </EuiFlexGroup>

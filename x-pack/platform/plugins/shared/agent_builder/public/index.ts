@@ -22,6 +22,8 @@ export type {
   AgentBuilderPluginSetup,
   AgentBuilderPluginStart,
   PublicEmbeddableConversationProps,
+  PublicEmbeddableConversationInputProps,
+  EmbeddableConversationInputRef,
 } from './types';
 export type { EmbeddableConversationProps } from './embeddable/types';
 export { AGENTBUILDER_FEATURE_ID, AGENTBUILDER_APP_ID, uiPrivileges, MCP_SERVER_PATH };

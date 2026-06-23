@@ -10,6 +10,10 @@
 import type { JSONSchema7 } from 'json-schema';
 import type { Document } from 'yaml';
 import { parseDocument } from 'yaml';
+import {
+  builtinWorkflowInputDefinitions,
+  KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX,
+} from '../builtin_workflow_input_definitions';
 import type { WorkflowOutput, WorkflowYaml } from '../schema';
 import type { JsonModelSchemaType } from '../schema/common/json_model_schema';
 import type { JsonSchema } from '../schema/common/json_model_shape_schema';
@@ -332,8 +336,11 @@ function createObjectWithDefaults(
 }
 
 /**
- * Resolves a $ref reference within the inputs schema context
- * @param ref - The $ref string (e.g., "#/definitions/UserSchema")
+ * Resolves a $ref reference within the inputs schema context, or from
+ * {@link builtinWorkflowInputDefinitions} when the ref uses
+ * {@link KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX}.
+ *
+ * @param ref - The $ref string (e.g., "#/definitions/UserSchema" or "#/kibana/definitions/MyType")
  * @param inputsSchema - The full inputs schema containing definitions
  * @returns The resolved schema, or null if not found
  */
@@ -344,6 +351,15 @@ export function resolveRef(
   if (!ref.startsWith('#/')) {
     // External references not supported yet
     return null;
+  }
+
+  if (ref.startsWith(KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX)) {
+    const id = ref.slice(KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX.length);
+    if (!id || id.includes('/')) {
+      return null;
+    }
+    const builtin = builtinWorkflowInputDefinitions[id];
+    return (builtin ?? null) as JSONSchema7 | null;
   }
 
   const path = ref.slice(2).split('/'); // Remove '#/' and split

@@ -19,6 +19,7 @@ import {
   EuiFlexItem,
   EuiPopoverFooter,
   EuiButtonEmpty,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
@@ -155,6 +156,7 @@ export const AgentsCountBreakDown = ({
 
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const closePopover = () => setIsPopoverOpen(false);
+  const popoverTitleId = useGeneratedHtmlId();
 
   const getKuery = (agentPolicyId: string) =>
     `${AGENTS_PREFIX}.policy_id : "${agentPolicyId}"${
@@ -172,6 +174,7 @@ export const AgentsCountBreakDown = ({
   return (
     <>
       <EuiPopover
+        aria-labelledby={popoverTitleId}
         data-test-subj="agentCountsPopover"
         isOpen={isPopoverOpen}
         closePopover={closePopover}
@@ -186,7 +189,7 @@ export const AgentsCountBreakDown = ({
           </EuiButtonEmpty>
         }
       >
-        <EuiPopoverTitle>
+        <EuiPopoverTitle id={popoverTitleId}>
           {i18n.translate('xpack.fleet.agentsCountsBreakdown.popover.title', {
             defaultMessage: 'Agents breakdown',
           })}

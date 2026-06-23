@@ -7,7 +7,7 @@
 
 import type { FC } from 'react';
 import React from 'react';
-import { EuiButtonIcon, EuiCallOut } from '@elastic/eui';
+import { EuiButtonIcon, EuiCallOut, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { Markdown } from '@kbn/shared-ux-markdown';
 import { ShowDebugging } from './show_debugging';
@@ -34,14 +34,21 @@ export const Error: FC<Props> = ({ payload, onClose }) => {
   const message = payload.error?.message;
 
   const CloseIconButton = () => (
-    <EuiButtonIcon
-      color="danger"
-      iconType="cross"
-      onClick={onClose}
-      aria-label={i18n.translate('xpack.canvas.errorComponent.dismissErrorAriaLabel', {
+    <EuiToolTip
+      content={i18n.translate('xpack.canvas.errorComponent.dismissErrorAriaLabel', {
         defaultMessage: 'Dismiss error',
       })}
-    />
+      disableScreenReaderOutput
+    >
+      <EuiButtonIcon
+        color="danger"
+        iconType="cross"
+        onClick={onClose}
+        aria-label={i18n.translate('xpack.canvas.errorComponent.dismissErrorAriaLabel', {
+          defaultMessage: 'Dismiss error',
+        })}
+      />
+    </EuiToolTip>
   );
 
   return (

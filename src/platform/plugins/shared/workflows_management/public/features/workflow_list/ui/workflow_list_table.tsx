@@ -27,7 +27,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { WorkflowListItemDto } from '@kbn/workflows';
+import type { WorkflowListItemDto, WorkflowSortField } from '@kbn/workflows';
 import { WorkflowTriggersAndSteps } from './workflow_triggers_and_steps';
 import {
   getRunTooltipContent,
@@ -60,6 +60,9 @@ export interface WorkflowListTableProps {
   canUpdateWorkflow: boolean;
   canDeleteWorkflow: boolean;
   canExecuteWorkflow: boolean;
+  sortField?: WorkflowSortField;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (field: WorkflowSortField, order: 'asc' | 'desc') => void;
 }
 
 export const WorkflowListTable = ({
@@ -82,6 +85,9 @@ export const WorkflowListTable = ({
   canUpdateWorkflow,
   canDeleteWorkflow,
   canExecuteWorkflow,
+  sortField,
+  sortOrder,
+  onSortChange,
 }: WorkflowListTableProps) => {
   const allowRowSelection = canUpdateWorkflow || canDeleteWorkflow || canReadWorkflow;
 
@@ -91,6 +97,7 @@ export const WorkflowListTable = ({
         field: 'name',
         name: i18n.translate('workflows.workflowList.column.name', { defaultMessage: 'Name' }),
         dataType: 'string',
+        sortable: true,
         render: (name: string, item) => (
           <div
             css={css`
@@ -230,7 +237,8 @@ export const WorkflowListTable = ({
           defaultMessage: 'Enabled',
         }),
         field: 'enabled',
-        width: '70px',
+        width: '90px',
+        sortable: true,
         render: (value: unknown, item: WorkflowListItemDto) => {
           return (
             <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
@@ -385,9 +393,28 @@ export const WorkflowListTable = ({
       itemId="id"
       responsiveBreakpoint="xs"
       tableLayout="fixed"
+      sorting={
+        sortField && sortOrder
+          ? { sort: { field: sortField, direction: sortOrder } }
+          : { sort: undefined }
+      }
       onChange={({
         page: { index: pageIndex, size: pageSize },
-      }: CriteriaWithPagination<WorkflowListItemDto>) => onPageChange(pageIndex, pageSize)}
+        sort,
+      }: CriteriaWithPagination<WorkflowListItemDto>) => {
+        // EUI can emit `sort` as `undefined` on page-only changes — guard
+        // against that so we don't fire `onSortChange` on pagination.
+        const incoming =
+          sort?.field === 'name' || sort?.field === 'enabled'
+            ? { field: sort.field as WorkflowSortField, order: sort.direction }
+            : undefined;
+        const sortChanged = incoming?.field !== sortField || incoming?.order !== sortOrder;
+        if (sortChanged && incoming) {
+          onSortChange?.(incoming.field, incoming.order);
+          return;
+        }
+        onPageChange(pageIndex, pageSize);
+      }}
       {...(allowRowSelection
         ? {
             selection: {

@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/271753
+issues:
+- https://github.com/elastic/obs-ai-team/issues/638
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix KB recall for inference endpoint connectors
+description: Knowledge base recall in Observability AI Assistant now works when the selected connector is an inference endpoint.

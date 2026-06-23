@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+// Original test (remove during Scout migration): src/platform/test/examples/data_view_field_editor_example/data_view_field_editor_example.ts
 import expect from '@kbn/expect';
 // TODO: Changed from PluginFunctionalProviderContext to FtrProviderContext in Serverless
 import type { FtrProviderContext } from '../../../ftr_provider_context';

@@ -60,7 +60,7 @@ export const runCommandsValidationSuite = (setup: Setup) => {
     ]);
 
     testErrorsAndWarnings(
-      'FROM a_index | LEFT JOIN join_index ON textField == keywordField, booleanField',
+      'FROM a_index | LEFT JOIN lookup_index ON textField == keywordField, booleanField',
       ['JOIN ON clause must be a comma separated list of fields or a single expression']
     );
   });

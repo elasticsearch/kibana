@@ -79,7 +79,7 @@ export class ServerlessSearchPlugin
 
   public setup(
     { getStartServices, http }: CoreSetup<StartDependencies>,
-    { serverless, usageCollection }: SetupDependencies
+    { features, serverless, usageCollection }: SetupDependencies
   ) {
     const router = http.createRouter();
     const dependencies = {
@@ -101,6 +101,16 @@ export class ServerlessSearchPlugin
     if (usageCollection) {
       registerTelemetryUsageCollector(usageCollection, this.logger);
     }
+
+    features.registerElasticsearchFeature({
+      id: 'serverlessSearch',
+      privileges: [
+        {
+          requiredClusterPrivileges: ['manage'],
+          ui: ['manageCluster'],
+        },
+      ],
+    });
 
     serverless.setupProjectSettings(SEARCH_PROJECT_SETTINGS);
     return {};

@@ -13,6 +13,8 @@ import {
   convertJsonSchemaToZod,
   convertJsonSchemaToZodWithRefs,
 } from './build_fields_zod_validator';
+import { mergeKibanaBuiltinWorkflowInputDefinitionsIntoRootSchema } from '../builtin_workflow_input_definitions';
+import type { JsonModelSchemaType } from '../schema/common/json_model_schema';
 
 describe('convertJsonSchemaToZod', () => {
   it('should convert a string schema to Zod', () => {
@@ -385,6 +387,45 @@ describe('convertJsonSchemaToZodWithRefs', () => {
 });
 
 describe('buildFieldsZodValidator', () => {
+  it('validates payloads that use built-in #/kibana/definitions $ref when schema is merged at root', () => {
+    const inputs: JsonModelSchemaType = {
+      properties: {
+        notificationGroup: {
+          $ref: '#/kibana/definitions/alertingV2NotificationGroup',
+        },
+      },
+      required: ['notificationGroup'],
+    };
+
+    const mergedInputs = mergeKibanaBuiltinWorkflowInputDefinitionsIntoRootSchema(
+      inputs as object
+    ) as JsonModelSchemaType;
+
+    const validator = buildFieldsZodValidator(mergedInputs);
+    const invalid = validator.safeParse({
+      notificationGroup: { episodes: [] },
+    });
+    expect(invalid.success).toBe(false);
+
+    const valid = validator.safeParse({
+      notificationGroup: {
+        id: 'group-1',
+        policyId: 'policy-1',
+        groupKey: {},
+        episodes: [
+          {
+            last_event_timestamp: '2024-01-01T00:00:00Z',
+            rule_id: 'rule-1',
+            group_hash: 'hash-1',
+            episode_id: 'episode-1',
+            episode_status: 'active',
+          },
+        ],
+      },
+    });
+    expect(valid.success).toBe(true);
+  });
+
   it('should return empty object schema when schema has no properties', () => {
     const validator = buildFieldsZodValidator(null);
     expect(validator.parse({})).toEqual({});

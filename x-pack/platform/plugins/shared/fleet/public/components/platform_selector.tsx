@@ -162,6 +162,9 @@ export const PlatformSelector: React.FunctionComponent<Props> = ({
               </EuiFilterButton>
             ))}
             <EuiPopover
+              aria-label={i18n.translate('xpack.fleet.agentEnrollment.morePlatformsLabel', {
+                defaultMessage: 'More platforms',
+              })}
               button={
                 <EuiFilterButton
                   iconType="chevronSingleDown"

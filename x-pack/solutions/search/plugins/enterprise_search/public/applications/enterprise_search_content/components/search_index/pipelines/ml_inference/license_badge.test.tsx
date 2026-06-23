@@ -7,9 +7,9 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiLink } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { LicenseBadgeProps } from './license_badge';
 import { LicenseBadge } from './license_badge';
@@ -21,16 +21,17 @@ const DEFAULT_PROPS: LicenseBadgeProps = {
 
 describe('LicenseBadge', () => {
   it('renders with link if URL is present', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <LicenseBadge
         licenseType={DEFAULT_PROPS.licenseType}
         modelDetailsPageUrl={DEFAULT_PROPS.modelDetailsPageUrl}
       />
     );
-    expect(wrapper.find(EuiLink)).toHaveLength(1);
+    expect(screen.getByRole('link')).toBeInTheDocument();
   });
+
   it('renders without link if URL is not present', () => {
-    const wrapper = shallow(<LicenseBadge licenseType={DEFAULT_PROPS.licenseType} />);
-    expect(wrapper.find(EuiLink)).toHaveLength(0);
+    renderWithKibanaRenderContext(<LicenseBadge licenseType={DEFAULT_PROPS.licenseType} />);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

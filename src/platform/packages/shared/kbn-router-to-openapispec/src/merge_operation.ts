@@ -8,18 +8,19 @@
  */
 
 import type { OpenAPIV3 } from 'openapi-types';
-import type { DeepPartial } from '@kbn/utility-types';
+import type { DeepPartial, MaybePromise } from '@kbn/utility-types';
 import { dereference } from '@apidevtools/json-schema-ref-parser';
 import deepMerge from 'deepmerge';
 import type { CustomOperationObject } from './type';
 
 export async function mergeOperation(
-  pathToSpecOrSpec: string | DeepPartial<OpenAPIV3.OperationObject>,
+  pathToSpecOrSpec: string | MaybePromise<DeepPartial<OpenAPIV3.OperationObject>>,
   operation: CustomOperationObject
 ) {
-  if (typeof pathToSpecOrSpec === 'string') {
-    Object.assign(operation, deepMerge(operation, await dereference(pathToSpecOrSpec)));
+  const resolvedSpec = await pathToSpecOrSpec;
+  if (typeof resolvedSpec === 'string') {
+    Object.assign(operation, deepMerge(operation, await dereference(resolvedSpec)));
   } else {
-    Object.assign(operation, deepMerge(operation, pathToSpecOrSpec));
+    Object.assign(operation, deepMerge(operation, resolvedSpec));
   }
 }

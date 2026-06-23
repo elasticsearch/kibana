@@ -37,12 +37,14 @@ import {
   dataGeneratorFactory,
 } from '../../../../utils';
 import type { FtrProviderContext } from '../../../../../../ftr_provider_context';
+import { EntityStoreV2EnrichmentSetup } from '../../entity_store_v2_enrichment_setup';
 
 export default ({ getService }: FtrProviderContext) => {
   const supertest = getService('supertest');
   const esArchiver = getService('esArchiver');
   const es = getService('es');
   const log = getService('log');
+  const entityStoreV2 = EntityStoreV2EnrichmentSetup(getService);
 
   const {
     indexListOfDocuments: indexListOfSourceDocuments,
@@ -2497,17 +2499,24 @@ export default ({ getService }: FtrProviderContext) => {
           });
         });
 
-        describe('@skipInServerlessMKI alerts should be enriched', () => {
+        describe('alerts should be enriched', () => {
           before(async () => {
-            await esArchiver.load(
-              'x-pack/solutions/security/test/fixtures/es_archives/entity/risks'
-            );
+            await entityStoreV2.setup({
+              hosts: [
+                {
+                  host: { name: 'zeek-sensor-amsterdam' },
+                  entity: {
+                    id: 'host:zeek-sensor-amsterdam',
+                    type: 'host',
+                    risk: { calculated_level: 'Critical', calculated_score_norm: 70 },
+                  },
+                },
+              ],
+            });
           });
 
           after(async () => {
-            await esArchiver.unload(
-              'x-pack/solutions/security/test/fixtures/es_archives/entity/risks'
-            );
+            await entityStoreV2.teardown();
           });
 
           it('should be enriched with host risk score', async () => {
@@ -2518,7 +2527,6 @@ export default ({ getService }: FtrProviderContext) => {
               id,
               '@timestamp': timestamp,
               host: { name: 'zeek-sensor-amsterdam' },
-              user: { name: 'root' },
             };
             const doc1WithLaterTimestamp = {
               ...doc1,
@@ -2565,22 +2573,24 @@ export default ({ getService }: FtrProviderContext) => {
 
             expect(previewAlerts[0]?._source?.host?.risk?.calculated_level).toEqual('Critical');
             expect(previewAlerts[0]?._source?.host?.risk?.calculated_score_norm).toEqual(70);
-            expect(previewAlerts[0]?._source?.user?.risk?.calculated_level).toEqual('Low');
-            expect(previewAlerts[0]?._source?.user?.risk?.calculated_score_norm).toEqual(11);
           });
         });
 
-        describe('@skipInServerlessMKI with asset criticality', () => {
+        describe('with asset criticality', () => {
           before(async () => {
-            await esArchiver.load(
-              'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-            );
+            await entityStoreV2.setup({
+              hosts: [
+                {
+                  host: { name: 'zeek-sensor-amsterdam' },
+                  entity: { id: 'host:zeek-sensor-amsterdam', type: 'host' },
+                  asset: { criticality: 'low_impact' },
+                },
+              ],
+            });
           });
 
           after(async () => {
-            await esArchiver.unload(
-              'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-            );
+            await entityStoreV2.teardown();
           });
 
           it('should be enriched alert with criticality_level', async () => {
@@ -2591,7 +2601,6 @@ export default ({ getService }: FtrProviderContext) => {
               id,
               '@timestamp': timestamp,
               host: { name: 'zeek-sensor-amsterdam' },
-              user: { name: 'root' },
             };
             const doc1WithLaterTimestamp = {
               ...doc1,
@@ -2637,7 +2646,6 @@ export default ({ getService }: FtrProviderContext) => {
             });
 
             expect(previewAlerts[0]?._source?.['host.asset.criticality']).toEqual('low_impact');
-            expect(previewAlerts[0]?._source?.['user.asset.criticality']).toEqual('extreme_impact');
           });
         });
       });

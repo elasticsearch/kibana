@@ -238,6 +238,7 @@ describe.skip('When using `upload` response action', () => {
       'agent-a': {
         isCompleted: true,
         wasSuccessful: false,
+        wasCanceled: false,
         errors: ['not found'],
         completedAt: new Date().toISOString(),
       },

@@ -10,14 +10,11 @@ import type { DefaultEmbeddableApi } from '@kbn/embeddable-plugin/public';
 import type { Filter, Query, TimeRange } from '@kbn/es-query';
 import type { MlEntityField } from '@kbn/ml-anomaly-utils';
 import type {
-  AnomalyChartsEmbeddableOverridableState,
   AnomalyChartsEmbeddableState,
   SeverityThreshold,
 } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
-import type {
-  SingleMetricViewerEmbeddableState,
-  SingleMetricViewerEmbeddableUserInput,
-} from '@kbn/ml-server-schemas/embeddables/single_metric_viewer';
+import type { SingleMetricViewerEmbeddableState } from '@kbn/ml-server-schemas/embeddables/single_metric_viewer';
+import type { AnomalySingleMetricViewerEmbeddableType } from '@kbn/ml-common-types/embeddables/single_metric_viewer';
 import type {
   EmbeddableApiContext,
   HasEditCapabilities,
@@ -31,6 +28,7 @@ import type {
 } from '@kbn/presentation-publishing';
 import { type BehaviorSubject } from 'rxjs';
 import type { JobId } from '@kbn/ml-common-types/anomaly_detection_jobs/job';
+import type { AnomalyExplorerChartsEmbeddableType } from '@kbn/ml-common-types/embeddables/anomaly_charts';
 import type { AnomalySwimLaneEmbeddableType } from '@kbn/ml-common-types/embeddables/anomaly_swimlane';
 import type { MlDependencies } from '../application/app';
 import type { MlCapabilitiesService } from '../application/capabilities/check_capabilities';
@@ -45,9 +43,13 @@ import type { MlTimeSeriesSearchService } from '../application/timeseriesexplore
 import type { TimeSeriesExplorerService } from '../application/util/time_series_explorer_service';
 import type { ToastNotificationService } from '../application/services/toast_notification_service';
 import type { MlPublicUsageCollection } from '../application/services/usage_collection';
-import type { AnomalyExplorerChartsEmbeddableType, MlEmbeddableTypes } from './constants';
 
 export type { AnomalySwimLaneEmbeddableApi } from './anomaly_swimlane/types';
+
+export type MlEmbeddableTypes =
+  | AnomalySwimLaneEmbeddableType
+  | AnomalyExplorerChartsEmbeddableType
+  | AnomalySingleMetricViewerEmbeddableType;
 
 /**
  * Common API for all ML embeddables
@@ -86,9 +88,9 @@ export interface SwimLaneDrilldownContext extends EditSwimlanePanelContext {
 export interface AnomalyChartsComponentApi {
   jobIds$: PublishingSubject<JobId[]>;
   maxSeriesToPlot$: PublishingSubject<number>;
-  severityThreshold$: PublishingSubject<SeverityThreshold[]>;
+  severityThreshold$: PublishingSubject<SeverityThreshold[] | undefined>;
   selectedEntities$: PublishingSubject<MlEntityField[] | undefined>;
-  updateUserInput: (input: AnomalyChartsEmbeddableOverridableState) => void;
+  updateUserInput: (input: AnomalyChartsEmbeddableState) => void;
   updateSeverityThreshold: (v?: SeverityThreshold[]) => void;
   updateSelectedEntities: (entities?: MlEntityField[] | undefined) => void;
 }
@@ -111,7 +113,13 @@ export interface AnomalyChartsFieldSelectionApi {
   entityFields: PublishingSubject<MlEntityField[] | undefined>;
 }
 
+/**
+ * Case attachment wrapper state. The core Anomaly Charts embeddable state does
+ * not persist id/query/filters; cases keep them alongside the embeddable state
+ * so attachments can render with their original context.
+ */
 export type AnomalyChartsAttachmentState = AnomalyChartsEmbeddableState & {
+  id?: string;
   query?: Query;
   filters?: Filter[];
 };
@@ -134,14 +142,17 @@ export type SingleMetricViewerEmbeddableApi =
     SingleMetricViewerComponentApi;
 
 /**
- * The subset of the single metric viewer Embeddable state that is actually used by the single metric viewer embeddable.
- *
- * TODO: Ideally this should be the same as the SingleMetricViewerEmbeddableState, but that type is used in many
- * places, so we cannot change it at the moment.
+ * The serialized subset of the single metric viewer embeddable state that is owned by the
+ * controls manager (job selection and detector/entity/forecast selection). Title and time
+ * range are managed separately.
  */
-export type SingleMetricViewerRuntimeState = Omit<
+export type SingleMetricViewerControlsState = Pick<
   SingleMetricViewerEmbeddableState,
-  'id' | 'filters' | 'query' | 'refreshConfig' | 'forecastId'
+  | 'job_ids'
+  | 'selected_detector_index'
+  | 'selected_entities'
+  | 'function_description'
+  | 'forecast_id'
 >;
 
 export interface SingleMetricViewerComponentApi {
@@ -151,7 +162,7 @@ export interface SingleMetricViewerComponentApi {
   selectedDetectorIndex: PublishingSubject<number>;
   selectedEntities: PublishingSubject<MlEntity | undefined>;
 
-  updateUserInput: (input: SingleMetricViewerEmbeddableUserInput) => void;
+  updateUserInput: (input: SingleMetricViewerEmbeddableState) => void;
   updateForecastId: (id: string | undefined) => void;
 }
 
@@ -198,4 +209,6 @@ export interface AnomalyChartsFieldSelectionContext extends EditAnomalyChartsPan
 export type MappedEmbeddableTypeOf<TEmbeddableType extends MlEmbeddableTypes> =
   TEmbeddableType extends AnomalyExplorerChartsEmbeddableType
     ? AnomalyChartsEmbeddableState
+    : TEmbeddableType extends AnomalySingleMetricViewerEmbeddableType
+    ? SingleMetricViewerEmbeddableState
     : unknown;

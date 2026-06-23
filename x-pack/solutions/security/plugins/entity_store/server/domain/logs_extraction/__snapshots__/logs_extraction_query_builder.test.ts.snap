@@ -1,8 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[
-  `buildLogsExtractionEsqlQuery generates the expected query for generic entity description 1`
-] = `
+exports[`buildLogsExtractionEsqlQuery generates the expected query for generic entity description 1`] = `
 "SET unmapped_fields=\\"nullify\\";
 FROM test-index-*
   | WHERE
@@ -12,9 +10,9 @@ FROM test-index-*
 | EVAL _src_entity_source0 = MV_FIRST(TO_STRING(event.module)),
  _src_entity_source1 = MV_FIRST(TO_STRING(event.dataset)),
  _src_entity_source2 = MV_FIRST(TO_STRING(data_stream.dataset)),
- _src_entity_source = CASE((_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\"), _src_entity_source0, (_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\"), _src_entity_source1, (_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\"), _src_entity_source2, NULL),
- entity.source = CASE((_src_entity_source IS NULL OR _src_entity_source == \\"\\"), NULL, _src_entity_source)
-| EVAL recent.entity.EngineMetadata.UntypedId = TO_STRING(entity.id)
+ _src_entity_source = COALESCE(CASE(_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\", _src_entity_source0), CASE(_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\", _src_entity_source1), CASE(_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\", _src_entity_source2)),
+ entity.source = CASE(_src_entity_source IS NULL OR _src_entity_source == \\"\\", NULL, _src_entity_source),
+ recent.entity.EngineMetadata.UntypedId = TO_STRING(entity.id)
 | STATS
     entity.EngineMetadata.FirstSeenLogInPage = MIN(@timestamp),
     recent.timestamp = MAX(@timestamp),
@@ -35,8 +33,8 @@ FROM test-index-*
  recent.entity.attributes.permissions = VALUES(TO_STRING(entity.attributes.permissions)),
  recent.entity.attributes.known_redirects = VALUES(TO_STRING(entity.attributes.known_redirects)),
  recent.entity.attributes.oauth_consent_restriction = LAST(TO_STRING(entity.attributes.oauth_consent_restriction), @timestamp) WHERE TO_STRING(entity.attributes.oauth_consent_restriction) IS NOT NULL,
- recent.entity.lifecycle.first_seen = FIRST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
- recent.entity.lifecycle.last_seen = LAST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
+ recent.entity.lifecycle.first_seen = FIRST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
+ recent.entity.lifecycle.last_seen = LAST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
  recent.entity.lifecycle.last_activity = LAST(TO_DATETIME(entity.lifecycle.last_activity), @timestamp) WHERE TO_DATETIME(entity.lifecycle.last_activity) IS NOT NULL,
  recent.entity.behaviors.rule_names = VALUES(TO_STRING(entity.behaviors.rule_names)),
  recent.entity.behaviors.anomaly_job_ids = VALUES(TO_STRING(entity.behaviors.anomaly_job_ids)),
@@ -279,9 +277,7 @@ asset*,
 @timestamp"
 `;
 
-exports[
-  `buildLogsExtractionEsqlQuery generates the expected query for host entity description 1`
-] = `
+exports[`buildLogsExtractionEsqlQuery generates the expected query for host entity description 1`] = `
 "SET unmapped_fields=\\"nullify\\";
 FROM test-index-*
   | WHERE
@@ -291,14 +287,15 @@ FROM test-index-*
 | EVAL _src_entity_source0 = MV_FIRST(TO_STRING(event.module)),
  _src_entity_source1 = MV_FIRST(TO_STRING(event.dataset)),
  _src_entity_source2 = MV_FIRST(TO_STRING(data_stream.dataset)),
- _src_entity_source = CASE((_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\"), _src_entity_source0, (_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\"), _src_entity_source1, (_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\"), _src_entity_source2, NULL),
- entity.source = CASE((_src_entity_source IS NULL OR _src_entity_source == \\"\\"), NULL, _src_entity_source)
-| EVAL host_id_present = TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\",
+ _src_entity_source = COALESCE(CASE(_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\", _src_entity_source0), CASE(_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\", _src_entity_source1), CASE(_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\", _src_entity_source2)),
+ entity.source = CASE(_src_entity_source IS NULL OR _src_entity_source == \\"\\", NULL, _src_entity_source),
+ host_id_present = TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\",
  host_name_present = TO_STRING(host.name) IS NOT NULL AND TO_STRING(host.name) != \\"\\",
  host_hostname_present = TO_STRING(host.hostname) IS NOT NULL AND TO_STRING(host.hostname) != \\"\\",
- recent.entity.EngineMetadata.UntypedId = CASE((host_id_present), TO_STRING(host.id),
-(host_name_present), TO_STRING(host.name),
-(host_hostname_present), TO_STRING(host.hostname), NULL)
+ host_id_present_or_null = CASE(host_id_present, TO_STRING(host.id)),
+ host_name_present_or_null = CASE(host_name_present, TO_STRING(host.name)),
+ host_hostname_present_or_null = CASE(host_hostname_present, TO_STRING(host.hostname)),
+ recent.entity.EngineMetadata.UntypedId = COALESCE(host_id_present_or_null, host_name_present_or_null, host_hostname_present_or_null)
 | STATS
     entity.EngineMetadata.FirstSeenLogInPage = MIN(@timestamp),
     recent.timestamp = MAX(@timestamp),
@@ -373,8 +370,8 @@ FROM test-index-*
  recent.entity.attributes.permissions = VALUES(TO_STRING(host.entity.attributes.permissions)),
  recent.entity.attributes.known_redirects = VALUES(TO_STRING(host.entity.attributes.known_redirects)),
  recent.entity.attributes.oauth_consent_restriction = LAST(TO_STRING(host.entity.attributes.oauth_consent_restriction), @timestamp) WHERE TO_STRING(host.entity.attributes.oauth_consent_restriction) IS NOT NULL,
- recent.entity.lifecycle.first_seen = FIRST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
- recent.entity.lifecycle.last_seen = LAST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
+ recent.entity.lifecycle.first_seen = FIRST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
+ recent.entity.lifecycle.last_seen = LAST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
  recent.entity.lifecycle.last_activity = LAST(TO_DATETIME(host.entity.lifecycle.last_activity), @timestamp) WHERE TO_DATETIME(host.entity.lifecycle.last_activity) IS NOT NULL,
  recent.entity.behaviors.rule_names = VALUES(TO_STRING(host.entity.behaviors.rule_names)),
  recent.entity.behaviors.anomaly_job_ids = VALUES(TO_STRING(host.entity.behaviors.anomaly_job_ids)),
@@ -609,14 +606,15 @@ FROM test-index-*
 | EVAL _src_entity_source0 = MV_FIRST(TO_STRING(event.module)),
  _src_entity_source1 = MV_FIRST(TO_STRING(event.dataset)),
  _src_entity_source2 = MV_FIRST(TO_STRING(data_stream.dataset)),
- _src_entity_source = CASE((_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\"), _src_entity_source0, (_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\"), _src_entity_source1, (_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\"), _src_entity_source2, NULL),
- entity.source = CASE((_src_entity_source IS NULL OR _src_entity_source == \\"\\"), NULL, _src_entity_source)
-| EVAL host_id_present = TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\",
+ _src_entity_source = COALESCE(CASE(_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\", _src_entity_source0), CASE(_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\", _src_entity_source1), CASE(_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\", _src_entity_source2)),
+ entity.source = CASE(_src_entity_source IS NULL OR _src_entity_source == \\"\\", NULL, _src_entity_source),
+ host_id_present = TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\",
  host_name_present = TO_STRING(host.name) IS NOT NULL AND TO_STRING(host.name) != \\"\\",
  host_hostname_present = TO_STRING(host.hostname) IS NOT NULL AND TO_STRING(host.hostname) != \\"\\",
- recent.entity.EngineMetadata.UntypedId = CASE((host_id_present), TO_STRING(host.id),
-(host_name_present), TO_STRING(host.name),
-(host_hostname_present), TO_STRING(host.hostname), NULL)
+ host_id_present_or_null = CASE(host_id_present, TO_STRING(host.id)),
+ host_name_present_or_null = CASE(host_name_present, TO_STRING(host.name)),
+ host_hostname_present_or_null = CASE(host_hostname_present, TO_STRING(host.hostname)),
+ recent.entity.EngineMetadata.UntypedId = COALESCE(host_id_present_or_null, host_name_present_or_null, host_hostname_present_or_null)
 | STATS
     entity.EngineMetadata.FirstSeenLogInPage = MIN(@timestamp),
     recent.timestamp = MAX(@timestamp),
@@ -691,8 +689,8 @@ FROM test-index-*
  recent.entity.attributes.permissions = VALUES(TO_STRING(host.entity.attributes.permissions)),
  recent.entity.attributes.known_redirects = VALUES(TO_STRING(host.entity.attributes.known_redirects)),
  recent.entity.attributes.oauth_consent_restriction = LAST(TO_STRING(host.entity.attributes.oauth_consent_restriction), @timestamp) WHERE TO_STRING(host.entity.attributes.oauth_consent_restriction) IS NOT NULL,
- recent.entity.lifecycle.first_seen = FIRST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
- recent.entity.lifecycle.last_seen = LAST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
+ recent.entity.lifecycle.first_seen = FIRST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
+ recent.entity.lifecycle.last_seen = LAST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
  recent.entity.lifecycle.last_activity = LAST(TO_DATETIME(host.entity.lifecycle.last_activity), @timestamp) WHERE TO_DATETIME(host.entity.lifecycle.last_activity) IS NOT NULL,
  recent.entity.behaviors.rule_names = VALUES(TO_STRING(host.entity.behaviors.rule_names)),
  recent.entity.behaviors.anomaly_job_ids = VALUES(TO_STRING(host.entity.behaviors.anomaly_job_ids)),
@@ -930,14 +928,15 @@ FROM test-index-*
 | EVAL _src_entity_source0 = MV_FIRST(TO_STRING(event.module)),
  _src_entity_source1 = MV_FIRST(TO_STRING(event.dataset)),
  _src_entity_source2 = MV_FIRST(TO_STRING(data_stream.dataset)),
- _src_entity_source = CASE((_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\"), _src_entity_source0, (_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\"), _src_entity_source1, (_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\"), _src_entity_source2, NULL),
- entity.source = CASE((_src_entity_source IS NULL OR _src_entity_source == \\"\\"), NULL, _src_entity_source)
-| EVAL host_id_present = TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\",
+ _src_entity_source = COALESCE(CASE(_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\", _src_entity_source0), CASE(_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\", _src_entity_source1), CASE(_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\", _src_entity_source2)),
+ entity.source = CASE(_src_entity_source IS NULL OR _src_entity_source == \\"\\", NULL, _src_entity_source),
+ host_id_present = TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\",
  host_name_present = TO_STRING(host.name) IS NOT NULL AND TO_STRING(host.name) != \\"\\",
  host_hostname_present = TO_STRING(host.hostname) IS NOT NULL AND TO_STRING(host.hostname) != \\"\\",
- recent.entity.EngineMetadata.UntypedId = CASE((host_id_present), TO_STRING(host.id),
-(host_name_present), TO_STRING(host.name),
-(host_hostname_present), TO_STRING(host.hostname), NULL)
+ host_id_present_or_null = CASE(host_id_present, TO_STRING(host.id)),
+ host_name_present_or_null = CASE(host_name_present, TO_STRING(host.name)),
+ host_hostname_present_or_null = CASE(host_hostname_present, TO_STRING(host.hostname)),
+ recent.entity.EngineMetadata.UntypedId = COALESCE(host_id_present_or_null, host_name_present_or_null, host_hostname_present_or_null)
 | STATS
     entity.EngineMetadata.FirstSeenLogInPage = MIN(@timestamp),
     recent.timestamp = MAX(@timestamp),
@@ -1012,8 +1011,8 @@ FROM test-index-*
  recent.entity.attributes.permissions = VALUES(TO_STRING(host.entity.attributes.permissions)),
  recent.entity.attributes.known_redirects = VALUES(TO_STRING(host.entity.attributes.known_redirects)),
  recent.entity.attributes.oauth_consent_restriction = LAST(TO_STRING(host.entity.attributes.oauth_consent_restriction), @timestamp) WHERE TO_STRING(host.entity.attributes.oauth_consent_restriction) IS NOT NULL,
- recent.entity.lifecycle.first_seen = FIRST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
- recent.entity.lifecycle.last_seen = LAST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
+ recent.entity.lifecycle.first_seen = FIRST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
+ recent.entity.lifecycle.last_seen = LAST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
  recent.entity.lifecycle.last_activity = LAST(TO_DATETIME(host.entity.lifecycle.last_activity), @timestamp) WHERE TO_DATETIME(host.entity.lifecycle.last_activity) IS NOT NULL,
  recent.entity.behaviors.rule_names = VALUES(TO_STRING(host.entity.behaviors.rule_names)),
  recent.entity.behaviors.anomaly_job_ids = VALUES(TO_STRING(host.entity.behaviors.anomaly_job_ids)),
@@ -1241,9 +1240,7 @@ data_stream*,
 @timestamp"
 `;
 
-exports[
-  `buildLogsExtractionEsqlQuery generates the expected query for service entity description 1`
-] = `
+exports[`buildLogsExtractionEsqlQuery generates the expected query for service entity description 1`] = `
 "SET unmapped_fields=\\"nullify\\";
 FROM test-index-*
   | WHERE
@@ -1253,9 +1250,9 @@ FROM test-index-*
 | EVAL _src_entity_source0 = MV_FIRST(TO_STRING(event.module)),
  _src_entity_source1 = MV_FIRST(TO_STRING(event.dataset)),
  _src_entity_source2 = MV_FIRST(TO_STRING(data_stream.dataset)),
- _src_entity_source = CASE((_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\"), _src_entity_source0, (_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\"), _src_entity_source1, (_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\"), _src_entity_source2, NULL),
- entity.source = CASE((_src_entity_source IS NULL OR _src_entity_source == \\"\\"), NULL, _src_entity_source)
-| EVAL recent.entity.EngineMetadata.UntypedId = TO_STRING(service.name)
+ _src_entity_source = COALESCE(CASE(_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\", _src_entity_source0), CASE(_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\", _src_entity_source1), CASE(_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\", _src_entity_source2)),
+ entity.source = CASE(_src_entity_source IS NULL OR _src_entity_source == \\"\\", NULL, _src_entity_source),
+ recent.entity.EngineMetadata.UntypedId = TO_STRING(service.name)
 | STATS
     entity.EngineMetadata.FirstSeenLogInPage = MIN(@timestamp),
     recent.timestamp = MAX(@timestamp),
@@ -1299,8 +1296,8 @@ FROM test-index-*
  recent.entity.attributes.permissions = VALUES(TO_STRING(service.entity.attributes.permissions)),
  recent.entity.attributes.known_redirects = VALUES(TO_STRING(service.entity.attributes.known_redirects)),
  recent.entity.attributes.oauth_consent_restriction = LAST(TO_STRING(service.entity.attributes.oauth_consent_restriction), @timestamp) WHERE TO_STRING(service.entity.attributes.oauth_consent_restriction) IS NOT NULL,
- recent.entity.lifecycle.first_seen = FIRST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
- recent.entity.lifecycle.last_seen = LAST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
+ recent.entity.lifecycle.first_seen = FIRST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
+ recent.entity.lifecycle.last_seen = LAST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
  recent.entity.lifecycle.last_activity = LAST(TO_DATETIME(service.entity.lifecycle.last_activity), @timestamp) WHERE TO_DATETIME(service.entity.lifecycle.last_activity) IS NOT NULL,
  recent.entity.behaviors.rule_names = VALUES(TO_STRING(service.entity.behaviors.rule_names)),
  recent.entity.behaviors.anomaly_job_ids = VALUES(TO_STRING(service.entity.behaviors.anomaly_job_ids)),
@@ -1491,9 +1488,7 @@ data_stream*,
 @timestamp"
 `;
 
-exports[
-  `buildLogsExtractionEsqlQuery generates the expected query for user entity description 1`
-] = `
+exports[`buildLogsExtractionEsqlQuery generates the expected query for user entity description 1`] = `
 "SET unmapped_fields=\\"nullify\\";
 FROM test-index-*
   | WHERE
@@ -1503,23 +1498,30 @@ FROM test-index-*
 | EVAL _src_entity_source0 = MV_FIRST(TO_STRING(event.module)),
  _src_entity_source1 = MV_FIRST(TO_STRING(event.dataset)),
  _src_entity_source2 = MV_FIRST(TO_STRING(data_stream.dataset)),
- _src_entity_source = CASE((_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\"), _src_entity_source0, (_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\"), _src_entity_source1, (_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\"), _src_entity_source2, NULL),
- entity.source = CASE((_src_entity_source IS NULL OR _src_entity_source == \\"\\"), NULL, _src_entity_source)
-| EVAL _src_entity_namespace0 = MV_FIRST(TO_STRING(event.module)),
+ _src_entity_source = COALESCE(CASE(_src_entity_source0 IS NOT NULL AND _src_entity_source0 != \\"\\", _src_entity_source0), CASE(_src_entity_source1 IS NOT NULL AND _src_entity_source1 != \\"\\", _src_entity_source1), CASE(_src_entity_source2 IS NOT NULL AND _src_entity_source2 != \\"\\", _src_entity_source2)),
+ entity.source = CASE(_src_entity_source IS NULL OR _src_entity_source == \\"\\", NULL, _src_entity_source),
+ _src_entity_namespace0 = MV_FIRST(TO_STRING(event.module)),
  _src_entity_namespace1 = MV_FIRST(SPLIT(MV_FIRST(TO_STRING(data_stream.dataset)), \\".\\")),
- _src_entity_namespace = CASE((_src_entity_namespace0 IS NOT NULL AND _src_entity_namespace0 != \\"\\"), _src_entity_namespace0, (_src_entity_namespace1 IS NOT NULL AND _src_entity_namespace1 != \\"\\"), _src_entity_namespace1, NULL),
- entity.namespace = CASE((TO_STRING(user.name) IS NOT NULL AND TO_STRING(user.name) != \\"\\" AND TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\" AND NOT (TO_STRING(user.name) IN (\\"root\\", \\"bin\\", \\"daemon\\", \\"sys\\", \\"nobody\\", \\"jenkins\\", \\"ansible\\", \\"deploy\\", \\"terraform\\", \\"gitlab-runner\\", \\"postgres\\", \\"mysql\\", \\"redis\\", \\"elasticsearch\\", \\"kafka\\", \\"admin\\", \\"operator\\", \\"service\\")) AND (MV_CONTAINS(TO_STRING(event.kind), \\"asset\\") OR NOT (MV_CONTAINS(TO_STRING(event.kind), \\"asset\\") OR (TO_STRING(event.kind) != \\"enrichment\\" OR TO_STRING(event.kind) IS NULL) AND MV_CONTAINS(TO_STRING(event.category), \\"iam\\") AND (MV_CONTAINS(TO_STRING(event.type), \\"user\\") OR MV_CONTAINS(TO_STRING(event.type), \\"creation\\") OR MV_CONTAINS(TO_STRING(event.type), \\"deletion\\") OR MV_CONTAINS(TO_STRING(event.type), \\"group\\"))))), \\"local\\", (_src_entity_namespace == \\"okta\\" OR _src_entity_namespace == \\"entityanalytics_okta\\"), \\"okta\\", (_src_entity_namespace == \\"azure\\" OR _src_entity_namespace == \\"entityanalytics_entra_id\\"), \\"entra_id\\", (_src_entity_namespace == \\"o365\\" OR _src_entity_namespace == \\"o365_metrics\\"), \\"microsoft_365\\", (_src_entity_namespace == \\"entityanalytics_ad\\"), \\"active_directory\\", (_src_entity_namespace IS NULL OR _src_entity_namespace == \\"\\"), \\"unknown\\", _src_entity_namespace),
+ _src_entity_namespace = COALESCE(CASE(_src_entity_namespace0 IS NOT NULL AND _src_entity_namespace0 != \\"\\", _src_entity_namespace0), CASE(_src_entity_namespace1 IS NOT NULL AND _src_entity_namespace1 != \\"\\", _src_entity_namespace1)),
+ _eval_entity_namespace_arm0 = (TO_STRING(user.name) IS NOT NULL AND TO_STRING(user.name) != \\"\\" AND TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\" AND NOT (TO_STRING(user.name) IN (\\"root\\", \\"bin\\", \\"daemon\\", \\"sys\\", \\"nobody\\", \\"jenkins\\", \\"ansible\\", \\"deploy\\", \\"terraform\\", \\"gitlab-runner\\", \\"postgres\\", \\"mysql\\", \\"redis\\", \\"elasticsearch\\", \\"kafka\\", \\"admin\\", \\"operator\\", \\"service\\")) AND (MV_CONTAINS(TO_STRING(event.kind), \\"asset\\") OR NOT (MV_CONTAINS(TO_STRING(event.kind), \\"asset\\") OR (TO_STRING(event.kind) != \\"enrichment\\" OR TO_STRING(event.kind) IS NULL) AND MV_CONTAINS(TO_STRING(event.category), \\"iam\\") AND (MV_CONTAINS(TO_STRING(event.type), \\"user\\") OR MV_CONTAINS(TO_STRING(event.type), \\"creation\\") OR MV_CONTAINS(TO_STRING(event.type), \\"deletion\\") OR MV_CONTAINS(TO_STRING(event.type), \\"group\\"))))),
+ entity.namespace = COALESCE(CASE(COALESCE(_eval_entity_namespace_arm0, FALSE), \\"local\\"), CASE(COALESCE(_src_entity_namespace IN (\\"okta\\", \\"entityanalytics_okta\\"), FALSE), \\"okta\\"), CASE(COALESCE(_src_entity_namespace IN (\\"azure\\", \\"entityanalytics_entra_id\\"), FALSE), \\"entra_id\\"), CASE(COALESCE(_src_entity_namespace IN (\\"o365\\", \\"o365_metrics\\"), FALSE), \\"microsoft_365\\"), CASE(COALESCE(_src_entity_namespace IN (\\"entityanalytics_ad\\"), FALSE), \\"active_directory\\"), CASE(_src_entity_namespace IS NULL OR _src_entity_namespace == \\"\\", \\"unknown\\"), _src_entity_namespace),
  user_name_present = TO_STRING(user.name) IS NOT NULL AND TO_STRING(user.name) != \\"\\",
  host_id_present = TO_STRING(host.id) IS NOT NULL AND TO_STRING(host.id) != \\"\\",
  entity_namespace_present = TO_STRING(entity.namespace) IS NOT NULL AND TO_STRING(entity.namespace) != \\"\\",
  user_email_present = TO_STRING(user.email) IS NOT NULL AND TO_STRING(user.email) != \\"\\",
  user_id_present = TO_STRING(user.id) IS NOT NULL AND TO_STRING(user.id) != \\"\\",
  user_domain_present = TO_STRING(user.domain) IS NOT NULL AND TO_STRING(user.domain) != \\"\\",
- recent.entity.EngineMetadata.UntypedId = CASE((TO_STRING(entity.namespace) == \\"local\\"), CASE((user_name_present AND host_id_present AND entity_namespace_present), CONCAT(TO_STRING(user.name), \\"@\\", TO_STRING(host.id), \\"@\\", TO_STRING(entity.namespace)), NULL),
-true, CASE((user_email_present AND entity_namespace_present), CONCAT(TO_STRING(user.email), \\"@\\", TO_STRING(entity.namespace)),
-(user_id_present AND entity_namespace_present), CONCAT(TO_STRING(user.id), \\"@\\", TO_STRING(entity.namespace)),
-(user_name_present AND user_domain_present AND entity_namespace_present), CONCAT(TO_STRING(user.name), \\"@\\", TO_STRING(user.domain), \\"@\\", TO_STRING(entity.namespace)),
-(user_name_present AND entity_namespace_present), CONCAT(TO_STRING(user.name), \\"@\\", TO_STRING(entity.namespace)), NULL), NULL)
+ user_name_present_or_null = CASE(user_name_present, TO_STRING(user.name)),
+ host_id_present_or_null = CASE(host_id_present, TO_STRING(host.id)),
+ entity_namespace_present_or_null = CASE(entity_namespace_present, TO_STRING(entity.namespace)),
+ user_email_present_or_null = CASE(user_email_present, TO_STRING(user.email)),
+ user_id_present_or_null = CASE(user_id_present, TO_STRING(user.id)),
+ user_domain_present_or_null = CASE(user_domain_present, TO_STRING(user.domain)),
+ _euid_branch_0_formula = CONCAT(user_name_present_or_null, \\"@\\", host_id_present_or_null, \\"@\\", entity_namespace_present_or_null),
+ _euid_branch_0_cond = (TO_STRING(entity.namespace) == \\"local\\"),
+ _euid_branch_1_formula = COALESCE(CONCAT(user_email_present_or_null, \\"@\\", entity_namespace_present_or_null), CONCAT(user_id_present_or_null, \\"@\\", entity_namespace_present_or_null), CONCAT(user_name_present_or_null, \\"@\\", user_domain_present_or_null, \\"@\\", entity_namespace_present_or_null), CONCAT(user_name_present_or_null, \\"@\\", entity_namespace_present_or_null)),
+ recent.entity.EngineMetadata.UntypedId = CASE(_euid_branch_0_cond, _euid_branch_0_formula,
+TRUE, _euid_branch_1_formula, NULL)
 | STATS
     entity.EngineMetadata.FirstSeenLogInPage = MIN(@timestamp),
     recent.timestamp = MAX(@timestamp),
@@ -1567,8 +1569,8 @@ true, CASE((user_email_present AND entity_namespace_present), CONCAT(TO_STRING(u
  recent.entity.attributes.permissions = VALUES(TO_STRING(user.entity.attributes.permissions)),
  recent.entity.attributes.known_redirects = VALUES(TO_STRING(user.entity.attributes.known_redirects)),
  recent.entity.attributes.oauth_consent_restriction = LAST(TO_STRING(user.entity.attributes.oauth_consent_restriction), @timestamp) WHERE TO_STRING(user.entity.attributes.oauth_consent_restriction) IS NOT NULL,
- recent.entity.lifecycle.first_seen = FIRST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
- recent.entity.lifecycle.last_seen = LAST(@timestamp, @timestamp) WHERE @timestamp IS NOT NULL,
+ recent.entity.lifecycle.first_seen = FIRST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
+ recent.entity.lifecycle.last_seen = LAST(TO_DATETIME(@timestamp), @timestamp) WHERE TO_DATETIME(@timestamp) IS NOT NULL,
  recent.entity.lifecycle.last_activity = LAST(TO_DATETIME(user.entity.lifecycle.last_activity), @timestamp) WHERE TO_DATETIME(user.entity.lifecycle.last_activity) IS NOT NULL,
  recent.entity.behaviors.rule_names = VALUES(TO_STRING(user.entity.behaviors.rule_names)),
  recent.entity.behaviors.anomaly_job_ids = VALUES(TO_STRING(user.entity.behaviors.anomaly_job_ids)),
@@ -1642,11 +1644,11 @@ true, CASE((user_email_present AND entity_namespace_present), CONCAT(TO_STRING(u
 | WHERE TO_STRING(entity.id) IS NOT NULL OR TO_STRING(recent.entity.namespace) == \\"local\\" OR MV_CONTAINS(TO_STRING(recent.event.kind), \\"asset\\") OR (TO_STRING(recent.event.kind) != \\"enrichment\\" OR TO_STRING(recent.event.kind) IS NULL) AND MV_CONTAINS(TO_STRING(recent.event.category), \\"iam\\") AND (MV_CONTAINS(TO_STRING(recent.event.type), \\"user\\") OR MV_CONTAINS(TO_STRING(recent.event.type), \\"creation\\") OR MV_CONTAINS(TO_STRING(recent.event.type), \\"deletion\\") OR MV_CONTAINS(TO_STRING(recent.event.type), \\"group\\")) 
 | SORT entity.EngineMetadata.FirstSeenLogInPage ASC, recent.entity.EngineMetadata.UntypedId ASC
 | LIMIT 10000
-| EVAL recent.entity.name = CASE((TO_STRING(recent.entity.namespace) == \\"local\\" AND TO_STRING(recent.host.name) IS NOT NULL AND TO_STRING(recent.host.name) != \\"\\"), CONCAT(TO_STRING(recent.user.name), \\"@\\", TO_STRING(recent.host.name)), recent.entity.name)
-| EVAL recent.entity.name = CASE((TO_STRING(recent.entity.namespace) == \\"local\\" AND NOT (TO_STRING(recent.host.name) IS NOT NULL AND TO_STRING(recent.host.name) != \\"\\")), TO_STRING(recent.user.name), recent.entity.name)
-| EVAL recent.entity.name = CASE((TO_STRING(recent.entity.namespace) != \\"local\\"), TO_STRING(recent.user.name), recent.entity.name),
-    recent.entity.confidence = CASE((TO_STRING(recent.entity.namespace) != \\"local\\"), \\"high\\", recent.entity.confidence)
-| EVAL recent.entity.confidence = CASE((TO_STRING(recent.entity.namespace) == \\"local\\"), \\"medium\\", recent.entity.confidence)
+| EVAL recent.entity.name = CASE((TO_STRING(recent.entity.namespace) == \\"local\\" AND TO_STRING(recent.host.name) IS NOT NULL AND TO_STRING(recent.host.name) != \\"\\"), CONCAT(TO_STRING(recent.user.name), \\"@\\", TO_STRING(recent.host.name)), recent.entity.name),
+    recent.entity.name = CASE((TO_STRING(recent.entity.namespace) == \\"local\\" AND NOT (TO_STRING(recent.host.name) IS NOT NULL AND TO_STRING(recent.host.name) != \\"\\")), TO_STRING(recent.user.name), recent.entity.name),
+    recent.entity.name = CASE((TO_STRING(recent.entity.namespace) != \\"local\\"), TO_STRING(recent.user.name), recent.entity.name),
+    recent.entity.confidence = CASE((TO_STRING(recent.entity.namespace) != \\"local\\"), \\"high\\", recent.entity.confidence),
+    recent.entity.confidence = CASE((TO_STRING(recent.entity.namespace) == \\"local\\"), \\"medium\\", recent.entity.confidence)
 | EVAL entity.name = COALESCE(recent.entity.name, entity.name),
  event.kind = MV_SLICE(MV_UNION(recent.event.kind, event.kind), 0, 49),
  event.category = MV_SLICE(MV_UNION(recent.event.category, event.category), 0, 49),

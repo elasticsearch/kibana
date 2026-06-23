@@ -158,7 +158,7 @@ export const getRangeFromOffsets = (lineCounter: LineCounter, start: number, end
 /**
  * Build validation markers for YAML content in Monaco editor
  */
-export const buildYamlValidationMarkers = (model: monaco.editor.ITextModel) => {
+export const buildYamlValidationMarkers = (model: monaco.editor.ITextModel): number => {
   const text = model.getValue();
   const lineCounter = new LineCounter();
   const doc = YAML.parseDocument(text, { lineCounter });
@@ -200,6 +200,7 @@ export const buildYamlValidationMarkers = (model: monaco.editor.ITextModel) => {
   }
 
   monaco.editor.setModelMarkers(model, 'alertingV2YamlSchema', markers);
+  return markers.length;
 };
 
 /**

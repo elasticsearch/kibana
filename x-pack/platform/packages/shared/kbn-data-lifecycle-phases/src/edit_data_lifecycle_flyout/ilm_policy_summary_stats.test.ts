@@ -9,7 +9,7 @@ import type { IlmPolicyForFlyout } from './types';
 import { getIlmPolicySummaryStats } from './ilm_policy_summary_stats';
 
 describe('getIlmPolicySummaryStats', () => {
-  it('computes phaseCount excluding the delete phase', () => {
+  it('computes phaseCount including the delete phase when present', () => {
     const phases: IlmPolicyForFlyout['phases'] = {
       hot: { actions: {} },
       warm: { actions: {} },
@@ -18,7 +18,7 @@ describe('getIlmPolicySummaryStats', () => {
 
     expect(getIlmPolicySummaryStats(phases)).toEqual({
       deleteAfter: '30d',
-      phaseCount: 2,
+      phaseCount: 3,
       downsampleStepCount: 0,
     });
   });
@@ -40,8 +40,8 @@ describe('getIlmPolicySummaryStats', () => {
 
   it('counts downsample steps across hot, warm, and cold phases', () => {
     const phases: IlmPolicyForFlyout['phases'] = {
-      hot: { actions: { downsample: {} } },
-      warm: { actions: { downsample: {} } },
+      hot: { actions: { downsample: { fixed_interval: '1h' } } },
+      warm: { actions: { downsample: { fixed_interval: '1d' } } },
       cold: { actions: {} },
       frozen: { actions: { downsample: {} } },
     };

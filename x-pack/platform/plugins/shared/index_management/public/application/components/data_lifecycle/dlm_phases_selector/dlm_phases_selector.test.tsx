@@ -185,6 +185,73 @@ describe('DlmPhasesSelector', () => {
     expect(queryByTestId('dlmPhasesSelectorFrozenPhaseCard')).not.toBeInTheDocument();
   });
 
+  describe('existing template with frozen phase already active (grace state)', () => {
+    const GRACE_DEFAULT_VALUE = {
+      frozen: { enabled: true, value: '30', unit: 'd' },
+      delete: { enabled: true, value: '60', unit: 'd' },
+    };
+
+    it('keeps frozen enabled with the enterprise warning callout when the license is missing', () => {
+      const { getByLabelText, getByTestId, getByText, queryByText } = renderSelector({
+        hasEnterpriseLicense: false,
+        defaultValue: GRACE_DEFAULT_VALUE,
+      });
+
+      expect(getByLabelText('Enable frozen phase')).not.toBeDisabled();
+      expect(getByLabelText('Enable frozen phase')).toBeChecked();
+      expect(getByTestId('frozenEnterpriseRequiredCallout')).toBeInTheDocument();
+      expect(getByText('Move after')).toBeInTheDocument();
+      expect(queryByText('Enterprise required')).not.toBeInTheDocument();
+    });
+
+    it('keeps frozen enabled with the default repository warning callout when the repository is missing', () => {
+      const { getByLabelText, getByTestId, queryByText } = renderSelector({
+        hasDefaultSnapshotRepository: false,
+        defaultValue: GRACE_DEFAULT_VALUE,
+      });
+
+      expect(getByLabelText('Enable frozen phase')).not.toBeDisabled();
+      expect(getByTestId('frozenDefaultRepositoryRequiredCallout')).toBeInTheDocument();
+      expect(queryByText('Default repository required')).not.toBeInTheDocument();
+    });
+
+    it('shows both warning callouts when both requirements are missing', () => {
+      const { getByTestId } = renderSelector({
+        hasEnterpriseLicense: false,
+        hasDefaultSnapshotRepository: false,
+        defaultValue: GRACE_DEFAULT_VALUE,
+      });
+
+      expect(getByTestId('frozenEnterpriseRequiredCallout')).toBeInTheDocument();
+      expect(getByTestId('frozenDefaultRepositoryRequiredCallout')).toBeInTheDocument();
+    });
+
+    it('collapses to the disabled badge state after the user unchecks the phase', () => {
+      const { getByLabelText, getByText, queryByTestId } = renderSelector({
+        hasEnterpriseLicense: false,
+        defaultValue: GRACE_DEFAULT_VALUE,
+      });
+
+      fireEvent.click(getByLabelText('Enable frozen phase'));
+
+      expect(getByText('Enterprise required')).toBeInTheDocument();
+      expect(getByLabelText('Enable frozen phase')).toBeDisabled();
+      expect(queryByTestId('frozenEnterpriseRequiredCallout')).not.toBeInTheDocument();
+    });
+
+    it('keeps the frozen phase visible in the grace state even without create permission', () => {
+      const { getByTestId } = renderSelector({
+        hasDefaultSnapshotRepository: false,
+        canCreateDefaultSnapshotRepository: false,
+        defaultValue: GRACE_DEFAULT_VALUE,
+      });
+
+      expect(getByTestId('dlmPhasesSelectorFrozenPhaseCard')).toBeInTheDocument();
+      expect(getByTestId('frozenDefaultRepositoryRequiredCallout')).toBeInTheDocument();
+      expect(getByTestId('frozenCreateDefaultRepositoryButton')).toBeDisabled();
+    });
+  });
+
   it('disables phase configuration fields when the selector is disabled', () => {
     const { getByText, getByTestId } = renderSelector({
       isDisabled: true,

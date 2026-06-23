@@ -6,16 +6,17 @@
  */
 
 import { loggerMock } from '@kbn/logging-mocks';
+import { WATCHLISTS_DATA_SOURCE_URL } from '../../../../../../../common/constants';
 import {
   serverMock,
   requestContextMock,
   requestMock,
 } from '../../../../../detection_engine/routes/__mocks__';
-import { WATCHLISTS_DATA_SOURCE_URL } from '../../../../../../../common/constants';
 
 const mockWatchlistClientCreate = jest.fn();
 const mockAddEntitySourceReference = jest.fn();
 const mockSyncWatchlist = jest.fn();
+const mockGetStartServices = jest.fn();
 
 jest.mock('../../watchlist_config', () => ({
   WatchlistConfigClient: jest.fn().mockImplementation(() => ({
@@ -26,10 +27,6 @@ jest.mock('../../watchlist_config', () => ({
 jest.mock('../../../entity_sources/infra', () => ({
   ...jest.requireActual('../../../entity_sources/infra'),
   WatchlistEntitySourceClient: jest.fn(),
-}));
-
-jest.mock('../../../shared/utils', () => ({
-  getRequestSavedObjectClient: jest.fn(() => 'mock-so-client'),
 }));
 
 jest.mock('../../../entity_sources/entity_sources_service', () => ({
@@ -47,6 +44,9 @@ const { createEntitySourcesService: mockCreateEntitySourcesService } = jest.requ
 // Import after mocks are set up
 import { createEntitySourceRoute } from './create';
 
+const WATCHLIST_ID = 'wl-1';
+const DATA_SOURCE_URL = WATCHLISTS_DATA_SOURCE_URL.replace('{watchlist_id}', WATCHLIST_ID);
+
 describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - createEntitySourceRoute', () => {
   let server: ReturnType<typeof serverMock.create>;
   let context: ReturnType<typeof requestContextMock.convertContext>;
@@ -62,32 +62,56 @@ describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - cre
     mockAddEntitySourceReference.mockReset();
     mockSyncWatchlist.mockReset();
 
+    const mockSecurity = { authc: { apiKeys: { grantAsInternalUser: jest.fn() } } };
+    mockGetStartServices.mockResolvedValue([{ security: mockSecurity }]);
+
     MockWatchlistEntitySourceClient.mockImplementation(() => ({
       create: mockWatchlistClientCreate,
     }));
 
     mockCreateEntitySourcesService.mockReturnValue({ syncWatchlist: mockSyncWatchlist });
 
-    createEntitySourceRoute(server.router, logger);
+    createEntitySourceRoute(server.router, logger, mockGetStartServices, true);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  const buildRequest = (watchlistId: string, body: object = {}) =>
+  const buildRequest = (body: object) =>
     requestMock.create({
       method: 'post',
-      path: `${WATCHLISTS_DATA_SOURCE_URL}/${watchlistId}`,
-      params: { watchlist_id: watchlistId },
-      body: {
-        type: 'index',
-        name: 'test-source',
-        indexPattern: 'logs-*',
-        enabled: true,
-        ...body,
-      },
+      path: DATA_SOURCE_URL,
+      params: { watchlist_id: WATCHLIST_ID },
+      body,
     });
+
+  describe('index-type source', () => {
+    const indexSourceBody = {
+      type: 'index' as const,
+      name: 'my-index-source',
+      indexPattern: 'logs-*',
+      enabled: true,
+    };
+
+    it('does not link source to watchlist when client.create fails', async () => {
+      mockWatchlistClientCreate.mockRejectedValue(new Error('Insufficient index privileges'));
+
+      await server.inject(buildRequest(indexSourceBody), context);
+
+      expect(mockAddEntitySourceReference).not.toHaveBeenCalled();
+    });
+
+    it('creates the source when client.create resolves', async () => {
+      const createdSource = { id: 'es-1', ...indexSourceBody };
+      mockWatchlistClientCreate.mockResolvedValue(createdSource);
+
+      const response = await server.inject(buildRequest(indexSourceBody), context);
+
+      expect(response.status).toEqual(200);
+      expect(mockWatchlistClientCreate).toHaveBeenCalledWith(indexSourceBody, expect.anything());
+    });
+  });
 
   describe('entity source creation', () => {
     it('creates an entity source and links it to watchlist', async () => {
@@ -103,18 +127,26 @@ describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - cre
       mockAddEntitySourceReference.mockResolvedValue(undefined);
       mockSyncWatchlist.mockResolvedValue(undefined);
 
-      const request = buildRequest('wl-1');
-      const response = await server.inject(request, context);
-
-      expect(response.status).toEqual(200);
-      expect(response.body).toEqual(sourceResult);
-      expect(mockWatchlistClientCreate).toHaveBeenCalledWith({
+      const request = buildRequest({
         type: 'index',
         name: 'test-source',
         indexPattern: 'logs-*',
         enabled: true,
       });
-      expect(mockAddEntitySourceReference).toHaveBeenCalledWith('wl-1', 'es-1');
+      const response = await server.inject(request, context);
+
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual(sourceResult);
+      expect(mockWatchlistClientCreate).toHaveBeenCalledWith(
+        {
+          type: 'index',
+          name: 'test-source',
+          indexPattern: 'logs-*',
+          enabled: true,
+        },
+        expect.anything()
+      );
+      expect(mockAddEntitySourceReference).toHaveBeenCalledWith(WATCHLIST_ID, 'es-1');
     });
 
     it('triggers background sync after linking entity source', async () => {
@@ -130,11 +162,16 @@ describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - cre
       mockAddEntitySourceReference.mockResolvedValue(undefined);
       mockSyncWatchlist.mockResolvedValue(undefined);
 
-      const request = buildRequest('wl-1');
+      const request = buildRequest({
+        type: 'index',
+        name: 'test-source',
+        indexPattern: 'logs-*',
+        enabled: true,
+      });
       const response = await server.inject(request, context);
 
       expect(response.status).toEqual(200);
-      expect(mockSyncWatchlist).toHaveBeenCalledWith('wl-1');
+      expect(mockSyncWatchlist).toHaveBeenCalledWith(WATCHLIST_ID);
     });
 
     it('logs warning when background sync fails', async () => {
@@ -150,11 +187,16 @@ describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - cre
       mockAddEntitySourceReference.mockResolvedValue(undefined);
       mockSyncWatchlist.mockRejectedValue(new Error('sync error'));
 
-      const request = buildRequest('wl-1');
+      const request = buildRequest({
+        type: 'index',
+        name: 'test-source',
+        indexPattern: 'logs-*',
+        enabled: true,
+      });
       const response = await server.inject(request, context);
 
       expect(response.status).toEqual(200);
-      expect(mockSyncWatchlist).toHaveBeenCalledWith('wl-1');
+      expect(mockSyncWatchlist).toHaveBeenCalledWith(WATCHLIST_ID);
     });
 
     it('still returns 200 when sync fails', async () => {
@@ -170,7 +212,12 @@ describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - cre
       mockAddEntitySourceReference.mockResolvedValue(undefined);
       mockSyncWatchlist.mockRejectedValue(new Error('sync error'));
 
-      const request = buildRequest('wl-1');
+      const request = buildRequest({
+        type: 'index',
+        name: 'test-source',
+        indexPattern: 'logs-*',
+        enabled: true,
+      });
       const response = await server.inject(request, context);
 
       expect(response.status).toEqual(200);
@@ -182,7 +229,12 @@ describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - cre
     it('returns error when entity source creation fails', async () => {
       mockWatchlistClientCreate.mockRejectedValue(new Error('source creation failed'));
 
-      const request = buildRequest('wl-1');
+      const request = buildRequest({
+        type: 'index',
+        name: 'test-source',
+        indexPattern: 'logs-*',
+        enabled: true,
+      });
       const response = await server.inject(request, context);
 
       expect(response.status).toEqual(500);
@@ -207,7 +259,12 @@ describe('POST /api/entity_analytics/watchlists/:watchlist_id/data_sources - cre
       mockWatchlistClientCreate.mockResolvedValue(sourceResult);
       mockAddEntitySourceReference.mockRejectedValue(new Error('linking failed'));
 
-      const request = buildRequest('wl-1');
+      const request = buildRequest({
+        type: 'index',
+        name: 'test-source',
+        indexPattern: 'logs-*',
+        enabled: true,
+      });
       const response = await server.inject(request, context);
 
       expect(response.status).toEqual(500);

@@ -12,7 +12,10 @@ import { ALERTS_API_READ } from '@kbn/security-solution-features/constants';
 import { SearchAlertsRequestBody } from '../../../../../common/api/detection_engine/signals';
 import type { SecuritySolutionPluginRouter } from '../../../../types';
 import { DETECTION_ENGINE_QUERY_SIGNALS_URL } from '../../../../../common/constants';
-import { searchAlertsHandler } from '../common/search_alerts_handler';
+import { buildSiemResponse } from '../utils';
+import { searchAlerts } from '../common/operations/search_alerts';
+import { validateSearchAlertsParams } from '../common/validators/validate_search_alerts_params';
+import { withSiemErrorHandling } from '../with_siem_error_handling';
 
 export const querySignalsRoute = (
   router: SecuritySolutionPluginRouter,
@@ -38,13 +41,17 @@ export const querySignalsRoute = (
         },
       },
       async (context, request, response) => {
-        const getIndexPattern = async () => {
-          const spaceId = (await context.securitySolution).getSpaceId();
-          const indexPattern = ruleDataClient?.indexNameWithNamespace(spaceId);
-          return indexPattern;
-        };
+        const params = request.body;
 
-        return searchAlertsHandler({ context, request, response, getIndexPattern });
+        const validationError = validateSearchAlertsParams(params);
+        if (validationError) {
+          return buildSiemResponse(response).error({ statusCode: 400, body: validationError });
+        }
+
+        const spaceId = (await context.securitySolution).getSpaceId();
+        const index = ruleDataClient?.indexNameWithNamespace(spaceId);
+
+        return withSiemErrorHandling(response, () => searchAlerts({ context, index, params }));
       }
     );
 };

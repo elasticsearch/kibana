@@ -63,6 +63,7 @@ import {
 import type { FtrProviderContext } from '../../../../../../ftr_provider_context';
 import { EsArchivePathBuilder } from '../../../../../../es_archive_path_builder';
 import { getMetricsRequest, getMetricsWithRetry } from '../../utils';
+import { EntityStoreV2EnrichmentSetup } from '../../entity_store_v2_enrichment_setup';
 
 /**
  * Specific AGENT_ID to use for some of the tests. If the archiver changes and you see errors
@@ -71,12 +72,19 @@ import { getMetricsRequest, getMetricsWithRetry } from '../../utils';
 const AGENT_ID = 'a1d7b39c-f898-4dbe-a761-efb61939302d';
 const specificQueryForTests = `configuration where agent.id=="${AGENT_ID}"`;
 
+// host.id of the auditbeat record matched by `specificQueryForTests`.
+// EUID priority is host.id, so the entity EUID is `host:${ENRICHMENT_HOST_ID}`.
+const ENRICHMENT_HOST_ID = '8cc95778cce5407c809480e8e32ad76b';
+const ENRICHMENT_HOST_NAME = 'suricata-zeek-sensor-toronto';
+const ENRICHMENT_HOST_EUID = `host:${ENRICHMENT_HOST_ID}`;
+
 export default ({ getService }: FtrProviderContext) => {
   const supertest = getService('supertest');
   const esArchiver = getService('esArchiver');
   const es = getService('es');
   const log = getService('log');
   const retry = getService('retry');
+  const entityStoreV2 = EntityStoreV2EnrichmentSetup(getService);
 
   // TODO: add a new service for loading archiver files similar to "getService('es')"
   const config = getService('config');
@@ -784,14 +792,25 @@ export default ({ getService }: FtrProviderContext) => {
 
     describe('with host risk index', () => {
       before(async () => {
-        await esArchiver.load('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: ENRICHMENT_HOST_NAME, id: [ENRICHMENT_HOST_ID] },
+              entity: {
+                id: ENRICHMENT_HOST_EUID,
+                type: 'host',
+                risk: { calculated_level: 'Critical', calculated_score_norm: 96 },
+              },
+            },
+          ],
+        });
       });
 
       after(async () => {
-        await esArchiver.unload('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        await entityStoreV2.teardown();
       });
 
-      it('@skipInServerlessMKI should be enriched with host risk score', async () => {
+      it('should be enriched with host risk score', async () => {
         const rule: EqlRuleCreateProps = {
           ...getEqlRuleForAlertTesting(['auditbeat-*']),
           query: specificQueryForTests,
@@ -810,18 +829,22 @@ export default ({ getService }: FtrProviderContext) => {
 
     describe('with asset criticality', () => {
       before(async () => {
-        await esArchiver.load(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: ENRICHMENT_HOST_NAME, id: [ENRICHMENT_HOST_ID] },
+              entity: { id: ENRICHMENT_HOST_EUID, type: 'host' },
+              asset: { criticality: 'high_impact' },
+            },
+          ],
+        });
       });
 
       after(async () => {
-        await esArchiver.unload(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        await entityStoreV2.teardown();
       });
 
-      it('@skipInServerlessMKI should be enriched alert with criticality_level', async () => {
+      it('should be enriched alert with criticality_level', async () => {
         const rule: EqlRuleCreateProps = {
           ...getEqlRuleForAlertTesting(['auditbeat-*']),
           query: specificQueryForTests,

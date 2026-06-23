@@ -9,6 +9,9 @@
 
 import { useCallback, useRef } from 'react';
 
+const MOUSE_DRAG_THRESHOLD = 8;
+const TOUCH_DRAG_THRESHOLD = 12;
+
 import { useGridLayoutContext } from '../../use_grid_layout_context';
 import {
   getSensorPosition,
@@ -36,6 +39,7 @@ import { getNextKeyboardPosition } from './utils';
 export const useGridLayoutSectionEvents = ({ sectionId }: { sectionId: string }) => {
   const { gridLayoutStateManager } = useGridLayoutContext();
   const startingPointer = useRef<PointerPosition>({ clientX: 0, clientY: 0 });
+  const hasPassedDragThreshold = useRef<boolean>(false);
 
   const onEnd = useCallback(() => commitAction(gridLayoutStateManager), [gridLayoutStateManager]);
   const onCancel = useCallback(
@@ -49,12 +53,28 @@ export const useGridLayoutSectionEvents = ({ sectionId }: { sectionId: string })
       }
       const onStart = () => {
         startingPointer.current = getSensorPosition(e);
+        hasPassedDragThreshold.current = false;
         startAction(e, gridLayoutStateManager, sectionId);
       };
 
       const onMove = (ev: UserInteractionEvent) => {
         if (isMouseEvent(ev) || isTouchEvent(ev)) {
-          moveAction(gridLayoutStateManager, startingPointer.current, getSensorPosition(ev));
+          const currentPointer = getSensorPosition(ev);
+
+          if (!hasPassedDragThreshold.current) {
+            const deltaX = currentPointer.clientX - startingPointer.current.clientX;
+            const deltaY = currentPointer.clientY - startingPointer.current.clientY;
+            const distance = Math.hypot(deltaX, deltaY);
+            const threshold = isTouchEvent(ev) ? TOUCH_DRAG_THRESHOLD : MOUSE_DRAG_THRESHOLD;
+
+            if (distance < threshold) {
+              return;
+            }
+
+            hasPassedDragThreshold.current = true;
+          }
+
+          moveAction(gridLayoutStateManager, startingPointer.current, currentPointer);
         } else if (
           isKeyboardEvent(ev) &&
           hasRowInteractionStartedWithKeyboard(gridLayoutStateManager)

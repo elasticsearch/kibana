@@ -23,14 +23,40 @@ import {
 
 const CUSTOM_DASHBOARDS_SETTING = 'observability:enableInfrastructureAssetCustomDashboards';
 
-// Failing: See https://github.com/elastic/kibana/issues/267134
-test.describe.skip(
+test.describe(
   'Hosts Page - Flyout',
   { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
-    test.beforeAll(async ({ esClient, kbnUrl, log, config }) => {
+    test.beforeAll(async ({ esClient, kbnUrl, log, config, kbnClient }) => {
       log.info('Sequential suite: ingesting ECS hosts + logs + APM services for flyout tests');
       await ingestHostsFlyoutSynthtraceData({ esClient, kbnUrl, log, config });
+
+      log.info('Sequential suite: waiting for hosts metrics to be searchable before navigating');
+      await expect
+        .poll(
+          async () => {
+            try {
+              const { data } = await kbnClient.request<{ nodes: Array<{ name: string }> }>({
+                method: 'POST',
+                path: '/api/metrics/infra/host',
+                body: {
+                  from: DATE_WITH_HOSTS_DATA_FROM,
+                  to: DATE_WITH_HOSTS_DATA_TO,
+                  metrics: ['cpuV2', 'diskSpaceUsage', 'memory', 'memoryFree', 'normalizedLoad1m'],
+                  limit: 100,
+                  schema: 'ecs',
+                },
+              });
+              return data.nodes.length;
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              log.debug(`Hosts metrics readiness probe failed, retrying: ${message}`);
+              return 0;
+            }
+          },
+          { timeout: EXTENDED_TIMEOUT, intervals: [1_000, 2_000, 5_000] }
+        )
+        .toBeGreaterThanOrEqual(HOSTS.length);
     });
 
     test.beforeEach(async ({ browserAuth, pageObjects: { hostsPage } }) => {

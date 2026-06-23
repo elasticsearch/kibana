@@ -11,7 +11,10 @@ import type { ElasticsearchClient } from '@kbn/core/server';
 import type { EntityUpdateClient } from '@kbn/entity-store/server';
 import { loggerMock } from '@kbn/logging-mocks';
 
-import { runRelationshipMaintainer } from './run_relationship_maintainer';
+import {
+  runRelationshipMaintainer,
+  type RelationshipMaintainerTelemetryCollector,
+} from './run_relationship_maintainer';
 import { COMPOSITE_PAGE_SIZE, MAX_ITERATIONS } from './constants';
 import type { RelationshipIntegrationConfig } from './types';
 
@@ -224,6 +227,8 @@ describe('runRelationshipMaintainer', () => {
     expect(result.totalBuckets).toBe(0);
     expect(result.totalRecords).toBe(0);
     expect(result.totalWritten).toBe(0);
+    expect(result.totalIterations).toBe(0);
+    expect(result.truncated).toBe(false);
     expect(result.lastRunTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(bulkUpdate).not.toHaveBeenCalled();
   });
@@ -346,6 +351,8 @@ describe('runRelationshipMaintainer', () => {
       const warns = logger.warn.mock.calls.map((c) => c[0] as string);
       expect(warns.some((m) => m.includes(`MAX_ITERATIONS`))).toBe(true);
       expect(result.totalBuckets).toBeGreaterThanOrEqual(COMPOSITE_PAGE_SIZE * MAX_ITERATIONS);
+      expect(result.truncated).toBe(true);
+      expect(result.totalIterations).toBe(MAX_ITERATIONS);
     });
   });
 
@@ -370,41 +377,43 @@ describe('runRelationshipMaintainer', () => {
       expect(logger.error).not.toHaveBeenCalled();
     });
 
-    it('does NOT swallow a ResponseError with a different error.type — re-throws (e.g. cluster_block_exception)', async () => {
+    it('absorbs a ResponseError with a different error.type — run continues rather than throwing (e.g. cluster_block_exception)', async () => {
+      // runIntegration catches all non-abort, non-index-not-found errors and
+      // returns outcome: 'error' so the outer loop can continue to other integrations.
       const { esClient, search } = makeEsClient();
       const { crudClient } = makeCrudClient();
       search.mockRejectedValueOnce(responseErrorWithType('cluster_block_exception'));
       const logger = loggerMock.create();
-      await expect(
-        runRelationshipMaintainer({
-          esClient,
-          logger,
-          namespace: 'default',
-          crudClient,
-          integrations: [baseConfig],
-        })
-      ).rejects.toBeInstanceOf(esErrors.ResponseError);
+      const result = await runRelationshipMaintainer({
+        esClient,
+        logger,
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig],
+      });
+      expect(result.totalBuckets).toBe(0);
+      expect(result.totalWritten).toBe(0);
+      expect(logger.error).toHaveBeenCalled();
     });
 
-    it('does NOT swallow a duck-typed plain object with shape { body: { error: { type: "index_not_found_exception" } } } — re-throws (typed ResponseError is required)', async () => {
-      // Locks the contract: only real `errors.ResponseError` instances are
-      // recoverable. A duck-typed object that happens to have the same shape
-      // (e.g. from a custom test fake or future client wrapper) is treated as
-      // a real failure so we surface it instead of silently dropping data.
+    it('absorbs a duck-typed plain object that resembles an index_not_found error — run continues', async () => {
+      // Previously re-threw; now runIntegration catches all throws so the outer
+      // loop continues. Duck-typed objects still trigger the error path (not
+      // recoverable as index_missing) but the run itself does not crash.
       const { esClient, search } = makeEsClient();
       const { crudClient } = makeCrudClient();
       const duckTyped = { body: { error: { type: 'index_not_found_exception' } } };
       search.mockRejectedValueOnce(duckTyped);
       const logger = loggerMock.create();
-      await expect(
-        runRelationshipMaintainer({
-          esClient,
-          logger,
-          namespace: 'default',
-          crudClient,
-          integrations: [baseConfig],
-        })
-      ).rejects.toBe(duckTyped);
+      const result = await runRelationshipMaintainer({
+        esClient,
+        logger,
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig],
+      });
+      expect(result.totalBuckets).toBe(0);
+      expect(logger.error).toHaveBeenCalled();
     });
 
     it('returns null (does not throw) when the abort signal fires during composite agg', async () => {
@@ -432,20 +441,22 @@ describe('runRelationshipMaintainer', () => {
       expect(logger.error).not.toHaveBeenCalled();
     });
 
-    it('throws on a real (non-aborted, non-index-not-found) ES error', async () => {
+    it('absorbs a real (non-aborted, non-index-not-found) ES error — run continues, error is logged', async () => {
+      // runIntegration now catches all exceptions and returns outcome: 'error'.
+      // The outer loop skips that integration's totals and continues.
       const { esClient, search } = makeEsClient();
       const { crudClient } = makeCrudClient();
       search.mockRejectedValueOnce(realEsError());
       const logger = loggerMock.create();
-      await expect(
-        runRelationshipMaintainer({
-          esClient,
-          logger,
-          namespace: 'default',
-          crudClient,
-          integrations: [baseConfig],
-        })
-      ).rejects.toThrow(/cluster_block/);
+      const result = await runRelationshipMaintainer({
+        esClient,
+        logger,
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig],
+      });
+      expect(result.totalBuckets).toBe(0);
+      expect(result.totalWritten).toBe(0);
       expect(logger.error).toHaveBeenCalled();
     });
   });
@@ -478,7 +489,9 @@ describe('runRelationshipMaintainer', () => {
       expect(infos.some((m) => m.includes('Aborted during ES|QL query'))).toBe(true);
     });
 
-    it('throws on a real ES|QL error, preventing partial-data writes', async () => {
+    it('absorbs a real ES|QL error — run continues without writing, error is logged', async () => {
+      // runIntegration catches the ES|QL throw, returns outcome: 'error' with
+      // partial counts (scanned > 0, qualified = 0). No bulk write occurs.
       const { esClient, search, esql } = makeEsClient();
       const { crudClient, bulkUpdate } = makeCrudClient();
       search.mockResolvedValueOnce(
@@ -486,15 +499,16 @@ describe('runRelationshipMaintainer', () => {
       );
       esql.mockRejectedValueOnce(new Error('parsing_exception: line 1, column 5'));
       const logger = loggerMock.create();
-      await expect(
-        runRelationshipMaintainer({
-          esClient,
-          logger,
-          namespace: 'default',
-          crudClient,
-          integrations: [baseConfig],
-        })
-      ).rejects.toThrow(/parsing_exception/);
+      const result = await runRelationshipMaintainer({
+        esClient,
+        logger,
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig],
+      });
+      expect(result.totalBuckets).toBe(0); // error integration excluded from totals
+      expect(result.totalRecords).toBe(0);
+      expect(result.totalWritten).toBe(0);
       expect(bulkUpdate).not.toHaveBeenCalled();
       expect(logger.error).toHaveBeenCalled();
     });
@@ -838,11 +852,159 @@ describe('runRelationshipMaintainer', () => {
     });
   });
 
+  describe('telemetryCollector', () => {
+    it('populates telemetryCollector.sources with one entry per integration', async () => {
+      const { esClient, search, esql } = makeEsClient();
+      const { crudClient } = makeCrudClient();
+
+      // elastic_defend: 1 actor bucket, 0 records (esql empty)
+      search.mockResolvedValueOnce(
+        successResponse([{ key: { 'user.name': 'alice' }, doc_count: 5 }])
+      );
+      esql.mockResolvedValueOnce({ columns: [], values: [] });
+      // okta: empty (no actor buckets)
+      search.mockResolvedValueOnce(successResponse([]));
+
+      const collector: RelationshipMaintainerTelemetryCollector = {
+        sources: [],
+        relationshipTypeApplied: {},
+      };
+
+      await runRelationshipMaintainer({
+        esClient,
+        logger: loggerMock.create(),
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig, oktaConfig],
+        telemetryCollector: collector,
+      });
+
+      expect(collector.sources).toHaveLength(2);
+      expect(collector.sources[0]).toMatchObject({
+        id: 'elastic_defend',
+        scanned: 1,
+        qualified: 0,
+        outcome: 'producing',
+      });
+      expect(collector.sources[1]).toMatchObject({
+        id: 'okta',
+        scanned: 0,
+        qualified: 0,
+        outcome: 'empty',
+      });
+    });
+
+    it('records outcome: error and partial counts when integration throws', async () => {
+      const { esClient, search, esql } = makeEsClient();
+      const { crudClient } = makeCrudClient();
+
+      // elastic_defend: 1 actor bucket succeeds, esql throws → error
+      search.mockResolvedValueOnce(
+        successResponse([{ key: { 'user.name': 'alice' }, doc_count: 5 }])
+      );
+      esql.mockRejectedValueOnce(new Error('boom'));
+
+      const collector: RelationshipMaintainerTelemetryCollector = {
+        sources: [],
+        relationshipTypeApplied: {},
+      };
+
+      await runRelationshipMaintainer({
+        esClient,
+        logger: loggerMock.create(),
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig],
+        telemetryCollector: collector,
+      });
+
+      expect(collector.sources).toHaveLength(1);
+      expect(collector.sources[0]).toMatchObject({
+        id: 'elastic_defend',
+        scanned: 1, // partial: composite agg succeeded before esql failed
+        qualified: 0, // no records parsed
+        outcome: 'error',
+      });
+    });
+
+    it('records outcome: index_missing when actor index does not exist', async () => {
+      const { esClient, search } = makeEsClient();
+      const { crudClient } = makeCrudClient();
+      search.mockRejectedValueOnce(indexNotFoundError());
+
+      const collector: RelationshipMaintainerTelemetryCollector = {
+        sources: [],
+        relationshipTypeApplied: {},
+      };
+
+      await runRelationshipMaintainer({
+        esClient,
+        logger: loggerMock.create(),
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig],
+        telemetryCollector: collector,
+      });
+
+      expect(collector.sources[0]).toMatchObject({
+        id: 'elastic_defend',
+        scanned: 0,
+        qualified: 0,
+        outcome: 'index_missing',
+      });
+    });
+
+    it('continues to remaining integrations when one integration throws', async () => {
+      const { esClient, search } = makeEsClient();
+      const { crudClient } = makeCrudClient();
+
+      // First integration throws on search; second succeeds with empty results.
+      search
+        .mockRejectedValueOnce(new Error('boom')) // elastic_defend search fails
+        .mockResolvedValueOnce(successResponse([])); // okta search returns empty
+
+      const result = await runRelationshipMaintainer({
+        esClient,
+        logger: loggerMock.create(),
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig, oktaConfig],
+      });
+
+      // The first integration's failure should NOT throw; the loop should continue.
+      // Totals reflect ONLY the successful (empty) second integration.
+      expect(result.totalBuckets).toBe(0);
+      expect(result.totalRecords).toBe(0);
+      expect(search).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not populate collector when telemetryCollector is not provided', async () => {
+      const { esClient, search } = makeEsClient();
+      const { crudClient } = makeCrudClient();
+      search.mockResolvedValueOnce(successResponse([]));
+
+      // No error expected — the function just doesn't populate a collector
+      const result = await runRelationshipMaintainer({
+        esClient,
+        logger: loggerMock.create(),
+        namespace: 'default',
+        crudClient,
+        integrations: [baseConfig],
+      });
+
+      expect(result.totalBuckets).toBe(0);
+    });
+  });
+
   describe('CPS read client routing', () => {
     it('uses cpsEsClient for both search and esql.query when provided, leaving esClient untouched', async () => {
       const { esClient, search: localSearch, esql: localEsql } = makeEsClient();
       const { esClient: cpsEsClient, search: cpsSearch, esql: cpsEsql } = makeEsClient();
       const { crudClient } = makeCrudClient();
+      const collector: RelationshipMaintainerTelemetryCollector = {
+        sources: [],
+        relationshipTypeApplied: {},
+      };
 
       cpsSearch.mockResolvedValueOnce(
         successResponse([{ key: { 'user.name': 'alice' }, doc_count: 1 }])
@@ -863,6 +1025,7 @@ describe('runRelationshipMaintainer', () => {
         namespace: 'default',
         crudClient,
         integrations: [baseConfig],
+        telemetryCollector: collector,
       });
 
       expect(cpsSearch).toHaveBeenCalledTimes(1);

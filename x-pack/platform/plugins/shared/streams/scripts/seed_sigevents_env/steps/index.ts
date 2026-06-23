@@ -10,5 +10,4 @@ export * from './seed_features';
 export * from './seed_logs';
 export * from './seed_queries';
 export * from './seed_tasks';
-export * from './seed_insights';
 export * from './clean';

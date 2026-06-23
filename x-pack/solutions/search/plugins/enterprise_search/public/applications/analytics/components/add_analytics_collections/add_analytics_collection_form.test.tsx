@@ -5,15 +5,13 @@
  * 2.0.
  */
 
-import '../../../__mocks__/shallow_useeffect.mock';
-
 import { setMockValues, setMockActions } from '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { fireEvent, screen } from '@testing-library/react';
 
-import { EuiFieldText, EuiForm, EuiFormRow } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { AddAnalyticsCollectionForm } from './add_analytics_collection_form';
 
@@ -41,21 +39,22 @@ describe('AddAnalyticsCollectionForm', () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AddAnalyticsCollectionForm formId={formId} collectionNameField={collectionNameField} />
     );
-    expect(wrapper.find(EuiForm)).toHaveLength(1);
+
+    expect(screen.getByText('Collection name')).toBeInTheDocument();
   });
 
   it('submit form will call create analytics collection action', () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    const { container } = renderWithKibanaRenderContext(
       <AddAnalyticsCollectionForm formId={formId} collectionNameField={collectionNameField} />
     );
 
-    wrapper.find(EuiForm).simulate('submit', { preventDefault: jest.fn() });
+    fireEvent.submit(container.querySelector('form')!);
     expect(mockActions.createAnalyticsCollection).toHaveBeenCalled();
   });
 
@@ -66,11 +65,11 @@ describe('AddAnalyticsCollectionForm', () => {
     });
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    const { container } = renderWithKibanaRenderContext(
       <AddAnalyticsCollectionForm formId={formId} collectionNameField={collectionNameField} />
     );
 
-    wrapper.find(EuiForm).simulate('submit', { preventDefault: jest.fn() });
+    fireEvent.submit(container.querySelector('form')!);
     expect(mockActions.createAnalyticsCollection).not.toHaveBeenCalled();
   });
 
@@ -78,12 +77,15 @@ describe('AddAnalyticsCollectionForm', () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    const { container } = renderWithKibanaRenderContext(
       <AddAnalyticsCollectionForm formId={formId} collectionNameField={collectionNameField} />
     );
 
-    wrapper.find(EuiFieldText).simulate('change', { target: { value: 'test' } });
-    expect(mockActions.setNameValue).toHaveBeenCalledWith('test');
+    const input = container.querySelector(
+      `input[name="${collectionNameField}"]`
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'new-collection' } });
+    expect(mockActions.setNameValue).toHaveBeenCalledWith('new-collection');
   });
 
   it('should show error when input error exists', () => {
@@ -94,11 +96,11 @@ describe('AddAnalyticsCollectionForm', () => {
     });
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AddAnalyticsCollectionForm formId={formId} collectionNameField={collectionNameField} />
     );
-    expect(wrapper.find(EuiFormRow).prop('error')).toEqual(inputErrorMock);
-    expect(wrapper.find(EuiFormRow).prop('isInvalid')).toBeTruthy();
-    expect(wrapper.find(EuiFieldText).prop('isInvalid')).toBeTruthy();
+
+    expect(screen.getByText(inputErrorMock)).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
   });
 });

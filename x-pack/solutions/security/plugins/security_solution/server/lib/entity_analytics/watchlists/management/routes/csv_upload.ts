@@ -20,7 +20,6 @@ import {
 import type { EntityAnalyticsRoutesDeps } from '../../../types';
 import { withMinimumLicense } from '../../../utils/with_minimum_license';
 import { WatchlistConfigClient } from '../watchlist_config';
-import { getRequestSavedObjectClient } from '../../shared/utils';
 import type { HapiReadableStream } from '../../../../../types';
 import type { StartPlugins } from '../../../../../plugin';
 import { csvUpload } from '../../entity_sources/csv/csv_upload';
@@ -80,7 +79,7 @@ export const csvUploadRoute = ({
             const esClient = coreStart.elasticsearch.client.asScoped(request).asCurrentUser;
             const entityStoreClient = new CRUDClient({ logger, esClient, namespace });
 
-            const soClient = getRequestSavedObjectClient(await context.core);
+            const soClient = (await context.core).savedObjects.client;
             const watchlistClient = new WatchlistConfigClient({
               esClient,
               soClient,

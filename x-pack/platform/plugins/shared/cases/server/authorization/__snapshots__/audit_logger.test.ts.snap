@@ -2117,6 +2117,98 @@ Object {
 `;
 
 exports[
+  `audit_logger log function event structure creates the correct audit event for operation: "getFieldDefinitions" with an error and entity 1`
+] = `
+Object {
+  "error": Object {
+    "code": "Error",
+    "message": "an error",
+  },
+  "event": Object {
+    "action": "case_field_definitions_get",
+    "category": Array [
+      "database",
+    ],
+    "outcome": "failure",
+    "type": Array [
+      "access",
+    ],
+  },
+  "kibana": Object {
+    "saved_object": Object {
+      "id": "1",
+      "type": "cases-field-definition",
+    },
+  },
+  "message": "Failed attempt to access cases-field-definition [id=1] as owner \\"awesome\\"",
+}
+`;
+
+exports[
+  `audit_logger log function event structure creates the correct audit event for operation: "getFieldDefinitions" with an error but no entity 1`
+] = `
+Object {
+  "error": Object {
+    "code": "Error",
+    "message": "an error",
+  },
+  "event": Object {
+    "action": "case_field_definitions_get",
+    "category": Array [
+      "database",
+    ],
+    "outcome": "failure",
+    "type": Array [
+      "access",
+    ],
+  },
+  "message": "Failed attempt to access a case field definitions as any owners",
+}
+`;
+
+exports[
+  `audit_logger log function event structure creates the correct audit event for operation: "getFieldDefinitions" without an error but with an entity 1`
+] = `
+Object {
+  "event": Object {
+    "action": "case_field_definitions_get",
+    "category": Array [
+      "database",
+    ],
+    "outcome": "success",
+    "type": Array [
+      "access",
+    ],
+  },
+  "kibana": Object {
+    "saved_object": Object {
+      "id": "5",
+      "type": "cases-field-definition",
+    },
+  },
+  "message": "User has accessed cases-field-definition [id=5] as owner \\"super\\"",
+}
+`;
+
+exports[
+  `audit_logger log function event structure creates the correct audit event for operation: "getFieldDefinitions" without an error or entity 1`
+] = `
+Object {
+  "event": Object {
+    "action": "case_field_definitions_get",
+    "category": Array [
+      "database",
+    ],
+    "outcome": "success",
+    "type": Array [
+      "access",
+    ],
+  },
+  "message": "User has accessed a case field definitions as any owners",
+}
+`;
+
+exports[
   `audit_logger log function event structure creates the correct audit event for operation: "getComment" with an error and entity 1`
 ] = `
 Object {

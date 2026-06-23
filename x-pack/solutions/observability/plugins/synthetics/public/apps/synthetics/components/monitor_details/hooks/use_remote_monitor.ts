@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { useEsSearch } from '@kbn/observability-shared-plugin/public';
 import { useMemo } from 'react';
+import { useSyntheticsEsSearch } from '../../../hooks/use_synthetics_es_search';
 import { getSyntheticsCcsIndex } from '../../../../../../common/get_synthetics_indices';
 import {
   ConfigKey,
@@ -87,7 +87,7 @@ export const useRemoteMonitor = ({
   // params.index truthiness), so the query is only issued when remoteName is set.
   const index = remoteName ? getSyntheticsCcsIndex(remoteName) : '';
 
-  const { data, loading, error } = useEsSearch(
+  const { data, loading, error } = useSyntheticsEsSearch(
     {
       index,
       size: 1,

@@ -14,7 +14,7 @@ import type {
 } from 'react';
 import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { pick } from 'lodash';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { i18n } from '@kbn/i18n';
 import { useIsMounted } from '@kbn/securitysolution-hook-utils';
 import { useTestIdGenerator } from '../../../../../hooks/use_test_id_generator';

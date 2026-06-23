@@ -20,6 +20,19 @@ import type { ComposeFormValues } from '../compose_form_types';
 import type { ComposeDiscoverState } from '../types';
 import { createInitialState } from '../use_compose_discover_state';
 
+jest.mock('./alert_condition_step', () => ({
+  AlertConditionStep: () => <div data-test-subj="mockAlertConditionStep" />,
+}));
+
+jest.mock('../compose_discover_time_field_context', () => ({
+  useComposeDiscoverTimeField: () => ({
+    timeFieldOptions: [{ value: '@timestamp', text: '@timestamp' }],
+    isTimeFieldResolved: true,
+  }),
+  ComposeDiscoverTimeFieldContextProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
+}));
+
 const createState = (overrides: Partial<ComposeDiscoverState> = {}): ComposeDiscoverState => ({
   ...createInitialState({ mode: 'create' }),
   ...overrides,
@@ -104,11 +117,38 @@ describe('step validation', () => {
   describe('alertCondition.validate', () => {
     const alertStep = getSteps(false).steps.find((s) => s.id === 'alertCondition')!;
 
-    it('returns true when queryCommitted is true', async () => {
+    it('returns true when queryCommitted and composed alert query is complete', async () => {
       const state = createState({ queryCommitted: true });
-      const methods = {} as UseFormReturn<ComposeFormValues>;
+      const methods = {
+        getValues: (field?: keyof ComposeFormValues) => {
+          if (field === 'kind') return 'alert';
+          if (field === 'query') {
+            return {
+              format: 'composed',
+              base: 'FROM logs-*',
+              breach: { segment: '| WHERE status == "error"' },
+            };
+          }
+          return undefined;
+        },
+      } as unknown as UseFormReturn<ComposeFormValues>;
 
       expect(await alertStep.validate!(methods, state)).toBe(true);
+    });
+
+    it('returns false when queryCommitted but breach segment is empty', async () => {
+      const state = createState({ queryCommitted: true });
+      const methods = {
+        getValues: (field?: keyof ComposeFormValues) => {
+          if (field === 'kind') return 'alert';
+          if (field === 'query') {
+            return { format: 'composed', base: 'FROM logs-*', breach: { segment: '' } };
+          }
+          return undefined;
+        },
+      } as unknown as UseFormReturn<ComposeFormValues>;
+
+      expect(await alertStep.validate!(methods, state)).toBe(false);
     });
 
     it('returns false when queryCommitted is false', async () => {
@@ -256,5 +296,62 @@ describe('step validation', () => {
       'details',
       'notifications',
     ]);
+  });
+});
+
+describe('shell shared fields', () => {
+  const renderShell = (
+    stateOverrides: Partial<ComposeDiscoverState> = {},
+    formOverrides: Partial<ComposeFormValues> = {}
+  ) => {
+    const services = { ...createMockServices(), dashboard: mockDashboard };
+    return render(
+      <ComposeDiscoverForm
+        state={createState({ queryCommitted: true, ...stateOverrides })}
+        dispatch={jest.fn()}
+        services={services}
+        onRecoveryTypeChange={jest.fn()}
+        onKindChange={jest.fn()}
+        isEditing={false}
+      />,
+      { wrapper: createComposeFormWrapper({ ...BASE_COMPOSE_VALUES, ...formOverrides }, services) }
+    );
+  };
+
+  it('renders ModeSelect, AlertDelayField, ScheduleField, and LookbackWindowField on alert condition step', () => {
+    renderShell({ step: 0 }, { kind: 'alert' });
+
+    expect(screen.getByTestId('composeDiscoverModeSelect')).toBeInTheDocument();
+    expect(screen.getByTestId('alertDelayFormRow')).toBeInTheDocument();
+    expect(screen.getByText('Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Lookback Window')).toBeInTheDocument();
+  });
+
+  it('does not render AlertDelayField when kind is signal', () => {
+    renderShell(
+      { step: 0 },
+      { kind: 'signal', query: { format: 'standalone', breach: { query: 'FROM logs-*' } } }
+    );
+
+    expect(screen.getByTestId('composeDiscoverModeSelect')).toBeInTheDocument();
+    expect(screen.queryByTestId('alertDelayFormRow')).not.toBeInTheDocument();
+    expect(screen.getByText('Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Lookback Window')).toBeInTheDocument();
+  });
+
+  it('does not render shared fields on non-alert-condition steps', () => {
+    // step 2 = 'details' when isAlert=true (alertCondition -> recoveryCondition -> details)
+    renderShell({ step: 2 });
+
+    expect(screen.queryByTestId('composeDiscoverModeSelect')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('alertDelayFormRow')).not.toBeInTheDocument();
+    expect(screen.queryByText('Schedule')).not.toBeInTheDocument();
+    expect(screen.queryByText('Lookback Window')).not.toBeInTheDocument();
+  });
+
+  it('disables ModeSelect when query is not committed', () => {
+    renderShell({ step: 0, queryCommitted: false });
+
+    expect(screen.getByTestId('composeDiscoverModeSelect')).toBeDisabled();
   });
 });

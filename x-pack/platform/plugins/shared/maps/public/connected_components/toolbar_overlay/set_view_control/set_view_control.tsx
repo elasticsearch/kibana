@@ -6,7 +6,7 @@
  */
 
 import React, { Component } from 'react';
-import { EuiButtonIcon, EuiPopover, EuiPanel } from '@elastic/eui';
+import { EuiButtonIcon, EuiPanel, EuiPopover, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { MapCenter, MapSettings } from '../../../../common/descriptor_types';
 import { SetViewForm } from './set_view_form';
@@ -51,20 +51,24 @@ export class SetViewControl extends Component<Props, State> {
         panelPaddingSize="s"
         button={
           <EuiPanel paddingSize="none" className="mapToolbarOverlay__button">
-            <EuiButtonIcon
-              className="mapToolbarOverlay__buttonIcon-empty"
-              size="s"
-              onClick={this._togglePopover}
-              data-test-subj="toggleSetViewVisibilityButton"
-              iconType="crosshair"
-              color="text"
-              aria-label={i18n.translate('xpack.maps.setViewControl.goToButtonLabel', {
+            <EuiToolTip
+              content={i18n.translate('xpack.maps.setViewControl.goToButtonLabel', {
                 defaultMessage: 'Go to',
               })}
-              title={i18n.translate('xpack.maps.setViewControl.goToButtonLabel', {
-                defaultMessage: 'Go to',
-              })}
-            />
+              anchorClassName="mapToolbarOverlay__buttonIcon-empty"
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                size="s"
+                onClick={this._togglePopover}
+                data-test-subj="toggleSetViewVisibilityButton"
+                iconType="crosshair"
+                color="text"
+                aria-label={i18n.translate('xpack.maps.setViewControl.goToButtonLabel', {
+                  defaultMessage: 'Go to',
+                })}
+              />
+            </EuiToolTip>
           </EuiPanel>
         }
         isOpen={this.state.isPopoverOpen}

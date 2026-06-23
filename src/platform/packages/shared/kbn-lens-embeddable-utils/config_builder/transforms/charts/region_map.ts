@@ -17,6 +17,7 @@ import type {
 } from '@kbn/lens-common';
 import type { DataViewSpec } from '@kbn/data-views-plugin/common';
 import type { SavedObjectReference } from '@kbn/core/types';
+import { LENS_ITEM_LATEST_VERSION } from '@kbn/lens-common/content_management/constants';
 import type {
   LensApiConfig,
   RegionMapConfig,
@@ -209,6 +210,7 @@ export function fromAPItoLensState(
       visualization,
       adHocDataViews,
     },
+    version: LENS_ITEM_LATEST_VERSION,
   };
 }
 

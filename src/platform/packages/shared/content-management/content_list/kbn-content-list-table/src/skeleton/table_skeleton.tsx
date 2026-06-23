@@ -17,6 +17,7 @@ import {
   type UseEuiTheme,
 } from '@elastic/eui';
 import { isCustomSkeletonNode, type SkeletonOutput } from '@kbn/content-list-assembly';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import type { ResolvedColumn } from '../hooks/use_columns';
 
 /**
@@ -124,7 +125,7 @@ export const TableSkeleton = ({
   rowCount,
   tableLayout,
   compressed,
-  'data-test-subj': dataTestSubj = 'content-list-table-skeleton',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.tableSkeleton,
 }: TableSkeletonProps) => {
   const { euiTheme } = useEuiTheme();
 

@@ -19,8 +19,10 @@ describe('cancelKiIdentificationToolHandler', () => {
       }),
       cancelWorkflowExecution: jest.fn().mockResolvedValue(undefined),
     };
+    const telemetry = { trackOnboardingScheduled: jest.fn() } as never;
     const streamsKIsOnboardingClient = new StreamsKIsOnboardingClient({
       managementApi: managementApi as never,
+      telemetry,
     });
     const request = httpServerMock.createKibanaRequest();
 
@@ -47,8 +49,10 @@ describe('cancelKiIdentificationToolHandler', () => {
       getWorkflowExecutions: jest.fn().mockResolvedValue({ results: [] }),
       cancelWorkflowExecution: jest.fn(),
     };
+    const telemetry = { trackOnboardingScheduled: jest.fn() } as never;
     const streamsKIsOnboardingClient = new StreamsKIsOnboardingClient({
       managementApi: managementApi as never,
+      telemetry,
     });
     const request = httpServerMock.createKibanaRequest();
 

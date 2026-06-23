@@ -14,3 +14,9 @@ export const CONNECTOR_NAME = i18n.translate('connectors.slackApi.title', {
 });
 
 export const SLACK_URL = 'https://slack.com/api/';
+
+export enum SUB_ACTION {
+  VALID_CHANNEL_ID = 'validChannelId',
+  POST_MESSAGE = 'postMessage',
+  POST_BLOCKKIT = 'postBlockkit',
+}

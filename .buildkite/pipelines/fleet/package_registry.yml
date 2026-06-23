@@ -75,7 +75,7 @@ steps:
       provider: gcp
       enableNestedVirtualization: true
       machineType: n2-highmem-4
-      diskSizeGb: 120
+      diskSizeGb: 125
     timeout_in_minutes: 75
     parallelism: 22
     key: defend-workflows-stateful
@@ -93,7 +93,7 @@ steps:
       provider: gcp
       enableNestedVirtualization: true
       machineType: n2-highmem-4
-      diskSizeGb: 120
+      diskSizeGb: 125
     timeout_in_minutes: 75
     parallelism: 14
     key: defend-workflows-serverless

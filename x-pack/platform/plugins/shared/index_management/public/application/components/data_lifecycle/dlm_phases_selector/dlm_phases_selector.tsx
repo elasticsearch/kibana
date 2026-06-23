@@ -5,13 +5,9 @@
  * 2.0.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { EuiFlexGroup, EuiFlexItem, useGeneratedHtmlId } from '@elastic/eui';
-import {
-  DefaultSnapshotRepositoryRequiredModal,
-  EnterpriseGatingModal,
-  usePhaseColors,
-} from '@kbn/data-lifecycle-phases';
+import { usePhaseColors } from '@kbn/data-lifecycle-phases';
 import {
   getDurationLabel,
   mergeDefaultValue,
@@ -23,7 +19,6 @@ import { FrozenPhaseCard } from './components/frozen_phase_card';
 import { HotPhaseCard } from './components/hot_phase_card';
 import { dlmPhasesSelectorStrings as strings } from './strings';
 import type { DlmPhaseDuration, DlmPhasesSelectorProps, DlmPhasesSelectorValue } from './types';
-import type { FrozenDisabledReason } from './components/frozen_phase_card';
 
 export type {
   DlmPhaseDuration,
@@ -53,43 +48,15 @@ export const DlmPhasesSelector = ({
   const phaseColors = usePhaseColors();
 
   const [value, setValue] = useState<DlmPhasesSelectorValue>(() => mergeDefaultValue(defaultValue));
-  const [openModal, setOpenModal] = useState<'enterprise' | 'defaultRepository' | undefined>();
-  const [isRefreshingDefaultSnapshotRepository, setIsRefreshingDefaultSnapshotRepository] =
-    useState(false);
 
-  const closeModal = useCallback(() => {
-    setOpenModal(undefined);
-  }, []);
+  const frozenInitiallyActiveRef = useRef(value.frozen.enabled);
 
-  useEffect(() => {
-    if (hasDefaultSnapshotRepository && openModal === 'defaultRepository') {
-      closeModal();
-    }
-  }, [closeModal, hasDefaultSnapshotRepository, openModal]);
-
-  const refreshDefaultSnapshotRepository = useCallback(async () => {
-    if (!onRefreshDefaultSnapshotRepository) {
-      return;
-    }
-
-    setIsRefreshingDefaultSnapshotRepository(true);
-
-    try {
-      await onRefreshDefaultSnapshotRepository();
-    } finally {
-      setIsRefreshingDefaultSnapshotRepository(false);
-    }
-  }, [onRefreshDefaultSnapshotRepository]);
-
-  const frozenDisabledReason: FrozenDisabledReason | undefined = !hasEnterpriseLicense
-    ? { type: 'enterprise', onClick: () => setOpenModal('enterprise') }
-    : !hasDefaultSnapshotRepository
-    ? { type: 'defaultRepository', onClick: () => setOpenModal('defaultRepository') }
-    : undefined;
-
+  const isFrozenStillActiveFromExisting = frozenInitiallyActiveRef.current && value.frozen.enabled;
   const shouldShowFrozenPhase =
-    !serverless && (hasDefaultSnapshotRepository || canCreateDefaultSnapshotRepository);
-  const frozenDisabled = isDisabled || Boolean(frozenDisabledReason);
+    !serverless &&
+    (hasDefaultSnapshotRepository ||
+      canCreateDefaultSnapshotRepository ||
+      isFrozenStillActiveFromExisting);
   const validation = validateDurations(value);
 
   const updateValue = useCallback(
@@ -126,66 +93,46 @@ export const DlmPhasesSelector = ({
       : undefined;
 
   return (
-    <>
-      <EuiFlexGroup direction="column" gutterSize="s" responsive={false}>
-        {!serverless && (
-          <EuiFlexItem grow={false}>
-            <HotPhaseCard id={hotCheckboxId} color={phaseColors.hot} />
-          </EuiFlexItem>
-        )}
-
-        {shouldShowFrozenPhase && (
-          <EuiFlexItem grow={false}>
-            <FrozenPhaseCard
-              id={frozenCheckboxId}
-              color={phaseColors.frozen}
-              duration={value.frozen}
-              disabled={frozenDisabled}
-              disabledReason={frozenDisabledReason}
-              durationError={validation.frozenError}
-              helpText={frozenHelpText}
-              isFormDisabled={isDisabled}
-              defaultSnapshotRepository={defaultSnapshotRepository}
-              manageRepositoriesHref={manageRepositoriesUrl}
-              onChange={updateFrozen}
-            />
-          </EuiFlexItem>
-        )}
-
+    <EuiFlexGroup direction="column" gutterSize="s" responsive={false}>
+      {!serverless && (
         <EuiFlexItem grow={false}>
-          <DeletePhaseCard
-            id={deleteCheckboxId}
-            duration={value.delete}
-            isCardDisabled={isDisabled}
-            durationError={validation.deleteError}
-            helpText={deleteHelpText}
+          <HotPhaseCard id={hotCheckboxId} color={phaseColors.hot} />
+        </EuiFlexItem>
+      )}
+
+      {shouldShowFrozenPhase && (
+        <EuiFlexItem grow={false}>
+          <FrozenPhaseCard
+            id={frozenCheckboxId}
+            color={phaseColors.frozen}
+            duration={value.frozen}
+            durationError={validation.frozenError}
+            helpText={frozenHelpText}
             isFormDisabled={isDisabled}
-            onChange={updateDelete}
+            defaultSnapshotRepository={defaultSnapshotRepository}
+            manageRepositoriesHref={manageRepositoriesUrl}
+            hasEnterpriseLicense={hasEnterpriseLicense}
+            hasDefaultSnapshotRepository={hasDefaultSnapshotRepository}
+            canCreateDefaultSnapshotRepository={canCreateDefaultSnapshotRepository}
+            createDefaultRepositoryUrl={createDefaultRepositoryUrl}
+            enterprise={enterprise}
+            onRefreshDefaultSnapshotRepository={onRefreshDefaultSnapshotRepository}
+            onChange={updateFrozen}
           />
         </EuiFlexItem>
-      </EuiFlexGroup>
-
-      {openModal === 'enterprise' && (
-        <EnterpriseGatingModal
-          environment={enterprise.isCloudEnabled ? 'cloud' : 'selfManaged'}
-          hasManageSubscriptionPermission={
-            enterprise.isCloudEnabled ? true : enterprise.canManageLicense
-          }
-          trialStatus={enterprise.trialDaysLeft === 0 ? 'expired' : 'notStarted'}
-          subscriptionFeaturesUrl={enterprise.subscriptionFeaturesUrl}
-          onPrimaryAction={enterprise.onUpgrade}
-          onCancel={closeModal}
-        />
       )}
 
-      {openModal === 'defaultRepository' && (
-        <DefaultSnapshotRepositoryRequiredModal
-          createDefaultRepositoryUrl={createDefaultRepositoryUrl}
-          isRefreshing={isRefreshingDefaultSnapshotRepository}
-          onCancel={closeModal}
-          onRefresh={refreshDefaultSnapshotRepository}
+      <EuiFlexItem grow={false}>
+        <DeletePhaseCard
+          id={deleteCheckboxId}
+          duration={value.delete}
+          isCardDisabled={isDisabled}
+          durationError={validation.deleteError}
+          helpText={deleteHelpText}
+          isFormDisabled={isDisabled}
+          onChange={updateDelete}
         />
-      )}
-    </>
+      </EuiFlexItem>
+    </EuiFlexGroup>
   );
 };

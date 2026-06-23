@@ -7,12 +7,40 @@
 
 import { setMockActions, setMockValues } from '../../../../../__mocks__/kea_logic';
 
+// EuiSelectable has complex internal state and uses ResizeObserver for height calculations.
+// Capturing the onChange callback lets us verify the selection logic without depending on
+// EUI's internal click handling or DOM measurement in JSDOM.
+let capturedOnChange: ((options: any[]) => void) | undefined;
+
+jest.mock('@elastic/eui', () => {
+  const actual = jest.requireActual('@elastic/eui');
+  return {
+    ...actual,
+    EuiSelectable: (props: any) => {
+      capturedOnChange = props.onChange;
+      const renderedOptions = props.options ?? [];
+      return (
+        <div data-test-subj="euiSelectable">
+          {renderedOptions.map((opt: any) => (
+            <div
+              key={opt.label}
+              data-test-subj={`option-${opt.label}`}
+              aria-selected={opt.checked === 'on'}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      );
+    },
+  };
+});
+
 import React from 'react';
 
-import { mount, shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiSelectable } from '@elastic/eui';
-import { euiThemeVars } from '@kbn/ui-theme';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { PipelineSelect } from './pipeline_select';
 
@@ -29,23 +57,22 @@ const MOCK_ACTIONS = {
   selectExistingPipeline: jest.fn(),
 };
 
-const EUI_BASE_SIZE = parseFloat(euiThemeVars.euiSize);
-
 describe('PipelineSelect', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    capturedOnChange = undefined;
     setMockValues({});
     setMockActions(MOCK_ACTIONS);
   });
+
   it('renders pipeline select with no options', () => {
     setMockValues(DEFAULT_VALUES);
-
-    const wrapper = shallow(<PipelineSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    expect(selectable.prop('options')).toEqual([]);
+    renderWithKibanaRenderContext(<PipelineSelect />);
+    expect(screen.getByTestId('euiSelectable')).toBeInTheDocument();
+    expect(screen.queryByTestId(/^option-/)).not.toBeInTheDocument();
   });
-  it('limits pipeline select height to option count', () => {
+
+  it('renders pipeline options', () => {
     setMockValues({
       ...DEFAULT_VALUES,
       existingInferencePipelines: [
@@ -69,108 +96,36 @@ describe('PipelineSelect', () => {
         },
       ],
     });
-
-    const wrapper = mount(<PipelineSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    expect(selectable.prop('height')).toEqual(EUI_BASE_SIZE * 6 * 3);
-    expect(selectable.prop('options')).toHaveLength(3);
+    renderWithKibanaRenderContext(<PipelineSelect />);
+    expect(screen.getByTestId('option-pipeline_1')).toBeInTheDocument();
+    expect(screen.getByTestId('option-pipeline_2')).toBeInTheDocument();
+    expect(screen.getByTestId('option-pipeline_3')).toBeInTheDocument();
   });
-  it('limits pipeline select height to 4.5 options', () => {
-    setMockValues({
-      ...DEFAULT_VALUES,
-      existingInferencePipelines: [
-        {
-          modelId: 'model_1',
-          modelType: 'model_1_type',
-          pipelineName: 'pipeline_1',
-          sourceFields: [],
-        },
-        {
-          modelId: 'model_2',
-          modelType: 'model_2_type',
-          pipelineName: 'pipeline_2',
-          sourceFields: [],
-        },
-        {
-          modelId: 'model_3',
-          modelType: 'model_3_type',
-          pipelineName: 'pipeline_3',
-          sourceFields: [],
-        },
-        {
-          modelId: 'model_4',
-          modelType: 'model_4_type',
-          pipelineName: 'pipeline_4',
-          sourceFields: [],
-        },
-        {
-          modelId: 'model_5',
-          modelType: 'model_5_type',
-          pipelineName: 'pipeline_5',
-          sourceFields: [],
-        },
-      ],
-    });
 
-    const wrapper = mount(<PipelineSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    expect(selectable.prop('height')).toEqual(EUI_BASE_SIZE * 6 * 4.5);
-    expect(selectable.prop('options')).toHaveLength(5);
-  });
   it('selects the chosen option', () => {
     setMockValues({
-      addInferencePipelineModal: {
-        configuration: {
-          pipelineName: 'pipeline_3',
-        },
-      },
+      addInferencePipelineModal: { configuration: { pipelineName: 'pipeline_3' } },
       existingInferencePipelines: [
-        {
-          modelId: 'model_1',
-          modelType: 'model_1_type',
-          pipelineName: 'pipeline_1',
-        },
-        {
-          modelId: 'model_2',
-          modelType: 'model_2_type',
-          pipelineName: 'pipeline_2',
-        },
-        {
-          modelId: 'model_3',
-          modelType: 'model_3_type',
-          pipelineName: 'pipeline_3',
-        },
+        { modelId: 'model_1', modelType: 'model_1_type', pipelineName: 'pipeline_1' },
+        { modelId: 'model_2', modelType: 'model_2_type', pipelineName: 'pipeline_2' },
+        { modelId: 'model_3', modelType: 'model_3_type', pipelineName: 'pipeline_3' },
       ],
     });
-
-    const wrapper = shallow(<PipelineSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    expect(selectable.prop('options')[2].checked).toEqual('on');
+    renderWithKibanaRenderContext(<PipelineSelect />);
+    expect(screen.getByTestId('option-pipeline_3')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('option-pipeline_1')).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByTestId('option-pipeline_2')).toHaveAttribute('aria-selected', 'false');
   });
+
   it('sets pipeline name on selecting a pipeline', () => {
     setMockValues(DEFAULT_VALUES);
+    renderWithKibanaRenderContext(<PipelineSelect />);
 
-    const wrapper = shallow(<PipelineSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    selectable.simulate('change', [
-      {
-        label: 'pipeline_1',
-        pipeline: {
-          pipelineName: 'pipeline_1',
-        },
-      },
-      {
-        checked: 'on',
-        label: 'pipeline_2',
-        pipeline: {
-          pipelineName: 'pipeline_2',
-        },
-      },
+    capturedOnChange!([
+      { label: 'pipeline_1', pipeline: { pipelineName: 'pipeline_1' } },
+      { checked: 'on', label: 'pipeline_2', pipeline: { pipelineName: 'pipeline_2' } },
     ]);
+
     expect(MOCK_ACTIONS.selectExistingPipeline).toHaveBeenCalledWith('pipeline_2');
   });
 });

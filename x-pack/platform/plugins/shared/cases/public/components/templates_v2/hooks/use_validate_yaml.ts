@@ -6,7 +6,7 @@
  */
 
 import { useCallback } from 'react';
-import { loadAll as yamlLoadAll, JSON_SCHEMA } from 'js-yaml';
+import { parseAllDocuments } from 'yaml';
 import * as i18n from '../translations';
 
 const ACCEPTED_MIME_TYPES = new Set([
@@ -97,7 +97,10 @@ export const useValidateYaml = () => {
     const parseResults = await Promise.allSettled(
       metadataValid.map(async (file) => {
         const text = await readFileAsText(file);
-        const documents = yamlLoadAll(text, null, { schema: JSON_SCHEMA });
+        const documents = parseAllDocuments(text).map((doc) => {
+          if (doc.errors.length > 0) throw doc.errors[0];
+          return doc.toJS();
+        });
         return { file, documents };
       })
     );

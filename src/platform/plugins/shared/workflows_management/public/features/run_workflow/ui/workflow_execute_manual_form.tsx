@@ -13,6 +13,7 @@ import type { JSONSchema7 } from 'json-schema';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { CodeEditor, monaco } from '@kbn/code-editor';
 import { i18n } from '@kbn/i18n';
+import { mergeKibanaBuiltinWorkflowInputDefinitionsIntoRootSchema } from '@kbn/workflows';
 import { buildFieldsZodValidator } from '@kbn/workflows/spec/lib/build_fields_zod_validator';
 import { applyInputDefaults, hasDefaultsRecursive } from '@kbn/workflows/spec/lib/field_conversion';
 import type { JsonModelSchemaType } from '@kbn/workflows/spec/schema/common/json_model_schema';
@@ -31,11 +32,10 @@ const getDefaultWorkflowInput = (inputs?: JsonModelSchemaType): Record<string, u
   // same values applyInputDefaults would produce at execution time.
   const resolvedDefaults = applyInputDefaults(undefined, inputs) ?? {};
 
-  // Only include a property in the initial editor JSON when the user needs to
-  // see it — i.e. it is required, or it has an explicit schema default
-  // somewhere in its subtree. Optional properties without a default are
-  // intentionally omitted so the workflow runtime can apply its own defaults
-  // and can distinguish "unset" from a user-chosen sentinel value.
+  // Only include a property when the user should see/edit it: required fields, fields with
+  // defaults in the subtree (hasDefaultsRecursive), or $ref inputs (optional: partial defaults
+  // from applyInputDefaults; required: full generated sample via resolveRef).
+  // Optional properties without defaults stay omitted so runtime can treat them as unset.
   // See issue elastic/security-team#16857.
   const requiredProps = new Set(inputs.required ?? []);
   const result: Record<string, unknown> = {};
@@ -45,13 +45,26 @@ const getDefaultWorkflowInput = (inputs?: JsonModelSchemaType): Record<string, u
     const isRequired = requiredProps.has(propertyName);
     const hasDefaults = hasDefaultsRecursive(jsonSchema, inputs);
     const resolvedValue = resolvedDefaults[propertyName];
+    const isRefProp = Boolean(jsonSchema.$ref);
 
-    if (hasDefaults && resolvedValue !== undefined) {
+    // Required $ref: prefer a full generated sample (resolveRef + placeholders) so the run
+    // modal matches what authors need to edit; fall back to applyInputDefaults if sampling fails.
+    if (isRequired && isRefProp) {
+      const sample = generateSampleFromJsonSchema(jsonSchema, inputs);
+      if (sample !== undefined) {
+        result[propertyName] = sample;
+      } else if (resolvedValue !== undefined && (hasDefaults || isRefProp)) {
+        result[propertyName] = resolvedValue;
+      } else {
+        // Unknown/invalid $ref: keep the key editable so the run modal is not missing a required field.
+        result[propertyName] = {};
+      }
+    } else if (resolvedValue !== undefined && (hasDefaults || isRefProp)) {
+      // Optional $ref (or defaults in subtree): partial structs from applyInputDefaults without
+      // hasDefaultsRecursive on the $ref wrapper alone.
       result[propertyName] = resolvedValue;
     } else if (isRequired) {
-      // generateSampleFromJsonSchema does not resolve $ref; required $ref-only fields with
-      // no resolvable sample can be omitted (follow-up: teach samples to resolve $ref).
-      const sample = generateSampleFromJsonSchema(jsonSchema);
+      const sample = generateSampleFromJsonSchema(jsonSchema, inputs);
       if (sample !== undefined) {
         result[propertyName] = sample;
       }
@@ -76,6 +89,15 @@ export const WorkflowExecuteManualForm = ({
   setErrors,
 }: WorkflowExecuteManualFormProps): React.JSX.Element => {
   const inputsValidator = useMemo(() => buildFieldsZodValidator(inputs), [inputs]);
+
+  /** Same root merge as workflow YAML Monaco schema so `#/kibana/definitions/*` $ref resolves. */
+  const monacoInputsJsonSchema = useMemo(() => {
+    if (!inputs) {
+      return undefined;
+    }
+    return (mergeKibanaBuiltinWorkflowInputDefinitionsIntoRootSchema(inputs as object) ??
+      inputs) as JsonModelSchemaType;
+  }, [inputs]);
 
   useEffect(() => {
     setValue(JSON.stringify(getDefaultWorkflowInput(inputs), null, 2));
@@ -110,7 +132,7 @@ export const WorkflowExecuteManualForm = ({
   const mountedOnce = useRef(false);
   const handleMount = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor) => {
-      if (!inputs || mountedOnce.current) return;
+      if (!monacoInputsJsonSchema || mountedOnce.current) return;
       mountedOnce.current = true;
 
       try {
@@ -123,7 +145,7 @@ export const WorkflowExecuteManualForm = ({
             {
               uri: SCHEMA_URI,
               fileMatch: [currentModel?.uri.toString() ?? ''],
-              schema: inputs,
+              schema: monacoInputsJsonSchema,
             },
           ],
         });
@@ -131,7 +153,7 @@ export const WorkflowExecuteManualForm = ({
         // Monaco setup failed — fall back to basic JSON editing
       }
     },
-    [inputs]
+    [monacoInputsJsonSchema]
   );
 
   return (

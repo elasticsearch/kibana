@@ -22,6 +22,7 @@ import {
   EuiFormRow,
   EuiPanel,
   EuiSpacer,
+  EuiToolTip,
 } from '@elastic/eui';
 
 import type { DataView } from '@kbn/data-views-plugin/public';
@@ -136,36 +137,60 @@ class ControlEditorUi extends PureComponent<ControlEditorUiProps & WrappedCompon
   renderEditorButtons() {
     return (
       <div>
-        <EuiButtonIcon
-          aria-label={this.props.intl.formatMessage({
+        <EuiToolTip
+          content={this.props.intl.formatMessage({
             id: 'inputControl.editor.controlEditor.moveControlUpAriaLabel',
             defaultMessage: 'Move control up',
           })}
-          color="primary"
-          onClick={this.moveUpControl}
-          iconType="sortUp"
-          data-test-subj={`inputControlEditorMoveUpControl${this.props.controlIndex}`}
-        />
-        <EuiButtonIcon
-          aria-label={this.props.intl.formatMessage({
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            aria-label={this.props.intl.formatMessage({
+              id: 'inputControl.editor.controlEditor.moveControlUpAriaLabel',
+              defaultMessage: 'Move control up',
+            })}
+            color="primary"
+            onClick={this.moveUpControl}
+            iconType="sortUp"
+            data-test-subj={`inputControlEditorMoveUpControl${this.props.controlIndex}`}
+          />
+        </EuiToolTip>
+        <EuiToolTip
+          content={this.props.intl.formatMessage({
             id: 'inputControl.editor.controlEditor.moveControlDownAriaLabel',
             defaultMessage: 'Move control down',
           })}
-          color="primary"
-          onClick={this.moveDownControl}
-          iconType="sortDown"
-          data-test-subj={`inputControlEditorMoveDownControl${this.props.controlIndex}`}
-        />
-        <EuiButtonIcon
-          aria-label={this.props.intl.formatMessage({
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            aria-label={this.props.intl.formatMessage({
+              id: 'inputControl.editor.controlEditor.moveControlDownAriaLabel',
+              defaultMessage: 'Move control down',
+            })}
+            color="primary"
+            onClick={this.moveDownControl}
+            iconType="sortDown"
+            data-test-subj={`inputControlEditorMoveDownControl${this.props.controlIndex}`}
+          />
+        </EuiToolTip>
+        <EuiToolTip
+          content={this.props.intl.formatMessage({
             id: 'inputControl.editor.controlEditor.removeControlAriaLabel',
             defaultMessage: 'Remove control',
           })}
-          color="danger"
-          onClick={this.removeControl}
-          iconType="cross"
-          data-test-subj={`inputControlEditorRemoveControl${this.props.controlIndex}`}
-        />
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            aria-label={this.props.intl.formatMessage({
+              id: 'inputControl.editor.controlEditor.removeControlAriaLabel',
+              defaultMessage: 'Remove control',
+            })}
+            color="danger"
+            onClick={this.removeControl}
+            iconType="cross"
+            data-test-subj={`inputControlEditorRemoveControl${this.props.controlIndex}`}
+          />
+        </EuiToolTip>
       </div>
     );
   }

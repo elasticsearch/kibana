@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/273392
+issues:
+- https://github.com/elastic/kibana/issues/273246
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Alerting and reporting
+title: Fix the mute, unmute, and snooze actions failing without connector privileges
+description: Users with alerting privileges but no connector privileges can now mute, unmute, and snooze alert rules and instances without authorization errors.

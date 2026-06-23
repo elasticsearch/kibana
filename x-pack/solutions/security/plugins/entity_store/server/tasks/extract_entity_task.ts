@@ -19,6 +19,7 @@ import type * as types from '../types';
 import type { EntityType } from '../../common/domain/definitions/entity_schema';
 import { createLogsExtractionClient } from './factories';
 import { wrapTaskRun } from '../telemetry/traces';
+import { entityStoreMetrics } from '../monitor/metrics';
 
 function getTaskType(entityType: EntityType): string {
   const config = TasksConfig[EntityStoreTaskType.enum.extractEntity];
@@ -36,10 +37,12 @@ async function runTask({
   entityType,
   logger,
   core,
+  isServerless,
 }: RunContext & {
   entityType: EntityType;
   logger: Logger;
   core: types.EntityStoreCoreSetup;
+  isServerless: boolean;
 }): Promise<RunResult> {
   logger.info(`Running extract entity task`);
 
@@ -56,12 +59,15 @@ async function runTask({
     };
   }
 
+  let remote = false;
+
   try {
     const { logsExtractionClient } = await createLogsExtractionClient({
       core,
       fakeRequest,
       logger,
       namespace,
+      isServerless,
     });
 
     const extractionStart = Date.now();
@@ -70,14 +76,26 @@ async function runTask({
     });
     const extractionDuration = moment().diff(extractionStart, 'milliseconds');
 
+    remote = extractionResult.isRemote;
     if (!extractionResult.success) {
       logger.error(
         `Logs extraction failed for ${entityType}: ${extractionResult.error.message}, took ${extractionDuration}ms`
       );
+      entityStoreMetrics.extractionTaskError.add(1, {
+        entity_type: entityType,
+        namespace,
+        error_type: extractionResult.error.name ?? 'UnknownError',
+        remote,
+      });
     } else {
       logger.info(
         `Successfully extracted ${extractionResult.count} entities for ${entityType}, took ${extractionDuration}ms  `
       );
+      entityStoreMetrics.extractionTaskSuccess.add(1, {
+        entity_type: entityType,
+        namespace,
+        remote,
+      });
     }
 
     const updatedState = {
@@ -94,6 +112,14 @@ async function runTask({
     };
   } catch (e) {
     logger.error(`Error running extract entity task, received ${e.message}`);
+
+    entityStoreMetrics.extractionTaskError.add(1, {
+      entity_type: entityType,
+      namespace,
+      error_type: e.name ?? 'UnknownError',
+      remote,
+    });
+
     return {
       state: {
         ...currentState,
@@ -111,11 +137,13 @@ export function registerExtractEntityTasks({
   logger,
   entityTypes,
   core,
+  isServerless,
 }: {
   core: types.EntityStoreCoreSetup;
   taskManager: TaskManagerSetupContract;
   logger: Logger;
   entityTypes: EntityType[];
+  isServerless: boolean;
 }): void {
   try {
     const config = TasksConfig[EntityStoreTaskType.enum.extractEntity];
@@ -143,6 +171,7 @@ export function registerExtractEntityTasks({
                     core,
                     entityType: type,
                     fakeRequest,
+                    isServerless,
                   }),
               }),
           }),

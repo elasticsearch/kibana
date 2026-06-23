@@ -121,6 +121,7 @@ describe('USER_AGENT Autocomplete', () => {
 
   it('suggests WITH and pipe after a complete expression', async () => {
     await expectUserAgentSuggestions('FROM a | USER_AGENT ua = keywordField ', [
+      '\n',
       withCompleteItem.text,
       pipeCompleteItem.text,
     ]);
@@ -187,7 +188,7 @@ describe('USER_AGENT Autocomplete', () => {
   it('suggests pipe after a complete options map', async () => {
     await expectUserAgentSuggestions(
       'FROM a | USER_AGENT ua = keywordField WITH { "extract_device_type": true } ',
-      [pipeCompleteItem.text]
+      ['\n', pipeCompleteItem.text]
     );
   });
 });

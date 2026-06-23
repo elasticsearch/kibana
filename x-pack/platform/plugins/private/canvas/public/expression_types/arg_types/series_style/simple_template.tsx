@@ -7,7 +7,14 @@
 
 import type { FunctionComponent } from 'react';
 import React, { Fragment } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiLink, EuiButtonIcon, EuiText } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiLink,
+  EuiText,
+  EuiToolTip,
+} from '@elastic/eui';
 import { set, del } from 'object-path-immutable';
 import { get } from 'lodash';
 import type { ResolvedArgProps, ResolvedLabels } from '../../arg';
@@ -86,12 +93,14 @@ export const SimpleTemplate: FunctionComponent<Props> = (props) => {
             />
           </EuiFlexItem>
           <EuiFlexItem>
-            <EuiButtonIcon
-              iconType="cross"
-              color="danger"
-              onClick={() => handleChange('color', '')}
-              aria-label={strings.getRemoveAriaLabel()}
-            />
+            <EuiToolTip content={strings.getRemoveAriaLabel()} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="cross"
+                color="danger"
+                onClick={() => handleChange('color', '')}
+                aria-label={strings.getRemoveAriaLabel()}
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         </Fragment>
       )}

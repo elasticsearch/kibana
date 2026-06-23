@@ -7,17 +7,14 @@
 
 import { run } from '@kbn/dev-cli-runner';
 import { captureEnvSnapshot } from './capture_env_snapshot';
-import {
-  DEFAULT_ENV_SNAPSHOT_LOGS_INDEX,
-  VALID_ALERT_INDICES,
-  VALID_SYSTEM_INDICES,
-} from '../lib/constants';
+import { DEFAULT_ENV_SNAPSHOT_LOGS_INDEX, VALID_ALERT_INDICES } from '../lib/constants';
 
 run(({ log, flags }) => captureEnvSnapshot({ log, flags }), {
   description: `
     Capture the current Streams/SigEvents environment into a GCS snapshot.
 
-    Protected Kibana indices listed in --system-indices (Streams .kibana_streams_*) are reindexed to snapshot-safe names (snapshot-*) with mappings preserved.
+    Protected Kibana system indices (Streams .kibana_streams_*) and the KI data stream are
+    reindexed to snapshot-safe names (snapshot-*) with mappings preserved.
     --logs-index and --alert-indices are included directly in the snapshot (not reindexed).
 
     Prerequisites:
@@ -37,16 +34,12 @@ run(({ log, flags }) => captureEnvSnapshot({ log, flags }), {
       'run-id',
       'logs-index',
       'alert-indices',
-      'system-indices',
     ],
     help: `
       --snapshot-name         (required) Name for the snapshot
       --run-id                Run identifier for GCS repo name and base path (default: today's date YYYY-MM-DD)
       --logs-index            Logs index to include in snapshot + replay. (default: ${DEFAULT_ENV_SNAPSHOT_LOGS_INDEX})
       --alert-indices         Alert index to include in snapshot + replay. Valid: ${VALID_ALERT_INDICES.join(
-        ', '
-      )}
-      --system-indices        .kibana system index pattern to capture. Valid: ${VALID_SYSTEM_INDICES.join(
         ', '
       )}
       --es-url                Elasticsearch URL (default: from kibana.dev.yml)

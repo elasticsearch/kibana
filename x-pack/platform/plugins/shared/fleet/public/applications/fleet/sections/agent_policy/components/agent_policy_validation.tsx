@@ -7,7 +7,7 @@
 import React from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
 
-import { isValidNamespace } from '../../../services';
+import { isValidDuration, isValidNamespace } from '../../../services';
 import type { NewAgentPolicy, AgentPolicy } from '../../../types';
 
 export interface ValidationResults {
@@ -101,6 +101,34 @@ export const agentPolicyFormValidation = (
         defaultMessage="Max retries must be an integer greater than zero"
       />,
     ];
+  }
+
+  const durationErrorMessage = (
+    <FormattedMessage
+      id="xpack.fleet.agentPolicyForm.invalidDurationFormatErrorMessage"
+      defaultMessage="Must be a duration with a time unit, for example, 30s, 5m, 2h"
+    />
+  );
+
+  if (
+    agentPolicy.monitoring_diagnostics?.limit?.interval &&
+    !isValidDuration(agentPolicy.monitoring_diagnostics.limit.interval)
+  ) {
+    errors['monitoring_diagnostics.limit.interval'] = [durationErrorMessage];
+  }
+
+  if (
+    agentPolicy.monitoring_diagnostics?.uploader?.init_dur &&
+    !isValidDuration(agentPolicy.monitoring_diagnostics.uploader.init_dur)
+  ) {
+    errors['monitoring_diagnostics.uploader.init_dur'] = [durationErrorMessage];
+  }
+
+  if (
+    agentPolicy.monitoring_diagnostics?.uploader?.max_dur &&
+    !isValidDuration(agentPolicy.monitoring_diagnostics.uploader.max_dur)
+  ) {
+    errors['monitoring_diagnostics.uploader.max_dur'] = [durationErrorMessage];
   }
 
   return errors;

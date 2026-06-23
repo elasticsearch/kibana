@@ -18,6 +18,7 @@ project:
   sourceRoot: src/platform/packages/shared/content-management/content_list/kbn-content-list-toolbar
 dependsOn:
   - '@kbn/content-list-assembly'
+  - '@kbn/content-list-common'
   - '@kbn/content-list-provider'
   - '@kbn/content-management-tags'
   - '@kbn/i18n'

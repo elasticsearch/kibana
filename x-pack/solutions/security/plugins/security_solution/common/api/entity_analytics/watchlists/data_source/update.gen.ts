@@ -20,8 +20,8 @@ import { UpdateEntitySourceNoadditionalProps, MonitoringEntitySource } from './c
 
 export const UpdateWatchlistEntitySourceRequestParams = lazySchema(() =>
   z.object({
-    watchlist_id: z.string(),
-    id: z.string(),
+    watchlist_id: z.string().max(256),
+    id: z.string().max(256),
   })
 );
 export type UpdateWatchlistEntitySourceRequestParams = z.infer<

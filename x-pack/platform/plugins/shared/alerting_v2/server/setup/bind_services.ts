@@ -16,21 +16,26 @@ import { CountTimeframeStrategy } from '../lib/director/strategies/count_timefra
 import { TransitionStrategyFactory } from '../lib/director/strategies/strategy_resolver';
 import { TransitionStrategyToken } from '../lib/director/strategies/types';
 import { DispatcherService } from '../lib/dispatcher/dispatcher';
-import {
-  DispatcherEnabledProviderToken,
-  DispatcherServiceInternalToken,
-} from '../lib/dispatcher/tokens';
-import { ALERTING_V2_DISPATCHER_ENABLED_SETTING_ID } from '../../common/advanced_settings';
+import { DispatcherServiceInternalToken } from '../lib/dispatcher/tokens';
 import { ActionPolicyClient } from '../lib/action_policy_client';
 import { ActionPolicyNamespaceToken } from '../lib/action_policy_client/tokens';
 import { ActionPolicyExecutionHistoryClient } from '../lib/action_policy_execution_history_client';
 import { RulesClient } from '../lib/rules_client';
 import { RequestSpaceIdToken } from '../lib/services/spaces_service/tokens';
 import { ApiKeyService } from '../lib/services/api_key_service/api_key_service';
-import { EsServiceInternalToken, EsServiceScopedToken } from '../lib/services/es_service/tokens';
+import {
+  EsServiceInternalToken,
+  EsServiceScopedToken,
+  EsServiceScopedSpaceRoutingToken,
+} from '../lib/services/es_service/tokens';
 import { EventLogService } from '../lib/services/event_log_service/event_log_service';
 import { EventLogServiceToken } from '../lib/services/event_log_service/tokens';
 import { LoggerService, LoggerServiceToken } from '../lib/services/logger_service/logger_service';
+import { SettingsService } from '../lib/services/settings_service/settings_service';
+import {
+  SettingsServiceToken,
+  UiSettingsClientToken,
+} from '../lib/services/settings_service/tokens';
 import { MaintenanceWindowService } from '../lib/services/maintenance_window_service/maintenance_window_service';
 import {
   MaintenanceWindowSavedObjectsClientToken,
@@ -46,6 +51,7 @@ import { QueryService } from '../lib/services/query_service/query_service';
 import {
   QueryServiceInternalToken,
   QueryServiceScopedToken,
+  QueryServiceScopedSpaceRoutingToken,
 } from '../lib/services/query_service/tokens';
 import { ResourceManager } from '../lib/services/resource_service/resource_manager';
 import { AlertingRetryService } from '../lib/services/retry_service';
@@ -109,6 +115,17 @@ export function bindServices({ bind }: ContainerModuleLoadOptions) {
   bind(LoggerService).toSelf().inSingletonScope();
   bind(LoggerServiceToken).toService(LoggerService);
 
+  bind(UiSettingsClientToken)
+    .toDynamicValue(({ get }) => {
+      const savedObjects = get(CoreStart('savedObjects'));
+      const uiSettings = get(CoreStart('uiSettings'));
+      const internalSoClient = savedObjects.createInternalRepository();
+      return uiSettings.globalAsScopedToClient(internalSoClient);
+    })
+    .inSingletonScope();
+  bind(SettingsService).toSelf().inSingletonScope();
+  bind(SettingsServiceToken).toService(SettingsService);
+
   bind(EventLogService).toSelf().inSingletonScope();
   bind(EventLogServiceToken).toService(EventLogService);
   bind(WorkflowService).toSelf().inSingletonScope();
@@ -127,6 +144,16 @@ export function bindServices({ bind }: ContainerModuleLoadOptions) {
       const request = get(Request);
       const elasticsearch = get(CoreStart('elasticsearch'));
       return elasticsearch.client.asScoped(request).asCurrentUser;
+    })
+    .inRequestScope();
+
+  bind(EsServiceScopedSpaceRoutingToken)
+    .toDynamicValue(({ get }) => {
+      const request = get(Request);
+      const elasticsearch = get(CoreStart('elasticsearch'));
+      // `projectRouting: 'space'` scopes rule-execution queries to the originating space/project
+      // when CPS is enabled, matching alerting v1 behavior. Only `asCurrentUser` honors the option.
+      return elasticsearch.client.asScoped(request, { projectRouting: 'space' }).asCurrentUser;
     })
     .inRequestScope();
 
@@ -220,6 +247,15 @@ export function bindServices({ bind }: ContainerModuleLoadOptions) {
     })
     .inRequestScope();
 
+  bind(QueryServiceScopedSpaceRoutingToken)
+    .toDynamicValue(({ get }) => {
+      const loggerService = get(LoggerServiceToken);
+      // Rule-execution queries run against user data and must respect the space project routing.
+      const esClient = get(EsServiceScopedSpaceRoutingToken);
+      return new QueryService(esClient, loggerService);
+    })
+    .inRequestScope();
+
   bind(QueryServiceInternalToken)
     .toDynamicValue(({ get }) => {
       const loggerService = get(LoggerServiceToken);
@@ -257,18 +293,6 @@ export function bindServices({ bind }: ContainerModuleLoadOptions) {
 
   bind(DispatcherService).toSelf().inSingletonScope();
   bind(DispatcherServiceInternalToken).toService(DispatcherService);
-
-  bind(DispatcherEnabledProviderToken)
-    .toDynamicValue(({ get }) => {
-      const savedObjects = get(CoreStart('savedObjects'));
-      const uiSettings = get(CoreStart('uiSettings'));
-      return async () => {
-        const soClient = savedObjects.createInternalRepository();
-        const client = uiSettings.globalAsScopedToClient(soClient);
-        return client.get<boolean>(ALERTING_V2_DISPATCHER_ENABLED_SETTING_ID);
-      };
-    })
-    .inSingletonScope();
 
   bind(DirectorService).toSelf().inSingletonScope();
   bind(TransitionStrategyFactory).toSelf().inSingletonScope();

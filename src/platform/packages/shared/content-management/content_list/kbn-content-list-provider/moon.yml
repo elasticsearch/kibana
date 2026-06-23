@@ -17,6 +17,7 @@ project:
   owner: '@elastic/appex-sharedux'
   sourceRoot: src/platform/packages/shared/content-management/content_list/kbn-content-list-provider
 dependsOn:
+  - '@kbn/content-list-common'
   - '@kbn/react-query'
   - '@kbn/i18n'
   - '@kbn/content-management-tags'

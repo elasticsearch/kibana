@@ -46,8 +46,8 @@ x-codeSamples:
   - lang: curl
     source: |
       curl \
-        -X GET "${KIBANA_URL}/api/workflows?size=20&page=1" \
+        -X GET "${KIBANA_URL}/api/workflows?size=20&page=1&sortField=name&sortOrder=asc" \
         -H "Authorization: ApiKey ${API_KEY}"
   - lang: Console
     source: |
-      GET kbn://api/workflows?size=20&page=1
+      GET kbn://api/workflows?size=20&page=1&sortField=name&sortOrder=asc

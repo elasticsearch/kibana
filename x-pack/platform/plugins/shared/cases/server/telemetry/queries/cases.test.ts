@@ -18,6 +18,7 @@ import type {
 import { getCasesTelemetryData } from './cases';
 import { TelemetrySavedObjectsClient } from '../telemetry_saved_objects_client';
 import { OBSERVABLE_TYPE_IPV4 } from '../../../common/constants';
+import { AUTO_EXTRACT_OBSERVABLE_DESCRIPTION } from '../../../common/constants/observables';
 
 const MOCK_FIND_TOTAL = 5;
 const SOLUTION_TOTAL = 1;
@@ -81,7 +82,7 @@ describe('getCasesTelemetryData', () => {
           byDescription: {
             buckets: [
               {
-                key: 'Auto extract observables',
+                key: AUTO_EXTRACT_OBSERVABLE_DESCRIPTION,
                 doc_count: 1,
                 byType: {
                   buckets: [

@@ -8,7 +8,7 @@
 import { schema } from '@kbn/config-schema';
 
 const modelIdSchemaBasic = {
-  modelId: schema.string({ meta: { description: 'Model ID' } }),
+  modelId: schema.string({ maxLength: 10000, meta: { description: 'Model ID' } }),
 };
 
 export const modelIdSchema = schema.object({
@@ -17,11 +17,11 @@ export const modelIdSchema = schema.object({
 
 export const modelAndDeploymentIdSchema = schema.object({
   ...modelIdSchemaBasic,
-  deploymentId: schema.string({ meta: { description: 'Deployment ID' } }),
+  deploymentId: schema.string({ maxLength: 10000, meta: { description: 'Deployment ID' } }),
 });
 export const createInferenceSchema = schema.object({
   taskType: schema.oneOf([schema.literal('sparse_embedding'), schema.literal('text_embedding')]),
-  inferenceId: schema.string(),
+  inferenceId: schema.string({ maxLength: 10000 }),
 });
 
 export const threadingParamsQuerySchema = schema.maybe(
@@ -29,7 +29,7 @@ export const threadingParamsQuerySchema = schema.maybe(
     number_of_allocations: schema.maybe(schema.number()),
     threads_per_allocation: schema.maybe(schema.number()),
     priority: schema.maybe(schema.oneOf([schema.literal('low'), schema.literal('normal')])),
-    deployment_id: schema.maybe(schema.string()),
+    deployment_id: schema.maybe(schema.string({ maxLength: 10000 })),
   })
 );
 
@@ -60,19 +60,21 @@ export const optionalModelIdSchema = schema.object({
   /**
    * Model ID
    */
-  modelId: schema.maybe(schema.string()),
+  modelId: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export const getInferenceQuerySchema = schema.object({
-  size: schema.maybe(schema.string()),
-  include: schema.maybe(schema.string()),
+  size: schema.maybe(schema.string({ maxLength: 10000 })),
+  include: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export const putTrainedModelQuerySchema = schema.object({
   defer_definition_decompression: schema.maybe(schema.boolean()),
 });
 
-export const inferTrainedModelQuery = schema.object({ timeout: schema.maybe(schema.string()) });
+export const inferTrainedModelQuery = schema.object({
+  timeout: schema.maybe(schema.string({ maxLength: 10000 })),
+});
 export const inferTrainedModelBody = schema.object({
   docs: schema.any(),
   inference_config: schema.maybe(schema.any()),
@@ -82,7 +84,7 @@ export const pipelineSimulateBody = schema.object({
   pipeline: schema.any(),
   docs: schema.arrayOf(schema.any(), { maxSize: 10000 }),
 });
-export const pipelineDocs = schema.arrayOf(schema.string(), { maxSize: 10000 });
+export const pipelineDocs = schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 });
 
 export const stopDeploymentSchema = schema.object({
   ...modelIdSchemaBasic,
@@ -95,11 +97,11 @@ export const deleteTrainedModelQuerySchema = schema.object({
 });
 
 export const createIngestPipelineSchema = schema.object({
-  pipelineName: schema.string(),
+  pipelineName: schema.string({ maxLength: 10000 }),
   pipeline: schema.maybe(
     schema.object({
       processors: schema.arrayOf(schema.any(), { maxSize: 10000 }),
-      description: schema.maybe(schema.string()),
+      description: schema.maybe(schema.string({ maxLength: 10000 })),
     })
   ),
 });
@@ -109,7 +111,7 @@ export const modelDownloadsQuery = schema.object({
 });
 
 export const curatedModelsParamsSchema = schema.object({
-  modelName: schema.string(),
+  modelName: schema.string({ maxLength: 10000 }),
 });
 
 export const curatedModelsQuerySchema = schema.object({ version: schema.maybe(schema.number()) });

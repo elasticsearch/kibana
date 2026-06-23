@@ -117,6 +117,7 @@ describe('When using Actions service utilities', () => {
       isCompleted: false,
       completedAt: undefined,
       wasSuccessful: false,
+      wasCanceled: false,
       errors: undefined,
       outputs: {},
       agentState: {
@@ -125,6 +126,7 @@ describe('When using Actions service utilities', () => {
           errors: undefined,
           isCompleted: false,
           wasSuccessful: false,
+          wasCanceled: false,
         },
       },
     });
@@ -205,6 +207,7 @@ describe('When using Actions service utilities', () => {
         completedAt: COMPLETED_AT,
         errors: undefined,
         wasSuccessful: true,
+        wasCanceled: false,
         outputs: {
           '123': {
             content: expect.anything(),
@@ -217,6 +220,7 @@ describe('When using Actions service utilities', () => {
             errors: undefined,
             isCompleted: true,
             wasSuccessful: true,
+            wasCanceled: false,
           },
         },
       });
@@ -257,6 +261,7 @@ describe('When using Actions service utilities', () => {
         completedAt: COMPLETED_AT,
         errors: undefined,
         wasSuccessful: true,
+        wasCanceled: false,
         outputs: {
           '123': {
             type: 'json',
@@ -269,6 +274,7 @@ describe('When using Actions service utilities', () => {
             errors: undefined,
             isCompleted: true,
             wasSuccessful: true,
+            wasCanceled: false,
           },
         },
       });
@@ -430,6 +436,7 @@ describe('When using Actions service utilities', () => {
           errors: ['Endpoint action response error: endpoint failed to apply'],
           isCompleted: true,
           wasSuccessful: false,
+          wasCanceled: false,
           outputs: expect.anything(),
           agentState: {
             '123': {
@@ -437,6 +444,7 @@ describe('When using Actions service utilities', () => {
               errors: ['Endpoint action response error: endpoint failed to apply'],
               isCompleted: true,
               wasSuccessful: false,
+              wasCanceled: false,
             },
           },
         });
@@ -457,6 +465,7 @@ describe('When using Actions service utilities', () => {
           errors: ['Fleet action response error: agent failed to deliver'],
           isCompleted: true,
           wasSuccessful: false,
+          wasCanceled: false,
           outputs: {},
           agentState: {
             '123': {
@@ -464,6 +473,7 @@ describe('When using Actions service utilities', () => {
               errors: ['Fleet action response error: agent failed to deliver'],
               isCompleted: true,
               wasSuccessful: false,
+              wasCanceled: false,
             },
           },
         });
@@ -487,6 +497,7 @@ describe('When using Actions service utilities', () => {
           ],
           isCompleted: true,
           wasSuccessful: false,
+          wasCanceled: false,
           outputs: expect.anything(),
           agentState: {
             '123': {
@@ -497,6 +508,7 @@ describe('When using Actions service utilities', () => {
               ],
               isCompleted: true,
               wasSuccessful: false,
+              wasCanceled: false,
             },
           },
         });
@@ -584,12 +596,14 @@ describe('When using Actions service utilities', () => {
               errors: undefined,
               isCompleted: false,
               wasSuccessful: false,
+              wasCanceled: false,
             },
             '789': {
               completedAt: undefined,
               errors: undefined,
               isCompleted: false,
               wasSuccessful: false,
+              wasCanceled: false,
             },
           },
         });
@@ -625,18 +639,21 @@ describe('When using Actions service utilities', () => {
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
             '456': {
               completedAt: undefined,
               errors: undefined,
               isCompleted: false,
               wasSuccessful: false,
+              wasCanceled: false,
             },
             '789': {
               completedAt: '2022-03-05T19:27:23.816Z',
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
           },
         });
@@ -667,6 +684,7 @@ describe('When using Actions service utilities', () => {
           isCompleted: true,
           completedAt: COMPLETED_AT,
           wasSuccessful: true,
+          wasCanceled: false,
           errors: undefined,
           outputs: expect.any(Object),
           agentState: {
@@ -675,18 +693,21 @@ describe('When using Actions service utilities', () => {
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
             '456': {
               completedAt: '2022-05-05T18:53:18.836Z',
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
             '789': {
               completedAt: '2022-03-05T19:27:23.816Z',
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
           },
         });
@@ -721,6 +742,7 @@ describe('When using Actions service utilities', () => {
           errors: ['Fleet action response error: something is no good'],
           isCompleted: true,
           wasSuccessful: false,
+          wasCanceled: false,
           outputs: expect.any(Object),
           agentState: {
             '123': {
@@ -728,18 +750,21 @@ describe('When using Actions service utilities', () => {
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
             '456': {
               completedAt: action456Responses.fleetResponses[0]['@timestamp'],
               errors: ['Fleet action response error: something is no good'],
               isCompleted: true,
               wasSuccessful: false,
+              wasCanceled: false,
             },
             '789': {
               completedAt: '2022-03-05T19:27:23.816Z',
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
           },
         });
@@ -789,18 +814,21 @@ describe('When using Actions service utilities', () => {
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
             '456': {
               completedAt: undefined,
               errors: undefined,
               isCompleted: false,
               wasSuccessful: false,
+              wasCanceled: false,
             },
             '789': {
               completedAt: '2022-03-05T19:27:23.816Z',
               errors: undefined,
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
             },
           },
           outputs: {
@@ -1065,6 +1093,7 @@ describe('When using Actions service utilities', () => {
           expirationDate: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(),
           isCompleted: false,
           wasSuccessful: false,
+          wasCanceled: false,
         })
       ).toEqual({ isExpired: true, status: 'failed' });
     });
@@ -1075,6 +1104,7 @@ describe('When using Actions service utilities', () => {
           expirationDate: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
           isCompleted: false,
           wasSuccessful: false,
+          wasCanceled: false,
         })
       ).toEqual({ isExpired: false, status: 'pending' });
     });
@@ -1085,6 +1115,7 @@ describe('When using Actions service utilities', () => {
           expirationDate: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
           isCompleted: true,
           wasSuccessful: true,
+          wasCanceled: false,
         })
       ).toEqual({ isExpired: false, status: 'successful' });
     });
@@ -1095,6 +1126,7 @@ describe('When using Actions service utilities', () => {
           expirationDate: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
           isCompleted: true,
           wasSuccessful: false,
+          wasCanceled: false,
         })
       ).toEqual({ isExpired: false, status: 'failed' });
     });
@@ -1155,6 +1187,7 @@ describe('When using Actions service utilities', () => {
         startedAt: '2022-04-27T16:08:47.449Z',
         status: 'successful',
         wasSuccessful: true,
+        wasCanceled: false,
         createdBy: 'elastic',
         errors: undefined,
         isCompleted: true,
@@ -1168,6 +1201,7 @@ describe('When using Actions service utilities', () => {
             errors: undefined,
             isCompleted: true,
             wasSuccessful: true,
+            wasCanceled: false,
           },
         },
         hosts: {

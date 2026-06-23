@@ -151,6 +151,7 @@ dependsOn:
   - '@kbn/fleet-plugin'
   - '@kbn/ai-assistant-common'
   - '@kbn/management-settings-ids'
+  - '@kbn/alerting-v2-utils'
   - '@kbn/observability-agent-builder-plugin'
   - '@kbn/kql'
   - '@kbn/shared-ux-utility'

@@ -154,15 +154,17 @@ const AddToTimelineButton: React.FC<AddToTimelineButtonProps> = React.memo(
             {i18n.ADD_TO_TIMELINE}
           </Component>
         ) : (
-          <EuiButtonIcon
-            aria-label={i18n.ADD_TO_TIMELINE}
-            buttonRef={defaultFocusedButtonRef}
-            className="timelines__hoverActionButton"
-            data-test-subj="add-to-timeline"
-            iconSize="s"
-            iconType="timeline"
-            onClick={handleStartDragToTimeline}
-          />
+          <EuiToolTip content={i18n.ADD_TO_TIMELINE} disableScreenReaderOutput>
+            <EuiButtonIcon
+              aria-label={i18n.ADD_TO_TIMELINE}
+              buttonRef={defaultFocusedButtonRef}
+              className="timelines__hoverActionButton"
+              data-test-subj="add-to-timeline"
+              iconSize="s"
+              iconType="timeline"
+              onClick={handleStartDragToTimeline}
+            />
+          </EuiToolTip>
         ),
       [Component, defaultFocusedButtonRef, handleStartDragToTimeline]
     );

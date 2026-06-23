@@ -5,14 +5,13 @@
  * 2.0.
  */
 
-import '../../../../__mocks__/shallow_useeffect.mock';
 import '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { fireEvent, screen } from '@testing-library/react';
 
-import { EuiCodeBlock, EuiSteps } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { AnalyticsCollection } from '../../../../../../common/types/analytics';
 
@@ -35,35 +34,38 @@ describe('AnalyticsCollectionIntegrate', () => {
   });
 
   it('renders', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionIntegrateView analyticsCollection={analyticsCollections} />
     );
-    expect(wrapper.find(EuiSteps).dive().find(EuiCodeBlock)).toHaveLength(4);
-    wrapper.find('[data-test-subj="searchuiEmbed"]').at(0).simulate('click');
-    expect(wrapper.find(EuiSteps).dive().find(EuiCodeBlock)).toHaveLength(3);
-    wrapper.find('[data-test-subj="javascriptClientEmbed"]').at(0).simulate('click');
-    expect(wrapper.find(EuiSteps).dive().find(EuiCodeBlock)).toHaveLength(6);
+
+    // Default tab is "Javascript Embed" — shows "Embed onto site" step
+    expect(screen.getByText('Embed onto site')).toBeInTheDocument();
+
+    // Switch to Search UI tab
+    fireEvent.click(screen.getByTestId('searchuiEmbed'));
+    expect(screen.getByText('Embed Behavioral Analytics')).toBeInTheDocument();
+    expect(screen.queryByText('Embed onto site')).not.toBeInTheDocument();
+
+    // Switch to Javascript Client tab
+    fireEvent.click(screen.getByTestId('javascriptClientEmbed'));
+    expect(screen.getByText('Install client')).toBeInTheDocument();
   });
 
   it('check value of config & webClientSrc', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionIntegrateView analyticsCollection={analyticsCollections} />
     );
-    expect(wrapper.find(EuiSteps).dive().find(EuiCodeBlock).at(1).dive().text()).toContain(
-      'https://cdn.jsdelivr.net/npm/@elastic/behavioral-analytics-browser-tracker@2'
-    );
 
-    expect(wrapper.find(EuiSteps).dive().find(EuiCodeBlock).at(2).dive().text())
-      .toMatchInlineSnapshot(`
-      "<script type=\\"text/javascript\\">
-      window.elasticAnalytics.createTracker({
-        endpoint: \\"your_deployment_url\\",
-        collectionName: \\"example\\",
-        apiKey: \\"########\\",
-        // Optional: sampling rate percentage: 0-1, 0 = no events, 1 = all events
-        // sampling: 1,
-      });
-      </script>"
-    `);
+    // webClientSrc is embedded inside a <script src="..."> tag
+    expect(
+      screen.getByText(
+        /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@elastic\/behavioral-analytics-browser-tracker@2"><\/script>/s
+      )
+    ).toBeInTheDocument();
+
+    // analyticsConfig fields are interpolated into the tracker initialization snippet
+    expect(screen.getByText(/endpoint.*your_deployment_url/s)).toBeInTheDocument();
+    expect(screen.getByText(/collectionName.*"example"/s)).toBeInTheDocument();
+    expect(screen.getByText(/apiKey.*"########"/s)).toBeInTheDocument();
   });
 });

@@ -43,6 +43,8 @@ import { getRiskInputsIndex } from './get_risk_inputs_index';
 
 import { createOrUpdateIndex } from '../utils/create_or_update_index';
 import { retryTransientEsErrors } from '../utils/retry_transient_es_errors';
+import type { RiskScoreHistoryEntry } from '../../../../common/api/entity_analytics/risk_engine';
+import { RISK_SCORE_HISTORY_PAGE_SIZE_MAX } from '../../../../common/entity_analytics/risk_score/constants';
 import { RiskScoreAuditActions } from './audit';
 import { AUDIT_CATEGORY, AUDIT_OUTCOME, AUDIT_TYPE } from '../audit';
 import {
@@ -170,6 +172,39 @@ export class RiskScoreDataClient {
 
     return result;
   }
+
+  public getRiskScoreHistory = async (params: {
+    entityType: string;
+    entityId: string;
+    range: { readonly gte: string; readonly lte: string };
+    scoreType?: string;
+    pageSize: number;
+  }): Promise<RiskScoreHistoryEntry[]> => {
+    const { esClient, namespace } = this.options;
+    const index = getRiskScoreTimeSeriesIndex(namespace);
+    const riskPath = `${params.entityType}.risk`;
+
+    const response = await esClient.search<RiskScoreTimeSeriesSource>({
+      index,
+      size: Math.min(params.pageSize, RISK_SCORE_HISTORY_PAGE_SIZE_MAX),
+      sort: [{ '@timestamp': 'asc' }],
+      _source: ['@timestamp', riskPath],
+      query: {
+        bool: {
+          filter: [
+            { term: { [`${riskPath}.id_field`]: 'entity.id' } },
+            { term: { [`${riskPath}.id_value`]: params.entityId } },
+            { range: { '@timestamp': { gte: params.range.gte, lte: params.range.lte } } },
+            ...toScoreTypeFilter(riskPath, params.scoreType),
+          ],
+        },
+      },
+    });
+
+    return response.hits.hits
+      .map((hit) => toHistoryEntry(hit._source, params.entityType))
+      .filter((entry): entry is RiskScoreHistoryEntry => entry !== undefined);
+  };
 
   public getRiskInputsIndex = ({ dataViewId }: { dataViewId: string }) =>
     getRiskInputsIndex({
@@ -474,3 +509,90 @@ export class RiskScoreDataClient {
     });
   }
 }
+
+// --- types and helpers for getRiskScoreHistory ---
+
+type RiskScoreTimeSeriesRisk = RiskScoreHistoryEntry & {
+  readonly id_field: string;
+  readonly id_value: string;
+};
+
+interface RiskScoreTimeSeriesSource {
+  readonly '@timestamp': string;
+  readonly host?: { readonly risk: RiskScoreTimeSeriesRisk };
+  readonly user?: { readonly risk: RiskScoreTimeSeriesRisk };
+  readonly service?: { readonly risk: RiskScoreTimeSeriesRisk };
+}
+
+const toScoreTypeFilter = (
+  riskPath: string,
+  scoreType: string | undefined
+): Array<Record<string, unknown>> => {
+  if (scoreType === undefined) {
+    return [];
+  }
+
+  // documents written before score_type was introduced have no field — treat as base
+  if (scoreType === 'base') {
+    return [
+      {
+        bool: {
+          should: [
+            { term: { [`${riskPath}.score_type`]: 'base' } },
+            { bool: { must_not: { exists: { field: `${riskPath}.score_type` } } } },
+          ],
+          minimum_should_match: 1,
+        },
+      },
+    ];
+  }
+
+  return [{ term: { [`${riskPath}.score_type`]: scoreType } }];
+};
+
+const getRiskFromSource = (
+  source: RiskScoreTimeSeriesSource,
+  entityType: string
+): RiskScoreTimeSeriesRisk | undefined => {
+  if (entityType === 'host') {
+    return source.host?.risk;
+  }
+  if (entityType === 'user') {
+    return source.user?.risk;
+  }
+  if (entityType === 'service') {
+    return source.service?.risk;
+  }
+  return undefined;
+};
+
+const toHistoryEntry = (
+  source: RiskScoreTimeSeriesSource | undefined,
+  entityType: string
+): RiskScoreHistoryEntry | undefined => {
+  if (source === undefined) {
+    return undefined;
+  }
+
+  const risk = getRiskFromSource(source, entityType);
+
+  if (risk === undefined) {
+    return undefined;
+  }
+
+  const timestamp = risk['@timestamp'] ?? source['@timestamp'];
+
+  if (timestamp === undefined) {
+    return undefined;
+  }
+
+  return {
+    '@timestamp': timestamp,
+    calculated_score_norm: risk.calculated_score_norm,
+    calculated_level: risk.calculated_level,
+    ...(risk.calculated_score !== undefined && { calculated_score: risk.calculated_score }),
+    ...(risk.score_type !== undefined && { score_type: risk.score_type }),
+    ...(risk.category_1_score !== undefined && { category_1_score: risk.category_1_score }),
+    ...(risk.category_1_count !== undefined && { category_1_count: risk.category_1_count }),
+  };
+};

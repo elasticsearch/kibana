@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/271983
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix investigation skill time range handling for alerts
+description: "Investigation skills now anchor to an alert's start time instead of the screen context window, with per-signal lookbacks matching alert AI insight time ranges."

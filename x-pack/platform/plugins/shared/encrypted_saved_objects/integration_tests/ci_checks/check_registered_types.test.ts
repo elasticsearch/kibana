@@ -20,7 +20,7 @@ import type { EncryptedSavedObjectsService } from '../../server/crypto';
 import * as EncryptedSavedObjectsModule from '../../server/saved_objects';
 
 // This will only change if new ESOs are introduced. This number should never get smaller.
-export const ESO_TYPES_COUNT = 23 as const;
+export const ESO_TYPES_COUNT = 24 as const;
 
 describe('checking changes on all registered encrypted SO types', () => {
   let esServer: TestElasticsearchUtils;
@@ -87,6 +87,7 @@ describe('checking changes on all registered encrypted SO types', () => {
         "task": "d6cc30871dc78caf3f451de1275a3803879ec9935b4a2e34076dee56878c228f",
         "uptime-synthetics-api-key": "5ca81f180763e85397fa8c6508adcd60efd0f916e29bac6dcd5b4564f1db7375",
         "user_connector_token": "b443b022b46b79c0ff9fa674aecc64176a5fcbd09c2db2d9f050a6a88435732e",
+        "watchlist-entity-source": "9e6445feba401a9b6d44c412d8fe9a069e051ea2483570c03ef17b5cf5e718d7",
       }
     `);
     expect(Object.keys(hashMap).length).toEqual(ESO_TYPES_COUNT);
@@ -166,9 +167,13 @@ describe('checking changes on all registered encrypted SO types', () => {
         "task|4",
         "task|3",
         "task|2",
+        "task|11",
         "task|10",
         "task|1",
         "user_connector_token|1",
+        "watchlist-entity-source|3",
+        "watchlist-entity-source|2",
+        "watchlist-entity-source|1",
       ]
     `);
   });

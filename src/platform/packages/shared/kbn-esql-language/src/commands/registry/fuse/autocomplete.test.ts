@@ -38,6 +38,7 @@ describe('FUSE Autocomplete', () => {
   describe('FUSE arguments', () => {
     it('suggests all FUSE arguments + FUSE types if FUSE has no arguments', async () => {
       await fuseExpectSuggestions('FROM a | FUSE /', [
+        '\n',
         'linear ',
         'rrf ',
         'SCORE BY ',
@@ -50,6 +51,7 @@ describe('FUSE Autocomplete', () => {
 
     it('does not suggest FUSE types if FUSE already has one', async () => {
       await fuseExpectSuggestions('FROM a | FUSE linear /', [
+        '\n',
         'SCORE BY ',
         'KEY BY ',
         'GROUP BY ',
@@ -60,6 +62,7 @@ describe('FUSE Autocomplete', () => {
 
     it('does not suggest already used arguments', async () => {
       await fuseExpectSuggestions('FROM a | FUSE linear SCORE BY x KEY BY y ', [
+        '\n',
         'GROUP BY ',
         'WITH { $0 }',
         '| ',
@@ -77,6 +80,7 @@ describe('FUSE Autocomplete', () => {
 
     it('does not suggest FUSE type if another argument has been added', async () => {
       await fuseExpectSuggestions('FROM a | FUSE SCORE BY x /', [
+        '\n',
         'KEY BY ',
         'GROUP BY ',
         'WITH { $0 }',
@@ -214,6 +218,7 @@ describe('FUSE Autocomplete', () => {
 
     it('suggests other config arguments after KEY BY fields', async () => {
       await fuseExpectSuggestions('FROM a | FUSE KEY BY keywordField, textField ', [
+        '\n',
         'SCORE BY ',
         'GROUP BY ',
         'WITH { $0 }',
@@ -230,6 +235,7 @@ describe('FUSE Autocomplete', () => {
       await fuseExpectSuggestions(
         'FROM a | FUSE KEY BY keywordField, textField',
         [
+          'textField \n',
           'textField GROUP BY ',
           'textField SCORE BY ',
           'textField WITH { $0 }',

@@ -34,5 +34,11 @@ export async function awaitIfPending<T>(asyncFunction: () => Promise<T>): Promis
     onReject(error);
   }
   isPending = false;
-  return status;
+  // Capture the settled promise to return, then clear the module-level reference so its
+  // resolved value (which may contain large ResponseError objects) can be garbage-collected.
+  // Concurrent callers that entered while isPending=true already hold their own reference
+  // to this same promise, so clearing it here does not affect them.
+  const settled = status;
+  status = undefined;
+  return settled;
 }

@@ -16,6 +16,7 @@ import {
 } from '../data_stream';
 import { combineWhere, inPredicate, IS_NOT_DELETED, IS_NOT_EXCLUDED } from '../esql_helpers';
 import {
+  FEATURE_TYPE,
   KI_TYPE_FEATURE,
   KI_TYPE_QUERY,
   STREAM_NAME,
@@ -249,7 +250,7 @@ export class IndicatorSearcher {
     const featureShould = [
       wildcard('title', 3),
       wildcard('description', 2),
-      wildcard('feature.type'),
+      wildcard(FEATURE_TYPE),
       wildcard('feature.subtype'),
       wildcard('tags'),
     ];

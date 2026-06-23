@@ -394,7 +394,7 @@ When creating a new connector type, your plugin will eventually call `server.plu
 
 Consider working with the alerting team on early structure /design feedback of new connectors, especially as the APIs and infrastructure are still under development.
 
-Don't forget to ping @elastic/security-detection-rule-management and @elastic/security-detection-engine to see if the new connector should be enabled within their solution.
+Don't forget to ping @elastic/security-detection-engineering to see if the new connector should be enabled within their solution.
 
 ## Licensing
 

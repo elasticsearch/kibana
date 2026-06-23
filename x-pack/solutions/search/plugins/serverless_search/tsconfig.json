@@ -57,6 +57,8 @@
     "@kbn/deeplinks-management",
     "@kbn/react-query",
     "@kbn/ai-assistant-common",
-    "@kbn/management-settings-ids"
+    "@kbn/management-settings-ids",
+    "@kbn/alerting-v2-utils",
+    "@kbn/features-plugin"
   ]
 }

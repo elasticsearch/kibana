@@ -6,6 +6,7 @@
  */
 
 import { hasNamespaceName, isInProtectedNamespace } from '../base/namespaces';
+import { isInternalTool } from './constants';
 
 export const toolIdRegexp =
   /^(?:[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)(?:\.(?:[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?))*$/;
@@ -48,6 +49,9 @@ export const validateToolId = ({
   if (!builtIn) {
     if (isInProtectedNamespace(toolId)) {
       return `Tool id is using a protected namespace.`;
+    }
+    if (isInternalTool(toolId)) {
+      return `Tool id '${toolId}' is reserved for internal use.`;
     }
   }
 };

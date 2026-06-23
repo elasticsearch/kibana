@@ -64,7 +64,13 @@ export const Conversation: React.FC<{}> = () => {
   const shouldStickToBottom = useShouldStickToBottom();
   const onAppLeave = useAppLeave();
   const { attachmentsService } = useAgentBuilderServices();
-  const { attachments: stagedAttachments = [], upsertAttachments } = useConversationContext();
+  const {
+    attachments: stagedAttachments = [],
+    upsertAttachments,
+    initialMessage,
+    autoSendInitialMessage,
+  } = useConversationContext();
+  const isPendingAutoSend = Boolean(initialMessage && autoSendInitialMessage);
   const { staleAttachments, scheduleStaleCheck } = useStaleAttachments(conversationId);
   const [dismissStaleAttachments, setDismissStaleAttachments] = useState(false);
   useSendPredefinedInitialMessage();
@@ -152,8 +158,11 @@ export const Conversation: React.FC<{}> = () => {
     padding-bottom: ${euiTheme.size.base};
   `;
 
-  if (!hasActiveConversation) {
+  if (!hasActiveConversation && !isPendingAutoSend) {
     return <NewConversationPrompt />;
+  }
+  if (isPendingAutoSend && !hasActiveConversation) {
+    return null;
   }
 
   if (errorType) {

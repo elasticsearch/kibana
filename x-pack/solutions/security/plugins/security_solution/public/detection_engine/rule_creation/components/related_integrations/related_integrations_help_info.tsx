@@ -45,7 +45,7 @@ export function RelatedIntegrationsHelpInfo(): JSX.Element {
       <EuiText css={{ width: POPOVER_WIDTH }} size="s">
         <FormattedMessage
           id="xpack.securitySolution.detectionEngine.ruleDescription.relatedIntegrations.fieldRelatedIntegrationsHelpText"
-          defaultMessage="Choose the {integrationsDocLink} this rule depends on, and correct if necessary each integration’s version constraint in {semverLink} format. Only tilde, caret, and plain versions are supported, such as ~1.2.3, ^1.2.3, or 1.2.3."
+          defaultMessage="Choose the {integrationsDocLink} this rule depends on, and correct if necessary each integration’s version constraint in {semverLink} range format. Supported examples: ^1.2.3, ~1.2.3, 1.2.3, >=1.2.3, or ^1.2.3 || ^2.0.0."
           values={{
             integrationsDocLink: (
               <EuiLink href={docLinks.links.securitySolution.createDetectionRules} target="_blank">

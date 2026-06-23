@@ -84,6 +84,40 @@ describe('Endpoint Authz service', () => {
       ).toBe(true);
     });
 
+    it('should set `canReadTrustedDevices` to false if not proper license', () => {
+      licenseService.isEnterprise.mockReturnValue(false);
+
+      expect(
+        calculateEndpointAuthz(licenseService, fleetAuthz, userRoles, false).canReadTrustedDevices
+      ).toBe(false);
+    });
+
+    it('should set `canWriteTrustedDevices` to false if not proper license', () => {
+      licenseService.isEnterprise.mockReturnValue(false);
+
+      expect(
+        calculateEndpointAuthz(licenseService, fleetAuthz, userRoles, false).canWriteTrustedDevices
+      ).toBe(false);
+    });
+
+    it('should set `canReadCustomYaraSignatures` to false if not proper license', () => {
+      licenseService.isEnterprise.mockReturnValue(false);
+
+      expect(
+        calculateEndpointAuthz(licenseService, fleetAuthz, userRoles, false)
+          .canReadCustomYaraSignatures
+      ).toBe(false);
+    });
+
+    it('should set `canWriteCustomYaraSignatures` to false if not proper license', () => {
+      licenseService.isEnterprise.mockReturnValue(false);
+
+      expect(
+        calculateEndpointAuthz(licenseService, fleetAuthz, userRoles, false)
+          .canWriteCustomYaraSignatures
+      ).toBe(false);
+    });
+
     it(`should allow Host Isolation Exception read/delete when license is not Platinum+`, () => {
       licenseService.isPlatinumPlus.mockReturnValue(false);
 
@@ -175,6 +209,8 @@ describe('Endpoint Authz service', () => {
       ['canReadTrustedApplications', 'readTrustedApplications'],
       ['canWriteTrustedDevices', 'writeTrustedDevices'],
       ['canReadTrustedDevices', 'readTrustedDevices'],
+      ['canWriteCustomYaraSignatures', 'writeCustomYaraSignatures'],
+      ['canReadCustomYaraSignatures', 'readCustomYaraSignatures'],
       ['canWriteHostIsolationExceptions', 'writeHostIsolationExceptions'],
       ['canAccessHostIsolationExceptions', 'accessHostIsolationExceptions'],
       ['canReadHostIsolationExceptions', 'readHostIsolationExceptions'],
@@ -219,6 +255,8 @@ describe('Endpoint Authz service', () => {
       ['canReadTrustedApplications', ['readTrustedApplications']],
       ['canWriteTrustedDevices', ['writeTrustedDevices']],
       ['canReadTrustedDevices', ['readTrustedDevices']],
+      ['canWriteCustomYaraSignatures', ['writeCustomYaraSignatures']],
+      ['canReadCustomYaraSignatures', ['readCustomYaraSignatures']],
       ['canWriteHostIsolationExceptions', ['writeHostIsolationExceptions']],
       ['canAccessHostIsolationExceptions', ['accessHostIsolationExceptions']],
       ['canReadHostIsolationExceptions', ['readHostIsolationExceptions']],
@@ -275,6 +313,8 @@ describe('Endpoint Authz service', () => {
       ['canReadTrustedApplications', ['readTrustedApplications']],
       ['canWriteTrustedDevices', ['writeTrustedDevices']],
       ['canReadTrustedDevices', ['readTrustedDevices']],
+      ['canWriteCustomYaraSignatures', ['writeCustomYaraSignatures']],
+      ['canReadCustomYaraSignatures', ['readCustomYaraSignatures']],
       ['canWriteHostIsolationExceptions', ['writeHostIsolationExceptions']],
       ['canAccessHostIsolationExceptions', ['accessHostIsolationExceptions']],
       ['canReadHostIsolationExceptions', ['readHostIsolationExceptions']],
@@ -379,6 +419,8 @@ describe('Endpoint Authz service', () => {
         canReadTrustedApplications: false,
         canWriteTrustedDevices: false,
         canReadTrustedDevices: false,
+        canReadCustomYaraSignatures: false,
+        canWriteCustomYaraSignatures: false,
         canWriteWorkflowInsights: false,
         canReadWorkflowInsights: false,
         canWriteHostIsolationExceptions: false,

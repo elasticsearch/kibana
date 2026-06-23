@@ -7,13 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, { useMemo } from 'react';
-import { AppHeader } from '@kbn/app-header';
+import React from 'react';
 import { AppMenu } from '@kbn/core-chrome-app-menu';
+import { ChromeAppHeader, useIsChromeNextProjectHeader } from '../chrome_app_header';
 import { SingleTabView, type SingleTabViewProps } from '.';
 import { useDiscoverServices } from '../../../../hooks/use_discover_services';
 import { useTopNavMenuItems } from '../top_nav/use_top_nav_menu_items';
-import { useInternalStateSelector } from '../../state_management/redux';
 
 export interface SingleTabViewWithAppMenuProps extends SingleTabViewProps {
   headerTitle: string;
@@ -22,28 +21,12 @@ export interface SingleTabViewWithAppMenuProps extends SingleTabViewProps {
 export const SingleTabViewWithAppMenu = (props: SingleTabViewProps) => {
   const { chrome } = useDiscoverServices();
   const topNavMenuItems = useTopNavMenuItems();
-  const persistedDiscoverSession = useInternalStateSelector(
-    (state) => state.persistedDiscoverSession
-  );
-  const isChromeNextProjectHeader = useMemo(
-    () => chrome.next.isEnabled && chrome.getChromeStyle() === 'project',
-    [chrome]
-  );
-
-  const chromeNextHeaderTitle = useMemo(
-    () => persistedDiscoverSession?.title ?? '',
-    [persistedDiscoverSession?.title]
-  );
+  const isChromeNextProjectHeader = useIsChromeNextProjectHeader();
 
   return (
     <>
       {isChromeNextProjectHeader ? (
-        <AppHeader
-          title={chromeNextHeaderTitle}
-          menu={topNavMenuItems}
-          sticky={false}
-          padding="m"
-        />
+        <ChromeAppHeader menu={topNavMenuItems} />
       ) : (
         topNavMenuItems && <AppMenu config={topNavMenuItems} setAppMenu={chrome.setAppMenu} />
       )}

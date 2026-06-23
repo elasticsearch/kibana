@@ -45,6 +45,7 @@ export function SloEditFormDescriptionSection() {
       <EuiFormRow
         fullWidth
         isInvalid={getFieldState('name').invalid}
+        error={getFieldState('name').error?.message}
         label={i18n.translate('xpack.slo.sloEdit.description.sloName', {
           defaultMessage: 'SLO Name',
         })}
@@ -52,7 +53,11 @@ export function SloEditFormDescriptionSection() {
         <Controller
           name="name"
           control={control}
-          rules={{ required: true }}
+          rules={{
+            required: i18n.translate('xpack.slo.sloEdit.description.sloNameRequired', {
+              defaultMessage: 'SLO name cannot be empty.',
+            }),
+          }}
           render={({ field: { ref, ...field }, fieldState }) => (
             <EuiFieldText
               {...field}

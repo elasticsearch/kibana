@@ -7,7 +7,7 @@
 
 import React, { useMemo } from 'react';
 import type { EuiDataGridColumn } from '@elastic/eui';
-import { EuiButtonIcon, EuiText } from '@elastic/eui';
+import { EuiButtonIcon, EuiText, EuiToolTip } from '@elastic/eui';
 import type { BrowserField } from '@kbn/rule-registry-plugin/common';
 import { useInspector } from '../../../hooks/use_inspector';
 import { IndicatorsFieldBrowser } from '../components/table/field_browser';
@@ -58,13 +58,14 @@ export const useToolbarOptions = ({
           ),
         },
         right: (
-          <EuiButtonIcon
-            aria-label={INSPECT_BUTTON_TITLE}
-            iconType="inspect"
-            title={INSPECT_BUTTON_TITLE}
-            data-test-subj={INSPECT_BUTTON_TEST_ID}
-            onClick={handleOpenInspector}
-          />
+          <EuiToolTip content={INSPECT_BUTTON_TITLE} disableScreenReaderOutput>
+            <EuiButtonIcon
+              aria-label={INSPECT_BUTTON_TITLE}
+              iconType="inspect"
+              data-test-subj={INSPECT_BUTTON_TEST_ID}
+              onClick={handleOpenInspector}
+            />
+          </EuiToolTip>
         ),
       },
     }),

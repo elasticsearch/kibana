@@ -106,6 +106,9 @@ export function SavedViewsToolbarControls<TSingleSavedViewState extends SavedVie
     <>
       <EuiPopover
         data-test-subj="savedViews-popover"
+        aria-label={i18n.translate('xpack.infra.savedView.popoverAriaLabel', {
+          defaultMessage: 'Saved views',
+        })}
         button={
           <EuiButton
             size="s"

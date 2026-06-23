@@ -26,7 +26,7 @@ import { AppHeaderView } from './app_header';
 interface ComposedHeaderStoryProps {
   title: string;
   editable: boolean;
-  padding: 'none' | 'm' | 'bleed-l';
+  padding: 'none' | 's' | 'm' | 'bleed-l';
   width: number;
   showBack: boolean;
   showTabs: boolean;
@@ -45,6 +45,13 @@ const tabs: AppHeaderTab[] = [
   { id: 'overview', label: 'Overview', isSelected: true, onClick: action('tab-overview') },
   { id: 'alerts', label: 'Alerts', badge: 3, onClick: action('tab-alerts') },
   { id: 'settings', label: 'Settings', onClick: action('tab-settings') },
+  {
+    id: 'logs',
+    label: 'Logs',
+    onClick: action('tab-logs'),
+    disabled: true,
+    toolTipContent: 'Logs are disabled for this app',
+  },
 ];
 
 const metadata: AppHeaderMetadataItems = [
@@ -145,7 +152,7 @@ const meta: Meta<ComposedHeaderStoryProps> = {
   argTypes: {
     padding: {
       control: 'inline-radio',
-      options: ['none', 'm', 'bleed-l'],
+      options: ['none', 's', 'm', 'bleed-l'],
       description: "Horizontal padding. `bleed-l` cancels a padded container (`{ bleed: 'l' }`).",
     },
   },

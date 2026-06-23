@@ -44,7 +44,7 @@ test.describe('Query streams - Delete query stream', { tag: tags.stateful.classi
 
   test('should support deleting an existing query stream', async ({ pageObjects, esClient }) => {
     await pageObjects.streams.clickStreamNameLink(QUERY_STREAM_NAME);
-    await pageObjects.streams.clickQueryStreamDetailsTab('advanced');
+    await pageObjects.streams.clickQueryStreamDetailsTab('overview');
     await pageObjects.streams.clickDeleteQueryStreamButton();
     await pageObjects.streams.fillDeleteQueryStreamModalInput(QUERY_STREAM_NAME);
     await pageObjects.streams.clickDeleteQueryStreamModalDeleteButton();

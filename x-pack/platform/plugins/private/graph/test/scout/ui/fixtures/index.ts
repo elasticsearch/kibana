@@ -11,11 +11,13 @@ import type {
   PageObjects,
   ScoutTestFixtures,
   ScoutWorkerFixtures,
+  ScoutParallelTestFixtures,
+  ScoutParallelWorkerFixtures,
 } from '@kbn/scout';
-import { test as baseTest, createLazyPageObject } from '@kbn/scout';
+import { test as baseTest, spaceTest as spaceBaseTest, createLazyPageObject } from '@kbn/scout';
 import type { GraphWorkspaceApiService } from '../services/graph_workspace_api_service';
 import { getGraphWorkspaceApiService } from '../services/graph_workspace_api_service';
-import { GraphPage } from './page_objects';
+import { GraphPage, GraphListingPage } from './page_objects';
 
 export interface GraphApiServicesFixture extends ApiServicesFixture {
   graphWorkspaces: GraphWorkspaceApiService;
@@ -58,6 +60,33 @@ export const test = baseTest.extend<GraphTestFixtures, GraphWorkerFixtures>({
     },
     { scope: 'worker' },
   ],
+});
+
+export interface GraphListingParallelTestFixtures extends ScoutParallelTestFixtures {
+  pageObjects: PageObjects & {
+    graphListing: GraphListingPage;
+  };
+}
+
+export const spaceTest = spaceBaseTest.extend<
+  GraphListingParallelTestFixtures,
+  ScoutParallelWorkerFixtures
+>({
+  pageObjects: async (
+    {
+      pageObjects,
+      page,
+    }: {
+      pageObjects: GraphListingParallelTestFixtures['pageObjects'];
+      page: GraphListingParallelTestFixtures['page'];
+    },
+    use: (pageObjects: GraphListingParallelTestFixtures['pageObjects']) => Promise<void>
+  ) => {
+    await use({
+      ...pageObjects,
+      graphListing: createLazyPageObject(GraphListingPage, page),
+    });
+  },
 });
 
 export * as testData from './constants';

@@ -221,6 +221,14 @@ import type {
   GetEndpointSuggestionsResponse,
 } from './endpoint/suggestions/get_suggestions.gen';
 import type {
+  GetAnomalyOverviewRequestParamsInput,
+  GetAnomalyOverviewRequestBodyInput,
+  GetAnomalyOverviewResponse,
+  GetAnomalySummaryRequestParamsInput,
+  GetAnomalySummaryRequestBodyInput,
+  GetAnomalySummaryResponse,
+} from './entity_analytics/anomaly_summary/anomaly_summary.gen';
+import type {
   BulkUpsertAssetCriticalityRecordsRequestBodyInput,
   BulkUpsertAssetCriticalityRecordsResponse,
 } from './entity_analytics/asset_criticality/bulk_upload_asset_criticality.gen';
@@ -379,6 +387,10 @@ import type {
   PreviewRiskScoreRequestBodyInput,
   PreviewRiskScoreResponse,
 } from './entity_analytics/risk_engine/preview_route.gen';
+import type {
+  GetRiskScoreHistoryRequestQueryInput,
+  GetRiskScoreHistoryResponse,
+} from './entity_analytics/risk_engine/risk_score_history_route.gen';
 import type {
   UploadWatchlistCsvRequestParamsInput,
   UploadWatchlistCsvResponse,
@@ -1818,6 +1830,44 @@ finishes and then call this operation once.
       .catch(catchAxiosErrorFormatAndThrow);
   }
   /**
+   * Returns time-bucketed anomaly counts and tactic distribution for a given entity.
+   */
+  async getAnomalyOverview(props: GetAnomalyOverviewProps) {
+    this.log.info(`${new Date().toISOString()} Calling API GetAnomalyOverview`);
+    return this.kbnClient
+      .request<GetAnomalyOverviewResponse>({
+        path: replaceParams(
+          '/internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_overview',
+          props.params
+        ),
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
+        },
+        method: 'POST',
+        body: props.body,
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
+  /**
+   * Queries ML anomaly records on demand, enriches them with baseline data, and returns results for a given entity.
+   */
+  async getAnomalySummary(props: GetAnomalySummaryProps) {
+    this.log.info(`${new Date().toISOString()} Calling API GetAnomalySummary`);
+    return this.kbnClient
+      .request<GetAnomalySummaryResponse>({
+        path: replaceParams(
+          '/internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_summary',
+          props.params
+        ),
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
+        },
+        method: 'POST',
+        body: props.body,
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
+  /**
    * Get the asset criticality record for a specific entity.
    */
   async getAssetCriticalityRecord(props: GetAssetCriticalityRecordProps) {
@@ -2132,6 +2182,23 @@ Requires the **Timeline and Notes** read privilege (`notes_read`).
           [ELASTIC_HTTP_VERSION_HEADER]: '1',
         },
         method: 'GET',
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
+  /**
+   * Returns time-ordered historical risk score entries from the risk score time-series index for a given entity.
+   */
+  async getRiskScoreHistory(props: GetRiskScoreHistoryProps) {
+    this.log.info(`${new Date().toISOString()} Calling API GetRiskScoreHistory`);
+    return this.kbnClient
+      .request<GetRiskScoreHistoryResponse>({
+        path: '/api/risk_score/history',
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '1',
+        },
+        method: 'GET',
+
+        query: props.query,
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -3111,7 +3178,10 @@ the immediately preceding revision in `old_values`.
     this.log.info(`${new Date().toISOString()} Calling API RuleChangesHistory`);
     return this.kbnClient
       .request<RuleChangesHistoryResponse>({
-        path: replaceParams('/internal/detection_engine/rules/{ruleId}/history', props.params),
+        path: replaceParams(
+          '/internal/detection_engine/rules/{ruleId}/history/_list',
+          props.params
+        ),
         headers: {
           [ELASTIC_HTTP_VERSION_HEADER]: '1',
         },
@@ -4025,6 +4095,14 @@ export interface FindRulesProps {
 export interface GetAllTranslationStatsDashboardMigrationProps {
   params: GetAllTranslationStatsDashboardMigrationRequestParamsInput;
 }
+export interface GetAnomalyOverviewProps {
+  params: GetAnomalyOverviewRequestParamsInput;
+  body: GetAnomalyOverviewRequestBodyInput;
+}
+export interface GetAnomalySummaryProps {
+  params: GetAnomalySummaryRequestParamsInput;
+  body: GetAnomalySummaryRequestBodyInput;
+}
 export interface GetAssetCriticalityRecordProps {
   query: GetAssetCriticalityRecordRequestQueryInput;
 }
@@ -4072,6 +4150,9 @@ export interface GetPolicyResponseProps {
 }
 export interface GetProtectionUpdatesNoteProps {
   params: GetProtectionUpdatesNoteRequestParamsInput;
+}
+export interface GetRiskScoreHistoryProps {
+  query: GetRiskScoreHistoryRequestQueryInput;
 }
 export interface GetRuleMigrationProps {
   params: GetRuleMigrationRequestParamsInput;

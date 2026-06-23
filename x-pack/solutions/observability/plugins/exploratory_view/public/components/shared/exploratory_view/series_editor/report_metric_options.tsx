@@ -105,6 +105,9 @@ export function ReportMetricOptions({ seriesId, series, seriesConfig }: Props) {
     <>
       {!series.selectedMetricField && (
         <EuiPopover
+          aria-label={i18n.translate('xpack.exploratoryView.reportMetricOptions.popoverAriaLabel', {
+            defaultMessage: 'Select report metric',
+          })}
           button={
             <EuiButton
               data-test-subj="o11yReportMetricOptionsButton"

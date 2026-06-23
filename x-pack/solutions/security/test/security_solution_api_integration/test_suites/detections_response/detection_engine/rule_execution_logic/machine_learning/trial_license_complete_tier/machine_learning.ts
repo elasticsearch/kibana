@@ -58,6 +58,7 @@ import {
 import type { FtrProviderContext } from '../../../../../../ftr_provider_context';
 import { EsArchivePathBuilder } from '../../../../../../es_archive_path_builder';
 import { getMetricsRequest, getMetricsWithRetry } from '../../utils';
+import { EntityStoreV2EnrichmentSetup } from '../../entity_store_v2_enrichment_setup';
 
 export default ({ getService }: FtrProviderContext) => {
   const supertest = getService('supertest');
@@ -71,6 +72,7 @@ export default ({ getService }: FtrProviderContext) => {
   const dataPathBuilder = new EsArchivePathBuilder(isServerless);
   const auditPath = dataPathBuilder.getPath('auditbeat/hosts');
   const retry = getService('retry');
+  const entityStoreV2 = EntityStoreV2EnrichmentSetup(getService);
 
   const siemModule = 'security_linux_v3';
   const mlJobId = 'v3_linux_anomalous_network_activity_ea';
@@ -312,16 +314,27 @@ export default ({ getService }: FtrProviderContext) => {
       });
     });
 
-    describe('alerts should be be enriched', () => {
+    describe('alerts should be enriched', () => {
       before(async () => {
-        await esArchiver.load('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: 'mothra' },
+              entity: {
+                id: 'host:mothra',
+                type: 'host',
+                risk: { calculated_level: 'Low', calculated_score_norm: 1 },
+              },
+            },
+          ],
+        });
       });
 
       after(async () => {
-        await esArchiver.unload('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        await entityStoreV2.teardown();
       });
 
-      it('@skipInServerlessMKI should be enriched with host risk score', async () => {
+      it('should be enriched with host risk score', async () => {
         const { previewId } = await previewRule({ supertest, rule });
         const previewAlerts = await getPreviewAlerts({ es, previewId });
         expect(previewAlerts).toHaveLength(1);
@@ -334,25 +347,36 @@ export default ({ getService }: FtrProviderContext) => {
 
     describe('with asset criticality', () => {
       before(async () => {
-        await esArchiver.load(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        // ML anomaly records carry host.name ('mothra') but not host.id. The host EUID is
+        // therefore name-based: host:mothra. 'root' (user.name in the anomaly influencer) is in
+        // LOCAL_NAMESPACE_EXCLUDED_USER_NAMES, which causes getEuidFromObject() to return undefined
+        // for the user entity — user enrichment is skipped for system accounts. Test host only.
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: 'mothra' },
+              entity: {
+                id: 'host:mothra',
+                type: 'host',
+              },
+              asset: { criticality: 'extreme_impact' },
+            },
+          ],
+        });
       });
 
       after(async () => {
-        await esArchiver.unload(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        await entityStoreV2.teardown();
       });
 
-      it('@skipInServerlessMKI should be enriched alert with criticality_level', async () => {
+      it('should be enriched alert with criticality_level', async () => {
         const { previewId } = await previewRule({ supertest, rule });
         const previewAlerts = await getPreviewAlerts({ es, previewId });
 
         expect(previewAlerts).toHaveLength(1);
         expect(previewAlerts[0]._source).toEqual(
           expect.objectContaining({
-            'user.asset.criticality': 'extreme_impact',
+            'host.asset.criticality': 'extreme_impact',
           })
         );
       });

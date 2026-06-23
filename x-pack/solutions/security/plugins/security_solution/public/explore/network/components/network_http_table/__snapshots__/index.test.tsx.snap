@@ -106,20 +106,24 @@ exports[`NetworkHttp Table Component rendering it renders the default NetworkHtt
                     <div
                       class="euiFlexItem emotion-euiFlexItem-growZero"
                     >
-                      <button
-                        aria-label="Open"
-                        class="euiButtonIcon emotion-euiButtonIcon-s-empty-text"
-                        data-test-subj="query-toggle-header"
-                        title="Open"
-                        type="button"
+                      <span
+                        class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+                        id="generated-id_euiToolTipAnchor"
                       >
-                        <span
-                          aria-hidden="true"
-                          class="euiButtonIcon__icon"
-                          color="inherit"
-                          data-euiicon-type="chevronSingleDown"
-                        />
-                      </button>
+                        <button
+                          aria-label="Open"
+                          class="euiButtonIcon emotion-euiButtonIcon-s-empty-text"
+                          data-test-subj="query-toggle-header"
+                          type="button"
+                        >
+                          <span
+                            aria-hidden="true"
+                            class="euiButtonIcon__icon"
+                            color="inherit"
+                            data-euiicon-type="chevronSingleDown"
+                          />
+                        </button>
+                      </span>
                     </div>
                     <div
                       class="euiFlexItem emotion-euiFlexItem-grow-1"
@@ -140,21 +144,25 @@ exports[`NetworkHttp Table Component rendering it renders the default NetworkHtt
                 <div
                   class="euiFlexItem emotion-euiFlexItem-growZero"
                 >
-                  <button
-                    aria-label="Inspect"
-                    class="euiButtonIcon inspectButtonComponent emotion-euiButtonIcon-xs-empty-disabled-isDisabled"
-                    data-test-subj="inspect-icon-button"
-                    disabled=""
-                    title="Inspect"
-                    type="button"
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+                    id="generated-id_euiToolTipAnchor"
                   >
-                    <span
-                      aria-hidden="true"
-                      class="euiButtonIcon__icon"
-                      color="inherit"
-                      data-euiicon-type="inspect"
-                    />
-                  </button>
+                    <button
+                      aria-label="Inspect"
+                      class="euiButtonIcon inspectButtonComponent emotion-euiButtonIcon-xs-empty-disabled-isDisabled"
+                      data-test-subj="inspect-icon-button"
+                      disabled=""
+                      type="button"
+                    >
+                      <span
+                        aria-hidden="true"
+                        class="euiButtonIcon__icon"
+                        color="inherit"
+                        data-euiicon-type="inspect"
+                      />
+                    </button>
+                  </span>
                 </div>
               </div>
             </div>

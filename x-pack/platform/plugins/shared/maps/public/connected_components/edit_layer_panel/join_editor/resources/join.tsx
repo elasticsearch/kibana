@@ -7,7 +7,14 @@
 
 import _ from 'lodash';
 import React, { Component } from 'react';
-import { EuiFlexItem, EuiFlexGroup, EuiButtonIcon, EuiText, EuiTextColor } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiText,
+  EuiTextColor,
+  EuiToolTip,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { DataViewField, DataView, Query } from '@kbn/data-plugin/common';
 import { isNestedField } from '@kbn/data-views-plugin/common';
@@ -279,18 +286,22 @@ export class Join extends Component<Props, State> {
 
         {globalTimeCheckbox}
 
-        <EuiButtonIcon
-          className="mapJoinItem__delete"
-          iconType="trash"
-          color="danger"
-          aria-label={i18n.translate('xpack.maps.layerPanel.join.deleteJoinAriaLabel', {
+        <EuiToolTip
+          content={i18n.translate('xpack.maps.layerPanel.join.deleteJoinTitle', {
             defaultMessage: 'Delete join',
           })}
-          title={i18n.translate('xpack.maps.layerPanel.join.deleteJoinTitle', {
-            defaultMessage: 'Delete join',
-          })}
-          onClick={onRemove}
-        />
+          anchorClassName="mapJoinItem__delete"
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            iconType="trash"
+            color="danger"
+            aria-label={i18n.translate('xpack.maps.layerPanel.join.deleteJoinAriaLabel', {
+              defaultMessage: 'Delete join',
+            })}
+            onClick={onRemove}
+          />
+        </EuiToolTip>
       </div>
     );
   }

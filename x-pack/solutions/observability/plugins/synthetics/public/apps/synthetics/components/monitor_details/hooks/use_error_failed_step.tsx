@@ -5,10 +5,10 @@
  * 2.0.
  */
 
-import { useEsSearch } from '@kbn/observability-shared-plugin/public';
 import { useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import { useSyntheticsEsSearch } from '../../../hooks/use_synthetics_es_search';
 import { STEP_END_FILTER } from '../../../../../../common/constants/data_filters';
 import { asMutableArray } from '../../../../../../common/utils/as_mutable_array';
 import type { Ping } from '../../../../../../common/runtime_types';
@@ -25,7 +25,7 @@ export function useErrorFailedStep(checkGroups: string[]) {
 
   const indexPattern = getSyntheticsCcsIndex(remoteName);
 
-  const { data, loading } = useEsSearch(
+  const { data, loading } = useSyntheticsEsSearch(
     {
       index: checkGroups?.length > 0 ? indexPattern : '',
       size: checkGroups.length,

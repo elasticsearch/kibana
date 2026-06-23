@@ -28,17 +28,49 @@ interface DependencyGraphOptions {
 type PathsToAnalyze = string[];
 type DependencyName = string | undefined;
 
+/** Regex that collapses node_modules entries to their top-level package name. */
+export const NODE_MODULES_COLLAPSE_REGEX = '^node_modules/(@[^/]+/[^/]+|[^/]+)';
+
+/**
+ * Run dependency-cruiser for a set of paths, capturing all external (node_modules)
+ * imports. Source file paths are intentionally NOT collapsed so that each dep
+ * module's `dependents[]` holds real file paths — suitable for per-file analysis
+ * such as ES indexing.
+ */
+export async function cruiseExternalDeps(paths: PathsToAnalyze) {
+  return cruise(paths, {
+    ruleSet: {
+      forbidden: [
+        {
+          name: 'external-deps',
+          severity: 'info',
+          from: { path: paths.map((p) => `^${p}`) },
+          to: { path: '^node_modules' },
+        },
+      ],
+    },
+    doNotFollow: { path: 'node_modules' },
+    // @ts-expect-error wrongly typed in dependency-cruiser, see https://github.com/sverweij/dependency-cruiser/blob/main/doc/options-reference.md#extensions
+    extensions: ['.ts', '.tsx'],
+    focus: '^node_modules',
+    exclude: { path: excludePaths },
+    onlyReachable: paths.map((p) => `^${p}`).join('|'),
+    includeOnly: ['^node_modules', ...paths.map((p) => `^${p}`)],
+    validate: true,
+    collapse: NODE_MODULES_COLLAPSE_REGEX,
+  });
+}
+
 const invokeDependencyCruiser = async (
   paths: PathsToAnalyze,
   dependencyName: DependencyName,
   { summary, collapseDepth }: Omit<DependencyGraphOptions, 'groupBy' | 'verbose'>
 ) => {
   const collapseByNodeModule = !dependencyName || (dependencyName && summary);
-  const collapseByNodeModuleRegex = '^node_modules/(@[^/]+/[^/]+|[^/]+)';
   const collapseRules = [createCollapseRegexWithDepth(aggregationGroups, collapseDepth)];
 
   if (collapseByNodeModule) {
-    collapseRules.push(collapseByNodeModuleRegex);
+    collapseRules.push(NODE_MODULES_COLLAPSE_REGEX);
   }
 
   const captureRule = dependencyName
@@ -57,7 +89,7 @@ const invokeDependencyCruiser = async (
 
   const result = await cruise(paths, {
     ruleSet: {
-      // @ts-ignore
+      // @ts-expect-error
       forbidden: [captureRule],
     },
     doNotFollow: {

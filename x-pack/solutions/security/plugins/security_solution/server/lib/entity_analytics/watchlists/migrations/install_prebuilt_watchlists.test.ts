@@ -76,6 +76,7 @@ describe('installPrebuiltWatchlists', function () {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '9.0.0',
+      hasEncryptionKey: true,
       experimentalFeatures: {
         entityAnalyticsWatchlistEnabled: true,
       } as ExperimentalFeatures,

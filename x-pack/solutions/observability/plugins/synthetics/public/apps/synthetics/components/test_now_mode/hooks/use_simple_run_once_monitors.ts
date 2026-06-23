@@ -6,7 +6,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createEsParams, useEsSearch } from '@kbn/observability-shared-plugin/public';
+import { createEsParams } from '@kbn/observability-shared-plugin/public';
+import { useSyntheticsEsSearch } from '../../../hooks/use_synthetics_es_search';
 import { FINAL_SUMMARY_FILTER } from '../../../../../../common/constants/client_defaults';
 import type { Ping } from '../../../../../../common/runtime_types';
 import { SYNTHETICS_INDEX_PATTERN } from '../../../../../../common/constants';
@@ -24,7 +25,7 @@ export const useSimpleRunOnceMonitors = ({
   const { refreshTimer, lastRefresh } = useTickTick(2 * 1000);
   const [numberOfRetries, setNumberOfRetries] = useState(0);
 
-  const { data, loading } = useEsSearch(
+  const { data, loading } = useSyntheticsEsSearch(
     createEsParams({
       index: SYNTHETICS_INDEX_PATTERN,
       sort: [

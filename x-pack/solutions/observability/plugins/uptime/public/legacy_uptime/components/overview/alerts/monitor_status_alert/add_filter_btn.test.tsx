@@ -18,6 +18,7 @@ describe('AddFilterButton component', () => {
     expect(component).toMatchInlineSnapshot(`
       <EuiPopover
         anchorPosition="downLeft"
+        aria-label="Add alert filter options"
         button={
           <EuiButtonEmpty
             data-test-subj="uptimeCreateAlertAddFilter"
@@ -84,6 +85,7 @@ describe('AddFilterButton component', () => {
     expect(component).toMatchInlineSnapshot(`
       <EuiPopover
         anchorPosition="downLeft"
+        aria-label="Add alert filter options"
         button={
           <EuiButtonEmpty
             data-test-subj="uptimeCreateAlertAddFilter"
@@ -137,6 +139,7 @@ describe('AddFilterButton component', () => {
     expect(component).toMatchInlineSnapshot(`
       <EuiPopover
         anchorPosition="downLeft"
+        aria-label="Add alert filter options"
         button={
           <EuiButtonEmpty
             data-test-subj="uptimeCreateAlertAddFilter"

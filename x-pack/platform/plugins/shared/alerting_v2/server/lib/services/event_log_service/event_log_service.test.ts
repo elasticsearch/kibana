@@ -7,8 +7,49 @@
 
 import type { IEvent } from '@kbn/event-log-plugin/server';
 import { httpServerMock } from '@kbn/core-http-server-mocks';
+import { toKqlExpression } from '@kbn/es-query';
 import { ACTION_POLICY_SAVED_OBJECT_TYPE } from '../../../saved_objects';
 import { createEventLogService } from './event_log_service.mock';
+import { buildExecutionHistoryAuthFilter } from './event_log_service';
+
+describe('buildExecutionHistoryAuthFilter', () => {
+  it('includes both dispatched and throttled when outcome is omitted', () => {
+    const node = buildExecutionHistoryAuthFilter();
+    const expr = toKqlExpression(node);
+    expect(expr).toContain('event.provider: alerting_v2');
+    expect(expr).toContain('event.action: dispatched');
+    expect(expr).toContain('event.action: throttled');
+  });
+
+  it('narrows to a single outcome when provided', () => {
+    const expr = toKqlExpression(buildExecutionHistoryAuthFilter({ outcome: 'dispatched' }));
+    expect(expr).toContain('event.action: dispatched');
+    expect(expr).not.toContain('event.action: throttled');
+  });
+
+  it('adds a nested saved_objects id clause and rule_ids spillover when ids are provided', () => {
+    const expr = toKqlExpression(
+      buildExecutionHistoryAuthFilter({ policyIds: ['p1'], ruleIds: ['r1', 'r2'] })
+    );
+    expect(expr).toContain('kibana.saved_objects: {');
+    expect(expr).toContain('id: "p1"');
+    expect(expr).toContain('id: "r1"');
+    expect(expr).toContain('id: "r2"');
+    expect(expr).toContain('kibana.alerting_v2.dispatcher.rule_ids');
+  });
+
+  it('skips the id clause when no ids are provided', () => {
+    const expr = toKqlExpression(buildExecutionHistoryAuthFilter());
+    expect(expr).not.toContain('kibana.saved_objects:');
+    expect(expr).not.toContain('kibana.alerting_v2.dispatcher.rule_ids');
+  });
+
+  it('escapes embedded quotes and backslashes in ids', () => {
+    const expr = toKqlExpression(buildExecutionHistoryAuthFilter({ policyIds: ['weird"id\\'] }));
+    expect(expr).toContain('\\"');
+    expect(expr).toContain('\\\\');
+  });
+});
 
 describe('EventLogService', () => {
   describe('logEvent', () => {
@@ -81,7 +122,7 @@ describe('EventLogService', () => {
       expect(ids).toEqual([]);
     });
 
-    it('passes the dispatched/throttled provider filter as the auth filter', async () => {
+    it('forwards outcome and ids to buildExecutionHistoryAuthFilter', async () => {
       const { eventLogService, mockEventLogClient } = createEventLogService();
       mockEventLogClient.findEventsWithAuthFilter.mockResolvedValue(buildResult() as any);
       const request = httpServerMock.createKibanaRequest();
@@ -90,10 +131,19 @@ describe('EventLogService', () => {
         request,
         spaceId: 'default',
         startDate: START_DATE,
+        outcome: 'dispatched',
+        policyIds: ['p1'],
+        ruleIds: ['r1'],
       });
 
       const authFilter = mockEventLogClient.findEventsWithAuthFilter.mock.calls[0][2];
-      expect(authFilter).toMatchObject({ type: 'function', function: 'and' });
+      expect(authFilter).toEqual(
+        buildExecutionHistoryAuthFilter({
+          outcome: 'dispatched',
+          policyIds: ['p1'],
+          ruleIds: ['r1'],
+        })
+      );
     });
 
     it('forwards page and perPage to per_page in options, sorted by @timestamp desc', async () => {
@@ -243,7 +293,7 @@ describe('EventLogService', () => {
       );
     });
 
-    it('reuses the dispatched/throttled provider auth filter', async () => {
+    it('forwards outcome and ids to buildExecutionHistoryAuthFilter', async () => {
       const { eventLogService, mockEventLogClient } = createEventLogService();
       mockEventLogClient.findEventsWithAuthFilter.mockResolvedValue(buildResult(0) as any);
       const request = httpServerMock.createKibanaRequest();
@@ -252,10 +302,19 @@ describe('EventLogService', () => {
         request,
         spaceId: 'default',
         since: '2026-05-05T10:00:00.000Z',
+        outcome: 'throttled',
+        policyIds: ['p1'],
+        ruleIds: ['r1'],
       });
 
       const authFilter = mockEventLogClient.findEventsWithAuthFilter.mock.calls[0][2];
-      expect(authFilter).toMatchObject({ type: 'function', function: 'and' });
+      expect(authFilter).toEqual(
+        buildExecutionHistoryAuthFilter({
+          outcome: 'throttled',
+          policyIds: ['p1'],
+          ruleIds: ['r1'],
+        })
+      );
     });
 
     it('returns the total reported by the client as count', async () => {

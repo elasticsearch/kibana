@@ -29,6 +29,7 @@ export const Popover = ({
   return (
     <EuiPopover
       panelPaddingSize="s"
+      aria-label={props['aria-label']}
       focusTrapProps={{
         returnFocus: true,
       }}

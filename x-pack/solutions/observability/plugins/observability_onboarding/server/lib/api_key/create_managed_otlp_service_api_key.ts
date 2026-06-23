@@ -6,23 +6,21 @@
  */
 
 import { type ElasticsearchClient } from '@kbn/core/server';
+import { APM_EVENT_WRITE_APPLICATION } from './privileges';
 
 export function createManagedOtlpServiceApiKey(esClient: ElasticsearchClient, name: string) {
   const timestamp = new Date().toISOString();
 
   return esClient.security.createApiKey({
     name: `${name}-${timestamp}`,
+    metadata: {
+      managed: true,
+    },
     role_descriptors: {
-      otel_managed_service: {
+      apm_writer: {
         cluster: [],
         index: [],
-        applications: [
-          {
-            application: 'apm',
-            privileges: ['event:write'],
-            resources: ['*'],
-          },
-        ],
+        applications: [APM_EVENT_WRITE_APPLICATION],
       },
     },
   });

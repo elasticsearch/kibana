@@ -49,6 +49,7 @@ dependsOn:
   - '@kbn/field-formats-common'
   - '@kbn/visualizations-common'
   - '@kbn/ui-actions-plugin'
+  - '@kbn/css-utils'
 tags:
   - plugin
   - prod

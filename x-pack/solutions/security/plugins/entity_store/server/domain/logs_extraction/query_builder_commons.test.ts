@@ -328,7 +328,7 @@ describe('buildPostStatsLogicalToColumnMap', () => {
     expect(m.get('user.name')).toBe(recentData('user.name'));
   });
 
-  it('should use plain destination names when useRecentDataPrefix is false (CCS)', () => {
+  it('should use plain destination names when useRecentDataPrefix is false (remote)', () => {
     const m = buildPostStatsLogicalToColumnMap(postStatsSampleFields, false);
     expect(m.get('entity.namespace')).toBe('entity.namespace');
     expect(m.get('user.name')).toBe('user.name');
@@ -349,7 +349,7 @@ describe('buildSetFieldsByCondition post-STATS context', () => {
     );
   });
 
-  it('should use plain column names when useRecentDataPrefix is false (CCS)', () => {
+  it('should use plain column names when useRecentDataPrefix is false (remote)', () => {
     const fragment = buildSetFieldsByCondition(
       {
         condition: { field: 'entity.namespace', eq: USER_ENTITY_NAMESPACE.Local },

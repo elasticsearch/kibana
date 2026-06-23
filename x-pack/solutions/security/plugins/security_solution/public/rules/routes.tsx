@@ -30,6 +30,7 @@ import { NotFoundPage } from '../app/404';
 import { RulesPage } from '../detection_engine/rule_management_ui/pages/rule_management';
 import { CreateRulePage } from '../detection_engine/rule_creation_ui/pages/rule_creation';
 import { RuleDetailsPage } from '../detection_engine/rule_details_ui/pages/rule_details';
+import { RuleChangesHistoryPage } from '../detection_engine/rule_details_ui/pages/rule_changes_history';
 import { EditRulePage } from '../detection_engine/rule_creation_ui/pages/rule_editing';
 import { useReadonlyHeader } from '../use_readonly_header';
 import { PluginTemplateWrapper } from '../common/components/plugin_template_wrapper';
@@ -189,6 +190,7 @@ const RulesContainerComponent: React.FC = () => {
   const isEndpointExceptionsMovedFFEnabled = useIsExperimentalFeatureEnabled(
     'endpointExceptionsMovedUnderManagement'
   );
+  const isRuleChangesHistoryEnabled = useIsExperimentalFeatureEnabled('ruleChangesHistoryEnabled');
 
   const subRoutes = useMemo(() => {
     return getRulesSubRoutes(capabilities, {
@@ -211,6 +213,11 @@ const RulesContainerComponent: React.FC = () => {
         <Route path="/rules" exact>
           <Redirect to={`/rules/${AllRulesTabs.management}`} />
         </Route>
+        {isRuleChangesHistoryEnabled && hasCapabilities(capabilities, RULES_UI_READ_PRIVILEGE) && (
+          <Route path="/rules/id/:ruleId/changes-history" exact>
+            <RuleChangesHistoryPage />
+          </Route>
+        )}
         {subRoutes}
         <Route component={NotFoundPage} />
         <SpyRoute pageName={SecurityPageName.rules} />

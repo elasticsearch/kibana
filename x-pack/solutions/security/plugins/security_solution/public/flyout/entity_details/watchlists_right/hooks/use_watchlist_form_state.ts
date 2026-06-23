@@ -7,6 +7,7 @@
 
 import type { WatchlistsFlyoutMode } from '..';
 import type { CreateWatchlistRequestBodyInput } from '../../../../../common/api/entity_analytics/watchlists/management/create.gen';
+import type { MonitoringEntitySource } from '../../../../../common/api/entity_analytics/watchlists/data_source/common.gen';
 import type { SourceType } from './rule_based_source_helpers';
 import { useCreateWatchlistFormState } from './use_watchlist_form_state_create';
 import { useEditWatchlistFormState } from './use_watchlist_form_state_edit';
@@ -21,6 +22,8 @@ export interface WatchlistFormState {
   normalizedWatchlistId?: string;
   /** Maps source type ('store' | 'index') → persisted entity-source ID. */
   ruleBasedSourceIds: Partial<Record<SourceType, string>>;
+  /** Set when an index source exists but has no stored API key — sync is paused until refreshed. */
+  indexSourceWithMissingApiKey?: MonitoringEntitySource;
   isEditMode: boolean;
   isDisabled: boolean;
   isNameTooLong: boolean;

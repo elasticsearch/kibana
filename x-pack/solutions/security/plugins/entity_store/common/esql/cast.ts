@@ -38,12 +38,8 @@ const fieldTypeMap: ReadonlyMap<string, string> = (() => {
 /**
  * Returns the appropriate `TO_*(<fieldName>)` expression for the given mapping type.
  * Defaults to `TO_STRING` when no type is provided or the type is unrecognised.
- * `@timestamp` is always returned raw — it is bounded by `TO_DATETIME(...)` literals in WHERE.
  */
 export function castFieldByType(fieldName: string, mappingType?: string): string {
-  if (fieldName === TIMESTAMP_FIELD) {
-    return fieldName;
-  }
   switch (mappingType) {
     case 'keyword':
     case 'text':

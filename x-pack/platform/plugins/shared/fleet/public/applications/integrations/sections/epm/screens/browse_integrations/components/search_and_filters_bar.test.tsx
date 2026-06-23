@@ -14,6 +14,7 @@ const mockUseUrlFilters = jest.fn();
 const mockUseAddUrlFilters = jest.fn();
 const mockUseUrlCategories = jest.fn();
 const mockUseSetUrlCategory = jest.fn();
+const mockUseUrlDefaultCategories = jest.fn();
 
 jest.mock('../hooks/url_filters', () => ({
   useUrlFilters: () => mockUseUrlFilters(),
@@ -23,6 +24,7 @@ jest.mock('../hooks/url_filters', () => ({
 jest.mock('../hooks/url_categories', () => ({
   useUrlCategories: () => mockUseUrlCategories(),
   useSetUrlCategory: () => mockUseSetUrlCategory(),
+  useUrlDefaultCategories: () => mockUseUrlDefaultCategories(),
 }));
 
 jest.mock('../../../../../hooks', () => ({}));
@@ -45,6 +47,7 @@ describe('SearchAndFiltersBar', () => {
       subCategory: undefined,
     });
     mockUseSetUrlCategory.mockReturnValue(jest.fn());
+    mockUseUrlDefaultCategories.mockReturnValue([]);
   });
 
   function renderSearchAndFiltersBar() {

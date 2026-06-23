@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/273374
+issues:
+- https://github.com/elastic/kibana/issues/273375
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Search and data
+title: Perform value-based rewrite of otelcol extensions

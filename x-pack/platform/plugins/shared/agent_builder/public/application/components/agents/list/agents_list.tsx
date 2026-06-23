@@ -23,32 +23,27 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { getEbtProps } from '@kbn/ebt-click';
-import {
-  agentBuilderDefaultAgentId,
-  canCurrentUserEditAgent,
-  type AgentDefinition,
-  AGENT_BUILDER_UI_EBT,
-} from '@kbn/agent-builder-common';
+import { AGENT_BUILDER_UI_EBT } from '@kbn/agent-builder-common';
 import { countBy } from 'lodash';
 import React, { useMemo } from 'react';
+import type { AgentDefinitionWithPermissions } from '../../../../../common/http_api/agents';
 import { useDeleteAgent } from '../../../context/delete_agent_context';
 import { useAgentBuilderAgents } from '../../../hooks/agents/use_agents';
 import { useNavigation } from '../../../hooks/use_navigation';
 import { searchParamNames } from '../../../search_param_names';
 import { appPaths } from '../../../utils/app_paths';
 import { useUiPrivileges } from '../../../hooks/use_ui_privileges';
-import { useCurrentUser } from '../../../hooks/agents/use_current_user';
 import { FilterOptionWithMatchesBadge } from '../../common/filter_option_with_matches_badge';
 import { Labels } from '../../common/labels';
 import { AgentAvatar } from '../../common/agent_avatar';
-import { AgentVisibilityBadge } from './agent_visibility_badge';
+import { AgentAccessControlModeBadge } from './agent_access_control_mode_badge';
 import { AccessFlyout } from '../access/access_flyout';
 import { accessSummaryManageButton } from '../access/access_i18n';
 
 const columnNames = {
   name: i18n.translate('xpack.agentBuilder.agents.nameColumn', { defaultMessage: 'Name' }),
-  visibility: i18n.translate('xpack.agentBuilder.agents.visibilityColumn', {
-    defaultMessage: 'Visibility',
+  accessControlMode: i18n.translate('xpack.agentBuilder.agents.accessControlModeColumn', {
+    defaultMessage: 'Access',
   }),
   labels: i18n.translate('xpack.agentBuilder.agents.labelsColumn', { defaultMessage: 'Labels' }),
 };
@@ -70,59 +65,35 @@ const actionLabels = {
   deleteDescription: i18n.translate('xpack.agentBuilder.agents.actions.deleteDescription', {
     defaultMessage: 'Delete agent',
   }),
-  checkingPermissions: i18n.translate('xpack.agentBuilder.agents.actions.checkingPermissions', {
-    defaultMessage: 'Checking permissions…',
-  }),
 };
 
 export const AgentsList: React.FC = () => {
   const { agents, isLoading, error } = useAgentBuilderAgents();
   const { createAgentBuilderUrl } = useNavigation();
   const { deleteAgent } = useDeleteAgent();
-  const { manageAgents, isAdmin } = useUiPrivileges();
-  const { currentUser, isLoading: isCurrentUserLoading } = useCurrentUser();
+  const { manageAgents } = useUiPrivileges();
   const [pageIndex, setPageIndex] = React.useState(0);
   const [pageSize, setPageSize] = React.useState(10);
-  const [aclAgent, setAclAgent] = React.useState<AgentDefinition | null>(null);
+  const [aclAgent, setAclAgent] = React.useState<AgentDefinitionWithPermissions | null>(null);
 
-  const canManageAgentAccess = React.useCallback(
-    (agent: AgentDefinition) => {
-      // The default agent never accepts ACLs; everyone else falls through to the same
-      // "can I edit this agent?" check that gates the rest of the row actions.
-      if (agent.id === agentBuilderDefaultAgentId) return false;
-      return canCurrentUserEditAgent({
-        agent,
-        manageAgents,
-        currentUser,
-        isAdmin,
-        isCurrentUserLoading,
-      });
-    },
-    [currentUser, isAdmin, isCurrentUserLoading, manageAgents]
-  );
+  const canManageAgentAccess = React.useCallback((agent: AgentDefinitionWithPermissions) => {
+    return agent.permissions.update_access_control;
+  }, []);
 
-  const columns: Array<EuiBasicTableColumn<AgentDefinition>> = useMemo(() => {
-    const agentAvatar: EuiTableComputedColumnType<AgentDefinition> = {
+  const columns: Array<EuiBasicTableColumn<AgentDefinitionWithPermissions>> = useMemo(() => {
+    const agentAvatar: EuiTableComputedColumnType<AgentDefinitionWithPermissions> = {
       width: '48px',
       align: 'center',
       render: (agent) => <AgentAvatar agent={agent} size="m" />,
       'data-test-subj': 'agentBuilderAgentsListAvatar',
     };
-    const canEditAgent = (agent: AgentDefinition) =>
-      canCurrentUserEditAgent({
-        agent,
-        manageAgents,
-        currentUser,
-        isAdmin,
-        isCurrentUserLoading,
-      });
+    const canEditAgent = (agent: AgentDefinitionWithPermissions) => agent.permissions.update_agent;
 
-    const agentNameAndDescription: EuiTableFieldDataColumnType<AgentDefinition> = {
+    const agentNameAndDescription: EuiTableFieldDataColumnType<AgentDefinitionWithPermissions> = {
       field: 'name',
       name: columnNames.name,
-      render: (name: string, agent: AgentDefinition) => {
+      render: (name: string, agent: AgentDefinitionWithPermissions) => {
         const canEdit = canEditAgent(agent);
-        const showCheckingTooltip = !canEdit && isCurrentUserLoading;
         const nameContent = !canEdit ? (
           <EuiText data-test-subj="agentBuilderAgentsListName" size="m">
             {name}
@@ -142,15 +113,7 @@ export const AgentsList: React.FC = () => {
         );
         return (
           <EuiFlexGroup direction="column" gutterSize="xs">
-            <EuiFlexItem grow={false}>
-              {showCheckingTooltip ? (
-                <EuiToolTip content={actionLabels.checkingPermissions} position="top">
-                  <span tabIndex={0}>{nameContent}</span>
-                </EuiToolTip>
-              ) : (
-                nameContent
-              )}
-            </EuiFlexItem>
+            <EuiFlexItem grow={false}>{nameContent}</EuiFlexItem>
             <EuiFlexItem grow={false}>
               <EuiText color="subdued" size="s">
                 {agent.description}
@@ -162,7 +125,7 @@ export const AgentsList: React.FC = () => {
       'data-test-subj': 'agentBuilderAgentsListNameAndDescription',
     };
 
-    const agentLabels: EuiTableFieldDataColumnType<AgentDefinition> = {
+    const agentLabels: EuiTableFieldDataColumnType<AgentDefinitionWithPermissions> = {
       width: '25%',
       field: 'labels',
       name: columnNames.labels,
@@ -176,14 +139,14 @@ export const AgentsList: React.FC = () => {
       'data-test-subj': 'agentBuilderAgentsListLabels',
     };
 
-    const agentVisibility: EuiTableComputedColumnType<AgentDefinition> = {
+    const agentAccessControlMode: EuiTableComputedColumnType<AgentDefinitionWithPermissions> = {
       width: '135px',
-      name: columnNames.visibility,
-      render: (agent) => <AgentVisibilityBadge agent={agent} />,
-      'data-test-subj': 'agentBuilderAgentsListVisibility',
+      name: columnNames.accessControlMode,
+      render: (agent) => <AgentAccessControlModeBadge agent={agent} />,
+      'data-test-subj': 'agentBuilderAgentsListAccessControlMode',
     };
 
-    const agentActions: EuiTableActionsColumnType<AgentDefinition> = {
+    const agentActions: EuiTableActionsColumnType<AgentDefinitionWithPermissions> = {
       width: '120px',
       actions: [
         {
@@ -260,16 +223,14 @@ export const AgentsList: React.FC = () => {
       ],
     };
 
-    return [agentAvatar, agentNameAndDescription, agentVisibility, agentLabels, agentActions];
-  }, [
-    createAgentBuilderUrl,
-    currentUser,
-    deleteAgent,
-    isAdmin,
-    isCurrentUserLoading,
-    manageAgents,
-    canManageAgentAccess,
-  ]);
+    return [
+      agentAvatar,
+      agentNameAndDescription,
+      agentAccessControlMode,
+      agentLabels,
+      agentActions,
+    ];
+  }, [createAgentBuilderUrl, deleteAgent, manageAgents, canManageAgentAccess]);
 
   const errorMessage = useMemo(
     () =>
@@ -320,7 +281,7 @@ export const AgentsList: React.FC = () => {
           pageSizeOptions: [10, 25, 50, 100],
           showPerPageOptions: true,
         }}
-        onTableChange={({ page }: CriteriaWithPagination<AgentDefinition>) => {
+        onTableChange={({ page }: CriteriaWithPagination<AgentDefinitionWithPermissions>) => {
           if (page) {
             setPageIndex(page.index);
             if (page.size !== pageSize) {

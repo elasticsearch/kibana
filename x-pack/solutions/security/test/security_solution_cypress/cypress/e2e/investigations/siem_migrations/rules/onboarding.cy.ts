@@ -11,7 +11,8 @@ import {
   RULE_MIGRATIONS_GROUP_PANEL,
   RULE_MIGRATION_PROGRESS_BAR,
 } from '../../../../screens/siem_migrations';
-import { deleteConnectors, suppressGlobalAnnouncements } from '../../../../tasks/api_calls/common';
+import { deleteConnectors } from '../../../../tasks/api_calls/common';
+import { suppressGlobalAnnouncements } from '../../../../tasks/api_calls/suppress_global_announcements';
 import { createBedrockConnector } from '../../../../tasks/api_calls/connectors';
 import { cleanMigrationData } from '../../../../tasks/api_calls/siem_migrations';
 import { visit } from '../../../../tasks/navigation';

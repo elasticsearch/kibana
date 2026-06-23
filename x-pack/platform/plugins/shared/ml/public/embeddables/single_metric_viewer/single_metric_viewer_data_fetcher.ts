@@ -8,15 +8,22 @@
 import { fetch$ } from '@kbn/presentation-publishing';
 import { type TimefilterContract } from '@kbn/data-plugin/public';
 import type { TimeRangeBounds } from '@kbn/ml-time-buckets';
-import type { SingleMetricViewerEmbeddableUserInput } from '@kbn/ml-server-schemas/embeddables/single_metric_viewer';
 import { combineLatest, BehaviorSubject } from 'rxjs';
-import type { SingleMetricViewerEmbeddableApi } from '../types';
+import type { CamelCasedProperties } from 'type-fest';
+import type { SingleMetricViewerControlsState, SingleMetricViewerEmbeddableApi } from '../types';
+
+/**
+ * Runtime selection driving the chart, read from the camelCase component API subjects.
+ * Derived from the snake_case serialized controls state so the two stay in sync; only the
+ * key casing differs, because the runtime component API is camelCase.
+ */
+type SingleMetricViewerControlsData = CamelCasedProperties<SingleMetricViewerControlsState>;
 
 interface SingleMetricViewerData {
   /**
    * Config data inputted by the user
    */
-  singleMetricViewerData: SingleMetricViewerEmbeddableUserInput | undefined;
+  singleMetricViewerData: SingleMetricViewerControlsData | undefined;
   /**
    * Current time range bounds
    */

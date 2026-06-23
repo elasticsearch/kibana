@@ -6,6 +6,7 @@
  */
 
 import { httpServerMock } from '@kbn/core-http-server-mocks';
+import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import type { AuditLogger, CoreSecurityDelegateContract } from '@kbn/core-security-server';
 import type { UserProfileData } from '@kbn/core-user-profile-common';
 import type { CoreUserProfileDelegateContract } from '@kbn/core-user-profile-server';
@@ -22,17 +23,20 @@ describe('buildSecurityApi', () => {
   let authc: ReturnType<typeof authenticationServiceMock.createStart>;
   let auditService: ReturnType<typeof auditServiceMock.create>;
   let session: ReturnType<typeof sessionMock.create>;
+  let logger: ReturnType<typeof loggingSystemMock.createLogger>;
   let api: CoreSecurityDelegateContract;
 
   beforeEach(() => {
     authc = authenticationServiceMock.createStart();
     auditService = auditServiceMock.create();
     session = sessionMock.create();
+    logger = loggingSystemMock.createLogger();
     api = buildSecurityApi({
       getAuthc: () => authc,
       getSession: () => session,
       audit: auditService,
       config: { uiam: { enabled: false } },
+      logger,
     });
   });
 
@@ -54,6 +58,47 @@ describe('buildSecurityApi', () => {
       const currentUser = api.authc.getCurrentUser(request);
 
       expect(currentUser).toBe(delegateReturn);
+    });
+
+    it('returns the enriched override for fake requests when the enricher has bound a profile', () => {
+      const request = httpServerMock.createFakeKibanaRequest({});
+
+      api.fakeRequestEnricher(request, 'u_test_profile_123');
+
+      const user = api.authc.getCurrentUser(request);
+
+      expect(authc.getCurrentUser).not.toHaveBeenCalled();
+      expect(user!.profile_uid).toBe('u_test_profile_123');
+    });
+
+    it('falls back to the authentication service for fake requests without an enrichment', () => {
+      const request = httpServerMock.createFakeKibanaRequest({});
+      const delegateReturn = securityMock.createMockAuthenticatedUser();
+      authc.getCurrentUser.mockReturnValue(delegateReturn);
+
+      const user = api.authc.getCurrentUser(request);
+
+      expect(authc.getCurrentUser).toHaveBeenCalledTimes(1);
+      expect(authc.getCurrentUser).toHaveBeenCalledWith(request);
+      expect(user).toBe(delegateReturn);
+    });
+  });
+
+  describe('fakeRequestEnricher', () => {
+    it('binds a profile_uid that is then surfaced via getCurrentUser', () => {
+      const request = httpServerMock.createFakeKibanaRequest({});
+
+      api.fakeRequestEnricher(request, 'u_test_profile_123');
+
+      const user = api.authc.getCurrentUser(request);
+      expect(user!.profile_uid).toBe('u_test_profile_123');
+    });
+
+    it('throws when called on a real (non-fake) request', () => {
+      const request = httpServerMock.createKibanaRequest();
+      expect(() => api.fakeRequestEnricher(request, 'u_test_profile_123')).toThrow(
+        /must only be called on a fake request/
+      );
     });
   });
 
@@ -125,6 +170,7 @@ describe('buildSecurityApi', () => {
           getSession: () => session,
           audit: auditService,
           config: { uiam: { enabled: true } },
+          logger,
         });
       });
 
@@ -169,6 +215,7 @@ describe('buildSecurityApi', () => {
           getSession: () => session,
           audit: auditService,
           config: { uiam: { enabled: false } },
+          logger,
         });
       });
 
@@ -187,6 +234,7 @@ describe('buildSecurityApi', () => {
           getSession: () => session,
           audit: auditService,
           config: {},
+          logger,
         });
       });
 

@@ -27,12 +27,12 @@ export const estimateBucketSpanSchema = schema.object({
     { maxSize: 10000 }
   ),
   duration: schema.object({ start: schema.number(), end: schema.number() }),
-  fields: schema.arrayOf(schema.nullable(schema.string()), { maxSize: 10000 }),
+  fields: schema.arrayOf(schema.nullable(schema.string({ maxLength: 10000 })), { maxSize: 10000 }),
   filters: schema.maybe(schema.arrayOf(schema.any(), { maxSize: 10000 })),
-  index: schema.string(),
+  index: schema.string({ maxLength: 10000 }),
   query: schema.any(),
-  splitField: schema.maybe(schema.string()),
-  timeField: schema.maybe(schema.string()),
+  splitField: schema.maybe(schema.string({ maxLength: 10000 })),
+  timeField: schema.maybe(schema.string({ maxLength: 10000 })),
   runtimeMappings: schema.maybe(runtimeMappingsSchema),
   indicesOptions: schema.maybe(indicesOptionsSchema),
 });
@@ -40,9 +40,9 @@ export const estimateBucketSpanSchema = schema.object({
 export const modelMemoryLimitSchema = schema.object({
   datafeedConfig: datafeedConfigSchema,
   analysisConfig: analysisConfigSchema,
-  indexPattern: schema.string(),
+  indexPattern: schema.string({ maxLength: 10000 }),
   query: schema.any(),
-  timeFieldName: schema.string(),
+  timeFieldName: schema.string({ maxLength: 10000 }),
   earliestMs: schema.number(),
   latestMs: schema.number(),
 });

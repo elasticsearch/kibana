@@ -159,6 +159,7 @@ export const initRoutes = (
     logger,
     telemetrySender,
     ml,
+    hasEncryptionKey,
   });
   registerSiemMigrationsRoutes(router, config, logger);
 

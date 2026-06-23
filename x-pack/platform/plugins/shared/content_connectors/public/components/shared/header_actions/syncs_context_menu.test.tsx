@@ -7,15 +7,10 @@
 import { setMockActions, setMockValues } from '../../../__mocks__';
 import React from 'react';
 
-import {
-  EuiPopover,
-  EuiContextMenuItem,
-  EuiContextMenuPanel,
-  EuiResizeObserver,
-} from '@elastic/eui';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { IngestionStatus, IngestionMethod, ConnectorStatus } from '@kbn/search-connectors';
-import { mountWithIntl } from '@kbn/test-jest-helpers';
 
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { Status } from '../../../../common/types/api';
@@ -70,7 +65,7 @@ describe('SyncsContextMenu', () => {
         openFlyout: jest.fn(),
         openModal: jest.fn(),
       },
-    });
+    } as any);
     setMockValues(mockValues);
     setMockActions({
       cancelSyncs,
@@ -80,73 +75,54 @@ describe('SyncsContextMenu', () => {
     });
   });
 
-  it('renders', () => {
-    setMockValues({ ...mockValues, isWaitingForSync: true });
-    const wrapper = mountWithIntl(
+  const renderMenu = () =>
+    renderWithKibanaRenderContext(
       <AppContextProvider value={appContext}>
         <SyncsContextMenu />
       </AppContextProvider>
     );
-    const popover = wrapper.find(EuiPopover);
 
-    expect(popover).toHaveLength(1);
-    expect(popover.props().isOpen).toEqual(false);
+  it('renders', () => {
+    setMockValues({ ...mockValues, isWaitingForSync: true });
+    renderMenu();
+
+    expect(screen.getByTestId('enterpriseSearchSyncsContextMenuButton')).toBeInTheDocument();
+    // Popover is closed — panel content not in DOM
+    expect(
+      screen.queryByTestId('entSearchContent-connector-header-sync-startSync')
+    ).not.toBeInTheDocument();
   });
 
   it('Can cancel syncs', () => {
     setMockValues({ ...mockValues, isSyncing: true });
-    const wrapper = mountWithIntl(
-      <AppContextProvider value={appContext}>
-        <SyncsContextMenu />
-      </AppContextProvider>
-    );
-    const button = wrapper.find(
-      'button[data-telemetry-id="entSearchContent-connector-header-sync-openSyncMenu"]'
-    );
-    button.simulate('click');
+    renderMenu();
 
-    const menuItems = wrapper
-      .find(EuiContextMenuPanel)
-      .find(EuiResizeObserver)
-      .find(EuiContextMenuItem);
-    expect(menuItems).toHaveLength(1);
+    fireEvent.click(screen.getByTestId('enterpriseSearchSyncsContextMenuButton'));
 
-    const lastButton = menuItems.last();
+    // When syncing, Full Content item is hidden; only Cancel Syncs is shown
+    expect(
+      screen.queryByTestId('entSearchContent-connector-header-sync-startSync')
+    ).not.toBeInTheDocument();
+    const cancelButton = screen.getByTestId('entSearchContent-connector-header-sync-cancelSync');
+    expect(cancelButton.closest('button')).not.toBeDisabled();
 
-    expect(lastButton.prop('disabled')).toEqual(false);
-    expect(lastButton.text()).toEqual('Cancel Syncs');
-
-    menuItems.last().find('button').first().simulate('click');
+    fireEvent.click(cancelButton);
     expect(cancelSyncs).toHaveBeenCalled();
   });
 
   it('Can start a sync', () => {
     setMockValues({ ...mockValues, ingestionStatus: IngestionStatus.ERROR });
-    const wrapper = mountWithIntl(
-      <AppContextProvider value={appContext}>
-        <SyncsContextMenu />
-      </AppContextProvider>
-    );
-    const button = wrapper.find(
-      'button[data-telemetry-id="entSearchContent-connector-header-sync-openSyncMenu"]'
-    );
-    button.simulate('click');
+    renderMenu();
 
-    const menuItems = wrapper
-      .find(EuiContextMenuPanel)
-      .find(EuiResizeObserver)
-      .find(EuiContextMenuItem);
-    expect(menuItems).toHaveLength(2);
+    fireEvent.click(screen.getByTestId('enterpriseSearchSyncsContextMenuButton'));
 
-    const firstButton = menuItems.get(0);
-
-    expect(firstButton.props).toEqual(
-      expect.objectContaining({
-        children: 'Full Content',
-        disabled: false,
-      })
+    const fullContentButton = screen.getByTestId(
+      'entSearchContent-connector-header-sync-startSync'
     );
-    menuItems.at(0).find('button').first().simulate('click');
+    expect(fullContentButton).toBeInTheDocument();
+    expect(fullContentButton).not.toBeDisabled();
+
+    fireEvent.click(fullContentButton);
     expect(startSync).toHaveBeenCalled();
   });
 
@@ -155,42 +131,17 @@ describe('SyncsContextMenu', () => {
       ...mockValues,
       connector: { index_name: null, status: ConnectorStatus.CONFIGURED },
     });
-    const wrapper = mountWithIntl(
-      <AppContextProvider value={appContext}>
-        <SyncsContextMenu />
-      </AppContextProvider>
-    );
-    const button = wrapper.find(
-      'button[data-telemetry-id="entSearchContent-connector-header-sync-openSyncMenu"]'
-    );
-    button.simulate('click');
+    renderMenu();
 
-    const menuItems = wrapper
-      .find(EuiContextMenuPanel)
-      .find(EuiResizeObserver)
-      .find(EuiContextMenuItem);
-    expect(menuItems).toHaveLength(2);
+    fireEvent.click(screen.getByTestId('enterpriseSearchSyncsContextMenuButton'));
 
-    const firstButton = menuItems.get(0);
-
-    expect(firstButton.props).toEqual(
-      expect.objectContaining({
-        children: 'Full Content',
-        disabled: true,
-      })
-    );
+    expect(screen.getByTestId('entSearchContent-connector-header-sync-startSync')).toBeDisabled();
   });
 
   it("Sync button is disabled when connector isn't configured", () => {
     setMockValues({ ...mockValues, connector: { status: null } });
-    const wrapper = mountWithIntl(
-      <AppContextProvider value={appContext}>
-        <SyncsContextMenu />
-      </AppContextProvider>
-    );
-    const button = wrapper.find(
-      'button[data-telemetry-id="entSearchContent-connector-header-sync-openSyncMenu"]'
-    );
-    expect(button.prop('disabled')).toEqual(true);
+    renderMenu();
+
+    expect(screen.getByTestId('enterpriseSearchSyncsContextMenuButton')).toBeDisabled();
   });
 });

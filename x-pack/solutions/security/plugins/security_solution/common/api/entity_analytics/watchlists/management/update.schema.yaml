@@ -20,6 +20,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 256
           description: The ID of the watchlist to update
       requestBody:
         required: true
@@ -33,9 +34,11 @@ paths:
               properties:
                 name:
                   type: string
+                  maxLength: 256
                   description: Unique name of the watchlist
                 description:
                   type: string
+                  maxLength: 1000
                   description: Description of the watchlist
                 riskModifier:
                   type: number

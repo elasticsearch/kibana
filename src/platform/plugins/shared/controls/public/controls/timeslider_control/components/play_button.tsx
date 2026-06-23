@@ -33,15 +33,20 @@ export function PlayButton(props: Props) {
   }
 
   const Button = (
-    <EuiButtonIcon
-      onClick={props.isPaused ? props.onPlay : props.onPause}
-      disabled={props.disablePlayButton}
-      iconType={props.isPaused ? 'play' : 'pause'}
-      size="s"
-      display="fill"
-      aria-label={TimeSliderStrings.control.getPlayButtonAriaLabel(props.isPaused)}
-      css={styles.icon}
-    />
+    <EuiToolTip
+      content={TimeSliderStrings.control.getPlayButtonAriaLabel(props.isPaused)}
+      disableScreenReaderOutput
+    >
+      <EuiButtonIcon
+        onClick={props.isPaused ? props.onPlay : props.onPause}
+        disabled={props.disablePlayButton}
+        iconType={props.isPaused ? 'play' : 'pause'}
+        size="s"
+        display="fill"
+        aria-label={TimeSliderStrings.control.getPlayButtonAriaLabel(props.isPaused)}
+        css={styles.icon}
+      />
+    </EuiToolTip>
   );
   return props.disablePlayButton ? (
     <EuiToolTip display="block" content={TimeSliderStrings.control.getPlayButtonDisabledTooltip()}>

@@ -26,19 +26,19 @@ export const MonitoringEntitySourceTypeEnum = MonitoringEntitySourceType.enum;
 
 export const Matcher = lazySchema(() =>
   z.object({
-    fields: z.array(z.string()),
+    fields: z.array(z.string().max(256)).max(100),
     /**
       * Matcher values. Must be either an array of strings (e.g. group or role names) or an array of booleans (e.g. integration-derived flags like privileged_group_member). Mixed types are intentionally not supported for simplicity and predictability.
 
       */
-    values: z.union([z.array(z.string()), z.array(z.boolean())]),
+    values: z.union([z.array(z.string().max(256)).max(1000), z.array(z.boolean()).max(1000)]),
   })
 );
 export type Matcher = z.infer<typeof Matcher>;
 
 export const Filter = lazySchema(() =>
   z.object({
-    kuery: z.union([z.string(), z.object({})]).optional(),
+    kuery: z.union([z.string().max(4096), z.object({}).strict()]).optional(),
   })
 );
 export type Filter = z.infer<typeof Filter>;
@@ -48,7 +48,7 @@ export const Integrations = lazySchema(() =>
     /**
      * Index to read latest sync markers from
      */
-    syncMarkerIndex: z.string().optional(),
+    syncMarkerIndex: z.string().max(1000).optional(),
     /**
      * integrations latest full sync and update syncData
      */
@@ -70,11 +70,11 @@ export type Integrations = z.infer<typeof Integrations>;
 
 export const UpdateableMonitoringEntitySourceProperties = lazySchema(() =>
   z.object({
-    name: z.string().optional(),
-    indexPattern: z.string().optional(),
-    integrationName: z.string().optional(),
+    name: z.string().max(256).optional(),
+    indexPattern: z.string().max(1000).optional(),
+    integrationName: z.string().max(256).optional(),
     enabled: z.boolean().optional(),
-    matchers: z.array(Matcher).optional(),
+    matchers: z.array(Matcher).max(100).optional(),
     filter: Filter.optional(),
     integrations: Integrations.optional(),
   })
@@ -120,10 +120,10 @@ export const CreateEntitySourceRequestBody = lazySchema(() =>
   z
     .object({
       type: MonitoringEntitySourceType,
-      name: z.string(),
-      indexPattern: z.string().optional(),
+      name: z.string().max(256),
+      indexPattern: z.string().max(1000).optional(),
       enabled: z.boolean().optional(),
-      matchers: z.array(Matcher).optional(),
+      matchers: z.array(Matcher).max(100).optional(),
       filter: Filter.optional(),
     })
     .strict()
@@ -136,7 +136,7 @@ export type CreateEntitySourceResponse = z.infer<typeof CreateEntitySourceRespon
 
 export const DeleteEntitySourceRequestParams = lazySchema(() =>
   z.object({
-    id: z.string(),
+    id: z.string().max(256),
   })
 );
 export type DeleteEntitySourceRequestParams = z.infer<typeof DeleteEntitySourceRequestParams>;
@@ -144,7 +144,7 @@ export type DeleteEntitySourceRequestParamsInput = z.input<typeof DeleteEntitySo
 
 export const GetEntitySourceRequestParams = lazySchema(() =>
   z.object({
-    id: z.string(),
+    id: z.string().max(256),
   })
 );
 export type GetEntitySourceRequestParams = z.infer<typeof GetEntitySourceRequestParams>;
@@ -154,12 +154,12 @@ export const GetEntitySourceResponse = lazySchema(() => MonitoringEntitySource);
 export type GetEntitySourceResponse = z.infer<typeof GetEntitySourceResponse>;
 export const ListEntitySourcesRequestQuery = lazySchema(() =>
   z.object({
-    type: z.string().optional(),
+    type: z.string().max(256).optional(),
     managed: BooleanFromString.optional(),
-    name: z.string().optional(),
+    name: z.string().max(256).optional(),
     page: z.coerce.number().int().min(1).optional(),
     per_page: z.coerce.number().int().min(1).max(10000).optional(),
-    sort_field: z.string().optional(),
+    sort_field: z.string().max(256).optional(),
     sort_order: z.enum(['asc', 'desc']).optional(),
   })
 );
@@ -178,7 +178,7 @@ export type ListEntitySourcesResponse = z.infer<typeof ListEntitySourcesResponse
 
 export const UpdateEntitySourceRequestParams = lazySchema(() =>
   z.object({
-    id: z.string(),
+    id: z.string().max(256),
   })
 );
 export type UpdateEntitySourceRequestParams = z.infer<typeof UpdateEntitySourceRequestParams>;

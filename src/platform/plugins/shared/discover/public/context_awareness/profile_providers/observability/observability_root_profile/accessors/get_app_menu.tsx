@@ -84,7 +84,7 @@ const registerCustomThresholdRuleAction = (
     ...services
   }: ProfileProviderServices,
   { dataView, authorizedRuleTypeIds }: AppMenuExtensionParams
-) => {
+): void => {
   if (!authorizedRuleTypeIds.includes(OBSERVABILITY_THRESHOLD_RULE_TYPE_ID)) return;
 
   const popoverItem = {
@@ -96,7 +96,7 @@ const registerCustomThresholdRuleAction = (
       defaultMessage: 'Create custom threshold rule',
     }),
 
-    run: ({ context: { onFinishAction } }: { context: { onFinishAction: () => void } }) => {
+    render: ({ context: { onFinishAction } }: { context: { onFinishAction: () => void } }) => {
       const index = dataView?.toMinimalSpec();
       const { filters, query } = data.query.getState();
 
@@ -146,7 +146,7 @@ const registerCreateSLOAction = (
   registry: AppMenuRegistry,
   allServices: ProfileProviderServices,
   { dataView, isEsqlMode }: AppMenuExtensionParams
-) => {
+): void => {
   const { data, discoverShared, application } = allServices;
   const sloFeature = discoverShared.features.registry.getById('observability-create-slo');
   const hasSloPermission = application.capabilities.slo?.write;
@@ -160,7 +160,7 @@ const registerCreateSLOAction = (
       }),
       iconType: 'chartGauge',
       testId: 'discoverAppMenuCreateSlo',
-      run: ({ context: { onFinishAction } }: { context: { onFinishAction: () => void } }) => {
+      render: ({ context: { onFinishAction } }: { context: { onFinishAction: () => void } }) => {
         const index = dataView?.getIndexPattern();
         const timestampField = dataView?.timeFieldName;
         const { filters, query: kqlQuery } = data.query.getState();
@@ -172,7 +172,7 @@ const registerCreateSLOAction = (
               filters: filters?.map(({ meta, query }) => ({ meta, query })),
             };
 
-        return sloFeature.createSLOFlyout({
+        const result = sloFeature.createSLOFlyout({
           initialValues: {
             indicator: {
               type: 'sli.kql.custom',
@@ -185,6 +185,8 @@ const registerCreateSLOAction = (
           },
           onClose: onFinishAction,
         });
+
+        return React.isValidElement(result) ? result : null;
       },
     };
 

@@ -34,6 +34,11 @@ test.describe('Rule name validation — Discover flyout', { tag: '@local-statefu
   test.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsAlertingV2Editor();
     await pageObjects.ruleForm.gotoDiscover();
+    await pageObjects.ruleForm.switchToEsqlMode();
+    await pageObjects.discover.writeAndSubmitEsqlQuery(
+      `FROM ${SOURCE_INDEX} | WHERE message != "" | LIMIT 10`
+    );
+    await pageObjects.discover.waitUntilSearchingHasFinished();
   });
 
   test.afterAll(async ({ esClient }) => {
@@ -41,8 +46,9 @@ test.describe('Rule name validation — Discover flyout', { tag: '@local-statefu
   });
 
   test('opens rule form flyout and displays default placeholder name', async ({ pageObjects }) => {
-    await pageObjects.ruleForm.switchToEsqlMode();
     await pageObjects.ruleForm.openRulesFlyoutFromDiscover();
+    // The name input lives on the Details step — navigate there first.
+    await pageObjects.ruleForm.navigateToDetailsStep();
 
     await expect(pageObjects.ruleForm.nameInput).toBeVisible();
     await expect(pageObjects.ruleForm.nameInput).toHaveAttribute('placeholder', 'Untitled rule');
@@ -51,24 +57,28 @@ test.describe('Rule name validation — Discover flyout', { tag: '@local-statefu
   test('shows validation error when saving flyout with empty default name', async ({
     pageObjects,
   }) => {
-    await pageObjects.ruleForm.switchToEsqlMode();
     await pageObjects.ruleForm.openRulesFlyoutFromDiscover();
+    // Navigate to the Details step where the name field lives.
+    await pageObjects.ruleForm.navigateToDetailsStep();
     await expect(pageObjects.ruleForm.nameInput).toBeVisible();
 
+    // Clicking Next on the Details step triggers name validation.
     await pageObjects.ruleForm.clickFlyoutSave();
-    await expect(pageObjects.ruleForm.errorCallout).toBeVisible();
-    await expect(pageObjects.ruleForm.errorCallout).toContainText('Name is required');
+    await expect(pageObjects.ruleForm.nameFieldError).toBeVisible();
+    await expect(pageObjects.ruleForm.nameFieldError).toContainText('Name is required');
   });
 
   test('error callout scrolls into view in flyout on failed submission', async ({
     pageObjects,
   }) => {
-    await pageObjects.ruleForm.switchToEsqlMode();
     await pageObjects.ruleForm.openRulesFlyoutFromDiscover();
+    // Navigate to the Details step where the name field lives.
+    await pageObjects.ruleForm.navigateToDetailsStep();
     await expect(pageObjects.ruleForm.nameInput).toBeVisible();
 
+    // Clicking Next on the Details step triggers name validation.
     await pageObjects.ruleForm.clickFlyoutSave();
-    await expect(pageObjects.ruleForm.errorCallout).toBeVisible();
-    await expect(pageObjects.ruleForm.errorCallout).toBeInViewport();
+    await expect(pageObjects.ruleForm.nameFieldError).toBeVisible();
+    await expect(pageObjects.ruleForm.nameFieldError).toBeInViewport();
   });
 });

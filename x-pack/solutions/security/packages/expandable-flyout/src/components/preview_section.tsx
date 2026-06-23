@@ -12,6 +12,7 @@ import {
   EuiFlexItem,
   EuiSplitPanel,
   EuiText,
+  EuiToolTip,
   transparentize,
   useEuiTheme,
 } from '@elastic/eui';
@@ -119,12 +120,14 @@ export const PreviewSection: React.FC<PreviewSectionProps> = memo(
 
     const closeButton = (
       <EuiFlexItem grow={false}>
-        <EuiButtonIcon
-          iconType="cross"
-          onClick={closePreviewPanel}
-          data-test-subj={PREVIEW_SECTION_CLOSE_BUTTON_TEST_ID}
-          aria-label={CLOSE_BUTTON}
-        />
+        <EuiToolTip content={CLOSE_BUTTON} disableScreenReaderOutput>
+          <EuiButtonIcon
+            iconType="cross"
+            onClick={closePreviewPanel}
+            data-test-subj={PREVIEW_SECTION_CLOSE_BUTTON_TEST_ID}
+            aria-label={CLOSE_BUTTON}
+          />
+        </EuiToolTip>
       </EuiFlexItem>
     );
     const header = (

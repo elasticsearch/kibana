@@ -18,6 +18,7 @@ import {
 } from '../esql_helpers';
 import {
   EXCLUDED,
+  FEATURE_TYPE,
   ID,
   KI_TYPE_FEATURE,
   KI_TYPE_QUERY,
@@ -71,7 +72,7 @@ export class IndicatorReader {
         : undefined;
 
     const featureTypesFilter = options.type?.length
-      ? esql.exp`\`feature.type\` IN (${options.type.map((t) => esql.str(t))})`
+      ? inPredicate(FEATURE_TYPE, options.type)
       : undefined;
 
     const where = combineWhere(
@@ -133,7 +134,7 @@ export class IndicatorReader {
     options: { types?: string[] } = {}
   ): Promise<{ '@timestamp': string } | null> {
     const featureTypesFilter = options.types?.length
-      ? esql.exp`\`feature.type\` IN (${options.types.map((t) => esql.str(t))})`
+      ? inPredicate(FEATURE_TYPE, options.types)
       : undefined;
     const where = combineWhere(
       inPredicate(TYPE, [KI_TYPE_FEATURE]),

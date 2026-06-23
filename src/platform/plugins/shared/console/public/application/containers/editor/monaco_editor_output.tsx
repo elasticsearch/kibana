@@ -34,7 +34,13 @@ import {
   languageForContentType,
   convertMapboxVectorTileToJson,
 } from './utils';
-import { useEditorReadContext, useRequestReadContext, useServicesContext } from '../../contexts';
+import {
+  useEditorReadContext,
+  useRequestReadContext,
+  useServicesContext,
+  useOutputFilterReadContext,
+} from '../../contexts';
+import { applyResponseFilter, isFilterableStatusCode } from '../../lib/apply_response_filter';
 import { MonacoEditorOutputActionsProvider } from './monaco_editor_output_actions_provider';
 import { useResizeCheckerUtils } from './hooks';
 import { useActionStyles, useHighlightedLinesClassName } from './styles';
@@ -118,6 +124,7 @@ export const MonacoEditorOutput: FunctionComponent = () => {
   const highlightedLinesClassName = useHighlightedLinesClassName();
   const lineDecorations = useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
 
+  const filterState = useOutputFilterReadContext();
   const actionsProvider = useRef<MonacoEditorOutputActionsProvider | null>(null);
   const [editorActionsCss, setEditorActionsCss] = useState<CSSProperties>({});
 
@@ -181,6 +188,23 @@ export const MonacoEditorOutput: FunctionComponent = () => {
       setValue('');
     }
   }, [readOnlySettings, data, value, statusCodeClassNames]);
+
+  const displayValue = useMemo(() => {
+    const statusCode = data?.length === 1 ? data[0].response.statusCode : undefined;
+    if (
+      data &&
+      statusCode !== undefined &&
+      isFilterableStatusCode(statusCode) &&
+      filterState.expression
+    ) {
+      return applyResponseFilter({
+        text: value,
+        contentType: data[0].response.contentType,
+        state: filterState,
+      });
+    }
+    return value;
+  }, [value, data, filterState]);
 
   const copyOutputCallback = useCallback(async () => {
     const selectedText = (await actionsProvider.current?.getParsedOutput()) as string;
@@ -248,7 +272,7 @@ export const MonacoEditorOutput: FunctionComponent = () => {
       <CodeEditor
         dataTestSubj={'consoleMonacoOutput'}
         languageId={mode}
-        value={value}
+        value={displayValue}
         fullWidth={true}
         editorDidMount={editorDidMountCallback}
         editorWillUnmount={editorWillUnmountCallback}

@@ -3190,6 +3190,9 @@ components:
               isCompleted:
                 description: Whether the response action is completed for the agent ID
                 type: boolean
+              wasCanceled:
+                description: Whether the response action was canceled for the agent ID
+                type: boolean
               wasSuccessful:
                 description: Whether the response action was successful for the agent ID
                 type: boolean
@@ -3267,6 +3270,9 @@ components:
         status:
           description: The response action status
           type: string
+        wasCanceled:
+          description: Whether the response action was canceled
+          type: boolean
         wasSuccessful:
           description: Whether the response action was successful
           type: boolean

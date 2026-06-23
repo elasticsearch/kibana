@@ -15,7 +15,7 @@ import { unescapeColumnName } from '../../definitions/utils/shared';
 import {
   commaCompleteItem,
   getNewUserDefinedColumnSuggestion,
-  pipeCompleteItem,
+  newLineAndPipeCompleteItems,
 } from '../complete_items';
 import type { ESQLColumnData, ESQLPolicy, ICommandCallbacks } from '../types';
 import { Location, type ICommandContext, type ISuggestionItem } from '../types';
@@ -80,7 +80,7 @@ export async function autocomplete(
     }
 
     case Position.AFTER_POLICY:
-      return [onSuggestion, withSuggestion, pipeCompleteItem];
+      return [onSuggestion, withSuggestion, ...newLineAndPipeCompleteItems];
 
     case Position.MATCH_FIELD: {
       if (!policyName) {
@@ -96,7 +96,7 @@ export async function autocomplete(
     }
 
     case Position.AFTER_ON_CLAUSE:
-      return [withSuggestion, pipeCompleteItem];
+      return [withSuggestion, ...newLineAndPipeCompleteItems];
 
     case Position.WITH_NEW_CLAUSE: {
       if (!policyName) {
@@ -131,7 +131,7 @@ export async function autocomplete(
       const word = findPreviousWord(innerText);
       if (policyMetadata.enrichFields.includes(unescapeColumnName(word))) {
         // complete field name
-        return [pipeCompleteItem, withAutoSuggest(commaCompleteItem)];
+        return [...newLineAndPipeCompleteItems, withAutoSuggest(commaCompleteItem)];
       } else {
         // not recognized as a field name, assume new user-defined column name
         return getOperatorSuggestions(
@@ -149,7 +149,7 @@ export async function autocomplete(
     }
 
     case Position.WITH_AFTER_COMPLETE_CLAUSE: {
-      return [pipeCompleteItem, withAutoSuggest(commaCompleteItem)];
+      return [...newLineAndPipeCompleteItems, withAutoSuggest(commaCompleteItem)];
     }
 
     default:

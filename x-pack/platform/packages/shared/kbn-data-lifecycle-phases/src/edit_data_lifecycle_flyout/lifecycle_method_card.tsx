@@ -40,6 +40,7 @@ export const LifecycleMethodCard = ({
     <EuiFlexItem>
       <EuiCheckableCard
         id={checkableCardId}
+        data-test-subj={`editDataLifecycle-methodCard-${method}`}
         label={
           <>
             <EuiText size="s">

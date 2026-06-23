@@ -13,6 +13,7 @@ import { createActionPolicyAttachmentType } from '../agent_builder/attachments/a
 import { createRuleAttachmentType } from '../agent_builder/attachments/rule_attachment_type';
 import { resolveRequestScoped } from '../agent_builder/resolve_request_scoped';
 import { registerSkills } from '../agent_builder/skills/register_skills';
+import { SchemaTranslationError } from '../agent_builder/skills/schema_to_skill_docs';
 import { createActionPolicySmlType } from '../agent_builder/sml/action_policy_sml_type';
 import { createRuleSmlType } from '../agent_builder/sml/rule_sml_type';
 import { AttachmentTypeToken } from '../agent_builder/tokens';
@@ -117,10 +118,22 @@ export function bindAgentBuilder({ bind }: ContainerModuleLoadOptions) {
     }
 
     const workflowsManagementApi = container.get(WorkflowsManagementApiToken);
-    registerSkills(agentBuilder, {
-      getWorkflow: (id, sid) => workflowsManagementApi.getWorkflow(id, sid),
-      getAvailableConnectors: (sid, req) => workflowsManagementApi.getAvailableConnectors(sid, req),
-    });
+    try {
+      registerSkills(agentBuilder, {
+        getWorkflow: (id, sid) => workflowsManagementApi.getWorkflow(id, sid),
+        getAvailableConnectors: (sid, req) =>
+          workflowsManagementApi.getAvailableConnectors(sid, req),
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (e instanceof SchemaTranslationError) {
+        container
+          .get(Logger)
+          .warn(`Rule management skill registered with empty schema docs: ${message}`);
+      } else {
+        container.get(Logger).warn(`Failed to register rule management skill: ${message}`);
+      }
+    }
 
     container.get(Logger).debug('Rule management skill and attachments registered');
   });

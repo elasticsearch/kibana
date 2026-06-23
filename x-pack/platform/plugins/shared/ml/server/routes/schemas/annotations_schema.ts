@@ -13,16 +13,16 @@ import { ANNOTATION_TYPE } from '../../../common/constants/annotations';
 export const indexAnnotationSchema = schema.object({
   timestamp: schema.number(),
   end_timestamp: schema.number(),
-  annotation: schema.string(),
-  job_id: schema.string(),
+  annotation: schema.string({ maxLength: 10000 }),
+  job_id: schema.string({ maxLength: 10000 }),
   type: schema.oneOf([
     schema.literal(ANNOTATION_TYPE.ANNOTATION),
     schema.literal(ANNOTATION_TYPE.COMMENT),
   ]),
   create_time: schema.maybe(schema.number()),
-  create_username: schema.maybe(schema.string()),
+  create_username: schema.maybe(schema.string({ maxLength: 10000 })),
   modified_time: schema.maybe(schema.number()),
-  modified_username: schema.maybe(schema.string()),
+  modified_username: schema.maybe(schema.string({ maxLength: 10000 })),
   event: schema.maybe(
     schema.oneOf([
       schema.literal('user'),
@@ -33,19 +33,19 @@ export const indexAnnotationSchema = schema.object({
     ])
   ),
   detector_index: schema.maybe(schema.number()),
-  partition_field_name: schema.maybe(schema.string()),
-  partition_field_value: schema.maybe(schema.string()),
-  over_field_name: schema.maybe(schema.string()),
-  over_field_value: schema.maybe(schema.string()),
-  by_field_name: schema.maybe(schema.string()),
-  by_field_value: schema.maybe(schema.string()),
+  partition_field_name: schema.maybe(schema.string({ maxLength: 10000 })),
+  partition_field_value: schema.maybe(schema.string({ maxLength: 10000 })),
+  over_field_name: schema.maybe(schema.string({ maxLength: 10000 })),
+  over_field_value: schema.maybe(schema.string({ maxLength: 10000 })),
+  by_field_name: schema.maybe(schema.string({ maxLength: 10000 })),
+  by_field_value: schema.maybe(schema.string({ maxLength: 10000 })),
   /** Document id */
-  _id: schema.maybe(schema.string()),
-  key: schema.maybe(schema.string()),
+  _id: schema.maybe(schema.string({ maxLength: 10000 })),
+  key: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export const getAnnotationsSchema = schema.object({
-  jobIds: schema.arrayOf(schema.string(), { maxSize: 10000 }),
+  jobIds: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
   earliestMs: schema.nullable(schema.number()),
   latestMs: schema.nullable(schema.number()),
   maxAnnotations: schema.number(),
@@ -53,8 +53,8 @@ export const getAnnotationsSchema = schema.object({
   fields: schema.maybe(
     schema.arrayOf(
       schema.object({
-        field: schema.string(),
-        missing: schema.maybe(schema.string()),
+        field: schema.string({ maxLength: 10000 }),
+        missing: schema.maybe(schema.string({ maxLength: 10000 })),
       }),
       { maxSize: 10000 }
     )
@@ -63,9 +63,9 @@ export const getAnnotationsSchema = schema.object({
   entities: schema.maybe(
     schema.arrayOf(
       schema.object({
-        fieldType: schema.maybe(schema.string()),
-        fieldName: schema.maybe(schema.string()),
-        fieldValue: schema.maybe(schema.string()),
+        fieldType: schema.maybe(schema.string({ maxLength: 10000 })),
+        fieldName: schema.maybe(schema.string({ maxLength: 10000 })),
+        fieldValue: schema.maybe(schema.string({ maxLength: 10000 })),
       }),
       { maxSize: 10000 }
     )
@@ -76,11 +76,13 @@ export const annotationsResponseSchema = () => {
   return schema.object({
     success: schema.boolean(),
     annotations: schema.recordOf<JobId, Annotations>(
-      schema.string(),
+      schema.string({ maxLength: 10000 }),
       schema.arrayOf(indexAnnotationSchema, { maxSize: 10000 })
     ),
     totalCount: schema.number(),
   });
 };
 
-export const deleteAnnotationSchema = schema.object({ annotationId: schema.string() });
+export const deleteAnnotationSchema = schema.object({
+  annotationId: schema.string({ maxLength: 10000 }),
+});

@@ -10,6 +10,7 @@ import { schema } from '@kbn/config-schema';
 export const setupModuleBodySchema = schema.object({
   prefix: schema.maybe(
     schema.string({
+      maxLength: 10000,
       meta: {
         description:
           'Job ID prefix. This will be added to the start of the ID every job created by the module (optional).',
@@ -17,7 +18,7 @@ export const setupModuleBodySchema = schema.object({
     })
   ),
   groups: schema.maybe(
-    schema.arrayOf(schema.string(), {
+    schema.arrayOf(schema.string({ maxLength: 10000 }), {
       maxSize: 10000,
       meta: {
         description:
@@ -27,6 +28,7 @@ export const setupModuleBodySchema = schema.object({
   ),
   indexPatternName: schema.maybe(
     schema.string({
+      maxLength: 10000,
       meta: {
         description: `Name of kibana index pattern. Overrides the index used in each datafeed and each index pattern used in the custom urls and saved objects created by the module. A matching index pattern must exist in kibana if the module contains custom urls or saved objects which rely on an index pattern ID. If the module does not contain custom urls or saved objects which require an index pattern ID, the indexPatternName can be any index name or pattern that will match an ES index. It can also be a comma separated list of names. If no indexPatternName is supplied, the default index pattern specified in the manifest.json will be used (optional).`,
       },
@@ -101,11 +103,13 @@ export const setupModuleBodySchema = schema.object({
 });
 
 export const optionalModuleIdParamSchema = schema.object({
-  moduleId: schema.maybe(schema.string({ meta: { description: 'ID of the module' } })),
+  moduleId: schema.maybe(
+    schema.string({ maxLength: 10000, meta: { description: 'ID of the module' } })
+  ),
 });
 
 export const moduleIdParamSchema = schema.object({
-  moduleId: schema.string({ meta: { description: 'ID of the module' } }),
+  moduleId: schema.string({ maxLength: 10000, meta: { description: 'ID of the module' } }),
 });
 
 export const optionalSizeQuerySchema = schema.object({
@@ -114,6 +118,7 @@ export const optionalSizeQuerySchema = schema.object({
 
 export const recognizeModulesSchema = schema.object({
   indexPatternTitle: schema.string({
+    maxLength: 10000,
     meta: {
       description:
         'Index pattern to recognize. Note that this does not need to be a Kibana index pattern, and can be the name of a single Elasticsearch index, or include a wildcard (*) to match multiple indices.',
@@ -122,34 +127,34 @@ export const recognizeModulesSchema = schema.object({
 });
 
 export const moduleFilterSchema = schema.object({
-  filter: schema.maybe(schema.string()),
+  filter: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export const recognizeModulesSchemaResponse = () =>
   schema.arrayOf(
     schema.object({
-      id: schema.string(),
-      title: schema.string(),
+      id: schema.string({ maxLength: 10000 }),
+      title: schema.string({ maxLength: 10000 }),
       query: schema.any(),
-      description: schema.string(),
+      description: schema.string({ maxLength: 10000 }),
       logo: schema.any(),
     }),
     { maxSize: 10000 }
   );
 
 const moduleSchema = schema.object({
-  id: schema.string(),
-  title: schema.string(),
-  description: schema.string(),
-  type: schema.string(),
+  id: schema.string({ maxLength: 10000 }),
+  title: schema.string({ maxLength: 10000 }),
+  description: schema.string({ maxLength: 10000 }),
+  type: schema.string({ maxLength: 10000 }),
   logo: schema.maybe(schema.any()),
-  logoFile: schema.maybe(schema.string()),
-  defaultIndexPattern: schema.maybe(schema.string()),
+  logoFile: schema.maybe(schema.string({ maxLength: 10000 })),
+  defaultIndexPattern: schema.maybe(schema.string({ maxLength: 10000 })),
   query: schema.maybe(schema.any()),
   jobs: schema.arrayOf(schema.any(), { maxSize: 10000 }),
   datafeeds: schema.arrayOf(schema.any(), { maxSize: 10000 }),
   kibana: schema.maybe(schema.any()),
-  tags: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 10000 })),
+  tags: schema.maybe(schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 })),
 });
 
 export const getModulesSchemaResponse = () =>
@@ -172,7 +177,7 @@ export const jobExistsResponse = () =>
     jobs: schema.maybe(
       schema.arrayOf(
         schema.object({
-          id: schema.string(),
+          id: schema.string({ maxLength: 10000 }),
           earliestTimestampMs: schema.number(),
           latestTimestampMs: schema.number(),
           latestResultsTimestampMs: schema.maybe(schema.number()),

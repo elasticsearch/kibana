@@ -6,6 +6,7 @@
  */
 
 import { type DataTableRecord } from '@kbn/discover-utils';
+import type { HttpStart } from '@kbn/core/public';
 import type { StreamsRepositoryClient } from '@kbn/streams-plugin/public/api';
 import {
   EuiIconTip,
@@ -25,6 +26,7 @@ import {
   adaptDocToResolverInputs,
   useResolvedDefinitionName,
 } from './use_resolved_definition_name';
+import { useCcsHasRemoteClusters } from './use_ccs_has_remote_clusters';
 
 export interface DiscoverFlyoutStreamProcessingLinkProps {
   dataView: DataView;
@@ -32,22 +34,30 @@ export interface DiscoverFlyoutStreamProcessingLinkProps {
   fieldFormats: FieldFormatsStart;
   locator: StreamsAppLocator;
   streamsRepositoryClient: StreamsRepositoryClient;
-  renderCpsWarning?: boolean;
+  http: HttpStart;
+  isServerless: boolean;
+  cpsHasLinkedProjects?: boolean;
 }
 
 export function DiscoverFlyoutStreamProcessingLink({
   doc,
   locator,
   streamsRepositoryClient,
-  renderCpsWarning,
+  http,
+  isServerless,
+  cpsHasLinkedProjects,
 }: DiscoverFlyoutStreamProcessingLinkProps) {
   const { index, fallbackStreamName } = adaptDocToResolverInputs(doc);
+  const ccsHasRemoteClusters = useCcsHasRemoteClusters({ http, isServerless });
   const { value, loading, error } = useResolvedDefinitionName({
     streamsRepositoryClient,
     index,
     fallbackStreamName,
-    cpsHasLinkedProjects: renderCpsWarning,
+    cpsHasLinkedProjects,
+    ccsHasRemoteClusters,
   });
+
+  const remoteSearchType = cpsHasLinkedProjects ? 'cps' : ccsHasRemoteClusters ? 'ccs' : undefined;
 
   if (loading) return <EuiLoadingSpinner size="s" />;
 
@@ -79,13 +89,13 @@ export function DiscoverFlyoutStreamProcessingLink({
           </EuiFlexGroup>
         </EuiToolTip>
       </EuiLink>
-      {renderCpsWarning && (
+      {remoteSearchType && !index && (
         <EuiIconTip
-          content={CPS_WARNING_MESSAGE}
+          content={PROCESSING_WARNING_MESSAGES[remoteSearchType]}
           type="warning"
           size="s"
           color="warning"
-          data-test-subj="cpsStreamsProcessingWarningIcon"
+          data-test-subj={`${remoteSearchType}StreamsProcessingWarningIcon`}
           anchorProps={{
             css: { display: 'flex' },
           }}
@@ -95,13 +105,16 @@ export function DiscoverFlyoutStreamProcessingLink({
   );
 }
 
-const CPS_WARNING_MESSAGE = i18n.translate(
-  'xpack.streams.discoverFlyoutStreamProcessingLink.cpsWarning',
-  {
+const PROCESSING_WARNING_MESSAGES: Record<'cps' | 'ccs', string> = {
+  cps: i18n.translate('xpack.streams.discoverFlyoutStreamProcessingLink.cpsWarning', {
     defaultMessage:
       'Cross-project search is active. This document may come from a linked project and might not be available in Streams.',
-  }
-);
+  }),
+  ccs: i18n.translate('xpack.streams.discoverFlyoutStreamProcessingLink.ccsWarning', {
+    defaultMessage:
+      'Cross-cluster search is active. This document may come from a remote cluster and might not be available in Streams.',
+  }),
+};
 
 const getTargetDataSource = (doc: DataTableRecord, streamName: string) => {
   const baseDataSource = {

@@ -108,20 +108,30 @@ export const ExpandablePanel: FC<PropsWithChildren<ExpandablePanelPanelProps>> =
 
   const toggleIcon = useMemo(
     () => (
-      <EuiButtonIcon
-        data-test-subj={`${dataTestSubj}ToggleIcon`}
-        aria-label={i18n.translate(
+      <EuiToolTip
+        content={i18n.translate(
           'xpack.securitySolution.flyout.shared.ExpandablePanelButtonIconAriaLabel',
           {
             defaultMessage: 'Expandable panel toggle',
           }
         )}
-        color="text"
-        display="empty"
-        iconType={toggleStatus ? 'chevronSingleDown' : 'chevronSingleRight'}
-        onClick={toggleQuery}
-        size="xs"
-      />
+        disableScreenReaderOutput
+      >
+        <EuiButtonIcon
+          data-test-subj={`${dataTestSubj}ToggleIcon`}
+          aria-label={i18n.translate(
+            'xpack.securitySolution.flyout.shared.ExpandablePanelButtonIconAriaLabel',
+            {
+              defaultMessage: 'Expandable panel toggle',
+            }
+          )}
+          color="text"
+          display="empty"
+          iconType={toggleStatus ? 'chevronSingleDown' : 'chevronSingleRight'}
+          onClick={toggleQuery}
+          size="xs"
+        />
+      </EuiToolTip>
     ),
     [dataTestSubj, toggleStatus, toggleQuery]
   );
@@ -153,6 +163,7 @@ export const ExpandablePanel: FC<PropsWithChildren<ExpandablePanelPanelProps>> =
                   margin: ${euiTheme.size.s} 0;
                 `}
                 data-test-subj={`${dataTestSubj}TitleIcon`}
+                aria-hidden={true}
               />
             </EuiFlexItem>
           )}

@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
+import { parse as yamlLoad, stringify as yamlDump } from 'yaml';
 import type { Template } from '../../../../common/types/domain/template/v1';
 import { useCasesEditTemplateNavigation } from '../../../common/navigation';
 import { useBulkDeleteTemplates } from './use_bulk_delete_templates';
@@ -58,7 +58,7 @@ export const useTemplatesActions = ({ onDeleteSuccess }: UseTemplatesActionsProp
 
       const clonedDefinition = yamlDump(
         { ...parsed, name: i18n.CLONED_TEMPLATE_NAME_PREFIX(template.name) },
-        { lineWidth: -1 }
+        { lineWidth: 0 }
       ).trimEnd();
 
       cloneTemplate(

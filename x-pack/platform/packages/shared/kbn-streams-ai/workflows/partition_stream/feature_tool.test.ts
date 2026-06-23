@@ -22,6 +22,7 @@ describe('partitionStream features_tool', () => {
   const sampleFeatures: Feature[] = [
     {
       id: 'feature-1',
+      uuid: 'feature-1-uuid',
       stream_name: 'logs',
       type: 'technology',
       title: 'Node.js',
@@ -34,6 +35,7 @@ describe('partitionStream features_tool', () => {
     },
     {
       id: 'feature-2',
+      uuid: 'feature-2-uuid',
       stream_name: 'logs',
       type: 'entity',
       title: 'API Gateway',
@@ -70,6 +72,7 @@ describe('partitionStream features_tool', () => {
     it('should preserve nested properties objects', () => {
       const featureWithComplexProperties: Feature = {
         id: 'feature-3',
+        uuid: 'feature-3-uuid',
         stream_name: 'logs',
         type: 'infrastructure',
         title: 'PostgreSQL',

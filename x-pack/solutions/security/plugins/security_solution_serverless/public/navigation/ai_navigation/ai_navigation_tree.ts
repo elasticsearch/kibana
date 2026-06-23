@@ -6,12 +6,14 @@
  */
 
 import type { AppDeepLinkId, NavigationTreeDefinition } from '@kbn/core-chrome-browser';
+import type { CoreStart } from '@kbn/core/public';
 import { i18n } from '@kbn/i18n';
 import { AIChatExperience } from '@kbn/ai-assistant-common';
 
 import { SecurityPageName } from '@kbn/security-solution-navigation';
 import { defaultNavigationTree } from '@kbn/security-solution-navigation/navigation_tree';
 import { i18nStrings, securityLink } from '@kbn/security-solution-navigation/links';
+import { getAlertingV2ManagementNavPanel } from '@kbn/alerting-v2-utils';
 
 import { AiNavigationIcon } from './icon';
 
@@ -21,9 +23,9 @@ const SOLUTION_NAME = i18n.translate(
 );
 
 export const createAiNavigationTree = (
+  core: CoreStart,
   chatExperience: AIChatExperience = AIChatExperience.Classic,
   workflowsUiEnabled: boolean = false,
-  showAlertingV2: boolean = false,
   showAgentBuilderNavAtTop: boolean = false
 ): NavigationTreeDefinition => ({
   body: [
@@ -187,20 +189,7 @@ export const createAiNavigationTree = (
             },
           ],
         },
-        ...(showAlertingV2
-          ? [
-              {
-                id: 'v2_alerting_preview',
-                title: i18nStrings.stackManagementV2.v2AlertingPreview.title,
-                renderAs: 'panelOpener' as const,
-                children: [
-                  { link: 'management:rules' as const },
-                  { link: 'management:action_policies' as const },
-                  { link: 'management:execution_history' as const },
-                ],
-              },
-            ]
-          : []),
+        ...getAlertingV2ManagementNavPanel(core),
         {
           title: i18nStrings.stackManagementV2.alertsAndInsights.title,
           children: [

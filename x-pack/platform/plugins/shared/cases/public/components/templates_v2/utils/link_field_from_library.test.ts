@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import { linkFieldFromLibrary, unlinkFieldFromTemplate } from './link_field_from_library';
 
 const baseTemplate = `

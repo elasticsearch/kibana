@@ -7,6 +7,44 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type {
+  ScoutParallelTestFixtures,
+  ScoutParallelWorkerFixtures,
+  ScoutSpaceParallelFixture,
+} from '@kbn/scout';
+import { spaceTest as spaceBaseTest, tags } from '@kbn/scout';
 import * as testData from './constants';
 
+export interface DiscoverScoutSpace extends ScoutSpaceParallelFixture {
+  setupDiscoverDefaults: () => Promise<void>;
+  teardownDiscoverDefaults: () => Promise<void>;
+}
+
+export type DiscoverWorkerFixtures = ScoutParallelWorkerFixtures & {
+  discoverScoutSpace: DiscoverScoutSpace;
+};
+
+export const spaceTest = spaceBaseTest.extend<ScoutParallelTestFixtures, DiscoverWorkerFixtures>({
+  discoverScoutSpace: [
+    async ({ scoutSpace }, use) => {
+      const discoverScoutSpace: DiscoverScoutSpace = {
+        ...scoutSpace,
+        setupDiscoverDefaults: async () => {
+          await scoutSpace.savedObjects.load(testData.DISCOVER_KBN_ARCHIVE);
+          await scoutSpace.uiSettings.setDefaultIndex(testData.DEFAULT_DATA_VIEW);
+          await scoutSpace.uiSettings.setDefaultTime(testData.DEFAULT_TIME_RANGE);
+        },
+        teardownDiscoverDefaults: async () => {
+          await scoutSpace.uiSettings.unset('defaultIndex', 'timepicker:timeDefaults');
+          await scoutSpace.savedObjects.cleanStandardList();
+        },
+      };
+
+      await use(discoverScoutSpace);
+    },
+    { scope: 'worker' },
+  ],
+});
+
 export { testData };
+export { tags };

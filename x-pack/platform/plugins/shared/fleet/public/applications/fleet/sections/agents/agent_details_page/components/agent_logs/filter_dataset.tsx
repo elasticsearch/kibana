@@ -77,6 +77,9 @@ export const DatasetFilter: React.FunctionComponent<{
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.fleet.agentLogs.datasetFilterAriaLabel', {
+        defaultMessage: 'Dataset filter',
+      })}
       button={
         <EuiFilterButton
           data-test-subj="agentList.datasetFilterBtn"

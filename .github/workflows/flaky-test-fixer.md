@@ -47,29 +47,7 @@ tools:
   github:
     toolsets: [default, search]
   web-fetch:
-  bash:
-    [
-      'cat',
-      'head',
-      'tail',
-      'grep',
-      'wc',
-      'sort',
-      'uniq',
-      'date',
-      'yq',
-      'jq',
-      'echo',
-      'ls',
-      'pwd',
-      'git:*',
-      'gh:*',
-      'bk:*',
-      'node',
-      'yarn',
-      'curl',
-    ]
-
+  bash: true
 network:
   allowed:
     - defaults
@@ -92,7 +70,7 @@ safe-outputs:
   create-pull-request:
     draft: true
     max: 1
-    labels: [auto-flaky-fix]
+    labels: [flaky-test-fixer]
     base-branch: main
     allowed-base-branches: ['main', '9.*', '8.*', '7.*']
     if-no-changes: 'ignore'
@@ -126,7 +104,13 @@ Open a single draft PR with the smallest possible test-side fix for this flaky-t
   ```
   Fixes #<issue-number> (add more issue numbers here if this fix resolves multiple issues)
 
-  <a few sentences: what was failing, and what this patch changes>
+  ### Summary
+  <a few bullet points: what was failing, and what this patch changes - keep it very concise, every bullet point must be earned>
+
+  <if this fix matches what the failed test investigator already proposed in the issue, reference it instead of repeating it here; otherwise, explain how and why it differs>
+
+  <details>
+  <summary>Verification</summary>
 
   #### Verified locally
 
@@ -134,7 +118,14 @@ Open a single draft PR with the smallest possible test-side fix for this flaky-t
 
   #### Not verified locally
 
-  <bullet list of what you could not verify and why — e.g. behavior under CI parallel load, on a different stack version, against a real Elasticsearch instance, etc. Omit this section if there is nothing to mention.
+  <bullet list of what you could not verify and why. E.g., behavior under CI parallel load, on a different stack version, against a real Elasticsearch instance, etc. Omit this section if there is nothing to mention.>
 
-  This PR was opened automatically by the Flaky Test Fixer. Provide feedback in [#appex-qa](https://elastic.slack.com/archives/C04HT4P1YS3).
+  </details>
   ```
+
+Add the following at the very end of the PR description (and outside of the details block):
+
+```markdown
+> [!NOTE]
+> Created by the Flaky Test Fixer workflow. Share feedback or questions in #appex-qa.
+```

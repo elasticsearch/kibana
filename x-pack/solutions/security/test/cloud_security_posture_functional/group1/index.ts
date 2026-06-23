@@ -19,6 +19,6 @@ export default function ({ getPageObjects, loadTestFile }: FtrProviderContext) {
     loadTestFile(require.resolve('./pages/rules/rules_counters'));
     loadTestFile(require.resolve('./pages/rules/rules_table'));
     loadTestFile(require.resolve('./pages/rules/rules_table_headers'));
-    loadTestFile(require.resolve('./pages/findings_onboarding'));
+    loadTestFile(require.resolve('./pages/findings_onboarding_smoke'));
   });
 }

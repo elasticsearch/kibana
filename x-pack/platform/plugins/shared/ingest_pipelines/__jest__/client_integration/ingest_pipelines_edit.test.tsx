@@ -42,6 +42,7 @@ const getInput = (testSubj: string) => {
 };
 
 type TestHttpSetup = ReturnType<typeof setupEnvironment>['httpSetup'];
+type TestHttpRequestsMockHelpers = ReturnType<typeof setupEnvironment>['httpRequestsMockHelpers'];
 
 const renderPipelinesEdit = async (httpSetup: TestHttpSetup) => {
   const history = createMemoryHistory({
@@ -57,14 +58,24 @@ const renderPipelinesEdit = async (httpSetup: TestHttpSetup) => {
 
   await screen.findByTestId('pipelineForm');
   await screen.findByTestId('descriptionField');
+  // Wait for the processors editor context to mount and register its onUpdate handler.
+  // pipelineProcessorsMoveAnnouncement lives inside PipelineProcessorsContextProvider
+  // alongside the onUpdate useEffect, so its presence guarantees the effect has run.
+  await screen.findByTestId('pipelineProcessorsMoveAnnouncement');
 };
 
-// Failing: See https://github.com/elastic/kibana/issues/253493
-describe.skip('<PipelinesEdit />', () => {
-  const { httpSetup, httpRequestsMockHelpers } = setupEnvironment();
+describe('<PipelinesEdit />', () => {
+  // Each test gets a fresh httpSetup + mockResponses Map so mock state can't leak
+  // between tests. jest.clearAllMocks() only clears call history, not the Map.
+  let httpSetup!: TestHttpSetup;
+  let httpRequestsMockHelpers!: TestHttpRequestsMockHelpers;
   const originalLocation = window.location;
 
   beforeEach(() => {
+    const env = setupEnvironment();
+    httpSetup = env.httpSetup;
+    httpRequestsMockHelpers = env.httpRequestsMockHelpers;
+
     jest.clearAllMocks();
     httpRequestsMockHelpers.setLoadPipelineResponse(PIPELINE_TO_EDIT.name, PIPELINE_TO_EDIT);
 
@@ -112,20 +123,11 @@ describe.skip('<PipelinesEdit />', () => {
     await user.clear(getInput('descriptionField'));
     await user.type(getInput('descriptionField'), UPDATED_DESCRIPTION);
 
-    const putCallsBefore = httpSetup.put.mock.calls.length;
     fireEvent.click(screen.getByTestId('submitButton'));
-
-    await waitFor(() => expect(httpSetup.put.mock.calls.length).toBeGreaterThan(putCallsBefore));
-    const updateRequest = httpSetup.put.mock.results[putCallsBefore]?.value as
-      | Promise<unknown>
-      | undefined;
-    expect(updateRequest).toBeDefined();
-    await waitFor(async () => {
-      await updateRequest;
-    });
+    await waitFor(() => expect(httpSetup.put).toHaveBeenCalled());
 
     const { name, ...pipelineDefinition } = PIPELINE_TO_EDIT;
-    expect(httpSetup.put).toHaveBeenLastCalledWith(
+    expect(httpSetup.put).toHaveBeenCalledWith(
       `${API_BASE_PATH}/${name}`,
       expect.objectContaining({
         body: JSON.stringify({

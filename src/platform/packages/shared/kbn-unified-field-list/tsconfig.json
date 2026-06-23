@@ -37,6 +37,7 @@
     "@kbn/restorable-state",
     "@kbn/css-utils",
     "@kbn/field-formats-common",
+    "@kbn/ebt-click",
   ],
   "exclude": ["target/**/*"]
 }

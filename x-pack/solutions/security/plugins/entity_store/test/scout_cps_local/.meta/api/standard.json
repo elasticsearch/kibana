@@ -1,0 +1,33 @@
+{
+  "sha1": "bccf609d5bee7832beaa8a441f58cea749512236",
+  "tests": [
+    {
+      "id": "395fb291fcac059-cdfe72291d65b9f",
+      "title": "Entity Store CPS logs extraction (linked serverless project) writes a user entity into updates from a linked log",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/entity_store/test/scout_cps_local/api/tests/cps_logs_extraction.spec.ts",
+        "line": 67,
+        "column": 12
+      }
+    },
+    {
+      "id": "395fb291fcac059-70843a1de983b04",
+      "title": "Entity Store CPS logs extraction (linked serverless project) promotes a linked-log entity into latest after a follow-up main run",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/entity_store/test/scout_cps_local/api/tests/cps_logs_extraction.spec.ts",
+        "line": 98,
+        "column": 12
+      }
+    }
+  ]
+}

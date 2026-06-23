@@ -102,8 +102,12 @@ export type RuleChangesHistoryRequestParamsInput = z.input<typeof RuleChangesHis
 export const RuleChangesHistoryResponse = lazySchema(() =>
   z.object({
     page: z.number().int(),
-    perPage: z.number().int(),
+    per_page: z.number().int(),
     total: z.number().int(),
+    /**
+     * ISO-8601 timestamp of the earliest recorded change event for this rule. Absent when no history items exist.
+     */
+    tracking_started_at: z.string().datetime().optional(),
     items: z.array(RuleHistoryItem),
   })
 );

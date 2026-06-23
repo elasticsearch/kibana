@@ -22,6 +22,7 @@ export const CONCURRENCY_ALLOW_LIST_BY_TASK_TYPE: string[] = [
 
 export const EVENT_LOG_PROVIDER = 'taskManager';
 export const EVENT_LOG_ACTIONS = {
+  taskRunStart: 'task-run-start',
   taskRun: 'task-run',
   taskCancel: 'task-cancel',
 };

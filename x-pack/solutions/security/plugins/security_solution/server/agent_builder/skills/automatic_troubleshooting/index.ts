@@ -220,7 +220,7 @@ Use exact terms from the user's request and queried endpoint evidence when calli
         checkEndpointPackageFreshnessTool(endpointAppContextService),
         getPackageConfigurationsTool(endpointAppContextService),
         getEndpointArtifactsTool(endpointAppContextService),
-        generateInsightTool(),
+        generateInsightTool(endpointAppContextService),
       ];
     },
   });

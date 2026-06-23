@@ -7,7 +7,7 @@
 
 import React, { memo, useMemo } from 'react';
 import { EuiCode, EuiTextColor } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { useTestIdGenerator } from '../../../hooks/use_test_id_generator';
 import { useDataTestSubj } from '../hooks/state_selectors/use_data_test_subj';
 

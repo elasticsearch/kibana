@@ -5,17 +5,24 @@
  * 2.0.
  */
 
-import { setMockValues } from '../../../../../__mocks__/kea_logic';
+import { setMockActions, setMockValues } from '../../../../../__mocks__/kea_logic';
 import { connectorIndex } from '../../../../__mocks__/view_index.mock';
+
+jest.mock('./default_pipeline_item', () => ({
+  DefaultPipelineItem: () => <div data-test-subj="defaultPipelineItem" />,
+}));
+jest.mock('./custom_pipeline_item', () => ({
+  CustomPipelineItem: () => <div data-test-subj="customPipelineItem" />,
+}));
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { DEFAULT_PIPELINE_NAME } from '../../../../../../../common/constants';
 
-import { CustomPipelineItem } from './custom_pipeline_item';
-import { DefaultPipelineItem } from './default_pipeline_item';
 import { IngestPipelinesCard } from './ingest_pipelines_card';
 
 const DEFAULT_VALUES = {
@@ -42,10 +49,12 @@ describe('IngestPipelinesCard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setMockValues({ ...DEFAULT_VALUES });
+    setMockActions({ fetchCustomPipeline: jest.fn(), makeRequest: jest.fn() });
   });
+
   it('renders with default ingest pipeline', () => {
-    const wrapper = shallow(<IngestPipelinesCard extractionDisabled={false} />);
-    expect(wrapper.find(DefaultPipelineItem)).toHaveLength(1);
-    expect(wrapper.find(CustomPipelineItem)).toHaveLength(0);
+    renderWithKibanaRenderContext(<IngestPipelinesCard extractionDisabled={false} />);
+    expect(screen.getByTestId('defaultPipelineItem')).toBeInTheDocument();
+    expect(screen.queryByTestId('customPipelineItem')).not.toBeInTheDocument();
   });
 });

@@ -521,13 +521,15 @@ export default function jiraTest({ getService }: FtrProviderContext) {
               id: simulatedActionId,
               provider: 'actions',
               actions: new Map([
-                ['execute-start', { gte: 2 }],
-                ['execute', { gte: 1 }],
+                ['execute-start', { gte: 11 }],
+                ['execute', { gte: 11 }],
               ]),
             });
           });
 
-          const executeEvent = events[1];
+          const executeEvent = events.find(
+            (e) => e?.event?.action === 'execute' && e?.event?.outcome === 'success'
+          );
           expect(executeEvent?.kibana?.action?.execution?.usage?.request_body_bytes).to.be(124);
         });
 

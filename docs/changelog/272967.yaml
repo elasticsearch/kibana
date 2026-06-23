@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/272967
+issues:
+- https://github.com/elastic/search-team/issues/14841
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- AI and machine Learning
+title: Remove reasoning panel and render as stream in Agent Builder

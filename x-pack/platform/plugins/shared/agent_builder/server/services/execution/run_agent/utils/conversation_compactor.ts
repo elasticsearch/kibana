@@ -18,12 +18,9 @@ import type { AgentEventEmitterFn } from '@kbn/agent-builder-server';
 import { estimateTokens } from '@kbn/agent-builder-genai-utils/tools/utils/token_count';
 import type { ProcessedConversation, ProcessedConversationRound } from './prepare_conversation';
 import type { ContextBudget } from './context_budget';
-import {
-  estimateConversationTokens,
-  estimateRoundTokens,
-  shouldTriggerCompaction,
-} from './context_budget';
+import { shouldTriggerCompaction } from './context_budget';
 import { convertPreviousRounds } from './to_langchain_messages';
+import { serializeCompactionSummary } from './compaction_serialize';
 import { llmCompactionSchema, COMPACTION_SYSTEM_PROMPT } from './compaction_schema';
 import type { LlmCompactionOutput } from './compaction_schema';
 
@@ -40,6 +37,12 @@ export interface CompactConversationOptions {
   processedConversation: ProcessedConversation;
   chatModel: InferenceChatModel;
   contextBudget: ContextBudget;
+  /**
+   * Per-round token counts for `processedConversation.previousRounds`, index-aligned.
+   * Computed once upstream so the trigger, before/after reporting, and hard truncation
+   * all share the same summarization-aware estimate.
+   */
+  perRoundTokenCounts: number[];
   existingSummary?: CompactionSummary;
   logger: Logger;
   abortSignal?: AbortSignal;
@@ -57,51 +60,6 @@ export interface CompactedConversation {
   /** Number of rounds that were summarized or removed */
   summarizedRoundCount?: number;
 }
-
-/**
- * Serializes CompactionStructuredData into a formatted text block
- * suitable for injection into the LLM prompt.
- */
-export const serializeCompactionSummary = (data: CompactionStructuredData): string => {
-  const parts: string[] = [];
-
-  parts.push(`## Conversation Summary (compacted from previous rounds)`);
-  parts.push(`**User Intent:** ${data.user_intent}`);
-  parts.push(`**Discussion Summary:** ${data.discussion_summary}`);
-
-  if (data.key_topics.length > 0) {
-    parts.push(`**Key Topics:** ${data.key_topics.join(', ')}`);
-  }
-
-  if (data.entities.length > 0) {
-    const entityLines = data.entities.map((e) => `- ${e.type}: ${e.name}`).join('\n');
-    parts.push(`**Entities:**\n${entityLines}`);
-  }
-
-  if (data.tool_calls_summary.length > 0) {
-    const toolLines = data.tool_calls_summary
-      .map((tc) => `- [${tc.tool_id}] ${tc.params_summary}`)
-      .join('\n');
-    parts.push(`**Tool Call History:**\n${toolLines}`);
-  }
-
-  if (data.outcomes_and_decisions.length > 0) {
-    const outcomeLines = data.outcomes_and_decisions.map((o) => `- ${o}`).join('\n');
-    parts.push(`**Outcomes & Decisions:**\n${outcomeLines}`);
-  }
-
-  if (data.agent_actions.length > 0) {
-    const actionLines = data.agent_actions.map((a) => `- ${a}`).join('\n');
-    parts.push(`**Agent Actions:**\n${actionLines}`);
-  }
-
-  if (data.unanswered_questions.length > 0) {
-    const questionLines = data.unanswered_questions.map((q) => `- ${q}`).join('\n');
-    parts.push(`**Unanswered Questions:**\n${questionLines}`);
-  }
-
-  return parts.join('\n\n');
-};
 
 // ---------------------------------------------------------------------------
 // Programmatic extraction helpers
@@ -183,16 +141,15 @@ export const compactConversation = async ({
   processedConversation,
   chatModel,
   contextBudget,
+  perRoundTokenCounts,
   existingSummary,
   logger,
   abortSignal,
   eventEmitter,
 }: CompactConversationOptions): Promise<CompactedConversation> => {
-  const { previousRounds } = processedConversation;
-
   // Under threshold: apply existing summary if present (so the LLM sees
   // the compacted view) but don't report a new compaction event.
-  if (!shouldTriggerCompaction(previousRounds, contextBudget, existingSummary)) {
+  if (!shouldTriggerCompaction(perRoundTokenCounts, contextBudget, existingSummary)) {
     if (existingSummary) {
       const compacted = applyExistingSummary(processedConversation, existingSummary);
       return {
@@ -204,10 +161,10 @@ export const compactConversation = async ({
     return { processedConversation, compactionTriggered: false };
   }
 
-  const rawTokens = estimateConversationTokens(previousRounds);
+  const rawTokens = sumTokens(perRoundTokenCounts);
   const effectiveTokens = existingSummary
     ? existingSummary.token_count +
-      estimateConversationTokens(previousRounds.slice(existingSummary.summarized_round_count))
+      sumTokens(perRoundTokenCounts.slice(existingSummary.summarized_round_count))
     : rawTokens;
   logger.info(
     `Compaction triggered: ${effectiveTokens} effective tokens (${rawTokens} raw) exceeds threshold of ${contextBudget.triggerThreshold}`
@@ -230,8 +187,10 @@ export const compactConversation = async ({
   );
 
   if (summarizationResult.summary) {
+    // Remaining rounds are the suffix after the summarized prefix, so their counts
+    // are perRoundTokenCounts sliced at summarized_round_count.
     const afterTokens =
-      estimateConversationTokens(summarizationResult.processedConversation.previousRounds) +
+      sumTokens(perRoundTokenCounts.slice(summarizationResult.summary.summarized_round_count)) +
       summarizationResult.summary.token_count;
     if (afterTokens <= contextBudget.historyBudget) {
       logger.debug(
@@ -256,12 +215,18 @@ export const compactConversation = async ({
     }
   }
 
-  // Hard truncation fallback
-  const truncated = applyHardTruncation(summarizationResult.processedConversation, contextBudget);
+  // Hard truncation fallback. When summarization produced a summary only the recent
+  // (suffix) rounds remain, so truncate over their counts; otherwise the full set.
+  const postSummaryCounts = summarizationResult.summary
+    ? perRoundTokenCounts.slice(summarizationResult.summary.summarized_round_count)
+    : perRoundTokenCounts;
+  const truncation = applyHardTruncation(
+    summarizationResult.processedConversation,
+    postSummaryCounts,
+    contextBudget
+  );
   // Account for the summary tokens (if present) so the reported total is accurate.
-  const truncatedTokens =
-    estimateConversationTokens(truncated.previousRounds) +
-    (summarizationResult.summary?.token_count ?? 0);
+  const truncatedTokens = truncation.tokens + (summarizationResult.summary?.token_count ?? 0);
   logger.debug('Applied hard truncation fallback');
 
   eventEmitter?.({
@@ -273,7 +238,7 @@ export const compactConversation = async ({
   });
 
   return {
-    processedConversation: truncated,
+    processedConversation: truncation.conversation,
     summary: summarizationResult.summary,
     compactionTriggered: true,
     tokensBefore: rawTokens,
@@ -281,6 +246,8 @@ export const compactConversation = async ({
     summarizedRoundCount: summarizationResult.summary?.summarized_round_count ?? 0,
   };
 };
+
+const sumTokens = (counts: number[]): number => counts.reduce((total, count) => total + count, 0);
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -431,31 +398,33 @@ const generateLlmSummary = async (
 };
 
 /**
- * Drop oldest rounds one by one until the conversation
- * fits within the history budget. Always preserves at least
- * the most recent rounds.
+ * Drop oldest rounds one by one until the conversation fits within the history
+ * budget, always preserving at least the most recent rounds. `perRoundCounts`
+ * is index-aligned with `conversation.previousRounds`; truncation is O(n) via a
+ * rolling total and a start index (no per-step re-estimation or array shifting).
  */
 const applyHardTruncation = (
   conversation: ProcessedConversation,
+  perRoundCounts: number[],
   budget: ContextBudget
-): ProcessedConversation => {
+): { conversation: ProcessedConversation; tokens: number } => {
   const { previousRounds } = conversation;
-  let currentTokens = estimateConversationTokens(previousRounds);
+  let currentTokens = sumTokens(perRoundCounts);
 
   if (currentTokens <= budget.historyBudget) {
-    return conversation;
+    return { conversation, tokens: currentTokens };
   }
 
   const minStart = previousRounds.length - PRESERVED_RECENT_ROUNDS;
   let start = 0;
 
   while (start < minStart && currentTokens > budget.historyBudget) {
-    currentTokens -= estimateRoundTokens(previousRounds[start]);
+    currentTokens -= perRoundCounts[start];
     start++;
   }
 
   return {
-    ...conversation,
-    previousRounds: previousRounds.slice(start),
+    conversation: { ...conversation, previousRounds: previousRounds.slice(start) },
+    tokens: currentTokens,
   };
 };

@@ -82,6 +82,7 @@ export const getActionListMock = async ({
         acc[agentId] = {
           isCompleted: isCompleted ?? true,
           wasSuccessful: wasSuccessful ?? true,
+          wasCanceled: false,
           errors,
           completedAt: actionDetailsOverrides.completedAt ?? '2023-05-10T20:09:25.824Z',
         };

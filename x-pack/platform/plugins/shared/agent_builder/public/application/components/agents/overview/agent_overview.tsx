@@ -15,17 +15,15 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
-import { canChangeAgentVisibility, defaultAgentToolIds } from '@kbn/agent-builder-common';
+import { defaultAgentToolIds } from '@kbn/agent-builder-common';
 import { useAgentBuilderAgentById } from '../../../hooks/agents/use_agent_by_id';
-import { useCanEditAgent } from '../../../hooks/agents/use_can_edit_agent';
+import { useCanUpdateAgent } from '../../../hooks/agents/use_can_update_agent';
 import { useSkillsService } from '../../../hooks/skills/use_skills';
 import { usePluginsService } from '../../../hooks/plugins/use_plugins';
 import { useToolsService } from '../../../hooks/tools/use_tools';
 import { useAgentBuilderServices } from '../../../hooks/use_agent_builder_service';
 import { useExperimentalFeatures } from '../../../hooks/use_experimental_features';
 import { useKibana } from '../../../hooks/use_kibana';
-import { useUiPrivileges } from '../../../hooks/use_ui_privileges';
-import { useCurrentUser } from '../../../hooks/agents/use_current_user';
 import { useNavigation } from '../../../hooks/use_navigation';
 import { appPaths } from '../../../utils/app_paths';
 import { isPreExecutionWorkflowEnabled } from '../../../utils/is_pre_execution_workflow_enabled';
@@ -36,7 +34,7 @@ import { SettingsSection } from './settings_section';
 import { PageWrapper } from '../common/page_wrapper';
 import { AccessFlyout } from '../access/access_flyout';
 import { AccessSummaryCard } from '../access/access_summary_card';
-import { useCanManageAgentAccess } from '../../../hooks/agents/use_can_manage_agent_access';
+import { useCanUpdateAgentAccess } from '../../../hooks/agents/use_can_update_agent_access';
 import {
   getActivePlugins,
   getActiveSkills,
@@ -54,27 +52,16 @@ export const AgentOverview: React.FC = () => {
     services: { uiSettings },
   } = useKibana();
 
-  const { isAdmin } = useUiPrivileges();
-  const { currentUser } = useCurrentUser();
-
   const { agent, isLoading } = useAgentBuilderAgentById(agentId);
   const { skills: allSkills, isLoading: skillsLoading } = useSkillsService();
   const { plugins: allPlugins, isLoading: pluginsLoading } = usePluginsService();
   const { tools: allTools, isLoading: toolsLoading } = useToolsService();
   const [isEditFlyoutOpen, setIsEditFlyoutOpen] = useState(false);
   const [isAccessFlyoutOpen, setIsAccessFlyoutOpen] = useState(false);
-  const canEditAgent = useCanEditAgent({ agent });
-  const { canManage: canManageAccess } = useCanManageAgentAccess(agent);
+  const canEditAgent = useCanUpdateAgent({ agent });
+  const { canUpdate: canUpdateAgentAccess } = useCanUpdateAgentAccess(agent);
 
-  const canChangeVisibility = useMemo(() => {
-    if (!isExperimentalFeaturesEnabled || !agent) return false;
-    return canChangeAgentVisibility({
-      agentId: agent.id,
-      owner: agent.created_by,
-      currentUser: currentUser ?? undefined,
-      isAdmin,
-    });
-  }, [isExperimentalFeaturesEnabled, agent, currentUser, isAdmin]);
+  const canChangeAccessControlMode = isExperimentalFeaturesEnabled && canUpdateAgentAccess;
 
   const showWorkflowSection = isPreExecutionWorkflowEnabled(uiSettings);
 
@@ -136,7 +123,7 @@ export const AgentOverview: React.FC = () => {
           docsUrl={docLinksService.agentBuilderAgents}
           canEditAgent={canEditAgent}
           onEditDetails={() => setIsEditFlyoutOpen(true)}
-          canManageAccess={canManageAccess}
+          canManageAccess={canUpdateAgentAccess}
           onManageAccess={() => setIsAccessFlyoutOpen(true)}
         />
 
@@ -190,7 +177,7 @@ export const AgentOverview: React.FC = () => {
           <EditDetailsFlyout
             agent={agent}
             onClose={() => setIsEditFlyoutOpen(false)}
-            canChangeVisibility={canChangeVisibility}
+            canChangeAccessControlMode={canChangeAccessControlMode}
             showWorkflowSection={showWorkflowSection}
           />
         )}

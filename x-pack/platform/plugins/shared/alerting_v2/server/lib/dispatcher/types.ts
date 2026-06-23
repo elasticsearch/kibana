@@ -140,7 +140,7 @@ export interface DispatcherPipelineState {
   readonly dispatchedExecutions?: Map<ActionGroupId, string[]>;
 }
 
-export type DispatcherHaltReason = 'no_episodes' | 'no_actions';
+export type DispatcherHaltReason = 'no_episodes' | 'no_actions' | 'engine_disabled';
 
 export type DispatcherStepOutput =
   | { type: 'continue'; data?: Partial<Omit<DispatcherPipelineState, 'input'>> }

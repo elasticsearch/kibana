@@ -142,4 +142,78 @@ describe('Agent Policy form validation', () => {
       'monitoring_diagnostics.uploader.max_retries',
     ]);
   });
+
+  describe('duration field validation', () => {
+    it('should not return errors when duration fields are valid', () => {
+      expect(
+        agentPolicyFormValidation({
+          namespace: 'default',
+          name: 'policy',
+          monitoring_diagnostics: {
+            limit: { interval: '1m' },
+            uploader: { init_dur: '30s', max_dur: '2h' },
+          },
+        })
+      ).toEqual({});
+    });
+
+    it('should not return errors when duration fields are not set', () => {
+      expect(
+        agentPolicyFormValidation({
+          namespace: 'default',
+          name: 'policy',
+          monitoring_diagnostics: {},
+        })
+      ).toEqual({});
+    });
+
+    it('should return error for invalid interval format', () => {
+      expect(
+        Object.keys(
+          agentPolicyFormValidation({
+            namespace: 'default',
+            name: 'policy',
+            monitoring_diagnostics: { limit: { interval: '1gyusgf' } },
+          })
+        )
+      ).toEqual(['monitoring_diagnostics.limit.interval']);
+    });
+
+    it('should return error for invalid init_dur format', () => {
+      expect(
+        Object.keys(
+          agentPolicyFormValidation({
+            namespace: 'default',
+            name: 'policy',
+            monitoring_diagnostics: { uploader: { init_dur: 'bad' } },
+          })
+        )
+      ).toEqual(['monitoring_diagnostics.uploader.init_dur']);
+    });
+
+    it('should return error for invalid max_dur format', () => {
+      expect(
+        Object.keys(
+          agentPolicyFormValidation({
+            namespace: 'default',
+            name: 'policy',
+            monitoring_diagnostics: { uploader: { max_dur: '1x' } },
+          })
+        )
+      ).toEqual(['monitoring_diagnostics.uploader.max_dur']);
+    });
+
+    it('should accept ms as a valid time unit', () => {
+      expect(
+        agentPolicyFormValidation({
+          namespace: 'default',
+          name: 'policy',
+          monitoring_diagnostics: {
+            limit: { interval: '500ms' },
+            uploader: { init_dur: '100ms', max_dur: '200ms' },
+          },
+        })
+      ).toEqual({});
+    });
+  });
 });

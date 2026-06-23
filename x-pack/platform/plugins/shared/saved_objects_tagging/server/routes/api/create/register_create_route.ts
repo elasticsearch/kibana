@@ -26,6 +26,10 @@ export const registerCreateRoute = (router: TagsPluginRouter, usageCounter?: Usa
   createRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () =>
+          (await import('../oas_examples')).createTagOASOperationObject,
+      },
       validate: {
         request: {
           body: tagRequestAttributesSchema,

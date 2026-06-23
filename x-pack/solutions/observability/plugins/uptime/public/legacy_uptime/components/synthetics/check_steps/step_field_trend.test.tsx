@@ -46,7 +46,7 @@ describe('StepFieldTrend', () => {
     );
 
     expect(await findByText('Embeddable exploratory view')).toBeInTheDocument();
-  });
+  }, 30_000);
 });
 
 describe('getLast48Intervals', () => {

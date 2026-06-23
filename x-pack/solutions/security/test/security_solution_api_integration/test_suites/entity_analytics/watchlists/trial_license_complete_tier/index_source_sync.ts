@@ -106,6 +106,58 @@ export default ({ getService }: FtrProviderContext) => {
       expect(await utils.queryWatchlistIndex(watchlistId)).toHaveLength(0);
     });
 
+    it('should skip sync for an index source with no stored API key', async () => {
+      await utils.createSourceIndex(sourceIndexName);
+      const { watchlistId, entitySourceId } = await utils.createWatchlistAndEntitySource(
+        'sync-skip-no-key',
+        sourceIndexName
+      );
+
+      await entityStore.createEntity('user', {
+        user: { name: 'alice' },
+        entity: { id: userEuid('alice'), type: 'user' },
+      });
+      await utils.addUsersToSourceIndex(['alice'], sourceIndexName);
+
+      // Simulate a source that has no API key stored
+      await utils.clearEntitySourceApiKey(entitySourceId);
+
+      await utils.syncWatchlist(watchlistId);
+
+      expect(await utils.queryWatchlistIndex(watchlistId)).toHaveLength(0);
+    });
+
+    it('should resume sync after re-authorization', async () => {
+      await utils.createSourceIndex(sourceIndexName);
+      const { watchlistId, entitySourceId } = await utils.createWatchlistAndEntitySource(
+        'sync-resume-reauth',
+        sourceIndexName
+      );
+
+      await entityStore.createEntity('user', {
+        user: { name: 'alice' },
+        entity: { id: userEuid('alice'), type: 'user' },
+      });
+      await utils.addUsersToSourceIndex(['alice'], sourceIndexName);
+
+      // Simulate a source that has no API key stored
+      await utils.clearEntitySourceApiKey(entitySourceId);
+
+      await utils.syncWatchlist(watchlistId);
+      expect(await utils.queryWatchlistIndex(watchlistId)).toHaveLength(0);
+
+      // Re-authorize: updating with no body re-mints the key for the existing index type
+      await entityAnalyticsApi
+        .updateWatchlistEntitySource({
+          params: { watchlist_id: watchlistId, id: entitySourceId },
+          body: {},
+        })
+        .expect(200);
+
+      await utils.syncWatchlist(watchlistId);
+      expect(await utils.queryWatchlistIndex(watchlistId)).toHaveLength(1);
+    });
+
     it('should only sync documents matching the KQL filter on the entity source', async () => {
       await utils.createSourceIndex(sourceIndexName);
       const { watchlistId } = await utils.createWatchlistAndEntitySource(

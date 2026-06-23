@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { EuiButtonIcon, EuiPopover, EuiContextMenu } from '@elastic/eui';
+import { EuiButtonIcon, EuiContextMenu, EuiPopover, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { strings } from './strings';
 
@@ -52,14 +52,16 @@ export const ProjectPickerSettings = ({ onResetToDefaults }: ProjectPickerSettin
   return (
     <EuiPopover
       button={
-        <EuiButtonIcon
-          display="empty"
-          iconType="ellipsis"
-          aria-label={strings.getManageCrossProjectSearchLabel()}
-          onClick={() => setIsOpen(!isOpen)}
-          size="s"
-          color="text"
-        />
+        <EuiToolTip content={strings.getManageCrossProjectSearchLabel()} disableScreenReaderOutput>
+          <EuiButtonIcon
+            display="empty"
+            iconType="ellipsis"
+            aria-label={strings.getManageCrossProjectSearchLabel()}
+            onClick={() => setIsOpen(!isOpen)}
+            size="s"
+            color="text"
+          />
+        </EuiToolTip>
       }
       isOpen={isOpen}
       closePopover={closePopover}

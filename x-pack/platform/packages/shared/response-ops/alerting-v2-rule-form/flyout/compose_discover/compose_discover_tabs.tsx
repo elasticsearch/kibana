@@ -6,10 +6,11 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
-import { EuiTab, EuiTabs, EuiSpacer, EuiPanel, EuiText } from '@elastic/eui';
+import { EuiTab, EuiTabs, EuiSpacer, EuiPanel, EuiText, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { CodeEditor, ESQL_LANG_ID, type monaco } from '@kbn/code-editor';
+import type { RuleQuery } from './compose_form_types';
 import type { QueryTab } from './types';
 
 type IStandaloneCodeEditor = monaco.editor.IStandaloneCodeEditor;
@@ -117,6 +118,98 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
   );
 };
 
+export const ALERT_TAB_DISABLED_TOOLTIP = i18n.translate(
+  'xpack.alertingV2.composeDiscover.tabs.alertTabDisabledTooltip',
+  {
+    defaultMessage: 'Define a base query before adding an alert condition',
+  }
+);
+
+export const isAlertTabDisabled = (
+  tabs: QueryTab[],
+  baseQueryOrRuleQuery: string | RuleQuery
+): boolean => {
+  if (!tabs.includes('alert')) {
+    return false;
+  }
+
+  if (typeof baseQueryOrRuleQuery === 'string') {
+    return baseQueryOrRuleQuery.trim().length === 0;
+  }
+
+  if (baseQueryOrRuleQuery.format === 'composed') {
+    return baseQueryOrRuleQuery.base.trim().length === 0;
+  }
+
+  const base = baseQueryOrRuleQuery.no_data?.query ?? '';
+  if (base.trim().length > 0) {
+    return false;
+  }
+
+  return baseQueryOrRuleQuery.breach.query.trim().length === 0;
+};
+
+export const resolveActiveQueryTab = (
+  tabs: QueryTab[],
+  activeTab: QueryTab,
+  baseQuery: string
+): QueryTab => {
+  if (tabs.length === 0) return 'alert';
+  if (tabs.includes(activeTab) && !(activeTab === 'alert' && isAlertTabDisabled(tabs, baseQuery))) {
+    return activeTab;
+  }
+  if (tabs.includes('base')) return 'base';
+  return tabs[0] ?? 'alert';
+};
+
+interface QueryTabButtonProps {
+  tab: { id: QueryTab; label: string };
+  isSelected: boolean;
+  onSelect: (tab: QueryTab) => void;
+  baseQuery: string;
+  tabs: QueryTab[];
+  dataTestSubjPrefix: string;
+}
+
+export const QueryTabButton: React.FC<QueryTabButtonProps> = ({
+  tab,
+  isSelected,
+  onSelect,
+  baseQuery,
+  tabs,
+  dataTestSubjPrefix,
+}) => {
+  const disabled = tab.id === 'alert' && isAlertTabDisabled(tabs, baseQuery);
+  const handleSelect = () => {
+    if (disabled) {
+      return;
+    }
+    onSelect(tab.id);
+  };
+  const tabElement = (
+    <EuiTab
+      isSelected={isSelected}
+      onClick={handleSelect}
+      disabled={disabled}
+      data-test-subj={`${dataTestSubjPrefix}-${tab.id}`}
+    >
+      {tab.label}
+    </EuiTab>
+  );
+
+  if (!disabled) {
+    return tabElement;
+  }
+
+  return (
+    <EuiToolTip content={ALERT_TAB_DISABLED_TOOLTIP}>
+      <span tabIndex={0} style={{ display: 'inline-flex' }}>
+        {tabElement}
+      </span>
+    </EuiToolTip>
+  );
+};
+
 export const TAB_DEFINITIONS: Array<{ id: QueryTab; label: string }> = [
   {
     id: 'base',
@@ -155,8 +248,7 @@ export const ComposeDiscoverTabs: React.FC<ComposeDiscoverTabsProps> = ({
 }) => {
   const visibleTabs = TAB_DEFINITIONS.filter((t) => tabs.includes(t.id));
 
-  const safeActiveTab: QueryTab =
-    tabs.length > 0 && tabs.includes(activeTab) ? activeTab : tabs[0] ?? 'alert';
+  const safeActiveTab = resolveActiveQueryTab(tabs, activeTab, baseQuery);
 
   useEffect(() => {
     if (safeActiveTab !== activeTab) {
@@ -223,14 +315,15 @@ export const ComposeDiscoverTabs: React.FC<ComposeDiscoverTabsProps> = ({
         <>
           <EuiTabs>
             {visibleTabs.map((tab) => (
-              <EuiTab
+              <QueryTabButton
                 key={tab.id}
+                tab={tab}
                 isSelected={safeActiveTab === tab.id}
-                onClick={() => onTabChange(tab.id)}
-                data-test-subj={`composeDiscoverTab-${tab.id}`}
-              >
-                {tab.label}
-              </EuiTab>
+                onSelect={onTabChange}
+                baseQuery={baseQuery}
+                tabs={tabs}
+                dataTestSubjPrefix="composeDiscoverTab"
+              />
             ))}
           </EuiTabs>
           <EuiSpacer size="m" />

@@ -76,7 +76,9 @@ export const RoutedConversationsProvider: React.FC<RoutedConversationsProviderPr
     [navigateToAgentBuilderUrl]
   );
 
-  const [attachments, setAttachments] = useState<ConversationAttachment[] | undefined>(undefined);
+  const [attachments, setAttachments] = useState<ConversationAttachment[] | undefined>(
+    location.state?.attachments
+  );
 
   // Clear attachments when navigating to a different conversation, but not on initial mount.
   // Skipping initial mount prevents the parent effect from racing with child effects (e.g.

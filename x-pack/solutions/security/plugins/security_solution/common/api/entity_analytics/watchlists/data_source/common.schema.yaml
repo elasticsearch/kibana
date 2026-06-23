@@ -21,20 +21,26 @@ components:
           $ref: "#/components/schemas/EntitySourceType"
         name:
           type: string
+          maxLength: 256
         indexPattern:
           type: string
+          maxLength: 1000
         integrationName:
           type: string
+          maxLength: 256
         enabled:
           type: boolean
         identifierField:
           type: string
+          maxLength: 256
           description: Field used to query the entity store for index-type sources
         queryRule:
           type: string
+          maxLength: 4096
           description: KQL query used to filter data from the provided index patterns
         matchers:
           type: array
+          maxItems: 100
           items:
             $ref: "#/components/schemas/Matcher"
         filter:
@@ -66,8 +72,10 @@ components:
       properties:
         fields:
           type: array
+          maxItems: 100
           items:
             type: string
+            maxLength: 256
         values:
           description: >
             Matcher values. Must be either an array of strings
@@ -76,9 +84,12 @@ components:
             Mixed types are intentionally not supported for simplicity and predictability.
           oneOf:
             - type: array
+              maxItems: 1000
               items:
                 type: string
+                maxLength: 256
             - type: array
+              maxItems: 1000
               items:
                 type: boolean
     Filter:
@@ -87,7 +98,9 @@ components:
         kuery:
           oneOf:
             - type: string
+              maxLength: 4096
             - type: object
+              additionalProperties: false
 
     MonitoringEntitySourceAttributes:
       allOf:
@@ -103,6 +116,11 @@ components:
           properties:
             id:
               type: string
+            apiKeyId:
+              type: string
+              nullable: true
+              maxLength: 64
+              description: ID of the API key used for scoped reads from the source index. Only present for index-type sources.
 
     DateRange:
       description: Defines the lookback period for filtering source data by timestamp.
@@ -113,9 +131,11 @@ components:
       properties:
         start:
           type: string
+          maxLength: 256
           description: Start of the lookback period (date math or ISO string, e.g. "now-10d")
         end:
           type: string
+          maxLength: 256
           description: End of the lookback period (date math or ISO string, e.g. "now")
 
     Integrations:
@@ -123,6 +143,7 @@ components:
       properties:
         syncMarkerIndex:
           type: string
+          maxLength: 1000
           description: Index to read latest sync markers from
         syncData:
           type: object

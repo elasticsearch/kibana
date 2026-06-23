@@ -43,9 +43,9 @@ spec:
         build_tags: false
       schedules:
         Every 12 hours (main):
-          message: Rspack e2e test (every 12 hours)
+          message: Rspack e2e test (every 3 hours)
           branch: main
-          cronline: 0 */12 * * * America/New_York
+          cronline: 0 */3 * * * America/New_York
       teams:
         everyone:
           access_level: BUILD_AND_READ

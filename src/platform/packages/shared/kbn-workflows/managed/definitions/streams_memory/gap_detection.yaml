@@ -1,0 +1,60 @@
+version: "1"
+
+name: Gap Detection
+description: >
+  Audits the sigevents memory knowledge base against 11 required knowledge
+  dimensions and writes a structured "_gaps/overview" memory page listing
+  what is unknown, ambiguous, or missing. Runs on a weekly schedule.
+enabled: false
+settings:
+  timeout: "30m"
+  concurrency:
+    key: "streams-gap-detection"
+    strategy: drop
+    max: 1
+tags:
+  - observability
+  - streams
+  - sigevents
+  - memory
+  - gap-detection
+
+triggers:
+  - type: scheduled
+    with:
+      every: "168h"
+
+steps:
+  - name: detect_gaps
+    type: ai.agent
+    connector-id: ".anthropic-claude-4.6-sonnet-chat_completion"
+    create-conversation: true
+    with:
+      timeout: 1800s
+      message: |
+        First, call the load_skill tool with skill path skills/platform/streams/streams-gap-detection.
+        Wait for the skill to load before calling any other tools.
+
+        Audit the memory knowledge base and produce an up-to-date gaps report.
+
+        Review all existing memory pages, available knowledge indicators, the
+        list of streams, and the configured connectors. Then assess coverage
+        across the 11 required knowledge dimensions and write (or overwrite)
+        the _gaps/overview memory page with a structured report of what is
+        known, what is partial, what is missing, and concrete next steps.
+      schema:
+        type: object
+        properties:
+          gaps_found:
+            type: array
+            description: List of knowledge dimensions with identified gaps.
+            items:
+              type: string
+          summary:
+            type: string
+            description: Brief summary of the overall knowledge coverage assessment.
+        required:
+          - gaps_found
+          - summary
+    on-failure:
+      continue: false

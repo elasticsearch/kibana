@@ -6,7 +6,14 @@
  */
 
 import React from 'react';
-import { EuiButtonIcon, EuiFlexGroup, EuiFlexItem, EuiText, useEuiTheme } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiText,
+  EuiToolTip,
+  useEuiTheme,
+} from '@elastic/eui';
 import { css } from '@emotion/react';
 
 export interface ActiveItemRowProps {
@@ -102,17 +109,19 @@ export const ActiveItemRow: React.FC<ActiveItemRowProps> = ({
       )}
       {showRemoveButton && (
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            className={SHOW_ON_HOVER_CLASS}
-            iconType="cross"
-            aria-label={removeAriaLabel}
-            disabled={isRemoving}
-            onClick={(event: React.MouseEvent) => {
-              event.stopPropagation();
-              onRemove();
-            }}
-            {...removeEbtProps}
-          />
+          <EuiToolTip content={removeAriaLabel} disableScreenReaderOutput>
+            <EuiButtonIcon
+              className={SHOW_ON_HOVER_CLASS}
+              iconType="cross"
+              aria-label={removeAriaLabel}
+              disabled={isRemoving}
+              onClick={(event: React.MouseEvent) => {
+                event.stopPropagation();
+                onRemove();
+              }}
+              {...removeEbtProps}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
       )}
     </EuiFlexGroup>

@@ -99,16 +99,16 @@ export const OptionsListControl = ({
   const [isPopoverOpen, setPopoverOpen] = useState<boolean>(false);
 
   const conditionalApiSubjects: [
-    PublishingSubject<boolean>,
-    PublishingSubject<boolean>,
+    PublishingSubject<boolean | undefined>,
+    PublishingSubject<boolean | undefined>,
     DSLOptionsListComponentApi['field$'] | PublishingSubject<undefined>,
     DSLOptionsListComponentApi['fieldFormatter'] | PublishingSubject<undefined>,
     ESQLOptionsListComponentApi['tooltipLabel$'] | PublishingSubject<undefined>
   ] = useMemo(() => {
     const isDSLControl = isDSLOptionsListApi(componentApi);
     return [
-      isDSLControl ? componentApi.exclude$ : new BehaviorSubject(false),
-      isDSLControl ? componentApi.existsSelected$ : new BehaviorSubject(false),
+      isDSLControl ? componentApi.exclude$ : new BehaviorSubject<boolean | undefined>(false),
+      isDSLControl ? componentApi.existsSelected$ : new BehaviorSubject<boolean | undefined>(false),
       isDSLControl ? componentApi.field$ : new BehaviorSubject(undefined),
       isDSLControl ? componentApi.fieldFormatter : new BehaviorSubject(undefined),
       !isDSLControl ? componentApi.tooltipLabel$ : new BehaviorSubject(undefined),

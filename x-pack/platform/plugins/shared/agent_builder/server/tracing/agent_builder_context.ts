@@ -8,7 +8,7 @@
 import type { api } from '@elastic/opentelemetry-node/sdk';
 import type { tracing } from '@elastic/opentelemetry-node/sdk';
 import { context as otelContext, propagation } from '@opentelemetry/api';
-import { isInferenceSpan } from '@kbn/inference-tracing';
+import { isInferenceSpan, CONVERSATION_ID_BAGGAGE_KEY } from '@kbn/inference-tracing';
 
 export const AGENT_BUILDER_OWNER_BAGGAGE_KEY = 'kibana.agent_builder';
 export const AGENT_BUILDER_OWNER_BAGGAGE_VALUE = '1';
@@ -21,7 +21,10 @@ export const DATA_STREAM_NAMESPACE_ATTR = 'data_stream.namespace';
  * All descendant inference spans created inside this context will be tagged as Agent Builder spans,
  * allowing the AgentBuilderSpanProcessor to filter them from other inference consumers.
  */
-export const withAgentBuilderContext = <T>(fn: () => T, options?: { spaceId?: string }): T => {
+export const withAgentBuilderContext = <T>(
+  fn: () => T,
+  options?: { spaceId?: string; conversationId?: string }
+): T => {
   const ctx = otelContext.active();
   let baggage = propagation.getBaggage(ctx) ?? propagation.createBaggage();
   baggage = baggage.setEntry(AGENT_BUILDER_OWNER_BAGGAGE_KEY, {
@@ -29,6 +32,9 @@ export const withAgentBuilderContext = <T>(fn: () => T, options?: { spaceId?: st
   });
   if (options?.spaceId) {
     baggage = baggage.setEntry(SPACE_ID_BAGGAGE_KEY, { value: options.spaceId });
+  }
+  if (options?.conversationId) {
+    baggage = baggage.setEntry(CONVERSATION_ID_BAGGAGE_KEY, { value: options.conversationId });
   }
   const updatedContext = propagation.setBaggage(ctx, baggage);
 

@@ -2,7 +2,7 @@
   "type": "shared-common",
   "id": "@kbn/securitysolution-io-ts-types",
   "owner": [
-    "@elastic/security-detection-engine"
+    "@elastic/security-detection-engineering"
   ],
   "group": "platform",
   "visibility": "shared"

@@ -11,11 +11,10 @@ import { expect } from '@kbn/scout/ui';
 import { test, testData } from '../fixtures';
 
 test.describe('Ingest pipelines Manage Processors', { tag: tags.stateful.classic }, () => {
-  // Poll ES directly until neither of our GeoIP databases exists. This absorbs the
-  // read after write lag between a UI/API delete and the cluster settling to zero
-  // databases.. at which point ES starts returning 404 for the list endpoint. The
-  // geoipEmptyListPrompt only renders when the UI's first GET returns an empty array,
-  // so we must confirm the cleared state before loading the page.
+  // Poll ES directly until neither of our GeoIP databases exists. On cloud,
+  // undeletable "web" GeoLite2 databases are always present so the list never
+  // reaches zero; this poll only checks for the two IDs the tests create/delete
+  // (MAXMIND_DATABASE_ID / IPINFO_DATABASE_ID), not global emptiness.
   const expectDatabasesCleared = async (esClient: ScoutWorkerFixtures['esClient']) => {
     await expect
       .poll(async () => {
@@ -45,8 +44,7 @@ test.describe('Ingest pipelines Manage Processors', { tag: tags.stateful.classic
         );
       }
     }
-    // Wait for ES to settle before the first page load, so the empty-prompt test
-    // doesn't race a stale list entry.
+    // Confirm the cluster has forgotten our IDs before the first page load.
     await expectDatabasesCleared(esClient);
   });
 
@@ -66,7 +64,15 @@ test.describe('Ingest pipelines Manage Processors', { tag: tags.stateful.classic
     }
   });
 
-  test('shows the empty list prompt', async ({ pageObjects }) => {
+  test('shows the empty list prompt', async ({ pageObjects, config }) => {
+    // On ECH the GeoIP downloader pre-populates read-only "web" GeoLite2 databases
+    // that can't be deleted, so the list is never empty and this prompt never renders.
+    // The test is skipped on cloud; it still exercises the empty-state UI locally
+    // where the downloader is off.
+    test.skip(
+      config.isCloud === true,
+      'On ECH the GeoIP downloader pre-populates read-only "web" databases, so the empty-state UI is never rendered.'
+    );
     await expect(pageObjects.ingestPipelines.geoipEmptyListPrompt).toBeVisible();
   });
 
@@ -110,14 +116,18 @@ test.describe('Ingest pipelines Manage Processors', { tag: tags.stateful.classic
     await pageObjects.ingestPipelines.deleteDatabaseByName(testData.MAXMIND_DATABASE_NAME);
     await pageObjects.ingestPipelines.deleteDatabaseByName(testData.IPINFO_DATABASE_NAME);
 
-    // The UI fetches the database list once on mount and only re-fetches on explicit
-    // user actions. After the deletes above the modal fires a single resendRequest, but
-    // ES can still serve a stale entry for a brief window. Poll ES to confirm the cluster
-    // has settled, then navigate fresh so the next useLoadDatabases GET is guaranteed
-    // to return [].
+    // Poll ES to confirm our databases are gone, then navigate fresh so the UI
+    // re-fetches. We assert that our specific rows are absent rather than waiting
+    // for the empty-state prompt, because on ECH the downloader pre-populates
+    // undeletable "web" databases so the list is never globally empty.
     await expectDatabasesCleared(esClient);
     await pageObjects.ingestPipelines.goto();
     await pageObjects.ingestPipelines.navigateToManageProcessorsPage();
-    await expect(pageObjects.ingestPipelines.geoipEmptyListPrompt).toBeVisible();
+    await expect
+      .poll(async () => await pageObjects.ingestPipelines.getGeoipDatabases())
+      .not.toContainEqual(expect.stringContaining(testData.MAXMIND_DATABASE_NAME));
+    await expect
+      .poll(async () => await pageObjects.ingestPipelines.getGeoipDatabases())
+      .not.toContainEqual(expect.stringContaining(testData.IPINFO_DATABASE_NAME));
   });
 });

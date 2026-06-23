@@ -42,6 +42,6 @@ describe('MV_EXPAND Autocomplete', () => {
   });
 
   it('suggests pipe after column', async () => {
-    mvExpandExpectSuggestions('from a | mv_expand doubleField ', ['| ']);
+    mvExpandExpectSuggestions('from a | mv_expand doubleField ', ['\n', '| ']);
   });
 });

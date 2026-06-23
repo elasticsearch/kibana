@@ -29,9 +29,15 @@ function schemaToJson(schema?: z.ZodType): unknown {
 }
 
 /**
- * Computes a hash over the entire step definition so changes to the schemas
- * (inputSchema/outputSchema/configSchema), handler/onCancel implementations, or
- * metadata are all detected. `id` is excluded since it's the lookup key.
+ * Computes a hash over the serializable contract of a step definition: its
+ * schemas (inputSchema/outputSchema/configSchema) and metadata. `id` is excluded
+ * since it's the lookup key.
+ *
+ * Function (handler/onCancel) implementations are intentionally NOT hashed: there is no
+ * reliable way to hash function behavior at runtime. `fn.toString()` misses logic
+ * in closed-over wrappers (e.g. `createCasesStepHandler`) and changes across
+ * builds/transpilation. Plugins own their implementations; the first registration
+ * is reviewed manually, and contract (schema/metadata) changes are caught here.
  */
 function computeDefinitionHash(definition: ServerStepDefinition, logger: Logger): string {
   const {
@@ -40,12 +46,9 @@ function computeDefinitionHash(definition: ServerStepDefinition, logger: Logger)
     category,
     stability,
     deprecation,
-    documentation,
     inputSchema,
     outputSchema,
     configSchema,
-    handler,
-    onCancel,
   } = definition;
 
   try {
@@ -55,12 +58,9 @@ function computeDefinitionHash(definition: ServerStepDefinition, logger: Logger)
       category,
       stability,
       deprecation,
-      documentation,
       inputSchema: schemaToJson(inputSchema),
       outputSchema: schemaToJson(outputSchema),
       configSchema: schemaToJson(configSchema),
-      handler: handler?.toString(),
-      onCancel: onCancel?.toString(),
     };
     return createSHA256Hash(stableStringify(canonical));
   } catch (error) {
@@ -96,7 +96,7 @@ export function registerGetStepDefinitionsRoute(
     async (_context, _request, response) => {
       const allStepDefinitions = registry.getAll();
       const steps = allStepDefinitions
-        // create a hash of the full definition to detect changes in schemas or implementation
+        // hash the serializable contract (schemas + metadata) to detect changes
         .map((definition) => ({
           id: definition.id,
           definitionHash: computeDefinitionHash(definition, logger),

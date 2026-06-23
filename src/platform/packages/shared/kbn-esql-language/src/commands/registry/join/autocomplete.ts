@@ -13,7 +13,7 @@ import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
 import { getLookupIndexCreateSuggestion } from '../../definitions/utils/autocomplete/helpers';
 import type { ICommandCallbacks } from '../types';
 import { type ISuggestionItem, type ICommandContext, Location } from '../types';
-import { pipeCompleteItem, commaCompleteItem } from '../complete_items';
+import { newLineAndPipeCompleteItems, commaCompleteItem } from '../complete_items';
 import {
   createEnrichedContext,
   createEnrichedGetByType,
@@ -168,7 +168,7 @@ export async function autocomplete(
 
         if (isBooleanComplete || (!isBooleanComplete && fieldIsCommon)) {
           filteredSuggestions.push(withAutoSuggest({ ...commaCompleteItem, text: ', ' }));
-          filteredSuggestions.push(pipeCompleteItem);
+          filteredSuggestions.push(...newLineAndPipeCompleteItems);
         }
       }
 

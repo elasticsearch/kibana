@@ -326,6 +326,12 @@ export const addEditorKeyBindings = (
 
   editor.addCommand(
     // eslint-disable-next-line no-bitwise
+    monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+    () => editor.trigger('keyboard', 'type', { text: '\n' })
+  );
+
+  editor.addCommand(
+    // eslint-disable-next-line no-bitwise
     monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
     () => toggleVisor()
   );

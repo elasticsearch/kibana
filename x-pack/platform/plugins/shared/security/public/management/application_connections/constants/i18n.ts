@@ -12,6 +12,10 @@ export const labels = {
     title: i18n.translate('xpack.security.management.applicationConnectionsTitle', {
       defaultMessage: 'Application connections',
     }),
+    pageCallout: i18n.translate('xpack.security.management.applicationConnectionsPageCallout', {
+      defaultMessage:
+        'Manage connections for OAuth-based applications. Currently, only MCP clients are supported.',
+    }),
     manageClientsLink: i18n.translate(
       'xpack.security.management.applicationConnections.manageClientsLink',
       { defaultMessage: 'Manage MCP clients' }
@@ -183,11 +187,11 @@ export const labels = {
   emptyPrompt: {
     title: i18n.translate(
       'xpack.security.management.applicationConnectionsEmptyPrompt.emptyTitle',
-      { defaultMessage: 'No MCP clients (OAuth)' }
+      { defaultMessage: 'No application connections' }
     ),
     message: i18n.translate(
       'xpack.security.management.applicationConnectionsEmptyPrompt.emptyMessage',
-      { defaultMessage: 'Get started with MCP clients (OAuth).' }
+      { defaultMessage: 'Get started by creating MCP clients (OAuth).' }
     ),
     addButton: i18n.translate(
       'xpack.security.management.applicationConnectionsEmptyPrompt.addButton',

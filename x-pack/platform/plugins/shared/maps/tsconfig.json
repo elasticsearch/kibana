@@ -69,14 +69,15 @@
     "@kbn/core-saved-objects-server",
     "@kbn/maps-vector-tile-utils",
     "@kbn/core-http-common",
-    "@kbn/content-management-table-list-view-table",
-    "@kbn/content-management-table-list-view",
     "@kbn/serverless",
     "@kbn/chart-expressions-common",
     "@kbn/search-errors",
     "@kbn/search-response-warnings",
     "@kbn/calculate-width-from-char-count",
     "@kbn/content-management-table-list-view-common",
+    "@kbn/content-list",
+    "@kbn/content-list-page",
+    "@kbn/content-list-provider-client",
     "@kbn/esql",
     "@kbn/es-types",
     "@kbn/data-service",
@@ -103,5 +104,7 @@
     "@kbn/kql",
     "@kbn/cps-utils"
   ],
-  "exclude": ["target/**/*"]
+  "exclude": [
+    "target/**/*"
+  ]
 }

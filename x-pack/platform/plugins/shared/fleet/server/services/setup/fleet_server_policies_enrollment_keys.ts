@@ -8,11 +8,44 @@
 import type { ElasticsearchClient, SavedObjectsClientContract, Logger } from '@kbn/core/server';
 import pMap from 'p-map';
 
+import { ENROLLMENT_API_KEYS_INDEX } from '../../../common/constants';
+
 import { agentPolicyService } from '../agent_policy';
-import { ensureDefaultEnrollmentAPIKeyForAgentPolicy } from '../api_keys';
+import { generateEnrollmentAPIKey } from '../api_keys';
 import { SO_SEARCH_LIMIT, MAX_CONCURRENT_AGENT_POLICIES_OPERATIONS_20 } from '../../constants';
 import { appContextService } from '../app_context';
 import { scheduleDeployAgentPoliciesTask } from '../agent_policies/deploy_agent_policies_task';
+
+/**
+ * Return the set of agent policy ids that already have at least one enrollment API key.
+ */
+async function getPolicyIdsWithEnrollmentAPIKeys(
+  esClient: ElasticsearchClient,
+  agentPolicyIds: string[]
+): Promise<Set<string>> {
+  const policyIdsWithKeys = new Set<string>();
+  if (agentPolicyIds.length === 0) {
+    return policyIdsWithKeys;
+  }
+
+  const res = await esClient.search<unknown, { policies: { buckets: Array<{ key: string }> } }>({
+    index: ENROLLMENT_API_KEYS_INDEX,
+    ignore_unavailable: true,
+    size: 0,
+    query: { terms: { policy_id: agentPolicyIds } },
+    aggs: {
+      policies: {
+        terms: { field: 'policy_id', size: agentPolicyIds.length, execution_hint: 'map' },
+      },
+    },
+  });
+
+  for (const bucket of res.aggregations?.policies?.buckets ?? []) {
+    policyIdsWithKeys.add(bucket.key);
+  }
+
+  return policyIdsWithKeys;
+}
 
 export async function ensureAgentPoliciesFleetServerKeysAndPolicies({
   logger,
@@ -36,31 +69,47 @@ export async function ensureAgentPoliciesFleetServerKeysAndPolicies({
     perPage: SO_SEARCH_LIMIT,
   });
 
-  const outdatedAgentPolicyIds: Array<{ id: string; spaceId?: string }> = [];
+  const agentPolicyIds = agentPolicies.map((agentPolicy) => agentPolicy.id);
+
+  // Resolve the latest deployed revision and which policies already have an enrollment API key
+  const [latestRevisionByPolicyId, policyIdsWithEnrollmentKeys] = await Promise.all([
+    agentPolicyService.getLatestFleetPolicyRevisions(esClient, agentPolicyIds),
+    getPolicyIdsWithEnrollmentAPIKeys(esClient, agentPolicyIds),
+  ]);
+
+  // Generate a default enrollment API key only for policies that are missing one
+  const policiesMissingEnrollmentKey = agentPolicies.filter(
+    (agentPolicy) => !policyIdsWithEnrollmentKeys.has(agentPolicy.id)
+  );
   await pMap(
-    agentPolicies,
-    async (agentPolicy) => {
-      const [latestFleetPolicy] = await Promise.all([
-        agentPolicyService.getLatestFleetPolicyRevision(esClient, agentPolicy.id),
-        ensureDefaultEnrollmentAPIKeyForAgentPolicy(soClient, esClient, agentPolicy.id),
-      ]);
-
-      if (latestFleetPolicy && latestFleetPolicy.revision_idx !== agentPolicy.revision) {
-        logger.warn(
-          `Policy [${agentPolicy.id}] has mismatched revisions: ` +
-            `.kibana_ingest revision [${agentPolicy.revision}], ` +
-            `.fleet-policies revision_idx [${latestFleetPolicy.revision_idx}]`
-        );
-      }
-
-      if ((latestFleetPolicy?.revision_idx ?? -1) < agentPolicy.revision) {
-        outdatedAgentPolicyIds.push({ id: agentPolicy.id, spaceId: agentPolicy.space_ids?.[0] });
-      }
-    },
+    policiesMissingEnrollmentKey,
+    (agentPolicy) =>
+      generateEnrollmentAPIKey(soClient, esClient, {
+        name: `Default`,
+        agentPolicyId: agentPolicy.id,
+        forceRecreate: true,
+      }),
     {
       concurrency: MAX_CONCURRENT_AGENT_POLICIES_OPERATIONS_20,
     }
   );
+
+  const outdatedAgentPolicyIds: Array<{ id: string; spaceId?: string }> = [];
+  for (const agentPolicy of agentPolicies) {
+    const latestRevisionIdx = latestRevisionByPolicyId.get(agentPolicy.id);
+
+    if (latestRevisionIdx !== undefined && latestRevisionIdx !== agentPolicy.revision) {
+      logger.warn(
+        `Policy [${agentPolicy.id}] has mismatched revisions: ` +
+          `.kibana_ingest revision [${agentPolicy.revision}], ` +
+          `.fleet-policies revision_idx [${latestRevisionIdx}]`
+      );
+    }
+
+    if ((latestRevisionIdx ?? -1) < agentPolicy.revision) {
+      outdatedAgentPolicyIds.push({ id: agentPolicy.id, spaceId: agentPolicy.space_ids?.[0] });
+    }
+  }
 
   if (!outdatedAgentPolicyIds.length) {
     return;
@@ -99,12 +148,16 @@ export async function ensureAgentPoliciesFleetServerKeysAndPolicies({
           ids.length === 1 ? 'policy' : 'policies'
         } [${ids.join(', ')}] in space [${spaceId}] during setup`
       );
-      await agentPolicyService.deployPolicies(
-        appContextService.getInternalUserSOClientForSpaceId(spaceId),
-        ids,
-        undefined,
-        { throwOnAnyError: true }
-      );
+      try {
+        await agentPolicyService.deployPolicies(
+          appContextService.getInternalUserSOClientForSpaceId(spaceId),
+          ids,
+          undefined,
+          { throwOnAnyError: true }
+        );
+      } catch (e) {
+        logger.error(`Failed to deploy fleet server policies [${ids.join(', ')}]: ${e.message}`);
+      }
     }
   }
 

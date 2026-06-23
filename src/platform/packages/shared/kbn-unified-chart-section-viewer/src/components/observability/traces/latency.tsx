@@ -14,12 +14,21 @@ import { Chart } from '../../chart';
 import { useChartLayers } from '../../chart/hooks/use_chart_layers';
 import { ACTION_OPEN_IN_DISCOVER } from '../../../common/constants';
 import { getLatencyChart } from './trace_charts_definition';
+import { BREAKDOWN_LEGEND_CONFIG } from './constants';
 
 type LatencyChartContentProps = NonNullable<ReturnType<typeof getLatencyChart>>;
 
 const LatencyChartContent = ({ esqlQuery, seriesType, color, title }: LatencyChartContentProps) => {
-  const { services, fetchParams, discoverFetch$, onBrushEnd, onFilter, actions, profileId } =
-    useTraceMetricsContext();
+  const {
+    services,
+    fetchParams,
+    discoverFetch$,
+    onBrushEnd,
+    onFilter,
+    actions,
+    profileId,
+    breakdownField,
+  } = useTraceMetricsContext();
 
   const chartLayers = useChartLayers({
     metricItem: {
@@ -30,6 +39,7 @@ const LatencyChartContent = ({ esqlQuery, seriesType, color, title }: LatencyCha
     },
     color,
     seriesType,
+    dimensions: breakdownField ? [{ name: breakdownField }] : [],
   });
 
   return (
@@ -45,6 +55,7 @@ const LatencyChartContent = ({ esqlQuery, seriesType, color, title }: LatencyCha
       onExploreInDiscoverTab={actions.openInNewTab}
       title={title}
       chartLayers={chartLayers}
+      legend={breakdownField ? BREAKDOWN_LEGEND_CONFIG : undefined}
       syncCursor
       syncTooltips
       extraDisabledActions={[ACTION_OPEN_IN_DISCOVER]}
@@ -54,12 +65,13 @@ const LatencyChartContent = ({ esqlQuery, seriesType, color, title }: LatencyCha
 };
 
 export const LatencyChart = () => {
-  const { filters, indexes, metadataFields } = useTraceMetricsContext();
+  const { filters, indexes, metadataFields, breakdownField } = useTraceMetricsContext();
 
   const latencyChart = getLatencyChart({
     indexes,
     filters,
     metadataFields,
+    breakdownField,
   });
 
   if (!latencyChart) {

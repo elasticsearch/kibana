@@ -7,6 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+// Serverless test (remove during Scout migration): x-pack/platform/test/serverless/functional/test_suites/discover/context_awareness/extensions/_get_additional_cell_actions.ts
+
 import kbnRison from '@kbn/rison';
 import expect from '@kbn/expect';
 import type { Alert } from 'selenium-webdriver';

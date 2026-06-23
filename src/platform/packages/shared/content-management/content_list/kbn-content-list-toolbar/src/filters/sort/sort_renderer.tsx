@@ -17,6 +17,7 @@ import {
   type SortField,
   type SortingConfig,
 } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import { useFilterPopover, FilterPopover } from '../filter_popover';
 
 // Helper to safely extract SortingConfig from features.sorting.
@@ -187,7 +188,7 @@ const getDefaultLabel = (field: string, name: string, direction: 'asc' | 'desc')
  * @returns A React element containing the sort dropdown.
  */
 export const SortRenderer = ({
-  'data-test-subj': dataTestSubj = 'contentListSortRenderer',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.sortFilter,
 }: SortRendererProps) => {
   const { euiTheme } = useEuiTheme();
   const config = useContentListConfig();
@@ -258,7 +259,7 @@ export const SortRenderer = ({
         })}
         options={options}
         onChange={handleSelectChange}
-        data-test-subj="sortSelectOptions"
+        data-test-subj={CONTENT_LIST_TEST_SUBJECTS.sortSelectOptions}
       >
         {(list) => list}
       </EuiSelectable>

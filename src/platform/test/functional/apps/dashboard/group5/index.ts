@@ -33,12 +33,8 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
     before(loadCurrentData);
     after(unloadCurrentData);
 
-    // This has to be first since the other tests create some embeddables as side affects and our counting assumes
-    // a fresh index.
-    loadTestFile(require.resolve('./empty_dashboard'));
     loadTestFile(require.resolve('./dashboard_settings'));
     loadTestFile(require.resolve('./data_shared_attributes'));
-    loadTestFile(require.resolve('./dashboard_back_button'));
 
     // Note: This one must be last because it unloads some data for one of its tests!
     // No, this isn't ideal, but loading/unloading takes so much time and these are all bunched

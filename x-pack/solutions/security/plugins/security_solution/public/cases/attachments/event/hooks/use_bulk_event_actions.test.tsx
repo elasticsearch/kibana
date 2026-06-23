@@ -11,8 +11,6 @@ import { TestProviders } from '../../../../common/mock';
 import type { TimelineItem } from '@kbn/timelines-plugin/common';
 import { SECURITY_EVENT_ATTACHMENT_TYPE } from '@kbn/cases-plugin/common';
 
-const mockObservable = [{ typeKey: 'ip', value: '127.0.0.1', description: null }];
-const mockGetObservablesFromEcs = jest.fn().mockReturnValue(mockObservable);
 const mockOpenNewCase = jest.fn();
 const mockOpenExistingCase = jest.fn();
 const mockCanUseCases = jest.fn(() => ({ create: true, read: true }));
@@ -30,7 +28,6 @@ jest.mock('../../../../common/lib/kibana', () => ({
       cases: {
         helpers: {
           canUseCases: mockCanUseCases,
-          getObservablesFromEcs: mockGetObservablesFromEcs,
         },
         ui: {
           getCasesContext: mockGetCasesContext,
@@ -79,8 +76,6 @@ describe('useBulkAddEventsToCaseActions', () => {
           metadata: { index: ['foo', 'bar'] },
         },
       ],
-
-      observables: mockObservable,
     });
   });
 
@@ -104,7 +99,6 @@ describe('useBulkAddEventsToCaseActions', () => {
         metadata: { index: ['foo', 'bar'] },
       },
     ]);
-    expect(mockOpenExistingCase.mock.lastCall[0].getObservables()).toEqual(mockObservable);
   });
 
   it('normalizes a single selected event to scalar attachment values', () => {
@@ -125,7 +119,6 @@ describe('useBulkAddEventsToCaseActions', () => {
           metadata: { index: 'foo' },
         },
       ],
-      observables: mockObservable,
     });
   });
 

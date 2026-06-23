@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import type { Field, InlineField } from '../../../../common/types/domain/template/fields';
 import {
   FieldSchema,

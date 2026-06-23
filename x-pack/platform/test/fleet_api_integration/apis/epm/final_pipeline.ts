@@ -6,10 +6,13 @@
  */
 
 import expect from '@kbn/expect';
+import { createEsClientForFtrConfig, kibanaServerTestUser } from '@kbn/test';
 import type { FtrProviderContext } from '../../../api_integration/ftr_provider_context';
 import { skipIfNoDockerRegistry } from '../../helpers';
 
 const TEST_INDEX = 'logs-log.log-test';
+
+const AGENT_TEST_INDEX = 'logs-elastic_agent.status_change-default';
 
 const FINAL_PIPELINE_ID = '.fleet_final_pipeline-1';
 
@@ -45,6 +48,12 @@ export default function (providerContext: FtrProviderContext) {
         .set('kbn-xsrf', 'xxxx')
         .send({ force: true })
         .expect(200);
+
+      await supertest
+        .post(`/api/fleet/epm/packages/elastic_agent`)
+        .set('kbn-xsrf', 'xxxx')
+        .send({ force: true })
+        .expect(200);
     });
 
     after(async () => {
@@ -53,9 +62,15 @@ export default function (providerContext: FtrProviderContext) {
         .set('kbn-xsrf', 'xxxx')
         .send({ force: true })
         .expect(200);
+
+      await supertest
+        .delete(`/api/fleet/epm/packages/elastic_agent`)
+        .set('kbn-xsrf', 'xxxx')
+        .send({ force: true })
+        .expect(200);
       await esArchiver.unload('x-pack/platform/test/fixtures/es_archives/fleet/empty_fleet_server');
       const res = await es.search({
-        index: TEST_INDEX,
+        index: [TEST_INDEX, AGENT_TEST_INDEX].join(','),
       });
 
       for (const hit of res.hits.hits) {
@@ -82,7 +97,7 @@ export default function (providerContext: FtrProviderContext) {
       await supertest.post(`/api/fleet/setup`).set('kbn-xsrf', 'xxxx');
       const pipelineRes = await es.ingest.getPipeline({ id: FINAL_PIPELINE_ID });
       expect(pipelineRes).to.have.property(FINAL_PIPELINE_ID);
-      expect(pipelineRes[FINAL_PIPELINE_ID].version).to.be(4);
+      expect(pipelineRes[FINAL_PIPELINE_ID].version).to.be(5);
     });
 
     it('should correctly setup the final pipeline and apply to fleet managed index template', async () => {
@@ -228,6 +243,36 @@ export default function (providerContext: FtrProviderContext) {
         event: { agent: { id: 'agent1' } },
       },
     ];
+
+    it('For a doc written by elastic/kibana user to a kibana_user_allowed_datasets should write verified status', async () => {
+      const config = getService('config');
+      const esAsKibanaSystem = createEsClientForFtrConfig(config, {
+        authOverride: kibanaServerTestUser,
+      });
+      const res = await esAsKibanaSystem.index({
+        index: 'logs-elastic_agent.status_change-default',
+        document: {
+          '@timestamp': '2020-01-01T09:09:00',
+          data_stream: {
+            type: 'logs',
+            dataset: 'elastic_agent.status_change',
+            namespace: 'default',
+          },
+          agent: {
+            id: 'agent1',
+          },
+        },
+      });
+
+      const doc = await es.get({
+        id: res._id,
+        index: res._index,
+      });
+      // @ts-expect-error
+      const event = doc._source.event;
+
+      expect(event.agent_id_status).to.be('verified');
+    });
 
     for (const scenario of scenarios) {
       it(`Should write the correct event.agent_id_status for ${scenario.name}`, async () => {

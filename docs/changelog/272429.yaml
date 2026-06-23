@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272429
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Improve agent policy list response time with batched agent counts
+description: The agent policies list with agent counts now uses a single aggregation instead of several queries per policy, greatly improving response time for deployments with many agent policies.

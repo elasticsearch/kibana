@@ -43,38 +43,46 @@ exports[`HeaderPage it renders 1`] = `
         <div
           class="euiPageHeaderSection css-1xndooq-headerSection"
         >
-          <h1
-            class="euiTitle css-1tgxtfm-Header-euiTitle-l e1mvi39w1"
-            data-test-subj="header-page-title"
+          <div
+            class="euiFlexGroup emotion-euiFlexGroup-s-flexStart-flexStart-column"
           >
-            <span
-              class="css-80vzk8-TitleWrapper e1mvi39w0"
+            <div
+              class="euiFlexItem emotion-euiFlexItem-growZero"
             >
-              <span
-                class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
-                id="generated-id-wrapper"
+              <h1
+                class="euiTitle css-1tgxtfm-Header-euiTitle-l e1mvi39w1"
+                data-test-subj="header-page-title"
               >
                 <span
-                  class="c0"
+                  class="css-80vzk8-TitleWrapper e1mvi39w0"
                 >
-                  Test title
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+                    id="generated-id-wrapper"
+                  >
+                    <span
+                      class="c0"
+                    >
+                      Test title
+                    </span>
+                  </span>
                 </span>
-              </span>
-            </span>
-            <span
-              class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
-              id="generated-id-wrapper"
-            >
-              <span
-                class="euiBetaBadge emotion-euiBetaBadge-hollow-m-baseline"
-                data-test-subj="header-page-title-beta-badge"
-                role="button"
-                tabindex="0"
-              >
-                Beta
-              </span>
-            </span>
-          </h1>
+                <span
+                  class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+                  id="generated-id-wrapper"
+                >
+                  <span
+                    class="euiBetaBadge emotion-euiBetaBadge-hollow-m-baseline"
+                    data-test-subj="header-page-title-beta-badge"
+                    role="button"
+                    tabindex="0"
+                  >
+                    Beta
+                  </span>
+                </span>
+              </h1>
+            </div>
+          </div>
           <div
             class="euiSpacer euiSpacer--s emotion-euiSpacer-s"
           />

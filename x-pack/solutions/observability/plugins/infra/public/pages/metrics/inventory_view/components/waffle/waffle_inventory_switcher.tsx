@@ -144,6 +144,9 @@ export const WaffleInventorySwitcher: React.FC = () => {
       closePopover={closePopover}
       panelPaddingSize="none"
       anchorPosition="downLeft"
+      aria-label={i18n.translate('xpack.infra.waffle.inventorySwitcher.ariaLabel', {
+        defaultMessage: 'Show',
+      })}
     >
       <EuiContextMenu initialPanelId="firstPanel" panels={panels} />
     </EuiPopover>

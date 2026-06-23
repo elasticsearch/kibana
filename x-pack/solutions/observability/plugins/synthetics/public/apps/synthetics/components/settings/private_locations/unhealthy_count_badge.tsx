@@ -52,6 +52,9 @@ export const UnhealthyCountBadge = ({ item }: { item: { id: string; label: strin
         button={badge}
         isOpen={isPopoverOpen}
         closePopover={() => setIsPopoverOpen(false)}
+        aria-label={i18n.translate('xpack.synthetics.unhealthyCountBadge.popoverAriaLabel', {
+          defaultMessage: 'Unhealthy monitors details',
+        })}
       >
         <EuiText size="s">
           <FormattedMessage

@@ -20,6 +20,7 @@ import { useInvalidateFetchRuleManagementFiltersQuery } from './use_fetch_rule_m
 import { useInvalidateFetchCoverageOverviewQuery } from './use_fetch_coverage_overview_query';
 import { useInvalidateFetchPrebuiltRulesUpgradeReviewQuery } from './prebuilt_rules/use_fetch_prebuilt_rules_upgrade_review_query';
 import { useInvalidateFetchPrebuiltRuleBaseVersionQuery } from './prebuilt_rules/use_fetch_prebuilt_rule_base_version_query';
+import { useInvalidateChangeHistory } from './use_infinite_change_history';
 
 export const UPDATE_RULE_MUTATION_KEY = ['PUT', DETECTION_ENGINE_RULES_URL];
 
@@ -32,6 +33,7 @@ export const useUpdateRuleMutation = (
   const invalidatePrebuiltRulesUpdateReview = useInvalidateFetchPrebuiltRulesUpgradeReviewQuery();
   const invalidateFetchPrebuiltRuleBaseVerison = useInvalidateFetchPrebuiltRuleBaseVersionQuery();
   const updateRuleCache = useUpdateRuleByIdCache();
+  const invalidateChangeHistory = useInvalidateChangeHistory();
 
   return useMutation<RuleResponse, Error, RuleUpdateProps>(
     (rule: RuleUpdateProps) => updateRule({ rule: transformOutput(rule) }),
@@ -44,6 +46,7 @@ export const useUpdateRuleMutation = (
         invalidateFetchCoverageOverviewQuery();
         invalidatePrebuiltRulesUpdateReview();
         invalidateFetchPrebuiltRuleBaseVerison();
+        invalidateChangeHistory();
 
         const [response] = args;
 

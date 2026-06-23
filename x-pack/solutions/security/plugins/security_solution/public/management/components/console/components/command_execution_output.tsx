@@ -7,7 +7,7 @@
 
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { EuiLoadingChart, EuiSpacer } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import moment from 'moment';
 import { LongRunningCommandHint } from './long_running_command_hint';
 import { CommandExecutionResult } from './command_execution_result';

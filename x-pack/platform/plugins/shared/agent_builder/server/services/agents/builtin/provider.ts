@@ -82,9 +82,13 @@ export const toInternalDefinition = async ({
       enable_elastic_capabilities: configuration.enable_elastic_capabilities ?? true,
     },
     type: AgentType.chat,
-    visibility: undefined,
+    access_control: undefined,
     created_by: undefined,
     readonly: true,
+    permissions: {
+      update_agent: false,
+      update_access_control: false,
+    },
     isAvailable: async (ctx) => {
       if (definition.availability) {
         return availabilityCache.getOrCompute(definition.id, definition.availability, ctx);

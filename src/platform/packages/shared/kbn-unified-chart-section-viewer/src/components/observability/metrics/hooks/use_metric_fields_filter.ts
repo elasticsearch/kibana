@@ -8,6 +8,7 @@
  */
 
 import { useMemo } from 'react';
+import { fieldNameWildcardMatcher } from '@kbn/field-utils';
 import type { ParsedMetricItem } from '../../../../types';
 
 export const useMetricFieldsFilter = ({
@@ -18,14 +19,14 @@ export const useMetricFieldsFilter = ({
   searchTerm: string;
 }) => {
   const filteredMetricItems = useMemo(() => {
-    const searchTermLower = searchTerm?.toLowerCase();
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
     return metricItems.filter((metricItem) => {
-      if (searchTermLower && !metricItem.metricName.toLowerCase().includes(searchTermLower)) {
-        return false;
+      if (!normalizedSearchTerm) {
+        return true;
       }
 
-      return true;
+      return fieldNameWildcardMatcher({ name: metricItem.metricName }, normalizedSearchTerm);
     });
   }, [metricItems, searchTerm]);
 

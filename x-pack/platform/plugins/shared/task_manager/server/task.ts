@@ -93,6 +93,15 @@ export interface RunContext {
    */
   fakeRequest?: KibanaRequest;
   abortController: AbortController;
+
+  /**
+   * If the task has a known `profile_uid`, binds it to a child fake request
+   * so `security.authc.getCurrentUser(request)` resolves to the originating
+   * user. Intended for tasks that construct child fake requests to invoke
+   * profile-keyed APIs. Throws on non-fake requests; calling twice on the
+   * same fake request is a no-op (first-wins) and emits a warning.
+   */
+  enrichRequest?: (request: KibanaRequest) => void;
 }
 
 /**
@@ -292,6 +301,7 @@ export interface TaskUserScope {
   uiamApiKeyId?: string;
   spaceId?: string;
   apiKeyCreatedByUser: boolean;
+  userProfileId?: string;
 }
 
 /*

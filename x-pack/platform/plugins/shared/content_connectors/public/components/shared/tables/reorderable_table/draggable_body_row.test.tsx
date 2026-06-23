@@ -7,9 +7,20 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+jest.mock('@elastic/eui', () => ({
+  ...jest.requireActual('@elastic/eui'),
+  EuiDraggable: jest.fn(({ children }: { children: (provided: object) => React.ReactNode }) => (
+    <>{children({ dragHandleProps: {} })}</>
+  )),
+}));
+jest.mock('./body_row', () => ({
+  BodyRow: jest.fn(({ leftAction }: { leftAction?: React.ReactNode }) => (
+    <div data-test-subj="bodyRow">{leftAction}</div>
+  )),
+}));
 
-import { EuiDraggable, EuiIcon } from '@elastic/eui';
+import { EuiDraggable } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { BodyRow } from './body_row';
 import { DraggableBodyRow } from './draggable_body_row';
@@ -27,16 +38,20 @@ describe('DraggableBodyRow', () => {
       alignItems: 'bar',
       render: (item: Foo) => item.id,
     },
-    {
-      name: 'Whatever',
-      render: () => 'Whatever',
-    },
+    { name: 'Whatever', render: () => 'Whatever' },
   ];
   const item = { id: 1 };
   const additionalProps = {};
 
+  const MockEuiDraggable = jest.mocked(EuiDraggable);
+  const MockBodyRow = jest.mocked(BodyRow);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('wraps a BodyRow with an EuiDraggable and injects a drag handle as the first cell', () => {
-    const wrapper = shallow(
+    const { container } = renderWithKibanaRenderContext(
       <DraggableBodyRow
         columns={columns}
         item={item}
@@ -45,30 +60,26 @@ describe('DraggableBodyRow', () => {
       />
     );
 
-    const euiDraggable = wrapper.find(EuiDraggable);
-    expect(euiDraggable.exists()).toBe(true);
-    // It adds an index and unique draggable id from the provided rowIndex
-    expect(euiDraggable.prop('index')).toEqual(1);
-    expect(euiDraggable.prop('draggableId')).toEqual('draggable_row_1');
-    expect(euiDraggable.prop('customDragHandle')).toBe(true);
-    expect(euiDraggable.prop('hasInteractiveChildren')).toBe(true);
+    const draggableProps = MockEuiDraggable.mock.calls[0][0];
+    expect(draggableProps.index).toEqual(1);
+    expect(draggableProps.draggableId).toEqual('draggable_row_1');
+    expect(draggableProps.customDragHandle).toBe(true);
+    expect(draggableProps.hasInteractiveChildren).toBe(true);
 
-    const childrenFn = euiDraggable.prop('children');
-    const bodyRowWrapper = shallow(<div>{childrenFn({ dragHandleProps: {} })}</div>);
-    const bodyRow = bodyRowWrapper.find(BodyRow);
-    expect(bodyRow.exists()).toEqual(true);
-    expect(bodyRow.props()).toEqual(expect.objectContaining({ columns, item, additionalProps }));
-    const leftAction = shallow(<div>{bodyRow.prop('leftAction')}</div>);
-    expect(leftAction.find(EuiIcon).exists()).toBe(true);
+    const bodyRowProps = MockBodyRow.mock.calls[0][0];
+    expect(bodyRowProps).toEqual(expect.objectContaining({ columns, item, additionalProps }));
+
+    // leftAction should contain the drag handle icon
+    expect(container.querySelector('[data-euiicon-type="dragVertical"]')).not.toBeNull();
   });
 
   it('will accept a parameter that disables dragging', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DraggableBodyRow columns={columns} item={item} rowIndex={1} disableDragging />
     );
 
-    const euiDraggable = wrapper.find(EuiDraggable);
-    expect(euiDraggable.prop('isDragDisabled')).toBe(true);
-    expect(euiDraggable.prop('customDragHandle')).toBe(false);
+    const draggableProps = MockEuiDraggable.mock.calls[0][0];
+    expect(draggableProps.isDragDisabled).toBe(true);
+    expect(draggableProps.customDragHandle).toBe(false);
   });
 });

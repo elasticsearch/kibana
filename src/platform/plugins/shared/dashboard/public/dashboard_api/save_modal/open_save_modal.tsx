@@ -21,11 +21,10 @@ import {
 } from '../../services/kibana_services';
 import type { DashboardState } from '../../../common';
 import { SAVED_OBJECT_POST_TIME } from '../../utils/telemetry_constants';
-import { extractTitleAndCount } from '../../utils/extract_title_and_count';
 import { DashboardSaveModal } from './save_modal';
 import { saveDashboard } from './save_dashboard';
 import { DASHBOARD_SAVED_OBJECT_TYPE } from '../../../common/constants';
-import { dashboardClient } from '../../dashboard_client';
+import { getSaveAsTitle } from './get_save_as_title';
 
 /**
  * @description exclusively for user directed dashboard save actions, also
@@ -192,26 +191,4 @@ function generateDashboardNotSavedToast(title: string, errorMessage: any) {
     }),
     'data-test-subj': 'saveDashboardFailure',
   };
-}
-
-async function getSaveAsTitle(title: string) {
-  const [baseTitle, baseCount] = extractTitleAndCount(title);
-
-  let saveAsTitle = `${baseTitle} (${baseCount + 1})`;
-
-  const { dashboards } = await dashboardClient.search({
-    query: baseTitle,
-    per_page: 20,
-  });
-
-  const hasTitleDuplicate = dashboards.some(({ data }) => data.title === title);
-
-  if (hasTitleDuplicate) {
-    const [largestDuplicationId] = dashboards
-      .map(({ data }) => extractTitleAndCount(data.title)[1])
-      .sort((a, b) => b - a);
-    saveAsTitle = `${baseTitle} (${largestDuplicationId + 1})`;
-  }
-
-  return saveAsTitle;
 }

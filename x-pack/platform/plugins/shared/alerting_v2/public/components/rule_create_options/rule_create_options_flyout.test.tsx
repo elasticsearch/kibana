@@ -68,12 +68,11 @@ describe('RuleCreateOptionsFlyout', () => {
     expect(onCreateWithAgent).toHaveBeenCalledTimes(1);
   });
 
-  it('renders the "Start from a rule builder" heading', () => {
+  it('renders the builder divider before the Threshold Alert option', () => {
     renderFlyout();
 
-    expect(
-      screen.getByRole('heading', { level: 3, name: 'Start from a rule builder' })
-    ).toBeInTheDocument();
+    expect(screen.getByText('or start from a builder')).toBeInTheDocument();
+    expect(screen.queryByText('Start from a rule builder')).not.toBeInTheDocument();
   });
 
   it('calls onCreateThresholdAlert when the Threshold Alert option is selected', () => {
@@ -82,5 +81,21 @@ describe('RuleCreateOptionsFlyout', () => {
     fireEvent.click(screen.getByRole('button', { name: /threshold alert/i }));
 
     expect(onCreateThresholdAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the AI Agent option when onCreateWithAgent is not provided', () => {
+    render(
+      <I18nProvider>
+        <RuleCreateOptionsFlyout
+          onClose={onClose}
+          onCreateEsqlRule={onCreateEsqlRule}
+          onCreateThresholdAlert={onCreateThresholdAlert}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText('Create ES|QL rule')).toBeInTheDocument();
+    expect(screen.queryByText('Create with AI Agent')).not.toBeInTheDocument();
+    expect(screen.getByText('Threshold Alert')).toBeInTheDocument();
   });
 });

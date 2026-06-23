@@ -26,6 +26,9 @@ export const registerReadRoute = (router: TagsPluginRouter, usageCounter?: Usage
   readRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () => (await import('../oas_examples')).readTagOASOperationObject,
+      },
       validate: {
         request: {
           params: tagIdParamSchema,

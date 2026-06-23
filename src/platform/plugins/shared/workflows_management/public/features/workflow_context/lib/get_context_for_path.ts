@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import _ from 'lodash';
 import type { Document } from 'yaml';
 import type { WorkflowYaml } from '@kbn/workflows';
 import { DynamicStepContextSchema, getStepId, WhileContextSchema } from '@kbn/workflows';
@@ -22,6 +21,7 @@ import {
 import { getForeachStateSchema } from './get_foreach_state_schema';
 import { getNearestStepPath } from './get_nearest_step_path';
 import { getStepsCollectionSchema } from './get_steps_collection_schema';
+import { getValueAtYamlPath } from './get_value_at_yaml_path';
 import { getVariablesSchema } from './get_variables_schema';
 import { getWorkflowContextSchema } from './get_workflow_context_schema';
 
@@ -90,7 +90,7 @@ export function getContextSchemaForPath(
   if (!nearestStepPath) {
     return maybeExtendWithTemplateLocals(schema, yamlDocument, offset, yamlSource);
   }
-  const nearestStep = _.get(definition, nearestStepPath);
+  const nearestStep = getValueAtYamlPath<{ name: string } | undefined>(definition, nearestStepPath);
   if (!nearestStep) {
     return maybeExtendWithTemplateLocals(schema, yamlDocument, offset, yamlSource);
   }

@@ -66,22 +66,6 @@ export class UiamProvisioningFeatureFlagScheduler {
             );
             return;
           }
-
-          // `ensureScheduled` leaves an already-existing task on its next daily
-          // `runAt`, so on a deploy the one-time plaintext `uiamApiKey` repair (and
-          // any provisioning backlog) could otherwise wait up to ~24h. Nudge a
-          // prompt run. A freshly created task already has `runAt: now`, so this only
-          // meaningfully advances a pre-existing task; failures are non-fatal.
-          try {
-            await taskScheduling.runSoon(TASK_ID);
-          } catch (e) {
-            this.logger.error(
-              `Could not trigger an immediate run of ${TASK_TYPE}, received ${
-                (e as Error).message
-              }`,
-              { tags: TAGS }
-            );
-          }
         } else {
           return;
         }

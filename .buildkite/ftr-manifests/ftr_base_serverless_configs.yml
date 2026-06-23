@@ -12,7 +12,6 @@ disabled:
 enabled:
   # Serverless deployment-agnostic configs to run platform api-integration tests
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/oblt.serverless.config.ts
-  - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/oblt.alerting_v2.serverless.config.ts
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/search.serverless.config.ts
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/security.serverless.config.ts
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/oblt.logs_essentials.serverless.config.ts

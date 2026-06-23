@@ -45,18 +45,18 @@ import {
 const getContextMenuAriaLabel = (title?: string, index?: number) => {
   if (title) {
     return i18n.translate('embeddableApi.contextMenu.ariaLabelWithTitle', {
-      defaultMessage: 'Panel options for {title}',
+      defaultMessage: 'Menu for {title}',
       values: { title },
     });
   }
   if (index) {
     return i18n.translate('embeddableApi.contextMenu.ariaLabelWithIndex', {
-      defaultMessage: 'Options for panel {index}',
+      defaultMessage: 'Menu for panel {index}',
       values: { index },
     });
   }
   return i18n.translate('embeddableApi.contextMenu.ariaLabel', {
-    defaultMessage: 'Panel options',
+    defaultMessage: 'Panel menu',
   });
 };
 
@@ -377,18 +377,20 @@ export const PresentationPanelHoverActions = ({
   });
 
   const ContextMenuButton = (
-    <EuiButtonIcon
-      color="text"
-      data-test-subj="embeddablePanelToggleMenuIcon"
-      aria-label={getContextMenuAriaLabel(title, index)}
-      onClick={() => {
-        setIsContextMenuOpen(!isContextMenuOpen);
-        if (apiCanLockHoverActions(api)) {
-          api.lockHoverActions(!hasLockedHoverActions);
-        }
-      }}
-      iconType="boxesVertical"
-    />
+    <EuiToolTip content={getContextMenuAriaLabel(title, index)} disableScreenReaderOutput>
+      <EuiButtonIcon
+        color="text"
+        data-test-subj="embeddablePanelToggleMenuIcon"
+        aria-label={getContextMenuAriaLabel(title, index)}
+        onClick={() => {
+          setIsContextMenuOpen(!isContextMenuOpen);
+          if (apiCanLockHoverActions(api)) {
+            api.lockHoverActions(!hasLockedHoverActions);
+          }
+        }}
+        iconType="boxesVertical"
+      />
+    </EuiToolTip>
   );
 
   const dragHandle = useMemo(

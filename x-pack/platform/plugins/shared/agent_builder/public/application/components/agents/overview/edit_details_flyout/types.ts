@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { AgentVisibility } from '@kbn/agent-builder-common';
+import type { AgentAccessControl } from '@kbn/agent-builder-common';
 
 export interface EditDetailsFormData {
   name: string;
@@ -13,7 +13,7 @@ export interface EditDetailsFormData {
   avatar_symbol: string;
   avatar_color: string;
   labels: string[];
-  visibility: AgentVisibility;
+  access_control: AgentAccessControl;
   configuration: {
     enable_elastic_capabilities: boolean;
     workflow_ids: string[];

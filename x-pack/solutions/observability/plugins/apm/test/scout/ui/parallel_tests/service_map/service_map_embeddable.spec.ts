@@ -21,6 +21,7 @@ test.describe(
   { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     let dataViewId: string;
+    let savedDashboardId: string | undefined;
 
     test.beforeAll(async ({ apiServices }) => {
       const { data } = await apiServices.dataViews.create({
@@ -36,10 +37,20 @@ test.describe(
       await uiSettings.set({ defaultIndex: dataViewId });
     });
 
-    test.afterAll(async ({ apiServices, uiSettings }) => {
+    test.afterAll(async ({ apiServices, uiSettings, kbnClient, log }) => {
       await uiSettings.unset('defaultIndex');
       if (dataViewId) {
         await apiServices.dataViews.delete(dataViewId);
+      }
+      if (savedDashboardId) {
+        await kbnClient.savedObjects
+          .delete({ type: 'dashboard', id: savedDashboardId })
+          .catch((error) => {
+            // A 404 is expected if the dashboard was never persisted; surface anything else.
+            if (error?.status !== 404) {
+              log.warning(`Failed to delete dashboard saved object: ${error?.message}`);
+            }
+          });
       }
     });
 
@@ -310,6 +321,9 @@ test.describe(
         // error toast and keeps the dashboard dirty; assert success instead.
         await expect(page.getByTestId('errorToastMessage')).toBeHidden();
         await expect(page).toHaveURL(/\/app\/dashboards#\/view\//);
+
+        const dashboardUrlMatch = page.url().match(/\/view\/([^/?]+)/);
+        savedDashboardId = dashboardUrlMatch?.[1];
 
         await pageObjects.dashboard.waitForPanelsToLoad(1);
         expect(await pageObjects.dashboard.getPanelCount()).toBe(1);

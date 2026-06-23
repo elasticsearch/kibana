@@ -7,18 +7,23 @@
 
 import type { BaseMessageLike } from '@langchain/core/messages';
 import type { ResolvedAgentCapabilities } from '@kbn/agent-builder-common';
-import type { IFileStore } from '@kbn/agent-builder-server/runner/filestore';
+import type { ToolManager } from '@kbn/agent-builder-server/runner';
 import type { ExperimentalFeatures } from '@kbn/agent-builder-server';
+import type { InternalSkillDefinition } from '@kbn/agent-builder-server/skills';
 import type { ResolvedConfiguration } from '../types';
 import type { ProcessedConversation } from '../utils/prepare_conversation';
-import type { ToolCallResultTransformer } from '../utils/create_result_transformer';
+import type { ToolCallResultTransformer } from '../utils/tool_summarization';
 import type { ResearchAgentAction, AnswerAgentAction } from '../actions';
 
 export interface PromptFactoryParams {
   configuration: ResolvedConfiguration;
   capabilities: ResolvedAgentCapabilities;
   processedConversation: ProcessedConversation;
-  filestore: IFileStore;
+  skills: InternalSkillDefinition[];
+  /**
+   * Tool manager, used by intra-round compaction to map tool ids and look up summarizers.
+   */
+  toolManager: ToolManager;
   /**
    * Transformer for tool call results in conversation history.
    * Used to summarize/substitute large results to optimize context.

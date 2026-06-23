@@ -18,36 +18,44 @@ import { RuleSidebarConditionsTab } from './rule_sidebar_conditions_tab';
 import { RuleSidebarPreviewTab } from './rule_sidebar_preview_tab';
 import { RuleSidebarRunbookTab } from './rule_sidebar_runbook_tab';
 
-const SIDEBAR_TAB_OPTIONS = [
-  {
-    id: 'conditions',
-    label: i18n.translate('xpack.alertingV2.sidebar.conditionsTab', {
-      defaultMessage: 'Conditions',
-    }),
-    'data-test-subj': 'sidebarConditionsTab',
-  },
-  {
-    id: 'queryPreview',
-    label: i18n.translate('xpack.alertingV2.sidebar.queryPreviewTab', {
-      defaultMessage: 'Query preview',
-    }),
-    'data-test-subj': 'sidebarQueryPreviewTab',
-  },
-  {
-    id: 'runbook',
-    label: i18n.translate('xpack.alertingV2.sidebar.runbookTab', {
-      defaultMessage: 'Runbook',
-    }),
-    'data-test-subj': 'sidebarRunbookTab',
-  },
-];
+const CONDITIONS_TAB = {
+  id: 'conditions',
+  label: i18n.translate('xpack.alertingV2.sidebar.conditionsTab', {
+    defaultMessage: 'Conditions',
+  }),
+  'data-test-subj': 'sidebarConditionsTab',
+};
 
-export const RuleSidebar: React.FC = () => {
+const QUERY_PREVIEW_TAB = {
+  id: 'queryPreview',
+  label: i18n.translate('xpack.alertingV2.sidebar.queryPreviewTab', {
+    defaultMessage: 'Query preview',
+  }),
+  'data-test-subj': 'sidebarQueryPreviewTab',
+};
+
+const RUNBOOK_TAB = {
+  id: 'runbook',
+  label: i18n.translate('xpack.alertingV2.sidebar.runbookTab', {
+    defaultMessage: 'Runbook',
+  }),
+  'data-test-subj': 'sidebarRunbookTab',
+};
+
+export interface RuleSidebarProps {
+  showQueryPreview?: boolean;
+}
+
+export const RuleSidebar: React.FC<RuleSidebarProps> = ({ showQueryPreview = false }) => {
   const [selectedTab, setSelectedTab] = useState('conditions');
+
+  const tabOptions = showQueryPreview
+    ? [CONDITIONS_TAB, QUERY_PREVIEW_TAB, RUNBOOK_TAB]
+    : [CONDITIONS_TAB, RUNBOOK_TAB];
 
   return (
     <div>
-      <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
+      <EuiFlexGroup direction="column" gutterSize="s" responsive={false}>
         <EuiFlexItem grow={false}>
           <EuiTitle size="s">
             <h2>
@@ -62,7 +70,7 @@ export const RuleSidebar: React.FC = () => {
             legend={i18n.translate('xpack.alertingV2.sidebar.tabSelection', {
               defaultMessage: 'Rule conditions view selection',
             })}
-            options={SIDEBAR_TAB_OPTIONS}
+            options={tabOptions}
             idSelected={selectedTab}
             onChange={(id) => setSelectedTab(id)}
             buttonSize="compressed"

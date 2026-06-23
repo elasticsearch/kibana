@@ -4,41 +4,45 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-/*
- * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
- * or more contributor license agreements. Licensed under the Elastic License
- * 2.0; you may not use this file except in compliance with the Elastic License
- * 2.0.
- */
 
 import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import { ENABLE_ESQL } from '@kbn/esql-utils';
-import {
-  initializeStateManager,
-  type WithAllKeys,
-  type StateComparators,
-} from '@kbn/presentation-publishing';
-import { BehaviorSubject } from 'rxjs';
-import type { FieldStatsInitialState } from '../grid_embeddable/types';
-import { FieldStatsInitializerViewType } from '../grid_embeddable/types';
+import type { StateComparators } from '@kbn/presentation-publishing';
+import { BehaviorSubject, map, merge, skip } from 'rxjs';
+import type { FieldStatsInitialState } from '../../../../../common/embeddables/types';
+import { FieldStatsInitializerViewType } from '../../../../../common/embeddables/types';
 import type { FieldStatsControlsApi } from './types';
+
+type FieldStatsViewType = NonNullable<FieldStatsInitialState['view_type']>;
+
+export const fieldStatsControlsComparators: StateComparators<FieldStatsInitialState> = {
+  view_type: 'referenceEquality',
+  data_view_id: 'referenceEquality',
+  query: 'deepEquality',
+  show_distributions: 'referenceEquality',
+};
 
 export const initializeFieldStatsControls = (
   initialState: FieldStatsInitialState,
   uiSettings: IUiSettingsClient
 ) => {
   const isEsqlEnabled = uiSettings.get(ENABLE_ESQL);
-  const defaultType = isEsqlEnabled
+  const defaultViewType = isEsqlEnabled
     ? FieldStatsInitializerViewType.ESQL
     : FieldStatsInitializerViewType.DATA_VIEW;
 
-  const defaults: WithAllKeys<FieldStatsInitialState> = {
-    showDistributions: false,
-    viewType: defaultType,
-    dataViewId: undefined,
-    query: undefined,
-  };
-  const fieldStatsStateManager = initializeStateManager(initialState, defaults);
+  const viewType$ = new BehaviorSubject<FieldStatsViewType>(
+    initialState.view_type ?? defaultViewType
+  );
+  const dataViewId$ = new BehaviorSubject<string | undefined>(
+    initialState.view_type === FieldStatsInitializerViewType.DATA_VIEW
+      ? initialState.data_view_id
+      : undefined
+  );
+  const query$ = new BehaviorSubject<{ esql: string } | undefined>(
+    initialState.view_type === FieldStatsInitializerViewType.ESQL ? initialState.query : undefined
+  );
+  const showDistributions$ = new BehaviorSubject<boolean>(initialState.show_distributions ?? false);
 
   const resetData$ = new BehaviorSubject<number>(Date.now());
   const dataLoading$ = new BehaviorSubject<boolean | undefined>(true);
@@ -48,16 +52,34 @@ export const initializeFieldStatsControls = (
     if (shouldResetData) {
       resetData$.next(Date.now());
     }
-    fieldStatsStateManager.api.setViewType(update.viewType);
-    fieldStatsStateManager.api.setDataViewId(update.dataViewId);
-    fieldStatsStateManager.api.setQuery(update.query);
+    const viewType = update.view_type ?? viewType$.value;
+    viewType$.next(viewType);
+    dataViewId$.next(update.data_view_id);
+    query$.next(viewType === FieldStatsInitializerViewType.ESQL ? update.query : undefined);
+    if (update.show_distributions !== undefined) {
+      showDistributions$.next(update.show_distributions);
+    }
   };
 
-  const fieldStatsControlsComparators: StateComparators<FieldStatsInitialState> = {
-    viewType: 'referenceEquality',
-    dataViewId: 'referenceEquality',
-    query: 'deepEquality',
-    showDistributions: 'referenceEquality',
+  const getLatestState = (): FieldStatsInitialState => {
+    const viewType = viewType$.value;
+    return {
+      view_type: viewType,
+      data_view_id:
+        viewType === FieldStatsInitializerViewType.DATA_VIEW ? dataViewId$.value : undefined,
+      query: viewType === FieldStatsInitializerViewType.ESQL ? query$.value : undefined,
+      show_distributions: showDistributions$.value,
+    };
+  };
+
+  const reinitializeState = (nextState: FieldStatsInitialState) => {
+    const viewType = nextState.view_type ?? defaultViewType;
+    viewType$.next(viewType);
+    dataViewId$.next(
+      viewType === FieldStatsInitializerViewType.DATA_VIEW ? nextState.data_view_id : undefined
+    );
+    query$.next(viewType === FieldStatsInitializerViewType.ESQL ? nextState.query : undefined);
+    showDistributions$.next(nextState.show_distributions ?? false);
   };
 
   const onRenderComplete = () => dataLoading$.next(false);
@@ -67,11 +89,11 @@ export const initializeFieldStatsControls = (
   return {
     fieldStatsControlsApi: {
       updateUserInput,
-      query$: fieldStatsStateManager.api.query$,
-      viewType$: fieldStatsStateManager.api.viewType$,
-      dataViewId$: fieldStatsStateManager.api.dataViewId$,
-      showDistributions$: fieldStatsStateManager.api.showDistributions$,
-    } as unknown as FieldStatsControlsApi,
+      query$,
+      viewType$,
+      dataViewId$,
+      showDistributions$,
+    } satisfies FieldStatsControlsApi,
     dataLoadingApi: {
       dataLoading$,
       blockingError$,
@@ -79,15 +101,36 @@ export const initializeFieldStatsControls = (
       onLoading,
       onError,
     },
-    fieldStatsStateManager,
+    fieldStatsStateManager: {
+      anyStateChange$: merge(
+        viewType$.pipe(
+          skip(1),
+          map(() => undefined)
+        ),
+        dataViewId$.pipe(
+          skip(1),
+          map(() => undefined)
+        ),
+        query$.pipe(
+          skip(1),
+          map(() => undefined)
+        ),
+        showDistributions$.pipe(
+          skip(1),
+          map(() => undefined)
+        )
+      ),
+      reinitializeState,
+    },
     // Reset data is internal state management, so no need to expose this in api
     resetData$,
-    serializeFieldStatsChartState: () => fieldStatsStateManager.getLatestState(),
+    serializeFieldStatsChartState: getLatestState,
     fieldStatsControlsComparators,
     onFieldStatsTableDestroy: () => {
-      fieldStatsStateManager.api.viewType$.complete();
-      fieldStatsStateManager.api.dataViewId$.complete();
-      fieldStatsStateManager.api.query$.complete();
+      viewType$.complete();
+      dataViewId$.complete();
+      query$.complete();
+      showDistributions$.complete();
       resetData$.complete();
     },
   };

@@ -139,6 +139,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       const currentURL = parse(await browser.getCurrentUrl());
       expect(currentURL.pathname).to.eql('/app/management/security/users');
 
+      await PageObjects.security.forceLogout();
       await security.user.delete('anonymous_user');
     });
 

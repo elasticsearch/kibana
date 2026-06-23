@@ -1,5 +1,5 @@
 {
-  "sha1": "b5c56b8fc8e4ccf28e991b8e54b19470344820ad",
+  "sha1": "cddcc14c7e0ed497fa510fccd524f8c2440df095",
   "tests": [
     {
       "id": "a3a9f820a79c452-b8b452a1ef0f11e",
@@ -10,7 +10,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 60,
+        "line": 62,
         "column": 9
       }
     },
@@ -23,7 +23,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 134,
+        "line": 139,
         "column": 9
       }
     },
@@ -36,7 +36,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 194,
+        "line": 204,
         "column": 9
       }
     },
@@ -49,7 +49,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 256,
+        "line": 267,
         "column": 9
       }
     },
@@ -62,7 +62,59 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 270,
+        "line": 281,
+        "column": 9
+      }
+    },
+    {
+      "id": "a3a9f820a79c452-6c141dc0d4a74ef",
+      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: Apply without typing anything disables Next",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
+        "line": 312,
+        "column": 9
+      }
+    },
+    {
+      "id": "a3a9f820a79c452-5767614bd465dd1",
+      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: base-only query shows callout and disables Next",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
+        "line": 331,
+        "column": 9
+      }
+    },
+    {
+      "id": "a3a9f820a79c452-0bc3e3ef257d7ca",
+      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: no callout when both base and alert condition are provided",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
+        "line": 357,
+        "column": 9
+      }
+    },
+    {
+      "id": "a3a9f820a79c452-c9d354100b88881",
+      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: missing breach query keeps user on Alert Condition step",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
+        "line": 379,
         "column": 9
       }
     },
@@ -88,7 +140,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/discover_query_sync.spec.ts",
-        "line": 44,
+        "line": 46,
         "column": 7
       }
     },
@@ -142,7 +194,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/rule_name_validation_flyout.spec.ts",
-        "line": 43,
+        "line": 48,
         "column": 7
       }
     },
@@ -155,7 +207,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/rule_name_validation_flyout.spec.ts",
-        "line": 51,
+        "line": 57,
         "column": 7
       }
     },
@@ -168,7 +220,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/rule_name_validation_flyout.spec.ts",
-        "line": 63,
+        "line": 71,
         "column": 7
       }
     },

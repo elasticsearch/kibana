@@ -42,6 +42,10 @@ jest.mock('../../../hooks/use_workflow_url_state', () => ({
   }),
 }));
 
+jest.mock('../../../hooks/use_workflows_experimental_ui_setting', () => ({
+  useWorkflowsExperimentalUiSetting: jest.fn().mockReturnValue(false),
+}));
+
 const mockWorkflowExecutions: WorkflowExecutionListDto = {
   results: [
     {

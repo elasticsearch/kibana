@@ -415,6 +415,7 @@ export const DiscoverTopNav = ({
                 onSaveControl,
                 controlsWrapper: (
                   <ControlGroupRenderer
+                    query={query}
                     onApiAvailable={setControlGroupApi}
                     timeRange={timeRangeAbsolute}
                     getCreationOptions={async (initialState) => {

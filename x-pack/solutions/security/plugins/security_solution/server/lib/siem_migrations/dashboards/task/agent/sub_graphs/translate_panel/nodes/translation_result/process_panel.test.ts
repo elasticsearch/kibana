@@ -10,7 +10,7 @@ import path from 'path';
 import { get } from 'lodash';
 import type { ParsedPanel } from '../../../../../../../../../../common/siem_migrations/parsers/types';
 import type { EsqlColumn } from '../../types';
-import { processPanel } from './process_panel';
+import { processPanel, toKibanaFieldType } from './process_panel';
 
 const readTemplate = (vizType: string): object => {
   const templatePath = path.join(__dirname, `./templates/${vizType}.viz.json`);
@@ -191,6 +191,111 @@ describe('processPanel', () => {
       processPanel(panel, 'FROM logs-* | STATS count=COUNT(*) BY host', columns, parsedPanel);
 
       expect(JSON.stringify(panel)).toBe(originalJSON);
+    });
+  });
+
+  describe('column type mapping', () => {
+    it('should apply proper Kibana types to all columns, not just the first', () => {
+      const panel = readTemplate('table');
+      const columns: EsqlColumn[] = [
+        { name: 'total_sales', type: 'double' },
+        { name: 'day', type: 'date' },
+        { name: 'category', type: 'keyword' },
+      ];
+      const parsedPanel = createParsedPanel({ viz_type: 'table' });
+
+      const result = processPanel(
+        panel,
+        'FROM logs-* | STATS total_sales=SUM(price) BY day, category',
+        columns,
+        parsedPanel
+      );
+
+      const layerId = '3a5310ab-2832-41db-bdbe-1b6939dd5651';
+      const resultColumns = get(
+        result,
+        `embeddableConfig.attributes.state.datasourceStates.textBased.layers.${layerId}.columns`
+      ) as unknown as Array<{ meta: { type: string } }>;
+
+      expect(resultColumns[0].meta.type).toBe('number');
+      expect(resultColumns[1].meta.type).toBe('date');
+      expect(resultColumns[2].meta.type).toBe('string');
+    });
+
+    it('should handle LLM-returned Kibana type "number" without producing "unknown"', () => {
+      const panel = readTemplate('line');
+      const columns: EsqlColumn[] = [
+        { name: 'daily_sales', type: 'number' },
+        { name: 'day', type: 'keyword' },
+      ];
+      const parsedPanel = createParsedPanel({ viz_type: 'line' });
+
+      const result = processPanel(
+        panel,
+        'FROM logs-* | STATS daily_sales=SUM(price) BY day',
+        columns,
+        parsedPanel
+      );
+
+      const layerId = '3a5310ab-2832-41db-bdbe-1b6939dd5651';
+      const resultColumns = get(
+        result,
+        `embeddableConfig.attributes.state.datasourceStates.textBased.layers.${layerId}.columns`
+      ) as unknown as Array<{ meta: { type: string } }>;
+
+      expect(resultColumns[0].meta.type).toBe('number');
+    });
+
+    it('should set inMetricDimension only on the first column', () => {
+      const panel = readTemplate('table');
+      const columns: EsqlColumn[] = [
+        { name: 'count', type: 'long' },
+        { name: 'host', type: 'keyword' },
+        { name: 'timestamp', type: 'date' },
+      ];
+      const parsedPanel = createParsedPanel({ viz_type: 'table' });
+
+      const result = processPanel(
+        panel,
+        'FROM logs-* | STATS count=COUNT(*) BY host, @timestamp',
+        columns,
+        parsedPanel
+      );
+
+      const layerId = '3a5310ab-2832-41db-bdbe-1b6939dd5651';
+      const resultColumns = get(
+        result,
+        `embeddableConfig.attributes.state.datasourceStates.textBased.layers.${layerId}.columns`
+      ) as unknown as Array<{ inMetricDimension?: boolean }>;
+
+      expect(resultColumns[0].inMetricDimension).toBe(true);
+      expect(resultColumns[1].inMetricDimension).toBeUndefined();
+      expect(resultColumns[2].inMetricDimension).toBeUndefined();
+    });
+  });
+
+  describe('toKibanaFieldType', () => {
+    it('should map valid ES field types to Kibana types', () => {
+      expect(toKibanaFieldType('double')).toBe('number');
+      expect(toKibanaFieldType('long')).toBe('number');
+      expect(toKibanaFieldType('integer')).toBe('number');
+      expect(toKibanaFieldType('float')).toBe('number');
+      expect(toKibanaFieldType('keyword')).toBe('string');
+      expect(toKibanaFieldType('text')).toBe('string');
+      expect(toKibanaFieldType('date')).toBe('date');
+      expect(toKibanaFieldType('boolean')).toBe('boolean');
+      expect(toKibanaFieldType('ip')).toBe('ip');
+    });
+
+    it('should pass through valid Kibana types when ES mapping returns unknown', () => {
+      expect(toKibanaFieldType('number')).toBe('number');
+      expect(toKibanaFieldType('string')).toBe('string');
+    });
+
+    it('should return unknown for unrecognized types', () => {
+      expect(toKibanaFieldType('garbage')).toBe('unknown');
+      expect(toKibanaFieldType('num')).toBe('unknown');
+      expect(toKibanaFieldType('int')).toBe('unknown');
     });
   });
 });

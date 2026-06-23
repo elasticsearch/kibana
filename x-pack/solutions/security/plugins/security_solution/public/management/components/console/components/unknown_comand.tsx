@@ -29,7 +29,7 @@ export const UnknownCommand = memo<CommandExecutionComponentProps>(({ command, s
                 {command.input}
               </ConsoleCodeBlock>
             ),
-            helpIcon: <EuiIcon type="question" />,
+            helpIcon: <EuiIcon type="question" aria-hidden={true} />,
             helpCmd: (
               <ConsoleCodeBlock bold inline>
                 {'help'}

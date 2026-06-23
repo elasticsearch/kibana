@@ -84,6 +84,13 @@ module.exports = (request, options) => {
     });
   }
 
+  if (request === 'just-bash') {
+    return resolve.sync('just-bash/dist/bundle/index.cjs', {
+      basedir: options.basedir,
+      extensions: options.extensions,
+    });
+  }
+
   if (request === `elastic-apm-node`) {
     return APM_AGENT_MOCK;
   }

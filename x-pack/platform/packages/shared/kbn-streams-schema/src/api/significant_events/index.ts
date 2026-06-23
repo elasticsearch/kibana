@@ -15,6 +15,7 @@ import {
 } from '../../queries';
 import type { TaskStatus } from '../../tasks/types';
 import type { Discovery } from '../../sig_events/discoveries';
+import type { Detection } from '../../sig_events/detections';
 import type { SigEvent } from '../../sig_events/events';
 
 /**
@@ -95,7 +96,8 @@ interface LifecycleDetection {
   rule_name?: string;
   stream_name?: string;
   change_point_type?: string;
-  detected_at: string;
+  kind: Extract<Detection['kind'], 'detection' | 'quiet'>;
+  '@timestamp': string;
 }
 
 interface EventLifecycleResponse {

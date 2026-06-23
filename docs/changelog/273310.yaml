@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/273310
+type: deprecation
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+title: Deprecate experimental public Significant Events APIs
+impact: "Calls to the experimental public Significant Events API endpoints (`/api/streams/{name}/queries*` and `/api/streams/{name}/significant_events`) return deprecation warnings and will be removed in a future release."
+action: There are no replacement APIs at this time.

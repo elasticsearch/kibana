@@ -33,6 +33,7 @@ import { useQuery } from '@kbn/react-query';
 import {
   DATASET_VAR_NAME,
   DATA_STREAM_TYPE_VAR_NAME,
+  FLEET_UNMANAGED_DATA_STREAM_TYPES,
   GENERIC_DATASET_NAME,
   USE_APM_VAR_NAME,
 } from '../../../../../../../../../common/constants';
@@ -157,6 +158,13 @@ export const PackagePolicyInputStreamConfig = memo<Props>(
     const customDataStreamTypeVarValue =
       customDataStreamTypeVar?.value || packagePolicyInputStream.data_stream.type || 'logs';
 
+    // For Fleet-unmanaged signal types (e.g. profiles) the type is fixed and the dataset has no
+    // effect; hide both to avoid implying configurability that doesn't exist. Keyed off the signal
+    // type so it applies to both OTel and non-OTel packages. See FLEET_UNMANAGED_DATA_STREAM_TYPES.
+    const isUnmanagedDataStreamType = FLEET_UNMANAGED_DATA_STREAM_TYPES.includes(
+      customDataStreamTypeVarValue
+    );
+
     const dataStreamTypeOptions = useMemo(() => {
       return [
         { id: 'logs', label: 'Logs' },
@@ -232,6 +240,13 @@ export const PackagePolicyInputStreamConfig = memo<Props>(
           : schemaVars;
 
       varsToProcess.forEach((varDef) => {
+        // Hide the dataset field for Fleet-unmanaged signal types (e.g. profiles): the value is
+        // ignored (data goes to dedicated indices, not a `<type>-<dataset>` data stream) and the
+        // "create dedicated index template" affordance would be misleading since none is created.
+        if (isUnmanagedDataStreamType && varDef.name === DATASET_VAR_NAME) {
+          return;
+        }
+
         // Check if var should be shown based on var_group selections
         // Use effective var_groups (stream-level if present, otherwise package-level)
         if (
@@ -257,6 +272,7 @@ export const PackagePolicyInputStreamConfig = memo<Props>(
       customDataStreamTypeVarValue,
       dynamicSignalTypes,
       isUseAPMVarInSchema,
+      isUnmanagedDataStreamType,
     ]);
 
     // Errors state
@@ -545,63 +561,65 @@ export const PackagePolicyInputStreamConfig = memo<Props>(
                   </EuiFlexItem>
                   {isShowingAdvanced ? (
                     <>
-                      {packageInfo.type === 'input' && !dynamicSignalTypes && (
-                        <EuiFlexItem>
-                          <EuiFormRow
-                            label={
-                              <FormattedMessage
-                                id="xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyDataStreamTypeInputLabel"
-                                defaultMessage="Data Stream Type"
-                              />
-                            }
-                            helpText={
-                              isEditPage ? (
+                      {packageInfo.type === 'input' &&
+                        !dynamicSignalTypes &&
+                        !isUnmanagedDataStreamType && (
+                          <EuiFlexItem>
+                            <EuiFormRow
+                              label={
                                 <FormattedMessage
-                                  id="xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyInputOnlyEditDataStreamTypeHelpLabel"
-                                  defaultMessage="The data stream type cannot be changed for this integration. Create a new integration policy to use a different input type."
+                                  id="xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyDataStreamTypeInputLabel"
+                                  defaultMessage="Data Stream Type"
                                 />
-                              ) : (
-                                <FormattedMessage
-                                  id="xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyDataStreamTypeHelpLabel"
-                                  defaultMessage="Select a data stream type for this policy. This setting changes the name of the integration's data stream. {learnMore}."
-                                  values={{
-                                    learnMore: (
-                                      <EuiLink
-                                        href={docLinks.links.fleet.datastreamsNamingScheme}
-                                        target="_blank"
-                                      >
-                                        {i18n.translate(
-                                          'xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyNamespaceHelpLearnMoreLabel',
-                                          { defaultMessage: 'Learn more' }
-                                        )}
-                                      </EuiLink>
-                                    ),
-                                  }}
-                                />
-                              )
-                            }
-                          >
-                            <EuiRadioGroup
-                              data-test-subj="packagePolicyDataStreamType"
-                              disabled={isEditPage}
-                              idSelected={customDataStreamTypeVarValue}
-                              options={dataStreamTypeOptions}
-                              onChange={(type: string) => {
-                                updatePackagePolicyInputStream({
-                                  vars: {
-                                    ...packagePolicyInputStream.vars,
-                                    [DATA_STREAM_TYPE_VAR_NAME]: {
-                                      type: 'string',
-                                      value: type,
+                              }
+                              helpText={
+                                isEditPage ? (
+                                  <FormattedMessage
+                                    id="xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyInputOnlyEditDataStreamTypeHelpLabel"
+                                    defaultMessage="The data stream type cannot be changed for this integration. Create a new integration policy to use a different input type."
+                                  />
+                                ) : (
+                                  <FormattedMessage
+                                    id="xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyDataStreamTypeHelpLabel"
+                                    defaultMessage="Select a data stream type for this policy. This setting changes the name of the integration's data stream. {learnMore}."
+                                    values={{
+                                      learnMore: (
+                                        <EuiLink
+                                          href={docLinks.links.fleet.datastreamsNamingScheme}
+                                          target="_blank"
+                                        >
+                                          {i18n.translate(
+                                            'xpack.fleet.createPackagePolicy.stepConfigure.packagePolicyNamespaceHelpLearnMoreLabel',
+                                            { defaultMessage: 'Learn more' }
+                                          )}
+                                        </EuiLink>
+                                      ),
+                                    }}
+                                  />
+                                )
+                              }
+                            >
+                              <EuiRadioGroup
+                                data-test-subj="packagePolicyDataStreamType"
+                                disabled={isEditPage}
+                                idSelected={customDataStreamTypeVarValue}
+                                options={dataStreamTypeOptions}
+                                onChange={(type: string) => {
+                                  updatePackagePolicyInputStream({
+                                    vars: {
+                                      ...packagePolicyInputStream.vars,
+                                      [DATA_STREAM_TYPE_VAR_NAME]: {
+                                        type: 'string',
+                                        value: type,
+                                      },
                                     },
-                                  },
-                                });
-                              }}
-                              name="dataStreamType"
-                            />
-                          </EuiFormRow>
-                        </EuiFlexItem>
-                      )}
+                                  });
+                                }}
+                                name="dataStreamType"
+                              />
+                            </EuiFormRow>
+                          </EuiFlexItem>
+                        )}
                       {isShowingAdvanced && showConditionField && (
                         <EuiFlexItem>
                           <PackagePolicyConditionField

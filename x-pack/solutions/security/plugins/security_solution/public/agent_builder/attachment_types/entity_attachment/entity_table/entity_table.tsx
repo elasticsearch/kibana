@@ -328,14 +328,19 @@ export const EntityTable: React.FC<EntityTableProps> = ({ entities }) => {
             <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
               {canNavigate && (
                 <EuiFlexItem grow={false}>
-                  <EuiButtonIcon
-                    iconType={icon}
-                    display="empty"
-                    size="xs"
-                    aria-label={OPEN_ENTITY_IN_ENTITY_ANALYTICS_ARIA}
-                    data-test-subj="entityAttachmentTableOpenEntity"
-                    onClick={() => handleOpenEntity(row)}
-                  />
+                  <EuiToolTip
+                    content={OPEN_ENTITY_IN_ENTITY_ANALYTICS_ARIA}
+                    disableScreenReaderOutput
+                  >
+                    <EuiButtonIcon
+                      iconType={icon}
+                      display="empty"
+                      size="xs"
+                      aria-label={OPEN_ENTITY_IN_ENTITY_ANALYTICS_ARIA}
+                      data-test-subj="entityAttachmentTableOpenEntity"
+                      onClick={() => handleOpenEntity(row)}
+                    />
+                  </EuiToolTip>
                 </EuiFlexItem>
               )}
               <EuiFlexItem grow={false}>

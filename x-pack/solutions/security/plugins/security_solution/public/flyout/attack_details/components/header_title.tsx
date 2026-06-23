@@ -5,100 +5,49 @@
  * 2.0.
  */
 
-import React, { memo } from 'react';
-import { EuiBadge, EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
-import { FormattedMessage } from '@kbn/i18n-react';
-import { i18n } from '@kbn/i18n';
-import {
-  FlyoutHeaderBlock,
-  flyoutHeaderBlockStyles,
-} from '../../../flyout_v2/shared/components/flyout_header_block';
-import { FlyoutTitle } from '../../../flyout_v2/shared/components/flyout_title';
-import { PreferenceFormattedDate } from '../../../common/components/formatted_date';
-import { Status } from './status';
-import { Assignees } from './assignees';
+import React, { memo, useMemo } from 'react';
+import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
+import type { EsHitRecord } from '@kbn/discover-utils';
+import { buildDataTableRecord } from '@kbn/discover-utils';
+import { flyoutHeaderBlockStyles } from '../../../flyout_v2/shared/components/flyout_header_block';
 import { Notes } from '../../../flyout_v2/shared/components/notes';
-import {
-  HEADER_ALERTS_BLOCK_TEST_ID,
-  HEADER_ASSIGNEES_BLOCK_TEST_ID,
-  HEADER_BADGE_TEST_ID,
-  HEADER_TITLE_TEST_ID,
-} from '../constants/test_ids';
-import { useHeaderData } from '../hooks/use_header_data';
+import { AlertsCount } from '../../../flyout_v2/attack/main/components/alerts_count';
+import { HeaderTitle as V2HeaderTitle } from '../../../flyout_v2/attack/main/components/header_title';
+import { Status } from '../../../flyout_v2/attack/main/components/status';
+import { Assignees } from '../../../flyout_v2/attack/main/components/assignees';
 import { useAttackDetailsContext } from '../context';
 import { useNavigateToAttackDetailsLeftPanel } from '../hooks/use_navigate_to_attack_details_left_panel';
 
-const ATTACK_HEADER_BADGE = i18n.translate(
-  'xpack.securitySolution.attackDetailsFlyout.header.badge.attackLabel',
-  {
-    defaultMessage: 'Attack',
-  }
-);
-
 /**
- * Header data for the Attack details flyout
+ * Header title for the legacy attack details flyout.
+ * Bridges context → props for the v2 HeaderTitle, then renders the four
+ * summary blocks (status, alerts, assignees, notes) in the same 2-column
+ * layout as the v2 flyout so both flyouts stay visually identical.
  */
 export const HeaderTitle = memo(() => {
-  const { title, timestamp, alertsCount } = useHeaderData();
-  const { attackId } = useAttackDetailsContext();
+  const { searchHit, attackId, refetch } = useAttackDetailsContext();
+  const hit = useMemo(() => buildDataTableRecord(searchHit as EsHitRecord), [searchHit]);
   const openNotesTab = useNavigateToAttackDetailsLeftPanel({ tab: 'notes' });
 
   return (
     <>
-      {timestamp && (
-        <>
-          <PreferenceFormattedDate value={new Date(timestamp)} />
-          <EuiSpacer size="xs" />
-        </>
-      )}
-      <FlyoutTitle data-test-subj={HEADER_TITLE_TEST_ID} title={title} iconType={'bolt'} />
-      <EuiSpacer size="s" />
-      <EuiBadge
-        aria-label={ATTACK_HEADER_BADGE}
-        color="hollow"
-        data-test-subj={HEADER_BADGE_TEST_ID}
-        tabIndex={0}
-      >
-        {ATTACK_HEADER_BADGE}
-      </EuiBadge>
+      <V2HeaderTitle hit={hit} />
       <EuiSpacer size="m" />
       <EuiFlexGroup direction="row" gutterSize="s" responsive={false} wrap>
         <EuiFlexItem css={flyoutHeaderBlockStyles}>
           <EuiFlexGroup direction="row" gutterSize="s" responsive={false}>
             <EuiFlexItem>
-              <Status />
+              <Status hit={hit} onAttackUpdated={refetch} />
             </EuiFlexItem>
             <EuiFlexItem>
-              <FlyoutHeaderBlock
-                hasBorder
-                title={
-                  <FormattedMessage
-                    id="xpack.securitySolution.attackDetailsFlyout.header.alertsTitle"
-                    defaultMessage="Alerts"
-                  />
-                }
-                data-test-subj={HEADER_ALERTS_BLOCK_TEST_ID}
-              >
-                {alertsCount}
-              </FlyoutHeaderBlock>
+              <AlertsCount hit={hit} />
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>
         <EuiFlexItem css={flyoutHeaderBlockStyles}>
           <EuiFlexGroup direction="row" gutterSize="s" responsive={false}>
             <EuiFlexItem>
-              <FlyoutHeaderBlock
-                hasBorder
-                title={
-                  <FormattedMessage
-                    id="xpack.securitySolution.attackDetailsFlyout.header.assigneesTitle"
-                    defaultMessage="Assignees"
-                  />
-                }
-                data-test-subj={HEADER_ASSIGNEES_BLOCK_TEST_ID}
-              >
-                <Assignees />
-              </FlyoutHeaderBlock>
+              <Assignees hit={hit} onAttackUpdated={refetch} />
             </EuiFlexItem>
             <EuiFlexItem>
               <Notes documentId={attackId} onShowNotes={openNotesTab} />

@@ -8,17 +8,19 @@
 import { schema } from '@kbn/config-schema';
 
 export const createFilterSchema = schema.object({
-  filterId: schema.string(),
-  description: schema.maybe(schema.string()),
-  items: schema.arrayOf(schema.string(), { maxSize: 10000 }),
+  filterId: schema.string({ maxLength: 10000 }),
+  description: schema.maybe(schema.string({ maxLength: 10000 })),
+  items: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
 });
 
 export const updateFilterSchema = schema.object({
-  description: schema.maybe(schema.string()),
-  addItems: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 10000 })),
-  removeItems: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 10000 })),
+  description: schema.maybe(schema.string({ maxLength: 10000 })),
+  addItems: schema.maybe(schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 })),
+  removeItems: schema.maybe(
+    schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 })
+  ),
 });
 
 export const filterIdSchema = schema.object({
-  filterId: schema.string({ meta: { description: 'ID of the filter' } }),
+  filterId: schema.string({ maxLength: 10000, meta: { description: 'ID of the filter' } }),
 });

@@ -316,6 +316,7 @@ fileGroups:
     - test/scout_ai_value_report/**/*
     - test/scout_cps_local/**/*
     - test/scout_security_attacks_alignment/**/*
+    - test/scout_security_entity_ml_anomaly_summary/**/*
     - common/**/*.json
     - server/**/*.json
     - scripts/**/*.json

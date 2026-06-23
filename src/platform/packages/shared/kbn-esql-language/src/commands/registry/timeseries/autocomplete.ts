@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import type { ESQLAstAllCommands } from '@elastic/esql/types';
-import { pipeCompleteItem, commaCompleteItem } from '../complete_items';
+import { newLineAndPipeCompleteItems, commaCompleteItem } from '../complete_items';
 import { specialIndicesToSuggestions } from '../../definitions/utils/sources';
 import {
   getSourcesFromCommands,
@@ -76,7 +76,7 @@ export async function autocomplete(
   ) {
     suggestions.push(metadataSuggestion);
     suggestions.push(commaCompleteItem);
-    suggestions.push(pipeCompleteItem);
+    suggestions.push(...newLineAndPipeCompleteItems);
     suggestions.push(
       ...(await getRecommendedQueriesSuggestions(
         context?.editorExtensions ?? { recommendedFields: [], recommendedQueries: [] }

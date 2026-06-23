@@ -175,6 +175,7 @@ export const LogEntryExampleMessageRow: React.FC<Props> = ({
 
       <EuiTableRowCell width="48px">
         <EuiPopover
+          aria-label={MENU_LABEL}
           button={
             <EuiToolTip content={MENU_LABEL} disableScreenReaderOutput>
               <EuiButtonIcon

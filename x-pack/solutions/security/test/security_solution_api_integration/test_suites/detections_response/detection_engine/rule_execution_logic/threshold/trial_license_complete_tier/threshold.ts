@@ -42,6 +42,11 @@ import {
 } from '../../../../utils';
 import type { FtrProviderContext } from '../../../../../../ftr_provider_context';
 import { EsArchivePathBuilder } from '../../../../../../es_archive_path_builder';
+import { EntityStoreV2EnrichmentSetup } from '../../entity_store_v2_enrichment_setup';
+
+// Sorted by host.name: suricata-sensor-london < suricata-zeek-sensor-toronto.
+const LONDON_HOST_NAME = 'suricata-sensor-london';
+const TORONTO_HOST_NAME = 'suricata-zeek-sensor-toronto';
 
 export default ({ getService }: FtrProviderContext) => {
   const supertest = getService('supertest');
@@ -53,6 +58,7 @@ export default ({ getService }: FtrProviderContext) => {
   const isServerless = config.get('serverless');
   const dataPathBuilder = new EsArchivePathBuilder(isServerless);
   const path = dataPathBuilder.getPath('auditbeat/hosts');
+  const entityStoreV2 = EntityStoreV2EnrichmentSetup(getService);
 
   describe('@ess @serverless @serverlessQA Threshold type rules', () => {
     before(async () => {
@@ -428,14 +434,36 @@ export default ({ getService }: FtrProviderContext) => {
 
     describe('with host risk index', () => {
       before(async () => {
-        await esArchiver.load('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        // Threshold alerts aggregate by host.name and may not carry host.id in their source,
+        // so the EUID is name-based (host:<host.name>). Omit host.id to ensure the entity EUID
+        // matches what the detection engine computes from the threshold alert.
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: LONDON_HOST_NAME },
+              entity: {
+                id: `host:${LONDON_HOST_NAME}`,
+                type: 'host',
+                risk: { calculated_level: 'Low', calculated_score_norm: 20 },
+              },
+            },
+            {
+              host: { name: TORONTO_HOST_NAME },
+              entity: {
+                id: `host:${TORONTO_HOST_NAME}`,
+                type: 'host',
+                risk: { calculated_level: 'Critical', calculated_score_norm: 96 },
+              },
+            },
+          ],
+        });
       });
 
       after(async () => {
-        await esArchiver.unload('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        await entityStoreV2.teardown();
       });
 
-      it('@skipInServerlessMKI should be enriched with host risk score', async () => {
+      it('should be enriched with host risk score', async () => {
         const rule: ThresholdRuleCreateProps = {
           ...getThresholdRuleForAlertTesting(['auditbeat-*']),
           threshold: {
@@ -455,18 +483,24 @@ export default ({ getService }: FtrProviderContext) => {
 
     describe('with asset criticality', () => {
       before(async () => {
-        await esArchiver.load(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        // Only the first alert (sorted by host.name) is asserted on — suricata-sensor-london.
+        // Use name-based EUID for the same reason as the risk index describe above.
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: LONDON_HOST_NAME },
+              entity: { id: `host:${LONDON_HOST_NAME}`, type: 'host' },
+              asset: { criticality: 'high_impact' },
+            },
+          ],
+        });
       });
 
       after(async () => {
-        await esArchiver.unload(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        await entityStoreV2.teardown();
       });
 
-      it('@skipInServerlessMKI should be enriched alert with criticality_level', async () => {
+      it('should be enriched alert with criticality_level', async () => {
         const rule: ThresholdRuleCreateProps = {
           ...getThresholdRuleForAlertTesting(['auditbeat-*']),
           threshold: {

@@ -56,7 +56,9 @@ const AllFieldDefinitionsLazy: FC<AllFieldDefinitionsPageProps> = lazy(
 // These will progressively replace the current pages and the FF will be removed.
 const AllCasesRedesignLazy = lazy(() => import('../cases_redesign/all_cases'));
 const CaseViewRedesignLazy: FC<CaseViewProps> = lazy(() => import('../cases_redesign/case_view'));
-const ConfigureCasesRedesignLazy = lazy(() => import('../cases_redesign/configure_cases'));
+const ConfigureCasesRedesignLazy = lazy(
+  () => import('../cases_redesign/configure_cases/configure_cases')
+);
 
 const CasesRoutesComponent: React.FC<CasesRoutesProps> = ({ refreshRef, timelineIntegration }) => {
   const { basePath, permissions } = useCasesContext();

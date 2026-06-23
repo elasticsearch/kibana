@@ -8,7 +8,7 @@ import type {
   SavedObjectsClientContract,
   SavedObjectsFindResult,
 } from '@kbn/core-saved-objects-api-server';
-import type { Logger } from '@kbn/core/server';
+import type { IUiSettingsClient, Logger } from '@kbn/core/server';
 import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import type { TLSRuleParams } from '@kbn/response-ops-rule-params/synthetics_tls';
@@ -57,13 +57,15 @@ export class TLSRuleExecutor {
     server: SyntheticsServerSetup,
     syntheticsMonitorClient: SyntheticsMonitorClient,
     spaceId: string,
-    ruleName: string
+    ruleName: string,
+    uiSettingsClient?: IUiSettingsClient
   ) {
     this.previousStartedAt = previousStartedAt;
     this.params = p;
     this.soClient = soClient;
     this.esClient = new SyntheticsEsClient(this.soClient, scopedClient, {
       heartbeatIndices: SYNTHETICS_INDEX_PATTERN,
+      uiSettingsClient,
     });
     this.server = server;
     this.syntheticsMonitorClient = syntheticsMonitorClient;

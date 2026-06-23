@@ -15,6 +15,7 @@ import {
   EuiText,
   EuiTitle,
   useEuiTheme,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import React from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -185,15 +186,18 @@ export const UninstallCommandFlyout: React.FunctionComponent<UninstallCommandFly
   onClose,
   target,
 }) => {
+  const flyoutTitleId = useGeneratedHtmlId();
+
   return (
     <EuiFlyout
       onClose={onClose}
       data-test-subj="uninstall-command-flyout"
       maxWidth={MAX_FLYOUT_WIDTH}
+      aria-labelledby={flyoutTitleId}
     >
       <EuiFlyoutHeader hasBorder>
         <EuiTitle size="m">
-          <h2>
+          <h2 id={flyoutTitleId}>
             <FormattedMessage
               id="xpack.fleet.agentUninstallCommandFlyout.title"
               defaultMessage="Uninstall agent"

@@ -41,7 +41,13 @@ describe(`Event Rendered View`, { tags: ['@ess', '@serverless'] }, () => {
     createRule(getNewRule());
     visit(ALERTS_URL);
     waitForAlerts();
+    // Set up intercept before switching views to avoid a race condition where the
+    // search request starts after waitForNetworkIdle's 500ms idle window has passed.
+    cy.intercept('POST', '/internal/search/privateRuleRegistryAlertsSearchStrategy').as(
+      'alertsSearch'
+    );
     switchAlertTableToEventRenderedView();
+    cy.wait('@alertsSearch');
     waitForAlerts();
   });
 

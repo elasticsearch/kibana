@@ -11,11 +11,11 @@ import { loggerMock } from '@kbn/logging-mocks';
 import { StepCategory } from '@kbn/workflows';
 import { z } from '@kbn/zod/v4';
 import { ServerStepRegistry } from './step_registry';
-import type { ServerStepDefinition } from './types';
+import { isOneShotStepDefinition, type ServerHandlerStepDefinition } from './types';
 
 const stepId = 'custom.myStep';
 const handler = jest.fn();
-const defaultDefinition: ServerStepDefinition = {
+const defaultDefinition: ServerHandlerStepDefinition = {
   id: stepId,
   category: StepCategory.Kibana,
   label: 'My Custom Step',
@@ -55,7 +55,11 @@ describe('ServerStepRegistry', () => {
     it('should return the handler for a registered step', () => {
       registry.register(defaultDefinition);
 
-      expect(registry.get(stepId)?.handler).toBe(handler);
+      const definition = registry.get(stepId);
+      expect(isOneShotStepDefinition(definition!)).toBe(true);
+      expect(
+        definition && isOneShotStepDefinition(definition) ? definition.handler : undefined
+      ).toBe(handler);
     });
 
     it('should return undefined for an unregistered step', () => {
@@ -137,14 +141,14 @@ describe('ServerStepRegistry', () => {
     });
 
     it('whenReady() should resolve after all loaders have settled', async () => {
-      const def1: ServerStepDefinition = { ...defaultDefinition, id: 'custom.step1' };
-      const def2: ServerStepDefinition = { ...defaultDefinition, id: 'custom.step2' };
-      let resolve1!: (d: ServerStepDefinition) => void;
-      let resolve2!: (d: ServerStepDefinition) => void;
-      const promise1 = new Promise<ServerStepDefinition>((r) => {
+      const def1: ServerHandlerStepDefinition = { ...defaultDefinition, id: 'custom.step1' };
+      const def2: ServerHandlerStepDefinition = { ...defaultDefinition, id: 'custom.step2' };
+      let resolve1!: (d: ServerHandlerStepDefinition) => void;
+      let resolve2!: (d: ServerHandlerStepDefinition) => void;
+      const promise1 = new Promise<ServerHandlerStepDefinition>((r) => {
         resolve1 = r;
       });
-      const promise2 = new Promise<ServerStepDefinition>((r) => {
+      const promise2 = new Promise<ServerHandlerStepDefinition>((r) => {
         resolve2 = r;
       });
 
@@ -164,8 +168,8 @@ describe('ServerStepRegistry', () => {
     });
 
     it('should support mixed sync and async registration', async () => {
-      const syncDef: ServerStepDefinition = { ...defaultDefinition, id: 'custom.sync' };
-      const asyncDef: ServerStepDefinition = { ...defaultDefinition, id: 'custom.async' };
+      const syncDef: ServerHandlerStepDefinition = { ...defaultDefinition, id: 'custom.sync' };
+      const asyncDef: ServerHandlerStepDefinition = { ...defaultDefinition, id: 'custom.async' };
 
       registry.register(syncDef);
       registry.register(() => Promise.resolve(asyncDef));

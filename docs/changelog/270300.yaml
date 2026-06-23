@@ -1,0 +1,13 @@
+prs:
+- https://github.com/elastic/kibana/pull/270300
+issues:
+- https://github.com/elastic/kibana/issues/269095
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Dashboards and visualizations
+- Alerting and reporting
+title: Fix dashboard read validation failures by validating each key separately
+description: Invalid dashboard panels, pinned panels, and filters are now dropped individually with warnings instead of failing the entire request.

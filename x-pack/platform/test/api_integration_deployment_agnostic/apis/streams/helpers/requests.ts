@@ -549,7 +549,7 @@ export async function upsertFeature(
   streamName: string,
   feature: BaseFeature,
   expectedStatusCode = 200
-): Promise<{ id: string }> {
+): Promise<{ id: string; uuid: string }> {
   await client
     .fetch('POST /internal/streams/{name}/features', {
       params: {
@@ -566,7 +566,7 @@ export async function upsertFeature(
     throw new Error(`Feature with id "${feature.id}" not found after upsert`);
   }
 
-  return { id: created.id };
+  return { id: created.id, uuid: created.uuid };
 }
 
 export async function listFeatures(

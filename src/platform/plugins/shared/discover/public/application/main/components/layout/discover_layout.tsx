@@ -37,6 +37,7 @@ import { BehaviorSubject } from 'rxjs';
 import type { DiscoverGridSettings } from '@kbn/saved-search-plugin/common';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { kbnFullBodyHeightCss } from '@kbn/css-utils/public/full_body_height_css';
+import { TABS_BAR_HEIGHT } from '@kbn/unified-tabs';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import { useDiscoverCustomizationContext } from '../../../../customizations';
 import { VIEW_MODE } from '../../../../../common/constants';
@@ -70,6 +71,7 @@ import {
 import { DiscoverHistogramLayout } from './discover_histogram_layout';
 import type { DiscoverLayoutRestorableState } from './discover_layout_restorable_state';
 import { useScopedServices } from '../../../../components/scoped_services_provider';
+import { useIsChromeNextProjectHeader } from '../chrome_app_header';
 
 const queryClient = new QueryClient();
 const SidebarMemoized = React.memo(DiscoverSidebarResponsive);
@@ -96,7 +98,6 @@ export function DiscoverLayout() {
     observabilityAIAssistant,
     dataVisualizer: dataVisualizerService,
     fieldsMetadata,
-    chrome,
   } = useDiscoverServices();
   const customizationContext = useDiscoverCustomizationContext();
   const { scopedEBTManager } = useScopedServices();
@@ -106,6 +107,8 @@ export function DiscoverLayout() {
   const { euiTheme } = useEuiTheme();
   const globalQueryState = data.query.getState();
   const dataStateContainer = useCurrentTabDataStateContainer();
+  const isChromeNextProjectHeader = useIsChromeNextProjectHeader();
+
   const { main$ } = dataStateContainer.data$;
   const [query, savedQuery, columns, sort, grid] = useAppStateSelector((state) => [
     state.query,
@@ -361,13 +364,13 @@ export function DiscoverLayout() {
   );
 
   const fullBodyHeightOffset = useMemo(() => {
-    const isChromeNext = chrome.next.isEnabled && chrome.getChromeStyle() === 'project';
     const isStandalone = customizationContext.displayMode === 'standalone';
-    if (isChromeNext && isStandalone) {
+    if (isChromeNextProjectHeader && isStandalone) {
       return mathWithUnits(euiTheme.size.xxl, (x) => x * 3);
     }
-    return euiTheme.size.xxl;
-  }, [chrome, customizationContext.displayMode, euiTheme.size.xxl]);
+
+    return `${TABS_BAR_HEIGHT + 1}px`;
+  }, [customizationContext.displayMode, euiTheme.size.xxl, isChromeNextProjectHeader]);
 
   return (
     <EuiPage

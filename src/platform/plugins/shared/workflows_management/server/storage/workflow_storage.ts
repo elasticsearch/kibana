@@ -38,6 +38,7 @@ const storageSettings = {
       managed: types.boolean({}),
       managedBy: types.keyword({}),
       managedVersion: types.long({ index: false }),
+      version: types.long({ index: false }),
       definitionHash: types.keyword({ index: false }),
       managedTemplateValues: types.object({ enabled: false }),
       originManagedWorkflowId: types.keyword({}),
@@ -69,6 +70,7 @@ export interface WorkflowProperties {
   managed?: boolean;
   managedBy?: string | null;
   managedVersion?: number | null;
+  version?: number;
   definitionHash?: string | null;
   managedTemplateValues?: Record<string, unknown> | null;
   originManagedWorkflowId?: string | null;

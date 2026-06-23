@@ -43,6 +43,9 @@ export const getCompareFrameAction =
 
     return (
       <EuiPopover
+        aria-label={i18n.translate('xpack.profiling.compareFrame.popoverAriaLabel', {
+          defaultMessage: 'Corresponding frame',
+        })}
         button={
           <Component
             onClick={() => {

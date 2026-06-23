@@ -64,6 +64,12 @@ export function ObservabilityPageProvider({ getService, getPageObjects }: FtrPro
     },
 
     async getDatePickerRangeText() {
+      if (await testSubjects.exists('dateRangePickerControlButton', { timeout: 2000 })) {
+        // New DateRangePicker renders the humanised range as the control button's
+        // visible text (the `dateRangePickerValueDisplay` node), e.g. "Last 15
+        // minutes". The button has no `value` attribute.
+        return await testSubjects.getVisibleText('dateRangePickerValueDisplay');
+      }
       const datePickerButton = await testSubjects.find('superDatePickerShowDatesButton');
       return await datePickerButton.getVisibleText();
     },

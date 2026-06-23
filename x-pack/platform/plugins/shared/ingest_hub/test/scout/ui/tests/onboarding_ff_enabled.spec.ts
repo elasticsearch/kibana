@@ -61,9 +61,9 @@ test.describe('Onboarding app — FF enabled', { tag: tags.stateful.classic }, (
       await expect(page.testSubj.locator('onboardingStep-services')).toBeVisible();
     });
 
-    await test.step('renders 5 step indicators', async () => {
+    await test.step('renders 4 step indicators', async () => {
       const steps = page.locator('[data-test-subj^="onboardingStepIndicator-"]');
-      await expect(steps).toHaveCount(5);
+      await expect(steps).toHaveCount(4);
     });
 
     await test.step('navigates directly to a step via hash', async () => {

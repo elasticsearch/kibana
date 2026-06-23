@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/272754
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Discover and ES|QL
+title: Render the Discover background searches “Extend” action icon as inline SVG

@@ -43,7 +43,8 @@ export default function (ftrContext: FtrProviderContext) {
     });
   };
 
-  describe('changes in license types', function () {
+  // Failing: See https://github.com/elastic/kibana/issues/271887
+  describe.skip('changes in license types', function () {
     this.tags('skipFIPS');
 
     before(async function setup() {

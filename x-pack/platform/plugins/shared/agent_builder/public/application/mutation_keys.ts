@@ -11,5 +11,6 @@
 export const mutationKeys = {
   sendMessage: ['sendMessage'] as const,
   resumeRound: ['resumeRound'] as const,
-  updateAgentAcl: (agentId: string) => ['agentProfiles', agentId, 'acl', 'update'] as const,
+  updateAgentAccessControl: (agentId: string) =>
+    ['agentProfiles', agentId, 'accessControl', 'update'] as const,
 };

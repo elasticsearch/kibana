@@ -8,7 +8,6 @@
 import { expect } from '@kbn/scout/api';
 import type { RoleApiCredentials } from '@kbn/scout';
 import {
-  ACTION_POLICY_CREATED_BY_MAX_LENGTH,
   ACTION_POLICY_PER_PAGE_MAX,
   ACTION_POLICY_SEARCH_MAX_LENGTH,
   ACTION_POLICY_TAG_MAX_LENGTH,
@@ -205,33 +204,6 @@ apiTest.describe('List action policies API', { tag: '@local-stateful-classic' },
       expect(response.body.items).toStrictEqual([]);
     }
   );
-
-  apiTest('filter: by destinationType=workflow', async ({ apiClient, apiServices }) => {
-    await createActionPolicies(apiServices);
-
-    const response = await apiClient.get(
-      getListActionPoliciesUrl({ destinationType: 'workflow' }),
-      {
-        headers: { ...testData.COMMON_HEADERS, ...readerHeaders },
-      }
-    );
-    expect(response).toHaveStatusCode(200);
-    expect(response.body.total).toBe(3);
-  });
-
-  apiTest('filter: by createdBy', async ({ apiClient, apiServices }) => {
-    const { alpha } = await createActionPolicies(apiServices);
-    expect(alpha.createdBy).toBeDefined();
-
-    const response = await apiClient.get(
-      getListActionPoliciesUrl({ createdBy: alpha.createdBy! }),
-      {
-        headers: { ...testData.COMMON_HEADERS, ...readerHeaders },
-      }
-    );
-    expect(response).toHaveStatusCode(200);
-    expect(response.body.total).toBe(3);
-  });
 
   apiTest('filter: by enabled=true and enabled=false', async ({ apiClient, apiServices }) => {
     const { alpha } = await createActionPolicies(apiServices);
@@ -433,21 +405,6 @@ apiTest.describe('List action policies API', { tag: '@local-stateful-classic' },
       {
         headers: { ...testData.COMMON_HEADERS, ...readerHeaders },
       }
-    );
-    expect(response).toHaveStatusCode(400);
-  });
-
-  apiTest('validation: rejects unknown destinationType', async ({ apiClient }) => {
-    const response = await apiClient.get(getListActionPoliciesUrl({ destinationType: 'email' }), {
-      headers: { ...testData.COMMON_HEADERS, ...readerHeaders },
-    });
-    expect(response).toHaveStatusCode(400);
-  });
-
-  apiTest('validation: rejects createdBy over the maximum length', async ({ apiClient }) => {
-    const response = await apiClient.get(
-      getListActionPoliciesUrl({ createdBy: 'a'.repeat(ACTION_POLICY_CREATED_BY_MAX_LENGTH + 1) }),
-      { headers: { ...testData.COMMON_HEADERS, ...readerHeaders } }
     );
     expect(response).toHaveStatusCode(400);
   });

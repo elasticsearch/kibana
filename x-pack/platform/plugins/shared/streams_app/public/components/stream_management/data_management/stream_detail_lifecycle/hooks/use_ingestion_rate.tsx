@@ -188,7 +188,17 @@ export const useIngestionRatePerTier = ({
                 size: 0,
                 query: {
                   bool: {
-                    filter: [{ range: { [TIMESTAMP_FIELD]: { gte: start, lte: end } } }],
+                    filter: [
+                      {
+                        range: {
+                          [TIMESTAMP_FIELD]: {
+                            gte: timeState.start,
+                            lte: timeState.end,
+                            format: 'epoch_millis',
+                          },
+                        },
+                      },
+                    ],
                   },
                 },
                 aggs: {
@@ -203,7 +213,7 @@ export const useIngestionRatePerTier = ({
                           field: TIMESTAMP_FIELD,
                           [intervalType]: interval,
                           min_doc_count: 0,
-                          extended_bounds: { min: start, max: end },
+                          extended_bounds: { min: timeState.start, max: timeState.end },
                         },
                         aggs: {
                           indices: {

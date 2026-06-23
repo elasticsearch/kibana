@@ -7,13 +7,13 @@
 
 import '../../../common/__mocks__';
 import '../__mocks__/kea_logic';
-import '../__mocks__/shallow_useeffect.mock';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { AnalyticsOverview } from './components/analytics_overview/analytics_overview';
+import { MemoryRouter } from '@kbn/shared-ux-router';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { Analytics } from '.';
 
@@ -23,8 +23,12 @@ describe('EnterpriseSearchAnalytics', () => {
   });
 
   it('always renders the overview', () => {
-    const wrapper = shallow(<Analytics />);
+    renderWithKibanaRenderContext(
+      <MemoryRouter>
+        <Analytics />
+      </MemoryRouter>
+    );
 
-    expect(wrapper.find(AnalyticsOverview)).toHaveLength(1);
+    expect(screen.getByText('Behavioral Analytics')).toBeInTheDocument();
   });
 });

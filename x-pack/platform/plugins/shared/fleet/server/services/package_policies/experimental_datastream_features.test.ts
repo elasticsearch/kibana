@@ -69,7 +69,13 @@ mockedAppContextService.getSecuritySetup.mockImplementation(() => ({
   ...securityMock.createSetup(),
 }));
 
-jest.mock('../epm/elasticsearch/template/template');
+jest.mock('../epm/elasticsearch/template/template', () => ({
+  updateCurrentWriteIndices: jest.fn(),
+  isTotalFieldsLimitError: (err: any): boolean => {
+    const reason: string = err?.body?.error?.reason ?? '';
+    return reason.includes('Limit of total fields') && reason.includes('has been exceeded');
+  },
+}));
 jest.mock('../epm/elasticsearch/template/install', () => {
   return {
     prepareDataStreamTemplates: jest.fn().mockResolvedValue([
@@ -189,6 +195,12 @@ describe('experimental_datastream_features', () => {
     mockedUpdateCurrentWriteIndices.mockReset();
     esClient.cluster.getComponentTemplate.mockClear();
     esClient.cluster.putComponentTemplate.mockClear();
+    mockedAppContextService.getLogger.mockReturnValue({
+      warn: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+    } as any);
 
     esClient.cluster.getComponentTemplate.mockResolvedValueOnce({
       component_templates: [
@@ -583,6 +595,73 @@ describe('experimental_datastream_features', () => {
             _meta: { has_experimental_data_stream_indexing_features: true },
           })
         );
+      });
+
+      it('should not throw when updateCurrentWriteIndices rejects with a total_fields limit error', async () => {
+        const packagePolicy = getExistingTestPackagePolicy({
+          isSyntheticSourceEnabled: false,
+          isTSDBEnabled: true,
+          isDocValueOnlyNumeric: false,
+          isDocValueOnlyOther: false,
+        });
+
+        esClient.indices.getIndexTemplate.mockResolvedValueOnce({
+          index_templates: [
+            {
+              name: 'metrics-test.test',
+              index_template: {
+                template: { settings: {}, mappings: {} },
+                composed_of: [],
+                index_patterns: '',
+              },
+            },
+          ],
+        });
+
+        const totalFieldsError = Object.assign(new Error('ResponseError'), {
+          statusCode: 400,
+          body: {
+            error: {
+              type: 'illegal_argument_exception',
+              reason: 'Limit of total fields [2500] has been exceeded',
+            },
+          },
+        });
+        mockedUpdateCurrentWriteIndices.mockRejectedValueOnce(totalFieldsError);
+
+        // total_fields errors are non-fatal — the rollover wouldn't have helped anyway
+        await expect(
+          handleExperimentalDatastreamFeatureOptIn({ soClient, esClient, packagePolicy })
+        ).resolves.not.toThrow();
+      });
+
+      it('should throw when updateCurrentWriteIndices rejects with an unexpected error', async () => {
+        const packagePolicy = getExistingTestPackagePolicy({
+          isSyntheticSourceEnabled: false,
+          isTSDBEnabled: true,
+          isDocValueOnlyNumeric: false,
+          isDocValueOnlyOther: false,
+        });
+
+        esClient.indices.getIndexTemplate.mockResolvedValueOnce({
+          index_templates: [
+            {
+              name: 'metrics-test.test',
+              index_template: {
+                template: { settings: {}, mappings: {} },
+                composed_of: [],
+                index_patterns: '',
+              },
+            },
+          ],
+        });
+
+        const unexpectedError = new Error('unexpected mapping error');
+        mockedUpdateCurrentWriteIndices.mockRejectedValueOnce(unexpectedError);
+
+        await expect(
+          handleExperimentalDatastreamFeatureOptIn({ soClient, esClient, packagePolicy })
+        ).rejects.toThrow(unexpectedError);
       });
 
       it('should update existing write indices', async () => {

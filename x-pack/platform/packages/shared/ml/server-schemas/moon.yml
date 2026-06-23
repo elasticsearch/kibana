@@ -18,8 +18,6 @@ project:
   sourceRoot: x-pack/platform/packages/shared/ml/server-schemas
 dependsOn:
   - '@kbn/config-schema'
-  - '@kbn/data-service-server'
-  - '@kbn/es-query-server'
   - '@kbn/ml-anomaly-utils'
   - '@kbn/presentation-publishing-schemas'
 tags:

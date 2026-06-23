@@ -6,6 +6,7 @@
  */
 
 import type { Direction } from '@elastic/eui';
+import { Ast, Query } from '@elastic/eui';
 import type { QualityIndicators } from '@kbn/dataset-quality-plugin/common/types';
 import type { ListStreamDetail } from '@kbn/streams-plugin/server/routes/internal/streams/crud/route';
 import {
@@ -45,6 +46,19 @@ export interface StreamTree extends ListStreamDetail {
 export function shouldComposeTree(sortField: SortableField) {
   // Always allow tree mode for nameSortKey
   return !sortField || sortField === 'nameSortKey';
+}
+
+// Builds an EUI Query from the free-text search bar input. The search bar runs in
+// `text` mode and accepts arbitrary input, but `Query.parse` only understands EUI
+// query syntax and throws on characters such as a leading comma. When parsing fails
+// we keep the raw input as a plain-text filter with no clauses, so the table still
+// filters by name instead of the page crashing.
+export function parseSearchQuery(searchText: string): Query {
+  try {
+    return Query.parse(searchText);
+  } catch {
+    return new Query(Ast.create([]), undefined, searchText);
+  }
 }
 
 // Returns all streams that match the query or are ancestors of a match

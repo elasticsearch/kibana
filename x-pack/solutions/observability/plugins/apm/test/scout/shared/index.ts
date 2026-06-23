@@ -7,5 +7,9 @@
 
 export * as testData from './constants';
 export { ingestApmMetricsFixtures } from './setup/ingest_apm_metrics';
-export { metricsServices, setupOtelNativeJavaMetrics } from './synthtrace/metrics_services';
+export {
+  metricsServices,
+  setupOtelNativeJavaMetrics,
+  OTEL_NATIVE_JAVA_TEMPLATE_NAME,
+} from './synthtrace/metrics_services';
 export { awsLambda } from './synthtrace/aws_lambda';

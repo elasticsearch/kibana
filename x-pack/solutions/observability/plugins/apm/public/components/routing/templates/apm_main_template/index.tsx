@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { css } from '@emotion/react';
 import type { EuiPageHeaderProps } from '@elastic/eui';
 import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiTab, EuiTabs } from '@elastic/eui';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
@@ -24,6 +25,11 @@ import { getNoDataConfig } from '../no_data_config';
 
 // Paths that must skip the no data screen
 const bypassNoDataScreenPaths = ['/settings', '/diagnostics'];
+
+// Garantee's responsiveness of the header content
+const headerContentStyles = css`
+  contain: inline-size;
+`;
 
 /*
  * This template contains:
@@ -138,7 +144,7 @@ export function ApmMainTemplate({
   const callerChildren = pageHeader?.children;
   const callerTabs = pageHeader?.tabs;
   const headerChildren = (
-    <>
+    <div css={headerContentStyles}>
       {callerChildren}
       {callerTabs && callerTabs.length > 0 && (
         <EuiTabs bottomBorder={false} size="m">
@@ -155,7 +161,7 @@ export function ApmMainTemplate({
           {searchBar}
         </>
       )}
-    </>
+    </div>
   );
 
   return (

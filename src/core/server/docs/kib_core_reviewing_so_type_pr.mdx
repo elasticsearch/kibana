@@ -32,7 +32,7 @@ Note: reviews will **not** automatically be triggered in these scenarios:
 
 ### A new type was added
 
-We have another integration test detecting this scenario (`src/core/server/integration_tests/saved_objects/migrations/type_registrations.test.ts`)
+The **Check changes in Saved Objects** CI step (`node scripts/check_saved_objects`) detects this scenario.
 
 In that scenario, we should:
 - check the initial mappings of the type to spot potential issues:
@@ -45,12 +45,12 @@ In that scenario, we should:
 
 ### A type was removed
 
-The integration test mentioned in the previous section also detects those scenarios.
+The **Check changes in Saved Objects** CI step (`node scripts/check_saved_objects`) also detects those scenarios.
 
-Additionally, we have an automated check (`node scripts/check_saved_objects`) that:
+This automated check:
 - Automatically detects when a previously registered SO type is no longer present
 - Prevents removed type names from being reused (to avoid migration conflicts)
-- Maintains a list of all removed types in `packages/kbn-check-saved-objects-cli/removed_types.json`
+- Maintains a list of all removed types in `src/core/packages/saved-objects/server-internal/removed_types.json`
 
 <DocCallOut>
 For detailed instructions on how to properly remove a Saved Object type, see <DocLink id="kibDevTutorialSavedObject" section="removing-a-saved-object-type" text="Removing a Saved Object type"/>.

@@ -39,6 +39,9 @@ describe('buildEpisodesBaseQuery', () => {
     expect(queryString).toContain(
       'episode_data = LAST(extracted_data, @timestamp) WHERE extracted_data != "{}"'
     );
+    expect(queryString).toContain(
+      'severity = LAST(severity, @timestamp) WHERE status == "breached" AND severity IS NOT NULL'
+    );
     expect(queryString).toContain('BY episode.id');
     expect(queryString).toContain('EVAL duration = DATE_DIFF');
     expect(queryString).toContain('"ms"');

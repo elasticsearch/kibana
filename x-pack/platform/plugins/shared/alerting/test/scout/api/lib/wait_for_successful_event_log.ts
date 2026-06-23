@@ -13,8 +13,10 @@ export const waitForSuccessfulEventLogEntry = async (
   headers: Record<string, string>
 ) => {
   const dateStart = new Date().toISOString();
+  // Force an immediate run so we don't depend on the scheduler's poll cadence.
+  await apiClient.post(`internal/alerting/rule/${ruleId}/_run_soon`, { headers });
   const pollIntervalMs = 2000;
-  const maxAttempts = 15;
+  const maxAttempts = 60; // ~120s; covers MKI/UIAM task-claim latency
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const logResponse = await apiClient.get(
       `internal/alerting/rule/${ruleId}/_execution_log?date_start=${encodeURIComponent(
@@ -28,5 +30,5 @@ export const waitForSuccessfulEventLogEntry = async (
     }
     await new Promise((r) => setTimeout(r, pollIntervalMs));
   }
-  throw new Error(`Rule ${ruleId} did not execute successfully within 30s`);
+  throw new Error(`Rule ${ruleId} did not execute successfully within 120s`);
 };

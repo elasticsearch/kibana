@@ -26,7 +26,7 @@ import { useQueryClient } from '@kbn/react-query';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAgentBuilderAgentById } from '../../../hooks/agents/use_agent_by_id';
-import { useCanEditAgent } from '../../../hooks/agents/use_can_edit_agent';
+import { useCanUpdateAgent } from '../../../hooks/agents/use_can_update_agent';
 import { useSkillsService } from '../../../hooks/skills/use_skills';
 import { useFlyoutState } from '../../../hooks/use_flyout_state';
 import { useNavigation } from '../../../hooks/use_navigation';
@@ -55,7 +55,7 @@ export const AgentSkills: React.FC = () => {
   const { agent, isLoading: agentLoading } = useAgentBuilderAgentById(agentId);
   const { skills: allSkills, isLoading: skillsLoading } = useSkillsService();
   const { manageSkills } = useUiPrivileges();
-  const canEditAgent = useCanEditAgent({ agent });
+  const canEditAgent = useCanUpdateAgent({ agent });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkillId, setSelectedSkillId] = useQueryState<string>(searchParamNames.skillId);

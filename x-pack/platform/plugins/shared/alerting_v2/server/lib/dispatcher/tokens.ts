@@ -14,13 +14,3 @@ import type { DispatcherService } from './dispatcher';
 export const DispatcherServiceInternalToken = Symbol.for(
   'alerting_v2.DispatcherServiceInternal'
 ) as ServiceIdentifier<DispatcherService>;
-
-/**
- * Async function that reads the `observability:alerting:dispatcherEnabled` uiSetting
- * and returns whether the dispatcher task should execute its pipeline.
- */
-export type DispatcherEnabledProvider = () => Promise<boolean>;
-
-export const DispatcherEnabledProviderToken = Symbol.for(
-  'alerting_v2.DispatcherEnabledProvider'
-) as ServiceIdentifier<DispatcherEnabledProvider>;

@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/271441
+issues:
+- https://github.com/elastic/kibana/issues/183412
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Alerting and reporting
+title: Fix the Alerts page double loading with filter controls
+description: Fix the Alerts page fetching alerts twice on load

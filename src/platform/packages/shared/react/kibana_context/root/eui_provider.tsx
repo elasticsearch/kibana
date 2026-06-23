@@ -89,6 +89,11 @@ const componentDefaults: EuiProviderProps<unknown>['componentDefaults'] = {
   EuiToolTip: {
     repositionOnScroll: true,
   },
+  EuiTable: {
+    scrollableInline: true,
+    tableLayout: 'auto',
+    responsiveBreakpoint: false,
+  },
 };
 
 /**

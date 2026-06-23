@@ -1,0 +1,108 @@
+version: "1"
+name: Investigation
+description: >
+  Root cause analysis for an observability issue. One agent investigates using
+  available signals — logs, traces, metrics, topology, and memory — then
+  produces a structured root cause conclusion.
+enabled: true
+settings:
+  timeout: "60m"
+  concurrency:
+    key: "streams-investigation-{{ inputs.concurrency_key | default: workflow.executionId }}"
+    strategy: cancel-in-progress
+    max: 1
+tags:
+  - observability
+  - streams
+  - investigation
+
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        message:
+          type: string
+          description: Description of the issue or event to investigate.
+        connector_id:
+          type: string
+          default: ".anthropic-claude-4.6-sonnet-chat_completion"
+          description: Connector ID for the investigation agent.
+        stream_names:
+          type: array
+          items:
+            type: string
+          description: Optional data stream names to scope observability queries.
+        context:
+          type: object
+          additionalProperties: true
+          description: Optional structured context (e.g. discovery metadata when invoked from sigevents).
+        concurrency_key:
+          type: string
+          description: Optional key for concurrency deduplication. Defaults to the workflow execution ID.
+      required:
+        - message
+      additionalProperties: false
+
+steps:
+
+  - name: investigate
+    type: ai.agent
+    agent-id: platform.streams.investigation
+    connector-id: '{{ inputs.connector_id }}'
+    # Keep plugin-id/aggregate-by in sync with @kbn/streams-schema inference_feature_ids.ts
+    # (STREAMS_SIG_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID / STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
+    plugin-id: "streams_sig_events_investigation"
+    aggregate-by: "streams_significant_events"
+    create-conversation: true
+    with:
+      timeout: 1800s
+      message: |
+        Investigate the root cause of the following issue:
+
+        {{ inputs.message }}
+
+        {% if inputs.stream_names and inputs.stream_names.size > 0 %}
+        Data streams (use get_index_info to discover available fields in each):
+        {% for stream in inputs.stream_names %}- {{ stream }}
+        {% endfor %}
+        {% endif %}
+        {% if inputs.context %}
+        Additional context: {{ inputs.context | json }}
+        {% endif %}
+      schema:
+        type: object
+        properties:
+          contributing_factors:
+            type: string
+          confidence:
+            type: number
+            minimum: 0
+            maximum: 1
+          evidence_summary:
+            type: string
+          mechanism:
+            type: string
+          alternatives_ruled_out:
+            type: array
+            items:
+              type: object
+              properties:
+                candidate:
+                  type: string
+                reason:
+                  type: string
+              required:
+                - candidate
+                - reason
+          gaps_found:
+            type: array
+            items:
+              type: string
+        required:
+          - contributing_factors
+          - confidence
+          - evidence_summary
+          - mechanism
+          - alternatives_ruled_out
+    on-failure:
+      continue: false

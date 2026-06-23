@@ -12,7 +12,7 @@ import { CASE_VIEW_PAGE_TABS } from '../../../../../common/types';
 import type { CaseUI } from '../../../../../common';
 import { useUrlParams } from '../../../../common/navigation';
 import { ATTACHMENT_TAB_ALIASES } from '../../../case_view/use_case_attachment_tabs';
-import { CaseViewActivity } from '../../../case_view/components/case_view_activity';
+import { CaseViewActivity } from './case_view_activity';
 import { CaseViewSimilarCases } from '../../../case_view/components/case_view_similar_cases';
 import { CaseViewAttachments } from '../../../case_view/components/case_view_attachments';
 import type { OnUpdateFields } from '../../../case_view/types';

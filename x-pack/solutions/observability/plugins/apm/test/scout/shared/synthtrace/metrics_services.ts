@@ -60,7 +60,7 @@ export function metricsServices({
     );
 }
 
-const OTEL_NATIVE_JAVA_TEMPLATE_NAME = 'metrics-otel_native_java-scout';
+export const OTEL_NATIVE_JAVA_TEMPLATE_NAME = 'metrics-otel_native_java-scout';
 const APM_INTERNAL_METRICS_INDEX = 'metrics-apm.internal-default';
 const APM_TRACES_INDEX = 'traces-apm-default';
 const DOC_INTERVAL_MS = 30_000;

@@ -166,14 +166,14 @@ describe('EditDataLifecycleFlyoutBody', () => {
     expect(policyBIdx).toBeLessThan(policyAIdx);
   });
 
-  it('renders the inherited lifecycle method when inheriting is enabled', () => {
+  it('renders the inherited lifecycle method the consumer provides when inheriting', () => {
     const inheritLifecycle = true;
 
     renderWithTheme(
       <EditDataLifecycleFlyoutBody
         inherit={{ value: inheritLifecycle, onChange: () => {} }}
-        // Simulate consumer preserving the last non-inherited selection (ILM)
-        method={{ value: 'ilm', onChange: () => {} }}
+        // The consumer feeds the resolved inherited method (DLM here).
+        method={{ value: 'dlm', onChange: () => {} }}
         ilm={{ policies: [], onSelect: () => {}, onInspect: () => {} }}
         dataStreamLifecycleContent={
           <EuiFieldText
@@ -194,12 +194,15 @@ describe('EditDataLifecycleFlyoutBody', () => {
     expect(screen.queryByTestId('editDataLifecycle-ilmNotConfiguredPanel')).not.toBeInTheDocument();
   });
 
-  it('keeps showing the inherited ILM policy while inheriting, even if selection changes', () => {
+  it('renders the inherited ILM policy the consumer provides while inheriting', () => {
     const policies = [
       { name: 'policy-a', phases: {}, serializedPolicy: undefined },
       { name: 'policy-b', phases: {}, serializedPolicy: undefined },
     ];
 
+    // The consumer owns the inherited value: while inheriting it feeds either
+    // `undefined` (until resolved) or exactly the inherited policy. The body
+    // renders that policy directly and only shows the single inherited row.
     const { rerender } = renderWithTheme(
       <EditDataLifecycleFlyoutBody
         inherit={{ value: true, onChange: () => {} }}
@@ -212,7 +215,10 @@ describe('EditDataLifecycleFlyoutBody', () => {
       />
     );
 
-    // Simulate local selection changes while still inheriting.
+    expect(screen.getByTestId(rowTestSubj('policy-a'))).toBeInTheDocument();
+    expect(screen.queryByTestId(rowTestSubj('policy-b'))).not.toBeInTheDocument();
+
+    // When the consumer updates the inherited policy, the body reflects it.
     rerender(
       <EditDataLifecycleFlyoutBody
         inherit={{ value: true, onChange: () => {} }}
@@ -225,66 +231,65 @@ describe('EditDataLifecycleFlyoutBody', () => {
       />
     );
 
-    expect(screen.getByTestId(rowTestSubj('policy-a'))).toBeInTheDocument();
-    expect(screen.queryByTestId(rowTestSubj('policy-b'))).not.toBeInTheDocument();
+    expect(screen.getByTestId(rowTestSubj('policy-b'))).toBeInTheDocument();
+    expect(screen.queryByTestId(rowTestSubj('policy-a'))).not.toBeInTheDocument();
   });
 
-  it('keeps showing the inherited DLM content while inheriting, even if content changes', () => {
-    const { rerender } = renderWithTheme(
-      <EditDataLifecycleFlyoutBody
-        inherit={{ value: true, onChange: () => {} }}
-        method={{ value: 'ilm', onChange: () => {} }}
-        ilm={{ policies: [], onSelect: () => {} }}
-        dataStreamLifecycleContent={<div data-test-subj="dlmPinnedValue">inherited</div>}
-      />
-    );
-
-    rerender(
-      <EditDataLifecycleFlyoutBody
-        inherit={{ value: true, onChange: () => {} }}
-        method={{ value: 'ilm', onChange: () => {} }}
-        ilm={{ policies: [], onSelect: () => {} }}
-        dataStreamLifecycleContent={<div data-test-subj="dlmPinnedValue">local</div>}
-      />
-    );
-
-    expect(screen.getByTestId('dlmPinnedValue')).toHaveTextContent('inherited');
-  });
-
-  it('keeps inheriting DLM after a local ILM policy is selected and inheritance is re-enabled', () => {
-    const policies = [{ name: 'policy-a', phases: {}, serializedPolicy: undefined }];
-
+  it('renders the DLM content the consumer provides while inheriting', () => {
     const { rerender } = renderWithTheme(
       <EditDataLifecycleFlyoutBody
         inherit={{ value: true, onChange: () => {} }}
         method={{ value: 'dlm', onChange: () => {} }}
-        ilm={{ policies, selectedPolicyName: undefined, onSelect: () => {} }}
-        dataStreamLifecycleContent={<div data-test-subj="dlmPinnedValue">inherited DLM</div>}
+        ilm={{ policies: [], onSelect: () => {} }}
+        dataStreamLifecycleContent={<div data-test-subj="dlmContentValue">inherited</div>}
       />
     );
 
+    expect(screen.getByTestId('dlmContentValue')).toHaveTextContent('inherited');
+
+    // The consumer owns the value; when it updates, the body reflects it.
     rerender(
       <EditDataLifecycleFlyoutBody
-        inherit={{ value: false, onChange: () => {} }}
-        method={{ value: 'ilm', onChange: () => {} }}
-        ilm={{ policies, selectedPolicyName: 'policy-a', onSelect: () => {} }}
-        dataStreamLifecycleContent={<div data-test-subj="dlmPinnedValue">local DLM</div>}
+        inherit={{ value: true, onChange: () => {} }}
+        method={{ value: 'dlm', onChange: () => {} }}
+        ilm={{ policies: [], onSelect: () => {} }}
+        dataStreamLifecycleContent={<div data-test-subj="dlmContentValue">local</div>}
       />
     );
 
-    expect(screen.getByTestId(rowTestSubj('policy-a'))).toBeInTheDocument();
+    expect(screen.getByTestId('dlmContentValue')).toHaveTextContent('local');
+  });
 
+  it('renders the inherited policy the consumer resolves after toggling inheritance on', () => {
+    const policies = [
+      { name: 'policy-a', phases: {}, serializedPolicy: undefined },
+      { name: 'policy-b', phases: {}, serializedPolicy: undefined },
+    ];
+
+    // Inheritance toggled on; consumer has not resolved the inherited policy yet
+    // (it feeds `undefined` until the source resolves).
+    const { rerender } = renderWithTheme(
+      <EditDataLifecycleFlyoutBody
+        inherit={{ value: true, onChange: () => {} }}
+        method={{ value: 'ilm', onChange: () => {} }}
+        ilm={{ policies, selectedPolicyName: undefined, onSelect: () => {} }}
+      />
+    );
+
+    // Inherited source resolves and the consumer feeds the inherited policy.
     rerender(
       <EditDataLifecycleFlyoutBody
         inherit={{ value: true, onChange: () => {} }}
         method={{ value: 'ilm', onChange: () => {} }}
         ilm={{ policies, selectedPolicyName: 'policy-a', onSelect: () => {} }}
-        dataStreamLifecycleContent={<div data-test-subj="dlmPinnedValue">inherited DLM</div>}
       />
     );
 
-    expect(screen.getByTestId('dlmPinnedValue')).toHaveTextContent('inherited DLM');
-    expect(screen.queryByTestId(rowTestSubj('policy-a'))).not.toBeInTheDocument();
+    // The inherited policy is shown read-only (no search input) even when it
+    // equals a value the user could have selected before toggling — the
+    // consumer drives the value, so there is no pin/deadlock to manage here.
+    expect(screen.getByTestId(rowTestSubj('policy-a'))).toBeInTheDocument();
+    expect(screen.queryByTestId('retentionSelectorSearchInput')).not.toBeInTheDocument();
   });
 
   it('resets uncontrolled DLM input back to inherited value when re-enabling inherit', async () => {

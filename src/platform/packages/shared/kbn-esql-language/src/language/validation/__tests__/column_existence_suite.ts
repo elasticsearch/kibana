@@ -43,15 +43,29 @@ export const runColumnExistenceValidationSuite = (setup: Setup) => {
       );
     });
 
-    it('warns when accessing an unsupported field', async () => {
+    it('warns when accessing an unsupported field in KEEP or DROP', async () => {
       const { expectErrors } = await setup();
-      await expectErrors(
-        'from a_index | keep unsupportedField',
-        [],
-        [
-          'Field "unsupportedField" cannot be retrieved, it is unsupported or not indexed; returning null',
-        ]
-      );
+      const warning =
+        'Field "unsupportedField" cannot be retrieved, it is unsupported or not indexed; returning null';
+      await expectErrors('from a_index | keep unsupportedField', [], [warning]);
+      await expectErrors('from a_index | drop unsupportedField', [], [warning]);
+    });
+
+    it('errors when accessing an unsupported field outside KEEP or DROP', async () => {
+      const { expectErrors } = await setup();
+      await expectErrors('from a_index | sort unsupportedField', [
+        'Field "unsupportedField" cannot be retrieved, it is unsupported or not indexed; returning null',
+      ]);
+    });
+
+    it('reports conflicting column types with original types', async () => {
+      const { expectErrors } = await setup();
+      const message =
+        'Column [conflictingField] has conflicting types across indices: [text], [keyword]';
+
+      await expectErrors('from conflict_index | keep conflictingField', [], [message]);
+      await expectErrors('from conflict_index | drop conflictingField', [], [message]);
+      await expectErrors('from conflict_index | sort conflictingField', [message]);
     });
 
     it('returns one warning for each instance of the same unmapped column', async () => {

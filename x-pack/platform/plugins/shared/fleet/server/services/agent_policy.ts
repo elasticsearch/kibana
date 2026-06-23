@@ -2021,21 +2021,21 @@ class AgentPolicyService {
             fleetServerPolicies.map((fsp) => fsp.policy_id).filter((id) => !hasVersionSuffix(id))
           ),
         ];
-        await pMap(
-          deployedPolicyIds,
-          async (policyId) => {
-            const latestFleetPolicy = await this.getLatestFleetPolicyRevision(esClient, policyId);
-            const soRevision = policiesMap[policyId]?.revision;
-            if (latestFleetPolicy && soRevision && latestFleetPolicy.revision_idx !== soRevision) {
-              logger.warn(
-                `Policy [${policyId}] has mismatched revisions after deploy: ` +
-                  `.kibana_ingest revision [${soRevision}], ` +
-                  `.fleet-policies revision_idx [${latestFleetPolicy.revision_idx}]`
-              );
-            }
-          },
-          { concurrency: MAX_CONCURRENT_AGENT_POLICIES_OPERATIONS_20 }
+        const latestRevisionByPolicyId = await this.getLatestFleetPolicyRevisions(
+          esClient,
+          deployedPolicyIds
         );
+        for (const policyId of deployedPolicyIds) {
+          const latestRevisionIdx = latestRevisionByPolicyId.get(policyId);
+          const soRevision = policiesMap[policyId]?.revision;
+          if (latestRevisionIdx !== undefined && soRevision && latestRevisionIdx !== soRevision) {
+            logger.warn(
+              `Policy [${policyId}] has mismatched revisions after deploy: ` +
+                `.kibana_ingest revision [${soRevision}], ` +
+                `.fleet-policies revision_idx [${latestRevisionIdx}]`
+            );
+          }
+        }
 
         for (const agentPolicy of policies) {
           if (!agentPolicy.supports_agentless) {
@@ -2129,29 +2129,43 @@ class AgentPolicyService {
     }
   }
 
-  public async getLatestFleetPolicyRevision(
+  /**
+   * Resolve the latest deployed revision (`revision_idx` in `.fleet-policies`) for many agent
+   * policies in a single aggregation. Returns a map keyed by policy id; policies without a
+   * deployed revision are omitted from the map.
+   */
+  public async getLatestFleetPolicyRevisions(
     esClient: ElasticsearchClient,
-    agentPolicyId: string
-  ): Promise<Pick<FleetServerPolicy, 'revision_idx' | 'policy_id'> | null> {
-    const res = await esClient.search<Pick<FleetServerPolicy, 'revision_idx' | 'policy_id'>>({
-      index: AGENT_POLICY_INDEX,
-      ignore_unavailable: true,
-      rest_total_hits_as_int: true,
-      _source: ['revision_idx', 'policy_id'],
-      query: {
-        term: {
-          policy_id: agentPolicyId,
-        },
-      },
-      size: 1,
-      sort: [{ revision_idx: { order: 'desc' } }],
-    });
-
-    if ((res.hits.total as number) === 0) {
-      return null;
+    agentPolicyIds: string[]
+  ): Promise<Map<string, number>> {
+    const latestRevisionByPolicyId = new Map<string, number>();
+    if (agentPolicyIds.length === 0) {
+      return latestRevisionByPolicyId;
     }
 
-    return res.hits.hits[0]._source ?? null;
+    const res = await esClient.search<
+      unknown,
+      { policies: { buckets: Array<{ key: string; latest_revision: { value: number | null } }> } }
+    >({
+      index: AGENT_POLICY_INDEX,
+      ignore_unavailable: true,
+      size: 0,
+      query: { terms: { policy_id: agentPolicyIds } },
+      aggs: {
+        policies: {
+          terms: { field: 'policy_id', size: agentPolicyIds.length, execution_hint: 'map' },
+          aggs: { latest_revision: { max: { field: 'revision_idx' } } },
+        },
+      },
+    });
+
+    for (const bucket of res.aggregations?.policies?.buckets ?? []) {
+      if (bucket.latest_revision.value !== null) {
+        latestRevisionByPolicyId.set(bucket.key, bucket.latest_revision.value);
+      }
+    }
+
+    return latestRevisionByPolicyId;
   }
 
   public async getFleetServerPolicy(

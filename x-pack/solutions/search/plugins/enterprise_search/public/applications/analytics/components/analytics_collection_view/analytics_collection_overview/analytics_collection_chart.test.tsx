@@ -9,16 +9,26 @@ import { setMockValues } from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { mount, shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
 import moment from 'moment';
 
-import { AreaSeries, Chart } from '@elastic/charts';
-import { EuiLoadingChart } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { FilterBy } from '../../../utils/get_formula_by_filter';
 
 import { AnalyticsCollectionChart } from './analytics_collection_chart';
+
+jest.mock('@elastic/charts', () => ({
+  ...jest.requireActual('@elastic/charts'),
+  AreaSeries: () => <div data-test-subj="areaSeries" />,
+  Axis: () => null,
+  Chart: ({ children }: { children: React.ReactNode }) => (
+    <div data-test-subj="chart">{children}</div>
+  ),
+  Settings: () => null,
+  Tooltip: () => null,
+}));
 
 describe('AnalyticsCollectionChart', () => {
   const mockedData = Object.values(FilterBy).reduce(
@@ -53,21 +63,25 @@ describe('AnalyticsCollectionChart', () => {
   });
 
   it('should render chart and metrics for each chart', () => {
-    const component = shallow(<AnalyticsCollectionChart {...defaultProps} />);
-    expect(component.find(Chart)).toHaveLength(1);
-    expect(component.find(AreaSeries)).toHaveLength(4);
+    renderWithKibanaRenderContext(<AnalyticsCollectionChart {...defaultProps} />);
+    expect(screen.getByTestId('chart')).toBeInTheDocument();
+    expect(screen.getAllByTestId('areaSeries')).toHaveLength(4);
   });
 
   it('should render a loading indicator if loading and have not data', () => {
-    const component = shallow(<AnalyticsCollectionChart {...defaultProps} data={{}} isLoading />);
-    expect(component.find(EuiLoadingChart).exists()).toBeTruthy();
+    renderWithKibanaRenderContext(
+      <AnalyticsCollectionChart {...defaultProps} data={{}} isLoading />
+    );
+    expect(screen.queryByTestId('chart')).not.toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('should not render a loading indicator if loading but have data', () => {
-    const component = mount(<AnalyticsCollectionChart {...defaultProps} isLoading />);
-    component.update();
-    component.setProps({ data: mockedData });
-    component.update();
-    expect(component.find(EuiLoadingChart).exists()).toBeFalsy();
+    const { rerender } = renderWithKibanaRenderContext(
+      <AnalyticsCollectionChart {...defaultProps} isLoading />
+    );
+    rerender(<AnalyticsCollectionChart {...defaultProps} data={mockedData} isLoading />);
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByTestId('chart')).toBeInTheDocument();
   });
 });

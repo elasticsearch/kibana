@@ -34,9 +34,21 @@ export const builtInTriggerDefinitions: BaseTriggerDefinition[] = [
     description: 'Trigger a workflow manually via the UI or API',
     schema: ManualTriggerSchema,
     documentation: {
+      details:
+        'Optionally declare runtime inputs under the trigger using JSON Schema ' +
+        '(`inputs.properties` + `inputs.required`). Reference them in steps with `{{ inputs.<name> }}`.',
       examples: [
         `triggers:
   - type: manual`,
+        `triggers:
+  - type: manual
+    inputs:
+      properties:
+        request_id:
+          type: string
+          description: The ID of the request to accept
+      required:
+        - request_id`,
       ],
     },
   },

@@ -17,6 +17,12 @@ export interface EmbeddableConversationDependencies {
   coreStart: CoreStart;
 }
 
+export interface EmbeddableConversationCallbacks {
+  updateProps: (props: EmbeddableConversationProps) => void;
+  resetBrowserApiTools: () => void;
+  addAttachment: (attachment: ConversationAttachment) => void;
+}
+
 export interface EmbeddableConversationSidebarProps {
   onClose?: () => void;
   ariaLabelledBy: string;
@@ -25,11 +31,7 @@ export interface EmbeddableConversationSidebarProps {
    * Used internally to update sidebar props and clear browser API tools.
    * @internal
    */
-  onRegisterCallbacks?: (callbacks: {
-    updateProps: (props: EmbeddableConversationProps) => void;
-    resetBrowserApiTools: () => void;
-    addAttachment: (attachment: ConversationAttachment) => void;
-  }) => void;
+  onRegisterCallbacks?: (callbacks: EmbeddableConversationCallbacks) => void;
 }
 
 export type EmbeddableConversationInternalProps = EmbeddableConversationDependencies &

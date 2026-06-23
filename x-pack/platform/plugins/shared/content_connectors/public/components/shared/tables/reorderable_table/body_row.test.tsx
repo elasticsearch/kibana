@@ -7,12 +7,10 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
-
-import { EuiCallOut, EuiToken } from '@elastic/eui';
+import { screen } from '@testing-library/react';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { BodyRow } from './body_row';
-import { Cell } from './cell';
 
 interface Foo {
   id: number;
@@ -36,65 +34,54 @@ describe('BodyRow', () => {
   const item = { id: 1 };
 
   it('renders a table row from the provided item and columns', () => {
-    const wrapper = shallow(<BodyRow columns={columns} item={item} />);
-    const cells = wrapper.find(Cell);
+    const { container } = renderWithKibanaRenderContext(<BodyRow columns={columns} item={item} />);
+    const cells = container.querySelectorAll('[role="cell"]');
 
-    expect(cells.length).toBe(2);
-    expect(cells.at(0).props()).toEqual({
-      alignItems: 'bar',
-      children: 1,
-      flexBasis: 'foo',
-      flexGrow: 0,
-      role: 'cell',
-      ariaColindex: 1,
-    });
-    expect(cells.at(1).props()).toEqual({
-      children: 'Whatever',
-      role: 'cell',
-      ariaColindex: 2,
-    });
+    expect(cells).toHaveLength(2);
+
+    expect(cells[0]).toHaveTextContent('1');
+    expect(cells[0]).toHaveStyle({ flexBasis: 'foo', flexGrow: 0, alignItems: 'bar' });
+    expect(cells[0]).toHaveAttribute('aria-colindex', '1');
+
+    expect(cells[1]).toHaveTextContent('Whatever');
+    expect(cells[1]).toHaveAttribute('aria-colindex', '2');
   });
 
   it('will accept additional properties to apply to this row', () => {
-    const wrapper = shallow(
-      <BodyRow
-        columns={columns}
-        item={item}
-        additionalProps={{
-          className: 'some_class_name',
-        }}
-      />
+    renderWithKibanaRenderContext(
+      <BodyRow columns={columns} item={item} additionalProps={{ className: 'some_class_name' }} />
     );
-
-    expect(wrapper.find('[data-test-subj="row"]').hasClass('some_class_name')).toBe(true);
+    expect(screen.getByTestId('row')).toHaveClass('some_class_name');
   });
 
   it('will render an additional cell in the first column if one is provided', () => {
-    const wrapper = shallow(
+    const { container } = renderWithKibanaRenderContext(
       <BodyRow columns={columns} item={item} leftAction={<div>Left Action</div>} />
     );
-    const cells = wrapper.find(Cell);
+    const cells = container.querySelectorAll('[role="cell"]');
 
-    expect(cells.length).toBe(3);
-    expect(cells.at(0).html()).toContain('Left Action');
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toHaveTextContent('Left Action');
   });
 
   it('will render a row identifier if one is provided', () => {
-    const wrapper = shallow(<BodyRow columns={columns} item={item} rowIdentifier="21" />);
-    const cells = wrapper.find(Cell);
+    const { container } = renderWithKibanaRenderContext(
+      <BodyRow columns={columns} item={item} rowIdentifier="21" />
+    );
+    const cells = container.querySelectorAll('[role="cell"]');
 
-    expect(cells.length).toBe(3);
-    expect(cells.at(0).find(EuiToken)).toHaveLength(1);
+    expect(cells).toHaveLength(3);
+    expect(cells[0].querySelector('.euiToken')).not.toBeNull();
   });
 
   it('will render row errors', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <BodyRow columns={columns} item={item} errors={['first error', 'second error']} />
     );
-    const callouts = wrapper.find(EuiCallOut);
+    const alerts = screen.getAllByRole('alert');
 
-    expect(callouts.length).toBe(2);
-    expect(callouts.at(0).prop('title')).toEqual('first error');
-    expect(callouts.at(1).prop('title')).toEqual('second error');
+    expect(alerts).toHaveLength(2);
+    expect(alerts[0]).toHaveTextContent('first error');
+    expect(alerts[1]).toHaveTextContent('second error');
   });
 });

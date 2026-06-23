@@ -406,6 +406,10 @@ export interface Conversation {
   read?: boolean;
   /** current status of the conversation */
   status?: ConversationRoundStatus;
+  /**
+   * Identifier of the bash/VFS workspace for this conversation.
+   */
+  workspace_id?: string;
 }
 
 export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';

@@ -13,16 +13,18 @@ import { actionsContainerStyles, visualizationActionsClassName } from './styles'
 
 export const renderActionButton = (button: ActionButton) => {
   const buttonElement = (
-    <EuiButtonIcon
-      display="base"
-      color="text"
-      size="s"
-      iconType={button.icon ? button.icon : 'pencil'}
-      aria-label={button.label}
-      css={button.type === ActionButtonType.PRIMARY ? css({ marginLeft: '-1px' }) : undefined}
-      isDisabled={button.disabled}
-      onClick={button.handler}
-    />
+    <EuiToolTip content={button.label} disableScreenReaderOutput>
+      <EuiButtonIcon
+        display="base"
+        color="text"
+        size="s"
+        iconType={button.icon ? button.icon : 'pencil'}
+        aria-label={button.label}
+        css={button.type === ActionButtonType.PRIMARY ? css({ marginLeft: '-1px' }) : undefined}
+        isDisabled={button.disabled}
+        onClick={button.handler}
+      />
+    </EuiToolTip>
   );
   const tooltipContent = button.disabled ? button.disabledReason ?? button.label : button.label;
 

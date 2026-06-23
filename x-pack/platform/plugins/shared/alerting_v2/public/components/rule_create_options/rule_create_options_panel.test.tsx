@@ -57,7 +57,7 @@ describe('RuleCreateOptionsPanel', () => {
   it('renders the rule builder divider between the second and third options', () => {
     renderPanel();
 
-    expect(screen.getByText('Or start from a builder')).toBeInTheDocument();
+    expect(screen.getByText('or start from a builder')).toBeInTheDocument();
     expect(screen.queryByText('Start from a rule builder')).not.toBeInTheDocument();
   });
 
@@ -73,5 +73,20 @@ describe('RuleCreateOptionsPanel', () => {
     fireEvent.click(screen.getByTestId('createThresholdAlertCard'));
 
     expect(onCreateThresholdAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the agent card when onCreateWithAgent is not provided', () => {
+    render(
+      <I18nProvider>
+        <RuleCreateOptionsPanel
+          onCreateEsqlRule={onCreateEsqlRule}
+          onCreateThresholdAlert={onCreateThresholdAlert}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('createEsqlRuleCard')).toBeInTheDocument();
+    expect(screen.queryByTestId('createWithAgentCard')).not.toBeInTheDocument();
+    expect(screen.getByTestId('createThresholdAlertCard')).toBeInTheDocument();
   });
 });

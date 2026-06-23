@@ -12,6 +12,7 @@ import { EuiFilterButton } from '@elastic/eui';
 import type { Query } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useContentListConfig } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 
 const STARRED_FIELD = 'starred';
 
@@ -46,7 +47,7 @@ export interface StarredFilterRendererProps {
 export const StarredFilterRenderer = ({
   query,
   onChange,
-  'data-test-subj': dataTestSubj = 'contentListStarredRenderer',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.starredFilter,
 }: StarredFilterRendererProps) => {
   const { supports } = useContentListConfig();
 

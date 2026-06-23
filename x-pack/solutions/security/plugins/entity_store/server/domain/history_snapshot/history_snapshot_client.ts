@@ -7,6 +7,7 @@
 
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import moment from 'moment';
+import { entityStoreMetrics } from '../../monitor/metrics';
 import type { EntityStoreGlobalState } from '../saved_objects';
 import type { EntityStoreGlobalStateClient } from '../saved_objects';
 import { createIndex, reindex, updateByQueryWithScript } from '../../infra/elasticsearch';
@@ -74,6 +75,7 @@ export class HistorySnapshotClient {
     try {
       await createIndex(this.esClient, historySnapshotIndex, { throwIfExists: false });
 
+      const reindexStart = Date.now();
       const reindexResult = await reindex(this.esClient, {
         source: { index: latestIndex },
         dest: { index: historySnapshotIndex },
@@ -85,12 +87,19 @@ export class HistorySnapshotClient {
           forever: true,
         },
       });
+      entityStoreMetrics.historySnapshotReindexDurationMs.record(Date.now() - reindexStart, {
+        namespace: this.namespace,
+      });
+
       const docCount = reindexResult.total;
       if (docCount === 0) {
         await this.updateGlobalStateOnSuccess(globalState);
+        entityStoreMetrics.historySnapshotSuccess.add(1, { namespace: this.namespace });
+        entityStoreMetrics.historySnapshotDocCount.record(0, { namespace: this.namespace });
         return { ok: true, historySnapshotIndex, docCount: 0, resetCount: 0 };
       }
 
+      const resetStart = Date.now();
       const updateResult = await updateByQueryWithScript(this.esClient, {
         index: latestIndex,
         query: { match_all: {} },
@@ -104,7 +113,13 @@ export class HistorySnapshotClient {
           forever: true,
         },
       });
+      entityStoreMetrics.historySnapshotResetDurationMs.record(Date.now() - resetStart, {
+        namespace: this.namespace,
+      });
+
       await this.updateGlobalStateOnSuccess(globalState);
+      entityStoreMetrics.historySnapshotSuccess.add(1, { namespace: this.namespace });
+      entityStoreMetrics.historySnapshotDocCount.record(docCount, { namespace: this.namespace });
       return {
         ok: true,
         historySnapshotIndex,

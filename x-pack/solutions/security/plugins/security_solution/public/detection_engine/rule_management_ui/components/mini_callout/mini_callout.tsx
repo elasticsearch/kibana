@@ -98,7 +98,7 @@ export const MiniCallout = memo(function MiniCallout({
   return (
     <EuiCallOut size="s" color={color} data-test-subj={dataTestSubj}>
       <div css={{ display: 'flex' }}>
-        {iconType && <EuiIcon type={iconType} color={color} />}
+        {iconType && <EuiIcon type={iconType} color={color} aria-hidden={true} />}
         {calloutTitle}
       </div>
     </EuiCallOut>

@@ -9,10 +9,9 @@ import type { ElasticsearchClient } from '@kbn/core/server';
 import { errors } from '@elastic/elasticsearch';
 
 import type { PackageDataStreamTypes } from '../../../../common/types';
+import { VALID_DATA_STREAM_TYPES } from '../../../../common/services';
 import { dataStreamService } from '../../data_streams';
 import { FleetUnauthorizedError } from '../../../errors';
-
-const VALID_STREAM_TYPES = ['logs', 'metrics', 'traces', 'synthetics', 'profiling'];
 
 export async function getDataStreams(options: {
   esClient: ElasticsearchClient;
@@ -43,7 +42,7 @@ export async function getDataStreams(options: {
     : allDataStreams;
 
   filteredDataStreams = filteredDataStreams.filter((stream) => {
-    const isValidStreamType = VALID_STREAM_TYPES.some((streamType) =>
+    const isValidStreamType = VALID_DATA_STREAM_TYPES.some((streamType) =>
       stream.name.startsWith(streamType)
     );
 

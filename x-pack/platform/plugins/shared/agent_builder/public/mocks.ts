@@ -81,6 +81,7 @@ const createStartContractMock = (): AgentBuilderPluginStartMock => {
     addAttachment: jest.fn(),
     updateAttachmentOrigin: jest.fn(),
     EmbeddableConversation: () => null,
+    EmbeddableConversationInput: () => null,
   };
 };
 

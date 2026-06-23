@@ -8,6 +8,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import type { ContentEditorActionProps, ActionOutput, ActionBuilderContext } from '../types';
 
 /**
@@ -41,7 +42,7 @@ export const buildContentEditorAction = (
     icon: 'inspect',
     type: 'icon',
     ...(consumerEnabled && { enabled: consumerEnabled }),
-    'data-test-subj': 'content-list-table-action-inspect',
+    'data-test-subj': CONTENT_LIST_TEST_SUBJECTS.actionInspect,
     onClick: (item) => open(item),
   };
 };

@@ -16,7 +16,7 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
-import { euiStyled } from '@kbn/kibana-react-plugin/common';
+import styled from '@emotion/styled';
 import { useTestIdGenerator } from '../../hooks/use_test_id_generator';
 import type {
   ActionDetails,
@@ -47,7 +47,7 @@ const ACCORDION_BUTTON_TEXT = Object.freeze({
   },
 });
 
-const StyledEuiText = euiStyled(EuiText)`
+const StyledEuiText = styled(EuiText)`
   white-space: pre-wrap;
   line-break: anywhere;
 `;

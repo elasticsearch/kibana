@@ -14,6 +14,7 @@ import { useChartLayers } from './use_chart_layers';
 import {
   LensConfigBuilder,
   type LensAttributes,
+  type LensLegendConfig,
   type LensSeriesLayer,
 } from '@kbn/lens-embeddable-utils';
 import { dataViewPluginMocks } from '@kbn/data-views-plugin/public/mocks';
@@ -47,6 +48,7 @@ describe('useLensProps', () => {
 
   const mockEmptyChartLayers: Array<LensSeriesLayer> = [];
   const mockError = new Error('Test error');
+  const legendConfig: LensLegendConfig = { show: true, position: 'right' };
 
   const fetchParams = getFetchParamsMock();
   let discoverFetch$: UnifiedHistogramFetch$;
@@ -188,6 +190,38 @@ describe('useLensProps', () => {
             esql: 'FROM metrics-*',
           },
         }
+      );
+    });
+  });
+
+  it('uses provided legend config when legend prop is set', async () => {
+    const chartRef = createMockChartRef();
+
+    renderHook(() =>
+      useLensProps({
+        chartId: 'testChartId',
+        title: 'Test Chart',
+        query: 'FROM metrics-*',
+        services: servicesMock as UnifiedHistogramServices,
+        fetchParams,
+        discoverFetch$,
+        chartRef,
+        chartLayers: mockChartLayers,
+        legend: legendConfig,
+        profileId: 'testProfileId',
+      })
+    );
+
+    act(() => {
+      discoverFetch$.next({ fetchParams, lensVisServiceState: undefined });
+    });
+
+    await waitFor(() => {
+      expect(LensConfigBuilder.prototype.build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          legend: { show: true, position: 'right' },
+        }),
+        expect.anything()
       );
     });
   });

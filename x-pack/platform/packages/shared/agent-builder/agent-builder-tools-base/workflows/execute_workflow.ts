@@ -6,9 +6,13 @@
  */
 
 import type { KibanaRequest } from '@kbn/core-http-server';
-import { safeJsonStringify } from '@kbn/std';
+import { SpanKind } from '@opentelemetry/api';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
-import { ElasticGenAIAttributes, withActiveInferenceSpan } from '@kbn/inference-tracing';
+import {
+  ElasticGenAIAttributes,
+  GenAISemanticConventions,
+  withActiveInferenceSpan,
+} from '@kbn/inference-tracing';
 import { toWorkflowExecutionState } from './get_execution_state';
 import type { WorkflowExecutionResult } from './execute_workflow_types';
 
@@ -59,12 +63,13 @@ export const executeWorkflow = async (
   const spanLabel = params.workflowId ?? 'ephemeral';
 
   return withActiveInferenceSpan(
-    `Workflow: ${spanLabel}`,
+    `invoke_workflow ${spanLabel}`,
     {
+      kind: SpanKind.INTERNAL,
       attributes: {
         [ElasticGenAIAttributes.InferenceSpanKind]: 'CHAIN',
+        [GenAISemanticConventions.GenAIOperationName]: 'invoke_workflow',
         ...(params.workflowId ? { 'elastic.workflow.id': params.workflowId } : {}),
-        'input.value': safeJsonStringify(workflowParams) ?? '{}',
       },
     },
     async (span) => {
@@ -96,15 +101,13 @@ export const executeWorkflow = async (
         span?.setAttribute('elastic.workflow.execution_id', executeResult.workflowExecutionId);
 
         if (executeResult.execution) {
-          span?.setAttribute(
-            'elastic.workflow.name',
-            executeResult.execution.workflowDefinition.name
-          );
+          const workflowName = executeResult.execution.workflowDefinition.name;
+          span?.setAttribute(GenAISemanticConventions.GenAIWorkflowName, workflowName);
+          span?.updateName(`invoke_workflow ${workflowName}`);
           const result: WorkflowExecutionResult = {
             success: true,
             execution: toWorkflowExecutionState(executeResult.execution),
           };
-          span?.setAttribute('output.value', safeJsonStringify(result) ?? 'unknown');
           return result;
         }
 
@@ -113,14 +116,12 @@ export const executeWorkflow = async (
           success: false,
           error: `Workflow '${idLabel}' executed but execution not found after ${completionTimeoutSec}s.`,
         };
-        span?.setAttribute('output.value', safeJsonStringify(result) ?? 'unknown');
         return result;
       } catch (e) {
         const result: WorkflowExecutionResult = {
           success: false,
           error: e instanceof Error ? e.message : String(e),
         };
-        span?.setAttribute('output.value', safeJsonStringify(result) ?? 'unknown');
         return result;
       }
     }

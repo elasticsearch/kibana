@@ -23,3 +23,22 @@ export const INDEX_LOGS_METRICS_AND_TRACES: estypes.SecurityIndicesPrivileges = 
   names: ['logs-*-*', 'logs', 'logs.*', 'metrics-*-*', 'traces-*-*'],
   privileges: ['auto_configure', 'create_doc'],
 };
+
+// https://www.elastic.co/observability-labs/blog/prometheus-remote-write-elasticsearch
+export const INDEX_PROMETHEUS_REMOTE_WRITE: estypes.SecurityIndicesPrivileges = {
+  names: ['metrics-*'],
+  privileges: ['auto_configure', 'create_doc'],
+};
+
+// https://www.elastic.co/docs/manage-data/ingest/otlp-endpoint#create-an-api-key
+export const INDEX_OTLP_LOGS_METRICS_AND_TRACES: estypes.SecurityIndicesPrivileges = {
+  names: ['logs-*', 'metrics-*', 'traces-*'],
+  privileges: ['auto_configure', 'create_doc'],
+};
+
+// https://docs.elastic.dev/hotel/development/api-key-ingestion#option-3-elasticsearch-api
+export const APM_EVENT_WRITE_APPLICATION: estypes.SecurityApplicationPrivileges = {
+  application: 'apm',
+  privileges: ['event:write'],
+  resources: ['*'],
+};

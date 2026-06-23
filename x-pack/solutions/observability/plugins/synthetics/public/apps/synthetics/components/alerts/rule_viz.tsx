@@ -16,6 +16,7 @@ import {
   EuiPopoverTitle,
   EuiSpacer,
   EuiToolTip,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { useSelector, useDispatch } from 'react-redux';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
@@ -36,6 +37,7 @@ export const RuleViz = ({ dispatchedAction }: { dispatchedAction: PayloadAction<
   } = useKibana<ClientPluginsStart>();
 
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+  const ruleVizPopoverTitleId = useGeneratedHtmlId();
 
   const { inspectorAdapters, addInspectorRequest } = useInspectorContext();
 
@@ -96,8 +98,9 @@ export const RuleViz = ({ dispatchedAction }: { dispatchedAction: PayloadAction<
                 </EuiButtonEmpty>
               )
             }
+            aria-labelledby={ruleVizPopoverTitleId}
           >
-            <EuiPopoverTitle>
+            <EuiPopoverTitle id={ruleVizPopoverTitleId}>
               {i18n.translate('xpack.synthetics.statusRuleViz.monitorsPopoverTitleLabel', {
                 defaultMessage: 'Monitors',
               })}

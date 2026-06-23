@@ -8,18 +8,18 @@
 import { schema } from '@kbn/config-schema';
 
 export const calendarSchema = schema.object({
-  calendarId: schema.string(),
-  calendar_id: schema.maybe(schema.string()),
-  job_ids: schema.arrayOf(schema.string(), { maxSize: 10000 }),
-  description: schema.maybe(schema.string()),
+  calendarId: schema.string({ maxLength: 10000 }),
+  calendar_id: schema.maybe(schema.string({ maxLength: 10000 })),
+  job_ids: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
+  description: schema.maybe(schema.string({ maxLength: 10000 })),
   total_job_count: schema.maybe(schema.number()),
   events: schema.arrayOf(
     schema.object({
-      event_id: schema.maybe(schema.string()),
-      calendar_id: schema.maybe(schema.string()),
-      description: schema.maybe(schema.string()),
-      start_time: schema.oneOf([schema.string(), schema.number()]),
-      end_time: schema.oneOf([schema.string(), schema.number()]),
+      event_id: schema.maybe(schema.string({ maxLength: 10000 })),
+      calendar_id: schema.maybe(schema.string({ maxLength: 10000 })),
+      description: schema.maybe(schema.string({ maxLength: 10000 })),
+      start_time: schema.oneOf([schema.string({ maxLength: 10000 }), schema.number()]),
+      end_time: schema.oneOf([schema.string({ maxLength: 10000 }), schema.number()]),
       skip_result: schema.maybe(schema.boolean()),
       skip_model_update: schema.maybe(schema.boolean()),
       force_time_shift: schema.maybe(schema.number()),
@@ -28,8 +28,11 @@ export const calendarSchema = schema.object({
   ),
 });
 
-export const calendarIdSchema = schema.object({ calendarId: schema.string() });
+export const calendarIdSchema = schema.object({ calendarId: schema.string({ maxLength: 10000 }) });
 
 export const calendarIdsSchema = schema.object({
-  calendarIds: schema.string({ meta: { description: 'Comma-separated list of calendar IDs' } }),
+  calendarIds: schema.string({
+    maxLength: 10000,
+    meta: { description: 'Comma-separated list of calendar IDs' },
+  }),
 });

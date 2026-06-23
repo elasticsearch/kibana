@@ -14,9 +14,9 @@ import {
   EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
-import { Tooltip } from '../tooltip';
 import { strings } from './action_strings';
 import type { FilterItemActionsProps } from './types';
 import { actionButtonCss } from '../filter_item.styles';
@@ -39,7 +39,14 @@ export const FilterItemActions: FC<FilterItemActionsProps & { minimizePaddings?:
   return (
     <EuiFlexGroup justifyContent="flexEnd" alignItems="flexEnd" gutterSize="xs" responsive={false}>
       <EuiFlexItem grow={false}>
-        <Tooltip content={strings.getDeleteButtonDisabled()} show={disableRemove || disabled}>
+        <EuiToolTip
+          content={
+            disableRemove || disabled
+              ? strings.getDeleteButtonDisabled()
+              : strings.getDeleteFilterGroupButtonIconLabel()
+          }
+          disableScreenReaderOutput
+        >
           <EuiButtonIcon
             onClick={onRemoveFilter}
             iconType="trash"
@@ -49,7 +56,7 @@ export const FilterItemActions: FC<FilterItemActionsProps & { minimizePaddings?:
             aria-label={strings.getDeleteFilterGroupButtonIconLabel()}
             // EuiButtonIcon has no padding to minimize
           />
-        </Tooltip>
+        </EuiToolTip>
       </EuiFlexItem>
       {!hideOr && (
         <EuiFlexItem grow={false}>

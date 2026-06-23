@@ -7,6 +7,7 @@
 
 import React from 'react';
 import type { CreateWatchlistRequestBodyInput } from '../../../../common/api/entity_analytics/watchlists/management/create.gen';
+import type { MonitoringEntitySource } from '../../../../common/api/entity_analytics/watchlists/data_source/common.gen';
 import { FlyoutBody } from '../../shared/components/flyout_body';
 import { FlyoutNavigation } from '../../shared/components/flyout_navigation';
 import { WatchlistsFlyoutFooter } from './footer';
@@ -17,6 +18,7 @@ export interface WatchlistsFlyoutContentProps {
   title: string;
   watchlist: CreateWatchlistRequestBodyInput;
   watchlistId?: string;
+  indexSourceWithMissingApiKey?: MonitoringEntitySource;
   isEditMode: boolean;
   isNameTooLong: boolean;
   isDescriptionTooLong: boolean;
@@ -35,6 +37,7 @@ export const WatchlistsFlyoutContent = ({
   title,
   watchlist,
   watchlistId,
+  indexSourceWithMissingApiKey,
   isEditMode,
   isNameTooLong,
   isDescriptionTooLong,
@@ -53,6 +56,7 @@ export const WatchlistsFlyoutContent = ({
         <WatchlistForm
           watchlist={watchlist}
           watchlistId={watchlistId}
+          indexSourceWithMissingApiKey={indexSourceWithMissingApiKey}
           isEditMode={isEditMode}
           onFieldChange={onFieldChange}
           isNameTooLong={isNameTooLong}

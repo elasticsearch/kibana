@@ -4,7 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import { EuiButtonEmpty, EuiConfirmModal, EuiToolTip } from '@elastic/eui';
+import { EuiButtonEmpty, EuiConfirmModal, EuiToolTip, useGeneratedHtmlId } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React, { useCallback, useState } from 'react';
 import { useKibanaContextForPlugin } from '../../../../../hooks/use_kibana';
@@ -27,6 +27,7 @@ export function UnlinkDashboard({
   assetType: InfraCustomDashboardAssetType;
 }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const confirmModalTitleId = useGeneratedHtmlId();
   const {
     services: { notifications },
   } = useKibanaContextForPlugin();
@@ -118,12 +119,14 @@ export function UnlinkDashboard({
       </EuiToolTip>
       {isModalVisible && (
         <EuiConfirmModal
+          aria-labelledby={confirmModalTitleId}
           title={i18n.translate(
             'xpack.infra.customDashboards.unlinkEmptyButtonLabel.confirm.title',
             {
               defaultMessage: 'Unlink Dashboard',
             }
           )}
+          titleProps={{ id: confirmModalTitleId }}
           onCancel={onCancel}
           onConfirm={onConfirm}
           confirmButtonText={i18n.translate(

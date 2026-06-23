@@ -1,7 +1,0 @@
-Analyze the significant events for this data stream and generate structured insights.
-
-`data stream`
-{{{streamName}}}
-
-`queries with event data`
-{{{queries}}}

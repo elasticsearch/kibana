@@ -13,3 +13,33 @@ export const UNKNOWN_TEXT = i18n.translate(
     defaultMessage: 'Unknown',
   }
 );
+
+export const RULE_VERSION_TOOLTIP_HEADER = i18n.translate(
+  'xpack.securitySolution.detectionEngine.ruleInfo.versionToolTip.header',
+  {
+    defaultMessage: 'What is the Elastic version?',
+  }
+);
+
+export const RULE_VERSION_TOOLTIP_CONTENT = i18n.translate(
+  'xpack.securitySolution.detectionEngine.ruleInfo.versionToolTip.content',
+  {
+    defaultMessage:
+      'The Elastic version indicates the latest update released by Elastic for this prebuilt rule',
+  }
+);
+
+export const RULE_REVISION_TOOLTIP_HEADER = i18n.translate(
+  'xpack.securitySolution.detectionEngine.ruleInfo.revisionToolTip.header',
+  {
+    defaultMessage: 'What is a revision?',
+  }
+);
+
+export const RULE_REVISION_TOOLTIP_CONTENT = i18n.translate(
+  'xpack.securitySolution.detectionEngine.ruleInfo.revisionToolTip.content',
+  {
+    defaultMessage:
+      'Changes to the rule are tracked as revisions. The revision number increments each time you save your changes.',
+  }
+);

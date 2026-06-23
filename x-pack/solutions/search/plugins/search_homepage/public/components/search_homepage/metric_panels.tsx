@@ -21,6 +21,7 @@ import {
 import { css } from '@emotion/react';
 import type { SharePublicStart } from '@kbn/share-plugin/public/plugin';
 import type { ApplicationStart } from '@kbn/core/public';
+import { getWorkflowsCapabilities } from '@kbn/workflows-ui';
 import { WORKFLOWS_UI_SETTING_ENABLED_ID } from '../../../common';
 import { useAssetBasePath } from '../../hooks/use_asset_base_path';
 import { useKibana } from '../../hooks/use_kibana';
@@ -203,23 +204,25 @@ const MetricPanelEmpty = ({ panel }: MetricPanelEmptyProps) => {
 export const MetricPanels = () => {
   const { hasEnterpriseLicense } = useGetLicenseInfo();
   const { services } = useKibana();
-  const { chrome, uiSettings } = services;
+  const { application, chrome, uiSettings } = services;
 
-  const isWorkflowsUiEnabled = uiSettings.get<boolean>(WORKFLOWS_UI_SETTING_ENABLED_ID, false);
+  const isWorkflowsUiEnabled = uiSettings.get<boolean>(WORKFLOWS_UI_SETTING_ENABLED_ID, true);
+  const { canReadWorkflow } = getWorkflowsCapabilities(application.capabilities);
 
   const panels = useMemo(() => {
     const capabilityChecks: Record<MetricPanelType, boolean> = {
       discover: chrome.navLinks.get('discover') !== undefined,
       dashboards: chrome.navLinks.get('dashboards') !== undefined,
       agentBuilder: chrome.navLinks.get('agent_builder') !== undefined && hasEnterpriseLicense,
-      workflows: isWorkflowsUiEnabled && chrome.navLinks.get('workflows') !== undefined,
+      workflows:
+        isWorkflowsUiEnabled && canReadWorkflow && chrome.navLinks.get('workflows') !== undefined,
       machineLearning:
         chrome.navLinks.get('ml:overview') !== undefined || chrome.navLinks.get('ml') !== undefined,
       dataManagement: chrome.navLinks.get('management:index_management') !== undefined,
     };
 
     return METRIC_PANEL_ITEMS.filter((panel) => capabilityChecks[panel.type]);
-  }, [chrome.navLinks, isWorkflowsUiEnabled, hasEnterpriseLicense]);
+  }, [chrome.navLinks, isWorkflowsUiEnabled, canReadWorkflow, hasEnterpriseLicense]);
 
   const gridColumns = useMemo(() => {
     const count = panels.length;

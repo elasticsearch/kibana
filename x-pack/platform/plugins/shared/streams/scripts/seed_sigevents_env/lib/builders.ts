@@ -7,8 +7,7 @@
 
 import type { LogsManifest } from '@kbn/synthtrace/src/lib/service_graph_logs/types';
 import { DEP_TO_CATEGORY } from '@kbn/synthtrace/src/lib/service_graph_logs/constants';
-import { getImpactLevel } from '@kbn/streams-schema';
-import type { SeedContext, SeedScenario, SeededQuery } from '../types';
+import type { SeedContext } from '../types';
 import { deterministicId } from '../types';
 
 const INFRA_DEP_SUBTYPE: Record<string, string> = {
@@ -100,35 +99,4 @@ export function buildFeaturePayloads(
   }
 
   return features;
-}
-
-/**
- * Builds the insight payload objects shared by seedInsights (Kibana API) and
- * buildTaskDocs in seed_tasks.ts (.kibana_streams_tasks). Both callers read
- * generatedAt from ctx so the two storage paths always stay in sync.
- */
-export function buildInsightPayloads(
-  ctx: SeedContext,
-  scenario: SeedScenario,
-  seededQueries: SeededQuery[]
-): Array<Record<string, unknown>> {
-  // event_count is intentionally 0: actual match counts would require re-running all ESQL
-  // queries here, which duplicates seedAlerts work and is not worth the complexity for a
-  // dev seeder. The UI renders evidence entries regardless of count.
-  const evidence = seededQueries.map((q) => ({
-    stream_name: ctx.streamName,
-    query_title: q.title,
-    event_count: 0,
-  }));
-
-  return scenario.insights.map((insight) => ({
-    id: deterministicId(ctx.scenarioName, 'insight', insight.title),
-    title: insight.title,
-    description: insight.description,
-    impact: insight.impact,
-    impact_level: getImpactLevel(insight.impact),
-    evidence,
-    recommendations: insight.recommendations,
-    generated_at: ctx.generatedAt,
-  }));
 }

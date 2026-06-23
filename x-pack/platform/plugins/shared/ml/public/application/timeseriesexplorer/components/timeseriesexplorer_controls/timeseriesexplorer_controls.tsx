@@ -17,7 +17,6 @@ import {
   EuiFormRow,
   EuiPopover,
   EuiToolTip,
-  htmlIdGenerator,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -27,13 +26,12 @@ import { useTimeRangeUpdates } from '@kbn/ml-date-picker';
 import type { MlJobState } from '@elastic/elasticsearch/lib/api/types';
 import type { SingleMetricViewerEmbeddableState } from '@kbn/ml-server-schemas/embeddables/single_metric_viewer';
 import type { CombinedJobWithStats } from '@kbn/ml-common-types/anomaly_detection_jobs/combined_job';
-import type { JobId } from '@kbn/ml-common-types/anomaly_detection_jobs/job';
+import { ANOMALY_SINGLE_METRIC_VIEWER_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/single_metric_viewer';
 import { CASES_TOAST_MESSAGES_TITLES } from '../../../../cases/constants';
 import { useMlKibana } from '../../../contexts/kibana';
 import { useCasesModal } from '../../../contexts/kibana/use_cases_modal';
 import { getDefaultSingleMetricViewerPanelTitle } from '../../../../embeddables/single_metric_viewer/get_default_panel_title';
 import type { MlEntity } from '../../../../embeddables';
-import { ANOMALY_SINGLE_METRIC_VIEWER_EMBEDDABLE_TYPE } from '../../../../embeddables/constants';
 import { ForecastingModal } from '../forecasting_modal/forecasting_modal';
 import type { Entity } from '../entity_control/entity_control';
 
@@ -61,15 +59,6 @@ interface Props {
   jobState: MlJobState;
   earliestRecordTimestamp: number;
   latestRecordTimestamp: number;
-}
-
-function getDefaultEmbeddablePanelConfig(jobId: JobId, queryString?: string) {
-  return {
-    title: getDefaultSingleMetricViewerPanelTitle(jobId).concat(
-      queryString ? `- ${queryString}` : ''
-    ),
-    id: htmlIdGenerator()(),
-  };
 }
 
 export const TimeSeriesExplorerControls: FC<Props> = ({
@@ -163,10 +152,10 @@ export const TimeSeriesExplorerControls: FC<Props> = ({
       icon: 'casesApp',
       onClick: closePopoverOnAction(() => {
         openCasesModalCallback({
-          forecastId,
-          jobIds: [selectedJobId],
-          selectedDetectorIndex,
-          selectedEntities,
+          forecast_id: forecastId,
+          job_ids: [selectedJobId],
+          selected_detector_index: selectedDetectorIndex,
+          selected_entities: selectedEntities,
           time_range: globalTimeRange,
         });
       }),
@@ -176,16 +165,14 @@ export const TimeSeriesExplorerControls: FC<Props> = ({
   const onSaveCallback: SaveModalDashboardProps['onSave'] = useCallback(
     async ({ dashboardId, newTitle, newDescription }) => {
       const stateTransfer = embeddable!.getStateTransfer();
-      const config = getDefaultEmbeddablePanelConfig(selectedJobId);
 
       const embeddableInput: Partial<SingleMetricViewerEmbeddableState> = {
-        id: config.id,
         title: newTitle,
         description: newDescription,
-        forecastId,
-        jobIds: [selectedJobId],
-        selectedDetectorIndex,
-        selectedEntities,
+        forecast_id: forecastId,
+        job_ids: [selectedJobId],
+        selected_detector_index: selectedDetectorIndex,
+        selected_entities: selectedEntities,
       };
 
       const state = {

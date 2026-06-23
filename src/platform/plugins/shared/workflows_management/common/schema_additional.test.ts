@@ -7,8 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { isDynamicConnector, StepCategory } from '@kbn/workflows';
+import { getWorkflowJsonSchema, isDynamicConnector, StepCategory } from '@kbn/workflows';
 import { z } from '@kbn/zod/v4';
+import { CONNECTOR_SUB_ACTIONS_MAP } from './connector_sub_actions_map';
 import {
   createMockConnectorInstance,
   createMockConnectorTypeInfo,
@@ -21,10 +22,125 @@ import {
   getCachedAllConnectorsMap,
   getCachedDynamicConnectorTypes,
   getDeprecatedStepMetadataMap,
+  getWorkflowZodSchema,
 } from './schema';
+import { EmailParamsSchema } from './stack_connectors_schema/email';
 import { stepSchemas } from './step_schemas';
 
 describe('schema - additional coverage', () => {
+  describe('EmailParamsSchema attachments', () => {
+    const baseEmailParams = {
+      to: ['ops@example.com'],
+      subject: 'Daily CSV report',
+      message: 'Attached is the generated report.',
+    };
+
+    const attachment = {
+      filename: 'report.csv',
+      contentType: 'text/csv',
+      content: 'host,risk\nhost-1,high\n',
+    };
+
+    const createWorkflowWithEmailStep = () => ({
+      name: 'email attachments workflow',
+      triggers: [{ type: 'manual' }],
+      steps: [
+        {
+          name: 'send-report',
+          type: 'email',
+          'connector-id': 'stakeholder-email',
+          with: {
+            ...baseEmailParams,
+            attachments: [attachment],
+          },
+        },
+      ],
+    });
+
+    const createWorkflowEmailSchema = () =>
+      getWorkflowZodSchema({
+        '.email': createMockConnectorTypeInfo({
+          actionTypeId: '.email',
+          displayName: 'Email',
+        }),
+      });
+
+    it('accepts email params with typical attachment fields', () => {
+      expect(() =>
+        EmailParamsSchema.parse({
+          ...baseEmailParams,
+          attachments: [attachment],
+        })
+      ).not.toThrow();
+    });
+
+    it('keeps filename and content in JSON Schema required for attachment items (Monaco YAML templates)', () => {
+      const jsonSchema = getWorkflowJsonSchema(createWorkflowEmailSchema());
+      expect(jsonSchema).not.toBeNull();
+
+      const hasAttachmentItemRequired = (node: unknown): boolean => {
+        if (!node || typeof node !== 'object') {
+          return false;
+        }
+        const o = node as Record<string, unknown>;
+        const req = o.required;
+        const props = o.properties as Record<string, unknown> | undefined;
+        if (
+          Array.isArray(req) &&
+          req.includes('filename') &&
+          req.includes('content') &&
+          props &&
+          typeof props.contentType !== 'undefined'
+        ) {
+          return true;
+        }
+        return Object.values(o).some(hasAttachmentItemRequired);
+      };
+
+      expect(hasAttachmentItemRequired(jsonSchema)).toBe(true);
+    });
+
+    it('accepts a workflow YAML email step with attachments', () => {
+      expect(() => createWorkflowEmailSchema().parse(createWorkflowWithEmailStep())).not.toThrow();
+    });
+
+    it('rejects attachments missing required filename', () => {
+      expect(() =>
+        EmailParamsSchema.parse({
+          ...baseEmailParams,
+          attachments: [{ content: 'host,risk\nhost-1,high\n' }],
+        })
+      ).toThrow();
+    });
+
+    it('rejects attachments missing required content', () => {
+      expect(() =>
+        EmailParamsSchema.parse({
+          ...baseEmailParams,
+          attachments: [{ filename: 'report.csv' }],
+        })
+      ).toThrow();
+    });
+
+    it('rejects attachments with invalid field types', () => {
+      expect(() =>
+        EmailParamsSchema.parse({
+          ...baseEmailParams,
+          attachments: [{ filename: 'report.csv', content: 123 }],
+        })
+      ).toThrow();
+    });
+
+    it('rejects attachments with content exceeding the max length', () => {
+      expect(() =>
+        EmailParamsSchema.parse({
+          ...baseEmailParams,
+          attachments: [{ filename: 'report.csv', content: 'a'.repeat(3 * 1024 * 1024 + 1) }],
+        })
+      ).toThrow();
+    });
+  });
+
   describe('getAllConnectorsInternal', () => {
     it('should include the console connector', () => {
       const connectors = getAllConnectorsInternal();
@@ -207,6 +323,82 @@ describe('schema - additional coverage', () => {
 
       const contracts = convertDynamicConnectorsToContracts(types);
       expect(contracts[0]).toHaveProperty('instances', instances);
+    });
+
+    it('should add XSOAR action schemas, documentation, and examples', () => {
+      const types = {
+        '.xsoar': createMockConnectorTypeInfo({
+          actionTypeId: '.xsoar',
+          displayName: 'XSOAR',
+          subActions: [
+            { name: 'getPlaybooks', displayName: 'Get Playbooks' },
+            { name: 'run', displayName: 'Run' },
+          ],
+        }),
+      };
+
+      const contracts = convertDynamicConnectorsToContracts(types);
+      const getPlaybooks = contracts.find((contract) => contract.type === 'xsoar.getPlaybooks');
+      const run = contracts.find((contract) => contract.type === 'xsoar.run');
+
+      expect(getPlaybooks?.description).toBe('Retrieve XSOAR playbooks visible to the connector.');
+      expect(getPlaybooks?.examples?.snippet).toContain('type: xsoar.getPlaybooks');
+      expect(run?.description).toBe(
+        'Create an XSOAR incident and optionally associate it with a playbook.'
+      );
+      expect(run?.documentation).toBeUndefined();
+      expect(run?.examples?.snippet).toContain('createInvestigation: true');
+      expect(
+        run?.paramsSchema.parse({
+          name: 'Suspicious login detected',
+          createInvestigation: true,
+          severity: '2',
+        })
+      ).toEqual({
+        name: 'Suspicious login detected',
+        playbookId: null,
+        createInvestigation: true,
+        severity: 2,
+        isRuleSeverity: false,
+        body: null,
+      });
+    });
+
+    it('should create Slack API sub-action contracts that accept flat workflow params', () => {
+      const types = {
+        '.slack_api': createMockConnectorTypeInfo({
+          actionTypeId: '.slack_api',
+          displayName: 'Slack API',
+          subActions: CONNECTOR_SUB_ACTIONS_MAP['.slack_api'],
+        }),
+      };
+
+      const contracts = convertDynamicConnectorsToContracts(types);
+
+      expect(contracts.map((contract) => contract.type)).toEqual([
+        'slack_api.validChannelId',
+        'slack_api.postMessage',
+        'slack_api.postBlockkit',
+      ]);
+
+      const schema = getWorkflowZodSchema(types);
+      expect(() =>
+        schema.parse({
+          name: 'slack api workflow',
+          triggers: [{ type: 'manual' }],
+          steps: [
+            {
+              name: 'post_digest_to_slack',
+              type: 'slack_api.postBlockkit',
+              'connector-id': 'slackybot',
+              with: {
+                channelNames: ['#triage'],
+                text: JSON.stringify({ blocks: [] }),
+              },
+            },
+          ],
+        })
+      ).not.toThrow();
     });
   });
 

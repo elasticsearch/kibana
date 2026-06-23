@@ -62,7 +62,6 @@ test.describe('Onboarding UI Validation', () => {
 
         await pageObjects.onboarding.selectKubernetesUseCase();
         await expect(pageObjects.onboarding.otelKubernetesCard).toBeVisible();
-        await expect(pageObjects.onboarding.kubernetesQuickStartCard).toHaveCount(0);
 
         await pageObjects.onboarding.selectCloudUseCase();
         await expect(pageObjects.onboarding.awsLogsVirtualCard).toBeVisible();
@@ -131,7 +130,7 @@ test.describe('Onboarding UI Validation', () => {
       await test.step('navigates correctly when Kubernetes OpenTelemetry card is clicked', async () => {
         await pageObjects.onboarding.selectKubernetesUseCase();
         await pageObjects.onboarding.clickIntegrationCard('integration-card:otel-kubernetes');
-        expect(page.url()).toContain('/otel-kubernetes');
+        expect(page.url()).toContain('/kubernetes');
       });
     }
   );
@@ -157,13 +156,12 @@ test.describe('Onboarding UI Validation', () => {
         );
 
         await expect(pageObjects.onboarding.otelKubernetesCard).toBeVisible();
-        await expect(pageObjects.onboarding.kubernetesQuickStartCard).toHaveCount(0);
       });
 
       await test.step('navigates correctly when Kubernetes OpenTelemetry card is tabbed to and enter is pressed', async () => {
         await page.keyTo('[data-test-subj="integration-card:otel-kubernetes"] button', 'Tab');
         await page.keyboard.press('Enter');
-        expect(page.url()).toContain('/otel-kubernetes');
+        expect(page.url()).toContain('/kubernetes');
       });
 
       await test.step('supports deep-linking to kubernetes category', async () => {

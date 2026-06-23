@@ -21,6 +21,7 @@ describe('createKiIdentificationCancelTool', () => {
     };
     const streamsKIsOnboardingClient = new StreamsKIsOnboardingClient({
       managementApi: managementApi as never,
+      telemetry: { trackOnboardingScheduled: jest.fn() } as never,
     });
 
     const tool = createKiIdentificationCancelTool({

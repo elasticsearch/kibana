@@ -20,7 +20,7 @@ import { CasesDeepLinkId } from '../../common/navigation';
 export const CommonUseField = getUseField({ component: Field });
 
 export const CreateCase = React.memo<CreateCaseFormProps>(
-  ({ afterCaseCreated, onCancel, onSuccess, timelineIntegration, withSteps, observables }) => {
+  ({ afterCaseCreated, onCancel, onSuccess, timelineIntegration, withSteps }) => {
     useCasesBreadcrumbs(CasesDeepLinkId.casesCreate);
 
     return (
@@ -32,7 +32,6 @@ export const CreateCase = React.memo<CreateCaseFormProps>(
           onSuccess={onSuccess}
           timelineIntegration={timelineIntegration}
           withSteps={withSteps}
-          observables={observables}
         />
       </EuiPageSection>
     );

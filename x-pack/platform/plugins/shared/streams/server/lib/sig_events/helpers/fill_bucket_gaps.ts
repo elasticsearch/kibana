@@ -34,35 +34,3 @@ export function parseBucketSize(raw: string): { value: number; unit: string } {
   if (value < 1) return { value: 60, unit: 's' };
   return { value, unit: match[2] };
 }
-
-/**
- * Fills gaps so every bucket in `[from, to]` has an entry. Caps the output at
- * `MAX_FILL_BUCKETS` and returns `truncated: true` when the cap was hit.
- */
-export function fillBucketGaps(
-  sparse: Array<{ date: string; count: number }>,
-  from: Date,
-  to: Date,
-  intervalMs: number
-): { buckets: Array<{ date: string; count: number }>; truncated: boolean } {
-  const existingBuckets = new Map(sparse.map((o) => [new Date(o.date).getTime(), o.count]));
-
-  const buckets: Array<{ date: string; count: number }> = [];
-  let current = Math.floor(from.getTime() / intervalMs) * intervalMs;
-  const endMs = to.getTime();
-  let truncated = false;
-
-  while (current <= endMs) {
-    if (buckets.length >= MAX_FILL_BUCKETS) {
-      truncated = true;
-      break;
-    }
-    buckets.push({
-      date: new Date(current).toISOString(),
-      count: existingBuckets.get(current) ?? 0,
-    });
-    current += intervalMs;
-  }
-
-  return { buckets, truncated };
-}

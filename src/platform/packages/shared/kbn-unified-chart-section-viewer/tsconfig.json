@@ -40,5 +40,6 @@
     "@kbn/discover-shared-plugin",
     "@kbn/logging",
     "@kbn/logging-mocks",
+    "@kbn/std",
   ]
 }

@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { ElasticsearchClient } from '@kbn/core/server';
 import { inject, injectable, multiInject } from 'inversify';
 import type {
   RuleExecutionInput,
@@ -20,8 +19,6 @@ import {
   LoggerServiceToken,
   type LoggerServiceContract,
 } from '../services/logger_service/logger_service';
-import { EsServiceInternalToken } from '../services/es_service/tokens';
-import { ALERT_EVENTS_DATA_STREAM } from '../../resources/datastreams/alert_events';
 import { createExecutionContext } from '../execution_context';
 
 /**
@@ -49,7 +46,6 @@ export interface RuleExecutionPipelineContract {
 export class RuleExecutionPipeline implements RuleExecutionPipelineContract {
   constructor(
     @inject(LoggerServiceToken) private readonly logger: LoggerServiceContract,
-    @inject(EsServiceInternalToken) private readonly esClient: ElasticsearchClient,
     @multiInject(RuleExecutionStepsToken) private readonly steps: RuleExecutionStep[],
     @multiInject(RuleExecutionMiddlewaresToken)
     private readonly middlewares: RuleExecutionMiddleware[]
@@ -71,7 +67,6 @@ export class RuleExecutionPipeline implements RuleExecutionPipelineContract {
     })();
 
     for (const step of this.steps) {
-      this.logger.debug({ message: `RuleExecutor: Executing step: ${step.name}` });
       stream = this.runMiddlewareChain({ step }, stream);
     }
 
@@ -91,29 +86,10 @@ export class RuleExecutionPipeline implements RuleExecutionPipelineContract {
       }
     }
 
-    await this.refreshIndices();
-
     return {
       completed: true,
       finalState: pipelineState,
     };
-  }
-
-  /**
-   * Refreshes write indices once after the entire stream has been consumed,
-   * so documents written with `refresh: false` become searchable.
-   * Failures are logged but never propagate — the data is already persisted.
-   */
-  private async refreshIndices(): Promise<void> {
-    try {
-      await this.esClient.indices.refresh({ index: ALERT_EVENTS_DATA_STREAM });
-    } catch (error) {
-      this.logger.error({
-        error,
-        code: 'INDEX_REFRESH_ERROR',
-        type: 'RuleExecutionPipelineError',
-      });
-    }
   }
 
   /**

@@ -13,7 +13,10 @@ export type {
   ProcessorSuggestionsResponse,
 } from './ingest_processor_suggestions';
 
-export { STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG } from './feature_flags';
+export {
+  STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG,
+  STREAMS_SIGNIFICANT_EVENTS_SEMANTIC_CODE_SEARCH_GROUNDING_ENABLED_FLAG,
+} from './feature_flags';
 
 export {
   STREAMS_TIERED_FEATURES,

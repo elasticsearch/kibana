@@ -418,6 +418,93 @@ router.post({
 }, handler);
 
 // =============================================================================
+// @kbn/zod: GOOD - bounded format methods (no .max() needed)
+// =============================================================================
+
+// GOOD: .datetime() is ISO 8601 — inherently bounded (~24–35 chars)
+router.post({ path: '/api/good/zod-datetime', validate: { body: z.object({
+  ts: z.string().datetime(),
+})} }, handler);
+
+// GOOD: .datetime().optional() — the motivating case
+router.post({ path: '/api/good/zod-datetime-optional', validate: { body: z.object({
+  tracking_started_at: z.string().datetime().optional(),
+})} }, handler);
+
+// GOOD: .date() — YYYY-MM-DD, 10 chars
+router.post({ path: '/api/good/zod-date', validate: { body: z.object({
+  d: z.string().date(),
+})} }, handler);
+
+// GOOD: .time() — bounded time string
+router.post({ path: '/api/good/zod-time', validate: { body: z.object({
+  t: z.string().time(),
+})} }, handler);
+
+// GOOD: .duration() — ISO 8601 duration
+router.post({ path: '/api/good/zod-duration', validate: { body: z.object({
+  dur: z.string().duration(),
+})} }, handler);
+
+// GOOD: .uuid() — 36 chars
+router.post({ path: '/api/good/zod-uuid', validate: { body: z.object({
+  id: z.string().uuid(),
+})} }, handler);
+
+// GOOD: .uuidv4() / .uuidv6() / .uuidv7() — 36 chars
+router.post({ path: '/api/good/zod-uuidvx', validate: { body: z.object({
+  a: z.string().uuidv4(),
+  b: z.string().uuidv6(),
+  c: z.string().uuidv7(),
+})} }, handler);
+
+// GOOD: .guid() — 36 chars
+router.post({ path: '/api/good/zod-guid', validate: { body: z.object({
+  id: z.string().guid(),
+})} }, handler);
+
+// GOOD: .nanoid() — 21 chars
+router.post({ path: '/api/good/zod-nanoid', validate: { body: z.object({
+  id: z.string().nanoid(),
+})} }, handler);
+
+// GOOD: .cuid() / .cuid2() — fixed-length
+router.post({ path: '/api/good/zod-cuid', validate: { body: z.object({
+  a: z.string().cuid(),
+  b: z.string().cuid2(),
+})} }, handler);
+
+// GOOD: .ulid() — 26 chars
+router.post({ path: '/api/good/zod-ulid', validate: { body: z.object({
+  id: z.string().ulid(),
+})} }, handler);
+
+// GOOD: .xid() / .ksuid() — fixed-length identifiers
+router.post({ path: '/api/good/zod-xid-ksuid', validate: { body: z.object({
+  a: z.string().xid(),
+  b: z.string().ksuid(),
+})} }, handler);
+
+// GOOD: .ipv4() / .ipv6() — IPv4 ≤15 chars, IPv6 ≤45 chars
+router.post({ path: '/api/good/zod-ip', validate: { body: z.object({
+  v4: z.string().ipv4(),
+  v6: z.string().ipv6(),
+})} }, handler);
+
+// GOOD: .cidrv4() / .cidrv6() — CIDR notation, bounded
+router.post({ path: '/api/good/zod-cidr', validate: { body: z.object({
+  v4: z.string().cidrv4(),
+  v6: z.string().cidrv6(),
+})} }, handler);
+
+// GOOD: format method chained before .optional() / .nullable() / .describe()
+router.post({ path: '/api/good/zod-format-chained', validate: { body: z.object({
+  a: z.string().datetime().optional(),
+  b: z.string().uuid().nullable(),
+  c: z.string().ulid().describe('A ULID'),
+})} }, handler);
+
+// =============================================================================
 // EDGE CASES
 // =============================================================================
 

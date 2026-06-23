@@ -8,6 +8,7 @@
 import type { RegisterEntityMaintainerConfig } from '@kbn/entity-store/server';
 
 import { runRelationshipMaintainer } from '../engine/run_relationship_maintainer';
+import type { RelationshipMaintainerTelemetryCollector } from '../types';
 import { ACCESSES_INTEGRATION_RELATIONSHIP_CONFIGS } from './configs';
 
 export const accessesFrequentlyMaintainer: RegisterEntityMaintainerConfig = {
@@ -16,9 +17,23 @@ export const accessesFrequentlyMaintainer: RegisterEntityMaintainerConfig = {
     'Computes accesses_frequently and accesses_infrequently relationships from authentication events',
   interval: '1d',
   initialState: {},
-  run: async ({ esClient, cpsEsClient, logger, status, crudClient, abortController }) => {
+  run: async ({
+    esClient,
+    cpsEsClient,
+    logger,
+    status,
+    crudClient,
+    abortController,
+    telemetry,
+  }) => {
     const namespace = status.metadata.namespace;
     logger.info('Starting accesses maintainer run');
+
+    const collector: RelationshipMaintainerTelemetryCollector = {
+      sources: [],
+      relationshipTypeApplied: {},
+    };
+
     const result = await runRelationshipMaintainer({
       esClient,
       cpsEsClient,
@@ -27,7 +42,29 @@ export const accessesFrequentlyMaintainer: RegisterEntityMaintainerConfig = {
       crudClient,
       integrations: ACCESSES_INTEGRATION_RELATIONSHIP_CONFIGS,
       abortController,
+      telemetryCollector: collector,
     });
+
+    telemetry.report({
+      iterations: result.totalIterations,
+      truncated: result.truncated,
+      funnel: {
+        scanned: result.totalBuckets,
+        qualified: result.totalRecords,
+        proposed: result.totalRecords, // engine has no distinct proposal phase; echo qualified
+        applied: result.totalWritten,
+        droppedNotInStore: result.totalNotFound,
+        failed: result.totalWriteErrors,
+      },
+      sources: collector.sources,
+      ...(Object.keys(collector.relationshipTypeApplied).length > 0 && {
+        breakdown: Object.entries(collector.relationshipTypeApplied).map(([name, count]) => ({
+          name,
+          count,
+        })),
+      }),
+    });
+
     logger.info(
       `Completed run: ${result.totalBuckets} buckets, ${result.totalRecords} records, ${result.totalWritten} entities written`
     );

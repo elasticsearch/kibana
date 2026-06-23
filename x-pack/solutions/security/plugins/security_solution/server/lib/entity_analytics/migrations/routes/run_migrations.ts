@@ -21,7 +21,8 @@ export const entityAnalyticsRunMigrationsRoute = (
   router: EntityAnalyticsRoutesDeps['router'],
   logger: EntityAnalyticsRoutesDeps['logger'],
   getStartServices: EntityAnalyticsRoutesDeps['getStartServices'],
-  config: EntityAnalyticsRoutesDeps['config']
+  config: EntityAnalyticsRoutesDeps['config'],
+  hasEncryptionKey: EntityAnalyticsRoutesDeps['hasEncryptionKey']
 ) => {
   router.versioned
     .post({
@@ -59,6 +60,7 @@ export const entityAnalyticsRunMigrationsRoute = (
             auditLogger: securitySolution.getAuditLogger(),
             kibanaVersion: kibanaPackageJson.version,
             experimentalFeatures: config.experimentalFeatures,
+            hasEncryptionKey,
           });
           const body: RunEntityAnalyticsMigrationsResponse = { success: true };
           return response.ok({ body });

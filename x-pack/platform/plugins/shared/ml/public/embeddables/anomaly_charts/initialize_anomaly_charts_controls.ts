@@ -9,7 +9,6 @@ import { BehaviorSubject, map, merge, skip } from 'rxjs';
 import type { MlEntityField } from '@kbn/ml-anomaly-utils';
 import type { StateComparators, TitlesApi } from '@kbn/presentation-publishing';
 import type {
-  AnomalyChartsEmbeddableRuntimeState,
   SeverityThreshold,
   AnomalyChartsEmbeddableState,
 } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
@@ -17,12 +16,20 @@ import type { JobId } from '@kbn/ml-common-types/anomaly_detection_jobs/job';
 
 import { DEFAULT_MAX_SERIES_TO_PLOT } from '../../application/services/anomaly_explorer_charts_service';
 import type { AnomalyChartsComponentApi, AnomalyChartsDataLoadingApi } from '../types';
+import {
+  normalizeAnomalyChartsLegacyFields,
+  type RawAnomalyChartsState,
+} from '../../../common/embeddables/anomaly_charts/normalize_legacy_state';
 
-export const anomalyChartsComparators: StateComparators<AnomalyChartsEmbeddableRuntimeState> = {
-  jobIds: 'deepEquality',
-  maxSeriesToPlot: 'referenceEquality',
-  severityThreshold: 'deepEquality',
-  selectedEntities: 'deepEquality',
+type AnomalyChartsControlState = Pick<
+  AnomalyChartsEmbeddableState,
+  'job_ids' | 'max_series_to_plot' | 'severity_threshold'
+>;
+
+export const anomalyChartsComparators: StateComparators<AnomalyChartsControlState> = {
+  job_ids: 'deepEquality',
+  max_series_to_plot: 'referenceEquality',
+  severity_threshold: 'deepEquality',
 };
 
 export const initializeAnomalyChartsControls = (
@@ -30,39 +37,44 @@ export const initializeAnomalyChartsControls = (
   titlesApi?: TitlesApi,
   parentApi?: unknown
 ) => {
-  const jobIds$ = new BehaviorSubject<JobId[]>(initialState.jobIds);
+  const normalizedInitialState = normalizeAnomalyChartsLegacyFields(
+    initialState as RawAnomalyChartsState
+  );
+  const jobIds$ = new BehaviorSubject<JobId[]>(normalizedInitialState.job_ids);
   const maxSeriesToPlot$ = new BehaviorSubject<number>(
-    initialState.maxSeriesToPlot ?? DEFAULT_MAX_SERIES_TO_PLOT
+    normalizedInitialState.max_series_to_plot ?? DEFAULT_MAX_SERIES_TO_PLOT
   );
 
   const severityThreshold$ = new BehaviorSubject<SeverityThreshold[] | undefined>(
-    initialState.severityThreshold
+    normalizedInitialState.severity_threshold
   );
-  const selectedEntities$ = new BehaviorSubject<MlEntityField[] | undefined>(
-    initialState.selectedEntities
-  );
+  const selectedEntities$ = new BehaviorSubject<MlEntityField[] | undefined>(undefined);
   const interval$ = new BehaviorSubject<number | undefined>(undefined);
   const dataLoading$ = new BehaviorSubject<boolean | undefined>(true);
   const blockingError$ = new BehaviorSubject<Error | undefined>(undefined);
 
   const updateUserInput = (update: AnomalyChartsEmbeddableState) => {
-    jobIds$.next(update.jobIds);
-    maxSeriesToPlot$.next(update.maxSeriesToPlot);
+    jobIds$.next(update.job_ids);
+    maxSeriesToPlot$.next(update.max_series_to_plot ?? DEFAULT_MAX_SERIES_TO_PLOT);
+    if (update.severity_threshold !== undefined) {
+      severityThreshold$.next(update.severity_threshold);
+    }
     if (titlesApi) {
       titlesApi.setTitle(update.title);
     }
   };
 
-  const updateSeverityThreshold = (v: SeverityThreshold[]) => severityThreshold$.next(v);
-  const updateSelectedEntities = (v: MlEntityField[]) => selectedEntities$.next(v);
+  const updateSeverityThreshold = (v?: SeverityThreshold[]) => severityThreshold$.next(v);
+  const updateSelectedEntities = (v?: MlEntityField[]) => selectedEntities$.next(v);
   const setInterval = (v: number) => interval$.next(v);
 
-  const getLatestState = (): AnomalyChartsEmbeddableState => {
+  const getLatestState = (): AnomalyChartsControlState => {
     return {
-      jobIds: jobIds$.value,
-      maxSeriesToPlot: maxSeriesToPlot$.value,
-      severityThreshold: severityThreshold$.value,
-      selectedEntities: selectedEntities$.value,
+      job_ids: jobIds$.value,
+      max_series_to_plot: maxSeriesToPlot$.value,
+      ...(severityThreshold$.value !== undefined
+        ? { severity_threshold: severityThreshold$.value }
+        : {}),
     };
   };
 
@@ -99,18 +111,14 @@ export const initializeAnomalyChartsControls = (
       severityThreshold$.pipe(
         skip(1),
         map(() => undefined)
-      ),
-      selectedEntities$.pipe(
-        skip(1),
-        map(() => undefined)
       )
     ),
     getLatestState,
     reinitializeState: (lastSavedState: AnomalyChartsEmbeddableState) => {
-      jobIds$.next(lastSavedState.jobIds);
-      maxSeriesToPlot$.next(lastSavedState.maxSeriesToPlot);
-      severityThreshold$.next(lastSavedState.severityThreshold);
-      selectedEntities$.next(lastSavedState.selectedEntities);
+      jobIds$.next(lastSavedState.job_ids);
+      maxSeriesToPlot$.next(lastSavedState.max_series_to_plot ?? DEFAULT_MAX_SERIES_TO_PLOT);
+      severityThreshold$.next(lastSavedState.severity_threshold);
+      selectedEntities$.next(undefined);
     },
     cleanup: () => {
       jobIds$.complete();

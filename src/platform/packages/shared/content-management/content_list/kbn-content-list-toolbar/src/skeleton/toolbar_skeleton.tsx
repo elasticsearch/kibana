@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiSkeletonRectangle, useEuiTheme } from '@elastic/eui';
+import { getContentListToolbarSubjects } from '@kbn/content-list-common';
 
 /**
  * Approximate width of a filter button. EUI filter buttons size to content,
@@ -41,7 +42,7 @@ export interface ToolbarSkeletonProps {
 export const ToolbarSkeleton = ({
   filterCount,
   hasSelection,
-  'data-test-subj': dataTestSubj = 'contentListToolbar-skeleton',
+  'data-test-subj': dataTestSubj = getContentListToolbarSubjects().skeleton,
 }: ToolbarSkeletonProps) => {
   const { euiTheme } = useEuiTheme();
   // Row height matches the rendered height of EUI's search-bar input and

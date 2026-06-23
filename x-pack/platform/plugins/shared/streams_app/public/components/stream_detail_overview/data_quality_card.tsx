@@ -261,7 +261,12 @@ function DataQualityCardContent({ definition }: { definition: Streams.ingest.all
           </EuiFlexGroup>
         </EuiFlexItem>
         <EuiFlexItem>
-          <TopFailureReasons streamName={streamName} canReadFailureStore={canQueryFailureStore} />
+          <TopFailureReasons
+            streamName={streamName}
+            canReadFailureStore={canQueryFailureStore}
+            failedDocs={failedDocs}
+            failedDocsLoading={failedDocsResult.loading}
+          />
         </EuiFlexItem>
       </EuiFlexGroup>
     </EuiPanel>

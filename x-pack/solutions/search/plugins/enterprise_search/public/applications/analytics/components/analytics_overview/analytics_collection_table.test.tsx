@@ -9,16 +9,17 @@ import '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiSuperDatePicker } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { AnalyticsCollection } from '../../../../../common/types/analytics';
 
-import { AnalyticsCollectionCardWithLens } from './analytics_collection_card/analytics_collection_card';
-import { AnalyticsCollectionNotFound } from './analytics_collection_not_found';
-
 import { AnalyticsCollectionTable } from './analytics_collection_table';
+
+jest.mock('../../utils/find_or_create_data_view', () => ({
+  findOrCreateDataView: jest.fn().mockResolvedValue(undefined),
+}));
 
 describe('AnalyticsCollectionTable', () => {
   const analyticsCollections: AnalyticsCollection[] = [
@@ -42,34 +43,37 @@ describe('AnalyticsCollectionTable', () => {
   });
 
   it('renders cards', () => {
-    const wrapper = shallow(<AnalyticsCollectionTable {...props} />);
-    const collectionCards = wrapper.find(AnalyticsCollectionCardWithLens);
+    renderWithKibanaRenderContext(<AnalyticsCollectionTable {...props} />);
 
-    expect(collectionCards).toHaveLength(analyticsCollections.length);
-    expect(collectionCards.at(1).prop('collection')).toMatchObject(analyticsCollections[1]);
+    expect(screen.getByText('example')).toBeInTheDocument();
+    expect(screen.getByText('example2')).toBeInTheDocument();
   });
 
   it('renders filters', () => {
-    const buttonGroup = shallow(<AnalyticsCollectionTable {...props} />).find(
-      '[data-test-subj="enterpriseSearchAnalyticsCollectionTableButtonGroup"]'
-    );
+    renderWithKibanaRenderContext(<AnalyticsCollectionTable {...props} />);
 
-    expect(buttonGroup).toHaveLength(1);
-    expect(buttonGroup.prop('options')).toHaveLength(4);
-    expect(buttonGroup.prop('idSelected')).toEqual('Searches');
+    expect(
+      screen.getByTestId('enterpriseSearchAnalyticsCollectionTableButtonGroup')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('Searches')).toBeInTheDocument();
+    expect(screen.getByTestId('NoResults')).toBeInTheDocument();
+    expect(screen.getByTestId('Clicks')).toBeInTheDocument();
+    expect(screen.getByTestId('Sessions')).toBeInTheDocument();
+
+    // Searches is the default selected filter
+    expect(screen.getByTestId('Searches')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('NoResults')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('renders datePick', () => {
-    const datePicker = shallow(<AnalyticsCollectionTable {...props} />).find(EuiSuperDatePicker);
+    renderWithKibanaRenderContext(<AnalyticsCollectionTable {...props} />);
 
-    expect(datePicker).toHaveLength(1);
-    expect(datePicker.prop('start')).toEqual('now-7d');
-    expect(datePicker.prop('end')).toEqual('now');
+    expect(screen.getByText('Last 7 days')).toBeInTheDocument();
   });
 
   it('renders not found page', () => {
-    const wrapper = shallow(<AnalyticsCollectionTable {...props} collections={[]} />);
+    renderWithKibanaRenderContext(<AnalyticsCollectionTable {...props} collections={[]} />);
 
-    expect(wrapper.find(AnalyticsCollectionNotFound)).toHaveLength(1);
+    expect(screen.getByText('Try searching for another term.')).toBeInTheDocument();
   });
 });

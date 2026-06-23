@@ -66,3 +66,16 @@ export const OBSERVABLE_TYPES_BUILTIN: { label: string; key: string }[] = [
 ];
 
 export const OBSERVABLE_TYPES_BUILTIN_KEYS = OBSERVABLE_TYPES_BUILTIN.map(({ key }) => key);
+
+/**
+ * Locale-independent marker stored as the description of observables that were
+ * automatically extracted from alert/event ECS fields during attachment creation.
+ * Used by the telemetry aggregation to distinguish auto-extracted from manually
+ * added observables.
+ *
+ * NOTE: Because this string is stored in the observable's user-visible `description`
+ * field and matched at telemetry time, this categorisation is still locale-fragile on
+ * non-English deployments. A dedicated, locale-independent `source` field on the
+ * observable type would be the robust solution; that is tracked as a follow-up.
+ */
+export const AUTO_EXTRACT_OBSERVABLE_DESCRIPTION = 'Auto extracted observable';

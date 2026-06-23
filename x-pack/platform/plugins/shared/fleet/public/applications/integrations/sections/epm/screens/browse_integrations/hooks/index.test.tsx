@@ -13,7 +13,7 @@ import type { IntegrationCardItem } from '../../home/card_utils';
 
 import { useBrowseIntegrationHook } from '.';
 import { useUrlFilters } from './url_filters';
-import { useUrlCategories, useSetUrlCategory } from './url_categories';
+import { useUrlCategories, useUrlDefaultCategories, useSetUrlCategory } from './url_categories';
 
 jest.mock('../../home/hooks/use_available_packages');
 jest.mock('./url_filters');
@@ -32,6 +32,7 @@ describe('useBrowseIntegrationHook', () => {
       category: '',
       subCategory: undefined,
     });
+    (useUrlDefaultCategories as jest.Mock).mockReturnValue([]);
     (useSetUrlCategory as jest.Mock).mockReturnValue(mockSetUrlCategory);
   });
 

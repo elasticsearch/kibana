@@ -35,6 +35,7 @@ import {
   useTimeseriesExplorerStyles,
   useAnnotationStyles,
 } from '../../application/timeseriesexplorer/styles';
+import { useDefaultSeverity } from '../../application/components/controls/select_severity/select_severity';
 
 const containerPadding = 20;
 const minElemAndChartDiff = 20;
@@ -110,6 +111,7 @@ const SingleMetricViewerWrapper: FC<SingleMetricViewerPropsWithDeps> = ({
 }) => {
   const timeseriesExplorerStyles = useTimeseriesExplorerStyles();
   const annotationStyles = useAnnotationStyles();
+  const { val: defaultSeverity } = useDefaultSeverity();
   const [chartDimensions, setChartDimensions] = useState<{ width: number; height: number }>({
     width: 0,
     height: 0,
@@ -289,7 +291,7 @@ const SingleMetricViewerWrapper: FC<SingleMetricViewerPropsWithDeps> = ({
                       selectedEntities={selectedEntities}
                       selectedForecastId={selectedForecastId}
                       tableInterval="auto"
-                      tableSeverity={[{ min: 0 }]}
+                      tableSeverity={defaultSeverity}
                       zoom={zoom}
                       functionDescription={functionDescription}
                       selectedJob={selectedJobWrapper.job}

@@ -7,21 +7,31 @@
 
 import { useQuery } from '@kbn/react-query';
 import { useService } from '@kbn/core-di-browser';
-import type { ListPolicyExecutionHistoryResponse } from '@kbn/alerting-v2-schemas';
+import type {
+  ListPolicyExecutionHistoryResponse,
+  PolicyExecutionOutcomeFilter,
+} from '@kbn/alerting-v2-schemas';
 import { ExecutionHistoryApi } from '../services/execution_history_api';
 import { executionHistoryKeys } from './query_key_factory';
 
 interface UseFetchExecutionHistoryParams {
   page: number;
   perPage: number;
+  search?: string;
+  outcome?: PolicyExecutionOutcomeFilter;
 }
 
-export const useFetchExecutionHistory = ({ page, perPage }: UseFetchExecutionHistoryParams) => {
+export const useFetchExecutionHistory = ({
+  page,
+  perPage,
+  search,
+  outcome,
+}: UseFetchExecutionHistoryParams) => {
   const executionHistoryApi = useService(ExecutionHistoryApi);
 
   return useQuery<ListPolicyExecutionHistoryResponse, Error>({
-    queryKey: executionHistoryKeys.list({ page, perPage }),
-    queryFn: () => executionHistoryApi.listExecutionHistory({ page, perPage }),
+    queryKey: executionHistoryKeys.list({ page, perPage, search, outcome }),
+    queryFn: () => executionHistoryApi.listExecutionHistory({ page, perPage, search, outcome }),
     refetchOnWindowFocus: false,
     keepPreviousData: true,
   });

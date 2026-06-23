@@ -190,6 +190,75 @@ describe('formatHitReact', () => {
     ]);
   });
 
+  it('skips nullish values before limiting fields when configured', () => {
+    const rowWithNullishFields = buildDataTableRecord(
+      {
+        _id: 'doc-001',
+        _source: {
+          field_1: null,
+          field_2: undefined,
+          source: 'void_realm',
+          status: 'missing_in_action',
+        },
+      },
+      dataViewMock
+    );
+
+    formatHitReact(rowWithNullishFields, dataViewMock, () => true, 2, fieldFormatsMock, undefined);
+
+    const formatted = formatHitReact(
+      rowWithNullishFields,
+      dataViewMock,
+      () => true,
+      2,
+      fieldFormatsMock,
+      undefined,
+      { skipNullishValues: true }
+    );
+
+    expect(
+      formatted.map(([fieldDisplayName, , fieldName]) => [fieldDisplayName, fieldName])
+    ).toEqual([
+      ['source', 'source'],
+      ['status', 'status'],
+    ]);
+  });
+
+  it('keeps non-nullish falsy values when skipping nullish values', () => {
+    const rowWithFalsyFields = buildDataTableRecord(
+      {
+        _id: 'doc-002',
+        _source: {
+          field_1: null,
+          a_empty_string: '',
+          b_zero: 0,
+          c_false_value: false,
+          d_source: 'void_realm',
+        },
+      },
+      dataViewMock
+    );
+
+    const formatted = formatHitReact(
+      rowWithFalsyFields,
+      dataViewMock,
+      () => true,
+      3,
+      fieldFormatsMock,
+      undefined,
+      { skipNullishValues: true }
+    );
+
+    expect(
+      formatted.map(([fieldDisplayName, , fieldName]) => [fieldDisplayName, fieldName])
+    ).toEqual([
+      ['a_empty_string', 'a_empty_string'],
+      ['b_zero', 'b_zero'],
+      ['c_false_value', 'c_false_value'],
+      ['and 1 more field', null],
+    ]);
+  });
+
   describe('with columnsMeta', () => {
     let formatFieldValueReactSpy: jest.SpyInstance;
 

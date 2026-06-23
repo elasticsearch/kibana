@@ -12,6 +12,7 @@ import type { BoundInferenceClient, ChatCompletionTokenCount } from '@kbn/infere
 import type { StreamType } from '@kbn/streams-schema';
 import {
   type Feature,
+  type FeatureUpsert,
   type BaseFeature,
   type IterationResult,
   isComputedFeature,
@@ -59,6 +60,7 @@ type IterationTuningParams = Partial<
 
 export interface FeaturesIdentifiedTelemetry {
   run_id: string;
+  connector_id: string;
   iteration: number;
   stream_name: string;
   stream_type: StreamType;
@@ -81,6 +83,7 @@ export interface FeaturesIdentifiedTelemetry {
 
 export interface TelemetryContext {
   run_id: string;
+  connector_id: string;
   iteration: number;
   stream_name: string;
   stream_type: StreamType;
@@ -206,8 +209,8 @@ type InferredIterationResult =
         | {
             state: 'success';
             tokensUsed: ChatCompletionTokenCount;
-            newFeatures: Feature[];
-            updatedFeatures: Feature[];
+            newFeatures: FeatureUpsert[];
+            updatedFeatures: FeatureUpsert[];
             ignoredFeatures: IgnoredFeature[];
             codeIgnoredCount: number;
           };
@@ -342,6 +345,7 @@ export interface IdentifyInferredFeaturesOptions {
   kiClient: KnowledgeIndicatorClient;
   soClient: SavedObjectsClientContract;
   inferenceClient: BoundInferenceClient;
+  connectorId: string;
   logger: Logger;
   signal: AbortSignal;
   streamName: string;
@@ -359,7 +363,7 @@ export interface IdentifyInferredFeaturesResult {
   hasDocuments: boolean;
   docsCount: number;
   docIds: string[];
-  discoveredFeatures: Feature[];
+  discoveredFeatures: FeatureUpsert[];
   iterationResult: IterationResult;
   nextDiverseOffset: number;
 }
@@ -369,6 +373,7 @@ export async function identifyInferredFeatures({
   kiClient,
   soClient,
   inferenceClient,
+  connectorId,
   logger,
   signal,
   streamName,
@@ -438,6 +443,7 @@ export async function identifyInferredFeatures({
 
   const telemetryCtx: TelemetryContext = {
     run_id: runId,
+    connector_id: connectorId,
     iteration,
     stream_name: streamName,
     stream_type: streamType,
@@ -481,7 +487,7 @@ export async function identifyInferredFeatures({
     );
   }
 
-  const discoveredMap = new Map(discoveredFeatures.map((f) => [f.id, f]));
+  const discoveredMap = new Map<string, FeatureUpsert>(discoveredFeatures.map((f) => [f.id, f]));
   for (const feature of allChanged) {
     discoveredMap.set(feature.id, feature);
   }

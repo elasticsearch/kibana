@@ -14,7 +14,7 @@ import {
 } from '@kbn/security-solution-plugin/common/test';
 import { setupUsers } from './setup_users';
 import { CLOUD_SERVERLESS, IS_SERVERLESS } from '../env_var_names_constants';
-import { suppressGlobalAnnouncements } from '../tasks/api_calls/common';
+import { suppressGlobalAnnouncements } from '../tasks/api_calls/suppress_global_announcements';
 
 before(() => {
   cy.task('esArchiverLoad', { archiveName: 'auditbeat_single' });

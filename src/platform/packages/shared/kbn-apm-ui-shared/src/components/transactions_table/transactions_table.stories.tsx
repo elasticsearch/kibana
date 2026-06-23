@@ -336,6 +336,26 @@ export const WithHeaderActions: StoryFn = () => (
   />
 );
 
+export const WithError: StoryFn = () => (
+  <EuiPanel style={{ maxWidth: 768 }}>
+    <TransactionsTable
+      items={[]}
+      isLoading={false}
+      maxCountExceeded={false}
+      latencyAggregationType={LatencyAggregationType.p95}
+      showSparklines={false}
+      headerActions={[
+        {
+          label: 'Open in APM',
+          href: '#',
+          ebt: { action: 'openInApm', element: 'transactionsTableHeader' },
+        },
+      ]}
+      errorMessage="Failed to load transaction data"
+    />
+  </EuiPanel>
+);
+
 export const Loading: StoryFn = () => (
   <TransactionsTable
     items={[]}

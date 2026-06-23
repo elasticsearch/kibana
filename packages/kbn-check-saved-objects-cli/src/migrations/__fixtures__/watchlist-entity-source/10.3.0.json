@@ -1,0 +1,48 @@
+{
+  "10.2.0": [
+    {
+      "type": "index",
+      "name": "watchlist",
+      "managed": true,
+      "enabled": true,
+      "error": "sample error",
+      "integrationName": "entityanalytics_ad",
+      "identifierField": "user.name",
+      "queryRule": "*",
+      "matchers": [],
+      "matchersModifiedByUser": false,
+      "managedVersion": 1,
+      "filter": "*",
+      "integrations": {
+        "syncMarkerIndex": "logs",
+        "syncData": {
+          "lastFullSync": "2026-01-01T00:00:00.000Z",
+          "lastUpdateProcessed": "2026-01-01T00:00:00.000Z"
+        }
+      }
+    }
+  ],
+  "10.3.0": [
+    {
+      "type": "index",
+      "name": "watchlist",
+      "managed": true,
+      "enabled": true,
+      "error": "sample error",
+      "integrationName": "entityanalytics_ad",
+      "identifierField": "user.name",
+      "queryRule": "*",
+      "matchers": [],
+      "matchersModifiedByUser": false,
+      "managedVersion": 1,
+      "filter": "*",
+      "integrations": {
+        "syncMarkerIndex": "logs",
+        "syncData": {
+          "lastFullSync": "2026-01-01T00:00:00.000Z",
+          "lastUpdateProcessed": "2026-01-01T00:00:00.000Z"
+        }
+      }
+    }
+  ]
+}

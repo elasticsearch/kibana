@@ -224,3 +224,149 @@ describe('reassignAgents kuery construction', () => {
     );
   });
 });
+
+describe('reassignAgents kuery path — cheap count and sync/async branching', () => {
+  let mockGetAgentsByKuery: jest.SpyInstance;
+  let mockOpenPointInTime: jest.SpyInstance;
+  let mockReassignBatch: jest.SpyInstance;
+  let mockReassignActionRunner: jest.SpyInstance;
+
+  beforeEach(async () => {
+    const { soClient } = createClientMock();
+    appContextService.start(
+      createAppContextStartContractMock({}, false, {
+        internal: soClient,
+        withoutSpaceExtensions: soClient,
+      })
+    );
+    mockGetAgentsByKuery = jest.spyOn(crud, 'getAgentsByKuery');
+    mockOpenPointInTime = jest.spyOn(crud, 'openPointInTime').mockResolvedValue('pit-id');
+    mockReassignBatch = jest
+      .spyOn(reassignActionRunner, 'reassignBatch')
+      .mockResolvedValue({ actionId: 'test-action-id' });
+    mockReassignActionRunner = jest
+      .spyOn(reassignActionRunner, 'ReassignActionRunner')
+      .mockImplementation(
+        () =>
+          ({
+            runActionAsyncTask: jest.fn().mockResolvedValue({ actionId: 'async-action-id' }),
+          } as any)
+      );
+  });
+
+  afterEach(() => {
+    mockGetAgentsByKuery.mockRestore();
+    mockOpenPointInTime.mockRestore();
+    mockReassignBatch.mockRestore();
+    mockReassignActionRunner.mockRestore();
+    appContextService.stop();
+  });
+
+  it('uses perPage:0 for the initial count query', async () => {
+    const { soClient, esClient, regularAgentPolicySO2 } = createClientMock();
+    mockGetAgentsByKuery.mockResolvedValue({ agents: [], total: 0, page: 1, perPage: 0 });
+
+    await reassignAgents(soClient, esClient, { kuery: 'status:online' }, regularAgentPolicySO2.id);
+
+    expect(mockGetAgentsByKuery).toHaveBeenNthCalledWith(
+      1,
+      esClient,
+      soClient,
+      expect.objectContaining({ perPage: 0 })
+    );
+  });
+
+  it('runs inline and fetches agents when total <= batchSize', async () => {
+    const { soClient, esClient, regularAgentPolicySO2 } = createClientMock();
+    const agents = [{ id: 'agent-1' } as any];
+    mockGetAgentsByKuery
+      .mockResolvedValueOnce({ agents: [], total: 5, page: 1, perPage: 0 }) // count
+      .mockResolvedValueOnce({ agents, total: 5, page: 1, perPage: SO_SEARCH_LIMIT }); // fetch
+
+    await reassignAgents(soClient, esClient, { kuery: 'status:online' }, regularAgentPolicySO2.id);
+
+    // second call fetches up to batchSize docs
+    expect(mockGetAgentsByKuery).toHaveBeenNthCalledWith(
+      2,
+      esClient,
+      soClient,
+      expect.objectContaining({ perPage: SO_SEARCH_LIMIT })
+    );
+    expect(mockReassignBatch).toHaveBeenCalledWith(
+      esClient,
+      expect.anything(),
+      agents,
+      expect.anything()
+    );
+    expect(mockReassignActionRunner).not.toHaveBeenCalled();
+  });
+
+  it('schedules async task and returns actionId immediately when total > batchSize', async () => {
+    const { soClient, esClient, regularAgentPolicySO2 } = createClientMock();
+    const batchSize = 100;
+    mockGetAgentsByKuery.mockResolvedValueOnce({
+      agents: [],
+      total: 500,
+      page: 1,
+      perPage: 0,
+    });
+
+    const result = await reassignAgents(
+      soClient,
+      esClient,
+      { kuery: 'status:online', batchSize },
+      regularAgentPolicySO2.id
+    );
+
+    expect(result).toEqual({ actionId: 'async-action-id' });
+    // only the count call — no second full-doc fetch
+    expect(mockGetAgentsByKuery).toHaveBeenCalledTimes(1);
+    expect(mockReassignActionRunner).toHaveBeenCalledWith(
+      esClient,
+      soClient,
+      expect.objectContaining({ batchSize, total: 500 }),
+      expect.anything()
+    );
+    expect(mockReassignBatch).not.toHaveBeenCalled();
+  });
+
+  it('uses caller-supplied batchSize as the async threshold', async () => {
+    const { soClient, esClient, regularAgentPolicySO2 } = createClientMock();
+    const batchSize = 50;
+    // total (60) > batchSize (50) → async
+    mockGetAgentsByKuery.mockResolvedValueOnce({ agents: [], total: 60, page: 1, perPage: 0 });
+
+    const result = await reassignAgents(
+      soClient,
+      esClient,
+      { kuery: 'status:online', batchSize },
+      regularAgentPolicySO2.id
+    );
+
+    expect(result).toEqual({ actionId: 'async-action-id' });
+    expect(mockReassignActionRunner).toHaveBeenCalledWith(
+      esClient,
+      soClient,
+      expect.objectContaining({ batchSize, total: 60 }),
+      expect.anything()
+    );
+  });
+
+  it('runs inline when total equals batchSize (boundary)', async () => {
+    const { soClient, esClient, regularAgentPolicySO2 } = createClientMock();
+    const batchSize = 100;
+    mockGetAgentsByKuery
+      .mockResolvedValueOnce({ agents: [], total: 100, page: 1, perPage: 0 }) // count
+      .mockResolvedValueOnce({ agents: [], total: 100, page: 1, perPage: batchSize }); // fetch
+
+    await reassignAgents(
+      soClient,
+      esClient,
+      { kuery: 'status:online', batchSize },
+      regularAgentPolicySO2.id
+    );
+
+    expect(mockReassignBatch).toHaveBeenCalled();
+    expect(mockReassignActionRunner).not.toHaveBeenCalled();
+  });
+});

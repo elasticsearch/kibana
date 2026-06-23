@@ -256,6 +256,15 @@ describe('Metric Operations Schemas', () => {
       expect(validated).toEqual(input);
     });
 
+    it('validates cumulative sum of count of records without field', () => {
+      const input = {
+        operation: 'cumulative_sum' as const,
+      };
+
+      const validated = cumulativeSumOperationSchema.validate(input);
+      expect(validated).toEqual(input);
+    });
+
     it('validates counter rate operation', () => {
       const input = {
         operation: 'counter_rate' as const,

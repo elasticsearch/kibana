@@ -91,6 +91,7 @@ describe('updateRiskScoreMappings', () => {
       logger,
       kibanaVersion,
       getStartServices: getStartServicesMock,
+      hasEncryptionKey: true,
     });
 
     expect(mockCreateOrUpdateIndex).toHaveBeenCalledWith(
@@ -126,6 +127,7 @@ describe('updateRiskScoreMappings', () => {
       logger,
       getStartServices: getStartServicesMock,
       kibanaVersion,
+      hasEncryptionKey: true,
     });
 
     expect(mockCreateOrUpdateIndex).not.toHaveBeenCalled();
@@ -155,6 +157,7 @@ describe('updateRiskScoreMappings', () => {
       logger,
       kibanaVersion,
       getStartServices: getStartServicesMock,
+      hasEncryptionKey: true,
     });
 
     expect(mockCreateOrUpdateIndex).toHaveBeenCalledTimes(4);

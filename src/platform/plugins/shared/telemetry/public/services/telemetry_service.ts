@@ -8,6 +8,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
+import { type Observable, ReplaySubject, distinctUntilChanged } from 'rxjs';
 import type { CoreSetup, CoreStart } from '@kbn/core/public';
 import {
   LastReportedRoute,
@@ -46,6 +47,13 @@ export class TelemetryService {
   private readonly isScreenshotMode: boolean;
   private updatedConfig?: TelemetryPluginConfig;
 
+  /**
+   * Emits the opt-in status. It withholds the synchronous injected/default value and only starts
+   * emitting once the config has been updated (i.e. the first value fetched from the server), then
+   * emits again on every subsequent opt-in change (e.g. `setOptIn`).
+   */
+  private readonly isOptedIn$$ = new ReplaySubject<boolean>(1);
+
   /** Current version of Kibana */
   public readonly currentKibanaVersion: string;
 
@@ -73,12 +81,26 @@ export class TelemetryService {
    */
   public set config(updatedConfig: TelemetryPluginConfig) {
     this.updatedConfig = updatedConfig;
+    // Every config update goes through this setter (initial server fetch and `setOptIn`), so it is
+    // the single funnel to notify subscribers about the resolved opt-in status. The injected default
+    // is assigned to `defaultConfig` in the constructor and never flows through here, which is why
+    // `isOptedIn$` correctly withholds the stale default.
+    this.isOptedIn$$.next(this.isOptedIn);
   }
 
   /** Returns the latest configuration **/
   public get config() {
     return { ...this.defaultConfig, ...this.updatedConfig };
   }
+
+  /**
+   * Emits the user's opt-in preference.
+   *
+   * It withholds the synchronous injected/default value and emits the first time the config is
+   * resolved from the server, then emits again whenever the preference changes. Replays the latest
+   * value to late subscribers.
+   */
+  public readonly isOptedIn$: Observable<boolean> = this.isOptedIn$$.pipe(distinctUntilChanged());
 
   /** Is the cluster opted-in to telemetry **/
   public get isOptedIn() {
@@ -153,7 +175,12 @@ export class TelemetryService {
     this.config = { ...this.config, userCanChangeSettings };
   }
 
-  /** Is the cluster opted-in to telemetry **/
+  /**
+   * Is the cluster opted-in to telemetry
+   * @deprecated Subscribe to {@link TelemetryService.isOptedIn$ | isOptedIn$} instead. Reading this
+   * synchronously at `start()` time or initial render may return the stale injected default before
+   * the user's saved preference has been fetched from the server.
+   */
   public getIsOptedIn = (): boolean => {
     return this.isOptedIn;
   };

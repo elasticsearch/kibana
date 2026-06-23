@@ -7,11 +7,11 @@
 
 import React, { useState } from 'react';
 import {
-  EuiCheckbox,
   EuiButtonIcon,
-  EuiPopover,
+  EuiCheckbox,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiPopover,
   EuiPopoverTitle,
   EuiSpacer,
   EuiToolTip,

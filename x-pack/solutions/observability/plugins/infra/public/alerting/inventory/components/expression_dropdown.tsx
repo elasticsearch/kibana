@@ -16,7 +16,7 @@ import {
   EuiSelect,
   EuiToolTip,
 } from '@elastic/eui';
-import { EuiPopoverTitle, EuiButtonIcon } from '@elastic/eui';
+import { EuiPopoverTitle, EuiButtonIcon, useGeneratedHtmlId } from '@elastic/eui';
 import { useBoolean } from '@kbn/react-hooks';
 
 interface WhenExpressionProps<TDropDownType extends string> {
@@ -54,9 +54,11 @@ export const ExpressionDropDown = <TDropDownType extends string>({
   ...props
 }: WhenExpressionProps<TDropDownType>) => {
   const [popoverOpen, { toggle: togglePopover, off: closePopover }] = useBoolean(false);
+  const popoverTitleId = useGeneratedHtmlId();
 
   return (
     <EuiPopover
+      aria-labelledby={popoverTitleId}
       button={
         <EuiExpression
           data-test-subj="nodeTypeExpression"
@@ -72,7 +74,7 @@ export const ExpressionDropDown = <TDropDownType extends string>({
       anchorPosition={popupPosition ?? 'downLeft'}
     >
       <div onBlur={closePopover}>
-        <ClosablePopoverTitle onClose={closePopover}>
+        <ClosablePopoverTitle onClose={closePopover} titleId={popoverTitleId}>
           <>{popoverTitle}</>
         </ClosablePopoverTitle>
         <EuiSelect
@@ -94,13 +96,14 @@ export const ExpressionDropDown = <TDropDownType extends string>({
 interface ClosablePopoverTitleProps {
   children: JSX.Element;
   onClose: () => void;
+  titleId?: string;
 }
 
-export const ClosablePopoverTitle = ({ children, onClose }: ClosablePopoverTitleProps) => {
+export const ClosablePopoverTitle = ({ children, onClose, titleId }: ClosablePopoverTitleProps) => {
   return (
     <EuiPopoverTitle>
       <EuiFlexGroup alignItems="center" gutterSize="s">
-        <EuiFlexItem>{children}</EuiFlexItem>
+        <EuiFlexItem id={titleId}>{children}</EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiToolTip
             content={i18n.translate(

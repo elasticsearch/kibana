@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { EuiFlexItem, EuiFlexGroup, EuiSpacer, useEuiTheme } from '@elastic/eui';
 import { useLocation, useHistory } from 'react-router-dom';
 
@@ -17,19 +17,25 @@ import { ResponsivePackageGrid } from './components/responsive_package_grid';
 import { SearchAndFiltersBar } from './components/search_and_filters_bar';
 import { Sidebar } from './components/side_bar';
 import { useBrowseIntegrationHook } from './hooks';
-import { useSetUrlCategory } from './hooks/url_categories';
+import {
+  useSetUrlCategory,
+  useUrlDefaultCategories,
+  useSetUrlDefaultCategories,
+} from './hooks/url_categories';
 import { NoDataPrompt } from './components/no_data_prompt';
 import {
   ManageIntegrationsTable,
   type CreatedIntegrationRow,
 } from './components/manage_integrations_table';
 
+const OBLT_DEFAULT_CATEGORIES = ['opentelemetry', 'observability'];
+
 export const BrowseIntegrationsPage: React.FC<{ prereleaseIntegrationsEnabled: boolean }> = ({
   prereleaseIntegrationsEnabled,
 }) => {
   useBreadcrumbs('integrations_all');
 
-  const { automaticImport, application } = useStartServices();
+  const { automaticImport, application, cloud } = useStartServices();
   const { pathname, search } = useLocation();
   const history = useHistory();
   const euiTheme = useEuiTheme();
@@ -69,10 +75,12 @@ export const BrowseIntegrationsPage: React.FC<{ prereleaseIntegrationsEnabled: b
   );
 
   const setUrlCategory = useSetUrlCategory();
+  const setUrlDefaultCategories = useSetUrlDefaultCategories();
+  const urlDefaultCategories = useUrlDefaultCategories();
   const {
     allCategories,
     initialSelectedCategory,
-    selectedCategory,
+    selectedCategories,
     mainCategories,
     isLoading,
     isLoadingCategories,
@@ -84,6 +92,43 @@ export const BrowseIntegrationsPage: React.FC<{ prereleaseIntegrationsEnabled: b
     onCategoryChange,
     availableSubCategories,
   } = useBrowseIntegrationHook({ prereleaseIntegrationsEnabled });
+
+  // Tracks whether we've already auto-redirected to the default categories this page visit.
+  // Without this, clicking "All categories" (which clears URL categories) would immediately
+  // trigger another redirect back to the defaults — preventing the user from removing them.
+  const hasAutoRedirectedRef = useRef(false);
+
+  const isObservability = cloud?.serverless?.projectType === 'observability';
+
+  useEffect(() => {
+    if (
+      hasAutoRedirectedRef.current ||
+      !isObservability ||
+      isLoading ||
+      isManageIntegrationsView ||
+      initialSelectedCategory ||
+      urlDefaultCategories.length > 0
+    )
+      return;
+    // Mark as redirected regardless of whether valid defaults exist, so the
+    // effect does not keep re-running when none of the default categories exist
+    // in the catalog.
+    hasAutoRedirectedRef.current = true;
+    const validDefaults = OBLT_DEFAULT_CATEGORIES.filter((cat) =>
+      categoryExists(cat, allCategories)
+    );
+    if (validDefaults.length > 0) {
+      setUrlDefaultCategories(validDefaults, { replace: true });
+    }
+  }, [
+    isObservability,
+    isLoading,
+    isManageIntegrationsView,
+    initialSelectedCategory,
+    urlDefaultCategories.length,
+    allCategories,
+    setUrlDefaultCategories,
+  ]);
 
   if (!isLoading && !categoryExists(initialSelectedCategory, allCategories)) {
     setUrlCategory({ category: '' }, { replace: true });
@@ -111,7 +156,7 @@ export const BrowseIntegrationsPage: React.FC<{ prereleaseIntegrationsEnabled: b
       <Sidebar
         isLoading={isLoading}
         categories={mainCategories}
-        selectedCategory={selectedCategory}
+        selectedCategories={selectedCategories}
         onCategoryChange={onCategoryChange}
         CreateIntegrationCardButton={
           canReadAutomaticImportIntegrations
@@ -120,6 +165,7 @@ export const BrowseIntegrationsPage: React.FC<{ prereleaseIntegrationsEnabled: b
         }
         hasCreatedIntegrations={hasCreatedIntegrations}
         isLoadingCreatedIntegrations={isLoadingCreatedIntegrations}
+        manageIntegrationsHref={manageIntegrationsHref}
         onManageIntegrationsClick={onManageIntegrationsClick}
       />
       <EuiFlexItem grow={5}>

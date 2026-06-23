@@ -9,6 +9,7 @@
 
 import { z } from '@kbn/zod/v4';
 import { getOrResolveObject } from '../../common/utils';
+import { mergeKibanaBuiltinWorkflowInputDefinitionsIntoRootSchema } from '../builtin_workflow_input_definitions';
 
 export function getWorkflowJsonSchema(zodSchema: z.ZodType): z.core.JSONSchema.JSONSchema | null {
   try {
@@ -51,7 +52,9 @@ export function getWorkflowJsonSchema(zodSchema: z.ZodType): z.core.JSONSchema.J
       },
     });
 
-    return stripNestedSchemaIds(jsonSchema) as z.core.JSONSchema.JSONSchema;
+    return mergeKibanaBuiltinWorkflowInputDefinitionsIntoRootSchema(
+      stripNestedSchemaIds(jsonSchema) as z.core.JSONSchema.JSONSchema
+    );
   } catch (error) {
     // console.error('Error generating JSON schema from YAML schema:', error);
     return null;

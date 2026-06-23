@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import type { EuiStepStatus } from '@elastic/eui';
-import { EuiPanel, EuiSkeletonRectangle, EuiSkeletonText, EuiSpacer, EuiSteps } from '@elastic/eui';
+import { EuiPanel, EuiSteps } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { usePerformanceContext } from '@kbn/ebt-tools';
@@ -15,8 +15,6 @@ import { DASHBOARD_APP_LOCATOR } from '@kbn/deeplinks-analytics';
 import { type LogsLocatorParams, LOGS_LOCATOR_ID } from '@kbn/logs-shared-plugin/common';
 import { FETCH_STATUS } from '../../../hooks/use_fetcher';
 import { EmptyPrompt } from '../shared/empty_prompt';
-import { CommandSnippet } from './command_snippet';
-import { DataIngestStatus } from './data_ingest_status';
 import { FeedbackButtons } from '../shared/feedback_buttons';
 import { useKubernetesFlow } from './use_kubernetes_flow';
 import { usePreExistingDataCheck } from '../shared/use_pre_existing_data_check';
@@ -27,6 +25,7 @@ import { ObservabilityOnboardingPricingFeature } from '../../../../common/pricin
 import { WIRED_ECS_DATA_VIEW_SPEC } from '../shared/wired_streams_data_view';
 import type { ObservabilityOnboardingContextValue } from '../../../plugin';
 import type { ActionLink } from './data_ingest_status';
+import { KubernetesElasticAgentInstallStep, KubernetesElasticAgentVisualizeStep } from './steps';
 
 const CLUSTER_OVERVIEW_DASHBOARD_ID = 'kubernetes-f4dc26db-1b53-4ea2-a78b-1bfab8ea267c';
 
@@ -119,26 +118,13 @@ export const KubernetesPanel: React.FC = () => {
         }
       ),
       children: (
-        <>
-          {status !== FETCH_STATUS.SUCCESS && (
-            <>
-              <EuiSkeletonText lines={5} />
-              <EuiSpacer />
-              <EuiSkeletonRectangle width="170px" height="40px" />
-            </>
-          )}
-          {status === FETCH_STATUS.SUCCESS && data !== undefined && (
-            <CommandSnippet
-              encodedApiKey={data.apiKeyEncoded}
-              onboardingId={data.onboardingId}
-              elasticsearchUrl={data.elasticsearchUrl}
-              elasticAgentVersionInfo={data.elasticAgentVersionInfo}
-              isCopyPrimaryAction={!isMonitoringStepActive}
-              ingestionMode={ingestionMode}
-              onIngestionModeChange={setIngestionMode}
-            />
-          )}
-        </>
+        <KubernetesElasticAgentInstallStep
+          status={status}
+          data={data}
+          isMonitoringStepActive={isMonitoringStepActive}
+          ingestionMode={ingestionMode}
+          onIngestionModeChange={setIngestionMode}
+        />
       ),
     },
     {
@@ -153,12 +139,10 @@ export const KubernetesPanel: React.FC = () => {
         : isMonitoringStepActive
         ? 'current'
         : 'incomplete') as EuiStepStatus,
-      children: isMonitoringStepActive && data && (
-        <DataIngestStatus
-          onboardingId={data.onboardingId}
-          onboardingFlowType="kubernetes"
-          dataset="kubernetes"
-          integration="kubernetes"
+      children: (
+        <KubernetesElasticAgentVisualizeStep
+          isMonitoringStepActive={isMonitoringStepActive}
+          data={data}
           actionLinks={kubernetesActionLinks}
           onDataReceived={() => setDataReceived(true)}
         />

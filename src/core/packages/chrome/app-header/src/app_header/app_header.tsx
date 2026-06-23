@@ -34,7 +34,7 @@ export interface AppHeaderViewProps {
   back?: AppHeaderBack | AppHeaderBack[];
   tabs?: AppHeaderTab[];
   badges?: AppHeaderBadge[];
-  menu?: AppMenuConfig;
+  menu?: AppMenuConfig & { isCollapsed?: boolean };
   favorite?: ReactNode;
   titleAppend?: ReactNode;
   metadata?: AppHeaderMetadataItems;
@@ -42,6 +42,11 @@ export interface AppHeaderViewProps {
   padding?: AppHeaderPadding;
   docLink?: string;
   showAddIntegrations?: boolean;
+  /**
+   * Omits the header's bottom border. Used when the content rendered below the header owns the
+   * separating line instead (e.g. Discover using UnifiedTabs).
+   */
+  borderless?: boolean;
 }
 
 export const AppHeaderView = React.memo<AppHeaderViewProps>(
@@ -56,6 +61,7 @@ export const AppHeaderView = React.memo<AppHeaderViewProps>(
     metadata,
     sticky,
     padding,
+    borderless,
     docLink,
     showAddIntegrations,
   }) => {
@@ -99,6 +105,7 @@ export const AppHeaderView = React.memo<AppHeaderViewProps>(
         tabs={tabs?.length ? <AppTabs tabs={tabs} /> : undefined}
         sticky={sticky}
         padding={padding}
+        borderless={borderless}
       />
     );
   }

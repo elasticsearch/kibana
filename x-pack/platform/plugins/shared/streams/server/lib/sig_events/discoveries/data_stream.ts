@@ -19,7 +19,8 @@ export const discoveriesMappings = {
     kind: mappings.keyword(),
     discovery_id: mappings.keyword(),
     discovery_slug: mappings.keyword(),
-    closes_discovery_id: mappings.keyword(),
+    parent_discovery_id: mappings.keyword(),
+    event_id: mappings.keyword(),
     grouped_discovery_ids: mappings.keyword(),
     criticality: mappings.integer(),
     closed_by_execution_id: mappings.keyword(),
@@ -39,7 +40,7 @@ export const discoveriesDataStream: DataStreamDefinition<
   StoredDiscovery
 > = {
   name: DISCOVERIES_DATA_STREAM,
-  version: 3,
+  version: 4,
   hidden: true,
   template: {
     priority: 500,

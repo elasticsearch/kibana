@@ -5,19 +5,23 @@
  * 2.0.
  */
 
-import '../../../__mocks__/shallow_useeffect.mock';
 import { setMockValues } from '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { waitFor } from '@testing-library/react';
 import { of } from 'rxjs';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 const mockUseEnterpriseSearchApplicationNav = jest.fn().mockReturnValue([]);
 
 jest.mock('../../../shared/layout', () => ({
   useEnterpriseSearchApplicationNav: (...args: any[]) =>
     mockUseEnterpriseSearchApplicationNav(...args),
+  EnterpriseSearchPageTemplateWrapper: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 import { EnterpriseSearchApplicationsPageTemplate } from './page_template';
@@ -47,10 +51,12 @@ describe('EnterpriseSearchApplicationsPageTemplate', () => {
       },
     ]);
 
-    shallow(<EnterpriseSearchApplicationsPageTemplate />);
+    renderWithKibanaRenderContext(<EnterpriseSearchApplicationsPageTemplate />);
 
-    expect(updateSideNavDefinition).toHaveBeenCalledWith({
-      searchApps: applicationsItems,
+    await waitFor(() => {
+      expect(updateSideNavDefinition).toHaveBeenCalledWith({
+        searchApps: applicationsItems,
+      });
     });
   });
 });

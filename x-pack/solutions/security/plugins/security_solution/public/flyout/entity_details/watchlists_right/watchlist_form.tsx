@@ -21,6 +21,7 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { canUpdateWatchlistField } from '../../../../common/api/entity_analytics/watchlists/management';
 import type { CreateWatchlistRequestBodyInput } from '../../../../common/api/entity_analytics/watchlists/management/create.gen';
+import type { MonitoringEntitySource } from '../../../../common/api/entity_analytics/watchlists/data_source/common.gen';
 import {
   WATCHLIST_DESCRIPTION_LABEL,
   WATCHLIST_NAME_LABEL,
@@ -37,6 +38,7 @@ import { MAX_WATCHLIST_DESCRIPTION_LENGTH, MAX_WATCHLIST_NAME_LENGTH } from './c
 export interface WatchlistFormProps {
   watchlist: CreateWatchlistRequestBodyInput;
   watchlistId?: string;
+  indexSourceWithMissingApiKey?: MonitoringEntitySource;
   isEditMode: boolean;
   isNameTooLong: boolean;
   isDescriptionTooLong: boolean;
@@ -61,6 +63,7 @@ const getTooLongError = (isTooLong: boolean, maxLength: number, fieldId: string)
 export const WatchlistForm = ({
   watchlist,
   watchlistId,
+  indexSourceWithMissingApiKey,
   isEditMode,
   isNameTooLong,
   isDescriptionTooLong,
@@ -159,6 +162,8 @@ export const WatchlistForm = ({
       )}
       <RuleBasedSourceInput
         watchlistName={watchlist.name}
+        watchlistId={watchlistId}
+        indexSourceWithMissingApiKey={indexSourceWithMissingApiKey}
         isEditMode={isEditMode}
         isManaged={watchlist.managed}
         onFieldChange={onFieldChange}

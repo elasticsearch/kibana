@@ -278,7 +278,7 @@ export class CoreSystem {
       const customBranding = this.customBranding.setup({ injectedMetadata });
       const application = this.application.setup({ http, analytics });
       this.coreApp.setup({ application, http, injectedMetadata, notifications });
-      const featureFlags = this.featureFlags.setup({ injectedMetadata });
+      const featureFlags = this.featureFlags.setup({ http, injectedMetadata });
 
       const core: InternalCoreSetup = {
         analytics,

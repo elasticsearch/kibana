@@ -1,0 +1,144 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`fetchBaselineBehavior rare detector search request matches snapshot 1`] = `
+Object {
+  "aggs": Object {
+    "anomaly": Object {
+      "filter": Object {
+        "term": Object {
+          "source.ip": "evil-ip",
+        },
+      },
+    },
+    "baseline": Object {
+      "terms": Object {
+        "exclude": Array [
+          "evil-ip",
+        ],
+        "field": "source.ip",
+        "order": Object {
+          "_count": "desc",
+        },
+        "size": 3,
+      },
+    },
+  },
+  "ignore_unavailable": true,
+  "index": Array [
+    "logs-*",
+  ],
+  "query": Object {
+    "bool": Object {
+      "filter": Array [
+        Object {
+          "bool": Object {
+            "filter": Array [
+              Object {
+                "term": Object {
+                  "event.action": "authentication",
+                },
+              },
+            ],
+          },
+        },
+        Object {
+          "term": Object {
+            "entity_id": "user:alice",
+          },
+        },
+        Object {
+          "exists": Object {
+            "field": "source.ip",
+          },
+        },
+        Object {
+          "range": Object {
+            "@timestamp": Object {
+              "gte": "now-30d",
+              "lte": 1778245200000,
+            },
+          },
+        },
+      ],
+    },
+  },
+  "runtime_mappings": Object {
+    "entity_id": Object {
+      "script": Object {
+        "source": "",
+      },
+      "type": "keyword",
+    },
+  },
+  "size": 0,
+}
+`;
+
+exports[`fetchBaselineBehavior time_of_day detector search request matches snapshot 1`] = `
+Object {
+  "aggs": Object {
+    "time_bucket": Object {
+      "filter": Object {
+        "term": Object {
+          "hour_of_day": 12,
+        },
+      },
+    },
+  },
+  "ignore_unavailable": true,
+  "index": Array [
+    "logs-*",
+  ],
+  "query": Object {
+    "bool": Object {
+      "filter": Array [
+        Object {
+          "bool": Object {
+            "filter": Array [
+              Object {
+                "term": Object {
+                  "event.action": "authentication",
+                },
+              },
+            ],
+          },
+        },
+        Object {
+          "term": Object {
+            "entity_id": "user:alice",
+          },
+        },
+        Object {
+          "range": Object {
+            "@timestamp": Object {
+              "gte": "now-30d",
+              "lte": 1778245200000,
+            },
+          },
+        },
+      ],
+    },
+  },
+  "runtime_mappings": Object {
+    "day_of_week": Object {
+      "script": Object {
+        "source": "emit(doc['@timestamp'].value.getDayOfWeekEnum().getValue() % 7)",
+      },
+      "type": "long",
+    },
+    "entity_id": Object {
+      "script": Object {
+        "source": "",
+      },
+      "type": "keyword",
+    },
+    "hour_of_day": Object {
+      "script": Object {
+        "source": "emit(doc['@timestamp'].value.getHour())",
+      },
+      "type": "long",
+    },
+  },
+  "size": 0,
+}
+`;

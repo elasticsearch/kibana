@@ -1,0 +1,94 @@
+{
+  "10.3.0": [
+    {
+      "rule_id": "sample-rule-id",
+      "version": 1,
+      "name": "Sample rule name",
+      "tags": [
+        "tag"
+      ],
+      "severity": "low",
+      "risk_score": 21,
+      "description": "Detects sample suspicious activity used to validate the prebuilt rule asset mappings.",
+      "type": "query",
+      "index": [
+        "logs-*",
+        "filebeat-*"
+      ],
+      "threat": [
+        {
+          "framework": "MITRE ATT&CK",
+          "tactic": {
+            "id": "TA0001",
+            "name": "Initial Access"
+          },
+          "technique": [
+            {
+              "id": "T1190",
+              "name": "Exploit Public-Facing Application",
+              "subtechnique": [
+                {
+                  "id": "T1190.001",
+                  "name": "Sample Subtechnique"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "related_integrations": [
+        {
+          "package": "endpoint",
+          "integration": "endpoint",
+          "version": "^8.2.0"
+        }
+      ]
+    }
+  ],
+  "10.4.0": [
+    {
+      "rule_id": "sample-rule-id",
+      "version": 1,
+      "name": "Sample rule name",
+      "tags": [
+        "tag"
+      ],
+      "severity": "low",
+      "risk_score": 21,
+      "description": "Detects sample suspicious activity used to validate the prebuilt rule asset mappings.",
+      "type": "query",
+      "index": [
+        "logs-*",
+        "filebeat-*"
+      ],
+      "threat": [
+        {
+          "framework": "MITRE ATT&CK",
+          "tactic": {
+            "id": "TA0001",
+            "name": "Initial Access"
+          },
+          "technique": [
+            {
+              "id": "T1190",
+              "name": "Exploit Public-Facing Application",
+              "subtechnique": [
+                {
+                  "id": "T1190.001",
+                  "name": "Sample Subtechnique"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "related_integrations": [
+        {
+          "package": "endpoint",
+          "integration": "endpoint",
+          "version": "^8.2.0"
+        }
+      ]
+    }
+  ]
+}

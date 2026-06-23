@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { parseDocument, isMap, isSeq } from 'yaml';
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml, parseDocument, isMap, isSeq } from 'yaml';
 
 interface FieldEntry {
   name?: string;

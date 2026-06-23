@@ -142,10 +142,10 @@ const ConversationSettingsManagementComponent: React.FC<Props> = ({
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   const handleSave = useCallback(
-    async (param?: { callback?: () => void }) => {
-      const { callback } = param ?? {};
+    async (param?: { callback?: () => void; isBulkDelete?: boolean }) => {
+      const { callback, isBulkDelete = false } = param ?? {};
       const saveConversationsSettingsParams =
-        isDeleteAll || excludedIds.length > 0
+        isBulkDelete && (isDeleteAll || excludedIds.length > 0)
           ? { isDeleteAll: true, excludedIds }
           : { isDeleteAll: false };
       const isSuccess = await saveConversationsSettings(saveConversationsSettingsParams);
@@ -235,7 +235,7 @@ const ConversationSettingsManagementComponent: React.FC<Props> = ({
       return;
     }
     closeConfirmModal();
-    handleSave({ callback: refetchAll });
+    handleSave({ callback: refetchAll, isBulkDelete: true });
     setConversationsSettingsBulkActions({});
   }, [
     closeConfirmModal,

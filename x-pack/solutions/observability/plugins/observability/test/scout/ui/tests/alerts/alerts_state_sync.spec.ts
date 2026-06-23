@@ -32,7 +32,7 @@ test.describe(
     });
 
     test('hydrates the query bar and time range from the URL', async ({ pageObjects }) => {
-      const { alertsTablePage } = pageObjects;
+      const { alertsTablePage, datePicker } = pageObjects;
       const kuery = 'kibana.alert.evaluation.threshold > 75';
 
       await alertsTablePage.gotoWithAppState({
@@ -42,18 +42,22 @@ test.describe(
       });
 
       await expect(alertsTablePage.queryInput).toHaveValue(kuery);
+      // The legacy picker humanises this relative-to-relative range as
+      // "~ a month ago - ~ 10 days ago"; the new DateRangePicker formats each
+      // bound separately as "30 days ago → 10 days ago".
       await expect
-        .poll(() => alertsTablePage.getTimeRangeText())
-        .toBe('~ a month ago - ~ 10 days ago');
+        .poll(() => datePicker.getTimeRangeText())
+        .toMatch(/^(~ a month ago - ~ 10 days ago|30 days ago → 10 days ago)$/);
     });
 
     test('applies defaults when the URL carries no state', async ({ pageObjects }) => {
-      const { alertsTablePage } = pageObjects;
+      const { alertsTablePage, datePicker } = pageObjects;
 
       await alertsTablePage.goto({ withoutFilter: true });
 
       await expect(alertsTablePage.queryInput).toHaveValue('');
-      await expect.poll(() => alertsTablePage.getTimeRangeText()).toBe('Last 24 hours');
+      // "Last 24 hours" is a preset in both pickers, so the label is identical.
+      await expect.poll(() => datePicker.getTimeRangeText()).toBe('Last 24 hours');
     });
   }
 );

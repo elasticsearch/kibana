@@ -465,4 +465,141 @@ describe('ai.agent workflow step (Agent Builder)', () => {
       expect(callArg.params).not.toHaveProperty('telemetryMetadata');
     });
   });
+
+  describe('token usage', () => {
+    it('includes usage in output from a single round with model_usage', async () => {
+      const events$ = of({
+        type: ChatEventType.roundComplete,
+        data: {
+          round: {
+            id: 'r-1',
+            response: { message: 'hello' },
+            model_usage: { connector_id: 'c', llm_calls: 1, input_tokens: 100, output_tokens: 50 },
+          },
+        },
+      });
+
+      const execution = createExecutionMock(events$);
+      const step = getRunAgentStepDefinition({ internalStart: { execution } } as any);
+
+      const res = await step.handler(createContext({ input: { message: 'hi' } }));
+
+      expect(res.output?.metadata?.usage).toEqual({
+        inputTokens: 100,
+        outputTokens: 50,
+        totalTokens: 150,
+      });
+    });
+
+    it('accumulates token usage across multiple rounds', async () => {
+      const events$ = of(
+        {
+          type: ChatEventType.roundComplete,
+          data: {
+            round: {
+              id: 'r-1',
+              response: { message: 'intermediate' },
+              model_usage: {
+                connector_id: 'c',
+                llm_calls: 1,
+                input_tokens: 200,
+                output_tokens: 80,
+              },
+            },
+          },
+        },
+        {
+          type: ChatEventType.roundComplete,
+          data: {
+            round: {
+              id: 'r-2',
+              response: { message: 'final' },
+              model_usage: {
+                connector_id: 'c',
+                llm_calls: 1,
+                input_tokens: 300,
+                output_tokens: 120,
+              },
+            },
+          },
+        }
+      );
+
+      const execution = createExecutionMock(events$);
+      const step = getRunAgentStepDefinition({ internalStart: { execution } } as any);
+
+      const res = await step.handler(createContext({ input: { message: 'hi' } }));
+
+      // Output should be from the first round (events.find returns first match)
+      expect(res.output?.message).toBe('intermediate');
+      // Usage should be the sum across all rounds
+      expect(res.output?.metadata?.usage).toEqual({
+        inputTokens: 500,
+        outputTokens: 200,
+        totalTokens: 700,
+      });
+    });
+
+    it('returns zero usage when round has no model_usage', async () => {
+      const events$ = of({
+        type: ChatEventType.roundComplete,
+        data: {
+          round: {
+            id: 'r-1',
+            response: { message: 'ok' },
+            // no model_usage
+          },
+        },
+      });
+
+      const execution = createExecutionMock(events$);
+      const step = getRunAgentStepDefinition({ internalStart: { execution } } as any);
+
+      const res = await step.handler(createContext({ input: { message: 'hi' } }));
+
+      expect(res.output?.metadata?.usage).toEqual({
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+      });
+    });
+
+    it('preserves partial token counts when the event stream errors mid-execution', async () => {
+      const { concat, throwError: rxThrowError } =
+        jest.requireActual<typeof import('rxjs')>('rxjs');
+
+      // Cold observable: emits one round with tokens, then errors
+      const events$ = concat(
+        of({
+          type: ChatEventType.roundComplete,
+          data: {
+            round: {
+              id: 'r-1',
+              response: { message: 'partial' },
+              model_usage: {
+                connector_id: 'c',
+                llm_calls: 1,
+                input_tokens: 150,
+                output_tokens: 60,
+              },
+            },
+          },
+        }),
+        rxThrowError(() => new Error('stream interrupted'))
+      );
+
+      const execution = createExecutionMock(events$);
+      const step = getRunAgentStepDefinition({ internalStart: { execution } } as any);
+
+      const res = await step.handler(createContext({ input: { message: 'hi' } }));
+
+      expect(res.error).toBeInstanceOf(Error);
+      // Partial token counts are preserved in the output despite the error
+      expect(res.output?.metadata?.usage).toEqual({
+        inputTokens: 150,
+        outputTokens: 60,
+        totalTokens: 210,
+      });
+    });
+  });
 });

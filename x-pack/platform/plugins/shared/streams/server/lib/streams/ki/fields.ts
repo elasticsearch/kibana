@@ -23,6 +23,8 @@ export const EXPIRES_AT = 'expires_at';
 // ===== Feature-specific fields =====
 
 export const FEATURE_SUBTYPE = 'feature.subtype';
+export const FEATURE_SLUG = 'feature.slug';
+export const FEATURE_TYPE = 'feature.type';
 export const FEATURE_PROPERTIES = 'feature.properties';
 export const FEATURE_CONFIDENCE = 'feature.confidence';
 export const FEATURE_EVIDENCE_DOC_IDS = 'feature.evidence_doc_ids';

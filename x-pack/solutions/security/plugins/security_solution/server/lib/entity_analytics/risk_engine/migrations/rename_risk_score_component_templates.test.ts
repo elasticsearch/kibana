@@ -74,6 +74,7 @@ describe('renameRiskScoreComponentTemplate', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockEsClient.cluster.existsComponentTemplate).toHaveBeenCalledWith({
@@ -91,6 +92,7 @@ describe('renameRiskScoreComponentTemplate', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockEsClient.cluster.existsComponentTemplate).toHaveBeenCalledWith({
@@ -120,6 +122,7 @@ describe('renameRiskScoreComponentTemplate', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockLogger.error).toHaveBeenCalledWith(
@@ -138,6 +141,7 @@ describe('renameRiskScoreComponentTemplate', () => {
         logger: mockLogger,
         getStartServices: mockGetStartServices,
         kibanaVersion: '8.0.0',
+        hasEncryptionKey: true,
       })
     ).rejects.toThrow('Risk Score component template migration failed with errors: \nTest error');
     expect(mockEsClient.cluster.deleteComponentTemplate).not.toHaveBeenCalled();
@@ -157,6 +161,7 @@ describe('renameRiskScoreComponentTemplate', () => {
         logger: mockLogger,
         getStartServices: mockGetStartServices,
         kibanaVersion: '8.0.0',
+        hasEncryptionKey: true,
       })
     ).rejects.toThrow(
       'Risk Score component template migration failed with errors: \nTest error 1\nTest error 2'
@@ -175,6 +180,7 @@ describe('renameRiskScoreComponentTemplate', () => {
         logger: mockLogger,
         getStartServices: mockGetStartServices,
         kibanaVersion: '8.0.0',
+        hasEncryptionKey: true,
       })
     ).rejects.toThrow(
       'Risk Score component template migration failed with errors: \nIndex template error'
@@ -190,6 +196,7 @@ describe('renameRiskScoreComponentTemplate', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockLogger.info).toHaveBeenCalledWith(
@@ -206,6 +213,7 @@ describe('renameRiskScoreComponentTemplate', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -222,6 +230,7 @@ describe('renameRiskScoreComponentTemplate', () => {
       logger: mockLogger,
       getStartServices: mockGetStartServices,
       kibanaVersion: '8.0.0',
+      hasEncryptionKey: true,
     });
 
     expect(mockEsClient.cluster.deleteComponentTemplate).toHaveBeenCalledWith(

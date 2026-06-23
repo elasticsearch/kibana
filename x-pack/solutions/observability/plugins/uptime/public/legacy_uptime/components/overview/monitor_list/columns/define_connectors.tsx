@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { EuiSwitch, EuiPopover, EuiText, EuiFormRow } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { ReactRouterEuiLink } from '../../../common/react_router_helpers';
 import { SETTINGS_ROUTE } from '../../../../../../common/constants';
@@ -20,6 +21,9 @@ export const DefineAlertConnectors = () => {
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.monitorList.defineConnectors.popoverAriaLabel', {
+        defaultMessage: 'Default connector information',
+      })}
       button={
         <>
           <EuiFormRow>

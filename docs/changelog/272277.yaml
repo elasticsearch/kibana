@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272277
+issues:
+- https://github.com/elastic/kibana/issues/272242
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Improve APM service map with copy to dashboard and edit options
+description: The APM service map now supports copying the map to a dashboard and editing display options. The copy action preserves APM context and time range on the destination dashboard.

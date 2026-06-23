@@ -6,11 +6,10 @@
  */
 
 import type { UseEuiTheme } from '@elastic/eui';
-import { EuiLink, EuiSpacer } from '@elastic/eui';
+import { EuiButton, EuiCallOut } from '@elastic/eui';
 import { css } from '@emotion/react';
 import React from 'react';
 
-import { FormattedMessage } from '@kbn/i18n-react';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 
 import { ApplicationConnectionsTable } from './application_connections_table';
@@ -22,33 +21,30 @@ const headerStyles = ({ euiTheme }: UseEuiTheme) => css`
   border-style: none;
 `;
 
+const callOutStyles = ({ euiTheme }: UseEuiTheme) => css`
+  margin-block: ${euiTheme.size.m};
+`;
+
 export const ApplicationConnections = () => {
   const { mcpClientsListUrl } = useNavigation();
-
   return (
     <>
       <KibanaPageTemplate.Header
         css={headerStyles}
         pageTitle={labels.page.title}
-        description={
-          <FormattedMessage
-            id="xpack.security.management.applicationConnections.subtitle"
-            defaultMessage="Manage connections for OAuth-based applications. Currently, only MCP clients are supported. {manageClientsLink}"
-            values={{
-              manageClientsLink: (
-                <EuiLink
-                  href={mcpClientsListUrl}
-                  data-test-subj="applicationConnectionsManageClientsLink"
-                >
-                  {labels.page.manageClientsLink}
-                </EuiLink>
-              ),
-            }}
-          />
-        }
+        rightSideItems={[
+          <EuiButton
+            color="text"
+            iconType="gear"
+            href={mcpClientsListUrl}
+            data-test-subj="applicationConnectionsManageClientsLink"
+          >
+            {labels.page.manageClientsLink}
+          </EuiButton>,
+        ]}
       />
       <KibanaPageTemplate.Section paddingSize="none">
-        <EuiSpacer size="l" />
+        <EuiCallOut size="s" title={labels.page.pageCallout} iconType="info" css={callOutStyles} />
         <ApplicationConnectionsTable />
       </KibanaPageTemplate.Section>
     </>

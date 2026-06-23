@@ -6,7 +6,7 @@
  */
 
 import pMap from 'p-map';
-import yaml from 'js-yaml';
+import { stringify as yamlStringify } from 'yaml';
 import { logger } from './logger';
 import { getKitchenSinkDefinition, KITCHEN_SINK_FIELD_DEFS } from './kitchen_sink_template';
 import {
@@ -156,7 +156,7 @@ function buildTemplateBody(template: TemplateInput): TemplateBuildResult {
     ]);
     definitionObj.tags = mergedTags;
     return {
-      definitionYaml: yaml.dump(definitionObj),
+      definitionYaml: yamlStringify(definitionObj),
       tags: mergedTags,
       description: template.description ?? definitionObj.description,
       summary: `with ${definitionObj.fields.length} kitchen-sink field(s)`,
@@ -178,7 +178,7 @@ function buildTemplateBody(template: TemplateInput): TemplateBuildResult {
       ? `with ${fields.length} field(s): ${template.fieldTypes.join(', ')}`
       : 'with no fields';
   return {
-    definitionYaml: yaml.dump(definitionObj),
+    definitionYaml: yamlStringify(definitionObj),
     tags,
     description: template.description,
     summary,

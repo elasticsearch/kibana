@@ -5,6 +5,7 @@
     "types": [
       "jest",
       "node",
+      "react",
       "@kbn/ambient-ui-types",
     ]
   },
@@ -22,5 +23,6 @@
     "@kbn/coloring",
     "@kbn/i18n",
     "@kbn/field-formats-plugin",
+    "@kbn/css-utils",
   ]
 }

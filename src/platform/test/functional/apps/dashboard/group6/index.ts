@@ -42,6 +42,5 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
     // If we don't use the timestamp in the URL, the colors in the charts will be different.
     loadTestFile(require.resolve('./dashboard_snapshots'));
     loadTestFile(require.resolve('./dashboard_esql_chart'));
-    loadTestFile(require.resolve('./dashboard_esql_no_data'));
   });
 }

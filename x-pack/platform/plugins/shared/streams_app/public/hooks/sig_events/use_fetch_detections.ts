@@ -58,3 +58,26 @@ export const useFetchDetections = ({ from, to }: UseFetchDetectionsParams) => {
 
   return { ...query, pagination, setPagination };
 };
+
+export const useFetchDetectionHistory = (detectionId: string | undefined) => {
+  const {
+    dependencies: {
+      start: {
+        streams: { streamsRepositoryClient },
+      },
+    },
+  } = useKibana();
+  const showFetchErrorToast = useFetchErrorToast();
+
+  return useQuery<{ hits: Detection[] }, Error>({
+    queryKey: ['detectionHistory', detectionId],
+    queryFn: async ({ signal }) => {
+      return streamsRepositoryClient.fetch('GET /internal/sig_events/detections/{id}/history', {
+        params: { path: { id: detectionId! } },
+        signal: signal ?? null,
+      });
+    },
+    enabled: !!detectionId,
+    onError: showFetchErrorToast,
+  });
+};

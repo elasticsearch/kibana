@@ -313,7 +313,7 @@ export const AgentListTable: React.FC<Props> = (props: Props) => {
           content={
             <FormattedMessage
               id="xpack.fleet.agentList.cpuTooltip"
-              defaultMessage="Average CPU usage in the last 5 minutes. This includes usage from the Agent and the component it supervises. Possible value ranges from 0 to (number of available CPU cores * 100)"
+              defaultMessage="Average CPU usage by Elastic Agent and reported Agent component processes over the last 5 minutes. This is process-level Agent/component CPU usage, not total host CPU usage. Values are not normalized by CPU core count and can exceed 100% on multi-core hosts."
             />
           }
         >

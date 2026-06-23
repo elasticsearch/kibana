@@ -58,7 +58,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Total Input Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens))',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Total Input Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens))',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -110,7 +110,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Total Input Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens))',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Total Input Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens))',
           },
           filters: [],
         },
@@ -140,7 +140,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Total Output Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.output_tokens))',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Total Output Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.output_tokens))',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -192,7 +192,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Total Output Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.output_tokens))',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Total Output Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.output_tokens))',
           },
           filters: [],
         },
@@ -222,14 +222,14 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `LLM Requests` = COUNT(*)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `LLM Requests` = COUNT(*)',
                   },
                   timeField: '@timestamp',
                   columns: [
                     {
                       columnId: 'metric_accessor_metric',
                       fieldName: 'LLM Requests',
-                      label: 'ChatComplete Count',
+                      label: 'LLM Request Count',
                       customLabel: true,
                       meta: {
                         type: 'number',
@@ -274,7 +274,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `LLM Requests` = COUNT(*)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `LLM Requests` = COUNT(*)',
           },
           filters: [],
         },
@@ -304,7 +304,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 area_stacked_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Total Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens)) + SUM(TO_LONG(attributes.gen_ai.usage.output_tokens)) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Model` = attributes.gen_ai.request.model',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Total Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens)) + SUM(TO_LONG(attributes.gen_ai.usage.output_tokens)) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Model` = attributes.gen_ai.request.model',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -441,7 +441,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Total Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens)) + SUM(TO_LONG(attributes.gen_ai.usage.output_tokens)) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Model` = attributes.gen_ai.request.model',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Total Tokens` = SUM(TO_LONG(attributes.gen_ai.usage.input_tokens)) + SUM(TO_LONG(attributes.gen_ai.usage.output_tokens)) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Model` = attributes.gen_ai.request.model',
           },
           filters: [],
         },
@@ -461,7 +461,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
       sectionId: '466dc07a-4a6a-4b5d-b82f-7e96e890e545',
     },
     embeddableConfig: {
-      title: 'ChatComplete Request Count by Model',
+      title: 'LLM Request Count by Model',
       attributes: {
         visualizationType: 'lnsXY',
         title: '',
@@ -472,7 +472,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 bar_horizontal_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Request Count` = COUNT(*) BY `Model` = attributes.gen_ai.request.model\n| SORT `Request Count` DESC',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Request Count` = COUNT(*) BY `Model` = attributes.gen_ai.request.model\n| SORT `Request Count` DESC',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -575,7 +575,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Request Count` = COUNT(*) BY `Model` = attributes.gen_ai.request.model\n| SORT `Request Count` DESC',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Request Count` = COUNT(*) BY `Model` = attributes.gen_ai.request.model\n| SORT `Request Count` DESC',
           },
           filters: [],
         },
@@ -595,7 +595,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
       sectionId: '466dc07a-4a6a-4b5d-b82f-7e96e890e545',
     },
     embeddableConfig: {
-      title: 'ChatComplete Request Count by LLM Provider',
+      title: 'LLM Request Count by Provider',
       attributes: {
         visualizationType: 'lnsXY',
         title: '',
@@ -606,7 +606,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 bar_horizontal_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Request Count` = COUNT(*) BY `Provider` = attributes.gen_ai.system\n| SORT `Request Count` DESC',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Request Count` = COUNT(*) BY `Provider` = attributes.gen_ai.provider.name\n| SORT `Request Count` DESC',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -710,7 +710,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ChatComplete"\n| STATS `Request Count` = COUNT(*) BY `Provider` = attributes.gen_ai.system\n| SORT `Request Count` DESC',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "chat *"\n| STATS `Request Count` = COUNT(*) BY `Provider` = attributes.gen_ai.provider.name\n| SORT `Request Count` DESC',
           },
           filters: [],
         },
@@ -741,7 +741,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| STATS `Conversations` = COUNT(*)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| STATS `Conversations` = COUNT(*)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -793,7 +793,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| STATS `Conversations` = COUNT(*)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| STATS `Conversations` = COUNT(*)',
           },
           filters: [],
         },
@@ -823,7 +823,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -885,7 +885,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
           },
           filters: [],
         },
@@ -915,7 +915,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -978,7 +978,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
           },
           filters: [],
         },
@@ -1008,7 +1008,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1070,7 +1070,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
           },
           filters: [],
         },
@@ -1100,7 +1100,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 line_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| STATS `Conversations` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| STATS `Conversations` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1205,7 +1205,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| STATS `Conversations` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| STATS `Conversations` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
           },
           filters: [],
         },
@@ -1236,7 +1236,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 line_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1352,7 +1352,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "Converse"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "CHAIN"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\n| SORT `Time`',
           },
           filters: [],
         },
@@ -1383,7 +1383,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| STATS `Agent Executions` = COUNT(*)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| STATS `Agent Executions` = COUNT(*)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1435,7 +1435,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| STATS `Agent Executions` = COUNT(*)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| STATS `Agent Executions` = COUNT(*)',
           },
           filters: [],
         },
@@ -1465,7 +1465,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1527,7 +1527,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
           },
           filters: [],
         },
@@ -1557,7 +1557,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1619,7 +1619,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `P95 Duration (s)` = ROUND(PERCENTILE(duration_sec, 95), 2)',
           },
           filters: [],
         },
@@ -1649,7 +1649,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1711,7 +1711,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Max Duration (s)` = ROUND(MAX(duration_sec), 2)',
           },
           filters: [],
         },
@@ -1741,7 +1741,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 line_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.elastic.agent.id\n| SORT `Time`',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.gen_ai.agent.id\n| SORT `Time`',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -1883,7 +1883,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.elastic.agent.id\n| SORT `Time`',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.gen_ai.agent.id\n| SORT `Time`',
           },
           filters: [],
         },
@@ -1914,7 +1914,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 line_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| STATS `Execution Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.elastic.agent.id\n| SORT `Time`',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| STATS `Execution Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.gen_ai.agent.id\n| SORT `Time`',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2047,7 +2047,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE name == "ExecuteAgent"\n| STATS `Execution Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.elastic.agent.id\n| SORT `Time`',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE span.name LIKE "invoke_agent *" AND attributes.elastic.inference.span.kind == "AGENT"\n| STATS `Execution Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Agent` = attributes.gen_ai.agent.id\n| SORT `Time`',
           },
           filters: [],
         },
@@ -2078,7 +2078,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Calls` = COUNT(*)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Calls` = COUNT(*)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2130,7 +2130,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Calls` = COUNT(*)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Calls` = COUNT(*)',
           },
           filters: [],
         },
@@ -2160,7 +2160,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:") AND status.code == "Error"\n| STATS `Tool Errors` = COUNT(*)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *" AND status.code == "Error"\n| STATS `Tool Errors` = COUNT(*)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2212,7 +2212,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:") AND status.code == "Error"\n| STATS `Tool Errors` = COUNT(*)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *" AND status.code == "Error"\n| STATS `Tool Errors` = COUNT(*)',
           },
           filters: [],
         },
@@ -2242,7 +2242,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS total = COUNT(*), errors = COUNT(*) WHERE status.code == "Error"\n| EVAL `Success Rate (%)` = ROUND((total - errors) / total * 100, 2)\n| KEEP `Success Rate (%)`',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS total = COUNT(*), errors = COUNT(*) WHERE status.code == "Error"\n| EVAL `Success Rate (%)` = ROUND((total - errors) / total * 100, 2)\n| KEEP `Success Rate (%)`',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2348,7 +2348,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS total = COUNT(*), errors = COUNT(*) WHERE status.code == "Error"\n| EVAL `Success Rate (%)` = ROUND((total - errors) / total * 100, 2)\n| KEEP `Success Rate (%)`',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS total = COUNT(*), errors = COUNT(*) WHERE status.code == "Error"\n| EVAL `Success Rate (%)` = ROUND((total - errors) / total * 100, 2)\n| KEEP `Success Rate (%)`',
           },
           filters: [],
         },
@@ -2378,7 +2378,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2440,7 +2440,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| EVAL duration_sec = duration / 1000000000.0\n| STATS `Avg Duration (s)` = ROUND(AVG(duration_sec), 2)',
           },
           filters: [],
         },
@@ -2470,7 +2470,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 line_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Tool Name` = name\n| SORT `Time`',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Tool Name` = name\n| SORT `Time`',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2602,7 +2602,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Tool Name` = name\n| SORT `Time`',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Tool Name` = name\n| SORT `Time`',
           },
           filters: [],
         },
@@ -2633,7 +2633,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 line_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Status` = status.code\n| SORT `Time`',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Status` = status.code\n| SORT `Time`',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2765,7 +2765,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Status` = status.code\n| SORT `Time`',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Count` = COUNT(*) BY `Time` = BUCKET(@timestamp, 75, ?_tstart, ?_tend), `Status` = status.code\n| SORT `Time`',
           },
           filters: [],
         },
@@ -2796,7 +2796,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 bar_horizontal_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Tool Count` DESC\n| LIMIT 15',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Tool Count` DESC\n| LIMIT 15',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -2901,7 +2901,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Tool Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Tool Count` DESC\n| LIMIT 15',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Tool Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Tool Count` DESC\n| LIMIT 15',
           },
           filters: [],
         },
@@ -2932,7 +2932,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
                 layer_0: {
                   index: 'traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__-@timestamp',
                   query: {
-                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Call Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Call Count` DESC\n| LIMIT 15',
+                    esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Call Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Call Count` DESC\n| LIMIT 15',
                   },
                   timeField: '@timestamp',
                   columns: [
@@ -3018,7 +3018,7 @@ Real-time observability for **Agent Builder** OTel traces (\`data_stream.dataset
             },
           },
           query: {
-            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE STARTS_WITH(name, "Tool:")\n| STATS `Call Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Call Count` DESC\n| LIMIT 15',
+            esql: 'FROM traces-agent_builder.otel-__AGENT_BUILDER_TRACES_NAMESPACE__\n| WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend\n| WHERE `span.name` LIKE "execute_tool *"\n| STATS `Call Count` = COUNT(*) BY `Tool Name` = name\n| SORT `Call Count` DESC\n| LIMIT 15',
           },
           filters: [],
         },

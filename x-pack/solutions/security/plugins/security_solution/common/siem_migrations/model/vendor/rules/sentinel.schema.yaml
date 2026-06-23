@@ -8,7 +8,7 @@ components:
   schemas:
     SentinelRuleProperties:
       type: object
-      description: Properties of a Microsoft Sentinel Scheduled Analytics Rule
+      description: Properties of a Microsoft Sentinel Scheduled or NRT Analytics Rule
       required:
         - displayName
         - query
@@ -22,6 +22,14 @@ components:
         query:
           type: string
           description: The KQL query for the rule
+        queryFrequency:
+          type: string
+          maxLength: 16
+          description: The frequency in ISO 8601 duration format for this alert rule to run.
+        queryPeriod:
+          type: string
+          maxLength: 16
+          description: The period in ISO 8601 duration format that this alert rule looks at.
         severity:
           type: string
           description: The rule severity
@@ -51,7 +59,7 @@ components:
           description: The ARM resource name
         kind:
           type: string
-          description: The rule kind (e.g. Scheduled)
+          description: The rule kind (e.g. Scheduled or NRT)
         type:
           type: string
           description: The ARM resource type

@@ -8,7 +8,12 @@
  */
 
 import type { JsonValue } from '@kbn/utility-types';
-import type { EsWorkflowExecution, EsWorkflowStepExecution, StackFrame } from '@kbn/workflows';
+import type {
+  EsWorkflowExecution,
+  EsWorkflowStepExecution,
+  StackFrame,
+  WorkflowTokenUsage,
+} from '@kbn/workflows';
 import { ExecutionStatus } from '@kbn/workflows';
 import type { GraphNodeUnion, WorkflowGraph } from '@kbn/workflows/graph';
 import { ExecutionError } from '@kbn/workflows/server';
@@ -17,7 +22,7 @@ import type { WorkflowContextManager } from './workflow_context_manager';
 import type { WorkflowExecutionState } from './workflow_execution_state';
 import { WorkflowScopeStack } from './workflow_scope_stack';
 import type { RunStepResult } from '../step/node_implementation';
-import { parseDuration } from '../utils';
+import { extractTokenUsage, parseDuration } from '../utils';
 
 import type { IWorkflowEventLogger, WorkflowEventFlushOptions } from '../workflow_event_logger';
 
@@ -179,10 +184,13 @@ export class StepExecutionRuntime {
       ? new Date(finishedAt).getTime() - new Date(startedStepExecution.startedAt).getTime()
       : undefined;
 
+    const usage = this.recordTokenUsage(stepOutput);
+
     this.workflowExecutionState.upsertStep({
       id: this.stepExecutionId,
       status: ExecutionStatus.COMPLETED,
       finishedAt,
+      ...(usage ? { usage } : {}),
       ...(executionTimeMs !== undefined ? { executionTimeMs } : {}),
     });
     this.stepIoService.setStepOutput(
@@ -202,11 +210,19 @@ export class StepExecutionRuntime {
    * Marks the step as FAILED.
    *
    * Same lifecycle/IO split as {@link finishStep}: status / error /
-   * scopeStack / timing go through state, the FAILED-step `output: null`
-   * sentinel goes through the IO service. Atomicity is preserved because
-   * the two writes share a synchronous tick.
+   * scopeStack / timing go through state, the FAILED-step output goes through
+   * the IO service. Atomicity is preserved because the two writes share a
+   * synchronous tick.
+   *
+   * @param error - The error that caused the step to fail.
+   * @param partialOutput - Optional partial output to persist alongside the
+   *   failure (e.g. token-usage metadata accumulated before a stream errored).
+   *   When provided it is stored via the IO service instead of the usual
+   *   `null` sentinel, so downstream readers can still reach
+   *   `steps.x.output.metadata.usage`, and any reported token usage is rolled
+   *   into the per-execution total.
    */
-  public failStep(error: Error): void {
+  public failStep(error: Error, partialOutput?: unknown): void {
     const executionError = ExecutionError.fromError(error);
     const serializedError = executionError.toSerializableObject();
 
@@ -222,6 +238,8 @@ export class StepExecutionRuntime {
       ? new Date(finishedAt).getTime() - new Date(startedStepExecution.startedAt).getTime()
       : undefined;
 
+    const usage = this.recordTokenUsage(partialOutput);
+
     this.workflowExecutionState.updateWorkflowExecution({
       error: serializedError,
     });
@@ -233,12 +251,31 @@ export class StepExecutionRuntime {
       scopeStack: this.stackFrames,
       finishedAt,
       error: serializedError,
+      ...(usage ? { usage } : {}),
       ...(executionTimeMs !== undefined ? { executionTimeMs } : {}),
     });
-    // `null` is the FAILED-step sentinel — distinct from `undefined`
-    // (evicted) so the eviction predicate can keep them apart.
-    this.stepIoService.setStepOutput(this.stepExecutionId, null);
+    // When partial output is provided, persist it so it remains reachable via
+    // `steps.x.output`. Otherwise write the `null` FAILED-step sentinel —
+    // distinct from `undefined` (evicted) so the eviction predicate can keep
+    // them apart.
+    this.stepIoService.setStepOutput(
+      this.stepExecutionId,
+      partialOutput !== undefined ? (partialOutput as JsonValue) : null
+    );
     this.logStepFail(executionError);
+  }
+
+  /**
+   * Normalizes any LLM token usage the step reported (`output.metadata.usage`)
+   * and rolls it into the per-execution total. Returns the normalized usage so
+   * the caller can also persist it on the step execution. No-op (returns
+   * `undefined`) for steps that don't report usage. Shared by `finishStep`
+   * (full output) and `failStep` (partial output before a failure).
+   */
+  private recordTokenUsage(stepOutput: unknown): WorkflowTokenUsage | undefined {
+    const usage = extractTokenUsage(stepOutput);
+    this.workflowExecutionState.accumulateUsage(usage);
+    return usage;
   }
 
   public async flushEventLogs(options?: WorkflowEventFlushOptions): Promise<void> {
@@ -317,6 +354,55 @@ export class StepExecutionRuntime {
     }
     const { resumeAt: _stripped, ...rest } = existing;
     return Object.keys(rest).length ? rest : undefined;
+  }
+
+  /**
+   * Unconditionally enters (or re-enters) a wait state until `resumeDate`,
+   * merging `additionalState` into the persisted step state.
+   *
+   * Unlike {@link tryEnterWaitUntil}, this does NOT toggle: every call writes
+   * `status: WAITING` and `resumeAt`. Use this for steps that re-enter the
+   * wait loop on every iteration (e.g. durable poll steps), where the
+   * "are we already waiting?" detection is owned by the caller (typically via
+   * an engine-bookkeeping field stored alongside `additionalState`).
+   *
+   * @param resumeDate When the step should be woken via the resume task.
+   * @param additionalState Fields to merge into the persisted step state. The
+   *   engine writes `resumeAt` itself; callers do not need to pass it.
+   * @param forceTaskSchedule When true, {@link handle_execution_delay} schedules a Task Manager
+   *   resume even if the sleep is under its 5 s in-process threshold. Durable poll steps set this
+   *   after the first continuation so sub-5 s poll intervals do not pin the worker.
+   */
+  public enterWaitUntil(
+    resumeDate: Date,
+    additionalState?: Record<string, unknown>,
+    forceTaskSchedule?: boolean
+  ): void {
+    const existing = this.stepExecution?.state ?? {};
+    const nextState: Record<string, unknown> = {
+      ...existing,
+      ...(additionalState ?? {}),
+      resumeAt: resumeDate.toISOString(),
+      forceTaskSchedule,
+    };
+    // `undefined` cannot round-trip through JSON persistence — a spread of
+    // `{ __authorState: undefined }` would otherwise leave a stale key from
+    // `existing`. Strip keys whose merged value is explicitly `undefined`.
+    for (const key of Object.keys(nextState)) {
+      if (nextState[key] === undefined) {
+        delete nextState[key];
+      }
+    }
+    this.workflowExecutionState.upsertStep({
+      id: this.stepExecutionId,
+      stepId: this.node.stepId,
+      stepType: this.node.stepType,
+      scopeStack: this.workflowExecution.scopeStack,
+      topologicalIndex: this.topologicalOrder.indexOf(this.node.id),
+      startedAt: this.stepExecution?.startedAt || new Date().toISOString(),
+      status: ExecutionStatus.WAITING,
+      state: nextState,
+    });
   }
 
   /** Modifies workflow-level execution state. Use sparingly — prefer step output for step-scoped data. */

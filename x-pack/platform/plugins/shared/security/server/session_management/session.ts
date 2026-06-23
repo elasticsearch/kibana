@@ -139,12 +139,19 @@ export class Session {
   private readonly crypto: Crypto;
 
   /**
+   * Dedicated logger for session invalidation events, allowing them to be managed
+   * independently of general session logs.
+   */
+  private readonly invalidationLogger: Logger;
+
+  /**
    * Promise-based version of the NodeJS native `randomBytes`.
    */
   private readonly randomBytes = promisify(randomBytes);
 
   constructor(private readonly options: Readonly<SessionOptions>) {
     this.crypto = nodeCrypto({ encryptionKey: this.options.config.encryptionKey });
+    this.invalidationLogger = this.options.logger.get('invalidation');
   }
 
   /**
@@ -178,6 +185,9 @@ export class Session {
 
     if (idleExpired || lifespanExpired) {
       sessionLogger.debug('Session has expired and will be invalidated.');
+      this.invalidationLogger.debug(
+        `Invalidating session: ${lifespanExpired ? 'lifespan' : 'idle'} timeout expired.`
+      );
       await this.invalidate(request, { match: 'current' });
       // Prefer lifespan if both expired (lifespan is the hard limit)
       const reason = lifespanExpired
@@ -204,6 +214,7 @@ export class Session {
       sessionLogger.warn(
         `Unable to decrypt session content, session will be invalidated: ${err.message}`
       );
+      this.invalidationLogger.warn('Invalidating session: content decryption failed.');
       await this.invalidate(request, { match: 'current' });
       return { error: new SessionUnexpectedError(), value: null };
     }
@@ -224,6 +235,7 @@ export class Session {
       sessionLogger.warn(
         'Session is outside the concurrent session limit and will be invalidated.'
       );
+      this.invalidationLogger.warn('Invalidating session: concurrent session limit exceeded.');
       await this.invalidate(request, { match: 'current' });
       return { error: new SessionConcurrencyLimitError(), value: null };
     }

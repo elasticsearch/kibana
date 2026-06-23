@@ -21,6 +21,7 @@ import {
 } from '@elastic/eui';
 import { FormProvider, useForm, useFormState, useWatch } from 'react-hook-form';
 
+import { FrozenEnterpriseRequiredCallout } from '@kbn/data-lifecycle-phases';
 import type { EditDlmPhasesFlyoutProps } from './types';
 import type { EditDataPhasesFlyoutChangeMeta } from '../shared';
 import { DlmSearchableSnapshotInfoSection } from './sections/dlm_searchable_snapshot_info_section';
@@ -29,7 +30,6 @@ import { AfterField, getDlmPhasesFlyoutFormSchema, type DlmPhasesFlyoutFormInter
 import { DEFAULT_NEW_PHASE_MIN_AGE, TIME_UNIT_OPTIONS } from '../edit_ilm_phases_flyout/constants';
 import { PhaseTabsRow } from '../shared';
 import { useDataPhasesFlyoutStyles } from '../shared';
-import { FrozenEnterpriseRequiredCallout } from '../../common/data_lifecycle/frozen_enterprise_required_callout';
 import { useIlmPhasesColorAndDescription } from '../../hooks/use_ilm_phases_color_and_description';
 import {
   formatDuration,

@@ -25,7 +25,8 @@ import type { EuiBasicTableColumn } from '@elastic/eui';
 import { RIGHT_ALIGNMENT } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { LatencyAggregationType } from '@kbn/apm-types';
-import { getEbtProps } from '@kbn/ebt-click';
+import { EBT_CLICK_ACTIONS, getEbtProps } from '@kbn/ebt-click';
+import { TRANSACTIONS_TABLE_EBT_ACTIONS, TRANSACTIONS_TABLE_EBT_ELEMENTS } from './ebt_constants';
 import { asMillisecondDuration, asTransactionRate } from '../../utils/formatters/duration';
 import { asPercent } from '../../utils/formatters/numeric';
 import { Sparkline } from '../sparkline';
@@ -214,7 +215,11 @@ export function getBuiltInColumns({
                     { defaultMessage: 'View active alerts' }
                   ),
                 })}
-            {...getEbtProps({ action: 'viewAlerts', element: 'transactionsTableAlertsBadge' })}
+            {...getEbtProps({
+              action: EBT_CLICK_ACTIONS.VIEW_ALERTS,
+              element:
+                alertsInteraction?.ebt?.element ?? TRANSACTIONS_TABLE_EBT_ELEMENTS.ROW_ALERTS_BADGE,
+            })}
           >
             {item.alertsCount}
           </EuiBadge>
@@ -249,8 +254,8 @@ export function getBuiltInColumns({
         }
         const nameHref = nameInteraction?.href?.(item);
         const ebtNameProps = getEbtProps({
-          action: 'viewTransactionGroup',
-          element: 'transactionsTableName',
+          action: TRANSACTIONS_TABLE_EBT_ACTIONS.VIEW_TRANSACTION_GROUP,
+          element: nameInteraction?.ebt?.element ?? TRANSACTIONS_TABLE_EBT_ELEMENTS.ROW_NAME,
         });
         if (nameHref) {
           return (

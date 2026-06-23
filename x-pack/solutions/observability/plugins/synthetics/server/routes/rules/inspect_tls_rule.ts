@@ -25,7 +25,7 @@ export const syntheticsInspectTLSRuleRoute: SyntheticsRestApiRouteFactory = () =
     context,
     spaceId,
   }) => {
-    const { elasticsearch } = await context.core;
+    const { elasticsearch, uiSettings } = await context.core;
 
     const tlsRule = new TLSRuleExecutor(
       new Date(),
@@ -35,7 +35,8 @@ export const syntheticsInspectTLSRuleRoute: SyntheticsRestApiRouteFactory = () =
       server,
       syntheticsMonitorClient,
       spaceId,
-      'Inspect TLS Rule'
+      'Inspect TLS Rule',
+      uiSettings.client
     );
 
     return tlsRule.getRuleThresholdOverview();

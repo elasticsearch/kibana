@@ -227,6 +227,9 @@ export const AgentStatusFilter: React.FC<{
       onDismiss={dismissInactiveAgentsCallout}
     >
       <EuiPopover
+        aria-label={i18n.translate('xpack.fleet.agentList.statusFilterAriaLabel', {
+          defaultMessage: 'Status filter',
+        })}
         ownFocus
         zIndex={Number(euiTheme.levels.header) - 1}
         button={

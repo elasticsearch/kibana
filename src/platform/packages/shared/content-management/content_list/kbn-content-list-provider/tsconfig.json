@@ -11,6 +11,7 @@
     "target/**/*"
   ],
   "kbn_references": [
+    "@kbn/content-list-common",
     "@kbn/react-query",
     "@kbn/i18n",
     "@kbn/content-management-tags",

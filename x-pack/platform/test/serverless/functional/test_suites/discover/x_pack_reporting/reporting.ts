@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+// Original test (remove during Scout migration): x-pack/platform/test/functional/apps/discover/group1/reporting.ts
 import expect from '@kbn/expect';
 import moment from 'moment';
 import type { FtrProviderContext } from '../../../ftr_provider_context';

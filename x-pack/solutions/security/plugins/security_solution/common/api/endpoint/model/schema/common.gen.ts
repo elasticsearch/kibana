@@ -143,7 +143,7 @@ export type Timeout = z.infer<typeof Timeout>;
 /**
  * The status of a response action.
  */
-export const Status = lazySchema(() => z.enum(['failed', 'pending', 'successful']));
+export const Status = lazySchema(() => z.enum(['failed', 'pending', 'successful', 'canceled']));
 export type Status = z.infer<typeof Status>;
 export type StatusEnum = typeof Status.enum;
 export const StatusEnum = Status.enum;
@@ -268,6 +268,10 @@ export const ResponseActionDetails = lazySchema(() =>
      */
     wasSuccessful: z.boolean().optional(),
     /**
+     * Whether the response action was canceled
+     */
+    wasCanceled: z.boolean().optional(),
+    /**
      * The response action status
      */
     status: z.string().optional(),
@@ -320,6 +324,10 @@ export const ResponseActionDetails = lazySchema(() =>
            * Whether the response action was successful for the agent ID
            */
           wasSuccessful: z.boolean().optional(),
+          /**
+           * Whether the response action was canceled for the agent ID
+           */
+          wasCanceled: z.boolean().optional(),
           /**
            * The date and time the response action was completed for the agent ID
            */

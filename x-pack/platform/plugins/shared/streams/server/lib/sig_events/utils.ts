@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { SignificantEventsResponse } from '@kbn/streams-schema';
+import type { QueryLink } from '@kbn/streams-schema';
 import { orderBy } from 'lodash';
 
 interface WithEvidenceNames {
@@ -28,14 +28,12 @@ export function enrichFromEvidences<T extends WithEvidenceNames>(doc: T): T {
 }
 
 /**
- * Sort queries for the Discovery "Queries" table.
+ * Sort query links for the Discovery "Queries" table.
  */
-export function sortForQueriesTable(
-  queries: SignificantEventsResponse[]
-): SignificantEventsResponse[] {
+export function sortQueryLinksForTable(queryLinks: QueryLink[]): QueryLink[] {
   return orderBy(
-    queries,
-    ['rule_backed', (query) => query.severity_score ?? 0, (query) => query.title],
+    queryLinks,
+    ['rule_backed', (link) => link.query.severity_score ?? 0, (link) => link.query.title],
     ['asc', 'desc', 'asc']
   );
 }

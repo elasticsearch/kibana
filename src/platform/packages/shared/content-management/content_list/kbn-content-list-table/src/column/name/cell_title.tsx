@@ -13,6 +13,7 @@ import { hasActiveModifierKey } from '@kbn/shared-ux-utility';
 
 import type { ContentListItem } from '@kbn/content-list-provider';
 import { useContentListConfig } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 
 export interface NameCellTitleProps {
   item: ContentListItem;
@@ -55,7 +56,11 @@ export const NameCellTitle = ({ item, shouldUseHref, onClick }: NameCellTitlePro
 
   return (
     <EuiText size="s">
-      <EuiLink href={href} onClick={handleClick} data-test-subj="content-list-table-item-link">
+      <EuiLink
+        href={href}
+        onClick={handleClick}
+        data-test-subj={CONTENT_LIST_TEST_SUBJECTS.itemLink}
+      >
         {title}
       </EuiLink>
     </EuiText>

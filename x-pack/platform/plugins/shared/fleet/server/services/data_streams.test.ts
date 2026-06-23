@@ -22,7 +22,7 @@ describe('DataStreamService', () => {
       expect(result).toEqual(['logs-system.cpu-default', 'logs-system.cpu-production']);
     });
 
-    it('calls the data streams API with filter_path=data_streams.name', async () => {
+    it('calls the _data_stream API with filter_path=data_streams.name', async () => {
       const esClient = elasticsearchServiceMock.createElasticsearchClient();
       esClient.transport.request.mockResolvedValue({ data_streams: [] });
 
@@ -31,6 +31,7 @@ describe('DataStreamService', () => {
       expect(esClient.transport.request).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'GET',
+          path: '/_data_stream/logs-*-*,metrics-*-*,traces-*-*,synthetics-*-*,profiling-*,profiles-*',
           querystring: { filter_path: 'data_streams.name' },
         })
       );

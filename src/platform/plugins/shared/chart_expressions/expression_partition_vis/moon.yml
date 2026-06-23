@@ -34,6 +34,7 @@ dependsOn:
   - '@kbn/chart-icons'
   - '@kbn/chart-expressions-common'
   - '@kbn/cell-actions'
+  - '@kbn/css-utils'
   - '@kbn/react-kibana-context-render'
   - '@kbn/core-rendering-browser'
   - '@kbn/palettes'

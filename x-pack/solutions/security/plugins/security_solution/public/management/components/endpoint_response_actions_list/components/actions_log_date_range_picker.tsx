@@ -8,7 +8,7 @@
 import React, { memo, useState } from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiSuperDatePicker } from '@elastic/eui';
 import type { IUnifiedSearchPluginServices } from '@kbn/unified-search-plugin/public';
-import { euiStyled } from '@kbn/kibana-react-plugin/common';
+import styled from '@emotion/styled';
 import type { EuiSuperDatePickerRecentRange } from '@elastic/eui';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import type {
@@ -28,8 +28,8 @@ export interface DateRangePickerValues {
   recentlyUsedDateRanges: EuiSuperDatePickerRecentRange[];
 }
 
-const DatePickerWrapper = euiStyled.div`
-  padding-bottom: ${(props) => `${props.theme.eui.euiSizeL}`};
+const DatePickerWrapper = styled.div`
+  padding-bottom: ${(props) => props.theme.euiTheme.size.l};
 `;
 
 export const ActionLogDateRangePicker = memo(

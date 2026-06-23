@@ -14,17 +14,15 @@ import type { FtrProviderContext } from '../../../ftr_provider_context';
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const retry = getService('retry');
   const kibanaServer = getService('kibanaServer');
-  const { dashboardControls, dashboard, timePicker, common, header } = getPageObjects([
+  const { dashboardControls, dashboard, timePicker, header } = getPageObjects([
     'dashboardControls',
     'dashboard',
     'timePicker',
-    'common',
     'header',
   ]);
   const testSubjects = getService('testSubjects');
   const esql = getService('esql');
   const dashboardAddPanel = getService('dashboardAddPanel');
-  const browser = getService('browser');
   const comboBox = getService('comboBox');
   const elasticChart = getService('elasticChart');
 
@@ -64,20 +62,13 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       await esql.waitESQLEditorLoaded('InlineEditingESQLEditor');
 
-      await retry.waitFor('control flyout to open', async () => {
-        await esql.typeEsqlEditorQuery(
-          'FROM logstash* | STATS COUNT(*) BY ',
-          'InlineEditingESQLEditor'
-        );
-        // Wait until suggestions are loaded
-        await common.sleep(1000);
-        // Create control is the third suggestion
-        await browser.pressKeys(browser.keys.ARROW_DOWN);
-        await browser.pressKeys(browser.keys.ARROW_DOWN);
-        await browser.pressKeys(browser.keys.ENTER);
+      await esql.typeEsqlEditorQuery(
+        'FROM logstash* | STATS COUNT(*) BY ',
+        'InlineEditingESQLEditor'
+      );
+      await esql.selectEsqlSuggestionByLabel('Create control', 'InlineEditingESQLEditor');
 
-        return await testSubjects.exists('create_esql_control_flyout');
-      });
+      await testSubjects.existOrFail('create_esql_control_flyout');
 
       await comboBox.set('esqlIdentifiersOptions', 'geo.dest');
       await comboBox.set('esqlIdentifiersOptions', 'clientip');

@@ -14,6 +14,7 @@ import { FeatureDetailsFlyout } from './feature_details_flyout';
 function createMinimalFeature(overrides: Partial<Feature> = {}): Feature {
   return {
     id: 'feature-123',
+    uuid: 'feature-uuid',
     type: 'service',
     description: 'A test feature',
     properties: { key: 'value' },

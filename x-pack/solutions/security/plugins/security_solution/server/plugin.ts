@@ -170,7 +170,6 @@ import { setupAlertsCapabilitiesSwitcher } from './lib/capabilities/alerts_capab
 import { securityAlertsProfileInitializer } from './lib/anonymization';
 import { registerWorkflowSteps } from './workflows/step_types';
 import { registerWatchlistMaintainer } from './lib/entity_analytics/watchlists/maintainer/register_watchlist_maintainer';
-import { registerMlAnomalyDetectionBehaviorMaintainer } from './lib/entity_analytics/maintainers/behaviors/ml_anomaly_detection';
 import { registerEndpointExceptionsRoutes } from './endpoint/routes/endpoint_exceptions_per_policy_opt_in';
 import { initializeEndpointExceptionsPerPolicyOptInStatus } from './endpoint/lib/reference_data';
 
@@ -350,19 +349,12 @@ export class Plugin implements ISecuritySolutionPlugin {
         entityAnalyticsConfig: config.entityAnalytics,
         telemetry: core.analytics,
       });
-      if (experimentalFeatures.entityAnalyticsMlJobBehaviorMaintainer) {
-        registerMlAnomalyDetectionBehaviorMaintainer({
-          entityStore: plugins.entityStore,
-          getStartServices: core.getStartServices,
-          ml: plugins.ml,
-          logger: this.logger,
-        });
-      }
       if (experimentalFeatures.entityAnalyticsWatchlistEnabled) {
         registerWatchlistMaintainer({
           entityStore: plugins.entityStore,
           getStartServices: core.getStartServices,
           logger: this.logger,
+          hasEncryptionKey: plugins.encryptedSavedObjects?.canEncrypt === true,
         });
       }
     } else {
@@ -385,6 +377,7 @@ export class Plugin implements ISecuritySolutionPlugin {
       auditLogger: plugins.security?.audit.withoutRequest,
       kibanaVersion: pluginContext.env.packageInfo.version,
       experimentalFeatures,
+      hasEncryptionKey: plugins.encryptedSavedObjects?.canEncrypt === true,
     }).catch((err) => {
       logger.error(`Error scheduling entity analytics migration: ${err}`);
     });

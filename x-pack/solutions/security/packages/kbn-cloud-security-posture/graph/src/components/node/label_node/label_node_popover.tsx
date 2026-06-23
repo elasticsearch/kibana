@@ -6,13 +6,17 @@
  */
 
 import React from 'react';
-import { EuiText, EuiIcon, useEuiTheme } from '@elastic/eui';
+import { EuiText, EuiIcon, EuiHorizontalRule, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import { getAbbreviatedNumber } from '@kbn/cloud-security-posture-common';
 import { useKibanaIsDarkMode } from '@kbn/react-kibana-context-theme';
 import { RoundedBadge } from '../styles';
 import type { DocumentAnalysisOutput } from './analyze_documents';
+
+export const TEST_SUBJ_TITLE = 'label-node-tooltip-title';
+
+const POPOVER_TITLE_MAX_WIDTH = 320;
 
 const alertedEventsText = i18n.translate(
   'securitySolutionPackages.csp.graph.labelNode.tooltip.alertedEvents',
@@ -30,6 +34,7 @@ const defaultEventsText = i18n.translate(
 
 interface LabelNodePopoverProps {
   analysis: DocumentAnalysisOutput;
+  text?: string;
 }
 
 const CountText: React.FC<{ testSubj: string; children: React.ReactNode }> = ({
@@ -100,8 +105,11 @@ const EventBadge: React.FC<{ count: number }> = ({ count }) => (
   </RoundedBadge>
 );
 
-export const LabelNodePopoverContent = ({ analysis }: LabelNodePopoverProps) => {
+export const LabelNodePopoverContent = ({ analysis, text }: LabelNodePopoverProps) => {
   const { euiTheme } = useEuiTheme();
+  const hasTitle = Boolean(text);
+  const hasCounters = analysis.uniqueAlertsCount > 0 || analysis.uniqueEventsCount > 0;
+
   return (
     <div
       css={css`
@@ -110,6 +118,30 @@ export const LabelNodePopoverContent = ({ analysis }: LabelNodePopoverProps) => 
         gap: ${euiTheme.size.s};
       `}
     >
+      {hasTitle && (
+        <EuiText
+          data-test-subj={TEST_SUBJ_TITLE}
+          size="s"
+          css={css`
+            font-weight: ${euiTheme.font.weight.bold};
+            max-width: ${POPOVER_TITLE_MAX_WIDTH}px;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+          `}
+        >
+          {text}
+        </EuiText>
+      )}
+      {hasTitle && hasCounters && (
+        <EuiHorizontalRule
+          margin="none"
+          size="full"
+          css={css`
+            width: calc(100% + ${euiTheme.size.xl});
+            margin-left: -${euiTheme.size.base};
+          `}
+        />
+      )}
       {analysis.uniqueAlertsCount > 0 && (
         <Section
           testSubj="label-node-tooltip-alert-section"

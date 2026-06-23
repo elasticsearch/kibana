@@ -7,8 +7,7 @@
 
 import type { ToolSelection } from '../tools';
 import type { UserIdAndName } from '../base/users';
-import type { AgentVisibility } from './visibility';
-import type { AgentAcl } from './acl';
+import type { AgentAccessControl } from './access_control/types';
 
 /**
  * The type of an agent.
@@ -49,14 +48,9 @@ export interface AgentDefinition {
    */
   readonly: boolean;
   /**
-   * Visibility controls who can read and write this agent.
+   * Access control controls who can read, run, write, delete, and manage this agent.
    */
-  visibility?: AgentVisibility;
-  /**
-   * Per-agent access control list. Grants additional access to specific users or roles
-   * on top of the visibility-based default.
-   */
-  acl?: AgentAcl;
+  access_control?: AgentAccessControl;
   /**
    * Agent owner metadata.
    */

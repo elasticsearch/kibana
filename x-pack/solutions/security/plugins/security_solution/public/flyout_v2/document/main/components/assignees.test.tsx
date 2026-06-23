@@ -153,6 +153,13 @@ describe('<Assignees />', () => {
     expect(getByTestId(USER_AVATAR_ITEM_TEST_ID('user1'))).toBeInTheDocument();
   });
 
+  it('renders all assignee avatars when multiple users are assigned', () => {
+    const { getByTestId } = renderAssignees({}, ['user-id-1', 'user-id-2']);
+
+    expect(getByTestId(USER_AVATAR_ITEM_TEST_ID('user1'))).toBeInTheDocument();
+    expect(getByTestId(USER_AVATAR_ITEM_TEST_ID('user2'))).toBeInTheDocument();
+  });
+
   it('applies updated assignees and calls the success callback', async () => {
     const onAlertUpdated = jest.fn();
     const { getByTestId, queryByTestId } = renderAssignees({ onAlertUpdated });

@@ -123,6 +123,7 @@ describe('StepExecutionRuntime', () => {
       flushStepChanges: jest.fn(),
       setLastFailedStepContext: jest.fn(),
       getLastFailedStepContext: jest.fn(),
+      accumulateUsage: jest.fn(),
     } as unknown as WorkflowExecutionState;
 
     workflowExecutionGraph = {
@@ -426,6 +427,33 @@ describe('StepExecutionRuntime', () => {
         );
       });
 
+      it('should extract token usage from output.metadata.usage and persist it on the step', () => {
+        underTest.finishStep({
+          message: 'hello',
+          metadata: { usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 } },
+        });
+
+        expect(workflowExecutionState.upsertStep).toHaveBeenCalledWith(
+          expect.objectContaining({
+            usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+          })
+        );
+        expect(workflowExecutionState.accumulateUsage).toHaveBeenCalledWith({
+          inputTokens: 100,
+          outputTokens: 50,
+          totalTokens: 150,
+        });
+      });
+
+      it('should not tag usage on steps that do not report it', () => {
+        underTest.finishStep({ message: 'hello' });
+
+        expect(workflowExecutionState.upsertStep).toHaveBeenCalledWith(
+          expect.not.objectContaining({ usage: expect.anything() })
+        );
+        expect(workflowExecutionState.accumulateUsage).toHaveBeenCalledWith(undefined);
+      });
+
       it('should log successful step execution', () => {
         underTest.finishStep();
         expect(workflowLogger.logInfo).toHaveBeenCalledWith(`Step 'fakeStepId1' completed`, {
@@ -606,6 +634,30 @@ describe('StepExecutionRuntime', () => {
         );
       }
     );
+
+    it('should extract and accumulate partial token usage from partial output on failure', () => {
+      underTest.failStep(new Error('stream interrupted'), {
+        message: '',
+        metadata: { usage: { inputTokens: 150, outputTokens: 60, totalTokens: 210 } },
+      });
+
+      expect(workflowExecutionState.upsertStep).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: ExecutionStatus.FAILED,
+          usage: { inputTokens: 150, outputTokens: 60, totalTokens: 210 },
+        })
+      );
+      expect(workflowExecutionState.accumulateUsage).toHaveBeenCalledWith({
+        inputTokens: 150,
+        outputTokens: 60,
+        totalTokens: 210,
+      });
+    });
+
+    it('should not accumulate usage when failing without partial output', () => {
+      underTest.failStep(new Error('boom'));
+      expect(workflowExecutionState.accumulateUsage).toHaveBeenCalledWith(undefined);
+    });
 
     it('should log the failure of the step', () => {
       const error = new Error('Step execution failed');

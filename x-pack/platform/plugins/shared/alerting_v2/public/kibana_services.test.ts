@@ -10,7 +10,7 @@ import { httpServiceMock } from '@kbn/core-http-browser-mocks';
 import { notificationServiceMock } from '@kbn/core-notifications-browser-mocks';
 import { dataPluginMock } from '@kbn/data-plugin/public/mocks';
 import { dataViewPluginMocks } from '@kbn/data-views-plugin/public/mocks';
-import { applicationServiceMock } from '@kbn/core/public/mocks';
+import { applicationServiceMock, uiSettingsServiceMock } from '@kbn/core/public/mocks';
 import { lensPluginMock } from '@kbn/lens-plugin/public/mocks';
 
 const createMockServices = (): AlertingV2KibanaServices => ({
@@ -22,6 +22,8 @@ const createMockServices = (): AlertingV2KibanaServices => ({
   lens: lensPluginMock.createStartContract(),
   expressions: {} as AlertingV2KibanaServices['expressions'],
   uiActions: {} as AlertingV2KibanaServices['uiActions'],
+  uiSettings: uiSettingsServiceMock.createStartContract(),
+  container: {} as AlertingV2KibanaServices['container'],
 });
 
 describe('kibana_services', () => {

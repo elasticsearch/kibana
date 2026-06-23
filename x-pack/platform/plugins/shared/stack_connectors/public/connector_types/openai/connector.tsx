@@ -24,6 +24,7 @@ import {
   EuiFlexItem,
   EuiSpacer,
   EuiTitle,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import {
@@ -315,13 +316,15 @@ const ConnectorFields: React.FC<ActionConnectorFieldsProps> = ({ readOnly, isEdi
                       />
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
-                      <EuiButtonIcon
-                        color="danger"
-                        onClick={() => removeItem(item.id)}
-                        iconType="minusCircle"
-                        aria-label={i18nAuth.DELETE_BUTTON}
-                        css={{ marginTop: '28px' }}
-                      />
+                      <EuiToolTip content={i18nAuth.DELETE_BUTTON} disableScreenReaderOutput>
+                        <EuiButtonIcon
+                          color="danger"
+                          onClick={() => removeItem(item.id)}
+                          iconType="minusCircle"
+                          aria-label={i18nAuth.DELETE_BUTTON}
+                          css={{ marginTop: '28px' }}
+                        />
+                      </EuiToolTip>
                     </EuiFlexItem>
                   </EuiFlexGroup>
                 ))}

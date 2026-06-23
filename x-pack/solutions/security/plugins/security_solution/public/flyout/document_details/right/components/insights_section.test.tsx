@@ -181,7 +181,7 @@ describe('<InsightsSection />', () => {
     });
   });
 
-  it('should render the component collapsed if value is false in local storage', async () => {
+  it('should render the component collapsed if value is false in local storage', () => {
     mockUseExpandSection.mockReturnValue(false);
 
     const contextValue = {
@@ -194,9 +194,7 @@ describe('<InsightsSection />', () => {
 
     const wrapper = renderInsightsSection(contextValue);
 
-    await act(async () => {
-      expect(wrapper.getByTestId(INSIGHTS_CONTENT_TEST_ID)).not.toBeVisible();
-    });
+    expect(wrapper.getByTestId(INSIGHTS_CONTENT_TEST_ID)).not.toBeVisible();
   });
 
   it('should render the component expanded if value is true in local storage', async () => {

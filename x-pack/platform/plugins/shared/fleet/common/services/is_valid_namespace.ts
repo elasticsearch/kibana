@@ -126,7 +126,7 @@ export const VALID_DATA_STREAM_TYPES: readonly PackageDataStreamTypes[] = [
   'metrics',
   'traces',
   'synthetics',
-  'profiling',
+  'profiles',
 ];
 
 export function isValidDataStreamType(

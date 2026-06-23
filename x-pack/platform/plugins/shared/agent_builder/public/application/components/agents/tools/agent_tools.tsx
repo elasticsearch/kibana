@@ -36,7 +36,7 @@ import { ToolLibraryPanel } from './tool_library_panel';
 import { ToolDetailPanel } from './tool_detail_panel';
 import { PageWrapper } from '../common/page_wrapper';
 import { useListDetailPageStyles } from '../common/styles';
-import { useCanEditAgent } from '../../../hooks/agents/use_can_edit_agent';
+import { useCanUpdateAgent } from '../../../hooks/agents/use_can_update_agent';
 import { ToolsCustomizeEmptyState } from './tools_customize_empty_state';
 import { useToolsMutation } from './use_tools_mutation';
 
@@ -120,7 +120,7 @@ export const AgentTools: React.FC = () => {
 
   const { agent, isLoading: agentLoading } = useAgentBuilderAgentById(agentId);
   const { tools: allTools, isLoading: toolsLoading } = useToolsService();
-  const canEditAgent = useCanEditAgent({ agent });
+  const canEditAgent = useCanUpdateAgent({ agent });
 
   const { handleAddTool, handleRemoveTool } = useToolsMutation({
     agent: agent ?? null,

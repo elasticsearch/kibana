@@ -6,13 +6,14 @@
  */
 
 import type { SentinelArmResource } from '../../model/vendor/rules/sentinel.gen';
+import { SENTINEL_NRT_RULE_KIND, SENTINEL_SCHEDULED_RULE_KIND } from './types';
 import { SentinelRulesParser } from './rules_json';
 
 const SCHEDULED_RULE: SentinelArmResource = {
   id: '/subscriptions/sub-id/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/ws/providers/Microsoft.SecurityInsights/alertRules/rule-guid',
   name: 'rule-guid',
   type: 'Microsoft.SecurityInsights/alertRules',
-  kind: 'Scheduled',
+  kind: SENTINEL_SCHEDULED_RULE_KIND,
   properties: {
     displayName: 'Suspicious Login Activity',
     description: 'Detects suspicious login attempts',
@@ -43,6 +44,7 @@ describe('SentinelRulesParser', () => {
       expect(rules).toHaveLength(1);
       expect(rules[0]).toMatchObject({
         id: 'rule-guid',
+        kind: SENTINEL_SCHEDULED_RULE_KIND,
         displayName: 'Suspicious Login Activity',
         description: 'Detects suspicious login attempts',
         query: 'SecurityEvent | where EventID == 4625 | summarize count() by Account',
@@ -52,7 +54,34 @@ describe('SentinelRulesParser', () => {
       });
     });
 
-    it('filters out non-Scheduled rule kinds', () => {
+    it('parses NRT rules from resources', () => {
+      const nrtRule: SentinelArmResource = {
+        name: 'nrt-rule',
+        type: 'Microsoft.SecurityInsights/alertRules',
+        kind: SENTINEL_NRT_RULE_KIND,
+        properties: {
+          displayName: 'NRT Security Event log cleared',
+          query: 'SecurityEvent | where EventID == 1102',
+          severity: 'High',
+        },
+      };
+
+      const parser = new SentinelRulesParser([nrtRule]);
+      const rules = parser.getRules();
+
+      expect(rules).toHaveLength(1);
+      expect(rules[0]).toMatchObject({
+        id: 'nrt-rule',
+        kind: SENTINEL_NRT_RULE_KIND,
+        displayName: 'NRT Security Event log cleared',
+        query: 'SecurityEvent | where EventID == 1102',
+        severity: 'High',
+      });
+      expect(rules[0].queryFrequency).toBeUndefined();
+      expect(rules[0].queryPeriod).toBeUndefined();
+    });
+
+    it('filters out unsupported rule kinds', () => {
       const parser = new SentinelRulesParser([SCHEDULED_RULE, FUSION_RULE]);
       const rules = parser.getRules();
 
@@ -62,7 +91,7 @@ describe('SentinelRulesParser', () => {
 
     it('filters out rules with missing displayName or query', () => {
       const incomplete: SentinelArmResource = {
-        kind: 'Scheduled',
+        kind: SENTINEL_SCHEDULED_RULE_KIND,
         properties: { displayName: 'No Query Rule', query: '' },
       };
       const parser = new SentinelRulesParser([incomplete]);
@@ -74,7 +103,7 @@ describe('SentinelRulesParser', () => {
     it('defaults severity to "medium" when missing', () => {
       const rule: SentinelArmResource = {
         name: 'no-severity',
-        kind: 'Scheduled',
+        kind: SENTINEL_SCHEDULED_RULE_KIND,
         properties: {
           displayName: 'Rule Without Severity',
           query: 'SecurityEvent | limit 10',
@@ -88,7 +117,7 @@ describe('SentinelRulesParser', () => {
 
     it('uses displayName as id when name and id are absent', () => {
       const rule: SentinelArmResource = {
-        kind: 'Scheduled',
+        kind: SENTINEL_SCHEDULED_RULE_KIND,
         properties: {
           displayName: 'Fallback Id Rule',
           query: 'SecurityEvent | limit 10',
@@ -103,7 +132,7 @@ describe('SentinelRulesParser', () => {
     it('handles rules without optional tactics and techniques', () => {
       const rule: SentinelArmResource = {
         name: 'no-mitre',
-        kind: 'Scheduled',
+        kind: SENTINEL_SCHEDULED_RULE_KIND,
         properties: {
           displayName: 'Rule Without MITRE',
           description: 'No MITRE mappings',

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import type { Template } from '../../../../common/types/domain/template/v1';
 import { mockTemplates } from './mock_data';
 import { getTemplatesRoute } from './get_templates_route';
@@ -19,7 +19,7 @@ import { getTemplateTagsRoute } from './get_template_tags_route';
 import { getTemplateCreatorsRoute } from './get_template_creators_route';
 
 const buildDefinition = (name: string) =>
-  yaml.dump({
+  yamlStringify({
     name,
     fields: [
       {
@@ -114,7 +114,7 @@ const createMockCasesClient = () => ({
       return toSavedObject(latest);
     }),
     createTemplate: jest.fn(async (input: { name?: string; owner: string; definition: string }) => {
-      const parsedDefinition = yaml.load(input.definition) as { name: string };
+      const parsedDefinition = yamlParse(input.definition) as { name: string };
       const templateName = input.name ?? parsedDefinition.name;
 
       const newTemplate: Template = {
@@ -142,7 +142,7 @@ const createMockCasesClient = () => ({
         }
 
         const latestVersion = Math.max(...candidates.map((template) => template.templateVersion));
-        const parsedDefinition = yaml.load(input.definition) as { name: string };
+        const parsedDefinition = yamlParse(input.definition) as { name: string };
         const templateName = input.name ?? parsedDefinition.name;
 
         const updatedTemplate: Template = {
@@ -365,7 +365,7 @@ describe('Template Routes', () => {
       const casesClient = await (await context.cases).getCasesClient();
       const logger = { warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() };
 
-      const invalidDefinition = yaml.dump({
+      const invalidDefinition = yamlStringify({
         name: 'Invalid Template',
         fields: [
           {

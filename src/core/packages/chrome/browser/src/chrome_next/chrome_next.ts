@@ -63,6 +63,8 @@ export interface AppHeaderTab {
   href?: string;
   badge?: number;
   'data-test-subj'?: string;
+  disabled?: boolean;
+  toolTipContent?: string;
 }
 
 /** @public */

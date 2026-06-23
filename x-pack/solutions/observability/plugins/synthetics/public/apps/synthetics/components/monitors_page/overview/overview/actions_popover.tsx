@@ -125,6 +125,7 @@ export function ActionsPopover({
     configId: monitor.configId,
     locationId: locationId || monitor.locations[0]?.id || '',
     spaces: monitor.spaces,
+    remoteName: monitor.remote?.remoteName,
   });
   const editUrl = useEditMonitorLocator({ configId: monitor.configId, spaces: monitor.spaces });
 
@@ -221,12 +222,19 @@ export function ActionsPopover({
 
   const alertLoading = alertStatus(monitor.configId) === FETCH_STATUS.LOADING;
 
-  // For remote monitors, only show: Quick Inspect, Go to monitor (remote link),
-  // and View on remote cluster. All management actions are local-only.
+  // For remote monitors, only show: Go to monitor (links to the local detail
+  // page with `?remoteName=<alias>`, which is CCS-aware), Quick Inspect, and
+  // View on remote cluster. All management actions are local-only.
   let popoverItems: EuiContextMenuPanelItemDescriptor[];
 
   if (isRemote) {
     popoverItems = [
+      {
+        name: actionsMenuGoToMonitorName,
+        icon: 'sortRight',
+        href: detailUrl,
+        'data-test-subj': 'actionsPopoverGoToMonitor',
+      },
       quickInspectPopoverItem,
       ...(remoteMonitorUrl
         ? [
@@ -397,6 +405,9 @@ export function ActionsPopover({
           closePopover={() => setIsPopoverOpen(false)}
           anchorPosition="rightUp"
           panelPaddingSize="none"
+          aria-label={i18n.translate('xpack.synthetics.actionsPopover.popoverAriaLabel', {
+            defaultMessage: 'Actions menu',
+          })}
         >
           <EuiContextMenu
             initialPanelId={0}

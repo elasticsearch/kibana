@@ -55,12 +55,12 @@ export class ServerlessObservabilityPlugin
     ]).pipe(
       map(([{ status }, chatExperience]) => {
         return createNavigationTree({
+          core,
           streamsAvailable: status === 'enabled',
           overviewAvailable: core.pricing.isFeatureAvailable('observability:complete_overview'),
           genAiSettingsAvailable: core.pricing.isFeatureAvailable('observability:gen_ai_settings'),
           isCasesAvailable: Boolean(setupDeps.cases),
           showAiAssistant: chatExperience !== AIChatExperience.Agent,
-          showAlertingV2: Boolean(core.application.capabilities.alertingVTwo),
         });
       })
     );

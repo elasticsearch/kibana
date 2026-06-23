@@ -84,6 +84,12 @@ backwards compatible. Renaming or removing a code is a breaking change.
 | ------------------- | ------ | ------------------------------------------------------------- | ---------------- |
 | `INSIGHT_NOT_FOUND` | 404    | `getInsight` / `updateInsightStatus` cannot find an insight by id | `{ insight_id }` |
 
+### Engine state (`server/routes/base_alerting_route.ts`)
+
+| Code                   | Status | When                                                                                                                                                                          | `details` |
+| ---------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `ALERTING_DISABLED` | 503    | `BaseAlertingRoute.handle` short-circuits when `alerting:v2:enabled` is off so every route refuses requests until the operator turns the engine back on.                       | _(none)_  |
+
 ### Generic fallback codes
 
 | Code                    | Status | When                                                                        |
@@ -93,13 +99,14 @@ backwards compatible. Renaming or removing a code is a breaking change.
 ## Common error responses (every route)
 
 `BaseAlertingRoute` declares a `commonResponses` block that `static get
-validate()` merges into each subclass's `schemas.response`. Every route therefore documents these three OAS responses without restating them:
+validate()` merges into each subclass's `schemas.response`. Every route therefore documents these four OAS responses without restating them:
 
-| HTTP status | When                                                                            |
-| ----------- | ------------------------------------------------------------------------------- |
-| `401`       | The request was not authenticated.                                              |
-| `403`       | The caller lacks the route's `requiredPrivileges`.                              |
-| `500`       | Any uncaught throw boomifies to 500.                             |
+| HTTP status | When                                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| `401`       | The request was not authenticated.                                                                    |
+| `403`       | The caller lacks the route's `requiredPrivileges`.                                                    |
+| `500`       | Any uncaught throw boomifies to 500.                                                                  |
+| `503`       | Alerting is administratively disabled via the `alerting:v2:enabled` advanced setting (kill switch).|
 
 Important distinction:
 

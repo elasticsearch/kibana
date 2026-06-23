@@ -431,6 +431,24 @@ export const ADD_TAG_STEP_DOCUMENTATION_DETAILS = i18n.translate(
   }
 );
 
+export const REMOVE_TAG_STEP_LABEL = i18n.translate('xpack.cases.workflowSteps.removeTags.label', {
+  defaultMessage: 'Cases - Remove tags from case',
+});
+
+export const REMOVE_TAG_STEP_DESCRIPTION = i18n.translate(
+  'xpack.cases.workflowSteps.removeTags.description',
+  {
+    defaultMessage: 'Remove tags from an existing case',
+  }
+);
+
+export const REMOVE_TAG_STEP_DOCUMENTATION_DETAILS = i18n.translate(
+  'xpack.cases.workflowSteps.removeTags.documentation.details',
+  {
+    defaultMessage: 'This step removes tags from an existing case.',
+  }
+);
+
 export const ADD_CATEGORY_STEP_LABEL = i18n.translate(
   'xpack.cases.workflowSteps.addCategory.label',
   {

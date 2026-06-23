@@ -22,15 +22,6 @@ import {
   TEST_SUBJ_TOOLTIP,
 } from './label_node';
 
-jest.mock('./label_node_badges', () => {
-  // Use the actual exports, except override LIMIT
-  const actual = jest.requireActual('./label_node_badges');
-  return {
-    ...actual,
-    LIMIT: 2,
-  };
-});
-
 describe('LabelNode', () => {
   const baseProps: NodeProps = {
     id: 'test-label-node',

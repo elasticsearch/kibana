@@ -8,6 +8,7 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
+import type { FieldsMetadataPublicStart } from '@kbn/fields-metadata-plugin/public';
 import type { EuiSelectableOption } from '@elastic/eui';
 import {
   FieldIcon,
@@ -26,13 +27,28 @@ import {
   ToolbarSelector,
   type SelectableEntry,
 } from '@kbn/shared-ux-toolbar-selector';
+import {
+  EBT_CLICK_ACTIONS,
+  getEbtProps,
+  NONE_EBT_DETAIL,
+  NON_ECS_FIELD_EBT_DETAIL,
+  useEcsFieldNames,
+} from '@kbn/ebt-click';
 import type { UnifiedHistogramBreakdownContext } from '../../types';
+import { EBT_BREAKDOWN_SELECTOR_ELEMENT } from './ebt_constants';
+
+const BREAKDOWN_EBT_BASE = {
+  action: EBT_CLICK_ACTIONS.SET_BREAKDOWN,
+  element: EBT_BREAKDOWN_SELECTOR_ELEMENT,
+} as const;
 
 export interface BreakdownFieldSelectorProps {
   dataView: DataView;
   breakdown: UnifiedHistogramBreakdownContext;
   esqlColumns?: DatatableColumn[];
   onBreakdownFieldChange?: (breakdownField: DataViewField | undefined) => void;
+  recommendedFields?: ReadonlyArray<string>;
+  fieldsMetadata?: FieldsMetadataPublicStart;
 }
 
 const mapToDropdownFields = (dataView: DataView, esqlColumns?: DatatableColumn[]) => {
@@ -53,44 +69,93 @@ export const BreakdownFieldSelector = ({
   breakdown,
   esqlColumns,
   onBreakdownFieldChange,
+  recommendedFields,
+  fieldsMetadata,
 }: BreakdownFieldSelectorProps) => {
   const fields = useMemo(() => mapToDropdownFields(dataView, esqlColumns), [dataView, esqlColumns]);
-  const fieldOptions: SelectableEntry[] = useMemo(() => {
-    const options: SelectableEntry[] = fields
-      .map((field) => ({
-        key: field.name,
-        name: field.name,
-        label: field.displayName,
-        value: field.name,
-        checked:
-          breakdown?.field?.name === field.name
-            ? ('on' as EuiSelectableOption['checked'])
-            : undefined,
-        prepend: (
-          <span
-            css={css`
-              .euiToken {
-                vertical-align: middle;
-              }
-            `}
-          >
-            <FieldIcon {...getFieldIconProps(field)} />
-          </span>
-        ),
-      }))
-      .sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+  const fieldNames = useMemo(() => fields.map((f) => f.name), [fields]);
+  const ecsFieldNames = useEcsFieldNames(fieldNames, fieldsMetadata);
 
-    options.unshift({
+  const fieldOptions: SelectableEntry[] = useMemo(() => {
+    const noBreakdownOption: SelectableEntry = {
       key: EMPTY_OPTION,
       value: EMPTY_OPTION,
       label: i18n.translate('unifiedHistogram.breakdownFieldSelector.noBreakdownButtonLabel', {
         defaultMessage: 'No breakdown',
       }),
       checked: !breakdown?.field ? ('on' as EuiSelectableOption['checked']) : undefined,
+      ...getEbtProps({ ...BREAKDOWN_EBT_BASE, detail: NONE_EBT_DETAIL }),
+    };
+
+    const toOption = (field: DataViewField): SelectableEntry => ({
+      key: field.name,
+      label: field.displayName,
+      value: field.name,
+      checked:
+        breakdown?.field?.name === field.name
+          ? ('on' as EuiSelectableOption['checked'])
+          : undefined,
+      prepend: (
+        <span
+          css={css`
+            .euiToken {
+              vertical-align: middle;
+            }
+          `}
+        >
+          <FieldIcon {...getFieldIconProps(field)} />
+        </span>
+      ),
+      ...getEbtProps({
+        ...BREAKDOWN_EBT_BASE,
+        detail:
+          ecsFieldNames !== null
+            ? ecsFieldNames.has(field.name)
+              ? field.name
+              : NON_ECS_FIELD_EBT_DETAIL
+            : undefined,
+      }),
     });
 
-    return options;
-  }, [fields, breakdown?.field]);
+    const sortedFields = fields
+      .map(toOption)
+      .sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+
+    if (recommendedFields && recommendedFields.length > 0) {
+      const recommendedSet = new Set<string>(recommendedFields);
+      const optionByName = new Map(sortedFields.map((o) => [o.value, o]));
+      const recommended = recommendedFields
+        .map((name) => optionByName.get(name))
+        .filter((o): o is SelectableEntry => o !== undefined);
+      const rest = sortedFields.filter((o) => !recommendedSet.has(o.value));
+
+      if (recommended.length > 0) {
+        return [
+          noBreakdownOption,
+          {
+            key: 'recommended-group-label',
+            value: '',
+            label: i18n.translate('unifiedHistogram.breakdownFieldSelector.recommendedGroupLabel', {
+              defaultMessage: 'Recommended fields',
+            }),
+            isGroupLabel: true,
+          },
+          ...recommended,
+          {
+            key: 'all-fields-group-label',
+            value: '',
+            label: i18n.translate('unifiedHistogram.breakdownFieldSelector.allFieldsGroupLabel', {
+              defaultMessage: 'All fields',
+            }),
+            isGroupLabel: true,
+          },
+          ...rest,
+        ];
+      }
+    }
+
+    return [noBreakdownOption, ...sortedFields];
+  }, [fields, breakdown?.field, recommendedFields, ecsFieldNames]);
 
   const onChange = useCallback(
     (chosenOption?: SelectableEntry) => {

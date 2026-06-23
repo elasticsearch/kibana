@@ -24,12 +24,17 @@ exports[`isLocked 1`] = `
       grow={false}
       key="closeButton"
     >
-      <EuiButtonIcon
-        aria-label="Close tooltip"
-        data-test-subj="mapTooltipCloseButton"
-        iconType="cross"
-        onClick={[Function]}
-      />
+      <EuiToolTip
+        content="Close tooltip"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Close tooltip"
+          data-test-subj="mapTooltipCloseButton"
+          iconType="cross"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiHorizontalRule
@@ -78,12 +83,17 @@ exports[`should only show close button when layer name is not yet loaded 1`] = `
       grow={false}
       key="closeButton"
     >
-      <EuiButtonIcon
-        aria-label="Close tooltip"
-        data-test-subj="mapTooltipCloseButton"
-        iconType="cross"
-        onClick={[Function]}
-      />
+      <EuiToolTip
+        content="Close tooltip"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Close tooltip"
+          data-test-subj="mapTooltipCloseButton"
+          iconType="cross"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiHorizontalRule

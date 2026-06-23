@@ -42,6 +42,8 @@ export const BraveSearchConnector: ConnectorSpec = {
   actions: {
     webSearch: {
       isTool: true,
+      description:
+        'Search the web using Brave Search. Returns a list of results with titles, URLs, and descriptions for a given query. Supports pagination via count and offset parameters.',
       input: lazySchema(() =>
         z.object({
           q: z.string().describe('Search query'),

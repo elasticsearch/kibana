@@ -275,13 +275,21 @@ export const getHeatmapVisualization = ({
     };
   },
 
-  setDimension({ prevState, layerId, columnId, groupId, previousColumn }) {
+  setDimension({ prevState, layerId, columnId, groupId, previousColumn, frame }) {
     const update: Partial<HeatmapVisualizationState> = {};
     if (groupId === GROUP_ID.X) {
       update.xAccessor = columnId;
     }
     if (groupId === GROUP_ID.Y) {
       update.yAccessor = columnId;
+      const datasource = frame.datasourceLayers[layerId];
+      const operation = datasource?.getOperationForColumnId(columnId);
+      if (operation?.dataType === 'number' && !prevState.gridConfig.ySortPredicate) {
+        update.gridConfig = {
+          ...prevState.gridConfig,
+          ySortPredicate: 'desc',
+        };
+      }
     }
     if (groupId === GROUP_ID.CELL) {
       update.valueAccessor = columnId;

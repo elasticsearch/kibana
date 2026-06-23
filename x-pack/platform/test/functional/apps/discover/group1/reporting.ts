@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+// Serverless test (remove during Scout migration): x-pack/platform/test/serverless/functional/test_suites/discover/x_pack_reporting/reporting.ts
 import expect from '@kbn/expect';
 import type { DurationInputArg2 } from 'moment';
 import moment from 'moment';

@@ -23,11 +23,11 @@ export const registerIngestFlows = (
   };
 
   const KubernetesFlow = dynamic(async () => {
-    const [{ createIngestFlowComponent }, { KubernetesPanel }] = await Promise.all([
+    const [{ createIngestFlowComponent }, { KubernetesOtelPage }] = await Promise.all([
       import('./ingest_flow_wrapper'),
-      import('../application/quickstart_flows/kubernetes'),
+      import('../application/pages/kubernetes_otel'),
     ]);
-    return { default: createIngestFlowComponent(deps, KubernetesPanel) };
+    return { default: createIngestFlowComponent(deps, KubernetesOtelPage) };
   });
 
   plugins.ingestHub?.registerIngestFlow({
@@ -36,7 +36,7 @@ export const registerIngestFlows = (
       defaultMessage: 'Kubernetes',
     }),
     description: i18n.translate('xpack.observability_onboarding.ingestHub.kubernetes.description', {
-      defaultMessage: 'Monitor your Kubernetes cluster with Elastic Agent',
+      defaultMessage: 'Monitor your Kubernetes cluster with OpenTelemetry',
     }),
     icon: 'logoKubernetes',
     category: i18n.translate('xpack.observability_onboarding.ingestHub.category.containers', {

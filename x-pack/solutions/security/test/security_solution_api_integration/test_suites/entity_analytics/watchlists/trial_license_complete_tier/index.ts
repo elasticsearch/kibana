@@ -14,5 +14,7 @@ export default function ({ loadTestFile }: FtrProviderContext) {
     loadTestFile(require.resolve('./entity_store_sync'));
     loadTestFile(require.resolve('./manual_assignment'));
     loadTestFile(require.resolve('./lifecycle'));
+    loadTestFile(require.resolve('./index_source_api_key'));
+    loadTestFile(require.resolve('./watchlist_privileges'));
   });
 }

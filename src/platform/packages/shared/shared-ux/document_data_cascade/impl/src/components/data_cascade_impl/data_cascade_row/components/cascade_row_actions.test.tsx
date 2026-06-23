@@ -13,7 +13,7 @@ import { EuiThemeProvider } from '@elastic/eui';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CascadeRowActions } from './cascade_row_actions';
 
-const headerRowActions = [
+const defaultHeaderRowActions = [
   {
     label: 'Action 1',
     iconType: 'pencil',
@@ -36,25 +36,36 @@ const headerRowActions = [
   },
 ];
 
-const renderComponent = (
-  props: Pick<ComponentProps<typeof CascadeRowActions>, 'isMobile'> = { isMobile: false }
-) => {
+const renderComponent = ({
+  isMobile = false,
+  headerRowActions = defaultHeaderRowActions,
+}: Partial<
+  Pick<ComponentProps<typeof CascadeRowActions>, 'isMobile' | 'headerRowActions'>
+> = {}) => {
   render(
     <EuiThemeProvider>
-      <CascadeRowActions headerRowActions={headerRowActions} {...props} />
+      <CascadeRowActions isMobile={isMobile} headerRowActions={headerRowActions} />
     </EuiThemeProvider>
   );
 };
 
 describe('CascadeRowActions', () => {
   describe('when isMobile is true', () => {
-    it('will only render the select more options button', () => {
+    it('will render the select more options button when the configured actions are more than 1', () => {
       renderComponent({ isMobile: true });
       expect(screen.queryByText('Action 1')).not.toBeInTheDocument();
       expect(screen.queryByText('Action 2')).not.toBeInTheDocument();
       expect(screen.queryByText('Action 3')).not.toBeInTheDocument();
       expect(screen.queryByText('Action 4')).not.toBeInTheDocument();
       expect(screen.getByLabelText('Select more options')).toBeInTheDocument();
+    });
+
+    it('will render the configured action when there is just 1 action', () => {
+      renderComponent({
+        isMobile: true,
+        headerRowActions: defaultHeaderRowActions.slice(0, 1),
+      });
+      expect(screen.getByText('Action 1')).toBeInTheDocument();
     });
   });
 

@@ -43,6 +43,33 @@ describe('EndpointActionFailureMessage', () => {
     expect(renderResult.queryByTestId(testId)).toBeNull();
   });
 
+  it('should show canceled message when action.wasCanceled is true and no errors', () => {
+    action = {
+      ...action,
+      agents: ['agent-a'],
+      isCompleted: true,
+      wasSuccessful: false,
+      wasCanceled: true,
+      hosts: { 'agent-a': { name: 'Agent A' } },
+      errors: undefined,
+      agentState: {
+        'agent-a': {
+          isCompleted: true,
+          wasSuccessful: false,
+          wasCanceled: true,
+          completedAt: new Date().toISOString(),
+          errors: undefined,
+        },
+      },
+      outputs: undefined,
+    };
+    render();
+    const { getByTestId } = renderResult;
+    const element = getByTestId(testId);
+    expect(element).not.toBeNull();
+    expect(element.textContent).toContain('Canceled ');
+  });
+
   it('should render `unknown error` when no errors/outputs', () => {
     action = {
       ...action,
@@ -60,6 +87,7 @@ describe('EndpointActionFailureMessage', () => {
         'agent-fails-a-lot': {
           isCompleted: true,
           wasSuccessful: false,
+          wasCanceled: false,
           completedAt: new Date().toISOString(),
           errors: undefined,
         },
@@ -94,6 +122,7 @@ describe('EndpointActionFailureMessage', () => {
           'agent-fails-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info A', 'Error info B', 'Error info C'],
           },
@@ -134,6 +163,7 @@ describe('EndpointActionFailureMessage', () => {
           'agent-fails-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info A', 'Error info B', 'Error info C'],
           },
@@ -174,6 +204,7 @@ describe('EndpointActionFailureMessage', () => {
           'agent-fails-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info A'],
           },
@@ -219,12 +250,14 @@ describe('EndpointActionFailureMessage', () => {
           'agent-fails-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info A', 'Error info B', 'Error info C'],
           },
           'agent-errs-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info P', 'Error info Q', 'Error info R'],
           },
@@ -281,12 +314,14 @@ describe('EndpointActionFailureMessage', () => {
           'agent-fails-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info A', 'Error info B', 'Error info C'],
           },
           'agent-errs-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info P', 'Error info Q', 'Error info R'],
           },
@@ -336,12 +371,14 @@ describe('EndpointActionFailureMessage', () => {
           'agent-runs-a-lot': {
             isCompleted: true,
             wasSuccessful: true,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: undefined,
           },
           'agent-errs-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: ['Error info P', 'Error info Q', 'Error info R'],
           },
@@ -391,12 +428,14 @@ describe('EndpointActionFailureMessage', () => {
           'agent-runs-a-lot': {
             isCompleted: true,
             wasSuccessful: true,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: undefined,
           },
           'agent-errs-a-lot': {
             isCompleted: true,
             wasSuccessful: false,
+            wasCanceled: false,
             completedAt: new Date().toISOString(),
             errors: [],
           },
@@ -424,6 +463,215 @@ describe('EndpointActionFailureMessage', () => {
       expect(errorMessages.textContent).toContain(
         'The following error was encountered:Host: Errs-a-lotErrors: File path or folder was not found'
       );
+    });
+  });
+
+  describe('when action was canceled', () => {
+    it('should show canceled message for single agent with errors and wasCanceled via output canceled_by=action', () => {
+      action = {
+        ...action,
+        agents: ['agent-a'],
+        command: 'scan',
+        isCompleted: true,
+        wasSuccessful: false,
+        wasCanceled: true,
+        hosts: { 'agent-a': { name: 'Agent A' } },
+        errors: ['Scan stopped'],
+        agentState: {
+          'agent-a': {
+            isCompleted: true,
+            wasSuccessful: false,
+            wasCanceled: true,
+            completedAt: new Date().toISOString(),
+            errors: ['Scan stopped'],
+          },
+        },
+        outputs: {
+          'agent-a': {
+            type: 'json',
+            content: {
+              code: 'ra_scan_error_canceled',
+              canceled_by: 'action',
+              canceled_id: 'cancel-action-id-1',
+            },
+          },
+        },
+      };
+      render();
+      const { getByTestId } = renderResult;
+      const errorMessages = getByTestId(testId);
+      expect(errorMessages).not.toBeNull();
+      expect(errorMessages.textContent).toContain('Canceled by action id: cancel-action-id-1');
+      expect(errorMessages.textContent).toContain('Scan stopped');
+    });
+
+    it('should show manually canceled message for single agent when canceled_by=manual', () => {
+      action = {
+        ...action,
+        agents: ['agent-a'],
+        command: 'scan',
+        isCompleted: true,
+        wasSuccessful: false,
+        wasCanceled: true,
+        hosts: { 'agent-a': { name: 'Agent A' } },
+        errors: ['Scan stopped'],
+        agentState: {
+          'agent-a': {
+            isCompleted: true,
+            wasSuccessful: false,
+            wasCanceled: true,
+            completedAt: new Date().toISOString(),
+            errors: ['Scan stopped'],
+          },
+        },
+        outputs: {
+          'agent-a': {
+            type: 'json',
+            content: {
+              code: 'ra_scan_error_canceled',
+              canceled_by: 'manual',
+              canceled_id: '',
+            },
+          },
+        },
+      };
+      render();
+      const { getByTestId } = renderResult;
+      const errorMessages = getByTestId(testId);
+      expect(errorMessages).not.toBeNull();
+      expect(errorMessages.textContent).toContain('Canceled manually on the host');
+      expect(errorMessages.textContent).toContain('Scan stopped');
+    });
+
+    it('should show canceled message for each agent in multi-agent action when agents are canceled', () => {
+      action = {
+        ...action,
+        agents: ['agent-a', 'agent-b'],
+        command: 'scan',
+        isCompleted: true,
+        wasSuccessful: false,
+        wasCanceled: true,
+        hosts: {
+          'agent-a': { name: 'Agent A' },
+          'agent-b': { name: 'Agent B' },
+        },
+        errors: ['Scan stopped'],
+        agentState: {
+          'agent-a': {
+            isCompleted: true,
+            wasSuccessful: false,
+            wasCanceled: true,
+            completedAt: new Date().toISOString(),
+            errors: ['Scan stopped on A'],
+          },
+          'agent-b': {
+            isCompleted: true,
+            wasSuccessful: false,
+            wasCanceled: true,
+            completedAt: new Date().toISOString(),
+            errors: ['Scan stopped on B'],
+          },
+        },
+        outputs: {
+          'agent-a': {
+            type: 'json',
+            content: {
+              code: 'ra_scan_error_canceled',
+              canceled_by: 'action',
+              canceled_id: 'cancel-id-abc',
+            },
+          },
+          'agent-b': {
+            type: 'json',
+            content: {
+              code: 'ra_scan_error_canceled',
+              canceled_by: 'manual',
+              canceled_id: '',
+            },
+          },
+        },
+      };
+      render();
+      const { getByTestId } = renderResult;
+      const errorMessages = getByTestId(testId);
+      expect(errorMessages).not.toBeNull();
+      expect(errorMessages.textContent).toContain('Host: Agent A');
+      expect(errorMessages.textContent).toContain('Canceled by action id: cancel-id-abc');
+      expect(errorMessages.textContent).toContain('Scan stopped on A');
+      expect(errorMessages.textContent).toContain('Host: Agent B');
+      expect(errorMessages.textContent).toContain('Canceled manually on the host');
+      expect(errorMessages.textContent).toContain('Scan stopped on B');
+    });
+  });
+
+  describe('when agentId prop is provided', () => {
+    beforeEach(() => {
+      action = {
+        ...action,
+        agents: ['agent-a', 'agent-b'],
+        command: 'scan',
+        isCompleted: true,
+        wasSuccessful: false,
+        hosts: {
+          'agent-a': { name: 'Agent A' },
+          'agent-b': { name: 'Agent B' },
+        },
+        errors: ['Error for A', 'Error for B'],
+        agentState: {
+          'agent-a': {
+            isCompleted: true,
+            wasSuccessful: false,
+            wasCanceled: false,
+            completedAt: new Date().toISOString(),
+            errors: ['Error for A'],
+          },
+          'agent-b': {
+            isCompleted: true,
+            wasSuccessful: true,
+            wasCanceled: false,
+            completedAt: new Date().toISOString(),
+            errors: undefined,
+          },
+        },
+        outputs: {
+          'agent-a': {
+            type: 'json',
+            content: { code: 'ra_scan_error_queue-quota' },
+          },
+          'agent-b': {
+            type: 'json',
+            content: { code: 'ra_scan_success' },
+          },
+        },
+      };
+    });
+
+    it('should render null when the specified agentId was successful', () => {
+      renderResult = appTestContext.render(
+        <EndpointActionFailureMessage
+          action={action}
+          agentId="agent-b"
+          data-test-subj={testPrefix}
+        />
+      );
+      expect(renderResult.queryByTestId(testId)).toBeNull();
+    });
+
+    it('should show only the errors for the specified agentId', () => {
+      renderResult = appTestContext.render(
+        <EndpointActionFailureMessage
+          action={action}
+          agentId="agent-a"
+          data-test-subj={testPrefix}
+        />
+      );
+      const errorMessages = renderResult.getByTestId(testId);
+      expect(errorMessages).not.toBeNull();
+      expect(errorMessages.textContent).toContain('Too many scans are queued');
+      expect(errorMessages.textContent).toContain('Error for A');
+      expect(errorMessages.textContent).not.toContain('Error for B');
+      expect(errorMessages.textContent).not.toContain('Agent A');
+      expect(errorMessages.textContent).not.toContain('Agent B');
     });
   });
 });

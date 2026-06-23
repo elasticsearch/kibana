@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/securitysolution-io-ts-utils'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/security-detection-engine'
+  defaultOwner: '@elastic/security-detection-engineering'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/securitysolution-io-ts-utils'
   description: Moon project for @kbn/securitysolution-io-ts-utils
   channel: ''
-  owner: '@elastic/security-detection-engine'
+  owner: '@elastic/security-detection-engineering'
   sourceRoot: src/platform/packages/shared/kbn-securitysolution-io-ts-utils
 dependsOn:
   - '@kbn/datemath'

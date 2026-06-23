@@ -28,6 +28,23 @@ interface SearchWorkflowExecutionsParams {
   page?: number;
 }
 
+/** Fields required to build {@link WorkflowExecutionListDto} without fetching full execution snapshots. */
+export const WORKFLOW_EXECUTION_LIST_SOURCE_INCLUDES = [
+  'spaceId',
+  'stepId',
+  'status',
+  'error',
+  'isTestRun',
+  'startedAt',
+  'finishedAt',
+  'duration',
+  'workflowId',
+  'triggeredBy',
+  'executedBy',
+  'createdBy',
+  'concurrencyGroupKey',
+] as const;
+
 export const searchWorkflowExecutions = async ({
   esClient,
   logger,
@@ -44,6 +61,7 @@ export const searchWorkflowExecutions = async ({
     const response = await esClient.search<EsWorkflowExecution>({
       index: workflowExecutionIndex,
       query,
+      _source: { includes: [...WORKFLOW_EXECUTION_LIST_SOURCE_INCLUDES] },
       sort,
       size,
       from,

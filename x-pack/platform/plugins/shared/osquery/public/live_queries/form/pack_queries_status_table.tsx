@@ -36,7 +36,10 @@ import { AddToTimelineButton } from '../../timelines/add_to_timeline_button';
 import { TagsColumn } from '../../actions/components/tags_column';
 import { RowKebabMenu } from './row_kebab_menu';
 import { useIsExperimentalFeatureEnabled } from '../../common/experimental_features_context';
-import { ExportFiltersProvider } from '../../results/export_filters_context';
+import {
+  ExportFiltersProvider,
+  useExportFiltersContext,
+} from '../../results/export_filters_context';
 import type { AddToTimelineHandler } from '../../types';
 
 const truncateTooltipTextCss = {
@@ -193,6 +196,7 @@ const PackQueriesStatusTableComponent: React.FC<PackQueriesStatusTableProps> = (
   onSaveQuery,
 }) => {
   const isHistoryEnabled = useIsExperimentalFeatureEnabled('queryHistoryRework');
+  const exportFiltersStore = useExportFiltersContext();
   const [queryDetailsFlyoutOpen, setQueryDetailsFlyoutOpen] = useState<{
     id: string;
     query: string;
@@ -334,6 +338,12 @@ const PackQueriesStatusTableComponent: React.FC<PackQueriesStatusTableProps> = (
         const itemIdToExpandedRowMapValues = { ...prevValue };
         if (itemIdToExpandedRowMapValues[item.id]) {
           delete itemIdToExpandedRowMapValues[item.id];
+          // Row is being collapsed: clear the store entry so a later expand
+          // doesn't read stale filter state. This is the correct owner for
+          // the clear signal because it can't be confused by a tab switch.
+          if (item.action_id) {
+            exportFiltersStore?.clearFilters(item.action_id);
+          }
         } else {
           itemIdToExpandedRowMapValues[item.id] = (
             <EuiFlexGroup gutterSize="none">
@@ -359,7 +369,16 @@ const PackQueriesStatusTableComponent: React.FC<PackQueriesStatusTableProps> = (
         return itemIdToExpandedRowMapValues;
       });
     },
-    [actionId, startDate, expirationDate, agentIds, addToTimeline, scheduleId, executionCount]
+    [
+      actionId,
+      exportFiltersStore,
+      startDate,
+      expirationDate,
+      agentIds,
+      addToTimeline,
+      scheduleId,
+      executionCount,
+    ]
   );
 
   const renderToggleResultsAction = useCallback(

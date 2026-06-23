@@ -51,6 +51,7 @@ RuleExecutionPipeline
    |
    +--> middleware chain wraps each step
    |
+   +--> CheckEngineEnabledStep
    +--> WaitForResourcesStep
    +--> FetchRuleStep
    +--> ValidateRuleStep
@@ -158,14 +159,15 @@ Step order is defined in `setup/bind_rule_executor.ts`.
 
 | # | Step | Responsibility |
 | --- | --- | --- |
-| 1 | `WaitForResourcesStep` | Ensure required Elasticsearch resources exist before doing work. |
-| 2 | `FetchRuleStep` | Load the current rule saved object. |
-| 3 | `ValidateRuleStep` | Halt early if the rule cannot run, for example because it is disabled. |
-| 4 | `ExecuteRuleQueryStep` | Build and run ES\|QL, emitting streamed row batches. |
-| 5 | `CreateAlertEventsStep` | Turn a row batch into breached rule events. |
-| 6 | `CreateRecoveryEventsStep` | Append recovery events for alert rules when configured. |
-| 7 | `DirectorStep` | Enrich alert-type events with episode state. |
-| 8 | `StoreAlertEventsStep` | Persist the final batch into `.rule-events`. |
+| 1 | `CheckEngineEnabledStep` | Halt before any work when the `alerting:v2:enabled` advanced setting is off. |
+| 2 | `WaitForResourcesStep` | Ensure required Elasticsearch resources exist before doing work. |
+| 3 | `FetchRuleStep` | Load the current rule saved object. |
+| 4 | `ValidateRuleStep` | Halt early if the rule cannot run, for example because it is disabled. |
+| 5 | `ExecuteRuleQueryStep` | Build and run ES\|QL, emitting streamed row batches. |
+| 6 | `CreateAlertEventsStep` | Turn a row batch into breached rule events. |
+| 7 | `CreateRecoveryEventsStep` | Append recovery events for alert rules when configured. |
+| 8 | `DirectorStep` | Enrich alert-type events with episode state. |
+| 9 | `StoreAlertEventsStep` | Persist the final batch into `.rule-events`. |
 
 ## Recovery behavior
 
@@ -241,6 +243,7 @@ For each breached ES\|QL row, the executor:
 | --- | --- |
 | `rule_deleted` | The saved object no longer exists. |
 | `rule_disabled` | The rule is present but disabled. |
+| `engine_disabled` | The `alerting:v2:enabled` advanced setting is off. Task state is preserved so execution resumes when it is turned back on. |
 | `state_not_ready` | A step ran without required upstream state. Usually indicates ordering or stream wiring misuse. |
 
 ## Middleware vs decorators
@@ -331,6 +334,7 @@ export interface RulePipelineState {
 Add the export to `steps/index.ts`, then register it in `setup/bind_rule_executor.ts`.
 
 ```typescript
+bind(RuleExecutionStepsToken).to(CheckEngineEnabledStep).inSingletonScope();
 bind(RuleExecutionStepsToken).to(WaitForResourcesStep).inSingletonScope();
 bind(RuleExecutionStepsToken).to(FetchRuleStep).inRequestScope();
 bind(RuleExecutionStepsToken).to(ValidateRuleStep).inSingletonScope();

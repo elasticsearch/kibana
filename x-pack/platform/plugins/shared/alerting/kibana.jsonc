@@ -31,7 +31,8 @@
       "spaces",
       "serverless",
       "maintenanceWindows",
-      "cps"
+      "cps",
+      "cloud"
     ],
     "extraPublicDirs": ["common", "common/parse_duration"]
   }

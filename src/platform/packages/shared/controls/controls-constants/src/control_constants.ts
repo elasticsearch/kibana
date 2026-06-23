@@ -17,3 +17,10 @@ export const DEFAULT_DATA_CONTROL_STATE = {
   use_global_filters: true,
   ignore_validations: false,
 };
+
+export enum ControlValuesSource {
+  FIELD = 'field',
+  ESQL = 'esql',
+}
+export const DEFAULT_CONTROL_VALUES_SOURCE = ControlValuesSource.FIELD;
+export const SELECTIONS_MAX = 10000;

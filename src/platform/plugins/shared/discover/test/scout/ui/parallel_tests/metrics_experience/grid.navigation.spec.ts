@@ -101,7 +101,7 @@ spaceTest.describe(
       await expect(metricsExperience.grid).toBeVisible();
 
       await spaceTest.step('search filters results across all pages', async () => {
-        await metricsExperience.searchMetric(SEARCH_METRIC_NAME);
+        await metricsExperience.searchMetric(`${SEARCH_METRIC_NAME}*`);
         await expect(metricsExperience.cards).toHaveCount(1);
       });
 
@@ -115,6 +115,25 @@ spaceTest.describe(
         await metricsExperience.clearSearch();
         await expect(metricsExperience.emptyState).toBeHidden();
         await expect(metricsExperience.cards).toHaveCount(PAGE_SIZE);
+      });
+
+      await spaceTest.step('space-separated search matches non-contiguous name', async () => {
+        await metricsExperience.searchMetric('gauge 22');
+        await expect(metricsExperience.cards).toHaveCount(1);
+        await metricsExperience.waitForFirstCard('gauge_22-0');
+      });
+
+      await spaceTest.step('wildcard search matches metric name pattern', async () => {
+        await metricsExperience.clearSearch();
+        await metricsExperience.searchMetric('*_0');
+        await expect(metricsExperience.cards).toHaveCount(2);
+      });
+
+      await spaceTest.step('typo-tolerant search finds metric', async () => {
+        await metricsExperience.clearSearch();
+        await metricsExperience.searchMetric('gauuge_0');
+        await expect(metricsExperience.cards).toHaveCount(1);
+        await metricsExperience.waitForFirstCard('gauge_0-0');
       });
     });
 

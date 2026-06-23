@@ -358,6 +358,20 @@ export function InfraHomePageProvider({ getService, getPageObjects }: FtrProvide
       return testSubjects.findAll('anomalyRow');
     },
     async setAnomaliesDate(date: string) {
+      if (await testSubjects.exists('dateRangePickerControlButton', { timeout: 2000 })) {
+        // New DateRangePicker: open custom range panel and set the start date,
+        // leaving the existing end date untouched.
+        await testSubjects.click('dateRangePickerControlButton');
+        await testSubjects.click('dateRangePickerCustomRangeNavItem');
+        await testSubjects.existOrFail('dateRangePickerCustomRangePanel', { timeout: 5000 });
+        await testSubjects.click('dateRangePickerStartAbsoluteTab');
+        const startInput = await testSubjects.find('dateRangePickerStartAbsoluteInput');
+        await startInput.clearValueWithKeyboard();
+        await startInput.type(date);
+        await testSubjects.click('dateRangePickerCustomRangeApplyButton');
+        await testSubjects.missingOrFail('dateRangePickerPopoverPanel', { timeout: 5000 });
+        return;
+      }
       await testSubjects.click('superDatePickerShowDatesButton');
       await testSubjects.click('superDatePickerAbsoluteTab');
       const datePickerInput = await testSubjects.find('superDatePickerAbsoluteDateInput');

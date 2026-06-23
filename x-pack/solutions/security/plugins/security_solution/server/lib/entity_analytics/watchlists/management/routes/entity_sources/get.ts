@@ -17,11 +17,13 @@ import { WatchlistDataSources } from '../../../../../../../common/api/entity_ana
 import type { EntityAnalyticsRoutesDeps } from '../../../../types';
 import { withMinimumLicense } from '../../../../utils/with_minimum_license';
 import { WatchlistEntitySourceClient } from '../../../entity_sources/infra';
-import { getRequestSavedObjectClient } from '../../../shared/utils';
+import { getWatchlistSavedObjectClient } from '../../../shared/utils';
 
 export const getEntitySourceRoute = (
   router: EntityAnalyticsRoutesDeps['router'],
-  logger: Logger
+  logger: Logger,
+  getStartServices: EntityAnalyticsRoutesDeps['getStartServices'],
+  hasEncryptionKey: EntityAnalyticsRoutesDeps['hasEncryptionKey']
 ) => {
   router.versioned
     .get({
@@ -54,8 +56,12 @@ export const getEntitySourceRoute = (
             const secSol = await context.securitySolution;
             const core = await context.core;
             const client = new WatchlistEntitySourceClient({
-              soClient: getRequestSavedObjectClient(core),
+              soClient: getWatchlistSavedObjectClient(core),
               namespace: secSol.getSpaceId(),
+              getStartServices,
+              esClient: core.elasticsearch.client.asCurrentUser,
+              logger,
+              hasEncryptionKey,
             });
             const body = await client.get(request.params.id);
             return response.ok({ body });

@@ -14,13 +14,11 @@ import {
 import type { CompactionStructuredData, CompactionSummary } from '@kbn/agent-builder-common';
 import type { AgentEventEmitterFn } from '@kbn/agent-builder-server';
 import { createAttachmentStateManager } from '@kbn/agent-builder-server/attachments';
+import { estimateTokens } from '@kbn/agent-builder-genai-utils/tools/utils/token_count';
 import type { ProcessedConversation, ProcessedConversationRound } from './prepare_conversation';
 import type { ContextBudget } from './context_budget';
-import {
-  compactConversation,
-  serializeCompactionSummary,
-  extractProgrammaticSummary,
-} from './conversation_compactor';
+import { compactConversation, extractProgrammaticSummary } from './conversation_compactor';
+import { serializeCompactionSummary } from './compaction_serialize';
 
 const mockLogger: Logger = {
   info: jest.fn(),
@@ -84,6 +82,10 @@ const createMockConversation = (rounds: ProcessedConversationRound[]): Processed
     getTypeDefinition: () => undefined,
   } as any),
 });
+
+// Stand-in for the per-round vector computed upstream by estimatePerRoundTokens.
+const countsFor = (conversation: ProcessedConversation): number[] =>
+  conversation.previousRounds.map((round) => estimateTokens(JSON.stringify(round)));
 
 const createMockChatModel = () =>
   ({
@@ -210,6 +212,7 @@ describe('compactConversation', () => {
 
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel: createMockChatModel(),
       contextBudget: budget,
       logger: mockLogger,
@@ -239,6 +242,7 @@ describe('compactConversation', () => {
     const chatModel = createMockChatModel();
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel,
       contextBudget: budget,
       logger: mockLogger,
@@ -265,6 +269,7 @@ describe('compactConversation', () => {
 
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel: createMockChatModel(),
       contextBudget: budget,
       logger: mockLogger,
@@ -322,6 +327,7 @@ describe('compactConversation', () => {
 
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel: createMockChatModel(),
       contextBudget: budget,
       existingSummary,
@@ -373,6 +379,7 @@ describe('compactConversation', () => {
     const chatModel = createMockChatModel();
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel,
       contextBudget: budget,
       existingSummary,
@@ -402,6 +409,7 @@ describe('compactConversation', () => {
 
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel: createMockChatModel(),
       contextBudget: budget,
       logger: mockLogger,
@@ -425,6 +433,7 @@ describe('compactConversation', () => {
 
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel: createMockChatModel(),
       contextBudget: budget,
       logger: mockLogger,
@@ -445,6 +454,7 @@ describe('compactConversation', () => {
 
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel: createMockChatModel(),
       contextBudget: budget,
       logger: mockLogger,
@@ -471,6 +481,7 @@ describe('compactConversation', () => {
 
     const result = await compactConversation({
       processedConversation: conversation,
+      perRoundTokenCounts: countsFor(conversation),
       chatModel: createMockChatModel(),
       contextBudget: budget,
       logger: mockLogger,
@@ -507,6 +518,7 @@ describe('compactConversation', () => {
 
       await compactConversation({
         processedConversation: conversation,
+        perRoundTokenCounts: countsFor(conversation),
         chatModel: createMockChatModel(),
         contextBudget: noCompactionBudget,
         logger: mockLogger,
@@ -528,6 +540,7 @@ describe('compactConversation', () => {
 
       await compactConversation({
         processedConversation: conversation,
+        perRoundTokenCounts: countsFor(conversation),
         chatModel: createMockChatModel(),
         contextBudget: compactionBudget,
         logger: mockLogger,
@@ -557,6 +570,7 @@ describe('compactConversation', () => {
 
       const result = await compactConversation({
         processedConversation: conversation,
+        perRoundTokenCounts: countsFor(conversation),
         chatModel: createMockChatModel(),
         contextBudget: compactionBudget,
         logger: mockLogger,
@@ -579,6 +593,7 @@ describe('compactConversation', () => {
 
       const result = await compactConversation({
         processedConversation: conversation,
+        perRoundTokenCounts: countsFor(conversation),
         chatModel: createMockChatModel(),
         contextBudget: compactionBudget,
         logger: mockLogger,
@@ -603,6 +618,7 @@ describe('compactConversation', () => {
       // No eventEmitter passed — should not throw
       const result = await compactConversation({
         processedConversation: conversation,
+        perRoundTokenCounts: countsFor(conversation),
         chatModel: createMockChatModel(),
         contextBudget: compactionBudget,
         logger: mockLogger,

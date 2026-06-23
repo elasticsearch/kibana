@@ -97,15 +97,21 @@ Note: this component uses `@kbn/i18n-react`. In Jest/component tests wrap with `
 
 - **`FrozenPhaseCard`** (`dlm_phases_selector/frozen_phase_card.tsx`)
   - **Purpose**: optional **Frozen** phase configuration (move-to-frozen after a duration).
-  - **Gating/disable behavior**:
-    - The parent selector computes a `disabledReason` when either:
-      - **No Enterprise license** → badge label "Enterprise required" with `iconType: 'lock'`.
-      - **No default snapshot repository** → badge label "Default repository required" with `iconType: 'warning'`.
-    - When a `disabledReason` is present, the card is disabled and the config UI is hidden even if `duration.enabled` is true.
+  - **Self-contained gating**: the card receives the raw requirement booleans (`hasEnterpriseLicense`, `hasDefaultSnapshotRepository`) plus the data needed to act on them (`canCreateDefaultSnapshotRepository`, `createDefaultRepositoryUrl`, `enterprise`, `onRefreshDefaultSnapshotRepository`), and derives the gating/grace behavior internally. The card also **owns and renders the gating modals** (`EnterpriseGatingModal` and `DefaultSnapshotRepositoryRequiredModal`): both the disabled-state badge and the grace-state callout open the same modal, so the parent no longer manages modal state. The card also captures whether the phase was active on first render to decide the grace state.
+  - **Disabled + badge behavior** (phase **not** active and a requirement is missing):
+    - **No Enterprise license** → "Enterprise required" badge (clicking it opens the `EnterpriseGatingModal`).
+    - **No default snapshot repository** → "Default repository required" badge (clicking it opens the `DefaultSnapshotRepositoryRequiredModal`). Enterprise takes precedence when both are missing.
+    - The card is disabled and the config UI is hidden even if `duration.enabled` is true.
+  - **Grace state (existing template with frozen already active)**:
+    - When the card mounts with `duration.enabled === true` (e.g. editing an existing template) but a requirement is missing, it keeps the phase **enabled** and renders warning callouts instead of a badge, matching the order used by the Streams DLM frozen configuration flyout:
+      - `FrozenEnterpriseRequiredCallout` renders **above** the configuration when the Enterprise license is missing; its "Upgrade to enterprise" button opens the same `EnterpriseGatingModal` as the badge.
+      - `FrozenDefaultRepositoryRequiredCallout` renders **inside the Searchable snapshot section** when the default repository is missing; its "Create default repository" button opens the same `DefaultSnapshotRepositoryRequiredModal` as the badge (disabled when `canCreateDefaultSnapshotRepository` is false), and its refresh button revalidates via `onRefreshDefaultSnapshotRepository`.
+    - While a warning callout is shown the phase configuration inputs (move-after duration) are **disabled** until the warning is resolved or the phase is turned off.
+    - The user can resolve the warning or **uncheck** the phase. Once unchecked while a requirement is missing, the card collapses back to the disabled + badge state (and the badge/modal for the situation). It can't be re-enabled until the requirement is satisfied.
   - **What it renders when enabled**:
     - `DurationFields` labeled "Move after …"
-    - A "Searchable snapshot" info row plus `SearchableSnapshotRepositoryInfo` when `defaultSnapshotRepository` is provided.
-  - **Props**: `duration`/`durationError`/`helpText`/`onChange`, `disabled` + optional `disabledReason`, `isFormDisabled`, plus `defaultSnapshotRepository` and `manageRepositoriesHref`.
+    - A "Searchable snapshot" info row plus `SearchableSnapshotRepositoryInfo` when `defaultSnapshotRepository` is provided (or the default-repository warning callout in the grace state).
+  - **Props**: `duration`/`durationError`/`helpText`/`onChange`, `isFormDisabled`, `defaultSnapshotRepository`, `manageRepositoriesHref`, the requirement booleans `hasEnterpriseLicense`/`hasDefaultSnapshotRepository`, and the data the card needs to drive its own modals: `canCreateDefaultSnapshotRepository`, `createDefaultRepositoryUrl`, `enterprise` (all required), plus the optional `onRefreshDefaultSnapshotRepository` callback.
 
 - **`DeletePhaseCard`** (`dlm_phases_selector/delete_phase_card.tsx`)
   - **Purpose**: optional **Delete** phase configuration (delete after a duration).

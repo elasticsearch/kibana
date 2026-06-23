@@ -17,6 +17,8 @@ import {
   httpServerMock,
   loggingSystemMock,
 } from '@kbn/core/server/mocks';
+import type { FakeRawRequest } from '@kbn/core-http-server';
+import { kibanaRequestFactory } from '@kbn/core-http-server-utils';
 import { nextTick } from '@kbn/test-jest-helpers';
 
 import { prefixCommaSeparatedValues, UserProfileService } from './user_profile_service';
@@ -39,6 +41,7 @@ describe('UserProfileService', () => {
   let mockStartParams: {
     clusterClient: ReturnType<typeof elasticsearchServiceMock.createClusterClient>;
     session: ReturnType<typeof sessionMock.create>;
+    getCurrentUser: jest.Mock;
   };
   let mockAuthz: ReturnType<typeof authorizationMock.create>;
   let userProfileService: UserProfileService;
@@ -46,6 +49,7 @@ describe('UserProfileService', () => {
     mockStartParams = {
       clusterClient: elasticsearchServiceMock.createClusterClient(),
       session: sessionMock.create(),
+      getCurrentUser: jest.fn().mockReturnValue(null),
     };
     mockAuthz = authorizationMock.create();
 
@@ -465,6 +469,170 @@ describe('UserProfileService', () => {
         ).not.toHaveBeenCalled();
 
         expect(securityTelemetry.recordGetCurrentProfileInvocation).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('with enriched fake request (profile_uid on authenticated user)', () => {
+      let enrichedFakeRequest: ReturnType<typeof httpServerMock.createFakeKibanaRequest>;
+
+      beforeEach(() => {
+        enrichedFakeRequest = httpServerMock.createFakeKibanaRequest({});
+      });
+
+      afterEach(() => {
+        logger.warn.mockClear();
+      });
+
+      it('resolves the profile directly via profile_uid without session or API key lookup', async () => {
+        const mockCurrentUser = securityMock.createMockAuthenticatedUser({
+          profile_uid: 'enriched-profile-uid',
+        });
+        mockStartParams.getCurrentUser.mockReturnValue(mockCurrentUser);
+
+        const startContract = userProfileService.start(mockStartParams);
+        await expect(
+          startContract.getCurrent({ request: enrichedFakeRequest })
+        ).resolves.toMatchObject({
+          uid: 'UID',
+        });
+
+        expect(
+          mockStartParams.clusterClient.asInternalUser.security.getUserProfile
+        ).toHaveBeenCalledWith({ uid: 'enriched-profile-uid', data: undefined });
+        expect(mockStartParams.session.getSID).not.toHaveBeenCalled();
+
+        expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
+          outcome: 'success',
+          fakeRequestProfileResolution: true,
+        });
+      });
+
+      it('passes dataPath when resolving profile via profile_uid', async () => {
+        const mockCurrentUser = securityMock.createMockAuthenticatedUser({
+          profile_uid: 'enriched-profile-uid',
+        });
+        mockStartParams.getCurrentUser.mockReturnValue(mockCurrentUser);
+
+        const startContract = userProfileService.start(mockStartParams);
+        await expect(
+          startContract.getCurrent({ request: enrichedFakeRequest, dataPath: 'some.path' })
+        ).resolves.toMatchObject({ uid: 'UID' });
+
+        expect(
+          mockStartParams.clusterClient.asInternalUser.security.getUserProfile
+        ).toHaveBeenCalledWith({
+          uid: 'enriched-profile-uid',
+          data: 'kibana.some.path',
+        });
+
+        expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
+          outcome: 'success',
+          fakeRequestProfileResolution: true,
+        });
+      });
+
+      it('skips the fast path (without warning) when the fake request has no profile_uid on the current user', async () => {
+        mockStartParams.getCurrentUser.mockReturnValue(
+          securityMock.createMockAuthenticatedUser({ profile_uid: undefined })
+        );
+
+        const authenticatedEnrichedFakeRequest = kibanaRequestFactory({
+          headers: {},
+          path: '/',
+          auth: { isAuthenticated: true },
+        } as FakeRawRequest);
+
+        mockStartParams.session.getSID.mockResolvedValue('some-session-id');
+        mockStartParams.session.get.mockResolvedValue({
+          error: null,
+          value: sessionMock.createValue({ userProfileId: mockUserProfile.uid }),
+        });
+
+        const startContract = userProfileService.start(mockStartParams);
+        await expect(
+          startContract.getCurrent({ request: authenticatedEnrichedFakeRequest })
+        ).resolves.toMatchObject({ uid: 'UID' });
+
+        expect(logger.warn).not.toHaveBeenCalled();
+        expect(mockStartParams.session.getSID).toHaveBeenCalled();
+      });
+
+      it('surfaces the error when the enriched profile_uid is not found in Elasticsearch', async () => {
+        const mockCurrentUser = securityMock.createMockAuthenticatedUser({
+          profile_uid: 'missing-uid',
+        });
+        mockStartParams.getCurrentUser.mockReturnValue(mockCurrentUser);
+        mockStartParams.clusterClient.asInternalUser.security.getUserProfile.mockResolvedValue({
+          profiles: [],
+        } as unknown as SecurityGetUserProfileResponse);
+
+        const startContract = userProfileService.start(mockStartParams);
+        await expect(
+          startContract.getCurrent({ request: enrichedFakeRequest })
+        ).rejects.toThrowError(/User profile is not found/);
+
+        expect(
+          mockStartParams.clusterClient.asInternalUser.security.getUserProfile
+        ).toHaveBeenCalledWith({ uid: 'missing-uid', data: undefined });
+        expect(mockStartParams.session.getSID).not.toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('[fake=true]'));
+        expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
+          outcome: 'failure',
+          fakeRequestProfileResolution: true,
+        });
+      });
+
+      it('surfaces the error when the cluster getUserProfile call rejects on a fake-request lookup', async () => {
+        const mockCurrentUser = securityMock.createMockAuthenticatedUser({
+          profile_uid: 'enriched-profile-uid',
+        });
+        mockStartParams.getCurrentUser.mockReturnValue(mockCurrentUser);
+        mockStartParams.clusterClient.asInternalUser.security.getUserProfile.mockRejectedValueOnce(
+          new Error('boom')
+        );
+
+        const startContract = userProfileService.start(mockStartParams);
+        await expect(
+          startContract.getCurrent({ request: enrichedFakeRequest })
+        ).rejects.toThrowError(/boom/);
+
+        expect(mockStartParams.session.getSID).not.toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('[fake=true]'));
+        expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
+          outcome: 'failure',
+          fakeRequestProfileResolution: true,
+        });
+      });
+    });
+
+    it('does not use the profile_uid fast path for real requests (uses session / API key resolution instead)', async () => {
+      const mockCurrentUser = securityMock.createMockAuthenticatedUser({
+        profile_uid: 'enriched-profile-uid',
+      });
+      mockStartParams.getCurrentUser.mockReturnValue(mockCurrentUser);
+      mockStartParams.session.getSID.mockResolvedValue('some-session-id');
+      mockStartParams.session.get.mockResolvedValue({
+        error: null,
+        value: sessionMock.createValue({ userProfileId: mockUserProfile.uid }),
+      });
+
+      const startContract = userProfileService.start(mockStartParams);
+      await expect(startContract.getCurrent({ request: mockRequest })).resolves.toMatchObject({
+        uid: 'UID',
+      });
+
+      expect(
+        mockStartParams.clusterClient.asInternalUser.security.getUserProfile
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        mockStartParams.clusterClient.asInternalUser.security.getUserProfile
+      ).toHaveBeenCalledWith({ uid: 'UID', data: undefined });
+      expect(
+        mockStartParams.clusterClient.asInternalUser.security.getUserProfile
+      ).not.toHaveBeenCalledWith(expect.objectContaining({ uid: 'enriched-profile-uid' }));
+
+      expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
+        outcome: 'success',
       });
     });
 

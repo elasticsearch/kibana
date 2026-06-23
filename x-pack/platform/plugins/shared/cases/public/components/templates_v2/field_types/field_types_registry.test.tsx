@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 
 import { ParsedTemplateDefinitionSchema } from '../../../../common/types/domain/template/latest';
 

@@ -6,7 +6,8 @@
  */
 
 export const mockPlainIndexSync = jest.fn();
-
-export const createIndexSyncService = jest.fn().mockImplementation(() => ({
+export const mockCreateIndexSyncService = jest.fn().mockImplementation(() => ({
   plainIndexSync: mockPlainIndexSync,
 }));
+
+export const createIndexSyncService = mockCreateIndexSyncService;

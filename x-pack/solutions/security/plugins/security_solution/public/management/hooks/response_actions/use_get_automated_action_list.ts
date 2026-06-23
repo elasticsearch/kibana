@@ -171,6 +171,7 @@ const combineResponse = (
     isExpired: !!responseData?.isExpired,
     wasSuccessful: responseData.status === 'successful',
     status: responseData.status,
+    wasCanceled: false,
     agentState: {},
     errors: action.error ? [action.error.message as string] : undefined,
   };

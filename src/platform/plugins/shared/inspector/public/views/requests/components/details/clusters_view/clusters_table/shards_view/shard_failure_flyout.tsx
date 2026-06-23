@@ -11,13 +11,14 @@ import React from 'react';
 import type { estypes } from '@elastic/elasticsearch';
 import { i18n } from '@kbn/i18n';
 import {
-  EuiButtonIcon,
   EuiButtonEmpty,
+  EuiButtonIcon,
   EuiFlyout,
   EuiFlyoutBody,
   EuiFlyoutFooter,
   EuiFlyoutHeader,
   EuiTitle,
+  EuiToolTip,
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { ShardFailureTable } from './shard_failure_table';
@@ -43,7 +44,9 @@ export function ShardFailureFlyout({ failures, onClose }: Props) {
       <EuiFlyoutHeader hasBorder>
         <EuiTitle size="s">
           <h1 id={flyoutTitleId}>
-            <EuiButtonIcon iconType="sortLeft" onClick={onClose} aria-label={backButtonLabel} />
+            <EuiToolTip content={backButtonLabel} disableScreenReaderOutput>
+              <EuiButtonIcon iconType="sortLeft" onClick={onClose} aria-label={backButtonLabel} />
+            </EuiToolTip>
             {i18n.translate('inspector.requests.clusters.shards.flyoutTitle', {
               defaultMessage:
                 '{failedShardCount} failed {failedShardCount, plural, one {shard} other {shards}}',

@@ -9,19 +9,21 @@ import { setMockValues, setMockActions } from '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import type { ShallowWrapper } from 'enzyme';
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiFormRow } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { EditingColumn } from './editing_column';
+import type { EditingRenderFlags } from './types';
 
 describe('EditingColumn', () => {
   const column = {
     name: 'foo',
     field: 'foo',
     render: jest.fn(),
-    editingRender: jest.fn<any, any, any>(() => <div data-test-subj="editing-view" />),
+    editingRender: jest.fn<React.ReactNode, [any, (value: string) => void, EditingRenderFlags]>(
+      () => <div data-test-subj="editing-view" />
+    ),
   };
 
   const requiredProps = {
@@ -45,12 +47,11 @@ describe('EditingColumn', () => {
   });
 
   it('renders', () => {
-    const wrapper = shallow(<EditingColumn {...requiredProps} />);
-    expect(wrapper.isEmptyRender()).toBe(false);
+    const { container } = renderWithKibanaRenderContext(<EditingColumn {...requiredProps} />);
+    expect(container).not.toBeEmptyDOMElement();
   });
 
   describe('when there is a form error for this field', () => {
-    let wrapper: ShallowWrapper;
     beforeEach(() => {
       setMockValues({
         ...mockValues,
@@ -58,44 +59,38 @@ describe('EditingColumn', () => {
           foo: 'I am an error for foo and should be displayed',
         },
       });
-
-      wrapper = shallow(
-        <EditingColumn
-          {...{
-            ...requiredProps,
-            column: {
-              ...column,
-              field: 'foo',
-            },
-          }}
-        />
-      );
     });
 
     it('renders field errors for this field if any are present', () => {
-      expect(shallow(wrapper.find(EuiFormRow).prop('helpText') as any).html()).toContain(
-        'I am an error for foo and should be displayed'
+      renderWithKibanaRenderContext(
+        <EditingColumn {...{ ...requiredProps, column: { ...column, field: 'foo' } }} />
       );
+      expect(screen.getByText('I am an error for foo and should be displayed')).toBeInTheDocument();
     });
 
     it('renders as invalid', () => {
-      expect(wrapper.find(EuiFormRow).prop('isInvalid')).toBe(true);
+      renderWithKibanaRenderContext(
+        <EditingColumn {...{ ...requiredProps, column: { ...column, field: 'foo' } }} />
+      );
+      expect(column.editingRender.mock.calls[0][2]).toEqual(
+        expect.objectContaining({ isInvalid: true })
+      );
     });
   });
 
   describe('when there is a form error for this row', () => {
-    let wrapper: ShallowWrapper;
     beforeEach(() => {
       setMockValues({
         ...mockValues,
         rowErrors: ['I am an error for this row'],
       });
-
-      wrapper = shallow(<EditingColumn {...requiredProps} />);
     });
 
     it('renders as invalid', () => {
-      expect(wrapper.find(EuiFormRow).prop('isInvalid')).toBe(true);
+      renderWithKibanaRenderContext(<EditingColumn {...requiredProps} />);
+      expect(column.editingRender.mock.calls[0][2]).toEqual(
+        expect.objectContaining({ isInvalid: true })
+      );
     });
   });
 
@@ -104,9 +99,8 @@ describe('EditingColumn', () => {
       ...mockValues,
       editingItemValue: null,
     });
-
-    const wrapper = shallow(<EditingColumn {...requiredProps} />);
-    expect(wrapper.isEmptyRender()).toBe(true);
+    const { container } = renderWithKibanaRenderContext(<EditingColumn {...requiredProps} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('renders the column\'s "editing" view (editingRender)', () => {
@@ -116,19 +110,12 @@ describe('EditingColumn', () => {
       fieldErrors: { foo: ['I am an error for foo'] },
     });
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <EditingColumn
-        {...{
-          ...requiredProps,
-          column: {
-            ...column,
-            field: 'foo',
-          },
-          isLoading: true,
-        }}
+        {...{ ...requiredProps, column: { ...column, field: 'foo' }, isLoading: true }}
       />
     );
-    expect(wrapper.find('[data-test-subj="editing-view"]').exists()).toBe(true);
+    expect(screen.getByTestId('editing-view')).toBeInTheDocument();
 
     expect(column.editingRender).toHaveBeenCalled();
     // The render function is provided with the item currently being edited for rendering
@@ -146,7 +133,7 @@ describe('EditingColumn', () => {
 
     // The render function is provided with additional properties
     expect(column.editingRender.mock.calls[0][2]).toEqual({
-      isInvalid: true, // Because there errors for 'foo'
+      isInvalid: true, // Because there are errors for 'foo'
       isLoading: true, // Because isLoading was passed as true to this prop
     });
   });

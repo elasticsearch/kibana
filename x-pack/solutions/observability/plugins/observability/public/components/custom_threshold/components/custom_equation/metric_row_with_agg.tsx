@@ -14,6 +14,7 @@ import {
   EuiFormRow,
   EuiPopover,
   EuiSelect,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import type { DataViewBase } from '@kbn/es-query';
 import { i18n } from '@kbn/i18n';
@@ -62,6 +63,7 @@ export function MetricRowWithAgg({
   }, [name, onDelete]);
 
   const [aggTypePopoverOpen, setAggTypePopoverOpen] = useState(false);
+  const aggTypePopoverTitleId = useGeneratedHtmlId();
 
   const fieldOptions = useMemo(
     () =>
@@ -184,9 +186,13 @@ export function MetricRowWithAgg({
           ownFocus
           anchorPosition={'downLeft'}
           repositionOnScroll
+          aria-labelledby={aggTypePopoverTitleId}
         >
           <div>
-            <ClosablePopoverTitle onClose={() => setAggTypePopoverOpen(false)}>
+            <ClosablePopoverTitle
+              id={aggTypePopoverTitleId}
+              onClose={() => setAggTypePopoverOpen(false)}
+            >
               <FormattedMessage
                 id="xpack.observability.customThreshold.rule.alertFlyout.customEquationEditor.aggregationLabel"
                 defaultMessage="Aggregation {name}"

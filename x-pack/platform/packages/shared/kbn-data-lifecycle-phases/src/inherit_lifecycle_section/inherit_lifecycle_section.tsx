@@ -17,7 +17,6 @@ export const InheritLifecycleSection = ({
   link,
   checkboxId,
   checkboxIdPrefix = 'inheritLifecycle',
-  checkboxDataTestSubj,
   linkDataTestSubj,
 }: InheritLifecycleSectionProps) => {
   const generatedCheckboxId = useGeneratedHtmlId({ prefix: checkboxIdPrefix });
@@ -31,7 +30,7 @@ export const InheritLifecycleSection = ({
           checked={value}
           label={label}
           onChange={(e) => onChange(e.target.checked)}
-          data-test-subj={checkboxDataTestSubj}
+          data-test-subj="dataLifecycleInheritCheckbox"
         />
       </EuiFlexItem>
 

@@ -18,6 +18,7 @@ import {
   EuiTableRowCell,
   EuiText,
   EuiToken,
+  EuiToolTip,
   useEuiTheme,
   useIsWithinBreakpoints,
 } from '@elastic/eui';
@@ -311,20 +312,22 @@ export const EsqlParamRow: React.FC<EsqlParamRowProps> = ({
         />
       </EuiTableRowCell>
       <EuiTableRowCell hasActions>
-        <EuiButtonIcon
-          iconType="trash"
-          color="danger"
-          onClick={() => {
-            removeParamField(index);
-            triggerEsqlParamFieldsValidation(['name']);
-          }}
-          size="s"
-          aria-label={i18nMessages.removeParamButtonLabel}
-          {...getEbtProps({
-            element: AGENT_BUILDER_UI_EBT.element.pageContent,
-            action: AGENT_BUILDER_UI_EBT.action.globalManagement.REMOVE_PARAM,
-          })}
-        />
+        <EuiToolTip content={i18nMessages.removeParamButtonLabel} disableScreenReaderOutput>
+          <EuiButtonIcon
+            iconType="trash"
+            color="danger"
+            onClick={() => {
+              removeParamField(index);
+              triggerEsqlParamFieldsValidation(['name']);
+            }}
+            size="s"
+            aria-label={i18nMessages.removeParamButtonLabel}
+            {...getEbtProps({
+              element: AGENT_BUILDER_UI_EBT.element.pageContent,
+              action: AGENT_BUILDER_UI_EBT.action.globalManagement.REMOVE_PARAM,
+            })}
+          />
+        </EuiToolTip>
       </EuiTableRowCell>
     </EuiTableRow>
   );

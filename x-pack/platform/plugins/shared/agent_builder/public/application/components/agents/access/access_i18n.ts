@@ -29,30 +29,30 @@ export const accessFlyoutSave = i18n.translate('xpack.agentBuilder.acl.flyout.sa
   defaultMessage: 'Save changes',
 });
 
-// Visibility context strip ────────────────────────────────────────────────────
+// Access control mode context strip ───────────────────────────────────────────
 
 /**
- * Per-visibility default-access blurb shown in the banner above the form.
+ * Default-access blurb shown in the banner above the form for each access control mode.
  *
- * Each message stitches together the agent's current visibility (bold, lead) with the
- * default behavior that visibility implies, plus a reminder that ACL entries grant
+ * Each message stitches together the agent's current access control mode with the
+ * default behavior that mode implies, plus a reminder that ACL entries grant
  * additional access on top.
  */
-export const visibilityContextMessage = (visibilityLabel: string) => ({
+export const accessControlModeContextMessage = (accessControlModeLabel: string) => ({
   publicMessage: i18n.translate('xpack.agentBuilder.acl.flyout.contextPublic', {
     defaultMessage:
-      '{visibilityLabel} by default. Anyone with access to Agent Builder can view and edit. Add entries below to grant additional permissions like delete or manage access.',
-    values: { visibilityLabel },
+      '{accessControlModeLabel} by default. Anyone with access to Agent Builder can view and edit. Add entries below to grant additional permissions like delete or manage access.',
+    values: { accessControlModeLabel },
   }),
   sharedMessage: i18n.translate('xpack.agentBuilder.acl.flyout.contextShared', {
     defaultMessage:
-      '{visibilityLabel} by default. Anyone with access to Agent Builder can view this agent; only the owner or an administrator can edit. Add entries below to grant additional permissions.',
-    values: { visibilityLabel },
+      '{accessControlModeLabel} by default. Anyone with access to Agent Builder can view this agent; only the owner or an administrator can edit. Add entries below to grant additional permissions.',
+    values: { accessControlModeLabel },
   }),
   privateMessage: i18n.translate('xpack.agentBuilder.acl.flyout.contextPrivate', {
     defaultMessage:
-      '{visibilityLabel} by default. Only the owner or an administrator can view and edit. Add entries below to grant access to specific people or roles.',
-    values: { visibilityLabel },
+      '{accessControlModeLabel} by default. Only the owner or an administrator can view and edit. Add entries below to grant access to specific people or roles.',
+    values: { accessControlModeLabel },
   }),
 });
 
@@ -65,7 +65,7 @@ export const accessFlyoutPeopleSection = i18n.translate(
 
 export const accessFlyoutPeopleHelp = i18n.translate(
   'xpack.agentBuilder.acl.flyout.peopleSectionHelp',
-  { defaultMessage: 'Grant additional access beyond the visibility setting.' }
+  { defaultMessage: 'Grant additional access beyond the access control mode.' }
 );
 
 export const accessFlyoutAddPeoplePlaceholder = i18n.translate(
@@ -125,7 +125,7 @@ export const accessSummaryDefaultDescription = i18n.translate(
   'xpack.agentBuilder.acl.summary.defaultDescription',
   {
     defaultMessage:
-      'Anyone who can see this agent gets the access set by visibility. Add entries to grant more.',
+      'Anyone who can see this agent gets the access set by its access control mode. Add entries to grant more.',
   }
 );
 

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { startTaskTimer, startTaskTimerWithEventLoopMonitoring } from './task_events';
+import { startTaskTimer, startEventLoopMonitoring } from './task_events';
 
 const DelayIterations = 4;
 const DelayMillis = 250;
@@ -56,38 +56,35 @@ describe('task_events', () => {
     expect(result.eventLoopBlockMs).toBe(undefined);
   });
 
-  describe('startTaskTimerWithEventLoopMonitoring', () => {
+  describe('startEventLoopMonitoring', () => {
     test('non-blocking', async () => {
-      const stopTaskTimer = startTaskTimerWithEventLoopMonitoring({
+      const stopMonitoring = startEventLoopMonitoring({
         monitor: true,
         warn_threshold: 5000,
       });
       await nonBlockingTask();
-      const result = stopTaskTimer();
-      expect(result.stop - result.start).not.toBeLessThan(DelayTotal);
-      expect(result.eventLoopBlockMs).toBeLessThan(DelayMillis);
+      const eventLoopBlockMs = stopMonitoring();
+      expect(eventLoopBlockMs).toBeLessThan(DelayMillis);
     });
 
     test('blocking', async () => {
-      const stopTaskTimer = startTaskTimerWithEventLoopMonitoring({
+      const stopMonitoring = startEventLoopMonitoring({
         monitor: true,
         warn_threshold: 5000,
       });
       await blockingTask();
-      const result = stopTaskTimer();
-      expect(result.stop - result.start).not.toBeLessThan(DelayTotal);
-      expect(result.eventLoopBlockMs).not.toBeLessThan(DelayMillis);
+      const eventLoopBlockMs = stopMonitoring();
+      expect(eventLoopBlockMs).not.toBeLessThan(DelayMillis);
     });
 
     test('not monitoring', async () => {
-      const stopTaskTimer = startTaskTimerWithEventLoopMonitoring({
+      const stopMonitoring = startEventLoopMonitoring({
         monitor: false,
         warn_threshold: 5000,
       });
       await blockingTask();
-      const result = stopTaskTimer();
-      expect(result.stop - result.start).not.toBeLessThan(DelayTotal);
-      expect(result.eventLoopBlockMs).toBe(0);
+      const eventLoopBlockMs = stopMonitoring();
+      expect(eventLoopBlockMs).toBe(0);
     });
   });
 });

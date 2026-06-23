@@ -7,7 +7,11 @@
 
 import type { KibanaUrl, ScoutPage } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/ui';
-import { dismissGlobalToastsIfPresent, waitForApmSettingsHeaderLink } from '../page_helpers';
+import {
+  dismissGlobalToastsIfPresent,
+  waitForApmSettingsHeaderLink,
+  waitForSearchBarReady,
+} from '../page_helpers';
 import { EXTENDED_TIMEOUT } from '../constants';
 import { type TraceWaterfallFlyout, createTraceWaterfallFlyout } from './trace_waterfall_flyout';
 
@@ -127,9 +131,7 @@ export class TransactionDetailsPage {
   }
 
   async waitForPageToLoad(page: ScoutPage) {
-    await page
-      .getByTestId('superDatePickerToggleQuickMenuButton')
-      .waitFor({ timeout: EXTENDED_TIMEOUT });
+    await waitForSearchBarReady(page);
   }
 
   // Span links methods

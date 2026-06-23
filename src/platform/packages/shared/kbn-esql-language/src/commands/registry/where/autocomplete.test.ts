@@ -16,6 +16,7 @@ import {
   getFunctionSignaturesByReturnType,
   mockFieldsWithTypes,
   getOperatorSuggestions,
+  suggest,
 } from '../../../__tests__/commands/autocomplete';
 import {
   logicalOperators,
@@ -81,7 +82,7 @@ describe('WHERE Autocomplete', () => {
   });
 
   describe('within the expression', () => {
-    const suggest = async (query: string) => {
+    const whereSuggest = async (query: string) => {
       const cursorPosition = query.length;
       const { command } = findAutocompleteAstPosition(query, cursorPosition);
       if (!command) {
@@ -294,6 +295,7 @@ describe('WHERE Autocomplete', () => {
         )
       );
       await whereExpectSuggestions('FROM index | WHERE NOT ENDS_WITH(keywordField, "foo") ', [
+        '\n',
         ...getOperatorSuggestions(logicalOperators),
         '| ',
       ]);
@@ -317,13 +319,14 @@ describe('WHERE Autocomplete', () => {
 
       await whereExpectSuggestions(
         'from index | WHERE doubleField in (FROM index | KEEP doubleField) ',
-        [...getOperatorSuggestions(logicalOperators), '| ']
+        ['\n', ...getOperatorSuggestions(logicalOperators), '| ']
       );
       await whereExpectSuggestions(
         'from index | WHERE doubleField not in (FROM index | KEEP doubleField) ',
-        [...getOperatorSuggestions(logicalOperators), '| ']
+        ['\n', ...getOperatorSuggestions(logicalOperators), '| ']
       );
       await whereExpectSuggestions('from index | WHERE doubleField in (ROW doubleField = 1) ', [
+        '\n',
         ...getOperatorSuggestions(logicalOperators),
         '| ',
       ]);
@@ -373,7 +376,7 @@ describe('WHERE Autocomplete', () => {
     });
 
     test('pipe suggestion after complete expression', async () => {
-      expect(await suggest('from index | WHERE doubleField != doubleField ')).toContainEqual(
+      expect(await whereSuggest('from index | WHERE doubleField != doubleField ')).toContainEqual(
         expect.objectContaining({
           label: '|',
         })
@@ -388,6 +391,70 @@ describe('WHERE Autocomplete', () => {
         DATE_DIFF_TIME_UNITS,
         mockCallbacks
       );
+    });
+  });
+
+  describe('KQL function autocomplete', () => {
+    const kqlSuggestions = [
+      { text: 'field_name', label: 'field_name', kind: 'Field' as const },
+      { text: 'other_field', label: 'other_field', kind: 'Field' as const },
+    ];
+
+    beforeEach(() => {
+      mockCallbacks = {
+        ...getMockCallbacks(),
+        getKqlSuggestions: jest.fn().mockImplementation((kqlQuery: string) =>
+          Promise.resolve(
+            kqlSuggestions.map((suggestion) => ({
+              ...suggestion,
+              // Mimic the KQL provider's per-suggestion range: the current word (after last space to cursor).
+              range: { start: kqlQuery.lastIndexOf(' ') + 1, end: kqlQuery.length },
+            }))
+          )
+        ),
+      };
+    });
+
+    it('returns KQL suggestions when cursor is inside KQL("""...)', async () => {
+      await whereExpectSuggestions(
+        'from index | WHERE KQL("""field_na',
+        ['field_name', 'other_field'],
+        mockCallbacks
+      );
+    });
+
+    it('returns KQL suggestions for an empty KQL query (cursor right after """)', async () => {
+      await whereExpectSuggestions(
+        'from index | WHERE KQL("""',
+        ['field_name', 'other_field'],
+        mockCallbacks
+      );
+    });
+
+    it('rangeToReplace starts at the typed word, not at the """ delimiter', async () => {
+      const query = 'from index | WHERE KQL("""field_na';
+      const kqlStartOffset = 'from index | WHERE KQL("""'.length;
+      const results = await suggest(query, whereContext, 'where', mockCallbacks, autocomplete);
+
+      const suggestion = results.find((s) => s.text === 'field_name');
+      expect(suggestion).toBeDefined();
+      expect(suggestion!.rangeToReplace).toEqual({
+        start: kqlStartOffset,
+        end: query.length,
+      });
+    });
+
+    it('rangeToReplace covers only the current word in multi-token KQL queries', async () => {
+      const query = 'from index | WHERE KQL("""fieldA AND field_na';
+      const wordStart = query.lastIndexOf('field_na');
+      const results = await suggest(query, whereContext, 'where', mockCallbacks, autocomplete);
+
+      const suggestion = results.find((s) => s.text === 'field_name');
+      expect(suggestion).toBeDefined();
+      expect(suggestion!.rangeToReplace).toEqual({
+        start: wordStart,
+        end: query.length,
+      });
     });
   });
 });

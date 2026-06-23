@@ -1,6 +1,51 @@
 {
-  "sha1": "63793ffcd2b26cee9d3d486a944ff3b4ba7c2da1",
+  "sha1": "4bce313eac4a9a198c33a05f99fdb40aff0fd058",
   "tests": [
+    {
+      "id": "ae3d37266a51314-58daa05cefa5c4d",
+      "title": "Inference features authorization feature-privileged user can GET features",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-stateful-search",
+        "@local-serverless-search"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/search_inference_endpoints/test/scout_inference_test/api/tests/inference_features_authorization.spec.ts",
+        "line": 20,
+        "column": 10
+      }
+    },
+    {
+      "id": "ae3d37266a51314-e20394c3e6d16ff",
+      "title": "Inference features authorization read-privileged user can GET features",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-stateful-search",
+        "@local-serverless-search"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/search_inference_endpoints/test/scout_inference_test/api/tests/inference_features_authorization.spec.ts",
+        "line": 30,
+        "column": 10
+      }
+    },
+    {
+      "id": "ae3d37266a51314-41b49a1429842c6",
+      "title": "Inference features authorization user with no inference privilege gets 403 on GET features",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-stateful-search",
+        "@local-serverless-search"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/search_inference_endpoints/test/scout_inference_test/api/tests/inference_features_authorization.spec.ts",
+        "line": 40,
+        "column": 10
+      }
+    },
     {
       "id": "0e7ddf934973be7-7cabd7589c944d7",
       "title": "Inference settings authorization feature-privileged user can GET settings",
@@ -32,8 +77,8 @@
       }
     },
     {
-      "id": "0e7ddf934973be7-4192c89357af784",
-      "title": "Inference settings authorization user without searchInferenceEndpoints privilege gets 403 on GET",
+      "id": "0e7ddf934973be7-b79d137dfde4474",
+      "title": "Inference settings authorization viewer (read privilege) can GET settings",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -47,8 +92,8 @@
       }
     },
     {
-      "id": "0e7ddf934973be7-5ed69e05e2e8c78",
-      "title": "Inference settings authorization user without searchInferenceEndpoints privilege gets 403 on PUT",
+      "id": "0e7ddf934973be7-efac034bc5c5e70",
+      "title": "Inference settings authorization viewer (read privilege) gets 403 on PUT settings",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -57,7 +102,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/search_inference_endpoints/test/scout_inference_test/api/tests/inference_settings_authorization.spec.ts",
-        "line": 68,
+        "line": 65,
         "column": 10
       }
     },

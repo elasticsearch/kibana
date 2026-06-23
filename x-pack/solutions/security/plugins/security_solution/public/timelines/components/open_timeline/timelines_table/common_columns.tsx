@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiButtonIcon, EuiLink } from '@elastic/eui';
+import { EuiButtonIcon, EuiLink, EuiToolTip } from '@elastic/eui';
 import type { EuiBasicTableColumn, EuiTableDataType } from '@elastic/eui';
 import { omit } from 'lodash/fp';
 import React from 'react';
@@ -49,21 +49,28 @@ export const getCommonColumns = ({
     isExpander: true,
     render: ({ notes, savedObjectId }: OpenTimelineResult) =>
       notes != null && notes.length > 0 && savedObjectId != null ? (
-        <EuiButtonIcon
-          data-test-subj="expand-notes"
-          onClick={() =>
-            itemIdToExpandedNotesRowMap[savedObjectId] != null
-              ? onToggleShowNotes(omit(savedObjectId, itemIdToExpandedNotesRowMap))
-              : onToggleShowNotes({
-                  ...itemIdToExpandedNotesRowMap,
-                  [savedObjectId]: <NotePreviews notes={notes} timelineId={TimelineId.active} />,
-                })
-          }
-          aria-label={itemIdToExpandedNotesRowMap[savedObjectId] ? i18n.COLLAPSE : i18n.EXPAND}
-          iconType={
-            itemIdToExpandedNotesRowMap[savedObjectId] ? 'chevronSingleDown' : 'chevronSingleRight'
-          }
-        />
+        <EuiToolTip
+          content={itemIdToExpandedNotesRowMap[savedObjectId] ? i18n.COLLAPSE : i18n.EXPAND}
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            data-test-subj="expand-notes"
+            onClick={() =>
+              itemIdToExpandedNotesRowMap[savedObjectId] != null
+                ? onToggleShowNotes(omit(savedObjectId, itemIdToExpandedNotesRowMap))
+                : onToggleShowNotes({
+                    ...itemIdToExpandedNotesRowMap,
+                    [savedObjectId]: <NotePreviews notes={notes} timelineId={TimelineId.active} />,
+                  })
+            }
+            aria-label={itemIdToExpandedNotesRowMap[savedObjectId] ? i18n.COLLAPSE : i18n.EXPAND}
+            iconType={
+              itemIdToExpandedNotesRowMap[savedObjectId]
+                ? 'chevronSingleDown'
+                : 'chevronSingleRight'
+            }
+          />
+        </EuiToolTip>
       ) : null,
     width: ACTION_COLUMN_WIDTH,
   },

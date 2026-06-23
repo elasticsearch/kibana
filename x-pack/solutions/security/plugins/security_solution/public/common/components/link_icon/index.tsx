@@ -99,7 +99,7 @@ export const LinkIcon = React.memo<LinkIconProps>(
         onClick={onClick}
         aria-label={aria}
       >
-        <EuiIcon size={iconSize} type={iconType} />
+        <EuiIcon size={iconSize} type={iconType} aria-hidden={true} />
         <span className="siemLinkIcon__label">{children}</span>
       </Link>
     );

@@ -8,7 +8,7 @@
 {
   "type": "functional-tests",
   "id": "@kbn/evals-suite-security-ai-rules",
-  "owner": "@elastic/security-detection-engine",
+  "owner": "@elastic/security-detection-engineering",
   "group": "security",
   "visibility": "private"
 }

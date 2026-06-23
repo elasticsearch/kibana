@@ -10,6 +10,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
 import {
+  ControlValuesSource,
   DEFAULT_DATA_CONTROL_STATE,
   DEFAULT_DSL_OPTIONS_LIST_STATE,
   DEFAULT_PINNED_CONTROL_STATE,
@@ -41,7 +42,7 @@ export const controlGroupStateBuilder = {
   addDataControlFromField: async (
     controlGroupState: Partial<ControlGroupRuntimeState>,
     controlState: Partial<Omit<DataControlState & FlattenedPinnedControlState, 'type'>> &
-      Pick<DataControlState, 'data_view_id' | 'field_name'>,
+      Required<Pick<DataControlState, 'data_view_id' | 'field_name'>>,
     uiActionsService: UiActionsStart,
     controlId?: string
   ) => {
@@ -76,7 +77,7 @@ export const controlGroupStateBuilder = {
         'type'
       >
     > &
-      Pick<OptionsListDSLControlState, 'data_view_id' | 'field_name'>,
+      Required<Pick<OptionsListDSLControlState, 'data_view_id' | 'field_name'>>,
     controlId?: string
   ) => {
     controlGroupState.initialChildControlState = {
@@ -87,7 +88,8 @@ export const controlGroupStateBuilder = {
         type: OPTIONS_LIST_CONTROL,
         order: getNextControlOrder(controlGroupState.initialChildControlState),
         ...controlState,
-      },
+        values_source: ControlValuesSource.FIELD,
+      } as ControlPanelState,
     };
   },
   addRangeSliderControl: (
@@ -96,7 +98,7 @@ export const controlGroupStateBuilder = {
       Omit<PinnedControlState, keyof RangeSliderControlState> & RangeSliderControlState,
       'type'
     > &
-      Pick<RangeSliderControlState, 'data_view_id' | 'field_name'>,
+      Required<Pick<RangeSliderControlState, 'data_view_id' | 'field_name'>>,
     controlId?: string
   ) => {
     controlGroupState.initialChildControlState = {
@@ -107,7 +109,8 @@ export const controlGroupStateBuilder = {
         type: RANGE_SLIDER_CONTROL,
         order: getNextControlOrder(controlGroupState.initialChildControlState),
         ...controlState,
-      },
+        values_source: ControlValuesSource.FIELD,
+      } as unknown as ControlPanelState,
     };
   },
   addTimeSliderControl: (

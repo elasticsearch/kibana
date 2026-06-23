@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/271800
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Fix broken references when an integration is re-installed or upgraded in a different space
+description: Fixes an issue where when an integration is re-installed or upgraded in a space different from the original installation space could create broken references to the integration's Kibana assets.

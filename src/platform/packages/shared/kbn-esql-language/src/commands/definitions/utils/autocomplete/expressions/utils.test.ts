@@ -55,12 +55,29 @@ describe('getKqlSuggestionsIfApplicable', () => {
   });
 
   it('should return suggestions if applicable', async () => {
-    const mockSuggestions = [{ text: 'value1', kind: 'Value', detail: 'A value' }];
+    const mockSuggestions = [
+      {
+        text: 'value1',
+        label: 'value1',
+        kind: 'Value',
+        detail: 'A value',
+        range: { start: 0, end: 5 },
+      },
+    ];
     const mockGetKqlSuggestions = jest.fn().mockResolvedValue(mockSuggestions);
     const ctx = createContext('KQL("""query', mockGetKqlSuggestions);
 
     const result = await getKqlSuggestionsIfApplicable(ctx);
 
-    expect(result).toEqual(mockSuggestions);
+    expect(result).toEqual([
+      {
+        text: 'value1',
+        label: 'value1',
+        kind: 'Value',
+        detail: 'A value',
+        // rangeToReplace = mock range shifted by startOffset (innerText.length - kqlQuery.length = 7).
+        rangeToReplace: { start: 7, end: 12 },
+      },
+    ]);
   });
 });

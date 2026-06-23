@@ -465,13 +465,13 @@ export default function swimlaneTest({ getService }: FtrProviderContext) {
               id: simulatedActionId,
               provider: 'actions',
               actions: new Map([
-                ['execute-start', { equal: 1 }],
-                ['execute', { equal: 1 }],
+                ['execute-start', { equal: 6 }],
+                ['execute', { equal: 6 }],
               ]),
             });
           });
 
-          const executeEvent = events[1];
+          const executeEvent = events[events.length - 1];
           expect(executeEvent?.kibana?.action?.execution?.usage?.request_body_bytes).to.be(175);
         });
 
@@ -513,13 +513,13 @@ export default function swimlaneTest({ getService }: FtrProviderContext) {
               id: simulatedActionId,
               provider: 'actions',
               actions: new Map([
-                ['execute-start', { gte: 1 }],
-                ['execute', { gte: 2 }],
+                ['execute-start', { equal: 7 }],
+                ['execute', { equal: 7 }],
               ]),
             });
           });
 
-          const executeEvent = events[3];
+          const executeEvent = events[events.length - 1];
           expect(executeEvent?.kibana?.action?.execution?.usage?.request_body_bytes).to.be(193);
         });
       });

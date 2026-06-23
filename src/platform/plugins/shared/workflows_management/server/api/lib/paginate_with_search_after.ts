@@ -16,6 +16,8 @@ export interface ValidHit<TSource> {
   _id: string;
   _source: TSource;
   sort?: estypes.SortResults;
+  _seq_no?: number;
+  _primary_term?: number;
 }
 
 /** Minimal search response shape — only the fields used by the paginator. */

@@ -7,6 +7,7 @@
 
 import { EuiButtonEmpty, EuiContextMenuPanel, EuiContextMenuItem, EuiPopover } from '@elastic/eui';
 import React, { useState, useEffect } from 'react';
+import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { UpdateUrlParams } from '../../../hooks';
 import { useUrlParams } from '../../../hooks';
@@ -103,6 +104,9 @@ export const MonitorListPageSizeSelectComponent: React.FC<ComponentProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.monitorList.pageSizeSelect.popoverAriaLabel', {
+        defaultMessage: 'Rows per page options',
+      })}
       button={<PopoverButton setIsOpen={(value) => setIsOpen(value)} size={size} />}
       isOpen={isOpen}
       closePopover={() => setIsOpen(false)}

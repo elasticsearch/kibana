@@ -150,12 +150,6 @@ export const AgentDetailsIntegrationStatus: React.FunctionComponent<{
                           tabId: 'logs',
                           logQuery: getLogsQueryByInputType(current.type),
                         })}
-                        aria-label={i18n.translate(
-                          'xpack.fleet.agentDetailsIntegrations.viewLogsButton',
-                          {
-                            defaultMessage: 'View logs',
-                          }
-                        )}
                       >
                         {labelText}
                       </StyledEuiLink>

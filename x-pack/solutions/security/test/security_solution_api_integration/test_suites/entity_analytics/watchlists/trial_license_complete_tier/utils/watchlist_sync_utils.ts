@@ -147,6 +147,14 @@ export const WatchlistSyncUtils = (
     });
   };
 
+  const clearEntitySourceApiKey = async (entitySourceId: string) => {
+    await kibanaServer.savedObjects.update({
+      id: entitySourceId,
+      type: 'watchlist-entity-source',
+      attributes: { apiKeyId: null, apiKey: null },
+    });
+  };
+
   return {
     createSourceIndex,
     addUsersToSourceIndex,
@@ -160,5 +168,6 @@ export const WatchlistSyncUtils = (
     queryWatchlistIndex,
     findEntity,
     deleteWatchlistDocs,
+    clearEntitySourceApiKey,
   };
 };

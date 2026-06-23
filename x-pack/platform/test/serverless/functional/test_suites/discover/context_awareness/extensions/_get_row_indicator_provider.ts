@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+// Original test (remove during Scout migration): src/platform/test/functional/apps/discover/context_awareness/extensions/_get_row_indicator_provider.ts
+
 import type { FtrProviderContext } from '../../../../ftr_provider_context';
 
 export default function ({}: FtrProviderContext) {

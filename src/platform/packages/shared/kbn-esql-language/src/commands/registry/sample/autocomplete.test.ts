@@ -33,6 +33,6 @@ describe('SAMPLE Autocomplete', () => {
   });
 
   test('suggests pipe after number', async () => {
-    sampleExpectSuggestions('from a | SAMPLE .48 ', ['| ']);
+    sampleExpectSuggestions('from a | SAMPLE .48 ', ['| ', '\n']);
   });
 });

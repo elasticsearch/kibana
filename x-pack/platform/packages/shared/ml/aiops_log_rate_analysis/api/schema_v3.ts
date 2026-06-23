@@ -13,9 +13,11 @@ import { aiopsLogRateAnalysisBase, significantItem } from './schema_v2';
 const overridesV3 = schema.object({
   loaded: schema.maybe(schema.number()),
   remainingKeywordFieldCandidates: schema.maybe(
-    schema.arrayOf(schema.string(), { maxSize: 10000 })
+    schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 })
   ),
-  remainingTextFieldCandidates: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 10000 })),
+  remainingTextFieldCandidates: schema.maybe(
+    schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 })
+  ),
   significantItems: schema.maybe(schema.arrayOf(significantItem, { maxSize: 10000 })),
   regroupOnly: schema.maybe(schema.boolean()),
 });

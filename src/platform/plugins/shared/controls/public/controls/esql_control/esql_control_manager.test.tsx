@@ -16,9 +16,12 @@ import { BehaviorSubject } from 'rxjs';
 
 const MOCK_VALUES_FROM_QUERY = ['option1', 'option2', 'option3', 'option4', 'option5'];
 
-jest.mock('./utils/get_esql_single_column_values', () => {
+jest.mock('../../../common/options_list/get_esql_single_column_values', () => {
   const fn = Object.assign(
-    jest.fn(async () => ({ values: MOCK_VALUES_FROM_QUERY })),
+    jest.fn(async () => ({
+      values: MOCK_VALUES_FROM_QUERY,
+      column: { type: 'keyword' },
+    })),
     {
       isSuccess: () => true,
     }
@@ -27,7 +30,8 @@ jest.mock('./utils/get_esql_single_column_values', () => {
 });
 
 const getMock = () =>
-  jest.requireMock('./utils/get_esql_single_column_values').getESQLSingleColumnValues as jest.Mock;
+  jest.requireMock('../../../common/options_list/get_esql_single_column_values')
+    .getESQLSingleColumnValues as jest.Mock;
 
 const mockFetch$ = new BehaviorSubject({});
 jest.mock('@kbn/presentation-publishing', () => ({

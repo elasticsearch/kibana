@@ -14,7 +14,7 @@ import { act, render, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { getGridLayoutStateManagerMock, mockRenderPanelContents } from '../test_utils/mocks';
-import { mouseDrop, mouseStartDragging } from '../test_utils/events';
+import { mouseDrop, mouseMoveTo, mouseStartDragging } from '../test_utils/events';
 import type { GridLayoutContextType } from '../use_grid_layout_context';
 import { GridLayoutContext } from '../use_grid_layout_context';
 import type { GridSectionHeaderProps } from './grid_section_header';
@@ -82,6 +82,46 @@ describe('GridSectionHeader', () => {
     ).toBe(false);
     mouseStartDragging(title);
     mouseDrop(title);
+    expect(
+      (gridLayoutStateManager.gridLayout$.getValue().second as CollapsibleSection).isCollapsed
+    ).toBe(true);
+  });
+
+  it('movement below threshold still toggles collapsed state', async () => {
+    const { component, gridLayoutStateManager } = renderGridSectionHeader();
+    const header = component.getByTestId('kbnGridSectionHeader-second');
+
+    expect(
+      (gridLayoutStateManager.gridLayout$.getValue().second as CollapsibleSection).isCollapsed
+    ).toBe(false);
+    mouseStartDragging(header, { clientX: 0, clientY: 0 });
+    mouseMoveTo({ clientX: 3, clientY: 0 });
+    mouseDrop(header);
+    expect(
+      (gridLayoutStateManager.gridLayout$.getValue().second as CollapsibleSection).isCollapsed
+    ).toBe(true);
+  });
+
+  it('movement at threshold starts dragging instead of toggling', async () => {
+    const { component, gridLayoutStateManager } = renderGridSectionHeader();
+    const header = component.getByTestId('kbnGridSectionHeader-second');
+
+    expect(header).not.toHaveClass('kbnGridSectionHeader--active');
+    expect(
+      (gridLayoutStateManager.gridLayout$.getValue().second as CollapsibleSection).isCollapsed
+    ).toBe(false);
+
+    mouseStartDragging(header, { clientX: 0, clientY: 0 });
+    mouseMoveTo({ clientX: 8, clientY: 0 });
+
+    expect(header).toHaveClass('kbnGridSectionHeader--active');
+    expect(
+      (gridLayoutStateManager.gridLayout$.getValue().second as CollapsibleSection).isCollapsed
+    ).toBe(true);
+
+    mouseDrop(header);
+
+    expect(header).not.toHaveClass('kbnGridSectionHeader--active');
     expect(
       (gridLayoutStateManager.gridLayout$.getValue().second as CollapsibleSection).isCollapsed
     ).toBe(true);

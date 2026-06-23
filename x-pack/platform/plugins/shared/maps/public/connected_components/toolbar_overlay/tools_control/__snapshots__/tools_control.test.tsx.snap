@@ -13,16 +13,20 @@ exports[`Should render cancel button when drawing 1`] = `
           className="mapToolbarOverlay__button"
           paddingSize="none"
         >
-          <EuiButtonIcon
-            aria-label="Tools"
-            className="mapToolbarOverlay__buttonIcon-empty"
-            color="text"
-            iconType="wrench"
-            isDisabled={false}
-            onClick={[Function]}
-            size="s"
-            title="Tools"
-          />
+          <EuiToolTip
+            anchorClassName="mapToolbarOverlay__buttonIcon-empty"
+            content="Tools"
+            disableScreenReaderOutput={true}
+          >
+            <EuiButtonIcon
+              aria-label="Tools"
+              color="text"
+              iconType="wrench"
+              isDisabled={false}
+              onClick={[Function]}
+              size="s"
+            />
+          </EuiToolTip>
         </EuiPanel>
       }
       closePopover={[Function]}
@@ -116,16 +120,20 @@ exports[`renders 1`] = `
       className="mapToolbarOverlay__button"
       paddingSize="none"
     >
-      <EuiButtonIcon
-        aria-label="Tools"
-        className="mapToolbarOverlay__buttonIcon-empty"
-        color="text"
-        iconType="wrench"
-        isDisabled={false}
-        onClick={[Function]}
-        size="s"
-        title="Tools"
-      />
+      <EuiToolTip
+        anchorClassName="mapToolbarOverlay__buttonIcon-empty"
+        content="Tools"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Tools"
+          color="text"
+          iconType="wrench"
+          isDisabled={false}
+          onClick={[Function]}
+          size="s"
+        />
+      </EuiToolTip>
     </EuiPanel>
   }
   closePopover={[Function]}

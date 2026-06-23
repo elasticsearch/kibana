@@ -10,7 +10,7 @@ import { runtimeMappingsSchema } from './runtime_mappings_schema';
 
 export const indexPatternSchema = schema.object({
   /** Pattern of index or indices for which to return stats. */
-  indexPattern: schema.string(),
+  indexPattern: schema.string({ maxLength: 10000 }),
 });
 
 const querySchemaBasic = {
@@ -26,7 +26,7 @@ export const dataVisualizerFieldHistogramsSchema = schema.object({
   /** Optional search time runtime fields */
   runtimeMappings: runtimeMappingsSchema,
   /** Optional project routing */
-  projectRouting: schema.maybe(schema.string()),
+  projectRouting: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export const dataVisualizerFieldStatsSchema = schema.object({
@@ -36,7 +36,7 @@ export const dataVisualizerFieldStatsSchema = schema.object({
   /** Number of documents to be collected in the sample processed on each shard, or -1 for no sampling. */
   samplerShardSize: schema.number(),
   /** Name of the time field in the index (optional). */
-  timeFieldName: schema.maybe(schema.string()),
+  timeFieldName: schema.maybe(schema.string({ maxLength: 10000 })),
   /** Earliest timestamp for search, as epoch ms (optional). */
   earliest: schema.maybe(schema.number()),
   /** Latest timestamp for search, as epoch ms (optional). */
@@ -53,13 +53,13 @@ export const dataVisualizerOverallStatsSchema = schema.object({
   /** Query to match documents in the index. */
   query: schema.any(),
   /** Names of aggregatable fields for which to return stats. */
-  aggregatableFields: schema.arrayOf(schema.string(), { maxSize: 10000 }),
+  aggregatableFields: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
   /** Names of non-aggregatable fields for which to return stats. */
-  nonAggregatableFields: schema.arrayOf(schema.string(), { maxSize: 10000 }),
+  nonAggregatableFields: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
   /** Number of documents to be collected in the sample processed on each shard, or -1 for no sampling. */
   samplerShardSize: schema.number(),
   /** Name of the time field in the index (optional). */
-  timeFieldName: schema.maybe(schema.string()),
+  timeFieldName: schema.maybe(schema.string({ maxLength: 10000 })),
   /** Earliest timestamp for search, as epoch ms (optional). */
   earliest: schema.maybe(schema.number()),
   /** Latest timestamp for search, as epoch ms (optional). */

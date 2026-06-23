@@ -32,6 +32,12 @@ import {
 import { deleteAllExceptions } from '../../../../../lists_and_exception_lists/utils';
 import type { FtrProviderContext } from '../../../../../../ftr_provider_context';
 import { EsArchivePathBuilder } from '../../../../../../es_archive_path_builder';
+import { EntityStoreV2EnrichmentSetup } from '../../entity_store_v2_enrichment_setup';
+
+// host.id of the auditbeat record for zeek-newyork-sha-aa8df15 (first new term).
+const ENRICHMENT_HOST_ID = '3729d06ce9964aa98549f41cbd99334d';
+const ENRICHMENT_HOST_NAME = 'zeek-newyork-sha-aa8df15';
+const ENRICHMENT_HOST_EUID = `host:${ENRICHMENT_HOST_ID}`;
 
 const historicalWindowStart = '2022-10-13T05:00:04.000Z';
 const ruleExecutionStart = '2022-10-19T05:00:04.000Z';
@@ -41,6 +47,7 @@ export default ({ getService }: FtrProviderContext) => {
   const esArchiver = getService('esArchiver');
   const es = getService('es');
   const log = getService('log');
+  const entityStoreV2 = EntityStoreV2EnrichmentSetup(getService);
   const { indexEnhancedDocuments } = dataGeneratorFactory({
     es,
     index: 'new_terms',
@@ -1041,14 +1048,26 @@ export default ({ getService }: FtrProviderContext) => {
 
     describe('alerts should be be enriched', () => {
       before(async () => {
-        await esArchiver.load('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        // The first new term alert uses auditbeat data (host.id present), so EUID is id-based.
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: ENRICHMENT_HOST_NAME, id: [ENRICHMENT_HOST_ID] },
+              entity: {
+                id: ENRICHMENT_HOST_EUID,
+                type: 'host',
+                risk: { calculated_level: 'Low', calculated_score_norm: 23 },
+              },
+            },
+          ],
+        });
       });
 
       after(async () => {
-        await esArchiver.unload('x-pack/solutions/security/test/fixtures/es_archives/entity/risks');
+        await entityStoreV2.teardown();
       });
 
-      it('@skipInServerlessMKI should be enriched with host risk score', async () => {
+      it('should be enriched with host risk score', async () => {
         const rule: NewTermsRuleCreateProps = {
           ...getCreateNewTermsRulesSchemaMock('rule-1', true),
           new_terms_fields: ['host.name'],
@@ -1069,18 +1088,22 @@ export default ({ getService }: FtrProviderContext) => {
         await esArchiver.load(
           'x-pack/solutions/security/test/fixtures/es_archives/security_solution/ecs_compliant'
         );
-        await esArchiver.load(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        await entityStoreV2.setup({
+          hosts: [
+            {
+              host: { name: ENRICHMENT_HOST_NAME },
+              entity: { id: `host:${ENRICHMENT_HOST_NAME}`, type: 'host' },
+              asset: { criticality: 'medium_impact' },
+            },
+          ],
+        });
       });
 
       after(async () => {
         await esArchiver.unload(
           'x-pack/solutions/security/test/fixtures/es_archives/security_solution/ecs_compliant'
         );
-        await esArchiver.unload(
-          'x-pack/solutions/security/test/fixtures/es_archives/asset_criticality'
-        );
+        await entityStoreV2.teardown();
       });
 
       const { indexListOfDocuments } = dataGeneratorFactory({
@@ -1089,14 +1112,13 @@ export default ({ getService }: FtrProviderContext) => {
         log,
       });
 
-      it('@skipInServerlessMKI should be enriched alert with criticality_level', async () => {
+      it('should be enriched alert with criticality_level', async () => {
         const id = uuidv4();
         const timestamp = '2020-10-28T06:45:00.000Z';
 
         const firstExecutionDocuments = [
           {
             host: { name: 'zeek-newyork-sha-aa8df15', ip: '127.0.0.5' },
-            user: { name: 'root' },
             id,
             '@timestamp': timestamp,
           },
@@ -1124,7 +1146,6 @@ export default ({ getService }: FtrProviderContext) => {
         const fullAlert = previewAlerts[0]._source;
 
         expect(fullAlert?.['host.asset.criticality']).toBe('medium_impact');
-        expect(fullAlert?.['user.asset.criticality']).toBe('extreme_impact');
       });
     });
 

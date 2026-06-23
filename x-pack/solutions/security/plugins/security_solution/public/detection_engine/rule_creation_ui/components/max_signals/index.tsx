@@ -91,7 +91,11 @@ export const MaxSignals: React.FC<MaxSignalsFieldProps> = ({
         placeholder={placeholder}
         data-test-subj={dataTestSubj}
         disabled={isDisabled}
-        append={hasWarning ? <EuiIcon size="s" type="warning" color="warning" /> : undefined}
+        append={
+          hasWarning ? (
+            <EuiIcon size="s" type="warning" color="warning" aria-hidden={true} />
+          ) : undefined
+        }
         min={MIN_VALUE}
       />
     </EuiFormRow>

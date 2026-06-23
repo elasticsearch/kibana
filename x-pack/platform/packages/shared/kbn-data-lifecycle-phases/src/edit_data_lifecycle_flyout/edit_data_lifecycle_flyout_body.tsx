@@ -74,59 +74,12 @@ export const EditDataLifecycleFlyoutBody = (props: EditDataLifecycleFlyoutBodyPr
   const ilmPolicies = props.ilm?.policies ?? EMPTY_ILM_POLICIES;
   const selectedIlmPolicyName = props.ilm?.selectedPolicyName;
 
-  // When inheriting lifecycle, the source-of-truth is upstream (template / parent).
-  // Consumers may still update their local selection state while the flyout is open
-  // (e.g. switching methods, applying a different policy in a sub-flyout), but while
-  // `inherit.value === true` the UI should keep reflecting the inherited values.
-  //
-  // We "pin" the first inherited method + inherited ILM policy name / DLM content
-  // we observe and keep showing it for the duration of this flyout session.
-  const inheritedLifecycleMethodRef = useRef<DataLifecycleMethod | undefined>(undefined);
-
-  const inheritedIlmPolicyNameRef = useRef<string | undefined>(undefined);
-  if (
-    inheritLifecycle &&
-    inheritedLifecycleMethodRef.current !== 'dlm' &&
-    !inheritedIlmPolicyNameRef.current &&
-    selectedIlmPolicyName
-  ) {
-    inheritedLifecycleMethodRef.current = 'ilm';
-    inheritedIlmPolicyNameRef.current = selectedIlmPolicyName;
-  }
-  const inheritedIlmPolicyName = inheritedIlmPolicyNameRef.current;
-
-  const inheritedDlmContentRef = useRef<React.ReactNode | undefined>(undefined);
-  if (
-    inheritLifecycle &&
-    inheritedLifecycleMethodRef.current !== 'ilm' &&
-    !inheritedDlmContentRef.current &&
-    props.dataStreamLifecycleContent
-  ) {
-    inheritedLifecycleMethodRef.current = 'dlm';
-    inheritedDlmContentRef.current = props.dataStreamLifecycleContent;
-  }
-  if (inheritLifecycle && !inheritedLifecycleMethodRef.current) {
-    inheritedLifecycleMethodRef.current = lifecycleMethod;
-  }
-  const inheritedLifecycleMethod = inheritedLifecycleMethodRef.current;
-
-  const pinnedDataStreamLifecycleContent =
-    inheritedDlmContentRef.current ?? props.dataStreamLifecycleContent;
-  const dataStreamLifecycleContentForUi = pinnedDataStreamLifecycleContent ? (
+  const dataStreamLifecycleContentForUi = props.dataStreamLifecycleContent ? (
     // Force a remount when toggling inheritance so uncontrolled inputs can't keep a locally edited value.
     <React.Fragment key={inheritLifecycle ? 'inherited' : 'local'}>
-      {inheritLifecycle ? pinnedDataStreamLifecycleContent : props.dataStreamLifecycleContent}
+      {props.dataStreamLifecycleContent}
     </React.Fragment>
   ) : undefined;
-
-  const selectedIlmPolicyNameForUi = inheritLifecycle
-    ? inheritedIlmPolicyName ?? selectedIlmPolicyName
-    : selectedIlmPolicyName;
-
-  const inferredInheritedMethod: DataLifecycleMethod =
-    inheritedLifecycleMethod ??
-    (inheritedIlmPolicyName ? 'ilm' : dataStreamLifecycleContentForUi ? 'dlm' : lifecycleMethod);
-  const effectiveLifecycleMethod = inheritLifecycle ? inferredInheritedMethod : lifecycleMethod;
 
   // Capture the selected policy from when the flyout opened so it stays visible
   // at the top while the user browses alternatives.
@@ -169,20 +122,18 @@ export const EditDataLifecycleFlyoutBody = (props: EditDataLifecycleFlyoutBodyPr
     if (!inheritLifecycle) return sortedRetentionOptions;
     // When inheriting, only the inherited policy should appear. The empty-list
     // case (no inherited policy) is handled upstream by a no-policy panel.
-    return sortedRetentionOptions.filter((option) => option.name === selectedIlmPolicyNameForUi);
-  }, [inheritLifecycle, sortedRetentionOptions, selectedIlmPolicyNameForUi]);
+    return sortedRetentionOptions.filter((option) => option.name === selectedIlmPolicyName);
+  }, [inheritLifecycle, sortedRetentionOptions, selectedIlmPolicyName]);
 
   return (
     <EuiFlyoutBody
       css={
-        effectiveLifecycleMethod === 'ilm' && showLifecycleMethodPicker
-          ? styles.overflowHidden
-          : undefined
+        lifecycleMethod === 'ilm' && showLifecycleMethodPicker ? styles.overflowHidden : undefined
       }
     >
       <EditDataLifecycleFlyoutBodyContent
         inheritLifecycle={inheritLifecycle}
-        lifecycleMethod={effectiveLifecycleMethod}
+        lifecycleMethod={lifecycleMethod}
         showLifecycleMethodPicker={showLifecycleMethodPicker}
         inherit={
           props.inherit
@@ -196,10 +147,10 @@ export const EditDataLifecycleFlyoutBody = (props: EditDataLifecycleFlyoutBodyPr
         }
         method={props.method}
         ilm={
-          effectiveLifecycleMethod === 'ilm' && props.ilm
+          lifecycleMethod === 'ilm' && props.ilm
             ? {
                 retentionOptions: visibleRetentionOptions,
-                selectedPolicyName: selectedIlmPolicyNameForUi,
+                selectedPolicyName: selectedIlmPolicyName,
                 onSelect: props.ilm.onSelect,
                 onInspect: props.ilm.onInspect,
               }

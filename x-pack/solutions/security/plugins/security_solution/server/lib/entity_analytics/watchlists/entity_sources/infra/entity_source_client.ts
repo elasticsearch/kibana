@@ -5,7 +5,13 @@
  * 2.0.
  */
 
-import type { SavedObjectsClientContract } from '@kbn/core/server';
+import type {
+  ElasticsearchClient,
+  KibanaRequest,
+  Logger,
+  SavedObjectsClientContract,
+  StartServicesAccessor,
+} from '@kbn/core/server';
 import _ from 'lodash';
 import moment from 'moment';
 import type {
@@ -16,11 +22,22 @@ import type {
   ListWatchlistEntitySourcesRequestQuery,
   ListWatchlistEntitySourcesResponse,
 } from '../../../../../../common/api/entity_analytics/watchlists/data_source/list.gen';
+import type { StartPlugins } from '../../../../../plugin';
 import { watchlistEntitySourceTypeName } from './entity_source_type';
+import {
+  grantEntitySourceApiKey,
+  invalidateEntitySourceApiKey,
+  validateIndexPermissions,
+} from '../entity_source_api_key';
 
 export interface WatchlistEntitySourceClientDependencies {
   soClient: SavedObjectsClientContract;
   namespace: string;
+  // user's scoped client (`core.elasticsearch.client.asCurrentUser`) - used to validate index read privileges
+  esClient: ElasticsearchClient;
+  getStartServices: StartServicesAccessor<StartPlugins>;
+  logger: Logger;
+  hasEncryptionKey: boolean;
 }
 
 interface UpsertResult {
@@ -31,43 +48,115 @@ interface UpsertResult {
 export class WatchlistEntitySourceClient {
   constructor(private readonly dependencies: WatchlistEntitySourceClientDependencies) {}
 
-  async create(attributes: MonitoringEntitySourceAttributes): Promise<MonitoringEntitySource> {
+  async create(
+    attributes: MonitoringEntitySourceAttributes,
+    request?: KibanaRequest
+  ): Promise<MonitoringEntitySource> {
     await this.assertNameUniqueness(attributes);
+
+    let apiKey = {};
+    if (attributes.type === 'index') {
+      if (!this.dependencies.hasEncryptionKey) {
+        throw new Error(
+          'Index-type entity sources require encrypted saved objects. Ensure xpack.encryptedSavedObjects.encryptionKey is configured.'
+        );
+      }
+      if (!request) {
+        throw new Error('Cannot create index-type entity source without a request.');
+      }
+
+      if (attributes.indexPattern) {
+        await validateIndexPermissions(this.dependencies.esClient, attributes.indexPattern);
+      }
+      const [coreStart] = await this.dependencies.getStartServices();
+      apiKey = (await grantEntitySourceApiKey(coreStart.security, request, attributes.name)) ?? {};
+    }
 
     const { id, attributes: created } =
       await this.dependencies.soClient.create<MonitoringEntitySourceAttributes>(
         watchlistEntitySourceTypeName,
-        { ...attributes, managed: attributes.managed ?? false },
+        { ...attributes, ...apiKey, managed: attributes.managed ?? false },
         { refresh: 'wait_for' }
       );
 
     return { ...created, id };
   }
 
-  async upsert(source: Partial<MonitoringEntitySource>): Promise<UpsertResult> {
+  async upsert(
+    source: Partial<MonitoringEntitySource>,
+    request?: KibanaRequest
+  ): Promise<UpsertResult> {
     const { sources } = await this.list({ name: source.name, per_page: 1 });
     const found = sources[0];
 
     if (found) {
       // TODO: Add matcher override protection (matchersModifiedByUser) once
       // managed source reconciliation is implemented for watchlists.
-      const updated = await this.update({ ...source, id: found.id });
+      const updated = await this.update({ ...source, id: found.id }, request);
       return { action: 'updated', source: updated };
     }
 
-    const created = await this.create(source);
+    const created = await this.create(source, request);
     return { action: 'created', source: created };
   }
 
   async update(
-    entitySource: Partial<MonitoringEntitySource> & { id: string }
+    entitySource: Partial<MonitoringEntitySource> & { id: string },
+    request?: KibanaRequest
   ): Promise<MonitoringEntitySource> {
+    const { esClient, getStartServices, logger } = this.dependencies;
+    const [coreStart] = await getStartServices();
+
+    // Step 1: Validate index permissions
+    const currentSource = await this.get(entitySource.id);
+    const newType = entitySource.type ?? currentSource?.type;
+    const indexPatternToCheck =
+      newType === 'index' ? entitySource.indexPattern ?? currentSource?.indexPattern : undefined;
+    if (indexPatternToCheck) {
+      await validateIndexPermissions(esClient, indexPatternToCheck);
+    }
+
+    // Step 2: handle API key fields
+    const wasIndex = currentSource.type === 'index';
+    const isNowIndex = newType === 'index';
+    const indexPatternChanged =
+      wasIndex &&
+      isNowIndex &&
+      entitySource.indexPattern !== undefined &&
+      entitySource.indexPattern !== currentSource.indexPattern;
+
+    let apiKey = {};
+    // Invalidates old API key: index pattern changed or type changed from index to non-index
+    if ((indexPatternChanged || (wasIndex && !isNowIndex)) && currentSource.apiKeyId) {
+      await invalidateEntitySourceApiKey(coreStart.security, currentSource.apiKeyId, logger);
+    }
+    // Needs new API key: index pattern changed, type changed from non-index to index, or API key is missing (re-auth)
+    if (isNowIndex && (indexPatternChanged || !wasIndex || !currentSource.apiKeyId)) {
+      if (!this.dependencies.hasEncryptionKey) {
+        throw new Error(
+          'Index-type entity sources require encrypted saved objects. Ensure xpack.encryptedSavedObjects.encryptionKey is configured.'
+        );
+      }
+      if (!request) {
+        throw new Error('Cannot update index-type entity source without a request.');
+      }
+
+      apiKey =
+        (await grantEntitySourceApiKey(coreStart.security, request, entitySource.name)) ?? {};
+    }
+    // Clears API key fields: type changed from index to non-index
+    if (wasIndex && !isNowIndex) {
+      apiKey = { apiKeyId: null, apiKey: null };
+    }
+
+    // Step 3: Update entity source
+    const newEntitySource = { ..._.omit(entitySource, ['id', 'apiKeyId', 'apiKey']), ...apiKey };
     await this.assertNameUniqueness(entitySource);
     const { attributes } =
       await this.dependencies.soClient.update<MonitoringEntitySourceAttributes>(
         watchlistEntitySourceTypeName,
         entitySource.id,
-        _.omit(entitySource, 'id'),
+        newEntitySource,
         { refresh: 'wait_for' }
       );
 
@@ -84,6 +173,13 @@ export class WatchlistEntitySourceClient {
   }
 
   async delete(id: string): Promise<void> {
+    const { getStartServices, logger } = this.dependencies;
+    const [coreStart] = await getStartServices();
+    const source = await this.get(id);
+
+    if (source.apiKeyId) {
+      await invalidateEntitySourceApiKey(coreStart.security, source.apiKeyId, logger);
+    }
     await this.dependencies.soClient.delete(watchlistEntitySourceTypeName, id);
   }
 

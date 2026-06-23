@@ -72,13 +72,17 @@ exports[`should render error for dupes 1`] = `
     <EuiFlexItem
       grow={false}
     >
-      <EuiButtonIcon
-        aria-label="Remove field"
-        color="danger"
-        iconType="trash"
-        onClick={[Function]}
-        title="Remove field"
-      />
+      <EuiToolTip
+        content="Remove field"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Remove field"
+          color="danger"
+          iconType="trash"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiSpacer
@@ -154,13 +158,17 @@ exports[`should render error for dupes 1`] = `
     <EuiFlexItem
       grow={false}
     >
-      <EuiButtonIcon
-        aria-label="Remove field"
-        color="danger"
-        iconType="trash"
-        onClick={[Function]}
-        title="Remove field"
-      />
+      <EuiToolTip
+        content="Remove field"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Remove field"
+          color="danger"
+          iconType="trash"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiSpacer
@@ -261,13 +269,17 @@ exports[`should render error for empty name 1`] = `
     <EuiFlexItem
       grow={false}
     >
-      <EuiButtonIcon
-        aria-label="Remove field"
-        color="danger"
-        iconType="trash"
-        onClick={[Function]}
-        title="Remove field"
-      />
+      <EuiToolTip
+        content="Remove field"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Remove field"
+          color="danger"
+          iconType="trash"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiSpacer
@@ -368,13 +380,17 @@ exports[`should render field editor 1`] = `
     <EuiFlexItem
       grow={false}
     >
-      <EuiButtonIcon
-        aria-label="Remove field"
-        color="danger"
-        iconType="trash"
-        onClick={[Function]}
-        title="Remove field"
-      />
+      <EuiToolTip
+        content="Remove field"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Remove field"
+          color="danger"
+          iconType="trash"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiSpacer
@@ -450,13 +466,17 @@ exports[`should render field editor 1`] = `
     <EuiFlexItem
       grow={false}
     >
-      <EuiButtonIcon
-        aria-label="Remove field"
-        color="danger"
-        iconType="trash"
-        onClick={[Function]}
-        title="Remove field"
-      />
+      <EuiToolTip
+        content="Remove field"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Remove field"
+          color="danger"
+          iconType="trash"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiSpacer

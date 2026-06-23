@@ -10,11 +10,14 @@ import { Response } from '@kbn/core-di-server';
 import type { KibanaResponseFactory } from '@kbn/core-http-server';
 import type { Logger as KibanaLogger } from '@kbn/logging';
 import { inject, injectable } from 'inversify';
+import type { SettingsServiceContract } from '../lib/services/settings_service/settings_service';
+import { SettingsServiceToken } from '../lib/services/settings_service/tokens';
 
 @injectable()
 export class AlertingRouteContext {
   constructor(
     @inject(Response) public readonly response: KibanaResponseFactory,
-    @inject(Logger) public readonly logger: KibanaLogger
+    @inject(Logger) public readonly logger: KibanaLogger,
+    @inject(SettingsServiceToken) public readonly settings: SettingsServiceContract
   ) {}
 }

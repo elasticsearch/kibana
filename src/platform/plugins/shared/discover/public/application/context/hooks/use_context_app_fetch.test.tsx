@@ -30,21 +30,14 @@ const mockInterceptedWarning = {
 };
 
 let mockOverrideInterceptedWarnings = false;
+const mockFetchSurroundingDocs = jest.fn();
 
 jest.mock('../services/context', () => {
   const originalModule = jest.requireActual('../services/context');
   return {
     ...originalModule,
 
-    fetchSurroundingDocs: (type: string, dataView: DataView) => {
-      if (!dataView || !dataView.id) {
-        throw new Error();
-      }
-      return {
-        rows: type === 'predecessors' ? mockPredecessorHits : mockSuccessorHits,
-        interceptedWarnings: mockOverrideInterceptedWarnings ? [mockInterceptedWarning] : undefined,
-      };
-    },
+    fetchSurroundingDocs: (...args: unknown[]) => mockFetchSurroundingDocs(...args),
   };
 });
 
@@ -60,7 +53,12 @@ jest.mock('../services/anchor', () => ({
   },
 }));
 
-const initDefaults = (tieBreakerFields: string[], dataViewId = 'the-data-view-id') => {
+const initDefaults = (
+  tieBreakerFields: string[],
+  dataViewId = 'the-data-view-id',
+  predecessorCount = 2,
+  successorCount = 2
+) => {
   const dangerNotification = jest.fn();
   const services = createDiscoverServicesMock();
 
@@ -77,11 +75,23 @@ const initDefaults = (tieBreakerFields: string[], dataViewId = 'the-data-view-id
       anchorId: 'mock_anchor_id',
       dataView: { ...dataViewWithTimefieldMock, id: dataViewId },
       appState: {
-        predecessorCount: 2,
-        successorCount: 2,
+        predecessorCount,
+        successorCount,
       },
     } as ContextAppFetchProps,
   };
+
+  // Reset and setup mock implementation
+  mockFetchSurroundingDocs.mockReset();
+  mockFetchSurroundingDocs.mockImplementation((type: string, dataView: DataView) => {
+    if (!dataView || !dataView.id) {
+      throw new Error();
+    }
+    return {
+      rows: type === 'predecessors' ? mockPredecessorHits : mockSuccessorHits,
+      interceptedWarnings: mockOverrideInterceptedWarnings ? [mockInterceptedWarning] : undefined,
+    };
+  });
 
   return {
     result: renderHook(() => useContextAppFetch(props.props), {
@@ -210,5 +220,29 @@ describe('test useContextAppFetch', () => {
       mockInterceptedWarning,
     ]);
     expect(result.current.fetchedState.anchorInterceptedWarnings).toEqual([mockInterceptedWarning]);
+  });
+
+  it('should pass correct size parameter from appState to fetchSurroundingDocs', async () => {
+    const predecessorCount = 7;
+    const successorCount = 3;
+    const { result } = initDefaults(['_doc'], 'the-data-view-id', predecessorCount, successorCount);
+
+    await act(async () => {
+      await result.current.fetchAllRows();
+    });
+
+    // Verify fetchSurroundingDocs was called with correct size for predecessors
+    const predecessorCalls = mockFetchSurroundingDocs.mock.calls.filter(
+      (call) => call[0] === 'predecessors'
+    );
+    expect(predecessorCalls.length).toBeGreaterThan(0);
+    expect(predecessorCalls[0][5]).toBe(predecessorCount); // size is the 6th parameter (index 5)
+
+    // Verify fetchSurroundingDocs was called with correct size for successors
+    const successorCalls = mockFetchSurroundingDocs.mock.calls.filter(
+      (call) => call[0] === 'successors'
+    );
+    expect(successorCalls.length).toBeGreaterThan(0);
+    expect(successorCalls[0][5]).toBe(successorCount); // size is the 6th parameter (index 5)
   });
 });

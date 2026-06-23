@@ -59,6 +59,7 @@ export async function generateLogstashApiKey(esClient: ElasticsearchClient) {
               '.logs-endpoint.action.responses-*',
               'profiling-*',
               '.profiling-*',
+              'profiles-*',
             ],
             privileges: ['auto_configure', 'create_doc'],
           },

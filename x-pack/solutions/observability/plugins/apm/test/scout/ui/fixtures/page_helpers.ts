@@ -27,6 +27,19 @@ export async function waitForApmMainContainer(page: ScoutPage): Promise<void> {
 }
 
 /**
+ * Waits for the unified search bar's date picker to mount, regardless of which
+ * variant (legacy EuiSuperDatePicker or new DateRangePicker) is rendered. The
+ * variant depends on the `enableDateRangePicker` flag and may flip across
+ * environments.
+ */
+export async function waitForSearchBarReady(page: ScoutPage): Promise<void> {
+  await page
+    .getByTestId('dateRangePickerControlButton')
+    .or(page.getByTestId('superDatePickerToggleQuickMenuButton'))
+    .waitFor({ state: 'visible', timeout: EXTENDED_TIMEOUT });
+}
+
+/**
  * Close global EUI toasts when present — they intercept pointer events and break
  * interactions (e.g. Investigate menu) while still visible (#246662 CI flakes).
  */

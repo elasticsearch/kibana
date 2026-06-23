@@ -36,9 +36,9 @@ export function routes(coreSetup: CoreSetup<StartDeps, unknown>, logger: Logger)
         validate: {
           request: {
             body: schema.object({
-              grokPattern: schema.string(),
-              text: schema.arrayOf(schema.string(), { maxSize: 10000 }),
-              ecsCompatibility: schema.maybe(schema.string()),
+              grokPattern: schema.string({ maxLength: 10000 }),
+              text: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
+              ecsCompatibility: schema.maybe(schema.string({ maxLength: 10000 })),
             }),
           },
         },
@@ -133,10 +133,10 @@ export function routes(coreSetup: CoreSetup<StartDeps, unknown>, logger: Logger)
         validate: {
           request: {
             params: schema.object({
-              inferenceId: schema.string(),
+              inferenceId: schema.string({ maxLength: 10000 }),
             }),
             body: schema.object({
-              input: schema.string(),
+              input: schema.string({ maxLength: 10000 }),
             }),
           },
         },

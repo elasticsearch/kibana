@@ -6,7 +6,7 @@
  */
 
 import React, { memo } from 'react';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { EuiText } from '@elastic/eui';
 import { useTestIdGenerator } from '../../../../../hooks/use_test_id_generator';
 import { useWithInputTextEntered } from '../../../hooks/state_selectors/use_with_input_text_entered';
@@ -18,7 +18,7 @@ const InputPlaceholderContainer = styled(EuiText)`
   pointer-events: none;
   padding-left: 0.5em;
   width: 96%;
-  color: ${({ theme: { eui } }) => eui.euiFormControlPlaceholderText};
+  color: ${({ theme }) => theme.euiTheme.colors.textSubdued};
   user-select: none;
 `;
 

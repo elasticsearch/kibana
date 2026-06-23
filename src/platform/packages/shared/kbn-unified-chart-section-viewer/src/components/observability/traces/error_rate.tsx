@@ -13,6 +13,7 @@ import { useTraceMetricsContext } from './context/trace_metrics_context';
 import { Chart } from '../../chart';
 import { ACTION_OPEN_IN_DISCOVER } from '../../../common/constants';
 import { getErrorRateChart } from './trace_charts_definition';
+import { BREAKDOWN_LEGEND_CONFIG } from './constants';
 import { getLensMetricFormat } from '../../../common/utils';
 import type { MetricUnit } from '../../../types';
 
@@ -33,8 +34,16 @@ const ErrorRateChartContent = ({
   color,
   title,
 }: ErrorRateChartContentProps) => {
-  const { services, fetchParams, discoverFetch$, onBrushEnd, onFilter, actions, profileId } =
-    useTraceMetricsContext();
+  const {
+    services,
+    fetchParams,
+    discoverFetch$,
+    onBrushEnd,
+    onFilter,
+    actions,
+    profileId,
+    breakdownField,
+  } = useTraceMetricsContext();
 
   const chartLayers = useMemo<LensSeriesLayer[]>(
     () => [
@@ -54,9 +63,10 @@ const ErrorRateChartContent = ({
             ...getLensMetricFormat(unit),
           },
         ],
+        breakdown: breakdownField ? [breakdownField] : undefined,
       },
     ],
-    [seriesType, color, unit]
+    [seriesType, color, unit, breakdownField]
   );
 
   return (
@@ -72,6 +82,7 @@ const ErrorRateChartContent = ({
       onExploreInDiscoverTab={actions.openInNewTab}
       title={title}
       chartLayers={chartLayers}
+      legend={breakdownField ? BREAKDOWN_LEGEND_CONFIG : undefined}
       syncCursor
       syncTooltips
       yBounds={ERROR_RATE_Y_BOUNDS}
@@ -82,12 +93,13 @@ const ErrorRateChartContent = ({
 };
 
 export const ErrorRateChart = () => {
-  const { filters, indexes, metadataFields } = useTraceMetricsContext();
+  const { filters, indexes, metadataFields, breakdownField } = useTraceMetricsContext();
 
   const errorRateChart = getErrorRateChart({
     indexes,
     filters,
     metadataFields,
+    breakdownField,
   });
 
   if (!errorRateChart) {

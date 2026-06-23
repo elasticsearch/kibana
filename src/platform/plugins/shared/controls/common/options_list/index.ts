@@ -10,8 +10,15 @@
 export { isValidSearch } from './is_valid_search';
 export { getSelectionAsFieldType } from './options_list_selections';
 export type {
+  OptionsListDSLFetchBody,
+  OptionsListESQLFetchBody,
   OptionsListFailureResponse,
-  OptionsListRequest,
   OptionsListSuccessResponse,
   OptionsListSuggestions,
+  OptionsListUnifiedFetchBody,
 } from './types';
+export type {
+  GetESQLSingleColumnValuesFailure,
+  GetESQLSingleColumnValuesSuccess,
+} from './get_esql_single_column_values';
+export { getESQLSingleColumnValues } from './get_esql_single_column_values';

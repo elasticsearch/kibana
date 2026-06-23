@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/272761
+issues:
+- https://github.com/elastic/kibana/issues/268273
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Kibana platform
+title: "Fix missing `notifications.connectors.default.email` in Docker ENV variables"

@@ -18,17 +18,20 @@ import type { EntityAnalyticsRoutesDeps } from '../../../types';
 import { withMinimumLicense } from '../../../utils/with_minimum_license';
 import { WatchlistConfigClient } from '../watchlist_config';
 import { WatchlistEntitySourceClient } from '../../entity_sources/infra';
-import { getRequestSavedObjectClient } from '../../shared/utils';
 import { createEntitySourcesService } from '../../entity_sources/entity_sources_service';
+import { getWatchlistSavedObjectClient } from '../../shared/utils';
 import {
   buildWatchlistApiCallSuccessFields,
   reportWatchlistApiCallError,
 } from './watchlist_ebt_helpers';
+import { validateIndexPermissions } from '../../entity_sources/entity_source_api_key';
 
 export const createWatchlistRoute = (
   router: EntityAnalyticsRoutesDeps['router'],
   logger: Logger,
-  telemetrySender: ITelemetryEventsSender
+  telemetrySender: ITelemetryEventsSender,
+  getStartServices: EntityAnalyticsRoutesDeps['getStartServices'],
+  hasEncryptionKey: EntityAnalyticsRoutesDeps['hasEncryptionKey']
 ) => {
   router.versioned
     .post({
@@ -56,7 +59,7 @@ export const createWatchlistRoute = (
             const secSol = await context.securitySolution;
             const core = await context.core;
             const namespace = secSol.getSpaceId();
-            const soClient = getRequestSavedObjectClient(core);
+            const soClient = getWatchlistSavedObjectClient(core);
 
             const watchlistClient = new WatchlistConfigClient({
               logger,
@@ -68,25 +71,47 @@ export const createWatchlistRoute = (
 
             const { entitySources: entitySourceInputs, ...watchlistInput } = request.body;
 
-            // Step 1: Create the watchlist
+            // Step 1: Validate index privileges
+            if (entitySourceInputs?.length) {
+              await Promise.all(
+                entitySourceInputs
+                  .filter(
+                    (input): input is typeof input & { indexPattern: string } =>
+                      input.type === 'index' && !!input.indexPattern
+                  )
+                  .map((input) =>
+                    validateIndexPermissions(
+                      core.elasticsearch.client.asCurrentUser,
+                      input.indexPattern
+                    )
+                  )
+              );
+            }
+
+            // Step 2: Create the watchlist
             const watchlist = await watchlistClient.create(watchlistInput);
             if (!watchlist.id) {
               throw new Error('Watchlist creation succeeded but no ID was returned');
             }
             const watchlistId = watchlist.id;
 
-            // Step 2: If entity sources were provided, create and link them (with rollback)
+            // Step 3: If entity sources were provided, create and link them (with rollback)
             if (entitySourceInputs?.length) {
               const sourceClient = new WatchlistEntitySourceClient({
                 soClient,
                 namespace,
+                getStartServices,
+                esClient: core.elasticsearch.client.asCurrentUser,
+                logger,
+                hasEncryptionKey,
               });
 
               const createdSources = [];
               try {
                 for (const entitySourceInput of entitySourceInputs) {
-                  const entitySource = await sourceClient.create(entitySourceInput);
+                  const entitySource = await sourceClient.create(entitySourceInput, request);
                   await watchlistClient.addEntitySourceReference(watchlistId, entitySource.id);
+
                   createdSources.push(entitySource);
                 }
                 telemetrySender.reportEBT(
@@ -111,6 +136,8 @@ export const createWatchlistRoute = (
                         soClient,
                         logger,
                         namespace,
+                        getStartServices,
+                        hasEncryptionKey,
                       });
                       await entitySourcesService.syncWatchlist(watchlistId);
                       logger.info(

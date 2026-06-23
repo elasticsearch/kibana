@@ -42,14 +42,16 @@ export const ShareUrlIconButton = memo(
         <EuiToolTip content={tooltip}>
           <EuiCopy textToCopy={url}>
             {(copy) => (
-              <EuiButtonIcon
-                iconType="share"
-                color="text"
-                aria-label={ariaLabel}
-                data-test-subj={dataTestSubj}
-                onClick={copy}
-                onKeyDown={copy}
-              />
+              <EuiToolTip content={ariaLabel} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  iconType="share"
+                  color="text"
+                  aria-label={ariaLabel}
+                  data-test-subj={dataTestSubj}
+                  onClick={copy}
+                  onKeyDown={copy}
+                />
+              </EuiToolTip>
             )}
           </EuiCopy>
         </EuiToolTip>

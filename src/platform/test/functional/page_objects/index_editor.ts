@@ -10,7 +10,8 @@
 import expect from '@kbn/expect';
 import { FtrService } from '../ftr_provider_context';
 
-const ADD_ROW_COLUMN_INDEX = 1;
+// Grid index of the add-row control column (after the color-indicator and selection columns)
+const ADD_ROW_COLUMN_INDEX = 2;
 
 export class IndexEditorObject extends FtrService {
   private readonly testSubjects = this.ctx.getService('testSubjects');

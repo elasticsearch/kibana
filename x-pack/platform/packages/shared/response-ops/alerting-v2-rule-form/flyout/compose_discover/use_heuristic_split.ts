@@ -128,6 +128,16 @@ export function splitQuery(query: string): SplitResult {
   return { base, alertBlock, confidence: 'high', reason: 'split_succeeded' };
 }
 
+/** Splits a full ES|QL query (e.g. from Discover) into composed base + breach segment. */
+export function discoverQueryToComposed(inlinedQuery: string): {
+  format: 'composed';
+  base: string;
+  breach: { segment: string };
+} {
+  const { base, alertBlock } = splitQuery(inlinedQuery);
+  return { format: 'composed', base, breach: { segment: alertBlock } };
+}
+
 /**
  * Produces a candidate recovery block from an alert block by performing a
  * naive per-operator flip of comparison operators (`>` ↔ `<`, `>=` ↔ `<=`).

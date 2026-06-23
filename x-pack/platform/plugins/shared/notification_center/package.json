@@ -1,0 +1,6 @@
+{
+  "name": "@kbn/notification-center-plugin",
+  "private": true,
+  "version": "1.0.0",
+  "license": "Elastic License 2.0"
+}

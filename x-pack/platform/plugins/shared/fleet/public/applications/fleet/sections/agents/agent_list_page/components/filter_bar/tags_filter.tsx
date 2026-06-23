@@ -9,6 +9,7 @@ import type { EuiSelectableOption } from '@elastic/eui';
 import { EuiButton, EuiPopoverFooter, EuiPopoverTitle, useEuiTheme } from '@elastic/eui';
 import { EuiFilterButton, EuiPopover, EuiSelectable } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 
 interface Props {
   tags: string[];
@@ -49,6 +50,9 @@ export const TagsFilter: React.FunctionComponent<Props> = ({
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.fleet.agentList.tagsFilterAriaLabel', {
+        defaultMessage: 'Tags filter',
+      })}
       ownFocus
       zIndex={Number(euiTheme.levels.header) - 1}
       button={

@@ -182,6 +182,58 @@ describe('getTemplateDefinitionJsonSchema', () => {
     expect(typeProp?.const ?? typeProp?.enum).toEqual('date');
   });
 
+  it('exposes required_on_close as a boolean property on the validation object of every inline field branch', () => {
+    const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
+    const branches = getFieldsOneOfBranches(schema);
+
+    const inlineBranches = branches.filter(({ controlConst }) => controlConst != null);
+    expect(inlineBranches.length).toBeGreaterThan(0);
+
+    for (const { branch, controlConst } of inlineBranches) {
+      // Validation may be nested directly in branch.properties or inside an allOf entry
+      let validationProp: JsonSchemaObject | undefined;
+
+      const directProps = branch.properties as JsonSchemaObject | undefined;
+      if (directProps?.validation) {
+        validationProp = directProps.validation as JsonSchemaObject;
+      } else if (Array.isArray(branch.allOf)) {
+        for (const entry of branch.allOf as JsonSchemaObject[]) {
+          const p = (entry.properties as JsonSchemaObject | undefined)?.validation as
+            | JsonSchemaObject
+            | undefined;
+          if (p) {
+            validationProp = p;
+            break;
+          }
+        }
+      }
+
+      if (!validationProp) {
+        // Top-level shared properties might carry it
+        const fieldsSchema = (schema.properties as JsonSchemaObject)?.fields as JsonSchemaObject;
+        const itemsSchema = fieldsSchema.items as JsonSchemaObject;
+        const sharedProps = itemsSchema.properties as JsonSchemaObject | undefined;
+        validationProp = sharedProps?.validation as JsonSchemaObject | undefined;
+      }
+
+      expect(validationProp).toBeDefined();
+
+      const validationProps = (validationProp!.properties ??
+        (validationProp!.allOf as JsonSchemaObject[] | undefined)?.[0]?.properties) as
+        | JsonSchemaObject
+        | undefined;
+
+      expect(validationProps?.required_on_close).toBeDefined();
+      expect((validationProps?.required_on_close as JsonSchemaObject)?.type).toBe('boolean');
+
+      // Sanity check: `required` is also present (unchanged)
+      expect(validationProps?.required).toBeDefined();
+
+      // suppress unused controlConst lint
+      void controlConst;
+    }
+  });
+
   it('uses if/then structure keyed on control for better error messages', () => {
     const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
     const fieldsSchema = (schema.properties as JsonSchemaObject)?.fields as JsonSchemaObject;

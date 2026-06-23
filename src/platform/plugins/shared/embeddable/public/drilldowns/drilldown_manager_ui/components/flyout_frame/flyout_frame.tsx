@@ -10,14 +10,15 @@
 import type { FC, PropsWithChildren } from 'react';
 import React from 'react';
 import {
-  EuiFlyoutHeader,
-  EuiTitle,
-  EuiFlyoutBody,
-  EuiFlyoutFooter,
-  EuiFlexGroup,
-  EuiFlexItem,
   EuiButtonEmpty,
   EuiButtonIcon,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiFlyoutBody,
+  EuiFlyoutFooter,
+  EuiFlyoutHeader,
+  EuiTitle,
+  EuiToolTip,
 } from '@elastic/eui';
 import { txtClose, txtBack } from './i18n';
 
@@ -47,12 +48,14 @@ export const FlyoutFrame: FC<PropsWithChildren<FlyoutFrameProps>> = ({
           {onBack && (
             <EuiFlexItem grow={false}>
               <div css={{ marginLeft: '-8px', marginTop: '-4px' }}>
-                <EuiButtonIcon
-                  color="text"
-                  onClick={onBack}
-                  iconType="chevronSingleLeft"
-                  aria-label={txtBack}
-                />
+                <EuiToolTip content={txtBack} disableScreenReaderOutput>
+                  <EuiButtonIcon
+                    color="text"
+                    onClick={onBack}
+                    iconType="chevronSingleLeft"
+                    aria-label={txtBack}
+                  />
+                </EuiToolTip>
               </div>
             </EuiFlexItem>
           )}

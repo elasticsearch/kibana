@@ -1,5 +1,5 @@
 {
-  "sha1": "89c4d5591674b16fd750fdd351047bc86bf6c048",
+  "sha1": "d2c514223ac9bb6ccb09caa9b81965c25728af74",
   "tests": [
     {
       "id": "f3ddbbb53c28ebe-f2cd2d3cdc77643",
@@ -425,7 +425,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/ui/parallel_tests/rules/custom_threshold_rule/custom_threshold_preview_chart.spec.ts",
-        "line": 27,
+        "line": 23,
         "column": 9
       }
     },
@@ -441,6 +441,38 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/ui/parallel_tests/rules/custom_threshold_rule/custom_threshold_preview_chart.spec.ts",
+        "line": 28,
+        "column": 9
+      }
+    },
+    {
+      "id": "19ff7375d931f4e-7d7813aed627c3b",
+      "title": "Custom threshold preview chart should render chart correctly after fixing an invalid equation",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/observability/test/scout/ui/parallel_tests/rules/custom_threshold_rule/custom_threshold_preview_chart.spec.ts",
+        "line": 42,
+        "column": 9
+      }
+    },
+    {
+      "id": "68a589e96611de6-3eb2f3a6481d3fa",
+      "title": "Custom Threshold Rule - Full creation flow should create a custom threshold rule with all fields and verify saved params",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/observability/test/scout/ui/parallel_tests/rules/custom_threshold_rule/custom_threshold_rule_creation.spec.ts",
         "line": 32,
         "column": 9
       }

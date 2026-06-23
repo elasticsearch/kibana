@@ -11,7 +11,10 @@ import { fireEvent, waitFor } from '@testing-library/react';
 import { createFleetTestRendererMock } from '../../../../../../../../mock';
 import type { TestRenderer } from '../../../../../../../../mock';
 import { useAgentless } from '../../../single_page_layout/hooks/setup_technology';
-import { DATA_STREAM_TYPE_VAR_NAME } from '../../../../../../../../../common/constants';
+import {
+  DATASET_VAR_NAME,
+  DATA_STREAM_TYPE_VAR_NAME,
+} from '../../../../../../../../../common/constants';
 
 import type {
   PackageInfo,
@@ -782,6 +785,108 @@ describe('PackagePolicyInputStreamConfig', () => {
 
       await waitFor(() => {
         expect(renderResult.queryByText('Enable Elastic APM Enrichment')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Fleet-unmanaged signal types (e.g. profiles)', () => {
+    // For profiles the type is fixed and the dataset has no effect; both fields are hidden
+    // via FLEET_UNMANAGED_DATA_STREAM_TYPES for both OTel and non-OTel packages.
+    const datasetVar = {
+      name: DATASET_VAR_NAME,
+      type: 'text',
+      title: 'Dataset name',
+      show_user: true,
+    };
+
+    const makeInputPackageInfo = (input: string, type: string): PackageInfo =>
+      ({
+        ...mockPackageInfo,
+        type: 'input',
+        policy_templates: [
+          {
+            name: 'profiling_template',
+            title: 'Profiling Template',
+            description: 'Profiling',
+            input,
+            type,
+            template_path: 'input.yml.hbs',
+            dynamic_signal_types: false,
+            vars: [],
+          },
+        ],
+      } as unknown as PackageInfo);
+
+    const makeInputStream = (
+      input: string,
+      type: string,
+      vars: RegistryStreamWithDataStream['vars'] = []
+    ): RegistryStreamWithDataStream => ({
+      input,
+      title: 'Profiling',
+      template_path: 'stream.yml.hbs',
+      vars,
+      description: 'Collect profiling data',
+      data_stream: {
+        title: 'Profiling Data',
+        release: 'ga',
+        type,
+        package: 'profiling_package',
+        dataset: 'profiling_package.data',
+        path: 'profiling_data',
+        elasticsearch: {},
+        ingest_pipeline: 'default',
+        streams: [],
+      },
+    });
+
+    const makePolicyInputStream = (type: string): NewPackagePolicyInputStream => ({
+      id: 'profiling-stream-1',
+      enabled: true,
+      data_stream: { type, dataset: 'profiling_package.data' },
+      vars: {},
+    });
+
+    // Same behavior for OTel and non-OTel input packages: hiding keys off the signal type.
+    it.each(['otelcol', 'pf-elastic-collector'])(
+      'hides the Data Stream Type selector for the profiles signal (%s input)',
+      async (input) => {
+        render(
+          makeInputStream(input, 'profiles'),
+          makePolicyInputStream('profiles'),
+          makeInputPackageInfo(input, 'profiles')
+        );
+
+        fireEvent.click(renderResult.getByText('Advanced options'));
+
+        await waitFor(() => {
+          expect(renderResult.queryByText('Data Stream Type')).not.toBeInTheDocument();
+          expect(renderResult.queryByTestId('packagePolicyDataStreamType')).not.toBeInTheDocument();
+        });
+      }
+    );
+
+    it('hides the dataset field for the profiles signal', async () => {
+      render(
+        makeInputStream('otelcol', 'profiles', [datasetVar] as any),
+        makePolicyInputStream('profiles'),
+        makeInputPackageInfo('otelcol', 'profiles')
+      );
+
+      await waitFor(() => {
+        expect(renderResult.queryByTestId('datasetComboBox')).not.toBeInTheDocument();
+      });
+    });
+
+    it('keeps the dataset field for managed signal types (e.g. logs)', async () => {
+      render(
+        makeInputStream('otelcol', 'logs', [datasetVar] as any),
+        makePolicyInputStream('logs'),
+        makeInputPackageInfo('otelcol', 'logs')
+      );
+
+      await waitFor(() => {
+        expect(renderResult.getByTestId('datasetComboBox')).toBeInTheDocument();
       });
     });
   });

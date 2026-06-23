@@ -132,7 +132,7 @@ test.describe(
 
     test('updates data when changing time range and clicking update', async ({
       page,
-      pageObjects: { serviceDetailsPage },
+      pageObjects: { serviceDetailsPage, datePicker },
     }) => {
       await serviceDetailsPage.overviewTab.goToTab({
         serviceName: testData.SERVICE_OPBEANS_NODE,
@@ -141,30 +141,15 @@ test.describe(
       });
 
       await test.step('Open date picker and select new time range', async () => {
-        // Click on the date picker button to open it
-        await page
-          .getByTestId('apmSloCalloutCreateSloButton')
-          .waitFor({ state: 'visible', timeout: EXTENDED_TIMEOUT });
-        await page.getByTestId('superDatePickerToggleQuickMenuButton').click();
-        await expect(page.getByTestId('superDatePickerQuickSelectApplyButton')).toBeVisible();
-        await page.getByTestId('superDatePickerToggleQuickMenuButton').click();
-        await expect(page.getByTestId('superDatePickerQuickSelectApplyButton')).toBeHidden();
-
-        // Click on "Absolute" tab for the start date
-        await page.getByTestId('superDatePickerstartDatePopoverButton').click();
-        await page.getByTestId('superDatePickerAbsoluteTab').click();
-
-        // Clear and set new start date (5 minutes earlier)
-        const startDateInput = page.getByTestId('superDatePickerAbsoluteDateInput');
-        await startDateInput.clear();
-        await startDateInput.fill('2021-10-09T23:55:00.000Z');
-        await startDateInput.press('Enter');
+        // datePicker.setAbsoluteRange auto-detects the picker variant, opens the
+        // popover, fills both bounds, and clicks the update/submit button.
+        await datePicker.setAbsoluteRange({
+          from: '2021-10-09T23:55:00.000Z',
+          to: testData.END_DATE,
+        });
       });
 
-      await test.step('Click Update button and verify URL is updated', async () => {
-        await page.getByTestId('querySubmitButton').click();
-
-        // Wait for URL to update with new time range
+      await test.step('Verify URL is updated', async () => {
         await page.waitForURL(/2021-10-09/, { timeout: EXTENDED_TIMEOUT });
         expect(page.url()).toContain('2021-10-09');
       });

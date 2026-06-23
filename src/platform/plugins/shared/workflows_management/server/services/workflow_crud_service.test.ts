@@ -8,14 +8,26 @@
  */
 
 import { errors } from '@elastic/elasticsearch';
+import type { CoreStart } from '@kbn/core/server';
 import { elasticsearchServiceMock } from '@kbn/core/server/mocks';
 import { loggerMock } from '@kbn/logging-mocks';
 
 import type { WorkflowCrudDeps } from './types';
+import { WorkflowChangeHistoryAction } from './workflow_change_history_constants';
 import { WorkflowCrudService } from './workflow_crud_service';
 import type { WorkflowExecutionQueryService } from './workflow_execution_query_service';
 import type { WorkflowValidationService } from './workflow_validation_service';
+import * as workflowPrepare from '../api/lib/workflow_prepare';
+import { logWorkflowChanges } from '../lib/log_workflow_changes';
 import type { WorkflowProperties } from '../storage/workflow_storage';
+
+jest.mock('../lib/log_workflow_changes', () => ({
+  logWorkflowChanges: jest.fn().mockResolvedValue(undefined),
+}));
+
+const mockedLogWorkflowChanges = logWorkflowChanges as jest.MockedFunction<
+  typeof logWorkflowChanges
+>;
 
 const makeSource = (overrides?: Partial<WorkflowProperties>): WorkflowProperties => ({
   name: 'Test Workflow',
@@ -37,7 +49,7 @@ const makeSource = (overrides?: Partial<WorkflowProperties>): WorkflowProperties
 
 const makeStorageClient = () => ({
   search: jest.fn(),
-  index: jest.fn().mockResolvedValue({ result: 'created' }),
+  index: jest.fn().mockResolvedValue({ result: 'created', _seq_no: 1, _primary_term: 1 }),
   bulk: jest.fn(),
 });
 
@@ -49,7 +61,8 @@ const makeSecurityMock = (username: string = 'alice') =>
   } as any);
 
 const makeDeps = (
-  clientOverrides?: Partial<ReturnType<typeof makeStorageClient>>
+  clientOverrides?: Partial<ReturnType<typeof makeStorageClient>>,
+  depsOverrides?: Partial<WorkflowCrudDeps>
 ): { deps: WorkflowCrudDeps; client: ReturnType<typeof makeStorageClient> } => {
   const client = { ...makeStorageClient(), ...clientOverrides };
   const executionQueryService = {
@@ -70,6 +83,14 @@ const makeDeps = (
     getTaskScheduler: () => null,
     executionQueryService,
     validationService,
+    getCoreStart: () => ({} as CoreStart),
+    changeHistoryService: {
+      isInitialized: () => false,
+      asScoped: jest.fn(),
+      asSystemUser: jest.fn(),
+    } as any,
+    workflowVersioningEnabled: true,
+    ...depsOverrides,
   };
   return { deps, client };
 };
@@ -87,6 +108,39 @@ const lightweightWorkflowYaml = [
 ].join('\n');
 
 describe('WorkflowCrudService', () => {
+  describe('logWorkflowChangesAfterWrite', () => {
+    it('does not touch change history when workflow versioning is disabled', async () => {
+      const asScoped = jest.fn(() => {
+        throw new Error('asScoped should not be called when versioning is disabled');
+      });
+      const asSystemUser = jest.fn(() => {
+        throw new Error('asSystemUser should not be called when versioning is disabled');
+      });
+      const { deps } = makeDeps(undefined, {
+        workflowVersioningEnabled: false,
+        changeHistoryService: {
+          isInitialized: () => false,
+          initialize: jest.fn().mockResolvedValue(undefined),
+          getHistory: jest.fn(),
+          asScoped,
+          asSystemUser,
+        },
+      });
+      const service = new WorkflowCrudService(deps);
+
+      await service.logWorkflowChangesAfterWrite({
+        workflows: [{ id: 'wf-1', document: makeSource() }],
+        action: WorkflowChangeHistoryAction.workflowUpdate,
+        spaceId: 'default',
+        timestamp: new Date(),
+      });
+
+      expect(asScoped).not.toHaveBeenCalled();
+      expect(asSystemUser).not.toHaveBeenCalled();
+      expect(mockedLogWorkflowChanges).not.toHaveBeenCalled();
+    });
+  });
+
   describe('prepareWorkflowDocumentForStorage', () => {
     it('uses lightweight validation only when explicitly requested', async () => {
       const { deps } = makeDeps();
@@ -371,6 +425,33 @@ describe('WorkflowCrudService', () => {
       );
     });
 
+    it('logs workflow create to change history after a successful index', async () => {
+      const scopedChangeHistory = { logBulk: jest.fn() };
+      const changeHistoryService = {
+        isInitialized: () => true,
+        asScoped: jest.fn().mockReturnValue(scopedChangeHistory),
+      };
+      const { deps, client } = makeDeps();
+      deps.changeHistoryService = changeHistoryService as any;
+      client.search.mockResolvedValue({ hits: { hits: [] } });
+
+      const service = new WorkflowCrudService(deps);
+      await service.createWorkflow({ yaml: validYaml }, 'default', request);
+
+      expect(mockedLogWorkflowChanges).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: WorkflowChangeHistoryAction.workflowCreate,
+          spaceId: 'default',
+          scopedChangeHistory,
+          workflows: [
+            expect.objectContaining({
+              document: expect.objectContaining({ name: 'My Workflow' }),
+            }),
+          ],
+        })
+      );
+    });
+
     it('does not generate a reserved workflow ID from the YAML name', async () => {
       const { deps, client } = makeDeps();
       client.search.mockResolvedValue({ hits: { hits: [] } });
@@ -575,7 +656,7 @@ describe('WorkflowCrudService', () => {
       });
       client.index
         .mockRejectedValueOnce(conflict) // first attempt loses the race
-        .mockResolvedValueOnce({ result: 'created' }); // retry succeeds
+        .mockResolvedValueOnce({ result: 'created', _seq_no: 1, _primary_term: 1 }); // retry succeeds
 
       const service = new WorkflowCrudService(deps);
       const result = await service.createWorkflow({ yaml: validYaml }, 'default', request);
@@ -788,26 +869,37 @@ describe('WorkflowCrudService', () => {
       (deps as any).getTaskScheduler = () => taskScheduler;
 
       client.bulk.mockResolvedValue({ items: [{ index: { _id: 'wf-1', status: 200 } }] });
-      // Post-write re-read: persisted document has only a manual trigger.
-      client.search.mockResolvedValueOnce({
-        hits: {
-          hits: [
-            {
-              _id: 'wf-1',
-              _source: makeSource({
-                enabled: true,
-                valid: true,
-                definition: {
-                  name: 'A',
+      // Pre-bulk read for overwrite version bump, then post-write re-read for scheduler sync.
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ version: 4 }),
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({
                   enabled: true,
-                  triggers: [{ type: 'manual' }],
-                  steps: [],
-                } as any,
-              }),
-            },
-          ],
-        },
-      });
+                  valid: true,
+                  definition: {
+                    name: 'A',
+                    enabled: true,
+                    triggers: [{ type: 'manual' }],
+                    steps: [],
+                  } as any,
+                }),
+              },
+            ],
+          },
+        });
 
       const service = new WorkflowCrudService(deps);
       await service.bulkCreateWorkflows(
@@ -827,25 +919,36 @@ describe('WorkflowCrudService', () => {
       (deps as any).getTaskScheduler = () => taskScheduler;
 
       client.bulk.mockResolvedValue({ items: [{ index: { _id: 'wf-1', status: 200 } }] });
-      client.search.mockResolvedValueOnce({
-        hits: {
-          hits: [
-            {
-              _id: 'wf-1',
-              _source: makeSource({
-                enabled: true,
-                valid: true,
-                definition: {
-                  name: 'A',
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ version: 2 }),
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({
                   enabled: true,
-                  triggers: [{ type: 'scheduled', with: { every: '5m' } }],
-                  steps: [],
-                } as any,
-              }),
-            },
-          ],
-        },
-      });
+                  valid: true,
+                  definition: {
+                    name: 'A',
+                    enabled: true,
+                    triggers: [{ type: 'scheduled', with: { every: '5m' } }],
+                    steps: [],
+                  } as any,
+                }),
+              },
+            ],
+          },
+        });
 
       const service = new WorkflowCrudService(deps);
       await service.bulkCreateWorkflows(
@@ -870,25 +973,36 @@ describe('WorkflowCrudService', () => {
       (deps as any).getTaskScheduler = () => taskScheduler;
 
       client.bulk.mockResolvedValue({ items: [{ index: { _id: 'wf-1', status: 200 } }] });
-      client.search.mockResolvedValueOnce({
-        hits: {
-          hits: [
-            {
-              _id: 'wf-1',
-              _source: makeSource({
-                enabled: false,
-                valid: true,
-                definition: {
-                  name: 'A',
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ version: 1 }),
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({
                   enabled: false,
-                  triggers: [{ type: 'scheduled', with: { every: '5m' } }],
-                  steps: [],
-                } as any,
-              }),
-            },
-          ],
-        },
-      });
+                  valid: true,
+                  definition: {
+                    name: 'A',
+                    enabled: false,
+                    triggers: [{ type: 'scheduled', with: { every: '5m' } }],
+                    steps: [],
+                  } as any,
+                }),
+              },
+            ],
+          },
+        });
 
       const service = new WorkflowCrudService(deps);
       await service.bulkCreateWorkflows(
@@ -1073,7 +1187,7 @@ describe('WorkflowCrudService', () => {
       const service = new WorkflowCrudService(deps);
       await expect(
         service.updateWorkflow('missing', { enabled: false }, 'default', request)
-      ).rejects.toThrow(/not found/);
+      ).rejects.toThrow('Workflow with id missing not found');
       expect(client.index).not.toHaveBeenCalled();
     });
 
@@ -1085,6 +1199,8 @@ describe('WorkflowCrudService', () => {
             {
               _id: 'wf-1',
               _source: makeSource({ name: 'Before', enabled: true, tags: ['t1'] }),
+              _seq_no: 5,
+              _primary_term: 1,
             },
           ],
         },
@@ -1103,10 +1219,51 @@ describe('WorkflowCrudService', () => {
         expect.objectContaining({
           id: 'wf-1',
           refresh: true,
+          if_seq_no: 5,
+          if_primary_term: 1,
           document: expect.objectContaining({
             tags: ['t1', 't2'],
             lastUpdatedBy: 'alice',
           }),
+        })
+      );
+    });
+
+    it('logs workflow update to change history after a successful write', async () => {
+      const scopedChangeHistory = { logBulk: jest.fn() };
+      const changeHistoryService = {
+        isInitialized: () => true,
+        asScoped: jest.fn().mockReturnValue(scopedChangeHistory),
+      };
+      const { deps, client } = makeDeps();
+      deps.changeHistoryService = changeHistoryService as any;
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({ name: 'Before', enabled: true, tags: ['t1'], version: 4 }),
+              _seq_no: 5,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow('wf-1', { tags: ['t1', 't2'] } as any, 'default', request);
+
+      expect(mockedLogWorkflowChanges).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: WorkflowChangeHistoryAction.workflowUpdate,
+          spaceId: 'default',
+          scopedChangeHistory,
+          workflows: [
+            expect.objectContaining({
+              id: 'wf-1',
+              document: expect.objectContaining({ tags: ['t1', 't2'], version: 5 }),
+            }),
+          ],
         })
       );
     });
@@ -1119,6 +1276,8 @@ describe('WorkflowCrudService', () => {
             {
               _id: 'wf-1',
               _source: makeSource({ lastUpdatedBy: 'someone-else' }),
+              _seq_no: 2,
+              _primary_term: 1,
             },
           ],
         },
@@ -1128,6 +1287,552 @@ describe('WorkflowCrudService', () => {
       await service.updateWorkflow('wf-1', { tags: ['new'] } as any, 'default', request);
 
       expect(client.index.mock.calls[0][0].document.lastUpdatedBy).toBe('alice');
+    });
+
+    it('retries after a version conflict and merges against a fresh read', async () => {
+      const { deps, client } = makeDeps();
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ name: 'Before', tags: ['t1'], version: 5 }),
+                _seq_no: 5,
+                _primary_term: 1,
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({
+                  name: 'Concurrent Name',
+                  tags: ['t1'],
+                  version: 6,
+                }),
+                _seq_no: 8,
+                _primary_term: 1,
+              },
+            ],
+          },
+        });
+
+      const conflict = Object.assign(new Error('version conflict'), {
+        statusCode: 409,
+        meta: { statusCode: 409 },
+      });
+      client.index
+        .mockRejectedValueOnce(conflict)
+        .mockResolvedValueOnce({ result: 'updated', _seq_no: 9, _primary_term: 1 });
+
+      const service = new WorkflowCrudService(deps);
+      const result = await service.updateWorkflow(
+        'wf-1',
+        { tags: ['t1', 't2'] } as any,
+        'default',
+        request
+      );
+
+      expect(result.id).toBe('wf-1');
+      expect(client.search).toHaveBeenCalledTimes(2);
+      expect(client.search.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ seq_no_primary_term: true })
+      );
+      expect(client.index).toHaveBeenCalledTimes(2);
+      expect(client.index).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          id: 'wf-1',
+          if_seq_no: 5,
+          if_primary_term: 1,
+          document: expect.objectContaining({ version: 6 }),
+        })
+      );
+      expect(client.index).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          id: 'wf-1',
+          if_seq_no: 8,
+          if_primary_term: 1,
+          document: expect.objectContaining({
+            name: 'Concurrent Name',
+            tags: ['t1', 't2'],
+            lastUpdatedBy: 'alice',
+            version: 7,
+          }),
+        })
+      );
+    });
+
+    it('increments version from the existing document on update', async () => {
+      const { deps, client } = makeDeps();
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({ version: 12 }),
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow('wf-1', { enabled: false }, 'default', request);
+
+      expect(client.index).toHaveBeenCalledWith(
+        expect.objectContaining({
+          document: expect.objectContaining({ version: 13, enabled: false }),
+        })
+      );
+    });
+
+    it('does not increment version when workflow versioning uiSetting is disabled', async () => {
+      const { deps, client } = makeDeps(undefined, { workflowVersioningEnabled: false });
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({ version: 12 }),
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow('wf-1', { enabled: false }, 'default', request);
+
+      expect(client.index).toHaveBeenCalledWith(
+        expect.objectContaining({
+          document: expect.objectContaining({ version: 12, enabled: false }),
+        })
+      );
+    });
+
+    it('reads global and soft-deleted workflows when applying OCC updates', async () => {
+      const { deps, client } = makeDeps();
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-global',
+              _source: makeSource({ spaceId: '*', tags: ['global'] }),
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow(
+        'wf-global',
+        { tags: ['global', 'updated'] } as any,
+        'default',
+        request
+      );
+
+      expect(client.search).toHaveBeenCalledWith(
+        expect.objectContaining({
+          seq_no_primary_term: true,
+          query: {
+            bool: {
+              must: [
+                { ids: { values: ['wf-global'] } },
+                {
+                  bool: {
+                    should: [{ term: { spaceId: 'default' } }, { term: { spaceId: '*' } }],
+                    minimum_should_match: 1,
+                  },
+                },
+              ],
+              must_not: [],
+            },
+          },
+        })
+      );
+    });
+
+    it('validates YAML once per request even when OCC retries after a conflict', async () => {
+      const applyYamlUpdateSpy = jest.spyOn(workflowPrepare, 'applyYamlUpdate');
+      const { deps, client } = makeDeps({
+        search: jest.fn(),
+      });
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ yaml: lightweightWorkflowYaml }),
+                _seq_no: 1,
+                _primary_term: 1,
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ yaml: lightweightWorkflowYaml, name: 'Concurrent Name' }),
+                _seq_no: 4,
+                _primary_term: 1,
+              },
+            ],
+          },
+        });
+
+      const conflict = Object.assign(new Error('version conflict'), {
+        statusCode: 409,
+        meta: { statusCode: 409 },
+      });
+      client.index
+        .mockRejectedValueOnce(conflict)
+        .mockResolvedValueOnce({ result: 'updated', _seq_no: 5, _primary_term: 1 });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow(
+        'wf-1',
+        { yaml: lightweightWorkflowYaml } as any,
+        'default',
+        request
+      );
+
+      expect(applyYamlUpdateSpy).toHaveBeenCalledTimes(1);
+      applyYamlUpdateSpy.mockRestore();
+    });
+
+    it('applies hoisted YAML patch to the indexed document', async () => {
+      const yamlWithoutTopLevelEnabled = [
+        'name: Parsed Workflow',
+        'triggers:',
+        '  - type: manual',
+        'steps:',
+        '  - name: step-one',
+        '    type: console',
+        '    with:',
+        '      message: "hi"',
+      ].join('\n');
+      const parsedDefinition = {
+        name: 'Parsed Workflow',
+        enabled: true,
+        version: '1' as const,
+        triggers: [],
+        steps: [],
+      };
+
+      jest.spyOn(workflowPrepare, 'applyYamlUpdate').mockReturnValue({
+        updatedDataPatch: {
+          definition: parsedDefinition,
+          name: 'Parsed Workflow',
+          enabled: true,
+          description: '',
+          tags: [],
+          triggerTypes: ['manual'],
+          valid: true,
+          yaml: yamlWithoutTopLevelEnabled,
+        },
+        validationErrors: [],
+        shouldUpdateScheduler: true,
+      });
+
+      const { deps, client } = makeDeps();
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({ name: 'Stored Name', yaml: 'name: Stored Name' }),
+              _seq_no: 3,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      const result = await service.updateWorkflow(
+        'wf-1',
+        { yaml: yamlWithoutTopLevelEnabled } as any,
+        'default',
+        request
+      );
+
+      expect(result.validationErrors).toEqual([]);
+      expect(result.valid).toBe(true);
+      expect(client.index).toHaveBeenCalledWith(
+        expect.objectContaining({
+          document: expect.objectContaining({
+            yaml: yamlWithoutTopLevelEnabled,
+            name: 'Parsed Workflow',
+            definition: parsedDefinition,
+            valid: true,
+          }),
+        })
+      );
+
+      jest.restoreAllMocks();
+    });
+
+    it('resolves enabled from fresh existingSource on YAML OCC retry when yaml omits top-level enabled', async () => {
+      const yamlWithoutTopLevelEnabled = [
+        'name: Parsed Workflow',
+        'triggers:',
+        '  - type: manual',
+        'steps:',
+        '  - name: step-one',
+        '    type: console',
+        '    with:',
+        '      message: "hi"',
+      ].join('\n');
+      const parsedDefinition = {
+        name: 'Parsed Workflow',
+        enabled: false,
+        version: '1' as const,
+        triggers: [],
+        steps: [],
+      };
+
+      jest.spyOn(workflowPrepare, 'applyYamlUpdate').mockReturnValue({
+        updatedDataPatch: {
+          definition: parsedDefinition,
+          name: 'Parsed Workflow',
+          enabled: true,
+          description: '',
+          tags: [],
+          triggerTypes: ['manual'],
+          valid: true,
+          yaml: yamlWithoutTopLevelEnabled,
+        },
+        validationErrors: [],
+        shouldUpdateScheduler: true,
+      });
+
+      const { deps, client } = makeDeps();
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ enabled: false, yaml: yamlWithoutTopLevelEnabled }),
+                _seq_no: 1,
+                _primary_term: 1,
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ enabled: true, yaml: yamlWithoutTopLevelEnabled }),
+                _seq_no: 4,
+                _primary_term: 1,
+              },
+            ],
+          },
+        });
+
+      const conflict = Object.assign(new Error('version conflict'), {
+        statusCode: 409,
+        meta: { statusCode: 409 },
+      });
+      client.index
+        .mockRejectedValueOnce(conflict)
+        .mockResolvedValueOnce({ result: 'updated', _seq_no: 5, _primary_term: 1 });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow(
+        'wf-1',
+        { yaml: yamlWithoutTopLevelEnabled } as any,
+        'default',
+        request
+      );
+
+      expect(client.index).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          document: expect.objectContaining({ enabled: false }),
+        })
+      );
+      expect(client.index).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          document: expect.objectContaining({
+            enabled: true,
+            definition: expect.objectContaining({ enabled: true }),
+          }),
+        })
+      );
+
+      jest.restoreAllMocks();
+    });
+
+    it('re-applies field updates against fresh existingSource on each OCC retry', async () => {
+      const applyFieldUpdatesSpy = jest.spyOn(workflowPrepare, 'applyFieldUpdates');
+      const { deps, client } = makeDeps();
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ name: 'Before', tags: ['t1'] }),
+                _seq_no: 5,
+                _primary_term: 1,
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({ name: 'Concurrent Name', tags: ['t1'] }),
+                _seq_no: 8,
+                _primary_term: 1,
+              },
+            ],
+          },
+        });
+
+      const conflict = Object.assign(new Error('version conflict'), {
+        statusCode: 409,
+        meta: { statusCode: 409 },
+      });
+      client.index
+        .mockRejectedValueOnce(conflict)
+        .mockResolvedValueOnce({ result: 'updated', _seq_no: 9, _primary_term: 1 });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow('wf-1', { tags: ['t1', 't2'] } as any, 'default', request);
+
+      expect(applyFieldUpdatesSpy).toHaveBeenCalledTimes(2);
+      expect(applyFieldUpdatesSpy).toHaveBeenNthCalledWith(
+        1,
+        { tags: ['t1', 't2'] },
+        expect.objectContaining({ name: 'Before' })
+      );
+      expect(applyFieldUpdatesSpy).toHaveBeenNthCalledWith(
+        2,
+        { tags: ['t1', 't2'] },
+        expect.objectContaining({ name: 'Concurrent Name' })
+      );
+
+      applyFieldUpdatesSpy.mockRestore();
+    });
+
+    it('returns hoisted YAML validation errors without changing stored definition', async () => {
+      jest.spyOn(workflowPrepare, 'applyYamlUpdate').mockReturnValue({
+        updatedDataPatch: {
+          definition: null,
+          enabled: false,
+          valid: false,
+          triggerTypes: [],
+        },
+        validationErrors: ['YAML parse error'],
+        shouldUpdateScheduler: true,
+      });
+
+      const { deps, client } = makeDeps();
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({
+                definition: {
+                  name: 'Existing',
+                  enabled: true,
+                  version: '1' as const,
+                  triggers: [],
+                  steps: [],
+                },
+                valid: true,
+              }),
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      const result = await service.updateWorkflow(
+        'wf-1',
+        { yaml: 'invalid: yaml:' } as any,
+        'default',
+        request
+      );
+
+      expect(result.validationErrors).toEqual(['YAML parse error']);
+      expect(result.valid).toBe(false);
+      expect(client.index).toHaveBeenCalledWith(
+        expect.objectContaining({
+          document: expect.objectContaining({
+            definition: null,
+            valid: false,
+            enabled: false,
+          }),
+        })
+      );
+
+      jest.restoreAllMocks();
+    });
+
+    it('skips YAML merge when the zod schema is unavailable', async () => {
+      const applyYamlUpdateSpy = jest.spyOn(workflowPrepare, 'applyYamlUpdate');
+      const { deps, client } = makeDeps();
+      (deps.validationService.getWorkflowZodSchema as jest.Mock).mockResolvedValue(undefined);
+
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({ name: 'Stored Name', tags: ['keep-me'] }),
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      const result = await service.updateWorkflow(
+        'wf-1',
+        { yaml: lightweightWorkflowYaml } as any,
+        'default',
+        request
+      );
+
+      expect(applyYamlUpdateSpy).not.toHaveBeenCalled();
+      expect(result.validationErrors).toEqual([]);
+      expect(client.index).toHaveBeenCalledWith(
+        expect.objectContaining({
+          document: expect.objectContaining({
+            name: 'Stored Name',
+            tags: ['keep-me'],
+            lastUpdatedBy: 'alice',
+          }),
+        })
+      );
+
+      applyYamlUpdateSpy.mockRestore();
     });
   });
 });

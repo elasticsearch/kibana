@@ -9,16 +9,14 @@ import { setMockValues } from '../../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
 import type { EuiSelectableOption } from '@elastic/eui';
-import { EuiText } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { MlModel } from '../../../../../../../common/types/ml';
 import { MlModelDeploymentState } from '../../../../../../../common/types/ml';
-import { TrainedModelHealth } from '../ml_model_health';
 
-import { LicenseBadge } from './license_badge';
 import { ModelSelectOption } from './model_select_option';
 
 const DEFAULT_PROPS: EuiSelectableOption<MlModel> = {
@@ -46,34 +44,29 @@ describe('ModelSelectOption', () => {
     jest.clearAllMocks();
     setMockValues({});
   });
+
   it('renders with license badge if present', () => {
-    const wrapper = shallow(<ModelSelectOption {...DEFAULT_PROPS} />);
-    expect(wrapper.find(LicenseBadge)).toHaveLength(1);
+    renderWithKibanaRenderContext(<ModelSelectOption {...DEFAULT_PROPS} />);
+    expect(screen.getByText(/License: elastic/i)).toBeInTheDocument();
   });
+
   it('renders without license badge if not present', () => {
-    const props = {
-      ...DEFAULT_PROPS,
-      licenseType: undefined,
-    };
-
-    const wrapper = shallow(<ModelSelectOption {...props} />);
-    expect(wrapper.find(LicenseBadge)).toHaveLength(0);
+    renderWithKibanaRenderContext(<ModelSelectOption {...DEFAULT_PROPS} licenseType={undefined} />);
+    expect(screen.queryByText(/License:/i)).not.toBeInTheDocument();
   });
+
   it('renders with description if present', () => {
-    const wrapper = shallow(<ModelSelectOption {...DEFAULT_PROPS} />);
-    expect(wrapper.find(EuiText)).toHaveLength(1);
+    renderWithKibanaRenderContext(<ModelSelectOption {...DEFAULT_PROPS} />);
+    expect(screen.getByText('Model 1 description')).toBeInTheDocument();
   });
-  it('renders without description if not present', () => {
-    const props = {
-      ...DEFAULT_PROPS,
-      description: undefined,
-    };
 
-    const wrapper = shallow(<ModelSelectOption {...props} />);
-    expect(wrapper.find(EuiText)).toHaveLength(0);
+  it('renders without description if not present', () => {
+    renderWithKibanaRenderContext(<ModelSelectOption {...DEFAULT_PROPS} description={undefined} />);
+    expect(screen.queryByText('Model 1 description')).not.toBeInTheDocument();
   });
+
   it('renders status badge if there is no action button', () => {
-    const wrapper = shallow(<ModelSelectOption {...DEFAULT_PROPS} />);
-    expect(wrapper.find(TrainedModelHealth)).toHaveLength(1);
+    renderWithKibanaRenderContext(<ModelSelectOption {...DEFAULT_PROPS} />);
+    expect(screen.getByText('Not started')).toBeInTheDocument();
   });
 });

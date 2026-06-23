@@ -21,6 +21,7 @@ describe('createCsvReport', () => {
     title: 'Alerts',
     objectType: 'alert',
     browserTimezone: 'UTC',
+    version: '9.5.0',
     columns: ['kibana.alert.rule.name', '@timestamp'],
     searchSource: {
       index: { title: '.alerts-default', timeFieldName: '@timestamp' },
@@ -54,6 +55,7 @@ describe('createCsvReport', () => {
       title: 'Alerts',
       objectType: 'alert',
       browserTimezone: 'UTC',
+      version: '9.5.0',
       columns: ['kibana.alert.rule.name', '@timestamp'],
       searchSource: baseParams.searchSource,
     });

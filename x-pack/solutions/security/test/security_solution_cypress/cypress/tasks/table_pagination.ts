@@ -54,6 +54,14 @@ export const sortByTableColumn = (columnName: string, direction: 'asc' | 'desc' 
   cy.get(TABLE_SORT_COLUMN_BTN).contains(columnName).click({ force: true });
 
   if (direction === 'desc') {
+    // Wait for the ascending sort indicator before clicking to toggle to descending.
+    // EuiBasicTable is controlled: its onChange computes the next direction from the
+    // current `sorting` prop. Without this guard, the second click can fire before
+    // React commits the first click's state update, causing EUI to see an unsorted
+    // column and toggle to 'asc' again instead of 'desc'.
+    cy.get(`${TABLE_SORT_COLUMN_BTN}.euiTableHeaderButton-isSorted`)
+      .contains(columnName)
+      .should('exist');
     cy.get(TABLE_SORT_COLUMN_BTN).contains(columnName).click({ force: true });
   }
 };

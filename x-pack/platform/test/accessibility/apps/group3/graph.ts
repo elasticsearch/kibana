@@ -37,7 +37,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     });
 
     it('Edit Graph page', async function () {
-      await testSubjects.click('graphListingTitleLink-Kibana-Sample-Data---Flights');
+      await testSubjects.click('content-list-table-item-link');
       await a11y.testAppSnapshot();
     });
 

@@ -19,6 +19,7 @@ import type {
 import {
   DATASET_VAR_NAME,
   DATA_STREAM_TYPE_VAR_NAME,
+  FLEET_UNMANAGED_DATA_STREAM_TYPES,
   OTEL_COLLECTOR_INPUT_TYPE,
 } from '../../../../common/constants';
 import { PackagePolicyValidationError, PackageNotFoundError, FleetError } from '../../../errors';
@@ -61,13 +62,18 @@ export const getCustomDatasetStreams = (
     if (!datasetName) return [];
 
     const isDynamicSignalTypes = hasDynamicSignalTypes(pkgInfo);
-    const signalTypes: string[] = isDynamicSignalTypes
-      ? ['logs', 'metrics', 'traces']
-      : [
-          packagePolicy.inputs[0].streams[0].vars?.[DATA_STREAM_TYPE_VAR_NAME]?.value ||
-            packagePolicy.inputs[0].streams[0].data_stream?.type ||
-            'logs',
-        ];
+    const signalTypes: string[] = (
+      isDynamicSignalTypes
+        ? ['logs', 'metrics', 'traces']
+        : [
+            packagePolicy.inputs[0].streams[0].vars?.[DATA_STREAM_TYPE_VAR_NAME]?.value ||
+              packagePolicy.inputs[0].streams[0].data_stream?.type ||
+              'logs',
+          ]
+    )
+      // Fleet does not create data streams for unmanaged signal types (e.g. profiles);
+      // those are owned by the producer/exporter (see FLEET_UNMANAGED_DATA_STREAM_TYPES).
+      .filter((type) => !FLEET_UNMANAGED_DATA_STREAM_TYPES.includes(type));
 
     return signalTypes.map((type) => ({
       datasetName,

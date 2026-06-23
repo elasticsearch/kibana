@@ -49,8 +49,12 @@ const generateConversationTitle = async ({
   chatModel: InferenceChatModel;
 }) => {
   return withActiveInferenceSpan(
-    'GenerateTitle',
-    { attributes: { [ElasticGenAIAttributes.InferenceSpanKind]: 'CHAIN' } },
+    'generate_title',
+    {
+      attributes: {
+        [ElasticGenAIAttributes.InferenceSpanKind]: 'CHAIN',
+      },
+    },
     async (span) => {
       const structuredModel = chatModel.withStructuredOutput(
         z
@@ -80,8 +84,6 @@ Now, generate a title for the following conversation.`,
       ];
 
       const { title } = await structuredModel.invoke(prompt);
-
-      span?.setAttribute('output.value', title);
 
       return title;
     }

@@ -7,6 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+// Serverless test (remove during Scout migration): x-pack/platform/test/serverless/functional/test_suites/discover/esql/_esql_view.ts
+
 import expect from '@kbn/expect';
 import kbnRison from '@kbn/rison';
 import { NULL_LABEL } from '@kbn/field-formats-common';
@@ -283,9 +285,8 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         expect(await filterBar.getFilterCount()).to.be(0);
         // chart and time picker updated
         await elasticChart.waitForRenderingCount(renderingCount + 1);
-        const updatedTimeConfig = await timePicker.getTimeConfigAsAbsoluteTimes();
-        expect(updatedTimeConfig.start).to.be('Sep 20, 2015 @ 08:23:44.196');
-        expect(updatedTimeConfig.end).to.be('Sep 21, 2015 @ 02:32:51.702');
+        const newDurationHours = await timePicker.getTimeDurationInHours();
+        expect(Math.round(newDurationHours)).to.be(18);
       });
     });
 

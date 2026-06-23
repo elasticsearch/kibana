@@ -29,10 +29,7 @@ import {
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { extractErrorMessage } from '@kbn/ml-error-utils';
-import type {
-  SingleMetricViewerEmbeddableInput,
-  SingleMetricViewerEmbeddableUserInput,
-} from '@kbn/ml-server-schemas/embeddables/single_metric_viewer';
+import type { SingleMetricViewerEmbeddableState } from '@kbn/ml-server-schemas/embeddables/single_metric_viewer';
 import type { TimeRangeBounds } from '@kbn/ml-time-buckets';
 import { ML_PAGES } from '@kbn/ml-common-types/locator_ml_pages';
 
@@ -51,9 +48,9 @@ import { getDefaultSingleMetricViewerPanelTitle } from './get_default_panel_titl
 
 export interface SingleMetricViewerInitializerProps {
   bounds: TimeRangeBounds;
-  initialInput?: Partial<SingleMetricViewerEmbeddableInput>;
+  initialInput?: Partial<SingleMetricViewerEmbeddableState>;
   mlApi: MlApi;
-  onCreate: (props: SingleMetricViewerEmbeddableUserInput) => void;
+  onCreate: (state: SingleMetricViewerEmbeddableState) => void;
   onCancel: () => void;
 }
 
@@ -67,21 +64,21 @@ export const SingleMetricViewerInitializer: FC<SingleMetricViewerInitializerProp
   const isMounted = useMountedState();
   const newJobUrl = useMlLink({ page: ML_PAGES.ANOMALY_DETECTION_CREATE_JOB });
   const [jobId, setJobId] = useState<string | undefined>(
-    initialInput?.jobIds && initialInput?.jobIds[0]
+    initialInput?.job_ids && initialInput?.job_ids[0]
   );
   const titleManuallyChanged = useRef(!!initialInput?.title);
 
   const [job, setJob] = useState<MlJob | undefined>();
   const [panelTitle, setPanelTitle] = useState<string>(initialInput?.title ?? '');
   const [functionDescription, setFunctionDescription] = useState<string | undefined>(
-    initialInput?.functionDescription
+    initialInput?.function_description
   );
   // Reset detector index and entities if the job has changed
   const [selectedDetectorIndex, setSelectedDetectorIndex] = useState<number>(
-    initialInput?.selectedDetectorIndex ?? 0
+    initialInput?.selected_detector_index ?? 0
   );
   const [selectedEntities, setSelectedEntities] = useState<MlEntity | undefined>(
-    initialInput?.selectedEntities
+    initialInput?.selected_entities
   );
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const isPanelTitleValid = panelTitle.length > 0;
@@ -222,13 +219,19 @@ export const SingleMetricViewerInitializer: FC<SingleMetricViewerInitializerProp
             <EuiButton
               data-test-subj="mlSingleMetricViewerInitializerConfirmButton"
               isDisabled={!isPanelTitleValid || errorMessage !== undefined || !jobId || !job}
-              onClick={onCreate.bind(null, {
-                jobIds: jobId ? [jobId] : [],
-                functionDescription,
-                panelTitle,
-                selectedDetectorIndex,
-                selectedEntities,
-              })}
+              onClick={() =>
+                onCreate({
+                  job_ids: jobId ? [jobId] : [],
+                  selected_detector_index: selectedDetectorIndex,
+                  ...(functionDescription !== undefined
+                    ? { function_description: functionDescription }
+                    : {}),
+                  ...(selectedEntities !== undefined
+                    ? { selected_entities: selectedEntities }
+                    : {}),
+                  ...(panelTitle ? { title: panelTitle } : {}),
+                })
+              }
               fill
             >
               <FormattedMessage

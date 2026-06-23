@@ -31,6 +31,16 @@ export const Popover = ({
   return (
     <EuiPopover
       panelPaddingSize="s"
+      aria-label={
+        buttonAriaLabelText
+          ? i18n.translate('xpack.infra.hostsViewPage.popoverInfoAriaLabelWithText', {
+              defaultMessage: '{buttonAriaLabelText} info',
+              values: { buttonAriaLabelText },
+            })
+          : i18n.translate('xpack.infra.hostsViewPage.popoverInfoAriaLabel', {
+              defaultMessage: 'info',
+            })
+      }
       button={
         <button
           aria-label={

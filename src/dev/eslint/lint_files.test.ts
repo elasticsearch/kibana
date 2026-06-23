@@ -96,7 +96,7 @@ describe('lintFiles', () => {
     expect(mockConstructor).toHaveBeenCalledWith({
       cache: true,
       cwd: REPO_ROOT,
-      fix: true,
+      fix: expect.any(Function),
     });
     expect(mockOutputFixes).toHaveBeenCalledTimes(1);
     expect(result).toEqual({

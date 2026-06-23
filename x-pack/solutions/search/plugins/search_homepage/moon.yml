@@ -51,6 +51,7 @@ dependsOn:
   - '@kbn/data-views-plugin'
   - '@kbn/cloud'
   - '@kbn/agent-builder-browser'
+  - '@kbn/workflows-ui'
   - '@kbn/scout-search'
 tags:
   - plugin

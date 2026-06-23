@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+// Original test (remove during Scout migration): src/platform/test/functional/apps/discover/group5/_url_state.ts
+
 import expect from '@kbn/expect';
 
 import type { FtrProviderContext } from '../../../ftr_provider_context';

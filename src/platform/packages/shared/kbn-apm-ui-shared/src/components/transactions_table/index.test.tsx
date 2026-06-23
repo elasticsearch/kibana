@@ -186,6 +186,52 @@ describe('TransactionsTable', () => {
     });
   });
 
+  describe('error state', () => {
+    it('renders the error callout with the provided message', () => {
+      renderWithIntl(
+        <TransactionsTable
+          items={[]}
+          isLoading={false}
+          maxCountExceeded={false}
+          errorMessage="Failed to load transaction data"
+        />
+      );
+      expect(screen.getByText('Failed to load transaction data')).toBeInTheDocument();
+    });
+
+    it('does not render the table when errorMessage is set', () => {
+      renderWithIntl(
+        <TransactionsTable
+          items={items}
+          isLoading={false}
+          maxCountExceeded={false}
+          errorMessage="Failed to load transaction data"
+        />
+      );
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    });
+
+    it('keeps the title and header actions visible when errorMessage is set', () => {
+      renderWithIntl(
+        <TransactionsTable
+          items={[]}
+          isLoading={false}
+          maxCountExceeded={false}
+          errorMessage="Failed to load transaction data"
+          headerActions={[
+            {
+              label: 'Open in APM',
+              href: '#apm',
+              ebt: { action: 'openInApm', element: 'transactionsTableHeader' },
+            },
+          ]}
+        />
+      );
+      expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Open in APM' })).toBeInTheDocument();
+    });
+  });
+
   describe('search behavior', () => {
     beforeEach(() => {
       jest.useFakeTimers();

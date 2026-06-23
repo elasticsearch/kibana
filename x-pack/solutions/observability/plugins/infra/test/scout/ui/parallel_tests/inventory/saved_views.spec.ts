@@ -68,7 +68,7 @@ test.describe(
       await inventoryPage.addDismissK8sTourInitScript();
     });
 
-    test.afterEach(async ({ apiServices: { inventoryViews } }) => {
+    test.afterEach(async ({ apiServices: { inventoryViews }, kbnClient }) => {
       await inventoryViews.deleteByName([
         'View without time',
         'View with time',
@@ -77,6 +77,9 @@ test.describe(
         'View updated',
       ]);
       await inventoryViews.makeDefault('0'); // Reset to default view whose id is fixed to '0'
+      // `beforeEach` writes `hideAnnouncements` via `updateGlobal` (global settings).
+      // `unset` only deletes the per-space value, so restore the default globally instead.
+      await kbnClient.uiSettings.updateGlobal({ hideAnnouncements: false });
     });
 
     test.afterAll(async ({ apiServices: { inventoryViews } }) => {

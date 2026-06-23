@@ -75,7 +75,12 @@ export async function runAppMenuAction({
     },
   };
 
-  const result = await appMenuItem.run?.(params);
+  if (appMenuItem.run) {
+    await appMenuItem.run(params);
+    return;
+  }
+
+  const result = appMenuItem.render?.(params);
 
   if (!result || !React.isValidElement(result)) {
     return;
@@ -120,18 +125,20 @@ export function enhanceAppMenuItemWithRunAction<T extends DiscoverAppMenuItem>({
   appMenuItem: T;
   services: DiscoverServices;
 }): EnhancedAppMenuItem<T> {
-  const enhancedRun = appMenuItem.run
-    ? (params?: AppMenuRunActionParams) => {
-        if (params) {
-          runAppMenuAction({
-            appMenuItem,
-            anchorElement: params.triggerElement,
-            services,
-            returnFocus: params.returnFocus,
-          });
+  const { render, ...baseAppMenuItem } = appMenuItem;
+  const enhancedRun =
+    appMenuItem.run || render
+      ? (params?: AppMenuRunActionParams) => {
+          if (params) {
+            runAppMenuAction({
+              appMenuItem,
+              anchorElement: params.triggerElement,
+              services,
+              returnFocus: params.returnFocus,
+            });
+          }
         }
-      }
-    : undefined;
+      : undefined;
 
   const enhancedItems =
     'items' in appMenuItem && Array.isArray(appMenuItem.items)
@@ -145,7 +152,7 @@ export function enhanceAppMenuItemWithRunAction<T extends DiscoverAppMenuItem>({
       : undefined;
 
   return {
-    ...appMenuItem,
+    ...baseAppMenuItem,
     items: enhancedItems,
     run: enhancedRun,
   } as unknown as EnhancedAppMenuItem<T>;

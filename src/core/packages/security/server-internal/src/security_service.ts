@@ -9,7 +9,7 @@
 
 import type { Logger } from '@kbn/logging';
 import type { CoreContext, CoreService } from '@kbn/core-base-server-internal';
-import type { CoreSecurityDelegateContract } from '@kbn/core-security-server';
+import type { CoreSecurityDelegateContract, FakeRequestEnricher } from '@kbn/core-security-server';
 import type { Observable, Subscription } from 'rxjs';
 import type { Config } from '@kbn/config';
 import { isFipsEnabled, checkFipsConfig } from './fips/fips';
@@ -25,6 +25,7 @@ export class SecurityService
 {
   private readonly log: Logger;
   private securityApi?: CoreSecurityDelegateContract;
+  private fakeRequestEnricherAcquired = false;
   private config$: Observable<Config>;
   private configSubscription?: Subscription;
   private config: Config | undefined;
@@ -58,6 +59,25 @@ export class SecurityService
           throw new Error('security API can only be registered once');
         }
         this.securityApi = api;
+      },
+      acquireFakeRequestEnricher: (): FakeRequestEnricher => {
+        if (this.fakeRequestEnricherAcquired) {
+          throw new Error(
+            'acquireFakeRequestEnricher() can only be called once and is reserved for Task Manager.'
+          );
+        }
+        this.fakeRequestEnricherAcquired = true;
+
+        // Returned eagerly at setup but invoked at task-run time, by which point
+        // the security delegate has been registered.
+        return (request, userProfileId) => {
+          if (!this.securityApi) {
+            throw new Error(
+              'Cannot enrich a fake request before the security delegate has been registered.'
+            );
+          }
+          this.securityApi.fakeRequestEnricher(request, userProfileId);
+        };
       },
       fips: {
         isEnabled: () => isFipsEnabled(securityConfig),

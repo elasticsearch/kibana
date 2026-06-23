@@ -59,7 +59,7 @@ export const SettingLockedCard = React.memo<SettingLockedCardProps>(
             label: licenseDisplayName,
           }}
           isDisabled={true}
-          icon={<EuiIcon size="xl" type="lock" />}
+          icon={<EuiIcon size="xl" type="lock" aria-hidden={true} />}
           title={
             <h3 data-test-subj={getTestId('title')}>
               <strong>{title}</strong>

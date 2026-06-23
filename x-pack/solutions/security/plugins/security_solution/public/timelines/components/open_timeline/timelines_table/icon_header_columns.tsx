@@ -83,7 +83,14 @@ export const getIconHeaderColumns = ({
         const isFavorite = favorite != null && favorite.length > 0;
         const fill = isFavorite ? 'starFill' : 'star';
 
-        return <EuiIcon data-test-subj={`favorite-${fill}-star`} type={fill} size="m" />;
+        return (
+          <EuiIcon
+            data-test-subj={`favorite-${fill}-star`}
+            type={fill}
+            size="m"
+            aria-hidden={true}
+          />
+        );
       },
       sortable: false,
       width: ACTION_COLUMN_WIDTH,

@@ -134,6 +134,12 @@ export const useQueryActions = ({
     if (!isLoading) setIsQueryLoading(false);
   }, [isLoading]);
 
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current.abort();
+    };
+  }, []);
+
   const queryRunButtonProperties = useMemo(() => {
     if (allowQueryCancellation && isLoading) {
       return {

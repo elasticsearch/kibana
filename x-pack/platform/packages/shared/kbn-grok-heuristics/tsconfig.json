@@ -18,8 +18,6 @@
   "kbn_references": [
     "@kbn/inference-common",
     "@kbn/zod",
-    "@kbn/tooling-log",
-    "@kbn/sample-log-parser",
     "@kbn/streamlang",
   ]
 }

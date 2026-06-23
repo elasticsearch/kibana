@@ -7,20 +7,19 @@
 
 import React, { createContext, useContext, useCallback, useState } from 'react';
 import useSessionStorage from 'react-use/lib/useSessionStorage';
-import type { AwsStaticKeyCredentials, AwsTemporaryKeyCredentials } from '@kbn/fleet-plugin/public';
+import type { AwsStaticKeyCredentials } from '@kbn/fleet-plugin/public';
 
-import { AWS_SERVICES_MATRIX, AWS_SERVICES_MAP } from './aws_service_matrix';
+import { AWS_SERVICES_MAP } from './aws_service_matrix';
 
 export interface ConnectStepState {
   connectorId?: string;
   staticKeys?: AwsStaticKeyCredentials;
-  temporaryKeys?: AwsTemporaryKeyCredentials;
 }
 
-// Only non-sensitive fields are persistedConnectStep — password values are never written to session storage
+// Only non-sensitive fields are persisted — password values are never written to session storage
 interface PersistedConnectStep {
   connectorId?: string;
-  authType?: 'identity_federation' | 'static_keys' | 'temporary_keys';
+  authType?: 'identity_federation' | 'static_keys';
   accessKeyId?: string;
 }
 
@@ -32,15 +31,12 @@ interface PersistedServicesStep {
   selectedServiceIds: string[];
 }
 
-const DEFAULT_SELECTED_IDS = AWS_SERVICES_MATRIX.filter((s) => s.showInUI && s.defaultEnabled).map(
-  (s) => s.id
-);
+const DEFAULT_SELECTED_IDS: string[] = [];
 
 interface OnboardingFlowState {
   connectStep: ConnectStepState;
   setConnectorId: (id: string | undefined) => void;
   setStaticKeys: (keys: AwsStaticKeyCredentials | undefined) => void;
-  setTemporaryKeys: (keys: AwsTemporaryKeyCredentials | undefined) => void;
   servicesStep: ServicesStepState;
   setSelectedServiceIds: (ids: string[]) => void;
 }
@@ -58,29 +54,16 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     { selectedServiceIds: DEFAULT_SELECTED_IDS }
   );
 
-  // Sensitive fields (secret_access_key, session_token) live in memory only.
-  // access_key_id is restored from session storage; passwords start empty on page refresh.
+  // secret_access_key lives in memory only; access_key_id is restored from session storage.
   const [staticKeys, setStaticKeysState] = useState<AwsStaticKeyCredentials | undefined>(() =>
     persistedConnectStep?.authType === 'static_keys' && persistedConnectStep.accessKeyId
       ? { access_key_id: persistedConnectStep.accessKeyId, secret_access_key: '' }
       : undefined
   );
 
-  const [temporaryKeys, setTemporaryKeysState] = useState<AwsTemporaryKeyCredentials | undefined>(
-    () =>
-      persistedConnectStep?.authType === 'temporary_keys' && persistedConnectStep.accessKeyId
-        ? {
-            access_key_id: persistedConnectStep.accessKeyId,
-            secret_access_key: '',
-            session_token: '',
-          }
-        : undefined
-  );
-
   const setConnectorId = useCallback(
     (id: string | undefined) => {
       setStaticKeysState(undefined);
-      setTemporaryKeysState(undefined);
       setPersistedConnectStep({
         connectorId: id,
         authType: id ? 'identity_federation' : undefined,
@@ -92,21 +75,8 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
   const setStaticKeys = useCallback(
     (keys: AwsStaticKeyCredentials | undefined) => {
       setStaticKeysState(keys);
-      setTemporaryKeysState(undefined);
       setPersistedConnectStep({
         authType: keys ? 'static_keys' : undefined,
-        accessKeyId: keys?.access_key_id,
-      });
-    },
-    [setPersistedConnectStep]
-  );
-
-  const setTemporaryKeys = useCallback(
-    (keys: AwsTemporaryKeyCredentials | undefined) => {
-      setTemporaryKeysState(keys);
-      setStaticKeysState(undefined);
-      setPersistedConnectStep({
-        authType: keys ? 'temporary_keys' : undefined,
         accessKeyId: keys?.access_key_id,
       });
     },
@@ -123,7 +93,6 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
   const connectStep: ConnectStepState = {
     connectorId: persistedConnectStep?.connectorId,
     staticKeys,
-    temporaryKeys,
   };
 
   const servicesStep: ServicesStepState = {
@@ -138,7 +107,6 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
         connectStep,
         setConnectorId,
         setStaticKeys,
-        setTemporaryKeys,
         servicesStep,
         setSelectedServiceIds,
       }}

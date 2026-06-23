@@ -10,4 +10,5 @@ export * from './risk_engine';
 export * from './entity_store';
 export * from './monitoring';
 export * from './watchlists';
+export * from './anomaly_summary';
 export type { EntityAnalyticsPrivileges } from './common';

@@ -1,0 +1,74 @@
+name: Index Dependency Usage
+on:
+  schedule:
+    # Runs daily at 02:00 UTC
+    - cron: '0 2 * * *'
+
+  workflow_dispatch:
+    inputs:
+      setup_template:
+        description: 'PUT the ES index template before indexing (needed on first run or after mapping changes)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+# Prevent a stale scheduled run from overlapping with a manual re-trigger.
+# A new run cancels any in-progress run for the same workflow.
+concurrency:
+  group: index-dependency-usage
+  cancel-in-progress: true
+
+jobs:
+  index:
+    name: 'Index: ${{ matrix.group }}'
+    runs-on: kibana
+    if: github.repository == 'elastic/kibana'
+
+    strategy:
+      # Let all groups run even if one fails — partial data beats no data.
+      fail-fast: false
+      matrix:
+        group:
+          - platform
+          - solutions
+
+    steps:
+      - name: Checkout kibana
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: '.node-version'
+
+      # Cache node_modules keyed on yarn.lock — shared across all matrix jobs
+      # on the same runner pool. First run after a dep bump takes a few minutes;
+      # cache-hit runs take ~30 s.
+      - name: Restore yarn cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: node_modules
+          key: dep-usage-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: dep-usage-node-modules-
+
+      - name: Install dependencies
+        # --ignore-scripts skips lifecycle hooks, package manifests, and symlink
+        # setup — faster than `yarn kbn bootstrap` for this read-only scan job.
+        run: yarn install --frozen-lockfile --ignore-scripts
+
+      - name: Index ${{ matrix.group }}
+        env:
+          ELASTICSEARCH_URL: ${{ secrets.CODE_SCANNING_ES_HOST }}
+          ELASTICSEARCH_API_KEY: ${{ secrets.CODE_SCANNING_ES_API_KEY }}
+        run: |
+          TEMPLATE_ARG=""
+          if [ "${{ github.event.inputs.setup_template }}" = "true" ]; then
+            TEMPLATE_ARG="--setup-template"
+          fi
+
+          bash scripts/index_dependency_usage.sh \
+            --group ${{ matrix.group }} \
+            $TEMPLATE_ARG

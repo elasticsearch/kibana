@@ -10,12 +10,17 @@ import type {
   ObltTestFixtures,
   ObltWorkerFixtures,
   ObltApiServicesFixture,
+  EsClient,
+  KibanaUrl,
+  ScoutLogger,
+  ScoutTestConfig,
 } from '@kbn/scout-oblt';
 import {
   mergeTests,
   test as base,
   createLazyPageObject,
   globalSetupHook as baseGlobalSetupHook,
+  globalTeardownHook as baseGlobalTeardownHook,
 } from '@kbn/scout-oblt';
 import type { SynthtraceFixture } from '@kbn/scout-synthtrace';
 import { getSynthtraceClient, synthtraceFixture } from '@kbn/scout-synthtrace';
@@ -84,30 +89,53 @@ export const test = baseWithSynthtrace.extend<
   },
 });
 
+interface InfraSynthtraceEsClient {
+  index: (events: SynthtraceGenerator<InfraDocument>) => Promise<void>;
+  clean: () => Promise<void>;
+}
+
+// Single source of truth for the infra synthtrace client, shared by both the
+// global setup and teardown hooks so the client configuration only lives in one place.
+const provideInfraSynthtraceEsClient = async (
+  {
+    esClient,
+    config,
+    kbnUrl,
+    log,
+  }: { esClient: EsClient; config: ScoutTestConfig; kbnUrl: KibanaUrl; log: ScoutLogger },
+  use: (client: InfraSynthtraceEsClient) => Promise<void>
+) => {
+  const { infraEsClient } = await getSynthtraceClient(
+    'infraEsClient',
+    {
+      esClient,
+      kbnUrl: kbnUrl.get(),
+      log,
+      config,
+    },
+    // Metrics system indexes are TSDS and thus, time bound.
+    // In order to have fixed dates in the tests, we need to skip the system package installation so that the TSDS configuration doesn't get applied.
+    // Otherwise, time-bound indexes will reject documents outside their time range, which depends on the time the test is being ran, making them less deterministic.
+    { skipInstallation: true }
+  );
+
+  const index = async (events: SynthtraceGenerator<InfraDocument>) => {
+    await infraEsClient.index(Readable.from(Array.from(events)));
+  };
+
+  const clean = async () => await infraEsClient.clean();
+
+  await use({ index, clean });
+};
+
 const globalSetupWithSynthtrace = mergeTests(baseGlobalSetupHook, synthtraceFixture);
 
 export const globalSetupHook = globalSetupWithSynthtrace.extend({
-  infraSynthtraceEsClient: async ({ esClient, config, kbnUrl, log }, use) => {
-    const { infraEsClient } = await getSynthtraceClient(
-      'infraEsClient',
-      {
-        esClient,
-        kbnUrl: kbnUrl.get(),
-        log,
-        config,
-      },
-      // Metrics system indexes are TSDS and thus, time bound.
-      // In order to have fixed dates in the tests, we need to skip the system package installation so that the TSDS configuration doesn't get applied.
-      // Otherwise, time-bound indexes will reject documents outside their time range, which depends on the time the test is being ran, making them less deterministic.
-      { skipInstallation: true }
-    );
+  infraSynthtraceEsClient: provideInfraSynthtraceEsClient,
+});
 
-    const index = async (events: SynthtraceGenerator<InfraDocument>) => {
-      await infraEsClient.index(Readable.from(Array.from(events)));
-    };
+const globalTeardownWithSynthtrace = mergeTests(baseGlobalTeardownHook, synthtraceFixture);
 
-    const clean = async () => await infraEsClient.clean();
-
-    await use({ index, clean });
-  },
+export const globalTeardownHook = globalTeardownWithSynthtrace.extend({
+  infraSynthtraceEsClient: provideInfraSynthtraceEsClient,
 });

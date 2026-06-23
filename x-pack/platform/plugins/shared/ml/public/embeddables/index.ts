@@ -7,14 +7,12 @@
 
 import type { EmbeddableSetup } from '@kbn/embeddable-plugin/public';
 import type { UsageCollectionSetup } from '@kbn/usage-collection-plugin/public';
+import { ANOMALY_EXPLORER_CHARTS_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/anomaly_charts';
+import type { Reference } from '@kbn/content-management-utils';
 import { ANOMALY_SWIMLANE_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/anomaly_swimlane';
+import { ANOMALY_SINGLE_METRIC_VIEWER_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/single_metric_viewer';
 import type { MlCoreSetup } from '../plugin';
-import {
-  ANOMALY_SINGLE_METRIC_VIEWER_EMBEDDABLE_TYPE,
-  ANOMALY_EXPLORER_CHARTS_EMBEDDABLE_TYPE,
-} from './constants';
 
-export * from './constants';
 export type * from './types';
 
 export function registerEmbeddables(
@@ -25,6 +23,12 @@ export function registerEmbeddables(
   embeddable.registerEmbeddablePublicDefinition(ANOMALY_SWIMLANE_EMBEDDABLE_TYPE, async () => {
     const { getAnomalySwimLaneEmbeddableFactory } = await import('./anomaly_swimlane');
     return getAnomalySwimLaneEmbeddableFactory(core.getStartServices);
+  });
+  embeddable.registerLegacyURLTransform(ANOMALY_SWIMLANE_EMBEDDABLE_TYPE, async () => {
+    const { transformOut } = await import(
+      '../../common/embeddables/anomaly_swimlane/transform_out'
+    );
+    return transformOut as (storedState: object, references?: Reference[]) => object;
   });
 
   embeddable.registerEmbeddablePublicDefinition(
@@ -44,4 +48,10 @@ export function registerEmbeddables(
       return getSingleMetricViewerEmbeddableFactory(core.getStartServices, usageCollection);
     }
   );
+  embeddable.registerLegacyURLTransform(ANOMALY_SINGLE_METRIC_VIEWER_EMBEDDABLE_TYPE, async () => {
+    const { transformOut } = await import(
+      '../../common/embeddables/single_metric_viewer/transform_out'
+    );
+    return transformOut as (storedState: object, references?: Reference[]) => object;
+  });
 }

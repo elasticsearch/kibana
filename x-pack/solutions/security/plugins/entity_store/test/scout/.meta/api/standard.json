@@ -1,5 +1,5 @@
 {
-  "sha1": "143018e43a67ce8fcfad1889cab57092d8661b2f",
+  "sha1": "f5b7b48d00db6555aa297b991e13f4eb54e0709d",
   "tests": [
     {
       "id": "2b226b45edecc17-e395ce97cca539e",
@@ -1789,7 +1789,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/entity_store/test/scout/api/tests/logs_extraction_broken_mapping.spec.ts",
-        "line": 370,
+        "line": 401,
         "column": 10
       }
     },
@@ -1805,7 +1805,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/entity_store/test/scout/api/tests/logs_extraction_broken_mapping.spec.ts",
-        "line": 415,
+        "line": 446,
         "column": 10
       }
     },
@@ -1821,7 +1821,23 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/entity_store/test/scout/api/tests/logs_extraction_broken_mapping.spec.ts",
-        "line": 503,
+        "line": 534,
+        "column": 10
+      }
+    },
+    {
+      "id": "5384aa0c0712e1f-64fa84ccac38380",
+      "title": "Entity Store logs extraction broken mapping should extract hosts successfully when timestamp is date_nanos (lifecycle COALESCE datetime/date_nanos type fix)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/entity_store/test/scout/api/tests/logs_extraction_broken_mapping.spec.ts",
+        "line": 582,
         "column": 10
       }
     },
@@ -1837,7 +1853,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/entity_store/test/scout/api/tests/logs_extraction_broken_mapping.spec.ts",
-        "line": 551,
+        "line": 699,
         "column": 10
       }
     },

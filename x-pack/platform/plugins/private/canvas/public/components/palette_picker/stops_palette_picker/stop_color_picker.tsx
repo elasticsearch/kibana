@@ -11,6 +11,7 @@ import {
   EuiFieldNumber,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { FC } from 'react';
@@ -120,14 +121,15 @@ export const StopColorPicker: FC<Props> = (props) => {
       </EuiFlexItem>
 
       <EuiFlexItem grow={false}>
-        <EuiButtonIcon
-          iconType="trash"
-          color="danger"
-          title={strings.getDeleteStopColorLabel()}
-          onClick={onDelete}
-          isDisabled={!removable}
-          aria-label={strings.getDeleteStopColorLabel()}
-        />
+        <EuiToolTip content={strings.getDeleteStopColorLabel()} disableScreenReaderOutput>
+          <EuiButtonIcon
+            iconType="trash"
+            color="danger"
+            onClick={onDelete}
+            isDisabled={!removable}
+            aria-label={strings.getDeleteStopColorLabel()}
+          />
+        </EuiToolTip>
       </EuiFlexItem>
     </EuiFlexGroup>
   );

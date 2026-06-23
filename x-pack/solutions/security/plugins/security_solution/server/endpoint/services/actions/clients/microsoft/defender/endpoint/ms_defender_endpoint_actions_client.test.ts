@@ -2053,7 +2053,7 @@ describe('MS Defender response actions client', () => {
         msStatusValue  | responseState
         ${'Failed'}    | ${'failure'}
         ${'TimeOut'}   | ${'failure'}
-        ${'Cancelled'} | ${'failure'}
+        ${'Cancelled'} | ${'canceled'}
         ${'Succeeded'} | ${'success'}
       `(
         'should generate $responseState action response if MS machine action status is $msStatusValue',
@@ -2072,9 +2072,18 @@ describe('MS Defender response actions client', () => {
             error: undefined,
             meta: undefined,
           };
-          if (responseState === 'failure') {
+          if (responseState === 'failure' || responseState === 'canceled') {
             expectedResult.error = {
               message: expect.any(String),
+            };
+          }
+          if (responseState === 'canceled') {
+            expectedResult.EndpointActions.data.output = {
+              content: expect.objectContaining({
+                canceled_by: 'action',
+                canceled_id: '',
+              }),
+              type: 'json',
             };
           }
           await msClientMock.processPendingActions(processPendingActionsOptions);
@@ -2362,7 +2371,7 @@ describe('MS Defender response actions client', () => {
           msStatusValue  | responseState
           ${'Failed'}    | ${'failed'}
           ${'TimeOut'}   | ${'failed'}
-          ${'Cancelled'} | ${'failed'}
+          ${'Cancelled'} | ${'canceled'}
           ${'Succeeded'} | ${'successful'}
         `(
           'should send telemetry for $responseState action response if MS machine action status is $msStatusValue',
@@ -2474,7 +2483,7 @@ describe('MS Defender response actions client', () => {
           msStatusValue  | responseState
           ${'Failed'}    | ${'failed'}
           ${'TimeOut'}   | ${'failed'}
-          ${'Cancelled'} | ${'failed'}
+          ${'Cancelled'} | ${'canceled'}
           ${'Succeeded'} | ${'successful'}
         `(
           'should generate $responseState action response if MS runscript machine action status is $msStatusValue',
@@ -2596,7 +2605,16 @@ describe('MS Defender response actions client', () => {
           EndpointActions: {
             action_id: '90d62689-f72d-4b5e3-500cad0dc366',
             completed_at: expect.any(String),
-            data: { command: 'isolate' },
+            data: {
+              command: 'isolate',
+              output: {
+                content: expect.objectContaining({
+                  canceled_by: 'action',
+                  canceled_id: '',
+                }),
+                type: 'json',
+              },
+            },
             input_type: 'microsoft_defender_endpoint',
             started_at: expect.any(String),
           },

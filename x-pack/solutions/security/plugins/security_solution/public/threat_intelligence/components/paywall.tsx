@@ -24,7 +24,7 @@ export const Paywall: FC = () => {
   } = useKibana();
   return (
     <EuiEmptyPrompt
-      icon={<EuiIcon type="logoSecurity" size="xl" />}
+      icon={<EuiIcon type="logoSecurity" size="xl" aria-hidden={true} />}
       color="subdued"
       data-test-subj="tiPaywall"
       title={

@@ -39,9 +39,11 @@ export const convertRangeToISO = (range: Range): Range => ({
 export const buildScopedInternalSavedObjectsClientUnsafe = ({
   coreStart,
   namespace,
+  includedHiddenTypes,
 }: {
   coreStart: CoreStart;
   namespace: string;
+  includedHiddenTypes?: string[];
 }) => {
   const fakeScopedRequest = kibanaRequestFactory({
     headers: {},
@@ -50,6 +52,7 @@ export const buildScopedInternalSavedObjectsClientUnsafe = ({
 
   return coreStart.savedObjects.getScopedClient(fakeScopedRequest, {
     excludedExtensions: [SECURITY_EXTENSION_ID],
+    includedHiddenTypes,
   });
 };
 

@@ -2,7 +2,7 @@
   "type": "plugin",
   "id": "@kbn/lists-plugin",
   "owner": [
-    "@elastic/security-detection-engine"
+    "@elastic/security-detection-engineering"
   ],
   "group": "security",
   "visibility": "private",

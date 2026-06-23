@@ -1050,23 +1050,31 @@ export class MicrosoftDefenderEndpointActionsClient extends ResponseActionsClien
             const isCancelledAction = machineAction.status === 'Cancelled' && command === 'cancel';
             // Special handling for cancelled actions:
             // Cancel actions that successfully cancel something should show as success
-            // Actions that were cancelled by another action should show as failed
+            // Actions that were cancelled by another action should have an `error.message` set
             const shouldUpdateErrorMessage = !isCancelledAction && isError;
 
             const isRunscriptAction = mdeCommand === 'LiveResponse' && command === 'runscript';
             let output: ActionResponseOutput<EndpointActionResponseDataOutput> | undefined;
             let meta: {} | undefined;
 
+            // If not a `cancel` response action and the MS Defender action status is `Canceled`, then
+            // set the `canceled_by` and `canceled_id` fields in the output content so that we show the
+            // action with a status of cancel in kibana
+            if (machineAction.status === 'Cancelled' && command !== `cancel`) {
+              output = output ?? { type: 'json', content: {} };
+              output.content.canceled_by = 'action';
+              output.content.canceled_id = '';
+            }
+
             if (isRunscriptAction) {
               const outputFile = await this.fetchMachineLiveResponseFile(machineActionId);
-              output = {
-                type: 'json' as const,
-                content: {
-                  stdout: outputFile?.stdout || '',
-                  stderr: outputFile?.stderr || '',
-                  code: outputFile?.code || '0',
-                },
-              };
+
+              output = output ?? { type: 'json', content: {} };
+              Object.assign(output.content, {
+                stdout: outputFile?.stdout || '',
+                stderr: outputFile?.stderr || '',
+                code: outputFile?.code || '0',
+              });
               meta = {
                 machineActionId,
                 filename: `runscript_output_${machineActionId}_0.json`,

@@ -10,13 +10,12 @@ import { usePostCase } from '../../containers/use_post_case';
 import { usePostPushToService } from '../../containers/use_post_push_to_service';
 
 import type { CaseUI } from '../../containers/types';
-import type { CasePostRequest, ObservablePost } from '../../../common/types/api';
+import type { CasePostRequest } from '../../../common/types/api';
 import type { UseCreateAttachments } from '../../containers/use_create_attachments';
 import { useCreateAttachments } from '../../containers/use_create_attachments';
 import type { CaseAttachmentsWithoutOwner } from '../../types';
 import { useCreateCaseWithAttachmentsTransaction } from '../../common/apm/use_cases_transactions';
 import { useApplication } from '../../common/lib/kibana/use_application';
-import { useBulkPostObservables } from '../../containers/use_bulk_post_observables';
 import { useAttachEventsEBT } from '../../analytics/use_attach_events_ebt';
 
 export interface UseSubmitCaseProps {
@@ -26,23 +25,15 @@ export interface UseSubmitCaseProps {
   ) => Promise<void>;
   onSuccess?: (theCase: CaseUI) => void;
   attachments?: CaseAttachmentsWithoutOwner;
-  observables?: ObservablePost[];
 }
 
 export type UseSubmitCaseValue = ReturnType<typeof useSubmitCase>;
 
-export const useSubmitCase = ({
-  attachments,
-  observables,
-  afterCaseCreated,
-  onSuccess,
-}: UseSubmitCaseProps) => {
+export const useSubmitCase = ({ attachments, afterCaseCreated, onSuccess }: UseSubmitCaseProps) => {
   const { appId } = useApplication();
   const { mutateAsync: postCase, isLoading: isPostingCase } = usePostCase();
   const { mutateAsync: createAttachments, isLoading: isCreatingAttachments } =
     useCreateAttachments();
-  const { mutateAsync: bulkPostObservables, isLoading: isPostingObservables } =
-    useBulkPostObservables();
   const { mutateAsync: pushCaseToExternalService, isLoading: isPushingToExternalService } =
     usePostPushToService();
   const { startTransaction } = useCreateCaseWithAttachmentsTransaction();
@@ -65,12 +56,6 @@ export const useSubmitCase = ({
           });
 
           trackAttachEvents(window.location.pathname, attachments);
-        }
-
-        if (theCase && Array.isArray(observables) && observables.length > 0) {
-          if (data.settings.extractObservables) {
-            await bulkPostObservables({ caseId: theCase.id, observables });
-          }
         }
 
         if (afterCaseCreated && theCase) {
@@ -102,19 +87,16 @@ export const useSubmitCase = ({
       appId,
       attachments,
       postCase,
-      observables,
       afterCaseCreated,
       onSuccess,
       createAttachments,
       trackAttachEvents,
-      bulkPostObservables,
       pushCaseToExternalService,
     ]
   );
 
   return {
     submitCase,
-    isSubmitting:
-      isPostingCase || isCreatingAttachments || isPostingObservables || isPushingToExternalService,
+    isSubmitting: isPostingCase || isCreatingAttachments || isPushingToExternalService,
   };
 };

@@ -543,6 +543,7 @@ exports[`XYChart component it renders area 1`] = `
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -2011,6 +2012,7 @@ exports[`XYChart component it renders bar 1`] = `
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -3479,6 +3481,7 @@ exports[`XYChart component it renders horizontal bar 1`] = `
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -4949,6 +4952,7 @@ exports[`XYChart component it renders line 1`] = `
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -6417,6 +6421,7 @@ exports[`XYChart component it renders stacked area 1`] = `
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -7885,6 +7890,7 @@ exports[`XYChart component it renders stacked bar 1`] = `
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -9353,6 +9359,7 @@ exports[`XYChart component it renders stacked horizontal bar 1`] = `
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -10842,6 +10849,7 @@ exports[`XYChart component split chart should render split chart if both, splitR
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -12400,6 +12408,7 @@ exports[`XYChart component split chart should render split chart if splitColumnA
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />
@@ -13951,6 +13960,7 @@ exports[`XYChart component split chart should render split chart if splitRowAcce
               },
             ]
           }
+          footer="default"
           headerFormatter={[Function]}
           type="vertical"
         />

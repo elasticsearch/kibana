@@ -34,6 +34,7 @@ const storageSettings = {
       state: types.object({ dynamic: false, properties: {} }),
       status: types.keyword({}),
       read: types.boolean({}),
+      workspace_id: types.keyword({}),
     },
   },
 } satisfies IndexStorageSettings;
@@ -51,6 +52,7 @@ export interface ConversationProperties {
   state?: ConversationInternalState;
   status?: ConversationRoundStatus;
   read?: boolean;
+  workspace_id?: string;
   // legacy field
   rounds?: PersistentConversationRound[];
 }

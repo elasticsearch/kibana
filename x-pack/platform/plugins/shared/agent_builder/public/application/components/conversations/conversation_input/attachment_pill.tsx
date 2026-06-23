@@ -7,12 +7,13 @@
 
 import { css } from '@emotion/css';
 import {
-  EuiPanel,
+  EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiText,
-  EuiButtonIcon,
   EuiIcon,
+  EuiPanel,
+  EuiText,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -92,18 +93,20 @@ export const AttachmentPill: React.FC<AttachmentPillProps> = ({
         </EuiFlexItem>
         {canRemoveAttachment && isHovered && (
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="cross"
-              size="xs"
-              color="text"
-              aria-label={removeAriaLabel}
-              onClick={onRemoveAttachment}
-              {...getEbtProps({
-                element: AGENT_BUILDER_UI_EBT.element.pageContent,
-                action: AGENT_BUILDER_UI_EBT.action.conversation.REMOVE_ATTACHMENT,
-                detail: 'conversation',
-              })}
-            />
+            <EuiToolTip content={removeAriaLabel} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="cross"
+                size="xs"
+                color="text"
+                aria-label={removeAriaLabel}
+                onClick={onRemoveAttachment}
+                {...getEbtProps({
+                  element: AGENT_BUILDER_UI_EBT.element.pageContent,
+                  action: AGENT_BUILDER_UI_EBT.action.conversation.REMOVE_ATTACHMENT,
+                  detail: 'conversation',
+                })}
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         )}
       </EuiFlexGroup>

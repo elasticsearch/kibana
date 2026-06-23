@@ -698,7 +698,14 @@ describe('rollback', () => {
         });
 
         expect(result.actionIds).toEqual([mockActionId1]);
-        expect(mockGetAgentsByKuery).toHaveBeenCalledWith(esClient, soClient, {
+        expect(mockGetAgentsByKuery).toHaveBeenNthCalledWith(1, esClient, soClient, {
+          kuery: `(${kuery})`,
+          showAgentless: undefined,
+          showInactive: false,
+          page: 1,
+          perPage: 0,
+        });
+        expect(mockGetAgentsByKuery).toHaveBeenNthCalledWith(2, esClient, soClient, {
           kuery: `(${kuery})`,
           showAgentless: undefined,
           showInactive: false,
@@ -739,7 +746,7 @@ describe('rollback', () => {
           showAgentless: undefined,
           showInactive: false,
           page: 1,
-          perPage: batchSize,
+          perPage: 0,
         });
         expect(mockOpenPointInTime).toHaveBeenCalledWith(esClient);
         expect(mockRollbackActionRunner).toHaveBeenCalledWith(

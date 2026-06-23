@@ -10,6 +10,7 @@ import { ToolType } from '@kbn/agent-builder-common';
 import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { getToolResultId, createErrorResult } from '@kbn/agent-builder-server';
+import { SEARCH_MODES } from '../../../../common/queries';
 import { platformStreamsMemoryTools } from './tool_ids';
 import type { MemoryToolsOptions } from './types';
 
@@ -40,6 +41,16 @@ const memorySearchSchema = z.object({
     .max(50)
     .optional()
     .describe('Maximum number of results to return (defaults to 10).'),
+  mode: z
+    .enum(SEARCH_MODES)
+    .optional()
+    .describe(
+      'Search mode — omit for the default "hybrid" behaviour, which combines keyword and semantic ' +
+        'matching and finds pages that are thematically related even when they share no keywords with the query. ' +
+        '"keyword": fast fuzzy/wildcard match only — use when you know the exact name, tag, or category and want ' +
+        'to avoid false positives from semantic drift. ' +
+        '"semantic": vector-similarity only — rarely the right choice because it ignores exact matches; prefer hybrid.'
+    ),
 });
 
 export const createMemorySearchTool = ({
@@ -53,7 +64,7 @@ export const createMemorySearchTool = ({
     'Memory contains persistent knowledge accumulated across conversations.',
   schema: memorySearchSchema,
   tags: ['memory'],
-  handler: async ({ query, tags, categories, references, size }, context) => {
+  handler: async ({ query, tags, categories, references, size, mode }, context) => {
     const memoryService = getMemoryService(context.esClient.asCurrentUser);
 
     try {
@@ -63,6 +74,7 @@ export const createMemorySearchTool = ({
         categories,
         references,
         size,
+        mode,
       });
 
       if (results.length === 0) {

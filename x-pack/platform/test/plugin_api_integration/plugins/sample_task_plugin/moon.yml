@@ -20,7 +20,6 @@ dependsOn:
   - '@kbn/core'
   - '@kbn/task-manager-plugin'
   - '@kbn/config-schema'
-  - '@kbn/security-plugin'
   - '@kbn/core-http-server-utils'
 tags:
   - plugin

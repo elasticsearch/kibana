@@ -16,7 +16,7 @@ import {
 import { profilingShowErrorFrames } from '@kbn/observability-plugin/common';
 import type { RouteRegisterParameters } from '.';
 import { IDLE_SOCKET_TIMEOUT } from '.';
-import { getRoutePaths, INDEX_EVENTS } from '../../common';
+import { getRoutePaths, INDEX_EVENTS, MAX_KUERY_LENGTH } from '../../common';
 import { computeBucketWidthFromTimeRangeAndBucketCount } from '../../common/histogram';
 import type { TopNResponse } from '../../common/topn';
 import { createTopNSamples, getTopNAggregationRequest } from '../../common/topn';
@@ -188,7 +188,7 @@ export function queryTopNCommon({
         query: schema.object({
           timeFrom: schema.number(),
           timeTo: schema.number(),
-          kuery: schema.string(),
+          kuery: schema.string({ maxLength: MAX_KUERY_LENGTH }),
         }),
       },
     },

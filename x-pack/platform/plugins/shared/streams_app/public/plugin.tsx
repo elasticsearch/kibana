@@ -237,11 +237,14 @@ export class StreamsAppPlugin
     const locator = pluginsStart.share.url.locators.create(new StreamsAppLocatorDefinition());
     pluginsStart.streams.navigationStatus$.subscribe((status) => {
       if (status.status !== 'enabled') return;
+      const isServerless = this.context.env.packageInfo.buildFlavor === 'serverless';
       pluginsStart.discoverShared.features.registry.register({
         id: 'streams',
         renderFlyoutStreamField: createDiscoverFlyoutStreamFieldLink({
           streamsRepositoryClient: pluginsStart.streams.streamsRepositoryClient,
           locator,
+          http: coreStart.http,
+          isServerless,
         }),
         renderFlyoutStreamFieldByStreamName: createDiscoverFlyoutStreamFieldByStreamNameLink({
           streamsRepositoryClient: pluginsStart.streams.streamsRepositoryClient,
@@ -251,6 +254,8 @@ export class StreamsAppPlugin
           fieldFormats: pluginsStart.fieldFormats,
           streamsRepositoryClient: pluginsStart.streams.streamsRepositoryClient,
           locator,
+          http: coreStart.http,
+          isServerless,
         }),
       });
     });

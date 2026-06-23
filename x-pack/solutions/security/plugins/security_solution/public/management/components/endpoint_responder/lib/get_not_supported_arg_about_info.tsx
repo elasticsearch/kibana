@@ -23,7 +23,7 @@ export const wrapWithNotice = (
     <>
       {content}
       <EuiText size="s">
-        <EuiIcon type="warning" size="s" color="warning" /> {noticeMessage}
+        <EuiIcon type="warning" size="s" color="warning" aria-hidden={true} /> {noticeMessage}
       </EuiText>
     </>
   );

@@ -108,7 +108,7 @@ export const FlyoutHeader = ({
         size="s"
       >
         {tabs.map(({ label, ...tab }, index) => (
-          <EuiTab key={index} {...tab}>
+          <EuiTab key={tab['data-test-subj'] ?? index} {...tab}>
             {label}
           </EuiTab>
         ))}

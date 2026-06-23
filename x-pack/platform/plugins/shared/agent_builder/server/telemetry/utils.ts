@@ -30,12 +30,16 @@ function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function toCustomHashedId(value: string): string {
-  return `${CUSTOM_HASH_PREFIX}${sha256Hex(value).slice(0, CUSTOM_HASH_HEX_LENGTH)}`;
+export function toHashedId(value: string): string {
+  return sha256Hex(value).slice(0, CUSTOM_HASH_HEX_LENGTH);
+}
+
+export function toCustomHashedId(value: string): string {
+  return `${CUSTOM_HASH_PREFIX}${toHashedId(value)}`;
 }
 
 function toPluginHashedId(value: string): string {
-  return `${PLUGIN_HASH_PREFIX}${sha256Hex(value).slice(0, CUSTOM_HASH_HEX_LENGTH)}`;
+  return `${PLUGIN_HASH_PREFIX}${toHashedId(value)}`;
 }
 
 /**

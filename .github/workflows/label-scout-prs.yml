@@ -1,0 +1,34 @@
+name: Label Scout PRs
+
+# Applies the `reviewer:scout` label to PRs that touch Scout test code or Scout
+# packages, which triggers the Scout Test Reviewer (reviewer-scout). The matching
+# globs live in .github/labeler-scout.yml.
+#
+# The label is added with KIBANAMACHINE_TOKEN (a User account, not a Bot) so the
+# resulting `labeled` event passes the reviewer's `sender.type != 'Bot'` gate.
+
+on:
+  # pull_request_target runs against the base branch's workflow with a read/write
+  # token and secrets, so it works for fork PRs. This workflow must never check out
+  # PR code, which would expose those secrets to untrusted contributions.
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  label_scout_prs:
+    name: Add reviewer:scout label when Scout files change
+    if: >-
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.labels.*.name, 'backport') &&
+      !contains(github.event.pull_request.labels.*.name, 'reviewer:scout') &&
+      !contains(github.event.pull_request.labels.*.name, 'reviewer:skip-ai')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
+        with:
+          repo-token: ${{ secrets.KIBANAMACHINE_TOKEN }}
+          configuration-path: .github/labeler-scout.yml
+          sync-labels: false

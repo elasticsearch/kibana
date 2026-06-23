@@ -6,11 +6,22 @@
  */
 
 import { createNavigationTree } from './navigation_tree';
+import type { CoreStart } from '@kbn/core/public';
+import { coreMock } from '@kbn/core/public/mocks';
 
 describe('Navigation Tree', () => {
-  const mockApplication = {
-    isAppRegistered: jest.fn(),
-  } as any;
+  let mockApplication: Parameters<typeof createNavigationTree>[0];
+  let core: CoreStart;
+
+  beforeEach(() => {
+    core = coreMock.createStart();
+    core.settings.globalClient.get = <T>(_key: string) => false as T;
+
+    mockApplication = {
+      ...core.application,
+      core,
+    };
+  });
 
   it('should generate tree with home link', () => {
     const navigation = createNavigationTree(mockApplication);
@@ -21,6 +32,11 @@ describe('Navigation Tree', () => {
       title: 'Elasticsearch',
       link: 'searchHomepage',
     });
+  });
+
+  it('has agent_builder as the first item after home', () => {
+    const { body } = createNavigationTree(mockApplication);
+    expect(body[1]).toMatchObject({ link: 'agent_builder' });
   });
 
   it('includes Manage jobs link to Stack Management anomaly detection jobs list under ML nav', () => {
@@ -100,6 +116,54 @@ describe('Navigation Tree', () => {
     expect(aiSection?.children).not.toContainEqual(
       expect.objectContaining({
         link: 'management:observabilityAiAssistantManagement',
+      })
+    );
+  });
+
+  it('shows Performance link in Organization section when showPerformanceLink is true', () => {
+    const { footer } = createNavigationTree({ ...mockApplication, showPerformanceLink: true });
+
+    const adminAndSettingsNode = footer?.find((item: any) => item.id === 'admin_and_settings');
+    const orgSection = adminAndSettingsNode?.children?.find(
+      (item: any) => item.id === 'organization'
+    );
+
+    expect(orgSection).toBeDefined();
+    expect(orgSection?.children).toContainEqual(
+      expect.objectContaining({
+        id: 'cloudLinkDeployment',
+        cloudLink: 'deployment',
+      })
+    );
+  });
+
+  it('hides Performance link in Organization section when showPerformanceLink is false', () => {
+    const { footer } = createNavigationTree({ ...mockApplication, showPerformanceLink: false });
+
+    const adminAndSettingsNode = footer?.find((item: any) => item.id === 'admin_and_settings');
+    const orgSection = adminAndSettingsNode?.children?.find(
+      (item: any) => item.id === 'organization'
+    );
+
+    expect(orgSection).toBeDefined();
+    expect(orgSection?.children).not.toContainEqual(
+      expect.objectContaining({
+        id: 'cloudLinkDeployment',
+      })
+    );
+  });
+
+  it('hides Performance link by default (no manage cluster privilege)', () => {
+    const { footer } = createNavigationTree(mockApplication);
+
+    const adminAndSettingsNode = footer?.find((item: any) => item.id === 'admin_and_settings');
+    const orgSection = adminAndSettingsNode?.children?.find(
+      (item: any) => item.id === 'organization'
+    );
+
+    expect(orgSection?.children).not.toContainEqual(
+      expect.objectContaining({
+        id: 'cloudLinkDeployment',
       })
     );
   });

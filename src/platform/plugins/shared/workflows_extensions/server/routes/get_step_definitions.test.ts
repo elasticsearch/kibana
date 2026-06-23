@@ -72,8 +72,9 @@ describe('registerGetStepDefinitionsRoute', () => {
     expect((body as { steps: unknown[] }).steps).toEqual([]);
   });
 
-  it('produces different hashes for different handler implementations', async () => {
+  it('ignores handler implementation when computing the hash', async () => {
     const stepRegistry = new ServerStepRegistry(logger);
+    // Same contract (no schemas/metadata), different handler implementations.
     stepRegistry.register({ id: 'a.step', handler: async () => ({ output: 'a' }) } as any);
     stepRegistry.register({ id: 'b.step', handler: async () => ({ output: 'b' }) } as any);
 
@@ -86,7 +87,7 @@ describe('registerGetStepDefinitionsRoute', () => {
 
     const { body } = response.ok.mock.calls[0][0]!;
     const { steps } = body as { steps: Array<{ id: string; definitionHash: string }> };
-    expect(steps[0].definitionHash).not.toBe(steps[1].definitionHash);
+    expect(steps[0].definitionHash).toBe(steps[1].definitionHash);
   });
 
   it('produces different hashes when only the schema differs', async () => {
@@ -115,12 +116,25 @@ describe('registerGetStepDefinitionsRoute', () => {
     expect(steps[0].definitionHash).not.toBe(steps[1].definitionHash);
   });
 
-  it('logs an error when failed to compute definition hash', async () => {
+  it('logs an error and returns a fallback hash when hashing fails', async () => {
     const stepRegistry = new ServerStepRegistry(logger);
-    stepRegistry.register({ id: 'a.step', handler: async () => ({ output: 'a' }) } as any);
-    stepRegistry.register({ id: 'b.step', handler: async () => ({ output: 'b' }) } as any);
+    // z.date() is unrepresentable in JSON Schema and makes z.toJSONSchema throw.
+    stepRegistry.register({
+      id: 'a.step',
+      handler: async () => ({ output: 'a' }),
+      inputSchema: z.date(),
+    } as any);
 
     const testRouter = httpServiceMock.createRouter();
     registerGetStepDefinitionsRoute(testRouter, stepRegistry, logger);
+
+    const [, handler] = testRouter.get.mock.calls[0];
+    const response = httpServerMock.createResponseFactory();
+    await handler({} as any, httpServerMock.createKibanaRequest(), response);
+
+    const { body } = response.ok.mock.calls[0][0]!;
+    const { steps } = body as { steps: Array<{ id: string; definitionHash: string }> };
+    expect(steps[0].definitionHash).toBe('definition-hashing-error');
+    expect(logger.error).toHaveBeenCalled();
   });
 });

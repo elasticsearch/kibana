@@ -54,7 +54,7 @@ export interface IlmPolicyPhaseForFlyout {
   min_age?: string;
   actions?: {
     delete?: unknown;
-    downsample?: unknown;
+    downsample?: { fixed_interval?: string };
     [key: string]: unknown;
   };
 }

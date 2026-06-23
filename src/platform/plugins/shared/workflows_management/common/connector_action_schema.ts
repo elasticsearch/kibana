@@ -7,6 +7,16 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import {
+  PostBlockkitSubActionParamsSchema as SlackApiPostBlockkitParamsSchema,
+  PostMessageSubActionParamsSchema as SlackApiPostMessageParamsSchema,
+  ValidChannelIdSubActionParamsSchema as SlackApiValidChannelIdParamsSchema,
+} from '@kbn/connector-schemas/slack_api';
+import {
+  XSOARPlaybooksActionResponseSchema,
+  XSOARRunActionParamsSchema,
+  XSOARRunActionResponseSchema,
+} from '@kbn/connector-schemas/xsoar';
 import { connectorsSpecs } from '@kbn/connector-specs';
 import { i18n } from '@kbn/i18n';
 import type { BaseConnectorContract } from '@kbn/workflows';
@@ -95,9 +105,6 @@ import {
   ServiceNowGetIncidentParamsSchema,
   ServiceNowIncidentResponseSchema,
   ServiceNowUpdateIncidentParamsSchema,
-  SlackApiGetChannelsParamsSchema,
-  SlackApiGetUsersParamsSchema,
-  SlackApiPostMessageParamsSchema,
   SlackApiResponseSchema,
   SlackParamsSchema,
   SlackResponseSchema,
@@ -231,9 +238,9 @@ export const ConnectorActionInputSchemas = new Map<string, Record<string, z.ZodS
   [
     '.slack_api',
     {
+      validChannelId: SlackApiValidChannelIdParamsSchema,
       postMessage: SlackApiPostMessageParamsSchema,
-      getChannels: SlackApiGetChannelsParamsSchema,
-      getUsers: SlackApiGetUsersParamsSchema,
+      postBlockkit: SlackApiPostBlockkitParamsSchema,
     },
   ],
   [
@@ -243,6 +250,13 @@ export const ConnectorActionInputSchemas = new Map<string, Record<string, z.ZodS
       webhooks: TinesWebhooksParamsSchema,
       run: TinesRunParamsSchema,
       test: TinesTestParamsSchema,
+    },
+  ],
+  [
+    '.xsoar',
+    {
+      getPlaybooks: z.object({}),
+      run: XSOARRunActionParamsSchema,
     },
   ],
   [
@@ -389,9 +403,9 @@ export const ConnectorActionOutputSchemas = new Map<string, Record<string, z.Zod
   [
     '.slack_api',
     {
+      validChannelId: SlackApiResponseSchema,
       postMessage: SlackApiResponseSchema,
-      getChannels: SlackApiResponseSchema,
-      getUsers: SlackApiResponseSchema,
+      postBlockkit: SlackApiResponseSchema,
     },
   ],
   [
@@ -401,6 +415,13 @@ export const ConnectorActionOutputSchemas = new Map<string, Record<string, z.Zod
       webhooks: TinesResponseSchema,
       run: TinesResponseSchema,
       test: TinesResponseSchema,
+    },
+  ],
+  [
+    '.xsoar',
+    {
+      getPlaybooks: XSOARPlaybooksActionResponseSchema,
+      run: XSOARRunActionResponseSchema,
     },
   ],
   [

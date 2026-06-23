@@ -27,6 +27,11 @@ const BROKEN_MAPPING_TEMPLATE = 'logs-broken-mapping-template';
 const FROM_DATE = '2026-04-14T10:00:00Z';
 const TO_DATE = '2026-04-14T10:06:00Z';
 
+const DATE_NANOS_DATA_STREAM = 'entity-store-nanos-host-test';
+const DATE_NANOS_TEMPLATE = 'entity-store-nanos-host-test-template';
+const DATE_NANOS_FROM = '2026-05-01T00:00:00Z';
+const DATE_NANOS_TO = '2026-05-01T01:00:00Z';
+
 /** Full expected `_source` for each host entity in the latest index (broken mapping → normalized types). */
 const EXPECTED_HOST_LATEST_SOURCES = [
   {
@@ -306,6 +311,32 @@ const cleanupBrokenMappingArtifacts = async (esClient: EsClient) => {
   await esClient.indices.deleteIndexTemplate({ name: BROKEN_MAPPING_TEMPLATE }, { ignore: [404] });
 };
 
+const createDateNanosTemplate = async (esClient: EsClient) => {
+  await esClient.indices.putIndexTemplate({
+    name: DATE_NANOS_TEMPLATE,
+    index_patterns: [`${DATE_NANOS_DATA_STREAM}*`],
+    data_stream: {},
+    template: {
+      mappings: {
+        properties: {
+          '@timestamp': { type: 'date_nanos' },
+          host: {
+            properties: {
+              id: { type: 'keyword' },
+              name: { type: 'keyword' },
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
+const cleanupDateNanosArtifacts = async (esClient: EsClient) => {
+  await esClient.indices.deleteDataStream({ name: DATE_NANOS_DATA_STREAM }, { ignore: [404] });
+  await esClient.indices.deleteIndexTemplate({ name: DATE_NANOS_TEMPLATE }, { ignore: [404] });
+};
+
 const ingestBrokenServiceDoc = async (esClient: EsClient) => {
   const bulkResponse = await esClient.bulk({
     refresh: 'wait_for',
@@ -545,6 +576,123 @@ apiTest.describe('Entity Store logs extraction broken mapping', { tag: ENTITY_ST
         },
       });
       matchExpectedLatestSources(bothUsers.hits.hits, EXPECTED_USER_LATEST_SOURCES);
+    }
+  );
+
+  apiTest(
+    'should extract hosts successfully when timestamp is date_nanos (lifecycle COALESCE datetime/date_nanos type fix)',
+    async ({ apiClient, esClient }) => {
+      await cleanupDateNanosArtifacts(esClient);
+      await createDateNanosTemplate(esClient);
+      await esClient.indices.createDataStream({ name: DATE_NANOS_DATA_STREAM }, { ignore: [400] });
+
+      const DOC_TIMESTAMP_1 = '2026-05-01T00:10:00.000Z';
+      const DOC_TIMESTAMP_2 = '2026-05-01T00:20:00.000Z';
+
+      await esClient.bulk({
+        refresh: 'wait_for',
+        operations: [
+          { create: { _index: DATE_NANOS_DATA_STREAM } },
+          {
+            '@timestamp': DOC_TIMESTAMP_1,
+            host: { id: 'nanos-host-1', name: 'nanos-host-name-1' },
+          },
+          { create: { _index: DATE_NANOS_DATA_STREAM } },
+          {
+            '@timestamp': DOC_TIMESTAMP_2,
+            host: { id: 'nanos-host-1', name: 'nanos-host-name-1' },
+          },
+        ],
+      });
+
+      // Include the date_nanos stream as an additional source. It does not carry a logs-* prefix
+      // so it is not picked up by the default pattern — it must be added explicitly.
+      await apiClient.put(ENTITY_STORE_ROUTES.public.UPDATE, {
+        headers: defaultHeaders,
+        responseType: 'json',
+        body: {
+          logExtraction: {
+            additionalIndexPatterns: [DATE_NANOS_DATA_STREAM],
+          },
+        },
+      });
+
+      try {
+        // First extraction: entity not yet in latest. COALESCE is type-checked at planning time —
+        // without the fix this fails with a verification_exception regardless of JOIN matches.
+        const firstExtraction = await apiClient.post(
+          ENTITY_STORE_ROUTES.internal.FORCE_LOG_EXTRACTION('host'),
+          {
+            headers: internalHeaders,
+            responseType: 'json',
+            body: { fromDateISO: DATE_NANOS_FROM, toDateISO: DATE_NANOS_TO },
+          }
+        );
+
+        expect(firstExtraction.statusCode).toBe(200);
+        expect(firstExtraction.body).toMatchObject({ success: true, count: 1 });
+
+        await esClient.indices.refresh({ index: LATEST_ALIAS });
+        const after1st = await esClient.search({
+          index: LATEST_ALIAS,
+          query: { term: { 'entity.id': 'host:nanos-host-1' } },
+        });
+        expect(after1st.hits.hits).toHaveLength(1);
+
+        const source1 = after1st.hits.hits[0]._source as {
+          entity: { lifecycle: { first_seen?: string; last_seen?: string } };
+        };
+        expect(source1.entity.lifecycle.first_seen).toBe(DOC_TIMESTAMP_1);
+        expect(source1.entity.lifecycle.last_seen).toBe(DOC_TIMESTAMP_2);
+
+        // Second extraction: entity now exists in latest — COALESCE merges both sides.
+        const thirdTimestamp = '2026-05-01T00:30:00.000Z';
+        await esClient.bulk({
+          refresh: 'wait_for',
+          operations: [
+            { create: { _index: DATE_NANOS_DATA_STREAM } },
+            {
+              '@timestamp': thirdTimestamp,
+              host: { id: 'nanos-host-1', name: 'nanos-host-name-1' },
+            },
+          ],
+        });
+
+        const secondExtraction = await apiClient.post(
+          ENTITY_STORE_ROUTES.internal.FORCE_LOG_EXTRACTION('host'),
+          {
+            headers: internalHeaders,
+            responseType: 'json',
+            body: { fromDateISO: DATE_NANOS_FROM, toDateISO: DATE_NANOS_TO },
+          }
+        );
+
+        expect(secondExtraction.statusCode).toBe(200);
+        expect(secondExtraction.body).toMatchObject({ success: true, count: 1 });
+
+        await esClient.indices.refresh({ index: LATEST_ALIAS });
+        const after2nd = await esClient.search({
+          index: LATEST_ALIAS,
+          query: { term: { 'entity.id': 'host:nanos-host-1' } },
+        });
+        expect(after2nd.hits.hits).toHaveLength(1);
+
+        const source2 = after2nd.hits.hits[0]._source as {
+          entity: { lifecycle: { first_seen?: string; last_seen?: string } };
+        };
+        // prefer_oldest_value → first_seen must stay pinned at the earliest timestamp
+        expect(source2.entity.lifecycle.first_seen).toBe(DOC_TIMESTAMP_1);
+        // prefer_newest_value → last_seen must advance to the newest timestamp
+        expect(source2.entity.lifecycle.last_seen).toBe(thirdTimestamp);
+      } finally {
+        // Restore config and clean up regardless of test outcome
+        await apiClient.put(ENTITY_STORE_ROUTES.public.UPDATE, {
+          headers: defaultHeaders,
+          responseType: 'json',
+          body: { logExtraction: { additionalIndexPatterns: [] } },
+        });
+        await cleanupDateNanosArtifacts(esClient);
+      }
     }
   );
 

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { fireEvent, render, act } from '@testing-library/react';
+import { fireEvent, render, act, waitFor } from '@testing-library/react';
 import type { DataViewFieldBase } from '@kbn/es-query';
 import { buildDataTableRecord, type EsHitRecord } from '@kbn/discover-utils';
 import { TestProviders } from '../../../../common/mock';
@@ -133,8 +133,10 @@ describe('<HighlighedFieldsModal />', () => {
       customHighlightedFields: ['custom1', 'custom2'],
     });
 
-    await act(async () => {
-      getByTestId(HIGHLIGHTED_FIELDS_MODAL_SAVE_BUTTON_TEST_ID).click();
+    fireEvent.click(getByTestId(HIGHLIGHTED_FIELDS_MODAL_SAVE_BUTTON_TEST_ID));
+
+    await waitFor(() => {
+      expect(mockSetIsModalVisible).toHaveBeenCalledWith(false);
     });
 
     expect(mockUpdateRule).toHaveBeenCalledWith({
@@ -145,6 +147,5 @@ describe('<HighlighedFieldsModal />', () => {
     expect(mockAddSuccess).toHaveBeenCalledWith('updated rule was saved');
     expect(mockUpdateRule).toHaveBeenCalled();
     expect(mockSetIsEditLoading).toHaveBeenCalledTimes(2);
-    expect(mockSetIsModalVisible).toHaveBeenCalledWith(false);
   });
 });

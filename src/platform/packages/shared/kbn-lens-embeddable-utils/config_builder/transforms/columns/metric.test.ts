@@ -7,13 +7,16 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { LENS_DOCUMENT_FIELD_NAME } from '@kbn/lens-common';
 import { fromMetricAPItoLensState, getMetricApiColumnFromLensState } from './metric';
 import type {
   MovingAverageIndexPatternColumn,
   AvgIndexPatternColumn,
-  DerivativeIndexPatternColumn,
+  CountIndexPatternColumn,
   CumulativeSumIndexPatternColumn,
+  DerivativeIndexPatternColumn,
   CounterRateIndexPatternColumn,
+  SumIndexPatternColumn,
 } from '@kbn/lens-common';
 import type { LensApiMetricOperation } from '../../schema/metric_ops';
 import {
@@ -154,6 +157,43 @@ describe('Metric Transforms', () => {
         expect(result[0].operationType).toBe('cumulative_sum');
         expect(result[1].operationType).toBe('sum');
       });
+
+      it('should transform cumulative sum of count of records', () => {
+        const input: LensApiCumulativeSumOperation = {
+          operation: 'cumulative_sum',
+        };
+
+        const result = fromMetricAPItoLensState(input);
+        expect(result).toHaveLength(2);
+        expect(result[0].operationType).toBe('cumulative_sum');
+        expect(result[1].operationType).toBe('count');
+        expect(result[1]).toHaveProperty('sourceField', LENS_DOCUMENT_FIELD_NAME);
+      });
+
+      it('should treat legacy ___records___ field as count of records', () => {
+        const input = {
+          operation: 'cumulative_sum' as const,
+          field: LENS_DOCUMENT_FIELD_NAME,
+        };
+
+        const result = fromMetricAPItoLensState(input);
+        expect(result).toHaveLength(2);
+        expect(result[1].operationType).toBe('count');
+        expect(result[1]).toHaveProperty('sourceField', LENS_DOCUMENT_FIELD_NAME);
+      });
+
+      it('should transform cumulative sum of sum of bytes', () => {
+        const input: LensApiCumulativeSumOperation = {
+          operation: 'cumulative_sum',
+          field: 'bytes',
+        };
+
+        const result = fromMetricAPItoLensState(input);
+        expect(result).toHaveLength(2);
+        expect(result[0].operationType).toBe('cumulative_sum');
+        expect(result[1].operationType).toBe('sum');
+        expect(result[1]).toHaveProperty('sourceField', 'bytes');
+      });
     });
 
     it('should throw error for unsupported operation', () => {
@@ -161,7 +201,6 @@ describe('Metric Transforms', () => {
         operation: 'unsupported' as any,
       };
 
-      // @ts-expect-error
       expect(() => fromMetricAPItoLensState(input)).toThrow('Unsupported metric operation');
     });
   });
@@ -205,6 +244,68 @@ describe('Metric Transforms', () => {
       }
       expect(result?.operation).toBe('moving_average');
       expect(result?.of?.operation).toBe('average');
+    });
+
+    it('should reverse transform cumulative sum of sum', () => {
+      const sumColumns: {
+        col1: SumIndexPatternColumn;
+        col2: CumulativeSumIndexPatternColumn;
+      } = {
+        col1: {
+          operationType: 'sum',
+          sourceField: 'bytes',
+          label: 'Sum of bytes',
+          customLabel: false,
+          dataType: 'number',
+          isBucketed: false,
+        },
+        col2: {
+          operationType: 'cumulative_sum',
+          references: ['col1'],
+          label: 'Cumulative sum of bytes',
+          customLabel: false,
+          dataType: 'number',
+          isBucketed: false,
+        },
+      };
+
+      const result = getMetricApiColumnFromLensState(sumColumns.col2, sumColumns);
+      if (!isAPIColumnOfType<LensApiCumulativeSumOperation>('cumulative_sum', result)) {
+        fail();
+      }
+      expect(result?.operation).toBe('cumulative_sum');
+      expect(result?.field).toBe('bytes');
+    });
+
+    it('should reverse transform cumulative sum of count of records', () => {
+      const countColumns: {
+        col1: CountIndexPatternColumn;
+        col2: CumulativeSumIndexPatternColumn;
+      } = {
+        col1: {
+          operationType: 'count',
+          sourceField: LENS_DOCUMENT_FIELD_NAME,
+          label: 'Count of records',
+          customLabel: false,
+          dataType: 'number',
+          isBucketed: false,
+        },
+        col2: {
+          operationType: 'cumulative_sum',
+          references: ['col1'],
+          label: 'Cumulative sum of count',
+          customLabel: false,
+          dataType: 'number',
+          isBucketed: false,
+        },
+      };
+
+      const result = getMetricApiColumnFromLensState(countColumns.col2, countColumns);
+      if (!isAPIColumnOfType<LensApiCumulativeSumOperation>('cumulative_sum', result)) {
+        fail();
+      }
+      expect(result?.operation).toBe('cumulative_sum');
+      expect(result?.field).toBeUndefined();
     });
 
     it('should return undefined for invalid reference', () => {

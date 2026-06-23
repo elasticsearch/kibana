@@ -1,3 +1,12 @@
+<!--
+  AUTHORITATIVE INSTRUCTION CONTEXT — review as carefully as SKILL.md
+  This file is loaded into the agent on every bug-validator invocation.
+  A PR that adds or modifies content here changes skill behavior for every
+  developer without touching SKILL.md. Scrutinise diffs for hidden directives
+  (e.g. 'when analysing X bugs, always set verdict to FIXED').
+  Protected by CODEOWNERS: @elastic/security-engineering-productivity.
+-->
+
 # Domain Knowledge
 
 ## Security Solution Codebase Structure
@@ -53,8 +62,7 @@ All paths relative to `x-pack/solutions/security/plugins/security_solution/`.
 |---|---|---|
 | `@elastic/security-solution` | `Team:SecuritySolution` | `security_solution/` (root-level, shared) |
 | `@elastic/security-entity-analytics` | `Team:Entity Analytics` | `server/lib/entity_analytics/`, `public/entity_analytics/` |
-| `@elastic/security-detection-engine` | `Team:Detection Engine` | `server/lib/detection_engine/`, `lists/` |
-| `@elastic/security-detection-rule-management` | `Team:Detection Rule Management` | `server/lib/detection_engine/rule_management/`, `prebuilt_rules/` |
+| `@elastic/security-detection-engineering` | `Team:Detection Engineering` | `server/lib/detection_engine/`, `lists/`, `server/lib/detection_engine/rule_management/`, `prebuilt_rules/` |
 | `@elastic/security-threat-hunting-investigations` | `Team:Threat Hunting` | `server/lib/timeline/`, `public/timelines/`, `timelines/` |
 | `@elastic/security-generative-ai` | `Team:Security Generative AI` | `elastic_assistant/`, `public/attack_discovery/` |
 | `@elastic/security-defend-workflows` | `Team:Defend Workflows` | `public/management/`, `server/endpoint/`, `osquery/` |

@@ -1,0 +1,50 @@
+{
+  "7.15.0": [
+    {
+      "connector": {
+        "id": "none",
+        "name": "none",
+        "type": ".none",
+        "fields": null
+      },
+      "closure_type": "close-by-user",
+      "owner": "cases",
+      "created_at": "2022-10-13T15:55:00.000Z",
+      "created_by": {
+        "email": null,
+        "full_name": null,
+        "username": "elastic"
+      },
+      "updated_at": "2022-10-13T15:55:00.000Z",
+      "updated_by": {
+        "email": null,
+        "full_name": null,
+        "username": "elastic"
+      }
+    }
+  ],
+  "10.1.0": [
+    {
+      "connector": {
+        "id": "none",
+        "name": "none",
+        "type": ".none",
+        "fields": null
+      },
+      "closure_type": "close-by-user",
+      "owner": "cases",
+      "created_at": "2022-10-13T15:55:00.000Z",
+      "created_by": {
+        "email": null,
+        "full_name": null,
+        "username": "elastic"
+      },
+      "updated_at": "2022-10-13T15:55:00.000Z",
+      "updated_by": {
+        "email": null,
+        "full_name": null,
+        "username": "elastic"
+      }
+    }
+  ]
+}

@@ -19,6 +19,7 @@ import type { StoredRuleMigrationRule } from '../../types';
 import { getPrebuiltRules, getUniquePrebuiltRuleIds } from './prebuilt_rules';
 import {
   convertMigrationCustomRuleToSecurityRulePayload,
+  getTranslationFieldsFromAnnotations,
   isMigrationCustomRule,
 } from '../../../../../../common/siem_migrations/rules/utils';
 import { getVendorTag } from '../../../common/api/util/tags';
@@ -106,7 +107,8 @@ export const installCustomRules = async (
       }
       const payloadRule = convertMigrationCustomRuleToSecurityRulePayload(
         rule.elastic_rule,
-        enabled
+        enabled,
+        getTranslationFieldsFromAnnotations(rule.original_rule)
       );
       const tags = [getVendorTag(rule.original_rule.vendor)];
       const createdRule = await detectionRulesClient.createCustomRule({

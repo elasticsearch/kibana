@@ -95,6 +95,16 @@ export const OutputSchema = z.object({
     .describe(
       'Conversation ID associated with this step execution. Present when create_conversation is enabled or conversation_id is provided.'
     ),
+  metadata: z
+    .object({
+      usage: z.object({
+        inputTokens: z.number().describe('Total input tokens consumed across all LLM rounds.'),
+        outputTokens: z.number().describe('Total output tokens produced across all LLM rounds.'),
+        totalTokens: z.number().describe('Sum of input and output tokens across all LLM rounds.'),
+      }),
+    })
+    .describe('Step execution metadata, including token usage across all LLM rounds.')
+    .optional(),
 });
 
 /**

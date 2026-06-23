@@ -8,18 +8,19 @@
 import React, { useCallback, useMemo } from 'react';
 import moment from 'moment';
 import {
+  EuiAccordion,
+  EuiBadge,
+  EuiBasicTable,
+  EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiPanel,
+  EuiHealth,
   EuiHorizontalRule,
   EuiIcon,
-  EuiBasicTable,
-  EuiHealth,
-  EuiText,
-  EuiAccordion,
-  EuiButtonIcon,
+  EuiPanel,
   EuiSpacer,
-  EuiBadge,
+  EuiText,
+  EuiToolTip,
   type EuiBasicTableColumn,
   useEuiTheme,
 } from '@elastic/eui';
@@ -110,11 +111,18 @@ export const RuleMigrationResultPanel = React.memo<RuleMigrationResultPanelProps
               <EuiBadge css={completeBadgeStyles}>{i18n.RULE_MIGRATION_COMPLETE_BADGE}</EuiBadge>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <EuiButtonIcon
-                iconType={isCollapsed ? 'chevronSingleDown' : 'chevronSingleUp'}
-                onClick={toggleCollapsed}
-                aria-label={isCollapsed ? i18n.RULE_MIGRATION_EXPAND : i18n.RULE_MIGRATION_COLLAPSE}
-              />
+              <EuiToolTip
+                content={isCollapsed ? i18n.RULE_MIGRATION_EXPAND : i18n.RULE_MIGRATION_COLLAPSE}
+                disableScreenReaderOutput
+              >
+                <EuiButtonIcon
+                  iconType={isCollapsed ? 'chevronSingleDown' : 'chevronSingleUp'}
+                  onClick={toggleCollapsed}
+                  aria-label={
+                    isCollapsed ? i18n.RULE_MIGRATION_EXPAND : i18n.RULE_MIGRATION_COLLAPSE
+                  }
+                />
+              </EuiToolTip>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiPanel>
@@ -139,7 +147,7 @@ export const RuleMigrationResultPanel = React.memo<RuleMigrationResultPanelProps
               <EuiFlexItem grow={false}>
                 <EuiFlexGroup direction="row" alignItems="center" gutterSize="s">
                   <EuiFlexItem grow={false}>
-                    <EuiIcon type={AssistantIcon} size="m" />
+                    <EuiIcon type={AssistantIcon} size="m" aria-hidden={true} />
                   </EuiFlexItem>
                   <EuiFlexItem>
                     <PanelText size="s" semiBold>

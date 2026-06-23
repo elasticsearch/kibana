@@ -43,6 +43,10 @@ export function registerReadRoute(
   readRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () =>
+          (await import('../oas_examples')).readDashboardOASOperationObject,
+      },
       validate: () => ({
         request: {
           params: schema.object({

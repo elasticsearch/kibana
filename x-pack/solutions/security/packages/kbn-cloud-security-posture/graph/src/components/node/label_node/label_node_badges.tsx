@@ -9,6 +9,7 @@ import React from 'react';
 import { EuiIcon, EuiText, EuiButtonEmpty, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
+import { getAbbreviatedNumber } from '@kbn/cloud-security-posture-common';
 import { RoundedBadge } from '../styles';
 import type { DocumentAnalysisOutput } from './analyze_documents';
 
@@ -17,9 +18,6 @@ export const TEST_SUBJ_ALERT_COUNT = 'label-node-alert-count';
 export const TEST_SUBJ_ALERT_COUNT_BUTTON = 'label-node-alert-count-button';
 export const TEST_SUBJ_EVENT_COUNT = 'label-node-event-count';
 export const TEST_SUBJ_EVENT_COUNT_BUTTON = 'label-node-event-count-button';
-
-export const LIMIT = 99;
-export const displayCount = (count: number) => (count > LIMIT ? `+${LIMIT}` : count);
 
 const POPOVER_EVENT_ARIA_LABEL = i18n.translate(
   'securitySolutionPackages.csp.graph.labelBadges.eventAriaLabel',
@@ -87,11 +85,11 @@ const EventBadge: React.FC<{
             color: ${euiTheme.colors.textHeading};
           `}
         >
-          {displayCount(count)}
+          {getAbbreviatedNumber(count)}
         </EuiButtonEmpty>
       ) : (
         <CountText testSubj={TEST_SUBJ_EVENT_COUNT} color={euiTheme.colors.textHeading}>
-          {displayCount(count)}
+          {getAbbreviatedNumber(count)}
         </CountText>
       )}
     </RoundedBadge>
@@ -127,11 +125,11 @@ const AlertCountBadge: React.FC<{
             color: ${textColor};
           `}
         >
-          {displayCount(count)}
+          {getAbbreviatedNumber(count)}
         </EuiButtonEmpty>
       ) : (
         <CountText testSubj={TEST_SUBJ_ALERT_COUNT} color={textColor}>
-          {displayCount(count)}
+          {getAbbreviatedNumber(count)}
         </CountText>
       )}
     </RoundedBadge>

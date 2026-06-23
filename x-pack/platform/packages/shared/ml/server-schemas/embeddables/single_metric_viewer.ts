@@ -5,61 +5,64 @@
  * 2.0.
  */
 
-import { schema } from '@kbn/config-schema';
-import type { TypeOf } from '@kbn/config-schema';
-import { storedFilterSchema, querySchema } from '@kbn/es-query-server';
-import { refreshIntervalSchema } from '@kbn/data-service-server';
+import { schema, type TypeOf } from '@kbn/config-schema';
 import {
   serializedTimeRangeSchema,
   serializedTitlesSchema,
 } from '@kbn/presentation-publishing-schemas';
 import { mlEntityFieldValueSchema } from '@kbn/ml-anomaly-utils/schemas';
 
-const baseUserInputProps = schema.object({
-  forecastId: schema.maybe(schema.string()),
-  functionDescription: schema.maybe(schema.string()),
-  jobIds: schema.arrayOf(schema.string(), { maxSize: 10000 }),
-  selectedDetectorIndex: schema.number(),
-  selectedEntities: schema.maybe(
-    schema.recordOf(schema.string(), schema.maybe(mlEntityFieldValueSchema))
-  ),
-});
-
-export const singleMetricViewerEmbeddableUserInputSchema = schema.object({
-  ...baseUserInputProps.getPropSchemas(),
-  panelTitle: schema.maybe(schema.string()),
-});
-
-export type SingleMetricViewerEmbeddableUserInput = TypeOf<
-  typeof singleMetricViewerEmbeddableUserInputSchema
->;
-
-export const singleMetricViewerEmbeddableCustomInputSchema = schema.object({
-  ...baseUserInputProps.getPropSchemas(),
-  ...serializedTimeRangeSchema.getPropSchemas(),
-  id: schema.maybe(schema.string()),
-  filters: schema.maybe(schema.arrayOf(storedFilterSchema, { maxSize: 10000 })),
-  query: schema.maybe(querySchema),
-  refreshConfig: schema.maybe(refreshIntervalSchema),
-});
-
-export type SingleMetricViewerEmbeddableCustomInput = TypeOf<
-  typeof singleMetricViewerEmbeddableCustomInputSchema
->;
-
-export const singleMetricViewerEmbeddableInputSchema = schema.object({
-  ...singleMetricViewerEmbeddableCustomInputSchema.getPropSchemas(),
-  title: schema.maybe(schema.string()),
-});
-
-export type SingleMetricViewerEmbeddableInput = TypeOf<
-  typeof singleMetricViewerEmbeddableInputSchema
->;
-
-export const singleMetricViewerEmbeddableStateSchema = schema.object({
-  ...serializedTitlesSchema.getPropSchemas(),
-  ...singleMetricViewerEmbeddableCustomInputSchema.getPropSchemas(),
-});
+export const singleMetricViewerEmbeddableStateSchema = schema.object(
+  {
+    ...serializedTitlesSchema.getPropSchemas(),
+    ...serializedTimeRangeSchema.getPropSchemas(),
+    job_ids: schema.arrayOf(schema.string({ minLength: 1, maxLength: 1000 }), {
+      minSize: 1,
+      maxSize: 1,
+      meta: {
+        description:
+          'Anomaly detection job ID whose results are shown in the single metric viewer.',
+      },
+    }),
+    selected_detector_index: schema.number({
+      min: 0,
+      defaultValue: 0,
+      meta: {
+        description:
+          'Zero-based index of the detector (the Elasticsearch detector_index) within the job whose results are shown.',
+      },
+    }),
+    selected_entities: schema.maybe(
+      schema.recordOf(schema.string({ maxLength: 1000 }), schema.maybe(mlEntityFieldValueSchema), {
+        meta: {
+          description:
+            'Values of the partition, by, or over fields that identify the single time series to display.',
+        },
+      })
+    ),
+    function_description: schema.maybe(
+      schema.string({
+        meta: {
+          description:
+            'For detectors that use the `metric` function, selects which value to plot: `min`, `max`, or `mean`. Ignored for other detector functions. When omitted, the viewer derives a default from the highest-scoring anomaly record.',
+        },
+        maxLength: 1000,
+      })
+    ),
+    forecast_id: schema.maybe(
+      schema.string({
+        meta: { description: 'Identifier of a forecast to overlay on the chart.' },
+        maxLength: 1000,
+      })
+    ),
+  },
+  {
+    meta: {
+      id: 'ml_single_metric_viewer',
+      description: 'Single Metric Viewer embeddable',
+    },
+  }
+);
 
 export type SingleMetricViewerEmbeddableState = TypeOf<
   typeof singleMetricViewerEmbeddableStateSchema

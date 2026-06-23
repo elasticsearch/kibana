@@ -27,6 +27,9 @@ export function SLOCardItemInstanceBadge({ slo }: Props) {
   return (
     <EuiFlexItem grow={false}>
       <EuiPopover
+        aria-label={i18n.translate('xpack.slo.sloCardItemInstanceBadge.popoverAriaLabel', {
+          defaultMessage: 'All instance IDs',
+        })}
         isOpen={isPopoverOpen}
         button={
           <EuiBadge

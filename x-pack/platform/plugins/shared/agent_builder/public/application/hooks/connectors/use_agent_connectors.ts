@@ -15,6 +15,7 @@ import { useAgentBuilderAgentById } from '../agents/use_agent_by_id';
 import { useAgentBuilderServices } from '../use_agent_builder_service';
 import { useListConnectors } from '../tools/use_mcp_connectors';
 import { useToasts } from '../use_toasts';
+import { agentHasConnector, getEffectiveConnectorIds } from './connector_ids_utils';
 
 export const useAgentConnectors = ({ agentId }: { agentId: string }) => {
   const { agent } = useAgentBuilderAgentById(agentId);
@@ -24,21 +25,33 @@ export const useAgentConnectors = ({ agentId }: { agentId: string }) => {
   const { addSuccessToast, addErrorToast } = useToasts();
 
   const agentQueryKey = queryKeys.agentProfiles.byId(agentId);
-  const assignedIds = agent?.configuration?.connector_ids;
 
   const assignedConnectors = useMemo(
-    () => allConnectors.filter((c) => assignedIds === undefined || assignedIds.includes(c.id)),
-    [allConnectors, assignedIds]
+    () => (agent ? allConnectors.filter((c) => agentHasConnector(agent, c.id)) : []),
+    [agent, allConnectors]
   );
 
   const activeConnectorIdSet = useMemo(
-    () => new Set(assignedIds ?? allConnectors.map((c) => c.id)),
-    [allConnectors, assignedIds]
+    () =>
+      new Set(
+        agent
+          ? getEffectiveConnectorIds(
+              agent,
+              allConnectors.map((c) => c.id)
+            )
+          : []
+      ),
+    [agent, allConnectors]
   );
 
   const getCurrentConnectorIds = useCallback((): string[] => {
     const currentAgent = queryClient.getQueryData<AgentDefinition>(agentQueryKey);
-    return currentAgent?.configuration?.connector_ids ?? allConnectors.map((c) => c.id);
+    return currentAgent
+      ? getEffectiveConnectorIds(
+          currentAgent,
+          allConnectors.map((c) => c.id)
+        )
+      : allConnectors.map((c) => c.id);
   }, [queryClient, agentQueryKey, allConnectors]);
 
   const updateConnectorsMutation = useMutation({
@@ -73,7 +86,7 @@ export const useAgentConnectors = ({ agentId }: { agentId: string }) => {
   });
 
   const assign = useCallback(
-    (connector: ConnectorItem) => {
+    (connector: Pick<ConnectorItem, 'id' | 'name'>) => {
       const currentIds = getCurrentConnectorIds();
       if (currentIds.includes(connector.id)) return;
       updateConnectorsMutation.mutate([...currentIds, connector.id], {

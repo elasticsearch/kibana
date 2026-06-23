@@ -1,5 +1,5 @@
 {
-  "sha1": "2bb2662640df9e01aa0f29c7aef0260590d4fc88",
+  "sha1": "676ac9e153046a6ac0e659b981f44e385d895a45",
   "tests": [
     {
       "id": "98600d12651f127-aa69b48f5334963",
@@ -70,6 +70,58 @@
       "location": {
         "file": "src/platform/plugins/shared/dashboard/test/scout/ui/parallel_tests/dashboard_add_panel_flyout.spec.ts",
         "line": 96,
+        "column": 14
+      }
+    },
+    {
+      "id": "18cd97eaaa06216-6bfe05f14c8e34c",
+      "title": "Dashboard clone save as copy creates a numbered clone with the same panels",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/dashboard/test/scout/ui/parallel_tests/dashboard_clone.spec.ts",
+        "line": 42,
+        "column": 12
+      }
+    },
+    {
+      "id": "785b8429bf26d7a-c42a06054aa8eea",
+      "title": "No data views: try ES|QL from dashboard creates a new ES|QL dashboard from the no-data prompt",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/dashboard/test/scout/ui/parallel_tests/dashboard_esql_no_data.spec.ts",
+        "line": 33,
         "column": 14
       }
     },
@@ -394,6 +446,32 @@
       }
     },
     {
+      "id": "5e171a4b43c007d-66f4628503ab8f5",
+      "title": "Empty dashboard supports empty-state widget and add-panel flows",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/dashboard/test/scout/ui/parallel_tests/empty_dashboard.spec.ts",
+        "line": 30,
+        "column": 12
+      }
+    },
+    {
       "id": "5e76aeeb49b5555-a908f3956402041",
       "title": "Controls migration smoke (8.0.0) imports and renders controls without regressions",
       "expectedStatus": "passed",
@@ -460,6 +538,32 @@
       "location": {
         "file": "src/platform/plugins/shared/dashboard/test/scout/ui/parallel_tests/migration_smoke_tests/visualize_migration_smoke.spec.ts",
         "line": 60,
+        "column": 12
+      }
+    },
+    {
+      "id": "1207d871c31a3c5-18d1af094b095d3",
+      "title": "Panel expand toggle expands and restores panels",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/dashboard/test/scout/ui/parallel_tests/panel_expand_toggle.spec.ts",
+        "line": 42,
         "column": 12
       }
     },

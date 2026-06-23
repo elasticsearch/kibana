@@ -46,8 +46,8 @@ export function registerKibanaSettings(coreSetup: CoreSetup) {
         }
       ),
       schema: schema.object({
-        from: schema.string(),
-        to: schema.string(),
+        from: schema.string({ maxLength: 10000 }),
+        to: schema.string({ maxLength: 10000 }),
       }),
       requiresPageReload: true,
       category: ['machineLearning'],

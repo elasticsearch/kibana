@@ -148,7 +148,7 @@ export const WorkflowInsightsScanSection = ({
           <EuiFlexItem grow={false}>
             <EuiFlexGroup alignItems="center" gutterSize="s">
               <EuiFlexItem grow={false}>
-                <EuiIcon type="sparkles" />
+                <EuiIcon type="sparkles" aria-hidden={true} />
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
                 <EuiText size="s">

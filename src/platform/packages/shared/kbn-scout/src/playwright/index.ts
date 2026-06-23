@@ -49,6 +49,7 @@ export type {
   LinkedProjectFixture,
   SamlAuth,
   RequestAuthFixture,
+  ScoutSpaceParallelFixture,
   SpaceSolutionView,
   ApiClientFixture,
   ApiClientOptions,

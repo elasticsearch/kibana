@@ -10,13 +10,20 @@
 import type { OverlayRef } from '@kbn/core-mount-utils-browser';
 import { BehaviorSubject } from 'rxjs';
 
-export function initializeTrackOverlay(setFocusedPanelId: (id: string | undefined) => void) {
+interface Api {
+  setFocusedPanelId: (id: string | undefined) => void;
+  setRelatedPanelsIndicatorId: (id: string | undefined) => void;
+}
+
+export function initializeTrackOverlay({ setFocusedPanelId, setRelatedPanelsIndicatorId }: Api) {
   let overlayRef: OverlayRef;
   const hasOverlays$ = new BehaviorSubject(false);
 
   function clearOverlays() {
     hasOverlays$.next(false);
     setFocusedPanelId(undefined);
+    // Clear related panels indicator ID when closing overlays as well
+    setRelatedPanelsIndicatorId(undefined);
     overlayRef?.close();
   }
 
@@ -29,6 +36,8 @@ export function initializeTrackOverlay(setFocusedPanelId: (id: string | undefine
       overlayRef = ref;
       if (options?.focusedPanelId) {
         setFocusedPanelId(options.focusedPanelId);
+        // Related panel indicator state should not persist across modes, so clear it on overlay open too
+        setRelatedPanelsIndicatorId(undefined);
       }
     },
   };

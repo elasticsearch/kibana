@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/270904
+issues:
+- https://github.com/elastic/security-team/issues/17496
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Add bulk action to send alerts to Agent Builder chat
+description: You can select multiple alerts and send them to Agent Builder chat for triage using a new "Add to chat" bulk action in the alerts table.

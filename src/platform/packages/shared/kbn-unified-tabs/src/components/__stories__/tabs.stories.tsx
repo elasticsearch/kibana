@@ -43,10 +43,11 @@ const TabbedContentTemplate: StoryFn<TabbedContentProps> = (args) => {
       {...args}
       items={managedItems}
       selectedItemId={managedSelectedItemId}
-      recentlyClosedItems={args.recentlyClosedItems}
+      recentlyClosedItems={args.recentlyClosedItems ?? []}
       createItem={getNewTabDefaultProps}
       getPreviewData={getPreviewDataMock}
       services={servicesMock}
+      onEBTEvent={action('onEBTEvent')}
       onChanged={(updatedState) => {
         action('onChanged')(updatedState);
         setState({

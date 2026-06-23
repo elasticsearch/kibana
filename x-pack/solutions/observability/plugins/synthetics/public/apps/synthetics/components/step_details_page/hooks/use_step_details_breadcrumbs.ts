@@ -11,6 +11,8 @@ import { useSelectedLocation } from '../../monitor_details/hooks/use_selected_lo
 import { TEST_RUN_DETAILS_ROUTE } from '../../../../../../common/constants/ui';
 import { useJourneySteps } from '../../monitor_details/hooks/use_journey_steps';
 import { useTestRunDetailsBreadcrumbs } from '../../test_run_details/hooks/use_test_run_details_breadcrumbs';
+import { useGetUrlParams } from '../../../hooks';
+import { buildMonitorParamsSearch } from '../../../utils/url_params';
 import { PLUGIN } from '../../../../../../common/constants/plugin';
 
 export const useStepDetailsBreadcrumbs = (extraCrumbs?: Array<{ text: string; href?: string }>) => {
@@ -24,13 +26,19 @@ export const useStepDetailsBreadcrumbs = (extraCrumbs?: Array<{ text: string; hr
   }>();
 
   const selectedLocation = useSelectedLocation();
+  // Preserve `remoteName` so the test-run-details breadcrumb stays on the
+  // remote (CCS) cluster path and doesn't 404 against local indices.
+  const { remoteName } = useGetUrlParams();
+
+  const testRunSearch = buildMonitorParamsSearch({
+    locationId: selectedLocation?.id,
+    remoteName,
+  });
 
   useTestRunDetailsBreadcrumbs([
     {
       text: data ? moment(data.details?.timestamp).format('LLL') : '',
-      href: `${appPath}/${generatePath(TEST_RUN_DETAILS_ROUTE, params)}?locationId=${
-        selectedLocation?.id ?? ''
-      }`,
+      href: `${appPath}/${generatePath(TEST_RUN_DETAILS_ROUTE, params)}${testRunSearch}`,
     },
 
     {

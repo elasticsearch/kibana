@@ -263,15 +263,6 @@ const UnifiedResultsTableComponent: React.FC<ResultsTableComponentProps> = ({
     unfilteredTotal,
   ]);
 
-  // Drop the store entry when this row's results table unmounts (e.g. pack
-  // row collapse) so stale filter state can't be served to a later mount.
-  useEffect(
-    () => () => {
-      exportFiltersStore?.clearFilters(actionId);
-    },
-    [exportFiltersStore, actionId]
-  );
-
   // Register missing columns as runtime fields on the data view so that
   // UnifiedDataTable can resolve their field type tokens (icons in column headers).
   // osquery.* fields may not exist in the data view if the index mapping hasn't

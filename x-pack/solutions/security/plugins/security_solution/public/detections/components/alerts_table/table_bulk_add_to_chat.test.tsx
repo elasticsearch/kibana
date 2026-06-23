@@ -47,6 +47,9 @@ jest.mock('../../../common/lib/kibana', () => ({
       agentBuilder: {},
     },
   })),
+  KibanaServices: {
+    getKibanaVersion: jest.fn(() => '8.0.0'),
+  },
   KibanaContextProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 jest.mock('../../../common/containers/use_global_time', () => ({

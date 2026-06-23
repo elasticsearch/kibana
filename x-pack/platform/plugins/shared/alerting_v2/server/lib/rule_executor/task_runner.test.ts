@@ -110,6 +110,18 @@ describe('RuleExecutorTaskRunner', () => {
       expect(result).toEqual({ state: { foo: 'bar' } });
     });
 
+    it('preserves previous state when pipeline halts with engine_disabled', async () => {
+      pipeline.execute.mockResolvedValue({
+        completed: false,
+        haltReason: 'engine_disabled',
+        finalState: createRulePipelineState(),
+      });
+
+      const result = await runner.run({ taskInstance, abortController });
+
+      expect(result).toEqual({ state: { foo: 'bar' } });
+    });
+
     it('does not throw an unrecoverable error when pipeline completes', async () => {
       pipeline.execute.mockResolvedValue({
         completed: true,

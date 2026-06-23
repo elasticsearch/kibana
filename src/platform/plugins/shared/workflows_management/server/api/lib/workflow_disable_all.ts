@@ -9,35 +9,46 @@
 
 import type { Logger } from '@kbn/core/server';
 
-import { partitionBulkResults } from './bulk_response_helpers';
+import { bulkIndexWithOccRetry, toOccHit } from './bulk_occ_index';
 import { paginateWithSearchAfter } from './paginate_with_search_after';
 import { updateWorkflowYamlFields } from '../../../common/lib/yaml';
 import type { WorkflowProperties, WorkflowStorage } from '../../storage/workflow_storage';
 import { unscheduleWorkflowTasks } from '../../task_defs/unschedule_workflow_tasks';
 import type { WorkflowTaskScheduler } from '../../tasks/workflow_task_scheduler';
 
+const mutateWorkflowToDisabled = (source: WorkflowProperties): WorkflowProperties => {
+  const updatedYaml = updateWorkflowYamlFields(source.yaml, { enabled: false }, false);
+  return {
+    ...source,
+    enabled: false,
+    yaml: updatedYaml,
+  };
+};
+
 /**
  * Disables all enabled workflows. When `spaceId` is set, scopes the operation
- * to that space; otherwise operates across all spaces. Sets `enabled: false`,
- * patches YAML accordingly, and unschedules any scheduled tasks.
- * Used when a user opts out of workflows by toggling the per-space UI setting off,
- * or when availability (license / config) requires a global bulk disable.
+ * to that space (user-initiated opt-out); otherwise operates across all spaces
+ * for system availability (license / config). Sets `enabled: false`, patches
+ * YAML accordingly, and unschedules any scheduled tasks.
  */
 export const disableAllWorkflows = async (params: {
   storage: WorkflowStorage;
   taskScheduler: WorkflowTaskScheduler | null;
   logger: Logger;
   spaceId?: string;
+  versioningEnabled?: boolean;
 }): Promise<{
   total: number;
   disabled: number;
   failures: Array<{ id: string; error: string }>;
+  disabledWorkflows: Array<{ id: string; document: WorkflowProperties }>;
 }> => {
-  const { storage, taskScheduler, logger, spaceId } = params;
+  const { storage, taskScheduler, logger, spaceId, versioningEnabled = false } = params;
   const client = storage.getClient();
   const pageSize = 1000;
   const failures: Array<{ id: string; error: string }> = [];
   const disabledIds: string[] = [];
+  const disabledWorkflows: Array<{ id: string; document: WorkflowProperties }> = [];
 
   const query = {
     bool: {
@@ -55,6 +66,7 @@ export const disableAllWorkflows = async (params: {
           size: pageSize,
           sort,
           _source: true,
+          seq_no_primary_term: true,
           track_total_hits: false,
           ...(searchAfter ? { search_after: searchAfter } : {}),
         }),
@@ -63,39 +75,31 @@ export const disableAllWorkflows = async (params: {
       operationName: 'disableAllWorkflows',
     },
     async (hits) => {
-      const bulkOperations = hits.map((hit) => {
-        const updatedYaml = updateWorkflowYamlFields(hit._source.yaml, { enabled: false }, false);
-        return {
-          index: {
-            _id: hit._id,
-            document: {
-              ...hit._source,
-              enabled: false,
-              yaml: updatedYaml,
-            },
-          },
-        };
-      });
-
       try {
-        const bulkResponse = await client.bulk({
-          operations: bulkOperations,
-          refresh: true,
+        const occHits = hits.map((hit) => toOccHit(hit));
+        const {
+          successIds,
+          successfulDocuments,
+          failures: bulkFailures,
+        } = await bulkIndexWithOccRetry({
+          client,
+          hits: occHits,
+          mutate: mutateWorkflowToDisabled,
+          logger,
+          versioningEnabled,
         });
 
-        const { successIds: pageDisabledIds, failures: bulkFailures } = partitionBulkResults(
-          bulkResponse.items
-        );
         failures.push(...bulkFailures);
 
-        if (pageDisabledIds.length > 0) {
-          disabledIds.push(...pageDisabledIds);
-          await unscheduleWorkflowTasks(pageDisabledIds, taskScheduler);
+        if (successIds.length > 0) {
+          disabledWorkflows.push(...successfulDocuments);
+          disabledIds.push(...successIds);
+          await unscheduleWorkflowTasks(successIds, taskScheduler);
         }
       } catch (error) {
-        bulkOperations.forEach((op) => {
+        hits.forEach((hit) => {
           failures.push({
-            id: op.index._id ?? 'unknown',
+            id: hit._id,
             error: error instanceof Error ? error.message : String(error),
           });
         });
@@ -113,5 +117,6 @@ export const disableAllWorkflows = async (params: {
     total: totalProcessed,
     disabled: disabledIds.length,
     failures,
+    disabledWorkflows,
   };
 };

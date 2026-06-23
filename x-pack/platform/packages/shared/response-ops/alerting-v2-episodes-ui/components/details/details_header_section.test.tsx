@@ -86,6 +86,37 @@ describe('AlertEpisodeDetailsHeaderSection', () => {
     );
   });
 
+  it('surfaces episode severity in the header after status', async () => {
+    runEsqlAsyncSearchMock.mockResolvedValue({
+      columns: [
+        { name: '@timestamp', type: 'date' },
+        { name: 'episode.status', type: 'keyword' },
+        { name: 'rule.id', type: 'keyword' },
+        { name: 'group_hash', type: 'keyword' },
+        { name: 'severity', type: 'keyword' },
+      ],
+      values: [
+        ['2024-01-01T00:00:00.000Z', ALERT_EPISODE_STATUS.ACTIVE, 'rule-1', 'gh-1', 'critical'],
+      ],
+    });
+    fetchEpisodeActionsMock.mockResolvedValue([]);
+    fetchGroupActionsMock.mockResolvedValue([]);
+    mockHttp.get.mockResolvedValueOnce(mockRule);
+
+    render(
+      <I18nProvider>
+        <AlertEpisodeDetailsHeaderSection episodeId="ep-1" services={mockServices} />
+      </I18nProvider>,
+      { wrapper }
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('alertingV2EpisodeSeverityBadge-critical')).toHaveTextContent(
+        'Critical'
+      )
+    );
+  });
+
   it('renders the loading title fallback while data is loading', () => {
     runEsqlAsyncSearchMock.mockImplementation(() => new Promise(() => {}));
     fetchEpisodeActionsMock.mockImplementation(() => new Promise(() => {}));

@@ -40,12 +40,14 @@ export const createGenerateInsightGraph = ({
   remediation,
   endpointIds,
   data,
+  spaceId,
 }: {
   model: ScopedModel;
   problemDescription: string;
   remediation: string;
   endpointIds: string[];
   data: unknown[];
+  spaceId: string;
 }) => {
   async function categorizeInsightType(): Promise<{ insightType: WorkflowInsightType }> {
     const output = await model.chatModel.withStructuredOutput(
@@ -101,7 +103,8 @@ Provide a concise and actionable insight for each group of events that can help 
       endpointIds,
       insightType,
       model.connector.connectorId,
-      model.chatModel.name
+      model.chatModel.name,
+      spaceId
     );
 
     const results: ToolHandlerResult[] = [

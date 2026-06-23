@@ -94,12 +94,12 @@ Note that the autocomplete service will work as best effort with invalid queries
 
 #### Code actions
 
-Code actions are **quick fixes** tied to validation messages. Given the current query text and a message, we return a quick fix for it if exists that contains a fixed version of the query.
+Code actions are **quick fixes** tied to validation messages. Given the current query text and a message, we return quick fixes that contain fixed versions of the query.
 
 ##### Usage
 
 ```js
-import { getQuickFixForMessage } from '@kbn/esql-language';
+import { getQuickFixesForMessage } from '@kbn/esql-language';
 
 const myCallbacks = {
   getSources: async () => [
@@ -108,13 +108,13 @@ const myCallbacks = {
   // ...other callbacks as needed; some fixes’ displayCondition requires getSources, etc.
 };
 
-const action = await getQuickFixForMessage({
+const actions = await getQuickFixesForMessage({
   queryString: 'FROM my.wired.stream | WHERE no_such_field > 0',
   message: { code: 'unknownColumn' },
   callbacks: myCallbacks,
 });
 
-if (action) {
+for (const action of actions) {
   console.log(action.title, action.fixedText);
 }
 ```
@@ -125,7 +125,7 @@ if (action) {
 - `fixQuery: (query: string) => string` — rewrites the full query (typically via `@elastic/esql` mutate helpers)
 - `displayCondition?` — `async (queryString, ESQLCallbacks) => boolean`. If omitted, the fix is shown whenever that message code is present. If the condition returns `false` or throws, no action is returned.
 
-`getQuickFixForMessage` resolves to `undefined` when there is no entry for the code, the display condition fails, or `fixQuery` throws (for example the query could not be rewritten safely).
+`getQuickFixesForMessage` resolves to an empty list when there is no entry for the code, the display condition fails, or `fixQuery` throws (for example the query could not be rewritten safely).
 
 ### getAstContext
 

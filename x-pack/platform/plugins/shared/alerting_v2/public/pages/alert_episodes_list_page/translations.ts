@@ -45,6 +45,12 @@ export const EPISODES_LIST_COLUMN_ASSIGNEES = i18n.translate(
   }
 );
 
+export const EPISODES_LIST_ITEM_COUNT = (count: number) =>
+  i18n.translate('xpack.alertingV2.episodes.itemCount', {
+    defaultMessage: 'Showing {count, plural, one {# episode} other {# episodes}}',
+    values: { count },
+  });
+
 export const EPISODES_ASSIGNEE_EMPTY = i18n.translate('xpack.alertingV2.episodes.assignees.empty', {
   defaultMessage: '—',
 });

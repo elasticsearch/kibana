@@ -84,6 +84,14 @@ export interface ToolManager {
   getToolMeta(toolId: string): { origin: ToolOrigin | undefined; type: ToolType | undefined };
 
   /**
+   * Returns the resolved executable tool for the given internal id, or `undefined`
+   * if no such tool was registered for this run. Use with `Runner.runInternalTool`
+   * to dispatch a tool from outside the LangChain graph (e.g. `exec_tool` in bash)
+   * while still going through the standard hooks/telemetry pipeline.
+   */
+  getExecutable(toolId: string): ExecutableTool | undefined;
+
+  /**
    * Gets the internal tool IDs of all dynamic tools currently in the tool manager.
    * Returns internal tool IDs (not LangChain names) for persistence.
    * @returns array of internal tool IDs

@@ -41,6 +41,7 @@ import {
 import { SummaryTab, TranslationTab } from './tabs';
 import {
   convertMigrationCustomRuleToSecurityRulePayload,
+  getTranslationFieldsFromAnnotations,
   isMigrationCustomRule,
 } from '../../../../../common/siem_migrations/rules/utils';
 import { useUpdateMigrationRule } from '../../logic/use_update_migration_rule';
@@ -110,7 +111,12 @@ export const MigrationRuleDetailsFlyout: React.FC<MigrationRuleDetailsFlyoutProp
     const ruleDetailsToOverview = useMemo(() => {
       const elasticRule = migrationRule?.elastic_rule;
       if (isMigrationCustomRule(elasticRule)) {
-        return convertMigrationCustomRuleToSecurityRulePayload(elasticRule, false);
+        const translationFields = getTranslationFieldsFromAnnotations(migrationRule.original_rule);
+        return convertMigrationCustomRuleToSecurityRulePayload(
+          elasticRule,
+          false,
+          translationFields
+        );
       }
       return matchedPrebuiltRule;
     }, [migrationRule, matchedPrebuiltRule]);

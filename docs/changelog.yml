@@ -57,7 +57,7 @@ pivot:
     #     security: ">security-breaking"
     #     other:
     # Simple string form: labels as comma-separated string
-    bug-fix: "release_note:fix"
+    bug-fix: "release_note:fix, release_note:bug"
     deprecation: "release_note:deprecation"
     feature: "release_note:feature"
     enhancement: "release_note:enhancement"

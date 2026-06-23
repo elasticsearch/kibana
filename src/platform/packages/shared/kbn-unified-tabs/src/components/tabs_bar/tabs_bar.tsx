@@ -291,7 +291,7 @@ export const TabsBar = forwardRef<TabsBarApi, TabsBarProps>(
         `}
       >
         <EuiFlexItem ref={setTabsContainerWithPlusElement} grow css={growingFlexItemCss}>
-          <EuiFlexGroup direction="row" gutterSize="s" alignItems="center" responsive={false}>
+          <EuiFlexGroup direction="row" gutterSize="xs" alignItems="center" responsive={false}>
             <EuiFlexItem grow={false} css={growingFlexItemCss}>
               <div
                 aria-orientation="horizontal"

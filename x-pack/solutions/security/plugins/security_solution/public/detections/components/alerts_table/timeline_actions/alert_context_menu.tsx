@@ -57,6 +57,7 @@ import type { Rule } from '../../../../detection_engine/rule_management/logic/ty
 import type { AlertTableContextMenuItem } from '../types';
 import { useAlertTagsActions } from './use_alert_tags_actions';
 import { useAlertAssigneesActions } from './use_alert_assignees_actions';
+import { useAddToChatAction } from './use_add_to_chat_action';
 import { timelineDefaults } from '../../../../timelines/store/defaults';
 interface AlertContextMenuProps {
   ariaLabel?: string;
@@ -257,6 +258,12 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
     documents: documentForWorkflow,
   });
 
+  const { addToChatActionItems } = useAddToChatAction({
+    ecsData: flattenedEcsData,
+    onMenuItemClick,
+    alertId: ecsRowData._id,
+  });
+
   const items: AlertTableContextMenuItem[] = useMemo(
     () =>
       !isEvent && ruleId
@@ -268,6 +275,7 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
             ...alertAssigneesItems,
             ...exceptionActionItems,
             ...(agentId ? osqueryActionItems : []),
+            ...addToChatActionItems,
           ]
         : [
             ...addToCaseActionItems,
@@ -289,6 +297,7 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
       canCreateEndpointEventFilters,
       alertTagsItems,
       alertAssigneesItems,
+      addToChatActionItems,
     ]
   );
 

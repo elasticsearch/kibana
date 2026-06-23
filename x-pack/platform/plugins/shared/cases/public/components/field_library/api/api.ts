@@ -19,16 +19,21 @@ import { KibanaServices } from '../../../common/lib/kibana';
 
 export const getFieldDefinitions = async ({
   owner,
+  isGlobal,
   signal,
 }: {
   owner?: string | string[];
+  isGlobal?: boolean;
   signal?: AbortSignal;
 }): Promise<FieldDefinitionsFindResponse> => {
   return KibanaServices.get().http.fetch<FieldDefinitionsFindResponse>(
     INTERNAL_FIELD_DEFINITIONS_URL,
     {
       method: 'GET',
-      query: owner ? { owner } : {},
+      query: {
+        ...(owner ? { owner } : {}),
+        ...(isGlobal !== undefined ? { isGlobal } : {}),
+      },
       signal,
     }
   );

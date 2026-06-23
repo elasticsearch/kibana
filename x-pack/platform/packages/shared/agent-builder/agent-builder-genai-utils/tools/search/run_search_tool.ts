@@ -50,7 +50,7 @@ export const runSearchTool = async ({
   });
 
   return withActiveInferenceSpan(
-    'SearchToolGraph',
+    'search_tool',
     {
       attributes: {
         [ElasticGenAIAttributes.InferenceSpanKind]: 'CHAIN',

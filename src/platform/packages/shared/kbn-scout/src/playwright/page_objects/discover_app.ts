@@ -12,6 +12,8 @@ import type { Locator } from '../../..';
 import type { ScoutPage } from '..';
 import { expect } from '..';
 import { KibanaCodeEditorWrapper } from '../ui_components';
+import { DataViewEditorPage } from './data_view_editor_page';
+import { resolveSelector } from '../utils/locator_helper';
 
 const DISCOVER_QUERY_MODE_KEY = 'discover.defaultQueryMode';
 
@@ -21,16 +23,12 @@ export interface DiscoverGotoOptions {
   queryMode?: DiscoverQueryMode;
 }
 
-/**
- * Test-subject prefixes used by the Unified Tabs component.
- */
-const UNIFIED_TABS_TEST_SUBJ = {
-  selectTabBtnPrefix: 'unifiedTabs_selectTabBtn_',
-  tabMenuBtnPrefix: 'unifiedTabs_tabMenuBtn_',
-  newTabBtn: 'unifiedTabs_tabsBar_newTabBtn',
-  tabsBar: 'unifiedTabs_tabsBar',
-  duplicateMenuItem: 'unifiedTabs_tabMenuItem_duplicate',
-} as const;
+export interface DataViewOptions {
+  /** Data view title; `*` is appended automatically by the editor. */
+  name: string;
+  /** Create a temporary ("ad hoc") data view via "Explore" instead of saving. */
+  adHoc?: boolean;
+}
 
 export class DiscoverApp {
   public readonly codeEditor: KibanaCodeEditorWrapper;
@@ -97,6 +95,48 @@ export class DiscoverApp {
     return this.page.testSubj
       .locator('discover-dataView-switch-link')
       .or(this.page.testSubj.locator('dataView-switch-link'));
+  }
+
+  /**
+   * Returns the trimmed display name of the currently selected data view.
+   */
+  async getSelectedDataViewName(): Promise<string> {
+    return (await this.getSelectedDataView().innerText()).trim();
+  }
+
+  private async fillAndSubmitDataViewEditor({ name, adHoc = false }: DataViewOptions) {
+    const editor = new DataViewEditorPage(this.page);
+    await this.page.testSubj.locator('indexPatternEditorFlyout').waitFor({ state: 'visible' });
+
+    // FTR passes the base name and relies on the editor auto-appending `*` as the
+    // user types. Scout sets the title verbatim (`fill`), so append the wildcard
+    // here to preserve that contract (`name`, `* will be added automatically`).
+    await editor.setTitle(name.endsWith('*') ? name : `${name}*`);
+
+    // wait for timestamp options; default @timestamp applies.
+    await editor.timestampField
+      .and(this.page.locator('[data-is-loading="0"]'))
+      .waitFor({ state: 'visible', timeout: 30_000 });
+
+    if (adHoc) {
+      await this.page.testSubj.click('exploreIndexPatternButton');
+      await this.page.testSubj.locator('indexPatternEditorFlyout').waitFor({ state: 'hidden' });
+    } else {
+      await editor.save();
+    }
+
+    await this.waitUntilTabIsLoaded();
+  }
+
+  /**
+   * Creates a new data view from the Discover search bar data-view switcher
+   * (classic mode only). The editor appends `*` to the title automatically.
+   */
+  async createDataViewFromSearchBar(options: DataViewOptions) {
+    const dataViewSwitch = await this.getVisibleDataViewSwitch();
+    await dataViewSwitch.click();
+    await this.page.testSubj.click('dataview-create-new');
+    await this.fillAndSubmitDataViewEditor(options);
   }
 
   private async clickAppMenuItem(
@@ -184,6 +224,22 @@ export class DiscoverApp {
   }
 
   /**
+   * Returns the number of fields shown in the sidebar "Available fields" group.
+   */
+  async getSidebarAvailableFieldCount(): Promise<number> {
+    await this.waitUntilFieldListHasCountOfFields();
+    const count = await this.page.testSubj.innerText('fieldListGroupedAvailableFields-count');
+    return Number(count);
+  }
+
+  /**
+   * Filters the sidebar field list by the given search term.
+   */
+  async searchFieldInSidebar(name: string) {
+    await this.page.testSubj.fill('fieldListFiltersFieldSearch', name);
+  }
+
+  /**
    * Assert that the "Selected fields" sidebar group contains exactly the
    * fields named in `expected` — no more, no less. Useful for verifying ES|QL
    * `KEEP` clauses or any explicit column-selection flow.
@@ -203,6 +259,42 @@ export class DiscoverApp {
 
   async waitForHistogramRendered() {
     await this.page.testSubj.waitForSelector('unifiedHistogramRendered');
+  }
+
+  /**
+   * Returns the rendered height (rounded to whole pixels) of the fixed histogram panel
+   * Rounding avoids sub-pixel noise so callers can assert exact resize deltas.
+   */
+  async getHistogramHeight(): Promise<number> {
+    const histogram = this.page.testSubj.locator('unifiedHistogramResizablePanelFixed');
+    await histogram.waitFor();
+    const box = await histogram.boundingBox();
+    if (!box) {
+      throw new Error('Could not read the histogram panel bounding box');
+    }
+    return Math.round(box.height);
+  }
+
+  /**
+   * Drags the histogram resize handle vertically by `distance` pixels (positive
+   * grows the histogram).
+   * Neither Scout nor Playwright has a drag-by-offset helper (Scout's
+   * `testSubj.dragTo` only drags element-to-element), so we drive the mouse
+   * manually.
+   */
+  async resizeHistogramBy(distance: number) {
+    const resizeButton = this.page.testSubj.locator('unifiedHistogramResizableButton');
+    await resizeButton.waitFor();
+    const box = await resizeButton.boundingBox();
+    if (!box) {
+      throw new Error('Could not read the histogram resize handle bounding box');
+    }
+    const startX = box.x + box.width / 2;
+    const startY = box.y + box.height / 2;
+    await this.page.mouse.move(startX, startY);
+    await this.page.mouse.down();
+    await this.page.mouse.move(startX, startY + distance, { steps: 10 });
+    await this.page.mouse.up();
   }
 
   async getCurrentQueryName(): Promise<string> {
@@ -260,6 +352,12 @@ export class DiscoverApp {
       state: 'hidden',
       timeout: 30_000,
     });
+  }
+
+  // Waits for a Discover tab to finish loading.
+  async waitUntilTabIsLoaded() {
+    await this.waitForDiscoverPage();
+    await this.waitUntilSearchingHasFinished();
   }
 
   // Waits for the document table to be fully rendered and stable
@@ -441,6 +539,14 @@ export class DiscoverApp {
     });
   }
 
+  /**
+   * Returns the label currently shown on the histogram breakdown selector button
+   * (e.g. `"Breakdown by geo.src"` or `"No breakdown"`.
+   */
+  async getBreakdownFieldValue(): Promise<string> {
+    return this.page.testSubj.innerText('unifiedHistogramBreakdownSelectorButton');
+  }
+
   async expandTimeRangeAsSuggestedInNoResultsMessage() {
     const button = this.page.testSubj.locator('discoverNoResultsViewAllMatches');
     await button.click();
@@ -479,11 +585,53 @@ export class DiscoverApp {
     await this.page.locator(`button:has-text("${sortOption}")`).click();
   }
 
-  async getDocHeader(): Promise<string> {
+  async getDocHeader(): Promise<string[]> {
     const headers = await this.page
-      .locator('[data-test-subj^="dataGridHeaderCell-"]')
+      .locator(
+        '.euiDataGridHeaderCell:not(.euiDataGridHeaderCell--controlColumn) .euiDataGridHeaderCell__content'
+      )
       .allInnerTexts();
-    return headers.join(',');
+    return headers.map((h) => h.trim());
+  }
+
+  /**
+   * Returns structured row data from the data grid, excluding control columns.
+   * Each inner array contains the visible text of each data cell in that row.
+   * When `isAnchorRow` is true, only the highlighted anchor row (context view) is returned.
+   */
+  async getDataGridRows(options?: { isAnchorRow?: boolean }): Promise<string[][]> {
+    const cellSelector = options?.isAnchorRow
+      ? '.euiDataGridRowCell.unifiedDataTable__cell--highlight'
+      : '.euiDataGridRowCell';
+
+    await this.page.locator(`${cellSelector} >> nth=0`).waitFor({
+      state: 'visible',
+      timeout: 30_000,
+    });
+
+    return this.page.evaluate((sel: string) => {
+      const cells = document.querySelectorAll(sel);
+      const rows: string[][] = [];
+      let rowIdx = -1;
+      let prevVisibleRowIndex = -1;
+
+      cells.forEach((cell) => {
+        const visibleRowIndex = Number(cell.getAttribute('data-gridcell-visible-row-index'));
+        if (prevVisibleRowIndex !== visibleRowIndex) {
+          rowIdx++;
+          rows[rowIdx] = [];
+          prevVisibleRowIndex = visibleRowIndex;
+        }
+        if (!cell.classList.contains('euiDataGridRowCell--controlColumn')) {
+          const content =
+            cell.querySelector<HTMLElement>('.euiDataGridRowCell__content') ??
+            (cell as HTMLElement);
+          rows[rowIdx].push(content.innerText.trim());
+        }
+      });
+
+      return rows;
+    }, cellSelector);
   }
 
   async showChart() {
@@ -518,13 +666,15 @@ export class DiscoverApp {
 
     await this.page.testSubj.fill('queryInput', query);
     await expect(this.page.testSubj.locator('queryInput')).toHaveValue(query);
-    await this.page.testSubj.click('querySubmitButton');
+    await this.submitQuery();
     await this.waitUntilSearchingHasFinished();
   }
 
   async dragFieldToGrid(fieldName: string[]) {
+    const gridLocator = this.page.testSubj.locator('euiDataGridBody');
     for (const field of fieldName) {
-      await this.page.testSubj.dragTo(`field-${field}`, 'euiDataGridBody');
+      // Fields can appear in both "Popular fields" and the full field list.
+      await resolveSelector(this.page, `field-${field}`).dragTo(gridLocator);
     }
   }
 
@@ -537,8 +687,8 @@ export class DiscoverApp {
   }
 
   async exportAsCsv(): Promise<Download> {
-    // 1. Navigate to the export menu
-    await this.page.testSubj.click('exportTopNavButton');
+    // Export may live in the top nav or the overflow menu depending on viewport / Discover layout.
+    await this.clickAppMenuItem('exportTopNavButton');
     await this.page.testSubj.click('exportMenuItem-CSV');
 
     // 2. Trigger the report generation
@@ -580,85 +730,21 @@ export class DiscoverApp {
   async writeAndSubmitEsqlQuery(query: string) {
     await this.selectTextBaseLang();
     await this.codeEditor.setCodeEditorValue(query);
-    await this.page.testSubj.click('querySubmitButton');
+    await this.submitQuery();
     await this.waitUntilSearchingHasFinished();
   }
 
-  async navigateToTabByName(name: string) {
-    const tabsBar = this.page.testSubj.locator('unifiedTabs_tabsBar');
-    const tab = tabsBar.getByRole('tab', { name });
-    await tab.click();
-    await expect(tab).toHaveAttribute('aria-selected', 'true');
-  }
-
   /**
-   * Locator for the currently selected Discover tab button in the unified
-   * tabs bar.
+   * Submits the current query (classic search bar or ES|QL editor) by clicking
+   * the query submit button. Does not wait for results — pair with
+   * `waitUntilSearchingHasFinished()` or `waitUntilTabIsLoaded()` as appropriate.
    */
-  private get activeTabLocator(): Locator {
-    return this.page.testSubj
-      .locator(UNIFIED_TABS_TEST_SUBJ.tabsBar)
-      .locator(
-        `[data-test-subj^="${UNIFIED_TABS_TEST_SUBJ.selectTabBtnPrefix}"][aria-selected="true"]`
-      );
-  }
-
-  /**
-   * Clicks the "New tab" button in the Discover tab bar and waits for the
-   * newly created tab to become the active one.
-   */
-  async createNewTab() {
-    await this.page.testSubj.click(UNIFIED_TABS_TEST_SUBJ.newTabBtn);
-    await this.activeTabLocator.waitFor({ state: 'visible' });
-  }
-
-  /**
-   * Returns the `data-test-subj` of the currently selected Discover tab
-   * (e.g. `unifiedTabs_selectTabBtn_<id>`). Useful for capturing a tab id
-   * before navigating away so it can be restored later by test-subj.
-   */
-  async getActiveTabTestSubj(): Promise<string> {
-    await this.activeTabLocator.waitFor({ state: 'visible' });
-    const testSubj = await this.activeTabLocator.getAttribute('data-test-subj');
-    if (!testSubj) {
-      throw new Error('Active Discover tab is missing a data-test-subj attribute');
-    }
-    return testSubj;
-  }
-
-  /**
-   * Switches to the Discover tab identified by the given full
-   * `unifiedTabs_selectTabBtn_<id>` test subject and waits for it to become
-   * the active tab.
-   */
-  async navigateToTabByTestSubj(testSubj: string) {
-    await this.page.testSubj.click(testSubj);
-    await this.page
-      .locator(`[data-test-subj="${testSubj}"][aria-selected="true"]`)
-      .waitFor({ state: 'visible' });
-  }
-
-  /**
-   * Duplicates the currently active Discover tab via its tab menu.
-   * The duplicated tab becomes the active one; this helper waits for the
-   * active-tab marker to move to a different test subject before returning.
-   */
-  async duplicateActiveTab() {
-    const originalTestSubj = await this.getActiveTabTestSubj();
-    const tabId = originalTestSubj.slice(UNIFIED_TABS_TEST_SUBJ.selectTabBtnPrefix.length);
-
-    await this.page.testSubj.click(`${UNIFIED_TABS_TEST_SUBJ.tabMenuBtnPrefix}${tabId}`);
-    await this.page.testSubj.click(UNIFIED_TABS_TEST_SUBJ.duplicateMenuItem);
-
-    await this.page
-      .locator(
-        `[data-test-subj^="${UNIFIED_TABS_TEST_SUBJ.selectTabBtnPrefix}"][aria-selected="true"]:not([data-test-subj="${originalTestSubj}"])`
-      )
-      .waitFor({ state: 'visible' });
+  async submitQuery() {
+    await this.page.testSubj.click('querySubmitButton');
   }
 
   async waitForDataGridRowWithRefresh(rowLocator: Locator, timeout = 30_000) {
-    await this.page.testSubj.click('querySubmitButton');
+    await this.submitQuery();
     await this.waitUntilSearchingHasFinished();
     await rowLocator.waitFor({ state: 'visible', timeout });
   }
@@ -698,7 +784,10 @@ export class DiscoverApp {
     return this.codeEditor.getCodeEditorValue(nthIndex);
   }
 
-  async addBreakdownFieldFromSidebar(field: string) {
+  async addBreakdownFieldFromSidebar(
+    field: string,
+    section: 'selected' | 'available' = 'available'
+  ) {
     const sidebarToggleButton = this.page.testSubj.locator('discover-sidebar-fields-button');
     if (await sidebarToggleButton.isVisible()) {
       await sidebarToggleButton.click();
@@ -706,7 +795,11 @@ export class DiscoverApp {
 
     await this.waitUntilFieldListHasCountOfFields();
 
-    const fieldLocator = this.page.testSubj.locator(`field-${field}`);
+    const sectionTestSubj =
+      section === 'selected' ? 'fieldListGroupedSelectedFields' : 'fieldListGroupedAvailableFields';
+    const fieldLocator = this.page.testSubj
+      .locator(sectionTestSubj)
+      .locator(`[data-test-subj="field-${field}"]`);
     await fieldLocator.hover();
     await fieldLocator.click();
     await this.waitUntilFieldPopoverIsLoaded();
@@ -795,5 +888,55 @@ export class DiscoverApp {
 
     // Return the mode that is currently visible
     return (await esqlEditor.isVisible()) ? 'esql' : 'classic';
+  }
+
+  async isShowingDocViewer(): Promise<boolean> {
+    try {
+      await this.page.testSubj
+        .locator('kbnDocViewer')
+        .waitFor({ state: 'visible', timeout: 30_000 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Inside an open document-viewer flyout, type a field name into the search
+   * input to filter the fields table. Mirrors the FTR
+   * `discover.findFieldByNameOrValueInDocViewer`.
+   */
+  async findFieldByNameOrValueInDocViewer(name: string) {
+    const flyout = this.page.testSubj.locator('docViewerFlyout');
+    const searchInput = flyout.locator('[data-test-subj="unifiedDocViewerFieldsSearchInput"]');
+    await searchInput.fill(name);
+    await expect(searchInput).toHaveValue(name, { timeout: 5_000 });
+  }
+
+  /**
+   * Inside an open document-viewer flyout, click a cell-level action button
+   * for a given field (e.g. `addFilterForValueButton`, `addExistsFilterButton`).
+   * Mirrors the FTR `dataGrid.clickFieldActionInFlyout`.
+   */
+  async clickFieldActionInFlyout(fieldName: string, actionName: string) {
+    const isValueAction = ['addFilterForValueButton', 'addFilterOutValueButton'].includes(
+      actionName
+    );
+    const cellTestSubj = isValueAction
+      ? `tableDocViewRow-${fieldName}-value`
+      : `tableDocViewRow-${fieldName}-name`;
+
+    const flyout = this.page.testSubj.locator('docViewerFlyout');
+    await expect(async () => {
+      const cell = flyout.locator(`[data-test-subj="${cellTestSubj}"]`);
+      await cell.evaluate((el) => {
+        el.scrollIntoView({ block: 'center', inline: 'nearest' });
+      });
+      await cell.hover();
+
+      const actionBtn = flyout.locator(`[data-test-subj="${actionName}-${fieldName}"]`);
+      await actionBtn.waitFor({ state: 'visible' });
+      await actionBtn.click();
+    }).toPass({ timeout: 15_000 });
   }
 }

@@ -122,7 +122,7 @@ export const RuleCanvasContent = ({
       <EuiPanel paddingSize="l" hasShadow={false}>
         <RuleHeaderDescription />
         <EuiSpacer size="m" />
-        <RuleSidebar />
+        <RuleSidebar showQueryPreview />
       </EuiPanel>
     </RuleProvider>
   );

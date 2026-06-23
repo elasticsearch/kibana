@@ -30,13 +30,16 @@ jest.mock('../watchlist_config', () => ({
 }));
 
 jest.mock('../../entity_sources/infra/entity_source_client');
-jest.mock('../../shared/utils', () => ({
-  getRequestSavedObjectClient: jest.fn(() => 'mock-so-client'),
-}));
 jest.mock('../../entity_sources/entity_sources_service', () => ({
   createEntitySourcesService: jest.fn(() => ({
     syncWatchlist: mockSyncWatchlist,
   })),
+}));
+
+const mockValidateIndexPermissions = jest.fn();
+
+jest.mock('../../entity_sources/entity_source_api_key', () => ({
+  validateIndexPermissions: (...args: unknown[]) => mockValidateIndexPermissions(...args),
 }));
 
 const { mockCreateEntitySource } = jest.requireMock(
@@ -44,6 +47,8 @@ const { mockCreateEntitySource } = jest.requireMock(
 ) as {
   mockCreateEntitySource: jest.Mock;
 };
+
+const mockGetStartServices = jest.fn();
 
 // Import after mocks are set up
 import { createWatchlistRoute } from './create';
@@ -66,6 +71,10 @@ describe('POST /api/entity_analytics/watchlists - createWatchlistRoute', () => {
     mockAddEntitySourceReference.mockReset();
     mockCreateEntitySource.mockReset();
     mockSyncWatchlist.mockReset();
+    mockValidateIndexPermissions.mockReset().mockResolvedValue(undefined);
+
+    const mockSecurity = { authc: { apiKeys: { grantAsInternalUser: jest.fn() } } };
+    mockGetStartServices.mockResolvedValue([{ security: mockSecurity }]);
 
     reportEBT = jest.fn();
     telemetrySenderMock = {
@@ -73,7 +82,7 @@ describe('POST /api/entity_analytics/watchlists - createWatchlistRoute', () => {
       reportEBT,
     } as unknown as ITelemetryEventsSender;
 
-    createWatchlistRoute(server.router, logger, telemetrySenderMock);
+    createWatchlistRoute(server.router, logger, telemetrySenderMock, mockGetStartServices, true);
   });
 
   afterEach(() => {
@@ -176,8 +185,8 @@ describe('POST /api/entity_analytics/watchlists - createWatchlistRoute', () => {
         riskModifier: 10,
       });
       expect(mockCreateEntitySource).toHaveBeenCalledTimes(2);
-      expect(mockCreateEntitySource).toHaveBeenCalledWith(entitySourceInputA);
-      expect(mockCreateEntitySource).toHaveBeenCalledWith(entitySourceInputB);
+      expect(mockCreateEntitySource).toHaveBeenCalledWith(entitySourceInputA, expect.anything());
+      expect(mockCreateEntitySource).toHaveBeenCalledWith(entitySourceInputB, expect.anything());
       expect(mockAddEntitySourceReference).toHaveBeenCalledTimes(2);
       expect(mockAddEntitySourceReference).toHaveBeenCalledWith('wl-1', 'es-1');
       expect(mockAddEntitySourceReference).toHaveBeenCalledWith('wl-1', 'es-2');
@@ -218,7 +227,7 @@ describe('POST /api/entity_analytics/watchlists - createWatchlistRoute', () => {
         entitySources: [entitySourceResult],
       });
       expect(mockCreateEntitySource).toHaveBeenCalledTimes(1);
-      expect(mockCreateEntitySource).toHaveBeenCalledWith(entitySourceInputA);
+      expect(mockCreateEntitySource).toHaveBeenCalledWith(entitySourceInputA, expect.anything());
       expect(mockAddEntitySourceReference).toHaveBeenCalledWith('wl-1', 'es-1');
       expect(reportEBT).toHaveBeenCalledTimes(1);
       expect(reportEBT).toHaveBeenCalledWith(
@@ -366,8 +375,31 @@ describe('POST /api/entity_analytics/watchlists - createWatchlistRoute', () => {
       expect(response.status).toEqual(200);
       expect(mockSyncWatchlist).not.toHaveBeenCalled();
     });
-  });
 
+    it('does not create watchlist when index permission validation fails', async () => {
+      mockValidateIndexPermissions.mockRejectedValue(new Error('Insufficient index privileges'));
+
+      const request = buildRequest({ entitySources: [entitySourceInputA] });
+      await server.inject(request, context);
+
+      expect(mockWatchlistCreate).not.toHaveBeenCalled();
+      expect(mockCreateEntitySource).not.toHaveBeenCalled();
+    });
+
+    it('does not validate index permissions for a non-index source', async () => {
+      const nonIndexSource = { type: 'store' as const, name: 'store-source', enabled: true };
+      const watchlistResult = { id: 'wl-1', name: 'test-watchlist', riskModifier: 10 };
+      const entitySourceResult = { id: 'es-2', ...nonIndexSource };
+      mockWatchlistCreate.mockResolvedValue(watchlistResult);
+      mockCreateEntitySource.mockResolvedValue(entitySourceResult);
+
+      const request = buildRequest({ entitySources: [nonIndexSource] });
+      const response = await server.inject(request, context);
+
+      expect(response.status).toEqual(200);
+      expect(mockValidateIndexPermissions).not.toHaveBeenCalled();
+    });
+  });
   describe('error handling', () => {
     it('returns an error response when watchlist creation fails', async () => {
       mockWatchlistCreate.mockRejectedValue(new Error('something went wrong'));

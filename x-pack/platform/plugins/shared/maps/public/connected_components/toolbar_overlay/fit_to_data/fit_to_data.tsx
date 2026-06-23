@@ -7,7 +7,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import { EuiButtonIcon, EuiPanel } from '@elastic/eui';
+import { EuiButtonIcon, EuiPanel, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
 export interface Props {
@@ -30,19 +30,23 @@ export function FitToData(props: Props) {
   }
   return (
     <EuiPanel paddingSize="none" className="mapToolbarOverlay__button">
-      <EuiButtonIcon
-        className={classNames({
+      <EuiToolTip
+        content={title}
+        disableScreenReaderOutput
+        anchorClassName={classNames({
           'mapToolbarOverlay__buttonIcon-empty': !props.autoFitToDataBounds,
         })}
-        size="s"
-        onClick={props.fitToBounds}
-        data-test-subj="fitToData"
-        iconType="maximize"
-        aria-label={label}
-        title={title}
-        color="text"
-        display={props.autoFitToDataBounds ? 'fill' : 'empty'}
-      />
+      >
+        <EuiButtonIcon
+          size="s"
+          onClick={props.fitToBounds}
+          data-test-subj="fitToData"
+          iconType="maximize"
+          aria-label={label}
+          color="text"
+          display={props.autoFitToDataBounds ? 'fill' : 'empty'}
+        />
+      </EuiToolTip>
     </EuiPanel>
   );
 }

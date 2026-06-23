@@ -323,7 +323,7 @@ describe('Data Streams tab', () => {
             'dataStream1',
             'green',
             'December 31st, 1969 7:00:00 PM',
-            '5b',
+            '5B',
             '1',
             'Standard',
             '7 days',
@@ -334,7 +334,7 @@ describe('Data Streams tab', () => {
             'dataStream2',
             'green',
             'December 31st, 1969 7:00:00 PM',
-            '1kb',
+            '1KB',
             '1',
             'Standard',
             '5 days Info',
@@ -376,7 +376,7 @@ describe('Data Streams tab', () => {
             'dataStream1',
             'green',
             'December 31st, 1969 7:00:00 PM',
-            '5b',
+            '5B',
             '1',
             'Standard',
             '7 days',
@@ -387,7 +387,7 @@ describe('Data Streams tab', () => {
             'dataStream2',
             'green',
             'December 31st, 1969 7:00:00 PM',
-            '1kb',
+            '1KB',
             '1',
             'Standard',
             '5 days Info',
@@ -441,8 +441,8 @@ describe('Data Streams tab', () => {
       await waitFor(() => {
         const tableCellsValues = getTableCellsValues('dataStreamTable');
         expect(tableCellsValues).toEqual([
-          ['', 'dataStream1', 'green', '156kb', '10000', '1', 'Standard', '7 days', 'Delete'],
-          ['', 'dataStream2', 'green', '156kb', '10000', '1', 'Standard', '5 days Info', 'Delete'],
+          ['', 'dataStream1', 'green', '156KB', '10000', '1', 'Standard', '7 days', 'Delete'],
+          ['', 'dataStream2', 'green', '156KB', '10000', '1', 'Standard', '5 days Info', 'Delete'],
         ]);
       });
     });
@@ -476,7 +476,7 @@ describe('Data Streams tab', () => {
             'dataStream1',
             'green',
             'December 31st, 1969 7:00:00 PM',
-            '5b',
+            '5B',
             '1',
             'Standard',
             '7 days',
@@ -487,7 +487,7 @@ describe('Data Streams tab', () => {
             'dataStream2',
             'green',
             'December 31st, 1969 7:00:00 PM',
-            '1kb',
+            '1KB',
             '1',
             'Standard',
             '5 days Info',

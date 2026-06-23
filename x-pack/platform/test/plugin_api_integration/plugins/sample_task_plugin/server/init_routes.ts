@@ -14,12 +14,15 @@ import type {
   IRouter,
   IScopedClusterClient,
   FakeRawRequest,
+  SecurityServiceStart,
 } from '@kbn/core/server';
 import type { EventEmitter } from 'events';
 import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
-import { BACKGROUND_TASK_NODE_SO_NAME } from '@kbn/task-manager-plugin/server/saved_objects';
+import {
+  BACKGROUND_TASK_NODE_SO_NAME,
+  TASK_SO_NAME,
+} from '@kbn/task-manager-plugin/server/saved_objects';
 import { kibanaRequestFactory } from '@kbn/core-http-server-utils';
-import type { SecurityPluginStart } from '@kbn/security-plugin/server';
 
 const scope = 'testing';
 const taskManagerQuery = {
@@ -38,45 +41,45 @@ const taskManagerQuery = {
   },
 };
 
+const innerTaskSchema = schema.object({
+  enabled: schema.boolean({ defaultValue: true }),
+  taskType: schema.string(),
+  schedule: schema.maybe(
+    schema.oneOf([
+      schema.object({
+        interval: schema.string(),
+      }),
+      schema.object({
+        rrule: schema.object({
+          dtstart: schema.maybe(schema.string()),
+          freq: schema.number(),
+          interval: schema.number(),
+          tzid: schema.string({ defaultValue: 'UTC' }),
+          byhour: schema.maybe(schema.arrayOf(schema.number({ min: 0, max: 23 }))),
+          byminute: schema.maybe(schema.arrayOf(schema.number({ min: 0, max: 59 }))),
+          byweekday: schema.maybe(schema.arrayOf(schema.number({ min: 1, max: 7 }))),
+          bymonthday: schema.maybe(schema.arrayOf(schema.number({ min: 1, max: 31 }))),
+        }),
+      }),
+    ])
+  ),
+  interval: schema.maybe(schema.string()),
+  params: schema.recordOf(schema.string(), schema.any(), { defaultValue: {} }),
+  state: schema.recordOf(schema.string(), schema.any(), { defaultValue: {} }),
+  id: schema.maybe(schema.string()),
+  timeoutOverride: schema.maybe(schema.string()),
+  cost: schema.maybe(schema.string()),
+  priority: schema.maybe(schema.oneOf([schema.literal(1), schema.literal(40), schema.literal(50)])),
+});
+
 const taskSchema = schema.object({
-  task: schema.object({
-    enabled: schema.boolean({ defaultValue: true }),
-    taskType: schema.string(),
-    schedule: schema.maybe(
-      schema.oneOf([
-        schema.object({
-          interval: schema.string(),
-        }),
-        schema.object({
-          rrule: schema.object({
-            dtstart: schema.maybe(schema.string()),
-            freq: schema.number(),
-            interval: schema.number(),
-            tzid: schema.string({ defaultValue: 'UTC' }),
-            byhour: schema.maybe(schema.arrayOf(schema.number({ min: 0, max: 23 }))),
-            byminute: schema.maybe(schema.arrayOf(schema.number({ min: 0, max: 59 }))),
-            byweekday: schema.maybe(schema.arrayOf(schema.number({ min: 1, max: 7 }))),
-            bymonthday: schema.maybe(schema.arrayOf(schema.number({ min: 1, max: 31 }))),
-          }),
-        }),
-      ])
-    ),
-    interval: schema.maybe(schema.string()),
-    params: schema.recordOf(schema.string(), schema.any(), { defaultValue: {} }),
-    state: schema.recordOf(schema.string(), schema.any(), { defaultValue: {} }),
-    id: schema.maybe(schema.string()),
-    timeoutOverride: schema.maybe(schema.string()),
-    cost: schema.maybe(schema.string()),
-    priority: schema.maybe(
-      schema.oneOf([schema.literal(1), schema.literal(40), schema.literal(50)])
-    ),
-  }),
+  task: innerTaskSchema,
 });
 
 export function initRoutes(
   router: IRouter,
   taskManagerStart: Promise<TaskManagerStartContract>,
-  securityStart: Promise<SecurityPluginStart | undefined>,
+  coreSecurityStart: Promise<SecurityServiceStart>,
   taskTestingEvents: EventEmitter
 ) {
   async function ensureIndexIsRefreshed(client: IScopedClusterClient) {
@@ -166,10 +169,10 @@ export function initRoutes(
       res: KibanaResponseFactory
     ): Promise<IKibanaResponse<any>> {
       const taskManager = await taskManagerStart;
-      const security = await securityStart;
+      const security = await coreSecurityStart;
       const { task: taskFields } = req.body;
 
-      const apiKeyCreateResult = await security?.authc.apiKeys.grantAsInternalUser(req, {
+      const apiKeyCreateResult = await security.authc.apiKeys.grantAsInternalUser(req, {
         name: `test task-manager schedule from fake request`,
         role_descriptors: {},
         metadata: { managed: true },
@@ -189,6 +192,77 @@ export function initRoutes(
       const taskResult = await taskManager.schedule(task, { request: fakeRequest });
 
       return res.ok({ body: taskResult });
+    }
+  );
+
+  router.post(
+    {
+      path: `/api/sample_tasks/schedule_for_profile_test`,
+      validate: {
+        body: schema.object({
+          task: innerTaskSchema,
+          userProfileId: schema.string(),
+        }),
+      },
+      security: {
+        authz: {
+          enabled: false,
+          reason: 'This route is opted out from authorization',
+        },
+      },
+    },
+    async function (
+      context: RequestHandlerContext,
+      req: KibanaRequest<any, any, any, any>,
+      res: KibanaResponseFactory
+    ): Promise<IKibanaResponse<any>> {
+      const taskManager = await taskManagerStart;
+      const security = await coreSecurityStart;
+      const { task: taskFields, userProfileId } = req.body;
+
+      const apiKeyCreateResult = await security.authc.apiKeys.grantAsInternalUser(req, {
+        name: `test task-manager schedule for profile test`,
+        role_descriptors: {},
+        metadata: { managed: true },
+      });
+
+      const fakeRawRequest: FakeRawRequest = {
+        headers: {
+          authorization: `ApiKey ${apiKeyCreateResult?.api_key}`,
+        },
+        path: '/',
+      };
+      const fakeRequest = kibanaRequestFactory(fakeRawRequest);
+
+      // FTR runs under basic auth and can't produce a session-backed request
+      // with a profile_uid. We schedule the task through Task Manager's normal
+      // path (so the API-key strategy and userScope plumbing run for real),
+      // then patch `userScope.userProfileId` on the stored SO to mimic a task
+      // that was originally scheduled by a session-backed user. `runAt` is
+      // deferred so the poller can't claim the task before the patch lands.
+      const deferredRunAt = new Date(Date.now() + 10_000);
+      const scheduled = await taskManager.schedule(
+        {
+          ...taskFields,
+          scope: [scope],
+          runAt: deferredRunAt,
+        },
+        { request: fakeRequest }
+      );
+
+      const soClient = (await context.core).savedObjects.getClient({
+        includedHiddenTypes: [TASK_SO_NAME],
+      });
+      await soClient.update(TASK_SO_NAME, scheduled.id, {
+        userScope: { ...scheduled.userScope, userProfileId },
+      });
+
+      // Make the task eligible for the next polling cycle now that userScope
+      // is patched; `runSoon` only updates runAt/scheduledAt/status and leaves
+      // userScope intact.
+      await taskManager.runSoon(scheduled.id);
+
+      return res.ok({ body: await taskManager.get(scheduled.id) });
     }
   );
 
@@ -276,9 +350,9 @@ export function initRoutes(
       const { taskIds, schedule } = req.body;
       try {
         const taskManager = await taskManagerStart;
-        const security = await securityStart;
+        const security = await coreSecurityStart;
 
-        const apiKeyCreateResult = await security?.authc.apiKeys.grantAsInternalUser(req, {
+        const apiKeyCreateResult = await security.authc.apiKeys.grantAsInternalUser(req, {
           name: `test task-manager bulk update schedules from fake request`,
           role_descriptors: {},
           metadata: { managed: true },

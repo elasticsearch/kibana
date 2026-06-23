@@ -51,6 +51,7 @@ interface TransactionsTableProps {
   onSearchQueryChange?: (query: string) => void;
   remainingTransactionsCellTooltipContent?: React.ReactNode;
   showSparklines?: boolean;
+  errorMessage?: string;
 }
 
 function shouldFetchServer({
@@ -80,6 +81,7 @@ export function TransactionsTable({
   onSearchQueryChange,
   remainingTransactionsCellTooltipContent,
   showSparklines: showSparklinesProp,
+  errorMessage,
 }: TransactionsTableProps) {
   const searchQueryRef = useRef('');
 
@@ -185,31 +187,35 @@ export function TransactionsTable({
       )}
 
       <EuiFlexItem>
-        <EuiInMemoryTable
-          tableCaption={title}
-          items={items}
-          columns={resolvedColumns}
-          loading={isLoading}
-          noItemsMessage={
-            isLoading
-              ? i18n.translate('apmUiShared.transactionsTable.loading', {
-                  defaultMessage: 'Loading...',
-                })
-              : i18n.translate('apmUiShared.transactionsTable.noResults', {
-                  defaultMessage: 'No transactions found',
-                })
-          }
-          pagination={{
-            initialPageSize: 10,
-            showPerPageOptions: true,
-            pageSizeOptions: [10, 25, 50],
-          }}
-          sorting={{ sort: { field: 'latency' as keyof TransactionGroup, direction: 'desc' } }}
-          search={{
-            box: { incremental: true },
-            onChange: onSearchChange,
-          }}
-        />
+        {errorMessage ? (
+          <EuiCallOut announceOnMount size="s" color="danger" title={errorMessage} />
+        ) : (
+          <EuiInMemoryTable
+            tableCaption={title}
+            items={items}
+            columns={resolvedColumns}
+            loading={isLoading}
+            noItemsMessage={
+              isLoading
+                ? i18n.translate('apmUiShared.transactionsTable.loading', {
+                    defaultMessage: 'Loading...',
+                  })
+                : i18n.translate('apmUiShared.transactionsTable.noResults', {
+                    defaultMessage: 'No transactions found',
+                  })
+            }
+            pagination={{
+              initialPageSize: 10,
+              showPerPageOptions: true,
+              pageSizeOptions: [10, 25, 50],
+            }}
+            sorting={{ sort: { field: 'latency' as keyof TransactionGroup, direction: 'desc' } }}
+            search={{
+              box: { incremental: true },
+              onChange: onSearchChange,
+            }}
+          />
+        )}
       </EuiFlexItem>
     </EuiFlexGroup>
   );

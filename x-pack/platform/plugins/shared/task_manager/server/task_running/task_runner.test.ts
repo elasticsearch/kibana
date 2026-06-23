@@ -1167,6 +1167,232 @@ describe('TaskManagerRunner', () => {
       expect(createTaskRunnerParams.fakeRequest).toBeDefined();
       expect(createTaskRunnerParams.taskInstance).toEqual(instance);
     });
+
+    test('calls enrichFakeRequest with the fake request and userProfileId when both are present', async () => {
+      const enrichFakeRequest = jest.fn();
+      const createTaskRunnerFn = jest.fn();
+      const { runner } = await readyToRunStageSetup({
+        instance: {
+          ...mockInstance(),
+          apiKey: 'aw4badfg333',
+          userScope: {
+            apiKeyId: 'abcdefg',
+            spaceId: 'default',
+            apiKeyCreatedByUser: false,
+            userProfileId: 'u_profile_123',
+          },
+        },
+        definitions: {
+          bar: {
+            title: 'Bar!',
+            createTaskRunner: createTaskRunnerFn,
+          },
+        },
+        enrichFakeRequest,
+      });
+
+      await runner.run();
+
+      expect(enrichFakeRequest).toHaveBeenCalledTimes(1);
+      expect(enrichFakeRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ headers: expect.any(Object) }),
+        'u_profile_123'
+      );
+    });
+
+    test('passes enrichRequest on RunContext when userProfileId is present', async () => {
+      const enrichFakeRequest = jest.fn();
+      const createTaskRunnerFn = jest.fn();
+      const { runner } = await readyToRunStageSetup({
+        instance: {
+          ...mockInstance(),
+          apiKey: 'aw4badfg333',
+          userScope: {
+            apiKeyId: 'abcdefg',
+            spaceId: 'default',
+            apiKeyCreatedByUser: false,
+            userProfileId: 'u_profile_123',
+          },
+        },
+        definitions: {
+          bar: {
+            title: 'Bar!',
+            createTaskRunner: createTaskRunnerFn,
+          },
+        },
+        enrichFakeRequest,
+      });
+
+      await runner.run();
+
+      const createTaskRunnerParams = createTaskRunnerFn.mock.calls[0][0];
+      expect(createTaskRunnerParams.enrichRequest).toBeDefined();
+      expect(typeof createTaskRunnerParams.enrichRequest).toBe('function');
+    });
+
+    test('enrichRequest is undefined when userProfileId is absent', async () => {
+      const enrichFakeRequest = jest.fn();
+      const createTaskRunnerFn = jest.fn();
+      const { runner } = await readyToRunStageSetup({
+        instance: {
+          ...mockInstance(),
+          apiKey: 'aw4badfg333',
+          userScope: {
+            apiKeyId: 'abcdefg',
+            spaceId: 'default',
+            apiKeyCreatedByUser: false,
+          },
+        },
+        definitions: {
+          bar: {
+            title: 'Bar!',
+            createTaskRunner: createTaskRunnerFn,
+          },
+        },
+        enrichFakeRequest,
+      });
+
+      await runner.run();
+
+      expect(enrichFakeRequest).not.toHaveBeenCalled();
+      const createTaskRunnerParams = createTaskRunnerFn.mock.calls[0][0];
+      expect(createTaskRunnerParams.enrichRequest).toBeUndefined();
+    });
+
+    test('enrichRequest calls enrichFakeRequest for child requests', async () => {
+      const enrichFakeRequest = jest.fn();
+      const createTaskRunnerFn = jest.fn();
+      const { runner } = await readyToRunStageSetup({
+        instance: {
+          ...mockInstance(),
+          apiKey: 'aw4badfg333',
+          userScope: {
+            apiKeyId: 'abcdefg',
+            spaceId: 'default',
+            apiKeyCreatedByUser: false,
+            userProfileId: 'u_profile_123',
+          },
+        },
+        definitions: {
+          bar: {
+            title: 'Bar!',
+            createTaskRunner: createTaskRunnerFn,
+          },
+        },
+        enrichFakeRequest,
+      });
+
+      await runner.run();
+
+      const createTaskRunnerParams = createTaskRunnerFn.mock.calls[0][0];
+      const childRequest = { fake: 'child-request' };
+      createTaskRunnerParams.enrichRequest(childRequest);
+
+      expect(enrichFakeRequest).toHaveBeenCalledTimes(2);
+      expect(enrichFakeRequest).toHaveBeenLastCalledWith(childRequest, 'u_profile_123');
+    });
+
+    test('runs without error and passes undefined enrichRequest when no enrichFakeRequest hook is provided', async () => {
+      const createTaskRunnerFn = jest.fn();
+      const { runner } = await readyToRunStageSetup({
+        instance: {
+          ...mockInstance(),
+          apiKey: 'aw4badfg333',
+          userScope: {
+            apiKeyId: 'abcdefg',
+            spaceId: 'default',
+            apiKeyCreatedByUser: false,
+            userProfileId: 'u_profile_123',
+          },
+        },
+        definitions: {
+          bar: {
+            title: 'Bar!',
+            createTaskRunner: createTaskRunnerFn,
+          },
+        },
+        // no enrichFakeRequest supplied (simulates Core without the hook)
+      });
+
+      await runner.run();
+
+      const createTaskRunnerParams = createTaskRunnerFn.mock.calls[0][0];
+      expect(createTaskRunnerParams.fakeRequest).toBeDefined();
+      expect(createTaskRunnerParams.enrichRequest).toBeUndefined();
+    });
+
+    test('still enriches when apiKeyCreatedByUser is true but userProfileId is present', async () => {
+      const enrichFakeRequest = jest.fn();
+      const createTaskRunnerFn = jest.fn();
+      const { runner } = await readyToRunStageSetup({
+        instance: {
+          ...mockInstance(),
+          apiKey: 'aw4badfg333',
+          userScope: {
+            apiKeyId: 'abcdefg',
+            spaceId: 'default',
+            apiKeyCreatedByUser: true,
+            userProfileId: 'u_profile_123',
+          },
+        },
+        definitions: {
+          bar: {
+            title: 'Bar!',
+            createTaskRunner: createTaskRunnerFn,
+          },
+        },
+        enrichFakeRequest,
+      });
+
+      await runner.run();
+
+      expect(enrichFakeRequest).toHaveBeenCalledTimes(1);
+      expect(enrichFakeRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ headers: expect.any(Object) }),
+        'u_profile_123'
+      );
+      const createTaskRunnerParams = createTaskRunnerFn.mock.calls[0][0];
+      expect(createTaskRunnerParams.enrichRequest).toBeDefined();
+    });
+
+    test('propagates enrichFakeRequest errors when enrichRequest is called on a non-fake child request', async () => {
+      let callCount = 0;
+      const enrichFakeRequest = jest.fn().mockImplementation(() => {
+        callCount += 1;
+        // succeed on the initial fake-request enrichment, throw on the child request
+        if (callCount > 1) {
+          throw new Error('boom');
+        }
+      });
+      const createTaskRunnerFn = jest.fn();
+      const { runner } = await readyToRunStageSetup({
+        instance: {
+          ...mockInstance(),
+          apiKey: 'aw4badfg333',
+          userScope: {
+            apiKeyId: 'abcdefg',
+            spaceId: 'default',
+            apiKeyCreatedByUser: false,
+            userProfileId: 'u_profile_123',
+          },
+        },
+        definitions: {
+          bar: {
+            title: 'Bar!',
+            createTaskRunner: createTaskRunnerFn,
+          },
+        },
+        enrichFakeRequest,
+      });
+
+      await runner.run();
+
+      const createTaskRunnerParams = createTaskRunnerFn.mock.calls[0][0];
+      const childRequest = { fake: 'child-request' };
+
+      expect(() => createTaskRunnerParams.enrichRequest(childRequest)).toThrow('boom');
+    });
+
     test('queues a reattempt if the task fails', async () => {
       const initialAttempts = _.random(0, 2);
       const id = Date.now().toString();
@@ -2754,6 +2980,95 @@ describe('TaskManagerRunner', () => {
       });
     });
 
+    describe('logTaskRunStartEvent', () => {
+      test('eventLog logs a start event when a task begins running', async () => {
+        const id = _.random(1, 20).toString();
+        const { runner, instance } = await readyToRunStageSetup({
+          instance: { id },
+          definitions: {
+            bar: {
+              title: 'Bar!',
+              createTaskRunner: () => ({
+                async run() {
+                  return { state: {} };
+                },
+              }),
+            },
+          },
+        });
+
+        await runner.run();
+
+        expect(eventLoggerMock.logEvent).toHaveBeenCalledWith({
+          event: {
+            action: 'task-run-start',
+            // start must equal task.startedAt so it aligns with the stored task document
+            start: instance.startedAt?.toISOString(),
+          },
+          kibana: {
+            task: {
+              id,
+              type: 'bar',
+              schedule_delay: expect.any(String),
+              scheduled: expect.any(String),
+            },
+          },
+          message: `Task bar "${id}" started.`,
+        });
+      });
+
+      test('eventLog logs the start event before the end event', async () => {
+        const id = _.random(1, 20).toString();
+        const { runner } = await readyToRunStageSetup({
+          instance: { id },
+          definitions: {
+            bar: {
+              title: 'Bar!',
+              createTaskRunner: () => ({
+                async run() {
+                  return { state: {} };
+                },
+              }),
+            },
+          },
+        });
+
+        await runner.run();
+
+        const calls = (eventLoggerMock.logEvent as jest.Mock).mock.calls;
+        const startCallIndex = calls.findIndex((c) => c[0].event.action === 'task-run-start');
+        const endCallIndex = calls.findIndex((c) => c[0].event.action === 'task-run');
+        expect(startCallIndex).toBeGreaterThanOrEqual(0);
+        expect(endCallIndex).toBeGreaterThanOrEqual(0);
+        expect(startCallIndex).toBeLessThan(endCallIndex);
+      });
+
+      test('eventLog logs a start event even when a task run fails', async () => {
+        const id = _.random(1, 20).toString();
+        const { runner } = await readyToRunStageSetup({
+          instance: { id },
+          definitions: {
+            bar: {
+              title: 'Bar!',
+              createTaskRunner: () => ({
+                async run() {
+                  throw new Error('Dangit!');
+                },
+              }),
+            },
+          },
+        });
+
+        await runner.run();
+
+        expect(eventLoggerMock.logEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            event: expect.objectContaining({ action: 'task-run-start' }),
+          })
+        );
+      });
+    });
+
     describe('logTaskRunEvent', () => {
       test('eventLog logs an event when a task is run successfully', async () => {
         const id = _.random(1, 20).toString();
@@ -2887,7 +3202,7 @@ describe('TaskManagerRunner', () => {
           },
           message: `Task bar "${id}" failed.`,
         });
-        expect(eventLoggerMock.logEvent).toHaveBeenCalledTimes(1);
+        expect(eventLoggerMock.logEvent).toHaveBeenCalledTimes(2);
       });
 
       test('eventLog logs failure and cancel events when a recurring task run throws an error due to timeout', async () => {
@@ -2962,7 +3277,7 @@ describe('TaskManagerRunner', () => {
           message: `Task bar "${id}" failed.`,
         });
 
-        expect(eventLoggerMock.logEvent).toHaveBeenCalledTimes(2);
+        expect(eventLoggerMock.logEvent).toHaveBeenCalledTimes(3);
       });
 
       test('eventLog logs failure and cancel events when an ad-hoc task run throws an error due to timeout', async () => {
@@ -3593,6 +3908,7 @@ describe('TaskManagerRunner', () => {
     onTaskEvent?: jest.Mock<(event: TaskEvent<unknown, unknown>) => void>;
     allowReadingInvalidState?: boolean;
     strategy?: string;
+    enrichFakeRequest?: jest.Mock;
   }
 
   function withAnyTiming(taskRun: TaskRun) {
@@ -3674,6 +3990,7 @@ describe('TaskManagerRunner', () => {
       getPollInterval: () => 500,
       apiKeyStrategy: new EsApiKeyStrategy(),
       eventLogger: eventLoggerMock,
+      enrichFakeRequest: opts.enrichFakeRequest,
     });
 
     if (stage === TaskRunningStage.READY_TO_RUN) {

@@ -63,7 +63,7 @@ export async function suggest(
   offset: number,
   resourceRetriever?: ESQLCallbacks
 ): Promise<ISuggestionItem[]> {
-  const { innerText, root, astContext } = getAutocompleteCursorContext(fullText, offset);
+  const { innerText, root, astContext, tokens } = getAutocompleteCursorContext(fullText, offset);
 
   if (astContext.type === 'comment') {
     return [];
@@ -194,6 +194,7 @@ export async function suggest(
       const rootLevelQuerySuggestions = attachReplacementRanges(innerText, rootLevelSuggestions, {
         fullText,
         offset,
+        tokens,
       });
 
       return orderingEngine.sort([...headerCommandsSuggestions, ...rootLevelQuerySuggestions], {
@@ -250,6 +251,7 @@ export async function suggest(
 
     return attachReplacementRanges(innerText, commandsSpecificSuggestions, {
       commandContext: { columns: await getColumnMapOnce() },
+      tokens,
     });
   }
   return [];

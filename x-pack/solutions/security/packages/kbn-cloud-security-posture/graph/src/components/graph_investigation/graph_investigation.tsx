@@ -385,9 +385,27 @@ export const GraphInvestigation = memo<GraphInvestigationProps>(
 
     const handlePointerDownCapture = useCallback(
       (event: React.PointerEvent<HTMLDivElement>) => {
-        if (!isExternalOverlayOpen()) return;
         const eventTarget = event.target as HTMLElement | null;
         if (!eventTarget?.closest?.('.react-flow__pane')) return;
+
+        // The KQL search input grows to fit a long query while it is focused.
+        // d3-zoom calls `preventDefault()` on the pane's pointer events, which
+        // suppresses the browser's native focus change — so clicking the graph
+        // would otherwise leave the input focused and expanded. Blur it
+        // explicitly so it collapses back to a single line, matching what
+        // happens when clicking any other DOM node outside the input.
+        const activeElement = document.activeElement as HTMLElement | null;
+        const isSearchInputFocused = Boolean(activeElement?.closest?.('.kbnQueryBar__wrap'));
+        if (isSearchInputFocused) {
+          activeElement?.blur();
+        }
+
+        // Synthesize the suppressed `mousedown`/`mouseup` on the graph container
+        // in capture phase (before d3-zoom) so `EuiOutsideClickDetector` (which
+        // collapses the search input and closes KQL autocomplete) and
+        // `react-focus-on` (EuiPopover) react to the click while it stays
+        // "inside" the parent EuiFlyout.
+        if (!isSearchInputFocused && !isExternalOverlayOpen()) return;
 
         const opts = { bubbles: true, cancelable: true, view: window, button: 0 };
         event.currentTarget.dispatchEvent(new MouseEvent('mousedown', opts));

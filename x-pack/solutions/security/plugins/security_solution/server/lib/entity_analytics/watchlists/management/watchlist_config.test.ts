@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { SecurityServiceStart } from '@kbn/core/server';
 import {
   savedObjectsClientMock,
   elasticsearchServiceMock,
@@ -12,9 +13,15 @@ import {
 } from '@kbn/core/server/mocks';
 import { WatchlistConfigClient } from './watchlist_config';
 import { getIndexForWatchlist } from '../entities/utils';
+import { watchlistEntitySourceTypeName } from '../entity_sources/infra';
 
 jest.mock('../entities/utils', () => ({
   getIndexForWatchlist: jest.fn().mockReturnValue('mock-watchlist-index'),
+}));
+
+const mockInvalidateEntitySourceApiKey = jest.fn();
+jest.mock('../entity_sources/entity_source_api_key', () => ({
+  invalidateEntitySourceApiKey: (...args: unknown[]) => mockInvalidateEntitySourceApiKey(...args),
 }));
 
 describe('WatchlistConfigClient', () => {
@@ -224,6 +231,107 @@ describe('WatchlistConfigClient', () => {
         entitySourceIds: [],
       });
       expect(client.getEntityCount).toHaveBeenCalledWith('wl-1');
+    });
+  });
+
+  describe('delete', () => {
+    const WATCHLIST_ID = 'wl-1';
+    const SOURCE_REF = (id: string) => ({
+      name: `entity-source_${id}`,
+      type: watchlistEntitySourceTypeName,
+      id,
+    });
+
+    beforeEach(() => {
+      mockInvalidateEntitySourceApiKey.mockReset().mockResolvedValue(undefined);
+      soClientMock.delete.mockResolvedValue({});
+    });
+
+    it('invalidates API keys for index-type sources with stored keys', async () => {
+      const securityServiceStart = {} as unknown as SecurityServiceStart;
+
+      const clientWithSecurity = new WatchlistConfigClient({
+        soClient: soClientMock,
+        esClient: esClientMock,
+        namespace: 'default',
+        logger: loggerMock,
+        securityServiceStart,
+      });
+
+      soClientMock.get.mockResolvedValue({
+        id: WATCHLIST_ID,
+        type: 'watchlist_config',
+        references: [SOURCE_REF('src-1'), SOURCE_REF('src-2'), SOURCE_REF('src-3')],
+        attributes: {},
+      });
+
+      soClientMock.bulkGet.mockResolvedValue({
+        saved_objects: [
+          {
+            id: 'src-1',
+            type: watchlistEntitySourceTypeName,
+            references: [],
+            attributes: { type: 'index', apiKeyId: 'kid-1' },
+          },
+          {
+            id: 'src-2',
+            type: watchlistEntitySourceTypeName,
+            references: [],
+            attributes: { type: 'index', apiKeyId: 'kid-2' },
+          },
+          {
+            id: 'src-3',
+            type: watchlistEntitySourceTypeName,
+            references: [],
+            attributes: { type: 'store' },
+          },
+        ],
+      });
+
+      await clientWithSecurity.delete(WATCHLIST_ID);
+
+      expect(mockInvalidateEntitySourceApiKey).toHaveBeenCalledTimes(2);
+      expect(mockInvalidateEntitySourceApiKey).toHaveBeenCalledWith(
+        securityServiceStart,
+        'kid-1',
+        loggerMock
+      );
+      expect(mockInvalidateEntitySourceApiKey).toHaveBeenCalledWith(
+        securityServiceStart,
+        'kid-2',
+        loggerMock
+      );
+    });
+
+    it('skips API key invalidation when securityServiceStart is not provided', async () => {
+      soClientMock.get.mockResolvedValue({
+        id: WATCHLIST_ID,
+        type: 'watchlist_config',
+        references: [SOURCE_REF('src-1')],
+        attributes: {},
+      });
+
+      await client.delete(WATCHLIST_ID);
+
+      expect(mockInvalidateEntitySourceApiKey).not.toHaveBeenCalled();
+    });
+
+    it('cascade-deletes all linked entity sources', async () => {
+      soClientMock.get.mockResolvedValue({
+        id: WATCHLIST_ID,
+        type: 'watchlist_config',
+        references: [SOURCE_REF('src-1'), SOURCE_REF('src-2')],
+        attributes: {},
+      });
+
+      await client.delete(WATCHLIST_ID);
+
+      expect(soClientMock.delete).toHaveBeenCalledWith(watchlistEntitySourceTypeName, 'src-1', {
+        refresh: 'wait_for',
+      });
+      expect(soClientMock.delete).toHaveBeenCalledWith(watchlistEntitySourceTypeName, 'src-2', {
+        refresh: 'wait_for',
+      });
     });
   });
 });

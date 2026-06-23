@@ -16,7 +16,6 @@ module.exports = {
   preset: '@kbn/test/jest_integration',
   rootDir: '../../../../..',
   roots: [
-    '<rootDir>/src/core/server/integration_tests/saved_objects/registration',
     '<rootDir>/src/core/server/integration_tests/saved_objects/routes',
     '<rootDir>/src/core/server/integration_tests/saved_objects/service',
     '<rootDir>/src/core/server/integration_tests/saved_objects/validation',

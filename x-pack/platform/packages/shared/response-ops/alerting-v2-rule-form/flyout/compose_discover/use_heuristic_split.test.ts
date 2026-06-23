@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { splitQuery, guessRecoveryBlock } from './use_heuristic_split';
+import { splitQuery, guessRecoveryBlock, discoverQueryToComposed } from './use_heuristic_split';
 
 // ── splitQuery ────────────────────────────────────────────────────────────────
 
@@ -199,6 +199,20 @@ describe('splitQuery', () => {
 });
 
 // ── guessRecoveryBlock ────────────────────────────────────────────────────────
+
+describe('discoverQueryToComposed', () => {
+  it('splits a WHERE clause into base and breach segment', () => {
+    const result = discoverQueryToComposed('FROM logs-* | WHERE status == "error" | LIMIT 10');
+    expect(result.base).toBe('FROM logs-*');
+    expect(result.breach.segment).toContain('WHERE');
+  });
+
+  it('leaves breach segment empty when query has no WHERE', () => {
+    const result = discoverQueryToComposed('FROM logs-* | LIMIT 10');
+    expect(result.base).toBe('FROM logs-* | LIMIT 10');
+    expect(result.breach.segment).toBe('');
+  });
+});
 
 describe('guessRecoveryBlock', () => {
   it('flips > to <', () => {

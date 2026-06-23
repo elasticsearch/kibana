@@ -20,6 +20,7 @@ import {
   NO_CREATOR_USER_FILTER,
   NO_CREATOR_USER_LABEL,
 } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 
 /** Props for the {@link CreatedByCell} component. */
 export interface CreatedByCellProps {
@@ -89,7 +90,7 @@ export const CreatedByCell = memo(({ createdBy, managed }: CreatedByCellProps) =
           'contentManagement.contentList.table.createdByCell.filterAriaLabel',
           { defaultMessage: 'Filter by creator: {name}', values: { name: MANAGED_USER_LABEL } }
         )}
-        data-test-subj="content-list-createdBy-managed"
+        data-test-subj={CONTENT_LIST_TEST_SUBJECTS.createdByManaged}
       >
         <EuiToolTip content={MANAGED_USER_LABEL} position="top">
           <EuiAvatar name={MANAGED_USER_LABEL} size="s" iconType="package" color="subdued" />
@@ -110,7 +111,7 @@ export const CreatedByCell = memo(({ createdBy, managed }: CreatedByCellProps) =
           'contentManagement.contentList.table.createdByCell.filterAriaLabel',
           { defaultMessage: 'Filter by creator: {name}', values: { name: NO_CREATOR_USER_LABEL } }
         )}
-        data-test-subj="content-list-createdBy-noCreator"
+        data-test-subj={CONTENT_LIST_TEST_SUBJECTS.createdByNoCreator}
       >
         <EuiToolTip content={NO_CREATOR_USER_LABEL} position="top">
           <EuiAvatar name={NO_CREATOR_USER_LABEL} size="s" iconType="userAvatar" color="subdued" />
@@ -134,7 +135,7 @@ export const CreatedByCell = memo(({ createdBy, managed }: CreatedByCellProps) =
         'contentManagement.contentList.table.createdByCell.filterAriaLabel',
         { defaultMessage: 'Filter by creator: {name}', values: { name: user.fullName } }
       )}
-      data-test-subj="content-list-createdBy-avatar"
+      data-test-subj={CONTENT_LIST_TEST_SUBJECTS.createdByAvatar}
     >
       <UserAvatarTip {...{ user: user.user, avatar: user.avatar, size: 's' }} />
     </span>

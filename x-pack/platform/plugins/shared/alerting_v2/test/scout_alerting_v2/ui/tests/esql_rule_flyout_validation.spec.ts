@@ -36,7 +36,7 @@ test.describe('ES|QL rule flyout — ?param validation', { tag: tags.stateful.cl
   }) => {
     await test.step('run a plain ES|QL query with no parameters', async () => {
       await pageObjects.discover.writeAndSubmitEsqlQuery(
-        'FROM kibana_sample_data_ecommerce | LIMIT 10'
+        'FROM kibana_sample_data_ecommerce | WHERE true | LIMIT 10'
       );
       await pageObjects.discover.waitUntilSearchingHasFinished();
     });
@@ -60,7 +60,7 @@ test.describe('ES|QL rule flyout — ?param validation', { tag: tags.stateful.cl
   }) => {
     await test.step('run an ES|QL query with an unresolved ?param', async () => {
       await pageObjects.discover.writeAndSubmitEsqlQuery(
-        'FROM kibana_sample_data_ecommerce | LIMIT ?limit'
+        'FROM kibana_sample_data_ecommerce | WHERE true | LIMIT ?limit'
       );
       await pageObjects.discover.waitUntilSearchingHasFinished();
     });

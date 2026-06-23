@@ -8,7 +8,7 @@
  */
 
 import type { OpenAPIV3 } from 'openapi-types';
-import type { DeepPartial } from '@kbn/utility-types';
+import type { DeepPartial, MaybePromise } from '@kbn/utility-types';
 import type { RouteValidator } from './route_validator';
 
 /**
@@ -34,6 +34,32 @@ export type SafeRouteMethod = 'get' | 'options';
  * @public
  */
 export type RouteMethod = SafeRouteMethod | DestructiveRouteMethod;
+
+/**
+ * Code sample metadata rendered by the public API docs.
+ * @public
+ */
+export interface OASCodeSample {
+  lang: string;
+  label?: string;
+  source: string;
+}
+
+/**
+ * Partial OpenAPI operation object merged into generated route docs.
+ * @public
+ */
+export type OASOperationObject = DeepPartial<
+  OpenAPIV3.OperationObject & {
+    'x-codeSamples': OASCodeSample[];
+  }
+>;
+
+/**
+ * Lazily provides route-specific OpenAPI operation metadata.
+ * @public
+ */
+export type OASOperationObjectProvider = () => string | MaybePromise<OASOperationObject>;
 
 /**
  * The set of supported parseable Content-Types
@@ -423,9 +449,7 @@ export interface RouteConfigOptions<Method extends RouteMethod> {
    *      },
    *  })
    */
-  oasOperationObject?: () =>
-    | string
-    | DeepPartial<Pick<OpenAPIV3.OperationObject, 'requestBody' | 'responses'>>;
+  oasOperationObject?: OASOperationObjectProvider;
 
   /**
    * Whether this route should be treated as "invisible" and excluded from router

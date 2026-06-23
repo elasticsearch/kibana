@@ -33,13 +33,13 @@ export const ContentBreakdown = ({
   formattedDoc,
   hit,
   renderFlyoutStreamProcessingLink,
-  renderCpsWarning,
+  cpsHasLinkedProjects,
 }: {
   dataView: DataView;
   formattedDoc: LogDocumentOverview;
   hit: DataTableRecord;
   renderFlyoutStreamProcessingLink?: ObservabilityStreamsFeature['renderFlyoutStreamProcessingLink'];
-  renderCpsWarning?: boolean;
+  cpsHasLinkedProjects?: boolean;
 }) => {
   const { fieldFormats } = getUnifiedDocViewerServices();
   const { field, value, formattedValue } = getMessageFieldWithFallbacks(hit.flattened, {
@@ -92,7 +92,7 @@ export const ContentBreakdown = ({
                 hit={hit}
                 formattedDoc={formattedDoc}
                 renderFlyoutStreamProcessingLink={renderFlyoutStreamProcessingLink}
-                renderCpsWarning={renderCpsWarning}
+                cpsHasLinkedProjects={cpsHasLinkedProjects}
               />
             </EuiFlexItem>
           </EuiFlexGroup>

@@ -5,11 +5,7 @@
  * 2.0.
  */
 
-import {
-  actionPolicyDestinationTypeSchema,
-  errorResponseSchema,
-  findActionPoliciesResponseSchema,
-} from '@kbn/alerting-v2-schemas';
+import { errorResponseSchema, findActionPoliciesResponseSchema } from '@kbn/alerting-v2-schemas';
 import { Request } from '@kbn/core-di-server';
 import type { KibanaRequest, RouteSecurity } from '@kbn/core-http-server';
 import { z } from '@kbn/zod/v4';
@@ -46,15 +42,6 @@ const listActionPoliciesQuerySchema = z.object({
     .pipe(z.array(tagFilterItemSchema).max(10))
     .optional()
     .describe('Filter by tags. Accepts a single string or an array.'),
-  destinationType: actionPolicyDestinationTypeSchema
-    .optional()
-    .describe('Filter by destination connector type.'),
-  createdBy: z
-    .string()
-    .min(1)
-    .max(256)
-    .optional()
-    .describe('Filter by the user ID who created the action policy.'),
   enabled: z
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
@@ -110,24 +97,12 @@ export class ListActionPoliciesRoute extends BaseAlertingRoute {
   }
 
   protected async execute() {
-    const {
-      page,
-      perPage,
-      search,
-      tags,
-      destinationType,
-      createdBy,
-      enabled,
-      sortField,
-      sortOrder,
-    } = this.request.query ?? {};
+    const { page, perPage, search, tags, enabled, sortField, sortOrder } = this.request.query ?? {};
     const result = await this.actionPolicyClient.findActionPolicies({
       page,
       perPage,
       search,
       tags,
-      destinationType,
-      createdBy,
       enabled,
       sortField,
       sortOrder,

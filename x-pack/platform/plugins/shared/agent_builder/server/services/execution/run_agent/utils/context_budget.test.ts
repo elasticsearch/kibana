@@ -7,14 +7,8 @@
 
 import type { InferenceConnector } from '@kbn/inference-common';
 import { InferenceConnectorType } from '@kbn/inference-common';
-import { ConversationRoundStatus, ConversationRoundStepType } from '@kbn/agent-builder-common';
-import type { ProcessedConversationRound } from './prepare_conversation';
-import {
-  computeContextBudget,
-  estimateRoundTokens,
-  estimateConversationTokens,
-  shouldTriggerCompaction,
-} from './context_budget';
+import type { CompactionSummary } from '@kbn/agent-builder-common';
+import { computeContextBudget, shouldTriggerCompaction } from './context_budget';
 
 const createMockConnector = (contextWindowSize?: number): InferenceConnector => ({
   type: InferenceConnectorType.OpenAI,
@@ -30,41 +24,13 @@ const createMockConnector = (contextWindowSize?: number): InferenceConnector => 
   },
 });
 
-const createMockRound = (
-  messageLength: number,
-  toolResults: number = 0
-): ProcessedConversationRound => {
-  const steps = Array.from({ length: toolResults }, (_, i) => ({
-    type: ConversationRoundStepType.toolCall as const,
-    tool_call_id: `tc-${i}`,
-    tool_id: `tool-${i}`,
-    params: { query: 'test' },
-    results: [
-      { type: 'other' as const, tool_result_id: `result-${i}`, data: { value: 'x'.repeat(100) } },
-    ],
-    progression: [],
-  }));
-
-  return {
-    id: 'round-1',
-    status: ConversationRoundStatus.completed,
-    input: {
-      message: 'x'.repeat(messageLength),
-      attachments: [],
-    },
-    steps,
-    response: { message: 'y'.repeat(messageLength) },
-    started_at: new Date().toISOString(),
-    time_to_first_token: 100,
-    time_to_last_token: 200,
-    model_usage: {
-      connector_id: 'test-connector',
-      llm_calls: 1,
-      input_tokens: 100,
-      output_tokens: 50,
-    },
-  };
-};
+const createSummary = (summarizedRoundCount: number, tokenCount: number): CompactionSummary =>
+  ({
+    summarized_round_count: summarizedRoundCount,
+    created_at: new Date().toISOString(),
+    token_count: tokenCount,
+    structured_data: {},
+  } as unknown as CompactionSummary);
 
 describe('computeContextBudget', () => {
   it('should compute budget from connector context window size', () => {
@@ -97,54 +63,28 @@ describe('computeContextBudget', () => {
   });
 });
 
-describe('estimateRoundTokens', () => {
-  it('should estimate tokens for a simple round', () => {
-    const round = createMockRound(400);
-    const tokens = estimateRoundTokens(round);
-
-    // 400 chars / 4 = 100 tokens for message + 100 for response + overhead
-    expect(tokens).toBeGreaterThan(200);
-  });
-
-  it('should include tool results in estimation', () => {
-    const roundWithTools = createMockRound(400, 3);
-    const roundWithoutTools = createMockRound(400, 0);
-
-    expect(estimateRoundTokens(roundWithTools)).toBeGreaterThan(
-      estimateRoundTokens(roundWithoutTools)
-    );
-  });
-});
-
-describe('estimateConversationTokens', () => {
-  it('should sum tokens across all rounds', () => {
-    const rounds = [createMockRound(400), createMockRound(800), createMockRound(200)];
-    const total = estimateConversationTokens(rounds);
-
-    expect(total).toBeGreaterThan(0);
-    expect(total).toBe(rounds.reduce((sum, r) => sum + estimateRoundTokens(r), 0));
-  });
-
-  it('should return 0 for empty rounds', () => {
-    expect(estimateConversationTokens([])).toBe(0);
-  });
-});
-
 describe('shouldTriggerCompaction', () => {
-  it('should not trigger for small conversations', () => {
-    const connector = createMockConnector(128000);
-    const budget = computeContextBudget(connector);
-    const rounds = [createMockRound(100)];
+  const budget = computeContextBudget(createMockConnector(128000)); // triggerThreshold 71680
 
-    expect(shouldTriggerCompaction(rounds, budget)).toBe(false);
+  it('should not trigger when total round tokens are under the threshold', () => {
+    expect(shouldTriggerCompaction([100, 200, 300], budget)).toBe(false);
   });
 
-  it('should trigger when conversation exceeds threshold', () => {
-    const connector = createMockConnector(1000); // very small window for testing
-    const budget = computeContextBudget(connector);
-    // Create rounds with enough text to exceed the threshold
-    const rounds = [createMockRound(2000), createMockRound(2000), createMockRound(2000)];
+  it('should trigger when total round tokens exceed the threshold', () => {
+    expect(shouldTriggerCompaction([50_000, 30_000], budget)).toBe(true); // 80_000 > 71_680
+  });
 
-    expect(shouldTriggerCompaction(rounds, budget)).toBe(true);
+  it('should return false for empty conversations', () => {
+    expect(shouldTriggerCompaction([], budget)).toBe(false);
+  });
+
+  it('should count only rounds beyond an existing summary plus the summary cost', () => {
+    const counts = [60_000, 60_000, 5_000];
+    const existingSummary = createSummary(2, 1_000);
+
+    // effective = 1_000 (summary) + 5_000 (uncovered round) = 6_000 -> under threshold
+    expect(shouldTriggerCompaction(counts, budget, existingSummary)).toBe(false);
+    // without the summary, the raw total (125_000) exceeds the threshold
+    expect(shouldTriggerCompaction(counts, budget)).toBe(true);
   });
 });

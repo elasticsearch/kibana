@@ -95,10 +95,12 @@ describe('<Wrapper />', () => {
       </TestProviders>
     );
 
-    expect(await screen.findByTestId(DATA_VIEW_LOADING_PROMPT_TEST_ID)).toBeInTheDocument();
-    expect(await screen.findByTestId(DATA_VIEW_ERROR_TEST_ID)).toHaveTextContent(
-      'Unable to retrieve the data view'
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId(DATA_VIEW_LOADING_PROMPT_TEST_ID)).toBeInTheDocument();
+      expect(screen.getByTestId(DATA_VIEW_ERROR_TEST_ID)).toHaveTextContent(
+        'Unable to retrieve the data view'
+      );
+    });
   });
 
   it('should render the content', async () => {

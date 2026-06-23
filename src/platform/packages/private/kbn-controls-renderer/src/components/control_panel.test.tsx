@@ -66,7 +66,8 @@ const mockOptionsListFactory: EmbeddablePublicDefinition<{ type: typeof OPTIONS_
   },
 };
 
-describe('render', () => {
+// Failing: See https://github.com/elastic/kibana/issues/273761
+describe.skip('render', () => {
   beforeAll(() => {
     registerEmbeddablePublicDefinition(
       'options_list_control',

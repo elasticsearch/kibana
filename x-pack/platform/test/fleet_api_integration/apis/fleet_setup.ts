@@ -8,7 +8,10 @@
 import expect from '@kbn/expect';
 import { v4 as uuidV4 } from 'uuid';
 import { INGEST_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-server';
-import { PACKAGE_POLICY_SAVED_OBJECT_TYPE } from '@kbn/fleet-plugin/common/constants';
+import {
+  ENROLLMENT_API_KEYS_INDEX,
+  PACKAGE_POLICY_SAVED_OBJECT_TYPE,
+} from '@kbn/fleet-plugin/common/constants';
 
 import type { FtrProviderContext } from '../../api_integration/ftr_provider_context';
 import { skipIfNoDockerRegistry } from '../helpers';
@@ -66,6 +69,67 @@ export default function (providerContext: FtrProviderContext) {
         .sort();
 
       expect(installedPackages).to.eql(['endpoint']);
+    });
+
+    describe('default enrollment API key reconciliation', () => {
+      before(async () => {
+        await supertest.post(`/api/fleet/setup`).set('kbn-xsrf', 'xxxx').expect(200);
+      });
+
+      async function createAgentPolicy() {
+        const { body } = await supertest
+          .post(`/api/fleet/agent_policies`)
+          .set('kbn-xsrf', 'xxxx')
+          .send({ name: `enrollment-key-test-${uuidV4()}`, namespace: 'default' })
+          .expect(200);
+
+        return body.item.id as string;
+      }
+
+      async function getEnrollmentKeysForPolicy(policyId: string) {
+        const { body } = await supertest
+          .get(`/api/fleet/enrollment_api_keys`)
+          .query({ kuery: `policy_id:"${policyId}"` })
+          .expect(200);
+
+        return body.items as Array<{ id: string; policy_id: string; name: string }>;
+      }
+
+      it('creates a default enrollment API key for a policy that is missing one', async () => {
+        const policyId = await createAgentPolicy();
+        // Creating the policy already provisions a Default enrollment API key
+        expect(await getEnrollmentKeysForPolicy(policyId)).to.have.length(1);
+
+        // Simulate a policy with no enrollment key by deleting the key document directly
+        await es.deleteByQuery({
+          index: ENROLLMENT_API_KEYS_INDEX,
+          refresh: true,
+          conflicts: 'proceed',
+          query: { term: { policy_id: policyId } },
+        });
+        expect(await getEnrollmentKeysForPolicy(policyId)).to.have.length(0);
+
+        await supertest.post(`/api/fleet/setup`).set('kbn-xsrf', 'xxxx').expect(200);
+
+        await retry.tryForTime(30_000, async () => {
+          const keys = await getEnrollmentKeysForPolicy(policyId);
+          expect(keys).to.have.length(1);
+          // generateEnrollmentAPIKey appends a unique suffix, e.g. `Default (<uuid>)`
+          expect(keys[0].name).to.match(/^Default/);
+        });
+      });
+
+      it('does not create a duplicate enrollment API key when one already exists', async () => {
+        const policyId = await createAgentPolicy();
+        const keysBefore = await getEnrollmentKeysForPolicy(policyId);
+        expect(keysBefore).to.have.length(1);
+
+        await supertest.post(`/api/fleet/setup`).set('kbn-xsrf', 'xxxx').expect(200);
+
+        const keysAfter = await getEnrollmentKeysForPolicy(policyId);
+        expect(keysAfter).to.have.length(1);
+        expect(keysAfter[0].id).to.eql(keysBefore[0].id);
+      });
     });
 
     describe('upgrade managed package policies', () => {

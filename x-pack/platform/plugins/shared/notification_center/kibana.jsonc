@@ -1,0 +1,21 @@
+{
+  "type": "plugin",
+  "id": "@kbn/notification-center-plugin",
+  "owner": [
+    "@elastic/search-kibana"
+  ],
+  "description": "Presentation and ingestion layer for search solution notifications",
+  "group": "platform",
+  "visibility": "shared",
+  "plugin": {
+    "id": "notificationCenter",
+    "server": true,
+    "browser": true,
+    "configPath": [
+      "xpack",
+      "notificationCenter"
+    ],
+    "requiredPlugins": [],
+    "optionalPlugins": []
+  }
+}

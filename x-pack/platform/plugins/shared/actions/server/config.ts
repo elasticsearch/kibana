@@ -221,6 +221,30 @@ export const configSchema = schema.object({
         enabled: schema.boolean({ defaultValue: false }),
         enableExperimental: schema.boolean({ defaultValue: false }),
         url: schema.maybe(schema.uri({ scheme: ['https'] })),
+        ssl: schema.maybe(
+          schema.object(
+            {
+              verificationMode: schema.maybe(
+                schema.oneOf(
+                  [schema.literal('none'), schema.literal('certificate'), schema.literal('full')],
+                  { defaultValue: 'full' }
+                )
+              ),
+              certificate: schema.maybe(schema.string()),
+              key: schema.maybe(schema.string()),
+            },
+            {
+              validate: (rawConfig) => {
+                if (rawConfig.certificate && !rawConfig.key) {
+                  return 'must specify [auth.ears.ssl.key] when [auth.ears.ssl.certificate] is specified';
+                }
+                if (rawConfig.key && !rawConfig.certificate) {
+                  return 'must specify [auth.ears.ssl.certificate] when [auth.ears.ssl.key] is specified';
+                }
+              },
+            }
+          )
+        ),
       })
     ),
   }),

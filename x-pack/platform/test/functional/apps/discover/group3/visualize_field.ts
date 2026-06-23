@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+// Serverless test (remove during Scout migration): x-pack/platform/test/serverless/functional/test_suites/discover/x_pack_visualize_field/visualize_field.ts
 import expect from '@kbn/expect';
 import type { DebugState } from '@elastic/charts';
 import type { WebElementWrapper } from '@kbn/ftr-common-functional-ui-services';

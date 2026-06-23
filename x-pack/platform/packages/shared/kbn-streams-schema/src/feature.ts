@@ -7,18 +7,23 @@
 
 import { z } from '@kbn/zod/v4';
 import { isEqual, uniq } from 'lodash';
+import objectHash from 'object-hash';
+import { v5 } from 'uuid';
 import { conditionSchema, type Condition } from '@kbn/streamlang';
+import { MAX_ID_LENGTH } from './sig_events/constants';
 
 export const DATASET_ANALYSIS_FEATURE_TYPE = 'dataset_analysis' as const;
 export const LOG_SAMPLES_FEATURE_TYPE = 'log_samples' as const;
 export const LOG_PATTERNS_FEATURE_TYPE = 'log_patterns' as const;
 export const ERROR_LOGS_FEATURE_TYPE = 'error_logs' as const;
+export const CODE_ANALYSIS_FEATURE_TYPE = 'code_analysis' as const;
 
 export const COMPUTED_FEATURE_TYPES = [
   DATASET_ANALYSIS_FEATURE_TYPE,
   LOG_SAMPLES_FEATURE_TYPE,
   LOG_PATTERNS_FEATURE_TYPE,
   ERROR_LOGS_FEATURE_TYPE,
+  CODE_ANALYSIS_FEATURE_TYPE,
 ] as const;
 
 export const INFERRED_FEATURE_TYPES = [
@@ -29,6 +34,7 @@ export const INFERRED_FEATURE_TYPES = [
   'schema',
 ] as const;
 
+// TODO: it would be nice to rename id->slug and uuid->id for consistency with queries
 export const baseFeatureSchema = z.object({
   id: z.string(),
   stream_name: z.string(),
@@ -70,7 +76,10 @@ export const ignoredFeatureSchema = z.object({
 
 export type IgnoredFeature = z.infer<typeof ignoredFeatureSchema>;
 
-export const featureSchema = baseFeatureSchema.and(
+// Creation/write payload. `uuid` is derived from (id, stream_name, type) at the
+// storage boundary (see `computeFeatureUuid` / `toStoredFeature`), so it is not
+// part of the input — callers never supply it.
+export const featureUpsertSchema = baseFeatureSchema.and(
   z.object({
     run_id: z.string().optional(),
     excluded: z.boolean().optional(),
@@ -79,8 +88,41 @@ export const featureSchema = baseFeatureSchema.and(
   })
 );
 
+export type FeatureUpsert = z.infer<typeof featureUpsertSchema>;
+
+// Canonical persisted feature. Once a feature has been stored and read back it
+// always carries its derived `uuid`.
+export const featureSchema = featureUpsertSchema.and(
+  z.object({
+    uuid: z.string().max(MAX_ID_LENGTH),
+  })
+);
+
 export type Feature = z.infer<typeof featureSchema>;
 export type FeatureWithFilter = Feature & { filter: Condition };
+
+/**
+ * Normalizes a feature id into its canonical slug form. Slugs are always
+ * trimmed and lowercased so they match `isDuplicateFeature`'s case-insensitive
+ * semantics and so the persisted slug stays in sync with the value the uuid is
+ * derived from.
+ */
+export function normalizeFeatureSlug(id: string): string {
+  return id.trim().toLowerCase();
+}
+
+/**
+ * Computes a deterministic, stable uuid for a feature from its identifying
+ * triple (slug, stream_name, type). The slug is normalized via
+ * `normalizeFeatureSlug`. Used as the storage document id and for
+ * delete/exclude/restore operations.
+ */
+export function computeFeatureUuid(
+  feature: Pick<BaseFeature, 'id' | 'stream_name' | 'type'>
+): string {
+  const slug = normalizeFeatureSlug(feature.id);
+  return v5(objectHash([feature.stream_name, feature.type, slug]), v5.DNS);
+}
 
 export function isFeature(feature: unknown): feature is Feature {
   return featureSchema.safeParse(feature).success;
@@ -104,7 +146,10 @@ export function hasSameFingerprint(feature: BaseFeature, other: BaseFeature): bo
 }
 
 export function isDuplicateFeature(feature: BaseFeature, other: BaseFeature): boolean {
-  return feature.id.toLowerCase() === other.id.toLowerCase() || hasSameFingerprint(feature, other);
+  return (
+    normalizeFeatureSlug(feature.id) === normalizeFeatureSlug(other.id) ||
+    hasSameFingerprint(feature, other)
+  );
 }
 
 const mergeArrays = (a: string[] | undefined, b: string[] | undefined): string[] | undefined => {

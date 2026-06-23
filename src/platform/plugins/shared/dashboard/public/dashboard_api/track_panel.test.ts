@@ -11,6 +11,7 @@ import { BehaviorSubject } from 'rxjs';
 import type { DefaultEmbeddableApi } from '@kbn/embeddable-plugin/public';
 import { initializeTrackPanel } from './track_panel';
 import type { DashboardChildren } from './layout_manager/types';
+import type { ViewMode } from '@kbn/presentation-publishing';
 
 const buildChild = (
   uuid: string,
@@ -25,9 +26,11 @@ const buildChild = (
 
 describe('track panel', () => {
   const mockChildrenSubject = new BehaviorSubject<DashboardChildren>({});
+  const mockViewMode = new BehaviorSubject<ViewMode>('edit');
   const { api, cleanup } = initializeTrackPanel(
     async (id: string) => undefined,
-    mockChildrenSubject
+    mockChildrenSubject,
+    mockViewMode
   );
   const {
     expandPanel,
@@ -211,11 +214,13 @@ describe('track panel', () => {
     // without other state leaking in from prior cases.
     const setupBlurTest = () => {
       const children$ = new BehaviorSubject<DashboardChildren>({});
+      const viewMode$ = new BehaviorSubject<ViewMode>('edit');
       const { api: blurApi, cleanup: blurCleanup } = initializeTrackPanel(
         async () => undefined,
-        children$
+        children$,
+        viewMode$
       );
-      return { children$, blurApi, blurCleanup };
+      return { children$, blurApi, blurCleanup, viewMode$ };
     };
 
     it('starts with no blurred panels', () => {
@@ -237,6 +242,22 @@ describe('track panel', () => {
 
       // siblings minus focusedChildId minus relatedPanels = ['sparrow', 'salamander']
       expect(blurApi.blurredPanelIds$.value.sort()).toEqual(['salamander', 'sparrow']);
+      blurCleanup();
+    });
+
+    it('clears blurred panels when switching from edit to view mode', () => {
+      const { children$, blurApi, blurCleanup, viewMode$ } = setupBlurTest();
+      children$.next({
+        snake: buildChild('snake', ['lizard']),
+        lizard: buildChild('lizard'),
+        sparrow: buildChild('sparrow'),
+      });
+
+      blurApi.setFocusedPanelId('snake');
+      expect(blurApi.blurredPanelIds$.value).toEqual(['sparrow']);
+
+      viewMode$.next('view');
+      expect(blurApi.blurredPanelIds$.value).toEqual([]);
       blurCleanup();
     });
 

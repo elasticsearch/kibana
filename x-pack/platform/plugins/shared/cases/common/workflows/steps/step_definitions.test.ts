@@ -9,6 +9,7 @@ import { AddAlertsStepTypeId, addAlertsStepCommonDefinition } from './add_alerts
 import { AddEventsStepTypeId, addEventsStepCommonDefinition } from './add_events';
 import { AddObservablesStepTypeId, addObservablesStepCommonDefinition } from './add_observables';
 import { AddTagsStepTypeId, addTagsStepCommonDefinition } from './add_tags';
+import { RemoveTagsStepTypeId, removeTagsStepCommonDefinition } from './remove_tags';
 import { AssignCaseStepTypeId, assignCaseStepCommonDefinition } from './assign_case';
 import { CloseCaseStepTypeId, closeCaseStepCommonDefinition } from './close_case';
 import { DeleteCasesStepTypeId, deleteCasesStepCommonDefinition } from './delete_cases';
@@ -146,6 +147,12 @@ const stepDefinitions = [
   {
     typeId: AddTagsStepTypeId,
     definition: addTagsStepCommonDefinition,
+    input: addTagInputFixture,
+    output: singleCaseOutput,
+  },
+  {
+    typeId: RemoveTagsStepTypeId,
+    definition: removeTagsStepCommonDefinition,
     input: addTagInputFixture,
     output: singleCaseOutput,
   },

@@ -14,7 +14,6 @@ import type { EntityAnalyticsRoutesDeps } from '../../../types';
 import { withMinimumLicense } from '../../../utils/with_minimum_license';
 import type { ListWatchlistsResponse } from '../../../../../../common/api/entity_analytics/watchlists/management/list.gen';
 import { WatchlistConfigClient } from '../watchlist_config';
-import { getRequestSavedObjectClient } from '../../shared/utils';
 
 export const listWatchlistsRoute = (
   router: EntityAnalyticsRoutesDeps['router'],
@@ -44,7 +43,7 @@ export const listWatchlistsRoute = (
 
             const watchlistClient = new WatchlistConfigClient({
               namespace: secSol.getSpaceId(),
-              soClient: getRequestSavedObjectClient(core),
+              soClient: core.savedObjects.client,
               esClient: core.elasticsearch.client.asCurrentUser,
               logger,
             });

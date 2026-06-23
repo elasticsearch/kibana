@@ -49,6 +49,7 @@ dependsOn:
   - '@kbn/restorable-state'
   - '@kbn/css-utils'
   - '@kbn/field-formats-common'
+  - '@kbn/ebt-click'
 tags:
   - shared-browser
   - package

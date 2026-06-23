@@ -23,6 +23,18 @@ export function esqlPresentColumnName(field: string): string {
   return `${field.replace(/\./g, '_')}_present`;
 }
 
+/**
+ * Returns the precomputed column name for a field's nullable-value alias.
+ * Emits the field's `TO_STRING` value when present, or NULL otherwise.
+ * Used by the COALESCE(CONCAT) entity-id optimisation to eliminate per-row
+ * condition guards from CASE arms — CONCAT propagates NULL automatically.
+ *
+ * Example: `entity.namespace` → `entity_namespace_present_or_null`
+ */
+export function esqlPresentOrNullColumnName(field: string): string {
+  return `${field.replace(/\./g, '_')}_present_or_null`;
+}
+
 export function esqlIsNullOrEmpty(field: string) {
   const ref = castField(field);
   return `(${ref} IS NULL OR ${ref} == "")`;

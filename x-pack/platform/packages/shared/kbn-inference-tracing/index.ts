@@ -14,6 +14,7 @@ export {
   BAGGAGE_TRACKING_BEACON_VALUE,
   EXECUTION_ID_BAGGAGE_KEY,
   EVAL_EXPERIMENT_ID_BAGGAGE_KEY,
+  CONVERSATION_ID_BAGGAGE_KEY,
 } from './src/baggage';
 
 export { isInferenceSpan } from './src/is_inference_span';

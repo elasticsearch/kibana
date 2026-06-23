@@ -89,9 +89,13 @@ export function getDashboardApi({
   const childrenSubject$: BehaviorSubject<Observable<DashboardChildren>> = new BehaviorSubject(
     of({})
   );
-  const trackPanel = initializeTrackPanel(async (id: string) => {
-    await layoutManager.api.getChildApi(id);
-  }, childrenSubject$.pipe(concatMap((children) => children)));
+  const trackPanel = initializeTrackPanel(
+    async (id: string) => {
+      await layoutManager.api.getChildApi(id);
+    },
+    childrenSubject$.pipe(concatMap((children) => children)),
+    viewModeManager.api.viewMode$
+  );
 
   const layoutManager = initializeLayoutManager(
     viewModeManager,
@@ -178,7 +182,7 @@ export function getDashboardApi({
     } satisfies DashboardState;
   }
 
-  const trackOverlayApi = initializeTrackOverlay(trackPanel.api.setFocusedPanelId);
+  const trackOverlayApi = initializeTrackOverlay(trackPanel.api);
 
   const pauseFetchManager = initializePauseFetchManager(filtersManager);
 

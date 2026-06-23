@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-export { PoliciesEmptyState, RulesPlaceholder } from './empty_state';
+export { PoliciesEmptyState, FilteredEmptyState, RulesPlaceholder } from './empty_state';
 export { ExecutionHistoryErrorState } from './error_state';
+export { ExecutionHistorySearchBar } from './execution_history_search_bar';
 export { NewEventsBanner } from './new_events_banner';
 export { PoliciesTabContent } from './policies_tab_content';

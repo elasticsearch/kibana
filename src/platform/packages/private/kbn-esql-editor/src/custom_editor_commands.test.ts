@@ -32,6 +32,8 @@ const mockEditor = {
   getModel: jest.fn(() => mockModel),
   executeEdits: jest.fn(),
   setPosition: jest.fn(),
+  focus: jest.fn(),
+  trigger: jest.fn(),
 } as unknown as monaco.editor.IStandaloneCodeEditor;
 
 const mockUiActions = {
@@ -205,7 +207,7 @@ describe('Custom Editor Commands', () => {
 
       addEditorKeyBindings(mockEditor, mockOnQuerySubmit, mockToggleVisor, mockOnPrettifyQuery);
 
-      expect(mockEditor.addCommand).toHaveBeenCalledTimes(3);
+      expect(mockEditor.addCommand).toHaveBeenCalledTimes(4);
 
       const cmdKCall = (mockEditor.addCommand as jest.Mock).mock.calls.find(
         // eslint-disable-next-line no-bitwise
@@ -258,6 +260,20 @@ describe('Custom Editor Commands', () => {
       cmdIHandler();
 
       expect(mockOnPrettifyQuery).toHaveBeenCalledTimes(1);
+    });
+
+    it('inserts a newline when Shift+Enter is pressed', () => {
+      addEditorKeyBindings(mockEditor, jest.fn(), jest.fn(), jest.fn());
+
+      const shiftEnterCall = (mockEditor.addCommand as jest.Mock).mock.calls.find(
+        // eslint-disable-next-line no-bitwise
+        ([keyMod]) => keyMod === (monaco.KeyMod.Shift | monaco.KeyCode.Enter)
+      );
+      expect(shiftEnterCall).toBeDefined();
+
+      shiftEnterCall[1]();
+
+      expect(mockEditor.trigger).toHaveBeenCalledWith('keyboard', 'type', { text: '\n' });
     });
   });
 });

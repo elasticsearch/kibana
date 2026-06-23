@@ -5,14 +5,14 @@
  * 2.0.
  */
 
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from '@emotion/styled';
+import { Global } from '@emotion/react';
 import { EuiFocusTrap, EuiPortal } from '@elastic/eui';
 import classnames from 'classnames';
 import { useLocation } from 'react-router-dom';
 import type { EuiPortalProps } from '@elastic/eui/src/components/portal/portal';
-import type { EuiTheme } from '@kbn/kibana-react-plugin/common';
 import { useIsMounted } from '@kbn/securitysolution-hook-utils';
 import { euiIncludeSelectorInFocusTrap, layoutVar } from '@kbn/core-chrome-layout-constants';
 
@@ -31,11 +31,11 @@ const OverlayRootContainer = styled.div`
   right: ${layoutVar('application.right', '0px')};
   left: ${layoutVar('application.left', '0px')};
 
-  border-left: 1px solid ${({ theme: { eui } }) => eui.euiColorLightestShade};
+  border-left: 1px solid ${({ theme }) => theme.euiTheme.colors.backgroundBaseSubdued};
 
-  z-index: ${({ theme: { eui } }) => eui.euiZFlyout};
+  z-index: ${({ theme }) => theme.euiTheme.levels.flyout};
 
-  background-color: ${({ theme: { eui } }) => eui.euiColorEmptyShade};
+  background-color: ${({ theme }) => theme.euiTheme.colors.backgroundBasePlain};
 
   &.scrolling {
     overflow: auto;
@@ -46,19 +46,19 @@ const OverlayRootContainer = styled.div`
   }
 
   &.padding-xs {
-    padding: ${({ theme: { eui } }) => eui.euiSizeXS};
+    padding: ${({ theme }) => theme.euiTheme.size.xs};
   }
   &.padding-s {
-    padding: ${({ theme: { eui } }) => eui.euiSizeS};
+    padding: ${({ theme }) => theme.euiTheme.size.s};
   }
   &.padding-m {
-    padding: ${({ theme: { eui } }) => eui.euiSizeM};
+    padding: ${({ theme }) => theme.euiTheme.size.m};
   }
   &.padding-l {
-    padding: ${({ theme: { eui } }) => eui.euiSizeL};
+    padding: ${({ theme }) => theme.euiTheme.size.l};
   }
   &.padding-xl {
-    padding: ${({ theme: { eui } }) => eui.euiSizeXL};
+    padding: ${({ theme }) => theme.euiTheme.size.xl};
   }
 
   &.fullScreen {
@@ -77,10 +77,12 @@ export const PAGE_OVERLAY_DOCUMENT_BODY_LOCK_CLASSNAME = `${PAGE_OVERLAY_CSS_CLA
 export const PAGE_OVERLAY_DOCUMENT_BODY_FULLSCREEN_CLASSNAME = `${PAGE_OVERLAY_CSS_CLASSNAME}-fullScreen`;
 export const PAGE_OVERLAY_DOCUMENT_BODY_OVER_PAGE_WRAPPER_CLASSNAME = `${PAGE_OVERLAY_CSS_CLASSNAME}-overSecuritySolutionPageWrapper`;
 
-const PageOverlayGlobalStyles = createGlobalStyle<{ theme: EuiTheme }>`
-  body.${PAGE_OVERLAY_DOCUMENT_BODY_LOCK_CLASSNAME} {
-    overflow: hidden;
-  }
+const PageOverlayGlobalStyles = () => (
+  <Global
+    styles={`
+      body.${PAGE_OVERLAY_DOCUMENT_BODY_LOCK_CLASSNAME} {
+        overflow: hidden;
+      }
 
   //-------------------------------------------------------------------------------------------
   // Style overrides for when Page Overlay is in full screen mode
@@ -88,10 +90,12 @@ const PageOverlayGlobalStyles = createGlobalStyle<{ theme: EuiTheme }>`
   // Needs to override some position of EUI components to ensure they are displayed correctly
   // when the top Kibana header is not visible
   //-------------------------------------------------------------------------------------------
-  body.${PAGE_OVERLAY_DOCUMENT_BODY_FULLSCREEN_CLASSNAME} {
-    ${FULL_SCREEN_CONTENT_OVERRIDES_CSS_STYLESHEET}
-  }
-`;
+      body.${PAGE_OVERLAY_DOCUMENT_BODY_FULLSCREEN_CLASSNAME} {
+        ${FULL_SCREEN_CONTENT_OVERRIDES_CSS_STYLESHEET}
+      }
+    `}
+  />
+);
 
 const setDocumentBodyOverlayIsVisible = () => {
   document.body.classList.add(PAGE_OVERLAY_DOCUMENT_BODY_IS_VISIBLE_CLASSNAME);

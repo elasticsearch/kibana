@@ -11,13 +11,18 @@ exports[`CollapsibleStatement component renders child components 1`] = `
     grow={false}
     key="statementId"
   >
-    <EuiButtonIcon
-      aria-label="collapse"
-      color="text"
-      iconType="chevronSingleDown"
-      onClick={[Function]}
-      size="s"
-    />
+    <EuiToolTip
+      content="collapse"
+      disableScreenReaderOutput={true}
+    >
+      <EuiButtonIcon
+        aria-label="collapse"
+        color="text"
+        iconType="chevronSingleDown"
+        onClick={[Function]}
+        size="s"
+      />
+    </EuiToolTip>
   </EuiFlexItem>
   <div>
     child element

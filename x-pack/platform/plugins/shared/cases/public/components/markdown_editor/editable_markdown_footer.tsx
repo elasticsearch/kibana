@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { EuiButtonSize } from '@elastic/eui';
 import { EuiFlexGroup, EuiFlexItem, EuiButtonEmpty, EuiButton } from '@elastic/eui';
 import React from 'react';
 
@@ -14,19 +15,21 @@ interface EditableMarkdownFooterProps {
   handleSaveAction: () => Promise<void>;
   handleCancelAction: () => void;
   isSaveDisabled: boolean;
+  buttonSize?: EuiButtonSize;
 }
 
 const EditableMarkdownFooterComponent: React.FC<EditableMarkdownFooterProps> = ({
   handleSaveAction,
   handleCancelAction,
   isSaveDisabled,
+  buttonSize = 's',
 }) => {
   return (
     <EuiFlexGroup gutterSize="s" justifyContent="flexEnd" responsive={false}>
       <EuiFlexItem grow={false}>
         <EuiButtonEmpty
           data-test-subj="editable-cancel-markdown"
-          size="s"
+          size={buttonSize}
           onClick={handleCancelAction}
           iconType="cross"
         >
@@ -41,7 +44,7 @@ const EditableMarkdownFooterComponent: React.FC<EditableMarkdownFooterProps> = (
           iconType="save"
           onClick={handleSaveAction}
           disabled={isSaveDisabled}
-          size="s"
+          size={buttonSize}
         >
           {i18n.SAVE}
         </EuiButton>

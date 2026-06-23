@@ -29,7 +29,6 @@ export const EntityNotFoundFlyout = ({ title, body, onClose }: Props) => (
   <EuiFlyout
     type="push"
     size="s"
-    ownFocus
     onClose={onClose}
     aria-labelledby={FLYOUT_TITLE_ID}
     data-test-subj="entityNotFoundFlyout"

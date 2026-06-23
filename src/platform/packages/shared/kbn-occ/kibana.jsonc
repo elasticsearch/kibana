@@ -1,0 +1,7 @@
+{
+  "type": "shared-server",
+  "id": "@kbn/occ",
+  "owner": ["@elastic/workflows-eng"],
+  "group": "platform",
+  "visibility": "shared"
+}

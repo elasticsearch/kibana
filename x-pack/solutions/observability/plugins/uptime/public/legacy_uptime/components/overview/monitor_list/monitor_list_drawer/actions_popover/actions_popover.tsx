@@ -31,6 +31,9 @@ export const ActionsPopoverComponent = ({
     !!popoverState && popoverState.open && popoverState.id === popoverId;
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.monitorList.actionsPopover.popoverAriaLabel', {
+        defaultMessage: 'Monitor actions',
+      })}
       button={
         <EuiButton
           aria-label={i18n.translate(

@@ -40,6 +40,7 @@ const ValueReportSettingsComponent: React.FC<Props> = ({ minutesPerAlert, analys
         <EuiIcon
           type="external"
           size="s"
+          aria-hidden={true}
           css={css`
             margin-left: 4px;
           `}

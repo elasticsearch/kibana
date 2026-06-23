@@ -21,6 +21,7 @@ import {
   EuiSpacer,
   EuiSkeletonText,
   EuiIconTip,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from '@emotion/styled';
@@ -68,14 +69,17 @@ export const MetricItemIcon = ({
 
   const inProgress = isTestRunning(testNowRun);
 
+  const stateId = latestPing?.state?.id;
   const errorLink = useErrorDetailsLink({
     locationId,
     configId: monitor.configId,
-    stateId: latestPing?.state?.id!,
+    stateId: stateId ?? '',
+    remoteName: monitor.remote?.remoteName,
   });
 
   const formatter = useDateFormat();
   const testTime = formatter(timestamp);
+  const metricItemPopoverTitleId = useGeneratedHtmlId();
 
   if (inProgress) {
     return (
@@ -122,8 +126,9 @@ export const MetricItemIcon = ({
           panelStyle={{
             outline: 'none',
           }}
+          aria-labelledby={metricItemPopoverTitleId}
         >
-          <EuiPopoverTitle>
+          <EuiPopoverTitle id={metricItemPopoverTitleId}>
             <EuiFlexGroup>
               <EuiFlexItem grow>{testTime}</EuiFlexItem>
               <EuiFlexItem grow={false}>
@@ -186,6 +191,7 @@ export const MetricItemIcon = ({
               fullWidth
               size="s"
               href={errorLink}
+              isDisabled={!stateId}
             >
               {ERROR_DETAILS}
             </EuiButton>

@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { getAlertsAppMenuItem } from './get_alerts';
+export { getAlertsAppMenuItem, getCreateRuleOptionsAppMenuItem } from './get_alerts';
 export { getNewSearchAppMenuItem } from './get_new_search';
 export { getOpenSearchAppMenuItem } from './get_open_search';
 export { getShareAppMenuItem } from './get_share';

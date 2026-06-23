@@ -7,32 +7,47 @@
 
 import { DEFAULT_INITIAL_APP_DATA } from '../../../common/__mocks__';
 import { setMockValues } from '../__mocks__/kea_logic';
-import '../__mocks__/shallow_useeffect.mock';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { ConnectorsRouter } from './components/connectors/connectors_router';
+import { MemoryRouter } from '@kbn/shared-ux-router';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
+
+jest.mock('./components/connectors/connectors_router', () => ({
+  ConnectorsRouter: () => <div data-test-subj="connectorsRouter">Connectors</div>,
+}));
 
 import { EnterpriseSearchContent, EnterpriseSearchContentConfigured } from '.';
 
+// MemoryRouter is required because EnterpriseSearchContent / EnterpriseSearchContentConfigured
+// render <Routes> / <Route> from @kbn/shared-ux-router, which need a router context.
 describe('EnterpriseSearchContent', () => {
   it('renders EnterpriseSearchContentConfigured', () => {
     setMockValues({
       config: { host: 'some.url' },
       errorConnectingMessage: '',
     });
-    const wrapper = shallow(<EnterpriseSearchContent />);
 
-    expect(wrapper.find(EnterpriseSearchContentConfigured)).toHaveLength(1);
+    renderWithKibanaRenderContext(
+      <MemoryRouter>
+        <EnterpriseSearchContent />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('connectorsRouter')).toBeInTheDocument();
   });
 });
 
 describe('EnterpriseSearchContentConfigured', () => {
-  const wrapper = shallow(<EnterpriseSearchContentConfigured {...DEFAULT_INITIAL_APP_DATA} />);
-
   it('renders engine routes', () => {
-    expect(wrapper.find(ConnectorsRouter)).toHaveLength(1);
+    renderWithKibanaRenderContext(
+      <MemoryRouter>
+        <EnterpriseSearchContentConfigured {...DEFAULT_INITIAL_APP_DATA} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('connectorsRouter')).toBeInTheDocument();
   });
 });

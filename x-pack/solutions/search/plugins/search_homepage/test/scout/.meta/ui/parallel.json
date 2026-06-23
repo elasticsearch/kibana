@@ -1,5 +1,5 @@
 {
-  "sha1": "97dcacd5bbf653018c71574564fcaef825577338",
+  "sha1": "a130c2014eea409a4fce18c4450d7bb04060eaac",
   "tests": [
     {
       "id": "926362ac9e9161a-ce96c191932cf3e",
@@ -139,7 +139,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_admin.spec.ts",
-        "line": 140,
+        "line": 144,
         "column": 9
       }
     },
@@ -155,7 +155,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_admin.spec.ts",
-        "line": 146,
+        "line": 150,
         "column": 9
       }
     },
@@ -171,7 +171,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_admin.spec.ts",
-        "line": 152,
+        "line": 156,
         "column": 9
       }
     },
@@ -187,7 +187,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_admin.spec.ts",
-        "line": 161,
+        "line": 165,
         "column": 9
       }
     },
@@ -203,7 +203,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_admin.spec.ts",
-        "line": 178,
+        "line": 182,
         "column": 9
       }
     },
@@ -219,7 +219,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_admin.spec.ts",
-        "line": 188,
+        "line": 192,
         "column": 9
       }
     },
@@ -240,15 +240,15 @@
     {
       "id": "36d5b3c1e8655d5-f6bc7b4906887c3",
       "title": "Homepage - Limited permissions user should only see Data Management in primary sidenav",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_data_management_user.spec.ts",
-        "line": 52,
-        "column": 15
+        "line": 51,
+        "column": 14
       }
     },
     {
@@ -309,7 +309,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 62,
+        "line": 66,
         "column": 9
       }
     },
@@ -325,7 +325,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 71,
+        "line": 75,
         "column": 9
       }
     },
@@ -341,7 +341,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 77,
+        "line": 81,
         "column": 9
       }
     },
@@ -357,7 +357,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 83,
+        "line": 87,
         "column": 9
       }
     },
@@ -373,7 +373,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 108,
+        "line": 112,
         "column": 9
       }
     },
@@ -389,7 +389,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 116,
+        "line": 120,
         "column": 9
       }
     },
@@ -405,7 +405,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 132,
+        "line": 136,
         "column": 9
       }
     },
@@ -421,7 +421,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 149,
+        "line": 153,
         "column": 9
       }
     },
@@ -437,7 +437,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/search/plugins/search_homepage/test/scout/ui/parallel_tests/homepage_viewer.spec.ts",
-        "line": 159,
+        "line": 163,
         "column": 9
       }
     }

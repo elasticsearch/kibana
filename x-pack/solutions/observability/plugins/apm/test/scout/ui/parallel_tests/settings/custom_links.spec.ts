@@ -15,6 +15,42 @@ test.describe(
   'Custom links',
   { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
+    // Labels created during a test, cleaned up via the API in `afterEach` so links
+    // never leak if an earlier assertion fails (UI cleanup is skipped on failure).
+    const createdCustomLinkLabels: string[] = [];
+
+    test.afterEach(async ({ kbnClient }) => {
+      if (createdCustomLinkLabels.length === 0) {
+        return;
+      }
+
+      // Custom links live in the `.apm-custom-link` index, exposed through the
+      // internal APM settings API rather than as saved objects.
+      const response = await kbnClient.request({
+        method: 'GET',
+        path: '/internal/apm/settings/custom_links',
+      });
+      const { customLinks } = response.data as {
+        customLinks: Array<{ id?: string; label: string }>;
+      };
+
+      await Promise.all(
+        customLinks
+          .filter((link) => link.id && createdCustomLinkLabels.includes(link.label))
+          .map((link) =>
+            kbnClient
+              .request({
+                method: 'DELETE',
+                path: `/internal/apm/settings/custom_links/${link.id}`,
+                headers: { 'kbn-xsrf': 'scout' },
+              })
+              .catch(() => {})
+          )
+      );
+
+      createdCustomLinkLabels.length = 0;
+    });
+
     test('Viewer should show disabled create button and no edit button', async ({
       pageObjects: { customLinksPage },
       browserAuth,
@@ -43,6 +79,7 @@ test.describe(
 
       // Create a link with unique name to avoid conflicts (using UUID for guaranteed uniqueness)
       const uniqueLabel = `test-link-${randomUUID()}`;
+      createdCustomLinkLabels.push(uniqueLabel);
       await customLinksPage.fillLabel(uniqueLabel);
       await customLinksPage.fillUrl('https://example.com');
 
@@ -67,6 +104,7 @@ test.describe(
         await customLinksPage.clickCreateCustomLink();
 
         const uniqueDeleteLabel = `delete-test-${randomUUID()}`;
+        createdCustomLinkLabels.push(uniqueDeleteLabel);
         await customLinksPage.fillLabel(uniqueDeleteLabel);
         await customLinksPage.fillUrl('https://example.com/delete-test');
         await customLinksPage.clickSave();
@@ -87,7 +125,8 @@ test.describe(
           timeout: EXTENDED_TIMEOUT,
         });
 
-        // Verify the previously created link row is still present
+        // Verify the previously created link row is still present (deleting one link
+        // must not remove the other). Its removal is handled by the `afterEach` hook.
         await expect(customLinksPage.getCustomLinkRow(uniqueLabel)).toBeVisible({
           timeout: EXTENDED_TIMEOUT,
         });

@@ -16,8 +16,10 @@ import {
   FLEET_CONNECTORS_PACKAGE,
   FLEET_UNIVERSAL_PROFILING_COLLECTOR_PACKAGE,
   FLEET_UNIVERSAL_PROFILING_SYMBOLIZER_PACKAGE,
+  FLEET_UNMANAGED_DATA_STREAM_INDEX_PATTERNS,
   OTEL_COLLECTOR_INPUT_TYPE,
   OTEL_TEMPLATE_SUFFIX,
+  UNIVERSAL_PROFILING_INDEX_PATTERNS,
   USE_APM_VAR_NAME,
 } from '../../../common/constants';
 
@@ -129,8 +131,10 @@ export function storedPackagePoliciesToAgentPermissions(
       );
     }
 
-    // Special handling for Universal Profiling packages, as it does not use data streams _only_,
-    // but also indices that do not adhere to the convention.
+    // Special handling for Universal Profiling packages: they are `integration` packages with no
+    // data streams, so the generic `profiles` -> UNIVERSAL_PROFILING_INDEX_PATTERNS path in
+    // getDataStreamPrivileges never runs (the empty-data-streams gate below short-circuits first).
+    // Migrating them to `input` packages with a `profiles` template would remove this special case.
     if (
       pkg.name === FLEET_UNIVERSAL_PROFILING_SYMBOLIZER_PACKAGE ||
       pkg.name === FLEET_UNIVERSAL_PROFILING_COLLECTOR_PACKAGE
@@ -376,6 +380,18 @@ export function getDataStreamPrivileges(
   dataStream: DataStreamMeta,
   namespace: string = '*'
 ): SecurityIndicesPrivileges {
+  // Fleet-unmanaged signals (e.g. profiles) are routed by their producer/exporter; grant write
+  // permissions to the known destination patterns instead of `<type>-<dataset>-<namespace>`.
+  const unmanagedIndexPatterns = FLEET_UNMANAGED_DATA_STREAM_INDEX_PATTERNS[dataStream.type];
+  if (unmanagedIndexPatterns) {
+    return {
+      names: [...unmanagedIndexPatterns],
+      privileges: dataStream?.elasticsearch?.privileges?.indices?.length
+        ? dataStream.elasticsearch.privileges.indices
+        : UNIVERSAL_PROFILING_PERMISSIONS,
+    };
+  }
+
   let index = dataStream.hidden ? `.${dataStream.type}-` : `${dataStream.type}-`;
 
   // Determine dataset
@@ -405,13 +421,12 @@ export function getDataStreamPrivileges(
 }
 
 function universalProfilingPermissions(packagePolicyId: string): [string, SecurityRoleDescriptor] {
-  const profilingIndexPattern = 'profiling-*';
   return [
     packagePolicyId,
     {
       indices: [
         {
-          names: [profilingIndexPattern],
+          names: [...UNIVERSAL_PROFILING_INDEX_PATTERNS],
           privileges: UNIVERSAL_PROFILING_PERMISSIONS,
         },
       ],

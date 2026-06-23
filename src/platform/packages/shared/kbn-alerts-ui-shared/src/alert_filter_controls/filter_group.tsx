@@ -16,7 +16,6 @@ import {
   type ControlGroupStateBuilder,
   type ControlStateTransform,
 } from '@kbn/control-group-renderer';
-import type { DataControlState } from '@kbn/controls-schemas';
 import { controlGroupStateBuilder } from '@kbn/control-group-renderer/src/control_group_state_builder';
 import type { Filter } from '@kbn/es-query';
 import { buildEsQuery } from '@kbn/es-query';
@@ -318,6 +317,7 @@ export const FilterGroup = (props: PropsWithChildren<FilterGroupProps>) => {
             defaultDataViewId: dataViewId ?? undefined,
             hideDataViewSelector: true,
             hideAdditionalSettings: true,
+            hideValuesSourceSelector: true,
             fieldFilterPredicate: (f) => f.type !== 'number',
           };
         },
@@ -389,10 +389,10 @@ export const FilterGroup = (props: PropsWithChildren<FilterGroupProps>) => {
           ...COMMON_OPTIONS_LIST_CONTROL_INPUTS,
         };
 
-        if ((newInput as DataControlState).field_name in defaultControlsObj) {
+        if (newInput.field_name && newInput.field_name in defaultControlsObj) {
           result = {
             ...result,
-            ...defaultControlsObj[(newInput as DataControlState).field_name],
+            ...defaultControlsObj[newInput.field_name],
             //  title should not be overridden by the initial controls, hence the hardcoding
             title: newInput.title ?? result.title,
           };

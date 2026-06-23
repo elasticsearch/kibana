@@ -301,11 +301,18 @@ export function KnowledgeIndicatorsTable() {
         <EuiInMemoryTable<KnowledgeIndicator>
           css={css`
             min-width: 700px;
+
+            & thead tr {
+              background-color: ${euiTheme.colors.backgroundBaseSubdued};
+            }
           `}
           items={filteredKnowledgeIndicators}
           itemId={getKnowledgeIndicatorItemId}
           columns={columns}
           loading={isOperationInProgress}
+          rowProps={(ki: KnowledgeIndicator) => ({
+            isSelected: selectedKnowledgeIndicatorId === getKnowledgeIndicatorItemId(ki),
+          })}
           selection={{
             selected: selectedKnowledgeIndicators,
             onSelectionChange: setSelectedKnowledgeIndicators,

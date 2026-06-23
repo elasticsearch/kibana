@@ -72,8 +72,8 @@ describe('ApplicationConnections', () => {
 
     const { findByText, findByTestId, getByTestId, getByPlaceholderText } = renderPage(coreStart);
 
-    expect(await findByText(/No MCP clients \(OAuth\)/)).toBeInTheDocument();
-    expect(await findByText(/Get started with MCP clients/)).toBeInTheDocument();
+    expect(await findByText(/No application connections/)).toBeInTheDocument();
+    expect(await findByText(/Get started by creating MCP clients/)).toBeInTheDocument();
     const addButton = await findByTestId('applicationConnectionsEmptyPromptAddButton');
     expect(addButton).toBeInTheDocument();
     expect(addButton).toHaveAttribute(
@@ -111,7 +111,7 @@ describe('ApplicationConnections', () => {
 
     const { findByText, queryByText, queryByTestId } = renderPage(coreStart);
 
-    expect(await findByText(/No MCP clients \(OAuth\)/)).toBeInTheDocument();
+    expect(await findByText(/No application connections/)).toBeInTheDocument();
     expect(queryByText('Unused MCP app')).not.toBeInTheDocument();
     expect(
       queryByTestId('applicationConnectionsListRow-client-without-conn')

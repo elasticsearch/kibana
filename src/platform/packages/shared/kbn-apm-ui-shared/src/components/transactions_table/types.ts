@@ -23,6 +23,7 @@ export interface TransactionMetric {
 export interface TransactionGroupInteraction {
   onClick?: (item: TransactionGroup) => void;
   href?: (item: TransactionGroup) => string | undefined;
+  ebt?: Pick<EbtClickAttrs, 'element'>;
 }
 
 export interface TransactionsTableHeaderAction {

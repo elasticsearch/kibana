@@ -35,6 +35,7 @@ export const WatchlistsFlyoutPanel = ({
     watchlist,
     normalizedWatchlistId,
     ruleBasedSourceIds,
+    indexSourceWithMissingApiKey,
     isEditMode,
     isDisabled,
     isNameTooLong,
@@ -68,6 +69,7 @@ export const WatchlistsFlyoutPanel = ({
       title={title}
       watchlist={watchlist}
       watchlistId={normalizedWatchlistId}
+      indexSourceWithMissingApiKey={indexSourceWithMissingApiKey}
       isEditMode={isEditMode}
       onFieldChange={setWatchlistField}
       onSave={() => mutation.mutate()}

@@ -5,12 +5,12 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { stringify as yamlStringify } from 'yaml';
 import type { Template } from '../../../../common/types/domain/template/v1';
 import { parseTemplate } from './parse_template';
 
 const buildDefinition = (name: string) =>
-  yaml.dump({
+  yamlStringify({
     name,
     fields: [
       {
@@ -98,7 +98,7 @@ describe('parseTemplate', () => {
   });
 
   it('parses severity and category from the definition', () => {
-    const definition = yaml.dump({
+    const definition = yamlStringify({
       name: 'Template with severity',
       severity: 'high',
       category: 'security',

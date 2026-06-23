@@ -49,6 +49,11 @@ export const CascadeRowActions = function RowActions({
     []
   );
 
+  const hideActionsOnMobile = useMemo(() => {
+    // trigger hiding actions on mobile only when there's more than 1 action
+    return isMobile && headerRowActions.length > 1;
+  }, [isMobile, headerRowActions]);
+
   const hiddenActionsButton = useMemo(
     () => (
       <EuiButtonIcon
@@ -69,7 +74,7 @@ export const CascadeRowActions = function RowActions({
 
   const visibleActions = useMemo(
     () =>
-      isMobile
+      hideActionsOnMobile
         ? []
         : headerRowActions.slice(0, maxActionCount).map(({ label, ...props }, index) => (
             <EuiFlexItem key={index} grow={false}>
@@ -82,19 +87,19 @@ export const CascadeRowActions = function RowActions({
               )}
             </EuiFlexItem>
           )),
-    [defaultActionProps, headerRowActions, maxActionCount, isMobile]
+    [defaultActionProps, headerRowActions, maxActionCount, hideActionsOnMobile]
   );
 
   const hiddenActions = useMemo(
     () =>
       headerRowActions
-        .slice(isMobile ? 0 : maxActionCount)
+        .slice(hideActionsOnMobile ? 0 : maxActionCount)
         .map(({ label, iconType, ...props }, index) => (
           <EuiContextMenuItem key={index} icon={iconType} {...props}>
             {label}
           </EuiContextMenuItem>
         )),
-    [headerRowActions, maxActionCount, isMobile]
+    [headerRowActions, maxActionCount, hideActionsOnMobile]
   );
 
   return (

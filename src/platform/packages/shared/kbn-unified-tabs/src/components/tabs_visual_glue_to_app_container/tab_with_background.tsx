@@ -16,13 +16,17 @@ import type { TabsServices } from '../../types';
 export interface TabWithBackgroundProps extends HTMLAttributes<HTMLElement> {
   isSelected: boolean;
   isDragging?: boolean;
+  isLoading?: boolean;
   hideRightSeparator?: boolean;
   services: TabsServices;
   children: React.ReactNode;
 }
 
 export const TabWithBackground = React.forwardRef<HTMLDivElement, TabWithBackgroundProps>(
-  ({ isSelected, isDragging, hideRightSeparator, services, children, ...otherProps }, ref) => {
+  (
+    { isSelected, isDragging, isLoading, hideRightSeparator, services, children, ...otherProps },
+    ref
+  ) => {
     const euiThemeContext = useEuiTheme();
     const { euiTheme } = euiThemeContext;
 
@@ -40,19 +44,26 @@ export const TabWithBackground = React.forwardRef<HTMLDivElement, TabWithBackgro
           border-radius: ${euiTheme.border.radius.small};
           background: ${isSelected || isDragging
             ? euiTheme.colors.backgroundBasePlain
-            : euiTheme.colors.lightestShade};
+            : 'transparent'};
           transition: background ${euiTheme.animation.fast};
           margin: ${euiTheme.size.xs};
-          margin-bottom: 0;
+          // overlap the container's bottom border so the active tab connects to the content below
+          margin-bottom: -${euiTheme.border.width.thin};
           padding-bottom: ${isDragging ? '0' : euiTheme.size.xs};
+          // Reserve space for the selected tab's borders so it does not shift layout.
+          border-top: ${euiTheme.border.width.thick} solid transparent;
+          border-left: ${euiTheme.border.width.thin} solid transparent;
+          border-right: ${euiTheme.border.width.thin} solid transparent;
 
           ${isSelected
             ? `
-              position: relative;
+              border-top-color: ${
+                isLoading ? euiTheme.colors.borderBaseSubdued : euiTheme.colors.primary
+              };
+              border-left-color: ${euiTheme.colors.borderBaseSubdued};
+              border-right-color: ${euiTheme.colors.borderBaseSubdued};
               border-bottom-left-radius: 0;
               border-bottom-right-radius: 0;
-              filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.06))
-                      drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.04));
             `
             : ''}
 
@@ -86,7 +97,8 @@ export const TabWithBackground = React.forwardRef<HTMLDivElement, TabWithBackgro
             ${!isSelected
               ? `
               &:hover {
-                background-color: ${euiTheme.colors.lightShade};
+                background-color: ${euiTheme.colors.backgroundLightPrimary};
+                color: ${euiTheme.colors.primary};
                 border-radius: ${euiTheme.border.radius.small};
               }
             `
@@ -132,6 +144,13 @@ const Accent = ({
       <path
         d="M8 7.92676C7.67329 7.97351 7.33964 8 7 8H8V7.92676ZM0 8H7C3.13401 8 0 4.86599 0 1C0 0.660412 0.0255308 0.326664 0.0722656 0H0V8Z"
         fill={euiTheme.colors.backgroundBasePlain}
+      />
+      <path
+        d="M7 8C3.13401 8 0 4.86599 0 1C0 0.660412 0.0255308 0.326664 0.0722656 0"
+        fill="none"
+        stroke={euiTheme.colors.borderBaseSubdued}
+        strokeWidth={euiTheme.border.width.thin}
+        vectorEffect="non-scaling-stroke"
       />
     </svg>
   );

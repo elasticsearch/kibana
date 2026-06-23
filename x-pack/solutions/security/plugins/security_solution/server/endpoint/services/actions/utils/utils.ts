@@ -162,7 +162,13 @@ export const mapResponsesByActionId = (
 
 type ActionCompletionInfo = Pick<
   Required<ActionDetails>,
-  'isCompleted' | 'completedAt' | 'wasSuccessful' | 'errors' | 'outputs' | 'agentState'
+  | 'isCompleted'
+  | 'completedAt'
+  | 'wasSuccessful'
+  | 'wasCanceled'
+  | 'errors'
+  | 'outputs'
+  | 'agentState'
 >;
 
 export const getActionCompletionInfo = <
@@ -182,6 +188,7 @@ export const getActionCompletionInfo = <
     agentState: {},
     isCompleted: Boolean(agentIds.length),
     wasSuccessful: Boolean(agentIds.length),
+    wasCanceled: false,
   };
 
   const responsesByAgentId: ActionResponseByAgentId = mapActionResponsesByAgentId(actionResponses);
@@ -200,6 +207,7 @@ export const getActionCompletionInfo = <
     completedInfo.agentState[agentId] = {
       isCompleted: false,
       wasSuccessful: false,
+      wasCanceled: false,
       errors: undefined,
       completedAt: undefined,
     };
@@ -208,6 +216,7 @@ export const getActionCompletionInfo = <
     if (agentResponse) {
       completedInfo.agentState[agentId].isCompleted = agentResponse.isCompleted;
       completedInfo.agentState[agentId].wasSuccessful = agentResponse.wasSuccessful;
+      completedInfo.agentState[agentId].wasCanceled = agentResponse.wasCanceled;
       completedInfo.agentState[agentId].completedAt = agentResponse.completedAt;
       completedInfo.agentState[agentId].errors = agentResponse.errors;
 
@@ -253,6 +262,11 @@ export const getActionCompletionInfo = <
           ...(normalizedAgentResponse.errors ? normalizedAgentResponse.errors : [])
         );
       }
+
+      if (normalizedAgentResponse.wasCanceled) {
+        completedInfo.wasSuccessful = false;
+        completedInfo.wasCanceled = true;
+      }
     }
 
     if (responseErrors.length) {
@@ -286,19 +300,27 @@ export const getActionStatus = ({
   expirationDate,
   isCompleted,
   wasSuccessful,
+  wasCanceled,
 }: {
   expirationDate: string;
   isCompleted: boolean;
   wasSuccessful: boolean;
+  wasCanceled: boolean;
 }): { status: ActionDetails['status']; isExpired: boolean } => {
   const isExpired = !isCompleted && expirationDate < new Date().toISOString();
-  const status = isExpired
-    ? 'failed'
-    : isCompleted
-    ? wasSuccessful
-      ? 'successful'
-      : 'failed'
-    : 'pending';
+  let status: ActionDetails['status'] = 'pending';
+
+  if (isExpired) {
+    status = 'failed';
+  } else if (isCompleted) {
+    if (wasCanceled) {
+      status = 'canceled';
+    } else if (wasSuccessful) {
+      status = 'successful';
+    } else {
+      status = 'failed';
+    }
+  }
 
   return { isExpired, status };
 };
@@ -310,6 +332,7 @@ interface NormalizedAgentActionResponse<
   isCompleted: boolean;
   completedAt: undefined | string;
   wasSuccessful: boolean;
+  wasCanceled: boolean;
   errors: undefined | string[];
   fleetResponse: undefined | EndpointActionResponse;
   endpointResponse: undefined | LogsEndpointActionResponse<TOutputContent, TResponseMeta>;
@@ -339,6 +362,7 @@ const mapActionResponsesByAgentId = <
         isCompleted: false,
         completedAt: undefined,
         wasSuccessful: false,
+        wasCanceled: false,
         errors: undefined,
         fleetResponse: undefined,
         endpointResponse: undefined,
@@ -398,6 +422,14 @@ const mapActionResponsesByAgentId = <
       if (errors.length) {
         agentNormalizedResponse.wasSuccessful = false;
         agentNormalizedResponse.errors = errors;
+      }
+
+      if (
+        agentNormalizedResponse.endpointResponse?.EndpointActions?.data?.output?.content
+          ?.canceled_by
+      ) {
+        agentNormalizedResponse.wasSuccessful = false;
+        agentNormalizedResponse.wasCanceled = true;
       }
     }
   }
@@ -599,13 +631,14 @@ export const createActionDetailsRecord = <T extends ActionDetails = ActionDetail
   actionResponses: FetchActionResponsesResult,
   agentHostInfo: Record<string, string>
 ): T => {
-  const { isCompleted, completedAt, wasSuccessful, errors, outputs, agentState } =
+  const { isCompleted, completedAt, wasSuccessful, wasCanceled, errors, outputs, agentState } =
     getActionCompletionInfo(actionRequest, actionResponses);
 
   const { isExpired, status } = getActionStatus({
     expirationDate: actionRequest.expiration,
     isCompleted,
     wasSuccessful,
+    wasCanceled,
   });
 
   const actionDetails: WithAllKeys<ActionDetails> = {
@@ -622,6 +655,7 @@ export const createActionDetailsRecord = <T extends ActionDetails = ActionDetail
     isCompleted,
     completedAt,
     wasSuccessful,
+    wasCanceled,
     errors,
     isExpired,
     status,

@@ -10,7 +10,11 @@
 import { getSpaceNPRE, PROJECT_ROUTING_ORIGIN } from '@kbn/cps-server-utils';
 import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import { isKibanaRequest } from '@kbn/core-http-router-server-internal';
-import type { OnRequestHandlerFactory, OnRequestHandler } from '../cluster_client';
+import type {
+  OnRequestHandlerFactory,
+  OnRequestHandler,
+  FactoryRoutingOpts,
+} from '../cluster_client';
 import { getCpsRequestHandler } from './cps_request_handler';
 import { getTimingRequestHandler } from '../timing';
 
@@ -34,14 +38,7 @@ export function getRequestHandlerFactory(
     const timingHandler = esTimingEnabled ? getTimingRequestHandler(request) : noopHandler;
 
     // Get the CPS handler based on routing options
-    const cpsHandler =
-      'projectRouting' in opts && opts.projectRouting === 'space'
-        ? getCpsRequestHandler(
-            cpsEnabled,
-            getSpaceNPRE(opts.request.spaceId ?? DEFAULT_SPACE_ID),
-            opts.logger
-          )
-        : getCpsRequestHandler(cpsEnabled, PROJECT_ROUTING_ORIGIN, opts.logger);
+    const cpsHandler = getCpsRequestHandler(cpsEnabled, resolveProjectRouting(opts), opts.logger);
 
     // Return a composed handler that calls both in sequence
     return (ctx, params, options, logger) => {
@@ -49,4 +46,22 @@ export function getRequestHandlerFactory(
       cpsHandler(ctx, params, options, logger);
     };
   };
+}
+
+/**
+ * Resolves the `project_routing` expression to inject based on the routing options:
+ * - `'space'`: derived from the request's active space NPRE.
+ * - `'expression'`: the caller-supplied expression, injected verbatim.
+ * - otherwise (internal user): origin-only routing.
+ */
+function resolveProjectRouting(opts: FactoryRoutingOpts): string {
+  if ('projectRouting' in opts) {
+    if (opts.projectRouting === 'space') {
+      return getSpaceNPRE(opts.request.spaceId ?? DEFAULT_SPACE_ID);
+    }
+    if (opts.projectRouting === 'expression') {
+      return opts.value;
+    }
+  }
+  return PROJECT_ROUTING_ORIGIN;
 }

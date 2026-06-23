@@ -6,7 +6,14 @@
  */
 
 import React, { useState } from 'react';
-import { EuiButtonIcon, EuiLink, EuiPopover, EuiPopoverTitle, EuiText } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiLink,
+  EuiPopover,
+  EuiPopoverTitle,
+  EuiText,
+  EuiToolTip,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { getDocLinks } from '../../../../kibana_services';
@@ -26,13 +33,15 @@ export function ScalingDocumenationPopover(props: Props) {
       id="scalingHelpPopover"
       anchorPosition="leftCenter"
       button={
-        <EuiButtonIcon
-          onClick={() => {
-            setIsPopoverOpen(!isPopoverOpen);
-          }}
-          iconType="documentation"
-          aria-label="Scaling documentation"
-        />
+        <EuiToolTip content="Scaling documentation" disableScreenReaderOutput>
+          <EuiButtonIcon
+            onClick={() => {
+              setIsPopoverOpen(!isPopoverOpen);
+            }}
+            iconType="documentation"
+            aria-label="Scaling documentation"
+          />
+        </EuiToolTip>
       }
       isOpen={isPopoverOpen}
       closePopover={() => {

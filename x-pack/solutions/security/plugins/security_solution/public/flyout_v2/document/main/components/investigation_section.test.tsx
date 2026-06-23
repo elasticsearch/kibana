@@ -124,7 +124,7 @@ describe('InvestigationSection', () => {
     );
   });
 
-  it('renders the component collapsed if value is false in local storage', async () => {
+  it('renders the component collapsed if value is false in local storage', () => {
     mockUseExpandSection.mockReturnValue(false);
 
     const { getByTestId } = render(
@@ -137,12 +137,10 @@ describe('InvestigationSection', () => {
       </IntlProvider>
     );
 
-    await act(async () => {
-      expect(getByTestId(`${INVESTIGATION_SECTION_TEST_ID}Content`)).not.toBeVisible();
-    });
+    expect(getByTestId(`${INVESTIGATION_SECTION_TEST_ID}Content`)).not.toBeVisible();
   });
 
-  it('renders the component expanded if value is true in local storage', async () => {
+  it('renders the component expanded if value is true in local storage', () => {
     mockUseExpandSection.mockReturnValue(true);
 
     const { getByTestId } = render(
@@ -155,9 +153,7 @@ describe('InvestigationSection', () => {
       </IntlProvider>
     );
 
-    await act(async () => {
-      expect(getByTestId(`${INVESTIGATION_SECTION_TEST_ID}Content`)).toBeVisible();
-    });
+    expect(getByTestId(`${INVESTIGATION_SECTION_TEST_ID}Content`)).toBeVisible();
   });
 
   it('renders investigation guide when document is signal', () => {

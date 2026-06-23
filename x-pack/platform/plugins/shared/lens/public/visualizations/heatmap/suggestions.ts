@@ -112,6 +112,14 @@ export const getSuggestions: Visualization<HeatmapVisualizationState>['getSugges
   newState.xAccessor = histogram[0]?.columnId || ordinal[0]?.columnId;
   newState.yAccessor = groups.find((g) => g.columnId !== newState.xAccessor)?.columnId;
 
+  const yColumn = groups.find((g) => g.columnId === newState.yAccessor);
+  if (yColumn && yColumn.operation.dataType === 'number') {
+    newState.gridConfig = {
+      ...newState.gridConfig,
+      ySortPredicate: 'desc',
+    };
+  }
+
   const hasDatehistogram = groups.some((group) => group.operation.dataType === 'date');
 
   if (!hasDatehistogram) {

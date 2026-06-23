@@ -18,6 +18,7 @@ import {
   EuiTitle,
   useEuiTheme,
   useGeneratedHtmlId,
+  EuiToolTip,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
@@ -43,6 +44,8 @@ export interface FlyoutWithTabsProps<TId extends string> {
   onClose: () => void;
   size?: number;
   type?: EuiFlyoutProps['type'];
+  container?: EuiFlyoutProps['container'];
+  ownFocus?: EuiFlyoutProps['ownFocus'];
   children: (selectedTabId: TId) => React.ReactNode;
 }
 
@@ -56,6 +59,8 @@ export const FlyoutWithTabs = <TId extends string>({
   onClose,
   size = 400,
   type = 'push',
+  container,
+  ownFocus = true,
   children,
 }: FlyoutWithTabsProps<TId>) => {
   const flyoutTitleId = useGeneratedHtmlId({ prefix: 'flyoutWithTabs' });
@@ -72,6 +77,10 @@ export const FlyoutWithTabs = <TId extends string>({
     padding: ${euiTheme.size.l} ${euiTheme.size.l} 0;
   `;
 
+  const backLabel = i18n.translate('xpack.dataLifecyclePhases.flyoutWithTabs.backButtonAriaLabel', {
+    defaultMessage: 'Back',
+  });
+
   return (
     <EuiFlyout
       onClose={onClose}
@@ -83,10 +92,10 @@ export const FlyoutWithTabs = <TId extends string>({
        */
       role="region"
       size={size}
-      ownFocus
+      ownFocus={ownFocus}
       paddingSize="none"
       type={type}
-      flyoutMenuProps={{ title }}
+      container={container}
       data-test-subj="flyoutWithTabs"
     >
       <EuiFlyoutHeader hasBorder>
@@ -101,16 +110,15 @@ export const FlyoutWithTabs = <TId extends string>({
             >
               {showBackButton && (
                 <EuiFlexItem grow={false}>
-                  <EuiButtonIcon
-                    iconType="chevronSingleLeft"
-                    aria-label={i18n.translate(
-                      'xpack.dataLifecyclePhases.flyoutWithTabs.backButtonAriaLabel',
-                      { defaultMessage: 'Back' }
-                    )}
-                    onClick={handleBack}
-                    data-test-subj="flyoutWithTabsBackButton"
-                    color="text"
-                  />
+                  <EuiToolTip content={backLabel} disableScreenReaderOutput>
+                    <EuiButtonIcon
+                      iconType="chevronSingleLeft"
+                      aria-label={backLabel}
+                      onClick={handleBack}
+                      data-test-subj="flyoutWithTabsBackButton"
+                      color="text"
+                    />
+                  </EuiToolTip>
                 </EuiFlexItem>
               )}
               <EuiFlexItem grow>

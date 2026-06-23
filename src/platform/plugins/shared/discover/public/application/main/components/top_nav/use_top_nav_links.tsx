@@ -26,12 +26,14 @@ import { useGetRuleTypesPermissions } from '@kbn/alerts-ui-shared';
 import useObservable from 'react-use/lib/useObservable';
 import type { DiscoverSession } from '@kbn/saved-search-plugin/common';
 import { useI18n } from '@kbn/i18n-react';
+import { ALERTING_V2_ENABLED_SETTING_ID } from '@kbn/alerting-v2-constants';
 import type { DiscoverAppLocatorParams } from '../../../../../common';
 import { createDataViewDataSource } from '../../../../../common/data_sources';
 import type { DiscoverServices } from '../../../../build_services';
 import type { AppMenuDiscoverParams } from './app_menu_actions';
 import {
   getAlertsAppMenuItem,
+  getCreateRuleOptionsAppMenuItem,
   getNewSearchAppMenuItem,
   getOpenSearchAppMenuItem,
   getShareAppMenuItem,
@@ -62,6 +64,18 @@ const TAB_SCOPED_APP_MENU_ITEM_IDS = new Set<string>([
   AppMenuActionId.inspect,
 ]);
 
+export interface UseTopNavLinksParams {
+  dataView: DataView | undefined;
+  services: DiscoverServices;
+  hasUnsavedChanges: boolean;
+  isEsqlMode: boolean;
+  adHocDataViews: DataView[];
+  hasShareIntegration: boolean;
+  persistedDiscoverSession: DiscoverSession | undefined;
+  onOpenSaveModal: () => void;
+  onOpenSaveAsModal: () => void;
+}
+
 /**
  * Helper function to build the top nav links
  */
@@ -75,17 +89,7 @@ export const useTopNavLinks = ({
   persistedDiscoverSession,
   onOpenSaveModal,
   onOpenSaveAsModal,
-}: {
-  dataView: DataView | undefined;
-  services: DiscoverServices;
-  hasUnsavedChanges: boolean;
-  isEsqlMode: boolean;
-  adHocDataViews: DataView[];
-  hasShareIntegration: boolean;
-  persistedDiscoverSession: DiscoverSession | undefined;
-  onOpenSaveModal: () => void;
-  onOpenSaveAsModal: () => void;
-}): AppMenuConfig => {
+}: UseTopNavLinksParams): AppMenuConfig => {
   const intl = useI18n();
   const dispatch = useInternalStateDispatch();
   const getState = useInternalStateGetState();
@@ -144,7 +148,11 @@ export const useTopNavLinks = ({
     [isEsqlMode, dataView, adHocDataViews, authorizedRuleTypes]
   );
 
-  const canCreateESQLRule = !!services.capabilities.alertingVTwo;
+  const canCreateESQLRule = services.settings.globalClient.get<boolean>(
+    ALERTING_V2_ENABLED_SETTING_ID,
+    false
+  );
+
   const showCreateRuleV2 = isEsqlMode && canCreateESQLRule;
 
   const appMenuItems: DiscoverAppMenuItemType[] = useMemo(() => {
@@ -160,8 +168,6 @@ export const useTopNavLinks = ({
         tabId: currentTab.id,
         getState,
         dispatch,
-        subscribe,
-        showCreateRuleV2,
       });
       items.push(alertsAppMenuItem);
     }
@@ -247,7 +253,7 @@ export const useTopNavLinks = ({
         tooltipContent: isDataViewMode
           ? i18n.translate('discover.localMenu.switchToESQLTooltip', {
               defaultMessage:
-                'Search, transform, join, and aggregate your data with ES|QL or PromQL',
+                'Search, transform, join and aggregate your data with ES|QL or PromQL',
             })
           : i18n.translate('discover.localMenu.switchToClassicTooltip', {
               defaultMessage: 'Search your data with data views and KQL in Classic Discover',
@@ -283,7 +289,6 @@ export const useTopNavLinks = ({
     appId,
     dispatch,
     getState,
-    subscribe,
     isEsqlMode,
     currentDataView,
     currentTab,
@@ -407,14 +412,33 @@ export const useTopNavLinks = ({
 
     const registry = getAppMenu(discoverParams).appMenuRegistry(newAppMenuRegistry);
 
+    const CreateRuleOptionsFlyout = services.alertingVTwo?.CreateRuleOptionsFlyout;
+
+    if (showCreateRuleV2 && CreateRuleOptionsFlyout) {
+      registry.registerItem(
+        getCreateRuleOptionsAppMenuItem({
+          CreateRuleOptionsFlyout,
+          baseItem: registry.getItem(AppMenuActionId.alerts),
+          alertsPopoverItems: registry.getPopoverItems(AppMenuActionId.alerts),
+          services,
+          tabId: currentTab.id,
+          getState,
+          subscribe,
+        })
+      );
+    }
+
     return registry;
   }, [
     getAppMenuAccessor,
     discoverParams,
     appMenuItems,
     services,
+    currentTab.id,
     dispatch,
     getState,
+    subscribe,
+    showCreateRuleV2,
     hasUnsavedChanges,
     transferBackToEditor,
     persistedDiscoverSession,

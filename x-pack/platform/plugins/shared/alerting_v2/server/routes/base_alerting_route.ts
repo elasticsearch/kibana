@@ -10,6 +10,8 @@ import type { IKibanaResponse, RouteConfigOptions, RouteMethod } from '@kbn/core
 import type { RouteHandler } from '@kbn/core-di-server';
 import { errorResponseSchema, type ErrorResponse } from '@kbn/alerting-v2-schemas';
 import { injectable } from 'inversify';
+import { ALERTING_V2_ENABLED_SETTING_ID } from '@kbn/alerting-v2-constants';
+import { ALERTING_V2_ERROR_CODES } from '../lib/errors/error_codes';
 import type { AlertingRouteContext } from './alerting_route_context';
 import { deepMergeRouteOptions } from './deep_merge_route_options';
 import { deriveErrorCodeFromStatus } from './derive_error_code';
@@ -59,6 +61,7 @@ export abstract class BaseAlertingRoute implements RouteHandler {
    *   401 — request was not authenticated (Kibana core enforces auth).
    *   403 — request lacks the route's `requiredPrivileges`.
    *   500 — any uncaught throw boomifies to 500.
+   *   503 — alerting is administratively disabled (kill switch).
    *
    * Route-specific codes (400 / 404 / 409 / …) belong on each subclass.
    */
@@ -75,6 +78,11 @@ export abstract class BaseAlertingRoute implements RouteHandler {
     500: {
       body: () => errorResponseSchema,
       description: 'Indicates an unexpected server-side error.',
+    },
+    503: {
+      body: () => errorResponseSchema,
+      description:
+        'Indicates the alerting engine is disabled by the `alerting:v2:enabled` advanced setting.',
     },
   };
 
@@ -103,6 +111,7 @@ export abstract class BaseAlertingRoute implements RouteHandler {
 
   async handle(): Promise<IKibanaResponse> {
     try {
+      await this.assertAlertingEnabled();
       return await this.execute();
     } catch (e) {
       return this.onError(e);
@@ -110,6 +119,23 @@ export abstract class BaseAlertingRoute implements RouteHandler {
   }
 
   protected abstract execute(): Promise<IKibanaResponse>;
+
+  /**
+   * Global kill switch for the alerting v2 HTTP surface.
+   *
+   * Reads the `alerting:v2:enabled` advanced setting and short-circuits with
+   * a 503 `ALERTING_DISABLED` error before any route-specific work runs
+   * when the operator has turned the engine off.
+   */
+  private async assertAlertingEnabled(): Promise<void> {
+    const enabled = await this.ctx.settings.get(ALERTING_V2_ENABLED_SETTING_ID);
+
+    if (!enabled) {
+      throw Boom.serverUnavailable('Alerting is disabled.', {
+        code: ALERTING_V2_ERROR_CODES.ALERTING_DISABLED,
+      });
+    }
+  }
 
   protected onError(e: Boom.Boom | Error): IKibanaResponse {
     const boom = Boom.isBoom(e) ? e : Boom.boomify(e);

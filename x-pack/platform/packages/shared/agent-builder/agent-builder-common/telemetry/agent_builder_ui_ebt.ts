@@ -178,6 +178,7 @@ const ebtAction = {
     EXTERNAL_LINK_CANCEL: 'external_link_cancel',
     OPEN_ROUND_METADATA: 'open_round_metadata',
     EXPAND_TOOL_CALL_STEP: 'expand_tool_call_step',
+    EXPAND_TOOL_CALL_GROUP: 'expand_tool_call_group',
     VIEW_TOOL_RESPONSE: 'view_tool_response',
     VIEW_SUB_AGENT_EXECUTION: 'view_sub_agent_execution',
     OPEN_ESQL_IN_DISCOVER: 'open_esql_in_discover',

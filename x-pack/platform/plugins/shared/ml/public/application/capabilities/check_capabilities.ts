@@ -6,15 +6,8 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import {
-  BehaviorSubject,
-  combineLatest,
-  from,
-  type Subscription,
-  timer,
-  firstValueFrom,
-} from 'rxjs';
-import { distinctUntilChanged, filter, retry, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { distinctUntilChanged, filter } from 'rxjs';
 import { isEqual } from 'lodash';
 import useObservable from 'react-use/lib/useObservable';
 import { useMemo, useRef } from 'react';
@@ -33,17 +26,7 @@ import type { MlCoreSetup } from '../../plugin';
 
 let _capabilities: MlCapabilities = getDefaultMlCapabilities();
 
-const CAPABILITIES_REFRESH_INTERVAL = 5 * 60 * 1000; // 5min;
-
 export class MlCapabilitiesService {
-  private _isLoading$ = new BehaviorSubject<boolean>(true);
-
-  /**
-   * Updates on manual request, e.g. in the route resolver.
-   * @internal
-   */
-  private _updateRequested$ = new BehaviorSubject<number>(Date.now());
-
   private _capabilities$ = new BehaviorSubject<MlCapabilities | null>(null);
   private _capabilitiesObs$ = this._capabilities$.asObservable();
 
@@ -53,36 +36,22 @@ export class MlCapabilitiesService {
 
   public capabilities$ = this._capabilities$.pipe(distinctUntilChanged(isEqual));
 
-  private _subscription: Subscription | undefined;
-
   constructor(private readonly mlApi: MlApi) {
-    this.init();
+    this.loadCapabilities();
   }
 
-  private init() {
-    this._subscription = combineLatest([
-      this._updateRequested$,
-      timer(0, CAPABILITIES_REFRESH_INTERVAL),
-    ])
-      .pipe(
-        tap(() => {
-          this._isLoading$.next(true);
-        }),
-        switchMap(() => from(this.mlApi.checkMlCapabilities())),
-        retry({ delay: CAPABILITIES_REFRESH_INTERVAL })
-      )
-      .subscribe((results) => {
-        this._capabilities$.next(results.capabilities);
-        this._isPlatinumOrTrialLicense$.next(results.isPlatinumOrTrialLicense);
-        this._mlFeatureEnabledInSpace$.next(results.mlFeatureEnabledInSpace);
-        this._isUpgradeInProgress$.next(results.upgradeInProgress);
-        this._isLoading$.next(false);
+  private loadCapabilities() {
+    void this.mlApi.checkMlCapabilities().then((results) => {
+      this._capabilities$.next(results.capabilities);
+      this._isPlatinumOrTrialLicense$.next(results.isPlatinumOrTrialLicense);
+      this._mlFeatureEnabledInSpace$.next(results.mlFeatureEnabledInSpace);
+      this._isUpgradeInProgress$.next(results.upgradeInProgress);
 
-        /**
-         * To support legacy use of {@link checkPermission}
-         */
-        _capabilities = results.capabilities;
-      });
+      /**
+       * To support legacy use of {@link checkPermission}
+       */
+      _capabilities = results.capabilities;
+    });
   }
 
   public getCapabilities(): MlCapabilities | null {
@@ -110,13 +79,7 @@ export class MlCapabilitiesService {
   }
 
   public refreshCapabilities() {
-    this._updateRequested$.next(Date.now());
-  }
-
-  public destroy() {
-    if (this._subscription) {
-      this._subscription.unsubscribe();
-    }
+    this.loadCapabilities();
   }
 }
 

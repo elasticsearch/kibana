@@ -1,6 +1,266 @@
 {
-  "sha1": "735ebd7c108e8e516b96c4da310684e7c8aee18d",
+  "sha1": "7f895cdf2bc6a1d65119ada88ddfca524b00b999",
   "tests": [
+    {
+      "id": "f8b956f17e7e029-39f26992a3def3c",
+      "title": "Per-alert mute/unmute without connector privilege restricted user (alerting all, no actions) can mute an alert instance",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 135,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-f7595278e84601b",
+      "title": "Per-alert mute/unmute without connector privilege restricted user (alerting all, no actions) can unmute an alert instance",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 146,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-437fdb342c0e3bd",
+      "title": "Per-alert mute/unmute without connector privilege admin can still mute an alert instance (regression)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 157,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-c1d186a57b554a9",
+      "title": "Per-alert mute/unmute without connector privilege mute/unmute by restricted user does not rotate the rule API key",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 171,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-717176e4e3a50aa",
+      "title": "Per-alert mute/unmute without connector privilege restricted user can mute_all without connector privilege",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 204,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-e75638e0c73e102",
+      "title": "Per-alert mute/unmute without connector privilege restricted user can unmute_all without connector privilege",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 211,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-28363d593c79e1e",
+      "title": "Per-alert mute/unmute without connector privilege mute_all/unmute_all by restricted user does not rotate the rule API key",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 218,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-50da9f898a8ca25",
+      "title": "Per-alert mute/unmute without connector privilege restricted user can snooze without connector privilege",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 247,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-3e304111f4a44ff",
+      "title": "Per-alert mute/unmute without connector privilege restricted user can unsnooze without connector privilege",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 277,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8b956f17e7e029-3b5496bbfb3896e",
+      "title": "Per-alert mute/unmute without connector privilege snooze/unsnooze by restricted user does not rotate the rule API key",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/alert_actions_authorization.spec.ts",
+        "line": 297,
+        "column": 12
+      }
+    },
     {
       "id": "d477aadf04adbc2-d5bf7aa0c833ea4",
       "title": "API key invalidation on rule operations enable rule preserves existing API keys without invalidation",
@@ -88,56 +348,56 @@
     {
       "id": "b7d416b796838f5-e5bd5cf338bcc23",
       "title": "Alerting Rule newly created rule has api_key_owner",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-serverless-observability_complete",
         "@cloud-serverless-observability_complete"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/rules.spec.ts",
-        "line": 67,
+        "line": 66,
         "column": 10
       }
     },
     {
       "id": "b7d416b796838f5-5d78285e8f5bb4f",
       "title": "Alerting Rule The rule runs and event log shows success",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-serverless-observability_complete",
         "@cloud-serverless-observability_complete"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/rules.spec.ts",
-        "line": 82,
+        "line": 81,
         "column": 10
       }
     },
     {
       "id": "b7d416b796838f5-eafab7767d29f6e",
       "title": "Alerting Rule when rule is updated, apiKey and uiamApiKey are queued for invalidation",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-serverless-observability_complete",
         "@cloud-serverless-observability_complete"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/rules.spec.ts",
-        "line": 92,
+        "line": 91,
         "column": 10
       }
     },
     {
       "id": "b7d416b796838f5-94ea894c179baba",
       "title": "Alerting Rule when rule is deleted, apiKey and uiamApiKey are queued for invalidation",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-serverless-observability_complete",
         "@cloud-serverless-observability_complete"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/rules.spec.ts",
-        "line": 127,
+        "line": 126,
         "column": 10
       }
     }

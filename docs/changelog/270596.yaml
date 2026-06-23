@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/270596
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+title: Fix Liquid for-loop validation and autocompletion in the workflow editor
+description: Workflow YAML editing now validates `{% for %}` loop collection paths and correctly detects loop variables in folded message fields.

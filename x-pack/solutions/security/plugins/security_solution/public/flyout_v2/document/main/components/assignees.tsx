@@ -82,7 +82,7 @@ export const Assignees = memo(({ hit, onAlertUpdated, showAssignees = true }: As
     [hit]
   );
   const initialAssignedUserIds = useMemo(() => {
-    const value = getFieldValue(hit, ALERT_WORKFLOW_ASSIGNEE_IDS) as string[] | string | null;
+    const value = hit.flattened[ALERT_WORKFLOW_ASSIGNEE_IDS] as string[] | string | null;
 
     if (Array.isArray(value)) {
       return value;
