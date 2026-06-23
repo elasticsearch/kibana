@@ -13,9 +13,17 @@ import {
   spaceTest,
   TRACES,
   RICH_TRACE,
+  PRODUCER_TRACE,
   setupTracesExperience,
   teardownTracesExperience,
 } from '../../fixtures/traces_experience';
+
+const UNIQUE_SERVICES = [RICH_TRACE.SERVICE_NAME, PRODUCER_TRACE.SERVICE_NAME];
+
+const BREAKDOWN = {
+  FIELD: 'service.name',
+  MIN_LEGEND_ITEMS: UNIQUE_SERVICES.length,
+} as const;
 
 spaceTest.describe(
   'Traces in Discover - RED metrics charts',
@@ -104,6 +112,80 @@ spaceTest.describe(
 
         await spaceTest.step('verify RED metrics charts are not visible', async () => {
           await expect(pageObjects.tracesExperience.charts.redMetricsCharts).toBeHidden();
+        });
+      }
+    );
+
+    spaceTest(
+      'should render legend with multiple series after toolbar breakdown selection',
+      async ({ pageObjects }) => {
+        const { discover, tracesExperience } = pageObjects;
+        const { charts } = tracesExperience;
+
+        await discover.goto({ queryMode: 'esql' });
+
+        await spaceTest.step('run ESQL query for traces', async () => {
+          await discover.writeAndSubmitEsqlQuery(TRACES.ESQL_QUERY);
+        });
+
+        await spaceTest.step('select breakdown field from toolbar', async () => {
+          await discover.chooseBreakdownField(BREAKDOWN.FIELD);
+        });
+
+        await spaceTest.step(
+          'verify RED metrics charts are still visible without errors',
+          async () => {
+            await expect(charts.redMetricsCharts).toBeVisible();
+            for (const title of charts.expectedTitles) {
+              await expect(charts.getChartError(title)).toBeHidden();
+            }
+          }
+        );
+
+        await spaceTest.step('verify charts render legend with multiple series', async () => {
+          await expect
+            .poll(async () => charts.legendItems.count())
+            .toBeGreaterThanOrEqual(BREAKDOWN.MIN_LEGEND_ITEMS);
+        });
+      }
+    );
+
+    spaceTest(
+      'should propagate field list breakdown selection to toolbar and render legend',
+      async ({ pageObjects }) => {
+        const { discover, tracesExperience } = pageObjects;
+        const { charts } = tracesExperience;
+
+        await discover.goto({ queryMode: 'esql' });
+
+        await spaceTest.step('run ESQL query for traces', async () => {
+          await discover.writeAndSubmitEsqlQuery(TRACES.ESQL_QUERY);
+        });
+
+        await spaceTest.step('set breakdown by dimension from field list', async () => {
+          await discover.addBreakdownFieldFromSidebar(BREAKDOWN.FIELD, 'selected');
+        });
+
+        await spaceTest.step('show selected breakdown in toolbar selector', async () => {
+          await expect
+            .poll(async () => discover.getBreakdownFieldValue())
+            .toBe(`Breakdown by ${BREAKDOWN.FIELD}`);
+        });
+
+        await spaceTest.step(
+          'verify RED metrics charts are still visible without errors',
+          async () => {
+            await expect(charts.redMetricsCharts).toBeVisible();
+            for (const title of charts.expectedTitles) {
+              await expect(charts.getChartError(title)).toBeHidden();
+            }
+          }
+        );
+
+        await spaceTest.step('verify charts render legend with multiple series', async () => {
+          await expect
+            .poll(async () => charts.legendItems.count())
+            .toBeGreaterThanOrEqual(BREAKDOWN.MIN_LEGEND_ITEMS);
         });
       }
     );

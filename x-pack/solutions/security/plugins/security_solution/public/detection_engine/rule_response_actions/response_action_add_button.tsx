@@ -88,7 +88,7 @@ export const ResponseActionAddButton = ({
             betaBadgeTooltipContent={'should be visible'}
             onClick={() => handleAddActionType(item)}
           >
-            <EuiIcon size="xl" type={item.iconClass} />
+            <EuiIcon size="xl" type={item.iconClass} aria-hidden={true} />
           </EuiKeyPadMenuItem>
         );
 

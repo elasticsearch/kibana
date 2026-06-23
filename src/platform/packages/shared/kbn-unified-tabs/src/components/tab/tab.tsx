@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { MouseEvent, KeyboardEvent } from 'react';
+import type { MouseEvent, KeyboardEvent, CSSProperties } from 'react';
 import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
 import { css } from '@emotion/react';
@@ -184,9 +184,12 @@ export const Tab: React.FC<TabProps> = (props) => {
     [isSelected, isDragging, onSelectEvent, setActionPopover, onSelectedTabKeyDown]
   );
 
+  const fontWeight = isSelected ? euiTheme.font.weight.semiBold : euiTheme.font.weight.regular;
+
   const { tabLabelRef, tabLabelWidth, tabLabelTextWidth } = useTabLabelWidth({
     item,
     tabsSizeConfig,
+    fontWeight,
   });
 
   useEffect(() => {
@@ -203,8 +206,10 @@ export const Tab: React.FC<TabProps> = (props) => {
     prevSelectedItemIdRef.current = selectedItemId;
   }, [selectedItemId, isSelected, isActionPopoverOpen]);
 
+  const isLoading = previewData?.status === TabStatus.RUNNING;
+
   const mainTabContent = (
-    <div css={getTabContainerCss(euiTheme, tabsSizeConfig, isSelected, isDragging)}>
+    <div css={getTabContainerCss(euiTheme, tabsSizeConfig, isSelected, fontWeight, isDragging)}>
       <div
         ref={tabInteractiveElementRef}
         {...(!disableDragAndDrop ? dragHandleProps : {})}
@@ -215,6 +220,12 @@ export const Tab: React.FC<TabProps> = (props) => {
         tabIndex={isSelected ? 0 : -1}
         aria-haspopup={!isInlineEditActive}
         aria-selected={isSelected}
+        css={css`
+          &:focus,
+          &:focus-visible {
+            outline: none;
+          }
+        `}
         onClick={isInlineEditActive ? undefined : onClick}
         onDoubleClick={isInlineEditActive ? undefined : onDoubleClick}
         onKeyDown={isInlineEditActive ? undefined : onKeyDownEvent}
@@ -231,12 +242,15 @@ export const Tab: React.FC<TabProps> = (props) => {
             />
           ) : (
             <div css={getTabLabelContainerCss(euiTheme)} className="unifiedTabs__tabLabel">
-              {previewData?.status === TabStatus.RUNNING && (
+              {isLoading && (
                 <EuiProgress
                   size="xs"
-                  color="accent"
+                  color="primary"
                   position="absolute"
                   css={css`
+                    // Pull the bar up by the tab's top border width so it sits on top of the
+                    // border edge instead of below it.
+                    top: -${euiTheme.border.width.thick};
                     // we can't simply use overflow: hidden; because then curved notches are not visible
                     border-top-left-radius: ${euiTheme.border.radius.small};
                     border-top-right-radius: ${euiTheme.border.radius.small};
@@ -250,7 +264,7 @@ export const Tab: React.FC<TabProps> = (props) => {
                 justifyContent="spaceBetween"
                 wrap={false}
                 responsive={false}
-                style={{ width: tabLabelWidth }}
+                style={{ width: tabLabelWidth, fontWeight }}
               >
                 <EuiText
                   id={tabLabelId}
@@ -321,6 +335,7 @@ export const Tab: React.FC<TabProps> = (props) => {
       data-test-subj={`unifiedTabs_tab_${item.id}`}
       isSelected={isSelected}
       isDragging={isDragging}
+      isLoading={isLoading}
       hideRightSeparator={hideRightSeparator}
       services={services}
       onMouseEnter={() => onHoverChange?.(item.id, true)}
@@ -351,6 +366,7 @@ function getTabContainerCss(
   euiTheme: EuiThemeComputed,
   tabsSizeConfig: TabsSizeConfig,
   isSelected: boolean,
+  fontWeight: CSSProperties['fontWeight'],
   isDragging?: boolean
 ) {
   // TODO: remove the usage of deprecated colors
@@ -362,7 +378,7 @@ function getTabContainerCss(
 
     .unifiedTabs__tabActions {
       position: absolute;
-      top: ${euiTheme.size.xs};
+      top: ${euiTheme.size.s};
       right: ${euiTheme.size.xs};
       opacity: 0;
       transition: opacity ${euiTheme.animation.fast};
@@ -370,11 +386,20 @@ function getTabContainerCss(
 
     .unifiedTabs__tabLabelText {
       color: ${isSelected || isDragging ? euiTheme.colors.text : euiTheme.colors.subduedText};
+      font-weight: ${fontWeight};
     }
 
     &:hover .unifiedTabs__tabLabelText {
       color: ${euiTheme.colors.text};
     }
+
+    ${!isSelected
+      ? `
+      &:hover .unifiedTabs__tabLabelText {
+        color: ${euiTheme.colors.primary};
+      }
+    `
+      : ''}
 
     &:hover,
     &:focus-within {
@@ -399,7 +424,7 @@ function getTabContentCss(euiTheme: EuiThemeComputed) {
     display: inline-flex;
     align-items: center;
     width: 100%;
-    height: ${euiTheme.size.xl};
+    height: ${euiTheme.size.xxl};
     padding-inline: ${euiTheme.size.xs};
   `;
 }

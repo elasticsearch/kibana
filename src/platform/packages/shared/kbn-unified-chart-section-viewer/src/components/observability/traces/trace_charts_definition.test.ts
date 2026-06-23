@@ -243,6 +243,52 @@ describe('trace_charts_definition', () => {
     });
   });
 
+  describe('when breakdownField is provided', () => {
+    const breakdownField = 'service.name';
+
+    it('getLatencyChart appends the field to the BY clause', () => {
+      const result = getLatencyChart({
+        indexes: mockIndexes,
+        filters: mockFilters,
+        metadataFields: [],
+        breakdownField,
+      });
+
+      expect(result?.esqlQuery).toContain(`, ${breakdownField}`);
+      expect(result?.esqlQuery).toMatchInlineSnapshot(
+        `"SET unmapped_fields=\\"NULLIFY\\"; FROM traces-* | WHERE service.name == \\"test-service\\" | WHERE environment == \\"production\\" | WHERE TO_STRING(processor.event) == \\"transaction\\" OR TO_STRING(processor.event) == \\"span\\" OR processor.event IS NULL | EVAL duration_ms_ecs = CASE(transaction.duration.us IS NOT NULL, TO_DOUBLE(transaction.duration.us) / 1000, span.duration.us IS NOT NULL, TO_DOUBLE(span.duration.us) / 1000, NULL) | EVAL duration_ms_otel = ROUND(duration) / 1000 / 1000 | EVAL duration_ms = COALESCE(TO_LONG(duration_ms_ecs), TO_LONG(duration_ms_otel)) | STATS AVG(duration_ms) BY TBUCKET(100), service.name"`
+      );
+    });
+
+    it('getErrorRateChart appends the field to the BY and KEEP clauses', () => {
+      const result = getErrorRateChart({
+        indexes: mockIndexes,
+        filters: mockFilters,
+        metadataFields: [],
+        breakdownField,
+      });
+
+      expect(result?.esqlQuery).toContain(`, ${breakdownField}`);
+      expect(result?.esqlQuery).toMatchInlineSnapshot(
+        `"SET unmapped_fields=\\"NULLIFY\\"; FROM traces-* | WHERE service.name == \\"test-service\\" | WHERE environment == \\"production\\" | WHERE TO_STRING(processor.event) == \\"transaction\\" OR TO_STRING(processor.event) == \\"span\\" OR processor.event IS NULL | STATS failure = COUNT(*) WHERE TO_STRING(event.outcome) == \\"failure\\" OR TO_STRING(status.code) == \\"Error\\", all = COUNT(*) BY timestamp = TBUCKET(100), service.name | EVAL error_rate = TO_DOUBLE(failure) / all | KEEP timestamp, error_rate, service.name | SORT timestamp"`
+      );
+    });
+
+    it('getThroughputChart appends the field to the BY clause', () => {
+      const result = getThroughputChart({
+        indexes: mockIndexes,
+        filters: mockFilters,
+        metadataFields: [],
+        breakdownField,
+      });
+
+      expect(result?.esqlQuery).toContain(`, ${breakdownField}`);
+      expect(result?.esqlQuery).toMatchInlineSnapshot(
+        `"SET unmapped_fields=\\"NULLIFY\\"; FROM traces-* | WHERE service.name == \\"test-service\\" | WHERE environment == \\"production\\" | WHERE TO_STRING(processor.event) == \\"transaction\\" OR TO_STRING(processor.event) == \\"span\\" OR processor.event IS NULL | EVAL id = COALESCE(transaction.id, span.id) | STATS COUNT(id) BY TBUCKET(100), service.name"`
+      );
+    });
+  });
+
   describe('when invalid filters are provided', () => {
     it('getErrorRateChart should return null', () => {
       const result = getErrorRateChart({

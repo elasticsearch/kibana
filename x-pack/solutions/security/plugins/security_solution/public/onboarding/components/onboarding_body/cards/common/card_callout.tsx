@@ -26,7 +26,7 @@ export const CardCallOut = React.memo<CardCallOutProps>(({ text, color, icon, ac
           <EuiFlexGroup gutterSize="s" alignItems="center">
             {icon && (
               <EuiFlexItem grow={false}>
-                <EuiIcon type={icon} />
+                <EuiIcon type={icon} aria-hidden={true} />
               </EuiFlexItem>
             )}
             <EuiFlexItem grow={false}>

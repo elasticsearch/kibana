@@ -170,6 +170,8 @@ exports[`Error KIND 1`] = `undefined`;
 
 exports[`Error KUBERNETES 1`] = `undefined`;
 
+exports[`Error K8S_CLUSTER_NAME 1`] = `undefined`;
+
 exports[`Error KUBERNETES_CONTAINER_ID 1`] = `undefined`;
 
 exports[`Error KUBERNETES_CONTAINER_NAME 1`] = `undefined`;
@@ -178,15 +180,19 @@ exports[`Error KUBERNETES_DEPLOYMENT 1`] = `undefined`;
 
 exports[`Error KUBERNETES_DEPLOYMENT_NAME 1`] = `undefined`;
 
+exports[`Error K8S_DEPLOYMENT_NAME 1`] = `undefined`;
+
 exports[`Error KUBERNETES_NAMESPACE 1`] = `undefined`;
 
 exports[`Error KUBERNETES_NAMESPACE_NAME 1`] = `undefined`;
 
 exports[`Error KUBERNETES_NODE_NAME 1`] = `undefined`;
 
+exports[`Error K8S_NODE_NAME 1`] = `undefined`;
+
 exports[`Error KUBERNETES_POD_NAME 1`] = `undefined`;
 
-exports[`Error KUBERNETES_POD_NAME_OTEL 1`] = `undefined`;
+exports[`Error K8S_POD_NAME 1`] = `undefined`;
 
 exports[`Error KUBERNETES_POD_UID 1`] = `undefined`;
 
@@ -335,6 +341,8 @@ exports[`Error SERVICE_LANGUAGE_NAME 1`] = `"nodejs"`;
 exports[`Error SERVICE_LANGUAGE_VERSION 1`] = `"v1337"`;
 
 exports[`Error SERVICE_NAME 1`] = `"service name"`;
+
+exports[`Error SERVICE_NAMESPACE 1`] = `undefined`;
 
 exports[`Error SERVICE_NODE_NAME 1`] = `undefined`;
 
@@ -605,6 +613,8 @@ exports[`Span KIND 1`] = `undefined`;
 
 exports[`Span KUBERNETES 1`] = `undefined`;
 
+exports[`Span K8S_CLUSTER_NAME 1`] = `undefined`;
+
 exports[`Span KUBERNETES_CONTAINER_ID 1`] = `undefined`;
 
 exports[`Span KUBERNETES_CONTAINER_NAME 1`] = `undefined`;
@@ -613,15 +623,19 @@ exports[`Span KUBERNETES_DEPLOYMENT 1`] = `undefined`;
 
 exports[`Span KUBERNETES_DEPLOYMENT_NAME 1`] = `undefined`;
 
+exports[`Span K8S_DEPLOYMENT_NAME 1`] = `undefined`;
+
 exports[`Span KUBERNETES_NAMESPACE 1`] = `undefined`;
 
 exports[`Span KUBERNETES_NAMESPACE_NAME 1`] = `undefined`;
 
 exports[`Span KUBERNETES_NODE_NAME 1`] = `undefined`;
 
+exports[`Span K8S_NODE_NAME 1`] = `undefined`;
+
 exports[`Span KUBERNETES_POD_NAME 1`] = `undefined`;
 
-exports[`Span KUBERNETES_POD_NAME_OTEL 1`] = `undefined`;
+exports[`Span K8S_POD_NAME 1`] = `undefined`;
 
 exports[`Span KUBERNETES_POD_UID 1`] = `undefined`;
 
@@ -766,6 +780,8 @@ exports[`Span SERVICE_LANGUAGE_NAME 1`] = `undefined`;
 exports[`Span SERVICE_LANGUAGE_VERSION 1`] = `undefined`;
 
 exports[`Span SERVICE_NAME 1`] = `"service name"`;
+
+exports[`Span SERVICE_NAMESPACE 1`] = `undefined`;
 
 exports[`Span SERVICE_NODE_NAME 1`] = `undefined`;
 
@@ -1050,6 +1066,8 @@ Object {
 }
 `;
 
+exports[`Transaction K8S_CLUSTER_NAME 1`] = `undefined`;
+
 exports[`Transaction KUBERNETES_CONTAINER_ID 1`] = `undefined`;
 
 exports[`Transaction KUBERNETES_CONTAINER_NAME 1`] = `undefined`;
@@ -1058,15 +1076,19 @@ exports[`Transaction KUBERNETES_DEPLOYMENT 1`] = `undefined`;
 
 exports[`Transaction KUBERNETES_DEPLOYMENT_NAME 1`] = `undefined`;
 
+exports[`Transaction K8S_DEPLOYMENT_NAME 1`] = `undefined`;
+
 exports[`Transaction KUBERNETES_NAMESPACE 1`] = `undefined`;
 
 exports[`Transaction KUBERNETES_NAMESPACE_NAME 1`] = `undefined`;
 
 exports[`Transaction KUBERNETES_NODE_NAME 1`] = `undefined`;
 
+exports[`Transaction K8S_NODE_NAME 1`] = `undefined`;
+
 exports[`Transaction KUBERNETES_POD_NAME 1`] = `undefined`;
 
-exports[`Transaction KUBERNETES_POD_NAME_OTEL 1`] = `undefined`;
+exports[`Transaction K8S_POD_NAME 1`] = `undefined`;
 
 exports[`Transaction KUBERNETES_POD_UID 1`] = `"pod1234567890abcdef"`;
 
@@ -1215,6 +1237,8 @@ exports[`Transaction SERVICE_LANGUAGE_NAME 1`] = `"nodejs"`;
 exports[`Transaction SERVICE_LANGUAGE_VERSION 1`] = `"v1337"`;
 
 exports[`Transaction SERVICE_NAME 1`] = `"service name"`;
+
+exports[`Transaction SERVICE_NAMESPACE 1`] = `undefined`;
 
 exports[`Transaction SERVICE_NODE_NAME 1`] = `undefined`;
 

@@ -25,7 +25,7 @@ export const MissingMigrationCallout = React.memo<MissingMigrationCalloutProps>(
             <EuiFlexGroup direction="row" gutterSize="xs" alignItems="center">
               <EuiFlexItem>{i18n.MIGRATION_MISSING_BUTTON}</EuiFlexItem>
               <EuiFlexItem grow={false}>
-                <EuiIcon type="chevronSingleRight" color="primary" size="s" />
+                <EuiIcon type="chevronSingleRight" color="primary" size="s" aria-hidden={true} />
               </EuiFlexItem>
             </EuiFlexGroup>
           </EuiLink>

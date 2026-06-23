@@ -188,4 +188,46 @@ describe('getDataStreams', () => {
       { name: 'logs-elastic_agent-default' },
     ]);
   });
+
+  describe('profiles data stream type', () => {
+    it('includes profiles-* data streams and filters out profiling-* data streams', async () => {
+      const esClientMock = elasticsearchServiceMock.createElasticsearchClient();
+      (dataStreamService.getMatchingDataStreams as jest.Mock).mockResolvedValueOnce([
+        {
+          name: 'profiles-generic.otel-default',
+          timestamp_field: { name: '@timestamp' },
+          indices: [],
+          generation: 1,
+          status: 'GREEN',
+          template: 'profiles-generic.otel',
+          hidden: false,
+          system: false,
+          allow_custom_routing: false,
+          replicated: false,
+        },
+        {
+          name: 'profiling-events-default',
+          timestamp_field: { name: '@timestamp' },
+          indices: [],
+          generation: 1,
+          status: 'GREEN',
+          template: 'profiling-events',
+          hidden: false,
+          system: false,
+          allow_custom_routing: false,
+          replicated: false,
+        },
+      ]);
+
+      const results = await getDataStreams({
+        esClient: esClientMock,
+        sortOrder: 'asc',
+        uncategorisedOnly: false,
+      });
+
+      const names = results.items.map((s) => s.name);
+      expect(names).toContain('profiles-generic.otel-default');
+      expect(names).not.toContain('profiling-events-default');
+    });
+  });
 });

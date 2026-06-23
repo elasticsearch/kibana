@@ -19,7 +19,7 @@ const Author = ({ isPrebuiltRule }: { isPrebuiltRule: boolean }) => {
     <EuiFlexGroup gutterSize="s" alignItems="center">
       {isPrebuiltRule && (
         <EuiFlexItem grow={false}>
-          <EuiIcon type="logoElastic" size="m" />
+          <EuiIcon type="logoElastic" size="m" aria-hidden={true} />
         </EuiFlexItem>
       )}
       <EuiFlexItem grow={false}>

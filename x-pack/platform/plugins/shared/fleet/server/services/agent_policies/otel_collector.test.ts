@@ -1579,7 +1579,7 @@ describe('generateOtelcolConfig', () => {
       expect(metricsPipeline?.processors).not.toContain('elasticapm/default');
     });
 
-    it('should generate transform with multiple signal type statements when dynamic_signal_types is true', () => {
+    it('should generate transform with multiple signal type statements (excluding profiles) when dynamic_signal_types is true', () => {
       const inputs: FullAgentPolicyInput[] = [otelInputWithMultipleSignalTypes];
       const result = generateOtelcolConfig({ inputs, dataOutput: defaultOutput, packageInfoCache });
 
@@ -1622,20 +1622,10 @@ describe('generateOtelcolConfig', () => {
             ],
           },
         ],
-        profile_statements: [
-          {
-            context: 'profile',
-            statements: [
-              'set(attributes["data_stream.type"], "profiles")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
-            ],
-          },
-        ],
       });
     });
 
-    it('should generate transform with multiple signal type statements when dynamic_signal_types is true and pipelines have simple names', () => {
+    it('should generate transform with multiple signal type statements (excluding profiles) when dynamic_signal_types is true and pipelines have simple names', () => {
       const inputs: FullAgentPolicyInput[] = [otelInputWithMultipleSignalTypes2];
       const result = generateOtelcolConfig({ inputs, dataOutput: defaultOutput, packageInfoCache });
 
@@ -1678,17 +1668,62 @@ describe('generateOtelcolConfig', () => {
             ],
           },
         ],
-        profile_statements: [
+      });
+    });
+
+    it('should not route or generate profile_statements for the profiles signal in a dynamic package', () => {
+      const inputs: FullAgentPolicyInput[] = [otelInputWithMultipleSignalTypes];
+      const result = generateOtelcolConfig({ inputs, dataOutput: defaultOutput, packageInfoCache });
+
+      // profiles is owned end-to-end by Universal Profiling (routing and storage handled by its
+      // Elasticsearch exporter), so Fleet must not stamp data_stream.* for it.
+      expect(
+        result.processors?.['transform/test-multi-signal-stream-id-1-routing']?.profile_statements
+      ).toBeUndefined();
+    });
+
+    it('should not generate a routing transform at all for a profiles-only stream', () => {
+      const profilesOnlyInput: FullAgentPolicyInput = {
+        ...otelInputWithMultipleSignalTypes,
+        streams: [
           {
-            context: 'profile',
-            statements: [
-              'set(attributes["data_stream.type"], "profiles")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
-            ],
+            id: 'stream-id-1',
+            data_stream: {
+              dataset: 'profilingreceiver',
+              type: 'profiles',
+            },
+            receivers: {
+              profiling: {},
+            },
+            service: {
+              pipelines: {
+                profiles: {
+                  receivers: ['profiling'],
+                },
+              },
+            },
           },
         ],
+      };
+
+      const result = generateOtelcolConfig({
+        inputs: [profilesOnlyInput],
+        dataOutput: defaultOutput,
+        packageInfoCache,
       });
+
+      // No routing transform should be injected, and the profiles pipeline must not
+      // reference one (regression test for elastic/package-spec#1191).
+      const routingKeys = Object.keys(result.processors ?? {}).filter((key) =>
+        key.endsWith('-routing')
+      );
+      expect(routingKeys).toEqual([]);
+
+      const pipeline = result.service?.pipelines?.['profiles/test-multi-signal-stream-id-1'];
+      expect(pipeline).toBeDefined();
+      expect(pipeline?.processors ?? []).not.toContain(
+        'transform/test-multi-signal-stream-id-1-routing'
+      );
     });
 
     it('should generate transform with only specified signal types when pipelines have subset', () => {

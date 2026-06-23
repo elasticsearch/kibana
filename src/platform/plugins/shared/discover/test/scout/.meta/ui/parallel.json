@@ -1,5 +1,5 @@
 {
-  "sha1": "dc8416cb4637f4ac34d4a5adfbd6815b048d0fb6",
+  "sha1": "a5ee7e0181b65de05875b092039fea28e9a2d68b",
   "tests": [
     {
       "id": "5f3825f308b4d12-d89fd2ade65d14f",
@@ -318,6 +318,45 @@
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/dataview_without_timefield.spec.ts",
         "line": 163,
+        "column": 12
+      }
+    },
+    {
+      "id": "4c54a2ad0ea60f4-accb5de6e8f51ae",
+      "title": "Discover tabs - opening a new tab should create a new tab in classic mode",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/new_tab.spec.ts",
+        "line": 35,
+        "column": 12
+      }
+    },
+    {
+      "id": "4c54a2ad0ea60f4-4eba405f9b363af",
+      "title": "Discover tabs - opening a new tab should create a new tab in ES|QL mode",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/new_tab.spec.ts",
+        "line": 93,
+        "column": 12
+      }
+    },
+    {
+      "id": "4c54a2ad0ea60f4-5e52b578914cfc3",
+      "title": "Discover tabs - opening a new tab should be able to complete all quickly opened tabs",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/new_tab.spec.ts",
+        "line": 129,
         "column": 12
       }
     },
@@ -790,6 +829,19 @@
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/surrounding_docs/context_size.spec.ts",
         "line": 49,
+        "column": 12
+      }
+    },
+    {
+      "id": "c52bd9ea218bca3-16c7641de80acbd",
+      "title": "Discover tabs - tab duplication should restore the previous app and global states",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/tab_duplication.spec.ts",
+        "line": 36,
         "column": 12
       }
     },

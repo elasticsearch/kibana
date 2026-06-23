@@ -82,6 +82,20 @@ export const LIST_FIELD_EVENTS = (count: number) =>
     defaultMessage: '{count} {count, plural, one {event} other {events}}',
   });
 
+export const SORT_NEWEST_FIRST = i18n.translate(
+  'xpack.cases.casesRedesign.tableFilters.newestFirst',
+  {
+    defaultMessage: 'Newest first',
+  }
+);
+
+export const SORT_OLDEST_FIRST = i18n.translate(
+  'xpack.cases.casesRedesign.tableFilters.oldestFirst',
+  {
+    defaultMessage: 'Oldest first',
+  }
+);
+
 export const SHOWING_CASES = (totalRules: number, pageSize: number) =>
   i18n.translate('xpack.cases.casesRedesign.caseTable.showingCasesTitle', {
     values: { totalRules, pageSize },

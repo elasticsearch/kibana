@@ -31,7 +31,7 @@ describe('DataStreamService', () => {
       expect(esClient.transport.request).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'GET',
-          path: '/_data_stream/logs-*-*,metrics-*-*,traces-*-*,synthetics-*-*,profiling-*',
+          path: '/_data_stream/logs-*-*,metrics-*-*,traces-*-*,synthetics-*-*,profiling-*,profiles-*',
           querystring: { filter_path: 'data_streams.name' },
         })
       );

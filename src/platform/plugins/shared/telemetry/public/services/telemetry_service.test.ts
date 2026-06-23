@@ -10,7 +10,9 @@
 // ESLint disabled dot-notation we can access the private key telemetryService['http']
 /* eslint-disable dot-notation */
 
+import { firstValueFrom, take, toArray } from 'rxjs';
 import { mockTelemetryService } from '../mocks';
+import type { TelemetryPluginConfig } from '../plugin';
 import {
   FetchSnapshotTelemetry,
   INTERNAL_VERSION,
@@ -354,6 +356,72 @@ describe('TelemetryService', () => {
       });
 
       expect(telemetryService.canSendTelemetry()).toBe(true);
+    });
+  });
+
+  describe('isOptedIn$', () => {
+    const serverConfig = (optIn: boolean | null): TelemetryPluginConfig =>
+      ({ optIn } as TelemetryPluginConfig);
+
+    it('withholds the injected default and emits the first value resolved from the server', async () => {
+      // Default injected at page render says opted-in...
+      const telemetryService = mockTelemetryService({ config: { optIn: true } });
+
+      const firstEmission = firstValueFrom(telemetryService.isOptedIn$);
+
+      // ...but the server resolves to opted-out. The observable must emit the server value, not the default.
+      telemetryService.config = serverConfig(false);
+
+      expect(await firstEmission).toBe(false);
+    });
+
+    it('does not emit synchronously before the config is resolved from the server', () => {
+      const telemetryService = mockTelemetryService({ config: { optIn: true } });
+
+      const emissions: boolean[] = [];
+      const subscription = telemetryService.isOptedIn$.subscribe((v) => emissions.push(v));
+
+      expect(emissions).toEqual([]);
+      subscription.unsubscribe();
+    });
+
+    it('emits again whenever the opt-in preference changes', async () => {
+      const telemetryService = mockTelemetryService({
+        reportOptInStatusChange: false,
+        config: { optIn: false, allowChangingOptInStatus: true },
+      });
+
+      const emissionsPromise = firstValueFrom(telemetryService.isOptedIn$.pipe(take(2), toArray()));
+
+      // First resolved value from the server.
+      telemetryService.config = serverConfig(false);
+      // User opts in.
+      await telemetryService.setOptIn(true);
+
+      expect(await emissionsPromise).toEqual([false, true]);
+    });
+
+    it('replays the latest value to late subscribers', async () => {
+      const telemetryService = mockTelemetryService({ config: { optIn: true } });
+
+      telemetryService.config = serverConfig(false);
+
+      // Subscribing after the value has resolved still yields the latest value.
+      expect(await firstValueFrom(telemetryService.isOptedIn$)).toBe(false);
+    });
+
+    it('does not re-emit when an unrelated config update leaves the opt-in unchanged', async () => {
+      const telemetryService = mockTelemetryService({ config: { optIn: true } });
+
+      const emissions: boolean[] = [];
+      const subscription = telemetryService.isOptedIn$.subscribe((v) => emissions.push(v));
+
+      telemetryService.config = serverConfig(true);
+      // An unrelated setting changes but the opt-in stays the same.
+      telemetryService.userCanChangeSettings = false;
+
+      expect(emissions).toEqual([true]);
+      subscription.unsubscribe();
     });
   });
 

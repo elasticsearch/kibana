@@ -784,7 +784,10 @@ export class DiscoverApp {
     return this.codeEditor.getCodeEditorValue(nthIndex);
   }
 
-  async addBreakdownFieldFromSidebar(field: string) {
+  async addBreakdownFieldFromSidebar(
+    field: string,
+    section: 'selected' | 'available' = 'available'
+  ) {
     const sidebarToggleButton = this.page.testSubj.locator('discover-sidebar-fields-button');
     if (await sidebarToggleButton.isVisible()) {
       await sidebarToggleButton.click();
@@ -792,7 +795,11 @@ export class DiscoverApp {
 
     await this.waitUntilFieldListHasCountOfFields();
 
-    const fieldLocator = this.page.testSubj.locator(`field-${field}`);
+    const sectionTestSubj =
+      section === 'selected' ? 'fieldListGroupedSelectedFields' : 'fieldListGroupedAvailableFields';
+    const fieldLocator = this.page.testSubj
+      .locator(sectionTestSubj)
+      .locator(`[data-test-subj="field-${field}"]`);
     await fieldLocator.hover();
     await fieldLocator.click();
     await this.waitUntilFieldPopoverIsLoaded();

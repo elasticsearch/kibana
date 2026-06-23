@@ -29,7 +29,7 @@ interface LogsOverviewHeaderProps
   > {
   formattedDoc: LogDocumentOverview;
   renderFlyoutStreamProcessingLink?: ObservabilityStreamsFeature['renderFlyoutStreamProcessingLink'];
-  renderCpsWarning?: boolean;
+  cpsHasLinkedProjects?: boolean;
 }
 
 export function LogsOverviewHeader({
@@ -40,7 +40,7 @@ export function LogsOverviewHeader({
   onAddColumn,
   onRemoveColumn,
   renderFlyoutStreamProcessingLink,
-  renderCpsWarning,
+  cpsHasLinkedProjects,
 }: LogsOverviewHeaderProps) {
   const accordionId = useGeneratedHtmlId({
     prefix: contentLabel,
@@ -59,7 +59,7 @@ export function LogsOverviewHeader({
         formattedDoc={formattedDoc}
         hit={hit}
         renderFlyoutStreamProcessingLink={renderFlyoutStreamProcessingLink}
-        renderCpsWarning={renderCpsWarning}
+        cpsHasLinkedProjects={cpsHasLinkedProjects}
       />
 
       <LogsOverviewHighlights

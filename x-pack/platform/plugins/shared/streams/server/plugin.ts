@@ -26,6 +26,7 @@ import { isNotFoundError } from '@kbn/es-errors';
 import type { WorkflowsExtensionsServerPluginStart } from '@kbn/workflows-extensions/server';
 import type { RulesClientApi } from '@kbn/alerting-v2-plugin/server';
 import { distinctUntilChanged, filter, skip } from 'rxjs';
+import type { Subscription } from 'rxjs';
 import { isSignificantEventsMemoryEnabled } from './lib/memory/is_significant_events_memory_enabled';
 import type { StreamsConfig } from '../common/config';
 import { installWorkflows } from './lib/workflows/setup/install_workflows';
@@ -82,7 +83,12 @@ import {
 } from './lib/workflows/continuous_onboarding_workflow';
 import { createWorkflowClients } from './lib/workflows/create_workflow_clients';
 import { installMemoryWorkflows } from './lib/memory/install_managed_workflows';
-import { STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG } from '../common/feature_flags';
+import { isInvestigationEnabled } from './lib/investigations/is_investigation_enabled';
+import { installInvestigationWorkflow } from './lib/investigations/install_investigation_workflow';
+import {
+  STREAMS_INVESTIGATION_ENABLED_FLAG,
+  STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG,
+} from '../common/feature_flags';
 
 const STREAMS_MANAGED_WORKFLOW_OWNER = 'streams';
 
@@ -109,6 +115,7 @@ export class StreamsPlugin
   private processorSuggestionsService: ProcessorSuggestionsService;
   private patternExtractionService?: PatternExtractionService;
   private streamsGetScopedClients?: GetScopedClients;
+  private subscriptions: Subscription[] = [];
 
   constructor(context: PluginInitializerContext<StreamsConfig>) {
     this.isDev = context.env.mode.dev;
@@ -316,17 +323,27 @@ export class StreamsPlugin
     const streamsKIsOnboardingClient = workflowClients.streamsKIsOnboardingClient;
 
     if (plugins.agentBuilder) {
-      registerStreamsAgentBuilder({
-        agentBuilder: plugins.agentBuilder,
-        getScopedClients: this.streamsGetScopedClients,
-        agentContextLayer: plugins.agentContextLayer,
-        server: this.server,
-        logger: this.logger,
-        telemetry: telemetryClient,
-        streamsKIsOnboardingClient,
-      }).catch((err) => {
-        this.logger.error(`Failed to register agent builder: ${err.message}`);
-      });
+      void core
+        .getStartServices()
+        .then(async ([coreStart]) => {
+          const { streamsGetScopedClients, server } = this;
+          if (!streamsGetScopedClients || !server) return;
+          const investigationEnabled = await isInvestigationEnabled(coreStart.featureFlags);
+
+          await registerStreamsAgentBuilder({
+            agentBuilder: plugins.agentBuilder!,
+            getScopedClients: streamsGetScopedClients,
+            agentContextLayer: plugins.agentContextLayer,
+            server,
+            logger: this.logger,
+            telemetry: telemetryClient,
+            streamsKIsOnboardingClient,
+            investigationEnabled,
+          });
+        })
+        .catch((err) => {
+          this.logger.error(`Failed to register agent builder: ${err.message}`);
+        });
     }
 
     let continuousKiOnboardingWorkflowService: ContinuousKiOnboardingWorkflowService | undefined;
@@ -598,6 +615,14 @@ export class StreamsPlugin
         filter((enabled) => enabled)
       );
 
+    const investigationEnabled$ = core.featureFlags
+      .getBooleanValue$(STREAMS_INVESTIGATION_ENABLED_FLAG, false)
+      .pipe(
+        distinctUntilChanged(),
+        skip(1),
+        filter((enabled) => enabled)
+      );
+
     initializeKnowledgeIndicatorsTemplate({
       esClient: core.elasticsearch.client.asInternalUser,
       logger: this.logger,
@@ -622,17 +647,34 @@ export class StreamsPlugin
         }
       );
 
-      memoryEnabled$.subscribe(() => {
-        void this.installMemoryWorkflowsIfEnabled(workflowsExtensions, core.featureFlags).catch(
-          (error: unknown) => {
+      this.subscriptions.push(
+        memoryEnabled$.subscribe(() => {
+          void this.installMemoryWorkflowsIfEnabled(workflowsExtensions, core.featureFlags).catch(
+            (error: unknown) => {
+              this.logger.error(
+                `streams: Failed to install memory managed workflows after feature flag change: ${
+                  error instanceof Error ? error.message : String(error)
+                }`
+              );
+            }
+          );
+        })
+      );
+
+      this.subscriptions.push(
+        investigationEnabled$.subscribe(() => {
+          void this.installInvestigationWorkflowIfEnabled(
+            workflowsExtensions,
+            core.featureFlags
+          ).catch((error: unknown) => {
             this.logger.error(
-              `streams: Failed to install memory managed workflows after feature flag change: ${
+              `streams: Failed to install investigation managed workflow after feature flag change: ${
                 error instanceof Error ? error.message : String(error)
               }`
             );
-          }
-        );
-      });
+          });
+        })
+      );
     }
 
     if (plugins.agentBuilder && this.server && this.streamsGetScopedClients) {
@@ -681,6 +723,24 @@ export class StreamsPlugin
     await client.ready();
   }
 
+  private async installInvestigationWorkflowIfEnabled(
+    workflowsExtensions: WorkflowsExtensionsServerPluginStart,
+    featureFlags: FeatureFlagsStart
+  ): Promise<void> {
+    if (!(await isInvestigationEnabled(featureFlags))) {
+      this.logger.debug(
+        'streams: investigation is disabled, skipping investigation workflow installation'
+      );
+      return;
+    }
+
+    const client = await workflowsExtensions.initManagedWorkflowsClient(
+      STREAMS_MANAGED_WORKFLOW_OWNER
+    );
+    await installInvestigationWorkflow({ client });
+    await client.ready();
+  }
+
   private async installManagedWorkflows(
     workflowsExtensions: WorkflowsExtensionsServerPluginStart,
     featureFlags: FeatureFlagsStart
@@ -694,6 +754,15 @@ export class StreamsPlugin
         client,
         isSignificantEventsMemoryEnabled: await isSignificantEventsMemoryEnabled(featureFlags),
       });
+
+      if (await isInvestigationEnabled(featureFlags)) {
+        await installInvestigationWorkflow({ client });
+      } else {
+        this.logger.debug(
+          'streams: investigation is disabled, skipping investigation workflow installation'
+        );
+      }
+
       this.logger.info('Streams managed workflows installed');
 
       await client.ready();
@@ -707,6 +776,7 @@ export class StreamsPlugin
   }
 
   public async stop() {
+    this.subscriptions.forEach((s) => s.unsubscribe());
     await this.patternExtractionService?.stop();
   }
 }

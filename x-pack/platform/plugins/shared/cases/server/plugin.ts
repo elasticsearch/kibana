@@ -54,6 +54,7 @@ import { registerSavedObjects } from './saved_object_types';
 import type { ServerlessProjectType } from '../common/constants/types';
 
 import { IncrementalIdTaskManager } from './tasks/incremental_id/incremental_id_task_manager';
+import { TemplatesMigrationTaskManager } from './tasks/templates_migration/templates_migration_task_manager';
 import { createCasesAnalyticsIndexes, registerCasesAnalyticsIndexesTasks } from './cases_analytics';
 import { scheduleCAISchedulerTask } from './cases_analytics/tasks/scheduler_task';
 import { CasesEventBus } from './events/event_bus';
@@ -82,6 +83,7 @@ export class CasePlugin
   private unifiedAttachmentTypeRegistry: UnifiedAttachmentTypeRegistry;
   private userProfileService: UserProfileService;
   private incrementalIdTaskManager?: IncrementalIdTaskManager;
+  private templatesMigrationTaskManager?: TemplatesMigrationTaskManager;
   private usageCounter?: IUsageCounter;
   private readonly isServerless: boolean;
   private casesEventBus?: CasesEventBus;
@@ -170,6 +172,14 @@ export class CasePlugin
           plugins.usageCollection
         );
       }
+
+      if (this.caseConfig.templates.enabled) {
+        this.templatesMigrationTaskManager = new TemplatesMigrationTaskManager(
+          plugins.taskManager,
+          this.logger,
+          plugins.usageCollection
+        );
+      }
     }
 
     const router = core.http.createRouter<CasesRequestHandlerContext>();
@@ -247,6 +257,18 @@ export class CasePlugin
 
       if (this.caseConfig.incrementalId.enabled) {
         void this.incrementalIdTaskManager?.setupIncrementIdTask(plugins.taskManager, core);
+      }
+
+      if (this.caseConfig.templates.enabled && this.templatesMigrationTaskManager) {
+        void this.templatesMigrationTaskManager
+          .scheduleMigrationTask(plugins.taskManager, core)
+          .catch((err) =>
+            this.logger.error(
+              `Failed to initialize templates migration task: ${
+                err instanceof Error ? err.message : String(err)
+              }`
+            )
+          );
       }
       if (this.caseConfig.analytics.index?.enabled) {
         const internalSavedObjectsRepository = core.savedObjects.createInternalRepository([

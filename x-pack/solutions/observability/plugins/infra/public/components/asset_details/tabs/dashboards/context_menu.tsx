@@ -25,6 +25,9 @@ export function ContextMenu({ items }: Props) {
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.infra.assetDetails.dashboards.contextMenu.ariaLabel', {
+        defaultMessage: 'More',
+      })}
       button={
         <EuiToolTip
           content={i18n.translate('xpack.infra.assetDetails.dashboards.contextMenu.moreLabel', {

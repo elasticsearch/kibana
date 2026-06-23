@@ -11,6 +11,7 @@ import {
   EuiFlexItem,
   EuiPopover,
   EuiPopoverTitle,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React, { useMemo, useState } from 'react';
@@ -42,6 +43,7 @@ export const GroupByExpression: React.FC<Props> = ({
   onChange,
 }) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const popoverTitleId = useGeneratedHtmlId();
 
   const expressionValue = useMemo(() => {
     return selectedGroups.length > 0 ? selectedGroups.join(', ') : EVERYTHING_PLACEHOLDER;
@@ -54,6 +56,7 @@ export const GroupByExpression: React.FC<Props> = ({
       <EuiFlexItem grow={false}>
         <EuiPopover
           id="groupByExpression"
+          aria-labelledby={popoverTitleId}
           button={
             <EuiExpression
               description={labelProp}
@@ -70,7 +73,7 @@ export const GroupByExpression: React.FC<Props> = ({
           anchorPosition="downLeft"
         >
           <div style={{ zIndex: 11000 }}>
-            <EuiPopoverTitle>{labelProp}</EuiPopoverTitle>
+            <EuiPopoverTitle id={popoverTitleId}>{labelProp}</EuiPopoverTitle>
             <GroupBySelector
               selectedGroups={selectedGroups}
               onChange={onChange}

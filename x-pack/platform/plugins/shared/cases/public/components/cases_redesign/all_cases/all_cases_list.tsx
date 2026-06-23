@@ -156,6 +156,13 @@ export const AllCasesList = React.memo<AllCasesListProps>(
       [deselectCases, setViewMode]
     );
 
+    const onSortOrderChange = useCallback(
+      (sortOrder: 'asc' | 'desc') => {
+        setQueryParams({ sortField: SortFieldCase.createdAt, sortOrder });
+      },
+      [setQueryParams]
+    );
+
     const { columns, isLoadingColumns, rowHeader } = useCasesColumns({
       filterStatus: filterOptions.status ?? [],
       userProfiles: userProfiles ?? new Map(),
@@ -244,6 +251,8 @@ export const AllCasesList = React.memo<AllCasesListProps>(
           onSelectedColumnsChange={setSelectedColumns}
           listFields={selectedFields}
           onListFieldsChange={setSelectedFields}
+          sortOrder={queryParams.sortOrder}
+          onSortOrderChange={onSortOrderChange}
         />
         {!isSelectorView ? (
           <div

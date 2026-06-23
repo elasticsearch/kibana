@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiButton, EuiFilterGroup } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiButton, EuiFilterGroup, useEuiTheme } from '@elastic/eui';
 import { mergeWith, isEqual } from 'lodash';
 import { css } from '@emotion/react';
 import { MoreFiltersSelectable } from '../../../all_cases/table_filter_config/more_filters_selectable';
@@ -26,6 +26,7 @@ import { TableSearch } from '../../../all_cases/search';
 import { DateRangeFilter } from '../../../all_cases/date_range_filter';
 import type { CasesColumnSelection } from '../types';
 import { ColumnsPopover } from './columns_popover';
+import { SortFilter } from './sort_filter';
 
 export interface CasesTableFiltersProps {
   countClosedCases: number | null;
@@ -46,6 +47,8 @@ export interface CasesTableFiltersProps {
   onSelectedColumnsChange: (columns: CasesColumnSelection[]) => void;
   listFields: CasesColumnSelection[];
   onListFieldsChange: (fields: CasesColumnSelection[]) => void;
+  sortOrder: 'asc' | 'desc';
+  onSortOrderChange: (sortOrder: 'asc' | 'desc') => void;
 }
 
 const mergeCustomizer = (objValue: string | string[], srcValue: string | string[], key: string) => {
@@ -73,6 +76,8 @@ const CasesTableFiltersComponent = ({
   onSelectedColumnsChange,
   listFields,
   onListFieldsChange,
+  sortOrder,
+  onSortOrderChange,
 }: CasesTableFiltersProps) => {
   const { data: tags = [], isLoading: isLoadingTags } = useGetTags();
   const { data: categories = [], isLoading: isLoadingCategories } = useGetCategories();
@@ -124,6 +129,8 @@ const CasesTableFiltersComponent = ({
     isLoading: isLoadingFilters,
   });
 
+  const { euiTheme } = useEuiTheme();
+
   const handleOnCreateCasePressed = useCallback(() => {
     if (onCreateCasePressed) {
       onCreateCasePressed();
@@ -136,6 +143,9 @@ const CasesTableFiltersComponent = ({
       justifyContent="flexStart"
       wrap={true}
       data-test-subj="cases-table-filters"
+      css={css`
+        padding-top: ${euiTheme.size.m};
+      `}
     >
       {isSelectorView && onCreateCasePressed ? (
         <EuiFlexItem grow={false}>
@@ -178,6 +188,11 @@ const CasesTableFiltersComponent = ({
           )}
         </EuiFilterGroup>
       </EuiFlexItem>
+      {viewMode !== VIEW_TOGGLE_TABLE_ID && (
+        <EuiFlexItem grow={false}>
+          <SortFilter sortOrder={sortOrder} onChange={onSortOrderChange} />
+        </EuiFlexItem>
+      )}
       <EuiFlexItem grow={false}>
         {viewMode === VIEW_TOGGLE_TABLE_ID ? (
           <ColumnsPopover

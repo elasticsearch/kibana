@@ -8,7 +8,9 @@
 import React, { useState } from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiText, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
-import { i18n } from '@kbn/i18n';
+import { FormattedMessage } from '@kbn/i18n-react';
+import { AGENT_BUILDER_UI_EBT } from '@kbn/agent-builder-common';
+import { isErrorResult } from '@kbn/agent-builder-common/tools/tool_result';
 import type { ToolCallStep as ToolCallStepData } from '@kbn/agent-builder-common/chat/conversation';
 import { StepLayout } from '../step_layout';
 import { ToolCallStep } from './tool_call_step';
@@ -22,35 +24,52 @@ export const ToolCallGroup: React.FC<ToolCallGroupProps> = ({ steps }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const onToggle = () => setIsExpanded((v) => !v);
 
-  const label = i18n.translate('xpack.agentBuilder.roundEvents.toolCallGroup.label', {
-    defaultMessage: 'Ran {count, plural, one {# tool} other {# tools}}',
-    values: { count: steps.length },
-  });
+  const allResponded = steps.every((s) => s.results.length > 0);
+  const hasError = steps.some((s) => s.results.some(isErrorResult));
+
+  const label = (
+    <EuiText size="s" color={hasError ? 'danger' : 'inherit'}>
+      <p role="status">
+        {allResponded ? (
+          <FormattedMessage
+            id="xpack.agentBuilder.roundEvents.toolCallGroup.responded"
+            defaultMessage="{count, plural, one {# tool responded} other {# tools responded}}"
+            values={{ count: steps.length }}
+          />
+        ) : (
+          <FormattedMessage
+            id="xpack.agentBuilder.roundEvents.toolCallGroup.calling"
+            defaultMessage="{count, plural, one {Calling # tool} other {Calling # tools}}"
+            values={{ count: steps.length }}
+          />
+        )}
+      </p>
+    </EuiText>
+  );
 
   const expansionStyles = css`
     padding-left: ${euiTheme.size.s};
   `;
 
   return (
-    <StepLayout
-      label={
-        <EuiText color="inherit">
-          <p>{label}</p>
-        </EuiText>
-      }
-      onClick={onToggle}
-      isExpanded={isExpanded}
-      expansion={
-        <div css={expansionStyles}>
-          <EuiFlexGroup direction="column" gutterSize="s">
-            {steps.map((step) => (
-              <EuiFlexItem grow={false} key={step.tool_call_id}>
-                <ToolCallStep step={step} />
-              </EuiFlexItem>
-            ))}
-          </EuiFlexGroup>
-        </div>
-      }
-    />
+    <div data-test-subj="agentBuilderToolCallGroup">
+      <StepLayout
+        label={label}
+        onClick={onToggle}
+        isExpanded={isExpanded}
+        expansion={
+          <div css={expansionStyles}>
+            <EuiFlexGroup direction="column" gutterSize="s">
+              {steps.map((step) => (
+                <EuiFlexItem grow={false} key={step.tool_call_id}>
+                  <ToolCallStep step={step} />
+                </EuiFlexItem>
+              ))}
+            </EuiFlexGroup>
+          </div>
+        }
+        ebtAction={AGENT_BUILDER_UI_EBT.action.conversation.EXPAND_TOOL_CALL_GROUP}
+      />
+    </div>
   );
 };

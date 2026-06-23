@@ -1006,6 +1006,8 @@
       "@kbn/data-views-plugin/*": ["src/platform/plugins/shared/data_views/*"],
       "@kbn/data-visualizer-plugin": ["x-pack/platform/plugins/private/data_visualizer"],
       "@kbn/data-visualizer-plugin/*": ["x-pack/platform/plugins/private/data_visualizer/*"],
+      "@kbn/data-visualizer-server-schemas": ["x-pack/platform/packages/shared/ml/data-visualizer-server-schemas"],
+      "@kbn/data-visualizer-server-schemas/*": ["x-pack/platform/packages/shared/ml/data-visualizer-server-schemas/*"],
       "@kbn/dataset-quality-plugin": ["x-pack/platform/plugins/shared/dataset_quality"],
       "@kbn/dataset-quality-plugin/*": ["x-pack/platform/plugins/shared/dataset_quality/*"],
       "@kbn/date-range-picker": ["src/platform/packages/shared/shared-ux/datetime/kbn-date-range-picker"],

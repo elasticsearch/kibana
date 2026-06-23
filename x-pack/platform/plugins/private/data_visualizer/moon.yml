@@ -25,6 +25,7 @@ dependsOn:
   - '@kbn/core-notifications-browser'
   - '@kbn/core'
   - '@kbn/custom-integrations-plugin'
+  - '@kbn/data-visualizer-server-schemas'
   - '@kbn/data-plugin'
   - '@kbn/data-service'
   - '@kbn/content-management-plugin'
@@ -92,7 +93,6 @@ dependsOn:
   - '@kbn/file-upload'
   - '@kbn/charts-theme'
   - '@kbn/presentation-util'
-  - '@kbn/presentation-publishing-schemas'
   - '@kbn/cps'
 tags:
   - plugin

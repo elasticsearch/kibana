@@ -1,6 +1,20 @@
 {
-  "sha1": "221a30eccbc80086589540e42ead02c3d9caf47d",
+  "sha1": "a493786d2745457c70f3152c782097566f0a2efe",
   "tests": [
+    {
+      "id": "12b5169bc361214-95d4bf5100c0857",
+      "title": "Reset profiling state after UI parallel tests",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/profiling/test/scout/ui/parallel_tests/global.teardown.ts",
+        "line": 13,
+        "column": 1
+      }
+    },
     {
       "id": "01827b5a57152a5-eaaf5032684392c",
       "title": "Set up Profiling Resources and Data",

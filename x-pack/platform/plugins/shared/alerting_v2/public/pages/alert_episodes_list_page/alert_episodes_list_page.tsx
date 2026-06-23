@@ -95,12 +95,14 @@ const getTableCss = (euiTheme: EuiThemeComputed) => css`
 
   & .euiDataGridRowCell__content {
     display: flex;
+  }
+
+  & .euiDataGridRowCell__content:not(.euiDataGridRowCell__content--autoHeight) {
     block-size: 100%;
   }
 
   & .euiDataGridRowCell[data-gridcell-column-id='select'] .euiDataGridRowCell__content {
     justify-content: flex-start;
-    height: 100%;
   }
 
   &

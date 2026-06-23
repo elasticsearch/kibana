@@ -9,24 +9,32 @@ import type { DataTableRecord } from '@kbn/discover-utils';
 import { useAbortableAsync } from '@kbn/react-hooks';
 import type { StreamsRepositoryClient } from '@kbn/streams-plugin/public/api';
 
+export interface ResolvedDefinitionName {
+  name?: string;
+  existsLocally: boolean;
+  remoteProject?: string;
+}
+
 export function useResolvedDefinitionName({
   streamsRepositoryClient,
   index,
   fallbackStreamName,
   cpsHasLinkedProjects,
+  ccsHasRemoteClusters,
 }: {
   streamsRepositoryClient: StreamsRepositoryClient;
   index?: string;
   fallbackStreamName?: string;
   cpsHasLinkedProjects?: boolean;
+  ccsHasRemoteClusters?: boolean;
 }) {
   return useAbortableAsync(
-    async ({ signal }) => {
+    async ({ signal }): Promise<ResolvedDefinitionName | undefined> => {
       if (!index) {
         if (!fallbackStreamName) {
           return undefined;
         }
-        if (!cpsHasLinkedProjects) {
+        if (!cpsHasLinkedProjects && !ccsHasRemoteClusters) {
           return { name: fallbackStreamName, existsLocally: true };
         }
         try {
@@ -36,24 +44,54 @@ export function useResolvedDefinitionName({
           });
           return { name: fallbackStreamName, existsLocally: true };
         } catch {
+          return { name: fallbackStreamName, existsLocally: false, remoteProject: 'unknown' };
+        }
+      } else {
+        try {
+          const definition = await streamsRepositoryClient.fetch(
+            'GET /internal/streams/_resolve_index',
+            {
+              signal,
+              params: {
+                query: {
+                  index,
+                },
+              },
+            }
+          );
+          return { name: definition?.stream?.name, existsLocally: true };
+        } catch {
+          const remoteInfo = parseRemoteIndex(index);
+          if (remoteInfo) {
+            return {
+              name: remoteInfo.streamName ?? fallbackStreamName,
+              existsLocally: false,
+              remoteProject: remoteInfo.projectName,
+            };
+          }
           return { name: fallbackStreamName, existsLocally: false };
         }
       }
-      const definition = await streamsRepositoryClient.fetch(
-        'GET /internal/streams/_resolve_index',
-        {
-          signal,
-          params: {
-            query: {
-              index,
-            },
-          },
-        }
-      );
-      return { name: definition?.stream?.name, existsLocally: true };
     },
-    [streamsRepositoryClient, index, fallbackStreamName, cpsHasLinkedProjects]
+    [streamsRepositoryClient, index, fallbackStreamName, cpsHasLinkedProjects, ccsHasRemoteClusters]
   );
+}
+
+function parseRemoteIndex(
+  index: string
+): { projectName: string; streamName: string | undefined } | undefined {
+  const colonIdx = index.indexOf(':');
+  if (colonIdx <= 0) return undefined;
+
+  const projectName = index.substring(0, colonIdx);
+  const backingIndex = index.substring(colonIdx + 1);
+
+  // Try to recover the logical stream name from a data-stream backing index
+  // (.ds-<name>-YYYY.MM.DD-<gen>). For any other index form (e.g. legacy
+  // filebeat indices) we still know the remote cluster, so we keep projectName
+  // and leave streamName undefined so the caller can fall back gracefully.
+  const match = backingIndex.match(/^\.ds-(.+)-\d{4}\.\d{2}\.\d{2}-\d+$/);
+  return { projectName, streamName: match ? match[1] : undefined };
 }
 
 export function adaptDocToResolverInputs(doc: DataTableRecord) {

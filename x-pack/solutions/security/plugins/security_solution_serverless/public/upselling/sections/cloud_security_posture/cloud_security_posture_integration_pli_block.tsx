@@ -23,7 +23,7 @@ export const CloudSecurityPostureIntegrationPliBlock = memo(() => {
         data-test-subj="cloud-security-posture-integration-pli-auth-block"
         isDisabled={true}
         description={false}
-        icon={<EuiIcon size="xl" type="lock" />}
+        icon={<EuiIcon size="xl" type="lock" aria-hidden={true} />}
         betaBadgeProps={{
           label: i18n.translate(
             'xpack.securitySolutionServerless.cloudSecurityPostureIntegrationPliBlock.badgeText',

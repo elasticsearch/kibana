@@ -41,12 +41,12 @@ describe('skill selection evaluators', () => {
       },
       {
         type: 'tool_call',
-        tool_id: 'platform.dashboard.manage_dashboard',
+        tool_id: 'platform.dashboard.generate_dashboard',
       },
     ]);
 
     expect(getSkillReadPaths(output)).toEqual(['skills/platform/dashboard/dashboard-management']);
-    expect(getToolIds(output)).toEqual(['filestore.read', 'platform.dashboard.manage_dashboard']);
+    expect(getToolIds(output)).toEqual(['filestore.read', 'platform.dashboard.generate_dashboard']);
   });
 
   it('passes when dashboard skill is loaded for dashboard requests', async () => {
@@ -102,7 +102,7 @@ describe('skill selection evaluators', () => {
         },
         {
           type: 'tool_call',
-          tool_id: 'platform.dashboard.manage_dashboard',
+          tool_id: 'platform.dashboard.generate_dashboard',
         },
       ])
     );

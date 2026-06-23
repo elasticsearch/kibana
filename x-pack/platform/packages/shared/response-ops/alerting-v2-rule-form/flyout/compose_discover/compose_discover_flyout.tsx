@@ -556,6 +556,9 @@ export function ComposeDiscoverFlyout({
   // ── YAML mode state ──────────────────────────────────────────────────────
   const [yamlText, setYamlText] = useState('');
   yamlTextRef.current = yamlText;
+  // Reflects Monaco markers set by the YAML editor's schema validator. Used to
+  // disable the Save button while the buffer is invalid.
+  const [yamlHasErrors, setYamlHasErrors] = useState(false);
 
   // Debounced (~300 ms) lenient parse that pushes every YAML keystroke into RHF
   // and mirrors the composed query into the sandbox editing buffer.
@@ -657,17 +660,20 @@ export function ComposeDiscoverFlyout({
   // YAML "Save" — flush any pending debounce into RHF, then run the shared
   // handleSubmit path so validation + submission use a single pipeline.
   const handleYamlSave = useCallback(() => {
-    if (hasValidationErrors) {
+    if (hasValidationErrors || yamlHasErrors) {
       return;
     }
     cancelYamlParse();
     const result = parseYamlToFormValues(yamlText);
-    if (result.values) {
-      applyYamlValuesToFormAndSandbox(result.values);
-      // No syncSandbox() here: draft is temporarily stale after methods.reset(), but
-      // we're about to submit. On success the flyout closes; on failure the user is still
-      // in YAML mode and handleToggleYamlMode(false) will resync when they switch back.
+    if (result.error !== null) {
+      // YAML syntax or shape errors are surfaced inline by the editor's Monaco
+      // markers; abort submission so we don't post stale RHF state to the API.
+      return;
     }
+    applyYamlValuesToFormAndSandbox(result.values);
+    // No syncSandbox() here: draft is temporarily stale after methods.reset(), but
+    // we're about to submit. On success the flyout closes; on failure the user is still
+    // in YAML mode and handleToggleYamlMode(false) will resync when they switch back.
     handleSubmit();
   }, [
     cancelYamlParse,
@@ -675,6 +681,7 @@ export function ComposeDiscoverFlyout({
     applyYamlValuesToFormAndSandbox,
     handleSubmit,
     hasValidationErrors,
+    yamlHasErrors,
   ]);
 
   const handleNext = useCallback(async () => {
@@ -832,6 +839,7 @@ export function ComposeDiscoverFlyout({
                     yamlText={yamlText}
                     setYamlText={handleSetYamlText}
                     onBlurSync={handleBlurSync}
+                    onValidate={setYamlHasErrors}
                     isSubmitting={isSaving}
                   />
                 </React.Suspense>
@@ -858,6 +866,7 @@ export function ComposeDiscoverFlyout({
               isLastStep={isLastStep}
               isCreate={isCreate}
               hasValidationErrors={hasValidationErrors}
+              yamlHasErrors={yamlHasErrors}
               isSaving={isSaving}
               onNext={handleNext}
               onFinalSubmit={handleFinalSubmit}

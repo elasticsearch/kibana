@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { readFileSync } from 'fs';
+
 import { i18n } from '@kbn/i18n';
 import { tryCatch, map, mapNullable, getOrElse } from 'fp-ts/Option';
 import url from 'url';
@@ -46,6 +48,7 @@ export interface ActionsConfigurationUtilities {
   ensureUriAllowed: (uri: string) => void;
   ensureActionTypeEnabled: (actionType: string) => void;
   getSSLSettings: () => SSLSettings;
+  getEARSSSLSettings: () => SSLSettings;
   getProxySettings: () => undefined | ProxySettings;
   getResponseSettings: () => ResponseSettings;
   getCustomHostSettings: (targetUrl: string) => CustomHostSettings | undefined;
@@ -207,6 +210,7 @@ export function getActionsConfigurationUtilities(
   const isUriAllowed = curry(isHostnameAllowedInUri)(config);
   const isActionTypeEnabled = curry(isActionTypeEnabledInConfig)(config);
   const validatedEmailCurried = curry(validateEmails)(config);
+  let earsSSLSettingsCache: SSLSettings | null = null;
   return {
     isHostnameAllowed,
     isUriAllowed,
@@ -214,6 +218,28 @@ export function getActionsConfigurationUtilities(
     getProxySettings: () => getProxySettingsFromConfig(config),
     getResponseSettings: () => getResponseSettingsFromConfig(config),
     getSSLSettings: () => getSSLSettingsFromConfig(config.ssl?.verificationMode),
+    getEARSSSLSettings: () => {
+      if (earsSSLSettingsCache !== null) {
+        return earsSSLSettingsCache;
+      }
+      const readSSLFile = (filePath: string, configKey: string): Buffer => {
+        try {
+          return readFileSync(filePath);
+        } catch (err) {
+          throw new Error(
+            `EARS SSL configuration error: failed to read ${configKey} file: ${err.message}`
+          );
+        }
+      };
+      earsSSLSettingsCache = {
+        ...getSSLSettingsFromConfig(config.auth.ears?.ssl?.verificationMode),
+        cert: config.auth.ears?.ssl?.certificate
+          ? readSSLFile(config.auth.ears.ssl.certificate, 'certificate')
+          : undefined,
+        key: config.auth.ears?.ssl?.key ? readSSLFile(config.auth.ears.ssl.key, 'key') : undefined,
+      };
+      return earsSSLSettingsCache;
+    },
     ensureUriAllowed(uri: string) {
       if (!isUriAllowed(uri)) {
         throw new Error(allowListErrorMessage(AllowListingField.URL, uri));

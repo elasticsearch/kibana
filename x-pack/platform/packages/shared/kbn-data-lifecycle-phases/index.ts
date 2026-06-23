@@ -16,3 +16,4 @@ export * from './src/default_snapshot_repository_required_modal';
 export * from './src/edit_failed_data_lifecycle_flyout';
 export * from './src/phase_requirement_badges';
 export * from './src/searchable_snapshot_repository_info';
+export * from './src/frozen_phase_callouts';

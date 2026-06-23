@@ -35,7 +35,6 @@ node scripts/capture_sigevents_env_snapshot.js \
 | `--run-id` | Run identifier for GCS repo name and base path. | Today's date `YYYY-MM-DD` |
 | `--logs-index` | Logs index to include in the snapshot + replay. | `logs.otel` |
 | `--alert-indices` | Alert index to include in the snapshot + replay. Can be repeated. | `.internal.alerts-streams.alerts-default-*` |
-| `--system-indices` | `.kibana` system index to capture with mapping. Can be repeated. Must start with `.kibana`. | `.kibana_streams_features-*` `.kibana_streams_assets-*` `.kibana_streams_insights-*` `.kibana_streams_tasks-*` |
 | `--es-url` | Elasticsearch URL | from `config/kibana.dev.yml` |
 | `--es-username` | Elasticsearch username | from `config/kibana.dev.yml` |
 | `--es-password` | Elasticsearch password | from `config/kibana.dev.yml` |
@@ -44,17 +43,17 @@ node scripts/capture_sigevents_env_snapshot.js \
 
 1. Creates a temporary Elasticsearch user (`restore_sigevents_env_snapshot_tmp`) with the `system_indices_superuser` role. This user is deleted on script exit (success or failure).
 2. Resolves wildcard patterns to concrete index names via `GET _resolve/index`.
-3. For each `--system-indices` match, fetches its mapping, creates a `snapshot-*` copy, and reindexes the data. `--logs-index` and `--alert-indices` targets are included directly in the snapshot without reindexing.
+3. For each fixed system index (`.kibana_streams_tasks-*`) and the KI data stream (`.significant_events-knowledge_indicators`), fetches its mapping, creates a `snapshot-*` copy, and reindexes the data. `--logs-index` and `--alert-indices` targets are included directly in the snapshot without reindexing.
 4. Registers a GCS snapshot repository and creates the snapshot containing all captured indices.
 
 ### Naming convention
 
-Only `.kibana` system indices are renamed. Leading `.` is replaced with `snapshot-`:
+System indices and the KI data stream are reindexed under a renamed copy. Leading `.` is replaced with `snapshot-`:
 
 | Source index | Snapshot index |
 | --- | --- |
-| `.kibana_streams_features-000001` | `snapshot-kibana_streams_features-000001` |
-| `.kibana_streams_assets-000001` | `snapshot-kibana_streams_assets-000001` |
+| `.kibana_streams_tasks-000001` | `snapshot-kibana_streams_tasks-000001` |
+| `.significant_events-knowledge_indicators` | `snapshot-significant_events-knowledge_indicators` |
 | `.internal.alerts-streams.alerts-default-000001` | `.internal.alerts-streams.alerts-default-000001` (no change) |
 | `logs.otel` | `logs.otel` (no change) |
 
@@ -77,4 +76,4 @@ The script automatically creates and deletes a temporary `system_indices_superus
 
 ## Why aliases can't be baked into the snapshot
 
-During capture, the source system indices (e.g. `.kibana_streams_features-000001`) still exist in the cluster with their aliases. Elasticsearch enforces that an alias cannot point to both a system and a non-system index simultaneously. Since the snapshot copies are regular (non-system) indices, adding the same alias name to them is rejected. This is a fundamental Elasticsearch limitation, not a script limitation.
+During capture, the source system indices (e.g. `.kibana_streams_tasks-000001`) still exist in the cluster with their aliases. Elasticsearch enforces that an alias cannot point to both a system and a non-system index simultaneously. Since the snapshot copies are regular (non-system) indices, adding the same alias name to them is rejected. This is a fundamental Elasticsearch limitation, not a script limitation.

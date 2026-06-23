@@ -18,7 +18,7 @@ const OsqueryResponseActionsUpsellingSection: React.FC<{ requiredPLI: ProductFea
 
     return (
       <EuiEmptyPrompt
-        icon={<EuiIcon type="logoSecurity" size="xl" />}
+        icon={<EuiIcon type="logoSecurity" size="xl" aria-hidden={true} />}
         color="subdued"
         title={
           <h2>

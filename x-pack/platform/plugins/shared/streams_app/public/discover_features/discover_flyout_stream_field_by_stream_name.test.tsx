@@ -50,7 +50,7 @@ describe('DiscoverFlyoutStreamFieldByStreamName', () => {
         streamName="logs-foo-default"
         streamsRepositoryClient={streamsRepositoryClient}
         locator={locator}
-        renderCpsWarning
+        cpsHasLinkedProjects
       />
     );
 
@@ -74,7 +74,7 @@ describe('DiscoverFlyoutStreamFieldByStreamName', () => {
         streamName="logs-foo-remote"
         streamsRepositoryClient={streamsRepositoryClient}
         locator={locator}
-        renderCpsWarning
+        cpsHasLinkedProjects
       />
     );
 

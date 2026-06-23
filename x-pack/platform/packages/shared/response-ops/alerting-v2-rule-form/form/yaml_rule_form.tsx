@@ -42,6 +42,9 @@ export interface YamlRuleFormProps {
    * When absent, blur falls back to `useFormContext().reset()`.
    */
   onBlurSync?: (values: FormValues) => void;
+  /** Forwarded to the editor; fires with `true` when the YAML buffer has
+   *  schema/syntax markers, `false` when clean. */
+  onValidate?: (hasErrors: boolean) => void;
 }
 
 /**
@@ -67,6 +70,7 @@ export const YamlRuleForm = ({
   yamlText,
   setYamlText,
   onBlurSync,
+  onValidate,
 }: YamlRuleFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const { reset } = useFormContext<FormValues>();
@@ -154,6 +158,7 @@ export const YamlRuleForm = ({
             value={yamlText}
             onChange={handleYamlChange}
             onBlur={handleBlur}
+            onValidate={onValidate}
             esqlCallbacks={esqlCallbacks}
             isReadOnly={isReadOnly}
             dataTestSubj="ruleV2FormYamlEditor"

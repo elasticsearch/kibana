@@ -26,4 +26,9 @@ describe('registerSkills', () => {
     expect(dashboardManagementSkill.content).toContain('platform.core.sml_search');
     expect(dashboardManagementSkill.content).toContain('platform.core.sml_attach');
   });
+
+  it('inlines the dashboard design guidance directly in the skill body', () => {
+    expect(dashboardManagementSkill.content).toContain('Dashboard Composition Guidelines');
+    expect(dashboardManagementSkill.content).toContain('Grid Packing Rules');
+  });
 });

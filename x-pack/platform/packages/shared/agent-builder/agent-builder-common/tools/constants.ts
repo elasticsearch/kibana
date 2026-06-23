@@ -112,6 +112,8 @@ export const defaultAgentToolIds = [
   platformCoreTools.search,
   platformCoreTools.listIndices,
   platformCoreTools.getIndexMapping,
+  platformCoreTools.generateEsql,
+  platformCoreTools.executeEsql,
   platformCoreTools.getDocumentById,
   platformCoreTools.getWorkflowExecutionStatus,
   platformCoreTools.resumeWorkflowExecution,

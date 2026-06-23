@@ -176,7 +176,7 @@ describe('useTopNavLinks', () => {
       expect(switchLanguageModeItem).toBeDefined();
       expect(switchLanguageModeItem?.label).toBe('Query in ES|QL');
       expect(switchLanguageModeItem?.tooltipContent).toBe(
-        'Search, transform, join, and aggregate your data with ES|QL or PromQL'
+        'Search, transform, join and aggregate your data with ES|QL or PromQL'
       );
     });
   });

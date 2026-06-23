@@ -123,6 +123,7 @@ const CategoryExampleMessageRow: React.FC<CategoryExampleMessageRowProps> = ({
       <EuiTableRowCell width="400px">{humanFriendlyDataset}</EuiTableRowCell>
       <EuiTableRowCell width="32px">
         <EuiPopover
+          aria-label={MENU_LABEL}
           button={
             <EuiToolTip content={MENU_LABEL} disableScreenReaderOutput>
               <EuiButtonIcon

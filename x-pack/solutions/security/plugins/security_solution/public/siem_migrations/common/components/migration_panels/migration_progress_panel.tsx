@@ -89,7 +89,7 @@ export const MigrationProgressPanel = React.memo(function MigrationProgressPanel
       <EuiSpacer size="m" />
       <EuiFlexGroup direction="row" justifyContent="flexStart" alignItems="center" gutterSize="s">
         <EuiFlexItem grow={false}>
-          <EuiIcon size="m" type={AssistantIcon} />
+          <EuiIcon size="m" type={AssistantIcon} aria-hidden={true} />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <PanelText size="s" subdued data-test-subj={descriptionTestId}>

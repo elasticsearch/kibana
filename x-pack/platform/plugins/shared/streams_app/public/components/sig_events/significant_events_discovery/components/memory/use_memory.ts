@@ -190,3 +190,12 @@ export const useSynthesizeMemory = () => {
     })
   );
 };
+
+export const useDetectGaps = () => {
+  return useMemoryTaskAction(
+    `${MEMORY_BASE}/_detect_gaps`,
+    i18n.translate('xpack.streams.memory.detectGapsActionName', {
+      defaultMessage: 'Detect gaps',
+    })
+  );
+};

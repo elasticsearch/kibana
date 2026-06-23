@@ -2,7 +2,8 @@
   "extends": "@kbn/tsconfig-base/tsconfig.json",
   "compilerOptions": {
     "isolatedModules": true,
-    "outDir": "target/types"
+    "outDir": "target/types",
+    "types": ["jest", "react", "@testing-library/jest-dom"]
   },
   "include": [
     "**/*.ts"
@@ -10,5 +11,7 @@
   "exclude": [
     "target/**/*"
   ],
-  "kbn_references": []
+  "kbn_references": [
+    "@kbn/fields-metadata-plugin"
+  ]
 }

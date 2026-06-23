@@ -46,6 +46,7 @@ export async function requestEarsRefreshToken(
       'Content-Type': 'application/json',
     },
     configurationUtilities,
+    sslOverrides: configurationUtilities.getEARSSSLSettings(),
     validateStatus: () => true,
   });
 

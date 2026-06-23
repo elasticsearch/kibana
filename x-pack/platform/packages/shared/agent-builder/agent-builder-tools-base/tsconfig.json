@@ -27,6 +27,7 @@
     "@kbn/workflows-management-plugin",
     "@kbn/zod",
     "@kbn/palettes",
-    "@kbn/core-http-server-mocks"
+    "@kbn/core-http-server-mocks",
+    "@kbn/esql-server-utils"
   ]
 }

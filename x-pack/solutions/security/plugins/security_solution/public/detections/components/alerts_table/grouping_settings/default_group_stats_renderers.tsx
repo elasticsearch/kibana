@@ -49,16 +49,16 @@ export const Severity = memo(({ severities }: SingleSeverityProps) => {
     return (
       <>
         <span className="smallDot">
-          <EuiIcon type="dot" color="#54b399" />
+          <EuiIcon type="dot" color="#54b399" aria-hidden={true} />
         </span>
         <span className="smallDot">
-          <EuiIcon type="dot" color="#d6bf57" />
+          <EuiIcon type="dot" color="#d6bf57" aria-hidden={true} />
         </span>
         <span className="smallDot">
-          <EuiIcon type="dot" color="#da8b45" />
+          <EuiIcon type="dot" color="#da8b45" aria-hidden={true} />
         </span>
         <span>
-          <EuiIcon type="dot" color="#e7664c" />
+          <EuiIcon type="dot" color="#e7664c" aria-hidden={true} />
         </span>
         {i18n.STATS_GROUP_SEVERITY_MULTI}
       </>
@@ -70,28 +70,28 @@ export const Severity = memo(({ severities }: SingleSeverityProps) => {
     case 'low':
       return (
         <>
-          <EuiIcon type="dot" color="#54b399" />
+          <EuiIcon type="dot" color="#54b399" aria-hidden={true} />
           {i18n.STATS_GROUP_SEVERITY_LOW}
         </>
       );
     case 'medium':
       return (
         <>
-          <EuiIcon type="dot" color="#d6bf57" />
+          <EuiIcon type="dot" color="#d6bf57" aria-hidden={true} />
           {i18n.STATS_GROUP_SEVERITY_MEDIUM}
         </>
       );
     case 'high':
       return (
         <>
-          <EuiIcon type="dot" color="#da8b45" />
+          <EuiIcon type="dot" color="#da8b45" aria-hidden={true} />
           {i18n.STATS_GROUP_SEVERITY_HIGH}
         </>
       );
     case 'critical':
       return (
         <>
-          <EuiIcon type="dot" color="#e7664c" />
+          <EuiIcon type="dot" color="#e7664c" aria-hidden={true} />
           {i18n.STATS_GROUP_SEVERITY_CRITICAL}
         </>
       );

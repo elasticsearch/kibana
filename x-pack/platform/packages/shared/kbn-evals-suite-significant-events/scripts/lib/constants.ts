@@ -21,17 +21,13 @@ export const DEFAULT_ENV_SNAPSHOT_LOGS_INDEX = 'logs.otel';
 export const BASELINE_WAIT_MS = 3 * 60 * 1000;
 export const FAILURE_WAIT_MS = 5 * 60 * 1000;
 export const KI_FEATURE_EXTRACTION_POLL_INTERVAL_MS = 10_000;
-export const KI_FEATURE_EXTRACTION_TIMEOUT_MS = 5 * 60 * 1000;
+export const KI_FEATURE_EXTRACTION_TIMEOUT_MS = 15 * 60 * 1000;
 
 export const HEALTHY_BASELINE_SCENARIO: Scenario = { id: 'healthy-baseline' };
 
-export const QUERIES_INDEX = '.kibana_streams_assets-*';
-export const VALID_SYSTEM_INDICES = [
-  '.kibana_streams_features-*',
-  QUERIES_INDEX,
-  '.kibana_streams_insights-*',
-  '.kibana_streams_tasks-*',
-] as const;
+export const KNOWLEDGE_INDICATORS_DATA_STREAM = '.significant_events-knowledge_indicators';
+
+export const VALID_SYSTEM_INDICES = ['.kibana_streams_tasks-*'] as const;
 
 export const VALID_ALERT_INDICES = ['.internal.alerts-streams.alerts-default-*'] as const;
 
@@ -42,18 +38,6 @@ type ValidStreamsIndices = ValidStreamsSystemIndices | ValidStreamsAlertIndices;
 export type StreamsIndexAliasConfig = Pick<IndicesUpdateAliasesAddAction, 'alias' | 'is_hidden'>;
 
 export const INDEX_ALIAS_CONFIG: Record<ValidStreamsIndices, StreamsIndexAliasConfig> = {
-  '.kibana_streams_features-*': {
-    alias: '.kibana_streams_features',
-    is_hidden: true,
-  },
-  '.kibana_streams_assets-*': {
-    alias: '.kibana_streams_assets',
-    is_hidden: true,
-  },
-  '.kibana_streams_insights-*': {
-    alias: '.kibana_streams_insights',
-    is_hidden: true,
-  },
   '.kibana_streams_tasks-*': {
     alias: '.kibana_streams_tasks',
     is_hidden: true,

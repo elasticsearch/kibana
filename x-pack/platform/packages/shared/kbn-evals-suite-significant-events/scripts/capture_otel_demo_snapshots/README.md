@@ -107,7 +107,7 @@ Those snapshot names are what you will replay later in the eval setup.
 
 This script is designed for **disposable dev data** and assumes it owns the `logs*` space.
 
-- **Run against a dedicated dev ES/Kibana**: The cleanup step deletes data in `logs*` and `.kibana_streams_features`, and it disables Streams. Do not point this at a shared cluster with important logs.
+- **Run against a dedicated dev ES/Kibana**: The cleanup step deletes data in `logs*` and `.significant_events-knowledge_indicators`, and it disables Streams. Do not point this at a shared cluster with important logs.
 - **Features are snapshotted from a non-system index**: Elasticsearch snapshots cannot include system indices via the `indices` parameter, so we copy extracted features into `sigevents-streams-features-<scenario>` before snapshotting.
 - **Keep the cluster quiet**: Feature extraction is scheduled over the **last 24 hours** (`from = now - 24h`), so any unrelated `logs*` data in that time range can affect extracted features and snapshots.
 - **Use a unique `--run-id`**: It determines the snapshot repository name (`sigevents-<run-id>`) and the GCS base path. Reusing a run ID can collide with existing snapshots (same scenario snapshot names).

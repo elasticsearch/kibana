@@ -10,3 +10,8 @@
  */
 export const STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG =
   'streams.significantEventsMemoryEnabled';
+
+/**
+ * Enables the Streams root cause investigation workflow and agent.
+ */
+export const STREAMS_INVESTIGATION_ENABLED_FLAG = 'streams.investigationEnabled';

@@ -24,6 +24,7 @@ import {
   EuiSwitch,
   EuiToolTip,
   useEuiTheme,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -102,6 +103,7 @@ export const LegendControls = ({
 }: Props) => {
   const { euiTheme } = useEuiTheme();
   const [isPopoverOpen, setPopoverState] = useState(false);
+  const popoverTitleId = useGeneratedHtmlId();
   const defaultLegendSteps = useMemo<LegendStep[]>(
     () => [
       { color: euiTheme.colors.severity.success, label: 'OK', value: 0 },
@@ -262,11 +264,12 @@ export const LegendControls = ({
       isOpen={isPopoverOpen}
       closePopover={handleCancelClick}
       id="legendControls"
+      aria-labelledby={popoverTitleId}
       button={buttonComponent}
       anchorPosition="leftCenter"
       data-test-subj="legendControls"
     >
-      <EuiPopoverTitle>
+      <EuiPopoverTitle id={popoverTitleId}>
         {i18n.translate('xpack.infra.legendControls.legendOptionsPopoverTitleLabel', {
           defaultMessage: 'Legend Options',
         })}

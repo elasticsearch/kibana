@@ -5,6 +5,7 @@
  * 2.0.
  */
 import { EuiFlyout, EuiFlyoutBody } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
 import React from 'react';
 import type { Props as FrameInformationWindowProps } from '.';
 import { FrameInformationWindow } from '.';
@@ -15,7 +16,13 @@ interface Props extends FrameInformationWindowProps {
 
 export function FrameInformationTooltip({ onClose, ...props }: Props) {
   return (
-    <EuiFlyout onClose={onClose} size="m">
+    <EuiFlyout
+      onClose={onClose}
+      size="m"
+      aria-label={i18n.translate('xpack.profiling.frameInformationTooltip.flyoutAriaLabel', {
+        defaultMessage: 'Frame information',
+      })}
+    >
       <EuiFlyoutBody>
         <FrameInformationWindow {...props} />
       </EuiFlyoutBody>

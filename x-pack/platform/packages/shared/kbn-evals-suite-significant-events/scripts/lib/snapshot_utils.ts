@@ -41,19 +41,9 @@ export const parseCommonSnapshotFlags = (flags: Record<string, unknown>): Common
     throw new Error('Required: --snapshot-name <name>');
   }
 
-  const systemIndicesFlag = parseRepeatableFlag(flags['system-indices']);
-  const systemIndices =
-    systemIndicesFlag.length > 0 ? systemIndicesFlag : [...VALID_SYSTEM_INDICES];
-
-  const validSystemSet = new Set<string>(VALID_SYSTEM_INDICES);
-  for (const pattern of systemIndices) {
-    if (!validSystemSet.has(pattern)) {
-      throw new Error(
-        `Invalid --system-indices value "${pattern}". ` +
-          `Allowed values: ${VALID_SYSTEM_INDICES.join(', ')}`
-      );
-    }
-  }
+  // System indices are not configurable — there is a single fixed set, so always
+  // capture/restore all of them. The KI data stream is handled separately.
+  const systemIndices = [...VALID_SYSTEM_INDICES];
 
   const alertIndicesFlag = parseRepeatableFlag(flags['alert-indices']);
   const alertIndices = alertIndicesFlag.length > 0 ? alertIndicesFlag : [...VALID_ALERT_INDICES];

@@ -7,7 +7,13 @@
 
 import type { Severity } from '../../api/detection_engine';
 import { DEFAULT_TRANSLATION_FIELDS } from '../constants';
-import type { ElasticRule, ElasticRulePartial } from '../model/rule_migration.gen';
+import type { ElasticRule, ElasticRulePartial, OriginalRule } from '../model/rule_migration.gen';
+
+export interface MigrationTranslationFields {
+  from: string;
+  to: string;
+  interval: string;
+}
 
 export type MigrationPrebuiltRule = ElasticRulePartial &
   Required<
@@ -32,9 +38,26 @@ export const isMigrationCustomRule = (rule?: ElasticRule): rule is MigrationCust
   !isMigrationPrebuiltRule(rule) &&
   !!(rule?.title && rule?.description && rule?.query && rule?.query_language);
 
+export const getTranslationFieldsFromAnnotations = (
+  originalRule: OriginalRule
+): MigrationTranslationFields => {
+  const { annotations } = originalRule;
+
+  return {
+    from:
+      typeof annotations?.from === 'string' ? annotations.from : DEFAULT_TRANSLATION_FIELDS.from,
+    to: typeof annotations?.to === 'string' ? annotations.to : DEFAULT_TRANSLATION_FIELDS.to,
+    interval:
+      typeof annotations?.interval === 'string'
+        ? annotations.interval
+        : DEFAULT_TRANSLATION_FIELDS.interval,
+  };
+};
+
 export const convertMigrationCustomRuleToSecurityRulePayload = (
   rule: MigrationCustomRule,
-  enabled: boolean
+  enabled: boolean,
+  translationFields?: MigrationTranslationFields
 ) => {
   return {
     type: rule.query_language,
@@ -47,5 +70,6 @@ export const convertMigrationCustomRuleToSecurityRulePayload = (
     risk_score: rule.risk_score,
     threat: rule.threat ?? [],
     ...DEFAULT_TRANSLATION_FIELDS,
+    ...(translationFields != null ? translationFields : {}),
   };
 };

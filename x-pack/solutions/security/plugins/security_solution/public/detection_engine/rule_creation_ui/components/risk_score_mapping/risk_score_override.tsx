@@ -132,7 +132,7 @@ export function RiskScoreOverride({
                   />
                 </EuiFlexItemComboBoxColumn>
                 <EuiFlexItemIconColumn grow={false}>
-                  <EuiIcon type="sortRight" />
+                  <EuiIcon type="sortRight" aria-hidden={true} />
                 </EuiFlexItemIconColumn>
                 <EuiFlexItemRiskScoreColumn grow={false}>
                   <EuiText size="s">{i18n.RISK_SCORE_FIELD}</EuiText>

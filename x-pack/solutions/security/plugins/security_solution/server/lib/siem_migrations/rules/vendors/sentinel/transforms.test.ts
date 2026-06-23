@@ -6,10 +6,17 @@
  */
 
 import type { SentinelRule } from '../../../../../../common/siem_migrations/parsers/sentinel/types';
+import {
+  SENTINEL_DEFAULT_QUERY_FREQUENCY,
+  SENTINEL_NRT_RULE_KIND,
+  SENTINEL_RULE_KIND_ANNOTATION_KEY,
+  SENTINEL_SCHEDULED_RULE_KIND,
+} from './constants';
 import { transformSentinelMitreMapping, transformSentinelRuleToOriginalRule } from './transforms';
 
 const baseSentinelRule: SentinelRule = {
   id: 'rule-id-1',
+  kind: SENTINEL_SCHEDULED_RULE_KIND,
   displayName: 'Suspicious sign-in',
   description: 'Detects suspicious sign-in activity',
   query: 'SigninLogs | where ResultType != 0',
@@ -79,6 +86,9 @@ describe('transformSentinelRuleToOriginalRule', () => {
       description: 'Detects suspicious sign-in activity',
       query: 'SigninLogs | where ResultType != 0',
       query_language: 'kql',
+      annotations: {
+        [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+      },
     });
   });
 
@@ -105,5 +115,146 @@ describe('transformSentinelRuleToOriginalRule', () => {
     expect(result.threat?.[0].tactic.id).toBe('TA0001');
     expect(result.threat?.[0].technique).toHaveLength(1);
     expect(result.threat?.[0].technique?.[0].id).toBe('T1078');
+  });
+
+  it('adds converted Sentinel timing overrides to annotations', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      queryFrequency: 'PT5M',
+      queryPeriod: 'PT5M30S',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+      from: 'now-330s',
+      to: 'now',
+      interval: '5m',
+    });
+  });
+
+  it('converts mixed Sentinel ISO durations to seconds', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      queryFrequency: 'PT1M30S',
+      queryPeriod: 'PT2M30S',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+      from: 'now-150s',
+      to: 'now',
+      interval: '90s',
+    });
+  });
+
+  it('converts Sentinel ISO durations with years and months', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      queryFrequency: 'P1Y',
+      queryPeriod: 'P2M',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+      from: 'now-2M',
+      to: 'now',
+      interval: '1y',
+    });
+  });
+
+  it('omits mixed calendar durations that cannot be represented as one unit', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      queryFrequency: 'P1Y2M',
+      queryPeriod: 'P2M1D',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+    });
+  });
+
+  it.each([
+    ['week duration', 'P1W'],
+    ['fractional duration', 'PT0.5H'],
+    ['date-plus-time duration', 'P1DT2H'],
+  ])('omits unsupported %s overrides', (_description, duration) => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      queryFrequency: duration,
+      queryPeriod: duration,
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+    });
+  });
+
+  it('omits the time range when queryPeriod is empty', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      queryFrequency: 'PT1M',
+      queryPeriod: '',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+      interval: '1m',
+    });
+  });
+
+  it('omits the interval when queryFrequency is empty', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      queryFrequency: '',
+      queryPeriod: 'PT1M',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_SCHEDULED_RULE_KIND,
+      from: 'now-1m',
+      to: 'now',
+    });
+  });
+
+  it('adds the Sentinel NRT default interval when queryFrequency is missing', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      kind: SENTINEL_NRT_RULE_KIND,
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_NRT_RULE_KIND,
+      interval: SENTINEL_DEFAULT_QUERY_FREQUENCY,
+    });
+  });
+
+  it('adds the Sentinel NRT default interval when queryFrequency is empty', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      kind: SENTINEL_NRT_RULE_KIND,
+      queryFrequency: '',
+      queryPeriod: 'PT1M',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_NRT_RULE_KIND,
+      from: 'now-1m',
+      to: 'now',
+      interval: SENTINEL_DEFAULT_QUERY_FREQUENCY,
+    });
+  });
+
+  it('uses custom queryFrequency instead of the Sentinel NRT default interval', () => {
+    const result = transformSentinelRuleToOriginalRule({
+      ...baseSentinelRule,
+      kind: SENTINEL_NRT_RULE_KIND,
+      queryFrequency: 'PT10M',
+    });
+
+    expect(result.annotations).toEqual({
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: SENTINEL_NRT_RULE_KIND,
+      interval: '10m',
+    });
   });
 });

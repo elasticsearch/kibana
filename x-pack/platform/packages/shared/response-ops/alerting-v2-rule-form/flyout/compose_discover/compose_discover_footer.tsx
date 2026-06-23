@@ -66,6 +66,7 @@ export interface ComposeDiscoverFooterProps {
   isLastStep: boolean;
   isCreate: boolean;
   hasValidationErrors: boolean;
+  yamlHasErrors: boolean;
   isSaving: boolean;
   onNext: () => void;
   onFinalSubmit: () => void;
@@ -81,6 +82,7 @@ export const ComposeDiscoverFooter = ({
   isLastStep,
   isCreate,
   hasValidationErrors,
+  yamlHasErrors,
   isSaving,
   onNext,
   onFinalSubmit,
@@ -117,19 +119,27 @@ export const ComposeDiscoverFooter = ({
   const submitLabel = isCreate ? CREATE_RULE_BUTTON_LABEL : SAVE_RULE_BUTTON_LABEL;
 
   if (uiState.yamlMode) {
+    const yamlSaveDisabled = hasValidationErrors || yamlHasErrors;
+    const yamlSaveDisabledTooltip = yamlHasErrors
+      ? i18n.translate('xpack.alertingV2.composeDiscover.flyout.yamlSaveDisabledTooltip', {
+          defaultMessage: 'Fix the errors highlighted in the YAML editor, then save the rule.',
+        })
+      : undefined;
     return (
       <EuiFlyoutFooter>
         <EuiFlexGroup justifyContent="flexEnd">
           <EuiFlexItem grow={false}>
-            <EuiButton
-              fill
-              onClick={onYamlSave}
-              isLoading={isSaving}
-              isDisabled={hasValidationErrors}
-              data-test-subj="composeDiscoverYamlSubmit"
-            >
-              {submitLabel}
-            </EuiButton>
+            <EuiToolTip content={yamlSaveDisabledTooltip}>
+              <EuiButton
+                fill
+                onClick={onYamlSave}
+                isLoading={isSaving}
+                isDisabled={yamlSaveDisabled}
+                data-test-subj="composeDiscoverYamlSubmit"
+              >
+                {submitLabel}
+              </EuiButton>
+            </EuiToolTip>
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiFlyoutFooter>

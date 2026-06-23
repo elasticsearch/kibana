@@ -6,6 +6,7 @@
  */
 
 import type { DataTableRecord } from '@kbn/discover-utils';
+import type { HttpStart } from '@kbn/core/public';
 import type { StreamsRepositoryClient } from '@kbn/streams-plugin/public/api';
 import { i18n } from '@kbn/i18n';
 import React from 'react';
@@ -16,12 +17,15 @@ import {
   useResolvedDefinitionName,
 } from './use_resolved_definition_name';
 import { StreamLinkContent } from './stream_link_content';
+import { useCcsHasRemoteClusters } from './use_ccs_has_remote_clusters';
 
 export interface DiscoverFlyoutStreamFieldProps {
   doc: DataTableRecord;
   streamsRepositoryClient: StreamsRepositoryClient;
   locator: StreamsAppLocator;
-  renderCpsWarning?: boolean;
+  http: HttpStart;
+  isServerless: boolean;
+  cpsHasLinkedProjects?: boolean;
 }
 
 export function DiscoverFlyoutStreamField(props: DiscoverFlyoutStreamFieldProps) {
@@ -41,15 +45,21 @@ function DiscoverFlyoutStreamFieldContent({
   streamsRepositoryClient,
   doc,
   locator,
-  renderCpsWarning,
+  http,
+  isServerless,
+  cpsHasLinkedProjects,
 }: DiscoverFlyoutStreamFieldProps) {
   const { index, fallbackStreamName } = adaptDocToResolverInputs(doc);
+  const ccsHasRemoteClusters = useCcsHasRemoteClusters({ http, isServerless });
   const { value, loading, error } = useResolvedDefinitionName({
     streamsRepositoryClient,
     index,
     fallbackStreamName,
-    cpsHasLinkedProjects: renderCpsWarning,
+    cpsHasLinkedProjects,
+    ccsHasRemoteClusters,
   });
+
+  const remoteSearchType = cpsHasLinkedProjects ? 'cps' : ccsHasRemoteClusters ? 'ccs' : undefined;
 
   return (
     <StreamLinkContent
@@ -58,7 +68,9 @@ function DiscoverFlyoutStreamFieldContent({
       loading={loading}
       error={error}
       locator={locator}
-      renderCpsWarning={renderCpsWarning}
+      remoteSearchType={remoteSearchType}
+      renderRemoteWarning={!!remoteSearchType && !index && value?.existsLocally}
+      remoteName={value?.remoteProject}
     />
   );
 }

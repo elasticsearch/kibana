@@ -19,7 +19,7 @@ import {
   KI_FEATURE_EXTRACTION_POLL_INTERVAL_MS,
   KI_FEATURE_EXTRACTION_TIMEOUT_MS,
   DEFAULT_LOGS_INDEX,
-  QUERIES_INDEX,
+  KNOWLEDGE_INDICATORS_DATA_STREAM,
 } from './constants';
 import {
   getSigeventsSnapshotKIFeaturesIndex,
@@ -119,10 +119,12 @@ export async function triggerSigEventsKIFeatureExtraction(
 export async function waitForSigEventsKIFeatureExtraction(
   config: ConnectionConfig,
   log: ToolingLog,
-  streamName: string = DEFAULT_LOGS_INDEX
+  streamName: string = DEFAULT_LOGS_INDEX,
+  timeoutMs: number = KI_FEATURE_EXTRACTION_TIMEOUT_MS
 ): Promise<void> {
-  log.info('Polling onboarding status for feature extraction...');
-  const deadline = Date.now() + KI_FEATURE_EXTRACTION_TIMEOUT_MS;
+  log.info(`Polling onboarding status for feature extraction (timeout ${timeoutMs / 1000}s)...`);
+  const start = Date.now();
+  const deadline = start + timeoutMs;
 
   while (Date.now() < deadline) {
     const { data } = await kibanaRequest(
@@ -144,12 +146,14 @@ export async function waitForSigEventsKIFeatureExtraction(
       );
     }
 
-    log.debug(`  status: ${taskStatus}`);
+    const elapsed = Math.round((Date.now() - start) / 1000);
+    log.info(`  feature extraction status: ${taskStatus} (${elapsed}s elapsed)`);
     await new Promise((resolve) => setTimeout(resolve, KI_FEATURE_EXTRACTION_POLL_INTERVAL_MS));
   }
 
   throw new Error(
-    `KI feature extraction did not complete within ${KI_FEATURE_EXTRACTION_TIMEOUT_MS / 1000}s`
+    `KI feature extraction did not complete within ${timeoutMs / 1000}s. ` +
+      `Increase --extraction-timeout if the model/data volume needs longer.`
   );
 }
 
@@ -236,7 +240,11 @@ export async function cleanupSigEventsExtractedKIsData(
 ): Promise<void> {
   log.info('Cleaning up ES data...');
 
-  for (const target of ['logs*', '.kibana_streams_features', SIGEVENTS_FEATURES_INDEX_PATTERN]) {
+  for (const target of [
+    'logs*',
+    KNOWLEDGE_INDICATORS_DATA_STREAM,
+    SIGEVENTS_FEATURES_INDEX_PATTERN,
+  ]) {
     try {
       await esClient.indices.deleteDataStream({ name: target });
     } catch {
@@ -291,14 +299,13 @@ export async function promoteQueries(config: ConnectionConfig): Promise<void> {
 
 export async function resetQueriesPromotion({ esClient }: { esClient: Client }): Promise<void> {
   await esClient.updateByQuery({
-    index: QUERIES_INDEX,
+    index: KNOWLEDGE_INDICATORS_DATA_STREAM,
     conflicts: 'proceed',
     refresh: true,
-    query: { match_all: {} },
+    query: { term: { type: 'query' } },
     script: {
       lang: 'painless',
-      source: `ctx._source['rule_backed'] = params.rb`,
-      params: { rb: false },
+      source: `if (ctx._source.query != null) { ctx._source.query.rule_backed = false; }`,
     },
   });
 }

@@ -64,8 +64,8 @@ test.describe(
         ).toContainText(MOCKED_TITLE);
       }).toPass({ timeout: 120_000 });
 
-      await expect(page.testSubj.locator('agentBuilderThinkingPanel')).toContainText(
-        'Tool platform.core.search responded',
+      await expect(page.testSubj.locator('agentBuilderToolCallGroup')).toContainText(
+        '1 tool responded',
         { timeout: 60_000 }
       );
 

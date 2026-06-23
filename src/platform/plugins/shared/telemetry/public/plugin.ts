@@ -25,7 +25,7 @@ import type {
 import type { HomePublicPluginSetup } from '@kbn/home-plugin/public';
 import { ElasticV3BrowserShipper } from '@elastic/ebt/shippers/elastic_v3/browser';
 import { isSyntheticsMonitor } from '@kbn/analytics-collection-utils';
-import { BehaviorSubject, map, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, type Observable, map, switchMap, tap } from 'rxjs';
 import { buildShipperHeaders, createBuildShipperUrl } from '../common/ebt_v3_endpoint';
 
 import type { TelemetryConfigLabels } from '../server/config';
@@ -38,8 +38,21 @@ import { renderWelcomeTelemetryNotice } from './render_welcome_telemetry_notice'
  * Publicly exposed APIs from the Telemetry Service
  */
 export interface TelemetryServicePublicApis {
-  /** Is the cluster opted-in to telemetry? **/
+  /**
+   * Is the cluster opted-in to telemetry?
+   * @deprecated Subscribe to {@link TelemetryServicePublicApis.isOptedIn$ | isOptedIn$} instead.
+   * Reading this synchronously at `start()` time or initial render may return the stale injected
+   * default before the user's saved preference has been fetched from the server.
+   */
   getIsOptedIn: () => boolean | null;
+  /**
+   * Emits the user's opt-in preference.
+   *
+   * It withholds the synchronous injected/default value and emits the first time the preference is
+   * resolved from the server, then emits again whenever it changes. Replays the latest value to late
+   * subscribers.
+   */
+  isOptedIn$: Observable<boolean>;
   /** Is the user allowed to change the opt-in/out status? **/
   userCanChangeSettings: boolean;
   /** Can phone-home telemetry calls be made? This depends on whether we have opted-in or if we are rendering a report */
@@ -265,6 +278,19 @@ export class TelemetryPlugin
     });
     this.telemetryNotifications = telemetryNotifications;
 
+    if (this.shouldSkipTelemetry(screenshotMode)) {
+      // In screenshot/synthetics mode we don't query the server. Seed `isOptedIn$` with the
+      // synchronous injected default so subscribers still receive a value.
+      this.telemetryService.config = this.config;
+    } else {
+      // Fetch the user's saved preference as early as possible so `telemetryService.isOptedIn$` emits
+      // the real value without waiting for the first `currentAppId$` emission (which only fires after
+      // every plugin's `start()` has run). This is the fix for the stale-at-startup behavior.
+      this.refreshConfig(http).catch(() => {
+        // Best-effort: the `currentAppId$` subscription below will retry on the first app navigation.
+      });
+    }
+
     application.currentAppId$
       .pipe(
         switchMap(async () => {
@@ -329,6 +355,7 @@ export class TelemetryPlugin
     const telemetryService = this.telemetryService!;
     return {
       getIsOptedIn: () => telemetryService.getIsOptedIn(),
+      isOptedIn$: telemetryService.isOptedIn$,
       setOptIn: (optedIn) => telemetryService.setOptIn(optedIn),
       canSendTelemetry: () => telemetryService.canSendTelemetry(),
       userCanChangeSettings: telemetryService.userCanChangeSettings,

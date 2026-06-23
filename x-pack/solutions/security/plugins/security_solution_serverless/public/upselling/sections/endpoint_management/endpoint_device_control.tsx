@@ -40,7 +40,7 @@ export const EndpointDeviceControl = memo(() => {
       data-test-subj="endpointDeviceControlLockedCard"
       isDisabled={true}
       description={false}
-      icon={<EuiIcon size="xl" type="lock" />}
+      icon={<EuiIcon size="xl" type="lock" aria-hidden={true} />}
       betaBadgeProps={{
         'data-test-subj': 'endpointDeviceControlLockedCard-badge',
         label: BADGE_TEXT,

@@ -97,7 +97,12 @@ export const DashboardsCard: OnboardingCardComponent = ({
                     <EuiFlexGroup direction="row" gutterSize="xs" alignItems="center">
                       <EuiFlexItem>{i18n.DASHBOARDS_CARD_CALLOUT_INTEGRATIONS_BUTTON}</EuiFlexItem>
                       <EuiFlexItem grow={false}>
-                        <EuiIcon type="chevronSingleRight" color="primary" size="s" />
+                        <EuiIcon
+                          type="chevronSingleRight"
+                          color="primary"
+                          size="s"
+                          aria-hidden={true}
+                        />
                       </EuiFlexItem>
                     </EuiFlexGroup>
                   </EuiLink>

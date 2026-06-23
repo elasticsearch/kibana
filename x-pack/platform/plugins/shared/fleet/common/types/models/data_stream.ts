@@ -25,4 +25,4 @@ export interface DataStream {
   } | null;
 }
 
-export type PackageDataStreamTypes = 'logs' | 'metrics' | 'traces' | 'synthetics' | 'profiling';
+export type PackageDataStreamTypes = 'logs' | 'metrics' | 'traces' | 'synthetics' | 'profiles';

@@ -22,7 +22,13 @@ export const TableHeader: React.FC<TableHeaderProps> = React.memo(
         <div id={id} tabIndex={0}>
           {title}
           &nbsp;
-          <EuiIcon size="s" type="question" color="subdued" className="eui-alignTop" />
+          <EuiIcon
+            size="s"
+            type="question"
+            color="subdued"
+            className="eui-alignTop"
+            aria-hidden={true}
+          />
         </div>
       </EuiToolTip>
     );

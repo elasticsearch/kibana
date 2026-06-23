@@ -54,6 +54,8 @@ const props: CasesTableFiltersProps = {
   onSelectedColumnsChange: jest.fn(),
   listFields: [],
   onListFieldsChange: jest.fn(),
+  sortOrder: 'desc',
+  onSortOrderChange: jest.fn(),
 };
 
 describe('CasesTableFilters ', () => {

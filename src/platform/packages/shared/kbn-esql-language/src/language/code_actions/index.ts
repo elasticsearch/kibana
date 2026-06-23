@@ -8,9 +8,8 @@
  */
 
 import type { ESQLCallbacks } from '@kbn/esql-types';
-import type { QuickFix } from './types';
-import type { ErrorTypes } from '../../commands/definitions/types';
-import { fixesByMessageCode } from './fixes_by_message_code';
+import type { QuickFix, QuickFixMessage } from './types';
+import { getQuickFixesByMessageCode } from './fixes_by_message_code';
 
 export interface EsqlCodeAction {
   title: string;
@@ -20,41 +19,42 @@ export interface EsqlCodeAction {
 /**
  * Computes the quick-fix code actions associated with an ESQLMessage.
  */
-export async function getQuickFixForMessage({
+export async function getQuickFixesForMessage({
   queryString,
   message,
   callbacks,
 }: {
   queryString: string;
-  message: {
-    // For now we only have query global quick fixes registered,so with the code is enough
-    // but if local quick fixes are needed, we should add start and end positions to the message interface.
-    code: string;
-  };
+  message: QuickFixMessage;
   callbacks?: ESQLCallbacks;
-}): Promise<EsqlCodeAction | undefined> {
-  const quickFix = fixesByMessageCode[message.code as ErrorTypes];
-  if (!quickFix) {
-    return undefined;
-  }
+}): Promise<EsqlCodeAction[]> {
+  const quickFixes = getQuickFixesByMessageCode(message);
 
-  const shouldDisplay = await shouldDisplayQuickFix(quickFix, queryString, callbacks);
-  if (!shouldDisplay) {
-    return undefined;
-  }
+  const actions = await Promise.all(
+    quickFixes.map(async (quickFix) => {
+      const shouldDisplay = await shouldDisplayQuickFix(quickFix, queryString, callbacks);
+      if (!shouldDisplay) {
+        return undefined;
+      }
 
-  let fixedText: string;
-  try {
-    fixedText = quickFix.fixQuery(queryString);
-  } catch {
-    // If the quick fix fails to generate a valid query, we don't display it.
-    return undefined;
-  }
+      try {
+        const fixedText = quickFix.fixQuery(queryString);
+        if (!fixedText) {
+          return undefined;
+        }
 
-  return {
-    title: quickFix.title,
-    fixedText,
-  };
+        return {
+          title: quickFix.title,
+          fixedText,
+        };
+      } catch {
+        // If the quick fix fails to generate a valid query, we don't display it.
+        return undefined;
+      }
+    })
+  );
+
+  return actions.filter((action): action is EsqlCodeAction => Boolean(action));
 }
 
 /**

@@ -100,3 +100,27 @@ export const FrozenOmittedWithoutRepositoryPermission: Story = {
   },
   render: (args) => <DlmPhasesSelector {...args} />,
 };
+
+export const ExistingFrozenActiveMissingEnterprise: Story = {
+  name: 'Existing template — frozen active, enterprise missing',
+  args: {
+    hasEnterpriseLicense: false,
+    defaultValue: {
+      frozen: { enabled: true, value: '30', unit: 'd' },
+      delete: { enabled: true, value: '60', unit: 'd' },
+    },
+  },
+  render: (args) => <DlmPhasesSelector {...args} />,
+};
+
+export const ExistingFrozenActiveMissingRepository: Story = {
+  name: 'Existing template — frozen active, repository missing',
+  args: {
+    hasDefaultSnapshotRepository: false,
+    defaultValue: {
+      frozen: { enabled: true, value: '30', unit: 'd' },
+      delete: { enabled: true, value: '60', unit: 'd' },
+    },
+  },
+  render: (args) => <DlmPhasesSelector {...args} />,
+};

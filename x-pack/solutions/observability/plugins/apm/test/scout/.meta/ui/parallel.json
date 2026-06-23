@@ -1,6 +1,22 @@
 {
-  "sha1": "5bd1a869b7ca0bf9a772514de6595c4453fcf51b",
+  "sha1": "83939c840e9193939dd27e952cfd0478e1c264e1",
   "tests": [
+    {
+      "id": "b24d1ecdbd533dc-9b4248bf82e44c0",
+      "title": "Clean up APM data after UI parallel tests",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/apm/test/scout/ui/parallel_tests/global.teardown.ts",
+        "line": 14,
+        "column": 1
+      }
+    },
     {
       "id": "5e91b4cbd08e25e-f2cd2d3cdc77643",
       "title": "Ingest data to Elasticsearch",
@@ -969,7 +985,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/apm/test/scout/ui/parallel_tests/service_map/service_map_embeddable.spec.ts",
-        "line": 46,
+        "line": 57,
         "column": 9
       }
     },
@@ -985,7 +1001,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/apm/test/scout/ui/parallel_tests/service_map/service_map_embeddable.spec.ts",
-        "line": 244,
+        "line": 255,
         "column": 9
       }
     },
@@ -2411,7 +2427,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/apm/test/scout/ui/parallel_tests/settings/custom_links.spec.ts",
-        "line": 18,
+        "line": 54,
         "column": 9
       }
     },
@@ -2427,7 +2443,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/apm/test/scout/ui/parallel_tests/settings/custom_links.spec.ts",
-        "line": 32,
+        "line": 68,
         "column": 9
       }
     },
@@ -2473,7 +2489,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/apm/test/scout/ui/parallel_tests/settings/indices.spec.ts",
-        "line": 14,
+        "line": 26,
         "column": 7
       }
     },
@@ -2487,7 +2503,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/apm/test/scout/ui/parallel_tests/settings/indices.spec.ts",
-        "line": 28,
+        "line": 40,
         "column": 7
       }
     },

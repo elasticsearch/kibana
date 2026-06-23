@@ -20,6 +20,7 @@ import {
   EuiIconTip,
   EuiButtonEmpty,
   useEuiTheme,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useKibanaContextForPlugin } from '../../../../../hooks/use_kibana';
@@ -56,6 +57,7 @@ export function SaveDashboardModal({
   const { data: allAvailableDashboards, status } = useDashboardFetcher();
   const [, setUrlState] = useAssetDetailsUrlState();
   const { euiTheme } = useEuiTheme();
+  const modalTitleId = useGeneratedHtmlId();
 
   const [assetNameEnabled, setAssetNameFiltersEnabled] = useState(
     currentDashboard?.dashboardFilterAssetIdEnabled ?? true
@@ -152,9 +154,13 @@ export function SaveDashboardModal({
   );
 
   return (
-    <EuiModal onClose={onClose} data-test-subj="infraSelectCustomDashboard">
+    <EuiModal
+      onClose={onClose}
+      data-test-subj="infraSelectCustomDashboard"
+      aria-labelledby={modalTitleId}
+    >
       <EuiModalHeader>
-        <EuiModalHeaderTitle>
+        <EuiModalHeaderTitle id={modalTitleId}>
           {isEditMode
             ? i18n.translate('xpack.infra.customDashboards.selectDashboard.modalTitle.edit', {
                 defaultMessage: 'Edit dashboard',

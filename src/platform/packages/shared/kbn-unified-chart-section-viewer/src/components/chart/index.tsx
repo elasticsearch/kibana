@@ -9,7 +9,11 @@
 
 import { EuiFlexGroup, EuiFlexItem, EuiLoadingChart, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { LensSeriesLayer, LensYBoundsConfig } from '@kbn/lens-embeddable-utils';
+import type {
+  LensLegendConfig,
+  LensSeriesLayer,
+  LensYBoundsConfig,
+} from '@kbn/lens-embeddable-utils';
 import { useBoolean } from '@kbn/react-hooks';
 import React, { useRef } from 'react';
 import type { EmbeddableComponentProps } from '@kbn/lens-plugin/public';
@@ -33,6 +37,7 @@ export type ChartProps = Pick<UnifiedMetricsGridProps, 'fetchParams'> &
     description?: string;
     chartLayers: LensSeriesLayer[];
     yBounds?: LensYBoundsConfig;
+    legend?: LensLegendConfig;
     isLoading?: boolean;
     error?: Error;
     userMessages?: EmbeddableComponentProps['userMessages'];
@@ -58,6 +63,7 @@ export const Chart = ({
   syncCursor,
   syncTooltips,
   yBounds,
+  legend,
   extraDisabledActions,
   quickActionIds,
   isLoading = false,
@@ -83,6 +89,7 @@ export const Chart = ({
     chartRef,
     chartLayers,
     yBounds,
+    legend,
     error,
     userMessages,
     profileId,

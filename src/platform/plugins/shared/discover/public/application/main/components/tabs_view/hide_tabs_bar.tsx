@@ -8,7 +8,7 @@
  */
 
 import type { FC, ReactNode } from 'react';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { AppMenu } from '@kbn/core-chrome-app-menu';
 import {
   internalStateActions,
@@ -18,6 +18,7 @@ import {
 import { useDiscoverServices } from '../../../../hooks/use_discover_services';
 import { useTopNavMenuItems } from '../top_nav/use_top_nav_menu_items';
 import type { DiscoverCustomizationContext } from '../../../../customizations';
+import { useIsChromeNextProjectHeader } from '../chrome_app_header';
 
 export const HideTabsBar: FC<{
   customizationContext: DiscoverCustomizationContext;
@@ -25,10 +26,7 @@ export const HideTabsBar: FC<{
 }> = ({ customizationContext, children }) => {
   const dispatch = useInternalStateDispatch();
   const { chrome } = useDiscoverServices();
-  const isChromeNextProjectHeader = useMemo(
-    () => chrome.next.isEnabled && chrome.getChromeStyle() === 'project',
-    [chrome]
-  );
+  const isChromeNextProjectHeader = useIsChromeNextProjectHeader();
   const topNavMenuItems = useTopNavMenuItems();
 
   useEffect(() => {

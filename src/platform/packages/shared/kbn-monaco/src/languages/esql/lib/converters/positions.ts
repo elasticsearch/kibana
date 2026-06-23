@@ -54,6 +54,8 @@ export function wrapAsMonacoMessages(
     return {
       code: e.code,
       message: e.text,
+      data: e.data,
+      location: e.location,
       startColumn: startPosition.column,
       startLineNumber: startPosition.lineNumber,
       endColumn: endPosition.column + 1,

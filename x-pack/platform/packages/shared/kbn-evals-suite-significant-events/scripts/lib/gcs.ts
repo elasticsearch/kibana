@@ -55,7 +55,7 @@ export async function createSnapshot({
   snapshotName: string;
   runId: string;
   indices?: string;
-}): Promise<void> {
+}): Promise<string[]> {
   const repoName = generateGcsRepoName({ runId });
   const kiFeaturesIndex = getSigeventsSnapshotKIFeaturesIndex(snapshotName);
   const indicesToCapture = indices ?? `logs*,${kiFeaturesIndex}`;
@@ -82,6 +82,10 @@ export async function createSnapshot({
     wait_for_completion: true,
     indices: indicesToCapture,
     include_global_state: false,
+    // Tolerate any requested index that doesn't exist (e.g. the KI data stream on a
+    // fresh env) instead of failing the whole snapshot. Callers should log the
+    // snapshot's actual contents so a silently-partial capture stays visible.
+    ignore_unavailable: true,
   });
 
   const shards = result.snapshot?.shards;
@@ -90,4 +94,6 @@ export async function createSnapshot({
       shards?.total ?? '?'
     } shards`
   );
+
+  return result.snapshot?.indices ?? [];
 }

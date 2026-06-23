@@ -8,11 +8,16 @@
 import type { Threat } from '../../../../../../common/api/detection_engine';
 import type { OriginalRule } from '../../../../../../common/siem_migrations/model/rule_migration.gen';
 import type { SentinelRule } from '../../../../../../common/siem_migrations/parsers/sentinel/types';
+import type { MigrationTranslationFields } from '../../../../../../common/siem_migrations/rules/utils';
 import {
   TACTICS_BASE_URL,
   TECHNIQUES_BASE_URL,
   SENTINEL_TACTIC_NAME_TO_ID,
   SENTINEL_TACTIC_NAME_TO_DISPLAY,
+  ISO_8601_DURATION_PATTERN,
+  SENTINEL_RULE_KIND_ANNOTATION_KEY,
+  SENTINEL_NRT_RULE_KIND,
+  SENTINEL_DEFAULT_QUERY_FREQUENCY,
 } from './constants';
 
 /**
@@ -63,6 +68,85 @@ export function transformSentinelMitreMapping(
   });
 }
 
+function convertIsoDurationToDateMath(isoString: string): string | undefined {
+  const match = isoString.match(ISO_8601_DURATION_PATTERN);
+  if (!match?.groups) {
+    return undefined;
+  }
+
+  const years = Number(match.groups.years ?? 0);
+  const months = Number(match.groups.months ?? 0);
+  const days = Number(match.groups.days ?? 0);
+  const hours = Number(match.groups.hours ?? 0);
+  const minutes = Number(match.groups.minutes ?? 0);
+  const seconds = Number(match.groups.seconds ?? 0);
+
+  const dateUnits = [
+    { value: years, suffix: 'y' },
+    { value: months, suffix: 'M' },
+    { value: days, suffix: 'd' },
+  ].filter(({ value }) => value > 0);
+  const totalTimeSeconds = hours * 60 * 60 + minutes * 60 + seconds;
+
+  if (dateUnits.length > 1 || (dateUnits.length === 1 && totalTimeSeconds > 0)) {
+    return undefined;
+  }
+
+  if (dateUnits.length === 1) {
+    const [dateUnit] = dateUnits;
+    return `${dateUnit.value}${dateUnit.suffix}`;
+  }
+
+  if (seconds > 0) {
+    return `${totalTimeSeconds}s`;
+  }
+  if (minutes > 0) {
+    return `${hours * 60 + minutes}m`;
+  }
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+
+  return undefined;
+}
+
+const isNonEmptyString = (value: string | undefined): value is string =>
+  value != null && value !== '';
+
+const transformQueryPeriodToTimeRange = (
+  queryPeriodIso: string
+): Pick<MigrationTranslationFields, 'from' | 'to'> | undefined => {
+  const period = convertIsoDurationToDateMath(queryPeriodIso);
+  if (!period) {
+    return undefined;
+  }
+
+  return {
+    from: `now-${period}`,
+    to: 'now',
+  };
+};
+
+const transformQueryFrequencyToInterval = (
+  queryFrequencyIso: string
+): Pick<MigrationTranslationFields, 'interval'> | undefined => {
+  const interval = convertIsoDurationToDateMath(queryFrequencyIso);
+
+  return interval ? { interval } : undefined;
+};
+
+const getSentinelIntervalAnnotation = (
+  rule: SentinelRule
+): Pick<MigrationTranslationFields, 'interval'> | undefined => {
+  if (isNonEmptyString(rule.queryFrequency)) {
+    return transformQueryFrequencyToInterval(rule.queryFrequency);
+  }
+
+  return rule.kind === SENTINEL_NRT_RULE_KIND
+    ? { interval: SENTINEL_DEFAULT_QUERY_FREQUENCY }
+    : undefined;
+};
+
 /**
  * Transforms a parsed Sentinel rule into the OriginalRule format
  * used by the SIEM migrations pipeline.
@@ -78,6 +162,13 @@ export function transformSentinelRuleToOriginalRule(rule: SentinelRule): Origina
     query: rule.query,
     query_language: 'kql',
     severity: rule.severity.toLowerCase(),
+    annotations: {
+      [SENTINEL_RULE_KIND_ANNOTATION_KEY]: rule.kind,
+      ...(isNonEmptyString(rule.queryPeriod)
+        ? transformQueryPeriodToTimeRange(rule.queryPeriod)
+        : {}),
+      ...getSentinelIntervalAnnotation(rule),
+    },
   };
 
   if (threat.length > 0) {

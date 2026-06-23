@@ -27,11 +27,9 @@ interface DashboardAttachmentContent {
   [key: string]: unknown;
 }
 
-interface DashboardAttachmentContainer {
+interface DashboardSummaryContainer {
   data?: {
-    dashboardAttachment?: {
-      content?: DashboardAttachmentContent;
-    };
+    dashboard?: DashboardAttachmentContent;
   };
 }
 
@@ -39,7 +37,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const getDashboardAttachmentContent = (value: unknown): DashboardAttachmentContent | undefined => {
-  const content = (value as DashboardAttachmentContainer).data?.dashboardAttachment?.content;
+  // The generate_dashboard tool result exposes a compact dashboard summary at
+  // `data.dashboard` (title, description, and panels/sections with their grids).
+  const content = (value as DashboardSummaryContainer).data?.dashboard;
   if (content && Array.isArray(content.panels)) {
     return content;
   }

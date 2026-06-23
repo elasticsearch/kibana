@@ -9,6 +9,8 @@ import { SupportedChartType } from '@kbn/agent-builder-common/tools/tool_result'
 import type { ModelProvider, ToolEventEmitter } from '@kbn/agent-builder-server';
 import type { IScopedClusterClient } from '@kbn/core-elasticsearch-server';
 import type { Logger } from '@kbn/logging';
+import { validateEsqlQuery } from '@kbn/agent-builder-genai-utils';
+import { buildServerESQLCallbacks } from '@kbn/esql-server-utils';
 import { createVisualizationGraph } from './graph_lens';
 import { guessChartType } from './guess_chart_type';
 import { getSchemaForChartType } from './schemas';
@@ -71,6 +73,27 @@ export const buildVisualizationConfig = async ({
     additionalChartConfigInstructions
   );
 
+  // If the user provides ES|QL, use it only when validation says it is safe.
+  // If validation cannot run, keep the query and let the next step handle it.
+  let providedEsql = esql;
+  if (providedEsql) {
+    let validationError: string | undefined;
+    try {
+      validationError = await validateEsqlQuery(
+        providedEsql,
+        buildServerESQLCallbacks({ client: esClient.asCurrentUser })
+      );
+    } catch {
+      // Couldn't validate, keep it.
+    }
+    if (validationError) {
+      logger.warn(
+        `Provided ES|QL failed validation; regenerating from the natural-language query. Error: ${validationError}`
+      );
+      providedEsql = undefined;
+    }
+  }
+
   const finalState = await graph.invoke({
     nlQuery,
     index,
@@ -78,7 +101,7 @@ export const buildVisualizationConfig = async ({
     schema,
     existingConfig,
     parsedExistingConfig,
-    esqlQuery: esql || '',
+    esqlQuery: providedEsql || '',
     currentAttempt: 0,
     actions: [],
     validatedConfig: null,

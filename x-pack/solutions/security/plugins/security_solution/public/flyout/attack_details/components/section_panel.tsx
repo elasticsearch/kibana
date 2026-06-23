@@ -129,6 +129,7 @@ export const SectionPanel = memo(
                   <EuiIcon
                     color="primary"
                     type={linkIconType}
+                    aria-hidden={true}
                     css={css`
                       margin: ${euiTheme.size.s} 0;
                     `}

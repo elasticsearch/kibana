@@ -269,7 +269,7 @@ export const useTopNavLinks = ({
         tooltipContent: isDataViewMode
           ? i18n.translate('discover.localMenu.switchToESQLTooltip', {
               defaultMessage:
-                'Search, transform, join, and aggregate your data with ES|QL or PromQL',
+                'Search, transform, join and aggregate your data with ES|QL or PromQL',
             })
           : i18n.translate('discover.localMenu.switchToClassicTooltip', {
               defaultMessage: 'Search your data with data views and KQL in Classic Discover',

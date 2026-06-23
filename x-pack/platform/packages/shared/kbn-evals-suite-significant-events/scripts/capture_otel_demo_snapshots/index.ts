@@ -25,6 +25,7 @@ import {
   HEALTHY_BASELINE_SCENARIO,
   DEFAULT_LOGS_INDEX,
   DEFAULT_DEMO_APP,
+  KI_FEATURE_EXTRACTION_TIMEOUT_MS,
 } from '../lib/constants';
 import { getConnectionConfig, type ConnectionConfig } from '../lib/get_connection_config';
 import { createSnapshot, generateGcsBasePath, registerGcsRepository } from '../lib/gcs';
@@ -85,6 +86,11 @@ run(
       BASELINE_WAIT_MS
     );
     const failureWaitMs = parseDurationFlag(flags['failure-wait'], 'failure-wait', FAILURE_WAIT_MS);
+    const extractionTimeoutMs = parseDurationFlag(
+      flags['extraction-timeout'],
+      'extraction-timeout',
+      KI_FEATURE_EXTRACTION_TIMEOUT_MS
+    );
 
     const failureScenarios = getDemoScenarios(demoType as DemoType);
     const allScenarios: Scenario[] = [HEALTHY_BASELINE_SCENARIO, ...failureScenarios];
@@ -135,7 +141,8 @@ run(
         demoType as DemoType,
         baselineWaitMs,
         failureWaitMs,
-        logsIndex
+        logsIndex,
+        extractionTimeoutMs
       );
     }
 
@@ -196,6 +203,7 @@ run(
         'demo-app',
         'baseline-wait',
         'failure-wait',
+        'extraction-timeout',
         'logs-index',
       ],
       boolean: ['dry-run'],
@@ -208,6 +216,7 @@ run(
         --demo-app         Demo app to use (default: otel-demo). Must be a registered demo type.
         --baseline-wait    Duration to wait for baseline traffic, e.g. 3m, 90s, 1h (default: 3m)
         --failure-wait     Duration to wait after applying failure scenario, e.g. 15m, 300s (default: 5m)
+        --extraction-timeout  Max duration to wait for KI feature extraction, e.g. 15m, 30m (default: 15m)
         --es-url           Elasticsearch URL (default: from kibana.dev.yml)
         --kibana-url       Kibana URL (default: from kibana.dev.yml, with basePath)
         --es-username      ES username (default: from kibana.dev.yml)
@@ -230,7 +239,8 @@ async function processScenario(
   demoType: DemoType,
   baselineWaitMs: number,
   failureWaitMs: number,
-  logsIndex: string = DEFAULT_LOGS_INDEX
+  logsIndex: string = DEFAULT_LOGS_INDEX,
+  extractionTimeoutMs: number = KI_FEATURE_EXTRACTION_TIMEOUT_MS
 ): Promise<void> {
   const isFailure = isFailureScenario(scenario);
 
@@ -275,9 +285,9 @@ async function processScenario(
     // Step 6 — Run feature extraction
     log.info('[6/8] Running feature extraction...');
     await triggerSigEventsKIFeatureExtraction(config, log, logsIndex);
-    await waitForSigEventsKIFeatureExtraction(config, log, logsIndex);
+    await waitForSigEventsKIFeatureExtraction(config, log, logsIndex, extractionTimeoutMs);
     await logSigEventsExtractedKIFeatures(config, log, logsIndex);
-    await persistSigEventsExtractedKIsForSnapshot(config, esClient, log, scenario.id);
+    await persistSigEventsExtractedKIsForSnapshot(config, esClient, log, scenario.id, logsIndex);
 
     // Step 7 — Create a snapshot of the logs and extracted features
     log.info('[7/8] Creating GCS snapshot...');

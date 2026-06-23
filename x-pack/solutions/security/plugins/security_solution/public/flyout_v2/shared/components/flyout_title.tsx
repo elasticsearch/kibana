@@ -87,6 +87,7 @@ export const FlyoutTitle: FC<FlyoutTitleProps> = memo(
         <EuiIcon
           type="external"
           size="m"
+          aria-hidden={true}
           css={css`
             margin-bottom: ${euiTheme.size.xs};
           `}

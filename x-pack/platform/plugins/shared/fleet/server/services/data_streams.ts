@@ -8,7 +8,8 @@
 import type { IndicesDataStream, IndicesIndexTemplate } from '@elastic/elasticsearch/lib/api/types';
 import type { ElasticsearchClient } from '@kbn/core/server';
 
-const DATA_STREAM_INDEX_PATTERN = 'logs-*-*,metrics-*-*,traces-*-*,synthetics-*-*,profiling-*';
+const DATA_STREAM_INDEX_PATTERN =
+  'logs-*-*,metrics-*-*,traces-*-*,synthetics-*-*,profiling-*,profiles-*';
 
 export interface MeteringStatsResponse {
   datastreams: MeteringStats[];

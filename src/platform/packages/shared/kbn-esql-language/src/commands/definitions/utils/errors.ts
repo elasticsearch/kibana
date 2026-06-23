@@ -791,10 +791,16 @@ export const errors = {
   ): ESQLMessage =>
     tagSemanticError(
       withWarningSeverity(
-        errors.byId('columnTypeConflict', column.location, {
-          columnName,
-          types: types.map((type) => `[${type}]`).join(', '),
-        }),
+        {
+          ...errors.byId('columnTypeConflict', column.location, {
+            columnName,
+            types: types.map((type) => `[${type}]`).join(', '),
+          }),
+          data: {
+            columnName,
+            types,
+          },
+        },
         shouldWarn
       ),
       'getColumnsFor'

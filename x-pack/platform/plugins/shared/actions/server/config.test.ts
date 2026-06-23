@@ -554,6 +554,56 @@ describe('config validation', () => {
       expect(result.email?.services?.ses).toBeUndefined();
     });
   });
+
+  describe('auth.ears.ssl', () => {
+    test('accepts certificate and key together', () => {
+      const result = configSchema.validate({
+        auth: {
+          ears: {
+            ssl: {
+              verificationMode: 'full',
+              certificate: '/path/to/cert.pem',
+              key: '/path/to/key.pem',
+            },
+          },
+        },
+      });
+      expect(result.auth?.ears?.ssl?.certificate).toBe('/path/to/cert.pem');
+      expect(result.auth?.ears?.ssl?.key).toBe('/path/to/key.pem');
+    });
+
+    test('throws when certificate is specified without key', () => {
+      expect(() =>
+        configSchema.validate({
+          auth: {
+            ears: {
+              ssl: {
+                certificate: '/path/to/cert.pem',
+              },
+            },
+          },
+        })
+      ).toThrowErrorMatchingInlineSnapshot(
+        `"[auth.ears.ssl]: must specify [auth.ears.ssl.key] when [auth.ears.ssl.certificate] is specified"`
+      );
+    });
+
+    test('throws when key is specified without certificate', () => {
+      expect(() =>
+        configSchema.validate({
+          auth: {
+            ears: {
+              ssl: {
+                key: '/path/to/key.pem',
+              },
+            },
+          },
+        })
+      ).toThrowErrorMatchingInlineSnapshot(
+        `"[auth.ears.ssl]: must specify [auth.ears.ssl.certificate] when [auth.ears.ssl.key] is specified"`
+      );
+    });
+  });
 });
 
 // object creator that ensures we can create a property named __proto__ on an

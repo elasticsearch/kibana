@@ -5,4 +5,4 @@
  * 2.0.
  */
 
-export { manageDashboardTool } from './manage_dashboard';
+export { generateDashboardTool } from './generate';

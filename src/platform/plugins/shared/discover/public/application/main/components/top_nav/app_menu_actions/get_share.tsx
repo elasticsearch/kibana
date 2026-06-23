@@ -292,6 +292,9 @@ export const getShareAppMenuItem = ({
       label: i18n.translate('discover.localMenu.shareTitle', {
         defaultMessage: 'Share',
       }),
+      tooltipContent: i18n.translate('discover.localMenu.shareTooltip', {
+        defaultMessage: 'Share session',
+      }),
       iconType: 'share',
       testId: 'shareTopNavButton',
       run: () => {

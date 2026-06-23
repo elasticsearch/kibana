@@ -8,7 +8,7 @@
 import type { EvaluationResult, Evaluator } from '@kbn/evals';
 import type { DashboardAgentTaskOutput, DashboardDatasetExample } from './evaluate_dataset';
 
-const DASHBOARD_MANAGEMENT_TOOL_ID = 'platform.dashboard.manage_dashboard';
+const DASHBOARD_GENERATE_TOOL_ID = 'platform.dashboard.generate_dashboard';
 
 const getLowerCaseSkillPaths = (output: DashboardAgentTaskOutput): string[] =>
   getSkillReadPaths(output).map((path) => path.toLowerCase());
@@ -75,7 +75,7 @@ const didLoadVisualizationSkill = (output: DashboardAgentTaskOutput): boolean =>
   );
 
 const didCallDashboardTool = (output: DashboardAgentTaskOutput): boolean =>
-  getToolIds(output).includes(DASHBOARD_MANAGEMENT_TOOL_ID);
+  getToolIds(output).includes(DASHBOARD_GENERATE_TOOL_ID);
 
 export const dashboardSkillActivatedEvaluator: Evaluator<
   DashboardDatasetExample,

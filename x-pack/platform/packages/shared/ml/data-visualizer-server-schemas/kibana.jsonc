@@ -1,0 +1,9 @@
+{
+  "type": "shared-server",
+  "id": "@kbn/data-visualizer-server-schemas",
+  "owner": [
+    "@elastic/ml-ui"
+  ],
+  "group": "platform",
+  "visibility": "shared"
+}

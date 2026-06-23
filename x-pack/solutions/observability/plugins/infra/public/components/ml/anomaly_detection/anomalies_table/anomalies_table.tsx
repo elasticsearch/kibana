@@ -228,6 +228,9 @@ const AnomalyActionMenu = ({
     <EuiPopover
       anchorPosition="downRight"
       panelPaddingSize="none"
+      aria-label={i18n.translate('xpack.infra.ml.anomalyFlyout.actions.menuAriaLabel', {
+        defaultMessage: 'Anomaly actions',
+      })}
       button={
         <EuiToolTip
           content={i18n.translate('xpack.infra.ml.anomalyFlyout.actions.openActionMenu', {

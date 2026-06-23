@@ -58,6 +58,7 @@ export const ConnectorSetup = React.memo<ConnectorSetupProps>(
                           size="xxl"
                           color="text"
                           type={actionTypeRegistry.get(actionType.id).iconClass}
+                          aria-hidden={true}
                         />
                       </EuiFlexItem>
                     </EuiFlexGroup>

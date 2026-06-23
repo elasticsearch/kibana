@@ -73,6 +73,7 @@ dependsOn:
   - '@kbn/session-notifications-plugin'
   - '@kbn/ui-actions-plugin'
   - '@kbn/deeplinks-analytics'
+  - '@kbn/unified-tabs'
 tags:
   - test-helper
   - package

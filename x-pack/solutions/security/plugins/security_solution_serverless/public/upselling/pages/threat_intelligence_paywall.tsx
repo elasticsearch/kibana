@@ -20,7 +20,7 @@ const ThreatIntelligencePaywall: React.FC<{ requiredPLI: ProductFeatureKeyType }
       <KibanaPageTemplate restrictWidth={false} contentBorder={false} grow={true}>
         <KibanaPageTemplate.Section>
           <EuiEmptyPrompt
-            icon={<EuiIcon type="logoSecurity" size="xl" />}
+            icon={<EuiIcon type="logoSecurity" size="xl" aria-hidden={true} />}
             color="subdued"
             title={
               <h2>

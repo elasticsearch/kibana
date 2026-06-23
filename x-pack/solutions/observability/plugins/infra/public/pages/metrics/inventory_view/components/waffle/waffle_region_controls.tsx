@@ -78,6 +78,9 @@ export const WaffleRegionControls = (props: Props) => {
       anchorPosition="downLeft"
       panelPaddingSize="none"
       closePopover={closePopover}
+      aria-label={i18n.translate('xpack.infra.waffle.regionControls.ariaLabel', {
+        defaultMessage: 'Region',
+      })}
     >
       <EuiContextMenu initialPanelId={0} panels={panels} />
     </EuiPopover>

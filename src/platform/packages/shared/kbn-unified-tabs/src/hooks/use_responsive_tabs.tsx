@@ -170,6 +170,10 @@ export const useResponsiveTabs = ({
       scrollbar-width: none; // hide the scrollbar
       scroll-behavior: smooth;
       padding-inline: ${euiTheme.size.xs}; // space for curved notch
+      // Extend the clip box downward (net-zero layout) so the active tab can overlap the
+      // container's bottom border without being clipped by overflow-x (which forces overflow-y to clip).
+      padding-bottom: ${euiTheme.size.s};
+      margin-bottom: -${euiTheme.size.s};
       &::-webkit-scrollbar {
         display: none;
       }

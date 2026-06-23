@@ -23,13 +23,13 @@ const createOutput = (steps: DashboardAgentTaskOutput['steps']): DashboardAgentT
 });
 
 const createDashboardResult = (title: string, panels: Array<Record<string, unknown>>) => ({
-  type: 'dashboard',
+  type: 'other',
   data: {
-    dashboardAttachment: {
-      content: {
-        title,
-        panels,
-      },
+    attachment_id: 'dashboard-attachment-id',
+    version: 1,
+    dashboard: {
+      title,
+      panels,
     },
   },
 });

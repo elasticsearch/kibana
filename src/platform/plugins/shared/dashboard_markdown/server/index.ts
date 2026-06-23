@@ -12,6 +12,7 @@ export { MARKDOWN_EMBEDDABLE_TYPE } from '../common/constants';
 export {
   type MarkdownByReferenceState,
   type MarkdownByValueState,
+  markdownByValueStateSchema,
   markdownEmbeddableSchema,
   type MarkdownEmbeddableState,
 } from './embeddable/schemas';

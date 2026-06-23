@@ -30,7 +30,7 @@ const UnfoldButton = ({ start, end, onExpand, ...props }: UnfoldButtonProps) => 
         <EuiFlexGroup justifyContent="center">
           <EuiLink onClick={expand}>
             <EuiFlexGroup justifyContent="center" alignItems="center" gutterSize="s">
-              <EuiIcon type="sortable" />
+              <EuiIcon type="sortable" aria-hidden={true} />
               <EuiText size="s">{i18n.EXPAND_UNCHANGED_LINES(linesCount)}</EuiText>
             </EuiFlexGroup>
           </EuiLink>

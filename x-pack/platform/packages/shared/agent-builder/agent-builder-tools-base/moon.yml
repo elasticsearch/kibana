@@ -31,6 +31,7 @@ dependsOn:
   - '@kbn/zod'
   - '@kbn/palettes'
   - '@kbn/core-http-server-mocks'
+  - '@kbn/esql-server-utils'
 tags:
   - shared-server
   - package

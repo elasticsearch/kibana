@@ -45,7 +45,7 @@ export const EndpointCustomNotification = memo(() => {
         data-test-subj="endpointPolicy-customNotificationLockedCard"
         isDisabled={true}
         description={false}
-        icon={<EuiIcon size="xl" type="lock" />}
+        icon={<EuiIcon size="xl" type="lock" aria-hidden={true} />}
         betaBadgeProps={{
           'data-test-subj': 'endpointPolicy-customNotificationLockedCard-badge',
           label: BADGE_TEXT,

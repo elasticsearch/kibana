@@ -34,7 +34,12 @@ const RuleStatusIconComponent: React.FC<RuleStatusIconProps> = ({ name, type }) 
     <RuleStatusIconStyled>
       <EuiAvatar color={color} name={type === 'valid' ? '' : name} size="l" aria-label={name} />
       {type === 'valid' ? (
-        <EuiIcon type="check" color={euiTheme.colors.backgroundBasePlain} size="l" />
+        <EuiIcon
+          type="check"
+          color={euiTheme.colors.backgroundBasePlain}
+          size="l"
+          aria-hidden={true}
+        />
       ) : null}
     </RuleStatusIconStyled>
   );

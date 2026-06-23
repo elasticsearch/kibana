@@ -12,7 +12,7 @@ import moment from 'moment';
 import type { ConnectionConfig } from '../lib/get_connection_config';
 import { getConnectionConfig } from '../lib/get_connection_config';
 import { createSnapshot, generateGcsBasePath, registerGcsRepository } from '../lib/gcs';
-import { GCS_BUCKET } from '../lib/constants';
+import { GCS_BUCKET, KNOWLEDGE_INDICATORS_DATA_STREAM } from '../lib/constants';
 import { resolvePatterns, parseCommonSnapshotFlags, toSnapshotName } from '../lib/snapshot_utils';
 import { withTempSuperuser } from '../lib/user_utils';
 
@@ -21,7 +21,10 @@ async function fetchMapping(
   indexName: string
 ): Promise<MappingTypeMapping | undefined> {
   const response = await esClient.indices.getMapping({ index: indexName });
-  return response[indexName]?.mappings;
+  // `getMapping` keys the response by concrete index name. For a data stream the
+  // keys are its backing indices (`.ds-…`), not the data-stream name, so fall back
+  // to the first entry when an exact-name match isn't present.
+  return response[indexName]?.mappings ?? Object.values(response)[0]?.mappings;
 }
 
 async function captureSystemIndex({
@@ -40,7 +43,11 @@ async function captureSystemIndex({
 
     const mappings = await fetchMapping(sysClient, sourceIndex);
     if (!mappings) {
-      throw new Error(`Could not fetch mapping for "${sourceIndex}"`);
+      const hint =
+        sourceIndex === KNOWLEDGE_INDICATORS_DATA_STREAM
+          ? ' The KI data stream has no backing indices — run KI feature extraction before capturing.'
+          : '';
+      throw new Error(`Could not fetch mapping for "${sourceIndex}".${hint}`);
     }
 
     await sysClient.indices.delete({ index: snapshotIndex, ignore_unavailable: true });
@@ -98,7 +105,10 @@ export async function captureEnvSnapshot({
 
   log.info(`Snapshot: ${snapshotName} | Run: ${runId} | ES: ${config.esUrl}`);
 
-  const resolvedSystemIndices = await resolvePatterns(esClient, log, systemIndices);
+  const resolvedSystemIndices = await resolvePatterns(esClient, log, [
+    ...systemIndices,
+    KNOWLEDGE_INDICATORS_DATA_STREAM,
+  ]);
   const resolvedIndices = await resolvePatterns(esClient, log, [logsIndex, ...alertIndices]);
 
   const capturedSystemIndices: string[] = [];
@@ -111,9 +121,24 @@ export async function captureEnvSnapshot({
   const allSnapshotIndices = [...resolvedIndices, ...capturedSystemIndices].join(',');
 
   await registerGcsRepository(esClient, log, runId);
-  await createSnapshot({ esClient, log, snapshotName, runId, indices: allSnapshotIndices });
+  const actualIndices = await createSnapshot({
+    esClient,
+    log,
+    snapshotName,
+    runId,
+    indices: allSnapshotIndices,
+  });
 
-  log.info(`Snapshot created: sigevents-${runId}/${snapshotName} (${allSnapshotIndices})`);
+  // `ignore_unavailable: true` silently drops missing indices — report what was actually
+  // captured so a partial snapshot surfaces immediately rather than at restore time.
+  log.info(`Snapshot contains ${actualIndices.length} indices: ${actualIndices.join(', ')}`);
+  const requested = allSnapshotIndices.split(',');
+  const missing = requested.filter((i) => !i.includes('*') && !actualIndices.includes(i));
+  if (missing.length > 0) {
+    log.warning(
+      `Requested indices NOT in snapshot (skipped — did not exist): ${missing.join(', ')}`
+    );
+  }
 
   log.info('');
   log.info('='.repeat(70));

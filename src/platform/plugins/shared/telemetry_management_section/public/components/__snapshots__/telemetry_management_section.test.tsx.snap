@@ -141,9 +141,7 @@ exports[`TelemetryManagementSectionComponent renders as expected 1`] = `
 </Fragment>
 `;
 
-exports[
-  `TelemetryManagementSectionComponent renders null because allowChangingOptInStatus is false 1`
-] = `
+exports[`TelemetryManagementSectionComponent renders null because allowChangingOptInStatus is false 1`] = `
 <TelemetryManagementSection
   docLinks={
     Object {
@@ -321,6 +319,63 @@ exports[
         "staticAssets": Object {
           "getPluginAssetHref": [MockFunction],
         },
+      },
+      "isOptedIn$": AnonymousSubject {
+        "closed": false,
+        "currentObservers": null,
+        "destination": ReplaySubject {
+          "_buffer": Array [],
+          "_bufferSize": 1,
+          "_infiniteTimeWindow": true,
+          "_timestampProvider": Object {
+            "delegate": undefined,
+            "now": [Function],
+          },
+          "_windowTime": Infinity,
+          "closed": false,
+          "currentObservers": null,
+          "hasError": false,
+          "isStopped": false,
+          "observers": Array [],
+          "thrownError": null,
+        },
+        "hasError": false,
+        "isStopped": false,
+        "observers": Array [],
+        "operator": [Function],
+        "source": ReplaySubject {
+          "_buffer": Array [],
+          "_bufferSize": 1,
+          "_infiniteTimeWindow": true,
+          "_timestampProvider": Object {
+            "delegate": undefined,
+            "now": [Function],
+          },
+          "_windowTime": Infinity,
+          "closed": false,
+          "currentObservers": null,
+          "hasError": false,
+          "isStopped": false,
+          "observers": Array [],
+          "thrownError": null,
+        },
+        "thrownError": null,
+      },
+      "isOptedIn$$": ReplaySubject {
+        "_buffer": Array [],
+        "_bufferSize": 1,
+        "_infiniteTimeWindow": true,
+        "_timestampProvider": Object {
+          "delegate": undefined,
+          "now": [Function],
+        },
+        "_windowTime": Infinity,
+        "closed": false,
+        "currentObservers": null,
+        "hasError": false,
+        "isStopped": false,
+        "observers": Array [],
+        "thrownError": null,
       },
       "isScreenshotMode": false,
       "notifications": Object {

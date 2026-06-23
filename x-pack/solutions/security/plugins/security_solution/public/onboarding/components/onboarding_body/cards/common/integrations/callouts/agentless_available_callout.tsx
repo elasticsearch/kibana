@@ -40,7 +40,7 @@ export const AgentlessAvailableCallout = React.memo(() => {
           id="xpack.securitySolution.onboarding.integrationsCard.callout.agentLessAvailableLabel"
           defaultMessage={`{icon} {new} {text} {link}`}
           values={{
-            icon: <EuiIcon type="popper" size="m" />,
+            icon: <EuiIcon type="popper" size="m" aria-hidden={true} />,
             new: (
               <b
                 css={css`

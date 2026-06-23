@@ -15,19 +15,19 @@ export interface DiscoverFlyoutStreamFieldByStreamNameProps {
   streamName: string;
   streamsRepositoryClient: StreamsRepositoryClient;
   locator: StreamsAppLocator;
-  renderCpsWarning?: boolean;
+  cpsHasLinkedProjects?: boolean;
 }
 
 export function DiscoverFlyoutStreamFieldByStreamName({
   streamName,
   streamsRepositoryClient,
   locator,
-  renderCpsWarning,
+  cpsHasLinkedProjects,
 }: DiscoverFlyoutStreamFieldByStreamNameProps) {
   const { value, loading, error } = useResolvedDefinitionName({
     streamsRepositoryClient,
     fallbackStreamName: streamName,
-    cpsHasLinkedProjects: renderCpsWarning,
+    cpsHasLinkedProjects,
   });
 
   return (
@@ -37,7 +37,7 @@ export function DiscoverFlyoutStreamFieldByStreamName({
       loading={loading}
       error={error}
       locator={locator}
-      renderCpsWarning={renderCpsWarning}
+      remoteSearchType={cpsHasLinkedProjects ? 'cps' : undefined}
     />
   );
 }

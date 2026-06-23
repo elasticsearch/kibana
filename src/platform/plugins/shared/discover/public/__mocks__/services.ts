@@ -324,6 +324,7 @@ export function createDiscoverServicesMock(): DiscoverServices {
       transferBackToEditor: jest.fn(),
       getByValueTab: jest.fn(),
       getEmbeddableId: jest.fn(() => undefined),
+      getOriginatingPath: jest.fn(() => undefined),
       clearEditorState: jest.fn(),
     },
     alertingVTwo: {

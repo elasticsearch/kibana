@@ -17,7 +17,7 @@
 import { z, lazySchema } from '@kbn/zod/v4';
 
 /**
- * Properties of a Microsoft Sentinel Scheduled Analytics Rule
+ * Properties of a Microsoft Sentinel Scheduled or NRT Analytics Rule
  */
 export const SentinelRuleProperties = lazySchema(() =>
   z.object({
@@ -33,6 +33,14 @@ export const SentinelRuleProperties = lazySchema(() =>
      * The KQL query for the rule
      */
     query: z.string(),
+    /**
+     * The frequency in ISO 8601 duration format for this alert rule to run.
+     */
+    queryFrequency: z.string().max(16).optional(),
+    /**
+     * The period in ISO 8601 duration format that this alert rule looks at.
+     */
+    queryPeriod: z.string().max(16).optional(),
     /**
      * The rule severity
      */
@@ -67,7 +75,7 @@ export const SentinelArmResource = lazySchema(() =>
      */
     name: z.string().optional(),
     /**
-     * The rule kind (e.g. Scheduled)
+     * The rule kind (e.g. Scheduled or NRT)
      */
     kind: z.string().optional(),
     /**

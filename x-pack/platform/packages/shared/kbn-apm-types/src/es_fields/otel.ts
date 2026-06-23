@@ -18,3 +18,7 @@ export const LINKS_SPAN_ID = 'links.span_id';
 export const ATTRIBUTE_HTTP_SCHEME = 'attributes.http.scheme';
 export const ATTRIBUTE_HTTP_STATUS_CODE = 'attributes.http.status_code';
 export const PROCESS_RUNTIME_VERSION = 'process.runtime.version';
+export const K8S_POD_NAME = 'k8s.pod.name';
+export const K8S_NODE_NAME = 'k8s.node.name';
+export const K8S_DEPLOYMENT_NAME = 'k8s.deployment.name';
+export const K8S_CLUSTER_NAME = 'k8s.cluster.name';

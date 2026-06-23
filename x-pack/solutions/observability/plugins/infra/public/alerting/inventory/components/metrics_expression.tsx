@@ -20,6 +20,7 @@ import {
   EuiSpacer,
   EuiText,
   EuiToolTip,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -95,6 +96,7 @@ export const MetricExpression = ({
   nodeType,
 }: Props) => {
   const [popoverOpen, { toggle: togglePopover, off: closePopover }] = useBoolean(false);
+  const popoverTitleId = useGeneratedHtmlId();
   const [customMetricTabOpen, setCustomMetricTabOpen] = useState(metric?.value === 'custom');
   const [selectedOption, setSelectedOption] = useState(metric?.value);
   const [fieldDisplayedCustomLabel, setFieldDisplayedCustomLabel] = useState(customMetric?.label);
@@ -189,6 +191,7 @@ export const MetricExpression = ({
   return (
     <EuiPopover
       id="metricPopover"
+      aria-labelledby={popoverTitleId}
       button={
         <EuiExpression
           description={i18n.translate(
@@ -210,7 +213,7 @@ export const MetricExpression = ({
       zIndex={8000}
     >
       <div style={{ width: 620 }} onBlur={closePopover}>
-        <ClosablePopoverTitle onClose={closePopover}>
+        <ClosablePopoverTitle onClose={closePopover} titleId={popoverTitleId}>
           <FormattedMessage
             id="xpack.infra.metrics.alertFlyout.expression.metric.popoverTitle"
             defaultMessage="Metric"
@@ -364,13 +367,14 @@ export const MetricExpression = ({
 interface ClosablePopoverTitleProps {
   children: JSX.Element;
   onClose: () => void;
+  titleId?: string;
 }
 
-export const ClosablePopoverTitle = ({ children, onClose }: ClosablePopoverTitleProps) => {
+export const ClosablePopoverTitle = ({ children, onClose, titleId }: ClosablePopoverTitleProps) => {
   return (
     <EuiPopoverTitle>
       <EuiFlexGroup alignItems="center" gutterSize="s">
-        <EuiFlexItem>{children}</EuiFlexItem>
+        <EuiFlexItem id={titleId}>{children}</EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiToolTip
             content={i18n.translate(

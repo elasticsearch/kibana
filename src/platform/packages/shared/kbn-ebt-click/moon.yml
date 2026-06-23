@@ -16,7 +16,8 @@ project:
   channel: ''
   owner: '@elastic/obs-exploration-team'
   sourceRoot: src/platform/packages/shared/kbn-ebt-click
-dependsOn: []
+dependsOn:
+  - '@kbn/fields-metadata-plugin'
 tags:
   - shared-common
   - package

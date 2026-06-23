@@ -93,7 +93,7 @@ describe('StreamLinkContent', () => {
     expect(screen.getByText('logs.remote')).toBeInTheDocument();
   });
 
-  it('renders the CPS warning icon when CPS rendering is enabled', () => {
+  it('renders the CPS warning icon when CPS remote search is active', () => {
     const { container } = renderWithI18n(
       <StreamLinkContent
         name={'logs.foo'}
@@ -101,14 +101,31 @@ describe('StreamLinkContent', () => {
         loading={false}
         error={undefined}
         locator={buildLocator()}
-        renderCpsWarning
+        remoteSearchType="cps"
+        renderRemoteWarning
       />
     );
 
     expect(container.querySelector('[data-test-subj="cpsStreamsWarningIcon"]')).toBeTruthy();
   });
 
-  it('does not render the CPS warning icon when CPS rendering is disabled', () => {
+  it('renders the CCS warning icon when CCS remote search is active', () => {
+    const { container } = renderWithI18n(
+      <StreamLinkContent
+        name={'logs.foo'}
+        existsLocally={true}
+        loading={false}
+        error={undefined}
+        locator={buildLocator()}
+        remoteSearchType="ccs"
+        renderRemoteWarning
+      />
+    );
+
+    expect(container.querySelector('[data-test-subj="ccsStreamsWarningIcon"]')).toBeTruthy();
+  });
+
+  it('does not render a warning icon when no remote search is active', () => {
     const { container } = renderWithI18n(
       <StreamLinkContent
         name={'logs.foo'}
@@ -120,5 +137,6 @@ describe('StreamLinkContent', () => {
     );
 
     expect(container.querySelector('[data-test-subj="cpsStreamsWarningIcon"]')).toBeNull();
+    expect(container.querySelector('[data-test-subj="ccsStreamsWarningIcon"]')).toBeNull();
   });
 });

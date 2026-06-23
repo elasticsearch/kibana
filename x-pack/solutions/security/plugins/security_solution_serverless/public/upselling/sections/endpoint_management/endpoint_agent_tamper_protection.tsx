@@ -40,7 +40,7 @@ export const EndpointAgentTamperProtection = memo(() => {
       data-test-subj="endpointPolicy-agentTamperProtectionLockedCard"
       isDisabled={true}
       description={false}
-      icon={<EuiIcon size="xl" type="lock" />}
+      icon={<EuiIcon size="xl" type="lock" aria-hidden={true} />}
       betaBadgeProps={{
         'data-test-subj': 'endpointSecurity-agentTamperProtectionLockedCard-badge',
         label: BADGE_TEXT,

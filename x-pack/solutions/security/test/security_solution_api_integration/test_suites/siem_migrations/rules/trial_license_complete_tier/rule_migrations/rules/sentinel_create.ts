@@ -106,7 +106,7 @@ export default ({ getService }: FtrProviderContext) => {
         });
 
         expect(response.body).toMatchObject({
-          message: 'No Scheduled rules found in the provided JSON export',
+          message: 'No Scheduled or NRT rules found in the provided JSON export',
         });
       });
     });

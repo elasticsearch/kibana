@@ -87,4 +87,11 @@ export interface YamlRuleEditorProps {
   isReadOnly?: boolean;
   height?: number | string;
   dataTestSubj?: string;
+  /**
+   * Called whenever the editor re-runs YAML schema validation. `hasErrors` is
+   * true if any Monaco marker was set by the editor's schema validator (YAML
+   * syntax errors or zod schema issues). Lets the parent block submission
+   * while the buffer is invalid.
+   */
+  onValidate?: (hasErrors: boolean) => void;
 }

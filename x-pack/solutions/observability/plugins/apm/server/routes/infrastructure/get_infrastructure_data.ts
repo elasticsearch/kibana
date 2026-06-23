@@ -13,7 +13,7 @@ import {
   SERVICE_NAME,
   CONTAINER_ID,
   KUBERNETES_POD_NAME,
-  KUBERNETES_POD_NAME_OTEL,
+  K8S_POD_NAME,
   HOST_NAME,
 } from '../../../common/es_fields/apm';
 import type { APMEventClient } from '../../lib/helpers/create_es_client/create_apm_event_client';
@@ -37,7 +37,7 @@ export const getInfrastructureData = async ({
   end: number;
 }) => {
   const isOtel = Boolean(agentName && hasOpenTelemetryPrefix(agentName));
-  const k8sFilterField = isOtel ? KUBERNETES_POD_NAME_OTEL : KUBERNETES_POD_NAME;
+  const k8sFilterField = isOtel ? K8S_POD_NAME : KUBERNETES_POD_NAME;
 
   const response = await apmEventClient.search('get_service_infrastructure', {
     apm: {

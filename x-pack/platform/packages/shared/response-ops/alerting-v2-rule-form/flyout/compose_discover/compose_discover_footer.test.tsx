@@ -80,6 +80,7 @@ const renderFooter = ({
     isLastStep: false,
     isCreate: true,
     hasValidationErrors: false,
+    yamlHasErrors: false,
     isSaving: false,
     onNext,
     onFinalSubmit,
@@ -185,6 +186,23 @@ describe('ComposeDiscoverFooter', () => {
         propsOverrides: { hasValidationErrors: true },
       });
       expect(screen.getByTestId('composeDiscoverYamlSubmit')).toBeDisabled();
+    });
+
+    it('disables YAML submit when yamlHasErrors is true', () => {
+      renderFooter({
+        stateOverrides: { yamlMode: true },
+        propsOverrides: { yamlHasErrors: true },
+      });
+      expect(screen.getByTestId('composeDiscoverYamlSubmit')).toBeDisabled();
+    });
+
+    it('does not call onYamlSave when the disabled button is clicked', () => {
+      const { onYamlSave } = renderFooter({
+        stateOverrides: { yamlMode: true },
+        propsOverrides: { yamlHasErrors: true },
+      });
+      fireEvent.click(screen.getByTestId('composeDiscoverYamlSubmit'));
+      expect(onYamlSave).not.toHaveBeenCalled();
     });
   });
 

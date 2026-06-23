@@ -136,7 +136,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
         const marks = await discover.getMarks();
         expect(marks.length).to.be.above(0);
-        expect(marks).to.contain('club');
+        expect(marks).to.contain('Club');
 
         expect(await browser.getCurrentUrl()).to.contain('columns:!()');
       });

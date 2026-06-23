@@ -775,7 +775,7 @@ describe('storedPackagePoliciesToAgentPermissions()', () => {
       'package-policy-uuid-test-123': {
         indices: [
           {
-            names: ['profiling-*'],
+            names: ['profiling-*', 'profiles-*'],
             privileges: UNIVERSAL_PROFILING_PERMISSIONS,
           },
         ],
@@ -817,7 +817,56 @@ describe('storedPackagePoliciesToAgentPermissions()', () => {
       'package-policy-uuid-test-123': {
         indices: [
           {
-            names: ['profiling-*'],
+            names: ['profiling-*', 'profiles-*'],
+            privileges: UNIVERSAL_PROFILING_PERMISSIONS,
+          },
+        ],
+      },
+    });
+  });
+
+  it('Returns Universal Profiling permissions for a non-dynamic OTel profiles input', async () => {
+    const packagePolicies: PackagePolicy[] = [
+      {
+        id: 'package-policy-otel-profiles',
+        name: 'profiling-otel-policy',
+        namespace: 'test',
+        enabled: true,
+        package: { name: 'test_package', version: '0.0.0', title: 'Test Package' },
+        inputs: [
+          {
+            type: 'otelcol',
+            enabled: true,
+            streams: [
+              {
+                id: 'otel-profiles',
+                enabled: true,
+                data_stream: { type: 'profiles', dataset: 'profilingreceiver' },
+              },
+            ],
+          },
+        ],
+        created_at: '',
+        updated_at: '',
+        created_by: '',
+        updated_by: '',
+        revision: 1,
+        policy_id: '',
+        policy_ids: [''],
+      },
+    ];
+
+    const permissions = await storedPackagePoliciesToAgentPermissions(
+      packageInfoCache,
+      'test',
+      packagePolicies
+    );
+    // profiles is owned end-to-end by Universal Profiling, not managed as a profiles-<dataset> data stream.
+    expect(permissions).toMatchObject({
+      'package-policy-otel-profiles': {
+        indices: [
+          {
+            names: ['profiling-*', 'profiles-*'],
             privileges: UNIVERSAL_PROFILING_PERMISSIONS,
           },
         ],
@@ -2470,6 +2519,34 @@ describe('getDataStreamPrivileges()', () => {
     expect(privileges).toMatchObject({
       names: ['logs-*-*'],
       privileges: ['auto_configure', 'create_doc'],
+    });
+  });
+
+  it('targets Universal Profiling index patterns for the profiles signal regardless of dataset/namespace', () => {
+    const dataStream = { type: 'profiles', dataset: 'profilingreceiver' } as DataStreamMeta;
+    const privileges = getDataStreamPrivileges(dataStream, 'namespace');
+
+    // profiles is owned end-to-end by Universal Profiling; permissions cover both legacy
+    // profiling-* custom indices and future profiles-* data streams.
+    expect(privileges).toEqual({
+      names: ['profiling-*', 'profiles-*'],
+      privileges: UNIVERSAL_PROFILING_PERMISSIONS,
+    });
+  });
+
+  it('uses custom privileges for the profiles signal when present', () => {
+    const dataStream = {
+      type: 'profiles',
+      dataset: 'profilingreceiver',
+      elasticsearch: {
+        privileges: { indices: ['create_doc'] },
+      },
+    } as DataStreamMeta;
+    const privileges = getDataStreamPrivileges(dataStream, 'namespace');
+
+    expect(privileges).toEqual({
+      names: ['profiling-*', 'profiles-*'],
+      privileges: ['create_doc'],
     });
   });
 });

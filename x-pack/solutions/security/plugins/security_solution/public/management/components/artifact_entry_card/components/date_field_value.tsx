@@ -36,7 +36,7 @@ export const DateFieldValue = memo<DateFieldProps>(
         data-test-subj={dataTestSubj}
       >
         <StyledEuiFlexItem grow={false}>
-          <EuiIcon type="calendar" />
+          <EuiIcon type="calendar" aria-hidden={true} />
         </StyledEuiFlexItem>
         <EuiFlexItem grow={true}>
           <EuiFlexGroup

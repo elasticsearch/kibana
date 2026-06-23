@@ -121,7 +121,7 @@ export const SetAlertSuppressionForm = React.memo(function SetAlertSuppressionFo
     >
       <EuiFlexGroup gutterSize="s">
         <EuiFlexItem grow={false}>
-          <EuiIcon type="info" />
+          <EuiIcon type="info" aria-hidden={true} />
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiText size="xs">{i18n.SUPPRESSION_INFO_TEXT}</EuiText>

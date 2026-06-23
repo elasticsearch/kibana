@@ -482,12 +482,12 @@ export const SimplifiedPackagePolicyInputsSchema = schema.maybe(
 );
 
 const VALIDATE_DATASTREAMS_PERMISSION_REGEX =
-  /^(logs)|(metrics)|(traces)|(synthetics)|(profiling)-(.*)$/;
+  /^(logs)|(metrics)|(traces)|(synthetics)|(profiles)-(.*)$/;
 
 function validateAdditionalDatastreamsPermissions(values: string[]) {
   for (const val of values) {
     if (!val.match(VALIDATE_DATASTREAMS_PERMISSION_REGEX)) {
-      return `${val} is not a valid datastream permissions, it should match logs|metrics|traces|synthetics|profiling)-*`;
+      return `${val} is not a valid datastream permissions, it should match logs|metrics|traces|synthetics|profiles)-*`;
     }
   }
 }

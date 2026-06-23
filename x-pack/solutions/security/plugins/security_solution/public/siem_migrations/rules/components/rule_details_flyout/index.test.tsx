@@ -104,6 +104,47 @@ describe('MigrationRuleDetailsFlyout', () => {
     expect(getByTestId('tabOverview')).toBeInTheDocument();
   });
 
+  it('renders custom rule schedule from original rule annotations in the overview tab', async () => {
+    const customRule = getRuleMigrationRuleMock({
+      original_rule: {
+        id: 'sentinel-rule-id',
+        vendor: 'microsoft-sentinel',
+        title: 'Detect port misuse by static threshold',
+        description: 'Detects port usage above configured static thresholds.',
+        query: 'SecurityEvent | where EventID == 1102',
+        query_language: 'kql',
+        annotations: {
+          from: 'now-1h',
+          to: 'now',
+          interval: '20m',
+        },
+      },
+      elastic_rule: {
+        severity: 'medium',
+        risk_score: 47,
+        query: 'FROM logs-*',
+        query_language: 'esql',
+        description: 'Detects port usage above configured static thresholds.',
+        title: 'Detect port misuse by static threshold',
+      },
+    });
+
+    const { getByTestId } = render(
+      <TestProviders>
+        <MigrationRuleDetailsFlyout migrationRule={customRule} closeFlyout={closeFlyout} />
+      </TestProviders>
+    );
+
+    fireEvent.click(getByTestId('tabOverview'));
+
+    await waitFor(() => {
+      expect(getByTestId('intervalPropertyValue')).toHaveTextContent('20m');
+    });
+    await waitFor(() => {
+      expect(getByTestId('lookBackPropertyValue-40m')).toBeInTheDocument();
+    });
+  });
+
   it('renders summary tab', () => {
     const { getByTestId } = render(
       <TestProviders>

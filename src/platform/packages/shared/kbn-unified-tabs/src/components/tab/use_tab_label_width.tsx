@@ -9,14 +9,17 @@
 
 import { CanvasTextUtils, useEuiTheme } from '@elastic/eui';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { TabItem, TabsSizeConfig } from '../../types';
 
 export const useTabLabelWidth = ({
   item,
   tabsSizeConfig,
+  fontWeight,
 }: {
   item: TabItem;
   tabsSizeConfig: TabsSizeConfig;
+  fontWeight: CSSProperties['fontWeight'];
 }) => {
   const { euiTheme } = useEuiTheme();
   const tabLabelRef = useRef<HTMLDivElement | null>(null);
@@ -52,13 +55,15 @@ export const useTabLabelWidth = ({
     textUtils,
   ]);
 
+  // Re-create the measurer whenever the rendered font weight changes so it reads the
+  // container's current computed font (which mirrors the selected/unselected weight).
   useEffect(() => {
     if (!tabLabelRef.current) {
       return;
     }
 
     setTextUtils(new CanvasTextUtils({ container: tabLabelRef.current }));
-  }, []);
+  }, [fontWeight]);
 
   return { tabLabelRef, tabLabelWidth, tabLabelTextWidth };
 };

@@ -7,27 +7,26 @@
 
 import { DATA_VIEW_SAVED_OBJECT_TYPE } from '@kbn/data-views-plugin/common';
 import type { Reference } from '@kbn/content-management-utils';
-import type {
-  FieldStatisticsTableEmbeddableState,
-  StoredFieldStatisticsTableEmbeddableState,
-} from './types';
+import type { FieldStatsTableEmbeddableState } from '@kbn/data-visualizer-server-schemas/embeddables/field_stats';
+import type { StoredFieldStatisticsTableEmbeddableState } from './types';
 import { FIELD_STATS_DATA_VIEW_REF_NAME } from './constants';
 
-export function transformIn(state: FieldStatisticsTableEmbeddableState): {
+export function transformIn(state: FieldStatsTableEmbeddableState): {
   state: StoredFieldStatisticsTableEmbeddableState;
   references: Reference[];
 } {
-  const { dataViewId, ...rest } = state;
-  return {
-    state: rest,
-    references: dataViewId
-      ? [
-          {
-            type: DATA_VIEW_SAVED_OBJECT_TYPE,
-            name: FIELD_STATS_DATA_VIEW_REF_NAME,
-            id: dataViewId,
-          },
-        ]
-      : [],
-  };
+  if (state.view_type === 'dataview') {
+    const { data_view_id, ...rest } = state;
+    return {
+      state: rest,
+      references: [
+        {
+          type: DATA_VIEW_SAVED_OBJECT_TYPE,
+          name: FIELD_STATS_DATA_VIEW_REF_NAME,
+          id: data_view_id,
+        },
+      ],
+    };
+  }
+  return { state, references: [] };
 }

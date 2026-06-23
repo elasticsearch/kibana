@@ -8,6 +8,7 @@ xpack.osquery.enabled: false
 
 # Enable fleet on search projects for agentless features
 xpack.fleet.enabled: true
+xpack.fleet.experimentalFeatures.installIntegrationsKnowledge: false
 xpack.fleet.packages:
   # fleet_server package installed to publish agent metrics
   - name: fleet_server
@@ -72,6 +73,7 @@ xpack.serverless.search.enabled: true
 
 ## Set the home route
 uiSettings.overrides.defaultRoute: /app/elasticsearch
+
 
 # Specify in telemetry the project type
 telemetry.labels.serverless: search
