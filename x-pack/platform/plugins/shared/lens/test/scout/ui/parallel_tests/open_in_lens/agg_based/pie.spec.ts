@@ -45,25 +45,21 @@ spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.deployment
     await scoutSpace.savedObjects.cleanStandardList();
   });
 
-  spaceTest(
-    'should hide the "Convert to Lens" menu item if no split slices were defined',
-    async ({ pageObjects }) => {
-      const { dashboard } = pageObjects;
-      expect(await canConvertToLensByTitle({ dashboard }, 'Pie - No split slices')).toBe(false);
-    }
-  );
-
-  spaceTest(
-    'should hide the "Convert to Lens" menu item if more than 3 split slices were defined',
-    async ({ pageObjects }) => {
-      const { dashboard } = pageObjects;
-      expect(await canConvertToLensByTitle({ dashboard }, 'Pie - 4 layers')).toBe(false);
-    }
-  );
-
-  spaceTest('should show the "Convert to Lens" menu item', async ({ pageObjects }) => {
+  // Negative/availability checks grouped — these don't navigate away from the dashboard.
+  spaceTest('should check Convert to Lens action availability', async ({ pageObjects }) => {
     const { dashboard } = pageObjects;
-    expect(await canConvertToLensByTitle({ dashboard }, 'Pie - 1 Split slice')).toBe(true);
+
+    await spaceTest.step('hides action when no split slices were defined', async () => {
+      expect(await canConvertToLensByTitle({ dashboard }, 'Pie - No split slices')).toBe(false);
+    });
+
+    await spaceTest.step('hides action when more than 3 split slices were defined', async () => {
+      expect(await canConvertToLensByTitle({ dashboard }, 'Pie - 4 layers')).toBe(false);
+    });
+
+    await spaceTest.step('shows action for a single split slice', async () => {
+      expect(await canConvertToLensByTitle({ dashboard }, 'Pie - 1 Split slice')).toBe(true);
+    });
   });
 
   spaceTest('should convert aggregation with params', async ({ pageObjects }) => {

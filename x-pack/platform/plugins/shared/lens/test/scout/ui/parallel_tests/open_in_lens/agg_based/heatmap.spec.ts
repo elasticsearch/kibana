@@ -50,19 +50,20 @@ spaceTest.describe(
       await scoutSpace.savedObjects.cleanStandardList();
     });
 
-    spaceTest(
-      'should show the "Convert to Lens" menu item if no X-axis was specified',
-      async ({ pageObjects }) => {
-        const { dashboard } = pageObjects;
+    spaceTest('should check Convert to Lens action availability', async ({ pageObjects }) => {
+      const { dashboard } = pageObjects;
+
+      await spaceTest.step('shows action when only Y-axis is specified', async () => {
         expect(await canConvertToLensByTitle({ dashboard }, 'Heatmap - With Y-Axis only')).toBe(
           true
         );
-      }
-    );
+      });
 
-    spaceTest('should show the "Convert to Lens" menu item', async ({ pageObjects }) => {
-      const { dashboard } = pageObjects;
-      expect(await canConvertToLensByTitle({ dashboard }, 'Heatmap - With X-Axis only')).toBe(true);
+      await spaceTest.step('shows action when X-axis is specified', async () => {
+        expect(await canConvertToLensByTitle({ dashboard }, 'Heatmap - With X-Axis only')).toBe(
+          true
+        );
+      });
     });
 
     spaceTest('should convert to Lens', async ({ page, pageObjects }) => {

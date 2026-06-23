@@ -45,9 +45,18 @@ spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.deployme
     await scoutSpace.savedObjects.cleanStandardList();
   });
 
-  spaceTest('should show the "Convert to Lens" menu item', async ({ pageObjects }) => {
+  spaceTest('should check Convert to Lens action availability', async ({ pageObjects }) => {
     const { dashboard } = pageObjects;
-    expect(await canConvertToLensByTitle({ dashboard }, 'Gauge - Basic')).toBe(true);
+
+    await spaceTest.step('unsupported field type has no Convert to Lens action', async () => {
+      expect(await canConvertToLensByTitle({ dashboard }, 'Gauge - Unsupported field type')).toBe(
+        false
+      );
+    });
+
+    await spaceTest.step('basic gauge has Convert to Lens action', async () => {
+      expect(await canConvertToLensByTitle({ dashboard }, 'Gauge - Basic')).toBe(true);
+    });
   });
 
   spaceTest('should convert aggregation with params', async ({ page, pageObjects }) => {
@@ -70,16 +79,6 @@ spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.deployme
     expect(Math.round(debugData?.value ?? 0)).toBe(13104036081);
     expect(debugData?.domain).toStrictEqual([0, 100]);
   });
-
-  spaceTest(
-    'should not convert aggregation with not supported field type',
-    async ({ pageObjects }) => {
-      const { dashboard } = pageObjects;
-      expect(await canConvertToLensByTitle({ dashboard }, 'Gauge - Unsupported field type')).toBe(
-        false
-      );
-    }
-  );
 
   spaceTest('should convert color ranges', async ({ page, pageObjects }) => {
     const { dashboard, lens } = pageObjects;
