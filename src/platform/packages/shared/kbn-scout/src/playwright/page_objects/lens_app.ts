@@ -174,6 +174,68 @@ export class LensApp {
     await this.closeDimensionEditor();
   }
 
+  /** Closes the open dimension editor flyout. */
+  async closeDimensionEditor() {
+    await this.closeDimensionEditorButton.click();
+    await expect(this.closeDimensionEditorButton).toBeHidden();
+  }
+
+  /**
+   * Activates the layer tab at `index` when multiple layers are present.
+   * No-op when there is only one layer (tabs are hidden).
+   */
+  async ensureLayerTabIsActive(index = 0) {
+    const tabs = await this.page.locator('[data-test-subj^="unifiedTabs_tab_"]').all();
+    const tab = tabs[index];
+    if (!tab) {
+      return;
+    }
+
+    if ((await tab.getAttribute('aria-selected')) === 'true') {
+      await expect(this.page.testSubj.locator(`lns-layerPanel-${index}`)).toBeVisible();
+      return;
+    }
+
+    await tab.click();
+    await expect(this.page.testSubj.locator(`lns-layerPanel-${index}`)).toBeVisible();
+  }
+
+  /** Returns the selected axis side label from an open dimension editor. */
+  async getSelectedAxisSide(): Promise<string> {
+    const axisSideButtons = await this.page
+      .locator('[data-test-subj^="lnsXY_axisSide_groups_"]')
+      .all();
+
+    for (const button of axisSideButtons) {
+      if ((await button.getAttribute('aria-pressed')) === 'true') {
+        const text = (await button.innerText()).trim();
+        if (!text) {
+          throw new Error('Axis side button text not yet rendered');
+        }
+        return text;
+      }
+    }
+
+    throw new Error('No axis side button is selected');
+  }
+
+  /** Returns the selected bar orientation from the style settings flyout. */
+  async getSelectedBarOrientationSetting(): Promise<string> {
+    await this.openStyleSettingsFlyout();
+
+    const orientationButtons = await this.page
+      .locator('[data-test-subj^="lns_barOrientation_"]')
+      .all();
+
+    for (const button of orientationButtons) {
+      if ((await button.getAttribute('aria-pressed')) === 'true') {
+        return (await button.innerText()).trim();
+      }
+    }
+
+    throw new Error('No bar orientation button is selected');
+  }
+
   async setTermsNumberOfValues(value: number) {
     const input = this.page.locator('input[data-test-subj="indexPattern-terms-values"]');
     await expect(input).toBeVisible();
@@ -249,11 +311,6 @@ export class LensApp {
 
     const value = await comboBox.getSelectedValue();
     return value ? [value] : [];
-  }
-
-  private async closeDimensionEditor() {
-    await this.closeDimensionEditorButton.click();
-    await expect(this.closeDimensionEditorButton).toBeHidden();
   }
 
   private async selectOperation(operation: string, isPreviousIncompatible = false) {

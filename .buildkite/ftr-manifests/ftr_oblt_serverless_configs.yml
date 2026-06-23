@@ -28,7 +28,6 @@ enabled:
   - x-pack/platform/test/serverless/functional/configs/observability/config.config_compat_mode.ts
   - x-pack/platform/test/serverless/functional/configs/observability/config.group1.ts
   - x-pack/platform/test/serverless/functional/configs/observability/config.group2.ts
-  - x-pack/platform/test/serverless/functional/configs/observability/config.group3.ts
   - x-pack/platform/test/serverless/functional/configs/observability/config.group4.ts
   - x-pack/platform/test/serverless/functional/configs/observability/config.group5.ts
   - x-pack/platform/test/serverless/functional/configs/observability/config.group6.ts

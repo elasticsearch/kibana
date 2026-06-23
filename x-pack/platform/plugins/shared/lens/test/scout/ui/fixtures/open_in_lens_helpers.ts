@@ -60,9 +60,12 @@ export async function canConvertToLensByTitle(
  */
 export async function loadDashboardInEditModeById(
   { dashboard }: Pick<PageObjects, 'dashboard'>,
-  dashboardId: string
+  dashboardId: string,
+  options?: { timeout?: number }
 ): Promise<void> {
-  await dashboard.openDashboardWithId(dashboardId);
+  // Open-in-Lens dashboards pack many panels per fixture; viewport render can exceed 10s.
+  const timeout = options?.timeout ?? 60_000;
+  await dashboard.openDashboardWithId(dashboardId, { timeout });
   await dashboard.switchToEditMode();
 }
 

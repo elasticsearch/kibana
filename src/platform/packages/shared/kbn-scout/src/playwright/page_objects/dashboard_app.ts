@@ -129,9 +129,9 @@ export class DashboardApp {
     await this.page.gotoApp('dashboards');
   }
 
-  async openDashboardWithId(id: string) {
+  async openDashboardWithId(id: string, options?: TimeoutOptions) {
     await this.page.gotoApp('dashboards', { hash: `/view/${id}` });
-    await this.waitForRenderComplete();
+    await this.waitForRenderComplete(options);
   }
 
   /** Navigates to the new dashboard creation page and waits for the editor toolbar to load. */
@@ -551,8 +551,9 @@ export class DashboardApp {
    * Waits for all dashboard controls and panels to finish rendering.
    * Uses the data-render-complete attribute to determine panel rendering completion.
    */
-  async waitForRenderComplete() {
-    await expect(this.dashboardViewport).toBeVisible();
+  async waitForRenderComplete(options?: TimeoutOptions) {
+    const timeout = options?.timeout ?? 10_000;
+    await expect(this.dashboardViewport).toBeVisible({ timeout });
 
     await this.waitForControlsReady();
 
