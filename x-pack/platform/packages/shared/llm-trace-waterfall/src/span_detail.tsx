@@ -20,6 +20,7 @@ import {
   EuiStat,
   EuiTabbedContent,
   type EuiTabbedContentTab,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { SpanNode } from './types';
 import { SPAN_COLORS, getSpanCategory } from './waterfall_item';
@@ -43,7 +44,7 @@ const PROMOTED_KEYS = new Set([
   'gen_ai.usage.input_tokens',
   'gen_ai.usage.output_tokens',
   'gen_ai.usage.total_tokens',
-  'elastic.tool.parameters',
+  'gen_ai.tool.call.arguments',
   'tool.parameters',
   'output.value',
   'gen_ai.prompt.id',
@@ -69,7 +70,7 @@ const categorizeAttributes = (attrs: Record<string, unknown>): CategorizedAttrs 
       result.tokens.output = value as number;
     } else if (key === 'gen_ai.usage.total_tokens') {
       result.tokens.total = value as number;
-    } else if (key === 'elastic.tool.parameters' || key === 'tool.parameters') {
+    } else if (key === 'gen_ai.tool.call.arguments' || key === 'tool.parameters') {
       result.toolInput = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
     } else if (key === 'output.value') {
       result.toolOutput =
@@ -135,14 +136,19 @@ const AttrTable: React.FC<{ attrs: Record<string, unknown> }> = ({ attrs }) => (
                 <EuiFlexItem grow={false}>
                   <EuiCopy textToCopy={strValue}>
                     {(copy) => (
-                      <EuiButtonIcon
-                        iconType="copy"
-                        aria-label={i18n.getCopyAttributeAriaLabel(key)}
-                        onClick={copy}
-                        size="xs"
-                        color="text"
-                        style={{ opacity: 0.4 }}
-                      />
+                      <EuiToolTip
+                        content={i18n.getCopyAttributeAriaLabel(key)}
+                        disableScreenReaderOutput
+                      >
+                        <EuiButtonIcon
+                          iconType="copy"
+                          aria-label={i18n.getCopyAttributeAriaLabel(key)}
+                          onClick={copy}
+                          size="xs"
+                          color="text"
+                          style={{ opacity: 0.4 }}
+                        />
+                      </EuiToolTip>
                     )}
                   </EuiCopy>
                 </EuiFlexItem>
@@ -195,12 +201,14 @@ export const SpanDetail: React.FC<SpanDetailProps> = ({ span, onClose, useTabs =
           </EuiFlexGroup>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            iconType="cross"
-            aria-label={i18n.CLOSE_DETAIL_ARIA}
-            onClick={onClose}
-            size="s"
-          />
+          <EuiToolTip content={i18n.CLOSE_DETAIL_ARIA} disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType="cross"
+              aria-label={i18n.CLOSE_DETAIL_ARIA}
+              onClick={onClose}
+              size="s"
+            />
+          </EuiToolTip>
         </EuiFlexItem>
       </EuiFlexGroup>
 
@@ -239,13 +247,15 @@ export const SpanDetail: React.FC<SpanDetailProps> = ({ span, onClose, useTabs =
         <EuiFlexItem grow={false}>
           <EuiCopy textToCopy={span.span_id}>
             {(copy) => (
-              <EuiButtonIcon
-                iconType="copy"
-                aria-label={i18n.COPY_SPAN_ID_ARIA}
-                onClick={copy}
-                size="xs"
-                color="text"
-              />
+              <EuiToolTip content={i18n.COPY_SPAN_ID_ARIA} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  iconType="copy"
+                  aria-label={i18n.COPY_SPAN_ID_ARIA}
+                  onClick={copy}
+                  size="xs"
+                  color="text"
+                />
+              </EuiToolTip>
             )}
           </EuiCopy>
         </EuiFlexItem>

@@ -35,8 +35,8 @@ describe('AnomalyChartsInitializer', () => {
     const jobIds = ['job1', 'job2'];
     const defaultTitle = getDefaultExplorerChartsPanelTitle(jobIds);
     const input = {
-      maxSeriesToPlot: 12,
-      jobIds,
+      max_series_to_plot: 12,
+      job_ids: jobIds,
     };
     render(
       <KibanaContextProvider services={kibanaContextMock.services}>
@@ -56,9 +56,9 @@ describe('AnomalyChartsInitializer', () => {
 
     await userEvent.click(confirmButton!);
     expect(onCreate).toHaveBeenCalledWith({
-      jobIds: ['job1', 'job2'],
+      job_ids: ['job1', 'job2'],
       title: defaultTitle,
-      maxSeriesToPlot: input.maxSeriesToPlot,
+      max_series_to_plot: input.max_series_to_plot,
     });
   });
 });

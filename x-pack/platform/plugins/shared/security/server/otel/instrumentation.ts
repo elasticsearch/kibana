@@ -29,6 +29,7 @@ interface UserAuthenticationAttributes extends BasicAttributes {
 interface GetCurrentProfileAttributes extends BasicAttributes {
   profileActivationRequired?: boolean;
   apiKeyRetrievalRequired?: boolean;
+  fakeRequestProfileResolution?: boolean;
 }
 
 export type SecurityTelemetryAttributes = Partial<BasicAttributes> &
@@ -129,6 +130,7 @@ class SecurityTelemetry {
       deletedPrivileges,
       profileActivationRequired,
       apiKeyRetrievalRequired,
+      fakeRequestProfileResolution,
       ...rest
     } = attributes;
 
@@ -142,6 +144,9 @@ class SecurityTelemetry {
         : {}),
       ...(apiKeyRetrievalRequired
         ? { 'profile.get_current.api_key_retrieval_required': apiKeyRetrievalRequired }
+        : {}),
+      ...(fakeRequestProfileResolution
+        ? { 'profile.get_current.fake_request_profile_resolution': fakeRequestProfileResolution }
         : {}),
       ...rest,
     };

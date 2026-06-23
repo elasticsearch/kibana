@@ -136,6 +136,9 @@ export const ToggleAlertFlyoutButtonComponent: React.FC<Props> = ({
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.toggleAlertFlyoutButton.popoverAriaLabel', {
+        defaultMessage: 'Alerts actions',
+      })}
       button={
         <EuiHeaderLink
           color="primary"

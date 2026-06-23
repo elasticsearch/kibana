@@ -6,13 +6,13 @@
  */
 
 import type { ChatCompletionTokenCount } from '@kbn/inference-common';
-import type { Feature, IterationResult } from '@kbn/streams-schema';
+import type { FeatureUpsert, IterationResult } from '@kbn/streams-schema';
 import { EMPTY_TOKENS, sumTokens } from '@kbn/streams-ai';
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface AccumulatedIterationState {
-  discoveredFeatures: Feature[];
+  discoveredFeatures: FeatureUpsert[];
   iterationResults: IterationResult[];
 }
 

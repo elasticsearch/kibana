@@ -7,15 +7,21 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { WORKFLOWS_UI_SETTING_ID } from './constants';
+import { WORKFLOWS_UI_SETTING_ID, WORKFLOWS_VERSIONING_SETTING_ID } from './constants';
 
 describe('Workflow Feature Flag Constants', () => {
   it('should export the correct UI setting ID', () => {
     expect(WORKFLOWS_UI_SETTING_ID).toBe('workflows:ui:enabled');
   });
 
+  it('should export the workflow versioning setting ID', () => {
+    expect(WORKFLOWS_VERSIONING_SETTING_ID).toBe('workflows:versioning:enabled');
+  });
+
   it('should have consistent naming pattern', () => {
     expect(WORKFLOWS_UI_SETTING_ID).toMatch(/^workflows:/);
     expect(WORKFLOWS_UI_SETTING_ID).toMatch(/:enabled$/);
+    expect(WORKFLOWS_VERSIONING_SETTING_ID).toMatch(/^workflows:/);
+    expect(WORKFLOWS_VERSIONING_SETTING_ID).toMatch(/:enabled$/);
   });
 });

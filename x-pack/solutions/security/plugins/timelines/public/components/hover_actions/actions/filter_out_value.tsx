@@ -82,16 +82,18 @@ const FilterOutValueButton: React.FC<HoverActionComponentProps & FilterValueFnAr
             {FILTER_OUT_VALUE}
           </Component>
         ) : (
-          <EuiButtonIcon
-            aria-label={FILTER_OUT_VALUE}
-            buttonRef={defaultFocusedButtonRef}
-            className="timelines__hoverActionButton"
-            data-test-subj="filter-out-value"
-            iconSize="s"
-            iconType="minusCircle"
-            onClick={filterOutValueFn}
-            size={size}
-          />
+          <EuiToolTip content={FILTER_OUT_VALUE} disableScreenReaderOutput>
+            <EuiButtonIcon
+              aria-label={FILTER_OUT_VALUE}
+              buttonRef={defaultFocusedButtonRef}
+              className="timelines__hoverActionButton"
+              data-test-subj="filter-out-value"
+              iconSize="s"
+              iconType="minusCircle"
+              onClick={filterOutValueFn}
+              size={size}
+            />
+          </EuiToolTip>
         ),
       [Component, defaultFocusedButtonRef, filterOutValueFn, size]
     );

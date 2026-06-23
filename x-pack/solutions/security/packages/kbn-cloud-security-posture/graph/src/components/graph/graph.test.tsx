@@ -756,6 +756,44 @@ describe('<Graph />', () => {
       });
     });
 
+    it('should disable selection and focus on nodes when interactive is false', async () => {
+      const { container } = renderGraphPreview({
+        nodes: testNodes,
+        edges: [],
+        interactive: false,
+      });
+
+      await waitFor(() => {
+        const nodes = container.querySelectorAll('.react-flow__node');
+        expect(nodes.length).toBeGreaterThan(0);
+
+        nodes.forEach((node) => {
+          // React Flow only adds the `selectable` class when `elementsSelectable` is enabled
+          expect(node).not.toHaveClass('selectable');
+          // and only makes nodes focusable (tabbable) when `nodesFocusable` is enabled
+          expect(node).not.toHaveAttribute('tabindex');
+        });
+      });
+    });
+
+    it('should enable selection and focus on nodes when interactive is true', async () => {
+      const { container } = renderGraphPreview({
+        nodes: testNodes,
+        edges: [],
+        interactive: true,
+      });
+
+      await waitFor(() => {
+        const nodes = container.querySelectorAll('.react-flow__node');
+        expect(nodes.length).toBeGreaterThan(0);
+
+        nodes.forEach((node) => {
+          expect(node).toHaveClass('selectable');
+          expect(node).toHaveAttribute('tabindex', '0');
+        });
+      });
+    });
+
     it('should add non-interactive class to relationship nodes when interactive is false', async () => {
       const nodesWithRelationship: NodeViewModel[] = [
         ...testNodes,

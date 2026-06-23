@@ -36,6 +36,7 @@ describe('Endpoint Upload Action Result component', () => {
     action.agentState['agent-b'] = {
       wasSuccessful: true,
       isCompleted: true,
+      wasCanceled: false,
       completedAt: new Date().toISOString(),
       errors: undefined,
     };

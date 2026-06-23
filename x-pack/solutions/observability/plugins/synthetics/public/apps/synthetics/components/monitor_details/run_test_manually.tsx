@@ -27,7 +27,7 @@ import {
   manualTestRunInProgressSelector,
 } from '../../state/manual_test_runs';
 
-export const RunTestManuallyContextItem = () => {
+export const RunTestManuallyContextItem = ({ isRemote = false }: { isRemote?: boolean }) => {
   const dispatch = useDispatch();
 
   const { monitor } = useSelectedMonitor();
@@ -40,6 +40,30 @@ export const RunTestManuallyContextItem = () => {
   const { space } = useKibanaSpace();
 
   const content = testInProgress ? TEST_SCHEDULED_LABEL : TEST_NOW_ARIA_LABEL;
+
+  // Remote (CCS) monitors cannot be triggered locally — manual test runs are
+  // dispatched against the local saved object, which doesn't exist. Render a
+  // disabled item with a remote-specific tooltip, bypassing the permissions
+  // wrapper (which only handles permission/enablement reasons).
+  if (isRemote) {
+    return (
+      <EuiContextMenuItem
+        data-test-subj="syntheticsRunTestManuallyButton"
+        color="success"
+        disabled
+        toolTipContent={NOT_AVAILABLE_FOR_REMOTE_MONITORS}
+      >
+        <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+          <EuiFlexItem grow={false}>
+            <EuiIcon type="flask" size="s" aria-hidden={true} />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <span>{RUN_TEST_LABEL}</span>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiContextMenuItem>
+    );
+  }
 
   return (
     <NoPermissionsTooltip
@@ -82,3 +106,10 @@ export const RunTestManuallyContextItem = () => {
 const RUN_TEST_LABEL = i18n.translate('xpack.synthetics.monitorSummary.runTestManually', {
   defaultMessage: 'Run test manually',
 });
+
+const NOT_AVAILABLE_FOR_REMOTE_MONITORS = i18n.translate(
+  'xpack.synthetics.monitorDetails.actions.notAvailableForRemote',
+  {
+    defaultMessage: 'This action is not available for remote monitors',
+  }
+);

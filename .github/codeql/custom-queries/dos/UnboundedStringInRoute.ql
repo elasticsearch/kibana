@@ -91,6 +91,27 @@ class ZodStringCall extends CallExpr {
       chain.getReceiver+() = this
     )
   }
+
+  /**
+   * Holds when the chain includes a format-constraining method whose valid
+   * output is inherently bounded in length, making a separate .max() redundant.
+   * Examples: .datetime() → ISO 8601 (~24–35 chars), .uuid() → 36 chars, etc.
+   */
+  predicate hasBoundedFormat() {
+    exists(MethodCallExpr chain |
+      chain.getMethodName() =
+        [
+          // ISO temporal formats (~10–35 chars)
+          "datetime", "date", "time", "duration",
+          // Fixed-length identifiers
+          "uuid", "uuidv4", "uuidv6", "uuidv7", "guid",
+          "nanoid", "cuid", "cuid2", "ulid", "xid", "ksuid",
+          // Network addresses (IPv4 ≤15, IPv6 ≤45, CIDR ≤49)
+          "ipv4", "ipv6", "cidrv4", "cidrv6"
+        ] and
+      chain.getReceiver+() = this
+    )
+  }
 }
 
 from CallExpr stringCall, string message
@@ -102,6 +123,7 @@ where
     or
     stringCall instanceof ZodStringCall and
     not stringCall.(ZodStringCall).hasMax() and
+    not stringCall.(ZodStringCall).hasBoundedFormat() and
     message = "This z.string() call does not specify a .max() constraint. Unbounded string input can cause Denial of Service (DoS) vulnerabilities. Consider adding .max(N) to the method chain."
   ) and
   not shouldExcludeFileFromDoSRules(stringCall)

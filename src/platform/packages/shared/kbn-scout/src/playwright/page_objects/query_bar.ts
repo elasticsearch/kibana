@@ -22,6 +22,10 @@ export class QueryBar {
     await this.page.testSubj.fill('queryInput', query);
   }
 
+  async getQuery(): Promise<string> {
+    return this.page.testSubj.locator('queryInput').inputValue();
+  }
+
   async clearQuery(): Promise<void> {
     await this.page.testSubj.clearInput('queryInput');
   }

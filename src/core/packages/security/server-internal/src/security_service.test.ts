@@ -74,6 +74,52 @@ describe('SecurityService', function () {
       });
     });
 
+    describe('#acquireFakeRequestEnricher', () => {
+      it('returns a function on the first call', () => {
+        const setup = service.setup();
+
+        const enricher = setup.acquireFakeRequestEnricher();
+
+        expect(typeof enricher).toBe('function');
+      });
+
+      it('throws if called more than once (one-shot, reserved for Task Manager)', () => {
+        const setup = service.setup();
+
+        setup.acquireFakeRequestEnricher();
+
+        expect(() => setup.acquireFakeRequestEnricher()).toThrow(
+          /can only be called once and is reserved for Task Manager/
+        );
+      });
+
+      it('throws when the returned enricher is invoked before the security delegate is registered', () => {
+        const setup = service.setup();
+        const enricher = setup.acquireFakeRequestEnricher();
+
+        const request = { isFakeRequest: true } as any;
+        expect(() => enricher(request, 'u_test_profile_123')).toThrow(
+          /Cannot enrich a fake request before the security delegate has been registered/
+        );
+      });
+
+      it('delegates to the registered security delegate when invoked', () => {
+        const setup = service.setup();
+        const enricher = setup.acquireFakeRequestEnricher();
+
+        const fakeRequestEnricher = jest.fn();
+        setup.registerSecurityDelegate({
+          fakeRequestEnricher,
+        } as unknown as CoreSecurityDelegateContract);
+
+        const request = { isFakeRequest: true } as any;
+        enricher(request, 'u_test_profile_123');
+
+        expect(fakeRequestEnricher).toHaveBeenCalledTimes(1);
+        expect(fakeRequestEnricher).toHaveBeenCalledWith(request, 'u_test_profile_123');
+      });
+    });
+
     describe('#uiam', () => {
       it('should be set to `null` if UIAM is not configured ', () => {
         expect(service.setup().uiam).toBeNull();

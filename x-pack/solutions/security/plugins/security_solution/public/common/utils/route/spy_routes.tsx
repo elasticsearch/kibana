@@ -26,6 +26,7 @@ type SpyRouteProps = RouteComponentProps<{
   location: H.Location;
   state?: Record<string, string | boolean | undefined>;
   pageName?: SecurityPageName;
+  detailName?: string;
 };
 
 export const SpyRouteComponent = memo<SpyRouteProps>(
@@ -33,11 +34,13 @@ export const SpyRouteComponent = memo<SpyRouteProps>(
     location: { pathname, search },
     history,
     match: {
-      params: { detailName, tabName, flowTarget },
+      params: { detailName: routeDetailName, tabName, flowTarget },
     },
     pageName,
     state,
+    detailName: explicitDetailName,
   }) => {
+    const detailName = explicitDetailName ?? routeDetailName;
     const [isInitializing, setIsInitializing] = useState(true);
     const [route, dispatch] = useRouteSpy();
 

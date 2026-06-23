@@ -14,6 +14,7 @@ import {
   EuiPopoverTitle,
   EuiPopover,
   EuiPopoverFooter,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { useSelector } from 'react-redux';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -30,6 +31,7 @@ export const TroubleshootPopover = () => {
   const { pingHistogram } = useSelector(selectPingHistogram);
 
   const updatedUrlParams = useUrlParams()[1];
+  const troubleshootPopoverTitleId = useGeneratedHtmlId();
 
   const histogram = pingHistogram?.histogram ?? [];
 
@@ -38,6 +40,7 @@ export const TroubleshootPopover = () => {
 
   return (
     <EuiPopover
+      aria-labelledby={troubleshootPopoverTitleId}
       button={
         <EuiButtonEmpty
           data-test-subj="syntheticsTroubleshootPopoverButton"
@@ -50,7 +53,7 @@ export const TroubleshootPopover = () => {
       closePopover={closePopover}
       anchorPosition="upCenter"
     >
-      <EuiPopoverTitle>{SYSTEM_CLOCK_OUT_OF_SYNC}</EuiPopoverTitle>
+      <EuiPopoverTitle id={troubleshootPopoverTitleId}>{SYSTEM_CLOCK_OUT_OF_SYNC}</EuiPopoverTitle>
       <div style={{ width: '300px' }}>
         <EuiText size="s">
           <p>

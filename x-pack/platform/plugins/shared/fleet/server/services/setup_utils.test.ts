@@ -90,6 +90,26 @@ describe('awaitIfPending', () => {
     });
   });
 
+  it('does not retain resolved value in module-level status after batch completes', async () => {
+    // Each new batch should execute the provided function and not reuse the previous result.
+    // This ensures the module-level `status` promise is cleared after resolution so the GC
+    // can reclaim any large objects (e.g. ResponseError with ES connection metadata) that were
+    // part of the resolved value.
+    const firstResult = { large: 'object' };
+    const secondResult = { different: 'object' };
+    const fnFirst = jest.fn().mockResolvedValue(firstResult);
+    const fnSecond = jest.fn().mockResolvedValue(secondResult);
+
+    const result1 = await awaitIfPending(fnFirst);
+    expect(result1).toBe(firstResult);
+    expect(fnFirst).toHaveBeenCalledTimes(1);
+
+    // After the first batch completes, a new call must run the new function — not reuse the old promise.
+    const result2 = await awaitIfPending(fnSecond);
+    expect(result2).toBe(secondResult);
+    expect(fnSecond).toHaveBeenCalledTimes(1);
+  });
+
   it('does not block other calls after batch is fulfilled. can call again for a new result', async () => {
     const fnA = jest
       .fn()

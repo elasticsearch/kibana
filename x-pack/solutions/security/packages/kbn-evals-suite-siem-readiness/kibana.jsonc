@@ -1,0 +1,7 @@
+{
+  "type": "functional-tests",
+  "id": "@kbn/evals-suite-siem-readiness",
+  "owner": "@elastic/contextual-security-apps",
+  "group": "security",
+  "visibility": "private"
+}

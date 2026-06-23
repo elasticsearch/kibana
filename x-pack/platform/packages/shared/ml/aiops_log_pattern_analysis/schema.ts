@@ -45,9 +45,9 @@ export const indicesOptionsSchema = schema.object({
  * Defines the schema for the categorization API request body.
  */
 export const categorizeSchema = schema.object({
-  index: schema.string(),
-  field: schema.string(),
-  timeField: schema.string(),
+  index: schema.string({ maxLength: 10000 }),
+  field: schema.string({ maxLength: 10000 }),
+  timeField: schema.string({ maxLength: 10000 }),
   to: schema.number(),
   from: schema.number(),
   query: schema.any(),
@@ -60,17 +60,17 @@ export const categorizeSchema = schema.object({
 export type CategorizeSchema = TypeOf<typeof categorizeSchema>;
 
 export const categorizationFieldValidationSchema = schema.object({
-  indexPatternTitle: schema.string(),
+  indexPatternTitle: schema.string({ maxLength: 10000 }),
   query: schema.any(),
   size: schema.number(),
-  field: schema.string(),
-  timeField: schema.maybe(schema.string()),
+  field: schema.string({ maxLength: 10000 }),
+  timeField: schema.maybe(schema.string({ maxLength: 10000 })),
   start: schema.number(),
   end: schema.number(),
   analyzer: schema.maybe(schema.any()),
   runtimeMappings: runtimeMappingsSchema,
   indicesOptions: indicesOptionsSchema,
-  projectRouting: schema.maybe(schema.string()),
+  projectRouting: schema.maybe(schema.string({ maxLength: 10000 })),
   includeExamples: schema.boolean(),
 });
 export type CategorizationFieldValidationSchema = TypeOf<

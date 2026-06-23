@@ -12,6 +12,7 @@ import type { SearchHit } from '@elastic/elasticsearch/lib/api/types';
 import { basename } from 'path';
 import { encode } from '@kbn/cbor';
 import { AGENT_ACTIONS_INDEX, AGENT_ACTIONS_RESULTS_INDEX } from '@kbn/fleet-plugin/common';
+import { isCancelAction } from '../../../common/endpoint/service/response_actions/type_guards';
 import { catchAxiosErrorFormatAndThrow } from '../../../common/endpoint/format_axios_error';
 import { FleetActionGenerator } from '../../../common/endpoint/data_generators/fleet_action_generator';
 import { EndpointActionGenerator } from '../../../common/endpoint/data_generators/endpoint_action_generator';
@@ -29,10 +30,12 @@ import type {
   EndpointActionResponseDataOutput,
   ResponseActionScanOutputContent,
   ResponseActionRunScriptOutputContent,
+  LogsEndpointAction,
 } from '../../../common/endpoint/types';
 import { getFileDownloadId } from '../../../common/endpoint/service/response_actions/get_file_download_id';
 import {
   ENDPOINT_ACTION_RESPONSES_INDEX,
+  ENDPOINT_ACTIONS_INDEX,
   FILE_STORAGE_DATA_INDEX,
   FILE_STORAGE_METADATA_INDEX,
 } from '../../../common/endpoint/constants';
@@ -283,6 +286,55 @@ export const sendEndpointActionResponse = async (
         )
         .catch(catchAxiosErrorFormatAndThrow)
         .then(() => sleep(2000));
+    }
+
+    // For `cancel` of an `agentType` of `endpoint` - also send a response for the action that was canceled
+    if (isCancelAction(action) && state !== 'failure') {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const canceledActionId = action.parameters!.id;
+      const canceledActionCommandName = await esClient
+        .search<LogsEndpointAction>({
+          index: ENDPOINT_ACTIONS_INDEX,
+          query: {
+            match: {
+              'EndpointActions.action_id': canceledActionId,
+            },
+          },
+        })
+        .then(
+          (response) => response.hits?.hits[0]?._source?.EndpointActions.data.command || 'runscript'
+        )
+        .catch(catchAxiosErrorFormatAndThrow);
+
+      const canceledActionResponse =
+        endpointActionGenerator.generateResponse<EndpointActionResponseDataOutput>({
+          agent: { id: actionAgentId },
+          error: { message: 'action was canceled' },
+          EndpointActions: {
+            action_id: canceledActionId,
+            started_at: action.startedAt,
+            data: {
+              command: canceledActionCommandName,
+              comment: '',
+              output: {
+                type: 'json',
+                content: {
+                  code: `ra_${canceledActionCommandName}_error_canceled`,
+                  canceled_by: 'action',
+                  canceled_id: action.id,
+                },
+              },
+            },
+          },
+        });
+
+      await esClient
+        .index({
+          index: ENDPOINT_ACTION_RESPONSES_INDEX,
+          body: canceledActionResponse,
+          refresh: 'wait_for',
+        })
+        .catch(catchAxiosErrorFormatAndThrow);
     }
   }
 

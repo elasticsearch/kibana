@@ -36,6 +36,9 @@ export function HeaderControl() {
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.slo.sloManagementHeaderControl.popoverAriaLabel', {
+        defaultMessage: 'SLO management actions',
+      })}
       data-test-subj="headerControlPopover"
       panelPaddingSize="none"
       button={

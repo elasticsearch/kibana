@@ -5,7 +5,13 @@
  * 2.0.
  */
 
-import { EuiButtonEmpty, EuiPopover, EuiCodeBlock, EuiPopoverTitle } from '@elastic/eui';
+import {
+  EuiButtonEmpty,
+  EuiPopover,
+  EuiCodeBlock,
+  EuiPopoverTitle,
+  useGeneratedHtmlId,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React, { useState } from 'react';
 import type { TypedLensByValueInput } from '@kbn/lens-plugin/public';
@@ -17,6 +23,7 @@ export function EmbedAction({
   lensAttributes: TypedLensByValueInput['attributes'] | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const embedActionPopoverTitleId = useGeneratedHtmlId();
 
   const { reportType, allSeries } = useSeriesStorage();
 
@@ -34,8 +41,13 @@ export function EmbedAction({
   );
 
   return (
-    <EuiPopover button={button} isOpen={isOpen} closePopover={() => setIsOpen(false)}>
-      <EuiPopoverTitle>{EMBED_TITLE_LABEL}</EuiPopoverTitle>
+    <EuiPopover
+      aria-labelledby={embedActionPopoverTitleId}
+      button={button}
+      isOpen={isOpen}
+      closePopover={() => setIsOpen(false)}
+    >
+      <EuiPopoverTitle id={embedActionPopoverTitleId}>{EMBED_TITLE_LABEL}</EuiPopoverTitle>
       <EuiCodeBlock
         language="jsx"
         fontSize="m"

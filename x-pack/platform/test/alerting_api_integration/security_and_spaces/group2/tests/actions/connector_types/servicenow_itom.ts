@@ -512,13 +512,13 @@ export default function serviceNowITOMTest({ getService }: FtrProviderContext) {
                 id: simulatedActionId,
                 provider: 'actions',
                 actions: new Map([
-                  ['execute-start', { equal: 1 }],
-                  ['execute', { equal: 1 }],
+                  ['execute-start', { equal: 5 }],
+                  ['execute', { equal: 5 }],
                 ]),
               });
             });
 
-            const executeEvent = events[1];
+            const executeEvent = events[events.length - 1];
             expect(executeEvent?.kibana?.action?.execution?.usage?.request_body_bytes).to.be(317);
           });
         });
@@ -577,13 +577,13 @@ export default function serviceNowITOMTest({ getService }: FtrProviderContext) {
                 id: simulatedActionId,
                 provider: 'actions',
                 actions: new Map([
-                  ['execute-start', { equal: 2 }],
-                  ['execute', { equal: 2 }],
+                  ['execute-start', { equal: 6 }],
+                  ['execute', { equal: 6 }],
                 ]),
               });
             });
 
-            const executeEvent = events[3];
+            const executeEvent = events[events.length - 1];
             expect(executeEvent?.kibana?.action?.execution?.usage?.request_body_bytes).to.be(0);
           });
         });

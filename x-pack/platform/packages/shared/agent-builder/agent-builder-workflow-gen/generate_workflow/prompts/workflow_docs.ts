@@ -32,6 +32,37 @@ triggers:
   - type: manual
 \`\`\`
 
+**Defining inputs:** A manual trigger declares the runtime inputs the caller
+provides when launching the workflow. Any input a step references with
+\`{{ inputs.<name> }}\` MUST be declared here. Inputs are defined with **JSON
+Schema**, directly under the trigger:
+
+\`\`\`yaml
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        request_id:
+          type: string
+          description: The ID of the request to accept
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+          description: Request priority
+      required:
+        - request_id
+\`\`\`
+
+- \`properties\` maps each input name to a JSON Schema definition. Common keywords:
+  \`type\`, \`description\`, \`default\`, \`enum\`, \`format\`, \`pattern\`,
+  \`minimum\`/\`maximum\`, \`minLength\`/\`maxLength\`, and nested \`object\`/\`array\`.
+- \`required\` lists the input names that must be provided.
+- Reference inputs in steps with \`{{ inputs.<name> }}\` (e.g. \`{{ inputs.request_id }}\`).
+
+IMPORTANT: inputs are declared **under the \`manual\` trigger** — there is NO
+top-level \`inputs:\` field.
+
 **Use cases:**
 - On-demand investigations
 - Ad-hoc enrichment
@@ -97,11 +128,24 @@ triggers:
 
 ## Data Flow
 
-### Accessing Step Outputs
+### A Complete Example
 
-Each step's output is accessible to subsequent steps:
+Note how every \`{{ inputs.* }}\` reference has a matching declaration under the
+\`manual\` trigger, and each step's output is accessible to subsequent steps:
 
 \`\`\`yaml
+name: Fetch and log user
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        user_id:
+          type: string
+          description: The ID of the user to fetch
+      required:
+        - user_id
+consts:
+  api: "https://api.example.com"
 steps:
   - name: fetch_user
     type: http
@@ -591,18 +635,22 @@ steps:
 
 ### 6. Use Meaningful Inputs
 
-\`\`\`yaml
-inputs:
-  - name: target_ip
-    type: string
-    description: "The IP address to investigate for threats"
-    required: true
+Declare inputs under the manual trigger with clear descriptions and sensible defaults:
 
-  - name: severity_threshold
-    type: number
-    description: "Minimum severity level (1-10) to trigger alerts"
-    default: 7
-    required: false
+\`\`\`yaml
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        target_ip:
+          type: string
+          description: "The IP address to investigate for threats"
+        severity_threshold:
+          type: number
+          description: "Minimum severity level (1-10) to trigger alerts"
+          default: 7
+      required:
+        - target_ip
 \`\`\`
 
 

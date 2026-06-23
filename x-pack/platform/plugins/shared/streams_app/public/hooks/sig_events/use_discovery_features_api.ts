@@ -57,11 +57,11 @@ export function useDiscoveryFeaturesApi(): DiscoveryFeaturesApi {
 
     return {
       deleteFeaturesInBulk: (features) =>
-        runBulk(features, (feature) => ({ delete: { id: feature.id } })),
+        runBulk(features, (feature) => ({ delete: { id: feature.uuid } })),
       excludeFeaturesInBulk: (features) =>
-        runBulk(features, (feature) => ({ exclude: { id: feature.id } })),
+        runBulk(features, (feature) => ({ exclude: { id: feature.uuid } })),
       restoreFeaturesInBulk: (features) =>
-        runBulk(features, (feature) => ({ restore: { id: feature.id } })),
+        runBulk(features, (feature) => ({ restore: { id: feature.uuid } })),
     };
   }, [streamsRepositoryClient]);
 }

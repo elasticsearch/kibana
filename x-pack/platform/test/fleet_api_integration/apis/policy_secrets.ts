@@ -266,7 +266,7 @@ export default function (providerContext: FtrProviderContext) {
           last_checkin:
             status === 'inactive'
               ? moment().subtract(2, 'hours')
-              : moment().subtract(5, 'minute').toISOString(),
+              : moment().subtract(6, 'minute').toISOString(),
           tags: ['tag1'],
           status,
         },

@@ -17,9 +17,16 @@ import { ALL_ENTITY_TYPES } from '../../common/domain/definitions/entity_schema'
 export function registerTasks(
   taskManager: TaskManagerSetupContract,
   logger: Logger,
-  core: EntityStoreCoreSetup
+  core: EntityStoreCoreSetup,
+  isServerless: boolean
 ) {
-  registerExtractEntityTasks({ taskManager, logger, entityTypes: ALL_ENTITY_TYPES, core });
+  registerExtractEntityTasks({
+    taskManager,
+    logger,
+    entityTypes: ALL_ENTITY_TYPES,
+    core,
+    isServerless,
+  });
   registerHistorySnapshotTask({ taskManager, logger, core });
   registerStatusReportTask({ taskManager, logger, core });
 }

@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 
 import { EuiFilterButton, EuiPopover } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
 import type { SeriesConfig, SeriesUrl } from '../../types';
 import { useFilterValues } from '../use_filter_values';
 import { FilterValuesList } from '../components/filter_values_list';
@@ -36,6 +37,9 @@ export function FilterExpanded(props: FilterProps) {
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.exploratoryView.filterExpanded.popoverAriaLabel', {
+        defaultMessage: 'Filter options',
+      })}
       button={
         <EuiFilterButton
           onClick={() => setIsOpen((prevState) => !prevState)}

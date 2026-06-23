@@ -28,12 +28,12 @@ describe('computeRetryDelayMs', () => {
       expect(computeRetryDelayMs({ delay: '1s', strategy: 'fixed', multiplier: 10 }, 2)).toBe(1000);
     });
 
-    it('applies jitter when jitter is true (result in [0, delay])', () => {
+    it('applies jitter when jitter is true (result in [delay/2, delay])', () => {
       const results = new Set<number>();
       for (let i = 0; i < 50; i++) {
         const ms = computeRetryDelayMs({ delay: '1s', jitter: true }, 0);
         results.add(ms);
-        expect(ms).toBeGreaterThanOrEqual(0);
+        expect(ms).toBeGreaterThanOrEqual(500);
         expect(ms).toBeLessThanOrEqual(1000);
       }
       expect(results.size).toBeGreaterThan(1);
@@ -119,7 +119,7 @@ describe('computeRetryDelayMs', () => {
       ).toBe(5000);
     });
 
-    it('applies jitter when jitter is true (result in [0, capped delay])', () => {
+    it('applies jitter when jitter is true (result in [capped/2, capped])', () => {
       for (let i = 0; i < 30; i++) {
         const ms = computeRetryDelayMs(
           {
@@ -130,7 +130,7 @@ describe('computeRetryDelayMs', () => {
           },
           2
         );
-        expect(ms).toBeGreaterThanOrEqual(0);
+        expect(ms).toBeGreaterThanOrEqual(2000);
         expect(ms).toBeLessThanOrEqual(4000);
       }
     });

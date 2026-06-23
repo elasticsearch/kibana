@@ -126,6 +126,7 @@ components:
         - failed
         - pending
         - successful
+        - canceled
 
     Statuses:
       type: array
@@ -133,7 +134,7 @@ components:
       items:
         $ref: '#/components/schemas/Status'
       minLength: 1
-      maxLength: 3
+      maxLength: 4
 
     UserIds:
       oneOf:
@@ -276,6 +277,9 @@ components:
          wasSuccessful:
            type: boolean
            description: Whether the response action was successful
+         wasCanceled:
+           type: boolean
+           description: Whether the response action was canceled
          status:
            type: string
            description: The response action status
@@ -322,6 +326,9 @@ components:
                wasSuccessful:
                  type: boolean
                  description: Whether the response action was successful for the agent ID
+               wasCanceled:
+                 type: boolean
+                 description: Whether the response action was canceled for the agent ID
                completedAt:
                  type: string
                  description: The date and time the response action was completed for the agent ID

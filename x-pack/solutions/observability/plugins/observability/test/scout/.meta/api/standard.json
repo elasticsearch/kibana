@@ -1,5 +1,5 @@
 {
-  "sha1": "c2adeded22f71218e1b84985838861c0edc8f7e5",
+  "sha1": "fc4a39c5ee2d1fb22dd44fb7970d2887e04933ea",
   "tests": [
     {
       "id": "2d983a450230de2-481578a854c377f",
@@ -13,8 +13,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_with_service_name.spec.ts",
-        "line": 102,
-        "column": 12
+        "line": 107,
+        "column": 16
       }
     },
     {
@@ -29,8 +29,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_with_service_name.spec.ts",
-        "line": 117,
-        "column": 12
+        "line": 120,
+        "column": 78
       }
     },
     {
@@ -45,8 +45,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_with_service_name.spec.ts",
-        "line": 131,
-        "column": 12
+        "line": 134,
+        "column": 78
       }
     },
     {
@@ -61,8 +61,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_with_service_name.spec.ts",
-        "line": 145,
-        "column": 12
+        "line": 148,
+        "column": 27
       }
     },
     {
@@ -77,8 +77,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_without_service_name.spec.ts",
-        "line": 74,
-        "column": 12
+        "line": 77,
+        "column": 14
       }
     },
     {
@@ -93,8 +93,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_without_service_name.spec.ts",
-        "line": 84,
-        "column": 12
+        "line": 87,
+        "column": 78
       }
     },
     {
@@ -109,8 +109,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_without_service_name.spec.ts",
-        "line": 129,
-        "column": 12
+        "line": 132,
+        "column": 78
       }
     },
     {
@@ -125,8 +125,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_without_service_name.spec.ts",
-        "line": 173,
-        "column": 12
+        "line": 175,
+        "column": 25
       }
     },
     {
@@ -141,8 +141,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context_logs_without_service_name.spec.ts",
-        "line": 180,
-        "column": 12
+        "line": 183,
+        "column": 27
       }
     },
     {
@@ -157,8 +157,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context.spec.ts",
-        "line": 29,
-        "column": 12
+        "line": 32,
+        "column": 15
       }
     },
     {
@@ -173,8 +173,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/alert_details_context.spec.ts",
-        "line": 47,
-        "column": 12
+        "line": 48,
+        "column": 7
       }
     },
     {
@@ -383,8 +383,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/find_annotations.spec.ts",
-        "line": 93,
-        "column": 12
+        "line": 95,
+        "column": 17
       }
     },
     {
@@ -399,8 +399,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/find_annotations.spec.ts",
-        "line": 103,
-        "column": 12
+        "line": 104,
+        "column": 74
       }
     },
     {
@@ -415,8 +415,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/find_annotations.spec.ts",
-        "line": 109,
-        "column": 12
+        "line": 113,
+        "column": 26
       }
     },
     {
@@ -515,6 +515,20 @@
         "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/metric_threshold_rule.spec.ts",
         "line": 339,
         "column": 10
+      }
+    },
+    {
+      "id": "c11a73171e746a7-9200dc75fb8f9b4",
+      "title": "Observability related dashboards suggests the dashboard matching a fired alert",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/observability/test/scout/api/tests/related_dashboards.spec.ts",
+        "line": 192,
+        "column": 12
       }
     }
   ]

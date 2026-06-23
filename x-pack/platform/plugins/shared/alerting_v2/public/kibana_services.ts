@@ -5,13 +5,17 @@
  * 2.0.
  */
 
+import type { Container } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 import type { RuleFormServices } from '@kbn/alerting-v2-rule-form';
+import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import type { ExpressionsStart } from '@kbn/expressions-plugin/public';
 
 /** Services shared by rule UI, episodes UI, and other alerting_v2 surfaces. */
 export type AlertingV2KibanaServices = RuleFormServices & {
   expressions: ExpressionsStart;
+  uiSettings: IUiSettingsClient;
+  container: Container;
 };
 
 const servicesReady$ = new BehaviorSubject<AlertingV2KibanaServices | undefined>(undefined);

@@ -104,14 +104,22 @@ export async function unenrollAgents(
   const batchSize = options.batchSize ?? SO_SEARCH_LIMIT;
   const namespaceFilter = await agentsKueryNamespaceFilter(spaceId);
   const kuery = buildFilterWithNamespace(namespaceFilter, options.kuery);
-  const res = await getAgentsByKuery(esClient, soClient, {
+  // cheap count — avoids hydrating up to batchSize agent documents just to read the total
+  const { total } = await getAgentsByKuery(esClient, soClient, {
     kuery,
     showAgentless: options.showAgentless,
     showInactive: options.showInactive ?? false,
     page: 1,
-    perPage: batchSize,
+    perPage: 0,
   });
-  if (res.total <= batchSize) {
+  if (total <= batchSize) {
+    const res = await getAgentsByKuery(esClient, soClient, {
+      kuery,
+      showAgentless: options.showAgentless,
+      showInactive: options.showInactive ?? false,
+      page: 1,
+      perPage: batchSize,
+    });
     return await unenrollBatch(soClient, esClient, res.agents, {
       ...options,
       spaceId,
@@ -124,7 +132,7 @@ export async function unenrollAgents(
         ...options,
         spaceId,
         batchSize,
-        total: res.total,
+        total,
       },
       { pitId: await openPointInTime(esClient) }
     ).runActionAsyncTask();

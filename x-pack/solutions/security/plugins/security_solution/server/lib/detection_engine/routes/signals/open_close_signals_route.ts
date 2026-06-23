@@ -13,14 +13,10 @@ import {
   ALERTS_API_ALL,
   ALERTS_API_UPDATE_DEPRECATED_PRIVILEGE,
 } from '@kbn/security-solution-features/constants';
-import { ALERT_CLOSING_REASON_VALIDATION_ERROR } from './translations';
-import { DefaultClosingReasonSchema } from '../../../../../common/types';
 import { SetAlertsStatusRequestBody } from '../../../../../common/api/detection_engine/signals';
-import { AlertStatusEnum } from '../../../../../common/api/model';
 import type { SecuritySolutionPluginRouter } from '../../../../types';
 import {
   DEFAULT_ALERTS_INDEX,
-  DEFAULT_DETECTIONS_CLOSE_REASONS_KEY,
   DETECTION_ENGINE_SIGNALS_STATUS_URL,
 } from '../../../../../common/constants';
 import { buildSiemResponse } from '../utils';
@@ -31,9 +27,10 @@ import {
   getSessionIDfromKibanaRequest,
 } from '../../../telemetry/insights';
 import {
-  getUpdateSignalStatusScript,
-  setWorkflowStatusHandler,
-} from '../common/set_workflow_status_handler';
+  getUpdateAlertsWorkflowStatusScript,
+  updateAlertsWorkflowStatus,
+} from '../common/operations/update_alerts_workflow_status';
+import { validateClosingReason } from '../common/validators/validate_closing_reason';
 
 export const setSignalsStatusRoute = (
   router: SecuritySolutionPluginRouter,
@@ -71,21 +68,15 @@ export const setSignalsStatusRoute = (
         const siemResponse = buildSiemResponse(response);
         const spaceId = securitySolution?.getSpaceId() ?? 'default';
 
-        let reason;
-        if (request.body.status === AlertStatusEnum.closed) {
-          const customReasons = await core.uiSettings.client.get(
-            DEFAULT_DETECTIONS_CLOSE_REASONS_KEY
-          );
-          const validReasons = new Set([...DefaultClosingReasonSchema.options, ...customReasons]);
-          if (request.body.reason === undefined || validReasons.has(request.body.reason)) {
-            reason = request.body.reason;
-          } else {
-            return siemResponse.error({
-              body: ALERT_CLOSING_REASON_VALIDATION_ERROR(request.body.reason),
-              statusCode: 400,
-            });
-          }
+        const closingReason = await validateClosingReason({
+          core,
+          status,
+          reason: 'reason' in request.body ? request.body.reason : undefined,
+        });
+        if (!closingReason.valid) {
+          return siemResponse.error({ statusCode: 400, body: closingReason.message });
         }
+        const reason = closingReason.reason;
 
         if (!siemClient) {
           return siemResponse.error({ statusCode: 404 });
@@ -119,14 +110,16 @@ export const setSignalsStatusRoute = (
 
         try {
           if ('signal_ids' in request.body) {
-            // Use common handler for "by IDs" case
-            const getIndexPattern = async () => `${DEFAULT_ALERTS_INDEX}-${spaceId}`;
-            return setWorkflowStatusHandler({
+            // Use common operation for "by IDs" case
+            const body = await updateAlertsWorkflowStatus({
               context,
-              request,
-              response,
-              getIndexPattern,
+              index: `${DEFAULT_ALERTS_INDEX}-${spaceId}`,
+              ids: request.body.signal_ids,
+              status,
+              reason,
             });
+
+            return response.ok({ body });
           } else {
             const { conflicts, query } = request.body;
 
@@ -172,7 +165,7 @@ const updateSignalsStatusByQuery = async (
     index: `${DEFAULT_ALERTS_INDEX}-${spaceId}`,
     conflicts: options.conflicts,
     refresh: true,
-    script: getUpdateSignalStatusScript(status, user, reason),
+    script: getUpdateAlertsWorkflowStatusScript(status, user, reason),
     query: {
       bool: {
         filter: query,

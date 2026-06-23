@@ -213,16 +213,17 @@ export async function getKqlSuggestionsIfApplicable(
       return null;
     }
 
-    const kqlWordBoundary = /[\s:()"'=<>]/;
-    let kqlWordStart = kqlQuery.length;
-    while (kqlWordStart > 0 && !kqlWordBoundary.test(kqlQuery[kqlWordStart - 1])) {
-      kqlWordStart--;
-    }
-    const kqlStartInText = innerText.length - kqlQuery.length;
-    const wordStartInText = kqlStartInText + kqlWordStart;
-    const rangeToReplace = { start: wordStartInText, end: innerText.length };
+    const startOffset = innerText.length - kqlQuery.length;
 
-    return suggestions.map((s) => ({ ...s, rangeToReplace }));
+    return suggestions.map(({ range, ...suggestion }) => ({
+      ...suggestion,
+      // Exception to the standard attachReplacementRanges path (no strategy / prefix resolver):
+      // KQL provider already owns the replace range; we shift to ES|QL coords — lexer sees """…""" as one token.
+      rangeToReplace: {
+        start: startOffset + range.start,
+        end: startOffset + range.end,
+      },
+    }));
   } catch (error) {
     return null;
   }

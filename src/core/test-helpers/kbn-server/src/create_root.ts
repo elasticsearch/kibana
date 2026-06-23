@@ -93,14 +93,31 @@ export function createRootWithSettings(
    * Most of these integration tests expect OSS to default to true, but FIPS
    * requires the security plugin to be enabled
    */
-  let oss = true;
+  const oss = true;
   if (getFips() === 1) {
     set(settings, 'xpack.security.fipsMode.enabled', true);
-    oss = false;
-    delete cliArgs.oss;
+    // Keep oss=true to avoid loading all xpack plugins on startup — heavy plugins like
+    // streams, fleet, and reporting do significant ES initialization that exhausts the
+    // test cluster. Instead, inject only the minimal set of xpack plugins required for
+    // FIPS security compliance, including the full requiredBundles transitive closure for
+    // the security plugin (spaces, remoteClusters, indexManagement, runtimeFields).
+    const existingPaths = Array.isArray(settings?.plugins?.paths)
+      ? (settings.plugins.paths as string[])
+      : [];
+    set(settings, 'plugins.paths', [
+      ...existingPaths,
+      join(REPO_ROOT, 'x-pack/platform/plugins/shared/licensing'),
+      join(REPO_ROOT, 'x-pack/platform/plugins/shared/features'),
+      join(REPO_ROOT, 'x-pack/platform/plugins/shared/task_manager'),
+      join(REPO_ROOT, 'x-pack/platform/plugins/shared/security'),
+      join(REPO_ROOT, 'x-pack/platform/plugins/shared/spaces'),
+      join(REPO_ROOT, 'x-pack/platform/plugins/private/remote_clusters'),
+      join(REPO_ROOT, 'x-pack/platform/plugins/shared/index_management'),
+      join(REPO_ROOT, 'x-pack/platform/plugins/private/runtime_fields'),
+    ]);
     if (cliArgs.serverless) {
-      // In serverless mode, spaces config keys use schema.literal(false) with no defaultValue.
-      // They are only validated when the spaces plugin loads (oss=false), so set them explicitly.
+      // spaces config keys use schema.literal(false) with no defaultValue in serverless
+      // mode; set them explicitly since the spaces plugin is now loaded via plugins.paths.
       set(settings, 'xpack.spaces.allowFeatureVisibility', false);
       set(settings, 'xpack.spaces.allowSolutionVisibility', false);
     }

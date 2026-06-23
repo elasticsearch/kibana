@@ -9,8 +9,7 @@
 import type { TimeRange } from '@kbn/es-query';
 import type { ISearchGeneric } from '@kbn/search-types';
 import type { ESQLControlVariable, EsqlFieldType, ESQLFieldWithMetadata } from '@kbn/esql-types';
-import { KBN_FIELD_TYPES } from '@kbn/field-types';
-import { getESQLQueryColumns } from '../run_query';
+import { getESQLQueryColumnsRaw } from '../run_query';
 
 /**
  * Gets the columns of an ESQL query, formatted as ESQLFieldWithMetadata
@@ -36,7 +35,7 @@ export const getEsqlColumns = async ({
 }): Promise<ESQLFieldWithMetadata[]> => {
   if (esqlQuery) {
     try {
-      const columns = await getESQLQueryColumns({
+      const columns = await getESQLQueryColumnsRaw({
         esqlQuery,
         search,
         dropNullColumns: true,
@@ -44,16 +43,16 @@ export const getEsqlColumns = async ({
         signal,
         timeRange,
       });
-      return (
-        columns?.map((c) => {
-          return {
-            name: c.name,
-            type: c.meta.esType as EsqlFieldType,
-            hasConflict: c.meta.type === KBN_FIELD_TYPES.CONFLICT,
-            userDefined: false,
-          };
-        }) || []
-      );
+      return columns.map(({ name, type, original_types: originalTypes }) => {
+        const hasConflict = type === 'unsupported' && (originalTypes?.length ?? 0) > 1;
+        return {
+          name,
+          type: type as EsqlFieldType,
+          hasConflict,
+          originalTypes: hasConflict ? originalTypes : undefined,
+          userDefined: false,
+        };
+      });
     } catch (error) {
       // Handle error
       return [];

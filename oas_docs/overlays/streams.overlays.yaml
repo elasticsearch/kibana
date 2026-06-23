@@ -23,5 +23,5 @@ actions:
           data from multiple streams into a single logical view without duplicating documents.
       externalDocs:
         description: Streams documentation
-        url: https://www.elastic.co/docs/solutions/observability/streams
+        url: https://www.elastic.co/docs/solutions/observability/streams/streams
       x-displayName: Streams

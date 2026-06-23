@@ -53,6 +53,7 @@ const addPlaceholder = (operators: string[]) => operators.map((op) => `${op} $0`
 
 const QUERY_LITERAL = buildConstantsDefinitions([QUERY_TEXT_SNIPPET], '')[0].text;
 const NEXT_ACTIONS = [
+  '\n',
   withCompleteItem.text,
   commaCompleteItem.text.endsWith(' ') ? commaCompleteItem.text : `${commaCompleteItem.text} `,
   pipeCompleteItem.text,
@@ -369,7 +370,7 @@ describe('RERANK Autocomplete', () => {
           withClause: '{ "inference_id": "inference_1" }',
         }) + ' ';
 
-      await expectRerankSuggestions(query, [pipeCompleteItem.text]);
+      await expectRerankSuggestions(query, ['\n', pipeCompleteItem.text]);
     });
 
     test('suggests inference endpoints as the values for inference_id', async () => {

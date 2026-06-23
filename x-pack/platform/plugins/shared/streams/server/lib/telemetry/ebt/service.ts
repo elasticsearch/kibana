@@ -11,7 +11,6 @@ import {
   streamsStateErrorEventType,
   streamsDescriptionGeneratedEventType,
   streamsSignificantEventsGeneratedEventType,
-  streamsInsightsGeneratedEventType,
   streamsProcessingPipelineSuggestedEventType,
   streamsFeaturesIdentifiedEventType,
   streamsAgentBuilderKnowledgeIndicatorCreatedEventType,
@@ -34,7 +33,6 @@ export class EbtTelemetryService {
     this.analytics.registerEventType(streamsStateErrorEventType);
     this.analytics.registerEventType(streamsDescriptionGeneratedEventType);
     this.analytics.registerEventType(streamsSignificantEventsGeneratedEventType);
-    this.analytics.registerEventType(streamsInsightsGeneratedEventType);
     this.analytics.registerEventType(streamsProcessingPipelineSuggestedEventType);
     this.analytics.registerEventType(streamsFeaturesIdentifiedEventType);
     this.analytics.registerEventType(streamsAgentBuilderKnowledgeIndicatorCreatedEventType);

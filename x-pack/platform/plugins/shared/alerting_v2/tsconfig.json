@@ -114,9 +114,12 @@
     "@kbn/workflows-ui",
     "@kbn/core-spaces-common",
     "@kbn/datemath",
+    "@kbn/core-ui-settings-server-mocks",
     "@kbn/css-utils",
     "@kbn/dashboard-plugin",
-    "@kbn/cps"
+    "@kbn/cps",
+    "@kbn/core-ui-settings-browser",
+    "@kbn/management-settings-ids"
   ],
   "exclude": ["target/**/*", ".storybook/**/*.js"]
 }

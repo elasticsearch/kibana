@@ -38,19 +38,19 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
     });
   };
 
-  // FLAKY: https://github.com/elastic/kibana/issues/246637
-  // FLAKY: https://github.com/elastic/kibana/issues/246638
-  describe.skip('Reporting Management app', () => {
+  describe('Reporting Management app', () => {
     let job: ReportApiJSON;
     let path: string;
 
     before('initialize saved object archive', async () => {
-      cookieCredentials = await samlAuth.getM2MApiCookieCredentialsWithRoleScope('admin');
-      internalReqHeader = samlAuth.getInternalRequestHeader();
-
       // add test saved search object
       await esArchiver.load(archives.ecommerce.data);
       await kibanaServer.importExport.load(archives.ecommerce.savedObjects);
+
+      cookieCredentials = await samlAuth.getM2MApiCookieCredentialsWithRoleScope('admin', {
+        forceNewSession: true,
+      });
+      internalReqHeader = samlAuth.getInternalRequestHeader();
 
       // generate a test report to ensure the user is able to see it in the listing
       ({ job, path } = await reportingAPI.createReportJobInternal(

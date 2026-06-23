@@ -214,7 +214,7 @@ interface InternalUnifiedDataTableProps {
   /**
    * function to change sorting of the documents, skipped when isSortEnabled is set to false
    */
-  onSort?: (sort: string[][]) => void;
+  onSort?: (sort: SortOrder[]) => void;
   /**
    * Array of documents provided by Elasticsearch
    */
@@ -251,6 +251,13 @@ interface InternalUnifiedDataTableProps {
    * Manage user sorting control
    */
   isSortEnabled?: boolean;
+  /**
+   * Only for ES|QL mode for now.
+   * When false, disables in-memory (client-side) row sorting. Use this when sorting is performed
+   * server-side (e.g. via a SORT clause in ES|QL) so the table displays the already-sorted rows
+   * verbatim instead of reordering them again. Defaults to true.
+   */
+  isInMemorySortEnabled?: boolean;
   /**
    * Current sort setting
    */
@@ -546,6 +553,7 @@ const InternalUnifiedDataTable = React.forwardRef<
       showFullScreenButton = true,
       sort,
       isSortEnabled = true,
+      isInMemorySortEnabled = true,
       isPaginationEnabled = true,
       paginationMode = DEFAULT_PAGINATION_MODE,
       cellActionsTriggerId,
@@ -672,6 +680,7 @@ const InternalUnifiedDataTable = React.forwardRef<
       dataView,
       isPlainRecord,
       isSortEnabled,
+      isInMemorySortEnabled,
       defaultColumns,
       onSort,
     });

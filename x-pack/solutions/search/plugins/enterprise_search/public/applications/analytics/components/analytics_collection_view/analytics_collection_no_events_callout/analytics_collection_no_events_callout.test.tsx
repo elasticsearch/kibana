@@ -5,13 +5,13 @@
  * 2.0.
  */
 
-import '../../../../__mocks__/shallow_useeffect.mock';
-
 import { setMockValues, setMockActions } from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { AnalyticsCollection } from '../../../../../../common/types/analytics';
 
@@ -41,21 +41,21 @@ describe('AnalyticsCollectionNoEventsCallout', () => {
     setMockValues({ ...mockValues, hasEvents: false });
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionNoEventsCallout analyticsCollection={mockValues.analyticsCollection} />
     );
 
-    expect(wrapper.find('EuiCallOut')).toHaveLength(1);
+    expect(screen.getByText('Install our tracker')).toBeInTheDocument();
   });
 
   it('does not render events Callout when the collection has events', () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionNoEventsCallout analyticsCollection={mockValues.analyticsCollection} />
     );
 
-    expect(wrapper.find('EuiCallOut')).toHaveLength(0);
+    expect(screen.queryByText('Install our tracker')).not.toBeInTheDocument();
   });
 });

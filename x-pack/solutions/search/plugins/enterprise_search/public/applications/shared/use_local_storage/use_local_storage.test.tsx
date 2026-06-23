@@ -7,7 +7,9 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen, fireEvent } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { useLocalStorage } from './use_local_storage';
 
@@ -22,6 +24,7 @@ describe('useLocalStorage', () => {
       <div>
         <button
           id="change"
+          data-test-subj="change"
           onClick={() => {
             setFields({
               options: ['big', 'new', 'values'],
@@ -45,27 +48,27 @@ describe('useLocalStorage', () => {
         options: ['some', 'old', 'values'],
       })
     );
-    const wrapper = shallow(<TestComponent />);
-    expect(wrapper.text()).toBe('some, old, values');
+    renderWithKibanaRenderContext(<TestComponent />);
+    expect(screen.getByText('some, old, values')).toBeInTheDocument();
   });
 
   it('will ignore non-JSON values in localStorage', () => {
     global.localStorage.setItem(KEY, 'blah blah blah');
-    const wrapper = shallow(<TestComponent />);
-    expect(wrapper.text()).toBe('foo, bar, baz');
+    renderWithKibanaRenderContext(<TestComponent />);
+    expect(screen.getByText('foo, bar, baz')).toBeInTheDocument();
     expect(global.localStorage.getItem(KEY)).toBe('{"options":["foo","bar","baz"]}');
   });
 
   it('if will use provided default values if state does not already exist in localStorage', () => {
-    const wrapper = shallow(<TestComponent />);
-    expect(wrapper.text()).toBe('foo, bar, baz');
+    renderWithKibanaRenderContext(<TestComponent />);
+    expect(screen.getByText('foo, bar, baz')).toBeInTheDocument();
     expect(global.localStorage.getItem(KEY)).toBe('{"options":["foo","bar","baz"]}');
   });
 
   it('state can be updated with new values', () => {
-    const wrapper = shallow(<TestComponent />);
-    wrapper.find('#change').simulate('click');
-    expect(wrapper.text()).toBe('big, new, values');
+    renderWithKibanaRenderContext(<TestComponent />);
+    fireEvent.click(screen.getByTestId('change'));
+    expect(screen.getByText('big, new, values')).toBeInTheDocument();
     expect(global.localStorage.getItem(KEY)).toBe('{"options":["big","new","values"]}');
   });
 });

@@ -46,6 +46,9 @@ describe('createRuleRoute', () => {
       removalDelay: '1h',
     },
     enableFrameworkAlerts: true,
+    alertsService: {
+      totalFieldsLimit: 2800,
+    },
     cancelAlertsOnRuleTimeout: true,
     ruleChangeTracking: {
       enabled: false,

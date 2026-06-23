@@ -5,16 +5,14 @@
  * 2.0.
  */
 
-import { setMockValues } from '../../../../../__mocks__/kea_logic';
+import { setMockActions, setMockValues } from '../../../../../__mocks__/kea_logic';
 import { connectorIndex } from '../../../../__mocks__/view_index.mock';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiCallOut, EuiButton } from '@elastic/eui';
-
-import { LicensingCallout } from '../../../../../shared/licensing_callout/licensing_callout';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { CopyAndCustomizePipelinePanel } from './customize_pipeline_item';
 
@@ -34,31 +32,27 @@ describe('CopyAndCustomizePipelinePanel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setMockValues({ ...DEFAULT_VALUES });
+    setMockActions({ makeRequest: jest.fn() });
   });
+
   it('renders callout with default pipeline', () => {
-    const wrapper = shallow(<CopyAndCustomizePipelinePanel />);
-
-    expect(wrapper.find(EuiCallOut)).toHaveLength(1);
-    expect(wrapper.find(EuiButton)).toHaveLength(1);
-    expect(wrapper.find(EuiButton).render().text()).toBe('Copy and customize');
+    renderWithKibanaRenderContext(<CopyAndCustomizePipelinePanel />);
+    expect(screen.getByText('Unlock your custom pipelines')).toBeInTheDocument();
+    expect(screen.getByText('Copy and customize')).toBeInTheDocument();
   });
+
   it('returns LicensingCallout if gated', () => {
-    setMockValues({
-      ...DEFAULT_VALUES,
-      hasPlatinumLicense: false,
-      isCloud: false,
-    });
-
-    const wrapper = shallow(<CopyAndCustomizePipelinePanel />);
-    expect(wrapper.find(LicensingCallout)).toHaveLength(1);
+    setMockValues({ ...DEFAULT_VALUES, hasPlatinumLicense: false, isCloud: false });
+    renderWithKibanaRenderContext(<CopyAndCustomizePipelinePanel />);
+    expect(
+      screen.getByText(/Custom pipelines require a Platinum license or higher/)
+    ).toBeInTheDocument();
   });
-  it('returns null if you have a custom pipeline', () => {
-    setMockValues({
-      ...DEFAULT_VALUES,
-      hasIndexIngestionPipeline: true,
-    });
 
-    const wrapper = shallow(<CopyAndCustomizePipelinePanel />);
-    expect(wrapper.isEmptyRender()).toBe(true);
+  it('returns null if you have a custom pipeline', () => {
+    setMockValues({ ...DEFAULT_VALUES, hasIndexIngestionPipeline: true });
+    renderWithKibanaRenderContext(<CopyAndCustomizePipelinePanel />);
+    expect(screen.queryByText('Copy and customize')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unlock your custom pipelines')).not.toBeInTheDocument();
   });
 });

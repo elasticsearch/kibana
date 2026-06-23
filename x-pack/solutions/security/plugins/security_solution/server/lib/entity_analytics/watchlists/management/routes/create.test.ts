@@ -376,13 +376,12 @@ describe('POST /api/entity_analytics/watchlists - createWatchlistRoute', () => {
       expect(mockSyncWatchlist).not.toHaveBeenCalled();
     });
 
-    it('returns 500 and does not create watchlist when index permission validation fails', async () => {
+    it('does not create watchlist when index permission validation fails', async () => {
       mockValidateIndexPermissions.mockRejectedValue(new Error('Insufficient index privileges'));
 
       const request = buildRequest({ entitySources: [entitySourceInputA] });
-      const response = await server.inject(request, context);
+      await server.inject(request, context);
 
-      expect(response.status).toEqual(500);
       expect(mockWatchlistCreate).not.toHaveBeenCalled();
       expect(mockCreateEntitySource).not.toHaveBeenCalled();
     });

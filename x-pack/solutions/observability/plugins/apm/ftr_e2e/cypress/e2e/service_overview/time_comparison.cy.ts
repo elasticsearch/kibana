@@ -113,8 +113,7 @@ describe.skip('Service overview: Time Comparison', () => {
       cy.contains('Week before');
 
       cy.selectAbsoluteTimeRange('2021-10-10T00:00:00.000Z', '2021-10-20T00:00:00.000Z');
-
-      cy.getByTestSubj('querySubmitButton').click();
+      // selectAbsoluteTimeRange submits the query itself.
 
       cy.getByTestSubj('comparisonSelect').should('have.value', '864000000ms');
       cy.getByTestSubj('comparisonSelect').should('not.contain.text', 'Day before');

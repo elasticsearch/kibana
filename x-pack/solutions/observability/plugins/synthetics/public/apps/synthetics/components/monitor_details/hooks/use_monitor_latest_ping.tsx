@@ -7,7 +7,7 @@
 
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useEsSearch } from '@kbn/observability-shared-plugin/public';
+import { useSyntheticsEsSearch } from '../../../hooks/use_synthetics_es_search';
 import { getSyntheticsCcsIndex } from '../../../../../../common/get_synthetics_indices';
 import {
   ConfigKey,
@@ -107,7 +107,7 @@ const useRemoteMonitorLatestPing = ({
   const canQuery = Boolean(remoteName && monitorId);
   const index = canQuery ? getSyntheticsCcsIndex(remoteName) : '';
 
-  const { data, loading } = useEsSearch(
+  const { data, loading } = useSyntheticsEsSearch(
     {
       index,
       size: 1,

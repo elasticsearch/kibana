@@ -135,6 +135,33 @@ describe('ExportResultsButton', () => {
       const button = screen.getByTestId('osqueryExportResultsButton');
       expect(button).toBeDisabled();
     });
+
+    it('shows the initial-loading spinner before any count has been fetched (total undefined)', () => {
+      renderButton({ total: undefined });
+
+      const button = screen.getByTestId('osqueryExportResultsButton');
+      expect(button.querySelector('.euiLoadingSpinner')).toBeInTheDocument();
+    });
+
+    it('becomes interactive once a non-zero count is known', () => {
+      renderButton({ total: 5 });
+
+      const button = screen.getByTestId('osqueryExportResultsButton');
+      expect(button).not.toBeDisabled();
+      expect(button.querySelector('.euiLoadingSpinner')).not.toBeInTheDocument();
+    });
+
+    // The cross-tab guarantee is owned upstream by the pack-row store-clear
+    // policy (see pack_queries_status_table.test.tsx) — the count is no longer
+    // dropped on a tab switch, so the button can derive its state purely from
+    // `total` without latching the last known value.
+    it('shows the spinner whenever total is undefined while an export is in progress', () => {
+      useExportResultsMock.mockReturnValue({ ...defaultExportMock, isExporting: true });
+      renderButton({ total: undefined });
+
+      const button = screen.getByTestId('osqueryExportResultsButton');
+      expect(button.querySelector('.euiLoadingSpinner')).toBeInTheDocument();
+    });
   });
 
   describe('empty-result gating', () => {

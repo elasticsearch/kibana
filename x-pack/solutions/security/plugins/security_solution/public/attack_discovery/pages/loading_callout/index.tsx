@@ -12,6 +12,7 @@ import {
   EuiIcon,
   EuiLoadingElastic,
   EuiLoadingSpinner,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
@@ -74,7 +75,7 @@ const LoadingCalloutComponent: React.FC<Props> = ({
       <EuiFlexGroup alignItems="center" data-test-subj="leftContent" gutterSize="none">
         <EuiFlexItem grow={false}>
           {isTerminalState ? (
-            <EuiIcon type="logoElastic" size="l" />
+            <EuiIcon type="logoElastic" size="l" aria-hidden={true} />
           ) : (
             <EuiLoadingElastic data-test-subj="loadingElastic" size="l" />
           )}
@@ -216,13 +217,15 @@ const LoadingCalloutComponent: React.FC<Props> = ({
                   `}
                 />
               ) : (
-                <EuiButtonIcon
-                  aria-label={i18n.CLOSE}
-                  disabled={isDismissing}
-                  iconType="cross"
-                  onClick={dismissGeneration}
-                  data-test-subj="dismissButton"
-                />
+                <EuiToolTip content={i18n.CLOSE} disableScreenReaderOutput>
+                  <EuiButtonIcon
+                    aria-label={i18n.CLOSE}
+                    disabled={isDismissing}
+                    iconType="cross"
+                    onClick={dismissGeneration}
+                    data-test-subj="dismissButton"
+                  />
+                </EuiToolTip>
               )}
             </EuiFlexItem>
           </EuiFlexGroup>

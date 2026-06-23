@@ -6,12 +6,12 @@ Platform primitives and bulk patterns: [`@kbn/occ` README](../../../../packages/
 
 ## Entry points
 
-| Path | CRUD method | `OccWriter` method | Reads before write? | Retries |
-|------|-------------|-------------------|---------------------|---------|
-| `WorkflowCrudService.updateWorkflow` | `readModifyWriteWorkflowDocument` | `readModifyWrite` | Yes — inside helper, per attempt | `3` (`DEFAULT_MAX_RETRIES`) |
-| `ManagedWorkflowsService.installManagedWorkflow` **create** | `createWorkflowDocument` | `create` | No | Outer install loop on id collision |
-| `ManagedWorkflowsService.installManagedWorkflow` **update** | `writeWorkflowDocumentWithOcc` | `write` (optimistic OCC) | No — install pre-read supplies `(ifSeqNo, ifPrimaryTerm)` | Outer install loop on 409 |
-| `disableAllWorkflows` | `bulkIndexWithOccRetry` | — | Per-page search only | `3` |
+| Path | CRUD method | `OccWriter` method | Reads before write? | Retries | Version |
+|------|-------------|-------------------|---------------------|---------|---------|
+| `WorkflowCrudService.updateWorkflow` | `readModifyWriteWorkflowDocument` | `readModifyWrite` | Yes — inside helper, per attempt | `3` (`DEFAULT_MAX_RETRIES`) | `maybeApplyWorkflowVersion` in composed `mutate` |
+| `ManagedWorkflowsService.installManagedWorkflow` **create** | `createWorkflowDocument` | `create` | No | Outer install loop on id collision | `maybeApplyWorkflowVersion(document, undefined, versioningEnabled)` |
+| `ManagedWorkflowsService.installManagedWorkflow` **update** | `writeWorkflowDocumentWithOcc` | `write` (optimistic OCC) | No — install pre-read supplies `(ifSeqNo, ifPrimaryTerm)` | Outer install loop on 409 | `maybeApplyWorkflowVersion` from pre-read `existing` when `versioningEnabled` |
+| `disableAllWorkflows` | `bulkIndexWithOccRetry` | — | Per-page search only | `3` | `maybeApplyWorkflowVersion` per bulk item when `versioningEnabled` |
 
 ## CRUD write methods
 

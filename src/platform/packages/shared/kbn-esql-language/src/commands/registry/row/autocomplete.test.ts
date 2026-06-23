@@ -38,7 +38,7 @@ describe('ROW Autocomplete', () => {
   });
 
   it('suggests a comma and a pipe after a complete expression', async () => {
-    const expected = [', ', '| '];
+    const expected = [', ', '| ', '\n'];
 
     await rowExpectSuggestions('ROW col0 = 23 ', expected);
     await rowExpectSuggestions('ROW ABS(23) ', expected);

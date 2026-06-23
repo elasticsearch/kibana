@@ -19,8 +19,6 @@ project:
 dependsOn:
   - '@kbn/inference-common'
   - '@kbn/zod'
-  - '@kbn/tooling-log'
-  - '@kbn/sample-log-parser'
   - '@kbn/streamlang'
 tags:
   - shared-common

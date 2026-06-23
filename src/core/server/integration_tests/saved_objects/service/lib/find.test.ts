@@ -182,10 +182,14 @@ describe('SOR - find API', () => {
     });
 
     expect(documents.total).toBe(2);
-    expect(documents.saved_objects[0].attributes?.user?.name).toBe('Alice Smith');
-    expect(documents.saved_objects[0].attributes?.user?.email).toBe('alice.smith@example.com');
-    expect(documents.saved_objects[1].attributes?.user?.name).toBe('Alice Johnson');
-    expect(documents.saved_objects[1].attributes?.user?.email).toBe('alice.johnson@example.com');
+    expect(
+      documents.saved_objects
+        .map(({ attributes }) => attributes.user)
+        .sort((first, second) => first.email.localeCompare(second.email))
+    ).toEqual([
+      { name: 'Alice Johnson', email: 'alice.johnson@example.com' },
+      { name: 'Alice Smith', email: 'alice.smith@example.com' },
+    ]);
   });
 
   it('supports deeply nested fields under a nested ancestor', async () => {

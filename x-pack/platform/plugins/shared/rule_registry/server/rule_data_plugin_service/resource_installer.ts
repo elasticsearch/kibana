@@ -44,6 +44,15 @@ export type IResourceInstaller = PublicMethodsOf<ResourceInstaller>;
 export class ResourceInstaller {
   constructor(private readonly options: ConstructorOptions) {}
 
+  /**
+   * Field limit applied to all rule registry alerts-as-data resources. Sourced
+   * from the alerting framework contract (`xpack.alerting.alertsService.totalFieldsLimit`)
+   * so it stays in sync with the framework, falling back to `TOTAL_FIELDS_LIMIT`.
+   */
+  private getTotalFieldsLimit(): number {
+    return this.options.frameworkAlerts.getTotalFieldsLimit?.() ?? TOTAL_FIELDS_LIMIT;
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Common resources
 
@@ -96,7 +105,7 @@ export class ResourceInstaller {
                       ...ecsComponentTemplate,
                       name: ECS_COMPONENT_TEMPLATE_NAME,
                     },
-                    totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+                    totalFieldsLimit: this.getTotalFieldsLimit(),
                   }),
                 ]),
             createOrUpdateComponentTemplate({
@@ -106,7 +115,7 @@ export class ResourceInstaller {
                 ...technicalComponentTemplate,
                 name: TECHNICAL_COMPONENT_TEMPLATE_NAME,
               },
-              totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+              totalFieldsLimit: this.getTotalFieldsLimit(),
             }),
           ]);
         } catch (err) {
@@ -174,7 +183,7 @@ export class ResourceInstaller {
                   },
                   _meta: ct._meta,
                 },
-                totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+                totalFieldsLimit: this.getTotalFieldsLimit(),
               });
             })
           );
@@ -256,7 +265,7 @@ export class ResourceInstaller {
         indexPatterns,
         kibanaVersion: indexInfo.kibanaVersion,
         namespace,
-        totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+        totalFieldsLimit: this.getTotalFieldsLimit(),
         dataStreamAdapter: this.options.dataStreamAdapter,
       }),
     });
@@ -264,7 +273,7 @@ export class ResourceInstaller {
     await createConcreteWriteIndex({
       logger: this.options.logger,
       esClient: clusterClient,
-      totalFieldsLimit: TOTAL_FIELDS_LIMIT,
+      totalFieldsLimit: this.getTotalFieldsLimit(),
       indexPatterns,
       dataStreamAdapter: this.options.dataStreamAdapter,
     });

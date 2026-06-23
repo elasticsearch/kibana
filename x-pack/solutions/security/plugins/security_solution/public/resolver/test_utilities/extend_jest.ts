@@ -56,9 +56,6 @@ expect.extend({
       // Use deep equals to compare the value to the expected value
       if (this.equals(next, expected)) {
         lastCheckPassed = true;
-      } else if (lastCheckPassed) {
-        // the previous check passed but this one didn't
-        lastCheckPassed = false;
         break;
       }
     }

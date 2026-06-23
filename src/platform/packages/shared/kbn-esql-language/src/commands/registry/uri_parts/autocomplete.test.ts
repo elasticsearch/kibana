@@ -62,6 +62,10 @@ describe('URI_PARTS > autocomplete', () => {
   });
 
   it('suggests pipe after complete command', async () => {
-    await uriPartsExpectSuggestions('FROM index | URI_PARTS prefix = url ', ['| '], mockCallbacks);
+    await uriPartsExpectSuggestions(
+      'FROM index | URI_PARTS prefix = url ',
+      ['\n', '| '],
+      mockCallbacks
+    );
   });
 });

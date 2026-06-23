@@ -62,7 +62,6 @@ import { KnowledgeIndicatorService, initializeKnowledgeIndicatorsTemplate } from
 import { ProcessorSuggestionsService } from './lib/streams/ingest_pipelines/processor_suggestions_service';
 import { registerStreamsSavedObjects } from './lib/saved_objects/register_saved_objects';
 import { TaskService } from './lib/tasks/task_service';
-import { InsightService } from './lib/sig_events/insights/client/insight_service';
 import {
   createSignificantEventsClients,
   createSignificantEventsServices,
@@ -163,7 +162,6 @@ export class StreamsPlugin
     const attachmentService = new AttachmentService(core, this.logger);
     const streamsService = new StreamsService(core, this.logger, this.isDev);
     const knowledgeIndicatorService = new KnowledgeIndicatorService(core, this.logger);
-    const insightService = new InsightService(core, this.logger);
     const contentService = new ContentService(core, this.logger);
     const taskService = new TaskService(plugins.taskManager);
     this.streamsGetScopedClients = async ({
@@ -190,12 +188,11 @@ export class StreamsPlugin
         this.logger
       );
 
-      const [attachmentClient, insightClient, contentClient, tuningConfig] = await Promise.all([
+      const [attachmentClient, contentClient, tuningConfig] = await Promise.all([
         attachmentService.getClient({
           soClient,
           rulesClient: await pluginsStart.alerting.getRulesClientWithRequest(request),
         }),
-        insightService.getInternalClient(),
         contentService.getClient(),
         getSigEventsTuningConfig(globalUiSettingsClient, this.logger),
       ]);
@@ -294,7 +291,6 @@ export class StreamsPlugin
         streamsClient,
         getKnowledgeIndicatorClient,
         ...significantEventsClients,
-        insightClient,
         inferenceClient,
         contentClient,
         getAlertingV2RulesClient,

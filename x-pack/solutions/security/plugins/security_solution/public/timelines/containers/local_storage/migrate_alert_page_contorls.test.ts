@@ -16,6 +16,7 @@ import type { ControlGroupRuntimeState } from '@kbn/control-group-renderer';
 import {
   DEFAULT_DSL_OPTIONS_LIST_STATE,
   DEFAULT_PINNED_CONTROL_STATE,
+  OPTIONS_LIST_CONTROL,
 } from '@kbn/controls-constants';
 
 const OLD_FORMAT = {
@@ -23,7 +24,7 @@ const OLD_FORMAT = {
   id: '5bc0ef0f-c6a9-4eaf-9fc5-9703fcb85482',
   panels: {
     '0': {
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 0,
       grow: true,
       width: 'small',
@@ -48,7 +49,7 @@ const OLD_FORMAT = {
       },
     },
     '1': {
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 1,
       grow: true,
       width: 'small',
@@ -72,7 +73,7 @@ const OLD_FORMAT = {
       },
     },
     '2': {
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 2,
       grow: true,
       width: 'small',
@@ -94,7 +95,7 @@ const OLD_FORMAT = {
       },
     },
     '3': {
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 3,
       grow: true,
       width: 'small',
@@ -155,12 +156,12 @@ const OLD_FORMAT = {
   },
 };
 
-const NEW_FORMAT: ControlGroupRuntimeState<NewFormatExplicitInput> = {
+const NEW_FORMAT = {
   initialChildControlState: {
     '0': {
       ...DEFAULT_DSL_OPTIONS_LIST_STATE,
       ...DEFAULT_PINNED_CONTROL_STATE,
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 0,
       display_settings: {
         hide_exclude: true,
@@ -179,7 +180,7 @@ const NEW_FORMAT: ControlGroupRuntimeState<NewFormatExplicitInput> = {
     '1': {
       ...DEFAULT_DSL_OPTIONS_LIST_STATE,
       ...DEFAULT_PINNED_CONTROL_STATE,
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 1,
       display_settings: {
         hide_exclude: true,
@@ -197,7 +198,7 @@ const NEW_FORMAT: ControlGroupRuntimeState<NewFormatExplicitInput> = {
     '2': {
       ...DEFAULT_DSL_OPTIONS_LIST_STATE,
       ...DEFAULT_PINNED_CONTROL_STATE,
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 2,
       display_settings: {
         hide_exclude: true,
@@ -215,7 +216,7 @@ const NEW_FORMAT: ControlGroupRuntimeState<NewFormatExplicitInput> = {
     '3': {
       ...DEFAULT_DSL_OPTIONS_LIST_STATE,
       ...DEFAULT_PINNED_CONTROL_STATE,
-      type: 'optionsListControl',
+      type: OPTIONS_LIST_CONTROL,
       order: 3,
       display_settings: {
         hide_exclude: true,
@@ -234,7 +235,7 @@ const NEW_FORMAT: ControlGroupRuntimeState<NewFormatExplicitInput> = {
   ignoreParentSettings: {
     ignoreValidations: false,
   },
-};
+} as unknown as ControlGroupRuntimeState<NewFormatExplicitInput>;
 const storage = new Storage(localStorage);
 
 const mockPlugins = {

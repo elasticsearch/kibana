@@ -11,7 +11,7 @@ import type {
   RuleChangesHistoryResponse,
   RuleHistoryItem,
 } from '../../../../../../../common/api/detection_engine/rule_management';
-import { mapRuleHistoryItem } from '../../history/map_rule_history_item';
+import { mapRuleHistoryItem } from './utils/map_rule_history_item';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PER_PAGE = 20;
@@ -29,14 +29,25 @@ export const getHistoryForRule = async ({
   page = DEFAULT_PAGE,
   perPage = DEFAULT_PER_PAGE,
 }: GetHistoryForRuleArgs): Promise<RuleChangesHistoryResponse> => {
-  // Fetch one extra entry past the requested page so the oldest item on the
-  // page can be paired with its predecessor (older revision) for `old_values`.
-  const result = await rulesClient.getHistory({
-    module: 'security',
-    ruleId,
-    from: (page - 1) * perPage,
-    size: perPage + 1,
-  });
+  // Run queries concurrently:
+  // - main: the requested page (newest-first, +1 extra for old_values computation)
+  // - oldest: single item ascending by timestamp to get tracking_started_at
+  const [result, oldestResult] = await Promise.all([
+    rulesClient.getHistory({
+      module: 'security',
+      ruleId,
+      from: (page - 1) * perPage,
+      size: perPage + 1,
+      sort: [{ '@timestamp': { order: 'desc' } }],
+    }),
+    rulesClient.getHistory({
+      module: 'security',
+      ruleId,
+      from: 0,
+      size: 1,
+      sort: [{ '@timestamp': { order: 'asc' } }],
+    }),
+  ]);
 
   const fetchedItems = result.items;
   const resultItems: RuleHistoryItem[] = [];
@@ -47,8 +58,9 @@ export const getHistoryForRule = async ({
 
   return {
     page,
-    perPage,
+    per_page: perPage,
     total: result.total,
+    tracking_started_at: oldestResult.items[0]?.['@timestamp'],
     items: resultItems,
   };
 };

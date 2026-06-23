@@ -63,9 +63,9 @@ spaceTest.describe(
     spaceTest(
       'preserves currentPage and breakdown dimension when a tab is duplicated',
       async ({ pageObjects }) => {
-        const { discover, metricsExperience } = pageObjects;
+        const { metricsExperience, unifiedTabs } = pageObjects;
 
-        const originalTabTestSubj = await discover.getActiveTabTestSubj();
+        const originalTabTestSubj = await unifiedTabs.getActiveTabTestSubj();
 
         await spaceTest.step('select a breakdown and navigate to last page', async () => {
           await metricsExperience.breakdownSelector.selectDimension(FIRST_DIMENSION);
@@ -78,8 +78,8 @@ spaceTest.describe(
         });
 
         await spaceTest.step('duplicate the active tab', async () => {
-          await discover.duplicateActiveTab();
-          const newTabTestSubj = await discover.getActiveTabTestSubj();
+          await unifiedTabs.duplicateActiveTab();
+          const newTabTestSubj = await unifiedTabs.getActiveTabTestSubj();
           expect(newTabTestSubj).not.toBe(originalTabTestSubj);
         });
 

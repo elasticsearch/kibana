@@ -39,6 +39,7 @@ const variables = {
   title: 'Alerts',
   objectType: 'alert',
   browserTimezone: 'UTC',
+  version: '9.5.0',
   columns: ['kibana.alert.rule.name'],
   searchSource: {
     index: { title: '.alerts-default', timeFieldName: '@timestamp' },

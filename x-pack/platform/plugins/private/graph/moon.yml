@@ -45,20 +45,21 @@ dependsOn:
   - '@kbn/core-saved-objects-server'
   - '@kbn/content-management-plugin'
   - '@kbn/object-versioning'
-  - '@kbn/content-management-table-list-view-table'
-  - '@kbn/content-management-table-list-view'
+  - '@kbn/content-list'
+  - '@kbn/content-list-page'
+  - '@kbn/content-list-provider-client'
+  - '@kbn/content-management-table-list-view-common'
   - '@kbn/core-ui-settings-browser'
   - '@kbn/react-kibana-mount'
   - '@kbn/content-management-utils'
   - '@kbn/logging'
-  - '@kbn/content-management-table-list-view-common'
   - '@kbn/visualization-utils'
-  - '@kbn/react-kibana-context-render'
   - '@kbn/core-saved-objects-api-server'
   - '@kbn/licensing-types'
   - '@kbn/kql'
   - '@kbn/unified-search-plugin'
   - '@kbn/scout'
+  - '@kbn/content-list-provider'
 tags:
   - plugin
   - prod
@@ -71,7 +72,7 @@ fileGroups:
     - common/**/*
     - public/**/*
     - server/**/*
-    - test/**/*
+    - test/scout/**/*
     - '!target/**/*'
   jest-config:
     - jest.config.js

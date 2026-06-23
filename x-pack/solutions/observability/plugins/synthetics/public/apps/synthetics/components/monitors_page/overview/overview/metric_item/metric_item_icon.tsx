@@ -21,6 +21,7 @@ import {
   EuiSpacer,
   EuiSkeletonText,
   EuiIconTip,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from '@emotion/styled';
@@ -76,6 +77,7 @@ export const MetricItemIcon = ({
 
   const formatter = useDateFormat();
   const testTime = formatter(timestamp);
+  const metricItemPopoverTitleId = useGeneratedHtmlId();
 
   if (inProgress) {
     return (
@@ -122,8 +124,9 @@ export const MetricItemIcon = ({
           panelStyle={{
             outline: 'none',
           }}
+          aria-labelledby={metricItemPopoverTitleId}
         >
-          <EuiPopoverTitle>
+          <EuiPopoverTitle id={metricItemPopoverTitleId}>
             <EuiFlexGroup>
               <EuiFlexItem grow>{testTime}</EuiFlexItem>
               <EuiFlexItem grow={false}>

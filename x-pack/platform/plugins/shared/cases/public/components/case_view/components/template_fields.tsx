@@ -6,19 +6,20 @@
  */
 
 import type { FC } from 'react';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import type { z } from '@kbn/zod/v4';
-import type { FieldValues } from 'react-hook-form';
-import { FormProvider, useForm } from 'react-hook-form';
+import { EuiSpacer, EuiTitle } from '@elastic/eui';
 import type { CaseUI } from '../../../../common';
-import { CASE_EXTENDED_FIELDS } from '../../../../common/constants';
 import type { ParsedTemplateDefinitionSchema } from '../../../../common/types/domain/template/latest';
 import type { InlineField } from '../../../../common/types/domain/template/fields';
 import { useGetTemplate } from '../../templates_v2/hooks/use_get_template';
-import { FieldsRenderer } from '../../templates_v2/field_types/field_renderer';
 import { useResolvedFields } from '../../field_library/hooks/use_resolved_fields';
-import { getFieldCamelKey, getFieldSnakeKey } from '../../../../common/utils';
+import { useGetFieldDefinitions } from '../../field_library/hooks/use_get_field_definitions';
+import { parseFieldDefinitionsToInlineFields } from '../../../../common/utils';
+import { isInlineField } from '../../../../common/types/domain/template/fields';
+import * as i18n from '../translations';
 import type { OnUpdateFields } from '../types';
+import { EMPTY_EXTENDED_FIELDS, TemplateFieldsFormReady } from './template_fields_form_ready';
 
 type ParsedTemplateDefinition = z.infer<typeof ParsedTemplateDefinitionSchema>;
 
@@ -26,69 +27,6 @@ interface TemplateFieldsProps {
   caseData: CaseUI;
   onUpdateField: (args: OnUpdateFields) => void;
 }
-
-const TemplateFieldsFormReady: FC<{
-  resolvedFields: InlineField[];
-  extendedFields: Record<string, unknown>;
-  onUpdateField: (args: OnUpdateFields) => void;
-}> = ({ resolvedFields, extendedFields, onUpdateField }) => {
-  const initialDefaultValues = useMemo<FieldValues>(() => {
-    const inner: Record<string, unknown> = {};
-    for (const field of resolvedFields) {
-      const snakeKey = getFieldSnakeKey(field.name, field.type);
-      const camelKey = getFieldCamelKey(field.name, field.type);
-      inner[snakeKey] = extendedFields[camelKey] ?? '';
-    }
-    return { [CASE_EXTENDED_FIELDS]: inner };
-  }, [resolvedFields, extendedFields]);
-
-  const form = useForm<FieldValues>({
-    defaultValues: initialDefaultValues,
-    mode: 'onBlur',
-  });
-
-  // Reset to fresh defaults whenever the underlying case data changes — e.g.
-  // after a successful save the parent re-renders with new extendedFields.
-  useEffect(() => {
-    form.reset(initialDefaultValues);
-  }, [initialDefaultValues, form]);
-
-  const inflightRef = useRef(false);
-
-  const releaseLock = useCallback(() => {
-    inflightRef.current = false;
-  }, []);
-
-  const persist = useCallback(async () => {
-    if (inflightRef.current) return;
-    // Claim the lock synchronously before awaiting so a second invocation
-    // can't race past the guard above.
-    inflightRef.current = true;
-    const isValid = await form.trigger().catch(() => false);
-    if (!isValid) {
-      releaseLock();
-      return;
-    }
-    const values =
-      (form.getValues() as Record<string, Record<string, unknown>>)?.[CASE_EXTENDED_FIELDS] ?? {};
-    onUpdateField({
-      key: CASE_EXTENDED_FIELDS,
-      value: values,
-      onSuccess: releaseLock,
-      onError: releaseLock,
-    });
-  }, [form, onUpdateField, releaseLock]);
-
-  return (
-    <FormProvider {...form}>
-      <div data-test-subj="template-fields-form">
-        <FieldsRenderer resolvedFields={resolvedFields} onFieldConfirm={persist} />
-      </div>
-    </FormProvider>
-  );
-};
-
-TemplateFieldsFormReady.displayName = 'TemplateFieldsFormReady';
 
 const TemplateFieldsForm: FC<{
   parsedTemplate: ParsedTemplateDefinition;
@@ -102,7 +40,7 @@ const TemplateFieldsForm: FC<{
   );
 
   const templateKey = useMemo(
-    () => resolvedFields.map((f) => `${f.name}:${f.type}`).join('|'),
+    () => resolvedFields.map((f: InlineField) => `${f.name}:${f.type}`).join('|'),
     [resolvedFields]
   );
 
@@ -123,16 +61,49 @@ TemplateFieldsForm.displayName = 'TemplateFieldsForm';
 export const TemplateFields = React.memo<TemplateFieldsProps>(({ caseData, onUpdateField }) => {
   const { data: templateData } = useGetTemplate(caseData.template?.id, caseData.template?.version);
 
+  const { data: globalFieldDefsData } = useGetFieldDefinitions({
+    owner: caseData.owner,
+    isGlobal: true,
+    // Prevent a background refetch from producing a new Set/array reference that would
+    // re-trigger memos and potentially reset an in-progress edit. Same rationale as the
+    // create form (create/template_fields.tsx).
+    staleTime: Infinity,
+  });
+
+  const globalFieldNames = useMemo<ReadonlySet<string>>(
+    () =>
+      new Set(
+        parseFieldDefinitionsToInlineFields(globalFieldDefsData?.fieldDefinitions ?? []).map(
+          (f) => f.name
+        )
+      ),
+    [globalFieldDefsData]
+  );
+
   const parsedTemplate = templateData?.definition;
-  if (!templateData || !parsedTemplate || parsedTemplate.fields.length === 0) return null;
+
+  const filteredTemplateFields = useMemo(
+    () =>
+      parsedTemplate?.fields.filter((f) => !isInlineField(f) || !globalFieldNames.has(f.name)) ??
+      [],
+    [parsedTemplate, globalFieldNames]
+  );
+
+  if (!templateData || !parsedTemplate || filteredTemplateFields.length === 0) return null;
 
   return (
-    <TemplateFieldsForm
-      parsedTemplate={parsedTemplate}
-      owner={templateData.owner}
-      extendedFields={caseData.extendedFields ?? {}}
-      onUpdateField={onUpdateField}
-    />
+    <>
+      <EuiTitle size="xs">
+        <h3>{i18n.EXTENDED_FIELDS_TITLE}</h3>
+      </EuiTitle>
+      <EuiSpacer size="s" />
+      <TemplateFieldsForm
+        parsedTemplate={{ ...parsedTemplate, fields: filteredTemplateFields }}
+        owner={templateData.owner}
+        extendedFields={caseData.extendedFields ?? EMPTY_EXTENDED_FIELDS}
+        onUpdateField={onUpdateField}
+      />
+    </>
   );
 });
 

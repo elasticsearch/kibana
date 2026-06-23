@@ -5,31 +5,48 @@
  * 2.0.
  */
 
-import '../../../../__mocks__/shallow_useeffect.mock';
-
-import { setMockValues, setMockActions } from '../../../../__mocks__/kea_logic';
+import {
+  setMockValues,
+  setMockActions,
+  mockTelemetryActions,
+} from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { AnalyticsCollection } from '../../../../../../common/types/analytics';
 import { FilterBy } from '../../../utils/get_formula_by_filter';
 
-import { EnterpriseSearchAnalyticsPageTemplate } from '../../layout/page_template';
-
-import { AnalyticsCollectionNoEventsCallout } from '../analytics_collection_no_events_callout/analytics_collection_no_events_callout';
-
 import { AnalyticsCollectionChartWithLens } from './analytics_collection_chart';
-
-import { AnalyticsCollectionViewMetricWithLens } from './analytics_collection_metric';
 import { AnalyticsCollectionOverview } from './analytics_collection_overview';
+
+jest.mock('./analytics_collection_chart', () => ({
+  AnalyticsCollectionChartWithLens: jest.fn(() => (
+    <div data-test-subj="analyticsCollectionChart" />
+  )),
+}));
+
+jest.mock('../../../utils/find_or_create_data_view', () => ({
+  findOrCreateDataView: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('./analytics_collection_overview_table', () => ({
+  AnalyticsCollectionOverviewTable: () => null,
+}));
+
+const MockedChart = jest.mocked(AnalyticsCollectionChartWithLens);
 
 const mockValues = {
   analyticsCollection: {
     events_datastream: 'analytics-events-example',
     name: 'Analytics-Collection-1',
   } as AnalyticsCollection,
+  hasEvents: false,
+  isLoading: false,
+  refreshInterval: { pause: false, value: 1000 },
   searchSessionId: 'session-id',
   timeRange: {
     from: 'now-90d',
@@ -53,49 +70,54 @@ describe('AnalyticsOverView', () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionOverview analyticsCollection={mockValues.analyticsCollection} />
     );
-    expect(wrapper.find(AnalyticsCollectionChartWithLens)).toHaveLength(1);
+    expect(screen.getByTestId('analyticsCollectionChart')).toBeInTheDocument();
   });
 
-  it('sends correct telemetry page name for selected tab', async () => {
+  it('sends correct telemetry page name on render', async () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionOverview analyticsCollection={mockValues.analyticsCollection} />
     );
 
-    expect(wrapper.prop('pageViewTelemetry')).toBe('View Analytics Collection - Overview');
+    await waitFor(() => {
+      expect(mockTelemetryActions.sendTelemetry).toHaveBeenCalledWith({
+        action: 'viewed',
+        metric: 'View Analytics Collection - Overview',
+        product: 'enterprise_search',
+      });
+    });
   });
 
   it('render toolbar in pageHeader rightSideItems ', async () => {
     setMockValues({ ...mockValues, dataViewId: null });
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionOverview analyticsCollection={mockValues.analyticsCollection} />
     );
 
     expect(
-      wrapper?.find(EnterpriseSearchAnalyticsPageTemplate)?.prop('pageHeader')?.rightSideItems
-    ).toHaveLength(1);
+      screen.getByTestId('enterpriseSearchAnalyticsCollectionToolbarManageButton')
+    ).toBeInTheDocument();
   });
 
   it('render AnalyticsCollectionChartWithLens with collection', () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionOverview analyticsCollection={mockValues.analyticsCollection} />
     );
-    expect(wrapper?.find(AnalyticsCollectionChartWithLens)).toHaveLength(1);
-    expect(wrapper?.find(AnalyticsCollectionChartWithLens).props()).toEqual({
+    expect(MockedChart.mock.calls[0][0]).toEqual({
       collection: mockValues.analyticsCollection,
       id: 'analytics-collection-chart-Analytics-Collection-1',
       searchSessionId: 'session-id',
-      selectedChart: 'Searches',
+      selectedChart: FilterBy.Searches,
       setSelectedChart: expect.any(Function),
       setTimeRange: mockActions.setTimeRange,
       timeRange: {
@@ -106,36 +128,37 @@ describe('AnalyticsOverView', () => {
   });
 
   it('displays all filter options', () => {
-    const wrapper = shallow(
+    setMockValues(mockValues);
+    setMockActions(mockActions);
+
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionOverview analyticsCollection={mockValues.analyticsCollection} />
     );
-    const filterOptions = wrapper.find(AnalyticsCollectionViewMetricWithLens);
-    expect(filterOptions).toHaveLength(4);
-    expect(filterOptions.at(0).props().name).toEqual('Searches');
-    expect(filterOptions.at(1).props().name).toEqual('No results');
-    expect(filterOptions.at(2).props().name).toEqual('Click');
-    expect(filterOptions.at(3).props().name).toEqual('Sessions');
+    expect(screen.getByText('Searches')).toBeInTheDocument();
+    expect(screen.getByText('No results')).toBeInTheDocument();
+    expect(screen.getByText('Click')).toBeInTheDocument();
+    expect(screen.getByText('Sessions')).toBeInTheDocument();
   });
 
   it('updates the selected chart when a filter option is clicked', () => {
-    const wrapper = shallow(
+    setMockValues(mockValues);
+    setMockActions(mockActions);
+
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionOverview analyticsCollection={mockValues.analyticsCollection} />
     );
-    const filterOption = wrapper.find(AnalyticsCollectionViewMetricWithLens).at(1);
-    filterOption.simulate('click', {});
-    expect(wrapper.find(AnalyticsCollectionChartWithLens).props().selectedChart).toEqual(
-      FilterBy.NoResults
-    );
+    fireEvent.click(screen.getAllByText('No results')[0]);
+    expect(MockedChart.mock.calls.at(-1)?.[0].selectedChart).toEqual(FilterBy.NoResults);
   });
 
   it('renders no events AnalyticsCollectionNoEventsCallout with collection', () => {
-    const wrapper = shallow(
+    setMockValues(mockValues);
+    setMockActions(mockActions);
+
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionOverview analyticsCollection={mockValues.analyticsCollection} />
     );
 
-    expect(wrapper.find(AnalyticsCollectionNoEventsCallout)).toHaveLength(1);
-    expect(wrapper?.find(AnalyticsCollectionNoEventsCallout).props()).toEqual({
-      analyticsCollection: mockValues.analyticsCollection,
-    });
+    expect(screen.getByText('Install our tracker')).toBeInTheDocument();
   });
 });

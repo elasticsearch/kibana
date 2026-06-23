@@ -54,7 +54,11 @@ export function registerStart(router: EntityStorePluginRouter) {
       },
       wrapMiddlewares(async (ctx, req, res): Promise<IKibanaResponse> => {
         const entityStoreCtx = await ctx.entityStore;
-        const { logger, assetManagerClient: assetManager } = entityStoreCtx;
+        const {
+          logger,
+          assetManagerClient: assetManager,
+          entityMaintainersClient,
+        } = entityStoreCtx;
         const { entityTypes } = req.body;
         logger.debug('Start API invoked');
 
@@ -66,6 +70,10 @@ export function registerStart(router: EntityStorePluginRouter) {
 
         const logsExtraction = await assetManager.getLogExtractionConfig();
         await Promise.all(toStart.map((type) => assetManager.start(req, type, logsExtraction)));
+
+        if (toStart.length > 0) {
+          await entityMaintainersClient.startAll(req);
+        }
 
         return res.ok({
           body: {

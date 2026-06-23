@@ -64,7 +64,9 @@ export class OnboardingHomePage {
   }
 
   public async gotoKubernetesElasticAgentFlow() {
-    await this.page.goto(`${process.env.KIBANA_BASE_URL}/app/observabilityOnboarding/kubernetes`);
+    await this.page.goto(
+      `${process.env.KIBANA_BASE_URL}/app/observabilityOnboarding/kubernetes/elastic-agent`
+    );
   }
 
   public async selectOtelKubernetesQuickstart() {

@@ -150,7 +150,7 @@ export class VisualizeApp {
     await this.goto();
     await this.openNewVisualizationWizard();
     await this.clickVisType('maps');
-    await expect(this.page.testSubj.locator('breadcrumb first')).toHaveText('Maps');
+    await expect(this.page.testSubj.locator('breadcrumb first')).toHaveText('Visualize library');
   }
 
   async createTSVBVisualization() {

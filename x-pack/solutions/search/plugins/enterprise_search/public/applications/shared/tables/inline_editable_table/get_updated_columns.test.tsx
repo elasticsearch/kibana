@@ -9,7 +9,14 @@ import '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+jest.mock('./action_column', () => ({
+  ActionColumn: jest.fn(() => null),
+}));
+jest.mock('./editing_column', () => ({
+  EditingColumn: jest.fn(() => null),
+}));
+
+import { render } from '@testing-library/react';
 
 import type { Column } from '../reorderable_table/types';
 
@@ -28,6 +35,13 @@ describe('getUpdatedColumns', () => {
   const lastItemWarning = 'I am a warning';
   const uneditableItems: Foo[] = [];
   const item = { id: 1 };
+
+  const MockActionColumn = jest.mocked(ActionColumn);
+  const MockEditingColumn = jest.mocked(EditingColumn);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   describe('it takes an array of InlineEditableTableColumn columns and turns them into ReorderableTable Columns', () => {
     const columns: Array<InlineEditableTableColumn<Foo>> = [
@@ -75,10 +89,8 @@ describe('getUpdatedColumns', () => {
         render: expect.any(Function),
       });
 
-      const renderResult = newColumns[2].render(item);
-      const wrapper = shallow(<div>{renderResult}</div>);
-      const actionColumn = wrapper.find(ActionColumn);
-      expect(actionColumn.props()).toEqual({
+      render(<div>{newColumns[2].render(item)}</div>);
+      expect(MockActionColumn.mock.calls[0][0]).toEqual({
         isActivelyEditing: expect.any(Function),
         displayedItems,
         emptyPropertyAllowed: false,
@@ -109,10 +121,8 @@ describe('getUpdatedColumns', () => {
         isActivelyEditing: () => true,
       });
 
-      const renderResult = newColumns[0].render(item);
-      const wrapper = shallow(<div>{renderResult}</div>);
-      const column = wrapper.find(EditingColumn);
-      expect(column.props()).toEqual({
+      render(<div>{newColumns[0].render(item)}</div>);
+      expect(MockEditingColumn.mock.calls[0][0]).toEqual({
         column: columns[0],
         isLoading: true,
       });

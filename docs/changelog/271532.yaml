@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/271532
+issues:
+- https://github.com/elastic/kibana/issues/265845
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+title: Move Agent Builder link to the top of the Security solution's navigation

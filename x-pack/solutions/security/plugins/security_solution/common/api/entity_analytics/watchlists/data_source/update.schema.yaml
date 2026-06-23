@@ -16,11 +16,13 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 256
         - name: id
           in: path
           required: true
           schema:
             type: string
+            maxLength: 256
       requestBody:
         required: true
         content:

@@ -469,6 +469,50 @@ export const scriptsManagementSubFeature = (): SubFeatureConfig => ({
   ],
 });
 
+export const customYaraSignaturesSubFeature = (): SubFeatureConfig => ({
+  name: i18n.translate(
+    'securitySolutionPackages.features.featureRegistry.subFeatures.customYaraSignatures',
+    { defaultMessage: 'Custom YARA Signatures' }
+  ),
+  description: i18n.translate(
+    'securitySolutionPackages.features.featureRegistry.subFeatures.customYaraSignatures.description',
+    {
+      defaultMessage: 'Management of custom YARA signatures used with Elastic Defend.',
+    }
+  ),
+  privilegeGroups: [
+    {
+      groupType: 'mutually_exclusive',
+      privileges: [
+        {
+          api: [`${APP_ID}-writeCustomYaraSignatures`, `${APP_ID}-readCustomYaraSignatures`],
+          id: 'custom_yara_signatures_all',
+          includeIn: 'none',
+          excludeFromBasePrivileges: true,
+          name: TRANSLATIONS.all,
+          savedObject: {
+            all: [],
+            read: [],
+          },
+          ui: ['writeCustomYaraSignatures', 'readCustomYaraSignatures'],
+        },
+        {
+          api: [`${APP_ID}-readCustomYaraSignatures`],
+          id: 'custom_yara_signatures_read',
+          includeIn: 'none',
+          excludeFromBasePrivileges: true,
+          name: TRANSLATIONS.read,
+          savedObject: {
+            all: [],
+            read: [],
+          },
+          ui: ['readCustomYaraSignatures'],
+        },
+      ],
+    },
+  ],
+});
+
 export const hostIsolationSubFeature = (): SubFeatureConfig => ({
   name: i18n.translate(
     'securitySolutionPackages.features.featureRegistry.subFeatures.hostIsolation',

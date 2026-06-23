@@ -13,7 +13,12 @@ import {
   withAutoSuggest,
 } from '../../definitions/utils/autocomplete/helpers';
 import { suggestForExpression } from '../../definitions/utils';
-import { commaCompleteItem, pipeCompleteItem } from '../complete_items';
+import {
+  commaCompleteItem,
+  newLineCompleteItem,
+  newLineAndPipeCompleteItems,
+  pipeCompleteItem,
+} from '../complete_items';
 import {
   Location,
   type ICommandCallbacks,
@@ -86,6 +91,7 @@ export async function autocomplete(
 
     case 'order_complete': {
       return [
+        newLineCompleteItem,
         { ...pipeCompleteItem, text: ' | ', preserveTypedPrefix: true },
         withAutoSuggest({ ...commaCompleteItem, text: ', ', preserveTypedPrefix: true }),
         { ...prependSpace(sortModifierSuggestions.NULLS_FIRST), preserveTypedPrefix: true },
@@ -97,7 +103,7 @@ export async function autocomplete(
       return [
         sortModifierSuggestions.NULLS_FIRST,
         sortModifierSuggestions.NULLS_LAST,
-        pipeCompleteItem,
+        ...newLineAndPipeCompleteItems,
         withAutoSuggest({ ...commaCompleteItem, text: ', ' }),
       ].map((suggestion) => ({
         ...suggestion,
@@ -106,13 +112,17 @@ export async function autocomplete(
 
     case 'nulls_complete': {
       return [
+        newLineCompleteItem,
         { ...pipeCompleteItem, text: ' | ', preserveTypedPrefix: true },
         withAutoSuggest({ ...commaCompleteItem, text: ', ', preserveTypedPrefix: true }),
       ];
     }
 
     case 'after_nulls': {
-      return [pipeCompleteItem, withAutoSuggest({ ...commaCompleteItem, text: ', ' })];
+      return [
+        ...newLineAndPipeCompleteItems,
+        withAutoSuggest({ ...commaCompleteItem, text: ', ' }),
+      ];
     }
 
     default: {

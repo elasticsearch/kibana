@@ -88,9 +88,16 @@ export const myStepCommonDefinition: CommonStepDefinition = {
 };
 ```
 
-### Step 2: Implement Server-Side Handler
+### Step 2: Implement Server-Side Definition
 
-Create the server-side implementation (e.g., `server/step_types/my_step.ts`):
+Server-side custom steps use one of two definition helpers:
+
+- **Single-shot** — `createServerStepDefinition` with a `handler` (synchronous or fast work).
+- **Durable start/poll** — `createPollServerStepDefinition` with `poll` and optionally `start`, `policy`, and `ceilings` (async work that wakes in `WAITING` until complete).
+
+For long-running or async work, use `createPollServerStepDefinition` instead — see [Durable start/poll custom steps](#durable-startpoll-custom-steps-createpollserverstepdefinition). Do not add `start` or `poll` to `createServerStepDefinition` definitions.
+
+The example below uses **single-shot** `createServerStepDefinition`. Create the server-side implementation (e.g., `server/step_types/my_step.ts`):
 
 ```typescript
 import type { ServerStepDefinition, StepHandler } from '@kbn/workflows-extensions/server';
@@ -935,6 +942,8 @@ const myStepDefinition = createServerStepDefinition({
 - Errors thrown in `onCancel` are logged but do **not** disrupt the cancellation flow
 - Steps without `onCancel` are unaffected — no changes required for existing step implementations
 
+For cancellation on **start/poll** steps, see [Cancellation cleanup for start/poll steps](#cancellation-cleanup-oncancel-for-startpoll-steps).
+
 ### Public-Side Definition Requirements
 
 The public definition must include:
@@ -953,58 +962,229 @@ The public definition must include:
   - `input`: Handlers for input properties (inside `with`)
   - `dynamicSchema`: Dynamic schema handlers (e.g., `getOutputSchema`)
 
+## Durable start/poll custom steps (`createPollServerStepDefinition`)
+
+Use this section when a step cannot finish in a single handler invocation: you **start** work, then **check status on a schedule** until the job completes or fails. The execution engine persists author state, moves the step to `WAITING` between polls, and wakes it according to `policy`.
+
+See also [Step 2: Implement Server-Side Definition](#step-2-implement-server-side-definition) in the contributor walkthrough.
+
+**Good fits:** async exports/reports, ML or Osquery actions, connector jobs, any upstream API that returns a job id and a status endpoint.
+
+**Poor fits:** quick synchronous work — use [`createServerStepDefinition`](#step-2-implement-server-side-definition) with `handler` instead.
+
+Do **not** mix APIs on one definition: poll-based steps omit `handler` and are built with `createPollServerStepDefinition` only.
+
+| Helper | Server shape | Returns from `start` / `poll` |
+|--------|--------------|-------------------------------------|
+| `createServerStepDefinition` | `handler` | `StepHandlerResult` — `{ output }` or `{ error }` |
+| `createPollServerStepDefinition` | `poll` (required), `start`, `policy`, `ceilings` (optional — see defaults) | `DurablePhaseResult` — see below |
+
+```mermaid
+sequenceDiagram
+  participant Engine
+  participant StartPhase as start_phase
+  participant PollHandler as poll_handler
+  Note over Engine,PollHandler: start_plus_poll mode
+  Engine->>StartPhase: first execution
+  StartPhase-->>Engine: state handoff
+  loop until output or error
+    Engine->>PollHandler: wake after policy delay
+    PollHandler-->>Engine: continue or output or error
+  end
+```
+
+### Step 1: Common definition
+
+Same as single-shot steps: define `id`, `inputSchema`, `outputSchema`, and optional UI metadata in `common/step_types/`. See [Step 1: Define Common Step Definition](#step-1-define-common-step-definition).
+
+### Step 2: Server definition with `createPollServerStepDefinition`
+
+Import `createPollServerStepDefinition` from `@kbn/workflows-extensions/server`. Spread your common definition and add `poll` (and optionally `start`, `policy`, `ceilings`, `stateSchema`, `onCancel`).
+
+**Registration defaults** (`PollStepDefaults`, applied inside `createPollServerStepDefinition` when fields are omitted):
+
+| Field | Default | Notes |
+|-------|---------|--------|
+| `policy` | `{ strategy: 'fixed', intervalMs: 1_000 }` | 1 s between polls |
+| `ceilings.maxAttempts` | `60` | ~1 min of 1 s polls if the step never completes |
+| `ceilings.maxWaitMs` | `60_000` | Caps any single sleep to 1 min |
+
+You can omit `policy` and `ceilings` entirely for quick prototypes; **override both for production** (exports, ML jobs, etc.). Import `PollStepDefaults` from `@kbn/workflows-extensions/server` to spread and tweak a single field (e.g. `{ ...PollStepDefaults.ceilings, maxAttempts: 120 }`).
+
+**Execution modes**
+
+| Mode | Fields | Behavior |
+|------|--------|----------|
+| **`start` + `poll`** | `start`, `poll` (+ optional `policy` / `ceilings`) | `start` may return `{ output }` / `{ error }` immediately, or `{ state }` to hand off. The first `poll` runs on the **next** wake-up (not in the same turn as `start`). |
+| **`poll` only** | `poll` (+ optional `policy` / `ceilings`) | No `start`. `poll` runs on first execution, then on each scheduled wake-up until done. |
+
+**`DurablePhaseResult`** (return type for both `start` and `poll`):
+
+- **`{ output }`** — success; must match `outputSchema`.
+- **`{ error }`** — failure; step fails with that error.
+- **`PollContinueResult`** — continue in `WAITING` (schedule another wake-up). Any of:
+  - **`undefined`** — continue polling; keep the previously persisted author state (same as returning `{}` without `output` / `error`).
+  - **`{ state?, nextPollDelayMs? }`** — continue and optionally update state or override the next delay. Omit `state` to keep prior author state. If `nextPollDelayMs` is a positive number, the **next** wake-up uses that delay from now; otherwise spacing follows `policy`. The override applies to **one** sleep only — the poll `attempt` counter still increments, and the wake-up after that uses `policy` computed from the updated attempt (for exponential policies, backoff continues from the incremented attempt, not from the override value).
+
+Optional **`stateSchema`**: a `z.object({ ... })` used **only for TypeScript inference** of author state passed between `start` and `poll` invocations. It types `context.state` in `poll` and the `state` field on `{ state }` continuations from `start` / `poll`. The engine does **not** validate author state at runtime — authors are responsible for returning a consistent shape.
+
+**`poll` context** (`PollContext`): extends `StepHandlerContext` with:
+
+- **`state`** — author state from the previous `start` / `poll` (typed from `stateSchema` when provided; `undefined` on the first poll of a poll-only step).
+- **`attempt`** — 0-based index of this `poll` invocation (does not count `start`).
+
+**`policy`** (optional at author time; defaults to `PollStepDefaults.policy`; fixed at definition time, not overridable from workflow YAML):
+
+- **`fixed`** — `{ strategy: 'fixed', intervalMs: number }` — same delay between every poll.
+- **`exponential`** — `{ strategy: 'exponential', initialMs, maxMs, multiplier?, jitter? }` — delay grows by `multiplier` (default `2`), capped at `maxMs`. With `jitter: true`, delay is randomized in `[computed/2, computed]` ms (same jitter helper as on-failure retry).
+
+**`ceilings`** (optional at author time; defaults to `PollStepDefaults.ceilings`; per-field merge — omit `ceilings` for all defaults, or pass `{ maxAttempts: 12 }` to override one field and keep the other default):
+
+- **`maxAttempts`** — engine safety limit on how many times `poll` may run. When exceeded, the step fails with a generic execution error (workflow users see the same failure shape as any other step). Prefer returning `{ error }` from `poll` (or `start`) with an integration-specific message when the upstream job fails or times out.
+- **`maxWaitMs`** — upper bound on **one** sleep until the next wake-up (from **now**). Caps delays from `policy` or a per-poll `nextPollDelayMs` override when they would be longer; does **not** fail the step. Distinct from exponential policy `maxMs`, which caps backoff growth in the policy itself.
+
+### Cancellation cleanup (`onCancel`) for start/poll steps
+
+Optional `onCancel` on `createPollServerStepDefinition` uses the same `StepHandlerContext` signature as single-shot steps.
+
+When the **workflow is cancelled**, `onCancel` is invoked **regardless of phase** — while `start` is active (`RUNNING`), while the step is suspended between polls (`WAITING`), or before the next scheduled wake-up. Use it to cancel external jobs (exports, ML tasks, Osquery actions, etc.) started in `start` or tracked in author `state`, without waiting for the next poll.
+
+- Implementations must be **idempotent**.
+- Errors are logged and do **not** block cancellation.
+
+```typescript
+import { createPollServerStepDefinition } from '@kbn/workflows-extensions/server';
+
+export const myAsyncStep = createPollServerStepDefinition({
+  ...myAsyncStepCommonDefinition,
+  start: async ({ input, logger }) => {
+    const jobId = await startExport(input.indexPattern);
+    return { state: { jobId } };
+  },
+  poll: async (context) => {
+    const status = await getExportStatus(context.state!.jobId);
+    if (status.ready) {
+      return { output: { downloadPath: status.path } };
+    }
+    return { state: { jobId: context.state!.jobId } };
+  },
+  policy: { strategy: 'fixed', intervalMs: 5000 },
+  ceilings: { maxAttempts: 60, maxWaitMs: 300_000 },
+  onCancel: async (context) => {
+    context.logger.info('Workflow cancelled — aborting export if still running');
+    // await cancelExport(context.input, persistedState...);
+  },
+});
+```
+
+### Reference implementation (`workflows_extensions_example`)
+
+A runnable **simulated async report** step ships in the example plugin:
+
+| Artifact | Path |
+|----------|------|
+| Common (schemas, YAML example) | `examples/workflows_extensions_example/common/step_types/durable_poll_step.ts` |
+| Server (`start` + `poll`) | `examples/workflows_extensions_example/server/step_types/durable_poll_step.ts` |
+| Public (UI metadata) | `examples/workflows_extensions_example/public/step_types/durable_poll_step.ts` |
+| Step type id | `example.durablePollDemo` |
+| Poll-only common | `examples/workflows_extensions_example/common/step_types/poll_only_job_step.ts` |
+| Poll-only server | `examples/workflows_extensions_example/server/step_types/poll_only_job_step.ts` |
+| Poll-only public | `examples/workflows_extensions_example/public/step_types/poll_only_job_step.ts` |
+| Poll-only step type id | `example.pollOnlyJobDemo` |
+
+Run Kibana with `yarn start --run-examples`, open **Developer examples** → **Workflows Extensions Example**, and use the **Async report (start + poll demo)** or **Wait for async job (poll-only demo)** step in the editor.
+
+**Demo vs production**
+
+| Demo behavior | Typical production equivalent |
+|---------------|------------------------------|
+| `start` queues a fake `requestId`, returns `{ state: { phase: 'queued', ... } }` | POST to export/report API or enqueue a background task |
+| `poll` advances `phase` until `simulatedRenderPolls` | GET job status from Elasticsearch or an upstream service |
+| `{ output: { documentDownloadPath, ... } }` | Final artifact URL and metadata |
+| `policy: { strategy: 'fixed', intervalMs: 2000 }` | Override `PollStepDefaults` (1 s) for demo pacing |
+| `ceilings: { maxAttempts: 12, maxWaitMs: 20_000 }` | Override defaults (60 attempts / 60 s cap) for a short demo |
+
+**Workflow YAML**
+
+```yaml
+- name: export_slow_errors
+  type: example.durablePollDemo
+  with:
+    indexPattern: "logs-*"
+    simulatedRenderPolls: 4
+```
+
+**Server excerpt** (abbreviated from the example):
+
+```typescript
+import { createPollServerStepDefinition } from '@kbn/workflows-extensions/server';
+
+export const durablePollStepDefinition = createPollServerStepDefinition({
+  ...durablePollStepCommonDefinition,
+  stateSchema: z.object({ requestId: z.string(), phase: z.enum(['queued', 'rendering', 'finalizing']) }),
+  start: async ({ input, logger }) => {
+    const requestId = `rpt_${Date.now().toString(36)}_…`;
+    return { state: { requestId, queryWindow: input.indexPattern, phase: 'queued', submittedAt: new Date().toISOString() } };
+  },
+  poll: async (context) => {
+    if (context.attempt < context.input.simulatedRenderPolls - 1) {
+      return { state: { ...context.state!, phase: context.attempt === 0 ? 'rendering' : 'finalizing' } };
+    }
+    return { output: { requestId: context.state!.requestId, documentDownloadPath: '…', totalHits: 42, generatedAt: new Date().toISOString() } };
+  },
+  policy: { strategy: 'fixed', intervalMs: 2000 },
+  ceilings: { maxAttempts: 12, maxWaitMs: 20_000 },
+});
+```
+
+**Poll-only variant** (`example.pollOnlyJobDemo`): when the job id is already in `input`, omit `start` and use `poll` from the first execution. See `examples/workflows_extensions_example/server/step_types/poll_only_job_step.ts` for a runnable simulated transform/snapshot wait loop.
+
+### Step 3: Public definition and registration
+
+Public registration is identical to single-shot steps: `createPublicStepDefinition` with the same common `id` and schemas. See [Public-Side Definition Requirements](#public-side-definition-requirements) and register via the `workflows_extensions` plugin contract in your plugin `setup` (same as `examples/workflows_extensions_example/README.md`).
 
 ## Step Definition Approval Process
 
-All custom step definitions must be approved by the workflows-eng team before being merged. This is enforced through a Scout API test that validates registered steps against an approved list.
+All custom step definitions must be approved by the workflows-eng team before being merged. This is enforced through a Scout API test that validates registered steps against a set of approved hashes.
 
 ### How It Works
 
-1. **Registration Detection**: When you register a new step or modify an existing step's handler, the test will detect it during CI runs.
+1. **Registration Detection**: When you register a new step or change an existing step definition (id, label, schemas, category, documentation, etc.), the test will detect it during CI runs.
 
-2. **Handler Hash**: The test generates a SHA256 hash of each step's handler function implementation. This ensures that:
+2. **Definition Hash**: The test generates a SHA256 hash of each step's definition and exposes it on the `internal/workflows_extensions/step_definitions` endpoint as `definitionHash`. Any meaningful change to the definition produces a new hash.
 
-   - New steps are detected
-   - Changes to handler implementations are detected (even if the step ID remains the same)
+3. **Per-step approval files**: Each approved step is stored in its own file under:
 
-3. **Approval Required**: The test compares registered steps against the approved list in:
    ```
-   test/scout/api/fixtures/approved_step_definitions.ts
+   test/scout/api/fixtures/approved_step_definitions/<step.id>.txt
    ```
 
-### Adding a New Step
+   The file contains a single line: the approved `definitionHash` for that step. One file per step means PRs that add or update different steps never conflict on a shared list.
 
-When registering a new step, you must:
+### Adding a New Step or Updating an Existing One
 
-1. **Run the test locally** to get the step ID and handler hash:
+1. **Run the approval test locally** so it prints the exact commands you need:
 
    ```bash
    node scripts/scout.js run-tests --arch stateful --domain classic \
      --config src/platform/plugins/shared/workflows_extensions/test/scout/api/playwright.config.ts
    ```
 
-2. **Add the step to the approved list** in `test/scout/api/fixtures/approved_step_definitions.ts`:
+   When a step is unapproved (new id or changed hash), the test fails with a message like:
 
-   ```typescript
-   export const APPROVED_STEP_DEFINITIONS: Array<{ id: string; handlerHash: string }> = [
-     {
-       id: 'my-namespace.myCustomStep',
-       handlerHash: 'abc123...', // SHA256 hash from test output
-     },
-   ];
+   ```
+   Found 1 unapproved step definition(s). Run the following command(s) from your kibana directory and request review from the workflows-eng team:
+
+   echo <definitionHash> > src/platform/plugins/shared/workflows_extensions/test/scout/api/fixtures/approved_step_definitions/my-namespace.myCustomStep.txt
    ```
 
-3. **Get approval** from the workflows-eng team (via PR review)
+2. **Run the printed `echo` command(s) from your kibana directory.** This creates (or overwrites) the per-step approval file with the new hash.
 
-4. **Update the test** to include your new step in the approved list
+3. **Re-run the test** to confirm it passes.
 
-### Modifying an Existing Step Handler
+4. **Commit the new/updated file** under `approved_step_definitions/` and request approval from the workflows-eng team in your PR.
 
-If you modify a step's handler implementation:
-
-1. The handler hash will change
-2. The test will fail until you update the hash in `approved_step_definitions.ts`
-3. You must get re-approval from the workflows-eng team
+If you change a step's definition later, only its own approval file needs updating — repeat the steps above.
 
 ### Running the Approval Test
 
@@ -1019,5 +1199,5 @@ node scripts/scout.js start-server --arch stateful --domain classic
 node scripts/playwright test --config src/platform/plugins/shared/workflows_extensions/test/scout/api/playwright.config.ts --project local
 ```
 
-The test will fail with a clear error message indicating which steps need to be added or updated in the approved list.
+The test prints one `echo … > …` command per offending step, ready to copy-paste from your kibana directory.
 

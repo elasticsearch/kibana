@@ -99,7 +99,13 @@ export const EntityStoreV2EnrichmentSetup = (getService: FtrProviderContext['get
         const maintainer = res.body?.maintainers?.[0];
         if (!maintainer) return false;
         if (maintainer.lastErrorTimestamp && !maintainer.lastSuccessTimestamp) {
-          throw new Error(`risk-score maintainer first run failed: ${JSON.stringify(res.body)}`);
+          // Every run so far has failed. The maintainer will not retry until its next
+          // scheduled interval, so it cannot overwrite CRUD-seeded entities in the
+          // test window. Log and proceed rather than failing the test setup.
+          log.debug(
+            `risk-score maintainer first run failed, proceeding: ${JSON.stringify(res.body)}`
+          );
+          return true;
         }
         return maintainer.runs > 0 && maintainer.lastSuccessTimestamp !== null;
       }

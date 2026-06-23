@@ -26,7 +26,7 @@ const labelEqDefinition: PromQLFunctionDefinition = {
   description: i18n.translate('kbn-esql-language.promql.definitions.label_eq', {
     defaultMessage: 'Matches labels exactly equal to the provided string.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -58,7 +58,7 @@ const labelNeqDefinition: PromQLFunctionDefinition = {
   description: i18n.translate('kbn-esql-language.promql.definitions.label_neq', {
     defaultMessage: 'Matches labels not equal to the provided string.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -90,7 +90,7 @@ const labelNreDefinition: PromQLFunctionDefinition = {
   description: i18n.translate('kbn-esql-language.promql.definitions.label_nre', {
     defaultMessage: 'Matches labels whose value does not satisfy the provided regular expression.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [
@@ -122,7 +122,7 @@ const labelReDefinition: PromQLFunctionDefinition = {
   description: i18n.translate('kbn-esql-language.promql.definitions.label_re', {
     defaultMessage: 'Matches labels whose value satisfies the provided regular expression.',
   }),
-  preview: true,
+  preview: false,
   signatures: [
     {
       params: [

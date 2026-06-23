@@ -46,6 +46,7 @@ export const knowledgeIndicatorsMappings = {
       properties: {
         type: mappings.keyword(),
         subtype: mappings.keyword(),
+        slug: mappings.keyword(),
         properties: mappings.object({ enabled: false, properties: {} }),
         confidence: mappings.long(),
         evidence_doc_ids: mappings.keyword(),
@@ -79,6 +80,7 @@ interface StoredKiRevisionIdentity {
 
 export interface StoredFeature {
   type: string;
+  slug: string;
   properties: Record<string, unknown>;
   confidence: number;
   subtype?: string;
@@ -162,7 +164,7 @@ export const knowledgeIndicatorsDataStream: DataStreamDefinition<
   StoredKnowledgeIndicator & Record<string, unknown>
 > = {
   name: KNOWLEDGE_INDICATORS_DATA_STREAM,
-  version: 1,
+  version: 2,
   hidden: true,
   template: {
     priority: 500,

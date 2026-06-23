@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { parse as yamlParse } from 'yaml';
 import {
   CreateTemplateInputSchema,
   ParsedTemplateDefinitionSchema,
@@ -38,7 +38,7 @@ export const postTemplateRoute = createCasesRoute({
       // Validate YAML definition can be parsed
       let parsedYaml: unknown;
       try {
-        parsedYaml = yaml.load(input.definition);
+        parsedYaml = yamlParse(input.definition);
       } catch (yamlError) {
         return response.badRequest({
           body: { message: `Invalid YAML definition: ${yamlError}` },

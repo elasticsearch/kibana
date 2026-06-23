@@ -221,6 +221,11 @@ import type {
   GetEndpointSuggestionsResponse,
 } from './endpoint/suggestions/get_suggestions.gen';
 import type {
+  GetAnomalySummaryRequestParamsInput,
+  GetAnomalySummaryRequestBodyInput,
+  GetAnomalySummaryResponse,
+} from './entity_analytics/anomaly_summary/anomaly_summary.gen';
+import type {
   BulkUpsertAssetCriticalityRecordsRequestBodyInput,
   BulkUpsertAssetCriticalityRecordsResponse,
 } from './entity_analytics/asset_criticality/bulk_upload_asset_criticality.gen';
@@ -1822,6 +1827,25 @@ finishes and then call this operation once.
       .catch(catchAxiosErrorFormatAndThrow);
   }
   /**
+   * Queries ML anomaly records on demand, enriches them with baseline data, and returns results for a given entity.
+   */
+  async getAnomalySummary(props: GetAnomalySummaryProps) {
+    this.log.info(`${new Date().toISOString()} Calling API GetAnomalySummary`);
+    return this.kbnClient
+      .request<GetAnomalySummaryResponse>({
+        path: replaceParams(
+          '/internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_summary',
+          props.params
+        ),
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
+        },
+        method: 'POST',
+        body: props.body,
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
+  /**
    * Get the asset criticality record for a specific entity.
    */
   async getAssetCriticalityRecord(props: GetAssetCriticalityRecordProps) {
@@ -3132,7 +3156,10 @@ the immediately preceding revision in `old_values`.
     this.log.info(`${new Date().toISOString()} Calling API RuleChangesHistory`);
     return this.kbnClient
       .request<RuleChangesHistoryResponse>({
-        path: replaceParams('/internal/detection_engine/rules/{ruleId}/history', props.params),
+        path: replaceParams(
+          '/internal/detection_engine/rules/{ruleId}/history/_list',
+          props.params
+        ),
         headers: {
           [ELASTIC_HTTP_VERSION_HEADER]: '1',
         },
@@ -4045,6 +4072,10 @@ export interface FindRulesProps {
 }
 export interface GetAllTranslationStatsDashboardMigrationProps {
   params: GetAllTranslationStatsDashboardMigrationRequestParamsInput;
+}
+export interface GetAnomalySummaryProps {
+  params: GetAnomalySummaryRequestParamsInput;
+  body: GetAnomalySummaryRequestBodyInput;
 }
 export interface GetAssetCriticalityRecordProps {
   query: GetAssetCriticalityRecordRequestQueryInput;

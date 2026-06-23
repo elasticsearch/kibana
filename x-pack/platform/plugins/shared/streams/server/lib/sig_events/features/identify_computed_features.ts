@@ -7,7 +7,7 @@
 
 import type { ElasticsearchClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
-import type { Feature, Streams } from '@kbn/streams-schema';
+import type { FeatureUpsert, Streams } from '@kbn/streams-schema';
 import { generateAllComputedFeatures } from '@kbn/streams-ai';
 import type { KnowledgeIndicatorClient } from '../../streams/ki';
 import { reconcileComputedFeatures } from './reconcile_features';
@@ -32,7 +32,7 @@ export async function identifyComputedFeatures({
   kiClient,
   logger,
   runId,
-}: IdentifyComputedFeaturesOptions): Promise<Feature[]> {
+}: IdentifyComputedFeaturesOptions): Promise<FeatureUpsert[]> {
   const computedFeatures = await generateAllComputedFeatures({
     stream,
     start,

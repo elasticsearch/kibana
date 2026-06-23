@@ -44,3 +44,4 @@ export * from './specs/outlook/outlook';
 export * from './specs/tavily/tavily';
 export * from './specs/pagerduty/pagerduty';
 export * from './specs/snowflake/snowflake';
+export * from './specs/box/box';

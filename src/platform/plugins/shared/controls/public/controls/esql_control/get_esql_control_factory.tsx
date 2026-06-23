@@ -15,16 +15,20 @@ import type { OptionsListESQLControlState } from '@kbn/controls-schemas';
 import type { EmbeddablePublicDefinition } from '@kbn/embeddable-plugin/public';
 import {
   apiPublishesESQLVariables,
+  ESQLVariableType,
   isStaticESQLControl,
   type QueryESQLControl,
   type StaticESQLControl,
 } from '@kbn/esql-types';
 import {
   apiHasPinnedPanels,
+  apiPublishesChildren,
+  apiPublishesESQLQuery,
   initializeRelatedPanels,
   initializeStateApi,
   type StateComparators,
 } from '@kbn/presentation-publishing';
+import { getESQLQueryVariables } from '@kbn/esql-utils';
 
 import { uiActionsService } from '../../services/kibana_services';
 import { defaultControlLabelComparators, initializeLabelManager } from '../control_labels';
@@ -142,9 +146,17 @@ export const getESQLControlFactory = <
             selections.reinitializeState(updatedState);
             labelManager.reinitializeState(updatedState);
           };
+
           try {
             await uiActionsService.executeTriggerActions('ESQL_CONTROL_TRIGGER', {
-              queryString: isStaticESQLControl(nextState) ? '' : nextState.esql_query,
+              queryString: isStaticESQLControl(nextState)
+                ? getRelatedStaticQuery(
+                    nextState.variable_type as ESQLVariableType,
+                    parentApi,
+                    selections.api.esqlVariable$.getValue().key,
+                    relatedPanelsApi.relatedPanels$
+                  )
+                : nextState.esql_query,
               variableType: nextState.variable_type,
               controlType: nextState.control_type,
               esqlVariables: variablesInParent,
@@ -260,3 +272,38 @@ export const getESQLControlFactory = <
     },
   };
 };
+
+function getRelatedStaticQuery(
+  variableType: ESQLVariableType,
+  parentApi: unknown,
+  variableKey: string,
+  relatedPanels$: BehaviorSubject<string[]>
+): string {
+  /**
+   * For non-field type static controls, we do not populate suggestions based on another query
+   */
+  if (variableType !== ESQLVariableType.FIELDS) return '';
+
+  /**
+   * For static ??field controls, we need to know which query to pull suggestions from
+   */
+  const getRelatedQuery = (_api: unknown) => {
+    const query = apiPublishesESQLQuery(_api) ? _api.query$.getValue().esql : undefined;
+    return query && getESQLQueryVariables(query).includes(variableKey) ? query : undefined;
+  };
+
+  const parentQuery = getRelatedQuery(parentApi); // check if parent API publishes a related query
+  if (!parentQuery && apiPublishesChildren(parentApi)) {
+    // the parent API does not publish a related query, so check all related children
+    for (const panel of relatedPanels$.getValue()) {
+      const child = parentApi.children$.getValue()[panel];
+      const childQuery = getRelatedQuery(child);
+      if (childQuery) {
+        // found a child with a query that references this variable, so return it;
+        // only one query can be used to build suggestions
+        return childQuery;
+      }
+    }
+  }
+  return parentQuery ?? '';
+}

@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-export { ConnectStep } from './connect_step';
+export { DeploySettingsStep } from './deploy_settings_step';
 export { ServicesStep } from './services_step';
-export { NameAndScopeStep } from './name_and_scope_step';
-export { DeploymentStep } from './deployment_step';
-export { SeeDataStep } from './see_data_step';
+export { DeployAndDetectStep } from './deploy_and_detect_step';
+export { ServiceSettingsStep } from './service_settings_step';

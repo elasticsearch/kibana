@@ -30,7 +30,7 @@
     "@kbn/react-kibana-context-theme",
     "@kbn/chart-test-jest-helpers",
     "@kbn/field-formats-common",
-    "@kbn/visualizations-common"
+    "@kbn/visualizations-common",
   ],
   "exclude": [
     "target/**/*",

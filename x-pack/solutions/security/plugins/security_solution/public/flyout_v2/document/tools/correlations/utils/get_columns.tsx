@@ -34,18 +34,29 @@ export const getColumns = ({
 }): Array<EuiBasicTableColumn<Record<string, unknown>>> => [
   {
     render: (row: Record<string, unknown>) => (
-      <EuiButtonIcon
-        iconType="expand"
-        data-test-subj={`${dataTestSubj}AlertPreviewButton`}
-        onClick={() => onShowAlert(row.id as string, row.index as string)}
-        aria-label={i18n.translate(
+      <EuiToolTip
+        content={i18n.translate(
           'xpack.securitySolution.flyout.correlations.alertPreview.ariaLabel',
           {
             defaultMessage: 'Preview alert with id {id}',
             values: { id: row.id as string },
           }
         )}
-      />
+        disableScreenReaderOutput
+      >
+        <EuiButtonIcon
+          iconType="expand"
+          data-test-subj={`${dataTestSubj}AlertPreviewButton`}
+          onClick={() => onShowAlert(row.id as string, row.index as string)}
+          aria-label={i18n.translate(
+            'xpack.securitySolution.flyout.correlations.alertPreview.ariaLabel',
+            {
+              defaultMessage: 'Preview alert with id {id}',
+              values: { id: row.id as string },
+            }
+          )}
+        />
+      </EuiToolTip>
     ),
     width: '5%',
   },

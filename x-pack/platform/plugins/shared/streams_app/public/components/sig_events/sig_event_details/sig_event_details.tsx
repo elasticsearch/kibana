@@ -90,6 +90,7 @@ export const SigEventDetails = ({ event }: SigEventDetailsProps) => {
                 wrapText: true,
               }))}
               bordered={false}
+              maxWidth={false}
             />
           </EuiPanel>
         </EuiFlexGroup>

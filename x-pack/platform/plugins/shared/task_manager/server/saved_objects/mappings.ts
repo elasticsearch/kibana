@@ -91,6 +91,10 @@ export const taskMappings: SavedObjectsTypeMappingDefinition = {
         // spaceId: {
         //   type: 'keyword',
         // },
+        // userProfileId: {
+        //   type: 'keyword',
+        //   ignore_above: 1024,
+        // },
       },
     },
   },

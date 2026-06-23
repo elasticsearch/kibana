@@ -59,6 +59,7 @@ export const DraggableBodyRow = <Item extends object>({
                 ) : (
                   <div
                     {...provided.dragHandleProps}
+                    data-test-subj="dragHandle"
                     aria-label={i18n.translate(
                       'xpack.contentConnectors.draggableBodyRow.dragHandleLabel',
                       { defaultMessage: 'Drag handle' }

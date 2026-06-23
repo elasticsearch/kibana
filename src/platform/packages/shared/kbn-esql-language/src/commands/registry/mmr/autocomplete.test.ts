@@ -124,7 +124,7 @@ describe('MMR Autocomplete', () => {
     const context = buildContextWithDenseVector();
     await expectMmrSuggestions(
       'FROM a | MMR ON denseField LIMIT 10 ',
-      [withCompleteItem.text, pipeCompleteItem.text],
+      ['\n', withCompleteItem.text, pipeCompleteItem.text],
       undefined,
       context
     );

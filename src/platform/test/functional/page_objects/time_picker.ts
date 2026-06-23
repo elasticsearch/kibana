@@ -321,6 +321,15 @@ export class TimePickerPageObject extends FtrService {
   }
 
   public async isOff() {
+    // The new picker renders a hidden `kbnQueryBar-datePicker-disabled` span
+    // whenever the time filter is off (no-time-field data view, isDisabled
+    // prop, or auto-refresh-only mode); the legacy picker renders it visibly
+    // inside the SuperDatePicker's isDisabled.display node.
+    if (await this.testSubjects.exists('kbnQueryBar-datePicker-disabled', { allowHidden: true })) {
+      return true;
+    }
+    // Legacy auto-refresh-only mode doesn't render the span; the
+    // SuperDatePicker collapses to a readOnly EuiAutoRefresh control instead.
     return await this.find.existsByCssSelector('.euiAutoRefresh .euiFormControlLayout-readOnly');
   }
 

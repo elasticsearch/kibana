@@ -10,6 +10,7 @@ import { isFunctionExpression, within, isAssignment, isColumn } from '@elastic/e
 import type { ESQLAstAllCommands, ESQLAstField } from '@elastic/esql/types';
 import {
   getNewUserDefinedColumnSuggestion,
+  newLineCompleteItem,
   pipeCompleteItem,
   commaCompleteItem,
   assignCompletionItem,
@@ -113,7 +114,7 @@ export async function suggestFieldsList(
         };
       }
 
-      suggestions.push(pipeCompleteItem, commaSuggestion);
+      suggestions.push(newLineCompleteItem, pipeCompleteItem, commaSuggestion);
     }
 
     if (options?.afterCompleteSuggestions) {

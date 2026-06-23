@@ -89,6 +89,48 @@ await featureFlags.getBooleanValue(
 Notifications of a certain type are shown only when the plugin is visible: `notificationCenter.uiEnabled`
 and its own `notificationCenter.types.<typeId>` flag is on.
 
+## Notification schema
+
+The structure of the notification document is defined in [`common/`](./common):
+
+- [`notification_schema.ts`](./common/notification_schema.ts) — the Zod
+  `notificationSchema` for the document stored in the append-only
+  `.kibana-notification-center` data stream. We use Zod because the shape is shared across
+  server and browser code.
+
+## Notification id conventions
+
+A notification's `notification_id` is a deterministic idempotency key.
+This ensures duplicate notifications can be collapsed at query time from the datastream.
+Producers control de-duplication by how they construct the id. Notification state does
+not need to be tracked by any other plugin.
+Two conventions are provided in [`notification_id.ts`](./common/notification_id.ts):
+
+- **Static-state** — `<producer>:<entity>:<state>`. Use when a notification
+  represents the _current state_ of an entity; a new state produces a new id.
+
+  ```ts
+  buildStaticStateNotificationId({
+    producer: 'inference',
+    entity: 'my-endpoint',
+    state: 'deprecated',
+  });
+  // => 'inference:my-endpoint:deprecated'  (re-push while still deprecated collapses to one entry)
+  ```
+
+- **Per-event** — `<producer>:<event>:<epochMs>`. Use when each occurrence is
+  distinct; the epoch milliseconds segment makes every push unique without
+  introducing colon collisions from ISO 8601 timestamps.
+
+  ```ts
+  buildEventNotificationId({
+    producer: 'autoOps',
+    event: 'memoryLimit',
+    epochMs: Date.now(),
+  });
+  // => 'autoOps:memoryLimit:1750118400000'  (each occurrence is its own entry)
+  ```
+
 ## Running tests
 
 ```bash

@@ -7,18 +7,43 @@
 
 import { setMockValues, setMockActions } from '../../../../../__mocks__/kea_logic';
 
+// EuiStepsHorizontal uses complex DOM measurement. Capturing the steps prop lets us
+// verify step status and onClick behavior without relying on EUI internals.
+let capturedSteps: any[] | undefined;
+
+jest.mock('@elastic/eui', () => {
+  const actual = jest.requireActual('@elastic/eui');
+  return {
+    ...actual,
+    EuiStepsHorizontal: (props: any) => {
+      capturedSteps = props.steps;
+      return <div data-test-subj="euiStepsHorizontal" />;
+    },
+  };
+});
+
+jest.mock('./configure_pipeline', () => ({
+  ConfigurePipeline: () => <div data-test-subj="configurePipeline" />,
+}));
+
+jest.mock('./configure_fields', () => ({
+  ConfigureFields: () => <div data-test-subj="configureFields" />,
+}));
+
+jest.mock('./test_pipeline', () => ({
+  TestPipeline: () => <div data-test-subj="testPipeline" />,
+}));
+
+jest.mock('./review_pipeline', () => ({
+  ReviewPipeline: () => <div data-test-subj="reviewPipeline" />,
+}));
+
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { fireEvent, screen } from '@testing-library/react';
 
-import {
-  EuiButton,
-  EuiButtonEmpty,
-  EuiCallOut,
-  EuiStepsHorizontal,
-  EuiLoadingSpinner,
-} from '@elastic/eui';
 import type { TrainedModelConfigResponse } from '@kbn/ml-common-types/trained_models';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import {
   AddInferencePipelineFlyout,
@@ -26,11 +51,7 @@ import {
   AddInferencePipelineHorizontalSteps,
   AddInferencePipelineFooter,
 } from './add_inference_pipeline_flyout';
-import { ConfigureFields } from './configure_fields';
-import { ConfigurePipeline } from './configure_pipeline';
 import { EMPTY_PIPELINE_CONFIGURATION } from './ml_inference_logic';
-import { ReviewPipeline } from './review_pipeline';
-import { TestPipeline } from './test_pipeline';
 import { AddInferencePipelineSteps } from './types';
 
 const supportedMLModels: TrainedModelConfigResponse[] = [
@@ -56,6 +77,7 @@ const DEFAULT_VALUES = {
   },
   createErrors: [],
   indexName: 'unit-test-index',
+  ingestionMethod: 'crawler',
   isLoading: false,
   isConfigureStepValid: true,
   isPipelineDataValid: true,
@@ -66,74 +88,101 @@ const onClose = jest.fn();
 describe('AddInferencePipelineFlyout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    capturedSteps = undefined;
     setMockValues({ ...DEFAULT_VALUES });
     setMockActions({
+      attachPipeline: jest.fn(),
+      createPipeline: jest.fn(),
+      makeMappingRequest: jest.fn(),
+      makeMlInferencePipelinesRequest: jest.fn(),
+      onAddInferencePipelineStepChange: jest.fn(),
       setIndexName: jest.fn(),
+      startPollingModels: jest.fn(),
     });
   });
-  it('renders AddProcessorContent', () => {
-    const wrapper = shallow(<AddInferencePipelineFlyout onClose={onClose} />);
-    expect(wrapper.find(AddInferencePipelineContent)).toHaveLength(1);
+  it('renders AddInferencePipelineContent', () => {
+    renderWithKibanaRenderContext(<AddInferencePipelineFlyout onClose={onClose} />);
+    expect(screen.getByText('Add an inference pipeline')).toBeInTheDocument();
+    expect(screen.getByTestId('euiStepsHorizontal')).toBeInTheDocument();
   });
-  describe('AddProcessorContent', () => {
+  describe('AddInferencePipelineContent', () => {
+    const baseActions = {
+      attachPipeline: jest.fn(),
+      createPipeline: jest.fn(),
+      onAddInferencePipelineStepChange: jest.fn(),
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      capturedSteps = undefined;
+      setMockValues({ ...DEFAULT_VALUES });
+      setMockActions(baseActions);
+    });
+
     it('renders spinner when loading', () => {
       setMockValues({ ...DEFAULT_VALUES, isLoading: true });
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
-      expect(wrapper.find(EuiLoadingSpinner)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      expect(screen.queryByTestId('configurePipeline')).not.toBeInTheDocument();
     });
+
     it('renders AddInferencePipelineHorizontalSteps', () => {
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
-      expect(wrapper.find(AddInferencePipelineHorizontalSteps)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByTestId('euiStepsHorizontal')).toBeInTheDocument();
     });
-    it('renders ModalFooter', () => {
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
-      expect(wrapper.find(AddInferencePipelineFooter)).toHaveLength(1);
+
+    it('renders ModalFooter with Continue button', () => {
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
     });
+
     it('renders errors', () => {
       const errorMsg = 'oh no!';
       setMockValues({ ...DEFAULT_VALUES, createErrors: [errorMsg] });
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByText('Error creating pipeline')).toBeInTheDocument();
+      expect(screen.getByText(errorMsg)).toBeInTheDocument();
+    });
 
-      expect(wrapper.find(EuiCallOut)).toHaveLength(1);
-      const errorCallout = wrapper.find(EuiCallOut);
-      expect(errorCallout.prop('color')).toBe('danger');
-      expect(errorCallout.prop('iconType')).toBe('error');
-      expect(errorCallout.find('p')).toHaveLength(1);
-      expect(errorCallout.find('p').text()).toBe(errorMsg);
-    });
     it('renders configure step', () => {
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
-      expect(wrapper.find(ConfigurePipeline)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByTestId('configurePipeline')).toBeInTheDocument();
     });
+
     it('renders fields step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
         addInferencePipelineModal: {
+          ...DEFAULT_VALUES.addInferencePipelineModal,
           step: AddInferencePipelineSteps.Fields,
         },
       });
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
-      expect(wrapper.find(ConfigureFields)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByTestId('configureFields')).toBeInTheDocument();
     });
+
     it('renders test step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
         addInferencePipelineModal: {
+          ...DEFAULT_VALUES.addInferencePipelineModal,
           step: AddInferencePipelineSteps.Test,
         },
       });
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
-      expect(wrapper.find(TestPipeline)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByTestId('testPipeline')).toBeInTheDocument();
     });
+
     it('renders review step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
         addInferencePipelineModal: {
+          ...DEFAULT_VALUES.addInferencePipelineModal,
           step: AddInferencePipelineSteps.Review,
         },
       });
-      const wrapper = shallow(<AddInferencePipelineContent onClose={onClose} />);
-      expect(wrapper.find(ReviewPipeline)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AddInferencePipelineContent onClose={onClose} />);
+      expect(screen.getByTestId('reviewPipeline')).toBeInTheDocument();
     });
   });
   describe('AddInferencePipelineHorizontalSteps', () => {
@@ -143,57 +192,47 @@ describe('AddInferencePipelineFlyout', () => {
     const REVIEW_STEP_INDEX = 3;
     const onAddInferencePipelineStepChange = jest.fn();
     beforeEach(() => {
-      setMockActions({
-        onAddInferencePipelineStepChange,
-      });
+      jest.clearAllMocks();
+      capturedSteps = undefined;
+      setMockValues({ ...DEFAULT_VALUES });
+      setMockActions({ onAddInferencePipelineStepChange });
     });
     it('renders EuiStepsHorizontal', () => {
-      const wrapper = shallow(<AddInferencePipelineHorizontalSteps />);
-      expect(wrapper.find(EuiStepsHorizontal)).toHaveLength(1);
+      renderWithKibanaRenderContext(<AddInferencePipelineHorizontalSteps />);
+      expect(screen.getByTestId('euiStepsHorizontal')).toBeInTheDocument();
     });
 
     const testStepStatus = (stepIndex: number, expectedTitle: string, expectedStatus: string) => {
-      const wrapper = shallow(<AddInferencePipelineHorizontalSteps />);
-      const steps = wrapper.find(EuiStepsHorizontal);
-      const step = steps.prop('steps')[stepIndex];
-      expect(step.title).toBe(expectedTitle);
-      expect(step.status).toBe(expectedStatus);
+      renderWithKibanaRenderContext(<AddInferencePipelineHorizontalSteps />);
+      expect(capturedSteps![stepIndex].title).toBe(expectedTitle);
+      expect(capturedSteps![stepIndex].status).toBe(expectedStatus);
     };
 
     it('configure step is current with valid data', () => {
       testStepStatus(CONFIGURE_STEP_INDEX, 'Configure', 'current');
     });
     it('configure step is current with invalid data', () => {
-      setMockValues({
-        ...DEFAULT_VALUES,
-        isConfigureStepValid: false,
-      });
+      setMockValues({ ...DEFAULT_VALUES, isConfigureStepValid: false });
       testStepStatus(CONFIGURE_STEP_INDEX, 'Configure', 'current');
     });
     it('configure step is complete when on later step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Review,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Review },
       });
       testStepStatus(CONFIGURE_STEP_INDEX, 'Configure', 'complete');
     });
     it('fields step is current with valid data', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Fields,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Fields },
       });
       testStepStatus(FIELDS_STEP_INDEX, 'Fields', 'current');
     });
     it('fields step is current with invalid data', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Fields,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Fields },
         isPipelineDataValid: false,
       });
       testStepStatus(FIELDS_STEP_INDEX, 'Fields', 'current');
@@ -201,57 +240,42 @@ describe('AddInferencePipelineFlyout', () => {
     it('fields step is complete when on later step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Review,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Review },
       });
       testStepStatus(FIELDS_STEP_INDEX, 'Fields', 'complete');
     });
     it('test step is current when on step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Test,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Test },
       });
       testStepStatus(TEST_STEP_INDEX, 'Test (Optional)', 'current');
     });
     it('test step is complete when on later step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Review,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Review },
       });
       testStepStatus(TEST_STEP_INDEX, 'Test (Optional)', 'complete');
     });
     it('review step is current when on step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Review,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Review },
       });
       testStepStatus(REVIEW_STEP_INDEX, 'Review', 'current');
     });
 
-    const testClickStep = (
-      stepIndex: number,
-      expectedStepAfterClicking: AddInferencePipelineSteps
-    ) => {
-      const wrapper = shallow(<AddInferencePipelineHorizontalSteps />);
-      const steps = wrapper.find(EuiStepsHorizontal);
-      const stepToClick = steps.prop('steps')[stepIndex];
-      stepToClick.onClick({} as any);
-      expect(onAddInferencePipelineStepChange).toHaveBeenCalledWith(expectedStepAfterClicking);
+    const testClickStep = (stepIndex: number, expectedStep: AddInferencePipelineSteps) => {
+      renderWithKibanaRenderContext(<AddInferencePipelineHorizontalSteps />);
+      capturedSteps![stepIndex].onClick({} as any);
+      expect(onAddInferencePipelineStepChange).toHaveBeenCalledWith(expectedStep);
     };
 
     it('clicking configure step updates step', () => {
       setMockValues({
         ...DEFAULT_VALUES,
-        addInferencePipelineModal: {
-          step: AddInferencePipelineSteps.Review,
-        },
+        addInferencePipelineModal: { step: AddInferencePipelineSteps.Review },
       });
       testClickStep(CONFIGURE_STEP_INDEX, AddInferencePipelineSteps.Configuration);
     });
@@ -266,32 +290,21 @@ describe('AddInferencePipelineFlyout', () => {
     });
 
     const testCannotClickInvalidStep = (stepIndex: number) => {
-      const wrapper = shallow(<AddInferencePipelineHorizontalSteps />);
-      const steps = wrapper.find(EuiStepsHorizontal);
-      const stepToClick = steps.prop('steps')[stepIndex];
-      stepToClick.onClick({} as any);
+      renderWithKibanaRenderContext(<AddInferencePipelineHorizontalSteps />);
+      capturedSteps![stepIndex].onClick({} as any);
       expect(onAddInferencePipelineStepChange).not.toHaveBeenCalled();
     };
 
     it('cannot click fields step when data is invalid', () => {
-      setMockValues({
-        ...DEFAULT_VALUES,
-        isConfigureStepValid: false,
-      });
+      setMockValues({ ...DEFAULT_VALUES, isConfigureStepValid: false });
       testCannotClickInvalidStep(FIELDS_STEP_INDEX);
     });
     it('cannot click test step when data is invalid', () => {
-      setMockValues({
-        ...DEFAULT_VALUES,
-        isPipelineDataValid: false,
-      });
+      setMockValues({ ...DEFAULT_VALUES, isPipelineDataValid: false });
       testCannotClickInvalidStep(TEST_STEP_INDEX);
     });
     it('cannot click review step when data is invalid', () => {
-      setMockValues({
-        ...DEFAULT_VALUES,
-        isPipelineDataValid: false,
-      });
+      setMockValues({ ...DEFAULT_VALUES, isPipelineDataValid: false });
       testCannotClickInvalidStep(REVIEW_STEP_INDEX);
     });
   });
@@ -303,16 +316,16 @@ describe('AddInferencePipelineFlyout', () => {
       onAddInferencePipelineStepChange: jest.fn(),
     };
     beforeEach(() => {
+      jest.clearAllMocks();
+      setMockValues({ ...DEFAULT_VALUES });
       setMockActions(actions);
     });
     it('renders cancel button on config step', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      const cancelBtn = wrapper.find(EuiButtonEmpty);
-      expect(cancelBtn).toHaveLength(1);
-      expect(cancelBtn.prop('children')).toBe('Cancel');
-      cancelBtn.prop('onClick')!({} as any);
+      expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
     it('renders cancel button on fields step', () => {
@@ -323,13 +336,11 @@ describe('AddInferencePipelineFlyout', () => {
           step: AddInferencePipelineSteps.Fields,
         },
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      expect(wrapper.find(EuiButtonEmpty)).toHaveLength(2);
-      const cancelBtn = wrapper.find(EuiButtonEmpty).at(0);
-      expect(cancelBtn.prop('children')).toBe('Cancel');
-      cancelBtn.prop('onClick')!({} as any);
+      expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
     it('renders cancel button on test step', () => {
@@ -340,13 +351,11 @@ describe('AddInferencePipelineFlyout', () => {
           step: AddInferencePipelineSteps.Test,
         },
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      expect(wrapper.find(EuiButtonEmpty)).toHaveLength(2);
-      const cancelBtn = wrapper.find(EuiButtonEmpty).at(0);
-      expect(cancelBtn.prop('children')).toBe('Cancel');
-      cancelBtn.prop('onClick')!({} as any);
+      expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
     it('renders cancel button on review step', () => {
@@ -357,19 +366,17 @@ describe('AddInferencePipelineFlyout', () => {
           step: AddInferencePipelineSteps.Review,
         },
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      expect(wrapper.find(EuiButtonEmpty)).toHaveLength(2);
-      const cancelBtn = wrapper.find(EuiButtonEmpty).at(0);
-      expect(cancelBtn.prop('children')).toBe('Cancel');
-      cancelBtn.prop('onClick')!({} as any);
+      expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
     const testBackButton = (
       currentStep: AddInferencePipelineSteps,
-      expectedStepAfterPressingBackButton: AddInferencePipelineSteps
+      expectedStep: AddInferencePipelineSteps
     ) => {
       setMockValues({
         ...DEFAULT_VALUES,
@@ -378,16 +385,11 @@ describe('AddInferencePipelineFlyout', () => {
           step: currentStep,
         },
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      expect(wrapper.find(EuiButtonEmpty)).toHaveLength(2);
-      const backBtn = wrapper.find(EuiButtonEmpty).at(1);
-      expect(backBtn.prop('children')).toBe('Back');
-      backBtn.prop('onClick')!({} as any);
-      expect(actions.onAddInferencePipelineStepChange).toHaveBeenCalledWith(
-        expectedStepAfterPressingBackButton
-      );
+      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+      expect(actions.onAddInferencePipelineStepChange).toHaveBeenCalledWith(expectedStep);
     };
 
     it('renders back button on fields step', () => {
@@ -401,26 +403,22 @@ describe('AddInferencePipelineFlyout', () => {
     });
 
     it('renders enabled continue button with valid data', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      const contBtn = wrapper.find(EuiButton);
-      expect(contBtn).toHaveLength(1);
-      expect(contBtn.prop('children')).toBe('Continue');
-      expect(contBtn.prop('disabled')).toBe(false);
-      contBtn.prop('onClick')!({} as any);
+      const continueBtn = screen.getByRole('button', { name: 'Continue' });
+      expect(continueBtn).not.toBeDisabled();
+      fireEvent.click(continueBtn);
       expect(actions.onAddInferencePipelineStepChange).toHaveBeenCalledWith(
         AddInferencePipelineSteps.Fields
       );
     });
     it('renders disabled continue button with invalid data', () => {
       setMockValues({ ...DEFAULT_VALUES, isConfigureStepValid: false });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      expect(wrapper.find(EuiButton)).toHaveLength(1);
-      expect(wrapper.find(EuiButton).prop('children')).toBe('Continue');
-      expect(wrapper.find(EuiButton).prop('disabled')).toBe(true);
+      expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
     it('renders continue button on fields step', () => {
       setMockValues({
@@ -430,14 +428,12 @@ describe('AddInferencePipelineFlyout', () => {
           step: AddInferencePipelineSteps.Fields,
         },
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      const contBtn = wrapper.find(EuiButton);
-      expect(contBtn).toHaveLength(1);
-      expect(contBtn.prop('children')).toBe('Continue');
-      expect(contBtn.prop('disabled')).toBe(false);
-      contBtn.prop('onClick')!({} as any);
+      const continueBtn = screen.getByRole('button', { name: 'Continue' });
+      expect(continueBtn).not.toBeDisabled();
+      fireEvent.click(continueBtn);
       expect(actions.onAddInferencePipelineStepChange).toHaveBeenCalledWith(
         AddInferencePipelineSteps.Test
       );
@@ -450,14 +446,12 @@ describe('AddInferencePipelineFlyout', () => {
           step: AddInferencePipelineSteps.Test,
         },
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      const contBtn = wrapper.find(EuiButton);
-      expect(contBtn).toHaveLength(1);
-      expect(contBtn.prop('children')).toBe('Continue');
-      expect(contBtn.prop('disabled')).toBe(false);
-      contBtn.prop('onClick')!({} as any);
+      const continueBtn = screen.getByRole('button', { name: 'Continue' });
+      expect(continueBtn).not.toBeDisabled();
+      fireEvent.click(continueBtn);
       expect(actions.onAddInferencePipelineStepChange).toHaveBeenCalledWith(
         AddInferencePipelineSteps.Review
       );
@@ -475,15 +469,12 @@ describe('AddInferencePipelineFlyout', () => {
           },
         },
       });
-
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      const actionButton = wrapper.find(EuiButton);
-      expect(actionButton).toHaveLength(1);
-      expect(actionButton.prop('children')).toBe('Create pipeline');
-      expect(actionButton.prop('color')).toBe('success');
-      actionButton.prop('onClick')!({} as any);
+      const createBtn = screen.getByRole('button', { name: 'Create pipeline' });
+      expect(createBtn).toBeInTheDocument();
+      fireEvent.click(createBtn);
       expect(actions.createPipeline).toHaveBeenCalledTimes(1);
     });
     it('renders attach button on review step', () => {
@@ -499,15 +490,12 @@ describe('AddInferencePipelineFlyout', () => {
           },
         },
       });
-
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <AddInferencePipelineFooter ingestionMethod={ingestionMethod} onClose={onClose} />
       );
-      const actionButton = wrapper.find(EuiButton);
-      expect(actionButton).toHaveLength(1);
-      expect(actionButton.prop('children')).toBe('Attach');
-      expect(actionButton.prop('color')).toBe('primary');
-      actionButton.prop('onClick')!({} as any);
+      const attachBtn = screen.getByRole('button', { name: 'Attach' });
+      expect(attachBtn).toBeInTheDocument();
+      fireEvent.click(attachBtn);
       expect(actions.attachPipeline).toHaveBeenCalledTimes(1);
     });
   });

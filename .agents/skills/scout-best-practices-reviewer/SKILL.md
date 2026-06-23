@@ -50,6 +50,7 @@ Checklist items are tagged with the document they're detailed in:
 Open only the docs relevant to the test type(s) under review.
 
 - **[general]** **Reuse-first**: prefer existing `pageObjects`, fixtures, and `apiServices`; if adding helpers/page objects, place them in the right scope (plugin vs solution vs `@kbn/scout`) and register via fixtures.
+- **[general]** **No unused constants**: flag constants that are unused or used in only one place — prefer inlining them.
 - **[api]** **Fixture boundaries**: `apiClient` for the endpoint under test; `apiServices`/`kbnClient` for setup/teardown only; correct auth + common headers.
 - **[api]** **Correctness**: guardrail assertions before dereferencing response fields; validate contract + side effects; stable error assertions.
 - **[ui]** **UI scope**: UI tests should focus on user interactions and rendering; avoid “data correctness” assertions (for example exact API response shapes or exact table cell values) unless the UI behavior depends on them. Prefer Scout API tests (or unit/integration) for data correctness coverage.

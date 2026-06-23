@@ -7,25 +7,50 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { omit } from 'lodash';
 import type { Reference } from '@kbn/content-management-utils';
-import type { DataControlState, LegacyStoredDataControlState } from '@kbn/controls-schemas';
-import { DEFAULT_DATA_CONTROL_STATE } from '@kbn/controls-constants';
+import type {
+  LegacyStoredDataControlState,
+  StrictDataControlState,
+  DataControlState,
+} from '@kbn/controls-schemas';
+import { ControlValuesSource, DEFAULT_DATA_CONTROL_STATE } from '@kbn/controls-constants';
 import { DATA_VIEW_SAVED_OBJECT_TYPE } from '@kbn/data-views-plugin/common';
 import { convertCamelCasedKeysToSnakeCase } from '@kbn/presentation-publishing';
 
-export function transformDataControlIn(
+type FieldDataControlState = Extract<
+  StrictDataControlState,
+  { values_source: ControlValuesSource.FIELD }
+>;
+type EsqlDataControlState<T> = Extract<
+  StrictDataControlState,
+  { values_source: ControlValuesSource.ESQL }
+> &
+  Omit<T, keyof StrictDataControlState>;
+
+type StoredFieldDataControlState<T> = Omit<FieldDataControlState, 'data_view_id'> & {
+  dataViewRefName: string;
+} & Omit<T, keyof StrictDataControlState>;
+
+export function transformDataControlIn<StoredStateType extends DataControlState>(
   state: DataControlState,
   referenceName: string
 ): {
-  state: Omit<DataControlState, 'data_view_id'> & { dataViewRefName: string };
+  state: StoredFieldDataControlState<StoredStateType> | EsqlDataControlState<StoredStateType>;
   references?: Reference[];
 } {
-  const { data_view_id, ...rest } = state;
+  if (state.values_source === ControlValuesSource.ESQL) {
+    return {
+      state: omit(state, 'data_view_id', 'field_name') as EsqlDataControlState<StoredStateType>,
+    };
+  }
+
+  const { data_view_id } = state as FieldDataControlState;
   return {
     state: {
-      ...rest,
+      ...omit(state, 'data_view_id', 'esql_query'),
       dataViewRefName: referenceName,
-    },
+    } as StoredFieldDataControlState<StoredStateType>,
     references: [
       {
         name: referenceName,
@@ -37,14 +62,31 @@ export function transformDataControlIn(
 }
 
 export function transformDataControlOut<
-  StoredStateType extends Partial<LegacyStoredDataControlState & DataControlState>
+  StoredStateType extends Partial<LegacyStoredDataControlState & StrictDataControlState>
 >(
   id: string | undefined,
   state: StoredStateType,
   refNames: Readonly<string[]>,
   panelReferences: Reference[] = [],
   containerReferences: Reference[] = []
-): DataControlState {
+): StrictDataControlState {
+  if (state.values_source === ControlValuesSource.ESQL) {
+    const { title, esql_query, use_global_filters, ignore_validations } = state;
+    const convertedState = {
+      ...DEFAULT_DATA_CONTROL_STATE,
+      values_source: ControlValuesSource.ESQL,
+      title,
+      esql_query: esql_query ?? '',
+      ...(typeof use_global_filters === 'boolean' && { use_global_filters }),
+      ...(typeof ignore_validations === 'boolean' && { ignore_validations }),
+    } as EsqlDataControlState<StoredStateType>;
+
+    ensureRequiredFields(convertedState);
+    return convertedState;
+  }
+
+  // Anything without `values_source === 'esql'` is treated as a field-sourced control —
+  // including legacy data written before the discriminator existed.
   const references = [...containerReferences, ...panelReferences];
   let { dataViewRefName } = state;
   let dataViewRef: Reference | undefined;
@@ -53,7 +95,7 @@ export function transformDataControlOut<
     for (const refName of refNames) {
       dataViewRefName = getLegacyReferenceName(id, refName);
       dataViewRef = references.find(({ name }) => name === dataViewRefName);
-      if (dataViewRef) break; // found the reference - so stop looking
+      if (dataViewRef) break;
     }
   } else {
     dataViewRef = references.find(({ name }) => name === dataViewRefName);
@@ -67,20 +109,18 @@ export function transformDataControlOut<
       state as LegacyStoredDataControlState
     );
 
-  // get the data view ID from the reference, or fall back to an explicitly stored dataViewId
   const dataViewId = dataViewRef?.id ?? data_view_id ?? '';
   const convertedState = {
     ...DEFAULT_DATA_CONTROL_STATE,
+    values_source: ControlValuesSource.FIELD,
     data_view_id: dataViewId,
     ...(title && { title }),
+    field_name: field_name ?? '',
     ...(typeof use_global_filters === 'boolean' && { use_global_filters }),
     ...(typeof ignore_validations === 'boolean' && { ignore_validations }),
-    field_name: field_name ?? '',
-  };
+  } as FieldDataControlState;
 
-  // will throw if one of the required fields is the empty string
   ensureRequiredFields(convertedState);
-
   return convertedState;
 }
 
@@ -88,11 +128,18 @@ function getLegacyReferenceName(controlId: string, refName: string) {
   return `controlGroup_${controlId}:${refName}`;
 }
 
-const ensureRequiredFields = (state: DataControlState) => {
+const ensureRequiredFields = (state: StrictDataControlState) => {
+  if (state.values_source === ControlValuesSource.ESQL) {
+    if (!state.esql_query.length) {
+      throw new Error('Must include a non-empty ES|QL query');
+    }
+    return;
+  }
+
   if (!state.data_view_id.length) {
     throw new Error('Must include a non-empty data view ID');
-  } else if (!state.field_name.length) {
-    throw new Error('Must include a non-empty field name ID');
   }
-  return;
+  if (!state.field_name.length) {
+    throw new Error('Must include a non-empty field name');
+  }
 };

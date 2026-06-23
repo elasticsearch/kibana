@@ -64,7 +64,7 @@ export const viewModeSchema = schema.oneOf(
   }
 );
 
-const dataTableLimitsSchema = schema.object(
+export const dataTableLimitsSchema = schema.object(
   {
     rows_per_page: schema.maybe(
       schema.number({
@@ -92,7 +92,7 @@ const dataTableLimitsSchema = schema.object(
   { meta: { id: 'discoverSessionEmbeddableDataTableLimitsSchema' } }
 );
 
-const dataTableSchema = schema.object(
+export const dataTableSchema = schema.object(
   {
     column_order: schema.maybe(
       schema.arrayOf(
@@ -182,7 +182,7 @@ const dataTableSchema = schema.object(
   { meta: { id: 'discoverSessionEmbeddableDataTableSchema' } }
 );
 
-const panelOverridesSchema = schema.object(
+export const panelOverridesSchema = schema.object(
   {
     column_order: schema.maybe(
       schema.arrayOf(
@@ -297,38 +297,34 @@ const panelOverridesSchema = schema.object(
   { defaultValue: {} }
 );
 
-const classicTabSchema = schema.allOf([
-  dataTableSchema,
-  dataTableLimitsSchema,
-  schema.object({
-    query: schema.maybe(asCodeQuerySchema),
-    filters: schema.arrayOf(asCodeFilterSchema, {
-      maxSize: 100,
-      defaultValue: [],
-      meta: {
-        description: 'List of filters to apply to the data in the tab.',
-      },
-    }),
-    data_source: dataViewSchema,
-    view_mode: viewModeSchema,
-  }),
-]);
-
-const esqlTabSchema = schema.allOf([
-  dataTableSchema,
-  schema.object(
-    {
-      data_source: esqlDataSourceSchema,
+export const classicTabSchema = schema.object({
+  ...dataTableSchema.getPropSchemas(),
+  ...dataTableLimitsSchema.getPropSchemas(),
+  query: schema.maybe(asCodeQuerySchema),
+  filters: schema.arrayOf(asCodeFilterSchema, {
+    maxSize: 100,
+    defaultValue: [],
+    meta: {
+      description: 'List of filters to apply to the data in the tab.',
     },
-    {
-      meta: {
-        description: 'ES|QL (Elasticsearch Query Language) data source.',
-      },
-    }
-  ),
-]);
+  }),
+  data_source: dataViewSchema,
+  view_mode: viewModeSchema,
+});
 
-const tabSchema = schema.oneOf([classicTabSchema, esqlTabSchema]);
+export const esqlTabSchema = schema.object(
+  {
+    ...dataTableSchema.getPropSchemas(),
+    data_source: esqlDataSourceSchema,
+  },
+  {
+    meta: {
+      description: 'ES|QL (Elasticsearch Query Language) data source.',
+    },
+  }
+);
+
+export const tabSchema = schema.oneOf([classicTabSchema, esqlTabSchema]);
 
 const DISCOVER_SUPPORTED_DRILLDOWN_TRIGGERS = [ON_OPEN_PANEL_MENU];
 

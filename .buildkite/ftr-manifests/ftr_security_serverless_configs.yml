@@ -57,7 +57,6 @@ enabled:
   - x-pack/platform/test/serverless/functional/configs/security/config.group7.ts
   - x-pack/platform/test/serverless/functional/configs/security/config.group8.ts
   - x-pack/platform/test/serverless/functional/configs/security/config.group9.ts
-  - x-pack/platform/test/serverless/functional/configs/security/config.group10.ts
   - x-pack/platform/test/serverless/functional/configs/security/config.group11.ts
   - x-pack/platform/test/serverless/functional/configs/security/config.group12.ts
   - x-pack/platform/test/serverless/functional/configs/security/config.group13.ts
@@ -129,7 +128,6 @@ enabled:
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/genai/conversations/trial_license_complete_tier/configs/serverless.config.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/entity_analytics/risk_engine/trial_license_complete_tier/configs/serverless.config.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/entity_analytics/risk_score_maintainer/trial_license_complete_tier/configs/serverless.config.ts
-  - x-pack/solutions/security/test/security_solution_api_integration/test_suites/entity_analytics/ml_anomaly_detection_maintainer/trial_license_complete_tier/configs/serverless.config.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/entity_analytics/entity_resolution/trial_license_complete_tier/configs/serverless.config.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/entity_analytics/entity_resolution/essentials_tier_pli_gating/configs/serverless.config.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/entity_analytics/risk_engine/basic_license_essentials_tier/configs/serverless.config.ts

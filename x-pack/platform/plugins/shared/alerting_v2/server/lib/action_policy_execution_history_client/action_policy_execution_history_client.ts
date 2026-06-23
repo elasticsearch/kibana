@@ -9,10 +9,12 @@ import { inject, injectable } from 'inversify';
 import { PluginStart } from '@kbn/core-di';
 import type { KibanaRequest } from '@kbn/core/server';
 import type { IValidatedEvent } from '@kbn/event-log-plugin/server';
+import { nodeBuilder, nodeTypes, toKqlExpression } from '@kbn/es-query';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
 import {
   POLICY_EXECUTION_HISTORY_MAX_PER_PAGE,
   type PolicyExecutionHistoryItem,
+  type RuleResponse,
   type PolicyExecutionOutcome,
   type PolicyExecutionOutcomeFilter,
 } from '@kbn/alerting-v2-schemas';
@@ -31,6 +33,12 @@ import { collectIdsFromEvents, denormalizeEvent, type NameMaps } from './denorma
 const TIME_WINDOW_HOURS = 24;
 const DEFAULT_PAGE = 1;
 const DEFAULT_PER_PAGE = POLICY_EXECUTION_HISTORY_MAX_PER_PAGE;
+
+// Cap rule lookups per page to keep the KQL filter and SO `find` bounded —
+// a single broad Action Policy can emit one event referencing thousands of rules.
+// Rule IDs over this cap render as the raw ID in the UI.
+const MAX_RULES_PER_LOOKUP = 1000;
+
 const SEARCH_ID_CAP = 500;
 const DEFAULT_OUTCOME_FILTER: PolicyExecutionOutcomeFilter = 'all';
 
@@ -184,7 +192,7 @@ export class ActionPolicyExecutionHistoryClient {
 
     const [policiesRes, rulesRes, workflowsRes] = await Promise.allSettled([
       this.actionPolicyClient.getActionPolicies({ ids: policyIds }),
-      this.rulesClient.getRules(ruleIds),
+      this.lookupRulesByIds(ruleIds),
       this.workflowsManagement.getWorkflowsByIds(workflowIds, spaceId),
     ]);
 
@@ -203,6 +211,25 @@ export class ActionPolicyExecutionHistoryClient {
     if (result.status === 'fulfilled') return result.value;
     this.logFailure(result.reason, code);
     return [];
+  }
+
+  private async lookupRulesByIds(ruleIds: string[]): Promise<RuleResponse[]> {
+    if (ruleIds.length === 0) return [];
+
+    const cappedRuleIds = ruleIds.slice(0, MAX_RULES_PER_LOOKUP);
+
+    const response = await this.rulesClient.findRules({
+      filter: this.buildRuleIdsFilter(cappedRuleIds),
+      perPage: MAX_RULES_PER_LOOKUP,
+    });
+
+    return response.items;
+  }
+
+  private buildRuleIdsFilter(ids: string[]): string {
+    return toKqlExpression(
+      nodeBuilder.or(ids.map((id) => nodeBuilder.is('id', nodeTypes.literal.buildNode(id, true))))
+    );
   }
 
   private unwrapFindResult<T>(

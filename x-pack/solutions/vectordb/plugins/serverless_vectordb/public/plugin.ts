@@ -79,8 +79,8 @@ export class ServerlessVectordbPlugin
         const showAiAssistant = chatExperience !== AIChatExperience.Agent;
         return createNavigationTree({
           ...application,
+          core,
           showAiAssistant,
-          showAlertingV2: Boolean(application.capabilities.alertingVTwo),
         });
       })
     );

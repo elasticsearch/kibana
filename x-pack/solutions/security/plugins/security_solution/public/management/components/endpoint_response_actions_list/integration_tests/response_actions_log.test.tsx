@@ -975,6 +975,7 @@ describe('Response actions history', () => {
         action.agentState['agent-b'] = {
           errors: undefined,
           wasSuccessful: true,
+          wasCanceled: false,
           isCompleted: true,
           completedAt: '2023-05-10T20:09:25.824Z',
         };
@@ -1037,12 +1038,14 @@ describe('Response actions history', () => {
               'agent-a': {
                 errors: undefined,
                 wasSuccessful: true,
+                wasCanceled: false,
                 isCompleted: true,
                 completedAt: '2023-05-10T20:09:25.824Z',
               },
               'agent-b': {
                 errors: undefined,
                 wasSuccessful: true,
+                wasCanceled: false,
                 isCompleted: true,
                 completedAt: '2023-05-10T20:09:25.824Z',
               },
@@ -1229,6 +1232,7 @@ describe('Response actions history', () => {
             'agent-a': {
               errors: [],
               wasSuccessful: true,
+              wasCanceled: false,
               isCompleted: true,
               completedAt: '2023-05-10T20:09:25.824Z',
             },
@@ -1267,6 +1271,7 @@ describe('Response actions history', () => {
                 'agent-a': {
                   errors: ['Error here!'],
                   wasSuccessful: false,
+                  wasCanceled: false,
                   isCompleted: true,
                   completedAt: '2023-05-10T20:09:25.824Z',
                 },
@@ -1332,6 +1337,7 @@ describe('Response actions history', () => {
                   'agent-a': {
                     errors: ['Error message w/o output'],
                     wasSuccessful: false,
+                    wasCanceled: false,
                     isCompleted: true,
                     completedAt: '2023-05-10T20:09:25.824Z',
                   },
@@ -1368,18 +1374,21 @@ describe('Response actions history', () => {
             'agent-a': {
               errors: [''],
               wasSuccessful: true,
+              wasCanceled: false,
               isCompleted: true,
               completedAt: '2023-05-10T20:09:25.824Z',
             },
             'agent-b': {
               errors: [''],
               wasSuccessful: false,
+              wasCanceled: false,
               isCompleted: true,
               completedAt: '2023-05-10T20:09:25.824Z',
             },
             'agent-c': {
               errors: [''],
               wasSuccessful: false,
+              wasCanceled: false,
               isCompleted: true,
               completedAt: '2023-05-10T20:09:25.824Z',
             },
@@ -1421,12 +1430,14 @@ describe('Response actions history', () => {
                 'agent-a': {
                   errors: ['Error with agent-a!'],
                   wasSuccessful: false,
+                  wasCanceled: false,
                   isCompleted: true,
                   completedAt: '2023-05-10T20:09:25.824Z',
                 },
                 'agent-b': {
                   errors: ['Error with agent-b!'],
                   wasSuccessful: false,
+                  wasCanceled: false,
                   isCompleted: true,
                   completedAt: '2023-05-10T20:09:25.824Z',
                 },
@@ -1515,12 +1526,14 @@ describe('Response actions history', () => {
                 'agent-a': {
                   errors: ['Error with agent-a!'],
                   wasSuccessful: false,
+                  wasCanceled: false,
                   isCompleted: true,
                   completedAt: '2023-05-10T20:09:25.824Z',
                 },
                 'agent-b': {
                   errors: ['Error with agent-b!'],
                   wasSuccessful: false,
+                  wasCanceled: false,
                   isCompleted: true,
                   completedAt: '2023-05-10T20:09:25.824Z',
                 },
@@ -1676,11 +1689,12 @@ describe('Response actions history', () => {
       await user.click(getByTestId(`${testPrefix}-${filterPrefix}-popoverButton`));
       const filterList = getByTestId(`${testPrefix}-${filterPrefix}-popoverList`);
       expect(filterList).toBeTruthy();
-      expect(getAllByTestId(`${filterPrefix}-option`).length).toEqual(3);
+      expect(getAllByTestId(`${filterPrefix}-option`).length).toEqual(4);
       expect(getAllByTestId(`${filterPrefix}-option`).map((option) => option.textContent)).toEqual([
         'Failed',
         'Pending',
         'Successful',
+        'Canceled',
       ]);
     });
 

@@ -137,7 +137,7 @@ const entitySourceSchemaV3 = {
 export const watchlistEntitySourceType: SavedObjectsType = {
   name: watchlistEntitySourceTypeName,
   indexPattern: SECURITY_SOLUTION_SAVED_OBJECT_INDEX,
-  hidden: false,
+  hidden: true,
   namespaceType: 'multiple-isolated',
   mappings: watchlistEntitySourceMappings,
   modelVersions: {

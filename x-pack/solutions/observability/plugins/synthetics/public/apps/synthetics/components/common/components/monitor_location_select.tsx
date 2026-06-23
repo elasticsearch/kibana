@@ -114,6 +114,9 @@ export const MonitorLocationSelect = ({
           isOpen={isLocationListOpen}
           closePopover={closeLocationList}
           panelPaddingSize="none"
+          aria-label={i18n.translate('xpack.synthetics.monitorLocationSelect.popoverAriaLabel', {
+            defaultMessage: 'Location selection menu',
+          })}
         >
           <EuiContextMenuPanel
             items={menuItems}

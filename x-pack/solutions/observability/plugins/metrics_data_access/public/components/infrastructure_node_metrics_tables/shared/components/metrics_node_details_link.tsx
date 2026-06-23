@@ -19,7 +19,14 @@ const DISCOVER_APP_LOCATOR_ID = 'DISCOVER_APP_LOCATOR';
 const DEFAULT_METRICS_INDEX = 'metrics-*';
 
 type ExtractStrict<T, U extends T> = Extract<T, U>;
-type NodeTypeForLink = ExtractStrict<InventoryItemType, 'host' | 'container' | 'pod'>;
+export type NodeTypeForLink = ExtractStrict<InventoryItemType, 'host' | 'container' | 'pod'>;
+
+interface CompareMetricNodesLinkProps {
+  ids: string[];
+  nodeType: NodeTypeForLink;
+  timerange: { from: string; to: string };
+  metricsIndices?: string;
+}
 
 interface MetricsNodeDetailsLinkProps {
   id: string;
@@ -30,6 +37,72 @@ interface MetricsNodeDetailsLinkProps {
   /** Infrastructure/metrics index pattern from settings; used for Discover ES|QL when isOtel is true. */
   metricsIndices?: string;
 }
+
+function getDiscoverBreakdownForNodeType(nodeType: NodeTypeForLink): string {
+  switch (nodeType) {
+    case 'container':
+      return 'resource.attributes.container.id';
+    case 'pod':
+      return 'resource.attributes.k8s.pod.name';
+    case 'host':
+      return 'resource.attributes.host.name';
+    default:
+      return '';
+  }
+}
+
+function getDiscoverEsqlQueryForNodeComparison(
+  nodeType: NodeTypeForLink,
+  ids: string[],
+  indexPattern: string
+): ComposerQuery {
+  const from = indexPattern || DEFAULT_METRICS_INDEX;
+  const idLiterals = ids.map((id) => esql.str(id));
+
+  switch (nodeType) {
+    case 'container':
+      return esql`TS ${from} | WHERE container.id IN (${idLiterals})`;
+    case 'pod':
+      return esql`TS ${from} | WHERE k8s.pod.name IN (${idLiterals})`;
+    default:
+      return esql`TS ${from} | WHERE host.name IN (${idLiterals})`;
+  }
+}
+
+export const CompareMetricNodesLink = ({
+  ids,
+  nodeType,
+  timerange,
+  metricsIndices,
+}: CompareMetricNodesLinkProps) => {
+  const { share } = useKibanaContextForPlugin().services;
+
+  return useMemo(() => {
+    const discoverLocator = share?.url?.locators?.get(DISCOVER_APP_LOCATOR_ID);
+    const esqlQuery = getDiscoverEsqlQueryForNodeComparison(
+      nodeType,
+      ids,
+      metricsIndices ?? DEFAULT_METRICS_INDEX
+    );
+    const discoverParams = {
+      timeRange: { from: timerange.from, to: timerange.to },
+      breakdownField: getDiscoverBreakdownForNodeType(nodeType),
+      query: {
+        esql: esqlQuery.toRequest().query,
+      },
+    };
+    const href = discoverLocator?.getRedirectUrl(discoverParams) ?? '#';
+    return {
+      href,
+      onClick: (e: React.MouseEvent) => {
+        if (discoverLocator) {
+          e.preventDefault();
+          discoverLocator.navigate(discoverParams);
+        }
+      },
+    };
+  }, [ids, nodeType, metricsIndices, timerange, share?.url?.locators]);
+};
 
 /** Build an ES|QL query that filters by the given node type and entity id. */
 function getDiscoverEsqlQueryForNode(

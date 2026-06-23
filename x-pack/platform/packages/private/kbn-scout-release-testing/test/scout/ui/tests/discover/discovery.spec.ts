@@ -13,36 +13,33 @@ import Papa from 'papaparse';
 import { cleanupDownloadedFile } from '../../helpers';
 
 const defaultSettings = {
-  defaultIndex: 'logstash-*',
+  defaultIndex: 'kibana_sample_data_logs',
   'dateFormat:tz': 'UTC',
 };
-const defaultStartTime = 'Sep 19, 2015 @ 06:31:44.000';
-const defaultEndTime = 'Sep 23, 2015 @ 18:31:44.000';
-const defaultStartTimeIso = '2015-09-19T06:31:44.000Z';
-const defaultEndTimeIso = '2015-09-23T18:31:44.000Z';
-const endTimeNoResults = 'Sep 19, 2015 @ 18:45:00.000';
+
+// Sample data for `kibana_sample_data_logs` is generated relative to the install
+// time and spans roughly three weeks in the past and one week in the future, so
+// a wide default time range guarantees the histogram and aggregations have data
+// to render against.
+const TIME_DEFAULTS = '{ "from": "now-3w", "to": "now+1w"}';
+const TIME_RANGE = JSON.parse(TIME_DEFAULTS) as { from: string; to: string };
+const normalizeDateMath = (value: string) => value.replace(/\/d$/, '');
+const EMPTY_TIME_RANGE_START = 'Jun 11, 1999 @ 09:22:11.000';
+const EMPTY_TIME_RANGE_END = 'Jun 12, 1999 @ 11:21:04.000';
 const queryName1 = 'Query # 1';
 const queryName2 = 'Query # 2';
 const queryName3 = 'CSV Export Test';
-const totalHitCount = 14004;
 let downloadedFilePath: string | null = null;
 
 test.describe('Discover app', { tag: tags.stateful.classic }, () => {
-  test.beforeAll(async ({ kbnClient, esArchiver }) => {
-    await kbnClient.importExport.load(
-      'src/platform/test/functional/fixtures/kbn_archiver/discover'
-    );
-    await esArchiver.loadIfNeeded(
-      'src/platform/test/functional/fixtures/es_archiver/logstash_functional'
-    );
+  test.beforeAll(async ({ kbnClient }) => {
     await kbnClient.uiSettings.update(defaultSettings);
   });
 
   test.beforeEach(async ({ browserAuth, pageObjects, uiSettings }) => {
     await browserAuth.loginAsAdmin();
-    await uiSettings.setDefaultTime({
-      from: defaultStartTime,
-      to: defaultEndTime,
+    await uiSettings.set({
+      'timepicker:timeDefaults': TIME_DEFAULTS,
     });
     await pageObjects.discover.goto();
   });
@@ -52,22 +49,18 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
   });
 
   test.afterAll(async ({ kbnClient }) => {
-    await kbnClient.savedObjects.clean({ types: ['search', 'index-pattern'] });
+    await kbnClient.savedObjects.clean({ types: ['search'] });
   });
 
   test('should display selected time range in date picker and matching docs in table', async ({
     pageObjects,
   }) => {
-    await pageObjects.datePicker.setAbsoluteRange({
-      from: defaultStartTime,
-      to: defaultEndTime,
-    });
     const time = await pageObjects.datePicker.getTimeConfig();
-    expect(time.start).toBe(defaultStartTimeIso);
-    expect(time.end).toBe(defaultEndTimeIso);
+    expect(normalizeDateMath(time.start)).toBe(TIME_RANGE.from);
+    expect(normalizeDateMath(time.end)).toBe(TIME_RANGE.to);
 
     const rowData = await pageObjects.discover.getDocTableIndex(1);
-    expect(rowData).toContain('Sep 22, 2015 @ 23:50:13.253');
+    expect(rowData.length).toBeGreaterThan(0);
   });
 
   test('save query should show toast message and display query name', async ({ pageObjects }) => {
@@ -106,32 +99,26 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
   });
 
   test('should show the correct hit count', async ({ pageObjects }) => {
-    expect(await pageObjects.discover.getHitCountInt()).toBe(totalHitCount);
+    expect(await pageObjects.discover.getHitCountInt()).toBeGreaterThan(0);
   });
 
   test('should show correct time range string in chart', async ({ pageObjects }) => {
     const actualTimeString = await pageObjects.discover.getChartTimespan();
-    const expectedTimeString = `${defaultStartTime} - ${defaultEndTime} (interval: Auto - 3 hours)`;
-    expect(actualTimeString).toBe(expectedTimeString);
+    expect(actualTimeString).toContain('(interval: Auto');
   });
 
   test('should modify the time range when a bar is clicked', async ({ pageObjects }) => {
+    const timeBefore = await pageObjects.datePicker.getTimeConfig();
     await pageObjects.discover.clickHistogramBar();
     await pageObjects.discover.waitUntilSearchingHasFinished();
 
-    const time = await pageObjects.datePicker.getTimeConfig();
-    expect(time.start).toBe('2015-09-21T09:00:00.000Z');
-    expect(time.end).toBe('2015-09-21T12:00:00.000Z');
+    const timeAfter = await pageObjects.datePicker.getTimeConfig();
+    expect(timeAfter.start).not.toBe(timeBefore.start);
+    expect(timeAfter.end).not.toBe(timeBefore.end);
 
     await expect
-      .poll(
-        async () => {
-          const rowData = await pageObjects.discover.getDocTableField(1);
-          return rowData.includes('Sep 21, 2015 @ 11:59:22.316');
-        },
-        { timeout: 3000 }
-      )
-      .toBe(true);
+      .poll(async () => await pageObjects.discover.getHitCountInt(), { timeout: 3000 })
+      .toBeGreaterThan(0);
   });
 
   test('should show correct initial chart interval of Auto', async ({ page, pageObjects }) => {
@@ -143,16 +130,16 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
 
   test('should show "no results"', async ({ page, pageObjects }) => {
     await pageObjects.datePicker.setAbsoluteRange({
-      from: defaultStartTime,
-      to: endTimeNoResults,
+      from: EMPTY_TIME_RANGE_START,
+      to: EMPTY_TIME_RANGE_END,
     });
     await expect(page.testSubj.locator('discoverNoResults')).toBeVisible();
   });
 
   test('should suggest a new time range is picked', async ({ page, pageObjects, uiSettings }) => {
     await uiSettings.setDefaultTime({
-      from: defaultStartTime,
-      to: endTimeNoResults,
+      from: EMPTY_TIME_RANGE_START,
+      to: EMPTY_TIME_RANGE_END,
     });
     await pageObjects.discover.goto();
     await expect(page.testSubj.locator('discoverNoResultsTimefilter')).toBeVisible();
@@ -164,8 +151,8 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
     uiSettings,
   }) => {
     await uiSettings.setDefaultTime({
-      from: defaultStartTime,
-      to: endTimeNoResults,
+      from: EMPTY_TIME_RANGE_START,
+      to: EMPTY_TIME_RANGE_END,
     });
     await pageObjects.discover.goto();
     await pageObjects.discover.expandTimeRangeAsSuggestedInNoResultsMessage();
@@ -202,31 +189,31 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
   test('drag and drop fields to grid', async ({ page, pageObjects }) => {
     // Verify chart is initially visible
     await expect(page.testSubj.locator('xyVisChart')).toBeVisible();
-    const fields = ['@message', '@tags'];
-    // Drag the @message and @tags fields to the data grid
+    const fields = ['tags', 'url'];
     await pageObjects.discover.dragFieldToGrid(fields);
-    // Verify the field was added to the grid
     const columnTextArray = await pageObjects.discover.getTheColumnFromGrid();
     expect(columnTextArray).toStrictEqual(fields);
-    // Move @message field to the right
-    await pageObjects.discover.moveColumn('@message', 'right');
+    // Move the left column right (url is already rightmost when only two columns are added)
+    await pageObjects.discover.moveColumn('tags', 'right');
     const updatedColumnTextArray = await pageObjects.discover.getTheColumnFromGrid();
-    // Verify the columns were reordered
-    expect(updatedColumnTextArray).toStrictEqual(fields.reverse());
+    expect(updatedColumnTextArray).toStrictEqual(['url', 'tags']);
   });
 
   test('type a search query and execute a search', async ({ pageObjects }) => {
-    const filteredHitCount = 12891;
+    const totalHitCount = await pageObjects.discover.getHitCountInt();
     await pageObjects.discover.writeAndSubmitKqlQuery('response:200');
     await expect
-      .poll(async () => await pageObjects.discover.getHitCountInt())
-      .toBe(filteredHitCount);
+      .poll(async () => {
+        const count = await pageObjects.discover.getHitCountInt();
+        return count > 0 && count < totalHitCount;
+      })
+      .toBe(true);
   });
 
   test('click Field Stats button and validate Document Stats is present', async ({ page }) => {
     await page.testSubj.click('dscViewModeFieldStatsButton');
     await expect(page.testSubj.locator('dataVisualizerTable-loaded')).toBeVisible();
-    await page.testSubj.click('dataVisualizerDetailsToggle-@message.raw-arrowRight');
+    await page.testSubj.click('dataVisualizerDetailsToggle-bytes-chevronSingleRight');
     await expect(page.testSubj.locator('dataVisualizerDocumentStatsContent')).toBeVisible();
   });
 
@@ -241,9 +228,11 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
   });
 
   test('download CSV report and validate row length', async ({ pageObjects }) => {
+    const hitCount = await pageObjects.discover.getHitCountInt();
     // Can download saved searches only, so save first
     await pageObjects.discover.saveSearch(queryName3);
     await pageObjects.toasts.closeAll(); // close toast to avoid obstruction
+    await pageObjects.discover.waitUntilSearchingHasFinished();
     // Wait for download
     const download = await pageObjects.discover.exportAsCsv();
     downloadedFilePath = `${os.tmpdir()}/${download.suggestedFilename()}`;
@@ -257,7 +246,7 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
       skipEmptyLines: true,
     });
     const rows = parseResult.data as string[][];
-    expect(rows).toHaveLength(totalHitCount + 1); // +1 for header row
+    expect(rows).toHaveLength(hitCount + 1); // +1 for header row
   });
   // Click on Patterns works with sample data, tbd once pipeline is in place
 });

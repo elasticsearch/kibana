@@ -124,6 +124,20 @@ yarn es snapshot --kibanaUrl http://localhost:5601
 yarn start --no-base-path
 ```
 
+**Running Elasticsearch from source** — like `yarn es snapshot`, `yarn es source` defaults to a `trial` license and auto-configures the SAML Mock IdP realm, so passwordless SAML login works out-of-the-box:
+
+```sh
+yarn es source
+yarn start
+```
+
+To opt out of the SAML Mock IdP auto-configuration (for example when using a `basic` license, which does not support SAML), start Kibana with `--mockIdpPlugin.enabled=false`:
+
+```sh
+yarn es source --license basic
+yarn start --mockIdpPlugin.enabled=false
+```
+
 ## Run in serverless mode
 
 To develop against serverless projects, you need to start both Elasticsearch and Kibana in serverless mode with matching project types.

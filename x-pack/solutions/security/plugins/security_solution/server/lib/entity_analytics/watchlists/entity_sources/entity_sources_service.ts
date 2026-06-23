@@ -125,7 +125,9 @@ export const createEntitySourcesService = ({
     source: MonitoringEntitySource
   ): Promise<ElasticsearchClient | undefined> => {
     const [coreStart, pluginsStart] = await getStartServices();
-    const esoClient = pluginsStart.encryptedSavedObjects?.getClient();
+    const esoClient = pluginsStart.encryptedSavedObjects?.getClient({
+      includedHiddenTypes: [watchlistEntitySourceTypeName],
+    });
     const coreElasticsearchClient = coreStart.elasticsearch.client;
     if (!esoClient) return;
 

@@ -54,8 +54,8 @@ export const getColumnHeaderRenderer = (
     displayHeaderCellProps: { [COLUMN_INDEX_PROP]: columnIndex } as HTMLAttributes<HTMLDivElement>,
     actions: {
       showHide: false,
-      showSortAsc: false,
-      showSortDesc: false,
+      showSortAsc: isSavedColumn && !isUnsupportedESQLType,
+      showSortDesc: isSavedColumn && !isUnsupportedESQLType,
       showMoveLeft: false,
       showMoveRight: false,
       additional: !isSavedColumn

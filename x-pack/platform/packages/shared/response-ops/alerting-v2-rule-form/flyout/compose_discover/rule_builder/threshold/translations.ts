@@ -103,3 +103,13 @@ export const THRESHOLD_STEP_TITLE = i18n.translate(
   'xpack.alertingV2.ruleBuilder.threshold.stepTitle',
   { defaultMessage: 'Alert Condition' }
 );
+
+export const STAT_LABEL_REQUIRED_ERROR = i18n.translate(
+  'xpack.alertingV2.ruleBuilder.stats.labelRequiredError',
+  { defaultMessage: 'Label is required.' }
+);
+
+export const STAT_FIELD_REQUIRED_ERROR = i18n.translate(
+  'xpack.alertingV2.ruleBuilder.stats.fieldRequiredError',
+  { defaultMessage: 'Field is required.' }
+);

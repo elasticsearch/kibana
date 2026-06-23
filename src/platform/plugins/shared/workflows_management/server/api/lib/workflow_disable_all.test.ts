@@ -10,10 +10,16 @@
 import { loggerMock } from '@kbn/logging-mocks';
 
 import { disableAllWorkflows } from './workflow_disable_all';
+import type { WorkflowProperties } from '../../storage/workflow_storage';
 
 const logger = loggerMock.create();
 
-const makeHit = (id: string, enabled = true, seqNo = 1) => ({
+const makeHit = (
+  id: string,
+  enabled = true,
+  seqNo = 1,
+  sourceOverrides: Partial<WorkflowProperties> = {}
+) => ({
   _id: id,
   _seq_no: seqNo,
   _primary_term: 1,
@@ -32,7 +38,8 @@ const makeHit = (id: string, enabled = true, seqNo = 1) => ({
     deleted_at: null,
     created_at: '2024-01-01T00:00:00.000Z',
     updated_at: '2024-01-01T00:00:00.000Z',
-  },
+    ...sourceOverrides,
+  } satisfies WorkflowProperties,
   sort: [id],
 });
 
@@ -59,6 +66,13 @@ const makeStorageClient = (pages: Array<Array<ReturnType<typeof makeHit>>>) => {
   };
 };
 
+const disableAllParams = (overrides: Partial<Parameters<typeof disableAllWorkflows>[0]> = {}) => ({
+  taskScheduler: null,
+  logger,
+  versioningEnabled: false,
+  ...overrides,
+});
+
 describe('disableAllWorkflows', () => {
   beforeEach(() => jest.clearAllMocks());
 
@@ -71,7 +85,7 @@ describe('disableAllWorkflows', () => {
       logger,
     });
 
-    expect(result).toEqual({ total: 0, disabled: 0, failures: [] });
+    expect(result).toEqual({ total: 0, disabled: 0, failures: [], disabledWorkflows: [] });
   });
 
   it('disables workflows in a single page', async () => {
@@ -210,5 +224,30 @@ describe('disableAllWorkflows', () => {
       { term: { spaceId: 'my-space' } },
     ]);
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('in space my-space'));
+  });
+
+  it('does not bump version for global disable by default', async () => {
+    const hit = makeHit('wf-1', true, 1, { version: 4 });
+    const { storage, client } = makeStorageClient([[hit]]);
+
+    await disableAllWorkflows({ ...disableAllParams(), storage });
+
+    const doc = client.bulk.mock.calls[0][0].operations[0].index.document;
+    expect(doc.version).toBe(4);
+  });
+
+  it('bumps version on space-scoped disable when versioningEnabled is true', async () => {
+    const hit = makeHit('wf-1', true, 1, { version: 4 });
+    const { storage, client } = makeStorageClient([[hit]]);
+
+    await disableAllWorkflows({
+      ...disableAllParams(),
+      storage,
+      spaceId: 'my-space',
+      versioningEnabled: true,
+    });
+
+    const doc = client.bulk.mock.calls[0][0].operations[0].index.document;
+    expect(doc.version).toBe(5);
   });
 });

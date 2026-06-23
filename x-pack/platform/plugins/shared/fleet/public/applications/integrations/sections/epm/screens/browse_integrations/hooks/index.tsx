@@ -13,15 +13,27 @@ import { useAvailablePackages } from '../../home/hooks/use_available_packages';
 import type { IntegrationCardItem } from '../../home';
 
 import { useUrlFilters } from './url_filters';
-import { useUrlCategories, useSetUrlCategory } from './url_categories';
+import { useUrlCategories, useUrlDefaultCategories, useSetUrlCategory } from './url_categories';
 
 export function useBrowseIntegrationHook({
   prereleaseIntegrationsEnabled,
 }: {
   prereleaseIntegrationsEnabled: boolean;
 }) {
-  const { category: selectedCategory, subCategory: selectedSubCategory } = useUrlCategories();
+  const { category: urlCategory, subCategory: selectedSubCategory } = useUrlCategories();
+  const urlDefaultCategories = useUrlDefaultCategories();
   const setUrlCategory = useSetUrlCategory();
+
+  // Priority: path-based single category (sidebar click) > URL query params (multi-default).
+  // Config defaults are written to the URL once on first load (in BrowseIntegrationsPage) and
+  // are not re-applied here so that navigating to "All categories" or clicking X clears them.
+  const effectiveCategories = useMemo<string[]>(() => {
+    if (urlCategory) return [urlCategory];
+    return urlDefaultCategories;
+  }, [urlCategory, urlDefaultCategories]);
+
+  // Single string used for subcategory lookup; first of effective categories, or empty for "All".
+  const selectedCategory = effectiveCategories[0] || '';
   const {
     initialSelectedCategory,
     allCategories,
@@ -120,21 +132,17 @@ export function useBrowseIntegrationHook({
     urlFilters.showContent,
   ]);
 
-  // Apply category filter on top of non-category filters
+  // Apply category filter on top of non-category filters.
+  // When multiple effective categories are active, show cards matching ANY of them (OR logic).
   const filteredCards = useMemo(() => {
-    if (selectedCategory || selectedSubCategory) {
+    if (effectiveCategories.length > 0 || selectedSubCategory) {
       return nonCategoryFilteredCards.filter((c) => {
-        if (selectedCategory === '') {
-          return true;
-        }
-        if (!selectedSubCategory) return c.categories.includes(selectedCategory);
-
-        return c.categories.includes(selectedSubCategory);
+        if (selectedSubCategory) return c.categories.includes(selectedSubCategory);
+        return effectiveCategories.some((cat) => c.categories.includes(cat));
       });
     }
-
     return nonCategoryFilteredCards;
-  }, [nonCategoryFilteredCards, selectedCategory, selectedSubCategory]);
+  }, [nonCategoryFilteredCards, effectiveCategories, selectedSubCategory]);
 
   // Recompute category counts based on non-category filtered cards so
   // sidebar counts reflect active filters (e.g. agentless, search, signal).
@@ -155,8 +163,10 @@ export function useBrowseIntegrationHook({
   }, [filteredAllCategories]);
 
   const availableSubCategories = useMemo(() => {
-    return filteredAllCategories?.filter((c) => c.parent_id === selectedCategory);
-  }, [filteredAllCategories, selectedCategory]);
+    return filteredAllCategories?.filter(
+      (c) => c.parent_id !== undefined && effectiveCategories.includes(c.parent_id)
+    );
+  }, [filteredAllCategories, effectiveCategories]);
 
   const onCategoryChange = useCallback(
     ({ id }: { id: string }) => {
@@ -170,6 +180,7 @@ export function useBrowseIntegrationHook({
   return {
     initialSelectedCategory,
     selectedCategory,
+    selectedCategories: effectiveCategories,
     allCategories: filteredAllCategories,
     mainCategories: filteredMainCategories,
     isLoading,

@@ -10,11 +10,6 @@ import type { Condition, StreamlangDSL } from '@kbn/streamlang';
 import type { RoutingStatus, Streams } from '@kbn/streams-schema';
 import type { IngestStream, IngestUpsertRequest } from '@kbn/streams-schema';
 import {
-  getImpactLevel,
-  type Insight,
-  type InsightImpactLevel,
-} from '@kbn/streams-schema/src/insights';
-import {
   OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS,
   OBSERVABILITY_STREAMS_ENABLE_DRAFT_STREAMS,
   OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS,
@@ -23,18 +18,6 @@ import type { KbnClient, ScoutLogger } from '@kbn/scout/src/common';
 import { measurePerformanceAsync } from '@kbn/scout/src/common';
 import { STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG } from '../../../../common/feature_flags';
 import { COMMON_API_HEADERS } from '../fixtures/constants';
-
-export type { Insight };
-
-export interface InsightBulkIndexOp {
-  index: Insight;
-}
-
-export interface InsightBulkDeleteOp {
-  delete: { id: string };
-}
-
-export type InsightBulkOperation = InsightBulkIndexOp | InsightBulkDeleteOp;
 
 export interface StreamsTestApiService {
   enable: () => Promise<void>;
@@ -93,15 +76,6 @@ export interface StreamsTestApiService {
   deleteEsqlView: (viewName: string) => Promise<void>;
   runEsql: (query: string) => Promise<{ columns: Array<{ name: string }>; values: unknown[][] }>;
   cleanupTestStreams: (prefix?: string) => Promise<void>;
-  // Insights API
-  listInsights: (filters?: {
-    impact?: InsightImpactLevel[];
-  }) => Promise<{ insights: Insight[]; total: number }>;
-  getInsight: (id: string) => Promise<{ insight: Insight }>;
-  saveInsight: (id: string, input: Insight) => Promise<{ insight: Insight }>;
-  deleteInsight: (id: string) => Promise<{ acknowledged: boolean }>;
-  bulkInsights: (operations: InsightBulkOperation[]) => Promise<{ acknowledged: boolean }>;
-  cleanupTestInsights: () => Promise<void>;
 }
 
 export function getStreamsTestApiService({
@@ -495,82 +469,6 @@ export function getStreamsTestApiService({
           return response.data as { status: string; executionId: string | null };
         }
       );
-    },
-
-    // Insights API methods
-    async listInsights(filters?: { impact?: InsightImpactLevel[] }) {
-      return measurePerformanceAsync(log, 'streamsTestApi.listInsights', async () => {
-        const query = new URLSearchParams();
-        if (filters?.impact?.length) query.set('impact', filters.impact.join(','));
-        const queryString = query.toString();
-        const path = `/internal/streams/_insights${queryString ? `?${queryString}` : ''}`;
-        const response = await kbnClient.request({
-          method: 'GET',
-          path,
-        });
-        return response.data as { insights: Insight[]; total: number };
-      });
-    },
-
-    async getInsight(id: string) {
-      return measurePerformanceAsync(log, 'streamsTestApi.getInsight', async () => {
-        const response = await kbnClient.request({
-          method: 'GET',
-          path: `/internal/streams/_insights/${id}`,
-        });
-        return response.data as { insight: Insight };
-      });
-    },
-
-    async saveInsight(id: string, input: Insight) {
-      return measurePerformanceAsync(log, 'streamsTestApi.saveInsight', async () => {
-        const body: Insight = {
-          ...input,
-          id,
-          generated_at: input.generated_at ?? new Date().toISOString(),
-          impact_level: input.impact_level ?? getImpactLevel(input.impact),
-        };
-        const response = await kbnClient.request({
-          method: 'PUT',
-          path: `/internal/streams/_insights/${id}`,
-          body,
-        });
-        return response.data as { insight: Insight };
-      });
-    },
-
-    async deleteInsight(id: string) {
-      return measurePerformanceAsync(log, 'streamsTestApi.deleteInsight', async () => {
-        const response = await kbnClient.request({
-          method: 'DELETE',
-          path: `/internal/streams/_insights/${id}`,
-        });
-        return response.data as { acknowledged: boolean };
-      });
-    },
-
-    async bulkInsights(operations: InsightBulkOperation[]) {
-      return measurePerformanceAsync(log, 'streamsTestApi.bulkInsights', async () => {
-        const response = await kbnClient.request({
-          method: 'POST',
-          path: '/internal/streams/_insights/_bulk',
-          body: { operations },
-        });
-        return response.data as { acknowledged: boolean };
-      });
-    },
-
-    async cleanupTestInsights() {
-      await measurePerformanceAsync(log, 'streamsTestApi.cleanupTestInsights', async () => {
-        try {
-          const { insights } = await this.listInsights();
-          if (insights.length > 0) {
-            await this.bulkInsights(insights.map((insight) => ({ delete: { id: insight.id } })));
-          }
-        } catch (error) {
-          log.debug(`Failed to cleanup insights: ${error}`);
-        }
-      });
     },
   };
 }

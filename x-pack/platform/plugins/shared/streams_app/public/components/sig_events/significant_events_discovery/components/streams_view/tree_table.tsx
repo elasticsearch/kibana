@@ -69,7 +69,7 @@ export function StreamsTreeTable({
   streams?: ListStreamDetail[];
   streamOnboardingResultMap: Record<string, SigEventsWorkflowStatusResult>;
   loading?: boolean;
-  searchQuery?: Query;
+  searchQuery: Query;
   selection: EuiTableSelectionType<TableRow>;
   onOnboardStreamActionClick: (streamName: string) => void;
   onStopOnboardingActionClick: (streamName: string) => void;
@@ -91,7 +91,7 @@ export function StreamsTreeTable({
   const filteredStreams = React.useMemo(() => {
     return filterStreamsByQuery(
       streams.filter((stream) => Streams.ingest.all.Definition.is(stream.stream)),
-      searchQuery?.text ?? ''
+      searchQuery.text
     );
   }, [streams, searchQuery]);
 
@@ -107,10 +107,9 @@ export function StreamsTreeTable({
 
   const allRows = React.useMemo(() => {
     const rows = buildStreamRows(enrichedStreams, sortField, sortDirection, {});
-    const qualityFiters =
-      searchQuery?.ast?.clauses.filter(
-        (clause) => clause.type === 'field' && clause.field === 'dataQuality'
-      ) ?? [];
+    const qualityFiters = searchQuery.ast.clauses.filter(
+      (clause) => clause.type === 'field' && clause.field === 'dataQuality'
+    );
     return qualityFiters.length > 0
       ? rows.filter((row) =>
           qualityFiters.some(
@@ -121,7 +120,7 @@ export function StreamsTreeTable({
           )
         )
       : rows;
-  }, [enrichedStreams, sortField, sortDirection, searchQuery?.ast?.clauses]);
+  }, [enrichedStreams, sortField, sortDirection, searchQuery.ast.clauses]);
 
   // Only pass filtered rows if tree mode is active
   const items = React.useMemo(
@@ -338,9 +337,7 @@ export function StreamsTreeTable({
                           path: { key: item.stream.name, tab: 'significantEvents' },
                         })}
                       >
-                        <EuiHighlight search={searchQuery?.text ?? ''}>
-                          {item.stream.name}
-                        </EuiHighlight>
+                        <EuiHighlight search={searchQuery.text}>{item.stream.name}</EuiHighlight>
                       </EuiLink>
                     </EuiFlexItem>
                   </EuiFlexGroup>

@@ -301,6 +301,7 @@ export const useEsqlCallbacks = ({
             label: suggestion.text,
             detail: typeof suggestion.description === 'string' ? suggestion.description : undefined,
             kind: KQL_TYPE_TO_KIND_MAP[suggestion.type] ?? 'Value',
+            range: { start: suggestion.start, end: suggestion.end },
           };
         }) ?? []
       );

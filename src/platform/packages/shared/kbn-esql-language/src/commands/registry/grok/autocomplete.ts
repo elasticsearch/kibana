@@ -9,7 +9,7 @@
 import { i18n } from '@kbn/i18n';
 import type { ESQLAstAllCommands } from '@elastic/esql/types';
 import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
-import { commaCompleteItem, pipeCompleteItem } from '../complete_items';
+import { commaCompleteItem, newLineAndPipeCompleteItems } from '../complete_items';
 import type { ICommandCallbacks } from '../types';
 import type { ISuggestionItem, ICommandContext } from '../types';
 import { buildConstantsDefinitions } from '../../definitions/utils/literals';
@@ -78,10 +78,7 @@ export async function autocomplete(
 
   // Has at least one pattern - suggest pipe or comma for more patterns
   if (hasPatterns) {
-    return [
-      withAutoSuggest(pipeCompleteItem),
-      withAutoSuggest({ ...commaCompleteItem, text: ', ' }),
-    ];
+    return [...newLineAndPipeCompleteItems, withAutoSuggest({ ...commaCompleteItem, text: ', ' })];
   }
 
   return [];

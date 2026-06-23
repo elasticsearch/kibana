@@ -126,6 +126,32 @@ describe('validateExtendedFields', () => {
     });
   });
 
+  describe('required_on_close flag', () => {
+    it('does not report an error when required_on_close field is empty (not enforced at create/update time)', () => {
+      const fields: FieldSchemaType[] = [
+        makeInputTextField({ validation: { required_on_close: true } }),
+      ];
+      const errors = validateExtendedFields({}, fields);
+      expect(errors).toEqual([]);
+    });
+
+    it('does not report an error when required_on_close field is an empty string', () => {
+      const fields: FieldSchemaType[] = [
+        makeInputTextField({ validation: { required_on_close: true } }),
+      ];
+      const errors = validateExtendedFields({ summary_as_keyword: '' }, fields);
+      expect(errors).toEqual([]);
+    });
+
+    it('does not treat required_on_close as required even alongside required: false', () => {
+      const fields: FieldSchemaType[] = [
+        makeInputTextField({ validation: { required: false, required_on_close: true } }),
+      ];
+      const errors = validateExtendedFields({}, fields);
+      expect(errors).toEqual([]);
+    });
+  });
+
   describe('required_when condition', () => {
     it('treats field as required when required_when evaluates to true', () => {
       const fields: FieldSchemaType[] = [

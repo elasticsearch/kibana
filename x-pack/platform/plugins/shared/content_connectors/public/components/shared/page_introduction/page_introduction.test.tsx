@@ -7,7 +7,8 @@
 
 import React from 'react';
 
-import { mount } from 'enzyme';
+import { screen } from '@testing-library/react';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { EuiLink } from '@elastic/eui';
 
@@ -15,49 +16,35 @@ import { PageIntroduction } from './page_introduction';
 
 describe('PageIntroduction component', () => {
   it('renders with title as a string', () => {
-    const wrapper = mount(<PageIntroduction title="string title" description="some description" />);
-    // .hostNodes is required due to Emotion injection causing problems with enzyme
-    const titleContainer = wrapper
-      .find('[data-test-subj="pageIntroductionTitleContainer"]')
-      .hostNodes();
-    expect(titleContainer).toHaveLength(1);
+    renderWithKibanaRenderContext(
+      <PageIntroduction title="string title" description="some description" />
+    );
 
-    expect(titleContainer.text()).toEqual('string title');
+    expect(screen.getByTestId('pageIntroductionTitleContainer')).toHaveTextContent('string title');
   });
 
   it('renders title as React node', () => {
-    const wrapper = mount(
+    renderWithKibanaRenderContext(
       <PageIntroduction
         title={<h2 data-test-subj="injected">react node title</h2>}
         description="some description"
       />
     );
-    // .hostNodes is required due to Emotion injection causing problems with enzyme
-    const titleContainer = wrapper.find('[data-test-subj="injected"]').hostNodes();
-    expect(titleContainer).toHaveLength(1);
 
-    expect(titleContainer.text()).toEqual('react node title');
+    expect(screen.getByTestId('injected')).toHaveTextContent('react node title');
   });
 
   it('renders with description only', () => {
-    const wrapper = mount(<PageIntroduction description="some description" />);
-    // .hostNodes is required due to Emotion injection causing problems with enzyme
-    const titleContainer = wrapper
-      .find('[data-test-subj="pageIntroductionTitleContainer"]')
-      .hostNodes();
+    renderWithKibanaRenderContext(<PageIntroduction description="some description" />);
 
-    const descriptionContainer = wrapper
-      .find('[data-test-subj="pageIntroductionDescriptionText"]')
-      .hostNodes();
-    expect(titleContainer).toHaveLength(1);
-    expect(descriptionContainer).toHaveLength(1);
-
-    expect(titleContainer.text()).toEqual('');
-    expect(descriptionContainer.text()).toEqual('some description');
+    expect(screen.getByTestId('pageIntroductionTitleContainer').textContent?.trim()).toBe('');
+    expect(screen.getByTestId('pageIntroductionDescriptionText')).toHaveTextContent(
+      'some description'
+    );
   });
 
   it('renders with single link', () => {
-    const wrapper = mount(
+    renderWithKibanaRenderContext(
       <PageIntroduction
         description="some description"
         title="some title"
@@ -68,15 +55,14 @@ describe('PageIntroduction component', () => {
         }
       />
     );
-    const links = wrapper.find(EuiLink);
-    expect(links).toHaveLength(1);
-    expect(links.prop('href')).toEqual('testlink');
-    // due to accesibility injections text includes screen reader text as well
-    expect(links.text().startsWith('test link to nowhere')).toBe(true);
+
+    const link = screen.getByTestId('contentConnectorsTestLinkToNowhereLink');
+    expect(link).toHaveAttribute('href', 'testlink');
+    expect(link).toHaveTextContent('test link to nowhere');
   });
 
   it('renders with multiple links', () => {
-    const wrapper = mount(
+    renderWithKibanaRenderContext(
       <PageIntroduction
         description="some description"
         title="some title"
@@ -94,40 +80,38 @@ describe('PageIntroduction component', () => {
         ]}
       />
     );
-    const links = wrapper.find(EuiLink);
-    expect(links).toHaveLength(2);
-    expect(links.at(0).prop('href')).toEqual('testlink');
-    // due to accesibility injections text includes screen reader text as well
-    expect(links.at(0).text().startsWith('test link to nowhere')).toBe(true);
-    expect(links.at(1).prop('href')).toEqual('testlink2');
-    // due to accesibility injections text includes screen reader text as well
-    expect(links.at(1).text().startsWith('test link to nowhere2')).toBe(true);
+
+    const link1 = screen.getByTestId('contentConnectorsTestLinkToNowhereLink');
+    expect(link1).toHaveAttribute('href', 'testlink');
+    expect(link1).toHaveTextContent('test link to nowhere');
+
+    const link2 = screen.getByTestId('contentConnectorsTestLinkToNowhere2Link');
+    expect(link2).toHaveAttribute('href', 'testlink2');
+    expect(link2).toHaveTextContent('test link to nowhere2');
   });
 
   it('renders with single actions', () => {
-    const wrapper = mount(
+    renderWithKibanaRenderContext(
       <PageIntroduction
         description="some description"
         title="some title"
         actions={<button>some action</button>}
       />
     );
-    const actions = wrapper.find('button');
-    expect(actions).toHaveLength(1);
-    expect(actions.text()).toEqual('some action');
+
+    expect(screen.getByRole('button', { name: 'some action' })).toBeInTheDocument();
   });
 
   it('renders with multiple action', () => {
-    const wrapper = mount(
+    renderWithKibanaRenderContext(
       <PageIntroduction
         description="some description"
         title="some title"
         actions={[<button>some action</button>, <button>another action</button>]}
       />
     );
-    const actions = wrapper.find('button');
-    expect(actions).toHaveLength(2);
-    expect(actions.at(0).text()).toEqual('some action');
-    expect(actions.at(1).text()).toEqual('another action');
+
+    expect(screen.getByRole('button', { name: 'some action' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'another action' })).toBeInTheDocument();
   });
 });

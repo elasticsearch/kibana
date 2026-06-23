@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { parse as yamlParse } from 'yaml';
 import type { Template, ParsedTemplate } from '../../../../common/types/domain/template/v1';
 import { ParsedTemplateDefinitionSchema } from '../../../../common/types/domain/template/v1';
 
@@ -14,7 +14,7 @@ import { ParsedTemplateDefinitionSchema } from '../../../../common/types/domain/
  * NOTE: this will be moved to a service / domain layer or even the schema itself
  */
 export const parseTemplate = (template: Template): ParsedTemplate => {
-  const parsedDefinition = ParsedTemplateDefinitionSchema.parse(yaml.load(template.definition));
+  const parsedDefinition = ParsedTemplateDefinitionSchema.parse(yamlParse(template.definition));
 
   return {
     templateId: template.templateId,

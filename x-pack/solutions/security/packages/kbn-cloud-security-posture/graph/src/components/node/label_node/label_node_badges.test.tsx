@@ -92,18 +92,18 @@ describe('LabelNodeBadges', () => {
     );
   });
 
-  test('renders event badge with limited counter and alert badge with icon and limited counter for multiple events and alerts', () => {
-    const countOverLimit = 120;
+  test('renders event badge with abbreviated counter and alert badge with icon and abbreviated counter for very large numbers of events and alerts', () => {
+    const largeCount = 1_200_000;
     const analysis = analyzeDocuments({
-      uniqueEventsCount: countOverLimit,
-      uniqueAlertsCount: countOverLimit,
+      uniqueEventsCount: largeCount,
+      uniqueAlertsCount: largeCount,
     });
 
     render(<LabelNodeBadges analysis={analysis} />);
 
-    expect(screen.getByTestId(TEST_SUBJ_EVENT_COUNT)).toHaveTextContent('+99');
+    expect(screen.getByTestId(TEST_SUBJ_EVENT_COUNT)).toHaveTextContent('1.2m');
     expect(screen.queryByTestId(TEST_SUBJ_ALERT_ICON)).toBeInTheDocument();
-    expect(screen.getByTestId(TEST_SUBJ_ALERT_COUNT)).toHaveTextContent('+99');
+    expect(screen.getByTestId(TEST_SUBJ_ALERT_COUNT)).toHaveTextContent('1.2m');
   });
 
   describe('Popover', () => {

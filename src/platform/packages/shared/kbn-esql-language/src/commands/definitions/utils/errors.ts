@@ -251,7 +251,17 @@ Expected one of:
             field: out.field,
           },
         }),
-        type: 'warning',
+      };
+    case 'columnTypeConflict':
+      return {
+        message: i18n.translate('kbn-esql-language.esql.validation.columnTypeConflict', {
+          defaultMessage: 'Column [{columnName}] has conflicting types across indices{typesSuffix}',
+          values: {
+            columnName: out.columnName,
+            // Live validation may know only that a column is conflicted; include exact types when available.
+            typesSuffix: out.types ? `: ${out.types}` : '',
+          },
+        }),
       };
     case 'unsupportedMode':
       return {
@@ -568,6 +578,9 @@ export function tagSemanticError(error: ESQLMessage, requiresCallback: string): 
   return { ...error, errorType: 'semantic', requiresCallback };
 }
 
+const withWarningSeverity = (message: ESQLMessage, shouldWarn: boolean): ESQLMessage =>
+  shouldWarn ? { ...message, type: 'warning', underlinedWarning: true } : message;
+
 export const errors = {
   unexpected: (
     location: ESQLLocation,
@@ -756,6 +769,36 @@ export const errors = {
       columnName: name,
       givenType: type,
     }),
+
+  unsupportedFieldType: (
+    column: ESQLColumn | ESQLIdentifier,
+    field: string,
+    shouldWarn = false
+  ): ESQLMessage =>
+    tagSemanticError(
+      withWarningSeverity(
+        errors.byId('unsupportedFieldType', column.location, { field }),
+        shouldWarn
+      ),
+      'getColumnsFor'
+    ),
+
+  columnTypeConflict: (
+    column: ESQLColumn | ESQLIdentifier,
+    columnName: string,
+    types: string[],
+    shouldWarn = false
+  ): ESQLMessage =>
+    tagSemanticError(
+      withWarningSeverity(
+        errors.byId('columnTypeConflict', column.location, {
+          columnName,
+          types: types.map((type) => `[${type}]`).join(', '),
+        }),
+        shouldWarn
+      ),
+      'getColumnsFor'
+    ),
 
   dropTimestampWarning: ({ location }: ESQLColumn): ESQLMessage =>
     errors.byId('dropTimestampWarning', location, {}),

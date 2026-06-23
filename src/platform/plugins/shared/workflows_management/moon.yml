@@ -59,6 +59,7 @@ dependsOn:
   - '@kbn/react-field'
   - '@kbn/storage-adapter'
   - '@kbn/occ'
+  - '@kbn/change-history'
   - '@kbn/core-i18n-browser-mocks'
   - '@kbn/core-lifecycle-browser-mocks'
   - '@kbn/serverless'
@@ -112,7 +113,10 @@ dependsOn:
   - '@kbn/esql-utils'
   - '@kbn/inbox-plugin'
   - '@kbn/inbox-common'
+  - '@kbn/presentation-publishing'
   - '@kbn/datemath'
+  - '@kbn/controls-plugin'
+  - '@kbn/controls-schemas'
 tags:
   - plugin
   - prod

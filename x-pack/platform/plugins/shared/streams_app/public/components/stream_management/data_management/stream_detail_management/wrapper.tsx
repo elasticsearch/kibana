@@ -20,9 +20,11 @@ import { i18n } from '@kbn/i18n';
 import { DatasetQualityIndicator } from '@kbn/dataset-quality-plugin/public';
 import {
   Streams,
+  LOGS_ROOT_STREAM_NAME,
   ROOT_STREAM_NAMES,
   type RootStreamName,
   isDraftGetResponse,
+  isRoot,
 } from '@kbn/streams-schema';
 import type { ReactNode } from 'react';
 import React, { useEffect, useRef } from 'react';
@@ -46,6 +48,7 @@ import {
 } from '../../../stream_badges';
 import { StreamsAppPageTemplate } from '../../../streams_app_page_template';
 import { TAB_TO_TOUR_STEP_ID, useStreamsTour } from '../../../streams_tour';
+import { StreamDetailActionsMenu } from './stream_detail_actions_menu';
 
 export type ManagementTabs = Record<
   string,
@@ -214,6 +217,14 @@ export function Wrapper({
     });
   }
 
+  const canDeleteStream =
+    (Streams.ClassicStream.GetResponse.is(definition) &&
+      definition.privileges.manage &&
+      !definition.replicated) ||
+    (Streams.WiredStream.GetResponse.is(definition) &&
+      definition.privileges.manage &&
+      (!isRoot(definition.stream.name) || definition.stream.name === LOGS_ROOT_STREAM_NAME));
+
   return (
     <>
       <EuiPageHeader
@@ -223,32 +234,40 @@ export function Wrapper({
           background: ${euiTheme.colors.backgroundBasePlain};
         `}
         pageTitle={
-          <EuiFlexGroup
-            direction="row"
-            gutterSize="s"
-            alignItems="center"
-            justifyContent="spaceBetween"
-            wrap
-          >
-            <EuiFlexGroup direction="row" gutterSize="s" alignItems="center" wrap>
-              <EuiFlexItem grow={false}>{streamId}</EuiFlexItem>
-              <EuiFlexGroup alignItems="center" gutterSize="s" wrap responsive={false}>
-                {streamBadges.map(({ key, node }) => (
-                  <EuiFlexItem key={key} grow={false}>
-                    {node}
-                  </EuiFlexItem>
-                ))}
-              </EuiFlexGroup>
+          <EuiFlexGroup direction="row" gutterSize="s" alignItems="center" wrap>
+            <EuiFlexItem grow={false}>{streamId}</EuiFlexItem>
+            <EuiFlexGroup alignItems="center" gutterSize="s" wrap responsive={false}>
+              {streamBadges.map(({ key, node }) => (
+                <EuiFlexItem key={key} grow={false}>
+                  {node}
+                </EuiFlexItem>
+              ))}
             </EuiFlexGroup>
-            {Streams.ingest.all.GetResponse.is(definition) && (
-              <DiscoverBadgeButton
-                stream={definition.stream}
-                hasDataStream={definition.data_stream_exists || isDraft}
-                indexMode={definition.index_mode ?? 'standard'}
-                spellOut
-              />
-            )}
           </EuiFlexGroup>
+        }
+        rightSideItems={
+          Streams.ingest.all.GetResponse.is(definition)
+            ? [
+                <EuiFlexGroup
+                  key="streamDetailActions"
+                  alignItems="center"
+                  gutterSize="xs"
+                  responsive={false}
+                >
+                  <EuiFlexItem grow={false}>
+                    <DiscoverBadgeButton
+                      stream={definition.stream}
+                      hasDataStream={definition.data_stream_exists || isDraft}
+                      indexMode={definition.index_mode ?? 'standard'}
+                      spellOut
+                    />
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <StreamDetailActionsMenu canDelete={canDeleteStream} definition={definition} />
+                  </EuiFlexItem>
+                </EuiFlexGroup>,
+              ]
+            : []
         }
         tabs={Object.entries(tabMap).map(([tabKey, { label, href }]) => {
           const tourStepId = TAB_TO_TOUR_STEP_ID[tabKey];

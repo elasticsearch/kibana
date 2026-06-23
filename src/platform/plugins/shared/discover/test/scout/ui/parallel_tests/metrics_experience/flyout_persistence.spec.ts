@@ -54,9 +54,9 @@ spaceTest.describe(
     spaceTest(
       'persists open metric and selected tab across Discover tab navigation',
       async ({ pageObjects, page }) => {
-        const { metricsExperience, discover } = pageObjects;
+        const { metricsExperience, unifiedTabs } = pageObjects;
 
-        const originalTabTestSubj = await discover.getActiveTabTestSubj();
+        const originalTabTestSubj = await unifiedTabs.getActiveTabTestSubj();
 
         await spaceTest.step('open flyout and switch to ES|QL Query tab', async () => {
           await metricsExperience.openInsightsFlyout(0);
@@ -67,7 +67,7 @@ spaceTest.describe(
         });
 
         await spaceTest.step('create a new Discover tab', async () => {
-          await discover.createNewTab();
+          await unifiedTabs.createNewTab();
           // The new tab starts with empty restorable state and only the active
           // tab renders its flyout (`isTabSelected` gate), so nothing should
           // be visible here.
@@ -77,7 +77,7 @@ spaceTest.describe(
         await spaceTest.step(
           'switch back to the original tab and confirm the flyout is restored',
           async () => {
-            await discover.navigateToTabByTestSubj(originalTabTestSubj);
+            await unifiedTabs.navigateToTabByTestSubj(originalTabTestSubj);
             await expect(metricsExperience.flyout.container).toBeVisible();
           }
         );
@@ -104,9 +104,9 @@ spaceTest.describe(
     spaceTest(
       'duplicating a tab preserves the open metric and selected flyout tab in the new tab',
       async ({ pageObjects }) => {
-        const { metricsExperience, discover } = pageObjects;
+        const { metricsExperience, unifiedTabs } = pageObjects;
 
-        const originalTabTestSubj = await discover.getActiveTabTestSubj();
+        const originalTabTestSubj = await unifiedTabs.getActiveTabTestSubj();
 
         await spaceTest.step('open flyout and switch to ES|QL Query tab', async () => {
           await metricsExperience.openInsightsFlyout(0);
@@ -117,8 +117,8 @@ spaceTest.describe(
         });
 
         await spaceTest.step('duplicate the active tab', async () => {
-          await discover.duplicateActiveTab();
-          const newTabTestSubj = await discover.getActiveTabTestSubj();
+          await unifiedTabs.duplicateActiveTab();
+          const newTabTestSubj = await unifiedTabs.getActiveTabTestSubj();
           expect(newTabTestSubj).not.toBe(originalTabTestSubj);
         });
 
@@ -137,7 +137,7 @@ spaceTest.describe(
         await spaceTest.step(
           'switching back to the original tab still shows its preserved flyout',
           async () => {
-            await discover.navigateToTabByTestSubj(originalTabTestSubj);
+            await unifiedTabs.navigateToTabByTestSubj(originalTabTestSubj);
             await expect(metricsExperience.flyout.container).toBeVisible();
             await expect(metricsExperience.flyout.esqlQuery.codeBlock).toBeVisible();
           }
@@ -148,9 +148,9 @@ spaceTest.describe(
     spaceTest(
       'opening a different metric flyout in the duplicated tab does not affect the original tab',
       async ({ pageObjects }) => {
-        const { metricsExperience, discover } = pageObjects;
+        const { metricsExperience, unifiedTabs } = pageObjects;
 
-        const originalTabTestSubj = await discover.getActiveTabTestSubj();
+        const originalTabTestSubj = await unifiedTabs.getActiveTabTestSubj();
 
         await spaceTest.step('open flyout for first metric in original tab', async () => {
           await metricsExperience.openInsightsFlyout(0);
@@ -158,7 +158,7 @@ spaceTest.describe(
         });
 
         await spaceTest.step('duplicate the tab', async () => {
-          await discover.duplicateActiveTab();
+          await unifiedTabs.duplicateActiveTab();
           await expect(metricsExperience.grid).toBeVisible();
           await expect(metricsExperience.flyout.container).toBeVisible();
         });
@@ -174,7 +174,7 @@ spaceTest.describe(
         await spaceTest.step(
           'returning to the original tab still shows the original metric flyout',
           async () => {
-            await discover.navigateToTabByTestSubj(originalTabTestSubj);
+            await unifiedTabs.navigateToTabByTestSubj(originalTabTestSubj);
             await expect(metricsExperience.flyout.container).toBeVisible();
           }
         );

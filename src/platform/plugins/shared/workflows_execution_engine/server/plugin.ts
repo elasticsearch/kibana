@@ -20,9 +20,9 @@ import type {
 import { ExecutionStatus, pickManagedWorkflowFields, WorkflowRepository } from '@kbn/workflows';
 import type {
   BulkScheduleWorkflowResult,
-  ConcurrencySettings,
   EsWorkflowExecution,
   WorkflowExecutionEngineModel,
+  WorkflowSettings,
 } from '@kbn/workflows';
 import {
   WorkflowExecutionInvalidStatusError,
@@ -565,7 +565,7 @@ export class WorkflowsExecutionEnginePlugin
 
               const concurrencyGroupKey = this.getConcurrencyGroupKey(
                 workflowExecution,
-                workflow.definition?.settings?.concurrency,
+                workflow.definition?.settings,
                 coreStart,
                 dependencies
               );
@@ -721,7 +721,7 @@ export class WorkflowsExecutionEnginePlugin
 
       const concurrencyGroupKey = this.getConcurrencyGroupKey(
         workflowExecution,
-        workflow.definition?.settings?.concurrency,
+        workflow.definition?.settings,
         coreStart,
         dependencies
       );
@@ -1380,18 +1380,18 @@ export class WorkflowsExecutionEnginePlugin
    * Normalizes the partial workflowExecution to build the workflow context needed for template evaluation.
    *
    * @param workflowExecution - The partial workflow execution
-   * @param concurrencySettings - The concurrency settings from workflow definition
+   * @param workflowSettings - The workflow settings from workflow definition
    * @param coreStart - Core start services
    * @param dependencies - Context dependencies for building workflow context
    * @returns The evaluated concurrency group key, or null if not applicable
    */
   private getConcurrencyGroupKey(
     workflowExecution: Partial<EsWorkflowExecution>,
-    concurrencySettings: ConcurrencySettings | undefined,
+    workflowSettings: WorkflowSettings | undefined,
     coreStart: CoreStart,
     dependencies: ContextDependencies
   ): string | null {
-    if (!concurrencySettings?.key) {
+    if (!workflowSettings?.concurrency?.key) {
       return null;
     }
 
@@ -1415,8 +1415,9 @@ export class WorkflowsExecutionEnginePlugin
     // Concurrency keys are evaluated before validateWorkflowInputs renders and persists inputs.
     // Liquid-rendered input defaults or templated input values are not supported here.
     return this.concurrencyManager.evaluateConcurrencyKey(
-      concurrencySettings,
-      buildWorkflowContext(normalizedWorkflowExecution, coreStart, dependencies)
+      workflowSettings.concurrency,
+      buildWorkflowContext(normalizedWorkflowExecution, coreStart, dependencies),
+      workflowSettings.liquid
     );
   }
 

@@ -705,6 +705,13 @@ export const ML_RULES_DISABLED_MESSAGE = i18n.translate(
   }
 );
 
+export const RULE_CHANGES_HISTORY = i18n.translate(
+  'xpack.securitySolution.detectionEngine.rules.allRules.actions.ruleChangesHistoryDescription',
+  {
+    defaultMessage: 'History',
+  }
+);
+
 export const DUPLICATE_RULE = i18n.translate(
   'xpack.securitySolution.detectionEngine.rules.allRules.actions.duplicateRuleDescription',
   {

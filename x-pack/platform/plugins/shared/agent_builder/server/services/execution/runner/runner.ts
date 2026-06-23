@@ -41,7 +41,6 @@ import type {
   ToolManager,
   WritableSkillsStore,
 } from '@kbn/agent-builder-server/runner';
-import type { IFileStore } from '@kbn/agent-builder-server/runner/filestore';
 import type { AttachmentStateManager } from '@kbn/agent-builder-server/attachments';
 import { createAttachmentStateManager } from '@kbn/agent-builder-server/attachments';
 import type { TodoStateManager } from '@kbn/agent-builder-server/runner';
@@ -61,7 +60,8 @@ import {
 import { createPromptManager, getAgentPromptStorageState } from './utils/prompts';
 import { runInternalTool, runTool } from './run_tool';
 import { runAgent } from './run_agent';
-import { createStore } from './store';
+import { createResultStore } from './store/volumes/tool_results/tool_result_store';
+import { createSkillsStore } from './store/volumes/skills/skills_store';
 import type { SkillServiceStart } from '../../skills';
 import type { PluginsServiceStart } from '../../plugins/plugin_service';
 
@@ -101,7 +101,6 @@ export interface CreateScopedRunnerDeps {
   skillServiceStart: SkillServiceStart;
   pluginsServiceStart: PluginsServiceStart;
   toolManager: ToolManager;
-  filestore: IFileStore;
   /** Execution mode for this runner context. */
   executionMode: AgentExecutionMode;
   /** Sub-agent executor for spawning child executions. */
@@ -121,7 +120,6 @@ export type CreateRunnerDeps = Omit<
   | 'modelProvider'
   | 'promptManager'
   | 'stateManager'
-  | 'filestore'
   | 'toolManager'
   | 'subAgentExecutor'
   | 'executionMode'
@@ -215,7 +213,8 @@ export const createRunner = (deps: CreateRunnerDeps): Runner => {
     abortSignal?: AbortSignal;
     executionMode: AgentExecutionMode;
   }): Promise<ScopedRunner> => {
-    const { resultStore, filestore, skillsStore } = createStore({ conversation });
+    const resultStore = createResultStore({ conversation });
+    const skillsStore = createSkillsStore({ skills: [] });
 
     const attachmentStateManager = createAttachmentStateManager(conversation?.attachments ?? [], {
       getTypeDefinition: runnerDeps.attachmentsService.getTypeDefinition,
@@ -243,7 +242,6 @@ export const createRunner = (deps: CreateRunnerDeps): Runner => {
       todoStateManager,
       stateManager,
       promptManager,
-      filestore,
       toolManager,
       executionMode,
       subAgentExecutor,

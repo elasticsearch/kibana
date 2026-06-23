@@ -153,22 +153,30 @@ export const DeletePackagePoliciesRequestSchema = {
 };
 
 export const DeletePackagePoliciesResponseBodySchema = schema.arrayOf(
-  PackagePolicyStatusResponseSchema.extends({
-    policy_id: schema.maybe(
-      schema.oneOf([
-        schema.literal(null),
-        schema.string({
-          meta: {
-            description: 'Use `policy_ids` instead',
-            deprecated: true,
-          },
-        }),
-      ])
-    ),
-    policy_ids: schema.arrayOf(schema.string(), { maxSize: 10000 }),
-    output_id: schema.maybe(schema.oneOf([schema.literal(null), schema.string()])),
-    package: PackagePolicyPackageSchema,
-  }),
+  PackagePolicyStatusResponseSchema.extends(
+    {
+      policy_id: schema.maybe(
+        schema.oneOf([
+          schema.literal(null),
+          schema.string({
+            meta: {
+              description: 'Use `policy_ids` instead',
+              deprecated: true,
+            },
+          }),
+        ])
+      ),
+      policy_ids: schema.arrayOf(schema.string(), { maxSize: 10000 }),
+      output_id: schema.maybe(schema.oneOf([schema.literal(null), schema.string()])),
+      package: PackagePolicyPackageSchema,
+    },
+    // Distinct meta.id so this extension does not collide with the base
+    // `package_policy_status_response` component in the OAS shared schemas
+    // map. Without this, the OAS bundler's last-write-wins semantics on the
+    // shared schemas registry cause this extension's keys to be dropped when
+    // another route registers the bare base under the same id.
+    { meta: { id: 'delete_package_policies_response_item' } }
+  ),
   { maxSize: 10000 }
 );
 

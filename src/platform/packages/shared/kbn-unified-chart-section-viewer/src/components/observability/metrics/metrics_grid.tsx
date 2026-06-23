@@ -16,6 +16,7 @@ import type { EmbeddableComponentProps } from '@kbn/lens-plugin/public';
 import { ACTION_INSPECT_PANEL, type QuickActionIds } from '@kbn/embeddable-plugin/public';
 import { DiscoverFlyouts, dismissAllFlyoutsExceptFor } from '@kbn/discover-utils';
 import { getIndexPatternFromESQLQuery } from '@kbn/esql-utils';
+import { getFieldSearchMatchingHighlight } from '@kbn/field-utils';
 import { stableStringify } from '@kbn/std';
 import type { Dimension, UnifiedMetricsGridProps, ParsedMetricItem } from '../../../types';
 import type { ChartSize } from '../../chart';
@@ -347,6 +348,13 @@ const ChartItem = React.memo(
       [index, esqlQuery, metricItem, onViewDetails]
     );
 
+    const titleHighlight = useMemo(() => {
+      if (!searchTerm?.trim()) {
+        return undefined;
+      }
+      return getFieldSearchMatchingHighlight(metricItem.metricName, searchTerm.trim());
+    }, [metricItem.metricName, searchTerm]);
+
     return (
       <A11yGridCell
         id={id}
@@ -372,7 +380,7 @@ const ChartItem = React.memo(
           chartLayers={chartLayers}
           syncCursor
           syncTooltips={false}
-          titleHighlight={searchTerm}
+          titleHighlight={titleHighlight}
           extraDisabledActions={[ACTION_OPEN_IN_DISCOVER]}
           quickActionIds={METRICS_QUICK_ACTION_IDS}
           userMessages={userMessages}

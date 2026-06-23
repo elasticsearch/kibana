@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { stringify as yamlStringify } from 'yaml';
 import type { Template } from '../../../../common/types/domain/template/v1';
 
 // Mock data store (simulates database)
@@ -16,7 +16,7 @@ export const mockTemplates: Template[] = [
     owner: 'securitySolution',
     tags: ['security', 'incident'],
     author: 'alice',
-    definition: yaml.dump({
+    definition: yamlStringify({
       name: 'Security Incident Template',
       fields: [
         {
@@ -43,7 +43,7 @@ export const mockTemplates: Template[] = [
     owner: 'observability',
     tags: ['observability', 'alert'],
     author: 'bob',
-    definition: yaml.dump({
+    definition: yamlStringify({
       name: 'Observability Alert Template',
       fields: [
         {
@@ -63,7 +63,7 @@ export const mockTemplates: Template[] = [
     owner: 'securitySolution',
     tags: ['security', 'deleted'],
     author: 'charlie',
-    definition: yaml.dump({ fields: [] }),
+    definition: yamlStringify({ fields: [] }),
     templateVersion: 1,
     deletedAt: '2024-01-15T10:00:00.000Z',
   },

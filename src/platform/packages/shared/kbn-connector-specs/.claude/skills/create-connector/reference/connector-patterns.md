@@ -333,20 +333,27 @@ auth: {
 
 ## Icon Patterns
 
-### Option 1: SVG Icon Component
+### Option 1: SVG File + EuiIcon (preferred)
 
-**Path**: `src/platform/packages/shared/kbn-connector-specs/src/specs/{name}/icon/index.tsx`
+Save the brand SVG as a separate file, then load it via `EuiIcon`. This matches the pattern used by `amazon_s3`, `bigquery`, `azure_blob`, `figma`, and most other connectors.
 
+**`icon/box.svg`** — plain SVG markup (no JSX, no React imports):
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- SVG paths from the original logo -->
+</svg>
+```
+
+**`icon/index.tsx`**:
 ```typescript
 import React from 'react';
+import { EuiIcon } from '@elastic/eui';
 import type { ConnectorIconProps } from '../../../types';
 
+import connectorIcon from './connector_name.svg';
+
 export default (props: ConnectorIconProps) => {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" {...props}>
-      {/* SVG paths from the original logo */}
-    </svg>
-  );
+  return <EuiIcon type={connectorIcon} {...props} />;
 };
 ```
 
@@ -442,6 +449,7 @@ Every Zod parameter should have a `.describe()` call that gives the agent the co
 - State the unit for numeric fields (`'Maximum number of results to return (1–100, default 20)'`).
 - For ID fields, say where the value comes from (`'The sys_id of the incident, returned by searchIncidents'`).
 - For enum-like strings, list the accepted values inline (`'Filter by state: "new", "in_progress", or "resolved"'`).
+- **Bound user-input strings** — add `.max()` to string fields that accept free-form user input (search queries, AI prompts, natural-language descriptions). Use the service's documented API limit if available; otherwise 2000 for queries and 10000 for AI prompts are safe defaults. Do not bound ID fields or pagination tokens — those have fixed service-side formats.
 
 ```typescript
 export const SearchInputSchema = z.object({

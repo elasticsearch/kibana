@@ -204,6 +204,9 @@ export const SearchAndFilterBar: React.FunctionComponent<SearchAndFilterBarProps
                 {hasAddOptions ? (
                   <EuiFlexItem grow={false}>
                     <EuiPopover
+                      aria-label={i18n.translate('xpack.fleet.agentList.addMenuAriaLabel', {
+                        defaultMessage: 'Add menu',
+                      })}
                       anchorPosition="downRight"
                       panelPaddingSize="none"
                       button={

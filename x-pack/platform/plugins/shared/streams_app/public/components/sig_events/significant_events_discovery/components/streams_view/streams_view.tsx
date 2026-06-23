@@ -5,15 +5,15 @@
  * 2.0.
  */
 
-import type { EuiSearchBarProps, Query } from '@elastic/eui';
-import { EuiFlexGroup, EuiFlexItem, EuiSearchBar, EuiText } from '@elastic/eui';
-import { css } from '@emotion/react';
+import { EuiFlexGroup, EuiFlexItem, EuiText } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES } from '@kbn/streams-schema';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { TableRow } from './utils';
+import { parseSearchQuery } from './utils';
 import { useAIFeatures } from '../../../../../hooks/use_ai_features';
 import { useSignificantEventsDiscoveryContext } from '../../context/significant_events_discovery_context';
+import type { StreamsAppSearchBarProps } from '../../../../streams_app_search_bar';
 import { StreamsAppSearchBar } from '../../../../streams_app_search_bar';
 import { useKiGeneration } from '../knowledge_indicators_table/ki_generation_context';
 import { GenerateSplitButton } from '../shared/generate_split_button';
@@ -21,16 +21,10 @@ import { FindSignificantEventsButton } from './find_significant_events_button';
 import { STREAMS_TABLE_SEARCH_ARIA_LABEL } from './translations';
 import { StreamsTreeTable } from './tree_table';
 
-const datePickerStyle = css`
-  .euiFormControlLayout,
-  .euiSuperDatePicker button,
-  .euiButton {
-    height: 40px;
-  }
-`;
-
 export function StreamsView() {
-  const [searchQuery, setSearchQuery] = useState<Query | undefined>();
+  const [searchText, setSearchText] = useState('');
+
+  const searchQuery = useMemo(() => parseSearchQuery(searchText), [searchText]);
 
   const {
     filteredStreams,
@@ -69,10 +63,6 @@ export function StreamsView() {
 
   const [selectedStreams, setSelectedStreams] = useState<TableRow[]>([]);
 
-  const handleQueryChange: EuiSearchBarProps['onChange'] = ({ query }) => {
-    if (query) setSearchQuery(query);
-  };
-
   const getActionableStreamNames = useCallback(
     () =>
       selectedStreams
@@ -107,25 +97,33 @@ export function StreamsView() {
     cancelOnboarding(streamName);
   };
 
+  const handleQueryChange: StreamsAppSearchBarProps['onQueryChange'] = (queryPayload) => {
+    setSearchText(String(queryPayload.query?.query ?? ''));
+  };
+
   return (
     <EuiFlexGroup direction="column" gutterSize="m">
       <EuiFlexItem grow={false}>
         <EuiFlexGroup gutterSize="s" alignItems="center" wrap>
-          <EuiFlexItem style={{ minWidth: 200 }}>
-            <EuiSearchBar
-              query={searchQuery}
-              onChange={handleQueryChange}
-              box={{
-                incremental: true,
-                'aria-label': STREAMS_TABLE_SEARCH_ARIA_LABEL,
+          <EuiFlexItem grow style={{ minWidth: 200 }}>
+            <StreamsAppSearchBar
+              onQuerySubmit={handleQueryChange}
+              onQueryChange={handleQueryChange}
+              placeholder={STREAMS_TABLE_SEARCH_ARIA_LABEL}
+              query={{
+                query: searchText,
+                language: 'text',
               }}
+              showDatePicker
+              showQueryInput
+              enableDateRangePicker
+              submitButtonStyle="iconOnly"
+              isClearable
             />
-          </EuiFlexItem>
-          <EuiFlexItem grow={false} css={datePickerStyle}>
-            <StreamsAppSearchBar showDatePicker />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             <GenerateSplitButton
+              size="s"
               config={onboardingConfig}
               allConnectors={allConnectors}
               connectorError={connectorError}

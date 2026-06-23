@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { i18n } from '@kbn/i18n';
-import { EuiButtonIcon, EuiText, type EuiBasicTableColumn } from '@elastic/eui';
+import { EuiButtonIcon, EuiText, EuiToolTip, type EuiBasicTableColumn } from '@elastic/eui';
 import type { BrowserFields, TimelineEventsDetailsItem } from '@kbn/timelines-plugin/common';
 import { getFieldFromBrowserField } from '../tabs/table_tab';
 import { TableFieldNameCell } from '../components/table_field_name_cell';
@@ -84,17 +84,19 @@ export const getTableTabColumns: ColumnsProvider = ({
     field: 'isPinned',
     render: (isPinned: boolean, data: TimelineEventsDetailsItem) => {
       return (
-        <EuiButtonIcon
-          aria-label={isPinned ? UNPIN : PIN}
-          className={isPinned ? 'flyout_table__unPinAction' : 'flyout_table__pinAction'}
-          iconType={isPinned ? 'pinFill' : 'pin'}
-          color="text"
-          iconSize="m"
-          onClick={() => {
-            onTogglePinned(data.field, isPinned ? 'unpin' : 'pin');
-          }}
-          data-test-subj={FLYOUT_TABLE_PIN_ACTION_TEST_ID}
-        />
+        <EuiToolTip content={isPinned ? UNPIN : PIN} disableScreenReaderOutput>
+          <EuiButtonIcon
+            aria-label={isPinned ? UNPIN : PIN}
+            className={isPinned ? 'flyout_table__unPinAction' : 'flyout_table__pinAction'}
+            iconType={isPinned ? 'pinFill' : 'pin'}
+            color="text"
+            iconSize="m"
+            onClick={() => {
+              onTogglePinned(data.field, isPinned ? 'unpin' : 'pin');
+            }}
+            data-test-subj={FLYOUT_TABLE_PIN_ACTION_TEST_ID}
+          />
+        </EuiToolTip>
       );
     },
     width: '32px',

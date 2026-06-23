@@ -97,6 +97,13 @@ describe('createWorkflowLiquidEngine', () => {
       const engine = createWorkflowLiquidEngine({ strictFilters: true });
       expect(engine).toBeInstanceOf(Liquid);
     });
+
+    it('accepts custom Liquid limits', () => {
+      const template = 'x'.repeat(160_000);
+      const engine = createWorkflowLiquidEngine({ parseLimit: 200_000 });
+
+      expect(engine.parseAndRenderSync(template)).toBe(template);
+    });
   });
 
   describe('LIQUID_ALLOWED_TAGS', () => {

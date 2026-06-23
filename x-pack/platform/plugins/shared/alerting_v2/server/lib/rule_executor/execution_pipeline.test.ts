@@ -5,8 +5,6 @@
  * 2.0.
  */
 
-import type { ElasticsearchClient } from '@kbn/core/server';
-import type { DeeplyMockedApi } from '@kbn/core-elasticsearch-client-server-mocks';
 import { RuleExecutionPipeline } from './execution_pipeline';
 import type { RulePipelineState } from './types';
 import type { RuleExecutionMiddleware } from './middleware';
@@ -14,19 +12,12 @@ import { createLoggerService } from '../services/logger_service/logger_service.m
 import { pipeStream } from './stream_utils';
 import {
   createRuleExecutionPipelineInput,
-  createMockEsClient,
   createMockStep,
   createQueryPayload,
   createRuleResponse,
 } from './test_utils';
 
 describe('RuleExecutionPipeline', () => {
-  let mockEsClient: DeeplyMockedApi<ElasticsearchClient>;
-
-  beforeEach(() => {
-    mockEsClient = createMockEsClient();
-  });
-
   describe('execute', () => {
     it('executes all steps in order when all continue', async () => {
       const { loggerService } = createLoggerService();
@@ -53,12 +44,7 @@ describe('RuleExecutionPipeline', () => {
         })
       );
 
-      const pipeline = new RuleExecutionPipeline(
-        loggerService,
-        mockEsClient,
-        [step1, step2, step3],
-        []
-      );
+      const pipeline = new RuleExecutionPipeline(loggerService, [step1, step2, step3], []);
       const input = createRuleExecutionPipelineInput();
 
       const result = await pipeline.execute(input);
@@ -93,12 +79,7 @@ describe('RuleExecutionPipeline', () => {
         })
       );
 
-      const pipeline = new RuleExecutionPipeline(
-        loggerService,
-        mockEsClient,
-        [step1, step2, step3],
-        []
-      );
+      const pipeline = new RuleExecutionPipeline(loggerService, [step1, step2, step3], []);
       const input = createRuleExecutionPipelineInput();
 
       const result = await pipeline.execute(input);
@@ -134,12 +115,7 @@ describe('RuleExecutionPipeline', () => {
         })
       );
 
-      const pipeline = new RuleExecutionPipeline(
-        loggerService,
-        mockEsClient,
-        [step1, step2, step3],
-        []
-      );
+      const pipeline = new RuleExecutionPipeline(loggerService, [step1, step2, step3], []);
       const input = createRuleExecutionPipelineInput();
 
       const result = await pipeline.execute(input);
@@ -178,7 +154,7 @@ describe('RuleExecutionPipeline', () => {
         pipeStream(input, (state) => ({ type: 'continue', state }))
       );
 
-      const pipeline = new RuleExecutionPipeline(loggerService, mockEsClient, [step1, step2], []);
+      const pipeline = new RuleExecutionPipeline(loggerService, [step1, step2], []);
       const input = createRuleExecutionPipelineInput();
 
       await expect(pipeline.execute(input)).rejects.toThrow('Step failed');
@@ -186,7 +162,7 @@ describe('RuleExecutionPipeline', () => {
 
     it('returns empty completed result when no steps', async () => {
       const { loggerService } = createLoggerService();
-      const pipeline = new RuleExecutionPipeline(loggerService, mockEsClient, [], []);
+      const pipeline = new RuleExecutionPipeline(loggerService, [], []);
       const input = createRuleExecutionPipelineInput();
 
       const result = await pipeline.execute(input);
@@ -237,7 +213,6 @@ describe('RuleExecutionPipeline', () => {
 
       const pipeline = new RuleExecutionPipeline(
         loggerService,
-        mockEsClient,
         [step1],
         [middleware1, middleware2]
       );
@@ -269,7 +244,7 @@ describe('RuleExecutionPipeline', () => {
         })
       );
 
-      const pipeline = new RuleExecutionPipeline(loggerService, mockEsClient, [step], []);
+      const pipeline = new RuleExecutionPipeline(loggerService, [step], []);
       const input = createRuleExecutionPipelineInput();
 
       const result = await pipeline.execute(input);
@@ -289,7 +264,7 @@ describe('RuleExecutionPipeline', () => {
         })
       );
 
-      const pipeline = new RuleExecutionPipeline(loggerService, mockEsClient, [step], []);
+      const pipeline = new RuleExecutionPipeline(loggerService, [step], []);
       const input = createRuleExecutionPipelineInput({ abortSignal: abortController.signal });
 
       await pipeline.execute(input);
@@ -320,67 +295,11 @@ describe('RuleExecutionPipeline', () => {
         })
       );
 
-      const pipeline = new RuleExecutionPipeline(
-        loggerService,
-        mockEsClient,
-        [step1],
-        [errorMiddleware]
-      );
+      const pipeline = new RuleExecutionPipeline(loggerService, [step1], [errorMiddleware]);
       const input = createRuleExecutionPipelineInput();
 
       await expect(pipeline.execute(input)).rejects.toThrow('Step error');
       expect(errorHandlerCalled).toHaveBeenCalledWith(expect.any(Error));
-    });
-
-    it('refreshes indices after all steps complete successfully', async () => {
-      const { loggerService } = createLoggerService();
-
-      const step = createMockStep('step1', (input) =>
-        pipeStream(input, (state) => ({ type: 'continue', state }))
-      );
-
-      const pipeline = new RuleExecutionPipeline(loggerService, mockEsClient, [step], []);
-      const input = createRuleExecutionPipelineInput();
-
-      await pipeline.execute(input);
-
-      expect(mockEsClient.indices.refresh).toHaveBeenCalledTimes(1);
-      expect(mockEsClient.indices.refresh).toHaveBeenCalledWith({
-        index: '.rule-events',
-      });
-    });
-
-    it('does not throw when index refresh fails', async () => {
-      const { loggerService, mockLogger } = createLoggerService();
-      mockEsClient.indices.refresh.mockRejectedValue(new Error('Refresh failed'));
-
-      const step = createMockStep('step1', (input) =>
-        pipeStream(input, (state) => ({ type: 'continue', state }))
-      );
-
-      const pipeline = new RuleExecutionPipeline(loggerService, mockEsClient, [step], []);
-      const input = createRuleExecutionPipelineInput();
-
-      const result = await pipeline.execute(input);
-
-      expect(result.completed).toBe(true);
-      expect(mockLogger.error).toHaveBeenCalled();
-    });
-
-    it('does not refresh indices when pipeline halts', async () => {
-      const { loggerService } = createLoggerService();
-
-      const step = createMockStep('step1', (input) =>
-        pipeStream(input, (state) => ({ type: 'halt', reason: 'rule_disabled', state }))
-      );
-
-      const pipeline = new RuleExecutionPipeline(loggerService, mockEsClient, [step], []);
-      const input = createRuleExecutionPipelineInput();
-
-      const result = await pipeline.execute(input);
-
-      expect(result.completed).toBe(false);
-      expect(mockEsClient.indices.refresh).not.toHaveBeenCalled();
     });
   });
 });

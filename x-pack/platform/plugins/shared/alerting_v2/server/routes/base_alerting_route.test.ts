@@ -11,6 +11,8 @@ import type { Logger } from '@kbn/logging';
 import { errorResponseSchema } from '@kbn/alerting-v2-schemas';
 import { z } from '@kbn/zod/v4';
 import { BaseAlertingRoute, type AlertingRouteSchemas } from './base_alerting_route';
+import { ALERTING_V2_ERROR_CODES } from '../lib/errors/error_codes';
+import type { MockUiSettingsClient } from '../lib/services/settings_service/settings_service.mock';
 import { deriveErrorCodeFromStatus } from './derive_error_code';
 import { createRouteDependencies } from './test_utils';
 import type { computeRouteValidate } from './compute_route_validate';
@@ -43,12 +45,14 @@ class TestRoute extends BaseAlertingRoute {
 describe('BaseAlertingRoute', () => {
   let response: jest.Mocked<KibanaResponseFactory>;
   let logger: jest.Mocked<Logger>;
+  let mockUiSettingsClient: MockUiSettingsClient;
   let route: TestRoute;
 
   beforeEach(() => {
     const deps = createRouteDependencies();
     response = deps.response;
     logger = deps.logger;
+    mockUiSettingsClient = deps.mockUiSettingsClient;
     route = new TestRoute(deps.ctx);
   });
 
@@ -60,6 +64,35 @@ describe('BaseAlertingRoute', () => {
 
     expect(result).toBe(expectedResponse);
     expect(route.executeFn).toHaveBeenCalledTimes(1);
+  });
+
+  describe('alerting kill switch', () => {
+    it('short-circuits with a 503 ALERTING_DISABLED error when the setting is off', async () => {
+      mockUiSettingsClient.get.mockResolvedValue(false);
+
+      await route.handle();
+
+      expect(route.executeFn).not.toHaveBeenCalled();
+      expect(response.customError).toHaveBeenCalledWith({
+        statusCode: 503,
+        body: {
+          code: ALERTING_V2_ERROR_CODES.ALERTING_DISABLED,
+          error: 'Service Unavailable',
+          message: 'Alerting is disabled.',
+        },
+      });
+    });
+
+    it('runs execute() when the setting is on', async () => {
+      mockUiSettingsClient.get.mockResolvedValue(true);
+      const expectedResponse = response.ok({ body: { id: '123' } });
+      route.executeFn.mockResolvedValue(expectedResponse);
+
+      const result = await route.handle();
+
+      expect(result).toBe(expectedResponse);
+      expect(route.executeFn).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('onError', () => {
@@ -263,18 +296,19 @@ describe('BaseAlertingRoute', () => {
       TestRoute.schemas = {};
     });
 
-    it('emits the shared 401/403/500 responses even when the subclass declares no schemas', () => {
+    it('emits the shared 401/403/500/503 responses even when the subclass declares no schemas', () => {
       const validate = TestRoute.validate as ComputedValidate;
 
       expect(
         Object.keys(validate.response ?? {})
           .map(Number)
-          .sort()
-      ).toEqual([401, 403, 500]);
+          .sort((a, b) => a - b)
+      ).toEqual([401, 403, 500, 503]);
 
       expect(validate.response?.[401]?.body?.()).toEqual(errorResponseSchema);
       expect(validate.response?.[403]?.body?.()).toEqual(errorResponseSchema);
       expect(validate.response?.[500]?.body?.()).toEqual(errorResponseSchema);
+      expect(validate.response?.[503]?.body?.()).toEqual(errorResponseSchema);
     });
 
     it('merges the subclass response schemas with the common ones', () => {
@@ -294,8 +328,8 @@ describe('BaseAlertingRoute', () => {
       expect(
         Object.keys(validate.response ?? {})
           .map(Number)
-          .sort()
-      ).toEqual([200, 401, 403, 500]);
+          .sort((a, b) => a - b)
+      ).toEqual([200, 401, 403, 500, 503]);
 
       expect(validate.response?.[200]?.body).toEqual(okSchemaFactory);
     });

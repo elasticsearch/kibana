@@ -18,6 +18,7 @@ import {
   EuiLoadingSpinner,
 } from '@elastic/eui';
 import { FormattedDate, FormattedMessage, FormattedTime } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 
 import { useAuthz } from '../../../../../../../hooks';
 import type { InstallFailedAttempt } from '../../../../../../../../common/types';
@@ -205,7 +206,14 @@ const InstallUpgradeFailedVersionStatus: React.FunctionComponent<{
   const latestAttempt = item.installationInfo?.latest_install_failed_attempts?.[0];
 
   return (
-    <EuiPopover button={button} isOpen={isPopoverOpen} closePopover={() => setIsPopoverOpen(false)}>
+    <EuiPopover
+      aria-label={i18n.translate('xpack.fleet.epmInstalledIntegrations.statusPopoverAriaLabel', {
+        defaultMessage: 'Installation status details',
+      })}
+      button={button}
+      isOpen={isPopoverOpen}
+      closePopover={() => setIsPopoverOpen(false)}
+    >
       <EuiCallOut
         css={{ maxWidth: 400 }}
         color="danger"

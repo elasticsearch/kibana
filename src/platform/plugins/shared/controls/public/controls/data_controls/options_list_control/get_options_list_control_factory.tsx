@@ -21,7 +21,11 @@ import {
   skip,
 } from 'rxjs';
 
-import { OPTIONS_LIST_CONTROL, DEFAULT_DSL_OPTIONS_LIST_STATE } from '@kbn/controls-constants';
+import {
+  ControlValuesSource,
+  OPTIONS_LIST_CONTROL,
+  DEFAULT_DSL_OPTIONS_LIST_STATE,
+} from '@kbn/controls-constants';
 import type { OptionsListSelection, OptionsListDSLControlState } from '@kbn/controls-schemas';
 import type { EmbeddablePublicDefinition } from '@kbn/embeddable-plugin/public';
 import {
@@ -63,6 +67,26 @@ import {
 } from './utils/selection_utils';
 import { getPlacementHints, LAYOUT_CONSTRAINTS } from '../../constants';
 
+// TODO Remove when we're able to get accurate document counts for ES|QL-source controls and can reenable doc-count sorting on them
+const normalizeEsqlSort = (
+  controlState: OptionsListDSLControlState
+): OptionsListDSLControlState => {
+  if (
+    controlState.values_source !== ControlValuesSource.ESQL ||
+    (controlState.sort?.by ?? DEFAULT_DSL_OPTIONS_LIST_STATE.sort.by) !== '_count'
+  ) {
+    return controlState;
+  }
+
+  return {
+    ...controlState,
+    sort: {
+      by: '_key',
+      direction: controlState.sort?.direction ?? DEFAULT_DSL_OPTIONS_LIST_STATE.sort.direction,
+    },
+  };
+};
+
 export const getOptionsListControlFactory = (): EmbeddablePublicDefinition<
   OptionsListDSLControlState,
   OptionsListControlApi
@@ -72,7 +96,7 @@ export const getOptionsListControlFactory = (): EmbeddablePublicDefinition<
     getPlacementHints,
     layoutConstraints: LAYOUT_CONSTRAINTS,
     buildEmbeddable: async ({ initialState, finalizeApi, uuid, parentApi }) => {
-      const state = initialState;
+      const state = normalizeEsqlSort(initialState);
 
       const editorStateManager = initializeEditorStateManager(state);
       const temporaryStateManager = initializeTemporayStateManager<OptionsListSelection>();
@@ -129,8 +153,14 @@ export const getOptionsListControlFactory = (): EmbeddablePublicDefinition<
       const fieldChangedSubscription = combineLatest([
         dataControlManager.api.fieldName$,
         dataControlManager.api.dataViewId$,
+        dataControlManager.api.valuesSource$,
       ])
         .pipe(
+          filter(([, , valuesSource]) => valuesSource === ControlValuesSource.FIELD),
+          distinctUntilChanged(
+            ([fieldNameA, dataViewIdA], [fieldNameB, dataViewIdB]) =>
+              fieldNameA === fieldNameB && dataViewIdA === dataViewIdB
+          ),
           skip(1) // skip first, since this represents initialization
         )
         .subscribe(() => {
@@ -268,9 +298,10 @@ export const getOptionsListControlFactory = (): EmbeddablePublicDefinition<
           exists_selected: false,
         },
         applySerializedState: (nextState) => {
-          dataControlManager.reinitializeState(nextState);
-          selectionsManager.reinitializeState(nextState);
-          editorStateManager.reinitializeState(nextState);
+          const normalizedState = normalizeEsqlSort(nextState);
+          dataControlManager.reinitializeState(normalizedState);
+          selectionsManager.reinitializeState(normalizedState);
+          editorStateManager.reinitializeState(normalizedState);
         },
       });
 

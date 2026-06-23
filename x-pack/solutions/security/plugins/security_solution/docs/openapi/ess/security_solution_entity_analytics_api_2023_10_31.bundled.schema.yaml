@@ -880,6 +880,7 @@ paths:
               properties:
                 description:
                   description: Description of the watchlist
+                  maxLength: 1000
                   type: string
                 entitySources:
                   description: Optional entity sources to create and link to the watchlist
@@ -893,21 +894,27 @@ paths:
                         $ref: '#/components/schemas/Filter'
                       identifierField:
                         description: Field used to query the entity store for index-type sources
+                        maxLength: 256
                         type: string
                       indexPattern:
+                        maxLength: 1000
                         type: string
                       integrationName:
                         description: Required when type is entity_analytics_integration. One of
                           entityanalytics_okta, entityanalytics_ad.
+                        maxLength: 256
                         type: string
                       matchers:
                         items:
                           $ref: '#/components/schemas/Matcher'
+                        maxItems: 100
                         type: array
                       name:
+                        maxLength: 256
                         type: string
                       queryRule:
                         description: KQL query used to filter data from the provided index patterns
+                        maxLength: 4096
                         type: string
                       range:
                         $ref: '#/components/schemas/DateRange'
@@ -916,12 +923,14 @@ paths:
                     required:
                       - type
                       - name
+                  maxItems: 100
                   type: array
                 managed:
                   description: Indicates if the watchlist is managed by the system
                   type: boolean
                 name:
                   description: Unique name for the watchlist
+                  maxLength: 256
                   type: string
                 riskModifier:
                   description: Risk score modifier associated with the watchlist
@@ -1005,6 +1014,7 @@ paths:
           name: id
           required: true
           schema:
+            maxLength: 256
             type: string
       requestBody:
         content:
@@ -1022,12 +1032,14 @@ paths:
               properties:
                 description:
                   description: Description of the watchlist
+                  maxLength: 1000
                   type: string
                 managed:
                   description: Indicates if the watchlist is managed by the system
                   type: boolean
                 name:
                   description: Unique name of the watchlist
+                  maxLength: 256
                   type: string
                 riskModifier:
                   description: Risk score modifier associated with the watchlist
@@ -2710,10 +2722,12 @@ components:
       properties:
         end:
           description: End of the lookback period (date math or ISO string, e.g. "now")
+          maxLength: 256
           type: string
         start:
           description: Start of the lookback period (date math or ISO string, e.g.
             "now-10d")
+          maxLength: 256
           type: string
       required:
         - start
@@ -3243,8 +3257,10 @@ components:
       properties:
         kuery:
           oneOf:
-            - type: string
-            - type: object
+            - maxLength: 4096
+              type: string
+            - additionalProperties: false
+              type: object
     GenericEntity:
       additionalProperties: false
       description: A generic entity record. Maps only the `entity` and `asset`
@@ -3411,6 +3427,7 @@ components:
               type: string
         syncMarkerIndex:
           description: Index to read latest sync markers from
+          maxLength: 1000
           type: string
     Interval:
       description: Interval in which enrich policy runs. For example, `"1h"` means the
@@ -3424,7 +3441,9 @@ components:
       properties:
         fields:
           items:
+            maxLength: 256
             type: string
+          maxItems: 100
           type: array
         values:
           description: >
@@ -3434,10 +3453,13 @@ components:
             supported for simplicity and predictability.
           oneOf:
             - items:
+                maxLength: 256
                 type: string
+              maxItems: 1000
               type: array
             - items:
                 type: boolean
+              maxItems: 1000
               type: array
       required:
         - fields
@@ -3489,17 +3511,22 @@ components:
                 $ref: '#/components/schemas/MonitoringLabel'
               type: array
         id:
+          maxLength: 256
           type: string
         labels:
           type: object
           properties:
             source_ids:
               items:
+                maxLength: 256
                 type: string
+              maxItems: 100
               type: array
             source_integrations:
               items:
+                maxLength: 256
                 type: string
+              maxItems: 100
               type: array
             sources:
               items:
@@ -3507,6 +3534,7 @@ components:
                   - csv
                   - index_sync
                   - api
+              maxItems: 100
               type: array
         user:
           type: object
@@ -3515,6 +3543,7 @@ components:
               description: Indicates if the user is privileged.
               type: boolean
             name:
+              maxLength: 512
               type: string
     MonitoringEngineDescriptor:
       type: object
@@ -3559,10 +3588,12 @@ components:
       type: object
       properties:
         field:
+          maxLength: 256
           type: string
         source:
           type: string
         value:
+          maxLength: 256
           type: string
       required:
         - field
@@ -3803,21 +3834,27 @@ components:
           $ref: '#/components/schemas/Filter'
         identifierField:
           description: Field used to query the entity store for index-type sources
+          maxLength: 256
           type: string
         indexPattern:
+          maxLength: 1000
           type: string
         integrationName:
+          maxLength: 256
           type: string
         integrations:
           $ref: '#/components/schemas/Integrations'
         matchers:
           items:
             $ref: '#/components/schemas/Matcher'
+          maxItems: 100
           type: array
         name:
+          maxLength: 256
           type: string
         queryRule:
           description: KQL query used to filter data from the provided index patterns
+          maxLength: 4096
           type: string
         range:
           $ref: '#/components/schemas/DateRange'
@@ -3905,6 +3942,7 @@ components:
                 properties:
                   field:
                     description: The field name for the label
+                    maxLength: 256
                     type: string
                   source:
                     description: The source where this label was created (api, csv, or index_sync)
@@ -3915,13 +3953,16 @@ components:
                     type: string
                   value:
                     description: The value of the label
+                    maxLength: 256
                     type: string
+              maxItems: 100
               type: array
         user:
           type: object
           properties:
             name:
               description: The name of the user.
+              maxLength: 512
               type: string
     WatchlistCsvUploadResponseItem:
       example:

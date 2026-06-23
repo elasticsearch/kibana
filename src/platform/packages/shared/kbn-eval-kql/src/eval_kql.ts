@@ -164,7 +164,13 @@ function readContextPath(
   let result: any = context;
 
   for (const segment of propertyPathSegments) {
-    if (!(segment in result)) {
+    // A path segment can only be read from an object. When an intermediate
+    // value is a scalar/null/undefined (e.g. `a.b` where `a` resolved to a
+    // string, or to `undefined` because the referenced step output is absent),
+    // the next segment does not exist — treat it as "not found" rather than
+    // letting `segment in result` throw `TypeError: Cannot use 'in' operator`.
+    // KQL term semantics: a field path that does not resolve is simply false.
+    if (result === null || typeof result !== 'object' || !(segment in result)) {
       return { pathExists: false, value: undefined }; // Path not found in context
     }
 

@@ -15,12 +15,12 @@ import type { SavedObjectsTypeMappingDefinition } from '@kbn/core-saved-objects-
 export const ruleMappings: SavedObjectsTypeMappingDefinition = {
   dynamic: false,
   properties: {
-    kind: { type: 'keyword' },
+    kind: { type: 'keyword', ignore_above: 256 },
     metadata: {
       properties: {
-        name: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+        name: { type: 'text', fields: { keyword: { type: 'keyword', ignore_above: 256 } } },
         description: { type: 'text' },
-        tags: { type: 'keyword' },
+        tags: { type: 'keyword', ignore_above: 128 },
       },
     },
     enabled: { type: 'boolean' },

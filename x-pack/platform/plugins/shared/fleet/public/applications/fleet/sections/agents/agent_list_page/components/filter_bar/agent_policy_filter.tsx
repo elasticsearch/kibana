@@ -10,6 +10,7 @@ import type { EuiSelectableOption } from '@elastic/eui';
 import { useEuiTheme } from '@elastic/eui';
 import { EuiFilterButton, EuiPopover, EuiSelectable } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 
 import type { AgentPolicy } from '../../../../../../../../common';
 
@@ -57,6 +58,9 @@ export const AgentPolicyFilter: React.FunctionComponent<Props> = ({
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.fleet.agentList.policyFilterAriaLabel', {
+        defaultMessage: 'Agent policy filter',
+      })}
       ownFocus
       zIndex={Number(euiTheme.levels.header) - 1}
       button={

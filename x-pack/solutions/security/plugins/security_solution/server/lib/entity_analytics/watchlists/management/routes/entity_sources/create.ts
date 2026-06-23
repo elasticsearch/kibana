@@ -25,8 +25,8 @@ import {
   integrationsSourceIndex,
   oktaLastFullSyncMarkersIndex,
 } from '../../../entity_sources/infra';
+import { getWatchlistSavedObjectClient } from '../../../shared/utils';
 import type { IntegrationType } from '../../../entity_sources/infra';
-import { validateIndexPermissions } from '../../../entity_sources/entity_source_api_key';
 
 export const createEntitySourceRoute = (
   router: EntityAnalyticsRoutesDeps['router'],
@@ -66,8 +66,9 @@ export const createEntitySourceRoute = (
             const secSol = await context.securitySolution;
             const core = await context.core;
             const namespace = secSol.getSpaceId();
+            const soClient = getWatchlistSavedObjectClient(core);
             const client = new WatchlistEntitySourceClient({
-              soClient: core.savedObjects.client,
+              soClient,
               namespace,
               getStartServices,
               esClient: core.elasticsearch.client.asCurrentUser,
@@ -75,19 +76,12 @@ export const createEntitySourceRoute = (
               hasEncryptionKey,
             });
 
-            if (monitoringSource.type === 'index' && monitoringSource.indexPattern) {
-              await validateIndexPermissions(
-                core.elasticsearch.client.asCurrentUser,
-                monitoringSource.indexPattern
-              );
-            }
-
             const body = await createSourceForType(client, monitoringSource, namespace, request);
 
             const watchlistClient = new WatchlistConfigClient({
               logger,
               namespace,
-              soClient: core.savedObjects.client,
+              soClient,
               esClient: core.elasticsearch.client.asCurrentUser,
             });
             await watchlistClient.addEntitySourceReference(request.params.watchlist_id, body.id);
@@ -97,7 +91,7 @@ export const createEntitySourceRoute = (
               try {
                 const entitySourcesService = createEntitySourcesService({
                   esClient: core.elasticsearch.client.asCurrentUser,
-                  soClient: core.savedObjects.client,
+                  soClient,
                   logger,
                   namespace,
                   getStartServices,

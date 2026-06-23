@@ -20,6 +20,7 @@ import {
   EuiSelectable,
   EuiSelectableMessage,
   EuiToolTip,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import useEvent from 'react-use/lib/useEvent';
@@ -73,6 +74,7 @@ export function SelectableUrlList({
 }: SelectableUrlListProps) {
   const [searchRef, setSearchRef] = useState<HTMLInputElement | null>(null);
 
+  const selectableUrlListPopoverTitleId = useGeneratedHtmlId();
   const titleRef = useRef<HTMLDivElement>(null);
 
   const formattedOptions = formatOptions(data.items ?? []);
@@ -124,7 +126,7 @@ export function SelectableUrlList({
 
   function PopOverTitle() {
     return (
-      <EuiPopoverTitle paddingSize="s">
+      <EuiPopoverTitle id={selectableUrlListPopoverTitleId} paddingSize="s">
         <EuiFlexGroup ref={titleRef} gutterSize="xs">
           <EuiFlexItem style={{ justifyContent: 'center' }}>
             {loading ? <EuiLoadingSpinner /> : titleText}
@@ -181,6 +183,7 @@ export function SelectableUrlList({
     >
       {(list, search) => (
         <EuiPopover
+          aria-labelledby={selectableUrlListPopoverTitleId}
           panelPaddingSize="none"
           isOpen={popoverIsOpen}
           display={'block'}

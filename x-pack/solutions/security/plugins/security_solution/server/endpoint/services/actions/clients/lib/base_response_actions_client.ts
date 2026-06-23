@@ -939,7 +939,11 @@ export abstract class ResponseActionsClientImpl implements ResponseActionsClient
           responseActions: {
             actionId: response.EndpointActions.action_id,
             agentType: this.agentType,
-            actionStatus: response.error ? 'failed' : 'successful',
+            actionStatus: response.EndpointActions.data?.output?.content.canceled_by
+              ? 'canceled'
+              : response.error
+              ? 'failed'
+              : 'successful',
             command: response.EndpointActions.data.command,
           },
         });

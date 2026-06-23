@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import classNames from 'classnames';
 import copy from 'copy-to-clipboard';
 import React from 'react';
@@ -62,14 +62,16 @@ export const Clipboard = ({
   });
 
   return (
-    <EuiButtonIcon
-      aria-label={i18n.COPY_TO_THE_CLIPBOARD}
-      className={className}
-      data-test-subj="clipboard"
-      iconType="copy"
-      onClick={onClick}
-    >
-      {children}
-    </EuiButtonIcon>
+    <EuiToolTip content={i18n.COPY_TO_THE_CLIPBOARD} disableScreenReaderOutput>
+      <EuiButtonIcon
+        aria-label={i18n.COPY_TO_THE_CLIPBOARD}
+        className={className}
+        data-test-subj="clipboard"
+        iconType="copy"
+        onClick={onClick}
+      >
+        {children}
+      </EuiButtonIcon>
+    </EuiToolTip>
   );
 };

@@ -46,6 +46,7 @@ describe('usePendingActionsOptions hook', () => {
       'agent-1': {
         isCompleted: false,
         wasSuccessful: false,
+        wasCanceled: false,
         errors: undefined,
         completedAt: undefined,
       },
@@ -53,6 +54,7 @@ describe('usePendingActionsOptions hook', () => {
     isExpired: false,
     isCompleted: false,
     wasSuccessful: false,
+    wasCanceled: false,
     startedAt: '2023-11-01T10:00:00.000Z',
     completedAt: undefined,
     status: 'pending',

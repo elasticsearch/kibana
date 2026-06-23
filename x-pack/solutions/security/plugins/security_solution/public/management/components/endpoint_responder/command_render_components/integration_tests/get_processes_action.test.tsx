@@ -175,6 +175,7 @@ describe('When using processes action from response actions console', () => {
       'agent-a': {
         isCompleted: true,
         wasSuccessful: false,
+        wasCanceled: false,
         errors: ['error one', 'error two'],
         completedAt: new Date().toISOString(),
       },

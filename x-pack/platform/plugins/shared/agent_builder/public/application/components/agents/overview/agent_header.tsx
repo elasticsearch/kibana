@@ -9,13 +9,14 @@ import React from 'react';
 import {
   EuiBadge,
   EuiButtonEmpty,
+  EuiButtonIcon,
   EuiCopy,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiButtonIcon,
   EuiSpacer,
   EuiText,
   EuiTitle,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import type { AgentDefinition } from '@kbn/agent-builder-common';
@@ -90,19 +91,24 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
                     <EuiFlexItem grow={false} css={textSubduedStyles}>
                       <EuiCopy textToCopy={agent.id}>
                         {(copy) => (
-                          <EuiButtonIcon
-                            iconType="copy"
-                            onClick={copy}
-                            size="xs"
-                            aria-label={overviewLabels.copyIdAriaLabel}
-                            data-test-subj="agentOverviewCopyId"
-                            css={textSubduedStyles}
-                            {...getEbtProps({
-                              element: AGENT_BUILDER_UI_EBT.element.pageContent,
-                              action: AGENT_BUILDER_UI_EBT.action.agentOverview.COPY_ID,
-                              detail: AGENT_BUILDER_UI_EBT.entity.AGENT,
-                            })}
-                          />
+                          <EuiToolTip
+                            content={overviewLabels.copyIdAriaLabel}
+                            disableScreenReaderOutput
+                          >
+                            <EuiButtonIcon
+                              iconType="copy"
+                              onClick={copy}
+                              size="xs"
+                              aria-label={overviewLabels.copyIdAriaLabel}
+                              data-test-subj="agentOverviewCopyId"
+                              css={textSubduedStyles}
+                              {...getEbtProps({
+                                element: AGENT_BUILDER_UI_EBT.element.pageContent,
+                                action: AGENT_BUILDER_UI_EBT.action.agentOverview.COPY_ID,
+                                detail: AGENT_BUILDER_UI_EBT.entity.AGENT,
+                              })}
+                            />
+                          </EuiToolTip>
                         )}
                       </EuiCopy>
                     </EuiFlexItem>

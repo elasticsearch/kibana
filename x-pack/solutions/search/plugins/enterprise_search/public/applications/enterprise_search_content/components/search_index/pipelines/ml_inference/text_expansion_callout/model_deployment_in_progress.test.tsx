@@ -9,10 +9,11 @@ import { setMockValues } from '../../../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { ModelDeploymentInProgress } from './model_deployment_in_progress';
-import { TextExpansionDismissButton } from './text_expansion_callout';
 
 const DEFAULT_VALUES = {
   startTextExpansionModelError: undefined,
@@ -29,11 +30,17 @@ describe('ModelDeploymentInProgress', () => {
     setMockValues(DEFAULT_VALUES);
   });
   it('renders dismiss button if it is set to dismissable', () => {
-    const wrapper = shallow(<ModelDeploymentInProgress dismiss={() => {}} isDismissable />);
-    expect(wrapper.find(TextExpansionDismissButton).length).toBe(1);
+    renderWithKibanaRenderContext(<ModelDeploymentInProgress dismiss={() => {}} isDismissable />);
+    expect(
+      screen.getByTestId('enterpriseSearchTextExpansionDismissButtonButton')
+    ).toBeInTheDocument();
   });
   it('does not render dismiss button if it is set to non-dismissable', () => {
-    const wrapper = shallow(<ModelDeploymentInProgress dismiss={() => {}} isDismissable={false} />);
-    expect(wrapper.find(TextExpansionDismissButton).length).toBe(0);
+    renderWithKibanaRenderContext(
+      <ModelDeploymentInProgress dismiss={() => {}} isDismissable={false} />
+    );
+    expect(
+      screen.queryByTestId('enterpriseSearchTextExpansionDismissButtonButton')
+    ).not.toBeInTheDocument();
   });
 });

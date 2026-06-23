@@ -28,7 +28,6 @@ import { SignificantEventsDiscoveryProvider } from './context/significant_events
 import { ONBOARDING_FAILURE_TITLE } from './components/streams_view/translations';
 import { QueriesTable } from './components/queries_table/queries_table';
 import { StreamsView } from './components/streams_view/streams_view';
-import { InsightsTab } from './components/insights/tab';
 import { SettingsTab } from './components/settings/tab';
 import { MemoryTab } from './components/memory/tab';
 import { DetectionsTab } from './components/detections_tab';
@@ -39,7 +38,6 @@ const discoveryTabs = [
   'streams',
   'knowledge_indicators',
   'queries',
-  'insights',
   'detections',
   'discoveries',
   'significant_events',
@@ -145,14 +143,6 @@ export function SignificantEventsDiscoveryPage() {
         href: router.link('/_discovery/{tab}', { path: { tab: 'significant_events' } }),
         isSelected: tab === 'significant_events',
       },
-      {
-        id: 'insights',
-        label: i18n.translate('xpack.streams.significantEventsDiscovery.insightsTab', {
-          defaultMessage: 'Insights',
-        }),
-        href: router.link('/_discovery/{tab}', { path: { tab: 'insights' } }),
-        isSelected: tab === 'insights',
-      },
     ];
 
     if (isMemoryEnabled) {
@@ -245,7 +235,6 @@ export function SignificantEventsDiscoveryPage() {
             {tab === 'streams' && <StreamsView />}
             {tab === 'knowledge_indicators' && <KnowledgeIndicatorsTable />}
             {tab === 'queries' && <QueriesTable />}
-            {tab === 'insights' && <InsightsTab />}
             {tab === 'detections' && <DetectionsTab />}
             {tab === 'discoveries' && <DiscoveriesTab />}
             {tab === 'significant_events' && <SigEventsTab />}

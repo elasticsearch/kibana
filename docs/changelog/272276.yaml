@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272276
+issues:
+- https://github.com/elastic/kibana/issues/272269
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix announcement modal reappearing after dismissal on fast navigation
+description: 'Fixes an issue where the Agent Builder announcement modal could reappear on page navigation after being dismissed, particularly in high-latency or proxy environments.'

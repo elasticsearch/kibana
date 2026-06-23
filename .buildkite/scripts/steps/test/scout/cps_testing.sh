@@ -7,6 +7,7 @@ source .buildkite/scripts/steps/functional/common.sh
 CONFIG_PATHS=(
   "x-pack/solutions/security/plugins/security_solution/test/scout_cps_local/ui/playwright.config.ts"
   "x-pack/solutions/security/plugins/security_solution/test/scout_cps_local/api/playwright.config.ts"
+  "x-pack/solutions/security/plugins/entity_store/test/scout_cps_local/api/playwright.config.ts"
 )
 
 echo "--- Cross Project Search (CPS) Tests"

@@ -111,6 +111,9 @@ export const LocationsBadge = ({
       closePopover={closePopover}
       panelPaddingSize="none"
       anchorPosition="downLeft"
+      aria-label={i18n.translate('xpack.synthetics.locationsBadge.popoverAriaLabel', {
+        defaultMessage: 'Locations menu',
+      })}
     >
       <EuiContextMenu initialPanelId={0} panels={panels} />
     </EuiPopover>

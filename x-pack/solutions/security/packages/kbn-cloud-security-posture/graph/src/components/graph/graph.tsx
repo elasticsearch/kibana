@@ -294,6 +294,11 @@ export const Graph = memo<GraphProps>(
           edges={edgesState}
           nodesConnectable={false}
           edgesFocusable={false}
+          // Disable React Flow's built-in selection/focus in non-interactive mode (e.g. flyout
+          // preview) so nodes never receive a selected/focused state through keyboard focus or
+          // programmatic selection, which would otherwise show selection visuals.
+          nodesFocusable={interactive}
+          elementsSelectable={interactive}
           onlyRenderVisibleElements={ONLY_RENDER_VISIBLE_ELEMENTS}
           snapToGrid={true} // Snap to grid is enabled to avoid sub-pixel positioning
           snapGrid={[GRID_SIZE, GRID_SIZE]} // Snap nodes to a 10px grid

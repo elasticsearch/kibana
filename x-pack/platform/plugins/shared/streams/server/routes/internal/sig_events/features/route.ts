@@ -8,7 +8,7 @@
 import { z } from '@kbn/zod/v4';
 import { BooleanFromString } from '@kbn/zod-helpers/v4';
 import type { IdentifyFeaturesResult, TaskResult } from '@kbn/streams-schema';
-import { baseFeatureSchema, featureSchema, type Feature } from '@kbn/streams-schema';
+import { baseFeatureSchema, featureUpsertSchema, type Feature } from '@kbn/streams-schema';
 import { searchModeSchema } from '../../../utils/search_mode';
 import { createServerRoute } from '../../../create_server_route';
 import { assertSignificantEventsAccess } from '../../../utils/assert_significant_events_access';
@@ -248,7 +248,7 @@ export const bulkFeaturesRoute = createServerRoute({
         z.union([
           z.object({
             index: z.object({
-              feature: featureSchema,
+              feature: featureUpsertSchema,
             }),
           }),
           z.object({

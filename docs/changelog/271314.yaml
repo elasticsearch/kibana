@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/271314
+issues:
+- https://github.com/elastic/kibana/issues/268959
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Kibana platform
+title: Fix user avatar and tooltip showing proxy user with reverse proxy `run_as`
+description: The Kibana header avatar and tooltip now show the effective run_as user instead of the reverse proxy account when `es-security-runas-user` is configured.

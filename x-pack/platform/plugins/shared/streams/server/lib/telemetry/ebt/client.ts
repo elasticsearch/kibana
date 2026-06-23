@@ -9,7 +9,6 @@ import type { AnalyticsServiceSetup } from '@kbn/core-analytics-server';
 import type {
   StreamEndpointLatencyProps,
   StreamsDescriptionGeneratedProps,
-  StreamsInsightsGeneratedProps,
   StreamsSignificantEventsQueriesGeneratedProps,
   StreamsStateErrorProps,
   StreamsProcessingPipelineSuggestedProps,
@@ -26,7 +25,6 @@ import {
   STREAMS_DESCRIPTION_GENERATED_EVENT_TYPE,
   STREAMS_SIGNIFICANT_EVENTS_QUERIES_GENERATED_EVENT_TYPE,
   STREAMS_STATE_ERROR_EVENT,
-  STREAMS_INSIGHTS_GENERATED_EVENT_TYPE,
   STREAMS_PROCESSING_PIPELINE_SUGGESTED_EVENT_TYPE,
   STREAMS_FEATURES_IDENTIFIED_EVENT_TYPE,
   STREAMS_AGENT_BUILDER_KNOWLEDGE_INDICATOR_CREATED_EVENT_TYPE,
@@ -89,10 +87,6 @@ export class EbtTelemetryClient {
     params: StreamsSignificantEventsQueriesGeneratedProps
   ) {
     this.analytics.reportEvent(STREAMS_SIGNIFICANT_EVENTS_QUERIES_GENERATED_EVENT_TYPE, params);
-  }
-
-  public trackInsightsGenerated(params: StreamsInsightsGeneratedProps) {
-    this.analytics.reportEvent(STREAMS_INSIGHTS_GENERATED_EVENT_TYPE, params);
   }
 
   public trackProcessingPipelineSuggested(params: StreamsProcessingPipelineSuggestedProps) {

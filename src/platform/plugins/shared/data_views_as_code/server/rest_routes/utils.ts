@@ -13,9 +13,11 @@ import type {
   RouteMethod,
   StartServicesAccessor,
 } from '@kbn/core/server';
+import { SavedObjectsErrorHelpers } from '@kbn/core/server';
 import type Boom from '@hapi/boom';
 import { SavedObjectNotFound } from '@kbn/kibana-utils-plugin/common';
 import type { ErrorIndexPatternNotFound } from '@kbn/data-views-plugin/server/error';
+import { DuplicateDataViewError } from '@kbn/data-views-plugin/common';
 import type { DataViewsAsCodeServerPluginStartDependencies } from '../types';
 import { DataViewsAsCodeService } from '../services/data_views_as_code_service';
 
@@ -80,6 +82,20 @@ export const handleErrors =
 
         if (is404) {
           return response.notFound({
+            headers: {
+              'content-type': 'application/json',
+            },
+            body,
+          });
+        }
+
+        const isConflict =
+          SavedObjectsErrorHelpers.isConflictError(error) ||
+          error instanceof DuplicateDataViewError ||
+          (error as Boom.Boom)?.output?.statusCode === 409;
+
+        if (isConflict) {
+          return response.conflict({
             headers: {
               'content-type': 'application/json',
             },

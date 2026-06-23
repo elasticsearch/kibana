@@ -66,31 +66,35 @@ export const attachmentTools = {
   diff: `${internalNamespaces.attachments}.diff`,
 };
 
-export const filestoreTools = {
-  read: `${internalNamespaces.filestore}.read`,
-  ls: `${internalNamespaces.filestore}.ls`,
-  grep: `${internalNamespaces.filestore}.grep`,
-  glob: `${internalNamespaces.filestore}.glob`,
-};
-
 export const internalTools = {
   runSubagent: 'run_subagent',
   sleep: 'sleep',
   writeTodos: 'write_todos',
   loadSkill: 'load_skill',
   askUserQuestion: 'ask_user_question',
+  readFile: 'read_file',
+  listFiles: 'list_files',
+  bash: 'bash',
 };
 
 export const isAttachmentTool = (toolName: string) =>
   Object.values(attachmentTools).includes(toolName);
 
-export const isFilestoreTool = (toolName: string) =>
-  Object.values(filestoreTools).includes(toolName);
+/**
+ * Legacy filestore tool ids, used to classify these historical tool calls as `internal`.
+ */
+const LEGACY_FILESTORE_TOOL_IDS = new Set([
+  'filestore.read',
+  'filestore.ls',
+  'filestore.grep',
+  'filestore.glob',
+]);
+const isLegacyFilestoreTool = (toolName: string) => LEGACY_FILESTORE_TOOL_IDS.has(toolName);
 
 const isInternalToolName = (toolName: string) => Object.values(internalTools).includes(toolName);
 
 export const isInternalTool = (toolName: string) =>
-  isAttachmentTool(toolName) || isFilestoreTool(toolName) || isInternalToolName(toolName);
+  isAttachmentTool(toolName) || isLegacyFilestoreTool(toolName) || isInternalToolName(toolName);
 
 export const isExcludedFromFilestore = (toolName: string) => isInternalTool(toolName);
 

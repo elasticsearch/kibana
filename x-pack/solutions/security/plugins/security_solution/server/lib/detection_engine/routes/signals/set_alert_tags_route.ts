@@ -16,7 +16,10 @@ import {
   DEFAULT_ALERTS_INDEX,
   DETECTION_ENGINE_ALERT_TAGS_URL,
 } from '../../../../../common/constants';
-import { setAlertTagsHandler } from '../common/set_alert_tags_handler';
+import { buildSiemResponse } from '../utils';
+import { validateAlertTagsArrays } from '../common/validators/validate_alert_arrays';
+import { updateAlertsTags } from '../common/operations/update_alerts_tags';
+import { withSiemErrorHandling } from '../with_siem_error_handling';
 
 export const setAlertTagsRoute = (router: SecuritySolutionPluginRouter) => {
   router.versioned
@@ -41,20 +44,25 @@ export const setAlertTagsRoute = (router: SecuritySolutionPluginRouter) => {
         },
       },
       async (context, request, response) => {
-        const securitySolution = await context.securitySolution;
-        const spaceId = securitySolution?.getSpaceId() ?? 'default';
-        const getIndexPattern = async () => `${DEFAULT_ALERTS_INDEX}-${spaceId}`;
+        const siemResponse = buildSiemResponse(response);
+        const { ids, tags } = request.body;
 
-        return setAlertTagsHandler({
-          context,
-          request,
-          response,
-          getIndexPattern,
-          validateSiemClient: async (ctx) => {
-            const secSolution = await ctx.securitySolution;
-            return secSolution?.getAppClient() != null;
-          },
-        });
+        const validationErrors = validateAlertTagsArrays(tags, ids);
+        if (validationErrors.length) {
+          return siemResponse.error({ statusCode: 400, body: validationErrors });
+        }
+
+        const securitySolution = await context.securitySolution;
+        if (securitySolution?.getAppClient() == null) {
+          return siemResponse.error({ statusCode: 404 });
+        }
+
+        const spaceId = securitySolution.getSpaceId() ?? 'default';
+        const index = `${DEFAULT_ALERTS_INDEX}-${spaceId}`;
+
+        return withSiemErrorHandling(response, () =>
+          updateAlertsTags({ context, index, ids, tags })
+        );
       }
     );
 };

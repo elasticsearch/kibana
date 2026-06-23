@@ -26,6 +26,7 @@ export type {
   PinnedControlState,
   RangeSliderControlState,
   RangeSliderValue,
+  StrictDataControlState,
   TimeSlice,
   TimeSliderControlState,
 } from './src/types';

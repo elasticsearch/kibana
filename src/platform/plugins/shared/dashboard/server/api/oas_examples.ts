@@ -13,6 +13,7 @@
 
 import type { DeepPartial } from '@kbn/utility-types';
 
+import { ControlValuesSource } from '@kbn/controls-constants';
 import type { DashboardState } from './types';
 import type { DashboardCreateResponseBody } from './create';
 import type { DashboardReadResponseBody } from './read';
@@ -711,6 +712,7 @@ const dashboardCreateRequestExamples = {
             title: 'Response code',
             data_view_id: '90943e30-9a47-11e8-b64d-95841ca0b247',
             field_name: 'response.keyword',
+            values_source: ControlValuesSource.FIELD,
             use_global_filters: true,
             ignore_validations: false,
             exclude: false,

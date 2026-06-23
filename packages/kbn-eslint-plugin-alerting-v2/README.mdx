@@ -1,0 +1,16 @@
+---
+id: kibDevDocsOpsEslintPluginAlertingV2
+slug: /kibana-dev-docs/ops/kbn-eslint-plugin-alerting-v2
+title: '@kbn/eslint-plugin-alerting-v2'
+description: Custom ESLint rules for the @kbn/alerting-v2-rule-form package
+tags: ['kibana', 'dev', 'contributor', 'operations', 'eslint', 'alerting']
+---
+
+Custom ESLint rules enforcing UI conventions for the `@kbn/alerting-v2-rule-form` package.
+
+## `@kbn/alerting-v2/require_eui_form_compressed`
+
+Requires compressed styling on EUI form controls to ensure compact form layouts:
+
+- `EuiFieldText`, `EuiFieldNumber`, `EuiSelect`, `EuiComboBox`, `EuiSuperSelect`, `EuiTextArea`, `EuiSuperDatePicker` — must have the `compressed` prop.
+- `EuiButtonGroup` — must have `buttonSize="compressed"` (or a dynamic expression).

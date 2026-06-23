@@ -14,7 +14,6 @@
     "@kbn/core-notifications-browser-mocks",
     "@kbn/data-plugin",
     "@kbn/data-views-plugin",
-    "@kbn/esql",
     "@kbn/esql-utils",
     "@kbn/esql-types",
     "@kbn/es-query",

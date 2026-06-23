@@ -82,4 +82,20 @@ describe('RuleCreateOptionsFlyout', () => {
 
     expect(onCreateThresholdAlert).toHaveBeenCalledTimes(1);
   });
+
+  it('hides the AI Agent option when onCreateWithAgent is not provided', () => {
+    render(
+      <I18nProvider>
+        <RuleCreateOptionsFlyout
+          onClose={onClose}
+          onCreateEsqlRule={onCreateEsqlRule}
+          onCreateThresholdAlert={onCreateThresholdAlert}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText('Create ES|QL rule')).toBeInTheDocument();
+    expect(screen.queryByText('Create with AI Agent')).not.toBeInTheDocument();
+    expect(screen.getByText('Threshold Alert')).toBeInTheDocument();
+  });
 });

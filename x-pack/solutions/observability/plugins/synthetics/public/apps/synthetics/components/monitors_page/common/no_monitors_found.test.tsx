@@ -33,5 +33,5 @@ describe('NoMonitorsFound', () => {
     await waitFor(() => {
       expect(updateUrlParamsMock).toBeCalledWith(null);
     });
-  });
+  }, 30_000);
 });

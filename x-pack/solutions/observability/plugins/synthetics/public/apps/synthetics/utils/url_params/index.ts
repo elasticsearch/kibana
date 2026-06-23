@@ -8,3 +8,4 @@
 export type { SyntheticsUrlParams } from './get_supported_url_params';
 export { getSupportedUrlParams } from './get_supported_url_params';
 export * from './stringify_url_params';
+export { buildMonitorParamsSearch } from './build_monitor_params_search';

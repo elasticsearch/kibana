@@ -9,19 +9,38 @@ import { setMockActions, setMockValues } from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import type { ShallowWrapper } from 'enzyme';
-import { shallow } from 'enzyme';
+import { fireEvent, screen } from '@testing-library/react';
 
-import { act } from 'react-dom/test-utils';
-
-import { EuiContextMenuItem, EuiSuperDatePicker } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { AnalyticsCollection } from '../../../../../../common/types/analytics';
 
 import { AnalyticsCollectionToolbar } from './analytics_collection_toolbar';
 
+// EuiSuperDatePicker has no stable test IDs for its internal controls (quick-select buttons,
+// apply button, etc.), so triggering onTimeChange/onRefreshChange/onRefresh through real DOM
+// interaction is fragile. Instead, the mock below intercepts the callback props passed by
+// AnalyticsCollectionToolbar during render and exposes them via the captured* variables so each
+// test can invoke them directly — verifying that the component wires callbacks to kea actions
+// without relying on EUI internals.
+let capturedOnTimeChange: ((props: any) => void) | undefined;
+let capturedOnRefreshChange: ((props: any) => void) | undefined;
+let capturedOnRefresh: (() => void) | undefined;
+
+jest.mock('@elastic/eui', () => {
+  const actual = jest.requireActual('@elastic/eui');
+  return {
+    ...actual,
+    EuiSuperDatePicker: (props: any) => {
+      capturedOnTimeChange = props.onTimeChange;
+      capturedOnRefreshChange = props.onRefreshChange;
+      capturedOnRefresh = props.onRefresh;
+      return <div data-test-subj="superDatePicker" />;
+    },
+  };
+});
+
 describe('AnalyticsCollectionToolbar', () => {
-  let wrapper: ShallowWrapper;
   const mockActions = {
     deleteAnalyticsCollection: jest.fn(),
     findDataViewId: jest.fn(),
@@ -32,6 +51,9 @@ describe('AnalyticsCollectionToolbar', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    capturedOnTimeChange = undefined;
+    capturedOnRefreshChange = undefined;
+    capturedOnRefresh = undefined;
 
     setMockValues({
       analyticsCollection: {
@@ -44,35 +66,21 @@ describe('AnalyticsCollectionToolbar', () => {
       timeRange: { from: 'now-90d', to: 'now' },
     });
     setMockActions(mockActions);
-
-    wrapper = shallow(<AnalyticsCollectionToolbar />);
-  });
-
-  afterEach(() => {
-    wrapper.unmount();
   });
 
   it('should call setTimeRange when date picker changed time', () => {
-    const datePicker = wrapper.find(EuiSuperDatePicker);
+    renderWithKibanaRenderContext(<AnalyticsCollectionToolbar />);
 
-    expect(datePicker).toHaveLength(1);
-
-    const handleTimeChange = datePicker.prop('onTimeChange') as (props: any) => void;
-
-    act(() => {
-      handleTimeChange({ end: 'now', start: 'now-30d' });
-    });
+    expect(screen.getByTestId('superDatePicker')).toBeInTheDocument();
+    capturedOnTimeChange!({ end: 'now', start: 'now-30d' });
 
     expect(mockActions.setTimeRange).toHaveBeenCalledWith({ from: 'now-30d', to: 'now' });
   });
 
   it('should call setRefreshInterval when date picker changed refresh time', () => {
-    const datePicker = wrapper.find(EuiSuperDatePicker);
-    const handleRefreshChange = datePicker.prop('onRefreshChange') as (props: any) => void;
+    renderWithKibanaRenderContext(<AnalyticsCollectionToolbar />);
 
-    act(() => {
-      handleRefreshChange({ isPaused: true, refreshInterval: 20000 });
-    });
+    capturedOnRefreshChange!({ isPaused: true, refreshInterval: 20000 });
 
     expect(mockActions.setRefreshInterval).toHaveBeenCalledWith({
       pause: true,
@@ -81,30 +89,33 @@ describe('AnalyticsCollectionToolbar', () => {
   });
 
   it('should call onTimeRefresh when the refresh button is clicked', () => {
-    const datePicker = wrapper.find(EuiSuperDatePicker);
-    const handleRefresh = datePicker.prop('onRefresh') as () => void;
-    act(() => {
-      handleRefresh();
-    });
+    renderWithKibanaRenderContext(<AnalyticsCollectionToolbar />);
+
+    capturedOnRefresh!();
+
     expect(mockActions.onTimeRefresh).toHaveBeenCalled();
   });
 
   it('should correct link to explore in discover item', () => {
-    const exploreInDiscoverItem = wrapper.find(EuiContextMenuItem).at(2);
+    renderWithKibanaRenderContext(<AnalyticsCollectionToolbar />);
 
-    expect(exploreInDiscoverItem).toHaveLength(1);
+    fireEvent.click(screen.getByTestId('enterpriseSearchAnalyticsCollectionToolbarManageButton'));
 
-    expect(exploreInDiscoverItem.prop('href')).toBe(
+    const discoverLink = screen.getByText('Create dashboards in Discover').closest('a');
+    expect(discoverLink).toHaveAttribute(
+      'href',
       "/app/discover#/?_a=(index:'data-view-test')&_g=(filters:!(),refreshInterval:(pause:!f,value:10000),time:(from:now-90d,to:now))"
     );
   });
 
   it('should correct link to the manage datastream link', () => {
-    const exploreInDiscoverItem = wrapper.find(EuiContextMenuItem).at(1);
+    renderWithKibanaRenderContext(<AnalyticsCollectionToolbar />);
 
-    expect(exploreInDiscoverItem).toHaveLength(1);
+    fireEvent.click(screen.getByTestId('enterpriseSearchAnalyticsCollectionToolbarManageButton'));
 
-    expect(exploreInDiscoverItem.prop('href')).toBe(
+    const datastreamLink = screen.getByText('Manage events datastream').closest('a');
+    expect(datastreamLink).toHaveAttribute(
+      'href',
       '/app/management/data/index_management/data_streams/test-events'
     );
   });

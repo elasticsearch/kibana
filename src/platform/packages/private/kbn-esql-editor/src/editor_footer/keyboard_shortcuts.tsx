@@ -41,6 +41,16 @@ const listItems = [
   {
     title: (
       <>
+        <kbd>⇧</kbd> <kbd>Enter</kbd>
+      </>
+    ),
+    description: i18n.translate('esqlEditor.query.newLineKeyboardShortcutsLabel', {
+      defaultMessage: 'New line',
+    }),
+  },
+  {
+    title: (
+      <>
         <kbd>{COMMAND_KEY}</kbd> <kbd>/</kbd>
       </>
     ),

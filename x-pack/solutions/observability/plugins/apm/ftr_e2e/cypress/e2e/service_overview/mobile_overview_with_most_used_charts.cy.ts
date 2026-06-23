@@ -74,8 +74,7 @@ describe.skip('Mobile Service overview page', () => {
         const timeEnd = moment(end).subtract(5, 'm').toISOString();
 
         cy.selectAbsoluteTimeRange(timeStart, timeEnd);
-
-        cy.contains('Update').click();
+        // selectAbsoluteTimeRange submits the query itself.
 
         cy.wait(aliasNames);
 

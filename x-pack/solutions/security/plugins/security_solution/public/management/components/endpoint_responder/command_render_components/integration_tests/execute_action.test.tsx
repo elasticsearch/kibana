@@ -189,6 +189,7 @@ describe('When using execute action from response actions console', () => {
             'a.b.c': {
               isCompleted: true,
               wasSuccessful: true,
+              wasCanceled: false,
               completedAt: '2025',
               errors: undefined,
             },

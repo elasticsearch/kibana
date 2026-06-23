@@ -267,6 +267,10 @@
           "label": "File service"
         },
         {
+          "id": "kibUserStorageService",
+          "label": "User Storage"
+        },
+        {
           "id": "kibDevSharePluginReadme",
           "label": "Sharing"
         },

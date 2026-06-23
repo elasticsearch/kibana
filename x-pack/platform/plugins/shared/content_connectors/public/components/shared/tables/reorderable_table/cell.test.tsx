@@ -7,24 +7,18 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { Cell } from './cell';
 
 describe('Cell', () => {
   it('renders a table cell with the provided content and styles', () => {
-    const wrapper = shallow(
+    const { container } = renderWithKibanaRenderContext(
       <Cell flexBasis="foo" flexGrow={0} alignItems="bar">
         Content
       </Cell>
     );
-    expect(wrapper.props()).toEqual({
-      style: {
-        flexBasis: 'foo',
-        flexGrow: 0,
-        alignItems: 'bar',
-      },
-      children: 'Content',
-    });
+    expect(container.firstChild).toHaveStyle({ flexBasis: 'foo', flexGrow: 0, alignItems: 'bar' });
+    expect(container.firstChild).toHaveTextContent('Content');
   });
 });

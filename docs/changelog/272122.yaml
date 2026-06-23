@@ -1,0 +1,7 @@
+prs:
+- https://github.com/elastic/kibana/pull/272122
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix Attack Discovery privilege check for internal alerts index

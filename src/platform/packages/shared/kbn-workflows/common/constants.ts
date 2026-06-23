@@ -27,6 +27,11 @@ export const WORKFLOWS_UI_SHOW_EXECUTOR_SETTING_ID = 'workflows:ui:showExecutor:
 export const WORKFLOW_EXECUTION_STATS_BAR_SETTING_ID = 'workflows:executionStatsBar:enabled';
 
 /**
+ * Hidden Advanced Setting gate for workflow versioning (change-history writes and read routes).
+ */
+export const WORKFLOWS_VERSIONING_SETTING_ID = 'workflows:versioning:enabled';
+
+/**
  * Map of regular (saved object) connector types -> their system connector equivalents.
  * Use this map to make the `connector-id` step config property optional for a given connector step type, allowing it to be executed via its linked system connector.
  * Pre-requisite for this to work:

@@ -15,3 +15,14 @@ export {
   NOTIFICATION_TYPE_ENABLED_DEFAULT,
 } from './feature_flags';
 export type { NotificationTypeId } from './feature_flags';
+
+export { notificationSchema } from './notification_schema';
+
+export {
+  NOTIFICATION_ID_SEPARATOR,
+  buildStaticStateNotificationId,
+  buildEventNotificationId,
+} from './notification_id';
+export type { StaticStateNotificationIdParts, EventNotificationIdParts } from './notification_id';
+
+export type { Notification } from './types';

@@ -12,6 +12,7 @@ import {
   EuiFlexItem,
   EuiIconTip,
   EuiTitle,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import React, { useCallback } from 'react';
@@ -153,18 +154,22 @@ const HeaderSectionComponent: React.FC<HeaderSectionProps> = ({
                   >
                     {toggleQuery && (
                       <EuiFlexItem grow={false}>
-                        <EuiButtonIcon
-                          data-test-subj="query-toggle-header"
-                          aria-label={[toggleAriaLabel, i18n.QUERY_BUTTON_TITLE(toggleStatus)]
-                            .filter(Boolean) // remove undefined, empty string, null
-                            .join(' ')}
-                          color="text"
-                          display="empty"
-                          iconType={toggleStatus ? 'chevronSingleDown' : 'chevronSingleRight'}
-                          onClick={toggle}
-                          size="s"
-                          title={i18n.QUERY_BUTTON_TITLE(toggleStatus)}
-                        />
+                        <EuiToolTip
+                          content={i18n.QUERY_BUTTON_TITLE(toggleStatus)}
+                          disableScreenReaderOutput
+                        >
+                          <EuiButtonIcon
+                            data-test-subj="query-toggle-header"
+                            aria-label={[toggleAriaLabel, i18n.QUERY_BUTTON_TITLE(toggleStatus)]
+                              .filter(Boolean) // remove undefined, empty string, null
+                              .join(' ')}
+                            color="text"
+                            display="empty"
+                            iconType={toggleStatus ? 'chevronSingleDown' : 'chevronSingleRight'}
+                            onClick={toggle}
+                            size="s"
+                          />
+                        </EuiToolTip>
                       </EuiFlexItem>
                     )}
                     <EuiFlexItem>

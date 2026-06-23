@@ -21,14 +21,6 @@ export const CLAIMS_SEED: Record<string, SeedScenario> = {
 | LIMIT 500`,
       },
     ],
-    insights: [
-      {
-        title: 'Baseline traffic healthy',
-        description: 'No failure injections; claim pipeline operating within normal parameters.',
-        impact: 'low',
-        recommendations: ['Continue periodic review of SLO dashboards.'],
-      },
-    ],
   },
 
   fraud_check_redis_herring: {
@@ -52,18 +44,6 @@ export const CLAIMS_SEED: Record<string, SeedScenario> = {
           `${fromStream(streamName)}
 | WHERE message LIKE "*Redis*" OR message LIKE "*Kafka*" OR message LIKE "*consumer lag*"
 | LIMIT 500`,
-      },
-    ],
-    insights: [
-      {
-        title: 'Distinguish fraud timeouts from infra noise',
-        description:
-          'Redis/Kafka chatter co-occurs with gateway timeouts — triage on fraud-check SLIs first.',
-        impact: 'high',
-        recommendations: [
-          'Correlate fraud-check error budget with gateway timeout spikes.',
-          'Validate Redis/Kafka health is green before chasing herrings.',
-        ],
       },
     ],
   },

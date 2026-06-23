@@ -24,7 +24,6 @@ import {
   EuiSpacer,
   EuiToolTip,
   formatDate,
-  htmlIdGenerator,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
@@ -38,14 +37,15 @@ import type { SaveModalDashboardProps } from '@kbn/presentation-util-plugin/publ
 import { SavedObjectSaveModalDashboard } from '@kbn/presentation-util-plugin/public';
 import type { TimeRangeBounds } from '@kbn/ml-time-buckets';
 import type { JobId } from '@kbn/ml-common-types/anomaly_detection_jobs/job';
+import { ANOMALY_EXPLORER_CHARTS_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/anomaly_charts';
 import type { AnomalyChartsEmbeddableState } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
+import type { AnomalyChartsAttachmentState } from '../../embeddables';
 import { useTableSeverity } from '../components/controls/select_severity';
 import { MAX_ANOMALY_CHARTS_ALLOWED } from '../../embeddables/anomaly_charts/anomaly_charts_initializer';
 import { useAnomalyExplorerContext } from './anomaly_explorer_context';
 import { escapeKueryForEmbeddableFieldValuePair } from '../util/string_utils';
 import { useCasesModal } from '../contexts/kibana/use_cases_modal';
 import { DEFAULT_MAX_SERIES_TO_PLOT } from '../services/anomaly_explorer_charts_service';
-import { ANOMALY_EXPLORER_CHARTS_EMBEDDABLE_TYPE } from '../../embeddables';
 import { useMlKibana } from '../contexts/kibana';
 import type { AppStateSelectedCells, ExplorerJob } from './explorer_utils';
 import { getSelectionInfluencers, getSelectionTimeRange } from './explorer_utils';
@@ -63,7 +63,6 @@ interface AnomalyContextMenuProps {
 
 function getDefaultEmbeddablePanelConfig(jobIds: JobId[], queryString?: string) {
   return {
-    id: htmlIdGenerator()(),
     title: getDefaultExplorerChartsPanelTitle(jobIds).concat(queryString ? `- ${queryString}` : ''),
   };
 }
@@ -140,33 +139,34 @@ export const AnomalyContextMenu: FC<AnomalyContextMenuProps> = ({
     maxSeriesToPlot <= MAX_ANOMALY_CHARTS_ALLOWED;
 
   const getEmbeddableInput = useCallback(
-    (timeRange?: TimeRange) => {
-      // Respect the query and the influencers selected
-      // If no query or filter set, filter out to the lanes the selected cells
-      // And if no selected cells, show everything
+    (timeRange?: TimeRange): Partial<AnomalyChartsEmbeddableState> => {
+      const config = getDefaultEmbeddablePanelConfig(mergedGroupsAndJobsIds, queryString);
 
+      return {
+        ...config,
+        ...(timeRange ? { time_range: timeRange } : {}),
+        job_ids: mergedGroupsAndJobsIds,
+        max_series_to_plot: maxSeriesToPlot ?? DEFAULT_MAX_SERIES_TO_PLOT,
+        severity_threshold: severity.val,
+      };
+    },
+    [mergedGroupsAndJobsIds, queryString, maxSeriesToPlot, severity.val]
+  );
+
+  const getCaseAttachmentInput = useCallback(
+    (timeRange?: TimeRange): Partial<AnomalyChartsAttachmentState> => {
+      // Cases preserve the originating query as wrapper state; dashboard panels rely on parent search.
       const selectionInfluencers = getSelectionInfluencers(
         selectedCells,
         selectedCells?.viewByFieldName!
       );
-
-      const influencers = selectionInfluencers ?? [];
-      const config = getDefaultEmbeddablePanelConfig(mergedGroupsAndJobsIds, queryString);
-
-      const queryFromSelectedCells = influencers
+      const queryFromSelectedCells = (selectionInfluencers ?? [])
         .map((s) => escapeKueryForEmbeddableFieldValuePair(s.fieldName, s.fieldValue))
         .join(' or ');
 
-      // When adding anomaly charts to Dashboard, we want to respect the Dashboard's time range
-      // so we are not passing the time range here
       return {
-        ...config,
-        ...(timeRange ? { time_range: timeRange } : {}),
-        jobIds: mergedGroupsAndJobsIds,
-        maxSeriesToPlot: maxSeriesToPlot ?? DEFAULT_MAX_SERIES_TO_PLOT,
-        severityThreshold: severity.val,
-        ...((isDefined(queryString) && queryString !== '') ||
-        (queryFromSelectedCells !== undefined && queryFromSelectedCells !== '')
+        ...getEmbeddableInput(timeRange),
+        ...((isDefined(queryString) && queryString !== '') || queryFromSelectedCells !== ''
           ? {
               query: {
                 query: queryString === '' ? queryFromSelectedCells : queryString,
@@ -176,7 +176,7 @@ export const AnomalyContextMenu: FC<AnomalyContextMenuProps> = ({
           : {}),
       };
     },
-    [selectedCells, mergedGroupsAndJobsIds, queryString, maxSeriesToPlot, severity.val]
+    [getEmbeddableInput, queryString, selectedCells]
   );
 
   const onSaveCallback: SaveModalDashboardProps['onSave'] = useCallback(
@@ -184,6 +184,7 @@ export const AnomalyContextMenu: FC<AnomalyContextMenuProps> = ({
       const stateTransfer = embeddable!.getStateTransfer();
 
       const embeddableInput: Partial<AnomalyChartsEmbeddableState> = {
+        // Dashboard panels should inherit the dashboard time range, so do not serialize time_range.
         ...getEmbeddableInput(),
         title: newTitle,
         description: newDescription,
@@ -300,7 +301,7 @@ export const AnomalyContextMenu: FC<AnomalyContextMenuProps> = ({
         content: getContent(
           closePopoverOnAction.bind(
             null,
-            openCasesModal.bind(null, getEmbeddableInput(timeRangeToPlot))
+            openCasesModal.bind(null, getCaseAttachmentInput(timeRangeToPlot))
           )
         ),
       });
@@ -308,7 +309,7 @@ export const AnomalyContextMenu: FC<AnomalyContextMenuProps> = ({
 
     return menuPanels;
   }, [
-    getEmbeddableInput,
+    getCaseAttachmentInput,
     canEditDashboards,
     casesPrivileges,
     maxSeriesToPlot,

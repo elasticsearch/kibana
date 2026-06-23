@@ -7,18 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { fromStoredDataViewToAsCodeSavedSchema } from '@kbn/as-code-data-views-transforms';
+import {
+  fromStoredDataViewToAsCodeSavedSchema,
+  toStoredDataView,
+} from '@kbn/as-code-data-views-transforms';
 import { DataViewsAsCodeService } from './data_views_as_code_service';
-import type { DataViewLazy } from '@kbn/data-views-plugin/common';
+import type { DataViewLazy, DataViewSpec } from '@kbn/data-views-plugin/common';
 import { dataViewsService } from '@kbn/data-views-plugin/server/mocks';
-
-jest.mock('@kbn/as-code-data-views-transforms', () => ({
-  fromStoredDataViewToAsCodeSavedSchema: jest.fn(),
-  toStoredDataView: jest.fn(),
-}));
-
-const fromStoredDataViewToAsCodeSavedSchemaMock =
-  fromStoredDataViewToAsCodeSavedSchema as jest.Mock;
 
 const createMockDataViewLazy = ({
   id = 'test-id',
@@ -46,6 +41,11 @@ const createService = () => {
   return { service, mockDataViewsService: dataViewsService };
 };
 
+const getExpectedMappedData = (spec: DataViewSpec) => {
+  const { id: _id, ...data } = fromStoredDataViewToAsCodeSavedSchema(spec);
+  return data;
+};
+
 describe('DataViewsAsCodeService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -65,14 +65,11 @@ describe('DataViewsAsCodeService', () => {
       });
       mockDataViewsService.getDataViewLazy.mockResolvedValue(mockDataView);
 
-      const transformedData = { title: 'my-index-*', timeFieldName: '@timestamp' };
-      fromStoredDataViewToAsCodeSavedSchemaMock.mockReturnValue(transformedData);
+      const transformedData = getExpectedMappedData(mockSpec as DataViewSpec);
 
       const result = await service.get('dv-1');
 
       expect(mockDataViewsService.getDataViewLazy).toHaveBeenCalledWith('dv-1');
-      expect(mockDataView.toSpec).toHaveBeenCalledTimes(1);
-      expect(fromStoredDataViewToAsCodeSavedSchemaMock).toHaveBeenCalledWith(mockSpec);
       expect(result).toEqual({
         id: 'dv-1',
         data: transformedData,
@@ -104,13 +101,12 @@ describe('DataViewsAsCodeService', () => {
         spec: { title: 'logs-*' },
       });
       mockDataViewsService.getDataViewLazy.mockResolvedValue(mockDataView);
-      fromStoredDataViewToAsCodeSavedSchemaMock.mockReturnValue({ title: 'logs-*' });
 
       const result = await service.get('dv-2');
 
       expect(result).toEqual({
         id: 'dv-2',
-        data: { title: 'logs-*' },
+        data: getExpectedMappedData({ title: 'logs-*' }),
         meta: {
           managed: false,
           version: '1',
@@ -127,16 +123,12 @@ describe('DataViewsAsCodeService', () => {
         spec: { title: 'events-*', id: 'dv-4' },
       });
       mockDataViewsService.getDataViewLazy.mockResolvedValue(mockDataView);
-      fromStoredDataViewToAsCodeSavedSchemaMock.mockReturnValue({
-        id: 'dv-4',
-        index_pattern: 'events-*',
-      });
 
       const result = await service.get('dv-4');
 
       expect(result).toEqual({
         id: 'dv-4',
-        data: { index_pattern: 'events-*' },
+        data: getExpectedMappedData({ title: 'events-*', id: 'dv-4' }),
         meta: {
           managed: false,
           version: '1',
@@ -159,11 +151,100 @@ describe('DataViewsAsCodeService', () => {
         spec: detailedSpec,
       });
       mockDataViewsService.getDataViewLazy.mockResolvedValue(mockDataView);
-      fromStoredDataViewToAsCodeSavedSchemaMock.mockReturnValue({ transformed: true });
 
-      await service.get('dv-3');
+      const result = await service.get('dv-3');
 
-      expect(fromStoredDataViewToAsCodeSavedSchemaMock).toHaveBeenCalledWith(detailedSpec);
+      expect(result.data).toEqual(getExpectedMappedData(detailedSpec));
+    });
+  });
+
+  describe('create', () => {
+    it('should transform the spec, create and save the data view, and return mapped result', async () => {
+      const { service, mockDataViewsService } = createService();
+
+      const inputSpec = { id: 'dv-new', index_pattern: 'logs-*', time_field: '@timestamp' };
+      const storedSpec = toStoredDataView(inputSpec) as DataViewSpec;
+
+      const mockDataView = createMockDataViewLazy({
+        id: 'dv-new',
+        managed: false,
+        version: '1',
+        namespaces: ['default'],
+        spec: storedSpec,
+      });
+      mockDataViewsService.createAndSaveDataViewLazy.mockResolvedValue(mockDataView);
+
+      const transformedData = getExpectedMappedData(storedSpec);
+
+      const result = await service.create(inputSpec);
+
+      expect(mockDataViewsService.createAndSaveDataViewLazy).toHaveBeenCalledWith(storedSpec);
+      expect(mockDataView.toSpec).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        id: 'dv-new',
+        data: transformedData,
+        meta: {
+          managed: false,
+          version: '1',
+          namespaces: ['default'],
+        },
+      });
+    });
+
+    it('should propagate errors from createAndSaveDataViewLazy', async () => {
+      const { service, mockDataViewsService } = createService();
+
+      const error = new Error('Failed to create data view');
+      mockDataViewsService.createAndSaveDataViewLazy.mockRejectedValue(error);
+
+      await expect(service.create({ id: 'dv-fail', index_pattern: 'logs-*' })).rejects.toThrow(
+        'Failed to create data view'
+      );
+    });
+
+    it('should pass the transformed spec to createAndSaveDataViewLazy', async () => {
+      const { service, mockDataViewsService } = createService();
+
+      const inputSpec = {
+        id: 'dv-complex',
+        index_pattern: 'metrics-*',
+        time_field: '@timestamp',
+        field_filters: ['bytes'],
+      };
+      const transformedStoredSpec = toStoredDataView(inputSpec) as DataViewSpec;
+
+      const mockDataView = createMockDataViewLazy({
+        id: 'dv-complex',
+        spec: transformedStoredSpec,
+      });
+      mockDataViewsService.createAndSaveDataViewLazy.mockResolvedValue(mockDataView);
+
+      await service.create(inputSpec);
+
+      expect(mockDataViewsService.createAndSaveDataViewLazy).toHaveBeenCalledWith(
+        transformedStoredSpec
+      );
+    });
+
+    it('should return correct meta from the created data view', async () => {
+      const { service, mockDataViewsService } = createService();
+
+      const mockDataView = createMockDataViewLazy({
+        id: 'dv-meta',
+        managed: true,
+        version: '3',
+        namespaces: ['default', 'space-a'],
+        spec: { title: 'test-*' },
+      });
+      mockDataViewsService.createAndSaveDataViewLazy.mockResolvedValue(mockDataView);
+
+      const result = await service.create({ id: 'dv-meta', index_pattern: 'test-*' });
+
+      expect(result.meta).toEqual({
+        managed: true,
+        version: '3',
+        namespaces: ['default', 'space-a'],
+      });
     });
   });
 

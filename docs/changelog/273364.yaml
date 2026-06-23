@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/273364
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Search and data
+title: Fix multiple data stream selectors in input packages with multiple policy templates

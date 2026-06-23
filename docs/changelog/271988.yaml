@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/271988
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Fix disappearance of Model Management pages
+description: "Model Management pages no longer disappear from Stack Management for users with only the `Inference Endpoints: All` privilege."

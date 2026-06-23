@@ -73,7 +73,7 @@ const Header: React.FunctionComponent<{
   return (
     <>
       <EuiTitle size="m">
-        <h2 data-test-subj="addFleetServerHeader">
+        <h2 data-test-subj="addFleetServerHeader" id="FleetAddFleetServerFlyoutTitle">
           <FormattedMessage
             id="xpack.fleet.fleetServerFlyout.title"
             defaultMessage="Add a Fleet Server"
@@ -134,7 +134,12 @@ export const FleetServerFlyout: React.FunctionComponent<Props> = ({ onClose }) =
   }
 
   return (
-    <EuiFlyout data-test-subj="fleetServerFlyout" onClose={onClose} maxWidth={MAX_FLYOUT_WIDTH}>
+    <EuiFlyout
+      data-test-subj="fleetServerFlyout"
+      onClose={onClose}
+      maxWidth={MAX_FLYOUT_WIDTH}
+      aria-labelledby="FleetAddFleetServerFlyoutTitle"
+    >
       <EuiFlyoutHeader hasBorder aria-labelledby="FleetAddFleetServerFlyoutTitle">
         <Header
           tabs={tabs}

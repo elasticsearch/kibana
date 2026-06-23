@@ -9,6 +9,8 @@ import type { Location } from 'history';
 import { type Observable, debounceTime, map } from 'rxjs';
 
 import type { EuiSideNavItemType } from '@elastic/eui';
+import { getAlertingV2ManagementNavPanel } from '@kbn/alerting-v2-utils';
+import type { CoreStart } from '@kbn/core/public';
 import type { NavigationTreeDefinition } from '@kbn/core-chrome-browser';
 import { STACK_MANAGEMENT_NAV_ID, DATA_MANAGEMENT_NAV_ID } from '@kbn/deeplinks-management';
 import { SEARCH_HOMEPAGE } from '@kbn/deeplinks-search';
@@ -49,13 +51,13 @@ function isEditingFromDashboard(
 }
 
 export const getNavigationTreeDefinition = ({
+  core,
   dynamicItems$,
   isCloudEnabled,
-  showAlertingV2 = false,
 }: {
+  core: CoreStart;
   dynamicItems$: Observable<DynamicSideNavItems>;
   isCloudEnabled?: boolean;
-  showAlertingV2?: boolean;
 }): AddSolutionNavigationArg => {
   return {
     icon,
@@ -72,6 +74,10 @@ export const getNavigationTreeDefinition = ({
               title,
             },
             {
+              icon: 'productAgent',
+              link: 'agent_builder',
+            },
+            {
               icon: 'productDiscover',
               link: 'discover',
             },
@@ -81,10 +87,6 @@ export const getNavigationTreeDefinition = ({
                 isEditingFromDashboard(location, pathNameSerialized, prepend),
               icon: 'productDashboard',
               link: 'dashboards',
-            },
-            {
-              icon: 'productAgent',
-              link: 'agent_builder',
             },
             {
               link: 'workflows',
@@ -251,26 +253,7 @@ export const getNavigationTreeDefinition = ({
                   id: 'stack_management_home',
                   title: '',
                 },
-                ...(showAlertingV2
-                  ? [
-                      {
-                        id: 'v2_alerting_preview',
-                        title: i18n.translate(
-                          'xpack.enterpriseSearch.searchNav.management.v2AlertingPreview',
-                          {
-                            defaultMessage: 'V2 Alerting Preview',
-                          }
-                        ),
-                        renderAs: 'panelOpener' as const,
-                        children: [
-                          { link: 'management:rules' as const },
-                          { link: 'management:episodes' as const },
-                          { link: 'management:action_policies' as const },
-                          { link: 'management:execution_history' as const },
-                        ],
-                      },
-                    ]
-                  : []),
+                ...getAlertingV2ManagementNavPanel(core),
                 {
                   children: [
                     { link: 'management:triggersActionsAlerts' },

@@ -12,11 +12,17 @@ import {
   type AgentCapabilities,
 } from '@kbn/agent-builder-common';
 import type { AgentHandlerContext } from '@kbn/agent-builder-server';
+import type { BuiltinToolDefinition } from '@kbn/agent-builder-server/tools';
+import type { ScopedRunner } from '@kbn/agent-builder-server/runner';
 import { ToolManagerToolType } from '@kbn/agent-builder-server/runner';
 import { createSubagentTool } from './run_subagent';
 import { createSleepTool } from './sleep';
 import { createLoadSkillTool } from './load_skill';
 import { createAskUserQuestionTool } from './ask_user_question';
+import { createReadFileTool } from './read_file';
+import { createListFilesTool } from './list_files';
+import { createBashTool } from './bash';
+import { createTodoTool } from '../../../tools/builtin/todo';
 import { builtinToolToExecutable } from '../utils/select_tools';
 import type { BackgroundExecutionService } from '../background_execution_service';
 
@@ -52,63 +58,59 @@ export const registerInternalTools = async ({
     subAgentExecutor,
     analyticsService,
     trackingService,
+    filesystemService,
+    bashService,
+    todoStateManager,
   } = context;
 
-  // Sub-agent and sleep tools — experimental, and not available in standalone mode
-  if (experimentalFeatures.subagents && executionMode !== AgentExecutionMode.standalone) {
-    const subagentTool = createSubagentTool({
-      agentId: agentId ?? agentBuilderDefaultAgentId,
-      executionId: executionId ?? '',
-      connectorId: defaultConnectorId,
-      capabilities,
-      subAgentExecutor,
-      abortSignal,
-      backgroundExecutionService,
-    });
-    const sleepTool = createSleepTool();
-    await toolManager.addTools({
-      type: ToolManagerToolType.executable,
-      tools: [
-        {
-          ...builtinToolToExecutable({ tool: subagentTool, runner }),
-          origin: ToolOrigin.internal,
-        },
-        {
-          ...builtinToolToExecutable({ tool: sleepTool, runner }),
-          origin: ToolOrigin.internal,
-        },
-      ],
-      logger,
-    });
+  const interactive = executionMode !== AgentExecutionMode.standalone;
+
+  const tools: Array<BuiltinToolDefinition<any>> = [];
+
+  // Filesystem — read_file and list_files are always on; bash is FF-gated.
+  tools.push(createReadFileTool({ filesystemService }));
+  tools.push(createListFilesTool({ filesystemService }));
+  if (experimentalFeatures.bash && bashService) {
+    tools.push(createBashTool({ bashService }));
   }
 
-  // ask_user_question — experimental, and not available in standalone mode
-  if (experimentalFeatures.askUserQuestion && executionMode !== AgentExecutionMode.standalone) {
-    const askUserQuestionTool = createAskUserQuestionTool();
-    await toolManager.addTools({
-      type: ToolManagerToolType.executable,
-      tools: [
-        {
-          ...builtinToolToExecutable({ tool: askUserQuestionTool, runner }),
-          origin: ToolOrigin.internal,
-        },
-      ],
-      logger,
-    });
+  // Todos — FF-gated.
+  if (experimentalFeatures.todos) {
+    tools.push(createTodoTool({ todoStateManager }));
+  }
+
+  // Sub-agent + sleep — experimental, and not available in standalone mode.
+  if (experimentalFeatures.subagents && interactive) {
+    tools.push(
+      createSubagentTool({
+        agentId: agentId ?? agentBuilderDefaultAgentId,
+        executionId: executionId ?? '',
+        connectorId: defaultConnectorId,
+        capabilities,
+        subAgentExecutor,
+        abortSignal,
+        backgroundExecutionService,
+      })
+    );
+    tools.push(createSleepTool());
+  }
+
+  // ask_user_question — experimental, and not available in standalone mode.
+  if (experimentalFeatures.askUserQuestion && interactive) {
+    tools.push(createAskUserQuestionTool());
   }
 
   // load_skill — gated on the skills feature only.
   if (experimentalFeatures.skills) {
-    const loadSkillTool = createLoadSkillTool({ analyticsService, trackingService });
-    await toolManager.addTools({
-      type: ToolManagerToolType.executable,
-      tools: [
-        {
-          ...builtinToolToExecutable({ tool: loadSkillTool, runner }),
-          origin: ToolOrigin.internal,
-        },
-      ],
-      logger,
-    });
+    tools.push(createLoadSkillTool({ analyticsService, trackingService }));
   }
+
+  await toolManager.addTools({
+    type: ToolManagerToolType.executable,
+    tools: tools.map((tool) => ({
+      ...builtinToolToExecutable({ tool, runner: runner as ScopedRunner }),
+      origin: ToolOrigin.internal,
+    })),
+    logger,
+  });
 };

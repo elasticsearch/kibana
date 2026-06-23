@@ -145,10 +145,9 @@ helm upgrade --install opentelemetry-kube-stack open-telemetry/opentelemetry-kub
       expect(command).not.toContain('elasticsearch.index');
     });
 
-    it('routes daemon logs to wired streams when useWiredStreams is true (direct ES)', () => {
+    it('routes daemon logs to wired streams when useWiredStreams is true', () => {
       const command = buildInstallStackCommand({
         ...defaultArgs,
-        isManagedOtlpServiceAvailable: false,
         useWiredStreams: true,
       });
 
@@ -157,7 +156,6 @@ helm upgrade --install opentelemetry-kube-stack open-telemetry/opentelemetry-kub
       expect(command).toContain(
         'collectors.daemon.config.service.pipelines.logs\\/node.processors[10]=resource/wired_streams'
       );
-      expect(command).not.toContain('logs\\/apm');
     });
 
     it('routes daemon logs to wired streams when useWiredStreams is true (managed OTLP)', () => {

@@ -8,6 +8,7 @@
  */
 
 import type { JSONSchema7 } from 'json-schema';
+import type { JsonModelSchemaType } from '@kbn/workflows/spec/schema/common/json_model_schema';
 import { generateSampleFromJsonSchema } from './generate_sample_from_json_schema';
 import { INPUT_STRING_PLACEHOLDER } from '../consts/placeholders';
 
@@ -167,6 +168,52 @@ describe('generateSampleFromJsonSchema', () => {
 
     it('returns undefined for no type and no properties', () => {
       expect(generateSampleFromJsonSchema({})).toBeUndefined();
+    });
+  });
+
+  describe('$ref resolution (inputs root)', () => {
+    it('resolves local #/definitions when inputs root is provided', () => {
+      const inputsRoot = {
+        properties: {
+          user: { $ref: '#/definitions/User' },
+        },
+        definitions: {
+          User: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+            },
+            required: ['name'],
+          },
+        },
+      } as JsonModelSchemaType;
+      expect(generateSampleFromJsonSchema({ $ref: '#/definitions/User' }, inputsRoot)).toEqual({
+        name: INPUT_STRING_PLACEHOLDER,
+      });
+    });
+
+    it('resolves built-in #/kibana/definitions when inputs root is provided', () => {
+      const inputsRoot = {
+        properties: {
+          notificationGroup: { $ref: '#/kibana/definitions/alertingV2NotificationGroup' },
+        },
+      } as JsonModelSchemaType;
+      const sample = generateSampleFromJsonSchema(
+        { $ref: '#/kibana/definitions/alertingV2NotificationGroup' },
+        inputsRoot
+      ) as Record<string, unknown>;
+      expect(sample.id).toBe(INPUT_STRING_PLACEHOLDER);
+      expect(sample.policyId).toBe(INPUT_STRING_PLACEHOLDER);
+      expect(sample.groupKey).toEqual({});
+      expect(sample.episodes).toEqual([
+        {
+          last_event_timestamp: INPUT_STRING_PLACEHOLDER,
+          rule_id: INPUT_STRING_PLACEHOLDER,
+          group_hash: INPUT_STRING_PLACEHOLDER,
+          episode_id: INPUT_STRING_PLACEHOLDER,
+          episode_status: INPUT_STRING_PLACEHOLDER,
+        },
+      ]);
     });
   });
 });

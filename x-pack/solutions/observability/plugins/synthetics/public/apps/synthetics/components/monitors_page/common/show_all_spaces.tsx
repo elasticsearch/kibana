@@ -107,6 +107,9 @@ const SelectablePopover = ({ space }: { space: Space }) => {
       closePopover={() => setIsPopoverOpen(false)}
       panelPaddingSize="none"
       anchorPosition="downLeft"
+      aria-label={i18n.translate('xpack.synthetics.showAllSpaces.popoverAriaLabel', {
+        defaultMessage: 'Spaces menu',
+      })}
     >
       <EuiContextMenu
         initialPanelId={0}

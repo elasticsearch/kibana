@@ -9,15 +9,16 @@
 
 import React, { useState, type FC } from 'react';
 import {
-  EuiFormRow,
-  EuiFieldText,
-  EuiCopy,
   EuiButtonIcon,
+  EuiCopy,
+  EuiFieldText,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiText,
+  EuiFormRow,
   EuiLink,
   EuiPopover,
+  EuiText,
+  EuiToolTip,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
@@ -48,15 +49,22 @@ const Label: FC<{ learnMoreUrl: string }> = ({ learnMoreUrl }) => {
             defaultMessage: 'Cloud ID help',
           })}
           button={
-            <EuiButtonIcon
-              iconType="question"
-              onClick={() => {
-                setIsPopoverOpen(true);
-              }}
-              aria-label={i18n.translate('cloud.deploymentDetails.cloudIdHelpButton.ariaLabel', {
+            <EuiToolTip
+              content={i18n.translate('cloud.deploymentDetails.cloudIdHelpButton.ariaLabel', {
                 defaultMessage: 'Show Cloud ID help',
               })}
-            />
+              disableScreenReaderOutput
+            >
+              <EuiButtonIcon
+                iconType="question"
+                onClick={() => {
+                  setIsPopoverOpen(true);
+                }}
+                aria-label={i18n.translate('cloud.deploymentDetails.cloudIdHelpButton.ariaLabel', {
+                  defaultMessage: 'Show Cloud ID help',
+                })}
+              />
+            </EuiToolTip>
           }
           isOpen={isPopoverOpen}
           closePopover={() => {
@@ -95,15 +103,25 @@ export const DeploymentDetailsCloudIdInput: FC<{ cloudId: string; learnMoreUrl: 
         <EuiFlexItem grow={false}>
           <EuiCopy textToCopy={cloudId}>
             {(copy) => (
-              <EuiButtonIcon
-                onClick={copy}
-                iconType="copy"
-                display="base"
-                size="m"
-                aria-label={i18n.translate('cloud.deploymentDetails.copyCloudIdButton.ariaLabel', {
+              <EuiToolTip
+                content={i18n.translate('cloud.deploymentDetails.copyCloudIdButton.ariaLabel', {
                   defaultMessage: 'Copy Cloud ID',
                 })}
-              />
+                disableScreenReaderOutput
+              >
+                <EuiButtonIcon
+                  onClick={copy}
+                  iconType="copy"
+                  display="base"
+                  size="m"
+                  aria-label={i18n.translate(
+                    'cloud.deploymentDetails.copyCloudIdButton.ariaLabel',
+                    {
+                      defaultMessage: 'Copy Cloud ID',
+                    }
+                  )}
+                />
+              </EuiToolTip>
             )}
           </EuiCopy>
         </EuiFlexItem>

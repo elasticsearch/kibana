@@ -6,7 +6,7 @@
  */
 
 import { firstValueFrom, of } from 'rxjs';
-import type { MlAnomaliesTableRecord } from '@kbn/ml-anomaly-utils';
+import { ML_ANOMALY_THRESHOLD, type MlAnomaliesTableRecord } from '@kbn/ml-anomaly-utils';
 
 import { ANOMALIES_TABLE_DEFAULT_QUERY_SIZE } from '../../../../common/constants/search';
 import type { CriteriaField } from '@kbn/ml-common-types/results';
@@ -79,7 +79,13 @@ describe('fetchAnomaliesTableData$', () => {
       criteriaFields as unknown as string[],
       [],
       'auto',
-      [{ min: 0 }],
+      [
+        { min: ML_ANOMALY_THRESHOLD.LOW, max: ML_ANOMALY_THRESHOLD.WARNING },
+        { min: ML_ANOMALY_THRESHOLD.WARNING, max: ML_ANOMALY_THRESHOLD.MINOR },
+        { min: ML_ANOMALY_THRESHOLD.MINOR, max: ML_ANOMALY_THRESHOLD.MAJOR },
+        { min: ML_ANOMALY_THRESHOLD.MAJOR, max: ML_ANOMALY_THRESHOLD.CRITICAL },
+        { min: ML_ANOMALY_THRESHOLD.CRITICAL },
+      ],
       10,
       20,
       'UTC',

@@ -28,7 +28,7 @@ import type { SeverityThreshold } from '@kbn/ml-server-schemas/embeddables/anoma
 import { SWIMLANE_TYPE } from '@kbn/ml-common-types/embeddables/swimlane_type';
 import type { AnomalyExplorerSwimLaneUrlState } from '@kbn/ml-common-types/locator';
 import { ANOMALY_SWIM_LANE_HARD_LIMIT } from '../../../common/constants/explorer';
-import { resolveSeverityFormat } from '../components/controls/select_severity/severity_format_resolver';
+import { resolveSeverityFormat } from '../../../common/util/severity_threshold';
 import type { AnomalyTimelineService } from '../services/anomaly_timeline_service';
 import type {
   AppStateSelectedCells,

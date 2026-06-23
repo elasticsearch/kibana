@@ -266,7 +266,7 @@ export function systemRoutes(
         validate: {
           request: {
             body: schema.object({
-              indices: schema.arrayOf(schema.string({ maxLength: 10000 }), { maxSize: 10000 }),
+              indices: schema.arrayOf(schema.string({ maxLength: 1000 }), { maxSize: 100 }),
             }),
           },
         },

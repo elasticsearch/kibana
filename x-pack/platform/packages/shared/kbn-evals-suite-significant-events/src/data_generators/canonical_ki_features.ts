@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import type { Feature } from '@kbn/streams-schema';
+import type { Feature, FeatureUpsert } from '@kbn/streams-schema';
+import { computeFeatureUuid } from '@kbn/streams-schema';
 
 const normalizeIdPart = (value: string): string =>
   value
@@ -53,7 +54,7 @@ const makeKIFeature = ({
   title?: string;
   description: string;
   properties: Record<string, unknown>;
-}): Feature => ({
+}): FeatureUpsert => ({
   id,
   stream_name: streamName,
   type,
@@ -84,7 +85,7 @@ export const canonicalKIFeaturesFromExpectedGroundTruth = ({
 
   const { entities = [], deps = [], infra = [] } = blocks;
 
-  const features: Feature[] = [];
+  const features: FeatureUpsert[] = [];
 
   for (const entity of entities) {
     const name = entity.trim();
@@ -143,5 +144,5 @@ export const canonicalKIFeaturesFromExpectedGroundTruth = ({
     );
   }
 
-  return features;
+  return features.map((feature) => ({ ...feature, uuid: computeFeatureUuid(feature) }));
 };

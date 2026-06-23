@@ -50,7 +50,7 @@ When a dashboard needs sections, prefer a single batched call:
 Do **not** make one ${dashboardTools.manageDashboard} call per section unless a later step truly depends on the result of an earlier section-specific change.
 
 For a new dashboard:
-- Start with \`set_metadata\` and provide both \`title\` and \`description\`.
+- Start with \`set_metadata\` and provide both \`title\` and \`description\`. Include \`time_range\` if the user specified a time window.
 - Use \`add_panels\` to add panels in one batched operation. Each item declares a \`kind\`: \`markdown\` for a summary or context panel, \`visualization\` for a Lens visualization created inline from natural language, or \`attachment\` for a panel sourced from an existing visualization attachment by \`attachmentId\`.
 - Use \`add_section\` when panels naturally group into distinct topics or the dashboard is large enough that sections improve scanability. Include \`panels\` on the section when you can create that section's initial panels immediately.
 
@@ -62,10 +62,10 @@ For an existing dashboard:
 - If a requested change targets a DSL, form-based, or other non-ES|QL Lens visualization panel, explicitly tell the user direct editing is not supported and ask for confirmation before replacing that panel with a newly created ES|QL-based Lens panel.
 - Use \`update_panel_layouts\` to resize, reposition, or move existing panels between top-level and sections without changing panel content.
 - Use \`add_section\` or \`remove_section\` for section changes.
-- Use \`set_metadata\` to update the dashboard title/description, \`edit_panels\` with \`kind: "markdown"\` to replace an existing markdown panel's content, or \`add_panels\` with \`kind: "markdown"\` to add a new markdown panel.
+- Use \`set_metadata\` to update the dashboard title, description, or time range. Use \`edit_panels\` with \`kind: "markdown"\` to replace an existing markdown panel's content, or \`add_panels\` with \`kind: "markdown"\` to add a new markdown panel.
 
 Supported operations:
-- \`set_metadata\`: set or update dashboard title and description.
+- \`set_metadata\`: set or update dashboard title, description, and/or time range. Use \`time_range\` whenever the user specifies a time window: convert natural language to Kibana date math (e.g. "last 30 minutes" → \`{ from: "now-30m", to: "now" }\`, "last 90 days" → \`{ from: "now-90d", to: "now" }\`) or ISO 8601 for absolute ranges (e.g. "May 20–24" → \`{ from: "2024-05-20T00:00:00.000Z", to: "2024-05-24T23:59:59.999Z", mode: "absolute" }\`). You can set \`time_range\` together with \`title\`/\`description\` or alone.
 - \`add_panels\`: add panels in one batched operation. Each item declares \`kind: "markdown"\`, \`kind: "visualization"\`, or \`kind: "attachment"\`.
 - Combine markdown summary, attached visualizations, and inline ES|QL visualizations in one \`add_panels\` operation when they belong to the same dashboard layout, even when items target different \`sectionId\` values.
 - \`edit_panels\`: update existing panel content in place by \`panelId\`. Each item declares \`kind: "visualization"\` for ES|QL-backed Lens visualization panels or \`kind: "markdown"\` for markdown panels. Placement (grid and sectionId) is preserved.

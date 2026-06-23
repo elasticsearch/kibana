@@ -15,6 +15,7 @@ import {
   EuiSpacer,
   EuiExpression,
   EuiPopover,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { range, first, xor, debounce } from 'lodash';
@@ -65,6 +66,7 @@ export function CustomEquationEditor({
     expression?.metrics ?? [NEW_METRIC]
   );
   const [customEqPopoverOpen, setCustomEqPopoverOpen] = useState(false);
+  const customEquationPopoverTitleId = useGeneratedHtmlId();
   const [equation, setEquation] = useState<string | undefined>(expression?.equation);
   const debouncedOnChange = useMemo(() => debounce(onChange, 500), [onChange]);
 
@@ -223,9 +225,13 @@ export function CustomEquationEditor({
           ownFocus
           anchorPosition={'downLeft'}
           repositionOnScroll
+          aria-labelledby={customEquationPopoverTitleId}
         >
           <div>
-            <ClosablePopoverTitle onClose={() => setCustomEqPopoverOpen(false)}>
+            <ClosablePopoverTitle
+              id={customEquationPopoverTitleId}
+              onClose={() => setCustomEqPopoverOpen(false)}
+            >
               <span>
                 <FormattedMessage
                   id="xpack.observability.customThreshold.rule.alertFlyout.customEquationLabel"

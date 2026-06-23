@@ -5,18 +5,7 @@
  * 2.0.
  */
 
-import { setMockValues } from '../../../../../../__mocks__/kea_logic';
-
-import React from 'react';
-
-import { shallow } from 'enzyme';
-
-import { DeployModel } from './deploy_model';
-import { ModelDeployed } from './model_deployed';
-import { ModelDeploymentInProgress } from './model_deployment_in_progress';
-import { ModelStarted } from './model_started';
-import { TextExpansionCallOut } from './text_expansion_callout';
-import { TextExpansionErrors } from './text_expansion_errors';
+import { setMockActions, setMockValues } from '../../../../../../__mocks__/kea_logic';
 
 jest.mock('./text_expansion_callout_data', () => ({
   useTextExpansionCallOutData: jest.fn(() => ({
@@ -27,6 +16,14 @@ jest.mock('./text_expansion_callout_data', () => ({
     show: true,
   })),
 }));
+
+import React from 'react';
+
+import { screen } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
+
+import { TextExpansionCallOut } from './text_expansion_callout';
 
 const DEFAULT_VALUES = {
   isCreateButtonDisabled: false,
@@ -40,6 +37,10 @@ describe('TextExpansionCallOut', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setMockValues(DEFAULT_VALUES);
+    setMockActions({
+      createTextExpansionModel: jest.fn(),
+      startTextExpansionModel: jest.fn(),
+    });
   });
   it('renders error panel instead of normal panel if there are some errors', () => {
     setMockValues({
@@ -49,39 +50,27 @@ describe('TextExpansionCallOut', () => {
         message: 'Mocked error message',
       },
     });
-
-    const wrapper = shallow(<TextExpansionCallOut />);
-    expect(wrapper.find(TextExpansionErrors).length).toBe(1);
+    renderWithKibanaRenderContext(<TextExpansionCallOut />);
+    expect(screen.getByText('Error with ELSER deployment')).toBeInTheDocument();
+    expect(screen.queryByText('Improve your results with ELSER')).not.toBeInTheDocument();
   });
   it('renders panel with deployment instructions if the model is not deployed', () => {
-    const wrapper = shallow(<TextExpansionCallOut />);
-    expect(wrapper.find(DeployModel).length).toBe(1);
+    renderWithKibanaRenderContext(<TextExpansionCallOut />);
+    expect(screen.getByText('Improve your results with ELSER')).toBeInTheDocument();
   });
   it('renders panel with deployment in progress status if the model is being deployed', () => {
-    setMockValues({
-      ...DEFAULT_VALUES,
-      isModelDownloadInProgress: true,
-    });
-
-    const wrapper = shallow(<TextExpansionCallOut />);
-    expect(wrapper.find(ModelDeploymentInProgress).length).toBe(1);
+    setMockValues({ ...DEFAULT_VALUES, isModelDownloadInProgress: true });
+    renderWithKibanaRenderContext(<TextExpansionCallOut />);
+    expect(screen.getByText('Your ELSER model is deploying.')).toBeInTheDocument();
   });
   it('renders panel with deployment in progress status if the model has been deployed', () => {
-    setMockValues({
-      ...DEFAULT_VALUES,
-      isModelDownloaded: true,
-    });
-
-    const wrapper = shallow(<TextExpansionCallOut />);
-    expect(wrapper.find(ModelDeployed).length).toBe(1);
+    setMockValues({ ...DEFAULT_VALUES, isModelDownloaded: true });
+    renderWithKibanaRenderContext(<TextExpansionCallOut />);
+    expect(screen.getByText('Your ELSER model has deployed but not started.')).toBeInTheDocument();
   });
   it('renders panel with deployment in progress status if the model has been started', () => {
-    setMockValues({
-      ...DEFAULT_VALUES,
-      isModelStarted: true,
-    });
-
-    const wrapper = shallow(<TextExpansionCallOut />);
-    expect(wrapper.find(ModelStarted).length).toBe(1);
+    setMockValues({ ...DEFAULT_VALUES, isModelStarted: true });
+    renderWithKibanaRenderContext(<TextExpansionCallOut />);
+    expect(screen.getByText('Your ELSER model has started.')).toBeInTheDocument();
   });
 });

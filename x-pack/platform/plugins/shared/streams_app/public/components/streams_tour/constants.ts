@@ -11,19 +11,13 @@ import { i18n } from '@kbn/i18n';
 export const STREAMS_TOUR_CALLOUT_DISMISSED_KEY = 'streams.tour.calloutDismissed';
 export const STREAMS_TOUR_STATE_KEY = 'streams.tour.state';
 
-export type StreamsTourStepId =
-  | 'streams_list'
-  | 'retention'
-  | 'processing'
-  | 'attachments'
-  | 'advanced';
+export type StreamsTourStepId = 'streams_list' | 'retention' | 'processing' | 'attachments';
 
 export const STEP_ID_TO_TAB: Record<StreamsTourStepId, string | undefined> = {
   streams_list: undefined,
   retention: 'retention',
   processing: 'processing',
   attachments: 'attachments',
-  advanced: 'advanced',
 };
 
 // Reverse mapping: tab name → tour step ID

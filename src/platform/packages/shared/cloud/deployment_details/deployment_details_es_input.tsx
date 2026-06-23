@@ -9,12 +9,13 @@
 
 import React, { type FC } from 'react';
 import {
-  EuiFormRow,
-  EuiFieldText,
-  EuiCopy,
   EuiButtonIcon,
+  EuiCopy,
+  EuiFieldText,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiFormRow,
+  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
@@ -39,7 +40,24 @@ export const DeploymentDetailsEsInput: FC<{ elasticsearchUrl: string }> = ({
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiCopy textToCopy={elasticsearchUrl}>
-            {(copy) => <EuiButtonIcon onClick={copy} iconType="copy" display="base" size="m" />}
+            {(copy) => (
+              <EuiToolTip
+                content={i18n.translate('cloud.deploymentDetails.copyEndpointButtonLabel', {
+                  defaultMessage: 'Copy Elasticsearch endpoint',
+                })}
+                disableScreenReaderOutput
+              >
+                <EuiButtonIcon
+                  onClick={copy}
+                  iconType="copy"
+                  display="base"
+                  size="m"
+                  aria-label={i18n.translate('cloud.deploymentDetails.copyEndpointButtonLabel', {
+                    defaultMessage: 'Copy Elasticsearch endpoint',
+                  })}
+                />
+              </EuiToolTip>
+            )}
           </EuiCopy>
         </EuiFlexItem>
       </EuiFlexGroup>

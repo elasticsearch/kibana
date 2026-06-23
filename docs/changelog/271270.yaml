@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/271270
+issues:
+- https://github.com/elastic/kibana/issues/189508
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Allow users to cancel scheduled unenroll actions

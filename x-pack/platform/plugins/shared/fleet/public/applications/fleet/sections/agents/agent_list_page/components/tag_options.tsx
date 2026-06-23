@@ -118,6 +118,9 @@ export const TagOptions: React.FC<Props> = ({ tagName, isTagHovered, onTagsUpdat
       )}
       {tagOptionsVisible && (
         <EuiWrappingPopover
+          aria-label={i18n.translate('xpack.fleet.tagOptions.popoverAriaLabel', {
+            defaultMessage: 'Tag options',
+          })}
           isOpen={true}
           button={tagOptionsButton!}
           closePopover={closePopover}

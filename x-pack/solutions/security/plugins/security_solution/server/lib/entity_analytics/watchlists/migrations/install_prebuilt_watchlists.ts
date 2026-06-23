@@ -21,7 +21,10 @@ import {
 import { getStreamPatternFor } from '../../privilege_monitoring/data_sources/constants';
 import type { WatchlistConfigClient } from '../management/watchlist_config';
 import { WatchlistConfigClient as WatchlistConfigClientClass } from '../management/watchlist_config';
-import { WatchlistEntitySourceClient } from '../entity_sources/infra';
+import {
+  WatchlistEntitySourceClient,
+  watchlistEntitySourceTypeName,
+} from '../entity_sources/infra';
 import type { StartPlugins } from '../../../../plugin';
 
 // Bump this when PREBUILT_WATCHLISTS definitions change
@@ -228,7 +231,11 @@ export const installPrebuiltWatchlists = async ({
   }
 
   for (const namespace of namespaces) {
-    const soClient = buildScopedInternalSavedObjectsClientUnsafe({ coreStart, namespace });
+    const soClient = buildScopedInternalSavedObjectsClientUnsafe({
+      coreStart,
+      namespace,
+      includedHiddenTypes: [watchlistEntitySourceTypeName],
+    });
     const watchlistClient = new WatchlistConfigClientClass({
       soClient,
       esClient,

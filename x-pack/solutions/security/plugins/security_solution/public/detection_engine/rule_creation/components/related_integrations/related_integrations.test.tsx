@@ -624,7 +624,7 @@ describe('RelatedIntegrations form part', () => {
       await waitFor(() => {
         expect(screen.getByTestId(VERSION_INPUT_TEST_ID)).toHaveValue('^1.0.0');
       });
-      await setVersion({ input: screen.getByTestId(VERSION_INPUT_TEST_ID), value: '100' });
+      await setVersion({ input: screen.getByTestId(VERSION_INPUT_TEST_ID), value: '^1.2.' });
 
       expect(screen.getByTestId(RELATED_INTEGRATION_ROW)).toHaveTextContent(
         'Version constraint is invalid'

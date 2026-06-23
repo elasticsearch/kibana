@@ -18,6 +18,7 @@ import {
 } from '@elastic/eui';
 
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 
 import { useLink } from '../../../../hooks';
 import type { OutputsForAgentPolicy } from '../../../../../../../common/types';
@@ -92,6 +93,9 @@ export const AgentPolicyOutputsSummary: React.FC<{
             />
           </EuiBadge>
           <EuiPopover
+            aria-label={i18n.translate('xpack.fleet.agentPolicyOutputsSummary.popoverAriaLabel', {
+              defaultMessage: 'Output integrations',
+            })}
             data-test-subj="outputPopover"
             isOpen={isPopoverOpen}
             closePopover={closePopover}

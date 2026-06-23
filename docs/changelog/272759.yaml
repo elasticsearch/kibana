@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/272759
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Alerting and reporting
+title: "Add attachment type and author filters in Cases > Attachments"

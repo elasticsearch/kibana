@@ -129,14 +129,16 @@ const EntityIdCell: React.FC<{ entityId?: string }> = ({ entityId }) => {
         <EuiToolTip content={LABELS.copy}>
           <EuiCopy textToCopy={entityId}>
             {(copy) => (
-              <EuiButtonIcon
-                iconType="copy"
-                aria-label={LABELS.copy}
-                onClick={copy}
-                iconSize="s"
-                color="text"
-                data-test-subj="entityAttachmentGridEntityIdCopy"
-              />
+              <EuiToolTip content={LABELS.copy} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  iconType="copy"
+                  aria-label={LABELS.copy}
+                  onClick={copy}
+                  iconSize="s"
+                  color="text"
+                  data-test-subj="entityAttachmentGridEntityIdCopy"
+                />
+              </EuiToolTip>
             )}
           </EuiCopy>
         </EuiToolTip>

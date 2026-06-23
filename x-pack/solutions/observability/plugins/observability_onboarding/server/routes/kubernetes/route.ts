@@ -55,7 +55,7 @@ const createKubernetesOnboardingFlowRoute = createObservabilityOnboardingServerR
     },
   },
   async handler(resources): Promise<CreateKubernetesOnboardingFlowRouteResponse> {
-    const { context, request, params, plugins, services, kibanaVersion, config } = resources;
+    const { context, request, plugins, services, kibanaVersion, config, params } = resources;
     const {
       elasticsearch: { client },
       featureFlags,
@@ -88,22 +88,19 @@ const createKubernetesOnboardingFlowRoute = createObservabilityOnboardingServerR
         Boolean(managedOtlpServiceUrl));
 
     const apiKeyPromise =
-      isManagedOtlpServiceAvailable && params.body.pkgName === 'kubernetes_otel'
+      params.body.pkgName === 'kubernetes'
+        ? createShipperApiKey(client.asCurrentUser, 'kubernetes_onboarding', true)
+        : isManagedOtlpServiceAvailable
         ? createManagedOtlpServiceApiKey(client.asCurrentUser, `ingest-otel-k8s`)
-        : createShipperApiKey(
-            client.asCurrentUser,
-            params.body.pkgName === 'kubernetes_otel' ? 'otel-kubernetes' : 'kubernetes',
-            true
-          );
+        : createShipperApiKey(client.asCurrentUser, 'otel-kubernetes', true);
 
     const [{ encoded: apiKeyEncoded }, elasticAgentVersionInfo] = await Promise.all([
       apiKeyPromise,
       getAgentVersionInfo(fleetPluginStart, kibanaVersion),
       // System package is always required
       packageClient.ensureInstalledPackage({ pkgName: 'system' }),
-      // Kubernetes package is required for both classic kubernetes and otel
+      // The EA flow uses this package directly; EDOT stack values also reference its assets.
       packageClient.ensureInstalledPackage({ pkgName: 'kubernetes' }),
-      // Kubernetes otel package is required only for otel
       params.body.pkgName === 'kubernetes_otel'
         ? packageClient.ensureInstalledPackage({ pkgName: 'kubernetes_otel' })
         : undefined,

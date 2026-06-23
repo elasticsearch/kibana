@@ -27,6 +27,7 @@ import type {
   DatafeedResultsChartDataParams,
 } from '@kbn/ml-common-types/results';
 import { defaultSearchQuery } from '@kbn/ml-common-types/results';
+import { getSeverityThresholdMax } from '../../../common/util/severity_threshold';
 import { getIndicesOptions } from '../../../common/util/datafeed_utils';
 import { buildAnomalyTableItems } from './build_anomaly_table_items';
 import { ANOMALIES_TABLE_DEFAULT_QUERY_SIZE } from '../../../common/constants/search';
@@ -178,14 +179,18 @@ export function resultsServiceProvider(mlClient: MlClient, client?: IScopedClust
       });
     }
 
-    const thresholdCriteria = threshold.map((t) => ({
-      range: {
-        record_score: {
-          gte: t.min,
-          ...(t.max !== undefined && { lte: t.max }),
+    const thresholdCriteria = threshold.map((t) => {
+      const max = getSeverityThresholdMax(t);
+
+      return {
+        range: {
+          record_score: {
+            gte: t.min,
+            ...(max !== undefined && { lte: max }),
+          },
         },
-      },
-    }));
+      };
+    });
 
     boolCriteria.push({
       bool: {

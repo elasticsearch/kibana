@@ -13,8 +13,7 @@ import type { FtrProviderContext } from '../../functional/ftr_provider_context';
 const SOURCE_QUERY = 'FROM logstash-* ';
 
 // eslint-disable-next-line import/no-default-export
-export default function ({ getService, getPageObjects }: FtrProviderContext) {
-  const { common } = getPageObjects(['common']);
+export default function ({ getService }: FtrProviderContext) {
   const testSubjects = getService('testSubjects');
   const retry = getService('retry');
   const find = getService('find');
@@ -57,9 +56,15 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     });
 
     it('should accept inline suggestion from query history with TAB', async () => {
-      await esql.typeEsqlEditorQuery('FROM logstash-*');
-      await common.sleep(1000); // inline suggestions don't appear immediately
-      await browser.pressKeys(browser.keys.TAB); // Then accept inline suggestion
+      await esql.typeEsqlEditorQuery('FROM logstash-');
+      await browser.pressKeys('*');
+
+      await retry.try(async () => {
+        const ghostText = await find.byCssSelector('.monaco-editor .ghost-text-decoration');
+        expect(await ghostText.isDisplayed()).to.be(true);
+      });
+
+      await browser.pressKeys(browser.keys.TAB); // Accept inline suggestion
 
       await retry.try(async () => {
         const finalValue = await esql.getEsqlEditorQuery();

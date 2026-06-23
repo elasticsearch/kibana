@@ -17,6 +17,7 @@ import { createInitialState } from '../use_compose_discover_state';
 import type { ComposeDiscoverState } from '../types';
 import type { ComposeFormValues, RuleQuery } from '../compose_form_types';
 import { AlertConditionStep } from './alert_condition_step';
+import { ComposeDiscoverTimeFieldContextProvider } from '../compose_discover_time_field_context';
 
 jest.mock('@kbn/code-editor', () => ({
   ...jest.requireActual('@kbn/code-editor'),
@@ -25,10 +26,6 @@ jest.mock('@kbn/code-editor', () => ({
 
 jest.mock('@kbn/esql-utils', () => ({
   getEsqlColumns: jest.fn(async () => []),
-}));
-
-jest.mock('../../../form/hooks/use_data_fields', () => ({
-  useDataFields: jest.fn(() => ({ data: {} })),
 }));
 
 let getFormValues: (() => ComposeFormValues) | undefined;
@@ -77,7 +74,14 @@ const createComposeFormWrapper = (
         <QueryClientProvider client={queryClient}>
           <FormProvider {...form}>
             <RuleFormProvider services={services} meta={{ layout: 'flyout' }}>
-              {children}
+              <ComposeDiscoverTimeFieldContextProvider
+                value={{
+                  timeFieldOptions: [{ value: '@timestamp', text: '@timestamp' }],
+                  isTimeFieldResolved: true,
+                }}
+              >
+                {children}
+              </ComposeDiscoverTimeFieldContextProvider>
             </RuleFormProvider>
           </FormProvider>
         </QueryClientProvider>
@@ -179,6 +183,75 @@ describe('AlertConditionStep', () => {
       expect(
         screen.getByText(/Couldn't automatically separate base query from alert condition/)
       ).toBeInTheDocument();
+    });
+
+    it('shows alert-condition-missing callout when base query is present but alert condition is empty', () => {
+      renderStep(
+        { queryCommitted: true },
+        {
+          formValueOverrides: {
+            kind: 'alert',
+            query: { format: 'composed', base: 'FROM logs-*', breach: { segment: '' } },
+          },
+        }
+      );
+
+      expect(screen.getByTestId('composeDiscoverAlertQueryMissing')).toBeInTheDocument();
+      expect(screen.getByText('Alert condition required')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Define an alert condition in the query editor before continuing to the next step.'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('does not show alert-condition-missing callout when splitFailed callout is already shown', () => {
+      renderStep(
+        { queryCommitted: true },
+        {
+          formValueOverrides: {
+            kind: 'alert',
+            query: { format: 'composed', base: '', breach: { segment: '' } },
+          },
+        }
+      );
+
+      expect(
+        screen.getByText(/Couldn't automatically separate base query from alert condition/)
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId('composeDiscoverAlertQueryMissing')).not.toBeInTheDocument();
+    });
+
+    it('does not show alert-query-missing callout when both queries are defined', () => {
+      renderStep(
+        { queryCommitted: true },
+        { formValueOverrides: { kind: 'alert', query: COMPOSED_QUERY } }
+      );
+
+      expect(screen.queryByTestId('composeDiscoverAlertQueryMissing')).not.toBeInTheDocument();
+    });
+
+    it('does not show alert-query-missing callout for signal kind', () => {
+      renderStep(
+        { queryCommitted: true },
+        { formValueOverrides: { kind: 'signal', query: STANDALONE_QUERY } }
+      );
+
+      expect(screen.queryByTestId('composeDiscoverAlertQueryMissing')).not.toBeInTheDocument();
+    });
+
+    it('does not show alert-query-missing callout when query is not committed', () => {
+      renderStep(
+        { queryCommitted: false },
+        {
+          formValueOverrides: {
+            kind: 'alert',
+            query: { format: 'composed', base: 'FROM logs-*', breach: { segment: '' } },
+          },
+        }
+      );
+
+      expect(screen.queryByTestId('composeDiscoverAlertQueryMissing')).not.toBeInTheDocument();
     });
   });
 

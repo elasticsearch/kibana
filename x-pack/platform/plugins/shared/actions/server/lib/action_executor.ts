@@ -474,28 +474,6 @@ export class ActionExecutor {
           );
         }
 
-        let validatedParams: Record<string, unknown>;
-        let validatedConfig;
-        let validatedSecrets;
-        try {
-          const validationResult = validateAction(
-            {
-              actionId,
-              actionType,
-              params,
-              config,
-              secrets,
-              taskInfo,
-            },
-            { configurationUtilities }
-          );
-          validatedParams = validationResult.validatedParams;
-          validatedConfig = validationResult.validatedConfig;
-          validatedSecrets = validationResult.validatedSecrets;
-        } catch (err) {
-          return err.result;
-        }
-
         if (span) {
           span.name = `${executeLabel} ${actionTypeId}`;
           addSpanLabels({
@@ -551,6 +529,35 @@ export class ActionExecutor {
         });
 
         eventLogger.logEvent(startEvent);
+
+        let validatedParams: Record<string, unknown>;
+        let validatedConfig;
+        let validatedSecrets;
+        try {
+          const validationResult = validateAction(
+            {
+              actionId,
+              actionType,
+              params,
+              config,
+              secrets,
+              taskInfo,
+            },
+            { configurationUtilities }
+          );
+          validatedParams = validationResult.validatedParams;
+          validatedConfig = validationResult.validatedConfig;
+          validatedSecrets = validationResult.validatedSecrets;
+        } catch (err) {
+          eventLogger.stopTiming(event);
+          span?.setOutcome('failure');
+          event.event!.outcome = 'failure';
+          event.message = `action execution failure: ${actionLabel}`;
+          event.error = { message: err.message };
+          logger.warn(`action execution failure: ${actionLabel}: ${err.message}`);
+          eventLogger.logEvent(event);
+          return err.result;
+        }
 
         let rawResult: ActionTypeExecutorRawResult<unknown>;
         try {

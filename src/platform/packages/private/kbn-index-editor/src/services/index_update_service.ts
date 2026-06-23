@@ -20,7 +20,7 @@ import type {
   DatatableColumnMeta,
   DatatableColumnType,
 } from '@kbn/expressions-plugin/common';
-import { groupBy, times, zipObject } from 'lodash';
+import { groupBy, isEqual, times, zipObject } from 'lodash';
 import {
   BehaviorSubject,
   type Observable,
@@ -360,8 +360,14 @@ export class IndexUpdateService {
   }
 
   /** Doc updates/additions/deletions that are pending to be saved */
-  private readonly _savingDocs$: Observable<PendingSave> = this.bufferState$.pipe(
-    map((updates) => {
+  private readonly _savingDocs$: Observable<PendingSave> = combineLatest([
+    this.bufferState$,
+    this._docs$,
+  ]).pipe(
+    map(([updates, docs]) => {
+      // Index the fetched documents to compare edited values against their original ones
+      const originalDocsById = new Map(docs.map((doc) => [doc.id, doc]));
+
       // First group all changes by id
       const deletedDocs: Set<string> = new Set(
         updates.filter(isDocDelete).flatMap((v) => v.payload.ids)
@@ -388,13 +394,52 @@ export class IndexUpdateService {
         result.set(docId, { type: 'delete-doc' });
       });
       mergedUpdates.forEach(([docId, docUpdate]) => {
-        result.set(docId, { type: 'add-doc', update: docUpdate });
+        const originalDoc = originalDocsById.get(docId);
+        const effectiveUpdate = this.stripUnchangedFields(docUpdate, originalDoc);
+
+        // Drop edits to existing docs that no longer differ from the stored values.
+        // New rows have no original document, so they are always kept.
+        if (originalDoc && Object.keys(effectiveUpdate).length === 0) {
+          return;
+        }
+
+        result.set(docId, { type: 'add-doc', update: effectiveUpdate });
       });
       return result;
     }),
     startWith(new Map() as PendingSave),
     shareReplay({ bufferSize: 1, refCount: true })
   );
+
+  /**
+   * Returns the subset of `update` fields whose values differ from the original document.
+   * When there is no original document (a newly added row) the update is returned unchanged.
+   */
+  private stripUnchangedFields(
+    update: Record<string, any>,
+    originalDoc: DataTableRecord | undefined
+  ): Record<string, any> {
+    if (!originalDoc) {
+      return update;
+    }
+    return Object.fromEntries(
+      Object.entries(update).filter(
+        ([field, value]) => !isEqual(value, originalDoc.flattened[field])
+      )
+    );
+  }
+
+  /** Latest snapshot of the pending docs, kept for synchronous per-row lookups */
+  private readonly _latestSavingDocs$ = new BehaviorSubject<PendingSave>(new Map());
+
+  /**
+   * Whether a row has unsaved content: a new row with values, or an edit that still differs from
+   * the stored value. Reverted edits and empty new rows are not considered dirty.
+   */
+  public isDirtyRow(rowId: string): boolean {
+    const pendingUpdate = this._latestSavingDocs$.getValue().get(rowId);
+    return pendingUpdate?.type === 'add-doc' && Object.keys(pendingUpdate.update).length > 0;
+  }
 
   public readonly dataView$: Observable<DataView> = combineLatest([
     this._indexName$,
@@ -479,16 +524,17 @@ export class IndexUpdateService {
   }
 
   private listenForUpdates() {
+    this._subscription.add(this._savingDocs$.subscribe(this._latestSavingDocs$));
     this._subscription.add(
-      combineLatest([this.bufferState$, this._pendingColumnsToBeSaved$])
+      combineLatest([this._savingDocs$, this._pendingColumnsToBeSaved$])
         .pipe(
-          map(([bufferState, pendingColumnsToBeSaved]) => {
-            const hasCellEditions = bufferState.some((action) => {
-              if (action.type === 'add-doc') {
-                // Only consider rows with at least one value
-                return Object.keys(action.payload.value).length > 0;
+          map(([savingDocs, pendingColumnsToBeSaved]) => {
+            const hasCellEditions = Array.from(savingDocs.values()).some((pendingUpdate) => {
+              if (pendingUpdate.type === 'add-doc') {
+                // Only consider rows with at least one (effective) value
+                return Object.keys(pendingUpdate.update).length > 0;
               }
-              return action.type === 'delete-doc';
+              return pendingUpdate.type === 'delete-doc';
             });
             const hasColumnAdditions =
               pendingColumnsToBeSaved.filter((col) => !isPlaceholderColumn(col.name)).length > 0;

@@ -25,7 +25,7 @@ const FLYOUT_TITLE_ID = 'ruleCreateOptionsFlyoutTitle';
 export interface RuleCreateOptionsFlyoutProps {
   onClose: () => void;
   onCreateEsqlRule: () => void;
-  onCreateWithAgent: () => void;
+  onCreateWithAgent?: () => void;
   onCreateThresholdAlert?: () => void;
   legacyRuleTypes?: LegacyRuleTypeItem[];
 }

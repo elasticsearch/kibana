@@ -9,7 +9,7 @@ import { schema, type TypeOf } from '@kbn/config-schema';
 
 export const dataViewCreateQuerySchema = schema.object({
   createDataView: schema.boolean({ defaultValue: false }),
-  timeFieldName: schema.maybe(schema.string()),
+  timeFieldName: schema.maybe(schema.string({ maxLength: 10000 })),
 });
 
 export type DataViewCreateQuerySchema = TypeOf<typeof dataViewCreateQuerySchema>;

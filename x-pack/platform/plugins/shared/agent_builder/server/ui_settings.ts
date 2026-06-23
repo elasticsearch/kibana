@@ -11,6 +11,7 @@ import { i18n } from '@kbn/i18n';
 import {
   AGENT_BUILDER_NAV_ENABLED_SETTING_ID,
   AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+  AGENT_BUILDER_BASH_SUPPORT_SETTING_ID,
   AGENT_BUILDER_UIAM_OAUTH_CLIENT_MANAGEMENT_SETTING_ID,
 } from '@kbn/management-settings-ids';
 
@@ -39,6 +40,20 @@ export const registerUISettings = ({ uiSettings }: { uiSettings: UiSettingsServi
       ),
       name: i18n.translate('xpack.agentBuilder.uiSettings.experimentalFeatures.name', {
         defaultMessage: 'Elastic Agent Builder: Experimental Features',
+      }),
+      schema: schema.boolean(),
+      value: false,
+      experimental: true,
+      requiresPageReload: false,
+      readonly: false,
+    },
+    [AGENT_BUILDER_BASH_SUPPORT_SETTING_ID]: {
+      description: i18n.translate('xpack.agentBuilder.uiSettings.bashSupport.description', {
+        defaultMessage:
+          'Enables the experimental bash tool for Elastic Agent Builder. Disabled by default; intended for controlled experimentation.',
+      }),
+      name: i18n.translate('xpack.agentBuilder.uiSettings.bashSupport.name', {
+        defaultMessage: 'Elastic Agent Builder: Bash Tool',
       }),
       schema: schema.boolean(),
       value: false,

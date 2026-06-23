@@ -23,12 +23,15 @@ paths:
                   $ref: "#/components/schemas/MonitoringEntitySourceType"
                 name:
                   type: string
+                  maxLength: 256
                 indexPattern:
                   type: string
+                  maxLength: 1000
                 enabled:
                   type: boolean
                 matchers:
                   type: array
+                  maxItems: 100
                   items:
                     $ref: '#/components/schemas/Matcher'
                 filter:
@@ -52,6 +55,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 256
       responses:
         "200":
           description: Entity source details retrieved
@@ -70,6 +74,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 256
       requestBody:
         required: true
         content:
@@ -94,6 +99,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 256
       responses:
         "200":
           description: Entity source deleted successfully
@@ -108,6 +114,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 256
         - name: managed
           in: query
           schema:
@@ -116,6 +123,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 256
         - name: page
           in: query
           schema:
@@ -131,6 +139,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 256
         - name: sort_order
           in: query
           schema:
@@ -176,14 +185,18 @@ components:
       properties:
         name:
           type: string
+          maxLength: 256
         indexPattern:
           type: string
+          maxLength: 1000
         integrationName:
           type: string
+          maxLength: 256
         enabled:
           type: boolean
         matchers:
           type: array
+          maxItems: 100
           items:
             $ref: '#/components/schemas/Matcher'
         filter:
@@ -219,8 +232,10 @@ components:
       properties:
         fields:
           type: array
+          maxItems: 100
           items:
             type: string
+            maxLength: 256
         values:
           description: >
             Matcher values. Must be either an array of strings
@@ -229,9 +244,12 @@ components:
             Mixed types are intentionally not supported for simplicity and predictability.
           oneOf:
             - type: array
+              maxItems: 1000
               items:
                 type: string
+                maxLength: 256
             - type: array
+              maxItems: 1000
               items:
                 type: boolean
     Filter:
@@ -240,7 +258,9 @@ components:
         kuery:
           oneOf:
             - type: string
+              maxLength: 4096
             - type: object
+              additionalProperties: false
 
     MonitoringEntitySourceAttributes:
       allOf:
@@ -257,11 +277,12 @@ components:
           id:
             type: string
 
-    Integrations: 
+    Integrations:
       type: object
       properties:
-        syncMarkerIndex: 
+        syncMarkerIndex:
           type: string
+          maxLength: 1000
           description: Index to read latest sync markers from
         syncData: 
           type: object

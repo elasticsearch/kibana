@@ -15,9 +15,14 @@ import {
 } from '../stream_management/data_management/shared/mocks';
 
 const mockUseStreamDetail = jest.fn();
+const mockUseStreamsPrivileges = jest.fn();
 
 jest.mock('../../hooks/use_stream_detail', () => ({
   useStreamDetail: () => mockUseStreamDetail(),
+}));
+
+jest.mock('../../hooks/use_streams_privileges', () => ({
+  useStreamsPrivileges: () => mockUseStreamsPrivileges(),
 }));
 
 jest.mock('./data_quality_card', () => ({
@@ -32,11 +37,18 @@ jest.mock('./ingest_rate_chart', () => ({
   IngestRateChart: () => <div data-test-subj="mockIngestRateChart">Ingest chart</div>,
 }));
 
+jest.mock('./import_export_panel', () => ({
+  ImportExportPanel: () => <div data-test-subj="mockImportExportPanel">Import & export</div>,
+}));
+
 const renderWithI18n = (ui: React.ReactElement) => render(<I18nProvider>{ui}</I18nProvider>);
 
 describe('StreamOverview', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseStreamsPrivileges.mockReturnValue({
+      features: { contentPacks: { enabled: false } },
+    });
   });
 
   it('renders about panel in sidebar', () => {
@@ -58,6 +70,34 @@ describe('StreamOverview', () => {
 
     expect(screen.getByTestId('mockIngestRateChart')).toBeInTheDocument();
     expect(screen.getByText('Dataset quality')).toBeInTheDocument();
+  });
+
+  it('renders import and export panel when content packs are enabled', () => {
+    mockUseStreamsPrivileges.mockReturnValue({
+      features: { contentPacks: { enabled: true } },
+    });
+    mockUseStreamDetail.mockReturnValue({
+      definition: createMockWiredStreamDefinition(),
+      refresh: jest.fn(),
+    });
+
+    renderWithI18n(<StreamOverview />);
+
+    expect(screen.getByText('Import & export')).toBeInTheDocument();
+  });
+
+  it('does not render import and export panel for query stream', () => {
+    mockUseStreamsPrivileges.mockReturnValue({
+      features: { contentPacks: { enabled: true } },
+    });
+    mockUseStreamDetail.mockReturnValue({
+      definition: createMockQueryStreamDefinition(),
+      refresh: jest.fn(),
+    });
+
+    renderWithI18n(<StreamOverview />);
+
+    expect(screen.queryByText('Import & export')).not.toBeInTheDocument();
   });
 
   it('renders IngestRateChart for all stream types', () => {

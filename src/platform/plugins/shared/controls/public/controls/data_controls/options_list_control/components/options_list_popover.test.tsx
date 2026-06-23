@@ -11,7 +11,7 @@ import React from 'react';
 import { BehaviorSubject, first } from 'rxjs';
 
 import { EuiThemeProvider } from '@elastic/eui';
-import { DEFAULT_DSL_OPTIONS_LIST_STATE } from '@kbn/controls-constants';
+import { ControlValuesSource, DEFAULT_DSL_OPTIONS_LIST_STATE } from '@kbn/controls-constants';
 import type { OptionsListDisplaySettings, OptionsListDSLControlState } from '@kbn/controls-schemas';
 import type { DataView, DataViewField } from '@kbn/data-views-plugin/common';
 import { createStubDataView } from '@kbn/data-views-plugin/common/data_view.stub';
@@ -64,10 +64,11 @@ describe('Options list popover', () => {
       initializeDrilldownsManager: jest.fn(),
       initialState: {
         ...DEFAULT_DSL_OPTIONS_LIST_STATE,
+        values_source: ControlValuesSource.FIELD,
         data_view_id: 'myDataViewId',
         field_name: 'myFieldName',
         ...overwriteState,
-      },
+      } as OptionsListDSLControlState,
       finalizeApi,
       uuid,
       parentApi: {},

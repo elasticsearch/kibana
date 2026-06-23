@@ -48,6 +48,10 @@ export const commandsMetadata: Record<string, unknown> = {
     type: 'command',
     name: 'grok',
   },
+  highlight: {
+    type: 'command',
+    name: 'highlight',
+  },
   inline_stats: {
     type: 'command',
     name: 'inline_stats',
@@ -136,6 +140,7 @@ export enum EsqlCommandNames {
   EXPLAIN = 'explain',
   FORK = 'fork',
   GROK = 'grok',
+  HIGHLIGHT = 'highlight',
   INLINE_STATS = 'inline_stats',
   INSIST = 'insist',
   KEEP = 'keep',

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { RadioGroupFieldSchema, TextareaFieldSchema } from './fields';
+import { InputTextFieldSchema, RadioGroupFieldSchema, TextareaFieldSchema } from './fields';
 
 const baseField = {
   name: 'env',
@@ -18,6 +18,69 @@ const baseTextareaField = {
   control: 'TEXTAREA' as const,
   type: 'keyword' as const,
 };
+
+const baseInputTextField = {
+  name: 'resolution',
+  control: 'INPUT_TEXT' as const,
+  type: 'keyword' as const,
+};
+
+describe('ValidationSchema — required_on_close', () => {
+  it('accepts required_on_close: true', () => {
+    const result = InputTextFieldSchema.safeParse({
+      ...baseInputTextField,
+      validation: { required_on_close: true },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.validation?.required_on_close).toBe(true);
+    }
+  });
+
+  it('accepts required_on_close: false', () => {
+    const result = InputTextFieldSchema.safeParse({
+      ...baseInputTextField,
+      validation: { required_on_close: false },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.validation?.required_on_close).toBe(false);
+    }
+  });
+
+  it('rejects non-boolean required_on_close', () => {
+    const result = InputTextFieldSchema.safeParse({
+      ...baseInputTextField,
+      validation: { required_on_close: 'yes' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts required_on_close alongside other validation flags', () => {
+    const result = InputTextFieldSchema.safeParse({
+      ...baseInputTextField,
+      validation: { required: false, required_on_close: true, min_length: 5 },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.validation?.required).toBe(false);
+      expect(result.data.validation?.required_on_close).toBe(true);
+      expect(result.data.validation?.min_length).toBe(5);
+    }
+  });
+
+  it('accepts required_on_close without required (the two are independent)', () => {
+    const result = InputTextFieldSchema.safeParse({
+      ...baseInputTextField,
+      validation: { required_on_close: true },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.validation?.required).toBeUndefined();
+      expect(result.data.validation?.required_on_close).toBe(true);
+    }
+  });
+});
 
 describe('RadioGroupFieldSchema', () => {
   describe('metadata.options validation', () => {

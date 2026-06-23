@@ -12,11 +12,16 @@ import type { PluginSetup as DataSetup } from '@kbn/data-plugin/server';
 import type { EmbeddableSetup } from '@kbn/embeddable-plugin/server';
 import type { PluginSetup as KqlSetup } from '@kbn/kql/server';
 
+import type { DataPluginStart } from '@kbn/data-plugin/server/plugin';
 import { registerESQLControlTransforms } from './transforms/esql_control_transforms';
 import { registerOptionsListControlTransforms } from './transforms/options_list_control_transforms';
 import { registerRangeSliderControlTransforms } from './transforms/range_slider_control_transforms';
 import { registerTimeSliderControlTransforms } from './transforms/time_slider_control_transforms';
 import { setupOptionsListSuggestionsRoute } from './options_list/options_list_suggestions_route';
+
+export interface StartDeps {
+  data: DataPluginStart;
+}
 
 interface SetupDeps {
   embeddable: EmbeddableSetup;
@@ -24,8 +29,8 @@ interface SetupDeps {
   kql: KqlSetup;
 }
 
-export class ControlsPlugin implements Plugin<object, object, SetupDeps> {
-  public setup(core: CoreSetup, { embeddable, kql }: SetupDeps) {
+export class ControlsPlugin implements Plugin<object, object, SetupDeps, StartDeps> {
+  public setup(core: CoreSetup<StartDeps>, { embeddable, kql }: SetupDeps) {
     registerESQLControlTransforms(embeddable);
     registerOptionsListControlTransforms(embeddable);
     registerRangeSliderControlTransforms(embeddable);

@@ -42,6 +42,7 @@ dependsOn:
   - '@kbn/react-kibana-context-render'
   - '@kbn/licensing-types'
   - '@kbn/core-http-browser'
+  - '@kbn/scout'
 tags:
   - plugin
   - prod

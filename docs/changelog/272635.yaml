@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/272635
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Add on-demand eval filtering and repetition environment variables
+description: On-demand evaluations support `EVAL_GREP` test filtering and `EVALUATION_REPETITIONS` repetition count through new environment variables.

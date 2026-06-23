@@ -40,6 +40,32 @@ describe('DataStreamDetailPanel', () => {
     mockUseAppContext.mockReturnValue(mockAppContext);
   });
 
+  describe('storage size units', () => {
+    it('displays storage size byte units in uppercase', async () => {
+      const dataStream = createMockDataStream({
+        storageSize: '5mb',
+        meteringStorageSize: '156kb',
+      });
+
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('storageSizeDetail')).toHaveTextContent('5MB');
+        expect(getByTestId('meteringStorageSizeDetail')).toHaveTextContent('156KB');
+      });
+    });
+  });
+
   describe('failure store status', () => {
     it('displays "Disabled" when failure store is not enabled', async () => {
       const dataStream = createMockDataStream({

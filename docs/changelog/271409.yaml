@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/271409
+issues:
+- https://github.com/elastic/security-team/issues/17599
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix actions menu row layout after EUI 116 upgrade

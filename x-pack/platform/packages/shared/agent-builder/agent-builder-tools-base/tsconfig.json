@@ -22,7 +22,6 @@
     "@kbn/inference-tracing",
     "@kbn/lens-embeddable-utils",
     "@kbn/logging",
-    "@kbn/std",
     "@kbn/utility-types",
     "@kbn/workflows",
     "@kbn/workflows-management-plugin",

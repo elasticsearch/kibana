@@ -99,6 +99,9 @@ export function SeriesActions({ seriesId, series, seriesConfig, onEditClick }: P
 
       <EuiFlexItem grow={false}>
         <EuiPopover
+          aria-label={i18n.translate('xpack.exploratoryView.seriesActions.popoverAriaLabel', {
+            defaultMessage: 'Series actions',
+          })}
           button={popoverButton}
           isOpen={isPopoverOpen}
           closePopover={closePopover}

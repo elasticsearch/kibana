@@ -5,41 +5,41 @@
  * 2.0.
  */
 
-import { isDuplicateFeature, type BaseFeature, type Feature } from './feature';
+import { isDuplicateFeature, normalizeFeatureSlug, type BaseFeature } from './feature';
 
 export class FeatureAccumulator {
-  private readonly byId = new Map<string, Feature>();
-  private readonly byLowerId = new Map<string, Feature>();
+  private readonly byId = new Map<string, BaseFeature>();
+  private readonly byLowerId = new Map<string, BaseFeature>();
   private readonly fromStorage = new Set<string>();
 
-  constructor(initialFeatures: Feature[] = []) {
+  constructor(initialFeatures: BaseFeature[] = []) {
     for (const f of initialFeatures) {
       this.add(f);
       this.fromStorage.add(f.id);
     }
   }
 
-  add(feature: Feature) {
+  add(feature: BaseFeature) {
     this.byId.set(feature.id, feature);
-    this.byLowerId.set(feature.id.toLowerCase(), feature);
+    this.byLowerId.set(normalizeFeatureSlug(feature.id), feature);
   }
 
-  update(feature: Feature) {
+  update(feature: BaseFeature) {
     if (!this.byId.has(feature.id)) {
       return;
     }
     this.byId.set(feature.id, feature);
-    this.byLowerId.set(feature.id.toLowerCase(), feature);
+    this.byLowerId.set(normalizeFeatureSlug(feature.id), feature);
   }
 
-  findDuplicate(candidate: BaseFeature): Feature | undefined {
+  findDuplicate(candidate: BaseFeature): BaseFeature | undefined {
     return (
-      this.byLowerId.get(candidate.id.toLowerCase()) ??
+      this.byLowerId.get(normalizeFeatureSlug(candidate.id)) ??
       this.getAll().find((f) => isDuplicateFeature(f, candidate))
     );
   }
 
-  isStoredFeature(feature: Feature): boolean {
+  isStoredFeature(feature: BaseFeature): boolean {
     return this.fromStorage.has(feature.id);
   }
 
@@ -47,15 +47,15 @@ export class FeatureAccumulator {
     this.fromStorage.delete(featureId);
   }
 
-  getAll(): Feature[] {
+  getAll(): BaseFeature[] {
     return Array.from(this.byId.values());
   }
 
-  getDiscovered(): Feature[] {
+  getDiscovered(): BaseFeature[] {
     return this.getAll().filter((f) => !this.fromStorage.has(f.id));
   }
 
-  getTopRanked(limit: number): Feature[] {
+  getTopRanked(limit: number): BaseFeature[] {
     return this.getAll()
       .sort((a, b) => {
         const aEntity = a.type === 'entity' ? 0 : 1;

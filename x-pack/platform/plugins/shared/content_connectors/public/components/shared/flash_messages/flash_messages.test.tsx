@@ -7,9 +7,8 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
-
-import { EuiCallOut } from '@elastic/eui';
+import { screen } from '@testing-library/react';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { setMockValues } from '../../../__mocks__';
 import { FlashMessages } from './flash_messages';
@@ -29,18 +28,21 @@ describe('FlashMessages', () => {
     ];
     setMockValues({ messages: mockMessages });
 
-    const wrapper = shallow(<FlashMessages />);
+    const { container } = renderWithKibanaRenderContext(<FlashMessages />);
 
-    expect(wrapper.find(EuiCallOut)).toHaveLength(5);
-    expect(wrapper.find(EuiCallOut).first().prop('color')).toEqual('success');
-    expect(wrapper.find('[data-test-subj="error"]')).toHaveLength(1);
-    expect(wrapper.find(EuiCallOut).last().prop('iconType')).toEqual('info');
+    const callouts = container.querySelectorAll('.euiCallOut');
+    expect(callouts).toHaveLength(5);
+    expect(callouts[0]).toHaveClass('euiCallOut--success');
+    expect(screen.getByTestId('error')).toBeInTheDocument();
+    expect(
+      callouts[callouts.length - 1].querySelector('[data-euiicon-type="info"]')
+    ).toBeInTheDocument();
   });
 
   it('renders any children', () => {
     setMockValues({ messages: [{ type: 'success' }] });
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <FlashMessages>
         <button data-test-subj="testing">
           Some action - you could even clear flash messages here
@@ -48,6 +50,6 @@ describe('FlashMessages', () => {
       </FlashMessages>
     );
 
-    expect(wrapper.find('[data-test-subj="testing"]').text()).toContain('Some action');
+    expect(screen.getByTestId('testing')).toHaveTextContent('Some action');
   });
 });

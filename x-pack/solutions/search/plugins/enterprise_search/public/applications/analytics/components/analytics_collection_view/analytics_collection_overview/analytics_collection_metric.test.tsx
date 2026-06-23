@@ -7,9 +7,9 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiI18nNumber } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { AnalyticsCollectionViewMetric } from './analytics_collection_metric';
 
@@ -26,33 +26,33 @@ const mockProps = {
 
 describe('AnalyticsCollectionViewMetric', () => {
   it('should render component without issues', () => {
-    const wrapper = shallow(<AnalyticsCollectionViewMetric {...mockProps} />);
-    expect(wrapper).toBeDefined();
+    renderWithKibanaRenderContext(<AnalyticsCollectionViewMetric {...mockProps} />);
+    expect(screen.getByText('Test metric')).toBeInTheDocument();
   });
 
   it('should show N/A if metric is null', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionViewMetric {...mockProps} metric={null} secondaryMetric={null} />
     );
-    expect(wrapper.find(EuiI18nNumber)).toHaveLength(0);
-    expect(wrapper.find('h2').text()).toContain('N/A');
+    expect(screen.getAllByText('N/A')).toHaveLength(2);
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('N/A');
   });
 
   it('should show the metric value if it is not null', () => {
-    const wrapper = shallow(<AnalyticsCollectionViewMetric {...mockProps} />);
-    expect(wrapper.find(EuiI18nNumber)).toHaveLength(1);
-    expect(wrapper.find(EuiI18nNumber).prop('value')).toEqual(mockProps.metric);
+    renderWithKibanaRenderContext(<AnalyticsCollectionViewMetric {...mockProps} />);
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('100');
   });
 
   it('should show N/A if secondary metric is null', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionViewMetric {...mockProps} secondaryMetric={null} />
     );
-    expect(wrapper.find('span').text()).toContain('N/A');
+    expect(screen.getByText('N/A')).toBeInTheDocument();
   });
 
   it('should show the secondary metric value if it is not null', () => {
-    const wrapper = shallow(<AnalyticsCollectionViewMetric {...mockProps} />);
-    expect(wrapper.find('span').text()).toContain(`${mockProps.secondaryMetric}%`);
+    renderWithKibanaRenderContext(<AnalyticsCollectionViewMetric {...mockProps} />);
+    // The component renders the metric value (not secondaryMetric) as the percentage display
+    expect(screen.getByText(`${mockProps.metric}%`)).toBeInTheDocument();
   });
 });

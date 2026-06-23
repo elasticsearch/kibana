@@ -82,6 +82,32 @@ describe('useAutoplayHelper', () => {
     expect(context.nextPage).toHaveBeenCalled();
   });
 
+  test('continues cycling to subsequent pages after each navigation', () => {
+    const firstNextPage = jest.fn();
+    const context = getMockedContext({
+      isFullscreen: true,
+      autoplayInterval: 1000,
+      nextPage: firstNextPage,
+    });
+
+    const { rerender } = renderHook(useAutoplayHelper, { wrapper: getContextWrapper(context) });
+
+    // First cycle fires
+    jest.advanceTimersByTime(1000);
+    expect(firstNextPage).toHaveBeenCalledTimes(1);
+
+    // Simulate navigation: pageNumber changes → nextPage is recreated with a new reference.
+    // nextPage is in the effect deps, so the effect re-runs and schedules the next tick.
+    const secondNextPage = jest.fn();
+    context.nextPage = secondNextPage;
+    rerender();
+
+    // Second cycle fires — proves autoplay keeps going rather than stopping after one page
+    jest.advanceTimersByTime(1000);
+    expect(secondNextPage).toHaveBeenCalledTimes(1);
+    expect(firstNextPage).toHaveBeenCalledTimes(1); // only ever called once
+  });
+
   test('calls updated nextPage when page count increases before the timer fires', () => {
     const originalNextPage = jest.fn();
     const context = getMockedContext({
@@ -94,17 +120,22 @@ describe('useAutoplayHelper', () => {
 
     jest.advanceTimersByTime(600);
 
-    // Simulate page addition: React re-renders, nextPageRef.current is updated synchronously
+    // Simulate page addition: React re-renders with a new nextPage.
+    // nextPage is in the effect deps, so the effect re-runs, cancelling the
+    // in-progress timer and starting a fresh 1000 ms interval.
     const updatedNextPage = jest.fn();
     context.nextPage = updatedNextPage;
     rerender();
 
-    // Timer does NOT restart — only 400ms remain from the original interval
-    jest.advanceTimersByTime(399);
+    // originalNextPage was never called (timer cancelled before it fired)
     expect(originalNextPage).not.toHaveBeenCalled();
+
+    // 999 ms into the fresh interval — not yet fired
+    jest.advanceTimersByTime(999);
     expect(updatedNextPage).not.toHaveBeenCalled();
 
-    jest.advanceTimersByTime(1); // reaches the original 1000ms mark
+    // 1000 ms — fires with the updated nextPage, not the stale original
+    jest.advanceTimersByTime(1);
     expect(originalNextPage).not.toHaveBeenCalled();
     expect(updatedNextPage).toHaveBeenCalledTimes(1);
   });
@@ -121,17 +152,22 @@ describe('useAutoplayHelper', () => {
 
     jest.advanceTimersByTime(600);
 
-    // Simulate page removal: React re-renders, nextPageRef.current is updated synchronously
+    // Simulate page removal: React re-renders with a new nextPage.
+    // nextPage is in the effect deps, so the effect re-runs, cancelling the
+    // in-progress timer and starting a fresh 1000 ms interval.
     const updatedNextPage = jest.fn();
     context.nextPage = updatedNextPage;
     rerender();
 
-    // Timer does NOT restart — only 400ms remain from the original interval
-    jest.advanceTimersByTime(399);
+    // originalNextPage was never called (timer cancelled before it fired)
     expect(originalNextPage).not.toHaveBeenCalled();
+
+    // 999 ms into the fresh interval — not yet fired
+    jest.advanceTimersByTime(999);
     expect(updatedNextPage).not.toHaveBeenCalled();
 
-    jest.advanceTimersByTime(1); // reaches the original 1000ms mark
+    // 1000 ms — fires with the updated nextPage, not the stale original
+    jest.advanceTimersByTime(1);
     expect(originalNextPage).not.toHaveBeenCalled();
     expect(updatedNextPage).toHaveBeenCalledTimes(1);
   });

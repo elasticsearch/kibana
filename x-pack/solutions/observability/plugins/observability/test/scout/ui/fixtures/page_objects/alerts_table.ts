@@ -140,23 +140,6 @@ export class AlertsTablePage {
     return ariaRowCount ? Number.parseInt(ariaRowCount, 10) : 0;
   }
 
-  /**
-   * Returns the human-readable time range shown by the super date picker. When
-   * an absolute/relative start-end range is active it joins the two popover
-   * button labels; otherwise it returns the quick-range "show dates" label.
-   */
-  async getTimeRangeText(): Promise<string> {
-    const startButton = this.page.testSubj.locator('superDatePickerstartDatePopoverButton');
-    if (await startButton.isVisible()) {
-      const start = (await startButton.innerText()).trim();
-      const end = (
-        await this.page.testSubj.locator('superDatePickerendDatePopoverButton').innerText()
-      ).trim();
-      return `${start} - ${end}`;
-    }
-    return (await this.page.testSubj.locator('superDatePickerShowDatesButton').innerText()).trim();
-  }
-
   // Query bar
   async submitQuery(query: string) {
     await this.queryInput.fill(query);
@@ -204,19 +187,6 @@ export class AlertsTablePage {
 
   async clickAddToExistingCase() {
     await this.addToExistingCaseAction.click();
-  }
-
-  // Date picker
-  /**
-   * Opens the super date picker quick menu and selects a "commonly used" range
-   * (e.g. `Last 15 minutes`), then waits for the table to reload.
-   */
-  async selectCommonlyUsedDateRange(label: string) {
-    await this.page.testSubj.click('superDatePickerToggleQuickMenuButton');
-    // EUI builds the commonly-used data-test-subj by replacing only the first
-    // space in the label (e.g. `Last 15 minutes` -> `Last_15 minutes`).
-    await this.page.testSubj.click(`superDatePickerCommonlyUsed_${label.replace(' ', '_')}`);
-    await this.waitForTableToLoad();
   }
 
   // Pagination

@@ -5,25 +5,33 @@
  * 2.0.
  */
 
+import { setMockValues } from '../../../../../__mocks__/kea_logic';
 import { mockPipelineState } from '../../../../__mocks__/pipeline.mock';
 import { indices } from '../../../../__mocks__/search_indices.mock';
 
+jest.mock('../../components/curl_request/curl_request', () => ({
+  CurlRequest: () => <div data-test-subj="curlRequest" />,
+}));
+
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { fireEvent, screen } from '@testing-library/react';
 
-import { EuiBadge, EuiButtonEmpty } from '@elastic/eui';
-
-import { CurlRequest } from '../../components/curl_request/curl_request';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { DefaultPipelineItem } from './default_pipeline_item';
 
 describe('DefaultPipelineItem', () => {
+  beforeEach(() => {
+    setMockValues({});
+  });
+
   it('renders default pipeline item for ingestion indices', () => {
     const index = indices[1];
     const mockOpenModal = jest.fn();
     const ingestionMethod = 'connector';
-    const wrapper = shallow(
+
+    renderWithKibanaRenderContext(
       <DefaultPipelineItem
         index={index}
         indexName={index.name}
@@ -34,26 +42,25 @@ describe('DefaultPipelineItem', () => {
       />
     );
 
-    const title = wrapper.find('h4').text();
-    const settingsButton = wrapper.find(EuiButtonEmpty);
-    const curlRequest = wrapper.find(CurlRequest);
-    const badge = wrapper.find(EuiBadge);
+    expect(screen.getByRole('heading', { name: mockPipelineState.name })).toBeInTheDocument();
 
-    expect(title).toEqual(mockPipelineState.name);
-    expect(settingsButton.prop('data-telemetry-id')).toEqual(
+    const settingsButton = screen.getByText('Settings');
+    expect(settingsButton.closest('button')?.getAttribute('data-telemetry-id')).toEqual(
       `entSearchContent-${ingestionMethod}-pipelines-ingestPipelines-settings`
     );
-    settingsButton.simulate('click');
+    fireEvent.click(settingsButton);
     expect(mockOpenModal).toHaveBeenCalledTimes(1);
-    expect(curlRequest.length).toEqual(0);
-    expect(badge.render().text()).toEqual('Managed');
+
+    expect(screen.queryByText('Ingest a document using cURL')).not.toBeInTheDocument();
+    expect(screen.getByText('Managed')).toBeInTheDocument();
   });
 
   it('renders default pipeline item for api indices', () => {
     const index = indices[0];
     const mockOpenModal = jest.fn();
     const ingestionMethod = 'api';
-    const wrapper = shallow(
+
+    renderWithKibanaRenderContext(
       <DefaultPipelineItem
         index={index}
         indexName={index.name}
@@ -64,24 +71,16 @@ describe('DefaultPipelineItem', () => {
       />
     );
 
-    const title = wrapper.find('h4').text();
-    const settingsButton = wrapper.find(EuiButtonEmpty);
-    const curlRequest = wrapper.find(CurlRequest);
-    const badge = wrapper.find(EuiBadge);
+    expect(screen.getByRole('heading', { name: mockPipelineState.name })).toBeInTheDocument();
 
-    expect(title).toEqual(mockPipelineState.name);
-    expect(settingsButton.prop('data-telemetry-id')).toEqual(
+    const settingsButton = screen.getByText('Settings');
+    expect(settingsButton.closest('button')?.getAttribute('data-telemetry-id')).toEqual(
       `entSearchContent-${ingestionMethod}-pipelines-ingestPipelines-settings`
     );
-    settingsButton.simulate('click');
+    fireEvent.click(settingsButton);
     expect(mockOpenModal).toHaveBeenCalledTimes(1);
-    expect(curlRequest.prop('document')).toBeDefined();
-    expect(curlRequest.prop('indexName')).toEqual(index.name);
-    expect(curlRequest.prop('pipeline')).toEqual({
-      ...mockPipelineState,
-      name: mockPipelineState.name,
-    });
 
-    expect(badge.render().text()).toEqual('Managed');
+    expect(screen.getByTestId('curlRequest')).toBeInTheDocument();
+    expect(screen.getByText('Managed')).toBeInTheDocument();
   });
 });

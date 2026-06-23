@@ -9,8 +9,10 @@ import type { Location } from 'history';
 
 import type { ApplicationStart } from '@kbn/core-application-browser';
 import type { NavigationTreeDefinition } from '@kbn/core-chrome-browser';
+import type { CoreStart } from '@kbn/core/public';
 import { DATA_MANAGEMENT_NAV_ID } from '@kbn/deeplinks-management';
 import { i18n } from '@kbn/i18n';
+import { getAlertingV2ManagementNavPanel } from '@kbn/alerting-v2-utils';
 
 function isEditingFromDashboard(
   location: Location,
@@ -56,11 +58,11 @@ const PROJECT_PERFORMANCE_TITLE = i18n.translate(
 );
 
 export function createNavigationTree({
+  core,
   showAiAssistant = true,
-  showAlertingV2 = false,
 }: ApplicationStart & {
+  core: CoreStart;
   showAiAssistant?: boolean;
-  showAlertingV2?: boolean;
 }): NavigationTreeDefinition {
   return {
     body: [
@@ -180,33 +182,7 @@ export function createNavigationTree({
               },
             ],
           },
-          ...(showAlertingV2
-            ? [
-                {
-                  id: 'v2_alerting_preview',
-                  title: i18n.translate(
-                    'xpack.serverlessVectordb.nav.management.v2AlertingPreview',
-                    {
-                      defaultMessage: 'V2 Alerting Preview',
-                    }
-                  ),
-                  renderAs: 'panelOpener' as const,
-                  breadcrumbStatus: 'hidden' as const,
-                  children: [
-                    { link: 'management:rules' as const, breadcrumbStatus: 'hidden' as const },
-                    { link: 'management:episodes' as const, breadcrumbStatus: 'hidden' as const },
-                    {
-                      link: 'management:action_policies' as const,
-                      breadcrumbStatus: 'hidden' as const,
-                    },
-                    {
-                      link: 'management:execution_history' as const,
-                      breadcrumbStatus: 'hidden' as const,
-                    },
-                  ],
-                },
-              ]
-            : []),
+          ...getAlertingV2ManagementNavPanel(core),
           {
             id: 'settings_alerts',
             title: ALERTS_AND_INSIGHTS_TITLE,

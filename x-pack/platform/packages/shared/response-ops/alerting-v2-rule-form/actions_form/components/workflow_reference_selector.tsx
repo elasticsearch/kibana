@@ -130,6 +130,7 @@ export const WorkflowReferenceSelector = ({
       error={errorMessage}
     >
       <EuiComboBox
+        compressed
         fullWidth
         async
         singleSelection={{ asPlainText: true }}

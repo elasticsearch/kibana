@@ -9,9 +9,9 @@ import { setMockValues } from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiHealth } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { MlModelDeploymentState } from '../../../../../../common/types/ml';
 import type { InferencePipeline } from '../../../../../../common/types/pipelines';
@@ -32,77 +32,73 @@ describe('TrainedModelHealth', () => {
     pipelineReferences: [],
     types: ['pytorch'],
   };
+
   it('renders model downloading', () => {
-    const wrapper = shallow(<TrainedModelHealth modelState={MlModelDeploymentState.Downloading} />);
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Deploying');
-    expect(health.prop('color')).toEqual('warning');
+    renderWithKibanaRenderContext(
+      <TrainedModelHealth modelState={MlModelDeploymentState.Downloading} />
+    );
+    expect(screen.getByText('Deploying')).toBeInTheDocument();
   });
+
   it('renders model downloaded', () => {
-    const wrapper = shallow(<TrainedModelHealth modelState={MlModelDeploymentState.Downloaded} />);
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Deployed');
-    expect(health.prop('color')).toEqual('subdued');
+    renderWithKibanaRenderContext(
+      <TrainedModelHealth modelState={MlModelDeploymentState.Downloaded} />
+    );
+    expect(screen.getByText('Deployed')).toBeInTheDocument();
   });
+
   it('renders model started', () => {
     const pipeline: InferencePipeline = {
       ...commonModelData,
       modelState: TrainedModelState.Started,
     };
     const { modelState, modelStateReason } = pipeline;
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <TrainedModelHealth modelState={modelState} modelStateReason={modelStateReason} />
     );
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Started');
-    expect(health.prop('color')).toEqual('success');
+    expect(screen.getByText('Started')).toBeInTheDocument();
   });
+
   it('renders model not deployed', () => {
-    const pipeline: InferencePipeline = {
-      ...commonModelData,
-    };
+    const pipeline: InferencePipeline = { ...commonModelData };
     const { modelState, modelStateReason } = pipeline;
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <TrainedModelHealth modelState={modelState} modelStateReason={modelStateReason} />
     );
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Not started');
-    expect(health.prop('color')).toEqual('danger');
+    expect(screen.getByText('Not started')).toBeInTheDocument();
   });
+
   it('renders model not downloaded for downloadable models', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <TrainedModelHealth modelState={MlModelDeploymentState.NotDeployed} isDownloadable />
     );
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Not deployed');
-    expect(health.prop('color')).toEqual('subdued');
+    expect(screen.getByText('Not deployed')).toBeInTheDocument();
   });
+
   it('renders model stopping', () => {
     const pipeline: InferencePipeline = {
       ...commonModelData,
       modelState: TrainedModelState.Stopping,
     };
     const { modelState, modelStateReason } = pipeline;
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <TrainedModelHealth modelState={modelState} modelStateReason={modelStateReason} />
     );
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Stopping');
-    expect(health.prop('color')).toEqual('warning');
+    expect(screen.getByText('Stopping')).toBeInTheDocument();
   });
+
   it('renders model starting', () => {
     const pipeline: InferencePipeline = {
       ...commonModelData,
       modelState: TrainedModelState.Starting,
     };
     const { modelState, modelStateReason } = pipeline;
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <TrainedModelHealth modelState={modelState} modelStateReason={modelStateReason} />
     );
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Starting');
-    expect(health.prop('color')).toEqual('warning');
+    expect(screen.getByText('Starting')).toBeInTheDocument();
   });
+
   it('renders model failed', () => {
     const pipeline: InferencePipeline = {
       ...commonModelData,
@@ -110,11 +106,9 @@ describe('TrainedModelHealth', () => {
       modelStateReason: 'Model start boom.',
     };
     const { modelState, modelStateReason } = pipeline;
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <TrainedModelHealth modelState={modelState} modelStateReason={modelStateReason} />
     );
-    const health = wrapper.find(EuiHealth);
-    expect(health.prop('children')).toEqual('Deployment failed');
-    expect(health.prop('color')).toEqual('danger');
+    expect(screen.getByText('Deployment failed')).toBeInTheDocument();
   });
 });

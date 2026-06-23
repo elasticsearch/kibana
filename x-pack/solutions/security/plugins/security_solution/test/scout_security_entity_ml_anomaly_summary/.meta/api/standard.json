@@ -1,0 +1,149 @@
+{
+  "sha1": "34b5d280749a58417771bd527dfe31f18bbd8e79",
+  "tests": [
+    {
+      "id": "25f6cc54ad6aa48-16ec3651fcfe5c3",
+      "title": "ML Anomaly Detection Summary API anomaly summary returns anomalies for an entity with anomaly records",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 189,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-54a449da2027ccd",
+      "title": "ML Anomaly Detection Summary API anomaly summary returns correct jobName and threat fields for suspicious_login_activity_ea",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 233,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-400f8c572eebeec",
+      "title": "ML Anomaly Detection Summary API anomaly summary returns empty anomalies for entity with no anomaly records",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 255,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-cbc10cb8648112f",
+      "title": "ML Anomaly Detection Summary API returns 400 when from is older than 1 year",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 271,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-8e00d3cd31cb680",
+      "title": "ML Anomaly Detection Summary API returns 200 when from is within 1 year",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 283,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-9b1f779da280b84",
+      "title": "ML Anomaly Detection Summary API anomaly summary filters anomalies by jobIds",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 294,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-c4381da4cd1f35d",
+      "title": "ML Anomaly Detection Summary API anomaly summary respects pageSize and page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 307,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-1a865ad9f58bf36",
+      "title": "ML Anomaly Detection Summary API anomaly summary sorts anomalies by record_score descending",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 335,
+        "column": 12
+      }
+    },
+    {
+      "id": "25f6cc54ad6aa48-fa7b1a20cb95927",
+      "title": "ML Anomaly Detection Summary API anomaly summary enriches anomalies with baseline values from source index",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_entity_ml_anomaly_summary/api/tests/entity_analytics/ml_anomaly_summary/ml_anomaly_summary.spec.ts",
+        "line": 348,
+        "column": 12
+      }
+    }
+  ]
+}

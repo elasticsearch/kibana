@@ -15,6 +15,7 @@ import { withMinimumLicense } from '../../../utils/with_minimum_license';
 import { GetWatchlistRequestParams as WatchlistIdParams } from '../../../../../../common/api/entity_analytics/watchlists/management/get.gen';
 import { WatchlistConfigClient } from '../watchlist_config';
 import { createEntitySourcesService } from '../../entity_sources/entity_sources_service';
+import { getWatchlistSavedObjectClient } from '../../shared/utils';
 
 interface DeleteWatchlistResponse {
   deleted: true;
@@ -53,7 +54,7 @@ export const deleteWatchlistRoute = (
             const core = await context.core;
 
             const namespace = secSol.getSpaceId();
-            const soClient = core.savedObjects.client;
+            const soClient = getWatchlistSavedObjectClient(core);
             const esClient = core.elasticsearch.client.asCurrentUser;
 
             const entitySourcesService = createEntitySourcesService({

@@ -10,7 +10,13 @@
 import type { FunctionComponent, ReactElement } from 'react';
 import React, { useState } from 'react';
 import type { EuiBasicTableColumn } from '@elastic/eui';
-import { EuiInMemoryTable, EuiIcon, EuiButtonIcon, EuiScreenReaderOnly } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiIcon,
+  EuiInMemoryTable,
+  EuiScreenReaderOnly,
+  EuiToolTip,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { FormattedStatus } from '../lib';
@@ -88,11 +94,16 @@ export const StatusTable: FunctionComponent<StatusTableProps> = ({ statuses }) =
       width: '40px',
       isExpander: true,
       render: (item: FormattedStatus) => (
-        <EuiButtonIcon
-          onClick={() => toggleDetails(item)}
-          aria-label={itemIdToExpandedRowMap[item.id] ? collapseLabel : expandLabel}
-          iconType={itemIdToExpandedRowMap[item.id] ? 'chevronSingleUp' : 'chevronSingleDown'}
-        />
+        <EuiToolTip
+          content={itemIdToExpandedRowMap[item.id] ? collapseLabel : expandLabel}
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            onClick={() => toggleDetails(item)}
+            aria-label={itemIdToExpandedRowMap[item.id] ? collapseLabel : expandLabel}
+            iconType={itemIdToExpandedRowMap[item.id] ? 'chevronSingleUp' : 'chevronSingleDown'}
+          />
+        </EuiToolTip>
       ),
     },
   ];

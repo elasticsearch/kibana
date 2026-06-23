@@ -6,20 +6,20 @@
  */
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiEmptyPrompt } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { EmptySearchApplicationsPrompt } from './empty_search_applications_prompt';
 
 describe('EmptySearchApplicationsPrompt', () => {
   it('should pass children to prompt actions', () => {
     const dummyEl = <div>dummy</div>;
-    const wrapper = shallow(
+
+    renderWithKibanaRenderContext(
       <EmptySearchApplicationsPrompt>{dummyEl}</EmptySearchApplicationsPrompt>
     );
-    const euiPrompt = wrapper.find(EuiEmptyPrompt);
 
-    expect(euiPrompt.prop('actions')).toEqual(dummyEl);
+    expect(screen.getByText('dummy')).toBeInTheDocument();
   });
 });

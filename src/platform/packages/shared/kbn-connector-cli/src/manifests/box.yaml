@@ -1,0 +1,18 @@
+spec_id: .box
+name: "Box (testing)"
+auth_type: oauth_authorization_code
+config:
+  serverUrl: "https://mcp.box.com"
+secrets:
+  authorizationUrl:
+    value: "https://account.box.com/api/oauth2/authorize"
+  tokenUrl:
+    value: "https://api.box.com/oauth2/token"
+  scope:
+    value: "root_readwrite ai.readwrite docgen.readwrite"
+  clientId:
+    vault: secret/ent-search-team/connectors-sources/box
+    field: client_id
+  clientSecret:
+    vault: secret/ent-search-team/connectors-sources/box
+    field: client_secret

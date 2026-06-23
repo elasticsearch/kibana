@@ -9,7 +9,7 @@
 import type { ESQLAstAllCommands } from '@elastic/esql/types';
 import type { ICommandCallbacks } from '../types';
 import { type ISuggestionItem, type ICommandContext } from '../types';
-import { pipeCompleteItem } from '../complete_items';
+import { newLineAndPipeCompleteItems } from '../complete_items';
 
 export async function autocomplete(
   query: string,
@@ -18,5 +18,5 @@ export async function autocomplete(
   context?: ICommandContext,
   cursorPosition?: number
 ): Promise<ISuggestionItem[]> {
-  return [pipeCompleteItem];
+  return newLineAndPipeCompleteItems;
 }

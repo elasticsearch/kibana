@@ -26,9 +26,11 @@ paths:
               properties:
                 name:
                   type: string
+                  maxLength: 256
                   description: Unique name for the watchlist
                 description:
                   type: string
+                  maxLength: 1000
                   description: Description of the watchlist
                 riskModifier:
                   type: number
@@ -41,6 +43,7 @@ paths:
                 entitySources:
                   description: Optional entity sources to create and link to the watchlist
                   type: array
+                  maxItems: 100
                   items:
                     type: object
                     required:
@@ -52,21 +55,27 @@ paths:
                         $ref: "../data_source/common.schema.yaml#/components/schemas/EntitySourceType"
                       name:
                         type: string
+                        maxLength: 256
                       indexPattern:
                         type: string
+                        maxLength: 1000
                       integrationName:
                         type: string
+                        maxLength: 256
                         description: Required when type is entity_analytics_integration. One of entityanalytics_okta, entityanalytics_ad.
                       enabled:
                         type: boolean
                       identifierField:
                         type: string
+                        maxLength: 256
                         description: Field used to query the entity store for index-type sources
                       queryRule:
                         type: string
+                        maxLength: 4096
                         description: KQL query used to filter data from the provided index patterns
                       matchers:
                         type: array
+                        maxItems: 100
                         items:
                           $ref: "../data_source/common.schema.yaml#/components/schemas/Matcher"
                       filter:

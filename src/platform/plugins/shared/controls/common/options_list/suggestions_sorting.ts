@@ -8,8 +8,17 @@
  */
 
 import type { OptionsListSortingType } from '@kbn/controls-schemas';
+import { ControlValuesSource } from '@kbn/controls-constants';
 
-export const getCompatibleSortingTypes = (type?: string): OptionsListSortingType['by'][] => {
+export const getCompatibleSortingTypes = (
+  type?: string,
+  valuesSource?: ControlValuesSource
+): OptionsListSortingType['by'][] => {
+  // TODO Remove when we're able to get accurate document counts for ES|QL-source controls
+  if (valuesSource === ControlValuesSource.ESQL) {
+    return ['_key'];
+  }
+
   switch (type) {
     case 'ip': {
       return ['_count'];

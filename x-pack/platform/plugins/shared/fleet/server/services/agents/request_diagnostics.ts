@@ -63,14 +63,22 @@ export async function bulkRequestDiagnostics(
 
   const batchSize = options.batchSize ?? SO_SEARCH_LIMIT;
 
-  const res = await getAgentsByKuery(esClient, soClient, {
+  // cheap count — avoids hydrating up to batchSize agent documents just to read the total
+  const { total } = await getAgentsByKuery(esClient, soClient, {
     kuery: options.kuery,
     spaceId: currentSpaceId,
     showInactive: false,
     page: 1,
-    perPage: batchSize,
+    perPage: 0,
   });
-  if (res.total <= batchSize) {
+  if (total <= batchSize) {
+    const res = await getAgentsByKuery(esClient, soClient, {
+      kuery: options.kuery,
+      spaceId: currentSpaceId,
+      showInactive: false,
+      page: 1,
+      perPage: batchSize,
+    });
     return await requestDiagnosticsBatch(esClient, res.agents, {
       additionalMetrics: options.additionalMetrics,
       spaceId: currentSpaceId,
@@ -82,7 +90,7 @@ export async function bulkRequestDiagnostics(
       {
         ...options,
         batchSize,
-        total: res.total,
+        total,
         spaceId: currentSpaceId,
       },
       { pitId: await openPointInTime(esClient) }

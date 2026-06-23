@@ -5,5 +5,9 @@
  * 2.0.
  */
 
-// Not available in platformCoreTools, but exported from @kbn/observability-agent-builder-plugin
-export const OBSERVABILITY_GET_LOGS_TOOL_ID = 'observability.get_logs';
+import { platformCoreTools, platformStreamsSigEventsTools } from '@kbn/agent-builder-common/tools';
+
+export const SIGNIFICANT_EVENTS_DISCOVERY_TOOL_IDS = [
+  platformStreamsSigEventsTools.searchKnowledgeIndicators,
+  platformCoreTools.executeEsql,
+] as const;

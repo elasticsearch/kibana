@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/272610
+issues:
+- https://github.com/elastic/kibana/issues/272609
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Discover and ES|QL
+title: Fix Discover session panel ID resolution after copy to spaces

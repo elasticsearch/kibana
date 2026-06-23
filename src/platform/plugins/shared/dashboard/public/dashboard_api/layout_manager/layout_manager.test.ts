@@ -11,6 +11,7 @@ import { pick } from 'lodash';
 import { BehaviorSubject, of } from 'rxjs';
 
 import {
+  ControlValuesSource,
   DEFAULT_DSL_OPTIONS_LIST_STATE,
   DEFAULT_PINNED_CONTROL_STATE,
 } from '@kbn/controls-constants';
@@ -62,13 +63,14 @@ describe('layout manager', () => {
     id: PANEL_ONE_ID,
   };
 
-  const pinnedControls: DashboardState['pinned_panels'] = [
+  const pinnedControls = [
     {
       ...DEFAULT_PINNED_CONTROL_STATE,
       id: 'control1',
       type: 'options_list_control',
       config: {
         ...DEFAULT_DSL_OPTIONS_LIST_STATE,
+        values_source: ControlValuesSource.FIELD,
         data_view_id: '',
         field_name: '',
       },
@@ -79,11 +81,12 @@ describe('layout manager', () => {
       type: 'options_list_control',
       config: {
         ...DEFAULT_DSL_OPTIONS_LIST_STATE,
+        values_source: ControlValuesSource.FIELD,
         data_view_id: '',
         field_name: '',
       },
     },
-  ];
+  ] as DashboardState['pinned_panels'];
 
   const titleManager = initializeTitleManager(panel1.config);
   const panel1Api: DefaultEmbeddableApi = {

@@ -177,14 +177,18 @@ export function StreamsTourProvider({ children }: StreamsTourProviderProps) {
   const [tourStreamName, setTourStreamName] = useState<string | null>(
     persistedTourState?.tourStreamName ?? null
   );
-  const prevStepRef = useRef<number>(persistedTourState?.currentTourStep ?? 1);
 
   const stepsConfig = useMemo(() => getTourStepsConfig(), []);
+  const restoredCurrentTourStep = Math.min(
+    persistedTourState?.currentTourStep ?? DEFAULT_TOUR_STATE.currentTourStep,
+    stepsConfig.length
+  );
+  const prevStepRef = useRef<number>(restoredCurrentTourStep);
 
   const restoredTourState: EuiTourState = {
     ...DEFAULT_TOUR_STATE,
     ...(persistedTourState && {
-      currentTourStep: persistedTourState.currentTourStep,
+      currentTourStep: restoredCurrentTourStep,
       isTourActive: persistedTourState.isTourActive,
     }),
   };

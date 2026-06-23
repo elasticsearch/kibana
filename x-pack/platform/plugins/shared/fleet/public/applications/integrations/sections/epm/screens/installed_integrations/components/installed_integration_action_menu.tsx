@@ -14,6 +14,7 @@ import {
   EuiToolTip,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 
 import type { InstalledPackageUIPackageListItem } from '../types';
 import { useInstalledIntegrationsActions } from '../hooks/use_installed_integrations_actions';
@@ -205,6 +206,10 @@ export const InstalledIntegrationsActionMenu: React.FunctionComponent<{
   return (
     <>
       <EuiPopover
+        aria-label={i18n.translate(
+          'xpack.fleet.epmInstalledIntegrations.bulkActionPopoverAriaLabel',
+          { defaultMessage: 'Actions menu' }
+        )}
         id="fleet.epmInstalledIntegrations.bulkActionPopover"
         button={button}
         isOpen={isPopoverOpen}

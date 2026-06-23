@@ -36,6 +36,14 @@ describe('buildHelmCommand', () => {
     expect(command).not.toContain('_write_to_logs_streams');
   });
 
+  it('formats the command as the existing copyable one-line command', () => {
+    const command = buildHelmCommand(baseParams);
+
+    expect(command).not.toContain('\n');
+    expect(command).toContain('helm repo add elastic https://helm.elastic.co/ &&');
+    expect(command).toContain('helm repo update elastic &&');
+  });
+
   it('does not include wired streams config when useWiredStreams is false', () => {
     const command = buildHelmCommand({
       ...baseParams,

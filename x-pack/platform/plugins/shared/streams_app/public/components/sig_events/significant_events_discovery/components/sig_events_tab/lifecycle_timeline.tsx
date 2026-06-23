@@ -17,133 +17,82 @@ import {
   EuiEmptyPrompt,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { EventLifecycleResponse } from '@kbn/streams-schema';
+import type { Discovery, EventLifecycleResponse } from '@kbn/streams-schema';
 import { formatTimestamp } from '../../../../../util/formatters';
-
-type EntityType = 'detection' | 'discovery' | 'clearance' | 'event';
+import {
+  getLifecycleStatusColor,
+  getLifecycleStatusLabel,
+  isVisibleDiscoveryKind,
+  type LifecycleDisplayStatus,
+} from '../shared/status_display';
 
 interface TimelineEntry {
-  type: EntityType;
+  icon: string;
+  status: LifecycleDisplayStatus;
   timestamp: string;
   title: string;
-  description: string;
+  description?: string;
   detail?: string;
 }
 
-interface LifecycleTimelineProps {
-  data: EventLifecycleResponse | undefined;
-}
-
-const ENTITY_ICONS: Record<EntityType, string> = {
+const FLOW_ICONS = {
   detection: 'bell',
   discovery: 'inspect',
-  clearance: 'check',
   event: 'documentEdit',
-};
+} as const;
 
-const ENTITY_COLORS: Record<EntityType, string> = {
-  detection: 'warning',
-  discovery: 'primary',
-  clearance: 'success',
-  event: 'accent',
-};
-
-const ENTITY_LABELS: Record<EntityType, string> = {
-  detection: i18n.translate('xpack.streams.lifecycle.detection', {
-    defaultMessage: 'Detection',
-  }),
-  discovery: i18n.translate('xpack.streams.lifecycle.discovery', {
-    defaultMessage: 'Discovery',
-  }),
-  clearance: i18n.translate('xpack.streams.lifecycle.clearance', {
-    defaultMessage: 'Cleared',
-  }),
-  event: i18n.translate('xpack.streams.lifecycle.event', {
-    defaultMessage: 'Event',
-  }),
-};
-
-const EVENT_CREATED_LABEL = i18n.translate('xpack.streams.lifecycle.eventCreated', {
-  defaultMessage: 'Event created',
-});
-
-const EVENT_UPDATED_LABEL = i18n.translate('xpack.streams.lifecycle.eventUpdated', {
-  defaultMessage: 'Event updated',
-});
-
-const buildDiscoveryDescription = (
-  discovery: EventLifecycleResponse['discoveries'][number]
-): string => {
-  if (discovery.kind === 'clearance') {
-    return i18n.translate('xpack.streams.lifecycle.discoveryCleared', {
-      defaultMessage: 'All detection signals resolved',
-    });
-  }
-  const occurrence = discovery.change_point_occurrence;
-  const parts: string[] = [];
-  if (occurrence) parts.push(occurrence);
-  parts.push(
-    i18n.translate('xpack.streams.lifecycle.discoveryCriticality', {
-      defaultMessage: 'criticality {criticality}',
-      values: { criticality: discovery.criticality ?? '-' },
-    })
-  );
-  return parts.join(' · ');
-};
-
-const buildEventDescription = ({
-  event,
-}: {
-  event: EventLifecycleResponse['events'][number];
-}): { description: string; detail?: string } => {
-  const description = i18n.translate('xpack.streams.lifecycle.eventDesc', {
-    defaultMessage: 'Status: {status}, Criticality: {criticality}',
-    values: {
-      status: event.status ?? '-',
-      criticality: event.criticality != null ? String(event.criticality) : '-',
-    },
-  });
-  const detail =
-    [event.analysis_summary, event.assessment_note].filter(Boolean).join(' — ') || undefined;
-  return { description, detail };
-};
-
-function buildTimelineEntries(data: EventLifecycleResponse): TimelineEntry[] {
+function buildEntries(data: EventLifecycleResponse): TimelineEntry[] {
   const detections: TimelineEntry[] = data.detections.map((detection) => ({
-    type: 'detection' as const,
-    timestamp: detection.detected_at,
+    icon: FLOW_ICONS.detection,
+    status: detection.kind as LifecycleDisplayStatus,
+    timestamp: detection['@timestamp'],
     title: detection.rule_name ?? '-',
     description: [detection.stream_name, detection.change_point_type].filter(Boolean).join(' · '),
   }));
 
-  const discoveries: TimelineEntry[] = data.discoveries.map((discovery) => ({
-    type: (discovery.kind === 'clearance' ? 'clearance' : 'discovery') as EntityType,
-    timestamp: discovery['@timestamp'],
-    title: discovery.title,
-    description: buildDiscoveryDescription(discovery),
-  }));
+  const discoveries: TimelineEntry[] = data.discoveries
+    .filter((discovery): discovery is Discovery & { kind: Exclude<Discovery['kind'], 'handled'> } =>
+      isVisibleDiscoveryKind(discovery.kind)
+    )
+    .map((discovery) => ({
+      icon: FLOW_ICONS.discovery,
+      status: discovery.kind,
+      timestamp: discovery['@timestamp'],
+      title: discovery.title,
+      description:
+        discovery.kind === 'discovery' && discovery.criticality != null
+          ? i18n.translate('xpack.streams.lifecycle.criticality', {
+              defaultMessage: 'Criticality {n}',
+              values: { n: discovery.criticality },
+            })
+          : undefined,
+    }));
 
-  const sortedEvents = [...data.events].sort(
-    (a, b) => (Date.parse(a['@timestamp']) || 0) - (Date.parse(b['@timestamp']) || 0)
-  );
-  const events: TimelineEntry[] = sortedEvents.map((event, idx) => {
-    const { description, detail } = buildEventDescription({ event });
-    return {
-      type: 'event' as const,
+  const events: TimelineEntry[] = [...data.events]
+    .sort((a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp']))
+    .map((event) => ({
+      icon: FLOW_ICONS.event,
+      status: event.status ?? '',
       timestamp: event['@timestamp'],
-      title: idx === 0 ? EVENT_CREATED_LABEL : EVENT_UPDATED_LABEL,
-      description: idx === 0 ? event.title : description,
-      detail: idx === 0 ? description : detail,
-    };
-  });
+      title: event.title,
+      description:
+        event.criticality != null
+          ? i18n.translate('xpack.streams.lifecycle.criticality', {
+              defaultMessage: 'Criticality {n}',
+              values: { n: event.criticality },
+            })
+          : undefined,
+
+      detail: event.assessment_note,
+    }));
 
   return [...detections, ...discoveries, ...events].sort(
-    (a, b) => (Date.parse(a.timestamp) || 0) - (Date.parse(b.timestamp) || 0)
+    (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)
   );
 }
 
-export const LifecycleTimeline = ({ data }: LifecycleTimelineProps) => {
-  const entries = data ? buildTimelineEntries(data) : [];
+export const LifecycleTimeline = ({ data }: { data: EventLifecycleResponse | undefined }) => {
+  const entries = data ? buildEntries(data) : [];
 
   if (entries.length === 0) {
     return (
@@ -168,9 +117,9 @@ export const LifecycleTimeline = ({ data }: LifecycleTimelineProps) => {
     <>
       {entries.map((entry, idx) => (
         <EuiTimelineItem
-          key={`${entry.type}-${entry.timestamp}-${idx}`}
-          icon={ENTITY_ICONS[entry.type]}
-          iconAriaLabel={ENTITY_LABELS[entry.type]}
+          key={`${entry.status}-${entry.timestamp}-${idx}`}
+          icon={entry.icon}
+          iconAriaLabel={getLifecycleStatusLabel(entry.status)}
           verticalAlign="top"
         >
           <EuiPanel paddingSize="s" color="plain" hasBorder>
@@ -180,9 +129,11 @@ export const LifecycleTimeline = ({ data }: LifecycleTimelineProps) => {
             <EuiSpacer size="xs" />
             <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} wrap>
               <EuiFlexItem grow={false}>
-                <EuiBadge color={ENTITY_COLORS[entry.type]}>{ENTITY_LABELS[entry.type]}</EuiBadge>
+                <EuiBadge color={getLifecycleStatusColor(entry.status)}>
+                  {getLifecycleStatusLabel(entry.status)}
+                </EuiBadge>
               </EuiFlexItem>
-              <EuiFlexItem grow={false}>
+              <EuiFlexItem>
                 <EuiText size="s">
                   <strong>{entry.title}</strong>
                 </EuiText>

@@ -80,7 +80,7 @@ test.describe(
       await pageObjects.streams.saveChildQueryStream();
 
       await pageObjects.streams.gotoStreamMainPage();
-      await pageObjects.streams.deleteQueryStreamFromAdvancedTab(CHILD_FULL_NAME);
+      await pageObjects.streams.deleteQueryStreamFromOverviewTab(CHILD_FULL_NAME);
 
       await pageObjects.streams.gotoStreamMainPage();
       await expect(page.getByTestId(`streamsNameLink-${PARENT_STREAM_NAME}`)).toBeVisible();

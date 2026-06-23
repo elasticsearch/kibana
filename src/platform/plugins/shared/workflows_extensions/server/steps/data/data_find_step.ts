@@ -31,18 +31,28 @@ function searchForMatch(
       return { item: null, index: null, aborted: true };
     }
 
-    try {
-      const matches = evaluateKql(condition, { item, index: i });
+    if (item === null || typeof item !== 'object') {
+      // A non-object item (e.g. `null` or a scalar) cannot satisfy an
+      // `item.<field>` condition. KQL now evaluates such a path to a non-match
+      // rather than throwing, so warn explicitly here to preserve the
+      // visibility operators expect when a malformed item is skipped.
+      context.logger.warn(
+        `Skipping non-object item at index ${i} (received ${item === null ? 'null' : typeof item})`
+      );
+    } else {
+      try {
+        const matches = evaluateKql(condition, { item, index: i });
 
-      if (matches) {
-        context.logger.debug(`Found match at index ${i}`);
-        return { item, index: i };
+        if (matches) {
+          context.logger.debug(`Found match at index ${i}`);
+          return { item, index: i };
+        }
+      } catch (error) {
+        if (isKqlSyntaxError(error)) {
+          throw new Error(`Invalid KQL condition: ${(error as Error).message}`);
+        }
+        context.logger.warn(`Failed to evaluate condition for item at index ${i}`, error);
       }
-    } catch (error) {
-      if (isKqlSyntaxError(error)) {
-        throw new Error(`Invalid KQL condition: ${(error as Error).message}`);
-      }
-      context.logger.warn(`Failed to evaluate condition for item at index ${i}`, error);
     }
   }
 

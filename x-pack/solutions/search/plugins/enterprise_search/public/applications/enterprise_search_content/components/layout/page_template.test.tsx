@@ -5,75 +5,95 @@
  * 2.0.
  */
 
+import { mockTelemetryActions } from '../../../__mocks__/kea_logic';
+
 jest.mock('../../../shared/layout/nav', () => ({
   useEnterpriseSearchNav: () => [],
 }));
 
+// SetEnterpriseSearchContentChrome renders null — mock it to verify trail prop is wired correctly.
+jest.mock('../../../shared/kibana_chrome', () => ({
+  SetEnterpriseSearchContentChrome: jest.fn(() => null),
+}));
+
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen, waitFor } from '@testing-library/react';
 
-import { i18n } from '@kbn/i18n';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { SetEnterpriseSearchContentChrome } from '../../../shared/kibana_chrome';
-import { EnterpriseSearchPageTemplateWrapper } from '../../../shared/layout';
-import { SendEnterpriseSearchTelemetry } from '../../../shared/telemetry';
 
 import { EnterpriseSearchContentPageTemplate } from './page_template';
 
+const MockedSetChrome = jest.mocked(SetEnterpriseSearchContentChrome);
+
 describe('EnterpriseSearchContentPageTemplate', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <EnterpriseSearchContentPageTemplate>
-        <div className="hello">
-          {i18n.translate('xpack.enterpriseSearch..div.worldLabel', { defaultMessage: 'world' })}
-        </div>
+        <div className="hello">world</div>
       </EnterpriseSearchContentPageTemplate>
     );
 
-    expect(wrapper.type()).toEqual(EnterpriseSearchPageTemplateWrapper);
-    expect(wrapper.prop('solutionNav')).toEqual({ name: 'Elasticsearch', items: [] });
-    expect(wrapper.find('.hello').text()).toEqual('world');
+    expect(screen.getByText('world')).toBeInTheDocument();
   });
 
   describe('page chrome', () => {
     it('takes a breadcrumb array & renders a product-specific page chrome', () => {
-      const wrapper = shallow(<EnterpriseSearchContentPageTemplate pageChrome={['Some page']} />);
-      const setPageChrome = wrapper
-        .find(EnterpriseSearchPageTemplateWrapper)
-        .prop('setPageChrome') as any;
+      renderWithKibanaRenderContext(
+        <EnterpriseSearchContentPageTemplate pageChrome={['Some page']} />
+      );
 
-      expect(setPageChrome.type).toEqual(SetEnterpriseSearchContentChrome);
-      expect(setPageChrome.props.trail).toEqual(['Some page']);
+      expect(MockedSetChrome).toHaveBeenCalledWith(
+        expect.objectContaining({ trail: ['Some page'] }),
+        expect.anything()
+      );
     });
   });
 
   describe('page telemetry', () => {
-    it('takes a metric & renders product-specific telemetry viewed event', () => {
-      const wrapper = shallow(
+    it('takes a metric & renders product-specific telemetry viewed event', async () => {
+      renderWithKibanaRenderContext(
         <EnterpriseSearchContentPageTemplate pageViewTelemetry="some_page" />
       );
 
-      expect(wrapper.find(SendEnterpriseSearchTelemetry).prop('action')).toEqual('viewed');
-      expect(wrapper.find(SendEnterpriseSearchTelemetry).prop('metric')).toEqual('some_page');
+      await waitFor(() => {
+        expect(mockTelemetryActions.sendTelemetry).toHaveBeenCalledWith(
+          expect.objectContaining({ action: 'viewed', metric: 'some_page' })
+        );
+      });
     });
   });
 
   describe('props', () => {
     it('passes down any ...pageTemplateProps that EnterpriseSearchPageTemplateWrapper accepts', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
+        <EnterpriseSearchContentPageTemplate pageHeader={{ pageTitle: 'hello world' }} />
+      );
+
+      expect(screen.getByText('hello world')).toBeInTheDocument();
+    });
+
+    it('passes isLoading to EnterpriseSearchPageTemplateWrapper', () => {
+      renderWithKibanaRenderContext(<EnterpriseSearchContentPageTemplate isLoading />);
+
+      expect(screen.getByTestId('enterpriseSearchLoading')).toBeInTheDocument();
+    });
+
+    it('passes emptyState to EnterpriseSearchPageTemplateWrapper', () => {
+      renderWithKibanaRenderContext(
         <EnterpriseSearchContentPageTemplate
-          pageHeader={{ pageTitle: 'hello world' }}
-          isLoading={false}
-          emptyState={<div />}
+          isEmptyState
+          emptyState={<div data-test-subj="emptyState" />}
         />
       );
 
-      expect(
-        wrapper.find(EnterpriseSearchPageTemplateWrapper).prop('pageHeader')!.pageTitle
-      ).toEqual('hello world');
-      expect(wrapper.find(EnterpriseSearchPageTemplateWrapper).prop('isLoading')).toEqual(false);
-      expect(wrapper.find(EnterpriseSearchPageTemplateWrapper).prop('emptyState')).toEqual(<div />);
+      expect(screen.getByTestId('emptyState')).toBeInTheDocument();
     });
   });
 });

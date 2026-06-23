@@ -75,7 +75,7 @@ describe('CHANGE_POINT Autocomplete', () => {
   });
 
   it('suggests ON after value column', async () => {
-    await changePointExpectSuggestions(`from a | change_point value /`, [ON, AS, BY, PIPE]);
+    await changePointExpectSuggestions(`from a | change_point value /`, ['\n', ON, AS, BY, PIPE]);
   });
 
   it('suggests fields after ON', async () => {
@@ -87,7 +87,12 @@ describe('CHANGE_POINT Autocomplete', () => {
 
   describe('AS', () => {
     it('suggests AS after ON <field>', async () => {
-      await changePointExpectSuggestions(`from a | change_point value on field `, [AS, BY, PIPE]);
+      await changePointExpectSuggestions(`from a | change_point value on field `, [
+        '\n',
+        AS,
+        BY,
+        PIPE,
+      ]);
     });
 
     it('suggests default field name for AS clauses with an empty ON', async () => {
@@ -120,7 +125,7 @@ describe('CHANGE_POINT Autocomplete', () => {
     it('suggests pipe after complete command', async () => {
       await changePointExpectSuggestions(
         `from a | change_point value on field as changePointType, pValue `,
-        [BY, PIPE]
+        ['\n', BY, PIPE]
       );
     });
   });
@@ -129,7 +134,7 @@ describe('CHANGE_POINT Autocomplete', () => {
     it('suggests the pipe after the AS clause, On clause should not be suggested', async () => {
       await changePointExpectSuggestions(
         `from a | change_point value as changePointType, pValue `,
-        [BY, PIPE]
+        ['\n', BY, PIPE]
       );
     });
   });
@@ -150,6 +155,7 @@ describe('CHANGE_POINT Autocomplete', () => {
 
     it('suggests comma and pipe after a complete grouping field', async () => {
       await changePointExpectSuggestions(`from a | change_point value by keywordField `, [
+        '\n',
         COMMA,
         PIPE,
       ]);

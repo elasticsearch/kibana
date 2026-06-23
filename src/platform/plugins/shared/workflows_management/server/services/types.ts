@@ -9,6 +9,7 @@
 
 import type { ActionsClient, IUnsecuredActionsClient } from '@kbn/actions-plugin/server';
 import type {
+  CoreStart,
   ElasticsearchClient,
   KibanaRequest,
   Logger,
@@ -18,6 +19,7 @@ import type { PublicMethodsOf } from '@kbn/utility-types';
 import type { IWorkflowEventLoggerService } from '@kbn/workflows-execution-engine/server';
 import type { WorkflowsExtensionsServerPluginStart } from '@kbn/workflows-extensions/server';
 
+import type { IWorkflowChangeHistoryService } from './workflow_change_history_types';
 import type { WorkflowExecutionQueryService } from './workflow_execution_query_service';
 import type { WorkflowValidationService } from './workflow_validation_service';
 import type { WorkflowStorage } from '../storage/workflow_storage';
@@ -37,6 +39,10 @@ export interface WorkflowCrudDeps extends WorkflowStorageDeps {
   getTaskScheduler: () => WorkflowTaskScheduler | null;
   executionQueryService: WorkflowExecutionQueryService;
   validationService: WorkflowValidationService;
+  getCoreStart: () => CoreStart;
+  changeHistoryService: IWorkflowChangeHistoryService;
+  /** Frozen at WorkflowsService startup from `workflows:versioning:enabled`. */
+  workflowVersioningEnabled: boolean;
 }
 
 /** Deps for WorkflowSearchService. */

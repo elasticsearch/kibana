@@ -16,7 +16,8 @@
       "data",
       "kql",
       "uiActions",
-      "kibanaReact"
+      "kibanaReact",
+      "esql"
     ]
   }
 }

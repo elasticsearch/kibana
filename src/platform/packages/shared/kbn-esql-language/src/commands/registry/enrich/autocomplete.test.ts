@@ -95,8 +95,8 @@ describe('ENRICH Autocomplete', () => {
   });
 
   it('suggests ON and WITH after policy name', async () => {
-    await enrichExpectSuggestions(`from a | enrich policy /`, ['ON ', 'WITH ', '| ']);
-    await enrichExpectSuggestions(`from a | enrich policy O/`, ['ON ', 'WITH ', '| ']);
+    await enrichExpectSuggestions(`from a | enrich policy /`, ['\n', 'ON ', 'WITH ', '| ']);
+    await enrichExpectSuggestions(`from a | enrich policy O/`, ['\n', 'ON ', 'WITH ', '| ']);
   });
 
   it('suggests fields after ON', async () => {
@@ -116,7 +116,7 @@ describe('ENRICH Autocomplete', () => {
 
   describe('WITH', () => {
     it('suggests WITH after ON <field>', async () => {
-      await enrichExpectSuggestions(`from a | enrich policy on field `, ['WITH ', '| ']);
+      await enrichExpectSuggestions(`from a | enrich policy on field `, ['\n', 'WITH ', '| ']);
     });
 
     it('suggests fields for new WITH clauses', async () => {
@@ -147,7 +147,11 @@ describe('ENRICH Autocomplete', () => {
       // not a recognized column name
       await enrichExpectSuggestions(`from a | enrich policy on b with col0 `, ['= $0']);
       // recognized column name
-      await enrichExpectSuggestions(`from a | enrich policy on b with otherField `, [',', '| ']);
+      await enrichExpectSuggestions(`from a | enrich policy on b with otherField `, [
+        '\n',
+        ',',
+        '| ',
+      ]);
     });
 
     test('suggests enrich fields after open assignment', async () => {
@@ -166,14 +170,20 @@ describe('ENRICH Autocomplete', () => {
     test('after complete clause', async () => {
       // works with escaped field names
       await enrichExpectSuggestions(`from a | enrich policy on b with col0 = \`otherField\` `, [
+        '\n',
         ',',
         '| ',
       ]);
       await enrichExpectSuggestions(`from a | enrich policy on b with col0=otherField `, [
+        '\n',
         ',',
         '| ',
       ]);
-      await enrichExpectSuggestions(`from a | enrich policy on b with otherField `, [',', '| ']);
+      await enrichExpectSuggestions(`from a | enrich policy on b with otherField `, [
+        '\n',
+        ',',
+        '| ',
+      ]);
     });
 
     test('after user-defined column name', async () => {

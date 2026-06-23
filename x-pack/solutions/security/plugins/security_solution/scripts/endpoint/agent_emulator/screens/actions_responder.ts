@@ -37,6 +37,7 @@ export class ActionResponderScreen extends ScreenBaseClass {
   ---------------------------   ------------------------------------
   RESPOND.STATE=SUCCESS         Respond with success
   RESPOND.STATE=FAILURE         Respond with failure
+  RESPOND.STATE=PENDING         Leave response action pending (don't complete it)
   RESPOND.FLEET.STATE=SUCCESS   Respond to Fleet Action with success
   RESPOND.FLEET.STATE=FAILURE   Respond to Fleet Action with failure
 

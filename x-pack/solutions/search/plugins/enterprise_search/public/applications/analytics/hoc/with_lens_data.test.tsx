@@ -9,9 +9,7 @@ import { setMockValues } from '../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { mount, shallow } from 'enzyme';
-
-import { act } from 'react-dom/test-utils';
+import { render, screen, waitFor } from '@testing-library/react';
 
 import { findOrCreateDataView } from '../utils/find_or_create_data_view';
 
@@ -24,8 +22,6 @@ interface MockComponentProps {
 interface MockComponentLensProps {
   data: string;
 }
-
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 const mockCollection = {
   event_retention_day_length: 180,
@@ -42,7 +38,12 @@ jest.mock('../utils/find_or_create_data_view', () => {
 });
 
 describe('withLensData', () => {
-  const MockComponent: React.FC<MockComponentProps> = ({ name }) => <div>{name}</div>;
+  const MockComponent: React.FC<MockComponentProps & MockComponentLensProps> = ({ name, data }) => (
+    <div>
+      <span data-test-subj="name">{name}</span>
+      <span data-test-subj="data">{data}</span>
+    </div>
+  );
 
   beforeEach(() => {
     setMockValues({});
@@ -65,10 +66,8 @@ describe('withLensData', () => {
     );
 
     const props = { collection: mockCollection, name: 'John Doe' };
-    const wrapper = shallow(
-      <WrappedComponent id={'id'} timeRange={{ from: 'now-10d', to: 'now' }} {...props} />
-    );
-    expect(wrapper.find(MockComponent).prop('data')).toEqual('initial data');
+    render(<WrappedComponent id={'id'} timeRange={{ from: 'now-10d', to: 'now' }} {...props} />);
+    expect(screen.getByTestId('data')).toHaveTextContent('initial data');
   });
 
   it('should call findOrCreateDataView with collection', async () => {
@@ -87,12 +86,11 @@ describe('withLensData', () => {
       name: 'John Doe',
       timeRange: { from: 'now-10d', to: 'now' },
     };
-    mount(<WrappedComponent {...props} />);
-    await act(async () => {
-      await flushPromises();
-    });
+    render(<WrappedComponent {...props} />);
 
-    expect(findOrCreateDataView).toHaveBeenCalledWith(mockCollection);
+    await waitFor(() => {
+      expect(findOrCreateDataView).toHaveBeenCalledWith(mockCollection);
+    });
   });
 
   it('should call getAttributes with the correct arguments when dataView and formula are available', async () => {
@@ -114,12 +112,11 @@ describe('withLensData', () => {
       name: 'John Doe',
       timeRange: { from: 'now-10d', to: 'now' },
     };
-    mount(<WrappedComponent {...props} />);
-    await act(async () => {
-      await flushPromises();
-    });
+    render(<WrappedComponent {...props} />);
 
-    expect(getAttributes).toHaveBeenCalledWith(mockDataView, props);
+    await waitFor(() => {
+      expect(getAttributes).toHaveBeenCalledWith(mockDataView, expect.objectContaining(props));
+    });
   });
 
   it('should not call getAttributes when dataView is not available', async () => {
@@ -141,11 +138,11 @@ describe('withLensData', () => {
       name: 'John Doe',
       timeRange: { from: 'now-10d', to: 'now' },
     };
-    mount(<WrappedComponent {...props} />);
-    await act(async () => {
-      await flushPromises();
-    });
+    render(<WrappedComponent {...props} />);
 
+    await waitFor(() => {
+      expect(findOrCreateDataView).toHaveBeenCalled();
+    });
     expect(getAttributes).not.toHaveBeenCalled();
   });
 });

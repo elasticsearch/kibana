@@ -35,8 +35,14 @@ describe('buildRuleSoFilter', () => {
       expect(buildRuleSoFilter('enabled: true')).toBe('alerting_rule.attributes.enabled: true');
     });
 
-    it('maps id to SO root path (not under attributes)', () => {
-      expect(buildRuleSoFilter('id: "abc-123"')).toBe('alerting_rule.id: "abc-123"');
+    it('maps id to SO root path and prefixes the id value', () => {
+      expect(buildRuleSoFilter('id: "abc-123"')).toBe('alerting_rule.id: "alerting_rule:abc-123"');
+    });
+
+    it('leaves already-prefixed id values unchanged', () => {
+      expect(buildRuleSoFilter('id: "alerting_rule:abc"')).toBe(
+        'alerting_rule.id: "alerting_rule:abc"'
+      );
     });
 
     it('maps metadata.name to SO attributes path', () => {
@@ -61,7 +67,7 @@ describe('buildRuleSoFilter', () => {
   describe('compound expressions', () => {
     it('handles NOT expressions', () => {
       expect(buildRuleSoFilter('NOT (id: "abc" or id: "def")')).toBe(
-        'NOT (alerting_rule.id: "abc" OR alerting_rule.id: "def")'
+        'NOT (alerting_rule.id: "alerting_rule:abc" OR alerting_rule.id: "alerting_rule:def")'
       );
     });
 
@@ -138,6 +144,10 @@ describe('buildRuleSoFilter', () => {
   describe('wildcard / exists patterns', () => {
     it('handles exists-style wildcard values', () => {
       expect(buildRuleSoFilter('kind: *')).toBe('alerting_rule.attributes.kind: *');
+    });
+
+    it('does not prefix wildcard id values', () => {
+      expect(buildRuleSoFilter('id: *')).toBe('alerting_rule.id: *');
     });
   });
 

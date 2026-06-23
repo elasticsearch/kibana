@@ -9,6 +9,7 @@
 
 import type { CumulativeSumIndexPatternColumn } from '@kbn/lens-common';
 import type {
+  LensApiCountMetricOperation,
   LensApiCumulativeSumOperation,
   LensApiSumMetricOperation,
 } from '../../schema/metric_ops';
@@ -32,11 +33,11 @@ export const fromCumulativeSumAPItoLensState = (
 
 export const fromCumulativeSumLensStateToAPI = (
   options: CumulativeSumIndexPatternColumn,
-  ref: LensApiSumMetricOperation
+  ref: LensApiCountMetricOperation | LensApiSumMetricOperation
 ): LensApiCumulativeSumOperation => {
   return {
     operation: 'cumulative_sum',
-    field: ref.field,
+    ...(ref.operation === 'sum' ? { field: ref.field } : {}),
     ...getLensAPIMetricSharedProps(options),
     ...(options.params?.format ? { format: fromFormatLensStateToAPI(options.params.format) } : {}),
   };

@@ -187,6 +187,54 @@ describe('WatchlistEntitySourceClient', () => {
 
       expect(mockGrantEntitySourceApiKey).not.toHaveBeenCalled();
     });
+
+    it('validates index permissions when creating an index-type source with an indexPattern', async () => {
+      const sourceAttributes = {
+        type: 'index' as const,
+        name: 'My Index Source',
+        indexPattern: 'logs-*',
+      };
+      const mockRequest = httpServerMock.createKibanaRequest();
+      soClient.find.mockResolvedValue({ saved_objects: [], total: 0 } as never);
+      soClient.create.mockResolvedValue({
+        id: 'new-id',
+        attributes: { ...sourceAttributes, managed: false },
+      } as never);
+
+      await client.create(sourceAttributes, mockRequest);
+
+      expect(mockValidateIndexPermissions).toHaveBeenCalledWith(esClient, 'logs-*');
+    });
+
+    it('does not validate index permissions when creating a non-index-type source', async () => {
+      const sourceAttributes = { type: 'store' as const, name: 'My Store Source' };
+      soClient.find.mockResolvedValue({ saved_objects: [], total: 0 } as never);
+      soClient.create.mockResolvedValue({
+        id: 'new-id',
+        attributes: { ...sourceAttributes, managed: false },
+      } as never);
+
+      await client.create(sourceAttributes);
+
+      expect(mockValidateIndexPermissions).not.toHaveBeenCalled();
+    });
+
+    it('does not call soClient.create when validateIndexPermissions throws', async () => {
+      const sourceAttributes = {
+        type: 'index' as const,
+        name: 'My Index Source',
+        indexPattern: 'logs-*',
+      };
+      const mockRequest = httpServerMock.createKibanaRequest();
+      soClient.find.mockResolvedValue({ saved_objects: [], total: 0 } as never);
+      mockValidateIndexPermissions.mockRejectedValue(new Error('Insufficient privileges'));
+
+      await expect(client.create(sourceAttributes, mockRequest)).rejects.toThrow(
+        'Insufficient privileges'
+      );
+
+      expect(soClient.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('upsert', () => {
@@ -218,11 +266,11 @@ describe('WatchlistEntitySourceClient', () => {
 
       soClient.update.mockResolvedValue({
         id: 'source-id',
-        attributes: { type: 'index', name: 'Existing' },
+        attributes: { type: 'store', name: 'Existing' },
       } as never);
 
       const attrs: MonitoringEntitySourceAttributes = {
-        type: 'index',
+        type: 'store',
         name: 'Existing',
       };
 
@@ -291,6 +339,7 @@ describe('WatchlistEntitySourceClient', () => {
         type: 'index' as const,
         name: 'My Source',
         indexPattern: 'logs-*',
+        apiKeyId: 'existing-kid',
       };
       soClient.get.mockResolvedValue({
         id: 'source-id',
@@ -466,6 +515,18 @@ describe('WatchlistEntitySourceClient', () => {
           apiKeyId: mockedApiKey.apiKeyId,
           apiKey: mockedApiKey.apiKey,
         });
+      });
+
+      it('throws when no request is provided and an API key is needed', async () => {
+        // Default get mock returns type: 'store', so transitioning to 'index' needs a new key
+        soClient.find.mockResolvedValue({ saved_objects: [], total: 0 } as never);
+
+        await expect(
+          client.update({ id: 'source-id', type: 'index', indexPattern: 'logs-*' })
+        ).rejects.toThrow('Cannot update index-type entity source without a request.');
+
+        expect(mockGrantEntitySourceApiKey).not.toHaveBeenCalled();
+        expect(soClient.update).not.toHaveBeenCalled();
       });
 
       it('throws before granting an API key when hasEncryptionKey is false', async () => {

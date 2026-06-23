@@ -6,6 +6,7 @@
  */
 
 import type {
+  AuthenticatedUser,
   Logger,
   SecurityServiceStart,
   KibanaRequest,
@@ -15,7 +16,7 @@ import { HTTPAuthorizationHeader, isUiamCredential } from '@kbn/core-security-se
 import { truncate } from 'lodash';
 import { ApiKeyType } from '../config';
 import type { ConcreteTaskInstance, TaskInstance } from '../task';
-import { createApiKey, requestHasApiKey, getApiKeyFromRequest } from '../lib/api_key_utils';
+import { createApiKey, getApiKeyFromRequest, hasApiKey } from '../lib/api_key_utils';
 import type {
   ApiKeySOFields,
   ApiKeyStrategy,
@@ -52,12 +53,7 @@ export class EsAndUiamApiKeyStrategy implements ApiKeyStrategy {
     security: SecurityServiceStart,
     opts?: GrantApiKeysOpts
   ): Promise<Map<string, ApiKeySOFields>> {
-    const esKeys = await createApiKey(taskInstances, request, security);
-    const uiamKeys =
-      opts?.onEsKey === true
-        ? new Map<string, UiamApiKeyResult>()
-        : await this.grantUiamApiKeys(taskInstances, request, security);
-
+    // Resolve identity once and thread it through every consumer below.
     // `apiKeyCreatedByUser` is derived from whether the incoming request is
     // authenticated with an API key (ES or UIAM). It is stored on `userScope`
     // and is used by `getApiKeyIdsForInvalidation` to short-circuit invalidation
@@ -74,7 +70,17 @@ export class EsAndUiamApiKeyStrategy implements ApiKeyStrategy {
     // independent flags on `userScope` (e.g., `esApiKeyCreatedByUser` /
     // `uiamApiKeyCreatedByUser`) with matching per-credential checks in
     // `getApiKeyIdsForInvalidation`.
-    const apiKeyCreatedByUser = requestHasApiKey(security, request);
+    const user = security.authc.getCurrentUser(request);
+    const apiKeyCreatedByUser = hasApiKey(user, request);
+
+    const esKeys = await createApiKey(taskInstances, request, security, {
+      user,
+      apiKeyCreatedByUser,
+    });
+    const uiamKeys =
+      opts?.onEsKey === true
+        ? new Map<string, UiamApiKeyResult>()
+        : await this.grantUiamApiKeys(taskInstances, request, user, apiKeyCreatedByUser);
 
     const result = new Map<string, ApiKeySOFields>();
     taskInstances.forEach((task) => {
@@ -89,6 +95,7 @@ export class EsAndUiamApiKeyStrategy implements ApiKeyStrategy {
             ...(uiamKey ? { uiamApiKeyId: uiamKey.apiKeyId } : {}),
             spaceId: request.spaceId,
             apiKeyCreatedByUser,
+            userProfileId: user?.profile_uid,
           },
         });
       }
@@ -100,7 +107,8 @@ export class EsAndUiamApiKeyStrategy implements ApiKeyStrategy {
   private async grantUiamApiKeys(
     taskInstances: TaskInstance[],
     request: KibanaRequest,
-    security: SecurityServiceStart
+    user: AuthenticatedUser | null,
+    apiKeyCreatedByUser: boolean
   ): Promise<Map<string, UiamApiKeyResult>> {
     const uiam = this.security.authc.apiKeys.uiam;
     const uiamKeyByTaskIdMap = new Map<string, UiamApiKeyResult>();
@@ -109,7 +117,7 @@ export class EsAndUiamApiKeyStrategy implements ApiKeyStrategy {
       return uiamKeyByTaskIdMap;
     }
 
-    if (requestHasApiKey(security, request)) {
+    if (apiKeyCreatedByUser) {
       const apiKeyResult = getApiKeyFromRequest(request);
       if (apiKeyResult && isUiamCredential(apiKeyResult.api_key)) {
         taskInstances.forEach((task) => {
@@ -131,7 +139,6 @@ export class EsAndUiamApiKeyStrategy implements ApiKeyStrategy {
       return uiamKeyByTaskIdMap;
     }
 
-    const user = security.authc.getCurrentUser(request);
     const taskTypes = [...new Set(taskInstances.map((task) => task.taskType))];
     const uiamKeyByTaskTypeMap = new Map<string, UiamApiKeyResult>();
 

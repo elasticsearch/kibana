@@ -18,6 +18,6 @@ export const actionPolicyMappings: SavedObjectsTypeMappingDefinition = {
     name: { type: 'text', fields: { keyword: { type: 'keyword', ignore_above: 256 } } },
     description: { type: 'text' },
     enabled: { type: 'boolean' },
-    tags: { type: 'keyword' },
+    tags: { type: 'keyword', ignore_above: 128 },
   },
 };

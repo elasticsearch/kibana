@@ -33,9 +33,9 @@ describe('SAMPLE Autocomplete', () => {
   });
 
   it('suggests pipe after INFO', async () => {
-    await sampleExpectSuggestions('SHOW INFO ', ['| ']);
-    await sampleExpectSuggestions('SHOW INFO\t ', ['| ']);
-    await sampleExpectSuggestions('SHOW info ', ['| ']);
+    await sampleExpectSuggestions('SHOW INFO ', ['| ', '\n']);
+    await sampleExpectSuggestions('SHOW INFO\t ', ['| ', '\n']);
+    await sampleExpectSuggestions('SHOW info ', ['| ', '\n']);
   });
 
   it('suggests nothing after a random word', async () => {

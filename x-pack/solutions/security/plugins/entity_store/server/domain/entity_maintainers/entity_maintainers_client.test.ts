@@ -571,6 +571,138 @@ describe('EntityMaintainersClient', () => {
     });
   });
 
+  describe('stopAll', () => {
+    it('should stop all registered maintainer tasks', async () => {
+      const entries: EntityMaintainerTaskEntry[] = [
+        { id: 'm1', interval: '5m', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+        { id: 'm2', interval: '1h', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+      ];
+      entityMaintainersRegistry.getAll.mockReturnValue(entries);
+      entityMaintainersRegistry.hasId.mockReturnValue(true);
+      const client = createClient();
+      const request = createMockRequest();
+
+      await client.stopAll(request);
+
+      expect(entityMaintainersRegistry.getAll).toHaveBeenCalled();
+      expect(stopEntityMaintainer).toHaveBeenCalledTimes(2);
+      expect(stopEntityMaintainer).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'm1', namespace: 'default', request })
+      );
+      expect(stopEntityMaintainer).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'm2', namespace: 'default', request })
+      );
+    });
+
+    it('should do nothing when registry is empty', async () => {
+      entityMaintainersRegistry.getAll.mockReturnValue([]);
+      const client = createClient();
+
+      await client.stopAll(createMockRequest());
+
+      expect(stopEntityMaintainer).not.toHaveBeenCalled();
+    });
+
+    it('should throw a combined error listing failed task ids when any stop fails', async () => {
+      const entries: EntityMaintainerTaskEntry[] = [
+        { id: 'm1', interval: '5m', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+        { id: 'm2', interval: '1h', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+      ];
+      entityMaintainersRegistry.getAll.mockReturnValue(entries);
+      entityMaintainersRegistry.hasId.mockReturnValue(true);
+      (stopEntityMaintainer as jest.Mock)
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('stop failed'));
+      const client = createClient();
+
+      await expect(client.stopAll(createMockRequest())).rejects.toThrow(
+        'Failed to stop 1 of 2 entity maintainer tasks: m2'
+      );
+    });
+
+    it('should run all tasks even when some fail', async () => {
+      const entries: EntityMaintainerTaskEntry[] = [
+        { id: 'm1', interval: '5m', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+        { id: 'm2', interval: '1h', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+      ];
+      entityMaintainersRegistry.getAll.mockReturnValue(entries);
+      entityMaintainersRegistry.hasId.mockReturnValue(true);
+      (stopEntityMaintainer as jest.Mock)
+        .mockRejectedValueOnce(new Error('stop failed'))
+        .mockResolvedValueOnce(undefined);
+      const client = createClient();
+
+      await expect(client.stopAll(createMockRequest())).rejects.toThrow();
+      expect(stopEntityMaintainer).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('startAll', () => {
+    it('should start all registered maintainer tasks', async () => {
+      const entries: EntityMaintainerTaskEntry[] = [
+        { id: 'm1', interval: '5m', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+        { id: 'm2', interval: '1h', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+      ];
+      entityMaintainersRegistry.getAll.mockReturnValue(entries);
+      entityMaintainersRegistry.hasId.mockReturnValue(true);
+      const client = createClient();
+      const request = createMockRequest();
+
+      await client.startAll(request);
+
+      expect(entityMaintainersRegistry.getAll).toHaveBeenCalled();
+      expect(startEntityMaintainer).toHaveBeenCalledTimes(2);
+      expect(startEntityMaintainer).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'm1', namespace: 'default', request })
+      );
+      expect(startEntityMaintainer).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'm2', namespace: 'default', request })
+      );
+    });
+
+    it('should do nothing when registry is empty', async () => {
+      entityMaintainersRegistry.getAll.mockReturnValue([]);
+      const client = createClient();
+
+      await client.startAll(createMockRequest());
+
+      expect(startEntityMaintainer).not.toHaveBeenCalled();
+    });
+
+    it('should throw a combined error listing failed task ids when any start fails', async () => {
+      const entries: EntityMaintainerTaskEntry[] = [
+        { id: 'm1', interval: '5m', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+        { id: 'm2', interval: '1h', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+      ];
+      entityMaintainersRegistry.getAll.mockReturnValue(entries);
+      entityMaintainersRegistry.hasId.mockReturnValue(true);
+      (startEntityMaintainer as jest.Mock)
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('start failed'));
+      const client = createClient();
+
+      await expect(client.startAll(createMockRequest())).rejects.toThrow(
+        'Failed to start 1 of 2 entity maintainer tasks: m2'
+      );
+    });
+
+    it('should run all tasks even when some fail', async () => {
+      const entries: EntityMaintainerTaskEntry[] = [
+        { id: 'm1', interval: '5m', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+        { id: 'm2', interval: '1h', minLicense: DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE },
+      ];
+      entityMaintainersRegistry.getAll.mockReturnValue(entries);
+      entityMaintainersRegistry.hasId.mockReturnValue(true);
+      (startEntityMaintainer as jest.Mock)
+        .mockRejectedValueOnce(new Error('start failed'))
+        .mockResolvedValueOnce(undefined);
+      const client = createClient();
+
+      await expect(client.startAll(createMockRequest())).rejects.toThrow();
+      expect(startEntityMaintainer).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('getMaintainers', () => {
     it('should only return requested maintainers when ids filter is provided', async () => {
       entityMaintainersRegistry.getAll.mockReturnValue([

@@ -9,17 +9,7 @@ import { expect } from '@kbn/scout/ui';
 import { test, tags } from '@kbn/scout';
 import fs from 'fs';
 import os from 'os';
-import {
-  SavedObjectsTracker,
-  cleanupDownloadedFile,
-  installLogsSampleData,
-  removeLogsSampleData,
-} from '../../helpers';
-
-const defaultSettings = {
-  defaultIndex: 'kibana_sample_data_logs',
-  'dateFormat:tz': 'UTC',
-};
+import { SavedObjectsTracker, cleanupDownloadedFile } from '../../helpers';
 
 const SAMPLE_DASHBOARD = '[Logs] Web Traffic';
 const SAMPLE_DASHBOARD_PANEL_COUNT = 12;
@@ -28,10 +18,6 @@ const tracker = new SavedObjectsTracker();
 let downloadedFilePath: string | null = null;
 
 test.describe('Visualize app', { tag: tags.stateful.classic }, () => {
-  test.beforeAll(async ({ kbnClient, apiServices }) => {
-    await installLogsSampleData({ apiServices, kbnClient, settings: defaultSettings });
-  });
-
   test.beforeEach(async ({ browserAuth }) => {
     await browserAuth.loginAsAdmin();
   });
@@ -39,10 +25,6 @@ test.describe('Visualize app', { tag: tags.stateful.classic }, () => {
   test.afterEach(async ({ kbnClient }) => {
     downloadedFilePath = cleanupDownloadedFile(downloadedFilePath);
     await tracker.cleanup(kbnClient);
-  });
-
-  test.afterAll(async ({ kbnClient, apiServices }) => {
-    await removeLogsSampleData({ apiServices, kbnClient });
   });
 
   test('should create and save an aggregation-based visualization', async ({ pageObjects }) => {

@@ -9,6 +9,7 @@
 // TODO: remove eslint exceptions once we have a better way to handle this
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { estypes } from '@elastic/elasticsearch';
 import type {
   SmlIndexAction,
   SmlIndexAttachmentParams,
@@ -62,10 +63,12 @@ import type { StepExecutionListResult } from './lib/search_step_executions';
 import { ManagedWorkflowDeleteForbiddenError } from './managed_workflow_delete_error';
 import { ManagedWorkflowUpdateForbiddenError } from './managed_workflow_errors';
 import type {
+  SearchExecutionsViewParams,
   SearchWorkflowExecutionsParams,
   WorkflowsService,
 } from './workflows_management_service';
 import { connectorParamsSchemaResolver } from '../../common/lib/connector_params_schema_resolver';
+import type { WorkflowChangesHistoryResponse } from '../types/workflow_change_history';
 
 export type SmlIndexAttachmentFn = (params: SmlIndexAttachmentParams) => Promise<void>;
 
@@ -282,6 +285,14 @@ export class WorkflowsManagementApi {
 
   public async getWorkflow(id: string, spaceId: string): Promise<WorkflowDetailDto | null> {
     return this.workflowsService.getWorkflow(id, spaceId);
+  }
+
+  public async getHistoryForWorkflow(
+    id: string,
+    spaceId: string,
+    options?: { page?: number; perPage?: number }
+  ): Promise<WorkflowChangesHistoryResponse> {
+    return this.workflowsService.getHistoryForWorkflow(id, spaceId, options);
   }
 
   public async getWorkflowsByIds(ids: string[], spaceId: string): Promise<WorkflowDetailDto[]> {
@@ -748,6 +759,13 @@ export class WorkflowsManagementApi {
     spaceId: string
   ): Promise<WorkflowExecutionListDto> {
     return this.workflowsService.getWorkflowExecutions(params, spaceId);
+  }
+
+  public async searchExecutionsView(
+    params: SearchExecutionsViewParams,
+    spaceId: string
+  ): Promise<estypes.SearchResponse<unknown>> {
+    return this.workflowsService.searchExecutionsView(params, spaceId);
   }
 
   public async getWorkflowExecution(

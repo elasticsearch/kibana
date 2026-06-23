@@ -6,7 +6,6 @@
  */
 
 import deepEqual from 'fast-deep-equal';
-import { mapKeys, snakeCase } from 'lodash';
 
 import type { CaseConnector } from '../../../common/types/domain';
 import { CASE_EXTENDED_FIELDS } from '../../../common/constants';
@@ -117,15 +116,13 @@ const processCustomFields = (
 
 const processExtendedFields = (
   value: unknown,
-  caseData: CaseUI,
   callUpdate: ProcessFieldUpdateParams['callUpdate']
 ): void => {
   const extendedFieldsValue = getTypedPayload<Record<string, string>>(value);
-  // caseData.extendedFields has camelCase keys (converted from the server response).
-  // Normalize them back to snake_case so the merged object stays in a consistent format.
-  const existingSnakeCase = mapKeys(caseData.extendedFields ?? {}, (_, k) => snakeCase(k));
-  const extendedFields = { ...existingSnakeCase, ...(extendedFieldsValue ?? {}) };
-  callUpdate(CASE_EXTENDED_FIELDS, extendedFields);
+  // Send only this section's own fields. The server merges them with the existing
+  // extended_fields so that concurrent saves from GlobalCaseFields and TemplateFields
+  // (two independent RHF form instances) don't overwrite each other.
+  callUpdate(CASE_EXTENDED_FIELDS, extendedFieldsValue ?? {});
 };
 
 export const processFieldUpdate = ({
@@ -156,7 +153,7 @@ export const processFieldUpdate = ({
     case 'customFields':
       return processCustomFields(value, caseData, callUpdate);
     case CASE_EXTENDED_FIELDS:
-      return processExtendedFields(value, caseData, callUpdate);
+      return processExtendedFields(value, callUpdate);
     default:
       break;
   }

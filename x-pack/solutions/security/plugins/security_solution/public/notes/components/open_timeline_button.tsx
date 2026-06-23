@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useQueryTimelineById } from '../../timelines/components/open_timeline/helpers';
 import { OPEN_TIMELINE_BUTTON_TEST_ID } from './test_ids';
@@ -49,15 +49,16 @@ export const OpenTimelineButtonIcon = memo(({ note, index }: OpenTimelineButtonI
   );
 
   return (
-    <EuiButtonIcon
-      data-test-subj={`${OPEN_TIMELINE_BUTTON_TEST_ID}-${index}`}
-      title={OPEN_TIMELINE}
-      aria-label={OPEN_TIMELINE}
-      color="text"
-      iconType="timelineWithArrow"
-      onClick={() => openTimeline(note)}
-      disabled={!canReadTimelines}
-    />
+    <EuiToolTip content={OPEN_TIMELINE} disableScreenReaderOutput>
+      <EuiButtonIcon
+        data-test-subj={`${OPEN_TIMELINE_BUTTON_TEST_ID}-${index}`}
+        aria-label={OPEN_TIMELINE}
+        color="text"
+        iconType="timelineWithArrow"
+        onClick={() => openTimeline(note)}
+        disabled={!canReadTimelines}
+      />
+    </EuiToolTip>
   );
 });
 

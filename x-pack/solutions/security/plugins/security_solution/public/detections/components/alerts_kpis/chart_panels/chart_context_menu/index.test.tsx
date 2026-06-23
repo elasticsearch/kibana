@@ -52,7 +52,7 @@ describe('ChartContextMenu', () => {
     );
 
     const menuButton = screen.getByRole('button', { name: CHART_SETTINGS_POPOVER_ARIA_LABEL });
-    menuButton.click();
+    fireEvent.click(menuButton);
     await waitForEuiPopoverOpen();
 
     expect(screen.getByRole('menuitem', { name: INSPECT })).toBeInTheDocument();
@@ -75,11 +75,11 @@ describe('ChartContextMenu', () => {
     );
 
     const menuButton = screen.getByRole('button', { name: CHART_SETTINGS_POPOVER_ARIA_LABEL });
-    menuButton.click();
+    fireEvent.click(menuButton);
     await waitForEuiPopoverOpen();
 
     const resetMenuItem = screen.getByRole('menuitem', { name: RESET_GROUP_BY_FIELDS });
-    resetMenuItem.click();
+    fireEvent.click(resetMenuItem);
 
     expect(setStackBy).toBeCalledWith('kibana.alert.rule.name');
     expect(setStackByField1).toBeCalledWith('host.name');

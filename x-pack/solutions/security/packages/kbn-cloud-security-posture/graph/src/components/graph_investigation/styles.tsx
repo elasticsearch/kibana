@@ -16,6 +16,15 @@ export const useBorder = () => {
 export const AnimatedSearchBarContainer = styled.div`
   display: grid;
   grid-template-rows: 1fr;
+  /**
+   * Constrain the implicit grid column to the parent width. Grid items default to
+   * \`min-width: auto\` (min-content), so a single long filter chip would otherwise force
+   * the cell — and the SearchBar inside it — to grow past the panel, pushing the date
+   * pickers, time-range selector and refresh button out of the viewport. \`minmax(0, 1fr)\`
+   * gives the column a finite width so EUI's \`whiteSpace: normal\` on \`.globalFilterItem\`
+   * can wrap long chip values onto multiple lines (matching Timeline's behavior).
+   */
+  grid-template-columns: minmax(0, 1fr);
   border-top: ${() => useBorder()};
   padding: 16px 8px;
 

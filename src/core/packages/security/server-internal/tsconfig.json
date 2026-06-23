@@ -20,6 +20,7 @@
     "@kbn/core-http-server",
     "@kbn/logging-mocks",
     "@kbn/core-base-server-mocks",
+    "@kbn/core-http-server-mocks",
     "@kbn/config",
     "@kbn/core-logging-server-mocks",
     "@kbn/config-mocks",

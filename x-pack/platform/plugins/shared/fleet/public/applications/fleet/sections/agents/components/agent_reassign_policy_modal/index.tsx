@@ -90,12 +90,13 @@ export const AgentReassignAgentPolicyModal: React.FunctionComponent<Props> = ({
         throw res.error;
       }
       setIsSubmitting(false);
-      const successMessage = i18n.translate(
-        'xpack.fleet.agentReassignPolicy.successSingleNotificationTitle',
-        {
-          defaultMessage: 'Reassigning agent policy',
-        }
-      );
+      const successMessage = isSingleAgent
+        ? i18n.translate('xpack.fleet.agentReassignPolicy.successSingleNotificationTitle', {
+            defaultMessage: 'Reassigning agent policy',
+          })
+        : i18n.translate('xpack.fleet.agentReassignPolicy.successBulkNotificationTitle', {
+            defaultMessage: 'Agent policy reassignment in progress',
+          });
       notifications.toasts.addSuccess(successMessage);
       onClose();
     } catch (error) {

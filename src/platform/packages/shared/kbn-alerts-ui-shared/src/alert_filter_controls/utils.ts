@@ -19,24 +19,26 @@ export const getPanelsInOrderFromControlsState = (controlState: ControlGroupRunt
 };
 
 export const getFilterItemObjListFromControlState = (controlState: ControlGroupRuntimeState) => {
-  const panels = getPanelsInOrderFromControlsState(controlState);
-  return panels.map((panel) => {
-    const { field_name, selected_options, title, exists_selected, exclude, display_settings } =
-      panel as OptionsListDSLControlState;
-    return {
-      field_name,
-      selected_options,
-      // Without this check, adding new field filters (that don't have a title) causes the "Filters
-      // changed" banner to show up indefinitely on every reload because rison strips `undefined`
-      // values, causing a mismatch with the localStorage-derived config under lodash `isEqual`.
-      ...(title !== undefined && { title }),
-      exists_selected,
-      exclude,
-      display_settings: {
-        hide_action_bar: display_settings?.hide_action_bar ?? false,
-      },
-    };
-  });
+  const panels = getPanelsInOrderFromControlsState(controlState) as OptionsListDSLControlState[];
+  return panels
+    .filter((panel) => panel.field_name)
+    .map((panel) => {
+      const { field_name, selected_options, title, exists_selected, exclude, display_settings } =
+        panel;
+      return {
+        field_name: field_name!,
+        selected_options,
+        // Without this check, adding new field filters (that don't have a title) causes the "Filters
+        // changed" banner to show up indefinitely on every reload because rison strips `undefined`
+        // values, causing a mismatch with the localStorage-derived config under lodash `isEqual`.
+        ...(title !== undefined && { title }),
+        exists_selected,
+        exclude,
+        display_settings: {
+          hide_action_bar: display_settings?.hide_action_bar ?? false,
+        },
+      };
+    });
 };
 
 interface MergableControlsArgs {

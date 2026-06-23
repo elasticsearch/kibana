@@ -33,6 +33,7 @@ export enum SuggestionCategory {
 
   VALUE = 'value', // METADATA, settings, special keywords
   SUBQUERY = 'subquery', // (FROM ...) subquery
+  NEW_LINE = 'new_line',
   PIPE = 'pipe',
   COMMA = 'comma',
   UNKNOWN = 'unknown',

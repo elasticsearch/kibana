@@ -16,7 +16,7 @@ RUN microdnf install -y findutils tar gzip{{#tarZstd}} zstd{{/tarZstd}}
 {{/ubi}}
 {{#wolfi}}
 RUN for iter in 1 2 3 4 5; do \
-      apk --no-cache add curl gnutar{{#tarZstd}} zstd{{/tarZstd}} && break; \
+      apk --no-cache add curl gnutar=1.35-r8{{#tarZstd}} zstd{{/tarZstd}} && break; \
       echo "apk add failed (attempt $iter/5), retrying in $((iter * 10))s..."; \
       sleep $((iter * 10)); \
       [ $iter -eq 5 ] && exit 1; \

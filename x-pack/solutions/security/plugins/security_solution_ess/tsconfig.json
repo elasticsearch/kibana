@@ -29,6 +29,7 @@
     "@kbn/licensing-types",
     "@kbn/deeplinks-management",
     "@kbn/management-settings-ids",
+    "@kbn/alerting-v2-utils",
     "@kbn/ai-assistant-common",
     "@kbn/ai-assistant-icon",
     "@kbn/shared-ux-page-kibana-template",

@@ -9,9 +9,9 @@ import { setMockValues } from '../../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { mount } from 'enzyme';
+import { fireEvent, screen } from '@testing-library/react';
 
-import { EuiButton, EuiToolTip } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { AddMLInferencePipelineButton } from './add_ml_inference_button';
 
@@ -32,35 +32,42 @@ describe('add inference pipeline button', () => {
     jest.clearAllMocks();
     setMockValues({ ...DEFAULT_VALUES });
   });
+
   it('renders button', () => {
-    const wrapper = mount(<AddMLInferencePipelineButton onClick={onClick} />);
-    expect(wrapper.find(EuiButton)).toHaveLength(1);
-    expect(wrapper.find(EuiToolTip)).toHaveLength(0);
-    const button = wrapper.find(EuiButton);
-    expect(button.text()).toBe('Add Inference Pipeline');
+    renderWithKibanaRenderContext(<AddMLInferencePipelineButton onClick={onClick} />);
+    expect(screen.getByRole('button', { name: /Add Inference Pipeline/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add Inference Pipeline/i })).not.toBeDisabled();
   });
-  it('renders permission tooltip when user cannot get trained models', () => {
+
+  it('renders permission tooltip when user cannot get trained models', async () => {
     setMockValues({ ...DEFAULT_VALUES, capabilities: {} });
-    const wrapper = mount(<AddMLInferencePipelineButton onClick={onClick} />);
-    expect(wrapper.find(EuiButton)).toHaveLength(1);
-    expect(wrapper.find(EuiToolTip)).toHaveLength(1);
-    const tooltip = wrapper.find(EuiToolTip);
-    expect(tooltip.prop('content')).toContain('permission');
+    renderWithKibanaRenderContext(<AddMLInferencePipelineButton onClick={onClick} />);
+
+    // EuiToolTip wraps the disabled button in a span to capture hover events
+    // (disabled buttons have pointer-events:none and don't fire mouse events)
+    const button = screen.getByRole('button', { name: /Add Inference Pipeline/i });
+    expect(button).toBeDisabled();
+    fireEvent.mouseOver(button.parentElement!);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(/permission/i);
   });
-  it('renders copy & customize tooltip with index pipeline', () => {
+
+  it('renders copy & customize tooltip with index pipeline', async () => {
     setMockValues({ ...DEFAULT_VALUES, hasIndexIngestionPipeline: false });
-    const wrapper = mount(<AddMLInferencePipelineButton onClick={onClick} />);
-    expect(wrapper.find(EuiButton)).toHaveLength(1);
-    expect(wrapper.find(EuiToolTip)).toHaveLength(1);
-    const tooltip = wrapper.find(EuiToolTip);
-    expect(tooltip.prop('content')).toContain('copy and customize');
+    renderWithKibanaRenderContext(<AddMLInferencePipelineButton onClick={onClick} />);
+
+    const button = screen.getByRole('button', { name: /Add Inference Pipeline/i });
+    expect(button).toBeDisabled();
+    fireEvent.mouseOver(button.parentElement!);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(/copy and customize/i);
   });
-  it('renders disabled tooltip ml is not enabled', () => {
+
+  it('renders disabled tooltip ml is not enabled', async () => {
     setMockValues({ ...DEFAULT_VALUES, canUseMlInferencePipeline: false });
-    const wrapper = mount(<AddMLInferencePipelineButton onClick={onClick} />);
-    expect(wrapper.find(EuiButton)).toHaveLength(1);
-    expect(wrapper.find(EuiToolTip)).toHaveLength(1);
-    const tooltip = wrapper.find(EuiToolTip);
-    expect(tooltip.prop('content')).toContain('enable ML Inference Pipelines');
+    renderWithKibanaRenderContext(<AddMLInferencePipelineButton onClick={onClick} />);
+
+    const button = screen.getByRole('button', { name: /Add Inference Pipeline/i });
+    expect(button).toBeDisabled();
+    fireEvent.mouseOver(button.parentElement!);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(/enable ML Inference Pipelines/i);
   });
 });

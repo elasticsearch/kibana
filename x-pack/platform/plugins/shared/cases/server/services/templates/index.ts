@@ -15,7 +15,7 @@ import type {
 } from '@kbn/core/server';
 import { toElasticsearchQuery, fromKueryExpression } from '@kbn/es-query';
 import { v4 } from 'uuid';
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import type {
   CreateTemplateInput,
   ParsedTemplate,

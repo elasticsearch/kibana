@@ -70,6 +70,8 @@ const createTestServices = (overrides: Partial<DiscoverServices> = {}): Discover
     return key === ENABLE_ESQL ? (true as T) : uiSettingsGetMock<T>(key);
   };
 
+  services.settings.globalClient.get = <T,>(_key: string) => true as T;
+
   // Apply overrides
   return {
     ...services,
@@ -395,6 +397,8 @@ describe('useTopNavLinks', () => {
         triggersActionsUi: triggersActionsUiMock.createStart(),
       });
 
+      v2Services.settings.globalClient.get = <T,>(_key: string) => alertingV2Enabled as T;
+
       const toolkit = getDiscoverInternalStateMock({ services: v2Services });
       await toolkit.initializeTabs();
 
@@ -539,7 +543,7 @@ describe('useTopNavLinks', () => {
     ): DiscoverServices => {
       const baseMock = createDiscoverServicesMock();
       const { alertingVTwoEnabled = true } = overrides;
-      return createTestServices({
+      const v2OnlyServices = createTestServices({
         capabilities: {
           ...baseMock.capabilities,
           discover_v2: {
@@ -556,6 +560,10 @@ describe('useTopNavLinks', () => {
         alertingVTwo: alertingVTwoEnabled ? baseMock.alertingVTwo : undefined,
         triggersActionsUi: triggersActionsUiMock.createStart(),
       });
+
+      v2OnlyServices.settings.globalClient.get = <T,>(_key: string) => alertingVTwoEnabled as T;
+
+      return v2OnlyServices;
     };
 
     beforeEach(() => {

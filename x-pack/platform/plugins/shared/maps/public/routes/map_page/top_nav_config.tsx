@@ -89,7 +89,9 @@ export function getTopNavConfig({
     }
   );
 
-  if (savedMap.hasOriginatingApp()) {
+  const hasSaveAndReturnConfig = savedMap.hasSaveAndReturnConfig();
+
+  if (hasSaveAndReturnConfig) {
     topNavConfigs.push({
       label: i18n.translate('xpack.maps.topNav.cancel', {
         defaultMessage: 'Cancel',
@@ -107,7 +109,6 @@ export function getTopNavConfig({
   }
 
   if (getMapsCapabilities().save) {
-    const hasSaveAndReturnConfig = savedMap.hasSaveAndReturnConfig();
     const mapDescription = savedMap.getAttributes().description
       ? savedMap.getAttributes().description!
       : '';
@@ -188,7 +189,7 @@ export function getTopNavConfig({
 
         let saveModal: React.ReactElement<ShowSaveModalMinimalSaveModalProps>;
 
-        if (savedMap.hasOriginatingApp()) {
+        if (hasSaveAndReturnConfig) {
           saveModal = (
             <SavedObjectSaveModalOrigin
               {...saveModalProps}

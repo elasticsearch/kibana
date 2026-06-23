@@ -7,7 +7,13 @@
 
 import type { FC } from 'react';
 import React from 'react';
-import { EuiButtonEmpty, EuiButtonIcon, EuiContextMenuItem, EuiCopy } from '@elastic/eui';
+import {
+  EuiButtonEmpty,
+  EuiButtonIcon,
+  EuiContextMenuItem,
+  EuiCopy,
+  EuiToolTip,
+} from '@elastic/eui';
 import { COPY_TITLE } from './translations';
 
 const COPY_ICON = 'copy';
@@ -88,16 +94,18 @@ export const CopyToClipboardButtonIcon: FC<CopyToClipboardProps> = ({
 }) => (
   <EuiCopy textToCopy={value}>
     {(copy) => (
-      <EuiButtonIcon
-        aria-label={COPY_TITLE}
-        iconType={COPY_ICON}
-        iconSize="s"
-        color="primary"
-        onClick={copy}
-        data-test-subj={dataTestSub}
-      >
-        {COPY_TITLE}
-      </EuiButtonIcon>
+      <EuiToolTip content={COPY_TITLE} disableScreenReaderOutput>
+        <EuiButtonIcon
+          aria-label={COPY_TITLE}
+          iconType={COPY_ICON}
+          iconSize="s"
+          color="primary"
+          onClick={copy}
+          data-test-subj={dataTestSub}
+        >
+          {COPY_TITLE}
+        </EuiButtonIcon>
+      </EuiToolTip>
     )}
   </EuiCopy>
 );

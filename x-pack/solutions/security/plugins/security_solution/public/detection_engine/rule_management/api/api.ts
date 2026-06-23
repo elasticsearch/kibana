@@ -54,9 +54,11 @@ import type {
   GetRuleManagementFiltersResponse,
   ImportRulesResponse,
   BulkManualRuleFillGaps,
+  RuleChangesHistoryResponse,
 } from '../../../../common/api/detection_engine/rule_management';
 import {
   BulkActionTypeEnum,
+  RULE_HISTORY_URL,
   RULE_MANAGEMENT_COVERAGE_OVERVIEW_URL,
   RULE_MANAGEMENT_FILTERS_URL,
   RULE_MANAGEMENT_RULES_URL_SEARCH,
@@ -81,6 +83,7 @@ import type {
   CreateRulesProps,
   ExportDocumentsProps,
   FetchCoverageOverviewProps,
+  FetchRuleHistoryProps,
   FetchRuleProps,
   FetchRuleSnoozingProps,
   FetchSearchRulesProps,
@@ -315,6 +318,32 @@ export const fetchRuleById = async ({ id, signal }: FetchRuleProps): Promise<Rul
     query: { id },
     signal,
   });
+
+/**
+ * Fetch the change history for a Rule.
+ *
+ * @param ruleId Rule SO id (not `rule_id`)
+ * @param page 1-based page number
+ * @param perPage items per page
+ * @param signal to cancel request
+ *
+ * @returns Promise<RuleChangesHistoryResponse>
+ */
+export const fetchRuleChangeHistoryById = async ({
+  ruleId,
+  page,
+  perPage,
+  signal,
+}: FetchRuleHistoryProps): Promise<RuleChangesHistoryResponse> =>
+  KibanaServices.get().http.fetch<RuleChangesHistoryResponse>(
+    RULE_HISTORY_URL.replace('{ruleId}', encodeURIComponent(ruleId)),
+    {
+      method: 'GET',
+      version: '1',
+      query: { page, per_page: perPage },
+      signal,
+    }
+  );
 
 /**
  * Fetch rule snooze settings for each provided ruleId

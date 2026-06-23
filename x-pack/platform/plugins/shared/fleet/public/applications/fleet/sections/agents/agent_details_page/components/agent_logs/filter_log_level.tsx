@@ -31,6 +31,9 @@ export const LogLevelFilter: React.FunctionComponent<{
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.fleet.agentLogs.logLevelFilterAriaLabel', {
+        defaultMessage: 'Log level filter',
+      })}
       button={
         <EuiFilterButton
           data-test-subj="agentList.logLevelFilterBtn"

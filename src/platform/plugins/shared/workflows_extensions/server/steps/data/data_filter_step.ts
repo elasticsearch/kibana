@@ -50,26 +50,39 @@ export const dataFilterStepDefinition = createServerStepDefinition({
           return { error: new Error('Operation was aborted') };
         }
 
-        try {
-          const matches = evaluateKql(condition, { item, index });
+        if (item === null || typeof item !== 'object') {
+          // A non-object item (e.g. `null` or a scalar) cannot satisfy an
+          // `item.<field>` condition. KQL now evaluates such a path to a
+          // non-match rather than throwing, so warn explicitly here to
+          // preserve the visibility operators expect when a malformed item is
+          // skipped.
+          context.logger.warn(
+            `Skipping non-object item at index ${index} (received ${
+              item === null ? 'null' : typeof item
+            })`
+          );
+        } else {
+          try {
+            const matches = evaluateKql(condition, { item, index });
 
-          if (matches) {
-            filteredItems.push(item);
-            matchedCount++;
+            if (matches) {
+              filteredItems.push(item);
+              matchedCount++;
 
-            if (limit && matchedCount >= limit) {
-              context.logger.debug(`Reached limit of ${limit} matches, stopping filter`);
-              break;
+              if (limit && matchedCount >= limit) {
+                context.logger.debug(`Reached limit of ${limit} matches, stopping filter`);
+                break;
+              }
             }
+          } catch (error) {
+            if (isKqlSyntaxError(error)) {
+              context.logger.error('Invalid KQL condition', error);
+              return {
+                error: new Error(`Invalid KQL condition: ${(error as Error).message}`),
+              };
+            }
+            context.logger.warn(`Failed to evaluate condition for item at index ${index}`, error);
           }
-        } catch (error) {
-          if (isKqlSyntaxError(error)) {
-            context.logger.error('Invalid KQL condition', error);
-            return {
-              error: new Error(`Invalid KQL condition: ${(error as Error).message}`),
-            };
-          }
-          context.logger.warn(`Failed to evaluate condition for item at index ${index}`, error);
         }
       }
 

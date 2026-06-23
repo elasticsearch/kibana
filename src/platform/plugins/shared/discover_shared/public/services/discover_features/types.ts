@@ -160,6 +160,25 @@ export interface SecuritySolutionIOCFlyoutFooterFeature {
   renderFooter: (props: DocViewRenderProps) => JSX.Element;
 }
 
+interface SecuritySolutionAttackFlyoutRenderProps extends DocViewRenderProps {
+  onAttackUpdated: () => void;
+}
+
+export interface SecuritySolutionAttackFlyoutOverviewTabFeature {
+  id: 'security-solution-attack-flyout-overview-tab';
+  render: (props: SecuritySolutionAttackFlyoutRenderProps) => JSX.Element;
+}
+
+export interface SecuritySolutionAttackFlyoutHeaderFeature {
+  id: 'security-solution-attack-flyout-header';
+  renderHeader: (props: SecuritySolutionAttackFlyoutRenderProps) => JSX.Element;
+}
+
+export interface SecuritySolutionAttackFlyoutFooterFeature {
+  id: 'security-solution-attack-flyout-footer';
+  renderFooter: (props: SecuritySolutionAttackFlyoutRenderProps) => JSX.Element;
+}
+
 export type SecuritySolutionFeature =
   | SecuritySolutionCellRendererFeature
   | SecuritySolutionAlertFlyoutOverviewTabFeature
@@ -167,7 +186,10 @@ export type SecuritySolutionFeature =
   | SecuritySolutionAlertFlyoutFooterFeature
   | SecuritySolutionIOCFlyoutOverviewTabFeature
   | SecuritySolutionIOCFlyoutHeaderFeature
-  | SecuritySolutionIOCFlyoutFooterFeature;
+  | SecuritySolutionIOCFlyoutFooterFeature
+  | SecuritySolutionAttackFlyoutOverviewTabFeature
+  | SecuritySolutionAttackFlyoutHeaderFeature
+  | SecuritySolutionAttackFlyoutFooterFeature;
 
 /** ****************************************************************************************/
 

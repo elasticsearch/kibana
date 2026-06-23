@@ -12,7 +12,7 @@ import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
 import { ESQL_STRING_TYPES } from '../../definitions/types';
 import type { ISuggestionItem, ICommandContext, ICommandCallbacks } from '../types';
 import {
-  pipeCompleteItem,
+  newLineAndPipeCompleteItems,
   assignCompletionItem,
   getNewUserDefinedColumnSuggestion,
 } from '../complete_items';
@@ -32,7 +32,7 @@ export async function autocomplete(
   const hasTargetFieldName = !!targetField?.name?.trim().length;
 
   if (hasAssignment && expression && !expression.incomplete && !endsWithAssignment(innerText)) {
-    return [pipeCompleteItem];
+    return newLineAndPipeCompleteItems;
   }
 
   if (hasAssignment && endsWithAssignment(innerText)) {

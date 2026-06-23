@@ -279,7 +279,7 @@ spaceTest.describe(
         await spaceTest.step(
           'Internal span child flyout - switch back to original tab',
           async () => {
-            await pageObjects.discover.navigateToTabByName('Untitled');
+            await pageObjects.unifiedTabs.navigateToTabByName('Untitled');
           }
         );
 
@@ -302,7 +302,7 @@ spaceTest.describe(
         await spaceTest.step(
           'Internal span child flyout - switch back to original tab',
           async () => {
-            await pageObjects.discover.navigateToTabByName('Untitled');
+            await pageObjects.unifiedTabs.navigateToTabByName('Untitled');
           }
         );
 

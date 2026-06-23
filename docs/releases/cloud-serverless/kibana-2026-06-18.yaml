@@ -1,0 +1,293 @@
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+  lifecycle: preview
+  repo: kibana
+  owner: elastic
+entries:
+- file:
+    name: 272204.yaml
+    checksum: e97336bf6463b39cb2e062b5e27c2a28d193fb2e
+  type: enhancement
+  title: Add read-only privilege tier to the Model Management pages
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Viewer-level Kibana roles can now browse inference endpoints and feature settings without being able to add, delete, or modify them.
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/272204
+- file:
+    name: 272967.yaml
+    checksum: 65edfddc2680f6c90fc75b128d720154ea95b26e
+  type: bug-fix
+  title: Remove reasoning panel and render as stream in Agent Builder
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - AI and machine Learning
+  prs:
+  - https://github.com/elastic/kibana/pull/272967
+  issues:
+  - '# PRIVATE: https://github.com/elastic/search-team/issues/14841'
+- file:
+    name: 272931.yaml
+    checksum: e827dd6065f854edbf8d0cbeaaa653169388ff66
+  type: bug-fix
+  title: Increase maximum panels on dashboards and add custom dashboard validation
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Dashboards and visualizations
+  prs:
+  - https://github.com/elastic/kibana/pull/272931
+  issues:
+  - https://github.com/elastic/kibana/issues/272128
+- file:
+    name: 264426.yaml
+    checksum: 5e180bd61ce0c0445732e031eb34da70714be920
+  type: enhancement
+  title: Highlight related dashboard panels on click
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Dashboards and visualizations
+  - Alerting and reporting
+  prs:
+  - https://github.com/elastic/kibana/pull/264426
+  issues:
+  - https://github.com/elastic/kibana/issues/204508
+- file:
+    name: 272751.yaml
+    checksum: 3c139b6b236f0e07ad0693aa2a438fdbd43c8979
+  type: bug-fix
+  title: Fix filters not being applied when section is collapsed
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Dashboards and visualizations
+  prs:
+  - https://github.com/elastic/kibana/pull/272751
+  issues:
+  - https://github.com/elastic/kibana/issues/272535
+- file:
+    name: 273521.yaml
+    checksum: 36f2c96ab370f7f711168cdac87bcf6e07be0ea0
+  type: bug-fix
+  title: Fix scroll jump in Security alert flyout table
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Fixes a scroll-position jump that occurred when moving the cursor off a cell with hover actions after previously interacting with the "Rows per page" control.
+  prs:
+  - https://github.com/elastic/kibana/pull/273521
+- file:
+    name: 273392.yaml
+    checksum: 3a6c535deb1de9473fcd67b9c4dae9e396222dfa
+  type: bug-fix
+  title: Fix the mute, unmute, and snooze actions failing without connector privileges
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Users with alerting privileges but no connector privileges can now mute, unmute, and snooze alert rules and instances without authorization errors.
+  areas:
+  - Alerting and reporting
+  prs:
+  - https://github.com/elastic/kibana/pull/273392
+  issues:
+  - https://github.com/elastic/kibana/issues/273246
+- file:
+    name: 273310.yaml
+    checksum: 16b6a7bf338e537aaed76221c4cadde91c1e1102
+  type: deprecation
+  title: Deprecate experimental public Significant Events APIs
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  impact: Calls to the experimental public Significant Events API endpoints (`/api/streams/{name}/queries*` and `/api/streams/{name}/significant_events`) return deprecation warnings and will be removed in a future release.
+  action: There are no replacement APIs at this time.
+  prs:
+  - https://github.com/elastic/kibana/pull/273310
+- file:
+    name: 273330.yaml
+    checksum: 43932d7ca157aeec463f59a927c815b46459102a
+  type: bug-fix
+  title: Fix OpenTelemetry integrations that declare a storage extension within a data stream failing to start
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Fleet now rewrites a receiver's storage reference to the per-stream extension ID it generates, matching the behavior already in place for `auth.authenticator` references.
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/273330
+- file:
+    name: 273367.yaml
+    checksum: 31267d46f2ebebeb42be3ab2e7be29195e01668c
+  type: bug-fix
+  title: Include all-environment SLOs in the SLO overview flyout link
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  prs:
+  - https://github.com/elastic/kibana/pull/273367
+  issues:
+  - https://github.com/elastic/kibana/issues/273366
+- file:
+    name: 271532.yaml
+    checksum: 3adfaabb99d4776b4f0880179c53ce154f95f1df
+  type: enhancement
+  title: Move Agent Builder link to the top of the Security solution's navigation
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  prs:
+  - https://github.com/elastic/kibana/pull/271532
+  issues:
+  - https://github.com/elastic/kibana/issues/265845
+- file:
+    name: 273364.yaml
+    checksum: a6c4df32e4be0147da386727f6389efed5d1431e
+  type: bug-fix
+  title: Fix multiple data stream selectors in input packages with multiple policy templates
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/273364
+- file:
+    name: 273098.yaml
+    checksum: 3117e47f14b6e369ebf8dcb66cee2bcbc7f59637
+  type: enhancement
+  title: Reject unknown keys in Entity Store API requests
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Entity Store API requests with unrecognized JSON keys now return a 400 Bad Request instead of silently stripping unknown fields.
+  prs:
+  - https://github.com/elastic/kibana/pull/273098
+- file:
+    name: 272754.yaml
+    checksum: ba67cd58396127ad7b349b44ed0dfb73a2adf0b6
+  type: bug-fix
+  title: Render the Discover background searches “Extend” action icon as inline SVG
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Discover and ES|QL
+  prs:
+  - https://github.com/elastic/kibana/pull/272754
+- file:
+    name: 272715.yaml
+    checksum: 5259044e0fde7b3053f7e82dc33e550490b9f49c
+  type: bug-fix
+  title: Fix Fleet `product_versions` fetch hanging when request times out
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Fleet agent upgrade actions no longer hang indefinitely when the `product_versions` endpoint is unreachable. The fetch now uses a configurable timeout with actionable log output.
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/272715
+  issues:
+  - https://github.com/elastic/kibana/issues/234653
+- file:
+    name: 272610.yaml
+    checksum: 8c2e95108ac7d1e3643e6996f8ce1f6c29428838
+  type: bug-fix
+  title: Fix Discover session panel ID resolution after copy to spaces
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Discover and ES|QL
+  prs:
+  - https://github.com/elastic/kibana/pull/272610
+  issues:
+  - https://github.com/elastic/kibana/issues/272609
+- file:
+    name: 267849.yaml
+    checksum: 6977e5c2557d2906c4fda7cd1dbb56cfa903af40
+  type: enhancement
+  title: Add remote cluster filter to the Synthetics monitors overview
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: You can filter the Synthetics monitors overview by remote cluster when cross-cluster search is enabled.
+  prs:
+  - https://github.com/elastic/kibana/pull/267849
+  issues:
+  - https://github.com/elastic/kibana/issues/267847
+- file:
+    name: 272759.yaml
+    checksum: 858db04f9b7e7b78acadf7c5b8d0769dc30a19cb
+  type: enhancement
+  title: Add attachment type and author filters in Cases > Attachments
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Alerting and reporting
+  prs:
+  - https://github.com/elastic/kibana/pull/272759
+- file:
+    name: 273374.yaml
+    checksum: 3d94d2364ceaf9cbf679ef547fdf0b6aa3b402bf
+  type: enhancement
+  title: Perform value-based rewrite of otelcol extensions
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/273374
+  issues:
+  - https://github.com/elastic/kibana/issues/273375
+- file:
+    name: 272932.yaml
+    checksum: f495af0b6c74d6cb30b2eb407570dcfb2ba2889f
+  type: bug-fix
+  title: Fix agent policy deploy timeouts when deploying many policies
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Batch Fleet's deploy agent policies background task into bounded chunks of 50 policies each, preventing timeout failures when deploying thousands of policies.
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/272932
+- file:
+    name: 273089.yaml
+    checksum: 7edf223243471869fdfac7ccda3a0790e5ee1fab
+  type: enhancement
+  title: Add above top section when unpinning controls in Dashboard
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  areas:
+  - Dashboards and visualizations
+  prs:
+  - https://github.com/elastic/kibana/pull/273089
+  issues:
+  - https://github.com/elastic/kibana/issues/264029
+- file:
+    name: 270596.yaml
+    checksum: f94b6aad3d4a5a0937629765f4995e3332735aed
+  type: bug-fix
+  title: Fix Liquid for-loop validation and autocompletion in the workflow editor
+  products:
+  - product: cloud-serverless
+    target: 2026-06-18
+  description: Workflow YAML editing now validates `{% for %}` loop collection paths and correctly detects loop variables in folded message fields.
+  prs:
+  - https://github.com/elastic/kibana/pull/270596

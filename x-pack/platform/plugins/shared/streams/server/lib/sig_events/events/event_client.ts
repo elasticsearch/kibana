@@ -127,4 +127,23 @@ export class EventClient {
       idValue: slug,
     });
   }
+
+  async findLatestBySlugs(slugs: string[]): Promise<Map<string, SigEvent>> {
+    if (!slugs.length) return new Map();
+    const slugLiterals = slugs.map((s) => esql.str(s));
+    const where = esql.exp`${esql.col(FIELD_DISCOVERY_SLUG)} IN (${slugLiterals})`;
+    const { hits } = await runPaginatedLatestSourceEsqlQuery<SigEvent>({
+      esClient: this.clients.esClient,
+      space: this.clients.space,
+      options: { perPage: slugs.length },
+      index: EVENTS_DATA_STREAM,
+      where,
+      groupBy: FIELD_DISCOVERY_SLUG,
+    });
+    const map = new Map<string, SigEvent>();
+    for (const event of hits) {
+      if (event.discovery_slug) map.set(event.discovery_slug, event);
+    }
+    return map;
+  }
 }

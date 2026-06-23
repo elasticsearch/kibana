@@ -297,6 +297,10 @@ export interface RoundCompleteEventData {
    * Updated conversation-level attachments after this round.
    **/
   attachments?: VersionedAttachment[];
+  /**
+   * Set when this round initialized the bash/VFS workspace for this conversation.
+   */
+  workspace_id?: string;
 }
 
 export type RoundCompleteEvent = ChatEventBase<ChatEventType.roundComplete, RoundCompleteEventData>;

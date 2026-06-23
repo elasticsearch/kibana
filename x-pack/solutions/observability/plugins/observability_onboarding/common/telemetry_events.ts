@@ -162,6 +162,10 @@ interface OnboardingCloudForwarderEventContext {
   cloudServiceProvider?: string;
 }
 
+interface OnboardingKubernetesEventContext {
+  selectedCollectorMethod?: 'edot' | 'existing_collector';
+}
+
 /**
  * Additional flow-specific context that might
  * be attached to telemetry events.
@@ -170,6 +174,7 @@ export interface OnboardingFlowEventContext {
   autoDetect?: OnboardingAutoDetectEventContext;
   firehose?: OnboardingFirehoseFlowEventContext;
   cloudforwarder?: OnboardingCloudForwarderEventContext;
+  kubernetes?: OnboardingKubernetesEventContext;
 }
 
 const flowContextSchema: SchemaValue<OnboardingFlowEventContext | undefined> = {
@@ -231,6 +236,20 @@ const flowContextSchema: SchemaValue<OnboardingFlowEventContext | undefined> = {
           _meta: {
             description:
               "The cloud service provider where the cloud forwarder is deployed. Can be 'aws', 'gcp' or 'azure'",
+            optional: true,
+          },
+        },
+      },
+      _meta: {
+        optional: true,
+      },
+    },
+    kubernetes: {
+      properties: {
+        selectedCollectorMethod: {
+          type: 'keyword',
+          _meta: {
+            description: 'Which Kubernetes OTel collector setup method is selected in the UI.',
             optional: true,
           },
         },

@@ -8,6 +8,7 @@
  */
 
 import { monaco } from '@kbn/monaco';
+import { KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX } from '@kbn/workflows';
 import { buildAutocompleteContext } from './context/build_autocomplete_context';
 import { getAllYamlProviders } from './intercept_monaco_yaml_provider';
 import { getSuggestions, isInsideLoopBody } from './suggestions/get_suggestions';
@@ -70,6 +71,33 @@ const TEMPLATE_EXPRESSION_MATCH_TYPES: ReadonlySet<string> = new Set([
   'liquid-block-filter',
   'liquid-syntax',
 ]);
+
+/**
+ * monaco-yaml inserts JSON Schema enum values as plain scalars; unquoted `#` is a YAML comment.
+ */
+function quoteKibanaBuiltinRefSuggestion(
+  suggestion: monaco.languages.CompletionItem
+): monaco.languages.CompletionItem {
+  const raw =
+    typeof suggestion.insertText === 'string'
+      ? suggestion.insertText
+      : typeof suggestion.label === 'string'
+      ? suggestion.label
+      : suggestion.label.label;
+
+  if (!raw.startsWith(KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX)) {
+    return suggestion;
+  }
+  if (raw.startsWith("'") || raw.startsWith('"')) {
+    return suggestion;
+  }
+
+  return {
+    ...suggestion,
+    insertText: `'${raw}'`,
+    filterText: suggestion.filterText ?? raw,
+  };
+}
 
 /**
  * Get the deduplication key for a suggestion.
@@ -173,7 +201,10 @@ export function getCompletionItemProvider(
               );
               if (result) {
                 // Deduplicate across YAML providers only (snippet beats plain)
-                mapSuggestions(deduplicatedMap, result.suggestions || []);
+                mapSuggestions(
+                  deduplicatedMap,
+                  (result.suggestions || []).map(quoteKibanaBuiltinRefSuggestion)
+                );
                 if (result.incomplete) {
                   isIncomplete = true;
                 }

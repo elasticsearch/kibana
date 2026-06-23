@@ -10,6 +10,8 @@
 import type { WorkflowsExtensionsServerPluginSetup } from '@kbn/workflows-extensions/server';
 import { setVarStepDefinition } from './setvar_step';
 import { externalStepDefinition } from './external_step';
+import { durablePollStepDefinition } from './durable_poll_step';
+import { pollOnlyJobStepDefinition } from './poll_only_job_step';
 
 const asyncFeatureFlagExample = () => Promise.resolve(true);
 
@@ -17,6 +19,8 @@ export const registerStepDefinitions = (
   workflowsExtensions: WorkflowsExtensionsServerPluginSetup
 ) => {
   workflowsExtensions.registerStepDefinition(setVarStepDefinition);
+  workflowsExtensions.registerStepDefinition(durablePollStepDefinition);
+  workflowsExtensions.registerStepDefinition(pollOnlyJobStepDefinition);
   workflowsExtensions.registerStepDefinition(async () => {
     const isFeatureFlagEnabled = await asyncFeatureFlagExample();
     if (!isFeatureFlagEnabled) {

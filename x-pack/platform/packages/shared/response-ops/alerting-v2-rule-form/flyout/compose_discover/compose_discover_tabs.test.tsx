@@ -7,7 +7,12 @@
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { ComposeDiscoverTabs } from './compose_discover_tabs';
+import { I18nProvider } from '@kbn/i18n-react';
+import {
+  ComposeDiscoverTabs,
+  isAlertTabDisabled,
+  resolveActiveQueryTab,
+} from './compose_discover_tabs';
 
 jest.mock('@kbn/code-editor', () => {
   const ReactActual = jest.requireActual('react');
@@ -91,5 +96,102 @@ describe('ComposeDiscoverTabs', () => {
         expect.objectContaining({ dataset: expect.objectContaining({ languageId: 'esql' }) }),
       ])
     );
+  });
+
+  it('disables the alert tab when the base query is empty', () => {
+    render(
+      <I18nProvider>
+        <ComposeDiscoverTabs
+          {...defaultProps}
+          baseQuery=""
+          activeTab="base"
+          tabs={['base', 'alert']}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('composeDiscoverTab-alert')).toBeDisabled();
+    expect(screen.getByTestId('composeDiscoverTab-base')).not.toBeDisabled();
+  });
+
+  it('enables the alert tab when the base query is populated', () => {
+    render(
+      <I18nProvider>
+        <ComposeDiscoverTabs {...defaultProps} activeTab="base" tabs={['base', 'alert']} />
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('composeDiscoverTab-alert')).not.toBeDisabled();
+  });
+
+  it('does not select the alert tab when it is disabled', () => {
+    const onTabChange = jest.fn();
+
+    render(
+      <I18nProvider>
+        <ComposeDiscoverTabs
+          {...defaultProps}
+          baseQuery=""
+          activeTab="base"
+          tabs={['base', 'alert']}
+          onTabChange={onTabChange}
+        />
+      </I18nProvider>
+    );
+
+    screen.getByTestId('composeDiscoverTab-alert').click();
+
+    expect(onTabChange).not.toHaveBeenCalledWith('alert');
+  });
+
+  it('switches to the base tab when alert is active without a base query', async () => {
+    const onTabChange = jest.fn();
+
+    render(
+      <I18nProvider>
+        <ComposeDiscoverTabs
+          {...defaultProps}
+          baseQuery=""
+          activeTab="alert"
+          tabs={['base', 'alert']}
+          onTabChange={onTabChange}
+        />
+      </I18nProvider>
+    );
+
+    await waitFor(() => {
+      expect(onTabChange).toHaveBeenCalledWith('base');
+    });
+  });
+});
+
+describe('isAlertTabDisabled', () => {
+  it('returns true when alert tab is shown and base query is empty', () => {
+    expect(isAlertTabDisabled(['base', 'alert'], '')).toBe(true);
+    expect(isAlertTabDisabled(['base', 'alert'], '   ')).toBe(true);
+  });
+
+  it('returns false when base query is populated or alert tab is absent', () => {
+    expect(isAlertTabDisabled(['base', 'alert'], 'FROM logs-*')).toBe(false);
+    expect(isAlertTabDisabled(['recovery'], '')).toBe(false);
+  });
+
+  it('allows the alert tab for standalone queries with breach content', () => {
+    expect(
+      isAlertTabDisabled(['base', 'alert'], {
+        format: 'standalone',
+        breach: { query: 'FROM kbn*' },
+      })
+    ).toBe(false);
+  });
+});
+
+describe('resolveActiveQueryTab', () => {
+  it('returns base when alert is active but disabled', () => {
+    expect(resolveActiveQueryTab(['base', 'alert'], 'alert', '')).toBe('base');
+  });
+
+  it('preserves alert when base query exists', () => {
+    expect(resolveActiveQueryTab(['base', 'alert'], 'alert', 'FROM logs-*')).toBe('alert');
   });
 });

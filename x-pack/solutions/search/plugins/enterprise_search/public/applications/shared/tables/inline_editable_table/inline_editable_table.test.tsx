@@ -9,19 +9,22 @@ import { setMockActions, setMockValues } from '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
-import { BindLogic } from 'kea';
-
-import { PageIntroduction } from '../../page_introduction/page_introduction';
-import { ReorderableTable } from '../reorderable_table';
-
 jest.mock('./get_updated_columns', () => ({
   getUpdatedColumns: jest.fn(),
 }));
+jest.mock('../reorderable_table', () => ({
+  ReorderableTable: jest.fn(() => null),
+}));
+
+import { screen } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
+
+import { ReorderableTable } from '../reorderable_table';
+
 import { getUpdatedColumns } from './get_updated_columns';
 
 import { InlineEditableTable, InlineEditableTableContents } from './inline_editable_table';
-import { InlineEditableTableLogic } from './inline_editable_table_logic';
 
 const items = [{ id: 1 }, { id: 2 }];
 const requiredParams = {
@@ -36,7 +39,9 @@ interface Foo {
 
 describe('InlineEditableTable', () => {
   const mockValues = {};
-  const mockActions = {};
+  const mockActions = { editNewItem: jest.fn(), reorderItems: jest.fn() };
+
+  const MockReorderableTable = jest.mocked(ReorderableTable);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -52,7 +57,8 @@ describe('InlineEditableTable', () => {
     const onUpdate = jest.fn();
     const transformItem = jest.fn();
     const validateItem = jest.fn();
-    const wrapper = shallow(
+
+    renderWithKibanaRenderContext(
       <InlineEditableTable
         {...requiredParams}
         instanceId={instanceId}
@@ -64,119 +70,113 @@ describe('InlineEditableTable', () => {
         validateItem={validateItem}
       />
     );
-    const bindLogic = wrapper.find(BindLogic);
-    expect(bindLogic.props()).toEqual(
-      expect.objectContaining({
-        logic: InlineEditableTableLogic,
-        props: {
-          columns: requiredParams.columns,
-          instanceId,
-          onAdd,
-          onDelete,
-          onReorder,
-          onUpdate,
-          transformItem,
-          validateItem,
-        },
-      })
-    );
 
-    expect(bindLogic.children().props()).toEqual(requiredParams);
+    // InlineEditableTableContents should receive requiredParams only, not logic-specific props
+    const tableProps = MockReorderableTable.mock.calls[0][0];
+    expect(tableProps).not.toHaveProperty('onAdd');
+    expect(tableProps).not.toHaveProperty('instanceId');
+    expect(tableProps).not.toHaveProperty('onDelete');
+    // Title and items are forwarded
+    expect(screen.getByTestId('inlineEditableTableTitle')).toHaveTextContent(requiredParams.title);
   });
 
   it('renders a ReorderableTable', () => {
-    const wrapper = shallow(<InlineEditableTableContents {...requiredParams} items={items} />);
-    const reorderableTable = wrapper.find(ReorderableTable);
-    const addButton = shallow(
-      <div>{wrapper.find(PageIntroduction).prop('actions')}</div>
-    ).children();
-    expect(reorderableTable.exists()).toBe(true);
-    expect(reorderableTable.prop('items')).toEqual(items);
-    expect(addButton.children().text()).toEqual('New row');
+    renderWithKibanaRenderContext(
+      <InlineEditableTableContents {...requiredParams} items={items} />
+    );
+
+    expect(MockReorderableTable).toHaveBeenCalled();
+    expect(MockReorderableTable.mock.calls[0][0].items).toEqual(items);
+    expect(screen.getByTestId('inlineEditableTableActionButton')).toHaveTextContent('New row');
   });
 
   it('renders a title if one is provided', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <InlineEditableTableContents {...requiredParams} description={<p>Some Description</p>} />
     );
-    expect(wrapper.find(PageIntroduction).prop('title')).toEqual(requiredParams.title);
+    expect(screen.getByTestId('inlineEditableTableTitle')).toHaveTextContent(requiredParams.title);
   });
 
   it('does not render a title if none is provided', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <InlineEditableTableContents
         {...{ ...requiredParams, title: '' }}
         description={<p>Some Description</p>}
       />
     );
-    expect(wrapper.find('[data-test-subj="inlineEditableTableTitle"]').exists()).toBe(false);
+    expect(screen.getByTestId('inlineEditableTableTitle')).toHaveTextContent('');
   });
 
   it('renders a description if one is provided', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <InlineEditableTableContents {...requiredParams} description={<p>Some Description</p>} />
     );
-    expect(wrapper.find(PageIntroduction).prop('description')).toEqual(<p>Some Description</p>);
+    expect(screen.getByTestId('pageIntroductionDescriptionText')).toHaveTextContent(
+      'Some Description'
+    );
   });
 
   it('renders no description if none is provided', () => {
-    const wrapper = shallow(<InlineEditableTableContents {...requiredParams} />);
-    expect(wrapper.find('[data-test-subj="inlineEditableTableDescription"]').exists()).toBe(false);
+    renderWithKibanaRenderContext(<InlineEditableTableContents {...requiredParams} />);
+    expect(screen.queryByTestId('inlineEditableTableDescription')).not.toBeInTheDocument();
   });
 
   it('can specify items in the table that are uneditable', () => {
     const uneditableItems = [{ id: 3 }];
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <InlineEditableTableContents {...requiredParams} uneditableItems={uneditableItems} />
     );
-    expect(wrapper.find(ReorderableTable).prop('unreorderableItems')).toBe(uneditableItems);
+    expect(MockReorderableTable.mock.calls[0][0].unreorderableItems).toBe(uneditableItems);
   });
 
   it('can apply an additional className', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <InlineEditableTableContents {...requiredParams} className="myTestClassName" />
     );
-    expect(wrapper.find('.editableTable.myTestClassName').exists()).toBe(true);
+    const className = MockReorderableTable.mock.calls[0][0].className as string;
+    expect(className).toContain('editableTable');
+    expect(className).toContain('myTestClassName');
   });
 
   it('will use the value of addButtonText as custom text on the New Row button', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <InlineEditableTableContents {...requiredParams} addButtonText="Add a new row custom text" />
     );
-    const addButton = shallow(
-      <div>{wrapper.find(PageIntroduction).prop('actions')}</div>
-    ).children();
-    expect(addButton.children().text()).toEqual('Add a new row custom text');
+    expect(screen.getByTestId('inlineEditableTableActionButton')).toHaveTextContent(
+      'Add a new row custom text'
+    );
   });
 
   describe('when a user is editing an unsaved item', () => {
     beforeEach(() => setMockValues({ ...mockValues, isEditingUnsavedItem: true }));
 
     it('will change the displayed items to END with an empty item', () => {
-      const wrapper = shallow(<InlineEditableTableContents {...requiredParams} items={items} />);
-      expect(wrapper.find(ReorderableTable).prop('items')).toEqual([...items, { id: null }]);
+      renderWithKibanaRenderContext(
+        <InlineEditableTableContents {...requiredParams} items={items} />
+      );
+      expect(MockReorderableTable.mock.calls[0][0].items).toEqual([...items, { id: null }]);
     });
 
     it('will change the displayed items to START with an empty item when there are uneditableItems', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <InlineEditableTableContents
           {...requiredParams}
           items={items}
           uneditableItems={[{ id: 3 }]}
         />
       );
-
-      expect(wrapper.find(ReorderableTable).prop('items')).toEqual([{ id: null }, ...items]);
+      expect(MockReorderableTable.mock.calls[0][0].items).toEqual([{ id: null }, ...items]);
     });
   });
 
   it('will style the row that is currently being edited', () => {
     setMockValues({ ...mockValues, isEditing: true, editingItemId: 2 });
     const itemList = [{ id: 1 }, { id: 2 }];
-    const wrapper = shallow(<InlineEditableTableContents {...requiredParams} items={itemList} />);
-    const rowProps = wrapper.find(ReorderableTable).prop('rowProps') as (item: any) => object;
+    renderWithKibanaRenderContext(
+      <InlineEditableTableContents {...requiredParams} items={itemList} />
+    );
+    const rowProps = MockReorderableTable.mock.calls[0][0].rowProps as (item: any) => object;
     expect(rowProps(items[0])).toEqual({ className: '' });
-    // Since editingItemId is 2 and the second item (position 1) in item list has an id of 2, it gets this class
     expect(rowProps(items[1])).toEqual({ className: 'is-being-edited' });
   });
 
@@ -188,10 +188,11 @@ describe('InlineEditableTable', () => {
       rowErrors: ['first error', 'second error'],
     });
     const itemList = [{ id: 1 }, { id: 2 }];
-    const wrapper = shallow(<InlineEditableTableContents {...requiredParams} items={itemList} />);
-    const rowErrors = wrapper.find(ReorderableTable).prop('rowErrors') as (item: any) => object;
+    renderWithKibanaRenderContext(
+      <InlineEditableTableContents {...requiredParams} items={itemList} />
+    );
+    const rowErrors = MockReorderableTable.mock.calls[0][0].rowErrors as (item: any) => object;
     expect(rowErrors(items[0])).toEqual(undefined);
-    // Since editingItemId is 2 and the second item (position 1) in item list has an id of 2, it gets the errors
     expect(rowErrors(items[1])).toEqual(['first error', 'second error']);
   });
 
@@ -203,7 +204,7 @@ describe('InlineEditableTable', () => {
     const uneditableItems: Foo[] = [];
 
     (getUpdatedColumns as jest.Mock).mockReturnValue(updatedColumns);
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <InlineEditableTableContents
         {...requiredParams}
         canRemoveLastItem={canRemoveLastItem}
@@ -212,8 +213,7 @@ describe('InlineEditableTable', () => {
         uneditableItems={uneditableItems}
       />
     );
-    const columns = wrapper.find(ReorderableTable).prop('columns');
-    expect(columns).toEqual(updatedColumns);
+    expect(MockReorderableTable.mock.calls[0][0].columns).toEqual(updatedColumns);
 
     expect(getUpdatedColumns).toHaveBeenCalledWith({
       columns: requiredParams.columns,

@@ -13,6 +13,10 @@ jest.mock('../utils/with_availability_check', () => ({
 jest.mock('../utils/route_error_handlers', () => ({
   handleRouteError: jest.fn(),
 }));
+jest.mock('../../../services/workflow_change_history_service');
+jest.mock('../../../lib/is_workflow_versioning_enabled', () => ({
+  readWorkflowVersioningEnabled: jest.fn().mockResolvedValue(true),
+}));
 
 import { errors } from '@elastic/elasticsearch';
 import { coreMock, httpServerMock } from '@kbn/core/server/mocks';
@@ -31,7 +35,7 @@ import { WorkflowsService } from '../../workflows_management_service';
 import { registerExecutionRoutes } from '../executions';
 import type { RouteDependencies } from '../types';
 import { createMockRequestHandlerContext } from '../utils/test_utils';
-import { WorkflowManagementAuditLog } from '../utils/workflow_audit_logging';
+import { createWorkflowManagementAuditLogMock } from '../utils/workflow_audit_logging.mock';
 import { registerWorkflowRoutes } from '../workflows';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -524,8 +528,8 @@ describe('Route privilege/ES-operation consistency', () => {
     };
 
     const startServices = jest.fn().mockResolvedValue([mockCoreStart, mockPluginsStart]) as any;
-    const service = new WorkflowsService(startServices, mockLogger);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    const service = new WorkflowsService(startServices, mockLogger, '9.0.0');
+    await service.getCoreStart();
 
     // ── WorkflowsManagementApi ──
 
@@ -563,7 +567,7 @@ describe('Route privilege/ES-operation consistency', () => {
     } as unknown as jest.Mocked<WorkflowsRouter>;
 
     const mockSpaces = { getSpaceId: jest.fn().mockReturnValue('default') } as any;
-    const mockAudit = new WorkflowManagementAuditLog({ service });
+    const mockAudit = createWorkflowManagementAuditLogMock();
 
     const deps: RouteDependencies = {
       router: mockRouter,

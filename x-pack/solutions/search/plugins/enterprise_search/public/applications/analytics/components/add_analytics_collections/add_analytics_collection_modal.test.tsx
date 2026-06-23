@@ -5,17 +5,13 @@
  * 2.0.
  */
 
-import '../../../__mocks__/shallow_useeffect.mock';
-
 import { setMockValues, setMockActions } from '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen, waitFor } from '@testing-library/react';
 
-import { EuiButton, EuiModal } from '@elastic/eui';
-
-import { AddAnalyticsCollectionForm } from './add_analytics_collection_form';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { AddAnalyticsCollectionModal } from './add_analytics_collection_modal';
 
@@ -42,27 +38,32 @@ describe('AddAnalyticsCollectionModal', () => {
     setMockValues(mockValues);
     setMockActions(mockActions);
 
-    const wrapper = shallow(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
-    expect(wrapper.find(EuiModal)).toHaveLength(1);
-    expect(wrapper.find(AddAnalyticsCollectionForm)).toHaveLength(1);
+    renderWithKibanaRenderContext(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
+
+    expect(screen.getByText('Name your Collection')).toBeInTheDocument();
+    expect(screen.getByText('Collection name')).toBeInTheDocument();
   });
 
-  it('successful creation will call onClose action', () => {
+  it('successful creation will call onClose action', async () => {
     setMockValues({ ...mockValues, isSuccess: true });
     setMockActions(mockActions);
 
-    shallow(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
+    renderWithKibanaRenderContext(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
 
-    expect(mockOnClose).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockOnClose).toHaveBeenCalled();
+    });
   });
 
-  it('system error will call onClose action', () => {
+  it('system error will call onClose action', async () => {
     setMockValues({ ...mockValues, isSystemError: true });
     setMockActions(mockActions);
 
-    shallow(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
+    renderWithKibanaRenderContext(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
 
-    expect(mockOnClose).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockOnClose).toHaveBeenCalled();
+    });
   });
 
   it('disabled confirmed button when canSubmit is false', () => {
@@ -72,8 +73,10 @@ describe('AddAnalyticsCollectionModal', () => {
     });
     setMockActions(mockActions);
 
-    const wrapper = shallow(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
+    renderWithKibanaRenderContext(<AddAnalyticsCollectionModal onClose={mockOnClose} />);
 
-    expect(wrapper.find(EuiButton).prop('isDisabled')).toBeTruthy();
+    expect(
+      screen.getByTestId('enterpriseSearchAddAnalyticsCollectionModalCreateButton')
+    ).toBeDisabled();
   });
 });

@@ -34,6 +34,14 @@ export const useStyles = () => {
       height: calc(100% - 40px);
     `,
 
+    outputPanelContent: css`
+      display: flex;
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
+      align-content: center;
+    `,
+
     actionsPanelWithBackground: css`
       background-color: ${euiTheme.colors.backgroundBasePlain};
     `,

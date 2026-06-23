@@ -8,10 +8,6 @@
 import type { IRuleDataClient } from '@kbn/rule-registry-plugin/server';
 import { buildRouteValidationWithZod } from '@kbn/zod-helpers/v4';
 import {
-  ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX,
-  ATTACK_DISCOVERY_ADHOC_ALERTS_COMMON_INDEX_PREFIX,
-} from '@kbn/elastic-assistant-common';
-import {
   ALERTS_API_ALL,
   ALERTS_API_UPDATE_DEPRECATED_PRIVILEGE,
 } from '@kbn/security-solution-features/constants';
@@ -19,7 +15,11 @@ import {
 import { SetUnifiedAlertsWorkflowStatusRequestBody } from '../../../../../common/api/detection_engine/unified_alerts';
 import type { SecuritySolutionPluginRouter } from '../../../../types';
 import { DETECTION_ENGINE_SET_UNIFIED_ALERTS_WORKFLOW_STATUS_URL } from '../../../../../common/constants';
-import { setWorkflowStatusHandler } from '../common/set_workflow_status_handler';
+import { updateAlertsWorkflowStatus } from '../common/operations/update_alerts_workflow_status';
+import { validateClosingReason } from '../common/validators/validate_closing_reason';
+import { getUnifiedAlertsIndex } from '../common/index_patterns/get_unified_alerts_index';
+import { withSiemErrorHandling } from '../with_siem_error_handling';
+import { buildSiemResponse } from '../utils';
 
 export const setUnifiedAlertsWorkflowStatusRoute = (
   router: SecuritySolutionPluginRouter,
@@ -47,18 +47,23 @@ export const setUnifiedAlertsWorkflowStatusRoute = (
         },
       },
       async (context, request, response) => {
-        const getIndexPattern = async () => {
-          const spaceId = (await context.securitySolution).getSpaceId();
-          const alertsIndex = ruleDataClient?.indexNameWithNamespace(spaceId);
-          const indexPattern = [
-            ...(alertsIndex ? [alertsIndex] : []), // Detection alerts
-            `${ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX}-${spaceId}`, // Attack alerts
-            `${ATTACK_DISCOVERY_ADHOC_ALERTS_COMMON_INDEX_PREFIX}-${spaceId}`, // Adhoc attack alerts
-          ];
-          return indexPattern;
-        };
+        const core = await context.core;
+        const { status, signal_ids: ids } = request.body;
+        const reason = 'reason' in request.body ? request.body.reason : undefined;
 
-        return setWorkflowStatusHandler({ context, request, response, getIndexPattern });
+        const closingReason = await validateClosingReason({ core, status, reason });
+        if (!closingReason.valid) {
+          return buildSiemResponse(response).error({
+            statusCode: 400,
+            body: closingReason.message,
+          });
+        }
+
+        const index = await getUnifiedAlertsIndex({ context, ruleDataClient });
+
+        return withSiemErrorHandling(response, () =>
+          updateAlertsWorkflowStatus({ context, index, ids, status, reason: closingReason.reason })
+        );
       }
     );
 };

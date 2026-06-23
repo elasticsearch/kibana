@@ -54,4 +54,12 @@ describe('getDefaultSecurityImplementation', () => {
       expect(logger.log({ message: 'no request' })).toBeUndefined();
     });
   });
+
+  describe('fakeRequestEnricher', () => {
+    it('is a no-op (no security delegate registered)', () => {
+      expect(() =>
+        implementation.fakeRequestEnricher({} as any, 'u_test_profile_123')
+      ).not.toThrow();
+    });
+  });
 });

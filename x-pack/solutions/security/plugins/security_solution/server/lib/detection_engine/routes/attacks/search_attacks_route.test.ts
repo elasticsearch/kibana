@@ -6,7 +6,7 @@
  */
 
 import {
-  ATTACK_DISCOVERY_ADHOC_ALERTS_INDEX_PREFIX,
+  ATTACK_DISCOVERY_ADHOC_ALERTS_COMMON_INDEX_PREFIX,
   ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX,
 } from '@kbn/elastic-assistant-common';
 import { elasticsearchClientMock } from '@kbn/core-elasticsearch-client-server-mocks';
@@ -83,7 +83,7 @@ describe('search for attacks', () => {
         expect.objectContaining({
           index: [
             `${ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX}-default`,
-            `${ATTACK_DISCOVERY_ADHOC_ALERTS_INDEX_PREFIX}-default`,
+            `${ATTACK_DISCOVERY_ADHOC_ALERTS_COMMON_INDEX_PREFIX}-default`,
           ],
           ignore_unavailable: true,
         })
@@ -103,7 +103,7 @@ describe('search for attacks', () => {
         expect.objectContaining({
           index: [
             `${ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX}-custom-space`,
-            `${ATTACK_DISCOVERY_ADHOC_ALERTS_INDEX_PREFIX}-custom-space`,
+            `${ATTACK_DISCOVERY_ADHOC_ALERTS_COMMON_INDEX_PREFIX}-custom-space`,
           ],
         })
       );

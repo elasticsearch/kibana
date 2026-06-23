@@ -17,7 +17,7 @@ import { getDefaultChartsData } from './explorer_charts/explorer_charts_containe
 import type { AnomalyExplorerChartsService } from '../services/anomaly_explorer_charts_service';
 import { getSelectionInfluencers, getSelectionJobIds } from './explorer_utils';
 import type { TableSeverityState } from '../components/controls/select_severity';
-import { resolveSeverityFormat } from '../components/controls/select_severity/severity_format_resolver';
+import { resolveSeverityFormat } from '../../../common/util/severity_threshold';
 import type { AnomalyExplorerUrlStateService } from './hooks/use_explorer_url_state';
 
 export class AnomalyChartsStateService extends StateService {

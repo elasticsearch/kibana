@@ -12,8 +12,9 @@ import {
   EuiFlexItem,
   EuiInMemoryTable,
   EuiText,
-  useEuiTheme,
+  EuiToolTip,
   type EuiBasicTableColumn,
+  useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
@@ -194,29 +195,34 @@ export const EntityListTable: React.FC<{
           return (
             <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
               <EuiFlexItem grow={false}>
-                <EuiButtonIcon
-                  iconType={icon}
-                  display="empty"
-                  aria-label={OPEN_ENTITY_IN_ENTITY_ANALYTICS_ARIA}
-                  onClick={() => {
-                    const displayName = row.entity_name ?? row.entity_id;
-                    const rightPanel = buildEntityRightPanel({
-                      identifierType: row.entity_type,
-                      identifier: displayName,
-                      entityStoreId: row.entity_id,
-                    });
-                    // Close the canvas first: both navigation helpers only
-                    // update the URL (and, when wired, the Agent Builder
-                    // sidebar). Leaving the canvas open would overlay the
-                    // expandable flyout that the URL change is about to open.
-                    closeCanvas?.();
-                    if (rightPanel) {
-                      navigateWithFlyout({ preview: [], right: rightPanel });
-                    } else {
-                      navigateToHome();
-                    }
-                  }}
-                />
+                <EuiToolTip
+                  content={OPEN_ENTITY_IN_ENTITY_ANALYTICS_ARIA}
+                  disableScreenReaderOutput
+                >
+                  <EuiButtonIcon
+                    iconType={icon}
+                    display="empty"
+                    aria-label={OPEN_ENTITY_IN_ENTITY_ANALYTICS_ARIA}
+                    onClick={() => {
+                      const displayName = row.entity_name ?? row.entity_id;
+                      const rightPanel = buildEntityRightPanel({
+                        identifierType: row.entity_type,
+                        identifier: displayName,
+                        entityStoreId: row.entity_id,
+                      });
+                      // Close the canvas first: both navigation helpers only
+                      // update the URL (and, when wired, the Agent Builder
+                      // sidebar). Leaving the canvas open would overlay the
+                      // expandable flyout that the URL change is about to open.
+                      closeCanvas?.();
+                      if (rightPanel) {
+                        navigateWithFlyout({ preview: [], right: rightPanel });
+                      } else {
+                        navigateToHome();
+                      }
+                    }}
+                  />
+                </EuiToolTip>
               </EuiFlexItem>
               <EuiFlexItem grow={true} style={{ minWidth: 0 }}>
                 <EuiText

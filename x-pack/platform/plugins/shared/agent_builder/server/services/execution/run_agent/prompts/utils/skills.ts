@@ -5,30 +5,26 @@
  * 2.0.
  */
 
-import type { IFileStore } from '@kbn/agent-builder-server/runner';
+import type { InternalSkillDefinition } from '@kbn/agent-builder-server/skills';
 import { cleanPrompt } from '@kbn/agent-builder-genai-utils/prompts';
-import { isSkillFileEntry } from '../../../runner/store/volumes/skills/utils';
-import type { SkillFileEntry } from '../../../runner/store/volumes/skills/types';
+import { getSkillAbsolutePath } from '../../../runner/store/volumes/skills/utils';
 
 // The "load skills before other tool calls" guidance exists because skills dynamically
 // register tools when loaded. If the LLM parallelizes a load_skill call with other tool
 // calls, the skill's specialized tools aren't available yet, causing the LLM to fall back
 // on general-purpose tools and often duplicate work.
-export const getSkillsInstructions = async ({
-  filesystem,
+export const getSkillsInstructions = ({
+  skills,
 }: {
-  filesystem: IFileStore;
-}): Promise<string> => {
-  const fileEntries = await filesystem.glob('/**/SKILL.md');
-  const skillsFileEntries = fileEntries
-    .filter(isSkillFileEntry)
-    .toSorted((a, b) => a.path.localeCompare(b.path));
+  skills: InternalSkillDefinition[];
+}): string => {
+  const sorted = [...skills].toSorted((a, b) => a.name.localeCompare(b.name));
 
-  const skillToLine = (entry: SkillFileEntry) => {
-    return `- ${entry.metadata.skill_name} (${entry.path}): ${entry.metadata.skill_description}`;
+  const skillToLine = (skill: InternalSkillDefinition) => {
+    return `- ${skill.name} (${getSkillAbsolutePath({ skill })}): ${skill.description}`;
   };
 
-  if (skillsFileEntries.length === 0) {
+  if (sorted.length === 0) {
     return [
       '## SKILLS',
       'Load a skill to get detailed instructions for a specific task. No skills are currently available.',
@@ -43,7 +39,7 @@ Loading a skill may also unlock dedicated tools that are more accurate than gene
 
 ### Available skills
 
-${skillsFileEntries.map(skillToLine).join('\n')}
+${sorted.map(skillToLine).join('\n')}
 
 ### How to load a skill
 

@@ -7,10 +7,11 @@
 
 import React, { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
-  EuiLoadingSpinner,
-  EuiFlyoutHeader,
-  EuiFlyoutBody,
   EuiButtonIcon,
+  EuiFlyoutBody,
+  EuiFlyoutHeader,
+  EuiLoadingSpinner,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
@@ -74,13 +75,15 @@ const AccessDeniedWrapper: React.FC<AccessDeniedWrapperProps> = ({ children, onC
     <>
       <EuiFlyoutHeader css={headerStyles}>
         {onClose && (
-          <EuiButtonIcon
-            buttonRef={closeButtonRef}
-            iconType="cross"
-            aria-label={closeButtonLabel}
-            onClick={onClose}
-            data-test-subj="embeddableAccessBoundaryCloseButton"
-          />
+          <EuiToolTip content={closeButtonLabel} disableScreenReaderOutput>
+            <EuiButtonIcon
+              buttonRef={closeButtonRef}
+              iconType="cross"
+              aria-label={closeButtonLabel}
+              onClick={onClose}
+              data-test-subj="embeddableAccessBoundaryCloseButton"
+            />
+          </EuiToolTip>
         )}
       </EuiFlyoutHeader>
       <EuiFlyoutBody css={bodyStyles}>{children}</EuiFlyoutBody>

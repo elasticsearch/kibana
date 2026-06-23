@@ -82,6 +82,8 @@ interface IngestEntitiesParams {
   transformDocument?: IngestEntitiesTransformDocument;
   /** Use `false` when downstream consumers tolerate the 1 s natural refresh window (e.g. CCS updates data stream). Use `true` when same-run visibility is required (e.g. LOOKUP JOIN on the latest index). */
   refresh: boolean | 'wait_for';
+  /** Called once per document rejected by the ES bulk API. Use to increment an external dropped-docs counter. */
+  onDropped?: () => void;
 }
 
 /**
@@ -107,6 +109,7 @@ export async function ingestEntities({
   fieldsToIgnore,
   transformDocument,
   refresh,
+  onDropped,
 }: IngestEntitiesParams) {
   const options: TransportRequestOptions = {};
   if (abortController?.signal) {
@@ -187,6 +190,7 @@ export async function ingestEntities({
       onDrop: (dropped) => {
         const errorReason = dropped.error?.reason || 'unknown error';
         logger.error(`entity dropped from bulk operation (reason: ${errorReason})`);
+        onDropped?.();
       },
     },
     options

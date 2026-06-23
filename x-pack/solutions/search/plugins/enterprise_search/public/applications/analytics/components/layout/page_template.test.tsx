@@ -5,13 +5,14 @@
  * 2.0.
  */
 
-import '../../../__mocks__/shallow_useeffect.mock';
-import { setMockValues } from '../../../__mocks__/kea_logic';
+import { setMockValues, mockTelemetryActions } from '../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen, waitFor } from '@testing-library/react';
 import { of } from 'rxjs';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 const mockUseEnterpriseSearchAnalyticsNav = jest.fn().mockReturnValue([]);
 
@@ -19,11 +20,18 @@ jest.mock('../../../shared/layout/nav', () => ({
   useEnterpriseSearchAnalyticsNav: (...args: any[]) => mockUseEnterpriseSearchAnalyticsNav(...args),
 }));
 
+// SetAnalyticsChrome renders null — mock it so we can verify the page template passes the
+// correct trail prop. SendEnterpriseSearchTelemetry is verified via mockTelemetryActions
+// (the kea_logic mock overrides any factory placed here for that module).
+jest.mock('../../../shared/kibana_chrome', () => ({
+  SetAnalyticsChrome: jest.fn(() => null),
+}));
+
 import { SetAnalyticsChrome } from '../../../shared/kibana_chrome';
-import { EnterpriseSearchPageTemplateWrapper } from '../../../shared/layout';
-import { SendEnterpriseSearchTelemetry } from '../../../shared/telemetry';
 
 import { EnterpriseSearchAnalyticsPageTemplate } from './page_template';
+
+const MockedSetAnalyticsChrome = jest.mocked(SetAnalyticsChrome);
 
 const mockValues = {
   getChromeStyle$: () => of('classic'),
@@ -31,18 +39,20 @@ const mockValues = {
 };
 
 describe('EnterpriseSearchAnalyticsPageTemplate', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders', () => {
     setMockValues(mockValues);
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <EnterpriseSearchAnalyticsPageTemplate>
         <div className="hello">world</div>
       </EnterpriseSearchAnalyticsPageTemplate>
     );
 
-    expect(wrapper.type()).toEqual(EnterpriseSearchPageTemplateWrapper);
-    expect(wrapper.prop('solutionNav')).toEqual({ name: 'Elasticsearch', items: [] });
-    expect(wrapper.find('.hello').text()).toEqual('world');
+    expect(screen.getByText('world')).toBeInTheDocument();
   });
 
   it('updates the side nav dynamic links', async () => {
@@ -62,10 +72,12 @@ describe('EnterpriseSearchAnalyticsPageTemplate', () => {
       },
     ]);
 
-    shallow(<EnterpriseSearchAnalyticsPageTemplate />);
+    renderWithKibanaRenderContext(<EnterpriseSearchAnalyticsPageTemplate />);
 
-    expect(updateSideNavDefinition).toHaveBeenCalledWith({
-      collections: collectionsItems,
+    await waitFor(() => {
+      expect(updateSideNavDefinition).toHaveBeenCalledWith({
+        collections: collectionsItems,
+      });
     });
   });
 
@@ -73,26 +85,32 @@ describe('EnterpriseSearchAnalyticsPageTemplate', () => {
     it('takes a breadcrumb array & renders a product-specific page chrome', () => {
       setMockValues(mockValues);
 
-      const wrapper = shallow(<EnterpriseSearchAnalyticsPageTemplate pageChrome={['Some page']} />);
-      const setPageChrome = wrapper
-        .find(EnterpriseSearchPageTemplateWrapper)
-        .prop('setPageChrome') as any;
+      renderWithKibanaRenderContext(
+        <EnterpriseSearchAnalyticsPageTemplate pageChrome={['Some page']} />
+      );
 
-      expect(setPageChrome.type).toEqual(SetAnalyticsChrome);
-      expect(setPageChrome.props.trail).toEqual(['Some page']);
+      expect(MockedSetAnalyticsChrome).toHaveBeenCalledWith(
+        expect.objectContaining({ trail: ['Some page'] }),
+        expect.anything()
+      );
     });
   });
 
   describe('page telemetry', () => {
-    it('takes a metric & renders product-specific telemetry viewed event', () => {
+    it('takes a metric & renders product-specific telemetry viewed event', async () => {
       setMockValues(mockValues);
 
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <EnterpriseSearchAnalyticsPageTemplate pageViewTelemetry="some_page" />
       );
 
-      expect(wrapper.find(SendEnterpriseSearchTelemetry).prop('action')).toEqual('viewed');
-      expect(wrapper.find(SendEnterpriseSearchTelemetry).prop('metric')).toEqual('some_page');
+      await waitFor(() => {
+        expect(mockTelemetryActions.sendTelemetry).toHaveBeenCalledWith({
+          action: 'viewed',
+          metric: 'some_page',
+          product: 'enterprise_search',
+        });
+      });
     });
   });
 
@@ -100,7 +118,7 @@ describe('EnterpriseSearchAnalyticsPageTemplate', () => {
     it('passes down any ...pageTemplateProps that EnterpriseSearchPageTemplateWrapper accepts', () => {
       setMockValues(mockValues);
 
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <EnterpriseSearchAnalyticsPageTemplate
           pageHeader={{ pageTitle: 'hello world' }}
           isLoading={false}
@@ -108,18 +126,14 @@ describe('EnterpriseSearchAnalyticsPageTemplate', () => {
         />
       );
 
-      expect(
-        wrapper.find(EnterpriseSearchPageTemplateWrapper).prop('pageHeader')!.pageTitle
-      ).toEqual('hello world');
-      expect(wrapper.find(EnterpriseSearchPageTemplateWrapper).prop('isLoading')).toEqual(false);
-      expect(wrapper.find(EnterpriseSearchPageTemplateWrapper).prop('emptyState')).toEqual(<div />);
+      expect(screen.getByText('hello world')).toBeInTheDocument();
     });
 
     it('passes down analytics name and paths to useEnterpriseSearchAnalyticsNav', () => {
       setMockValues(mockValues);
 
       const mockAnalyticsName = 'some_analytics_name';
-      shallow(
+      renderWithKibanaRenderContext(
         <EnterpriseSearchAnalyticsPageTemplate
           analyticsName={mockAnalyticsName}
           pageHeader={{ pageTitle: 'hello world' }}

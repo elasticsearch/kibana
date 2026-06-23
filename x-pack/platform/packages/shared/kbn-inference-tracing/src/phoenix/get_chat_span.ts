@@ -37,7 +37,7 @@ import type { tracing } from '@elastic/opentelemetry-node/sdk';
 import { omit, partition } from 'lodash';
 import type { ToolDefinition } from '@kbn/inference-common';
 import type { ChoiceEvent, MessageEvent } from '../types';
-import { ElasticGenAIAttributes, GenAISemanticConventions } from '../types';
+import { GenAISemanticConventions } from '../types';
 import { flattenAttributes } from '../util/flatten_attributes';
 import { unflattenAttributes } from '../util/unflatten_attributes';
 
@@ -54,9 +54,9 @@ export function getChatSpan(span: tracing.ReadableSpan) {
     system: inputEvents.find((event) => event.name === GenAISemanticConventions.GenAISystemMessage)
       ?.attributes?.content,
   });
-  span.attributes[LLM_SYSTEM] = span.attributes[GenAISemanticConventions.GenAISystem];
+  span.attributes[LLM_SYSTEM] = span.attributes[GenAISemanticConventions.GenAIProviderName];
 
-  span.attributes[LLM_PROVIDER] = span.attributes[GenAISemanticConventions.GenAISystem];
+  span.attributes[LLM_PROVIDER] = span.attributes[GenAISemanticConventions.GenAIProviderName];
 
   span.attributes[LLM_TOKEN_COUNT_COMPLETION] =
     span.attributes[GenAISemanticConventions.GenAIUsageOutputTokens];
@@ -65,7 +65,7 @@ export function getChatSpan(span: tracing.ReadableSpan) {
     span.attributes[GenAISemanticConventions.GenAIUsageInputTokens];
 
   span.attributes[LLM_TOKEN_COUNT_PROMPT_DETAILS_CACHE_READ] =
-    span.attributes[GenAISemanticConventions.GenAIUsageCachedInputTokens];
+    span.attributes[GenAISemanticConventions.GenAIUsageCacheReadInputTokens];
 
   span.attributes[LLM_TOKEN_COUNT_TOTAL] =
     Number(span.attributes[LLM_TOKEN_COUNT_COMPLETION] ?? 0) +
@@ -85,8 +85,8 @@ export function getChatSpan(span: tracing.ReadableSpan) {
     })
   );
 
-  const parsedTools = span.attributes[ElasticGenAIAttributes.Tools]
-    ? (JSON.parse(String(span.attributes[ElasticGenAIAttributes.Tools])) as Record<
+  const parsedTools = span.attributes[GenAISemanticConventions.GenAIToolDefinitions]
+    ? (JSON.parse(String(span.attributes[GenAISemanticConventions.GenAIToolDefinitions])) as Record<
         string,
         ToolDefinition
       >)

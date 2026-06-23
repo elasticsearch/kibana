@@ -151,6 +151,7 @@ export const AgentlessEnrollmentFlyout = ({
       data-test-subj="agentlessEnrollmentFlyout"
       onClose={onClose}
       maxWidth={MAX_FLYOUT_WIDTH}
+      aria-labelledby="FleetAgentlessEnrollmentFlyoutTitle"
     >
       <EuiFlyoutHeader hasBorder aria-labelledby="FleetAgentlessEnrollmentFlyoutTitle">
         <EuiTitle size="m">

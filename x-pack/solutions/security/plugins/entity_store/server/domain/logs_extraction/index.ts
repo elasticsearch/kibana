@@ -6,4 +6,3 @@
  */
 
 export { LogsExtractionClient } from './logs_extraction_client';
-export { CcsLogsExtractionClient } from './ccs_logs_extraction_client';

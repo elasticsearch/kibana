@@ -1,6 +1,84 @@
 {
-  "sha1": "7354f18e6196e024dc3b8e543dd57a4309ccbbdc",
+  "sha1": "bd0f25acf5bff1110962cbfe54b3156394d21855",
   "tests": [
+    {
+      "id": "c30666c9b3b6156-d19fa41e7270071",
+      "title": "DELETE /api/data_views/{id} - as code can delete an existing data view",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/data_views_as_code/test/scout/api/tests/delete_data_view.spec.ts",
+        "line": 23,
+        "column": 10
+      }
+    },
+    {
+      "id": "c30666c9b3b6156-1dd234de9987eae",
+      "title": "DELETE /api/data_views/{id} - as code returns 404 when deleting a non-existing data view",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/data_views_as_code/test/scout/api/tests/delete_data_view.spec.ts",
+        "line": 54,
+        "column": 10
+      }
+    },
+    {
+      "id": "c30666c9b3b6156-0c13bc9a7a7fa1e",
+      "title": "DELETE /api/data_views/{id} - as code returns 403 when user does not have indexPatterns:manage privilege",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/data_views_as_code/test/scout/api/tests/delete_data_view.spec.ts",
+        "line": 68,
+        "column": 10
+      }
+    },
     {
       "id": "e9d43db51b73ef9-f5a2a74a653d734",
       "title": "GET /api/data_views/{id} - as code can retrieve a data view",

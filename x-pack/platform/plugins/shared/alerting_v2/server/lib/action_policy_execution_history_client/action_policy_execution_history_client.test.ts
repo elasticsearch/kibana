@@ -52,6 +52,8 @@ const buildEvent = ({
 const buildPolicy = (id: string, name: string) => ({ id, name } as any);
 const buildRule = (id: string, name: string) => ({ id, metadata: { name } } as any);
 const buildWorkflow = (id: string, name: string) => ({ id, name } as any);
+const buildFindRulesResponse = (rules: Array<{ id: string; metadata: { name: string } }>) =>
+  ({ items: rules, total: rules.length, page: 1, perPage: rules.length } as any);
 
 const createMocks = () => {
   const eventLogService: jest.Mocked<EventLogServiceContract> = {
@@ -69,8 +71,7 @@ const createMocks = () => {
     findActionPolicies: jest.fn().mockResolvedValue({ items: [], total: 0, page: 1, perPage: 500 }),
   } as unknown as jest.Mocked<ActionPolicyClient>;
   const rulesClient = {
-    getRules: jest.fn().mockResolvedValue([]),
-    findRules: jest.fn().mockResolvedValue({ items: [], total: 0, page: 1, perPage: 500 }),
+    findRules: jest.fn().mockResolvedValue({ items: [], total: 0, page: 1, perPage: 0 }),
   } as unknown as jest.Mocked<RulesClient>;
   const workflowsManagement = {
     getWorkflowsByIds: jest.fn().mockResolvedValue([]),
@@ -175,7 +176,10 @@ describe('ActionPolicyExecutionHistoryClient', () => {
       await client.listExecutionHistory({ request });
 
       expect(actionPolicyClient.getActionPolicies).toHaveBeenCalledWith({ ids: ['p-1'] });
-      expect(rulesClient.getRules).toHaveBeenCalledWith(['r-1']);
+      expect(rulesClient.findRules).toHaveBeenCalledWith({
+        filter: expect.stringContaining(`id: "r-1"`),
+        perPage: 1000,
+      });
       expect(workflowsManagement.getWorkflowsByIds).toHaveBeenCalledWith(['w-1'], 'default');
     });
 
@@ -186,7 +190,7 @@ describe('ActionPolicyExecutionHistoryClient', () => {
       await client.listExecutionHistory({ request });
 
       expect(actionPolicyClient.getActionPolicies).toHaveBeenCalledWith({ ids: [] });
-      expect(rulesClient.getRules).toHaveBeenCalledWith([]);
+      expect(rulesClient.findRules).not.toHaveBeenCalled();
       expect(workflowsManagement.getWorkflowsByIds).toHaveBeenCalledWith([], 'default');
     });
 
@@ -200,7 +204,9 @@ describe('ActionPolicyExecutionHistoryClient', () => {
         total: 1,
       } as any);
       actionPolicyClient.getActionPolicies.mockResolvedValue([buildPolicy('p-1', 'Policy 1')]);
-      rulesClient.getRules.mockResolvedValue([buildRule('r-1', 'Rule 1')]);
+      (rulesClient.findRules as jest.Mock).mockResolvedValue(
+        buildFindRulesResponse([buildRule('r-1', 'Rule 1')])
+      );
       workflowsManagement.getWorkflowsByIds.mockResolvedValue([buildWorkflow('w-1', 'WF 1')]);
 
       const request = httpServerMock.createKibanaRequest();
@@ -445,7 +451,9 @@ describe('ActionPolicyExecutionHistoryClient', () => {
         mocks.actionPolicyClient.getActionPolicies.mockResolvedValue([
           buildPolicy('p-1', 'Policy 1'),
         ]);
-        mocks.rulesClient.getRules.mockResolvedValue([buildRule('r-1', 'Rule 1')]);
+        (mocks.rulesClient.findRules as jest.Mock).mockResolvedValue(
+          buildFindRulesResponse([buildRule('r-1', 'Rule 1')])
+        );
         mocks.workflowsManagement.getWorkflowsByIds.mockResolvedValue([
           buildWorkflow('w-1', 'WF 1'),
         ]);
@@ -484,7 +492,7 @@ describe('ActionPolicyExecutionHistoryClient', () => {
 
       it('falls back to null rule names when rules lookup rejects', async () => {
         const mocks = setup();
-        mocks.rulesClient.getRules.mockRejectedValue(new Error('rules down'));
+        (mocks.rulesClient.findRules as jest.Mock).mockRejectedValue(new Error('rules down'));
         const request = httpServerMock.createKibanaRequest();
 
         const result = await mocks.client.listExecutionHistory({ request });
@@ -493,6 +501,32 @@ describe('ActionPolicyExecutionHistoryClient', () => {
         expect(mocks.logger.error).toHaveBeenCalledWith(
           expect.objectContaining({ code: 'EXECUTION_HISTORY_RULE_LOOKUP_FAILED' })
         );
+      });
+    });
+
+    describe('missing rule ids in name resolution', () => {
+      it('uses names for found ids and falls back to null for missing ones (no rejection)', async () => {
+        const { client, eventLogService, rulesClient } = createMocks();
+        eventLogService.findActionPolicyExecutionEvents.mockResolvedValue({
+          events: [
+            buildEvent({ policyId: 'p-1', ruleIds: ['r-1'] }),
+            buildEvent({ policyId: 'p-1', ruleIds: ['r-2'] }),
+            buildEvent({ policyId: 'p-1', ruleIds: ['r-3'] }),
+          ],
+          page: 1,
+          perPage: 100,
+          total: 3,
+        } as any);
+        (rulesClient.findRules as jest.Mock).mockResolvedValue(
+          buildFindRulesResponse([buildRule('r-1', 'Rule 1'), buildRule('r-3', 'Rule 3')])
+        );
+
+        const request = httpServerMock.createKibanaRequest();
+        const result = await client.listExecutionHistory({ request });
+
+        expect(result.items[0].rule).toEqual({ id: 'r-1', name: 'Rule 1' });
+        expect(result.items[1].rule).toEqual({ id: 'r-2', name: null });
+        expect(result.items[2].rule).toEqual({ id: 'r-3', name: 'Rule 3' });
       });
     });
   });

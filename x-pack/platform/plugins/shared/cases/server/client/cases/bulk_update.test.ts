@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { stringify as yamlStringify } from 'yaml';
 import { CustomFieldTypes, CaseStatuses } from '../../../common/types/domain';
 import {
   MAX_CATEGORY_LENGTH,
@@ -17,6 +18,7 @@ import {
   MAX_ASSIGNEES_PER_CASE,
   MAX_CUSTOM_FIELDS_PER_CASE,
 } from '../../../common/constants';
+import { SECURITY_SOLUTION_OWNER, OBSERVABILITY_OWNER } from '../../../common/constants/owners';
 import { mockCaseComments, mockCases } from '../../mocks';
 import { createCasesClientMock, createCasesClientMockArgs } from '../mocks';
 import { Operations } from '../../authorization';
@@ -2360,6 +2362,131 @@ describe('update', () => {
 
         expect(result[0]).not.toHaveProperty('updateSummary');
       });
+    });
+  });
+
+  describe('Global extended_fields — per-owner key isolation', () => {
+    const clientArgs = createCasesClientMockArgs();
+
+    const makeGlobalFieldDef = (name: string, owner: string) => ({
+      fieldDefinitionId: `fd-${name}`,
+      name,
+      owner,
+      description: '',
+      isGlobal: true,
+      definition: yamlStringify({ name, type: 'keyword', control: 'INPUT_TEXT', label: name }),
+    });
+
+    const secCase = {
+      ...mockCases[0],
+      attributes: { ...mockCases[0].attributes, owner: SECURITY_SOLUTION_OWNER },
+    };
+
+    const obsCase = {
+      ...mockCases[1],
+      attributes: { ...mockCases[1].attributes, owner: OBSERVABILITY_OWNER },
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      clientArgs.services.caseService.getCases.mockResolvedValue({
+        saved_objects: [secCase, obsCase],
+      });
+      clientArgs.services.caseService.getAllCaseComments.mockResolvedValue({
+        saved_objects: [],
+        total: 0,
+        per_page: 10,
+        page: 1,
+      });
+      clientArgs.services.caseService.patchCases.mockResolvedValue({
+        saved_objects: [secCase, obsCase],
+      });
+      clientArgs.services.attachmentService.getter.getCaseAttatchmentStats.mockResolvedValue(
+        new Map()
+      );
+      clientArgs.services.userActionService.getMultipleCasesUserActionsTotal.mockResolvedValue({
+        [secCase.id]: 0,
+        [obsCase.id]: 0,
+      });
+    });
+
+    it('calls fieldDefinitionsService once per unique owner, not once per case', async () => {
+      // Both owners have a global field — register them per owner.
+      clientArgs.services.fieldDefinitionsService.getFieldDefinitions.mockImplementation(
+        async (owner: string | string[]) => {
+          const o = Array.isArray(owner) ? owner[0] : owner;
+          if (o === SECURITY_SOLUTION_OWNER) {
+            return {
+              fieldDefinitions: [makeGlobalFieldDef('risk_score', SECURITY_SOLUTION_OWNER)],
+              total: 1,
+            };
+          }
+          if (o === OBSERVABILITY_OWNER) {
+            return {
+              fieldDefinitions: [makeGlobalFieldDef('service_name', OBSERVABILITY_OWNER)],
+              total: 1,
+            };
+          }
+          return { fieldDefinitions: [], total: 0 };
+        }
+      );
+
+      await bulkUpdate(
+        {
+          cases: [
+            {
+              id: secCase.id,
+              version: secCase.version ?? '',
+              extended_fields: { risk_score_as_keyword: 'high' },
+            },
+            {
+              id: obsCase.id,
+              version: obsCase.version ?? '',
+              extended_fields: { service_name_as_keyword: 'api' },
+            },
+          ],
+        },
+        clientArgs,
+        casesClientMock
+      );
+
+      // One call per unique owner (2 owners), not one per case.
+      expect(clientArgs.services.fieldDefinitionsService.getFieldDefinitions).toHaveBeenCalledTimes(
+        2
+      );
+    });
+
+    it('rejects a non-global extended_fields key for one owner while allowing the other', async () => {
+      // securitySolution has global field 'risk_score'; observability has none.
+      clientArgs.services.fieldDefinitionsService.getFieldDefinitions.mockImplementation(
+        async (owner: string | string[]) => {
+          const o = Array.isArray(owner) ? owner[0] : owner;
+          if (o === SECURITY_SOLUTION_OWNER) {
+            return {
+              fieldDefinitions: [makeGlobalFieldDef('risk_score', SECURITY_SOLUTION_OWNER)],
+              total: 1,
+            };
+          }
+          return { fieldDefinitions: [], total: 0 };
+        }
+      );
+
+      // Sending the securitySolution global key for the observability case should fail.
+      await expect(
+        bulkUpdate(
+          {
+            cases: [
+              {
+                id: obsCase.id,
+                version: obsCase.version ?? '',
+                extended_fields: { risk_score_as_keyword: 'high' },
+              },
+            ],
+          },
+          clientArgs,
+          casesClientMock
+        )
+      ).rejects.toThrow('are not global (isGlobal) field definitions');
     });
   });
 

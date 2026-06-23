@@ -11,6 +11,7 @@ import type { OptionsListDSLControlState } from '@kbn/controls-schemas';
 import {
   DEFAULT_DSL_OPTIONS_LIST_STATE,
   DEFAULT_PINNED_CONTROL_STATE,
+  OPTIONS_LIST_CONTROL,
 } from '@kbn/controls-constants';
 import type { StartPlugins } from '../../../types';
 
@@ -110,7 +111,7 @@ export async function migrateAlertPageControlsTo816(storage: Storage, plugins: S
       newFormat.initialChildControlState[key] = {
         ...DEFAULT_PINNED_CONTROL_STATE,
         ...DEFAULT_DSL_OPTIONS_LIST_STATE,
-        type: 'optionsListControl',
+        type: OPTIONS_LIST_CONTROL,
         order: value.order,
         display_settings: {
           hide_exclude: value.explicitInput.hideExclude ?? true,
@@ -126,7 +127,7 @@ export async function migrateAlertPageControlsTo816(storage: Storage, plugins: S
         selected_options:
           value.explicitInput.selectedOptions ?? DEFAULT_DSL_OPTIONS_LIST_STATE.selected_options,
         persist: value.explicitInput.persist ?? false,
-      };
+      } as ControlPanelState<NewFormatExplicitInput>;
     }
 
     storage.set(storageKey, newFormat);

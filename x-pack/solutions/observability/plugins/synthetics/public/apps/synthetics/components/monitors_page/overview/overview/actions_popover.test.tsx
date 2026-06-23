@@ -200,4 +200,89 @@ describe('ActionsPopover', () => {
     expect(updateMonitorEnabledState).toHaveBeenCalledTimes(1);
     expect(updateMonitorEnabledState.mock.calls[0]).toEqual([true]);
   });
+
+  describe('remote monitor', () => {
+    let remoteMonitor: OverviewStatusMetaData;
+
+    beforeEach(() => {
+      remoteMonitor = {
+        ...testMonitor,
+        remote: {
+          remoteName: 'remote-cluster-1',
+          kibanaUrl: 'https://remote-kibana.example.com',
+        },
+      } as any;
+    });
+
+    it('renders a CCS-aware "Go to monitor" link that threads remoteName through the locator', () => {
+      const detailLinkSpy = jest
+        .spyOn(monitorDetailLocatorModule, 'useMonitorDetailLocator')
+        .mockReturnValue(
+          '/app/synthetics/monitor/1lkjelre?locationId=us_central&remoteName=remote-cluster-1'
+        );
+
+      const { getByTestId } = render(
+        <ActionsPopover
+          position="relative"
+          isPopoverOpen={true}
+          setIsPopoverOpen={jest.fn()}
+          monitor={remoteMonitor}
+          locationId={remoteMonitor.locations[0].id}
+        />
+      );
+
+      expect(getByTestId('actionsPopoverGoToMonitor')?.getAttribute('href')).toBe(
+        '/app/synthetics/monitor/1lkjelre?locationId=us_central&remoteName=remote-cluster-1'
+      );
+      expect(detailLinkSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ remoteName: 'remote-cluster-1' })
+      );
+    });
+
+    it('hides local-only management actions for remote monitors', () => {
+      const { queryByText, queryByTestId } = render(
+        <ActionsPopover
+          position="relative"
+          isPopoverOpen={true}
+          setIsPopoverOpen={jest.fn()}
+          monitor={remoteMonitor}
+          locationId={remoteMonitor.locations[0].id}
+        />
+      );
+
+      // Visible for remote monitors.
+      expect(queryByTestId('actionsPopoverGoToMonitor')).toBeInTheDocument();
+      expect(queryByText('Quick inspect')).toBeInTheDocument();
+      expect(queryByTestId('actionsPopoverViewOnRemoteCluster')).toBeInTheDocument();
+
+      // Local-only management actions are hidden.
+      expect(queryByTestId('editMonitorLink')).not.toBeInTheDocument();
+      expect(queryByTestId('cloneMonitorLink')).not.toBeInTheDocument();
+      expect(queryByTestId('createSLOBtn')).not.toBeInTheDocument();
+      expect(queryByText('Run test manually')).not.toBeInTheDocument();
+      expect(queryByText('Disable monitor (all locations)')).not.toBeInTheDocument();
+      expect(queryByText('Disable status alerts (all locations)')).not.toBeInTheDocument();
+      expect(queryByText('Add to dashboard')).not.toBeInTheDocument();
+    });
+
+    it('omits "View on remote cluster" when the remote Kibana URL is not available', () => {
+      const monitorWithoutKibanaUrl = {
+        ...remoteMonitor,
+        remote: { remoteName: 'remote-cluster-1' },
+      } as any;
+
+      const { queryByTestId } = render(
+        <ActionsPopover
+          position="relative"
+          isPopoverOpen={true}
+          setIsPopoverOpen={jest.fn()}
+          monitor={monitorWithoutKibanaUrl}
+          locationId={monitorWithoutKibanaUrl.locations[0].id}
+        />
+      );
+
+      expect(queryByTestId('actionsPopoverGoToMonitor')).toBeInTheDocument();
+      expect(queryByTestId('actionsPopoverViewOnRemoteCluster')).not.toBeInTheDocument();
+    });
+  });
 });

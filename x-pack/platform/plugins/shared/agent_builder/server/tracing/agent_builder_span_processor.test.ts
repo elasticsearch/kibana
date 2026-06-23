@@ -11,6 +11,8 @@ import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-ho
 import type { tracing } from '@elastic/opentelemetry-node/sdk';
 import { resources, tracing as elasticTracing } from '@elastic/opentelemetry-node/sdk';
 import { BAGGAGE_TRACKING_BEACON_KEY, BAGGAGE_TRACKING_BEACON_VALUE } from '@kbn/inference-tracing';
+import { GenAISemanticConventions } from '@kbn/inference-tracing';
+import { agentBuilderDefaultAgentId } from '@kbn/agent-builder-common';
 import { AgentBuilderSpanProcessor } from './agent_builder_span_processor';
 import {
   AGENT_BUILDER_OWNER_BAGGAGE_KEY,
@@ -308,5 +310,131 @@ describe('AgentBuilderSpanProcessor', () => {
     await processor.shutdown();
 
     expect(mockBatch.shutdown).toHaveBeenCalledTimes(1);
+  });
+
+  describe('sensitive attribute hashing', () => {
+    it('hashes custom agent IDs but keeps built-in agent IDs', () => {
+      const processor = new AgentBuilderSpanProcessor({
+        exporter: createExporter(),
+        scheduledDelayMillis: 1,
+      });
+
+      const readable = createMockReadableSpan({
+        [SHOULD_TRACK_ATTR]: true,
+        [GenAISemanticConventions.GenAIAgentId]: 'user-custom-agent-uuid',
+      });
+
+      processor.onEnd(readable);
+
+      const exported = (mockBatch.onEnd as jest.Mock).mock.calls[0][0] as tracing.ReadableSpan;
+      expect(exported.attributes[GenAISemanticConventions.GenAIAgentId]).toMatch(/^custom-/);
+      expect(exported.attributes[GenAISemanticConventions.GenAIAgentId]).not.toBe(
+        'user-custom-agent-uuid'
+      );
+    });
+
+    it('preserves built-in (default) agent ID without hashing', () => {
+      const processor = new AgentBuilderSpanProcessor({
+        exporter: createExporter(),
+        scheduledDelayMillis: 1,
+      });
+
+      const readable = createMockReadableSpan({
+        [SHOULD_TRACK_ATTR]: true,
+        [GenAISemanticConventions.GenAIAgentId]: agentBuilderDefaultAgentId,
+      });
+
+      processor.onEnd(readable);
+
+      const exported = (mockBatch.onEnd as jest.Mock).mock.calls[0][0] as tracing.ReadableSpan;
+      expect(exported.attributes[GenAISemanticConventions.GenAIAgentId]).toBe(
+        agentBuilderDefaultAgentId
+      );
+    });
+
+    it('hashes conversation IDs', () => {
+      const processor = new AgentBuilderSpanProcessor({
+        exporter: createExporter(),
+        scheduledDelayMillis: 1,
+      });
+
+      const readable = createMockReadableSpan({
+        [SHOULD_TRACK_ATTR]: true,
+        [GenAISemanticConventions.GenAIConversationId]: 'conv-uuid-123',
+      });
+
+      processor.onEnd(readable);
+
+      const exported = (mockBatch.onEnd as jest.Mock).mock.calls[0][0] as tracing.ReadableSpan;
+      expect(exported.attributes[GenAISemanticConventions.GenAIConversationId]).toMatch(
+        /^[a-f0-9]{16}$/
+      );
+      expect(exported.attributes[GenAISemanticConventions.GenAIConversationId]).not.toBe(
+        'conv-uuid-123'
+      );
+    });
+
+    it('hashes workflow IDs and execution IDs', () => {
+      const processor = new AgentBuilderSpanProcessor({
+        exporter: createExporter(),
+        scheduledDelayMillis: 1,
+      });
+
+      const readable = createMockReadableSpan({
+        [SHOULD_TRACK_ATTR]: true,
+        'elastic.workflow.id': 'workflow-uuid-456',
+        'elastic.workflow.execution_id': 'exec-uuid-789',
+      });
+
+      processor.onEnd(readable);
+
+      const exported = (mockBatch.onEnd as jest.Mock).mock.calls[0][0] as tracing.ReadableSpan;
+      expect(exported.attributes['elastic.workflow.id']).toMatch(/^[a-f0-9]{16}$/);
+      expect(exported.attributes['elastic.workflow.id']).not.toBe('workflow-uuid-456');
+      expect(exported.attributes['elastic.workflow.execution_id']).toMatch(/^[a-f0-9]{16}$/);
+      expect(exported.attributes['elastic.workflow.execution_id']).not.toBe('exec-uuid-789');
+    });
+
+    it('does NOT hash gen_ai.tool.call.id', () => {
+      const processor = new AgentBuilderSpanProcessor({
+        exporter: createExporter(),
+        scheduledDelayMillis: 1,
+      });
+
+      const readable = createMockReadableSpan({
+        [SHOULD_TRACK_ATTR]: true,
+        [GenAISemanticConventions.GenAIToolCallId]: 'call_abc123',
+      });
+
+      processor.onEnd(readable);
+
+      const exported = (mockBatch.onEnd as jest.Mock).mock.calls[0][0] as tracing.ReadableSpan;
+      expect(exported.attributes[GenAISemanticConventions.GenAIToolCallId]).toBe('call_abc123');
+    });
+
+    it('produces stable hashes for the same input', () => {
+      const processor = new AgentBuilderSpanProcessor({
+        exporter: createExporter(),
+        scheduledDelayMillis: 1,
+      });
+
+      const readable1 = createMockReadableSpan({
+        [SHOULD_TRACK_ATTR]: true,
+        [GenAISemanticConventions.GenAIConversationId]: 'same-id',
+      });
+      const readable2 = createMockReadableSpan({
+        [SHOULD_TRACK_ATTR]: true,
+        [GenAISemanticConventions.GenAIConversationId]: 'same-id',
+      });
+
+      processor.onEnd(readable1);
+      processor.onEnd(readable2);
+
+      const exported1 = (mockBatch.onEnd as jest.Mock).mock.calls[0][0] as tracing.ReadableSpan;
+      const exported2 = (mockBatch.onEnd as jest.Mock).mock.calls[1][0] as tracing.ReadableSpan;
+      expect(exported1.attributes[GenAISemanticConventions.GenAIConversationId]).toBe(
+        exported2.attributes[GenAISemanticConventions.GenAIConversationId]
+      );
+    });
   });
 });

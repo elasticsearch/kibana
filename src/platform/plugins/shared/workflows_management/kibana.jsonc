@@ -30,6 +30,8 @@
       "fieldFormats",
       "unifiedSearch",
       "embeddable",
+      "controls",
+      "uiActions",
       "licensing"
     ],
     "optionalPlugins": ["alerting", "serverless", "cloud", "inbox"],

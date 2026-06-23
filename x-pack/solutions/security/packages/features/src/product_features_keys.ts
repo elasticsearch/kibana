@@ -69,6 +69,10 @@ export enum ProductFeatureSecurityKey {
    */
   endpointHostIsolationExceptions = 'endpoint_host_isolation_exceptions',
   /**
+   * Enables custom YARA signature management for Elastic Defend.
+   */
+  endpointCustomYaraSignatures = 'endpoint_custom_yara_signatures',
+  /**
    * Enables all of endpoint's supported response actions - like host isolation, file operations,
    * process operations, command execution, etc.
    */
@@ -236,6 +240,7 @@ export enum SecuritySubFeatureId {
   hostIsolationExceptionsBasic = 'hostIsolationExceptionsBasicSubFeature',
   blocklist = 'blocklistSubFeature',
   eventFilters = 'eventFiltersSubFeature',
+  customYaraSignatures = 'customYaraSignaturesSubFeature',
   globalArtifactManagement = 'globalArtifactManagementSubFeature',
   policyManagement = 'policyManagementSubFeature',
   scriptsManagement = 'scriptsManagementSubFeature',

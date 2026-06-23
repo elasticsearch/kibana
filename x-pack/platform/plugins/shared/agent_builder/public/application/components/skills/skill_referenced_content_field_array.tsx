@@ -13,6 +13,7 @@ import {
   EuiFlexItem,
   EuiSpacer,
   EuiText,
+  EuiToolTip,
 } from '@elastic/eui';
 import { useController, useFieldArray, useWatch, type Control } from 'react-hook-form';
 import { maxReferencedContentItems, AGENT_BUILDER_UI_EBT } from '@kbn/agent-builder-common';
@@ -65,19 +66,23 @@ const ReferencedContentFileRow: React.FC<ReferencedContentFileRowProps> = ({
         />
       </EuiFlexItem>
       <EuiFlexItem grow={false}>
-        <EuiButtonIcon
-          iconType="trash"
-          color="danger"
-          onClick={onRemove}
-          aria-label={labels.skills.referencedFileSection.removeFileAriaLabel}
-          title={labels.skills.referencedFileSection.removeFileAriaLabel}
-          data-test-subj={`agentBuilderSkillReferencedContentRemove-${index}`}
-          {...getEbtProps({
-            element: AGENT_BUILDER_UI_EBT.element.pageContent,
-            action: AGENT_BUILDER_UI_EBT.action.globalManagement.REMOVE_REFERENCED_FILE,
-            detail: AGENT_BUILDER_UI_EBT.entity.SKILL,
-          })}
-        />
+        <EuiToolTip
+          content={labels.skills.referencedFileSection.removeFileAriaLabel}
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            iconType="trash"
+            color="danger"
+            onClick={onRemove}
+            aria-label={labels.skills.referencedFileSection.removeFileAriaLabel}
+            data-test-subj={`agentBuilderSkillReferencedContentRemove-${index}`}
+            {...getEbtProps({
+              element: AGENT_BUILDER_UI_EBT.element.pageContent,
+              action: AGENT_BUILDER_UI_EBT.action.globalManagement.REMOVE_REFERENCED_FILE,
+              detail: AGENT_BUILDER_UI_EBT.entity.SKILL,
+            })}
+          />
+        </EuiToolTip>
       </EuiFlexItem>
     </EuiFlexGroup>
   );

@@ -36,7 +36,6 @@ const event: SigEvent = {
   criticality: 90,
   confidence: 0.8,
   impact: 'high',
-  recommended_action: 'Restart gateway client',
   recommendations: ['Restart gateway client'],
 };
 

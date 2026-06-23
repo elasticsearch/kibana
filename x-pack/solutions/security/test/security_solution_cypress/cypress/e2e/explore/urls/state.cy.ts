@@ -7,10 +7,7 @@
 
 import {
   DATE_PICKER_APPLY_BUTTON_TIMELINE,
-  DATE_PICKER_START_DATE_POPOVER_BUTTON,
-  GET_DATE_PICKER_END_DATE_POPOVER_BUTTON,
-  GET_LOCAL_DATE_PICKER_END_DATE_POPOVER_BUTTON,
-  GET_LOCAL_DATE_PICKER_START_DATE_POPOVER_BUTTON,
+  GLOBAL_FILTERS_CONTAINER,
 } from '../../../screens/date_picker';
 import { HOSTS_NAMES } from '../../../screens/hosts/all_hosts';
 import { ANOMALIES_TAB } from '../../../screens/hosts/main';
@@ -28,6 +25,7 @@ import { TIMELINE_DATE_PICKER_CONTAINER, TIMELINE_TITLE } from '../../../screens
 import { login } from '../../../tasks/login';
 import { visit, visitWithTimeRange } from '../../../tasks/navigation';
 import {
+  expectDateRangeToBe,
   setEndDate,
   setStartDate,
   updateDates,
@@ -115,16 +113,10 @@ describe(
 
     it('sets the global start and end dates from the url', () => {
       visit(ABSOLUTE_DATE_RANGE.url);
-      cy.get(DATE_PICKER_START_DATE_POPOVER_BUTTON).should(
-        'have.attr',
-        'title',
-        ABSOLUTE_DATE.startTime
-      );
-      cy.get(GET_DATE_PICKER_END_DATE_POPOVER_BUTTON()).should(
-        'have.attr',
-        'title',
-        ABSOLUTE_DATE.endTime
-      );
+      expectDateRangeToBe(GLOBAL_FILTERS_CONTAINER, {
+        start: ABSOLUTE_DATE.startTime,
+        end: ABSOLUTE_DATE.endTime,
+      });
     });
 
     it('sets the url state when start and end date are set', () => {
@@ -158,39 +150,25 @@ describe(
       visit(ABSOLUTE_DATE_RANGE.url);
       openTimelineUsingToggle();
 
-      cy.get(
-        GET_LOCAL_DATE_PICKER_START_DATE_POPOVER_BUTTON(TIMELINE_DATE_PICKER_CONTAINER)
-      ).should('have.attr', 'title', ABSOLUTE_DATE.startTime);
-      cy.get(GET_LOCAL_DATE_PICKER_END_DATE_POPOVER_BUTTON(TIMELINE_DATE_PICKER_CONTAINER)).should(
-        'have.attr',
-        'title',
-        ABSOLUTE_DATE.endTime
-      );
+      expectDateRangeToBe(TIMELINE_DATE_PICKER_CONTAINER, {
+        start: ABSOLUTE_DATE.startTime,
+        end: ABSOLUTE_DATE.endTime,
+      });
     });
 
     it('sets the timeline start and end dates independently of the global start and end dates when times are unlocked', () => {
       visit(ABSOLUTE_DATE_RANGE.urlUnlinked);
-      cy.get(DATE_PICKER_START_DATE_POPOVER_BUTTON).should(
-        'have.attr',
-        'title',
-        ABSOLUTE_DATE.startTime
-      );
-      cy.get(GET_DATE_PICKER_END_DATE_POPOVER_BUTTON()).should(
-        'have.attr',
-        'title',
-        ABSOLUTE_DATE.endTime
-      );
+      expectDateRangeToBe(GLOBAL_FILTERS_CONTAINER, {
+        start: ABSOLUTE_DATE.startTime,
+        end: ABSOLUTE_DATE.endTime,
+      });
 
       openTimelineUsingToggle();
 
-      cy.get(
-        GET_LOCAL_DATE_PICKER_START_DATE_POPOVER_BUTTON(TIMELINE_DATE_PICKER_CONTAINER)
-      ).should('have.attr', 'title', ABSOLUTE_DATE.startTimeTimelineFormatted);
-      cy.get(GET_LOCAL_DATE_PICKER_END_DATE_POPOVER_BUTTON(TIMELINE_DATE_PICKER_CONTAINER)).should(
-        'have.attr',
-        'title',
-        ABSOLUTE_DATE.endTimeTimelineFormatted
-      );
+      expectDateRangeToBe(TIMELINE_DATE_PICKER_CONTAINER, {
+        start: ABSOLUTE_DATE.startTimeTimelineFormatted,
+        end: ABSOLUTE_DATE.endTimeTimelineFormatted,
+      });
     });
 
     it('sets the url state when timeline/global date pickers are unlinked and timeline start and end date are set', () => {

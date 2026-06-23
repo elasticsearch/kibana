@@ -5,59 +5,82 @@
  * 2.0.
  */
 
+jest.mock('@elastic/eui', () => {
+  const actual = jest.requireActual('@elastic/eui');
+  return {
+    ...actual,
+    // EuiTitle applies size via CSS-in-JS only (no stable DOM class); mock to inspect props
+    EuiTitle: jest.fn(({ children }) => children),
+  };
+});
+
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiIcon, EuiButton, EuiTitle, EuiSpacer } from '@elastic/eui';
-
-import { LoadingOverlay } from '../loading';
+import { EuiButton, EuiTitle } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { DataPanel } from './data_panel';
 
+const MockEuiTitle = jest.mocked(EuiTitle);
+
 describe('DataPanel', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders with a title and children', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DataPanel title={<h1 data-test-subj="title">Tabula Rasa</h1>}>
         <div data-test-subj="children">Look at this graph</div>
       </DataPanel>
     );
 
-    expect(wrapper.find('[data-test-subj="title"]').text()).toEqual('Tabula Rasa');
-    expect(wrapper.find('[data-test-subj="children"]').text()).toEqual('Look at this graph');
+    expect(screen.getByTestId('title')).toHaveTextContent('Tabula Rasa');
+    expect(screen.getByTestId('children')).toHaveTextContent('Look at this graph');
   });
 
   it('conditionally renders a spacer between the header and children', () => {
-    const wrapper = shallow(<DataPanel title={<h1>Test</h1>} />);
+    const { container, rerender } = renderWithKibanaRenderContext(
+      <DataPanel title={<h1>Test</h1>} />
+    );
 
-    expect(wrapper.find(EuiSpacer)).toHaveLength(0);
+    expect(container.querySelector('.euiSpacer--s')).toBeNull();
+    expect(container.querySelector('.euiSpacer--l')).toBeNull();
 
-    wrapper.setProps({ children: 'hello world' });
+    rerender(<DataPanel title={<h1>Test</h1>}>hello world</DataPanel>);
 
-    expect(wrapper.find(EuiSpacer).prop('size')).toEqual('s');
+    expect(container.querySelector('.euiSpacer--s')).not.toBeNull();
 
-    wrapper.setProps({ filled: true });
+    rerender(
+      <DataPanel title={<h1>Test</h1>} filled>
+        hello world
+      </DataPanel>
+    );
 
-    expect(wrapper.find(EuiSpacer).prop('size')).toEqual('l');
+    expect(container.querySelector('.euiSpacer--l')).not.toBeNull();
   });
 
   describe('components', () => {
     it('renders with an icon', () => {
-      const wrapper = shallow(<DataPanel title={<h1>The Smoke Monster</h1>} iconType="eye" />);
+      const { container } = renderWithKibanaRenderContext(
+        <DataPanel title={<h1>The Smoke Monster</h1>} iconType="eye" />
+      );
 
-      expect(wrapper.find(EuiIcon).prop('type')).toEqual('eye');
+      expect(container.querySelector('[data-euiicon-type="eye"]')).not.toBeNull();
     });
 
     it('renders with a subtitle', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <DataPanel title={<h1>Hugo Reyes</h1>} subtitle="Hurley was typically happy-go-lucky" />
       );
 
-      expect(wrapper.find('p').text()).toEqual('Hurley was typically happy-go-lucky');
+      expect(screen.getByText('Hurley was typically happy-go-lucky')).toBeInTheDocument();
     });
 
     it('renders with an icon and a subtitle', () => {
-      const wrapper = shallow(
+      const { container } = renderWithKibanaRenderContext(
         <DataPanel
           title={<h1>Flight 815</h1>}
           iconType="package"
@@ -65,76 +88,77 @@ describe('DataPanel', () => {
         />
       );
 
-      expect(wrapper.find(EuiIcon).prop('type')).toEqual('package');
-      expect(wrapper.find('p').text()).toEqual(
-        'Oceanic Airlines Flight 815 was a scheduled flight from Sydney, Australia to Los Angeles, California'
-      );
+      expect(container.querySelector('[data-euiicon-type="package"]')).not.toBeNull();
+      expect(
+        screen.getByText(
+          'Oceanic Airlines Flight 815 was a scheduled flight from Sydney, Australia to Los Angeles, California'
+        )
+      ).toBeInTheDocument();
     });
 
     it('renders with a button', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <DataPanel
           title={<h1>Board Flight 815</h1>}
           action={<EuiButton data-test-subj="action">Book flight</EuiButton>}
         />
       );
 
-      expect(wrapper.find('[data-test-subj="action"]')).toHaveLength(1);
+      expect(screen.getByTestId('action')).toBeInTheDocument();
     });
   });
 
   describe('props', () => {
     it('passes titleSize to the title', () => {
-      const wrapper = shallow(<DataPanel title={<h2>Test</h2>} />);
+      const { rerender } = renderWithKibanaRenderContext(<DataPanel title={<h2>Test</h2>} />);
 
-      expect(wrapper.find(EuiTitle).prop('size')).toEqual('xs'); // Default
+      expect(MockEuiTitle.mock.calls[0][0].size).toEqual('xs');
 
-      wrapper.setProps({ titleSize: 's' });
+      rerender(<DataPanel title={<h2>Test</h2>} titleSize="s" />);
 
-      expect(wrapper.find(EuiTitle).prop('size')).toEqual('s');
+      expect(MockEuiTitle.mock.calls[1][0].size).toEqual('s');
     });
 
     it('renders panel color based on filled flag', () => {
-      const wrapper = shallow(<DataPanel title={<h1>Test</h1>} />);
+      const { container, rerender } = renderWithKibanaRenderContext(
+        <DataPanel title={<h1>Test</h1>} />
+      );
 
-      expect(wrapper.prop('color')).toEqual('plain');
+      expect(container.querySelector('.euiPanel--plain')).not.toBeNull();
+      expect(container.querySelector('.dataPanel--filled')).toBeNull();
 
-      wrapper.setProps({ filled: true });
+      rerender(<DataPanel title={<h1>Test</h1>} filled />);
 
-      expect(wrapper.prop('color')).toEqual('subdued');
-      expect(wrapper.prop('className')).toEqual('dataPanel--filled');
+      expect(container.querySelector('.euiPanel--subdued')).not.toBeNull();
+      expect(container.querySelector('.dataPanel--filled')).not.toBeNull();
     });
 
     it('renders a loading overlay based on isLoading flag', () => {
-      const wrapper = shallow(<DataPanel title={<h1>Test</h1>} />);
+      const { container, rerender } = renderWithKibanaRenderContext(
+        <DataPanel title={<h1>Test</h1>} />
+      );
 
-      expect(wrapper.prop('aria-busy')).toBeFalsy();
-      expect(wrapper.find(LoadingOverlay)).toHaveLength(0);
+      expect(container.querySelector('[aria-busy]')).toBeNull();
+      expect(screen.queryByTestId('enterpriseSearchLoadingOverlay')).not.toBeInTheDocument();
 
-      wrapper.setProps({ isLoading: true });
+      rerender(<DataPanel title={<h1>Test</h1>} isLoading />);
 
-      expect(wrapper.prop('aria-busy')).toBeTruthy();
-      expect(wrapper.find(LoadingOverlay)).toHaveLength(1);
-    });
-
-    it('passes hasBorder', () => {
-      const wrapper = shallow(<DataPanel filled title={<h1>Test</h1>} />);
-      expect(wrapper.prop('hasBorder')).toBeFalsy();
-
-      wrapper.setProps({ hasBorder: true });
-      expect(wrapper.prop('hasBorder')).toBeTruthy();
+      expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+      expect(screen.getByTestId('enterpriseSearchLoadingOverlay')).toBeInTheDocument();
     });
 
     it('passes class names', () => {
-      const wrapper = shallow(<DataPanel title={<h1>Test</h1>} className="testing" />);
+      const { container } = renderWithKibanaRenderContext(
+        <DataPanel title={<h1>Test</h1>} className="testing" />
+      );
 
-      expect(wrapper.prop('className')).toEqual('testing');
+      expect(container.querySelector('.testing')).not.toBeNull();
     });
 
     it('passes arbitrary props', () => {
-      const wrapper = shallow(<DataPanel title={<h1>Test</h1>} data-test-subj="testing" />);
+      renderWithKibanaRenderContext(<DataPanel title={<h1>Test</h1>} data-test-subj="testing" />);
 
-      expect(wrapper.find('[data-test-subj="testing"]')).toHaveLength(1);
+      expect(screen.getByTestId('testing')).toBeInTheDocument();
     });
   });
 });

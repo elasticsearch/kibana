@@ -17,6 +17,7 @@ import {
   EuiIcon,
   EuiPopover,
   EuiTextTruncate,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
@@ -225,23 +226,25 @@ export const ConversationListItemRow: React.FC<ConversationListItemRowProps> = (
   );
 
   const menuButton = (
-    <EuiButtonIcon
-      iconType="boxesVertical"
-      display="empty"
-      size="xs"
-      aria-label={labels.openMenu}
-      aria-expanded={isPopoverOpen}
-      onClick={(e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        togglePopover();
-      }}
-      data-test-subj={`agentBuilderSidebarConversationMenu-${conversationId}`}
-      {...getEbtProps({
-        element: AGENT_BUILDER_UI_EBT.element.sidebar,
-        action: AGENT_BUILDER_UI_EBT.action.conversationList.OPEN_CONVERSATION_MENU,
-      })}
-    />
+    <EuiToolTip content={labels.openMenu} disableScreenReaderOutput>
+      <EuiButtonIcon
+        iconType="boxesVertical"
+        display="empty"
+        size="xs"
+        aria-label={labels.openMenu}
+        aria-expanded={isPopoverOpen}
+        onClick={(e: React.MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          togglePopover();
+        }}
+        data-test-subj={`agentBuilderSidebarConversationMenu-${conversationId}`}
+        {...getEbtProps({
+          element: AGENT_BUILDER_UI_EBT.element.sidebar,
+          action: AGENT_BUILDER_UI_EBT.action.conversationList.OPEN_CONVERSATION_MENU,
+        })}
+      />
+    </EuiToolTip>
   );
 
   return (

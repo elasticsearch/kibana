@@ -26,6 +26,7 @@ import { useGetRuleTypesPermissions } from '@kbn/alerts-ui-shared';
 import useObservable from 'react-use/lib/useObservable';
 import type { DiscoverSession } from '@kbn/saved-search-plugin/common';
 import { useI18n } from '@kbn/i18n-react';
+import { ALERTING_V2_ENABLED_SETTING_ID } from '@kbn/alerting-v2-constants';
 import type { DiscoverAppLocatorParams } from '../../../../../common';
 import { createDataViewDataSource } from '../../../../../common/data_sources';
 import type { DiscoverServices } from '../../../../build_services';
@@ -145,7 +146,11 @@ export const useTopNavLinks = ({
     [isEsqlMode, dataView, adHocDataViews, authorizedRuleTypes]
   );
 
-  const canCreateESQLRule = !!services.alertingVTwo && !!services.capabilities.alertingVTwo;
+  const canCreateESQLRule = services.settings.globalClient.get<boolean>(
+    ALERTING_V2_ENABLED_SETTING_ID,
+    false
+  );
+
   const showCreateRuleV2 = isEsqlMode && canCreateESQLRule;
 
   const getAppMenuAccessor = useProfileAccessor('getAppMenu');

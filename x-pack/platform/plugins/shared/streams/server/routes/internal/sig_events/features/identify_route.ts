@@ -124,6 +124,7 @@ const identifyInferredFeaturesRoute = createServerRoute({
             },
           },
         }),
+        connectorId,
         logger: routeLogger,
         signal: getRequestAbortSignal(request),
         streamName,
@@ -155,6 +156,7 @@ const identifyInferredFeaturesRoute = createServerRoute({
         buildTelemetry(
           {
             run_id: runId,
+            connector_id: connectorId,
             iteration: iteration ?? 1,
             stream_name: streamName,
             stream_type: streamType,

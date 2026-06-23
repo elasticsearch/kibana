@@ -54,7 +54,7 @@ const getAgentSystemMessage = async ({
   conversationTimestamp,
   processedConversation: { attachmentTypes, versionedAttachmentPresentation },
   outputSchema,
-  filestore,
+  skills,
   experimentalFeatures,
   capabilities,
 }: ResearchAgentPromptParams): Promise<string> => {
@@ -114,9 +114,9 @@ Assume users can't see most tool calls or thinking - only your text output.
 - Use custom rendering when appropriate.
 - Use minimal Markdown for readability (short bullets; code blocks for queries/JSON when helpful).
 
-${experimentalFeatures.filestore ? await getFileSystemInstructions() : ''}
+${getFileSystemInstructions({ bashEnabled: experimentalFeatures.bash })}
 
-${experimentalFeatures.skills ? await getSkillsInstructions({ filesystem: filestore }) : ''}
+${experimentalFeatures.skills ? getSkillsInstructions({ skills }) : ''}
 
 ## INSTRUCTIONS
 

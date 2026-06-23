@@ -1815,5 +1815,64 @@ export default function ({ getService }: FtrProviderContext) {
         expect(retryAt).to.be.lessThan(now + 6.5 * 60 * 1000);
       });
     });
+
+    describe('user profile enrichment', () => {
+      function scheduleTaskForProfileTest(
+        task: Partial<ConcreteTaskInstance>,
+        userProfileId: string
+      ): Promise<SerializedConcreteTaskInstance> {
+        return supertest
+          .post('/api/sample_tasks/schedule_for_profile_test')
+          .set('kbn-xsrf', 'xxx')
+          .send({ task, userProfileId })
+          .expect(200)
+          .then((response: { body: SerializedConcreteTaskInstance }) => {
+            log.debug(`Task Scheduled: ${response.body.id}`);
+            return response.body;
+          });
+      }
+
+      it('persists userProfileId on userScope and resolves it via getCurrentUser at run time', async () => {
+        const testProfileUid = 'test-user-profile-uid-1';
+        const scheduled = await scheduleTaskForProfileTest(
+          {
+            id: 'test-task-for-user-profile-enrichment',
+            taskType: 'sampleUserResolvingTask',
+            params: {},
+          },
+          testProfileUid
+        );
+
+        expect(scheduled.userScope?.userProfileId).to.eql(testProfileUid);
+        expect(scheduled.userScope?.apiKeyCreatedByUser).to.be(true);
+
+        // The task is one-shot, so it's removed from saved objects after it
+        // runs. The task indexes its captured state into the test history
+        // index instead, so assert against that.
+        await retry.try(async () => {
+          const docs = await historyDocs(scheduled.id);
+          expect(docs.length).to.eql(1);
+
+          const state = JSON.parse(docs[0]._source.state) as {
+            resolvedFromTaskRequest: {
+              profileUid?: string;
+              usernameWasUndefined: boolean;
+            } | null;
+            resolvedFromChildRequest: {
+              profileUid?: string;
+              usernameWasUndefined: boolean;
+            } | null;
+          };
+
+          expect(state.resolvedFromTaskRequest).to.be.an('object');
+          expect(state.resolvedFromTaskRequest?.profileUid).to.eql(testProfileUid);
+          expect(state.resolvedFromTaskRequest?.usernameWasUndefined).to.be(true);
+
+          expect(state.resolvedFromChildRequest).to.be.an('object');
+          expect(state.resolvedFromChildRequest?.profileUid).to.eql(testProfileUid);
+          expect(state.resolvedFromChildRequest?.usernameWasUndefined).to.be(true);
+        });
+      });
+    });
   });
 }

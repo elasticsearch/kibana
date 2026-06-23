@@ -47,9 +47,9 @@ const renderStatus = (overrides: Partial<React.ComponentProps<typeof DataIngestS
     <I18nProvider>
       <DataIngestStatus
         onboardingId="test-onboarding-id"
-        onboardingFlowType="kubernetes"
+        onboardingFlowType="kubernetes_otel"
         dataset="kubernetes"
-        integration="kubernetes"
+        integration="kubernetes_otel"
         actionLinks={[metricsAction, logsAction]}
         {...overrides}
       />

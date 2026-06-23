@@ -8,18 +8,19 @@
 import React, { useCallback, useMemo } from 'react';
 import moment from 'moment';
 import {
+  EuiAccordion,
+  EuiBadge,
+  EuiBasicTable,
+  EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiPanel,
+  EuiHealth,
   EuiHorizontalRule,
   EuiIcon,
-  EuiBasicTable,
-  EuiHealth,
-  EuiText,
-  EuiAccordion,
-  EuiButtonIcon,
+  EuiPanel,
   EuiSpacer,
-  EuiBadge,
+  EuiText,
+  EuiToolTip,
   type EuiBasicTableColumn,
 } from '@elastic/eui';
 import { Chart, BarSeries, Settings, ScaleType } from '@elastic/charts';
@@ -99,14 +100,23 @@ export const DashboardMigrationResultPanel = React.memo<DashboardMigrationResult
               </EuiBadge>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <EuiButtonIcon
-                iconType={isCollapsed ? 'chevronSingleDown' : 'chevronSingleUp'}
-                onClick={toggleCollapsed}
-                aria-label={
+              <EuiToolTip
+                content={
                   isCollapsed ? i18n.DASHBOARD_MIGRATION_EXPAND : i18n.DASHBOARD_MIGRATION_COLLAPSE
                 }
-                data-test-subj="collapseButton"
-              />
+                disableScreenReaderOutput
+              >
+                <EuiButtonIcon
+                  iconType={isCollapsed ? 'chevronSingleDown' : 'chevronSingleUp'}
+                  onClick={toggleCollapsed}
+                  aria-label={
+                    isCollapsed
+                      ? i18n.DASHBOARD_MIGRATION_EXPAND
+                      : i18n.DASHBOARD_MIGRATION_COLLAPSE
+                  }
+                  data-test-subj="collapseButton"
+                />
+              </EuiToolTip>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiPanel>
@@ -131,7 +141,7 @@ export const DashboardMigrationResultPanel = React.memo<DashboardMigrationResult
               <EuiFlexItem grow={false}>
                 <EuiFlexGroup direction="row" alignItems="center" gutterSize="s">
                   <EuiFlexItem grow={false}>
-                    <EuiIcon type={AssistantIcon} size="m" />
+                    <EuiIcon type={AssistantIcon} size="m" aria-hidden={true} />
                   </EuiFlexItem>
                   <EuiFlexItem>
                     <PanelText size="s" semiBold>

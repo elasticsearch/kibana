@@ -7,6 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import {
+  XSOARPlaybooksActionResponseSchema,
+  XSOARRunActionParamsSchema,
+  XSOARRunActionResponseSchema,
+} from '@kbn/connector-schemas/xsoar';
 import { connectorsSpecs } from '@kbn/connector-specs';
 import { i18n } from '@kbn/i18n';
 import type { BaseConnectorContract } from '@kbn/workflows';
@@ -246,6 +251,13 @@ export const ConnectorActionInputSchemas = new Map<string, Record<string, z.ZodS
     },
   ],
   [
+    '.xsoar',
+    {
+      getPlaybooks: z.object({}),
+      run: XSOARRunActionParamsSchema,
+    },
+  ],
+  [
     '.jira-service-management',
     {
       createAlert: JiraServiceManagementCreateAlertParamsSchema,
@@ -401,6 +413,13 @@ export const ConnectorActionOutputSchemas = new Map<string, Record<string, z.Zod
       webhooks: TinesResponseSchema,
       run: TinesResponseSchema,
       test: TinesResponseSchema,
+    },
+  ],
+  [
+    '.xsoar',
+    {
+      getPlaybooks: XSOARPlaybooksActionResponseSchema,
+      run: XSOARRunActionResponseSchema,
     },
   ],
   [

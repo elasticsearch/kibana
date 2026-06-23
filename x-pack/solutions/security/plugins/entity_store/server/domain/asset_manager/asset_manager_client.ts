@@ -56,7 +56,7 @@ import { getUpdatesIndexTemplateId } from './updates_index_template';
 import { getComponentTemplateName, getUpdatesComponentTemplateName } from './component_templates';
 import { getUpdatesEntitiesDataStreamName } from './updates_data_stream';
 import type { LogsExtractionClient } from '../logs_extraction';
-import type { CcsLogExtractionStateClient } from '../saved_objects/ccs_log_extraction_state';
+import type { RemoteLogExtractionStateClient } from '../saved_objects/remote_log_extraction_state';
 import type { ManagedEntityDefinition } from '../../../common/domain/definitions/entity_schema';
 import { getEntityDefinition } from '../../../common/domain/definitions/registry';
 import { installEuidStoredScripts, deleteEuidStoredScripts } from './euid_stored_scripts';
@@ -75,7 +75,7 @@ interface AssetManagerDependencies {
   taskManager: TaskManagerStartContract;
   engineDescriptorClient: EngineDescriptorClient;
   globalStateClient: EntityStoreGlobalStateClient;
-  ccsLogExtractionStateClient: CcsLogExtractionStateClient;
+  remoteLogExtractionStateClient: RemoteLogExtractionStateClient;
   namespace: string;
   isServerless: boolean;
   logsExtractionClient: LogsExtractionClient;
@@ -90,7 +90,7 @@ export class AssetManagerClient {
   private readonly taskManager: TaskManagerStartContract;
   private readonly engineDescriptorClient: EngineDescriptorClient;
   private readonly globalStateClient: EntityStoreGlobalStateClient;
-  private readonly ccsLogExtractionStateClient: CcsLogExtractionStateClient;
+  private readonly remoteLogExtractionStateClient: RemoteLogExtractionStateClient;
   private readonly namespace: string;
   private readonly isServerless: boolean;
   private readonly logsExtractionClient: LogsExtractionClient;
@@ -104,7 +104,7 @@ export class AssetManagerClient {
     this.taskManager = deps.taskManager;
     this.engineDescriptorClient = deps.engineDescriptorClient;
     this.globalStateClient = deps.globalStateClient;
-    this.ccsLogExtractionStateClient = deps.ccsLogExtractionStateClient;
+    this.remoteLogExtractionStateClient = deps.remoteLogExtractionStateClient;
     this.namespace = deps.namespace;
     this.isServerless = deps.isServerless;
     this.logsExtractionClient = deps.logsExtractionClient;
@@ -235,7 +235,7 @@ export class AssetManagerClient {
 
       await Promise.all([
         this.engineDescriptorClient.delete(type),
-        this.ccsLogExtractionStateClient.delete(type),
+        this.remoteLogExtractionStateClient.delete(type),
         uninstallElasticsearchAssets({
           esClient: this.esClient,
           logger: this.logger.get(type),

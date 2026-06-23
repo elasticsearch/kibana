@@ -34,6 +34,9 @@ export function WaterfallMarkerIcon({ field, label }: { field: string; label: st
       panelStyle={{ paddingBottom: 0, paddingLeft: 4 }}
       zIndex={100}
       css={{ top: 4 }}
+      aria-label={i18n.translate('xpack.synthetics.waterfallMarkerIcon.popoverAriaLabel', {
+        defaultMessage: 'Waterfall marker details',
+      })}
       button={
         <EuiToolTip
           content={i18n.translate(

@@ -74,4 +74,19 @@ describe('RuleCreateOptionsPanel', () => {
 
     expect(onCreateThresholdAlert).toHaveBeenCalledTimes(1);
   });
+
+  it('hides the agent card when onCreateWithAgent is not provided', () => {
+    render(
+      <I18nProvider>
+        <RuleCreateOptionsPanel
+          onCreateEsqlRule={onCreateEsqlRule}
+          onCreateThresholdAlert={onCreateThresholdAlert}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('createEsqlRuleCard')).toBeInTheDocument();
+    expect(screen.queryByTestId('createWithAgentCard')).not.toBeInTheDocument();
+    expect(screen.getByTestId('createThresholdAlertCard')).toBeInTheDocument();
+  });
 });

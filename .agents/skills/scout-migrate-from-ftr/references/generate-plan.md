@@ -81,17 +81,18 @@ For each archive, data fixture, or setup pattern found:
 3. **Classify setup timing**: can data be loaded once (shared across all tests) or does each test need fresh data?
 4. **Flag fresh-server tests**: tests that require a completely clean ES/Kibana state (candidates for a dedicated server config)
 5. **Catalog UI settings mutations**: list every `kibanaServer.uiSettings.replace`, `uiSettings.update`, `uiSettings.delete` call, which tests use them, and whether they use replace-all semantics (wipes all settings) vs selective set
-6. **Catalog repeated magic values**: archive paths, index names, time ranges, saved object IDs that appear in multiple files. These are candidates for a shared constants file.
+6. **Catalog repeated magic values**: archive paths, index names, time ranges, saved object IDs that appear in multiple files. Be conservative: only propose a constant when the value is genuinely reused and extracting it removes real duplication; prefer inline otherwise. Avoid proposing constants for deployment tags unless the same tag set is reused across multiple suites.
 
 ### 6. Auth and roles
 
 1. **Catalog every role**: list every FTR role from configs and test files, with the full privilege definition (ES cluster/index privileges, Kibana feature/space privileges)
 2. **Note usage frequency**: how many test files use each role
 3. **Flag over-privileged tests**: tests that run as `superuser` or the FTR default role when a narrower role would suffice. For each, note what privileges the test actually exercises
-4. **Flag roles used widely** (≥3 files): these warrant a shared auth helper rather than inline definitions
-5. **Flag special auth patterns**: `run_as`, API-key-based auth, certificate auth, or any non-standard FTR auth
+4. **Recommend a target Scout role**: for each role, recommend the least-privileged Cloud-compatible built-in role (`viewer` → privileged/`editor` → `admin`) unless the test specifically validates permission-scoped behavior (e.g. a user limited to index X can see Y but not Z) that no built-in role expresses — only then keep a custom role. Many FTR suites scoped custom roles needlessly; flag those as candidates for a default role rather than a 1:1 custom-role port.
+5. **Flag roles used widely** (≥3 files): these warrant a shared auth helper rather than inline definitions
+6. **Flag special auth patterns**: `run_as`, API-key-based auth, certificate auth, or any non-standard FTR auth
 
-The execution step will decide the specific Scout auth API to use; the plan just provides the complete role inventory with privilege definitions and usage context.
+The execution step picks the specific Scout auth method (`loginAsViewer`, `loginWithCustomRole`, etc.); the plan provides the role inventory, privilege definitions, usage context, and the default-vs-custom recommendation.
 
 ### 7. Reusability and abstraction audit
 
@@ -104,11 +105,13 @@ The execution step will decide the specific Scout auth API to use; the plan just
 
 ### 8. Server configuration and feature flags
 
+**Prefer Scout's default servers config.** It mirrors the Elastic Cloud (MKI/ECH) setup and is batched with other default-config suites in CI, so tests that pass locally on it are likely to pass on Cloud. A custom server config set runs only in local pipelines (no Cloud) and adds CI cost — treat it as a last resort, used only when a setting must be present at Kibana boot (e.g. registering HTTP routes at plugin `setup`). See [Can your tests reuse Scout's default servers config?](../../../../docs/extend/scout/migrate-tests.md#dont-migrate-blindly).
+
 1. **List every server arg** from `kbnTestServer.serverArgs` and `esTestCluster.serverArgs` across all relevant configs (including inherited base configs)
 2. **Classify each arg**:
    - **Already in Scout's default server config**: no action needed
-   - **Runtime-settable** (can be changed via API/UI settings without restarting servers): note which API or setting key
-   - **Requires server config**: needs a custom Scout server config set. Check if a matching one already exists under `src/platform/packages/shared/kbn-scout/src/servers/configs/config_sets/`
+   - **Runtime-settable** (can be changed via API/UI settings without restarting servers): note which API or setting key. Most FTR server args land here — map them to `apiServices.core.settings()` runtime feature flags, the `uiSettings` fixture, or data ingestion rather than a custom config
+   - **Requires a custom server config set**: only when the arg must apply at Kibana boot. Check if a matching one already exists under `src/platform/packages/shared/kbn-scout/src/servers/configs/config_sets/`
 3. **Flag experimental feature flags** and note whether they're compile-time or runtime-settable
 
 ### 9. Deployment targets and Cloud portability
@@ -127,7 +130,7 @@ For each test group, answer all four:
    - Node topology assumptions (single-node, specific port)
    - Cluster settings unavailable on Elastic Cloud
    - Custom server args / feature flags set in FTR configs (these need to become runtime settings or move to a Scout server config set)
-4. **Custom servers config or default?** State whether the migrated tests can use Scout's default test servers config, or whether they need a [custom servers config](../../../../docs/extend/scout/feature-flags.md#scout-feature-flags-custom-servers). If custom, list which args force the choice and whether a matching config set already exists.
+4. **Custom servers config or default?** Default to Scout's default test servers config (see step 8 for why); only call for a [custom servers config](../../../../docs/extend/scout/feature-flags.md#scout-feature-flags-custom-servers) when a server arg must apply at Kibana boot. If custom, list which args force the choice and whether a matching config set already exists.
 
 ### 10. FTR test smells
 

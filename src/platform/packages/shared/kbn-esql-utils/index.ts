@@ -92,6 +92,9 @@ export {
   type ESQLColumnsWithHighlights,
   type ESQLHighlightTags,
   type ESQLIndexPatterns,
+  classifyESQLSource,
+  isSingleSource,
+  type ESQLSourceKind,
 } from './src';
 
 export { ENABLE_ESQL, GROUP_NOT_SET_VALUE } from './constants';

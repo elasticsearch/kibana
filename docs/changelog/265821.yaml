@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/265821
+issues:
+- https://github.com/elastic/kibana/issues/259913
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Alerting and reporting
+- Dashboards and visualizations
+title: Add user activity logs

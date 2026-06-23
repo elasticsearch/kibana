@@ -16,7 +16,7 @@ import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
 import { ESQL_NUMBER_TYPES } from '../../definitions/types';
 import {
   byCompleteItem,
-  pipeCompleteItem,
+  newLineAndPipeCompleteItems,
   onCompleteItem,
   asCompletionItem,
 } from '../complete_items';
@@ -97,7 +97,7 @@ export async function autocomplete(
         })) ?? [];
       return numericFields;
     case Position.AFTER_VALUE: {
-      return [onCompleteItem, asCompletionItem, byCompleteItem, pipeCompleteItem];
+      return [onCompleteItem, asCompletionItem, byCompleteItem, ...newLineAndPipeCompleteItems];
     }
     case Position.ON_COLUMN: {
       const onFields =
@@ -108,7 +108,7 @@ export async function autocomplete(
       return onFields;
     }
     case Position.AFTER_ON_CLAUSE:
-      return [asCompletionItem, byCompleteItem, pipeCompleteItem];
+      return [asCompletionItem, byCompleteItem, ...newLineAndPipeCompleteItems];
     case Position.AS_TYPE_COLUMN: {
       // add comma and space
       return buildUserDefinedColumnsDefinitions(['changePointType']).map((v) =>
@@ -122,7 +122,7 @@ export async function autocomplete(
       return buildUserDefinedColumnsDefinitions(['pValue']).map((v) => withAutoSuggest(v));
     }
     case Position.AFTER_AS_CLAUSE: {
-      return [byCompleteItem, pipeCompleteItem];
+      return [byCompleteItem, ...newLineAndPipeCompleteItems];
     }
     case Position.BY_CLAUSE: {
       const byNode = command.args[command.args.length - 1] as ESQLCommandOption;

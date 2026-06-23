@@ -26,7 +26,7 @@ import { AppHeaderView } from './app_header';
 interface ComposedHeaderStoryProps {
   title: string;
   editable: boolean;
-  padding: 'none' | 'm' | 'bleed-l';
+  padding: 'none' | 's' | 'm' | 'bleed-l';
   width: number;
   showBack: boolean;
   showTabs: boolean;
@@ -152,7 +152,7 @@ const meta: Meta<ComposedHeaderStoryProps> = {
   argTypes: {
     padding: {
       control: 'inline-radio',
-      options: ['none', 'm', 'bleed-l'],
+      options: ['none', 's', 'm', 'bleed-l'],
       description: "Horizontal padding. `bleed-l` cancels a padded container (`{ bleed: 'l' }`).",
     },
   },

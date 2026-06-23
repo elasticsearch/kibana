@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { EuiButtonIcon, EuiFlexGroup } from '@elastic/eui';
+import { EuiButtonIcon, EuiFlexGroup, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { AGENT_BUILDER_UI_EBT } from '@kbn/agent-builder-common';
 import { getEbtProps } from '@kbn/ebt-click';
@@ -39,18 +39,20 @@ export const ConversationRightActions: React.FC<ConversationRightActionsProps> =
     >
       <MoreActionsButton onCloseSidebar={isEmbeddedContext ? onClose : undefined} />
       {isEmbeddedContext && (
-        <EuiButtonIcon
-          color="text"
-          iconType="cross"
-          size="m"
-          onClick={onClose}
-          aria-label={labels.close}
-          {...getEbtProps({
-            element: AGENT_BUILDER_UI_EBT.element.pageContent,
-            action: AGENT_BUILDER_UI_EBT.action.conversation.CLOSE,
-            detail: 'conversation',
-          })}
-        />
+        <EuiToolTip content={labels.close} disableScreenReaderOutput>
+          <EuiButtonIcon
+            color="text"
+            iconType="cross"
+            size="m"
+            onClick={onClose}
+            aria-label={labels.close}
+            {...getEbtProps({
+              element: AGENT_BUILDER_UI_EBT.element.pageContent,
+              action: AGENT_BUILDER_UI_EBT.action.conversation.CLOSE,
+              detail: 'conversation',
+            })}
+          />
+        </EuiToolTip>
       )}
     </EuiFlexGroup>
   );

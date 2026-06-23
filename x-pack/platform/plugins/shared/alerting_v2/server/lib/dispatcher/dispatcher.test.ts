@@ -28,6 +28,7 @@ import type { RulesSavedObjectServiceContract } from '../services/rules_saved_ob
 import { createRulesSavedObjectService } from '../services/rules_saved_object_service/rules_saved_object_service.mock';
 import type { StorageServiceContract } from '../services/storage_service/storage_service';
 import { createStorageService } from '../services/storage_service/storage_service.mock';
+import { createSettingsService } from '../services/settings_service/settings_service.mock';
 import { LOOKBACK_WINDOW_MINUTES } from './constants';
 import { DispatcherService } from './dispatcher';
 import { DispatcherPipeline, type DispatcherPipelineContract } from './execution_pipeline';
@@ -38,6 +39,7 @@ import {
 } from './fixtures/dispatcher';
 import { getDispatchableAlertEventsQuery } from './queries';
 import {
+  CheckEngineEnabledStep,
   FetchEpisodesStep,
   FetchSuppressionsStep,
   ApplySuppressionStep,
@@ -104,7 +106,11 @@ function buildDispatcherService(deps: {
   workflowsManagement: WorkflowsServerPluginSetup['management'];
 }): DispatcherService {
   const { loggerService } = createLoggerService();
+  const { settingsService, mockUiSettingsClient } = createSettingsService();
+  mockUiSettingsClient.get.mockResolvedValue(true);
+
   const pipeline = new DispatcherPipeline(loggerService, [
+    new CheckEngineEnabledStep(loggerService, settingsService),
     new FetchEpisodesStep(deps.queryService),
     new FetchSuppressionsStep(deps.queryService),
     new ApplySuppressionStep(),

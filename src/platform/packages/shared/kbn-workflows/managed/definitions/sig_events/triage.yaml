@@ -16,51 +16,24 @@ settings:
 triggers:
   - type: manual
     inputs:
-      - name: rereviewFallbackInterval
-        type: string
-        default: "now-5m"
-        required: false
-        description: "Stale fallback window for re-review; events not reviewed within this window are re-evaluated as a safety net. Lower = more unnecessary re-reviews."
-      - name: detectionLookback
-        type: string
-        default: "now-24h"
-        required: false
-        description: "Lookback window for detection evidence queries; detections older than this are considered stale evidence."
       - name: discoveryLookback
         type: string
         default: "now-7d"
         required: false
-        description: "Lookback window for active discoveries and reviewed discovery IDs. Should match .significant_events-discoveries retention."
-      - name: knowledgeBaseLookback
-        type: string
-        default: "now-7d"
-        required: false
-        description: "Lookback window for knowledge base calibration examples (promoted + demoted significant events). Wider = more examples, larger context."
+        description: "Lookback window for active discoveries. Should match .significant_events-discoveries retention."
       - name: discoveryBatchMax
         type: number
         default: 5
         required: false
-        description: "Max discoveries per judge invocation (per fetch path: unreviewed, recurrence). Caps agent message size; remaining discoveries are picked up on the next cycle."
+        description: "Max discoveries per judge invocation. Caps agent message size; remaining discoveries are picked up on the next cycle."
 
 consts:
-  CONTEXT_FETCH_SIZE: 20
-  DETECTIONS_INDEX: ".significant_events-detections"
   DISCOVERIES_INDEX: ".significant_events-discoveries"
-  EVENTS_FETCH_SIZE: 50
   EVENTS_INDEX: ".significant_events-events"
-  KB_BATCH_MAX: 5
+  KIND_DISCOVERY: "discovery"
   KIND_CLEARANCE: "clearance"
-  KIND_DETECTION: "detection"
-  KIND_FINDING: "finding"
   KIND_HANDLED: "handled"
-  LOOKUP_BATCH_SIZE: 100
-  REVIEWED_IDS_MAX: 1000
-  SEVERITY_CRITICAL: 76
-  SEVERITY_HIGH: 51
-  SEVERITY_MEDIUM: 25
-  STATUS_ACKNOWLEDGED: "acknowledged"
-  STATUS_DEMOTED: "demoted"
-  STATUS_PROMOTED: "promoted"
+  SCAN_BATCH_SIZE: 100
 steps:
   # Copy workflow.spaceId into variables so ES body Liquid expressions can reference it.
   - name: set_space_vars
@@ -69,767 +42,82 @@ steps:
       spaceId: "{{ workflow.spaceId }}"
 
   # -----------------------------------------------------------------------
-  # Pre-pass: Fetch cleared discovery slugs for judge context.
+  # Step 1: Fetch unassessed discoveries — latest doc per slug where kind is
+  # discovery or quiet. Scan SCAN_BATCH_SIZE to avoid kind:handled docs (newer
+  # timestamps) crowding out unprocessed slugs in the size cap; handled slugs
+  # are filtered out in collect_discoveries and the result is capped there.
   # -----------------------------------------------------------------------
-  - name: get_cleared_discovery_slugs
-    # Lookback matches discovery_lookback — a shorter window would miss clearances for
-    # events promoted long after resolution.
+  - name: get_unassessed_discoveries
     type: elasticsearch.request
     with:
       method: POST
-      path: '/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true'
+      path: "/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true"
       body:
-        size: "${{ consts.LOOKUP_BATCH_SIZE }}"
+        size: "${{ consts.SCAN_BATCH_SIZE }}"
         sort:
           - "@timestamp":
               order: desc
+          - criticality:
+              order: desc
+              missing: "_last"
+              unmapped_type: integer
         collapse:
           field: discovery_slug
-        query:
-          bool:
-            filter:
-              - term:
-                  kibana.space_ids: "{{ variables.spaceId }}"
-              - term:
-                  kind: '{{ consts.KIND_CLEARANCE }}'
-              - range:
-                  "@timestamp":
-                    gte: '{{ inputs.discoveryLookback }}'
-    on-failure:
-      continue: true
-
-  - name: compute_cleared_slugs
-    type: data.set
-    with:
-      slugs: "${{ steps.get_cleared_discovery_slugs.output.hits.hits | map: '_source' | map: 'discovery_slug' | default: [] }}"
-  # -----------------------------------------------------------------------
-  # Re-review: evidence-based (detection state changed) + 5m fallback (stale safety net).
-  # -----------------------------------------------------------------------
-  - name: get_all_event_docs
-    # No status filter — post-filtered in compute_promoted_context and compute_active_event_ids.
-    type: elasticsearch.request
-    with:
-      method: POST
-      path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
-      body:
-        size: "${{ consts.EVENTS_FETCH_SIZE }}"
-        collapse:
-          field: event_id
-        sort:
-          - "@timestamp":
-              order: desc
-        _source:
-          includes:
-            - discovery_slug
-            - event_id
-            - title
-            - status
-        query:
-          bool:
-            filter:
-              - term:
-                  kibana.space_ids: "{{ variables.spaceId }}"
-              - match_all: {}
-    on-failure:
-      continue: true
-
-  - name: compute_promoted_context
-    type: data.set
-    with:
-      promoted_events: "${{ steps.get_all_event_docs.output.hits.hits | where: '_source.status', 'promoted' | map: '_source' | default: [] }}"
-      acknowledged_events: "${{ steps.get_all_event_docs.output.hits.hits | where: '_source.status', 'acknowledged' | map: '_source' | default: [] }}"
-
-  - name: get_latest_detection_ts
-    # Latest evidence marker: if newer than an event's @timestamp, evidence changed.
-    type: elasticsearch.request
-    with:
-      method: POST
-      path: '/{{ consts.DETECTIONS_INDEX }}/_search?ignore_unavailable=true'
-      body:
-        size: 1
-        sort:
-          - "@timestamp":
-              order: desc
-        _source: ["@timestamp"]
-        query:
-          bool:
-            filter:
-              - term:
-                  kibana.space_ids: "{{ variables.spaceId }}"
-              - range:
-                  "@timestamp":
-                    gte: '{{ inputs.detectionLookback }}'
-            must_not:
-              - term:
-                  kind: '{{ consts.KIND_HANDLED }}'
-    on-failure:
-      continue: true
-
-  - name: get_promoted_with_cleared_signal
-    # No status filter — post-filtered in compute_cleared_signal_events.
-    type: elasticsearch.request
-    if: "${{ steps.compute_cleared_slugs.output.slugs.size > 0 }}"
-    with:
-      method: POST
-      path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
-      body:
-        size: "${{ consts.CONTEXT_FETCH_SIZE }}"
-        collapse:
-          field: event_id
-        sort:
-          - "@timestamp":
-              order: desc
-        _source:
-          includes:
-            - discovery_id
-            - discovery_slug
-            - title
-            - status
-            - summary
-            - root_cause
-            - impact
-            - criticality
-            - dependency_edges
-            - infra_components
-            - cause_kis
-            - evidences
-            - event_id
-        query:
-          bool:
-            filter:
-              - term:
-                  kibana.space_ids: "{{ variables.spaceId }}"
-              - terms:
-                  discovery_slug: "${{ steps.compute_cleared_slugs.output.slugs }}"
-    on-failure:
-      continue: true
-
-  - name: compute_cleared_signal_events
-    type: data.set
-    with:
-      cleared_promoted: "${{ steps.get_promoted_with_cleared_signal.output.hits.hits | where: '_source.status', 'promoted' | default: [] }}"
-      cleared_acknowledged: "${{ steps.get_promoted_with_cleared_signal.output.hits.hits | where: '_source.status', 'acknowledged' | default: [] }}"
-
-  - name: compute_active_event_ids
-    type: data.set
-    with:
-      promoted_ids: "${{ steps.get_all_event_docs.output.hits.hits | where: '_source.status', 'promoted' | map: '_source.event_id' | default: [] }}"
-      acknowledged_ids: "${{ steps.get_all_event_docs.output.hits.hits | where: '_source.status', 'acknowledged' | map: '_source.event_id' | default: [] }}"
-
-  # -----------------------------------------------------------------------
-  # Step 1: Find unreviewed discoveries.
-  # -----------------------------------------------------------------------
-
-  - name: get_reviewed_ids
-    # Per-ID exclusion avoids missing recurrences when another slug has a newer event.
-    type: elasticsearch.request
-    with:
-      method: POST
-      path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
-      body:
-        size: 0
-        query:
-          bool:
-            filter:
-              - term:
-                  kibana.space_ids: "{{ variables.spaceId }}"
-              - range:
-                  "@timestamp":
-                    gte: '{{ inputs.discoveryLookback }}'
-        aggs:
-          by_slug:
-            terms:
-              field: discovery_slug
-              size: "${{ consts.REVIEWED_IDS_MAX }}"
-            aggs:
-              latest_status_ts:
-                max:
-                  field: "@timestamp"
-          reviewed_ids:
-            terms:
-              field: discovery_id
-              size: "${{ consts.REVIEWED_IDS_MAX }}"
-    on-failure:
-      continue: true
-
-  - name: compute_reviewed_ids
-    type: data.set
-    with:
-      reviewed_slugs: "${{ steps.get_reviewed_ids.output.aggregations.by_slug.buckets | map: 'key' | default: [] }}"
-      reviewed_discovery_ids: "${{ steps.get_reviewed_ids.output.aggregations.reviewed_ids.buckets | map: 'key' | default: [] }}"
-
-  - name: compute_has_reviewed
-    type: data.set
-    with:
-      flag: "${{ steps.compute_reviewed_ids.output.reviewed_discovery_ids.size > 0 }}"
-      
-  - name: get_unreviewed_discoveries
-    # Guards against empty-array terms queries (ES rejects terms: [] at parse time).
-    # Four branches cover the cross-product of (has_reviewed_ids) × (has_cleared_slugs).
-    type: if
-    condition: "${{ steps.compute_has_reviewed.output.flag }}"
-    steps:
-      - name: get_unreviewed_excluding_gate
-        # Filter-before-collapse on kind:finding — a slug whose latest doc is a clearance
-        # still surfaces its older finding. Clearance propagation belongs to Discovery.
-        type: if
-        condition: "${{ steps.compute_cleared_slugs.output.slugs.size > 0 }}"
-        steps:
-          - name: get_unreviewed_excluding_ids_and_slugs
-            type: elasticsearch.request
-            with:
-              method: POST
-              path: '/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true'
-              body:
-                size: '{{ inputs.discoveryBatchMax }}'
-                sort:
-                  - criticality:
-                      order: desc
-                      missing: "_last"
-                      unmapped_type: integer
-                  - "@timestamp":
-                      order: asc
-                collapse:
-                  field: discovery_slug
-                _source:
-                  includes:
-                    - discovery_id
-                    - discovery_slug
-                    - title
-                    - summary
-                    - root_cause
-                    - criticality
-                    - confidence
-                    - cause_kis
-                    - evidences
-                    - dependency_edges
-                    - infra_components
-                    - grouped_discovery_ids
-                    - change_point_occurrence
-                query:
-                  bool:
-                    filter:
-                      - term:
-                          kibana.space_ids: "{{ variables.spaceId }}"
-                      - term:
-                          kind: '{{ consts.KIND_FINDING }}'
-                      - range:
-                          "@timestamp":
-                            gte: '{{ inputs.discoveryLookback }}'
-                    must_not:
-                      - terms:
-                          discovery_id: "${{ steps.compute_reviewed_ids.output.reviewed_discovery_ids }}"
-                      - terms:
-                          discovery_slug: "${{ steps.compute_cleared_slugs.output.slugs }}"
-            on-failure:
-              continue: true
-        else:
-          - name: get_unreviewed_excluding_ids_only
-            type: elasticsearch.request
-            with:
-              method: POST
-              path: '/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true'
-              body:
-                size: '{{ inputs.discoveryBatchMax }}'
-                sort:
-                  - criticality:
-                      order: desc
-                      missing: "_last"
-                      unmapped_type: integer
-                  - "@timestamp":
-                      order: asc
-                collapse:
-                  field: discovery_slug
-                _source:
-                  includes:
-                    - discovery_id
-                    - discovery_slug
-                    - title
-                    - summary
-                    - root_cause
-                    - criticality
-                    - confidence
-                    - cause_kis
-                    - evidences
-                    - dependency_edges
-                    - infra_components
-                    - grouped_discovery_ids
-                    - change_point_occurrence
-                query:
-                  bool:
-                    filter:
-                      - term:
-                          kibana.space_ids: "{{ variables.spaceId }}"
-                      - term:
-                          kind: '{{ consts.KIND_FINDING }}'
-                      - range:
-                          "@timestamp":
-                            gte: '{{ inputs.discoveryLookback }}'
-                    must_not:
-                      - terms:
-                          discovery_id: "${{ steps.compute_reviewed_ids.output.reviewed_discovery_ids }}"
-            on-failure:
-              continue: true
-    else:
-      - name: get_unreviewed_all_gate
-        type: if
-        condition: "${{ steps.compute_cleared_slugs.output.slugs.size > 0 }}"
-        steps:
-          - name: get_unreviewed_all_excluding_slugs
-            type: elasticsearch.request
-            with:
-              method: POST
-              path: '/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true'
-              body:
-                size: '{{ inputs.discoveryBatchMax }}'
-                sort:
-                  - criticality:
-                      order: desc
-                      missing: "_last"
-                      unmapped_type: integer
-                  - "@timestamp":
-                      order: asc
-                collapse:
-                  field: discovery_slug
-                _source:
-                  includes:
-                    - discovery_id
-                    - discovery_slug
-                    - title
-                    - summary
-                    - root_cause
-                    - criticality
-                    - confidence
-                    - cause_kis
-                    - evidences
-                    - dependency_edges
-                    - infra_components
-                    - grouped_discovery_ids
-                    - change_point_occurrence
-                query:
-                  bool:
-                    filter:
-                      - term:
-                          kibana.space_ids: "{{ variables.spaceId }}"
-                      - term:
-                          kind: '{{ consts.KIND_FINDING }}'
-                      - range:
-                          "@timestamp":
-                            gte: '{{ inputs.discoveryLookback }}'
-                    must_not:
-                      - terms:
-                          discovery_slug: "${{ steps.compute_cleared_slugs.output.slugs }}"
-            on-failure:
-              continue: true
-        else:
-          - name: get_unreviewed_all_no_exclusions
-            type: elasticsearch.request
-            with:
-              method: POST
-              path: '/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true'
-              body:
-                size: '{{ inputs.discoveryBatchMax }}'
-                sort:
-                  - criticality:
-                      order: desc
-                      missing: "_last"
-                      unmapped_type: integer
-                  - "@timestamp":
-                      order: asc
-                collapse:
-                  field: discovery_slug
-                _source:
-                  includes:
-                    - discovery_id
-                    - discovery_slug
-                    - title
-                    - summary
-                    - root_cause
-                    - criticality
-                    - confidence
-                    - cause_kis
-                    - evidences
-                    - dependency_edges
-                    - infra_components
-                    - grouped_discovery_ids
-                    - change_point_occurrence
-                query:
-                  bool:
-                    filter:
-                      - term:
-                          kibana.space_ids: "{{ variables.spaceId }}"
-                      - term:
-                          kind: '{{ consts.KIND_FINDING }}'
-                      - range:
-                          "@timestamp":
-                            gte: '{{ inputs.discoveryLookback }}'
-            on-failure:
-              continue: true
-
-  - name: check_has_unreviewed
-    # Coalesces the four branch outputs — exactly one will be non-nil.
-    type: data.set
-    with:
-      unreviewed_hits: >-
-        ${{ steps.get_unreviewed_excluding_ids_and_slugs.output.hits.hits
-          | default: steps.get_unreviewed_excluding_ids_only.output.hits.hits
-          | default: steps.get_unreviewed_all_excluding_slugs.output.hits.hits
-          | default: steps.get_unreviewed_all_no_exclusions.output.hits.hits
-          | default: [] }}
-      unreviewed_count: >-
-        ${{ steps.get_unreviewed_excluding_ids_and_slugs.output.hits.hits
-          | default: steps.get_unreviewed_excluding_ids_only.output.hits.hits
-          | default: steps.get_unreviewed_all_excluding_slugs.output.hits.hits
-          | default: steps.get_unreviewed_all_no_exclusions.output.hits.hits
-          | default: [] | size | default: 0 }}
-
-  - name: get_cleared_unreviewed_stubs
-    # Minimal fields only — cleared items go through the judge's fast-path; heavy
-    # fields (evidences, summary, root_cause, etc.) are not needed.
-    # Guards against empty-array terms query (ES parse error on []).
-    type: if
-    condition: "${{ steps.compute_cleared_slugs.output.slugs.size > 0 }}"
-    steps:
-      - name: get_cleared_stubs_excluding_reviewed
-        type: elasticsearch.request
-        if: "${{ steps.compute_has_reviewed.output.flag }}"
-        with:
-          method: POST
-          path: '/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true'
-          body:
-            size: "${{ consts.LOOKUP_BATCH_SIZE }}"
-            sort:
-              - criticality:
-                  order: desc
-                  missing: "_last"
-                  unmapped_type: integer
-            collapse:
-              field: discovery_slug
-            _source:
-              includes:
-                - discovery_id
-                - discovery_slug
-                - title
-                - criticality
-                - detections.rule_uuid
-                - detections.rule_name
-                - change_point_occurrence
-                - grouped_discovery_ids
-            query:
-              bool:
-                filter:
-                  - term:
-                      kibana.space_ids: "{{ variables.spaceId }}"
-                  - term:
-                      kind: '{{ consts.KIND_FINDING }}'
-                  - range:
-                      "@timestamp":
-                        gte: '{{ inputs.discoveryLookback }}'
-                  - terms:
-                      discovery_slug: "${{ steps.compute_cleared_slugs.output.slugs }}"
-                must_not:
-                  - terms:
-                      discovery_id: "${{ steps.compute_reviewed_ids.output.reviewed_discovery_ids }}"
-        on-failure:
-          continue: true
-      - name: get_cleared_stubs_all
-        type: elasticsearch.request
-        if: "${{ steps.compute_has_reviewed.output.flag == false }}"
-        with:
-          method: POST
-          path: '/{{ consts.DISCOVERIES_INDEX }}/_search?ignore_unavailable=true'
-          body:
-            size: "${{ consts.LOOKUP_BATCH_SIZE }}"
-            sort:
-              - criticality:
-                  order: desc
-                  missing: "_last"
-                  unmapped_type: integer
-            collapse:
-              field: discovery_slug
-            _source:
-              includes:
-                - discovery_id
-                - discovery_slug
-                - title
-                - criticality
-                - detections.rule_uuid
-                - detections.rule_name
-                - change_point_occurrence
-                - grouped_discovery_ids
-            query:
-              bool:
-                filter:
-                  - term:
-                      kibana.space_ids: "{{ variables.spaceId }}"
-                  - term:
-                      kind: '{{ consts.KIND_FINDING }}'
-                  - range:
-                      "@timestamp":
-                        gte: '{{ inputs.discoveryLookback }}'
-                  - terms:
-                      discovery_slug: "${{ steps.compute_cleared_slugs.output.slugs }}"
-        on-failure:
-          continue: true
-
-  - name: compute_cleared_stubs
-    type: data.set
-    with:
-      hits: "${{ steps.get_cleared_stubs_excluding_reviewed.output.hits.hits | default: steps.get_cleared_stubs_all.output.hits.hits | default: [] | map: '_source' }}"
-      count: "${{ steps.get_cleared_stubs_excluding_reviewed.output.hits.hits | default: steps.get_cleared_stubs_all.output.hits.hits | default: [] | size }}"
-      slugs: "${{ steps.get_cleared_stubs_excluding_reviewed.output.hits.hits | default: steps.get_cleared_stubs_all.output.hits.hits | default: [] | map: '_source' | map: 'discovery_slug' | default: [] }}"
-
-  - name: compute_unreviewed_slugs
-    type: data.set
-    with:
-      discovery_slugs: "${{ steps.check_has_unreviewed.output.unreviewed_hits | default: [] | map: '_source' | map: 'discovery_slug' | concat: steps.compute_cleared_stubs.output.slugs }}"
-
-  - name: get_rereview_candidates
-    # Inner if/else guards against empty-array terms query (ES parse error on []).
-    type: if
-    condition: >-
-      ${{ steps.compute_active_event_ids.output.promoted_ids.size > 0
-      or steps.compute_active_event_ids.output.acknowledged_ids.size > 0 }}
-    steps:
-      - name: get_rereview_slug_gate
-        type: if
-        condition: "${{ steps.compute_unreviewed_slugs.output.discovery_slugs.size > 0 }}"
-        steps:
-          - name: get_rereview_with_slug_exclusion
-            type: elasticsearch.request
-            with:
-              method: POST
-              path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
-              body:
-                size: "${{ consts.EVENTS_FETCH_SIZE }}"
-                collapse:
-                  field: event_id
-                sort:
-                  - "@timestamp":
-                      order: desc
-                _source: false
-                fields: ["event_id"]
-                query:
-                  bool:
-                    filter:
-                      - term:
-                          kibana.space_ids: "{{ variables.spaceId }}"
-                      - terms:
-                          event_id: "${{ steps.compute_active_event_ids.output.promoted_ids | concat: steps.compute_active_event_ids.output.acknowledged_ids }}"
-                    must_not:
-                      - terms:
-                          discovery_slug: "${{ steps.compute_unreviewed_slugs.output.discovery_slugs }}"
-                    should:
-                      - range:
-                          "@timestamp":
-                            lt: "{{ steps.get_latest_detection_ts.output.hits.hits[0]._source['@timestamp'] | default: '2000-01-01T00:00:00Z' }}"
-                      - range:
-                          "@timestamp":
-                            lte: '{{ inputs.rereviewFallbackInterval }}'
-                    minimum_should_match: 1
-            on-failure:
-              continue: true
-        else:
-          - name: get_rereview_no_exclusion
-            type: elasticsearch.request
-            with:
-              method: POST
-              path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
-              body:
-                size: "${{ consts.EVENTS_FETCH_SIZE }}"
-                collapse:
-                  field: event_id
-                sort:
-                  - "@timestamp":
-                      order: desc
-                _source: false
-                fields: ["event_id"]
-                query:
-                  bool:
-                    filter:
-                      - term:
-                          kibana.space_ids: "{{ variables.spaceId }}"
-                      - terms:
-                          event_id: "${{ steps.compute_active_event_ids.output.promoted_ids | concat: steps.compute_active_event_ids.output.acknowledged_ids }}"
-                    should:
-                      - range:
-                          "@timestamp":
-                            lt: "{{ steps.get_latest_detection_ts.output.hits.hits[0]._source['@timestamp'] | default: '2000-01-01T00:00:00Z' }}"
-                      - range:
-                          "@timestamp":
-                            lte: '{{ inputs.rereviewFallbackInterval }}'
-                    minimum_should_match: 1
-            on-failure:
-              continue: true
-  - name: compute_rereview_event_ids
-    type: data.set
-    with:
-      ids: "${{ steps.get_rereview_with_slug_exclusion.output.hits.hits | default: steps.get_rereview_no_exclusion.output.hits.hits | default: [] | map: 'fields' | map: 'event_id' | map: 'first' | default: [] }}"
-
-  - name: get_rereview_events
-    type: elasticsearch.request
-    if: "${{ steps.compute_rereview_event_ids.output.ids.size > 0 }}"
-    with:
-      method: POST
-      path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
-      body:
-        size: "${{ consts.CONTEXT_FETCH_SIZE }}"
-        collapse:
-          field: event_id
-        sort:
-          - "@timestamp":
-              order: desc
-        _source:
-          includes:
-            - discovery_id
-            - discovery_slug
-            - title
-            - status
-            - summary
-            - root_cause
-            - impact
-            - criticality
-            - dependency_edges
-            - infra_components
-            - cause_kis
-            - evidences
-            - event_id
-            - created_at
-            - previous_event_id
-        query:
-          bool:
-            filter:
-              - term:
-                  kibana.space_ids: "{{ variables.spaceId }}"
-              - terms:
-                  event_id: "${{ steps.compute_rereview_event_ids.output.ids }}"
-    on-failure:
-      continue: true
-
-  - name: compute_work_needed
-    type: data.set
-    with:
-      has_unreviewed: >-
-        ${{ steps.check_has_unreviewed.output.unreviewed_count > 0
-        or steps.compute_cleared_stubs.output.count > 0 }}
-      has_rereview_work: >-
-        ${{ steps.compute_rereview_event_ids.output.ids.size > 0
-        or steps.compute_cleared_signal_events.output.cleared_promoted.size > 0
-        or steps.compute_cleared_signal_events.output.cleared_acknowledged.size > 0 }}
-      should_run: >-
-        ${{ steps.check_has_unreviewed.output.unreviewed_count > 0
-        or steps.compute_cleared_stubs.output.count > 0
-        or steps.compute_rereview_event_ids.output.ids.size > 0
-        or steps.compute_cleared_signal_events.output.cleared_promoted.size > 0
-        or steps.compute_cleared_signal_events.output.cleared_acknowledged.size > 0 }}
-
-  - name: exit_idle
-    type: workflow.output
-    if: "${{ steps.compute_work_needed.output.should_run == false }}"
-    status: cancelled
-    with:
-      reason: "No unreviewed findings or re-review work — nothing to triage"
-
-  # -----------------------------------------------------------------------
-  # Step 2: Fetch detection evidence for all unreviewed discoveries.
-  # -----------------------------------------------------------------------
-  - name: get_detection_evidence
-    type: elasticsearch.request
-    with:
-      method: POST
-      path: '/{{ consts.DETECTIONS_INDEX }}/_search?ignore_unavailable=true'
-      body:
-        size: "${{ consts.LOOKUP_BATCH_SIZE }}"
-        sort:
-          - "@timestamp":
-              order: desc
-        collapse:
-          field: rule_uuid
         _source:
           includes:
             - kind
-            - rule_name
-            - rule_uuid
-            - stream_name
-            - detection_evidence.change_point_type
-            - detection_evidence.p_value
-            - rules_activity.key_as_string
-            - rules_activity.doc_count
-            - "@timestamp"
-        query:
-          bool:
-            filter:
-              - term:
-                  kibana.space_ids: "{{ variables.spaceId }}"
-              - range:
-                  "@timestamp":
-                    gte: '{{ inputs.detectionLookback }}'
-            must_not:
-              - term:
-                  kind: '{{ consts.KIND_HANDLED }}'
-    on-failure:
-      continue: true
-
-  - name: compute_active_detection_evidence
-    # Post-filter to kind:detection — avoids filter-before-collapse surfacing stale docs.
-    type: data.set
-    with:
-      active_evidence: "${{ steps.get_detection_evidence.output.hits.hits | where: '_source.kind', 'detection' | default: [] }}"
-
-  # -----------------------------------------------------------------------
-  # Step 3: Knowledge base — promoted + demoted events for judge calibration.
-  # -----------------------------------------------------------------------
-  - name: get_knowledge_base
-    # acknowledged/grouped events excluded — promoted/demoted pattern data is
-    # what calibrates the judge; older promoted/demoted events for a slug are
-    # exactly the desired signal even if the latest status is acknowledged.
-    # evidences excluded from KB — the judge calibrates from status/criticality/title;
-    # full evidence payloads add ~50KB per entry for no calibration gain.
-    # Slug-scoped should omitted — terms with an empty array causes an ES parse error.
-    type: elasticsearch.request
-    with:
-      method: POST
-      path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
-      body:
-        size: '${{ consts.KB_BATCH_MAX }}'
-        sort:
-          - "@timestamp":
-              order: desc
-        collapse:
-          field: discovery_slug
-        _source:
-          includes:
-            - "@timestamp"
+            - discovery_id
             - discovery_slug
-            - status
-            - criticality
             - title
-            - analysis_summary
+            - summary
+            - root_cause
+            - criticality
+            - confidence
+            - cause_kis
+            - evidences
+            - detections
+            - dependency_edges
+            - infra_components
+            - stream_names
         query:
           bool:
             filter:
               - term:
                   kibana.space_ids: "{{ variables.spaceId }}"
-              - terms:
-                  status: ["promoted", "demoted"]
               - range:
                   "@timestamp":
-                    gte: '{{ inputs.knowledgeBaseLookback }}'
+                    gte: "{{ inputs.discoveryLookback }}"
     on-failure:
       continue: true
 
-  - name: compute_batch
+  # -----------------------------------------------------------------------
+  # Step 2: Filter to only unassessed slugs (latest doc is discovery or quiet,
+  # not handled).
+  # -----------------------------------------------------------------------
+  - name: collect_discoveries
     type: data.set
     with:
-      unreviewed_json: |
-        {{ steps.check_has_unreviewed.output.unreviewed_hits | map: '_source' | concat: steps.compute_cleared_stubs.output.hits | sort: 'criticality' | reverse | json }}
-      rereview_json: |
-        {{ steps.get_rereview_events.output.hits.hits | map: '_source' | sort: 'criticality' | reverse | json }}
-      rereview_cleared_json: |
-        {{ steps.compute_cleared_signal_events.output.cleared_promoted | concat: steps.compute_cleared_signal_events.output.cleared_acknowledged | map: '_source' | sort: 'criticality' | reverse | json }}
+      findings: >-
+        ${{ steps.get_unassessed_discoveries.output.hits.hits
+          | map: '_source'
+          | reject: 'kind', 'handled'
+          | slice: 0, inputs.discoveryBatchMax
+          | default: [] }}
 
   # -----------------------------------------------------------------------
-  # Step 4: Judge — unreviewed discoveries and re-review active events.
+  # Step 3: Exit early when there is nothing to triage.
+  # -----------------------------------------------------------------------
+  - name: exit_no_discoveries
+    type: workflow.output
+    if: >-
+      ${{ steps.collect_discoveries.output.findings == null
+      or steps.collect_discoveries.output.findings.size == 0 }}
+    status: cancelled
+    with:
+      reason: "No unassessed discoveries or quiet docs — nothing to triage"
+
+  # -----------------------------------------------------------------------
+  # Step 4: Judge — evaluate unreviewed discoveries and quiet docs.
   # -----------------------------------------------------------------------
   - name: run_judge_agent
     # TODO: agent-id and connector-id are config fields and are NOT rendered through Liquid by the
@@ -845,35 +133,9 @@ steps:
     create-conversation: true
     with:
       message: |
-        ## Detection Evidence
-
-        Most recent detection @timestamp: {{ steps.compute_active_detection_evidence.output.active_evidence | map: '_source' | map: '@timestamp' | first | default: 'none in window' }}
-
-        {{ steps.compute_active_detection_evidence.output.active_evidence | map: '_source' | json }}
-
-        ## Knowledge Base (recent promoted + demoted events)
-
-        {{ steps.get_knowledge_base.output.hits.hits | map: '_source' | json }}
-
         ## Unreviewed Discoveries
 
-        {{ steps.compute_batch.output.unreviewed_json }}
-
-        ## Confirmed Significant Events
-
-        {% if steps.check_has_unreviewed.output.unreviewed_count > 0 %}{{ steps.compute_promoted_context.output.promoted_events | concat: steps.compute_promoted_context.output.acknowledged_events | json }}{% else %}(omitted — no new discoveries in this batch; dedup context not needed){% endif %}
-
-        ## Active Events for Re-Review
-
-        {{ steps.compute_batch.output.rereview_json }}
-
-        ## Active Events for Re-Review (clearance signal)
-
-        {{ steps.compute_batch.output.rereview_cleared_json }}
-
-        ## Discoveries with Detections Cleared
-
-        {{ steps.compute_cleared_slugs.output.slugs | json }}
+        {{ steps.collect_discoveries.output.findings | json }}
       schema:
         type: object
         properties:
@@ -884,76 +146,39 @@ steps:
               properties:
                 discovery_id:
                   type: string
-                  description: "The discovery's discovery_id — echo verbatim from the input discovery doc."
+                  description: "Echo verbatim from the input discovery doc. READ-ONLY."
                 discovery_slug:
                   type: string
-                  description: "The discovery's discovery_slug — echo verbatim from the input discovery doc. READ-ONLY."
-                grouped_discovery_ids:
-                  type: array
-                  items:
-                    type: string
-                  description: "For new group events: populate with the discovery_ids of all grouped discoveries. For re-reviewed group events: echo verbatim from the group discovery — do not add or modify entries."
+                  description: "Echo verbatim from the input discovery doc. READ-ONLY."
                 status:
                   type: string
-                  enum: [acknowledged, demoted, promoted]
+                  enum: [promoted, acknowledged, demoted, resolved]
+                  description: "promoted: active incident requiring immediate action. acknowledged: real issue, not critical enough for immediate escalation. demoted: insignificant or confirmed false positive. resolved: alerts genuinely stopped (kind:clearance inputs only)."
                 criticality:
                   type: integer
                   minimum: 0
                   maximum: 100
+                  description: "Judge's own severity assessment 0–100."
                 confidence:
                   type: integer
                   minimum: 0
                   maximum: 100
+                  description: "Confidence in this verdict 0–100."
+                summary:
+                  type: string
+                  description: "Operator notification — always emit for promoted and acknowledged. Lead with service + operator-visible symptom; name the exposed path when dependency_edges has exposed entries; close with the single most time-sensitive on-call action. One to two sentences. For demoted/resolved: omit unless you have a material correction."
+                root_cause:
+                  type: string
+                  description: "Corrected probable-cause hypothesis. Omit when nothing contradicts the discovery. Must cite KI name + row_count and keep the causal chain coherent."
                 recommendations:
                   type: array
                   items:
                     type: string
-                  description: "Top 3 operator action items. Required for promoted and acknowledged events."
-                analysis_summary:
-                  type: string
+                  description: "3 candidate stop-the-bleeding actions ranked by likelihood of stopping user impact. These are operational attempts — not a guaranteed fix sequence. Order from most reversible and most targeted to broader interventions. Each must name the specific service or error code observed in evidences and include the exact operational command (kubectl, helm, systemctl, CLI). No ES|QL or diagnostic queries — investigation is complete. Required for promoted and acknowledged."
                 assessment_note:
                   type: string
-                title:
-                  type: string
-                summary:
-                  type: string
-                root_cause:
-                  type: string
-                evidences:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      rule_name:
-                        anyOf:
-                          - type: string
-                          - type: "null"
-                        description: "Name of the rule this evidence targets. Null for get_logs entries."
-                      rule_uuid:
-                        anyOf:
-                          - type: string
-                          - type: "null"
-                        description: "UUID of the rule this evidence targets. Null for get_logs entries."
-                      result:
-                        type: string
-                        enum: [found, empty, error]
-                      description:
-                        type: string
-                      stream_name:
-                        type: string
-                      row_count:
-                        type: integer
-                      collected_at:
-                        type: string
-                      esql_query:
-                        anyOf:
-                          - type: string
-                          - type: "null"
-                      confirmed:
-                        type: boolean
-                        enum: [true]
-                  description: "Inherit all discovery evidences unchanged, then append one entry per tool call made during this evaluation."
-              required: [discovery_id, discovery_slug, status, criticality, confidence, analysis_summary, assessment_note, title, evidences]
+                  description: "Adversarial reasoning trace: what was independently verified, what signals confirmed or contradicted the discovery, and how criticality and status were calibrated. Not operator-facing. Required for promoted and acknowledged; brief for demoted and resolved."
+              required: [discovery_id, discovery_slug, status, criticality, confidence, assessment_note]
         required: [significant_events]
     on-failure:
       continue: false
@@ -980,49 +205,22 @@ steps:
       and steps.store_significant_events.output.significant_events != null }}
     foreach: "${{ steps.store_significant_events.output.significant_events }}"
     steps:
-
-      # Phase 1: Compute signals
-      - name: compute_significant_event_meta
-        type: data.set
-        with:
-          recommended_action: "{% if foreach.item.status == consts.STATUS_DEMOTED %}monitor{% elsif foreach.item.status == consts.STATUS_ACKNOWLEDGED and foreach.item.criticality < consts.SEVERITY_CRITICAL %}monitor{% elsif foreach.item.criticality >= consts.SEVERITY_CRITICAL %}escalate{% elsif foreach.item.criticality >= consts.SEVERITY_HIGH %}investigate{% else %}monitor{% endif %}"
-          impact: "{% if foreach.item.criticality >= consts.SEVERITY_CRITICAL %}critical{% elsif foreach.item.criticality >= consts.SEVERITY_HIGH %}high{% elsif foreach.item.criticality >= consts.SEVERITY_MEDIUM %}medium{% else %}low{% endif %}"
-
-      # Phase 2: Compute content
-      - name: resolve_discovery_source
-        # New discoveries: look up from pre-judge unreviewed_hits by slug.
-        # Re-reviews: slug not in unreviewed_hits — source from foreach item directly.
-        type: data.set
-        with:
-          src: "${{ steps.check_has_unreviewed.output.unreviewed_hits | default: [] | map: '_source' | where: 'discovery_slug', foreach.item.discovery_slug | first }}"
-
-      - name: compute_event_content
-        type: data.set
-        with:
-          cause_kis: "${{ steps.resolve_discovery_source.output.src.cause_kis | default: [] }}"
-          dependency_edges: "${{ steps.resolve_discovery_source.output.src.dependency_edges | default: [] }}"
-          discovery_id: "{{ foreach.item.discovery_id | default: steps.resolve_discovery_source.output.src.discovery_id }}"
-          discovery_slug: "{{ foreach.item.discovery_slug | default: steps.resolve_discovery_source.output.src.discovery_slug }}"
-          infra_components: "${{ steps.resolve_discovery_source.output.src.infra_components | default: [] }}"
-          root_cause: "{{ foreach.item.root_cause | default: steps.resolve_discovery_source.output.src.root_cause }}"
-          summary: "{{ foreach.item.summary | default: steps.resolve_discovery_source.output.src.summary }}"
-          title: "{{ foreach.item.title | default: steps.resolve_discovery_source.output.src.title }}"
-
-      - name: get_prior_event_doc
+      - name: check_existing_event
         type: elasticsearch.request
         with:
           method: POST
-          path: '/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true'
+          path: "/{{ consts.EVENTS_INDEX }}/_search?ignore_unavailable=true"
           body:
             size: 1
-            collapse:
-              field: event_id
-            _source:
-              includes:
-                - event_id
             sort:
               - "@timestamp":
                   order: desc
+            _source:
+              includes:
+                - event_id
+                - status
+                - created_at
+                - previous_event_id
             query:
               bool:
                 filter:
@@ -1033,78 +231,85 @@ steps:
         on-failure:
           continue: true
 
-      - name: check_discovery_cleared
-        type: elasticsearch.request
-        with:
-          method: POST
-          path: '/{{ consts.DISCOVERIES_INDEX }}/_count?ignore_unavailable=true'
-          body:
-            query:
-              bool:
-                filter:
-                  - term:
-                      kibana.space_ids: "{{ variables.spaceId }}"
-                  - term:
-                      kind: '{{ consts.KIND_CLEARANCE }}'
-                  - term:
-                      closes_discovery_id: "${{ foreach.item.discovery_id }}"
-        on-failure:
-          continue: true
-
-      - name: compute_is_cleared
+      - name: compute_write_gate
         type: data.set
         with:
-          cleared: "${{ steps.check_discovery_cleared.error == null and steps.check_discovery_cleared.output.count > 0 }}"
+          should_write: >-
+            ${{ steps.check_existing_event.output.hits.hits[0]._source.status != foreach.item.status }}
+          event_id: "{{ foreach.item.discovery_slug }}-{{ execution.id }}"
+          created_at: "{% if steps.check_existing_event.output.hits.total.value > 0 and steps.check_existing_event.output.hits.hits[0]._source.status != 'resolved' %}{{ steps.check_existing_event.output.hits.hits[0]._source.created_at }}{% else %}{{ 'now' | date: '%Y-%m-%dT%H:%M:%S%:z' }}{% endif %}"
+          previous_event_id: "{% if steps.check_existing_event.output.hits.total.value > 0 %}{{ steps.check_existing_event.output.hits.hits[0]._source.event_id }}{% endif %}"
 
-      - name: compute_event_write
+      # Resolve the source discovery for the Liquid join.
+      - name: resolve_discovery
         type: data.set
         with:
-          should_write: "${{ not steps.compute_is_cleared.output.cleared }}"
-          event_id: "{{ execution.id }}-{{ foreach.item.discovery_id }}"
-          created_at: '{{ "now" | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
-          previous_event_id: "{{ steps.get_prior_event_doc.output.hits.hits[0]._source.event_id }}"
-          title: "{{ steps.compute_event_content.output.title }}"
-          summary: "{{ steps.compute_event_content.output.summary }}"
-          root_cause: "{{ steps.compute_event_content.output.root_cause }}"
-          discovery_slug: "{{ foreach.item.discovery_slug }}"
-          discovery_id: "{{ foreach.item.discovery_id }}"
+          discovery: "${{ steps.collect_discoveries.output.findings | where: 'discovery_id', foreach.item.discovery_id | first }}"
 
-      # Phase 3: Write
-      - name: write_significant_event_doc
+      - name: write_event_doc
         type: elasticsearch.request
-        if: "${{ steps.compute_event_write.output.should_write }}"
+        if: "${{ steps.compute_write_gate.output.should_write }}"
         with:
           method: POST
-          path: '/{{ consts.EVENTS_INDEX }}/_doc'
+          path: "/{{ consts.EVENTS_INDEX }}/_doc"
           body:
             "@timestamp": '{{ "now" | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
             kibana:
               space_ids:
                 - "{{ variables.spaceId }}"
-            cause_kis: "${{ steps.compute_event_content.output.cause_kis }}"
-            confidence: "${{ foreach.item.confidence }}"
-            created_at: "{{ steps.compute_event_write.output.created_at }}"
-            criticality: "${{ foreach.item.criticality }}"
-            dependency_edges: "${{ steps.compute_event_content.output.dependency_edges }}"
-            discovery_id: "{{ steps.compute_event_write.output.discovery_id }}"
-            discovery_slug: "{{ steps.compute_event_write.output.discovery_slug }}"
-            event_id: "{{ steps.compute_event_write.output.event_id }}"
-            evidences: "${{ foreach.item.evidences | where: 'result', 'found' }}"
-            impact: "{{ steps.compute_significant_event_meta.output.impact }}"
-            infra_components: "${{ steps.compute_event_content.output.infra_components }}"
-            previous_event_id: "{{ steps.compute_event_write.output.previous_event_id }}"
-            recommendations: "${{ foreach.item.recommendations | default: [] }}"
-            recommended_action: "{{ steps.compute_significant_event_meta.output.recommended_action }}"
-            stream_names: "${{ foreach.item.evidences | map: 'stream_name' | compact | uniq }}"
-            root_cause: "{{ steps.compute_event_write.output.root_cause }}"
-            summary: "{{ steps.compute_event_write.output.summary }}"
-            title: "{{ steps.compute_event_write.output.title }}"
+            event_id: "{{ steps.compute_write_gate.output.event_id }}"
+            created_at: "{{ steps.compute_write_gate.output.created_at }}"
+            previous_event_id: "{{ steps.compute_write_gate.output.previous_event_id }}"
+            discovery_id: "{{ foreach.item.discovery_id }}"
+            discovery_slug: "{{ foreach.item.discovery_slug }}"
             status: "${{ foreach.item.status }}"
-            analysis_summary: "${{ foreach.item.analysis_summary }}"
-            assessment_note: "${{ foreach.item.assessment_note }}"
+            criticality: "${{ foreach.item.criticality }}"
+            confidence: "${{ foreach.item.confidence }}"
+            summary: "{{ foreach.item.summary | default: steps.resolve_discovery.output.discovery.summary }}"
+            title: "{{ steps.resolve_discovery.output.discovery.title }}"
+            root_cause: "{{ foreach.item.root_cause | default: steps.resolve_discovery.output.discovery.root_cause }}"
+            cause_kis: "${{ steps.resolve_discovery.output.discovery.cause_kis | default: [] }}"
+            dependency_edges: "${{ steps.resolve_discovery.output.discovery.dependency_edges | default: [] }}"
+            infra_components: "${{ steps.resolve_discovery.output.discovery.infra_components | default: [] }}"
+            evidences: "${{ steps.resolve_discovery.output.discovery.evidences | default: [] }}"
+            stream_names: "${{ steps.resolve_discovery.output.discovery.stream_names | default: [] }}"
+            recommendations: "${{ foreach.item.recommendations | default: [] }}"
+            assessment_note: "{{ foreach.item.assessment_note }}"
             analysis_source: judge_agent
             conversation_id: "{{ steps.store_significant_events.output.conversation_id }}"
-            grouped_discovery_ids: "${{ foreach.item.grouped_discovery_ids }}"
             workflow_execution_id: "{{ execution.id }}"
         on-failure:
           continue: false
+
+      # Write kind:handled to the discoveries index after write_event_doc succeeds.
+      # Carries the full discovery payload plus event_id lineage pointer.
+      # This closes the slug for re-assessment by the next triage run.
+      - name: write_handled_discovery
+        type: elasticsearch.request
+        if: "${{ steps.compute_write_gate.output.should_write and steps.write_event_doc.error == null }}"
+        with:
+          method: POST
+          path: "/{{ consts.DISCOVERIES_INDEX }}/_doc"
+          body:
+            "@timestamp": '{{ "now" | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
+            kibana:
+              space_ids:
+                - "{{ variables.spaceId }}"
+            kind: "{{ consts.KIND_HANDLED }}"
+            workflow_execution_id: "{{ execution.id }}"
+            discovery_id: "{{ steps.resolve_discovery.output.discovery.discovery_id }}"
+            discovery_slug: "{{ steps.resolve_discovery.output.discovery.discovery_slug }}"
+            title: "{{ steps.resolve_discovery.output.discovery.title }}"
+            summary: "{{ steps.resolve_discovery.output.discovery.summary }}"
+            root_cause: "{{ steps.resolve_discovery.output.discovery.root_cause }}"
+            criticality: "${{ steps.resolve_discovery.output.discovery.criticality }}"
+            confidence: "${{ steps.resolve_discovery.output.discovery.confidence }}"
+            rule_names: "${{ steps.resolve_discovery.output.discovery.rule_names | default: [] }}"
+            stream_names: "${{ steps.resolve_discovery.output.discovery.stream_names | default: [] }}"
+            cause_kis: "${{ steps.resolve_discovery.output.discovery.cause_kis | default: [] }}"
+            evidences: "${{ steps.resolve_discovery.output.discovery.evidences | default: [] }}"
+            detections: "${{ steps.resolve_discovery.output.discovery.detections | default: [] }}"
+            dependency_edges: "${{ steps.resolve_discovery.output.discovery.dependency_edges | default: [] }}"
+            infra_components: "${{ steps.resolve_discovery.output.discovery.infra_components | default: [] }}"
+        on-failure:
+          continue: true

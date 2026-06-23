@@ -21,6 +21,12 @@ export {
   builtInTriggerDefinitions,
   getBuiltInTriggerDefinition,
 } from './spec/builtin_trigger_definitions';
+export {
+  builtinWorkflowInputDefinitions,
+  builtinWorkflowInputDefinitionRefValuesForZod,
+  KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX,
+  mergeKibanaBuiltinWorkflowInputDefinitionsIntoRootSchema,
+} from './spec/builtin_workflow_input_definitions';
 export type {
   BaseTriggerDefinition,
   TriggerDocumentation,

@@ -31,7 +31,8 @@ import type { ElasticsearchClient } from '@kbn/core/server';
 import type { AssetManagerClient } from './domain/asset_manager';
 import type { EntityMaintainersClient } from './domain/entity_maintainers';
 import type { FeatureFlags } from './infra/feature_flags';
-import type { CcsLogsExtractionClient, LogsExtractionClient } from './domain/logs_extraction';
+import type { LogsExtractionClient } from './domain/logs_extraction';
+import type { RemoteLogsExtractionClient } from './domain/logs_extraction/remote';
 import type { HistorySnapshotClient } from './domain/history_snapshot';
 import type { CRUDClient } from './domain/crud';
 import type { ResolutionClient } from './domain/resolution';
@@ -59,7 +60,7 @@ export interface EntityStoreApiRequestHandlerContext {
   entityMaintainersClient: EntityMaintainersClient;
   crudClient: CRUDClient;
   resolutionClient: ResolutionClient;
-  ccsLogsExtractionClient: CcsLogsExtractionClient;
+  remoteLogsExtractionClient: RemoteLogsExtractionClient;
   featureFlags: FeatureFlags;
   logsExtractionClient: LogsExtractionClient;
   historySnapshotClient: HistorySnapshotClient;

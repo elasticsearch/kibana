@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { EuiButtonIcon, useEuiTheme } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { AGENT_BUILDER_UI_EBT } from '@kbn/agent-builder-common';
 import { getEbtProps } from '@kbn/ebt-click';
@@ -27,19 +27,21 @@ export const ScrollButton: React.FC<ScrollButtonProps> = ({ onClick }) => {
   `;
 
   return (
-    <EuiButtonIcon
-      display="base"
-      size="s"
-      color="text"
-      css={scrollDownButtonStyles}
-      iconType="sortDown"
-      aria-label="Scroll down"
-      onClick={onClick}
-      {...getEbtProps({
-        element: AGENT_BUILDER_UI_EBT.element.pageContent,
-        action: AGENT_BUILDER_UI_EBT.action.conversation.SCROLL_DOWN,
-        detail: 'conversation',
-      })}
-    />
+    <EuiToolTip content="Scroll down" disableScreenReaderOutput>
+      <EuiButtonIcon
+        display="base"
+        size="s"
+        color="text"
+        css={scrollDownButtonStyles}
+        iconType="sortDown"
+        aria-label="Scroll down"
+        onClick={onClick}
+        {...getEbtProps({
+          element: AGENT_BUILDER_UI_EBT.element.pageContent,
+          action: AGENT_BUILDER_UI_EBT.action.conversation.SCROLL_DOWN,
+          detail: 'conversation',
+        })}
+      />
+    </EuiToolTip>
   );
 };

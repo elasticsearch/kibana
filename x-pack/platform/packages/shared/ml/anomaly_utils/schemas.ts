@@ -20,20 +20,23 @@ const mlEntityFieldOperationSchema = schema.oneOf([
 ]);
 
 export const influencerSchema = schema.object({
-  fieldName: schema.string(),
+  fieldName: schema.string({ maxLength: 10000 }),
   fieldValue: schema.any(),
 });
 
 export const criteriaFieldSchema = schema.object({
-  fieldName: schema.string(),
+  fieldName: schema.string({ maxLength: 10000 }),
   fieldValue: schema.any(),
   fieldType: schema.maybe(mlEntityFieldTypeSchema),
 });
 
-export const mlEntityFieldValueSchema = schema.oneOf([schema.string(), schema.number()]);
+export const mlEntityFieldValueSchema = schema.oneOf([
+  schema.string({ maxLength: 10000 }),
+  schema.number(),
+]);
 
 export const mlEntityFieldSchema = schema.object({
-  fieldName: schema.string(),
+  fieldName: schema.string({ maxLength: 10000 }),
   fieldValue: schema.maybe(mlEntityFieldValueSchema),
   fieldType: schema.maybe(mlEntityFieldTypeSchema),
   operation: schema.maybe(mlEntityFieldOperationSchema),

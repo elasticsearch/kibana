@@ -21,3 +21,10 @@ export {
   useEditorReadContext,
   EditorContextProvider,
 } from './editor_context';
+
+export {
+  useOutputFilterReadContext,
+  useOutputFilterActionContext,
+  OutputFilterContextProvider,
+} from './output_filter_context';
+export type { OutputFilterState, FilterMode } from './output_filter_context';

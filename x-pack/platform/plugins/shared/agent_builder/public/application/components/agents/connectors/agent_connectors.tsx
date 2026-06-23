@@ -262,6 +262,7 @@ export const AgentConnectors = ({ agentId }: AgentConnectorsProps) => {
               {selectedConnector ? (
                 <ConnectorDetailPanel
                   connector={selectedConnector}
+                  agentId={agentId}
                   onRemove={(c) => {
                     unassign(c);
                     setSelectedConnectorId(null);

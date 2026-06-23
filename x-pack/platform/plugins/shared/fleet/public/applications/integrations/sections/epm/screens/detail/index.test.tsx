@@ -233,11 +233,20 @@ describe('When on integration detail', () => {
     unInstalledPackage.item.status = 'not_installed';
     unInstalledPackage.item.version = pkgVersion;
 
+    const isViewingPrerelease = pkgVersion.includes('-');
+
     mockedApi.responseProvider.epmGetInfo.mockImplementation((name, version, query) => {
       if (query?.prerelease === false) {
         const gaPackage = { item: { ...unInstalledPackage.item } };
         gaPackage.item.version = '1.0.0';
+        gaPackage.item.latestVersion = '1.0.0';
         return gaPackage;
+      }
+      if (query?.prerelease === true) {
+        // The prerelease query uses a specific version; latestVersion reflects newest prerelease.
+        const pkg = { item: { ...unInstalledPackage.item } };
+        pkg.item.latestVersion = isViewingPrerelease ? pkgVersion : '1.0.0';
+        return pkg;
       }
       return unInstalledPackage;
     });
@@ -274,6 +283,54 @@ describe('When on integration detail', () => {
     });
   });
 
+  describe('and the package is not installed while viewing an old pinned version with prerelease enabled', () => {
+    // Reproduces the bug from https://github.com/elastic/ingest-dev/issues/7934:
+    // URL is pinned to an old version (0.3.7) after uninstall; GA=1.0.0 and prerelease=1.0.0-beta exist.
+    // Before the fix, showVersionSelect was false (version ≠ latestGA or latestPrerelease) → no dropdown.
+    // After the fix, notInstalled status also reveals the dropdown.
+    beforeEach(async () => {
+      mockedApi.responseProvider.getSettings.mockReturnValue({
+        item: { prerelease_integrations_enabled: true, id: '' },
+      });
+
+      // URL is pinned to 0.3.7 (old). GA=1.0.0, prerelease=1.0.0-beta. Package is not installed.
+      const baseResponse = mockedApi.responseProvider.epmGetInfo('nginx');
+      const notInstalledOldVersion = {
+        ...baseResponse.item,
+        status: 'not_installed' as const,
+        version: '0.3.7',
+        latestVersion: '1.0.0',
+      };
+
+      mockedApi.responseProvider.epmGetInfo.mockImplementation((name, version, query) => {
+        if (query?.prerelease === false) {
+          // GA query (version=0.3.7, prerelease=false): latestVersion = latest GA
+          return { item: { ...notInstalledOldVersion, version: '0.3.7', latestVersion: '1.0.0' } };
+        }
+        if (query?.prerelease === true) {
+          // Prerelease query (version=0.3.7, prerelease=true): latestVersion = latest prerelease
+          return {
+            item: { ...notInstalledOldVersion, version: '0.3.7', latestVersion: '1.0.0-beta' },
+          };
+        }
+        // main query (version=0.3.7, prerelease=true from settings)
+        return { item: notInstalledOldVersion };
+      });
+
+      await render();
+      await act(() => mockedApi.waitForApi());
+      await act(() => mockedApi.waitForApi());
+      await act(() => mockedApi.waitForApi());
+      await act(() => mockedApi.waitForApi());
+    }, TESTS_TIMEOUT);
+
+    it('should display the version selector even when viewing an old pinned version after uninstall', async () => {
+      const versionSelect = renderResult.queryByTestId('versionSelect');
+      expect(versionSelect).toBeInTheDocument();
+      expect(renderResult.queryByTestId('versionText')).not.toBeInTheDocument();
+    });
+  });
+
   describe('and the package is not installed and prerelease disabled', () => {
     beforeEach(async () => {
       mockGAAndPrereleaseVersions('1.0.0');
@@ -296,8 +353,10 @@ describe('When on integration detail', () => {
       expect(renderResult.queryByTestId('tab-policies')).toBeNull();
     });
 
-    it('should display version text and no callout if prerelease setting disabled', async () => {
-      expect((renderResult.queryByTestId('versionText') as any)?.textContent).toEqual('1.0.0');
+    it('should display static version text and no callout if prerelease setting disabled and only one version available', async () => {
+      // Only one version available (no newer GA, no prerelease) → selector collapses to static text.
+      expect(renderResult.queryByTestId('versionSelect')).toBeNull();
+      expect(renderResult.queryByTestId('versionText')).toBeInTheDocument();
       expect(renderResult.queryByTestId('prereleaseCallout')).toBeNull();
     });
   });
@@ -1019,7 +1078,7 @@ On Windows, the module was tested with Nginx installed from the Chocolatey repos
     if (typeof path === 'string') {
       if (path === epmRouteService.getInfoPath(`nginx`, `0.3.7`)) {
         markApiCallAsHandled();
-        return mockedApiInterface.responseProvider.epmGetInfo('nginx');
+        return mockedApiInterface.responseProvider.epmGetInfo('nginx', '0.3.7', options.query);
       }
       if (path === epmRouteService.getInfoPath(`nginx`)) {
         markApiCallAsHandled();

@@ -32,7 +32,7 @@ export const FindSignificantEventsButton = ({
   isRunning,
   isCanceling = false,
   isDisabled,
-  size,
+  size = 's',
   primaryDataTestSubj = 'significant_events_discovery_button',
 }: FindSignificantEventsButtonProps) => {
   const buildPanels = useCallback(

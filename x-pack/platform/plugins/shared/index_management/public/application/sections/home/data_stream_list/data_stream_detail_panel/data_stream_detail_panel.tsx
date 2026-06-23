@@ -54,6 +54,7 @@ import { useIlmLocator } from '../../../../services/use_ilm_locator';
 import { StreamsPromotion } from './streams_promotion';
 import { INDEX_MANAGEMENT_LOCATOR_ID } from '../../../../..';
 import { DataRetentionValue } from '../data_retention_value';
+import { formatByteSizeString } from '../../../../lib/format_bytes';
 
 interface Detail {
   name: string;
@@ -279,7 +280,7 @@ export const DataStreamDetailPanel: React.FunctionComponent<Props> = ({
           toolTip: i18n.translate('xpack.idxMgmt.dataStreamDetailPanel.storageSizeToolTip', {
             defaultMessage: `The total size of all shards in the data stream’s backing indices.`,
           }),
-          content: meteringStorageSize,
+          content: formatByteSizeString(meteringStorageSize),
           dataTestSubj: 'meteringStorageSizeDetail',
         }
       );
@@ -311,7 +312,7 @@ export const DataStreamDetailPanel: React.FunctionComponent<Props> = ({
           toolTip: i18n.translate('xpack.idxMgmt.dataStreamDetailPanel.storageSizeToolTip', {
             defaultMessage: `The total size of all shards in the data stream’s backing indices.`,
           }),
-          content: storageSize,
+          content: formatByteSizeString(storageSize),
           dataTestSubj: 'storageSizeDetail',
         }
       );

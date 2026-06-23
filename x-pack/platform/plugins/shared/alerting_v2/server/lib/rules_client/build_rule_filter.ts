@@ -33,6 +33,14 @@ const FIELD_MAP: Record<string, string> = {
 
 export const ALLOWED_FILTER_FIELDS = Object.keys(FIELD_MAP);
 
+const toSavedObjectIdFilterValue = (ruleId: string): string => {
+  const prefix = `${RULE_SAVED_OBJECT_TYPE}:`;
+  if (ruleId === '*' || ruleId.includes('*')) {
+    return ruleId;
+  }
+  return ruleId.startsWith(prefix) ? ruleId : `${prefix}${ruleId}`;
+};
+
 /**
  * Validates the field argument of a field-referencing KQL function and
  * rewrites it from the clean API name to the saved-object path.
@@ -40,21 +48,38 @@ export const ALLOWED_FILTER_FIELDS = Object.keys(FIELD_MAP);
 const rewriteFieldArg = (node: KueryNode): KueryNode => {
   const fieldArg = node.arguments[0];
   if (fieldArg?.type === 'literal' && typeof fieldArg.value === 'string') {
-    const soField = FIELD_MAP[fieldArg.value];
+    const apiFieldName = fieldArg.value;
+    const soField = FIELD_MAP[apiFieldName];
     if (!soField) {
       throw Boom.badRequest(
-        `Invalid filter field "${fieldArg.value}". Allowed fields: ${ALLOWED_FILTER_FIELDS.join(
+        `Invalid filter field "${apiFieldName}". Allowed fields: ${ALLOWED_FILTER_FIELDS.join(
           ', '
         )}`,
         {
           code: ALERTING_V2_ERROR_CODES.INVALID_FILTER_FIELD,
-          details: { field: fieldArg.value, allowed_fields: ALLOWED_FILTER_FIELDS },
+          details: { field: apiFieldName, allowed_fields: ALLOWED_FILTER_FIELDS },
         }
       );
     }
+
+    const rewrittenArgs: KueryNode[] = [
+      { ...fieldArg, value: soField },
+      ...node.arguments.slice(1),
+    ];
+
+    if (apiFieldName === 'id' && node.function === 'is') {
+      const valueArg = rewrittenArgs[1];
+      if (valueArg?.type === 'literal' && typeof valueArg.value === 'string') {
+        rewrittenArgs[1] = {
+          ...valueArg,
+          value: toSavedObjectIdFilterValue(valueArg.value),
+        };
+      }
+    }
+
     return {
       ...node,
-      arguments: [{ ...fieldArg, value: soField }, ...node.arguments.slice(1)],
+      arguments: rewrittenArgs,
     };
   }
   return node;
@@ -117,7 +142,7 @@ const rewriteNode = (node: KueryNode): KueryNode => {
  *
  * @example
  * buildRuleSoFilter('NOT (id: "abc" or id: "def")')
- * // → 'NOT (alerting_rule.id: "abc" OR alerting_rule.id: "def")'
+ * // → 'NOT (alerting_rule.id: "alerting_rule:abc" OR alerting_rule.id: "alerting_rule:def")'
  *
  * @example
  * buildRuleSoFilter('enabled: true AND kind: alert')

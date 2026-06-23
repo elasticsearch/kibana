@@ -7,6 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+const mockValidateQuery = jest.fn();
+
+jest.mock('@kbn/esql-language', () => ({
+  __esModule: true,
+  validateQuery: (...args: unknown[]) => mockValidateQuery(...args),
+}));
+
 // eslint-disable-next-line import/no-nodejs-modules
 import fs from 'fs';
 // eslint-disable-next-line import/no-nodejs-modules
@@ -27,18 +34,21 @@ import { validateTriggerConditions } from './validate_trigger_conditions';
 import { validateVariables } from './validate_variables';
 import { validateWorkflowInputs } from './validate_workflow_inputs';
 import { validateWorkflowOutputsInYaml } from './validate_workflow_outputs_in_yaml';
+import { createFakeMonacoModel } from '../../../../common/mocks/monaco_model';
 import { getPropertyHandler } from '../../../../common/schema';
 import { performComputation } from '../../../entities/workflows/store/workflow_detail/utils/computation';
 import { validateEsqlSteps } from '../../../widgets/workflow_yaml_editor/lib/esql_validation/validate_esql_steps';
 
 const WARMUP_ITERATIONS = 5;
 
+/** Per-step budgets use ~8× local median on large fixtures to absorb CI agent variance (#261389). */
 const stubEsqlCallbacks: ESQLCallbacks = {};
 
 interface BenchmarkConfig {
   iterations: number;
-  perStepThresholdMs: number;
   totalThresholdMs: number;
+  defaultBudgetMs: number;
+  stepBudgets?: Record<string, number>;
 }
 
 function median(values: number[]): number {
@@ -63,44 +73,56 @@ function benchmarkSync(fn: () => void, iterations: number): number {
   return median(samples);
 }
 
-function createMockModel(value: string) {
-  const lines = value.split('\n');
-  return {
-    getValue: () => value,
-    getPositionAt: (offset: number) => {
-      let line = 1;
-      let col = 1;
-      for (let i = 0; i < offset && i < value.length; i++) {
-        if (value[i] === '\n') {
-          line++;
-          col = 1;
-        } else {
-          col++;
-        }
+function resolveStepBudget(stepName: string, config: BenchmarkConfig): number {
+  if (config.stepBudgets?.[stepName] !== undefined) {
+    return config.stepBudgets[stepName];
+  }
+  for (const [prefix, budget] of Object.entries(config.stepBudgets ?? {})) {
+    if (stepName.startsWith(prefix)) {
+      return budget;
+    }
+  }
+  return config.defaultBudgetMs;
+}
+
+function assertTimingsWithinBudget(
+  timings: Record<string, number>,
+  config: BenchmarkConfig
+): Array<{ step: string; ms: number; budgetMs: number }> {
+  const violations: Array<{ step: string; ms: number; budgetMs: number }> = [];
+  for (const [step, ms] of Object.entries(timings)) {
+    if (step !== 'total') {
+      const budgetMs = resolveStepBudget(step, config);
+      if (ms >= budgetMs) {
+        violations.push({ step, ms, budgetMs });
       }
-      return { lineNumber: line, column: col };
-    },
-    getOffsetAt: (pos: { lineNumber: number; column: number }) => {
-      let offset = 0;
-      for (let i = 1; i < pos.lineNumber && offset < value.length; i++) {
-        const nextNewline = value.indexOf('\n', offset);
-        if (nextNewline === -1) {
-          break;
-        }
-        offset = nextNewline + 1;
-      }
-      return offset + pos.column - 1;
-    },
-    getLineMaxColumn: (lineNumber: number) => {
-      const line = lines[lineNumber - 1];
-      return line ? line.length + 1 : 1;
-    },
-    uri: { path: '/test.yaml' },
-  } as any;
+      expect(ms).toBeLessThan(budgetMs);
+    }
+  }
+  return violations;
+}
+
+function logTimingsTable(title: string, timings: Record<string, number>, logOnSuccess: boolean) {
+  if (!logOnSuccess && process.env.CI) {
+    return;
+  }
+  // eslint-disable-next-line no-console
+  console.log(title);
+  // eslint-disable-next-line no-console
+  console.table(
+    Object.fromEntries(Object.entries(timings).map(([k, v]) => [k, Number(v.toFixed(3))]))
+  );
 }
 
 function loadYaml(relativePath: string): string {
   return fs.readFileSync(path.resolve(__dirname, relativePath), 'utf-8');
+}
+
+/** Extends the shared fake model with APIs required by validateEsqlSteps. */
+function createPerfMonacoModel(yamlContent: string) {
+  return Object.assign(createFakeMonacoModel(yamlContent), {
+    getValueLength: () => yamlContent.length,
+  });
 }
 
 function runPerStepBenchmarks(yamlContent: string, config: BenchmarkConfig) {
@@ -109,10 +131,10 @@ function runPerStepBenchmarks(yamlContent: string, config: BenchmarkConfig) {
     lineCounter,
     keepSourceTokens: true,
   });
-  const mockModel = createMockModel(yamlContent);
+  const mockModel = createPerfMonacoModel(yamlContent);
   const computed = performComputation(yamlContent);
   const { workflowDefinition, workflowGraph, workflowLookup } = computed;
-  const { iterations, perStepThresholdMs } = config;
+  const { iterations } = config;
 
   const timings: Record<string, number> = {};
 
@@ -170,11 +192,11 @@ function runPerStepBenchmarks(yamlContent: string, config: BenchmarkConfig) {
     }, iterations);
   }
 
-  return { timings, perStepThresholdMs };
+  return { timings, config };
 }
 
 async function runE2EBenchmark(yamlContent: string, config: BenchmarkConfig) {
-  const { iterations, totalThresholdMs, perStepThresholdMs } = config;
+  const { iterations } = config;
   const timings: Record<string, number[]> = {};
   const record = (name: string, ms: number) => {
     if (!timings[name]) {
@@ -207,7 +229,7 @@ async function runE2EBenchmark(yamlContent: string, config: BenchmarkConfig) {
       throw new Error(`performComputation returned no document on iteration ${i}`);
     }
 
-    const model = createMockModel(yamlContent);
+    const model = createPerfMonacoModel(yamlContent);
 
     start = performance.now();
     validateStepNameUniqueness(yamlDocument, lc);
@@ -274,7 +296,7 @@ async function runE2EBenchmark(yamlContent: string, config: BenchmarkConfig) {
     medians[name] = Number(median(samples).toFixed(3));
   }
 
-  return { medians, totalThresholdMs, perStepThresholdMs };
+  return { medians, config };
 }
 
 const EXAMPLES_DIR = '../../../../common/examples';
@@ -283,18 +305,39 @@ const SUITES = [
   {
     name: 'case_response.yaml (27 steps, 81 vars)',
     yamlPath: `${EXAMPLES_DIR}/case_response.yaml`,
-    config: { iterations: 100, perStepThresholdMs: 50, totalThresholdMs: 100 },
+    config: {
+      iterations: 100,
+      defaultBudgetMs: 50,
+      totalThresholdMs: 100,
+    },
   },
   {
     name: 'infosec_demo.yaml (150 steps, 361 vars)',
     yamlPath: `${EXAMPLES_DIR}/infosec_demo.yaml`,
-    config: { iterations: 20, perStepThresholdMs: 500, totalThresholdMs: 2000 },
+    config: {
+      iterations: 20,
+      defaultBudgetMs: 50,
+      totalThresholdMs: 2000,
+      stepBudgets: {
+        performComputation: 120,
+        validateLiquidTemplate: 80,
+        collectAllVariables: 200,
+        validateVariables: 650,
+        'connectorIds (collect+validate)': 80,
+        validateIfConditions: 80,
+        validateEsqlSteps: 120,
+      },
+    },
   },
 ] as const;
 
+beforeEach(() => {
+  mockValidateQuery.mockResolvedValue({ errors: [], warnings: [] });
+});
+
 for (const suite of SUITES) {
-  // FLAKY: https://github.com/elastic/kibana/issues/261389
-  describe.skip(`YAML validation performance: ${suite.name}`, () => {
+  // Regression guard for validation latency; per-step budgets fix #261389 CI flake.
+  describe(`YAML validation performance: ${suite.name}`, () => {
     let yamlContent: string;
 
     beforeAll(() => {
@@ -302,44 +345,37 @@ for (const suite of SUITES) {
     });
 
     it('each validation step completes within budget', async () => {
-      const { timings, perStepThresholdMs } = runPerStepBenchmarks(yamlContent, suite.config);
+      const { timings, config } = runPerStepBenchmarks(yamlContent, suite.config);
 
       const varCount = Array.from(yamlContent.matchAll(VARIABLE_REGEX_GLOBAL)).length;
       const lineCount = yamlContent.split('\n').length;
 
-      // eslint-disable-next-line no-console
-      console.log(
-        `\n--- Per-step (${lineCount} lines, ${varCount} vars, ` +
-          `median of ${suite.config.iterations}, ms) ---`
-      );
-      // eslint-disable-next-line no-console
-      console.table(
-        Object.fromEntries(Object.entries(timings).map(([k, v]) => [k, Number(v.toFixed(3))]))
-      );
-
-      for (const [, ms] of Object.entries(timings)) {
-        expect(ms).toBeLessThan(perStepThresholdMs);
+      let violations: Array<{ step: string; ms: number; budgetMs: number }> = [];
+      try {
+        violations = assertTimingsWithinBudget(timings, config);
+      } finally {
+        logTimingsTable(
+          `\n--- Per-step (${lineCount} lines, ${varCount} vars, median of ${suite.config.iterations}, ms) ---`,
+          timings,
+          violations.length > 0
+        );
       }
     });
 
     it('full validation pipeline completes within budget', async () => {
-      const {
-        medians,
-        totalThresholdMs,
-        perStepThresholdMs: stepThreshold,
-      } = await runE2EBenchmark(yamlContent, suite.config);
+      const { medians, config } = await runE2EBenchmark(yamlContent, suite.config);
 
-      // eslint-disable-next-line no-console
-      console.log(`\n--- E2E (median of ${suite.config.iterations}, ms) ---`);
-      // eslint-disable-next-line no-console
-      console.table(medians);
+      expect(medians.total).toBeLessThan(config.totalThresholdMs);
 
-      expect(medians.total).toBeLessThan(totalThresholdMs);
-
-      for (const [step, ms] of Object.entries(medians)) {
-        if (step !== 'total') {
-          expect(ms).toBeLessThan(stepThreshold);
-        }
+      let violations: Array<{ step: string; ms: number; budgetMs: number }> = [];
+      try {
+        violations = assertTimingsWithinBudget(medians, config);
+      } finally {
+        logTimingsTable(
+          `\n--- E2E (median of ${suite.config.iterations}, ms) ---`,
+          medians,
+          violations.length > 0
+        );
       }
     });
   });

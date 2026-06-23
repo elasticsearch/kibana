@@ -212,6 +212,9 @@ export const HierarchicalActionsMenu: React.FC<HierarchicalActionsMenuProps> = (
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.fleet.hierarchicalMenu.popoverAriaLabel', {
+        defaultMessage: 'Menu',
+      })}
       anchorPosition={anchorPosition}
       panelPaddingSize="none"
       button={buttonElement}

@@ -18,6 +18,7 @@ import {
   EuiLink,
   EuiIconTip,
   EuiText,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { CSSProperties } from 'react';
@@ -42,6 +43,7 @@ export const MultipleAgentPoliciesSummaryLine = memo<{
   const { getHref } = useLink();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const closePopover = () => setIsPopoverOpen(false);
+  const popoverTitleId = useGeneratedHtmlId();
   const [policiesModalEnabled, setPoliciesModalEnabled] = useState(false);
   const authz = useAuthz();
   const canManageAgentPolicies =
@@ -142,12 +144,13 @@ export const MultipleAgentPoliciesSummaryLine = memo<{
                       +{policies.length - 1}
                     </EuiBadge>
                     <EuiPopover
+                      aria-labelledby={popoverTitleId}
                       data-test-subj="agentPoliciesPopover"
                       isOpen={isPopoverOpen}
                       closePopover={closePopover}
                       anchorPosition="downCenter"
                     >
-                      <EuiPopoverTitle>
+                      <EuiPopoverTitle id={popoverTitleId}>
                         {i18n.translate('xpack.fleet.agentPolicySummaryLine.popover.title', {
                           defaultMessage: 'This integration is shared by',
                         })}

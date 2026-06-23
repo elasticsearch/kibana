@@ -5,13 +5,13 @@
  * 2.0.
  */
 
-import { setMockValues } from '../../../../__mocks__/kea_logic';
+import { setMockActions, setMockValues } from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiBasicTable, EuiLoadingSpinner } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { InferenceErrors } from './inference_errors';
 
@@ -24,40 +24,28 @@ describe('InferenceErrors', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setMockValues(defaultValues);
+    setMockActions({ makeRequest: jest.fn() });
   });
+
   it('renders spinner when loading data', () => {
-    const wrapper = shallow(<InferenceErrors />);
-    expect(wrapper.find(EuiLoadingSpinner)).toHaveLength(1);
-    expect(wrapper.find(EuiBasicTable)).toHaveLength(0);
+    renderWithKibanaRenderContext(<InferenceErrors />);
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
+
   it('renders expected table columns', () => {
     setMockValues({
       ...defaultValues,
       inferenceErrors: [],
       isLoading: false,
     });
-    const wrapper = shallow(<InferenceErrors />);
-    expect(wrapper.find(EuiLoadingSpinner)).toHaveLength(0);
-    expect(wrapper.find(EuiBasicTable)).toHaveLength(1);
-    const table = wrapper.find(EuiBasicTable);
-    expect(table.prop('tableLayout')).toEqual('auto');
-    expect(table.prop('columns')).toEqual([
-      {
-        dataType: 'date',
-        field: 'timestamp',
-        name: expect.any(String),
-      },
-      {
-        dataType: 'string',
-        field: 'message',
-        name: expect.any(String),
-        textOnly: true,
-      },
-      {
-        dataType: 'number',
-        field: 'doc_count',
-        name: expect.any(String),
-      },
-    ]);
+    renderWithKibanaRenderContext(<InferenceErrors />);
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Timestamp' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Error message' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Approx. document count' })
+    ).toBeInTheDocument();
   });
 });

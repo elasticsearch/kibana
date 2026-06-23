@@ -25,7 +25,13 @@ import {
 export const trimUserFormData = (
   userFormData: Omit<
     CaseFormFieldsSchemaProps,
-    'connectorId' | 'fields' | 'syncAlerts' | 'extractObservables' | 'customFields'
+    | 'connectorId'
+    | 'fields'
+    | 'syncAlerts'
+    | 'extractObservables'
+    | 'customFields'
+    | 'templateId'
+    | 'templateVersion'
   >
 ) => {
   let formData = {
@@ -46,7 +52,13 @@ export const trimUserFormData = (
 };
 
 export const createFormDeserializer = (data: CasePostRequest): CaseFormFieldsSchemaProps => {
-  const { connector, settings, customFields, ...restData } = data;
+  const {
+    connector,
+    settings,
+    customFields,
+    [CASE_EXTENDED_FIELDS]: extendedFieldsFromResponse,
+    ...restData
+  } = data;
 
   return {
     ...restData,
@@ -55,6 +67,9 @@ export const createFormDeserializer = (data: CasePostRequest): CaseFormFieldsSch
     syncAlerts: settings.syncAlerts,
     extractObservables: settings.extractObservables ?? false,
     customFields: customFieldsFormDeserializer(customFields) ?? {},
+    ...(extendedFieldsFromResponse != null
+      ? { [CASE_EXTENDED_FIELDS]: extendedFieldsFromResponse }
+      : {}),
   };
 };
 

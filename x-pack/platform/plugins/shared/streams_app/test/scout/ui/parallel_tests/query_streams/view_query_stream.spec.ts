@@ -50,7 +50,7 @@ test.describe('Query streams - View query stream', { tag: tags.stateful.classic 
     await expect(page.getByTestId(`streamsNameLink-${QUERY_STREAM_NAME}`)).toBeVisible();
 
     await pageObjects.streams.clickStreamNameLink(QUERY_STREAM_NAME);
-    await pageObjects.streams.clickQueryStreamDetailsTab('advanced');
+    await pageObjects.streams.clickQueryStreamDetailsTab('overview');
 
     // details are visible and show the query
     await expect(pageObjects.streams.queryStreamDetailsQueryViewerCodeBlock).toHaveText(

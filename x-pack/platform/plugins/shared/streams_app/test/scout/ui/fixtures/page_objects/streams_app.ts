@@ -7,6 +7,7 @@
 
 /* eslint-disable playwright/no-nth-methods */
 
+import moment from 'moment';
 import type { Locator, ScoutPage } from '@kbn/scout';
 import {
   EuiCodeBlockWrapper,
@@ -17,6 +18,8 @@ import {
 } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 import type { FieldTypeOption } from '../../../../../public/components/stream_management/data_management/schema_editor/constants';
+
+const LEGACY_DATE_FORMAT = 'MMM D, YYYY @ HH:mm:ss.SSS';
 
 export class StreamsApp {
   public readonly processorFieldComboBox;
@@ -145,13 +148,6 @@ export class StreamsApp {
     await this.gotoStreamManagementTab(streamName, 'significantEvents');
   }
 
-  async gotoAdvancedTab(streamName: string) {
-    // Navigate to a stable tab first, then open Advanced to avoid races from direct URL nav
-    await this.gotoDataRetentionTab(streamName);
-    await this.page.getByRole('tab', { name: 'Advanced' }).click();
-    await this.page.waitForURL(/\/advanced/);
-  }
-
   async gotoAttachmentsTab(streamName: string) {
     await this.gotoStreamManagementTab(streamName, 'attachments');
   }
@@ -187,6 +183,22 @@ export class StreamsApp {
 
   async verifyDatePickerTimeRange(expectedRange: { from: string; to: string }) {
     // Use .first() because some pages (like Retention) may have multiple date pickers
+    const newControlButton = this.page.testSubj.locator('dateRangePickerControlButton').first();
+    try {
+      await newControlButton.waitFor({ state: 'visible', timeout: 5_000 });
+      // New DateRangePicker stores the range as ISO strings on data-date-range
+      // for absolute dates. Compare canonical ISO on both sides to avoid the
+      // display-format differences between the legacy and new pickers.
+      const dateRange = (await newControlButton.getAttribute('data-date-range')) ?? '';
+      const [actualStart, actualEnd] = dateRange.split(' to ').map((s) => s.trim());
+      const expectedStart = moment.utc(expectedRange.from, LEGACY_DATE_FORMAT, true).toISOString();
+      const expectedEnd = moment.utc(expectedRange.to, LEGACY_DATE_FORMAT, true).toISOString();
+      expect(actualStart, `Date picker 'start date' is incorrect`).toBe(expectedStart);
+      expect(actualEnd, `Date picker 'end date' is incorrect`).toBe(expectedEnd);
+      return;
+    } catch {
+      // New picker not present; fall through to legacy assertions.
+    }
     await expect(
       this.page.testSubj.locator('superDatePickerstartDatePopoverButton').first(),
       `Date picker 'start date' is incorrect`
@@ -1342,6 +1354,7 @@ export class StreamsApp {
   }
 
   async clickDeleteQueryStreamButton() {
+    await this.page.getByTestId('streamsAppStreamDetailActionsButton').click();
     await this.page.getByTestId('deleteQueryStreamButton').click();
   }
 
@@ -1442,9 +1455,9 @@ export class StreamsApp {
     }
   }
 
-  async deleteQueryStreamFromAdvancedTab(streamName: string) {
+  async deleteQueryStreamFromOverviewTab(streamName: string) {
     await this.clickStreamNameLink(streamName);
-    await this.clickQueryStreamDetailsTab('advanced');
+    await this.clickQueryStreamDetailsTab('overview');
     await this.clickDeleteQueryStreamButton();
     await this.fillDeleteQueryStreamModalInput(streamName);
     await this.clickDeleteQueryStreamModalDeleteButton();

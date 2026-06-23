@@ -6,6 +6,8 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useStore } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 import type { Filter } from '@kbn/es-query';
 import { isNonLocalIndexName } from '@kbn/es-query';
@@ -23,6 +25,11 @@ import { useGlobalTime } from '../../../../common/containers/use_global_time';
 import { inputsSelectors } from '../../../../common/store/inputs';
 import { useKibana } from '../../../../common/lib/kibana';
 import { AttacksEventTypes } from '../../../../common/lib/telemetry';
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
+import { useDefaultDocumentFlyoutProperties } from '../../../../flyout_v2/shared/hooks/use_default_flyout_properties';
+import { flyoutProviders } from '../../../../flyout_v2/shared/components/flyout_provider';
+import { AttackFlyoutWrapper } from '../../../../flyout_v2/attack/main/attack_flyout_wrapper';
+import { documentFlyoutHistoryKey } from '../../../../flyout_v2/shared/constants/flyout_history';
 import { useUserData } from '../../user_info';
 import { useListsConfig } from '../../../containers/detection_engine/lists/use_lists_config';
 import {
@@ -43,8 +50,8 @@ import { dsl } from '../utils/dsl';
 import { groupingOptions, groupingSettings } from './grouping_settings/grouping_configs';
 import {
   buildAttacksOnlyFilter,
-  buildConnectorIdFilter,
   buildAttackTypeFilter,
+  buildConnectorIdFilter,
 } from './filtering_configs';
 import type { GroupTakeActionItems } from '../../alerts_table/types';
 import { AttacksGroupTakeActionItems } from './attacks_group_take_action_items';
@@ -118,9 +125,13 @@ export const TableSection = React.memo(
 
     const { to, from } = useGlobalTime();
 
-    const {
-      services: { telemetry },
-    } = useKibana();
+    const { services } = useKibana();
+    const { telemetry, overlays } = services;
+
+    const newFlyoutSystemEnabled = useIsExperimentalFeatureEnabled('newFlyoutSystemEnabled');
+    const defaultFlyoutProperties = useDefaultDocumentFlyoutProperties();
+    const store = useStore();
+    const history = useHistory();
 
     const [{ loading: userInfoLoading }] = useUserData();
 
@@ -158,22 +169,55 @@ export const TableSection = React.memo(
       (selectedGroup: string, bucket: RawBucket<AlertsGroupingAggregation>) => {
         const attack = getAttack(selectedGroup, bucket);
         if (attack) {
-          openFlyout({
-            right: {
-              id: AttackDetailsRightPanelKey,
-              params: {
-                attackId: attack.id,
-                indexName: dataView.getIndexPattern(),
+          if (newFlyoutSystemEnabled) {
+            overlays.openSystemFlyout(
+              flyoutProviders({
+                services,
+                store,
+                history,
+                children: (
+                  <AttackFlyoutWrapper
+                    attackId={attack.id}
+                    indexName={dataView.getIndexPattern()}
+                    onAttackUpdated={() => {}}
+                  />
+                ),
+              }),
+              {
+                ...defaultFlyoutProperties,
+                historyKey: documentFlyoutHistoryKey,
+                session: 'start',
+              }
+            );
+          } else {
+            openFlyout({
+              right: {
+                id: AttackDetailsRightPanelKey,
+                params: {
+                  attackId: attack.id,
+                  indexName: dataView.getIndexPattern(),
+                },
               },
-            },
-          });
+            });
+          }
           telemetry.reportEvent(AttacksEventTypes.DetailsFlyoutOpened, {
             id: attack.id,
             source: 'attacks_page_table',
           });
         }
       },
-      [dataView, getAttack, openFlyout, telemetry]
+      [
+        dataView,
+        defaultFlyoutProperties,
+        getAttack,
+        history,
+        newFlyoutSystemEnabled,
+        openFlyout,
+        overlays,
+        services,
+        store,
+        telemetry,
+      ]
     );
 
     const { defaultGroupTitleRenderers } = useGetDefaultGroupTitleRenderers({

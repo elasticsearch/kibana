@@ -100,6 +100,11 @@ export interface EndpointAuthz {
   /** if the user has read permissions for endpoint exceptions */
   canWriteEndpointExceptions: boolean;
 
+  /** If the user has write permissions for custom YARA signatures */
+  canWriteCustomYaraSignatures: boolean;
+  /** If the user has read permissions for custom YARA signatures */
+  canReadCustomYaraSignatures: boolean;
+
   /** If user is allowed to manage global artifacts. Introduced support for spaces feature */
   canManageGlobalArtifacts: boolean;
 

@@ -5,54 +5,37 @@
  * 2.0.
  */
 
-import { filestoreTools } from '@kbn/agent-builder-common/tools';
-import { FileEntryType } from '@kbn/agent-builder-server/runner/filestore';
+import { internalTools } from '@kbn/agent-builder-common/tools';
 import { cleanPrompt } from '@kbn/agent-builder-genai-utils/prompts';
 import { sanitizeToolId } from '@kbn/agent-builder-genai-utils/langchain';
 
 const tools = {
-  read: sanitizeToolId(filestoreTools.read),
-  ls: sanitizeToolId(filestoreTools.ls),
-  glob: sanitizeToolId(filestoreTools.glob),
-  grep: sanitizeToolId(filestoreTools.grep),
+  readFile: sanitizeToolId(internalTools.readFile),
+  listFiles: sanitizeToolId(internalTools.listFiles),
+  bash: sanitizeToolId(internalTools.bash),
 };
 
-export const getFileSystemInstructions = (): string => {
+export const getFileSystemInstructions = ({
+  bashEnabled = false,
+}: {
+  bashEnabled?: boolean;
+} = {}): string => {
+  const bashToolSection = bashEnabled
+    ? `- ${tools.bash}: run a bash command in a sandboxed shell. Use for composition, piping, and writing files. Refer to the tool description for the full capabilities.`
+    : '';
+
   return cleanPrompt(`
-  ## FILESTORE
+  ## FILESYSTEM (VFS)
 
-  You have access to a file store, exposing a virtual filesystem containing files representing assets that you can use to perform your tasks.
+  You have access to a virtual filesystem with the following root folders:
+  - /workspace: persistent across rounds and conversation resumptions — anything you write here is saved.
+  - /tool_calls: read-only view of prior tool results in this conversation. Path convention: /tool_calls/{tool_id}/{tool_call_id}/{tool_result_id}.json
+  - /skills: read-only skill files (main file: SKILL.md, plus subfiles).
+  - /tmp and /home/user: ephemeral folders — not persisted between rounds.
 
-  ### Tools
-
-  You have access to the following tools to access and interact with the file store:
-  - ${tools.read}: access the content of a file
-  - ${tools.ls}: list the content of a directory
-  - ${tools.glob}: find files matching a glob pattern
-  - ${tools.grep}: search for a text pattern in files
-
-  Please refer to each tool's description and schema for more information on how to use it.
-
-  Note: Results from filestore tools called before the last user message will be excluded from the conversation.
-  When needing to access the same data again, you should call the filestore tool again with the same parameters.
-
-  ### Types of files
-
-  The filestore is used to store different types of files. Each of them represents a different concept in the system.
-
-  #### Tool results
-
-  File type: "${FileEntryType.toolResult}"
-
-  Those are the results from all prior tool calls you performed during the current conversation, exposed
-  so that you can access them later when required.
-
-  - They are all stored under the "/tool_calls" folder
-  - They follow this path convention: "/tool_calls/{tool_id}/{tool_call_id}/{tool_result_id}.json"
-
-  #### Skills
-
-  File type: "${FileEntryType.skill}" for main skill files (SKILL.md) and "${FileEntryType.skillReferenceContent}" for additional skill files.
-
-  Skills contained detailed instructions for a specific task. They are all stored under the "/skills" folder.`);
+  The following tools can interact with the VFS:
+  - ${tools.readFile}: read a single file's content.
+  - ${tools.listFiles}: list the entries (files and subdirectories) under a directory.
+  ${bashToolSection}
+`);
 };

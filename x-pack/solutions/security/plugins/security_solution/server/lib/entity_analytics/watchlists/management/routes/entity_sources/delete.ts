@@ -18,6 +18,7 @@ import type { EntityAnalyticsRoutesDeps } from '../../../../types';
 import { withMinimumLicense } from '../../../../utils/with_minimum_license';
 import { WatchlistConfigClient } from '../../watchlist_config';
 import { WatchlistEntitySourceClient } from '../../../entity_sources/infra';
+import { getWatchlistSavedObjectClient } from '../../../shared/utils';
 
 export const deleteEntitySourceRoute = (
   router: EntityAnalyticsRoutesDeps['router'],
@@ -50,8 +51,9 @@ export const deleteEntitySourceRoute = (
         try {
           const secSol = await context.securitySolution;
           const core = await context.core;
+          const soClient = getWatchlistSavedObjectClient(core);
           const client = new WatchlistEntitySourceClient({
-            soClient: core.savedObjects.client,
+            soClient,
             namespace: secSol.getSpaceId(),
             getStartServices,
             esClient: core.elasticsearch.client.asCurrentUser,
@@ -66,7 +68,7 @@ export const deleteEntitySourceRoute = (
           const watchlistClient = new WatchlistConfigClient({
             logger,
             namespace: secSol.getSpaceId(),
-            soClient: core.savedObjects.client,
+            soClient,
             esClient: core.elasticsearch.client.asCurrentUser,
           });
           await watchlistClient.removeEntitySourceReference(request.params.watchlist_id, source);

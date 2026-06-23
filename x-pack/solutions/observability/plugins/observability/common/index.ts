@@ -23,6 +23,7 @@ export { ElapsedTimestampTooltip } from './components/elapsed_timestamp_tooltip'
 
 export {
   enableInspectEsQueries,
+  searchExcludedDataTiers,
   maxSuggestions,
   enableComparisonByDefault,
   defaultApmServiceEnvironment,

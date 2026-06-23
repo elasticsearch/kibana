@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { Document } from 'yaml';
 import type { WorkflowYaml } from '@kbn/workflows';
 import { DynamicWorkflowContextSchema } from '@kbn/workflows';
 import { WorkflowGraph } from '@kbn/workflows/graph';
@@ -272,6 +273,24 @@ describe('validateVariables', () => {
     expect(result).toEqual([]);
     expect(mockGetContextSchemaForStep).not.toHaveBeenCalled();
     expect(mockValidateVariable).not.toHaveBeenCalled();
+  });
+
+  it('should cache path and template-local context for variables with the same yaml path and offset', () => {
+    const sharedPath: Array<string | number> = ['steps', 0, 'with', 'value'];
+    const sharedOffset = 42;
+    const variables = [
+      createVariableItem({ key: 'var1', yamlPath: sharedPath, offset: sharedOffset }),
+      createVariableItem({ key: 'var2', yamlPath: sharedPath, offset: sharedOffset }),
+    ];
+
+    mockValidateVariable.mockReturnValue({} as YamlValidationResult);
+
+    validateVariables(variables, mockWorkflowGraph, mockWorkflowDefinition, {} as Document);
+
+    expect(mockGetContextSchemaForStep).toHaveBeenCalledTimes(1);
+    expect(mockExtendWithPathSpecificContext).toHaveBeenCalledTimes(1);
+    expect(mockGetContextSchemaWithTemplateLocals).toHaveBeenCalledTimes(1);
+    expect(mockValidateVariable).toHaveBeenCalledTimes(2);
   });
 
   it('should pass correct parameters to validateVariable', () => {

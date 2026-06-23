@@ -8,7 +8,7 @@
 import type { FC } from 'react';
 import React, { useMemo } from 'react';
 import { EuiText } from '@elastic/eui';
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import { FormProvider, useForm } from 'react-hook-form';
 import type { InlineField } from '../../../../common/types/domain/template/fields';
 import { FieldSchema, isInlineField } from '../../../../common/types/domain/template/fields';

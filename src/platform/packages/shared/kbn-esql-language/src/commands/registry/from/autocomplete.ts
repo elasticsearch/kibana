@@ -9,7 +9,12 @@
 import { SOURCES_TYPES } from '@kbn/esql-types';
 import type { ESQLAstAllCommands } from '@elastic/esql/types';
 import { isSubQuery, isSource } from '@elastic/esql';
-import { pipeCompleteItem, commaCompleteItem, buildSubqueryCompleteItems } from '../complete_items';
+import {
+  newLineCompleteItem,
+  newLineAndPipeCompleteItems,
+  commaCompleteItem,
+  buildSubqueryCompleteItems,
+} from '../complete_items';
 import {
   getSourcesFromCommands,
   getSourceSuggestions,
@@ -169,7 +174,11 @@ async function suggestNextActions(
   context: ICommandContext | undefined,
   callbacks: ICommandCallbacks | undefined
 ): Promise<ISuggestionItem[]> {
-  const suggestions: ISuggestionItem[] = [pipeCompleteItem, commaCompleteItem, metadataSuggestion];
+  const suggestions: ISuggestionItem[] = [
+    ...newLineAndPipeCompleteItems,
+    commaCompleteItem,
+    metadataSuggestion,
+  ];
 
   const recommendedQueries = await getRecommendedQueriesSuggestions(
     context?.editorExtensions ?? EMPTY_EXTENSIONS,
@@ -227,6 +236,16 @@ async function suggestAdditionalSources(
 
   if (subquerySuggestions && isRestartingExpression(innerText) && shouldSuggestSubquery(context)) {
     suggestions.push(...subquerySuggestions);
+  }
+
+  if (isTypingIndexName) {
+    const indexNameStart = innerText.length - lastIndex.name.length;
+    suggestions.unshift({
+      ...newLineCompleteItem,
+      text: lastIndex.name + '\n',
+      filterText: lastIndex.name,
+      rangeToReplace: { start: indexNameStart, end: innerText.length },
+    });
   }
 
   return suggestions;

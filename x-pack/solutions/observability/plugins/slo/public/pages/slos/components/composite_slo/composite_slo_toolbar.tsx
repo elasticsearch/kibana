@@ -101,6 +101,9 @@ export function CompositeSloToolbar({
       <EuiFlexItem grow={false}>
         <EuiFilterGroup>
           <EuiPopover
+            aria-label={i18n.translate('xpack.slo.compositeSloToolbar.tagsPopoverAriaLabel', {
+              defaultMessage: 'Filter composite SLOs by tags',
+            })}
             button={
               <EuiFilterButton
                 data-test-subj="compositeSloListTagFilter"
@@ -140,6 +143,9 @@ export function CompositeSloToolbar({
             </EuiSelectable>
           </EuiPopover>
           <EuiPopover
+            aria-label={i18n.translate('xpack.slo.compositeSloToolbar.statusPopoverAriaLabel', {
+              defaultMessage: 'Filter composite SLOs by status',
+            })}
             button={
               <EuiFilterButton
                 data-test-subj="compositeSloListStatusFilter"

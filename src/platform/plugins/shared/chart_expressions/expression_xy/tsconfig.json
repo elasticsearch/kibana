@@ -41,7 +41,8 @@
     "@kbn/chart-test-jest-helpers",
     "@kbn/field-formats-common",
     "@kbn/visualizations-common",
-    "@kbn/ui-actions-plugin"
+    "@kbn/ui-actions-plugin",
+    "@kbn/css-utils"
   ],
   "exclude": [
     "target/**/*",

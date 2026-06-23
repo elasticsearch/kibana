@@ -499,7 +499,7 @@ the immediately preceding revision in `old_values`.
     return supertest
       .get(
         getRouteUrlForSpace(
-          replaceParams('/internal/detection_engine/rules/{ruleId}/history', props.params),
+          replaceParams('/internal/detection_engine/rules/{ruleId}/history/_list', props.params),
           kibanaSpace
         )
       )

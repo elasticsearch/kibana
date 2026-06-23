@@ -29,6 +29,7 @@ export {
   SHOW_MULTIFIELDS,
   SORT_DEFAULT_ORDER_SETTING,
   DataGridDensity,
+  UnifiedHistogramSuggestionType,
   IgnoredReason,
   buildDataTableRecord,
   buildDataTableRecordList,

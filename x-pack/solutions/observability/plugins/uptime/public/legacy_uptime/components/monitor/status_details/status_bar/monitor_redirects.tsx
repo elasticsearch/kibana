@@ -48,6 +48,9 @@ export const MonitorRedirects: React.FC<Props> = ({ monitorStatus }) => {
     <>
       <EuiDescriptionListTitle>Redirects</EuiDescriptionListTitle>
       <EuiPopover
+        aria-label={i18n.translate('xpack.uptime.monitorRedirects.popoverAriaLabel', {
+          defaultMessage: 'Monitor redirects details',
+        })}
         button={button}
         isOpen={isPopoverOpen}
         anchorPosition="downLeft"

@@ -7,7 +7,7 @@
 
 import React, { memo, useCallback } from 'react';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import type { Alert } from '@kbn/alerting-types';
 import { i18n } from '@kbn/i18n';
 import { EasePanelKey } from '../../../../flyout/ease/constants/panel_keys';
@@ -41,16 +41,23 @@ export const OpenFlyoutRowControlColumn = memo(({ alert }: ActionsCellProps) => 
   );
 
   return (
-    <EuiButtonIcon
-      aria-label={i18n.translate('xpack.securitySolution.alertSummary.table.flyoutIcon', {
+    <EuiToolTip
+      content={i18n.translate('xpack.securitySolution.alertSummary.table.flyoutIcon', {
         defaultMessage: 'Open flyout',
       })}
-      color="primary"
-      data-test-subj={ROW_ACTION_FLYOUT_ICON_TEST_ID}
-      iconType="maximize"
-      onClick={onOpenFlyout}
-      size="xs"
-    />
+      disableScreenReaderOutput
+    >
+      <EuiButtonIcon
+        aria-label={i18n.translate('xpack.securitySolution.alertSummary.table.flyoutIcon', {
+          defaultMessage: 'Open flyout',
+        })}
+        color="primary"
+        data-test-subj={ROW_ACTION_FLYOUT_ICON_TEST_ID}
+        iconType="maximize"
+        onClick={onOpenFlyout}
+        size="xs"
+      />
+    </EuiToolTip>
   );
 });
 

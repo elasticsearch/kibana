@@ -23,7 +23,7 @@ export const UserName = lazySchema(() =>
         /**
          * The name of the user.
          */
-        name: z.string().optional(),
+        name: z.string().max(512).optional(),
       })
       .optional(),
     /**
@@ -40,17 +40,18 @@ export const UserName = lazySchema(() =>
               /**
                * The field name for the label
                */
-              field: z.string().optional(),
+              field: z.string().max(256).optional(),
               /**
                * The value of the label
                */
-              value: z.string().optional(),
+              value: z.string().max(256).optional(),
               /**
                * The source where this label was created (api, csv, or index_sync)
                */
               source: z.enum(['api', 'csv', 'index_sync']).optional(),
             })
           )
+          .max(100)
           .optional(),
       })
       .optional(),
@@ -60,8 +61,8 @@ export type UserName = z.infer<typeof UserName>;
 
 export const MonitoringLabel = lazySchema(() =>
   z.object({
-    field: z.string(),
-    value: z.string(),
+    field: z.string().max(256),
+    value: z.string().max(256),
     source: z.string(),
   })
 );
@@ -69,10 +70,10 @@ export type MonitoringLabel = z.infer<typeof MonitoringLabel>;
 
 export const MonitoredUserUpdateDoc = lazySchema(() =>
   z.object({
-    id: z.string().optional(),
+    id: z.string().max(256).optional(),
     user: z
       .object({
-        name: z.string().optional(),
+        name: z.string().max(512).optional(),
         /**
          * Indicates if the user is privileged.
          */
@@ -81,9 +82,9 @@ export const MonitoredUserUpdateDoc = lazySchema(() =>
       .optional(),
     labels: z
       .object({
-        sources: z.array(z.unknown()).optional(),
-        source_ids: z.array(z.string()).optional(),
-        source_integrations: z.array(z.string()).optional(),
+        sources: z.array(z.unknown()).max(100).optional(),
+        source_ids: z.array(z.string().max(256)).max(100).optional(),
+        source_integrations: z.array(z.string().max(256)).max(100).optional(),
       })
       .optional(),
     entity_analytics_monitoring: z

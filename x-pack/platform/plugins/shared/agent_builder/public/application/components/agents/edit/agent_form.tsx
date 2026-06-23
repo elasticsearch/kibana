@@ -629,21 +629,31 @@ export const AgentForm: React.FC<AgentFormProps> = ({ editingAgentId, onDelete }
                     closePopover={() => setAdditionalActionsMenuOpen(false)}
                     zIndex={Number(euiTheme.levels.header) - 1}
                     button={
-                      <EuiButtonIcon
-                        aria-label={i18n.translate('xpack.agentBuilder.agents.form.openMenuLabel', {
+                      <EuiToolTip
+                        content={i18n.translate('xpack.agentBuilder.agents.form.openMenuLabel', {
                           defaultMessage: 'Open menu',
                         })}
-                        size="m"
-                        isDisabled={isSaveDisabled}
-                        display="fill"
-                        iconType="chevronSingleDown"
-                        onClick={() => setAdditionalActionsMenuOpen((openState) => !openState)}
-                        {...getEbtProps({
-                          element: AGENT_BUILDER_UI_EBT.element.pageContent,
-                          action: AGENT_BUILDER_UI_EBT.action.agentEdit.OPEN_MENU,
-                          detail: AGENT_BUILDER_UI_EBT.entity.AGENT,
-                        })}
-                      />
+                        disableScreenReaderOutput
+                      >
+                        <EuiButtonIcon
+                          aria-label={i18n.translate(
+                            'xpack.agentBuilder.agents.form.openMenuLabel',
+                            {
+                              defaultMessage: 'Open menu',
+                            }
+                          )}
+                          size="m"
+                          isDisabled={isSaveDisabled}
+                          display="fill"
+                          iconType="chevronSingleDown"
+                          onClick={() => setAdditionalActionsMenuOpen((openState) => !openState)}
+                          {...getEbtProps({
+                            element: AGENT_BUILDER_UI_EBT.element.pageContent,
+                            action: AGENT_BUILDER_UI_EBT.action.agentEdit.OPEN_MENU,
+                            detail: AGENT_BUILDER_UI_EBT.entity.AGENT,
+                          })}
+                        />
+                      </EuiToolTip>
                     }
                   >
                     <EuiContextMenuPanel
@@ -675,19 +685,26 @@ export const AgentForm: React.FC<AgentFormProps> = ({ editingAgentId, onDelete }
             ? [
                 <EuiPopover
                   button={
-                    <EuiButtonIcon
-                      size="m"
-                      aria-label={i18n.translate('xpack.agentBuilder.agents.form.openMenuLabel', {
+                    <EuiToolTip
+                      content={i18n.translate('xpack.agentBuilder.agents.form.openMenuLabel', {
                         defaultMessage: 'Open menu',
                       })}
-                      iconType="boxesVertical"
-                      onClick={() => setContextMenuOpen(!isContextMenuOpen)}
-                      {...getEbtProps({
-                        element: AGENT_BUILDER_UI_EBT.element.pageContent,
-                        action: AGENT_BUILDER_UI_EBT.action.agentEdit.OPEN_MENU,
-                        detail: AGENT_BUILDER_UI_EBT.entity.AGENT,
-                      })}
-                    />
+                      disableScreenReaderOutput
+                    >
+                      <EuiButtonIcon
+                        size="m"
+                        aria-label={i18n.translate('xpack.agentBuilder.agents.form.openMenuLabel', {
+                          defaultMessage: 'Open menu',
+                        })}
+                        iconType="boxesVertical"
+                        onClick={() => setContextMenuOpen(!isContextMenuOpen)}
+                        {...getEbtProps({
+                          element: AGENT_BUILDER_UI_EBT.element.pageContent,
+                          action: AGENT_BUILDER_UI_EBT.action.agentEdit.OPEN_MENU,
+                          detail: AGENT_BUILDER_UI_EBT.entity.AGENT,
+                        })}
+                      />
+                    </EuiToolTip>
                   }
                   isOpen={isContextMenuOpen}
                   closePopover={() => setContextMenuOpen(false)}

@@ -132,9 +132,9 @@ describe('AssetManagerClient', () => {
         mockEngineDescriptorClient as unknown as import('../saved_objects').EngineDescriptorClient,
       globalStateClient:
         mockGlobalStateClient as unknown as import('../saved_objects').EntityStoreGlobalStateClient,
-      ccsLogExtractionStateClient: {
+      remoteLogExtractionStateClient: {
         delete: jest.fn().mockResolvedValue(undefined),
-      } as unknown as import('../saved_objects/ccs_log_extraction_state').CcsLogExtractionStateClient,
+      } as unknown as import('../saved_objects/remote_log_extraction_state').RemoteLogExtractionStateClient,
       namespace,
       isServerless: false,
       logsExtractionClient: {} as unknown as import('../logs_extraction').LogsExtractionClient,
@@ -183,9 +183,9 @@ describe('AssetManagerClient', () => {
           mockEngineDescriptorClient as unknown as import('../saved_objects').EngineDescriptorClient,
         globalStateClient:
           mockGlobalStateClient as unknown as import('../saved_objects').EntityStoreGlobalStateClient,
-        ccsLogExtractionStateClient: {
+        remoteLogExtractionStateClient: {
           delete: jest.fn().mockResolvedValue(undefined),
-        } as unknown as import('../saved_objects/ccs_log_extraction_state').CcsLogExtractionStateClient,
+        } as unknown as import('../saved_objects/remote_log_extraction_state').RemoteLogExtractionStateClient,
         namespace,
         isServerless: false,
         logsExtractionClient: {

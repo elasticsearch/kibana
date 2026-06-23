@@ -33,7 +33,7 @@ import { useShouldDisableStatus } from '../actions/status/use_should_disable_sta
 import { useCloseCaseModal } from './use_close_case_modal';
 import { useCanSyncCloseReasonToAlerts } from './use_can_sync_close_reason_to_alerts';
 
-const ActionColumnComponent: React.FC<{ theCase: CaseUI; disableActions: boolean }> = ({
+export const ActionColumnComponent: React.FC<{ theCase: CaseUI; disableActions: boolean }> = ({
   theCase,
   disableActions,
 }) => {

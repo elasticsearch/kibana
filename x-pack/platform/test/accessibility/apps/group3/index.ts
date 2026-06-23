@@ -15,10 +15,7 @@ export default ({ loadTestFile }: FtrProviderContext): void => {
     loadTestFile(require.resolve('./graph'));
     loadTestFile(require.resolve('./ml_embeddables_in_dashboard'));
     loadTestFile(require.resolve('./rules_connectors'));
-    // Please make sure that remote clusters and snapshot and restore
-    // tests stay in that order. Their execution fails if rearranged.
     loadTestFile(require.resolve('./remote_clusters'));
-    loadTestFile(require.resolve('./snapshot_and_restore'));
     loadTestFile(require.resolve('./reporting'));
     loadTestFile(require.resolve('./search_sessions'));
 

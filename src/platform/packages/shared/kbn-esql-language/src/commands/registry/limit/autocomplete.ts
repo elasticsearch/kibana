@@ -10,7 +10,11 @@
 import type { ESQLAstAllCommands, ESQLAstField } from '@elastic/esql/types';
 import type { ICommandCallbacks } from '../types';
 import { Location, type ISuggestionItem, type ICommandContext } from '../types';
-import { pipeCompleteItem, byCompleteItem, defaultLimitValueSuggestions } from '../complete_items';
+import {
+  newLineAndPipeCompleteItems,
+  byCompleteItem,
+  defaultLimitValueSuggestions,
+} from '../complete_items';
 import { buildConstantsDefinitions } from '../../definitions/utils/literals';
 import { suggestFieldsList } from '../../definitions/utils/autocomplete/fields_list';
 import { getByColumns, getByOption, getPosition } from './utils';
@@ -33,7 +37,7 @@ export async function autocomplete(
     }
 
     case 'after_value': {
-      return [byCompleteItem, pipeCompleteItem];
+      return [byCompleteItem, ...newLineAndPipeCompleteItems];
     }
 
     case 'grouping_expression': {

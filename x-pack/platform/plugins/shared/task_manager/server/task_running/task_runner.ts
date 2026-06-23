@@ -16,17 +16,11 @@ import { withActiveSpan } from '@kbn/tracing-utils';
 import { v4 as uuidv4 } from 'uuid';
 import { addSpanLabels, withSpan } from '@kbn/apm-utils';
 import { flow, identity, omit } from 'lodash';
-import type {
-  ExecutionContextStart,
-  FakeRawRequest,
-  Headers,
-  KibanaRequest,
-  Logger,
-} from '@kbn/core/server';
+import type { ExecutionContextStart, Logger } from '@kbn/core/server';
 import { SavedObjectsErrorHelpers } from '@kbn/core/server';
+import type { FakeRequestEnricher } from '@kbn/core-security-server';
 import type { UsageCounter } from '@kbn/usage-collection-plugin/server';
-import { asSpaceId } from '@kbn/core-spaces-common';
-import { kibanaRequestFactory } from '@kbn/core-http-server-utils';
+import { buildChildRequestEnricher, buildTaskFakeRequest } from './fake_request_factory';
 import type { Middleware } from '../lib/middleware';
 import type { Result } from '../lib/result_type';
 import {
@@ -138,6 +132,7 @@ type Opts = {
   getPollInterval: () => number;
   apiKeyStrategy: ApiKeyStrategy;
   eventLogger: TaskEventLogger;
+  enrichFakeRequest?: FakeRequestEnricher;
 } & Pick<Middleware, 'beforeRun' | 'beforeMarkRunning'>;
 
 export enum TaskRunResult {
@@ -195,6 +190,7 @@ export class TaskManagerRunner implements TaskRunner {
   private apiKeyStrategy: ApiKeyStrategy;
   private eventLogger: TaskEventLogger;
   private isCancelled = false;
+  private readonly enrichFakeRequest?: FakeRequestEnricher;
 
   /**
    * Creates an instance of TaskManagerRunner.
@@ -223,6 +219,7 @@ export class TaskManagerRunner implements TaskRunner {
     getPollInterval,
     apiKeyStrategy,
     eventLogger,
+    enrichFakeRequest,
   }: Opts) {
     this.instance = asPending(sanitizeInstance(instance));
     this.definitions = definitions;
@@ -245,6 +242,7 @@ export class TaskManagerRunner implements TaskRunner {
     this.getPollInterval = getPollInterval;
     this.apiKeyStrategy = apiKeyStrategy;
     this.eventLogger = eventLogger;
+    this.enrichFakeRequest = enrichFakeRequest;
   }
 
   /**
@@ -448,10 +446,19 @@ export class TaskManagerRunner implements TaskRunner {
           const apiKeyForRequest = this.apiKeyStrategy.getApiKeyForFakeRequest(
             modifiedContext.taskInstance
           );
-          const fakeRequest = this.getFakeKibanaRequest(
-            apiKeyForRequest,
-            modifiedContext.taskInstance.userScope?.spaceId
-          );
+          const userProfileId = modifiedContext.taskInstance.userScope?.userProfileId;
+
+          const fakeRequest = buildTaskFakeRequest({
+            apiKey: apiKeyForRequest,
+            spaceId: modifiedContext.taskInstance.userScope?.spaceId,
+            userProfileId,
+            enrichFakeRequest: this.enrichFakeRequest,
+          });
+
+          const enrichRequest = buildChildRequestEnricher({
+            userProfileId,
+            enrichFakeRequest: this.enrichFakeRequest,
+          });
 
           const abortController = new AbortController();
 
@@ -459,6 +466,7 @@ export class TaskManagerRunner implements TaskRunner {
             taskInstance: sanitizedTaskInstance,
             fakeRequest,
             abortController,
+            enrichRequest,
           });
 
           const originalTaskCancel = this.task.cancel;
@@ -1035,21 +1043,6 @@ export class TaskManagerRunner implements TaskRunner {
 
   private getMaxAttempts() {
     return this.definition?.maxAttempts ?? this.defaultMaxAttempts;
-  }
-
-  private getFakeKibanaRequest(apiKey?: string, spaceId?: string): KibanaRequest | undefined {
-    if (apiKey) {
-      const requestHeaders: Headers = {};
-
-      requestHeaders.authorization = `ApiKey ${apiKey}`;
-
-      const fakeRawRequest: FakeRawRequest = {
-        headers: requestHeaders,
-        spaceId: asSpaceId(spaceId || 'default'),
-      };
-
-      return kibanaRequestFactory(fakeRawRequest);
-    }
   }
 
   private updateRetryAtOnIntervalForLongRunningTasks() {

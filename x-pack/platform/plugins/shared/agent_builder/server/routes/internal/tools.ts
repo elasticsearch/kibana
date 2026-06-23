@@ -535,15 +535,33 @@ export function registerInternalToolsRoutes({
       security: AGENT_BUILDER_READ_SECURITY,
     },
     wrapHandler(async (ctx, request, response) => {
-      const [, pluginsStart] = await coreSetup.getStartServices();
+      const [coreStart, pluginsStart] = await coreSetup.getStartServices();
       const actionsClient = await pluginsStart.actions.getActionsClientWithRequest(request);
       const { connectorId } = request.params;
 
       const connector = await actionsClient.get({ id: connectorId });
 
+      let oauthStatus;
+      if (connector.authMode === PER_USER_AUTH_MODE) {
+        const currentUser = coreStart.security.authc.getCurrentUser(request);
+        if (currentUser?.profile_uid) {
+          const soClient = coreStart.savedObjects.getScopedClient(request, {
+            includedHiddenTypes: [USER_CONNECTOR_TOKEN_TYPE],
+          });
+          const tokenResult = await soClient.find<{ connectorId: string }>({
+            type: USER_CONNECTOR_TOKEN_TYPE,
+            perPage: 1,
+            filter: `${USER_CONNECTOR_TOKEN_TYPE}.attributes.profileUid: "${currentUser.profile_uid}" AND ${USER_CONNECTOR_TOKEN_TYPE}.attributes.connectorId: "${connectorId}"`,
+          });
+          oauthStatus = tokenResult.total > 0 ? OAUTH_STATUS.AUTHORIZED : OAUTH_STATUS.DISCONNECTED;
+        } else {
+          oauthStatus = OAUTH_STATUS.DISCONNECTED;
+        }
+      }
+
       return response.ok<GetConnectorResponse>({
         body: {
-          connector: toConnectorItem(connector),
+          connector: toConnectorItem(connector, { oauthStatus }),
         },
       });
     })

@@ -58,11 +58,14 @@ test.describe(
     });
 
     test('applies date picker selections', async ({ pageObjects }) => {
-      const { alertsTablePage } = pageObjects;
+      const { alertsTablePage, datePicker } = pageObjects;
       // The generated alerts are timestamped in 2021, so narrowing the window to
       // the last 15 minutes leaves the table with nothing to show.
       await alertsTablePage.submitQuery('kibana.alert.status: recovered');
-      await alertsTablePage.selectCommonlyUsedDateRange('Last 15 minutes');
+      // Pass the legacy "commonly used" form; the shared picker PO normalises it
+      // to the new DateRangePicker's preset test-subject when that picker is active.
+      await datePicker.setCommonlyUsedTime('Last_15 minutes');
+      await alertsTablePage.waitForTableToLoad();
       await expect(alertsTablePage.noDataState).toBeVisible();
     });
   }

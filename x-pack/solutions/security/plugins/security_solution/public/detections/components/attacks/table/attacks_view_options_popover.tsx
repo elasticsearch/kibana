@@ -8,11 +8,11 @@
 import React, { useCallback, useState } from 'react';
 import type { EuiSwitchEvent } from '@elastic/eui';
 import {
-  EuiPopover,
   EuiButtonIcon,
-  EuiSwitch,
   EuiFormRow,
+  EuiPopover,
   EuiSpacer,
+  EuiSwitch,
   EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';

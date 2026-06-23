@@ -104,7 +104,7 @@ describe('FROM Autocomplete', () => {
         [...visibleIndices, ...subquerySuggestions],
         mockCallbacks
       );
-      await fromExpectSuggestions('from /index', visibleIndices, mockCallbacks);
+      await fromExpectSuggestions('from /index', [...visibleIndices, '/index\n'], mockCallbacks);
     });
 
     test("doesn't create suggestions after an open quote", async () => {
@@ -242,6 +242,7 @@ describe('FROM Autocomplete', () => {
         categorizationField: 'keywordField',
       });
       const expected = [
+        '\n',
         'METADATA ',
         ',',
         '| ',
@@ -259,7 +260,7 @@ describe('FROM Autocomplete', () => {
       mockContext.sources = visibleDataSources;
       await fromExpectSuggestions(
         'FROM MET',
-        visibleDataSources.map((source) => source.name),
+        [...visibleDataSources.map((source) => source.name), 'MET\n'],
         mockCallbacks
       );
     });
@@ -274,15 +275,15 @@ describe('FROM Autocomplete', () => {
     });
 
     test('on <kbd>SPACE</kbd> after "METADATA" column suggests command and pipe operators', async () => {
-      await fromExpectSuggestions('from a, b metadata _index ', [',', '| '], mockCallbacks);
+      await fromExpectSuggestions('from a, b metadata _index ', ['\n', ',', '| '], mockCallbacks);
       await fromExpectSuggestions(
         'from a, b metadata _index, _source ',
-        [',', '| '],
+        ['\n', ',', '| '],
         mockCallbacks
       );
       await fromExpectSuggestions(
         `from a, b metadata ${METADATA_FIELDS.join(', ')} `,
-        ['| '],
+        ['\n', '| '],
         mockCallbacks
       );
     });
@@ -309,6 +310,7 @@ describe('FROM Autocomplete', () => {
     });
 
     const nextActionsWithMetadata = [
+      '\n',
       'METADATA ',
       ',',
       '| ',
@@ -407,6 +409,7 @@ describe('FROM Autocomplete', () => {
         categorizationField: 'keywordField',
       });
       const expected = [
+        '\n',
         'METADATA ',
         ',',
         '| ',

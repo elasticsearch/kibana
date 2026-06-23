@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { useEsSearch } from '@kbn/observability-shared-plugin/public';
 import { useMemo } from 'react';
+import { useSyntheticsEsSearch } from './use_synthetics_es_search';
 import { MONITOR_STATUS_ENUM } from '../../../../common/constants/monitor_management';
 import { useMonitorHealthColor } from '../components/monitors_page/hooks/use_monitor_health_color';
 import { UNNAMED_LOCATION } from '../../../../common/constants';
@@ -34,7 +34,7 @@ export function useStatusByLocation({
 
   const { locations: allLocations } = useLocations();
 
-  const { data, loading } = useEsSearch(
+  const { data, loading } = useSyntheticsEsSearch(
     {
       index: getSyntheticsCcsIndex(remoteName),
       size: 0,

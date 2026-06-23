@@ -22,8 +22,10 @@ import type { ESQLControlVariable } from '@kbn/esql-types';
 import type { CreateRuleData } from '@kbn/alerting-v2-schemas';
 import { AGENT_BUILDER_APP_ID } from '@kbn/deeplinks-agent-builder';
 import type { ComposeDiscoverFlyoutProps } from '@kbn/alerting-v2-rule-form';
+import { Context } from '@kbn/core-di-browser';
 import { untilPluginStartServicesReady, type AlertingV2KibanaServices } from './kibana_services';
 import { RuleCreateOptionsFlyout } from './components/rule_create_options/rule_create_options_flyout';
+import { getIsRuleManagementABSkillAvailable } from './hooks/use_is_rule_management_ab_skill_available';
 import { RulesApi } from './services/rules_api';
 import { CREATE_WITH_AGENT_INITIAL_PROMPT, AGENT_BUILDER_NEW_CONVERSATION_PATH } from './constants';
 
@@ -236,32 +238,41 @@ const CreateRuleOptionsFlyoutInner = ({
 
   const { services, ComposeDiscoverFlyout } = value;
 
+  const isRuleManagementABSkillAvailable = getIsRuleManagementABSkillAvailable(
+    services.application,
+    services.uiSettings
+  );
+
   if (step.type === 'esql') {
     return (
-      <ComposeDiscoverFlyout
-        historyKey={historyKey}
-        mode="create"
-        onClose={onClose}
-        services={services}
-        onCreateRule={handleCreateRule}
-        isSaving={isSaving}
-        initialQuery={query}
-        esqlVariables={esqlVariables}
-      />
+      <Context.Provider value={services.container}>
+        <ComposeDiscoverFlyout
+          historyKey={historyKey}
+          mode="create"
+          onClose={onClose}
+          services={services}
+          onCreateRule={handleCreateRule}
+          isSaving={isSaving}
+          initialQuery={query}
+          esqlVariables={esqlVariables}
+        />
+      </Context.Provider>
     );
   }
 
   if (step.type === 'threshold') {
     return (
-      <ComposeDiscoverFlyout
-        historyKey={historyKey}
-        mode="create"
-        onClose={onClose}
-        services={services}
-        builderType="threshold"
-        onCreateRule={handleCreateRule}
-        isSaving={isSaving}
-      />
+      <Context.Provider value={services.container}>
+        <ComposeDiscoverFlyout
+          historyKey={historyKey}
+          mode="create"
+          onClose={onClose}
+          services={services}
+          builderType="threshold"
+          onCreateRule={handleCreateRule}
+          isSaving={isSaving}
+        />
+      </Context.Provider>
     );
   }
 
@@ -276,7 +287,7 @@ const CreateRuleOptionsFlyoutInner = ({
     <RuleCreateOptionsFlyout
       onClose={onClose}
       onCreateEsqlRule={() => setStep({ type: 'esql' })}
-      onCreateWithAgent={navigateToAgentBuilder}
+      onCreateWithAgent={isRuleManagementABSkillAvailable ? navigateToAgentBuilder : undefined}
       onCreateThresholdAlert={() => setStep({ type: 'threshold' })}
       legacyRuleTypes={legacyPanelItems}
     />

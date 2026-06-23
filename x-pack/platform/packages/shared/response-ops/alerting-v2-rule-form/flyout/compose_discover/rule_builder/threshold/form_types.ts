@@ -100,6 +100,99 @@ export const nextEvalLabel = (existingLabels: string[]): string => {
   return `eval_${existingLabels.length}`;
 };
 
+export const nextStatLabel = (
+  existingLabels: string[],
+  agg: Aggregation,
+  field?: string
+): string => {
+  const base = deriveStatLabel(agg, field);
+  const used = new Set(existingLabels);
+  if (!used.has(base)) {
+    return base;
+  }
+  let suffix = 2;
+  while (used.has(`${base}_${suffix}`)) {
+    suffix++;
+  }
+  return `${base}_${suffix}`;
+};
+
+export const getAvailableMetricLabels = (
+  stats: StatDefinition[],
+  evaluations: EvaluationDefinition[]
+): string[] => [
+  ...stats.filter((s) => s.label.trim()).map((s) => s.label),
+  ...evaluations.filter((e) => e.label.trim()).map((e) => e.label),
+];
+
+/** Re-point conditions at the first available metric when their metric is missing. */
+export const reconcileAlertConditionMetrics = (
+  conditions: AlertCondition[],
+  stats: StatDefinition[],
+  evaluations: EvaluationDefinition[]
+): AlertCondition[] => {
+  const availableLabels = getAvailableMetricLabels(stats, evaluations);
+  const defaultMetric = availableLabels[0] ?? '';
+  return conditions.map((c) => {
+    if (c.metric.trim() && availableLabels.includes(c.metric)) {
+      return c;
+    }
+    return { ...c, metric: defaultMetric };
+  });
+};
+
+export const shouldSyncConditionMetricOnLabelChange = (
+  labels: string[],
+  index: number,
+  oldLabel: string,
+  newLabel: string
+): boolean => {
+  if (oldLabel === newLabel) {
+    return false;
+  }
+  const owners = labels.filter((label) => label === oldLabel);
+  return owners.length === 1 && labels[index] === oldLabel;
+};
+
+export const syncConditionsForLabelChange = (
+  conditions: AlertCondition[],
+  labels: string[],
+  index: number,
+  oldLabel: string,
+  newLabel: string,
+  stats: StatDefinition[],
+  evaluations: EvaluationDefinition[]
+): AlertCondition[] => {
+  const synced = shouldSyncConditionMetricOnLabelChange(labels, index, oldLabel, newLabel)
+    ? conditions.map((c) => (c.metric === oldLabel ? { ...c, metric: newLabel } : c))
+    : conditions;
+  return reconcileAlertConditionMetrics(synced, stats, evaluations);
+};
+
+export const clearConditionsForRemovedMetric = (
+  conditions: AlertCondition[],
+  removedLabel: string,
+  remainingStats: StatDefinition[],
+  evaluations: EvaluationDefinition[]
+): AlertCondition[] => {
+  const remainingLabels = new Set([
+    ...remainingStats.filter((s) => s.label.trim()).map((s) => s.label),
+    ...evaluations.filter((e) => e.label.trim()).map((e) => e.label),
+  ]);
+  if (remainingLabels.has(removedLabel)) {
+    return conditions;
+  }
+  return conditions.map((c) => (c.metric === removedLabel ? { ...c, metric: '' } : c));
+};
+
+export const isStatLabelValid = (stat: StatDefinition): boolean => Boolean(stat.label.trim());
+
+export const isStatFieldValid = (stat: StatDefinition): boolean =>
+  !AGGREGATIONS_REQUIRING_FIELD.includes(stat.aggregation) || Boolean(stat.field?.trim());
+
+export const areAllStatsValid = (stats: StatDefinition[]): boolean =>
+  stats.length > 0 && stats.every((s) => isStatLabelValid(s) && isStatFieldValid(s));
+
 export const DEFAULT_ALERT_CONDITION: Omit<AlertCondition, 'id'> = {
   metric: 'count',
   comparator: Comparator.GT,

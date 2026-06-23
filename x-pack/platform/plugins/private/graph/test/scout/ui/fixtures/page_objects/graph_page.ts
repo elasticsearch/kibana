@@ -6,8 +6,12 @@
  */
 
 import type { KibanaUrl, Locator, ScoutPage } from '@kbn/scout';
+import { ContentListWrapper } from '@kbn/scout';
 
 export class GraphPage {
+  /** Shared wrapper for the Content List listing UI (toolbar, table, selection bar). */
+  readonly contentList: ContentListWrapper;
+
   // Public locators consumed directly by specs.
   readonly createGraphPromptButton: Locator;
   readonly saveButton: Locator;
@@ -19,8 +23,6 @@ export class GraphPage {
   readonly vennSmallTerm2: Locator;
 
   // Internal locators — consumed only by methods on this class.
-  private readonly landingPage: Locator;
-  private readonly listingSearchBox: Locator;
   private readonly newButton: Locator;
   private readonly homeBreadcrumb: Locator;
   private readonly datasourceButton: Locator;
@@ -43,9 +45,8 @@ export class GraphPage {
   private readonly selectionListFields: Locator;
 
   constructor(private readonly page: ScoutPage, private readonly kbnUrl: KibanaUrl) {
-    this.landingPage = this.page.testSubj.locator('graphLandingPage');
+    this.contentList = new ContentListWrapper(page);
     this.createGraphPromptButton = this.page.testSubj.locator('graphCreateGraphPromptButton');
-    this.listingSearchBox = this.landingPage.locator('.euiFieldSearch');
 
     this.newButton = this.page.testSubj.locator('graphNewButton');
     this.saveButton = this.page.testSubj.locator('graphSaveButton');
@@ -96,7 +97,7 @@ export class GraphPage {
   }
 
   async waitForListing() {
-    await this.landingPage.waitFor({ state: 'visible' });
+    await this.contentList.waitForReady();
   }
 
   async clickCreateGraph() {
@@ -172,17 +173,14 @@ export class GraphPage {
 
   async deleteWorkspace(title: string) {
     const rowLink = this.workspaceListingLink(title);
-    await this.listingSearchBox.fill(title);
+    await this.contentList.searchFor(title);
     await rowLink.waitFor({ state: 'visible' });
-    await this.page.testSubj.locator('checkboxSelectAll').click();
-    await this.page.testSubj.locator('deleteSelectedItems').click();
-    await this.confirmModalTitle.waitFor({ state: 'visible' });
-    await this.confirmModalConfirmButton.click();
+    await this.contentList.selectAllAndDelete();
     await rowLink.waitFor({ state: 'hidden' });
   }
 
   private workspaceListingLink(title: string): Locator {
-    return this.page.testSubj.locator(`graphListingTitleLink-${title.split(' ').join('-')}`);
+    return this.contentList.itemLinks.filter({ hasText: title });
   }
 
   async nodeCount(): Promise<number> {
@@ -245,7 +243,9 @@ export class GraphPage {
 
     const keep = new Set([from, to]);
     for (const label of allLabels) {
-      if (keep.has(label)) continue;
+      if (keep.has(label)) {
+        continue;
+      }
       await this.page.locator(`[data-test-subj="graph-selected-${label}"]`).click();
     }
 

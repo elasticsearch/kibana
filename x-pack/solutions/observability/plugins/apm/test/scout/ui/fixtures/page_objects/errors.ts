@@ -6,7 +6,7 @@
  */
 
 import type { KibanaUrl, Locator, ScoutPage } from '@kbn/scout-oblt';
-import { EXTENDED_TIMEOUT } from '../constants';
+import { waitForSearchBarReady } from '../page_helpers';
 
 export class ErrorsPage {
   public tableSearchInput: Locator;
@@ -21,9 +21,7 @@ export class ErrorsPage {
     await this.page.goto(
       `${this.kbnUrl.app('apm')}/services/${serviceName}/errors?rangeFrom=${start}&rangeTo=${end}`
     );
-    await this.page
-      .getByTestId('superDatePickerToggleQuickMenuButton')
-      .waitFor({ state: 'visible', timeout: EXTENDED_TIMEOUT });
+    await waitForSearchBarReady(this.page);
   }
 
   async gotoErrorDetailsPage(
@@ -37,9 +35,7 @@ export class ErrorsPage {
         'apm'
       )}/services/${serviceName}/errors/${errorGroupingKey}?rangeFrom=${start}&rangeTo=${end}`
     );
-    await this.page
-      .getByTestId('superDatePickerToggleQuickMenuButton')
-      .waitFor({ state: 'visible', timeout: EXTENDED_TIMEOUT });
+    await waitForSearchBarReady(this.page);
   }
 
   async getSearchBar() {

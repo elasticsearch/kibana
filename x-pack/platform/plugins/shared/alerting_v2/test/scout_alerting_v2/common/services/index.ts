@@ -25,3 +25,9 @@ export { getMaintenanceWindowsApiService } from './maintenance_windows_api_servi
 
 export type { DispatcherApiService, WaitForDispatcherTickParams } from './dispatcher_api_service';
 export { getDispatcherApiService } from './dispatcher_api_service';
+
+export type { TaskManagerService } from './task_manager_service';
+export { getTaskManagerService } from './task_manager_service';
+
+export type { TelemetryService } from './telemetry_service';
+export { getTelemetryService } from './telemetry_service';

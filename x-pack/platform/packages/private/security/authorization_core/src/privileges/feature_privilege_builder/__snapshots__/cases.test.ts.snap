@@ -12,6 +12,7 @@ Array [
   "cases:observability/getReporters",
   "cases:observability/getUserActions",
   "cases:observability/findConfigurations",
+  "cases:observability/getFieldDefinitions",
   "cases:observability/updateCase",
   "cases:observability/updateComment",
   "cases:observability/deleteCase",
@@ -45,6 +46,7 @@ exports[
 ] = `
 Array [
   "cases:securitySolution/manageTemplate",
+  "cases:securitySolution/getFieldDefinitions",
 ]
 `;
 
@@ -75,6 +77,7 @@ Array [
   "cases:observability/getReporters",
   "cases:observability/getUserActions",
   "cases:observability/findConfigurations",
+  "cases:observability/getFieldDefinitions",
 ]
 `;
 

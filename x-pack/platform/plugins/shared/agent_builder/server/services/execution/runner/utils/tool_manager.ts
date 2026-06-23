@@ -165,6 +165,10 @@ export class ToolManager implements IToolManager {
     };
   }
 
+  public getExecutable(toolId: string): ExecutableTool | undefined {
+    return this.executableTools.get(toolId);
+  }
+
   /**
    * Gets the summarizer function for a tool by its internal tool ID.
    * Returns undefined if the tool is not found or has no summarizer.

@@ -412,6 +412,7 @@ export function QueriesTable() {
           }}
           showDatePicker
           showQueryInput
+          enableDateRangePicker
           submitButtonStyle="iconOnly"
         />
       </EuiFlexItem>

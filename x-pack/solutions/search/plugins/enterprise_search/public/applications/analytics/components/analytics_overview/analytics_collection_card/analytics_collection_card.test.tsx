@@ -9,13 +9,23 @@ import { setMockValues } from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiFlexGroup, EuiLoadingChart } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { FilterBy } from '../../../utils/get_formula_by_filter';
 
 import { AnalyticsCollectionCard } from './analytics_collection_card';
+
+jest.mock('@elastic/charts', () => ({
+  ...jest.requireActual('@elastic/charts'),
+  AreaSeries: () => <div data-test-subj="areaSeries" />,
+  Chart: ({ children }: { children: React.ReactNode }) => (
+    <div data-test-subj="enterpriseSearchAnalyticsCollectionCardChart">{children}</div>
+  ),
+  Settings: () => null,
+  Tooltip: () => null,
+}));
 
 const mockCollection = {
   event_retention_day_length: 180,
@@ -24,16 +34,13 @@ const mockCollection = {
   name: 'example2',
 };
 
-const chartSelector = '[data-test-subj="enterpriseSearchAnalyticsCollectionCardChart"]';
-const cardSelector = '[data-test-subj="enterpriseSearchAnalyticsCollectionCard"]';
-
 describe('AnalyticsCollectionCard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('loading charts', async () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionCard
         collection={mockCollection}
         isLoading
@@ -44,12 +51,10 @@ describe('AnalyticsCollectionCard', () => {
       />
     );
 
-    expect(wrapper.find(chartSelector)).toHaveLength(0);
-    expect(wrapper.find(cardSelector).prop('footer')).toEqual(
-      <EuiFlexGroup alignItems="center" justifyContent="center">
-        <EuiLoadingChart size="m" />
-      </EuiFlexGroup>
-    );
+    expect(
+      screen.queryByTestId('enterpriseSearchAnalyticsCollectionCardChart')
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('enterpriseSearchAnalyticsCollectionCard')).toBeInTheDocument();
   });
 
   it('render', async () => {
@@ -57,7 +62,8 @@ describe('AnalyticsCollectionCard', () => {
 
     const mockMetric = 999;
     const secondaryMetric = 124;
-    const wrapper = shallow(
+
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionCard
         collection={mockCollection}
         isLoading={false}
@@ -68,8 +74,8 @@ describe('AnalyticsCollectionCard', () => {
       />
     );
 
-    expect(wrapper.find(cardSelector)).toHaveLength(1);
-    expect(wrapper.find(chartSelector)).toHaveLength(1);
+    expect(screen.getByTestId('enterpriseSearchAnalyticsCollectionCard')).toBeInTheDocument();
+    expect(screen.getByTestId('enterpriseSearchAnalyticsCollectionCardChart')).toBeInTheDocument();
   });
 
   it('hide charts when data is not provided', async () => {
@@ -77,7 +83,8 @@ describe('AnalyticsCollectionCard', () => {
 
     const mockMetric = 999;
     const secondaryMetric = 124;
-    const wrapper = shallow(
+
+    renderWithKibanaRenderContext(
       <AnalyticsCollectionCard
         collection={mockCollection}
         isLoading={false}
@@ -88,7 +95,9 @@ describe('AnalyticsCollectionCard', () => {
       />
     );
 
-    expect(wrapper.find(cardSelector)).toHaveLength(1);
-    expect(wrapper.find(chartSelector)).toHaveLength(0);
+    expect(screen.getByTestId('enterpriseSearchAnalyticsCollectionCard')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('enterpriseSearchAnalyticsCollectionCardChart')
+    ).not.toBeInTheDocument();
   });
 });

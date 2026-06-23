@@ -37,8 +37,9 @@ import type {
   PluginsService,
   ToolManager,
   TodoStateManager,
+  IFilesystemService,
+  IBashService,
 } from '../runner';
-import type { IFileStore } from '../runner/filestore';
 import type { AttachmentStateManager } from '../attachments';
 import type { AgentBuilderHooks } from '../hooks/types';
 import type { ToolRegistry } from '../tools';
@@ -96,8 +97,6 @@ export interface SubAgentExecution {
  * Experimental features configuration for agent builder.
  */
 export interface ExperimentalFeatures {
-  /** Whether the filestore feature is enabled */
-  filestore: boolean;
   /** Whether the skills feature is enabled */
   skills: boolean;
   /** Whether the sub-agent execution feature is enabled */
@@ -106,6 +105,8 @@ export interface ExperimentalFeatures {
   todos: boolean;
   /** Whether the ask_user_question HITL tool is enabled */
   askUserQuestion: boolean;
+  /** Whether the bash tool (and the just-bash runtime) is enabled */
+  bash: boolean;
 }
 
 export interface AgentHandlerContext {
@@ -203,9 +204,13 @@ export interface AgentHandlerContext {
    */
   hooks: AgentBuilderHooks;
   /**
-   * File store to access data from the agent's virtual filesystem
+   * Unified virtual filesystem service.
    */
-  filestore: IFileStore;
+  filesystemService: IFilesystemService;
+  /**
+   * Bash runtime service. Present only when `experimentalFeatures.bash` is on.
+   */
+  bashService?: IBashService;
   /**
    * Experimental features configuration for this agent execution.
    * Determined by the UI setting at the start of execution.

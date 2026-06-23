@@ -8,7 +8,7 @@
  */
 
 import type { CoreFipsService } from './fips';
-import type { CoreAuthenticationService } from './authc';
+import type { CoreAuthenticationService, FakeRequestEnricher } from './authc';
 import type { CoreSecurityDelegateContract } from './api_provider';
 import type { CoreAuditService } from './audit';
 /**
@@ -23,6 +23,21 @@ export interface SecurityServiceSetup {
    * @remark this should **exclusively** be used by the security plugin.
    */
   registerSecurityDelegate(api: CoreSecurityDelegateContract): void;
+
+  /**
+   * Returns a function that binds a `profile_uid` to a fake request so that
+   * `security.authc.getCurrentUser(request)` resolves to a synthetic
+   * {@link AuthenticatedUser} exposing only that `profile_uid`. Reading any
+   * other identity field on the returned user yields `undefined`.
+   *
+   * One-shot: calling it more than once throws. Reserved for Task Manager,
+   * the sole legitimate consumer. The returned enricher throws on non-fake
+   * requests; calling it twice on the same fake request is a no-op
+   * (first-wins) and emits a warning.
+   *
+   * @internal
+   */
+  acquireFakeRequestEnricher(): FakeRequestEnricher;
 
   /**
    * The {@link CoreFipsService | FIPS service}

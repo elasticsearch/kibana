@@ -5,16 +5,15 @@
  * 2.0.
  */
 
-import { setMockValues } from '../../../../../../__mocks__/kea_logic';
+import { setMockActions, setMockValues } from '../../../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiButton } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { DeployModel } from './deploy_model';
-import { TextExpansionDismissButton } from './text_expansion_callout';
 
 const DEFAULT_VALUES = {
   startTextExpansionModelError: undefined,
@@ -29,9 +28,10 @@ describe('DeployModel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setMockValues(DEFAULT_VALUES);
+    setMockActions({ createTextExpansionModel: jest.fn() });
   });
   it('renders deploy button', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DeployModel
         dismiss={() => {}}
         ingestionMethod="crawler"
@@ -39,12 +39,10 @@ describe('DeployModel', () => {
         isDismissable={false}
       />
     );
-    expect(wrapper.find(EuiButton).length).toBe(1);
-    const button = wrapper.find(EuiButton);
-    expect(button.prop('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: 'Deploy' })).not.toBeDisabled();
   });
   it('renders disabled deploy button if it is set to disabled', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DeployModel
         dismiss={() => {}}
         ingestionMethod="crawler"
@@ -52,12 +50,10 @@ describe('DeployModel', () => {
         isDismissable={false}
       />
     );
-    expect(wrapper.find(EuiButton).length).toBe(1);
-    const button = wrapper.find(EuiButton);
-    expect(button.prop('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Deploy' })).toBeDisabled();
   });
   it('renders dismiss button if it is set to dismissable', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DeployModel
         dismiss={() => {}}
         ingestionMethod="crawler"
@@ -65,10 +61,12 @@ describe('DeployModel', () => {
         isDismissable
       />
     );
-    expect(wrapper.find(TextExpansionDismissButton).length).toBe(1);
+    expect(
+      screen.getByTestId('enterpriseSearchTextExpansionDismissButtonButton')
+    ).toBeInTheDocument();
   });
   it('does not render dismiss button if it is set to non-dismissable', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DeployModel
         dismiss={() => {}}
         ingestionMethod="crawler"
@@ -76,6 +74,8 @@ describe('DeployModel', () => {
         isDismissable={false}
       />
     );
-    expect(wrapper.find(TextExpansionDismissButton).length).toBe(0);
+    expect(
+      screen.queryByTestId('enterpriseSearchTextExpansionDismissButtonButton')
+    ).not.toBeInTheDocument();
   });
 });

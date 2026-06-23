@@ -237,6 +237,7 @@ export function createDiscoverServicesMock(): DiscoverServices {
     },
     uiActions: uiActionsPluginMock.createStartContract(),
     uiSettings: uiSettingsMock,
+    settings: corePluginMock.settings,
     http: {
       basePath: '/',
       post: jest.fn((path: string) => {

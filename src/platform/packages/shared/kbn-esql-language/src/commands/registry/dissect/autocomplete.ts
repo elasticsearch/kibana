@@ -10,7 +10,11 @@ import { i18n } from '@kbn/i18n';
 import type { ESQLAstAllCommands } from '@elastic/esql/types';
 import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
 import type { ICommandCallbacks } from '../types';
-import { pipeCompleteItem, colonCompleteItem, semiColonCompleteItem } from '../complete_items';
+import {
+  newLineAndPipeCompleteItems,
+  colonCompleteItem,
+  semiColonCompleteItem,
+} from '../complete_items';
 import { type ISuggestionItem, type ICommandContext } from '../types';
 import { buildConstantsDefinitions } from '../../definitions/utils/literals';
 import { ESQL_STRING_TYPES } from '../../definitions/types';
@@ -58,7 +62,7 @@ export async function autocomplete(
   }
   // DISSECT field pattern /
   else if (commandArgs.length === 2) {
-    return [withAutoSuggest(pipeCompleteItem), appendSeparatorCompletionItem];
+    return [...newLineAndPipeCompleteItems, appendSeparatorCompletionItem];
   }
   // DISSECT field APPEND_SEPARATOR = /
   else if (/append_separator\s*=\s*$/i.test(innerText)) {
@@ -66,7 +70,7 @@ export async function autocomplete(
   }
   // DISSECT field APPEND_SEPARATOR = ":" /
   else if (commandArgs.some((arg) => !Array.isArray(arg) && arg.type === 'option')) {
-    return [withAutoSuggest(pipeCompleteItem)];
+    return newLineAndPipeCompleteItems;
   }
 
   // DISSECT /

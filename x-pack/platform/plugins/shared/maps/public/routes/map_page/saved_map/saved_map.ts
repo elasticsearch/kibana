@@ -326,10 +326,7 @@ export class SavedMap {
         pageTitle: this._getPageTitle(),
         isByValue: this.isByValue(),
         getHasUnsavedChanges: this.hasUnsavedChanges,
-        originatingApp:
-          this.hasOriginatingApp() || this._isFromDashboardListing()
-            ? this._originatingApp
-            : undefined,
+        originatingApp: this.hasSaveAndReturnConfig() ? this._originatingApp : undefined,
         incomingBreadcrumbs: this._breadcrumbs,
         getAppNameFromId: this._getStateTransfer().getAppNameFromId,
         history,
@@ -352,16 +349,6 @@ export class SavedMap {
     return this._originatingApp ? this.getAppNameFromId(this._originatingApp) : undefined;
   }
 
-  private _isFromDashboardListing(): boolean {
-    return (
-      this._originatingApp === 'dashboards' && Boolean(this._originatingPath?.includes('/list/'))
-    );
-  }
-
-  public hasOriginatingApp(): boolean {
-    return !!this._originatingApp && !this._isFromDashboardListing();
-  }
-
   public getOriginatingPath(): string | undefined {
     return this._originatingPath;
   }
@@ -374,9 +361,14 @@ export class SavedMap {
     return this._tags;
   }
 
-  public hasSaveAndReturnConfig() {
-    const hasOriginatingApp = this.hasOriginatingApp();
-    return hasOriginatingApp;
+  public hasSaveAndReturnConfig(): boolean {
+    return Boolean(
+      this._originatingApp &&
+        this._originatingPath &&
+        // TODO remove this check in editors (lens does this too)
+        // instead, embeddable state transform should provide hasSaveAndReturnConfig
+        !this._originatingPath.includes('/list/')
+    );
   }
 
   public getTitle(): string {
@@ -410,7 +402,7 @@ export class SavedMap {
 
   public isByValue(): boolean {
     const hasSavedObjectId = !!this.getSavedObjectId();
-    return this.hasOriginatingApp() && !hasSavedObjectId;
+    return this.hasSaveAndReturnConfig() && !hasSavedObjectId;
   }
 
   public async save({

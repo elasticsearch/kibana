@@ -73,6 +73,7 @@ export interface HasEditorConfig {
 export interface ControlGroupEditorConfig {
   hideDataViewSelector?: boolean;
   hideAdditionalSettings?: boolean;
+  hideValuesSourceSelector?: boolean;
   defaultDataViewId?: string;
   fieldFilterPredicate?: FieldFilterPredicate;
   controlStateTransform?: ControlStateTransform;

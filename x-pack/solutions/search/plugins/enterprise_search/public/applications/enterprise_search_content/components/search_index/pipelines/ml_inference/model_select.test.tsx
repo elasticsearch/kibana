@@ -7,38 +7,54 @@
 
 import { setMockActions, setMockValues } from '../../../../../__mocks__/kea_logic';
 
+// EuiSelectable uses ResizeObserver and complex internal state in JSDOM.
+// Capturing the onChange callback lets us verify selection logic without
+// relying on EUI's internal click handling or DOM measurement.
+let capturedOnChange: ((options: any[]) => void) | undefined;
+
+jest.mock('@elastic/eui', () => {
+  const actual = jest.requireActual('@elastic/eui');
+  return {
+    ...actual,
+    EuiSelectable: (props: any) => {
+      capturedOnChange = props.onChange;
+      const options = props.options ?? [];
+      return (
+        <div data-test-subj="euiSelectable">
+          {options.map((opt: any) => (
+            <div
+              key={opt.label}
+              data-test-subj={`option-${opt.label}`}
+              aria-selected={opt.checked === 'on'}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      );
+    },
+  };
+});
+
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiSelectable, EuiText } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { MlModel } from '../../../../../../../common/types/ml';
 import { MlModelDeploymentState } from '../../../../../../../common/types/ml';
 
-import { LicenseBadge } from './license_badge';
-import {
-  DeployModelButton,
-  ModelSelect,
-  NoModelSelected,
-  SelectedModel,
-  StartModelButton,
-} from './model_select';
+import { ModelSelect, SelectedModel } from './model_select';
 
 const DEFAULT_VALUES = {
   addInferencePipelineModal: {
     configuration: {},
     indexName: 'my-index',
   },
-  selectableModels: [
-    {
-      modelId: 'model_1',
-    },
-    {
-      modelId: 'model_2',
-    },
-  ],
+  selectableModels: [{ modelId: 'model_1' }, { modelId: 'model_2' }],
 };
+
 const DEFAULT_MODEL: MlModel = {
   modelId: 'model_1',
   type: 'ner',
@@ -65,67 +81,46 @@ const MOCK_ACTIONS = {
 describe('ModelSelect', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    capturedOnChange = undefined;
     setMockValues({});
     setMockActions(MOCK_ACTIONS);
   });
-  it('renders model select with no options', () => {
-    setMockValues({
-      ...DEFAULT_VALUES,
-      selectableModels: null,
-    });
 
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    expect(selectable.prop('options')).toEqual([]);
+  it('renders model select with no options', () => {
+    setMockValues({ ...DEFAULT_VALUES, selectableModels: null });
+    renderWithKibanaRenderContext(<ModelSelect />);
+    expect(screen.getByTestId('euiSelectable')).toBeInTheDocument();
+    expect(screen.queryByTestId(/^option-/)).not.toBeInTheDocument();
   });
+
   it('renders model select with options', () => {
     setMockValues(DEFAULT_VALUES);
-
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    expect(selectable.prop('options')).toEqual([
-      {
-        data: {
-          modelId: 'model_1',
-        },
-        label: 'model_1',
-      },
-      {
-        data: {
-          modelId: 'model_2',
-        },
-        label: 'model_2',
-      },
-    ]);
+    renderWithKibanaRenderContext(<ModelSelect />);
+    expect(screen.getByTestId('option-model_1')).toBeInTheDocument();
+    expect(screen.getByTestId('option-model_2')).toBeInTheDocument();
   });
+
   it('selects the chosen option', () => {
     setMockValues({
       ...DEFAULT_VALUES,
       addInferencePipelineModal: {
-        configuration: {
-          ...DEFAULT_VALUES.addInferencePipelineModal.configuration,
-          modelID: 'model_2',
-        },
+        configuration: { modelID: 'model_2' },
       },
     });
-
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    expect(selectable.prop('options')[1].checked).toEqual('on');
+    renderWithKibanaRenderContext(<ModelSelect />);
+    expect(screen.getByTestId('option-model_2')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('option-model_1')).toHaveAttribute('aria-selected', 'false');
   });
+
   it('sets model ID on selecting an item and clears config', () => {
     setMockValues(DEFAULT_VALUES);
+    renderWithKibanaRenderContext(<ModelSelect />);
 
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    selectable.simulate('change', [
+    capturedOnChange!([
       { data: { modelId: 'model_1' } },
       { data: { modelId: 'model_2' }, checked: 'on' },
     ]);
+
     expect(MOCK_ACTIONS.setInferencePipelineConfiguration).toHaveBeenCalledWith(
       expect.objectContaining({
         inferenceConfig: undefined,
@@ -134,16 +129,16 @@ describe('ModelSelect', () => {
       })
     );
   });
+
   it('sets placeholder flag on selecting a placeholder item', () => {
     setMockValues(DEFAULT_VALUES);
+    renderWithKibanaRenderContext(<ModelSelect />);
 
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    selectable.simulate('change', [
+    capturedOnChange!([
       { data: { modelId: 'model_1' } },
       { data: { modelId: 'model_2', isPlaceholder: true }, checked: 'on' },
     ]);
+
     expect(MOCK_ACTIONS.setInferencePipelineConfiguration).toHaveBeenCalledWith(
       expect.objectContaining({
         modelID: 'model_2',
@@ -151,115 +146,101 @@ describe('ModelSelect', () => {
       })
     );
   });
+
   it('generates pipeline name on selecting an item', () => {
     setMockValues(DEFAULT_VALUES);
+    renderWithKibanaRenderContext(<ModelSelect />);
 
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    selectable.simulate('change', [
+    capturedOnChange!([
       { data: { modelId: 'model_1' } },
       { data: { modelId: 'model_2' }, checked: 'on' },
     ]);
+
     expect(MOCK_ACTIONS.setInferencePipelineConfiguration).toHaveBeenCalledWith(
-      expect.objectContaining({
-        pipelineName: 'my-index-model_2',
-      })
+      expect.objectContaining({ pipelineName: 'my-index-model_2' })
     );
   });
+
   it('does not generate pipeline name on selecting an item if it a name was supplied by the user', () => {
     setMockValues({
       ...DEFAULT_VALUES,
       addInferencePipelineModal: {
         configuration: {
-          ...DEFAULT_VALUES.addInferencePipelineModal.configuration,
           pipelineName: 'user-pipeline',
           isPipelineNameUserSupplied: true,
         },
+        indexName: 'my-index',
       },
     });
+    renderWithKibanaRenderContext(<ModelSelect />);
 
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(EuiSelectable)).toHaveLength(1);
-    const selectable = wrapper.find(EuiSelectable);
-    selectable.simulate('change', [
+    capturedOnChange!([
       { data: { modelId: 'model_1' } },
       { data: { modelId: 'model_2' }, checked: 'on' },
     ]);
+
     expect(MOCK_ACTIONS.setInferencePipelineConfiguration).toHaveBeenCalledWith(
-      expect.objectContaining({
-        pipelineName: 'user-pipeline',
-      })
+      expect.objectContaining({ pipelineName: 'user-pipeline' })
     );
   });
+
   it('renders selected model panel if a model is selected', () => {
     setMockValues({
       ...DEFAULT_VALUES,
-      addInferencePipelineModal: {
-        configuration: {
-          ...DEFAULT_VALUES.addInferencePipelineModal.configuration,
-          modelID: 'model_2',
-        },
-      },
+      addInferencePipelineModal: { configuration: { modelID: 'model_2' } },
       selectedModel: DEFAULT_MODEL,
     });
-
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(SelectedModel)).toHaveLength(1);
-    expect(wrapper.find(NoModelSelected)).toHaveLength(0);
+    renderWithKibanaRenderContext(<ModelSelect />);
+    expect(screen.getByText('Model 1')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Select an available model to add to your inference pipeline')
+    ).not.toBeInTheDocument();
   });
+
   it('renders no model selected panel if no model is selected', () => {
     setMockValues(DEFAULT_VALUES);
-
-    const wrapper = shallow(<ModelSelect />);
-    expect(wrapper.find(SelectedModel)).toHaveLength(0);
-    expect(wrapper.find(NoModelSelected)).toHaveLength(1);
+    renderWithKibanaRenderContext(<ModelSelect />);
+    expect(
+      screen.getByText('Select an available model to add to your inference pipeline')
+    ).toBeInTheDocument();
   });
 
   describe('SelectedModel', () => {
+    beforeEach(() => {
+      setMockActions({ createModel: jest.fn(), startModel: jest.fn() });
+      setMockValues({ areActionButtonsDisabled: false });
+    });
+
     it('renders with license badge if present', () => {
-      const wrapper = shallow(<SelectedModel {...DEFAULT_MODEL} />);
-      expect(wrapper.find(LicenseBadge)).toHaveLength(1);
+      renderWithKibanaRenderContext(<SelectedModel {...DEFAULT_MODEL} />);
+      expect(screen.getByText(/License: elastic/i)).toBeInTheDocument();
     });
+
     it('renders without license badge if not present', () => {
-      const props = {
-        ...DEFAULT_MODEL,
-        licenseType: undefined,
-      };
-
-      const wrapper = shallow(<SelectedModel {...props} />);
-      expect(wrapper.find(LicenseBadge)).toHaveLength(0);
+      renderWithKibanaRenderContext(<SelectedModel {...DEFAULT_MODEL} licenseType={undefined} />);
+      expect(screen.queryByText(/License:/i)).not.toBeInTheDocument();
     });
+
     it('renders with description if present', () => {
-      const wrapper = shallow(<SelectedModel {...DEFAULT_MODEL} />);
-      expect(wrapper.find(EuiText)).toHaveLength(1);
+      renderWithKibanaRenderContext(<SelectedModel {...DEFAULT_MODEL} />);
+      expect(screen.getByText('Model 1 description')).toBeInTheDocument();
     });
+
     it('renders without description if not present', () => {
-      const props = {
-        ...DEFAULT_MODEL,
-        description: undefined,
-      };
-
-      const wrapper = shallow(<SelectedModel {...props} />);
-      expect(wrapper.find(EuiText)).toHaveLength(0);
+      renderWithKibanaRenderContext(<SelectedModel {...DEFAULT_MODEL} description={undefined} />);
+      expect(screen.queryByText('Model 1 description')).not.toBeInTheDocument();
     });
+
     it('renders deploy button for a model placeholder', () => {
-      const props = {
-        ...DEFAULT_MODEL,
-        isPlaceholder: true,
-      };
-
-      const wrapper = shallow(<SelectedModel {...props} />);
-      expect(wrapper.find(DeployModelButton)).toHaveLength(1);
+      renderWithKibanaRenderContext(<SelectedModel {...DEFAULT_MODEL} isPlaceholder />);
+      expect(screen.getByText('Deploy')).toBeInTheDocument();
     });
-    it('renders start button for a downloaded model', () => {
-      const props = {
-        ...DEFAULT_MODEL,
-        deploymentState: MlModelDeploymentState.NotDeployed,
-      };
 
-      const wrapper = shallow(<SelectedModel {...props} />);
-      expect(wrapper.find(StartModelButton)).toHaveLength(1);
+    it('renders start button for a downloaded model', () => {
+      renderWithKibanaRenderContext(
+        <SelectedModel {...DEFAULT_MODEL} deploymentState={MlModelDeploymentState.NotDeployed} />
+      );
+      expect(screen.getByText('Start')).toBeInTheDocument();
     });
   });
 });

@@ -6,6 +6,8 @@
  */
 
 import {
+  EuiFlexGroup,
+  EuiFlexItem,
   EuiProgress,
   EuiPageHeader,
   EuiPageHeaderSection,
@@ -44,7 +46,7 @@ function Divider(): JSX.Element {
 
 interface BackOptions {
   pageId: SecurityPageName;
-  text: LinkIconProps['children'];
+  text?: LinkIconProps['children'];
   path?: string;
   dataTestSubj?: string;
 }
@@ -53,6 +55,7 @@ export interface HeaderPageProps extends HeaderProps {
   backOptions?: BackOptions;
   /** A component to be displayed as the back button. Used only if `backOption` is not defined */
   backComponent?: React.ReactNode;
+  backInlined?: boolean;
   badgeOptions?: BadgeOptions;
   children?: React.ReactNode;
   rightSideItems?: React.ReactNode[];
@@ -74,6 +77,9 @@ export const useHeaderLinkBackStyles = () => {
       line-height: ${lineHeightS};
       margin-bottom: ${euiTheme.size.s};
     `,
+    linkBackIconOnly: css`
+      font-size: ${fontSizeXs};
+    `,
   };
 };
 
@@ -85,7 +91,10 @@ export const HeaderLinkBack: React.FC<{ backOptions: BackOptions }> = React.memo
 
     const backUrl = formatUrl(backOptions.path ?? '');
     return (
-      <div css={styles.linkBack} className="securitySolutionHeaderPage__linkBack">
+      <div
+        css={backOptions.text ? styles.linkBack : styles.linkBackIconOnly}
+        className="securitySolutionHeaderPage__linkBack"
+      >
         <LinkIcon
           dataTestSubj={backOptions.dataTestSubj ?? 'link-back'}
           onClick={(ev: Event) => {
@@ -115,6 +124,7 @@ const headerPageStyles = {
 const HeaderPageComponent: React.FC<HeaderPageProps> = ({
   backOptions,
   backComponent,
+  backInlined,
   badgeOptions,
   border,
   children,
@@ -124,45 +134,57 @@ const HeaderPageComponent: React.FC<HeaderPageProps> = ({
   subtitle2,
   title,
   titleNode,
-}) => (
-  <div data-test-subj="header-page">
-    <EuiPageHeader alignItems="center" rightSideItems={rightSideItems}>
-      <EuiPageHeaderSection css={headerPageStyles.headerSection}>
-        {backOptions && <HeaderLinkBack backOptions={backOptions} />}
-        {!backOptions && backComponent && <>{backComponent}</>}
+}) => {
+  const backEl =
+    backComponent ?? (backOptions ? <HeaderLinkBack backOptions={backOptions} /> : null);
 
-        {titleNode || <Title title={title} badgeOptions={badgeOptions} />}
+  return (
+    <div data-test-subj="header-page">
+      <EuiPageHeader alignItems="center" rightSideItems={rightSideItems}>
+        <EuiPageHeaderSection css={headerPageStyles.headerSection}>
+          <EuiFlexGroup
+            direction={backInlined ? 'row' : 'column'}
+            alignItems={backInlined ? 'center' : 'flexStart'}
+            gutterSize="s"
+            responsive={false}
+          >
+            {backEl && <EuiFlexItem grow={false}>{backEl}</EuiFlexItem>}
+            <EuiFlexItem grow={false}>
+              {titleNode || <Title title={title} badgeOptions={badgeOptions} />}
+            </EuiFlexItem>
+          </EuiFlexGroup>
 
-        {subtitle && (
-          <>
-            <EuiSpacer size="s" />
-            <Subtitle data-test-subj="header-page-subtitle" items={subtitle} />
-          </>
-        )}
-        {border && isLoading && <EuiProgress size="xs" color="accent" />}
-      </EuiPageHeaderSection>
-
-      {children && (
-        <EuiPageHeaderSection data-test-subj="header-page-supplements">
-          {children}
+          {subtitle && (
+            <>
+              <EuiSpacer size="s" />
+              <Subtitle data-test-subj="header-page-subtitle" items={subtitle} />
+            </>
+          )}
+          {border && isLoading && <EuiProgress size="xs" color="accent" />}
         </EuiPageHeaderSection>
+
+        {children && (
+          <EuiPageHeaderSection data-test-subj="header-page-supplements">
+            {children}
+          </EuiPageHeaderSection>
+        )}
+      </EuiPageHeader>
+      {subtitle2 && (
+        <>
+          <EuiSpacer size="xs" />
+          <Subtitle data-test-subj="header-page-subtitle-2" items={subtitle2} />
+        </>
       )}
-    </EuiPageHeader>
-    {subtitle2 && (
-      <>
-        <EuiSpacer size="xs" />
-        <Subtitle data-test-subj="header-page-subtitle-2" items={subtitle2} />
-      </>
-    )}
-    {border && (
-      <>
-        <EuiSpacer size="m" />
-        <Divider />
-      </>
-    )}
-    {/* Manually add a 'padding-bottom' to header */}
-    <EuiSpacer size="l" />
-  </div>
-);
+      {border && (
+        <>
+          <EuiSpacer size="m" />
+          <Divider />
+        </>
+      )}
+      {/* Manually add a 'padding-bottom' to header */}
+      <EuiSpacer size="l" />
+    </div>
+  );
+};
 
 export const HeaderPage = React.memo(HeaderPageComponent);

@@ -87,7 +87,12 @@ import {
   getStepsData,
   redirectToDetections,
 } from '../../../common/helpers';
-import { CreatedBy, UpdatedBy } from '../../../../detections/components/rules/rule_info';
+import {
+  CreatedBy,
+  UpdatedBy,
+  RuleVersion,
+  RuleRevision,
+} from '../../../../detections/components/rules/rule_info';
 import { useGlobalTime } from '../../../../common/containers/use_global_time';
 import { inputsSelectors } from '../../../../common/store/inputs';
 import { setAbsoluteRangeDatePicker } from '../../../../common/store/inputs/actions';
@@ -126,7 +131,7 @@ import { MissingDetectionsPrivilegesCallOut } from '../../../../detections/compo
 import { useRuleWithFallback } from '../../../rule_management/logic/use_rule_with_fallback';
 import type { BadgeOptions } from '../../../../common/components/header_page/types';
 import type { AlertsStackByField } from '../../../../detections/components/alerts_kpis/common/types';
-import type { RuleResponse, Status } from '../../../../../common/api/detection_engine';
+import { type RuleResponse, type Status } from '../../../../../common/api/detection_engine';
 import { AlertsTableFilterGroup } from '../../../../detections/components/alerts_table/alerts_filter_group';
 import { useSignalHelpers } from '../../../../sourcerer/containers/use_signal_helpers';
 import { HeaderPage } from '../../../../common/components/header_page';
@@ -148,6 +153,7 @@ import { useManualRuleRunConfirmation } from '../../../rule_gaps/components/manu
 // eslint-disable-next-line no-restricted-imports
 import { useLegacyUrlRedirect } from './use_redirect_legacy_url';
 import { RuleDetailTabs, useRuleDetailsTabs } from './use_rule_details_tabs';
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 import { useRuleUpdateCallout } from '../../../rule_management/hooks/use_rule_update_callout';
 import { useDeprecatedRuleDetailsCallout } from '../../../rule_management/components/rule_deprecation';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
@@ -231,6 +237,10 @@ export const RuleDetailsPage = connector(
     clearEventsLoading,
     clearSelected,
   }: DetectionEngineComponentProps) {
+    const isRuleChangesHistoryEnabled = useIsExperimentalFeatureEnabled(
+      'ruleChangesHistoryEnabled'
+    );
+
     const { application, timelines: timelinesUi, spaces: spacesApi } = useKibana().services;
     const {
       navigateToApp,
@@ -384,17 +394,23 @@ export const RuleDetailsPage = connector(
       () =>
         rule ? (
           [
-            <CreatedBy createdBy={rule?.created_by} createdAt={rule?.created_at} />,
-            rule?.updated_by != null ? (
-              <UpdatedBy updatedBy={rule?.updated_by} updatedAt={rule?.updated_at} />
+            <CreatedBy createdBy={rule.created_by} createdAt={rule.created_at} />,
+            rule.updated_by != null ? (
+              <UpdatedBy updatedBy={rule.updated_by} updatedAt={rule.updated_at} />
             ) : (
               ''
             ),
-          ]
+            isRuleChangesHistoryEnabled && rule.rule_source.type === 'external' ? (
+              <RuleVersion version={rule.version} />
+            ) : (
+              ''
+            ),
+            isRuleChangesHistoryEnabled ? <RuleRevision revision={rule.revision} /> : '',
+          ].filter(Boolean)
         ) : ruleLoading ? (
           <EuiLoadingSpinner size="m" />
         ) : null,
-      [rule, ruleLoading]
+      [rule, ruleLoading, isRuleChangesHistoryEnabled]
     );
 
     // Callback for when open/closed filter changes
@@ -651,6 +667,7 @@ export const RuleDetailsPage = connector(
         {isDeleteConfirmationVisible && (
           <EuiConfirmModal
             title={ruleI18n.SINGLE_DELETE_CONFIRMATION_TITLE}
+            aria-label={ruleI18n.SINGLE_DELETE_CONFIRMATION_TITLE}
             onCancel={handleDeletionCancel}
             onConfirm={() => handleDeletionConfirm()}
             confirmButtonText={ruleI18n.DELETE_CONFIRMATION_CONFIRM}

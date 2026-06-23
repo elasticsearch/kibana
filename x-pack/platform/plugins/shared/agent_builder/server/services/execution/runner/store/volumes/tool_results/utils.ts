@@ -12,8 +12,14 @@ import type { ToolResultWithMeta } from '@kbn/agent-builder-server/runner';
 import { FileEntryType } from '@kbn/agent-builder-server/runner/filestore';
 import { sanitizeToolId } from '@kbn/agent-builder-genai-utils/langchain';
 import { estimateTokens } from '@kbn/agent-builder-genai-utils/tools/utils/token_count';
+import { MOUNT_POINTS } from '../../../../filesystem/mount_points';
 import type { ToolCallFileEntry } from './types';
 
+/**
+ * Returns the store-relative entry path for a tool-call result. The path is
+ * relative to the `/tool_calls` mount: e.g. `/{tool_id}/{call_id}/{result_id}.json`.
+ * Use {@link getToolCallEntryAbsolutePath} for the agent-visible (mounted) form.
+ */
 export const getToolCallEntryPath = ({
   toolId,
   toolCallId,
@@ -23,7 +29,18 @@ export const getToolCallEntryPath = ({
   toolCallId: string;
   toolResultId: string;
 }): string => {
-  return `/tool_calls/${sanitizeToolId(toolId)}/${toolCallId}/${toolResultId}.json`;
+  return `/${sanitizeToolId(toolId)}/${toolCallId}/${toolResultId}.json`;
+};
+
+/**
+ * Agent-visible (absolute, mount-prefixed) path for a tool-call result —
+ * the form the LLM sees and that consumers like `tryFilestoreSubstitution`
+ * embed in `fileReference` results.
+ */
+export const getToolCallEntryAbsolutePath = (
+  args: Parameters<typeof getToolCallEntryPath>[0]
+): string => {
+  return `${MOUNT_POINTS.toolCalls}${getToolCallEntryPath(args)}`;
 };
 
 export const createToolCallEntry = (result: ToolResultWithMeta): ToolCallFileEntry => {

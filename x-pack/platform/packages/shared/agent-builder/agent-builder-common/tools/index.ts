@@ -16,7 +16,6 @@ export {
   platformCoreTools,
   platformStreamsSigEventsTools,
   attachmentTools,
-  filestoreTools,
   internalTools,
   activeToolsCountWarningThreshold,
   defaultAgentToolIds,
@@ -24,7 +23,6 @@ export {
   isInternalTool,
   isExcludedFromFilestore,
   isAttachmentTool,
-  isFilestoreTool,
 } from './constants';
 export {
   type ByIdsToolSelection,

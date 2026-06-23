@@ -5,24 +5,28 @@
  * 2.0.
  */
 
+import { setMockValues } from '../../../../../__mocks__/kea_logic';
+
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiBadge } from '@elastic/eui';
-
-import { EuiButtonEmptyTo } from '../../../../../shared/react_router_helpers';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { CustomPipelineItem } from './custom_pipeline_item';
 
 describe('CustomPipelineItem', () => {
+  beforeEach(() => {
+    setMockValues({});
+  });
+
   it('renders custom pipeline item', () => {
     const indexName = 'fake-index-name';
     const pipelineSuffix = 'custom-pipeline';
     const ingestionMethod = 'crawler';
     const processorsCount = 12;
 
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <CustomPipelineItem
         indexName={indexName}
         pipelineSuffix={pipelineSuffix}
@@ -30,16 +34,17 @@ describe('CustomPipelineItem', () => {
         processorsCount={processorsCount}
       />
     );
-    const title = wrapper.find('h4').text();
-    const editLink = wrapper.find(EuiButtonEmptyTo).prop('to');
-    const trackLink = wrapper.find(EuiButtonEmptyTo).prop('data-telemetry-id');
-    const processorCountBadge = wrapper.find(EuiBadge).render().text();
 
-    expect(title).toEqual(`${indexName}@${pipelineSuffix}`);
-    expect(editLink.endsWith(`${indexName}@${pipelineSuffix}`)).toBe(true);
-    expect(trackLink).toEqual(
+    expect(
+      screen.getByRole('heading', { name: `${indexName}@${pipelineSuffix}` })
+    ).toBeInTheDocument();
+
+    const editButton = screen.getByText('Edit pipeline');
+    expect(editButton.closest('a')?.href).toMatch(`${indexName}@${pipelineSuffix}`);
+    expect(editButton.closest('a')?.getAttribute('data-telemetry-id')).toEqual(
       `entSearchContent-${ingestionMethod}-pipelines-customPipeline-editPipeline`
     );
-    expect(processorCountBadge).toEqual(`${processorsCount} Processors`);
+
+    expect(screen.getByText(`${processorsCount} Processors`)).toBeInTheDocument();
   });
 });

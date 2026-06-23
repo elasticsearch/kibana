@@ -8,20 +8,15 @@
 import { Client } from '@elastic/elasticsearch';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type { LogsManifest } from '@kbn/synthtrace/src/lib/service_graph_logs/types';
-import type { SeedContext, SeedScenario, SeededQuery } from '../types';
-import { buildFeaturePayloads, buildInsightPayloads } from '../lib/builders';
+import type { SeedContext, SeededQuery } from '../types';
+import { buildFeaturePayloads } from '../lib/builders';
 
 const FEATURES_TASK_TYPE = 'streams_features_identification';
 const QUERIES_TASK_TYPE = 'streams_significant_events_queries_generation';
 const ONBOARDING_TASK_TYPE = 'streams_onboarding';
-const INSIGHTS_TASK_TYPE = 'streams_insights_discovery';
 
 /** Returns the per-stream task doc IDs. Single source of truth for both
  *  seedTasks (which creates them) and cleanTasks (which deletes them).
- *
- *  ID conventions mirror the live system: features, queries, and onboarding
- *  are per-stream (`${type}_${streamName}`). The insights task is a global
- *  singleton handled separately — see `INSIGHTS_TASK_TYPE` usages below.
  */
 function streamTaskDocIds(streamName: string): string[] {
   return [
@@ -88,17 +83,13 @@ async function withTempSuperuser<T>(
   }
 }
 
-/** Build all 4 task doc objects for a seed run. */
+/** Build task doc objects for a seed run. */
 function buildTaskDocs(
   ctx: SeedContext,
   manifest: LogsManifest,
-  scenario: SeedScenario,
   seededQueries: SeededQuery[],
   log: ToolingLog
 ) {
-  // Re-uses shared builders so the task payload matches what was indexed/POSTed by the
-  // individual seed steps. Features include uuid (from buildFeaturePayloads). Insights use
-  // ctx.generatedAt — same value passed to seedInsights — so both storage paths stay in sync.
   const features = buildFeaturePayloads(ctx, manifest);
 
   const queries = seededQueries.map((q) => ({
@@ -108,8 +99,6 @@ function buildTaskDocs(
     description: q.description ?? '',
     evidence: [],
   }));
-
-  const insights = buildInsightPayloads(ctx, scenario, seededQueries);
 
   const baseTask = (
     id: string,
@@ -129,8 +118,6 @@ function buildTaskDocs(
   const tokensZero = { prompt: 0, completion: 0 };
 
   const [featuresId, queriesId, onboardingId] = streamTaskDocIds(ctx.streamName);
-  // The insights task is a global singleton — its ID is the type itself (no stream suffix).
-  const insightsId = INSIGHTS_TASK_TYPE;
 
   return [
     baseTask(
@@ -159,25 +146,18 @@ function buildTaskDocs(
         queriesTaskResult: { status: 'completed', queries, tokensUsed: tokensZero },
       }
     ),
-    baseTask(
-      insightsId,
-      INSIGHTS_TASK_TYPE,
-      { streamNames: [ctx.streamName] },
-      { insights, tokensUsed: { ...tokensZero, cached: 0 } }
-    ),
   ];
 }
 
 export async function seedTasks(
   ctx: SeedContext,
   manifest: LogsManifest,
-  scenario: SeedScenario,
   seededQueries: SeededQuery[],
   esClient: Client,
   log: ToolingLog
 ): Promise<void> {
   await withTempSuperuser(esClient, ctx, log, async (sysClient) => {
-    const taskDocs = buildTaskDocs(ctx, manifest, scenario, seededQueries, log);
+    const taskDocs = buildTaskDocs(ctx, manifest, seededQueries, log);
     for (const doc of taskDocs) {
       await sysClient.index({
         index: '.kibana_streams_tasks',
@@ -196,11 +176,7 @@ export async function cleanTasks(
   log: ToolingLog
 ): Promise<void> {
   await withTempSuperuser(esClient, ctx, log, async (sysClient) => {
-    // Per-stream task docs + the global insights singleton. The insights task is deleted
-    // here because this seeder manages a single stream at a time and re-seeding recreates
-    // it. If multi-stream support is added, the insights task deletion should be guarded
-    // to only run when all seeded streams are being cleaned simultaneously.
-    const ids = [...streamTaskDocIds(ctx.streamName), INSIGHTS_TASK_TYPE];
+    const ids = streamTaskDocIds(ctx.streamName);
     await Promise.all(
       ids.map(async (id) => {
         try {

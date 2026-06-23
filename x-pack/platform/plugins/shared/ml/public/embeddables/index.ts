@@ -7,13 +7,12 @@
 
 import type { EmbeddableSetup } from '@kbn/embeddable-plugin/public';
 import type { UsageCollectionSetup } from '@kbn/usage-collection-plugin/public';
+import { ANOMALY_EXPLORER_CHARTS_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/anomaly_charts';
 import type { Reference } from '@kbn/content-management-utils';
 import { ANOMALY_SWIMLANE_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/anomaly_swimlane';
 import { ANOMALY_SINGLE_METRIC_VIEWER_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/single_metric_viewer';
 import type { MlCoreSetup } from '../plugin';
-import { ANOMALY_EXPLORER_CHARTS_EMBEDDABLE_TYPE } from './constants';
 
-export * from './constants';
 export type * from './types';
 
 export function registerEmbeddables(

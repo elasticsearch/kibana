@@ -251,10 +251,11 @@ export interface QueryBarTopRowProps<QT extends Query | AggregateQuery = Query> 
   enableResourceBrowser?: ESQLEditorProps['enableResourceBrowser'];
   useBackgroundSearchButton?: boolean;
   /**
-   * Opt-in to the new DateRangePicker. The new picker is shown only when both
-   * this prop is `true` and the `unifiedSearch.newDateRangePickerEnabled` feature
-   * flag is enabled. When the feature flag is disabled, the legacy
-   * EuiSuperDatePicker is always used regardless of this prop.
+   * Whether to use the new DateRangePicker. Defaults to `true`; pass `false`
+   * to opt out and keep the legacy EuiSuperDatePicker. The new picker is shown
+   * only when this resolves to `true` *and* the
+   * `unifiedSearch.newDateRangePickerEnabled` feature flag is enabled — when
+   * the flag is disabled, the legacy picker is always used.
    */
   enableDateRangePicker?: boolean;
 }
@@ -336,6 +337,7 @@ export const QueryBarTopRow = React.memo(
       showDatePicker = true,
       showAutoRefreshOnly = false,
       showSubmitButton = true,
+      enableDateRangePicker = true,
     } = props;
 
     const [isDateRangeInvalid, setIsDateRangeInvalid] = useState(false);
@@ -389,7 +391,7 @@ export const QueryBarTopRow = React.memo(
     } = kibana.services;
 
     const shouldUseLegacyTimePicker =
-      !props.enableDateRangePicker ||
+      !enableDateRangePicker ||
       !kibana.services.featureFlags?.getBooleanValue(DATE_RANGE_PICKER_FEATURE_FLAG, true);
 
     const isQueryLangSelected = props.query && !isOfQueryType(props.query);
@@ -809,9 +811,19 @@ export const QueryBarTopRow = React.memo(
       } else {
         const noTimeFieldNameDisabled =
           typeof isDisabled === 'object' && isDisabled.display !== undefined;
+        // Visualize-style consumers request auto-refresh-only mode via
+        // `showAutoRefreshOnly` + `!showDatePicker`. The legacy picker rendered a
+        // read-only date display while still letting users operate the auto-refresh
+        // controls. The new picker has no read-only mode, so we disable it here —
+        // but that also removes access to auto-refresh, a temporary regression.
+        // TODO: add a `readOnly` prop to the new picker so auto-refresh stays
+        // operable, and use it instead of `disabled` for this case.
+        const autoRefreshOnlyDisabled = Boolean(showAutoRefreshOnly && !showDatePicker);
+        const pickerDisabled =
+          Boolean(props.isDisabled) || noTimeFieldNameDisabled || autoRefreshOnlyDisabled;
         datePicker = (
           <>
-            {noTimeFieldNameDisabled && (
+            {(noTimeFieldNameDisabled || autoRefreshOnlyDisabled) && (
               // Hidden sibling so FTR tests can detect the disabled state via
               // testSubjects.existOrFail('kbnQueryBar-datePicker-disabled'), matching
               // the span the legacy picker renders inside its isDisabled.display node.
@@ -820,12 +832,14 @@ export const QueryBarTopRow = React.memo(
             <DateRangePicker
               className="kbnQueryBar__datePicker"
               value={
-                noTimeFieldNameDisabled ? strings.getDisabledDatePickerLabel() : dateRangeValue
+                noTimeFieldNameDisabled || autoRefreshOnlyDisabled
+                  ? strings.getDisabledDatePickerLabel()
+                  : dateRangeValue
               }
               onChange={onDateRangeChange}
               onInputChange={onDateRangeInputChange}
               isInvalid={isDateRangeInvalid}
-              disabled={props.isDisabled || noTimeFieldNameDisabled}
+              disabled={pickerDisabled}
               width="auto"
               compressed
               collapsed={isMobile || isQueryInputFocused}

@@ -38,9 +38,13 @@ export const isRequestApiKeyType = (user: AuthenticatedUser | null) => {
   return user?.authentication_type === 'api_key';
 };
 
+export const hasApiKey = (user: AuthenticatedUser | null, request: KibanaRequest) => {
+  return request.isFakeRequest || (user != null && isRequestApiKeyType(user));
+};
+
 export const requestHasApiKey = (security: SecurityServiceStart, request: KibanaRequest) => {
   const user = security.authc.getCurrentUser(request);
-  return (user && isRequestApiKeyType(user)) || request.isFakeRequest;
+  return hasApiKey(user, request);
 };
 
 export const getApiKeyFromRequest = (request: KibanaRequest) => {
@@ -59,18 +63,23 @@ export const getApiKeyFromRequest = (request: KibanaRequest) => {
 export const createApiKey = async (
   taskInstances: TaskInstance[],
   request: KibanaRequest,
-  security: SecurityServiceStart
+  security: SecurityServiceStart,
+  preResolved?: {
+    user: AuthenticatedUser | null;
+    apiKeyCreatedByUser: boolean;
+  }
 ) => {
   if (!(await security.authc.apiKeys.areAPIKeysEnabled())) {
     throw Error('API keys are not enabled, cannot create API key.');
   }
 
-  const user = security.authc.getCurrentUser(request);
+  const user = preResolved?.user ?? security.authc.getCurrentUser(request);
+  const apiKeyCreatedByUser = preResolved?.apiKeyCreatedByUser ?? hasApiKey(user, request);
 
   const apiKeyByTaskIdMap = new Map<string, EncodedApiKeyResult>();
 
   // If the user passed in their own API key or the request is a fake request, use the API key from the request
-  if (requestHasApiKey(security, request)) {
+  if (apiKeyCreatedByUser) {
     const apiKeyCreateResult = getApiKeyFromRequest(request);
 
     if (!apiKeyCreateResult) {
@@ -132,7 +141,13 @@ export const getApiKeyAndUserScope = async (
   request: KibanaRequest,
   security: SecurityServiceStart
 ): Promise<Map<string, ApiKeyAndUserScope>> => {
-  const apiKeyByTaskIdMap = await createApiKey(taskInstances, request, security);
+  const user = security.authc.getCurrentUser(request);
+  const apiKeyCreatedByUser = hasApiKey(user, request);
+
+  const apiKeyByTaskIdMap = await createApiKey(taskInstances, request, security, {
+    user,
+    apiKeyCreatedByUser,
+  });
 
   const apiKeyAndUserScopeByTaskId = new Map<string, ApiKeyAndUserScope>();
 
@@ -146,7 +161,8 @@ export const getApiKeyAndUserScope = async (
           spaceId: request.spaceId,
           // Set apiKeyCreatedByUser to true if the request includes its own API key, since we do
           // not want to invalidate a specific API key that was not created by the task manager
-          apiKeyCreatedByUser: requestHasApiKey(security, request),
+          apiKeyCreatedByUser,
+          userProfileId: user?.profile_uid,
         },
       });
     }

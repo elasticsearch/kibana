@@ -6,3 +6,4 @@
  */
 
 export { GraphPage } from './graph_page';
+export { GraphListingPage } from './graph_listing_page';

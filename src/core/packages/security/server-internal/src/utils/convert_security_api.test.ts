@@ -8,12 +8,15 @@
  */
 
 import type { CoreSecurityDelegateContract } from '@kbn/core-security-server';
+import { httpServerMock } from '@kbn/core-http-server-mocks';
 import { convertSecurityApi } from './convert_security_api';
 import { createAuditLoggerMock } from '../test_helpers/create_audit_logger.mock';
 
 describe('convertSecurityApi', () => {
-  it('returns the API from the source', () => {
-    const source: CoreSecurityDelegateContract = {
+  let source: CoreSecurityDelegateContract;
+
+  beforeEach(() => {
+    source = {
       authc: {
         getCurrentUser: jest.fn(),
         getRedactedSessionId: jest.fn(),
@@ -38,11 +41,37 @@ describe('convertSecurityApi', () => {
         asScoped: jest.fn().mockReturnValue(createAuditLoggerMock.create()),
         withoutRequest: createAuditLoggerMock.create(),
       },
+      fakeRequestEnricher: jest.fn(),
     };
+  });
+
+  it('passes through delegate apiKeys, audit, and getRedactedSessionId', () => {
     const output = convertSecurityApi(source);
-    expect(output.authc.getCurrentUser).toBe(source.authc.getCurrentUser);
     expect(output.authc.apiKeys).toBe(source.authc.apiKeys);
+    expect(output.authc.getRedactedSessionId).toBe(source.authc.getRedactedSessionId);
     expect(output.audit.asScoped).toBe(source.audit.asScoped);
     expect(output.audit.withoutRequest).toBe(source.audit.withoutRequest);
+  });
+
+  describe('getCurrentUser', () => {
+    it('delegates directly to the source for real requests', () => {
+      const output = convertSecurityApi(source);
+      const request = httpServerMock.createKibanaRequest();
+
+      output.authc.getCurrentUser(request);
+
+      expect(source.authc.getCurrentUser).toHaveBeenCalledTimes(1);
+      expect(source.authc.getCurrentUser).toHaveBeenCalledWith(request);
+    });
+
+    it('delegates directly to the source for fake requests (delegate owns the enrichment override)', () => {
+      const output = convertSecurityApi(source);
+      const request = httpServerMock.createFakeKibanaRequest({});
+
+      output.authc.getCurrentUser(request);
+
+      expect(source.authc.getCurrentUser).toHaveBeenCalledTimes(1);
+      expect(source.authc.getCurrentUser).toHaveBeenCalledWith(request);
+    });
   });
 });

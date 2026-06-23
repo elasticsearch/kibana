@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { parse as yamlParse } from 'yaml';
 import { pick, rng, sampleN } from './utils';
 
 // Source-of-truth kitchen-sink template definition. Edit this YAML to change
@@ -94,6 +94,13 @@ fields:
       required: true
       min: 0
       max: 100
+  # resolution_summary must be provided before the case can be closed
+  - name: resolution_summary
+    control: TEXTAREA
+    label: Resolution summary
+    type: keyword
+    validation:
+      required_on_close: true
   # DATE_PICKER with show_time enabled and local timezone
   # show_when: not_empty — this field appears only when a date is selected above
   - name: scheduled_at
@@ -219,6 +226,8 @@ interface KitchenSinkValidation {
   // required_when is preserved on the parsed definition but isn't used by the
   // value sampler; we just always set a value so cases can carry every field.
   required_when?: Record<string, unknown>;
+  // required_on_close is declarative only; close-time enforcement is a follow-up.
+  required_on_close?: boolean;
 }
 
 interface KitchenSinkMetadata {
@@ -251,7 +260,7 @@ export interface KitchenSinkTemplateDefinition {
   fields: KitchenSinkFieldDef[];
 }
 
-const PARSED_DEFINITION = yaml.load(KITCHEN_SINK_TEMPLATE_YAML) as KitchenSinkTemplateDefinition;
+const PARSED_DEFINITION = yamlParse(KITCHEN_SINK_TEMPLATE_YAML) as KitchenSinkTemplateDefinition;
 
 if (!PARSED_DEFINITION || !Array.isArray(PARSED_DEFINITION.fields)) {
   throw new Error('Kitchen sink template YAML is malformed: expected a top-level `fields` array.');

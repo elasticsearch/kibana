@@ -63,6 +63,6 @@ describe('RENAME Autocomplete', () => {
   });
 
   it('suggests pipe and comma after complete expression', async () => {
-    await renameExpectSuggestions('from a | rename field AS foo ', ['| ', ', ']);
+    await renameExpectSuggestions('from a | rename field AS foo ', ['| ', ', ', '\n']);
   });
 });

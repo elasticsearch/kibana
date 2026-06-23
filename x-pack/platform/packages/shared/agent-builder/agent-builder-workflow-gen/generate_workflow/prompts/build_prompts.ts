@@ -65,6 +65,10 @@ ${formatConnectorsBlock(prefetched.connectors)}
 - Use \`{{ event }}\`, \`{{ inputs.* }}\`, \`{{ steps.<name>.output.* }}\` for
   Liquid templating. NEVER use \`{{ triggers.event }}\` or \`{{ trigger.event }}\`.
 
+- Whenever a step references \`{{ inputs.<name> }}\`, you MUST declare that input
+  under the \`manual\` trigger's \`inputs.properties\`. Add it to \`inputs.required\`
+  unless it has a sensible \`default\`. Never reference an input you have not declared.
+
 - Prefer connector-based steps over raw HTTP for integrations like Slack, Jira, PagerDuty, etc.
 
 ## Providing your final response

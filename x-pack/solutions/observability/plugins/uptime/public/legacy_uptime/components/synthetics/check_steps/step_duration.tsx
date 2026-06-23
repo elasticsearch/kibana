@@ -72,6 +72,9 @@ export const StepDuration = ({
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.uptime.stepDuration.popoverAriaLabel', {
+        defaultMessage: 'Step duration trend',
+      })}
       onClick={(evt: MouseEvent<HTMLDivElement>) => evt.stopPropagation()}
       isOpen={durationPopoverOpenIndex === step.synthetics.step?.index}
       button={button}

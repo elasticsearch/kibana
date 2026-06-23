@@ -48,22 +48,25 @@ export const changePointChartEmbeddableStateSchema = schema.object(
     ...serializedTimeRangeSchema.getPropSchemas(),
     data_view_id: schema.string({
       minLength: 1,
+      maxLength: 10000,
       meta: { description: 'The data view ID used to run change point detection.' },
     }),
     view_type: viewTypeSchema,
     aggregation_function: aggregationFunctionSchema,
     metric_field: schema.string({
       minLength: 1,
+      maxLength: 10000,
       meta: { description: 'The metric field used by the aggregation function.' },
     }),
     split_field: schema.maybe(
       schema.string({
         minLength: 1,
+        maxLength: 10000,
         meta: { description: 'The optional field used to split change point results.' },
       })
     ),
     partitions: schema.maybe(
-      schema.arrayOf(schema.string({ minLength: 1 }), {
+      schema.arrayOf(schema.string({ minLength: 1, maxLength: 10000 }), {
         maxSize: 10000,
         meta: { description: 'Optional split field values to include in the panel.' },
       })

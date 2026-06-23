@@ -67,6 +67,29 @@ describe('getWorkflowJsonSchema', () => {
       expect(looseObjectAdditionalProps).toStrictEqual({});
     }
   });
+
+  it('merges built-in kibana workflow input definitions at the document root', () => {
+    const baseSchema = z.object({
+      version: z.literal('1').default('1'),
+      name: z.string().min(1),
+    });
+    const jsonSchema = getWorkflowJsonSchema(baseSchema);
+    expect(jsonSchema).toMatchObject({
+      kibana: {
+        definitions: {
+          alertingV2NotificationGroup: expect.objectContaining({
+            type: 'object',
+            properties: expect.objectContaining({
+              id: expect.any(Object),
+              policyId: expect.any(Object),
+              groupKey: expect.any(Object),
+              episodes: expect.any(Object),
+            }),
+          }),
+        },
+      },
+    });
+  });
 });
 
 describe('fixAdditionalPropertiesInSchema', () => {

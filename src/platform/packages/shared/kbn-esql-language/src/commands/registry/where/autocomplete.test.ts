@@ -295,6 +295,7 @@ describe('WHERE Autocomplete', () => {
         )
       );
       await whereExpectSuggestions('FROM index | WHERE NOT ENDS_WITH(keywordField, "foo") ', [
+        '\n',
         ...getOperatorSuggestions(logicalOperators),
         '| ',
       ]);
@@ -318,13 +319,14 @@ describe('WHERE Autocomplete', () => {
 
       await whereExpectSuggestions(
         'from index | WHERE doubleField in (FROM index | KEEP doubleField) ',
-        [...getOperatorSuggestions(logicalOperators), '| ']
+        ['\n', ...getOperatorSuggestions(logicalOperators), '| ']
       );
       await whereExpectSuggestions(
         'from index | WHERE doubleField not in (FROM index | KEEP doubleField) ',
-        [...getOperatorSuggestions(logicalOperators), '| ']
+        ['\n', ...getOperatorSuggestions(logicalOperators), '| ']
       );
       await whereExpectSuggestions('from index | WHERE doubleField in (ROW doubleField = 1) ', [
+        '\n',
         ...getOperatorSuggestions(logicalOperators),
         '| ',
       ]);
@@ -401,7 +403,15 @@ describe('WHERE Autocomplete', () => {
     beforeEach(() => {
       mockCallbacks = {
         ...getMockCallbacks(),
-        getKqlSuggestions: jest.fn().mockResolvedValue(kqlSuggestions),
+        getKqlSuggestions: jest.fn().mockImplementation((kqlQuery: string) =>
+          Promise.resolve(
+            kqlSuggestions.map((suggestion) => ({
+              ...suggestion,
+              // Mimic the KQL provider's per-suggestion range: the current word (after last space to cursor).
+              range: { start: kqlQuery.lastIndexOf(' ') + 1, end: kqlQuery.length },
+            }))
+          )
+        ),
       };
     });
 

@@ -12,6 +12,9 @@ import {
   CollisionStrategySchema,
   ConcurrencySettingsSchema,
   EventTimestampSchema,
+  LIQUID_MEMORY_LIMIT_MAX,
+  LIQUID_PARSE_LIMIT_MAX,
+  LIQUID_RENDER_LIMIT_MAX,
   WorkflowOutputStepSchema,
   WorkflowSchema,
   WorkflowSchemaForAutocomplete,
@@ -534,6 +537,52 @@ describe('WorkflowSettingsSchema', () => {
           strategy: 'invalid-strategy',
         },
       });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('liquid', () => {
+    const validLiquidSettings = {
+      parseLimit: 200_000,
+      renderLimit: 2_000,
+      memoryLimit: 30_000_000,
+    };
+
+    it('should accept valid liquid limit settings', () => {
+      const result = WorkflowSettingsSchema.safeParse({
+        liquid: validLiquidSettings,
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.liquid).toEqual(validLiquidSettings);
+      }
+    });
+
+    it.each([
+      ['parseLimit below minimum', { ...validLiquidSettings, parseLimit: 0 }],
+      ['parseLimit not integer', { ...validLiquidSettings, parseLimit: 1.5 }],
+      [
+        'parseLimit above maximum',
+        { ...validLiquidSettings, parseLimit: LIQUID_PARSE_LIMIT_MAX + 1 },
+      ],
+      ['renderLimit below minimum', { ...validLiquidSettings, renderLimit: 0 }],
+      ['renderLimit not integer', { ...validLiquidSettings, renderLimit: 1.5 }],
+      [
+        'renderLimit above maximum',
+        { ...validLiquidSettings, renderLimit: LIQUID_RENDER_LIMIT_MAX + 1 },
+      ],
+      ['memoryLimit below minimum', { ...validLiquidSettings, memoryLimit: 0 }],
+      ['memoryLimit not integer', { ...validLiquidSettings, memoryLimit: 1.5 }],
+      [
+        'memoryLimit above maximum',
+        { ...validLiquidSettings, memoryLimit: LIQUID_MEMORY_LIMIT_MAX + 1 },
+      ],
+    ])('should reject liquid settings with %s', (_, liquid) => {
+      const result = WorkflowSettingsSchema.safeParse({
+        liquid,
+      });
+
       expect(result.success).toBe(false);
     });
   });

@@ -1,5 +1,5 @@
 {
-  "sha1": "0b77a945a6482fa97adc6399c779991571d19564",
+  "sha1": "35ed39ab4bba0527d848682ca7120b4881783cce",
   "tests": [
     {
       "id": "b26b2efa27acfba-7132d4e40af07dc",
@@ -84,130 +84,6 @@
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/attachments/attachments.spec.ts",
         "line": 192,
-        "column": 9
-      }
-    },
-    {
-      "id": "031f9300558572d-4f1df209bb20bf0",
-      "title": "Advanced tab with basic license should NOT show enterprise features on wired stream Advanced tab with basic license",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/license_basic.spec.ts",
-        "line": 37,
-        "column": 7
-      }
-    },
-    {
-      "id": "031f9300558572d-6a2b3b1f642b875",
-      "title": "Advanced tab with basic license should NOT show enterprise features on classic stream Advanced tab with basic license",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/license_basic.spec.ts",
-        "line": 78,
-        "column": 7
-      }
-    },
-    {
-      "id": "97c654a81a7d83e-48369d416cc3c1a",
-      "title": "Advanced tab permissions should NOT show Advanced tab for viewer role on classic stream",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/permissions.spec.ts",
-        "line": 31,
-        "column": 9
-      }
-    },
-    {
-      "id": "97c654a81a7d83e-733e8e2ef71368e",
-      "title": "Advanced tab permissions should NOT show Advanced tab for editor role on classic stream",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/permissions.spec.ts",
-        "line": 42,
-        "column": 9
-      }
-    },
-    {
-      "id": "97c654a81a7d83e-a87efcb40ae6bf9",
-      "title": "Advanced tab permissions should show Advanced tab for admin role on classic stream",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/permissions.spec.ts",
-        "line": 53,
-        "column": 9
-      }
-    },
-    {
-      "id": "97c654a81a7d83e-2f943a965b62c2a",
-      "title": "Advanced tab permissions should NOT show Advanced tab for viewer role on wired stream",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/permissions.spec.ts",
-        "line": 66,
-        "column": 9
-      }
-    },
-    {
-      "id": "97c654a81a7d83e-4eead21292b8534",
-      "title": "Advanced tab permissions should NOT show Advanced tab for editor role on wired stream",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/permissions.spec.ts",
-        "line": 77,
-        "column": 9
-      }
-    },
-    {
-      "id": "97c654a81a7d83e-54e2df7018f1d1c",
-      "title": "Advanced tab permissions should show Advanced tab for admin role on wired stream",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic",
-        "@local-serverless-observability_complete",
-        "@cloud-serverless-observability_complete"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_advanced/permissions.spec.ts",
-        "line": 88,
         "column": 9
       }
     },
@@ -549,7 +425,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_processing/data_sources_management.spec.ts",
-        "line": 79,
+        "line": 77,
         "column": 9
       }
     },
@@ -565,7 +441,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_processing/data_sources_management.spec.ts",
-        "line": 93,
+        "line": 91,
         "column": 9
       }
     },
@@ -789,7 +665,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_processing/outdated_documents.spec.ts",
-        "line": 144,
+        "line": 142,
         "column": 24
       }
     },
@@ -805,7 +681,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_processing/outdated_documents.spec.ts",
-        "line": 152,
+        "line": 150,
         "column": 24
       }
     },
@@ -821,7 +697,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_processing/outdated_documents.spec.ts",
-        "line": 179,
+        "line": 175,
         "column": 24
       }
     },
@@ -837,7 +713,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_processing/outdated_documents.spec.ts",
-        "line": 187,
+        "line": 183,
         "column": 24
       }
     },
@@ -853,7 +729,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams_app/test/scout/ui/parallel_tests/data_management/data_processing/outdated_documents.spec.ts",
-        "line": 205,
+        "line": 201,
         "column": 24
       }
     },
@@ -1552,8 +1428,8 @@
       }
     },
     {
-      "id": "ff3e65064e17a2f-7490fc470cd2b93",
-      "title": "Query streams - Edit query stream should support editing an existing query stream's ES|QL query from the partitioning tab",
+      "id": "ff3e65064e17a2f-c086dd597528ab5",
+      "title": "Query streams - Edit query stream should support editing an existing query stream's ES|QL query from the overview tab",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",

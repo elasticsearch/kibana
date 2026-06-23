@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import yaml from 'js-yaml';
+import { stringify as yamlStringify } from 'yaml';
 import { elasticsearchServiceMock, savedObjectsClientMock } from '@kbn/core/server/mocks';
 import { serializerMock } from '@kbn/core-saved-objects-base-server-mocks';
 import type { SavedObject, SavedObjectsFindResponse } from '@kbn/core/server';
@@ -18,7 +18,7 @@ import { CASE_TEMPLATE_SAVED_OBJECT } from '../../../common/constants';
 import { TemplatesService } from '.';
 
 const buildDefinition = (name: string, extras?: { description?: string; tags?: string[] }) =>
-  yaml.dump({
+  yamlStringify({
     name,
     ...(extras?.description ? { description: extras.description } : {}),
     ...(extras?.tags ? { tags: extras.tags } : {}),

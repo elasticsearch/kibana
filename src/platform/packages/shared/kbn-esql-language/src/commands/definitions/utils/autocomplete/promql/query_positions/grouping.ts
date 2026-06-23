@@ -8,7 +8,11 @@
  */
 
 import type { ICommandContext, ISuggestionItem } from '../../../../../registry/types';
-import { pipeCompleteItem, promqlByCompleteItem } from '../../../../../registry/complete_items';
+import {
+  newLineCompleteItem,
+  pipeCompleteItem,
+  promqlByCompleteItem,
+} from '../../../../../registry/complete_items';
 import type { PromQLFunctionParamType } from '../../../../types';
 import { getPromqlFunctionParamTypes } from '../../../promql';
 import { suggestOperators } from './operators';
@@ -53,7 +57,7 @@ export function suggestGrouping(input: SuggestGroupingInput): ISuggestionItem[] 
 
   const suggestions: ISuggestionItem[] = [
     ...suggestOperators(),
-    ...(includePipe ? [pipeCompleteItem] : []),
+    ...(includePipe ? [newLineCompleteItem, pipeCompleteItem] : []),
   ];
 
   if (canAddGrouping) {

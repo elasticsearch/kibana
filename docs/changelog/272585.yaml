@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/272585
+issues:
+- https://github.com/elastic/kibana/issues/272583
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Search and data
+title: Include input packages in Integrations signal type filter

@@ -7,9 +7,8 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
-import { Cell } from './cell';
 import { HeaderRow } from './header_row';
 
 interface Foo {
@@ -23,24 +22,31 @@ describe('HeaderRow', () => {
   ];
 
   it('renders a table header row from the provided column names', () => {
-    const wrapper = shallow(<HeaderRow columns={columns} />);
-    const cells = wrapper.find(Cell);
-    expect(cells.length).toBe(2);
-    expect(cells.at(0).children().dive().text()).toEqual('ID');
-    expect(cells.at(1).children().dive().text()).toEqual('Whatever');
+    const { container } = renderWithKibanaRenderContext(<HeaderRow columns={columns} />);
+    const cells = container.querySelectorAll('[role="columnheader"]');
+
+    expect(cells).toHaveLength(2);
+    expect(cells[0]).toHaveTextContent('ID');
+    expect(cells[1]).toHaveTextContent('Whatever');
   });
 
   it('will render an additional cell in the first column if one is provided', () => {
-    const wrapper = shallow(<HeaderRow columns={columns} leftAction={<div>Left Action</div>} />);
-    const cells = wrapper.find(Cell);
-    expect(cells.length).toBe(3);
-    expect(cells.at(0).html()).toContain('Left Action');
+    const { container } = renderWithKibanaRenderContext(
+      <HeaderRow columns={columns} leftAction={<div>Left Action</div>} />
+    );
+    const cells = container.querySelectorAll('[role="columnheader"]');
+
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toHaveTextContent('Left Action');
   });
 
   it('will add space for row identifiers', () => {
-    const wrapper = shallow(<HeaderRow columns={columns} spacingForRowIdentifier />);
-    const cells = wrapper.find(Cell);
-    expect(cells.length).toBe(3);
-    expect(cells.at(0).children()).toHaveLength(1);
+    const { container } = renderWithKibanaRenderContext(
+      <HeaderRow columns={columns} spacingForRowIdentifier />
+    );
+    const cells = container.querySelectorAll('[role="columnheader"]');
+
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toHaveTextContent('Row identifier');
   });
 });

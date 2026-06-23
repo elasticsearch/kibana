@@ -37,7 +37,7 @@ describe('skills utils', () => {
     it('returns the correct path for a skill', () => {
       const skill = createMockSkill();
       const path = getSkillEntryPath({ skill });
-      expect(path).toBe('skills/platform/test-skill/SKILL.md');
+      expect(path).toBe('/platform/test-skill/SKILL.md');
     });
 
     it('handles different base paths', () => {
@@ -46,7 +46,7 @@ describe('skills utils', () => {
         name: 'alert-rule-skill',
       });
       const path = getSkillEntryPath({ skill });
-      expect(path).toBe('skills/security/alerts/rules/alert-rule-skill/SKILL.md');
+      expect(path).toBe('/security/alerts/rules/alert-rule-skill/SKILL.md');
     });
 
     it('handles skills with different names', () => {
@@ -54,7 +54,7 @@ describe('skills utils', () => {
         name: 'another-skill',
       });
       const path = getSkillEntryPath({ skill });
-      expect(path).toBe('skills/platform/another-skill/SKILL.md');
+      expect(path).toBe('/platform/another-skill/SKILL.md');
     });
   });
 
@@ -67,7 +67,7 @@ describe('skills utils', () => {
         content: 'Content body',
       };
       const path = getSkillReferencedContentEntryPath({ skill, referencedContent });
-      expect(path).toBe('skills/platform/test-skill/./example-content.md');
+      expect(path).toBe('/platform/test-skill/example-content.md');
     });
 
     it('handles referenced content in subdirectories', () => {
@@ -78,7 +78,7 @@ describe('skills utils', () => {
         content: 'Query content',
       };
       const path = getSkillReferencedContentEntryPath({ skill, referencedContent });
-      expect(path).toBe('skills/platform/test-skill/./queries/query-example.md');
+      expect(path).toBe('/platform/test-skill/queries/query-example.md');
     });
 
     it('handles different base paths', () => {
@@ -92,7 +92,7 @@ describe('skills utils', () => {
         content: 'Config content',
       };
       const path = getSkillReferencedContentEntryPath({ skill, referencedContent });
-      expect(path).toBe('skills/observability/alert-skill/./configs/alert-config.md');
+      expect(path).toBe('/observability/alert-skill/configs/alert-config.md');
     });
   });
 
@@ -151,7 +151,7 @@ This is the skill body.`);
       expect(entries).toHaveLength(1);
       expect(entries[0]).toMatchObject({
         type: 'file',
-        path: 'skills/platform/test-skill/SKILL.md',
+        path: '/platform/test-skill/SKILL.md',
         content: {
           plain_text: expect.stringContaining('name: test-skill'),
         },
@@ -189,12 +189,12 @@ This is the skill body.`);
 
       const refContent1 = entries[1];
       expect(refContent1.metadata.type).toBe(FileEntryType.skillReferenceContent);
-      expect(refContent1.path).toBe('skills/platform/test-skill/./content-1.md');
+      expect(refContent1.path).toBe('/platform/test-skill/content-1.md');
       expect(refContent1.content.plain_text).toBe('Content 1 body');
 
       const refContent2 = entries[2];
       expect(refContent2.metadata.type).toBe(FileEntryType.skillReferenceContent);
-      expect(refContent2.path).toBe('skills/platform/test-skill/./queries/content-2.md');
+      expect(refContent2.path).toBe('/platform/test-skill/queries/content-2.md');
       expect(refContent2.content.plain_text).toBe('Content 2 body');
     });
 

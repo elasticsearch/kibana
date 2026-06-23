@@ -5,7 +5,8 @@
  * 2.0.
  */
 import { useEffect, useState, useRef } from 'react';
-import { createEsParams, useEsSearch, useFetcher } from '@kbn/observability-shared-plugin/public';
+import { createEsParams, useFetcher } from '@kbn/observability-shared-plugin/public';
+import { useSyntheticsEsSearch } from '../../../hooks/use_synthetics_es_search';
 import { useTickTick } from './use_tick_tick';
 import { isStepEnd } from '../../common/monitor_test_result/browser_steps_list';
 import { SYNTHETICS_INDEX_PATTERN } from '../../../../../../common/constants';
@@ -29,7 +30,7 @@ export const useBrowserEsResults = ({
   testRunId: string;
   lastRefresh: number;
 }) => {
-  return useEsSearch(
+  return useSyntheticsEsSearch(
     createEsParams({
       index: SYNTHETICS_INDEX_PATTERN,
       sort: [

@@ -16,6 +16,8 @@ const DEFAULT_RULE_NAME = 'Untitled rule';
 
 const TEST_INDEX = 'test-compose-discover';
 const TEST_QUERY = `FROM ${TEST_INDEX} | LIMIT 10`;
+const BASE_QUERY = `FROM ${TEST_INDEX} | STATS count = COUNT(*)`;
+const ALERT_SEGMENT = '| WHERE count > 0';
 const RULE_NAME = 'scout-compose-discover-create';
 const EDIT_RULE_NAME = 'scout-compose-discover-edit';
 const EDITED_RULE_NAME = 'scout-compose-discover-edited';
@@ -294,15 +296,100 @@ test.describe(
         await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
       });
 
-      await test.step('reopen sandbox, type query, and click Apply', async () => {
+      await test.step('reopen sandbox, type query with alert condition, and click Apply', async () => {
         await pageObjects.composeDiscover.openEditorButton.click();
-        await pageObjects.composeDiscover.setSandboxQuery(TEST_QUERY);
+        await pageObjects.composeDiscover.setSandboxQuery(BASE_QUERY);
+        await pageObjects.composeDiscover.setSandboxAlertCondition(ALERT_SEGMENT);
         await pageObjects.composeDiscover.clickApply();
       });
 
       await test.step('Apply closes sandbox and commits query', async () => {
         await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
         await expect(pageObjects.composeDiscover.nextButton).toBeEnabled();
+      });
+    });
+
+    test('breach query validation: Apply without typing anything disables Next', async ({
+      pageObjects,
+    }) => {
+      await test.step('open create flyout (sandbox opens automatically)', async () => {
+        await pageObjects.composeDiscover.openCreateFlyout();
+        await expect(pageObjects.composeDiscover.flyout).toBeVisible();
+        await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeVisible();
+      });
+
+      await test.step('click Apply without typing anything', async () => {
+        await pageObjects.composeDiscover.clickApply();
+        await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
+      });
+
+      await test.step('Next button is disabled', async () => {
+        await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
+      });
+    });
+
+    test('breach query validation: base-only query shows callout and disables Next', async ({
+      pageObjects,
+    }) => {
+      await test.step('open create flyout', async () => {
+        await pageObjects.composeDiscover.openCreateFlyout();
+        await expect(pageObjects.composeDiscover.flyout).toBeVisible();
+        await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeVisible();
+      });
+
+      await test.step('apply only a base query (no alert condition)', async () => {
+        await pageObjects.composeDiscover.applySandboxBaseQueryOnly(BASE_QUERY);
+        await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
+      });
+
+      await test.step('breach query missing callout is visible', async () => {
+        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toBeVisible();
+        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toContainText(
+          'Alert condition required'
+        );
+      });
+
+      await test.step('Next button is disabled', async () => {
+        await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
+      });
+    });
+
+    test('breach query validation: no callout when both base and alert condition are provided', async ({
+      pageObjects,
+    }) => {
+      await test.step('open create flyout', async () => {
+        await pageObjects.composeDiscover.openCreateFlyout();
+        await expect(pageObjects.composeDiscover.flyout).toBeVisible();
+        await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeVisible();
+      });
+
+      await test.step('apply base query and alert condition', async () => {
+        await pageObjects.composeDiscover.setSandboxQuery(BASE_QUERY);
+        await pageObjects.composeDiscover.setSandboxAlertCondition(ALERT_SEGMENT);
+        await pageObjects.composeDiscover.clickApply();
+        await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
+      });
+
+      await test.step('no callout is shown and Next is enabled', async () => {
+        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toBeHidden();
+        await expect(pageObjects.composeDiscover.nextButton).toBeEnabled();
+      });
+    });
+
+    test('breach query validation: missing breach query keeps user on Alert Condition step', async ({
+      page,
+      pageObjects,
+    }) => {
+      await test.step('open create flyout and apply only a base query', async () => {
+        await pageObjects.composeDiscover.openCreateFlyout();
+        await expect(pageObjects.composeDiscover.flyout).toBeVisible();
+        await pageObjects.composeDiscover.applySandboxBaseQueryOnly(BASE_QUERY);
+      });
+
+      await test.step('Next is disabled — verify we stay on Alert Condition step', async () => {
+        await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
+        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toBeVisible();
+        await expect(page.testSubj.locator('ruleNameInput')).toBeHidden();
       });
     });
   }

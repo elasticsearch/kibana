@@ -75,10 +75,12 @@ describe('DISSECT Autocomplete', () => {
     dissectExpectSuggestions(`from a | DISSECT keywordField ${constantPattern} /`, [
       'APPEND_SEPARATOR = ',
       '| ',
+      '\n',
     ]);
     dissectExpectSuggestions(`from a | DISSECT keywordField ${constantPattern} /`, [
       'APPEND_SEPARATOR = ',
       '| ',
+      '\n',
     ]);
   });
 
@@ -92,7 +94,7 @@ describe('DISSECT Autocomplete', () => {
   it('suggests a pipe after an append separator', async () => {
     await dissectExpectSuggestions(
       `from a | DISSECT keywordField ${constantPattern} append_separator = ":" /`,
-      ['| ']
+      ['| ', '\n']
     );
   });
 });

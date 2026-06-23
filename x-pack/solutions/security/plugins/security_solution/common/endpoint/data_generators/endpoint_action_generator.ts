@@ -212,6 +212,15 @@ export class EndpointActionGenerator extends BaseDataGenerator {
       output = uploadOutput as typeof output;
     }
 
+    if (command === 'cancel' && !output) {
+      output = {
+        type: 'json',
+        content: {
+          code: 'ra_cancel_success',
+        },
+      } as typeof output;
+    }
+
     return merge(
       {
         '@timestamp': timeStamp.toISOString(),
@@ -271,6 +280,7 @@ export class EndpointActionGenerator extends BaseDataGenerator {
       isCompleted: true,
       isExpired: false,
       wasSuccessful: true,
+      wasCanceled: false,
       errors: undefined,
       startedAt: '2022-04-27T16:08:47.449Z',
       status: 'successful',
@@ -284,6 +294,7 @@ export class EndpointActionGenerator extends BaseDataGenerator {
           isCompleted: true,
           completedAt: '2022-04-30T16:08:47.449Z',
           wasSuccessful: true,
+          wasCanceled: false,
         };
         return acc;
       }, {} as ActionDetails['agentState']),

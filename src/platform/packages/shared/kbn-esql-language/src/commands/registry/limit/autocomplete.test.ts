@@ -74,6 +74,7 @@ describe('LIMIT Autocomplete', () => {
       await limitExpectSuggestions('from a | limit 4 ', [
         byCompleteItem.text,
         pipeCompleteItem.text,
+        '\n',
       ]);
     });
   });
@@ -95,6 +96,7 @@ describe('LIMIT Autocomplete', () => {
       await limitExpectSuggestions('from a | limit 10 by integerField ', [
         pipeCompleteItem.text,
         commaWithSpaceText,
+        '\n',
         ...operatorSuggestions,
       ]);
     });
@@ -114,6 +116,7 @@ describe('LIMIT Autocomplete', () => {
       await limitExpectSuggestions('from a | limit ?rows ', [
         byCompleteItem.text,
         pipeCompleteItem.text,
+        '\n',
       ]);
     });
   });

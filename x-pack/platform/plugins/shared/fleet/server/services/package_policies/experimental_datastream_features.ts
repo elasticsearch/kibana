@@ -20,7 +20,10 @@ import type {
 } from '../../types';
 import { appContextService } from '../app_context';
 import { prepareDataStreamTemplates } from '../epm/elasticsearch/template/install';
-import { updateCurrentWriteIndices } from '../epm/elasticsearch/template/template';
+import {
+  isTotalFieldsLimitError,
+  updateCurrentWriteIndices,
+} from '../epm/elasticsearch/template/template';
 import { getInstalledPackageWithAssets } from '../epm/packages/get';
 import { updateDatastreamExperimentalFeatures } from '../epm/packages/update';
 
@@ -239,7 +242,24 @@ export async function handleExperimentalDatastreamFeatureOptIn({
 
   // Trigger rollover for updated datastreams
   if (updatedIndexTemplates.length > 0) {
-    await updateCurrentWriteIndices(esClient, appContextService.getLogger(), updatedIndexTemplates);
+    try {
+      await updateCurrentWriteIndices(
+        esClient,
+        appContextService.getLogger(),
+        updatedIndexTemplates
+      );
+    } catch (err) {
+      if (isTotalFieldsLimitError(err)) {
+        appContextService
+          .getLogger()
+          .warn(
+            `Mappings update for experimental datastream features failed because the index mapping total_fields limit has been exceeded. ` +
+              `The total_fields limit must be raised on the index template to allow this mapping update: ${err}`
+          );
+        return;
+      }
+      throw err;
+    }
   }
 
   // Update the installation object to persist the experimental feature map

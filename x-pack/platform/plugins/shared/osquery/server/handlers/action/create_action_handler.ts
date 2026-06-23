@@ -159,6 +159,7 @@ export const createActionHandler = async (
           input_type: 'osquery',
           agents: query.agents as string[],
           user_id: metadata?.currentUser,
+          space_id: options.space?.id ?? DEFAULT_SPACE_ID,
           ...(query.timeout !== QUERY_TIMEOUT.DEFAULT ? { timeout: query.timeout } : {}),
           data: pick(query, ['id', 'query', 'ecs_mapping', 'version', 'platform']) as {
             [k: string]: unknown;

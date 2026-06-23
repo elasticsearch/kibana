@@ -43,13 +43,13 @@ export const OptionsListPopoverSuggestions = ({
   const styles = useMemoCss(optionListPopoverSuggestionsStyles);
 
   const conditionalApiSubjects: [
-    PublishingSubject<boolean>,
+    PublishingSubject<boolean | undefined>,
     DSLOptionsListComponentApi['sort$'] | PublishingSubject<undefined>,
     DSLOptionsListComponentApi['fieldFormatter'] | PublishingSubject<undefined>
   ] = useMemo(() => {
     const isDSLControl = isDSLOptionsListApi(componentApi);
     return [
-      isDSLControl ? componentApi.existsSelected$ : new BehaviorSubject(false),
+      isDSLControl ? componentApi.existsSelected$ : new BehaviorSubject<boolean | undefined>(false),
       isDSLControl ? componentApi.sort$ : new BehaviorSubject(undefined),
       isDSLControl ? componentApi.fieldFormatter : new BehaviorSubject(undefined),
     ];

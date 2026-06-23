@@ -126,7 +126,9 @@ export class StepExecutionRuntimeFactory {
       node.stepType
     );
     const contextManager = new WorkflowContextManager({
-      templateEngine: new WorkflowTemplatingEngine(),
+      templateEngine: new WorkflowTemplatingEngine({
+        liquidSettings: workflowExecution.workflowDefinition?.settings?.liquid,
+      }),
       workflowExecutionGraph: this.params.workflowExecutionGraph,
       workflowExecutionState: this.params.workflowExecutionState,
       stepIoService: this.params.stepIoService,

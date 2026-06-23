@@ -1,0 +1,7 @@
+prs:
+- https://github.com/elastic/kibana/pull/272155
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+title: Fix `Security` category link in the global navigation menu

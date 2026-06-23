@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
 import { TestProviders } from '../../../../common/mock';
@@ -138,17 +138,15 @@ describe('<AlertReason />', () => {
 
     fireEvent.click(getByTestId(REASON_DETAILS_PREVIEW_BUTTON_TEST_ID));
 
-    await waitFor(() => {
-      expect(mockUseEventDetails).toHaveBeenCalledWith({
-        eventId: 'test-id',
-        indexName: 'test-index',
-      });
+    expect(await findByTestId('full-reason-renderer')).toBeInTheDocument();
+    expect(mockUseEventDetails).toHaveBeenCalledWith({
+      eventId: 'test-id',
+      indexName: 'test-index',
     });
     expect(mockRenderRow).toHaveBeenCalledWith({
       data: mockDataAsNestedObject,
       scopeId: 'document-details-flyout',
     });
-    expect(await findByTestId('full-reason-renderer')).toBeInTheDocument();
   });
 
   it('should show a loading state while fetching full event details', async () => {

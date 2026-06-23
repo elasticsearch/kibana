@@ -10,7 +10,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor, within, act } from '@testing-library/react';
 import type { Filter } from '@kbn/es-query';
-import { FilterStateStore } from '@kbn/es-query';
+import { FilterStateStore, buildCombinedFilter, BooleanRelation } from '@kbn/es-query';
 import type { FilterEditorProps } from './filter_editor';
 import { FilterEditor } from './filter_editor';
 import { I18nProvider } from '@kbn/i18n-react';
@@ -128,6 +128,82 @@ const filterIsBetween = (
 const filterLessThan = filterIsBetween({ lt: '30' });
 const filterGreaterOrEqual = filterIsBetween({ gte: '20' });
 
+const filterPhrases = (
+  field: string,
+  values: string[],
+  negate = false,
+  fieldType = 'string'
+): Filter => ({
+  meta: {
+    alias: null,
+    disabled: false,
+    index: 'ff959d40-b880-11e8-a6d9-e546fe2bba5f',
+    key: field,
+    negate,
+    params: values,
+    type: 'phrases',
+  },
+  query: {
+    bool: {
+      minimum_should_match: 1,
+      should: values.map((value) => ({
+        match_phrase: {
+          [field]: fieldType === 'number' ? Number(value) : value,
+        },
+      })),
+    },
+  },
+  $state: {
+    store: FilterStateStore.APP_STATE,
+  },
+});
+
+const filterRange = (
+  field: string,
+  params: { gte?: number; lt?: number },
+  negate = false
+): Filter => ({
+  meta: {
+    disabled: false,
+    negate,
+    alias: null,
+    index: 'ff959d40-b880-11e8-a6d9-e546fe2bba5f',
+    key: field,
+    params,
+    type: 'range',
+  },
+  query: {
+    range: {
+      [field]: params,
+    },
+  },
+  $state: {
+    store: FilterStateStore.APP_STATE,
+  },
+});
+
+const filterPhrase = (field: string, value: string, negate = false): Filter => ({
+  meta: {
+    disabled: false,
+    negate,
+    alias: null,
+    index: 'ff959d40-b880-11e8-a6d9-e546fe2bba5f',
+    key: field,
+    params: {
+      query: value,
+    },
+    type: 'phrase',
+  },
+  query: {
+    match_phrase: {
+      [field]: value,
+    },
+  },
+  $state: {
+    store: FilterStateStore.APP_STATE,
+  },
+});
+
 const mockedDataView = {
   id: 'ff959d40-b880-11e8-a6d9-e546fe2bba5f',
   title: 'logstash-*',
@@ -136,6 +212,30 @@ const mockedDataView = {
       name: 'price',
       type: 'number',
       esTypes: ['integer'],
+      aggregatable: true,
+      filterable: true,
+      searchable: true,
+    },
+    {
+      name: 'extension',
+      type: 'string',
+      esTypes: ['keyword'],
+      aggregatable: true,
+      filterable: true,
+      searchable: true,
+    },
+    {
+      name: 'bytes',
+      type: 'number',
+      esTypes: ['long'],
+      aggregatable: true,
+      filterable: true,
+      searchable: true,
+    },
+    {
+      name: 'clientip',
+      type: 'ip',
+      esTypes: ['ip'],
       aggregatable: true,
       filterable: true,
       searchable: true,
@@ -361,5 +461,70 @@ describe('Preserving or clearing value on operator change', () => {
       expect(getSingleParamValue()).toEqual('20');
       expect(getFilterBadgeTextContent()).toBe('price: ≥ 20');
     });
+  });
+});
+
+describe('Combined filter preview text', () => {
+  const renderCombinedFilterEditor = async (filter: Filter) => {
+    await act(async () => {
+      render(<FilterEditor {...defaultProps} filter={filter} />, {
+        wrapper: ({ children }) => (
+          <I18nProvider>
+            <KibanaContextProvider services={services}>{children}</KibanaContextProvider>
+          </I18nProvider>
+        ),
+      });
+    });
+
+    // For combined filters, wait for the preview badge instead of operator combobox
+    await waitFor(() => {
+      expect(screen.getByTestId('filter-preview')).toBeInTheDocument();
+    });
+  };
+
+  it('should display OR compound filter preview', async () => {
+    const orFilter = buildCombinedFilter(
+      BooleanRelation.OR,
+      [filterPhrase('extension', 'png'), filterRange('bytes', { gte: 1000, lt: 2000 })],
+      mockedDataView
+    );
+
+    await renderCombinedFilterEditor(orFilter);
+
+    expect(getFilterBadgeTextContent()).toBe('extension: png OR bytes: 1000 to 2000');
+  });
+
+  it('should display AND compound filter preview', async () => {
+    const andFilter = buildCombinedFilter(
+      BooleanRelation.AND,
+      [filterPhrases('extension', ['png', 'jpeg']), filterRange('bytes', { gte: 1000, lt: 2000 })],
+      mockedDataView
+    );
+
+    await renderCombinedFilterEditor(andFilter);
+
+    expect(getFilterBadgeTextContent()).toBe(
+      'extension: is one of png, jpeg AND bytes: 1000 to 2000'
+    );
+  });
+
+  it('should display nested filters with brackets', async () => {
+    const nestedOrFilter = buildCombinedFilter(
+      BooleanRelation.OR,
+      [filterPhrase('clientip', '127.0.0.1', true), filterPhrases('extension', ['png', 'jpeg'])],
+      mockedDataView
+    );
+
+    const nestedAndFilter = buildCombinedFilter(
+      BooleanRelation.AND,
+      [nestedOrFilter, filterRange('bytes', { gte: 1000, lt: 2000 })],
+      mockedDataView
+    );
+
+    await renderCombinedFilterEditor(nestedAndFilter);
+
+    expect(getFilterBadgeTextContent()).toBe(
+      '(NOT clientip: 127.0.0.1 OR extension: is one of png, jpeg) AND bytes: 1000 to 2000'
+    );
   });
 });

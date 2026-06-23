@@ -18,8 +18,9 @@ import {
   andWhere,
   runLatestSourceEsqlQuery,
   runPaginatedLatestSourceEsqlQuery,
-  queryEsql,
-  esqlToObjects,
+  runFindByIdEsqlQuery,
+  runFindByIdsEsqlQuery,
+  runGetProcessedIds,
 } from '../latest_source_query';
 import {
   DETECTIONS_DATA_STREAM,
@@ -85,39 +86,37 @@ export class DetectionClient {
     return where;
   }
 
-  // Returns detection_ids where the latest kind:handled timestamp is on or after the latest
-  // kind:detection OR kind:quiet timestamp, or where only handled docs exist.
-  // Chunked to avoid oversized ES|QL IN clauses when many detections are on screen.
   private async getProcessedIds(detectionIds: string[]): Promise<Set<string>> {
-    if (!detectionIds.length) return new Set();
-
-    const processed = new Set<string>();
-    for (let i = 0; i < detectionIds.length; i += PROCESSED_IDS_CHUNK_SIZE) {
-      const batch = detectionIds.slice(i, i + PROCESSED_IDS_CHUNK_SIZE);
-      const idLiterals = batch.map((id) => esql.str(id));
-      const kindState = [esql.str('detection'), esql.str(KIND_QUIET)];
-      const allKinds = [...kindState, esql.str(KIND_HANDLED)];
-      const query = esql`FROM ${DETECTIONS_DATA_STREAM}
-        | WHERE kibana.space_ids == ${esql.str(this.clients.space)} OR kibana.space_ids IS NULL
-        | WHERE kind IN (${allKinds})
-        | WHERE detection_id IN (${idLiterals})
-        | STATS max_state_ts = MAX(CASE(kind IN (${kindState}), @timestamp, null)),
-                max_handled_ts = MAX(CASE(kind == ${esql.str(KIND_HANDLED)}, @timestamp, null))
-          BY detection_id
-        | WHERE max_handled_ts >= max_state_ts OR max_state_ts IS NULL
-        | KEEP detection_id`;
-
-      const response = await queryEsql({ esClient: this.clients.esClient, query });
-      const rows = esqlToObjects<{ detection_id?: string }>(response);
-      for (const r of rows) {
-        if (r.detection_id) processed.add(r.detection_id);
-      }
-    }
-    return processed;
+    return runGetProcessedIds({
+      esClient: this.clients.esClient,
+      space: this.clients.space,
+      index: DETECTIONS_DATA_STREAM,
+      idField: FIELD_DETECTION_ID,
+      idValues: detectionIds,
+      stateKinds: ['detection', KIND_QUIET],
+      handledKind: KIND_HANDLED,
+      chunkSize: PROCESSED_IDS_CHUNK_SIZE,
+    });
   }
 
-  private toDetection(raw: RawDetection, processed: boolean): Detection {
-    return { ...raw, processed };
+  async findById(detectionId: string): Promise<{ hits: Detection[] }> {
+    return runFindByIdEsqlQuery<Detection>({
+      esClient: this.clients.esClient,
+      space: this.clients.space,
+      index: DETECTIONS_DATA_STREAM,
+      idField: FIELD_DETECTION_ID,
+      idValue: detectionId,
+    });
+  }
+
+  async findByIds(detectionIds: string[]): Promise<{ hits: Detection[] }> {
+    return runFindByIdsEsqlQuery<Detection>({
+      esClient: this.clients.esClient,
+      space: this.clients.space,
+      index: DETECTIONS_DATA_STREAM,
+      idField: FIELD_DETECTION_ID,
+      idValues: detectionIds,
+    });
   }
 
   async findLatest(options: DetectionsSearchOptions = {}): Promise<{ hits: Detection[] }> {
@@ -133,8 +132,8 @@ export class DetectionClient {
       result.hits.map((h) => h.detection_id).filter((id): id is string => Boolean(id))
     );
     return {
-      hits: result.hits.map((raw) =>
-        this.toDetection(raw, processedIds.has(raw.detection_id ?? ''))
+      hits: result.hits.map(
+        (raw) => ({ ...raw, processed: processedIds.has(raw.detection_id ?? '') } as Detection)
       ),
     };
   }
@@ -157,9 +156,7 @@ export class DetectionClient {
     );
     return {
       ...result,
-      hits: result.hits.map((raw) =>
-        this.toDetection(raw, processedIds.has(raw.detection_id ?? ''))
-      ),
+      hits: result.hits.map((raw) => ({ ...raw, processed: processedIds.has(raw.detection_id) })),
     };
   }
 }

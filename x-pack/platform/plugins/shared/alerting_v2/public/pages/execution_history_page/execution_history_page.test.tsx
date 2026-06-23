@@ -142,7 +142,7 @@ describe('ExecutionHistoryPage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: /execution history/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Policies' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /policies/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('renders the experimental badge in the page header', () => {
@@ -152,7 +152,7 @@ describe('ExecutionHistoryPage', () => {
     expect(screen.getByTestId('alertingV2ExperimentalBadge')).toBeInTheDocument();
   });
 
-  it('renders the denormalization info tooltip next to the title', () => {
+  it('renders the denormalization info tooltip next to the Policies tab', () => {
     mockFetchResult();
     renderPage();
 

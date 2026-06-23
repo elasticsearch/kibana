@@ -134,7 +134,11 @@ describe('bulkIndexWithOccRetry', () => {
       retryDelayMs: 0,
     });
 
-    expect(result).toEqual({ successIds: ['wf-1'], failures: [] });
+    expect(result).toEqual({
+      successIds: ['wf-1'],
+      successfulDocuments: [{ id: 'wf-1', document: expect.objectContaining({ enabled: false }) }],
+      failures: [],
+    });
     expect(client.bulk).toHaveBeenCalledWith({
       operations: [
         {
@@ -180,7 +184,11 @@ describe('bulkIndexWithOccRetry', () => {
       retryDelayMs: 0,
     });
 
-    expect(result).toEqual({ successIds: ['wf-1'], failures: [] });
+    expect(result).toEqual({
+      successIds: ['wf-1'],
+      successfulDocuments: [{ id: 'wf-1', document: expect.objectContaining({ enabled: false }) }],
+      failures: [],
+    });
     expect(client.search).toHaveBeenCalledWith({
       query: { ids: { values: ['wf-1'] } },
       seq_no_primary_term: true,
@@ -337,7 +345,14 @@ describe('bulkIndexWithOccRetry', () => {
       retryDelayMs: 0,
     });
 
-    expect(result).toEqual({ successIds: ['wf-1', 'wf-2'], failures: [] });
+    expect(result).toEqual({
+      successIds: ['wf-1', 'wf-2'],
+      successfulDocuments: [
+        { id: 'wf-1', document: expect.objectContaining({ enabled: false }) },
+        { id: 'wf-2', document: expect.objectContaining({ enabled: false }) },
+      ],
+      failures: [],
+    });
     expect(client.bulk).toHaveBeenCalledTimes(2);
     expect(client.bulk.mock.calls[1][0].operations).toHaveLength(1);
     expectIndexOperation(client.bulk.mock.calls[1][0].operations[0], { _id: 'wf-2' });

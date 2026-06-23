@@ -219,6 +219,7 @@ describe('When using get-file action from response actions console', () => {
       'agent-a': {
         isCompleted: true,
         wasSuccessful: false,
+        wasCanceled: false,
         errors: ['not found'],
         completedAt: new Date().toISOString(),
       },

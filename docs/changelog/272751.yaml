@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/272751
+issues:
+- https://github.com/elastic/kibana/issues/272535
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Dashboards and visualizations
+title: Fix filters not being applied when section is collapsed

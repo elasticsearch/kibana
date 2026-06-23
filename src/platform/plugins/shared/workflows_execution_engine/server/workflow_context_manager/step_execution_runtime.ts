@@ -356,6 +356,55 @@ export class StepExecutionRuntime {
     return Object.keys(rest).length ? rest : undefined;
   }
 
+  /**
+   * Unconditionally enters (or re-enters) a wait state until `resumeDate`,
+   * merging `additionalState` into the persisted step state.
+   *
+   * Unlike {@link tryEnterWaitUntil}, this does NOT toggle: every call writes
+   * `status: WAITING` and `resumeAt`. Use this for steps that re-enter the
+   * wait loop on every iteration (e.g. durable poll steps), where the
+   * "are we already waiting?" detection is owned by the caller (typically via
+   * an engine-bookkeeping field stored alongside `additionalState`).
+   *
+   * @param resumeDate When the step should be woken via the resume task.
+   * @param additionalState Fields to merge into the persisted step state. The
+   *   engine writes `resumeAt` itself; callers do not need to pass it.
+   * @param forceTaskSchedule When true, {@link handle_execution_delay} schedules a Task Manager
+   *   resume even if the sleep is under its 5 s in-process threshold. Durable poll steps set this
+   *   after the first continuation so sub-5 s poll intervals do not pin the worker.
+   */
+  public enterWaitUntil(
+    resumeDate: Date,
+    additionalState?: Record<string, unknown>,
+    forceTaskSchedule?: boolean
+  ): void {
+    const existing = this.stepExecution?.state ?? {};
+    const nextState: Record<string, unknown> = {
+      ...existing,
+      ...(additionalState ?? {}),
+      resumeAt: resumeDate.toISOString(),
+      forceTaskSchedule,
+    };
+    // `undefined` cannot round-trip through JSON persistence — a spread of
+    // `{ __authorState: undefined }` would otherwise leave a stale key from
+    // `existing`. Strip keys whose merged value is explicitly `undefined`.
+    for (const key of Object.keys(nextState)) {
+      if (nextState[key] === undefined) {
+        delete nextState[key];
+      }
+    }
+    this.workflowExecutionState.upsertStep({
+      id: this.stepExecutionId,
+      stepId: this.node.stepId,
+      stepType: this.node.stepType,
+      scopeStack: this.workflowExecution.scopeStack,
+      topologicalIndex: this.topologicalOrder.indexOf(this.node.id),
+      startedAt: this.stepExecution?.startedAt || new Date().toISOString(),
+      status: ExecutionStatus.WAITING,
+      state: nextState,
+    });
+  }
+
   /** Modifies workflow-level execution state. Use sparingly — prefer step output for step-scoped data. */
   public updateWorkflowExecution(update: Partial<EsWorkflowExecution>): void {
     this.workflowExecutionState.updateWorkflowExecution(update);

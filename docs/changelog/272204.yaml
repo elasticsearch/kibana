@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272204
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Search and data
+title: Add read-only privilege tier to the Model Management pages
+description: "Viewer-level Kibana roles can now browse inference endpoints and feature settings without being able to add, delete, or modify them."

@@ -24,7 +24,7 @@ import {
 import { buildConstantsDefinitions } from '../../definitions/utils/literals';
 import type { MapParameters } from '../../definitions/utils/autocomplete/map_expression';
 import { getCommandMapExpressionSuggestions } from '../../definitions/utils/autocomplete/map_expression';
-import { pipeCompleteItem, withCompleteItem } from '../complete_items';
+import { newLineAndPipeCompleteItems, withCompleteItem } from '../complete_items';
 import { suggestFieldsList } from '../../definitions/utils/autocomplete/fields_list';
 
 export const QUERY_TEXT = 'Your search query' as const;
@@ -135,7 +135,7 @@ export async function autocomplete(
     }
 
     case CaretPosition.AFTER_COMMAND: {
-      return [pipeCompleteItem];
+      return newLineAndPipeCompleteItems;
     }
 
     default: {

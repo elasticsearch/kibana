@@ -30,12 +30,28 @@ interface FailureReason {
 interface TopFailureReasonsProps {
   streamName: string;
   canReadFailureStore: boolean;
+  failedDocs: number;
+  failedDocsLoading?: boolean;
 }
 
 // Severity palette applied by rank: red → orange → subdued for the rest.
 const BAR_COLORS = ['danger', 'warning', 'subdued', 'subdued', 'subdued'] as const;
 
-export function TopFailureReasons({ streamName, canReadFailureStore }: TopFailureReasonsProps) {
+function isExpectedEmptyFailureStoreError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.message.includes('Unknown index') ||
+    error.message.includes('index_not_found_exception') ||
+    error.message.includes('Unknown column')
+  );
+}
+
+export function TopFailureReasons({
+  streamName,
+  canReadFailureStore,
+  failedDocs,
+  failedDocsLoading,
+}: TopFailureReasonsProps) {
   const {
     core: { uiSettings },
     dependencies: {
@@ -45,7 +61,7 @@ export function TopFailureReasons({ streamName, canReadFailureStore }: TopFailur
 
   const failureReasonsFetch = useStreamsAppFetch(
     async ({ signal, timeState: ts }) => {
-      if (!canReadFailureStore || !ts) return [];
+      if (!canReadFailureStore || !ts || failedDocs <= 0) return [];
 
       let response;
       try {
@@ -58,12 +74,7 @@ export function TopFailureReasons({ streamName, canReadFailureStore }: TopFailur
           uiSettings,
         });
       } catch (error: unknown) {
-        // The ::failures backing index is created lazily — treat "Unknown index" as no data.
-        if (
-          error instanceof Error &&
-          (error.message.includes('Unknown index') ||
-            error.message.includes('index_not_found_exception'))
-        ) {
+        if (isExpectedEmptyFailureStoreError(error)) {
           return [];
         }
         throw error;
@@ -83,12 +94,13 @@ export function TopFailureReasons({ streamName, canReadFailureStore }: TopFailur
           })
         );
     },
-    [streamName, canReadFailureStore, data.search.search, uiSettings],
+    [streamName, canReadFailureStore, failedDocs, data.search.search, uiSettings],
     { withTimeRange: true, withRefresh: true }
   );
 
   const reasons = useMemo(() => failureReasonsFetch.value ?? [], [failureReasonsFetch.value]);
   const maxCount = useMemo(() => Math.max(1, ...reasons.map((r) => r.count)), [reasons]);
+  const isLoading = failedDocsLoading || failureReasonsFetch.loading;
 
   if (!canReadFailureStore) {
     return null;
@@ -107,7 +119,7 @@ export function TopFailureReasons({ streamName, canReadFailureStore }: TopFailur
         <EuiSpacer size="s" />
       </EuiFlexItem>
 
-      {failureReasonsFetch.loading ? (
+      {isLoading ? (
         <EuiFlexItem>
           <EuiSkeletonText lines={3} size="s" />
         </EuiFlexItem>

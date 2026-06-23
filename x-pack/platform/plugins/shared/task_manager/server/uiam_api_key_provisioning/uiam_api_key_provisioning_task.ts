@@ -44,7 +44,6 @@ import { mapUiamConvertResponseToKeyResults } from './lib/map_uiam_convert_respo
 import { buildSavedObjectBulkUpdatesForUiamKeys } from './lib/build_saved_object_bulk_updates_for_uiam';
 import { markApiKeysForInvalidation } from '../api_key_strategy';
 import { statusDocsAndOrphanedUiamKeysFromTaskBulkUpdate } from './lib/task_status_and_orphaned_keys_from_bulk_update';
-import { resetUiamKeysForReprovisioning } from './lib/reset_uiam_keys_for_reprovisioning';
 import { UiamProvisioningFeatureFlagScheduler } from './lib/uiam_provisioning_feature_flag_scheduler';
 import {
   createUiamProvisioningTaskRunner,
@@ -130,11 +129,6 @@ export class UiamApiKeyProvisioningTask {
     const context = await createProvisioningRunContext(coreSetup);
     const state = (taskInstance.state ?? emptyState) as LatestTaskStateSchema;
 
-    // One-time remediation for keys persisted in plaintext by the pre-fix run. Runs before the
-    // normal flow so the stripped tasks are re-provisioned (with proper encryption) in this same
-    // run. Failure here must not block normal provisioning, so it is caught and retried next run.
-    const plaintextUiamKeysRepaired = await this.repairPlaintextUiamKeysOnce(state, context);
-
     const { apiKeysToConvert, hasMoreToProvision, provisioningStatusForSkippedTasks } =
       await this.getApiKeysToConvert(context);
 
@@ -169,44 +163,14 @@ export class UiamApiKeyProvisioningTask {
       nextRunNumber: nextRuns,
     });
 
-    // Re-run soon when there is more to provision, or when the one-time repair has not completed
-    // yet (so the freshly stripped tasks get re-provisioned promptly).
-    const shouldRunAgainSoon = hasMoreToProvision || !plaintextUiamKeysRepaired;
+    // Re-run soon when there is more to provision.
+    const shouldRunAgainSoon = hasMoreToProvision;
 
     return {
-      state: { runs: nextRuns, plaintextUiamKeysRepaired },
+      state: { runs: nextRuns },
       ...(shouldRunAgainSoon ? { runAt: new Date(Date.now() + RUN_AT_INTERVAL_MS) } : {}),
       telemetry,
     };
-  };
-
-  /**
-   * One-time (per environment) repair: strips plaintext `uiamApiKey`/`userScope.uiamApiKeyId` from
-   * all provisioned tasks and flushes their provisioning status so the regular flow re-mints
-   * properly encrypted keys. Latches via task state once it succeeds; errors are swallowed so a
-   * transient failure does not block provisioning and the repair is retried on the next run.
-   */
-  private repairPlaintextUiamKeysOnce = async (
-    state: LatestTaskStateSchema,
-    context: TaskManagerUiamProvisioningRunContext
-  ): Promise<boolean> => {
-    if (state.plaintextUiamKeysRepaired) {
-      return true;
-    }
-    try {
-      await resetUiamKeysForReprovisioning(
-        context.coreStart.elasticsearch.client.asInternalUser,
-        context.savedObjectsClient,
-        this.logger
-      );
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Plaintext UIAM key repair failed; will retry next run: ${getErrorMessage(error)}`,
-        { error: { stack_trace: error instanceof Error ? error.stack : undefined, tags: TAGS } }
-      );
-      return false;
-    }
   };
 
   private reportProvisioningRunEvent = (

@@ -24,7 +24,7 @@ export const DEFAULT_CCS_SETTINGS: CCSSettingsWithSpaces = {
   spaces: [],
 };
 
-const fetchCCSSettings = async (): Promise<CCSSettingsWithSpaces> => {
+export const fetchCCSSettings = async (): Promise<CCSSettingsWithSpaces> => {
   try {
     const settings = await apiService.get<{
       useAllRemoteClusters?: boolean;

@@ -46,6 +46,7 @@ import { type DataStreamFilterName } from '../data_stream_list';
 import { DataStreamActionsMenu } from '../data_stream_actions_menu';
 import { EditDataRetentionModal } from '../edit_data_retention_modal';
 import { DataRetentionValue } from '../data_retention_value';
+import { formatByteSizeString } from '../../../../lib/format_bytes';
 
 interface TableDataStream extends DataStream {
   isNextGenIlm: boolean;
@@ -153,7 +154,7 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
         className: 'eui-textNoWrap',
         align: RIGHT_ALIGNMENT,
         render: (_: DataStream['meteringStorageSizeBytes'], dataStream: DataStream) =>
-          dataStream.meteringStorageSize,
+          formatByteSizeString(dataStream.meteringStorageSize),
       });
       columns.push({
         field: 'meteringDocsCount',
@@ -193,7 +194,7 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
         className: 'eui-textNoWrap',
         align: RIGHT_ALIGNMENT,
         render: (_: DataStream['storageSizeBytes'], dataStream: DataStream) =>
-          dataStream.storageSize,
+          formatByteSizeString(dataStream.storageSize),
       });
     }
   }

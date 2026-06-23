@@ -10,7 +10,7 @@
 import type { ESQLAstAllCommands, ESQLSingleAstItem } from '@elastic/esql/types';
 import { isColumn } from '@elastic/esql';
 import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
-import { pipeCompleteItem, commaCompleteItem } from '../complete_items';
+import { newLineCompleteItem, pipeCompleteItem, commaCompleteItem } from '../complete_items';
 import type { ISuggestionItem } from '../types';
 import { ReplacementRangeStrategyKind } from '../../../language/autocomplete/utils/prefix_range';
 import { endsWithComma, endsWithWhitespace } from '../../definitions/utils/regex';
@@ -135,5 +135,5 @@ export const getSuggestionsAfterCompleteExpression = (
     commaSuggestion.preserveTypedPrefix = true;
   }
 
-  return [...sortCommandKeywordSuggestions, pipeSuggestion, commaSuggestion];
+  return [...sortCommandKeywordSuggestions, newLineCompleteItem, pipeSuggestion, commaSuggestion];
 };

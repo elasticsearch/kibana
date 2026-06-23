@@ -30,7 +30,7 @@ export interface RulePipelineState {
   readonly alertEventsBatch?: ReadonlyArray<AlertEvent>;
 }
 
-export type HaltReason = 'rule_deleted' | 'rule_disabled' | 'state_not_ready';
+export type HaltReason = 'rule_deleted' | 'rule_disabled' | 'state_not_ready' | 'engine_disabled';
 
 export type StepStreamResult =
   | { type: 'continue'; state: RulePipelineState }

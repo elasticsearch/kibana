@@ -13,9 +13,9 @@ import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { BehaviorSubject } from 'rxjs';
 import { css } from '@emotion/react';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { transformTimeRangeOut } from '@kbn/presentation-publishing';
 import type { UnifiedValueAttachmentViewProps } from '@kbn/cases-plugin/public';
 import { FIELD_FORMAT_IDS } from '@kbn/field-formats-plugin/common';
+import type { AnomalyChartsEmbeddableState } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
 import { EuiDescriptionList, htmlIdGenerator } from '@elastic/eui';
 import type { FieldFormatsStart } from '@kbn/field-formats-plugin/public';
 import type { Filter, Query, TimeRange } from '@kbn/es-query';
@@ -28,6 +28,7 @@ import type {
   AnomalyChartsAttachmentState,
   AnomalyChartsAttachmentApi,
 } from '../embeddables';
+import { transformOut } from '../../common/embeddables/anomaly_charts/transform_out';
 
 type AnomalyChartsViewProps = UnifiedValueAttachmentViewProps<AnomalyChartsAttachmentData>;
 
@@ -77,7 +78,7 @@ const AnomalyChartsCaseAttachment = ({
         <KibanaContextProvider services={contextServices}>
           <LazyAnomalyChartsContainer
             id={`case-anomaly-charts-${id}`}
-            severityThreshold={rawState.severityThreshold}
+            severityThreshold={rawState.severity_threshold}
             api={api}
             services={services}
             onLoading={api.onLoading}
@@ -96,6 +97,22 @@ function isValidTimeRange(arg: unknown): arg is TimeRange {
   return isPopulatedObject(arg, ['from', 'to']);
 }
 
+const normalizeAnomalyChartsAttachmentState = (
+  attachmentState: Record<string, unknown>
+): AnomalyChartsAttachmentState => {
+  const embeddableState = transformOut(attachmentState as unknown as AnomalyChartsEmbeddableState);
+  const { id, query, filters } = attachmentState as Partial<
+    Pick<AnomalyChartsAttachmentState, 'id' | 'query' | 'filters'>
+  >;
+
+  return {
+    ...embeddableState,
+    ...(id !== undefined ? { id } : {}),
+    ...(query !== undefined ? { query } : {}),
+    ...(filters !== undefined ? { filters } : {}),
+  };
+};
+
 export const initializeAnomalyChartsAttachment = memoize(
   (fieldFormats: FieldFormatsStart, services: AnomalyChartsEmbeddableServices) => {
     return React.memo(
@@ -106,9 +123,7 @@ export const initializeAnomalyChartsAttachment = memoize(
           id: FIELD_FORMAT_IDS.DATE,
         });
 
-        const inputProps = transformTimeRangeOut(
-          attachmentState as unknown as AnomalyChartsAttachmentState & Record<string, unknown>
-        );
+        const inputProps = normalizeAnomalyChartsAttachmentState(attachmentState);
 
         const descriptions = useMemo(() => {
           const listItems = [
@@ -119,7 +134,7 @@ export const initializeAnomalyChartsAttachment = memoize(
                   defaultMessage="Job IDs"
                 />
               ),
-              description: inputProps.jobIds.join(', '),
+              description: inputProps.job_ids.join(', '),
             },
           ];
 
@@ -152,7 +167,7 @@ export const initializeAnomalyChartsAttachment = memoize(
           // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [
           dataFormatter,
-          inputProps.jobIds,
+          inputProps.job_ids,
           inputProps.query?.query,
           inputProps.time_range?.from,
           inputProps.time_range?.to,

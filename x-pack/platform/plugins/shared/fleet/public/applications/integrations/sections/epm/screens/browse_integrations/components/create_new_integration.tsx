@@ -55,6 +55,9 @@ export const CreateNewIntegrationButton: React.FC = () => {
       </EuiFlexItem>
       <EuiFlexItem grow={false} style={{ display: 'flex' }}>
         <EuiPopover
+          aria-label={i18n.translate('xpack.fleet.epmList.createNewIntegrationDropdownAriaLabel', {
+            defaultMessage: 'More integration creation options',
+          })}
           isOpen={isPopoverOpen}
           closePopover={() => setIsPopoverOpen(false)}
           panelPaddingSize="none"

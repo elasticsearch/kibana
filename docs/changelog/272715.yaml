@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/272715
+issues:
+- https://github.com/elastic/kibana/issues/234653
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Search and data
+title: Fix Fleet `product_versions` fetch hanging when request times out
+description: Fleet agent upgrade actions no longer hang indefinitely when the `product_versions` endpoint is unreachable. The fetch now uses a configurable timeout with actionable log output.

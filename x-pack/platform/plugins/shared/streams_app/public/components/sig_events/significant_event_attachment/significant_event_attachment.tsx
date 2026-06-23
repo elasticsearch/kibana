@@ -16,7 +16,7 @@ import type { SignificantEventAttachment } from '@kbn/streams-plugin/common';
 import { SIGNIFICANT_EVENT_ATTACHMENT_TYPE } from '@kbn/streams-plugin/common';
 import type { ChromeStart } from '@kbn/core/public';
 import type { StreamsAppStartDependencies } from '../../../types';
-import { getStatusColor } from '../significant_events_discovery/utils/event_status_color';
+import { getSigEventStatusColor } from '../significant_events_discovery/components/shared/status_display';
 import { SigEventDetails } from '../sig_event_details/sig_event_details';
 import sigEventIcon from '../../asset_image/sig_event_icon.svg';
 import type { FocusedSignificantEventService } from '../../../services/significant_events/focused_significant_event_service';
@@ -38,7 +38,9 @@ export const significantEventAttachmentDefinition: AttachmentUIDefinition<Signif
     getHeader: ({ attachment }) => ({
       icon: sigEventIcon,
       subtitle: labels.fallback,
-      badges: [{ label: attachment.data.status, color: getStatusColor(attachment.data.status) }],
+      badges: [
+        { label: attachment.data.status, color: getSigEventStatusColor(attachment.data.status) },
+      ],
     }),
     getActionButtons: ({ openCanvas, isCanvas }) => {
       if (isCanvas || !openCanvas) {

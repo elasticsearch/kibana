@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import type { IntegrationCardItem } from '@kbn/fleet-plugin/public';
 import { OnboardingFlowForm } from './onboarding_flow_form';
@@ -28,6 +28,7 @@ const mockUseCustomCards = jest.fn<IntegrationCardItem[], []>(() => []);
 
 jest.mock('./use_custom_cards', () => ({
   useCustomCards: () => mockUseCustomCards(),
+  AWS_CLOUDWATCH_OTEL_CARD_ID: 'aws-cloudwatch-otel-virtual',
 }));
 
 jest.mock('../package_list/package_list', () => ({
@@ -40,6 +41,16 @@ jest.mock('../package_list/package_list', () => ({
       ))}
     </div>
   ),
+}));
+
+jest.mock('@kbn/fleet-plugin/public', () => ({
+  LazyPackageCard: ({ id, title }: IntegrationCardItem) => (
+    <div data-test-subj={`package-card-${id}`}>{title}</div>
+  ),
+}));
+
+jest.mock('../api_endpoints/api_endpoints', () => ({
+  ApiEndpoints: () => <div data-test-subj="apiEndpointsStub" />,
 }));
 
 const mockUseKibana = useKibana as jest.MockedFunction<typeof useKibana>;
@@ -121,14 +132,36 @@ describe('OnboardingFlowForm', () => {
 
     it('should show only OpenTelemetry as the Kubernetes featured quickstart', () => {
       mockUseCustomCards.mockReturnValue([
-        { id: 'kubernetes-quick-start', title: 'Kubernetes Quickstart' } as IntegrationCardItem,
         { id: 'otel-kubernetes', title: 'OpenTelemetry Kubernetes' } as IntegrationCardItem,
       ]);
 
       renderWithProviders(<OnboardingFlowForm />, ['/?category=kubernetes']);
 
-      expect(screen.queryByTestId('package-item-kubernetes-quick-start')).not.toBeInTheDocument();
       expect(screen.getByTestId('package-item-otel-kubernetes')).toBeInTheDocument();
+    });
+
+    it('leads with the AWS quickstart in the provider grid and shows the AWS collection as a fallback below', () => {
+      mockUseCustomCards.mockReturnValue([
+        { id: 'azure-logs-virtual', title: 'Azure' } as IntegrationCardItem,
+        { id: 'aws-logs-virtual', title: 'AWS collection' } as IntegrationCardItem,
+        { id: 'gcp-logs-virtual', title: 'Google Cloud Platform' } as IntegrationCardItem,
+        { id: 'aws-cloudwatch-otel-virtual', title: 'AWS' } as IntegrationCardItem,
+      ]);
+
+      renderWithProviders(<OnboardingFlowForm />, ['/?category=cloud']);
+
+      const [featuredPackageList] = screen.getAllByTestId('package-list');
+      expect(
+        within(featuredPackageList).getByTestId('package-item-aws-cloudwatch-otel-virtual')
+      ).toBeInTheDocument();
+      expect(
+        within(featuredPackageList).queryByTestId('package-item-aws-logs-virtual')
+      ).not.toBeInTheDocument();
+      expect(within(featuredPackageList).getAllByTestId(/^package-item-/)).toHaveLength(3);
+
+      const fallbackRow = screen.getByTestId('observabilityOnboardingCloudExtraRow');
+      expect(fallbackRow).toBeInTheDocument();
+      expect(within(fallbackRow).getByTestId('package-card-aws-logs-virtual')).toBeInTheDocument();
     });
   });
 
@@ -168,6 +201,30 @@ describe('OnboardingFlowForm', () => {
       const grid = screen.getByTestId('observabilityOnboardingUseCaseGrid');
       expect(grid).toBeInTheDocument();
     });
+
+    it('leads with the AWS quickstart in the provider grid and shows the AWS collection as a fallback below', () => {
+      mockUseCustomCards.mockReturnValue([
+        { id: 'azure-logs-virtual', title: 'Azure' } as IntegrationCardItem,
+        { id: 'aws-logs-virtual', title: 'AWS collection' } as IntegrationCardItem,
+        { id: 'gcp-logs-virtual', title: 'Google Cloud Platform' } as IntegrationCardItem,
+        { id: 'aws-cloudwatch-otel-virtual', title: 'AWS' } as IntegrationCardItem,
+      ]);
+
+      renderWithProviders(<OnboardingFlowForm />, ['/?category=cloud']);
+
+      const [featuredPackageList] = screen.getAllByTestId('package-list');
+      expect(
+        within(featuredPackageList).getByTestId('package-item-aws-cloudwatch-otel-virtual')
+      ).toBeInTheDocument();
+      expect(
+        within(featuredPackageList).queryByTestId('package-item-aws-logs-virtual')
+      ).not.toBeInTheDocument();
+      expect(within(featuredPackageList).getAllByTestId(/^package-item-/)).toHaveLength(3);
+
+      const fallbackRow = screen.getByTestId('observabilityOnboardingCloudExtraRow');
+      expect(fallbackRow).toBeInTheDocument();
+      expect(within(fallbackRow).getByTestId('package-card-aws-logs-virtual')).toBeInTheDocument();
+    });
   });
 
   describe('Common Elements', () => {
@@ -204,6 +261,24 @@ describe('OnboardingFlowForm', () => {
       expect(mockPackageListSearchForm).toHaveBeenCalledWith(
         expect.objectContaining({ searchQuery: '' })
       );
+    });
+
+    it('excludes the AWS CloudWatch quickstart from the search results, since it has its own tile', () => {
+      mockUsePricingFeature.mockReturnValue(true);
+      mockUseCustomCards.mockReturnValue([
+        { id: 'azure-logs-virtual', title: 'Azure', isCollectionCard: true } as IntegrationCardItem,
+        { id: 'otel-logs', title: 'OpenTelemetry' } as IntegrationCardItem,
+        { id: 'aws-cloudwatch-otel-virtual', title: 'Amazon CloudWatch' } as IntegrationCardItem,
+      ]);
+
+      renderWithProviders(<OnboardingFlowForm />, ['/?category=cloud']);
+
+      const { customCards } = mockPackageListSearchForm.mock.calls[0][0] as unknown as {
+        customCards: IntegrationCardItem[];
+      };
+      const customCardIds = customCards.map((card) => card.id);
+      expect(customCardIds).toContain('otel-logs');
+      expect(customCardIds).not.toContain('aws-cloudwatch-otel-virtual');
     });
   });
 });

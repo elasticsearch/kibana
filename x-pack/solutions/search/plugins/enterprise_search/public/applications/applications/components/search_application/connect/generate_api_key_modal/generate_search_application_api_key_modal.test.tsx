@@ -9,17 +9,15 @@ import { setMockValues, setMockActions } from '../../../../../__mocks__/kea_logi
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 
-import { EuiModal, EuiFieldText, EuiCodeBlock } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
+
+import { GenerateSearchApplicationApiKeyModal } from './generate_search_application_api_key_modal';
 
 const mockActions = { makeRequest: jest.fn(), setKeyName: jest.fn() };
 
 const mockValues = { apiKey: '', isLoading: false, isSuccess: false, keyName: '' };
-
-import { mountWithIntl } from '@kbn/test-jest-helpers';
-
-import { GenerateSearchApplicationApiKeyModal } from './generate_search_application_api_key_modal';
 
 const onCloseMock = jest.fn();
 describe('GenerateSearchApplicationApiKeyModal', () => {
@@ -30,47 +28,52 @@ describe('GenerateSearchApplicationApiKeyModal', () => {
   });
 
   it('renders the empty modal', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <GenerateSearchApplicationApiKeyModal searchApplicationName="puggles" onClose={onCloseMock} />
     );
-    expect(wrapper.find(EuiModal)).toHaveLength(1);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-    wrapper.find(EuiModal).prop('onClose')();
+    fireEvent.click(screen.getByLabelText('Closes this modal window'));
     expect(onCloseMock).toHaveBeenCalled();
   });
 
   describe('Modal content', () => {
     it('renders API key name form', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <GenerateSearchApplicationApiKeyModal
           searchApplicationName="puggles"
           onClose={onCloseMock}
         />
       );
-      expect(wrapper.find(EuiFieldText)).toHaveLength(1);
-      expect(wrapper.find('[data-test-subj="generateApiKeyButton"]')).toHaveLength(1);
+      expect(
+        screen.getByTestId('enterpriseSearchGenerateSearchApplicationApiKeyModalFieldText')
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('generateApiKeyButton')).toBeInTheDocument();
     });
 
-    it('pre-set the key name with search application name', () => {
-      mountWithIntl(
+    it('pre-set the key name with search application name', async () => {
+      renderWithKibanaRenderContext(
         <GenerateSearchApplicationApiKeyModal
           searchApplicationName="puggles"
           onClose={onCloseMock}
         />
       );
-      expect(mockActions.setKeyName).toHaveBeenCalledWith('puggles read-only API key');
+      await waitFor(() => {
+        expect(mockActions.setKeyName).toHaveBeenCalledWith('puggles read-only API key');
+      });
     });
 
     it('sets keyName name on form', () => {
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <GenerateSearchApplicationApiKeyModal
           searchApplicationName="puggles"
           onClose={onCloseMock}
         />
       );
-      const textField = wrapper.find(EuiFieldText);
-      expect(textField).toHaveLength(1);
-      textField.simulate('change', { currentTarget: { value: 'changeEvent-key-name' } });
+      const textField = screen.getByTestId(
+        'enterpriseSearchGenerateSearchApplicationApiKeyModalFieldText'
+      );
+      fireEvent.change(textField, { target: { value: 'changeEvent-key-name' } });
       expect(mockActions.setKeyName).toHaveBeenCalledWith('changeEvent-key-name');
     });
 
@@ -80,20 +83,20 @@ describe('GenerateSearchApplicationApiKeyModal', () => {
         searchApplicationName: 'test-123',
         keyName: '    with-spaces    ',
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <GenerateSearchApplicationApiKeyModal
           searchApplicationName="puggles"
           onClose={onCloseMock}
         />
       );
-      expect(wrapper.find(EuiFieldText)).toHaveLength(1);
-      wrapper.find('[data-test-subj="generateApiKeyButton"]').simulate('click');
+      fireEvent.click(screen.getByTestId('generateApiKeyButton'));
 
       expect(mockActions.makeRequest).toHaveBeenCalledWith({
         searchApplicationName: 'puggles',
         keyName: 'with-spaces',
       });
     });
+
     it('renders created API key results', () => {
       setMockValues({
         ...mockValues,
@@ -102,16 +105,17 @@ describe('GenerateSearchApplicationApiKeyModal', () => {
         isSuccess: true,
         keyName: 'keyname',
       });
-      const wrapper = shallow(
+      renderWithKibanaRenderContext(
         <GenerateSearchApplicationApiKeyModal
           searchApplicationName="puggles"
           onClose={onCloseMock}
         />
       );
-      expect(wrapper.find(EuiFieldText)).toHaveLength(0);
-      expect(wrapper.find('[data-test-subj="generateApiKeyButton"]')).toHaveLength(0);
-      expect(wrapper.find(EuiCodeBlock)).toHaveLength(1);
-      expect(wrapper.find(EuiCodeBlock).children().text()).toEqual('apiKeyFromBackend123123==');
+      expect(
+        screen.queryByTestId('enterpriseSearchGenerateSearchApplicationApiKeyModalFieldText')
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('generateApiKeyButton')).not.toBeInTheDocument();
+      expect(screen.getByText('apiKeyFromBackend123123==')).toBeInTheDocument();
     });
   });
 });

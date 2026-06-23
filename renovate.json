@@ -1314,7 +1314,7 @@
     },
     {
       "groupName": "workplace_ai gen-ai dependencies",
-      "matchDepNames": ["@a2a-js/sdk", "@modelcontextprotocol/sdk"],
+      "matchDepNames": ["@a2a-js/sdk", "@modelcontextprotocol/sdk", "just-bash"],
       "reviewers": ["team:search-kibana"],
       "matchBaseBranches": ["main"],
       "addLabels": ["Team:Search", "Team:Enterprise Search"],
@@ -2459,6 +2459,15 @@
     {
       "groupName": "@elastic/request-converter",
       "matchDepNames": ["@elastic/request-converter"],
+      "reviewers": ["team:kibana-management"],
+      "matchBaseBranches": ["main"],
+      "labels": ["release_note:skip", "backport:skip", "Team:Kibana Management", "Feature:Console"],
+      "minimumReleaseAge": "14 days",
+      "enabled": true
+    },
+    {
+      "groupName": "@elastic/micro-jq",
+      "matchDepNames": ["@elastic/micro-jq"],
       "reviewers": ["team:kibana-management"],
       "matchBaseBranches": ["main"],
       "labels": ["release_note:skip", "backport:skip", "Team:Kibana Management", "Feature:Console"],

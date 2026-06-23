@@ -10,6 +10,7 @@ import { waitForAlertsToPopulate } from '../../../../tasks/create_new_rule';
 import { login } from '../../../../tasks/login';
 import { visit } from '../../../../tasks/navigation';
 import { createRule } from '../../../../tasks/api_calls/rules';
+import { deleteAlertsAndRules } from '../../../../tasks/api_calls/common';
 import { ALERTS_URL } from '../../../../urls/navigation';
 import { closeFlyout } from '../../../../tasks/expandable_flyout/alert_details_right_panel';
 import { expandAlertAtIndexExpandableFlyout } from '../../../../tasks/expandable_flyout/common';
@@ -19,6 +20,7 @@ describe('Expandable flyout state sync', { tags: ['@ess', '@serverless'] }, () =
   const rule = getNewRule();
 
   beforeEach(() => {
+    deleteAlertsAndRules();
     login();
     createRule(rule);
     visit(ALERTS_URL);

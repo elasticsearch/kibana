@@ -30,6 +30,8 @@ interface Props {
   elasticAgentVersionInfo: ElasticAgentVersionInfo;
   ingestionMode: IngestionMode;
   onIngestionModeChange: (mode: IngestionMode) => void;
+  useInlineCopyOnly?: boolean;
+  useColoredSyntax?: boolean;
 }
 
 export function CommandSnippet({
@@ -40,6 +42,8 @@ export function CommandSnippet({
   elasticAgentVersionInfo,
   ingestionMode,
   onIngestionModeChange,
+  useInlineCopyOnly = false,
+  useColoredSyntax = false,
 }: Props) {
   const {
     services: { docLinks },
@@ -83,7 +87,7 @@ export function CommandSnippet({
         </>
       )}
 
-      <EuiText>
+      <EuiText size={useColoredSyntax ? 's' : 'm'}>
         <p>
           <FormattedMessage
             id="xpack.observability_onboarding.kubernetesPanel.installElasticAgentDescription"
@@ -123,17 +127,22 @@ export function CommandSnippet({
       <EuiSpacer />
 
       <EuiCodeBlock
-        language="text"
+        language={useColoredSyntax ? 'bash' : 'text'}
         paddingSize="m"
-        fontSize="m"
+        fontSize={useColoredSyntax ? 's' : 'm'}
+        isCopyable={useInlineCopyOnly}
+        overflowHeight={useInlineCopyOnly ? 300 : undefined}
         data-test-subj="observabilityOnboardingKubernetesPanelCodeSnippet"
       >
         {command}
       </EuiCodeBlock>
+      {!useInlineCopyOnly ? (
+        <>
+          <EuiSpacer />
 
-      <EuiSpacer />
-
-      <CopyToClipboardButton textToCopy={command} fill={isCopyPrimaryAction} />
+          <CopyToClipboardButton textToCopy={command} fill={isCopyPrimaryAction} />
+        </>
+      ) : null}
     </>
   );
 }

@@ -6,11 +6,10 @@
  */
 
 import type { BuiltInAgentDefinition } from '@kbn/agent-builder-server/agents';
-import { platformCoreTools, platformStreamsSigEventsTools } from '@kbn/agent-builder-common/tools';
 import type { StreamsServer } from '../../../types';
 import { getSignificantEventsAvailability } from '../../../routes/utils/assert_significant_events_access';
 import instructions from './instructions/investigator.md.text';
-import { OBSERVABILITY_GET_LOGS_TOOL_ID } from './constants';
+import { SIGNIFICANT_EVENTS_DISCOVERY_TOOL_IDS } from './constants';
 
 export const SIGEVENTS_INVESTIGATOR_AGENT_ID =
   'platform.streams.significant-events.discovery.investigator';
@@ -45,11 +44,7 @@ export function createSigEventsInvestigatorAgent({
       instructions,
       tools: [
         {
-          tool_ids: [
-            platformStreamsSigEventsTools.searchKnowledgeIndicators,
-            platformCoreTools.executeEsql,
-            OBSERVABILITY_GET_LOGS_TOOL_ID,
-          ],
+          tool_ids: [...SIGNIFICANT_EVENTS_DISCOVERY_TOOL_IDS],
         },
       ],
     },

@@ -6,7 +6,13 @@
  */
 
 import React, { useState } from 'react';
-import { EuiPopover, EuiPopoverTitle, EuiButtonEmpty, EuiDescriptionList } from '@elastic/eui';
+import {
+  EuiPopover,
+  EuiPopoverTitle,
+  EuiButtonEmpty,
+  EuiDescriptionList,
+  useGeneratedHtmlId,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import {
   CLS_HELP_LABEL,
@@ -43,6 +49,7 @@ export const DefinitionsPopover = () => {
 
   const onButtonClick = () => setIsPopoverOpen((prevPopoverOpen) => !prevPopoverOpen);
   const closePopover = () => setIsPopoverOpen(false);
+  const definitionsPopoverTitleId = useGeneratedHtmlId();
 
   return (
     <EuiPopover
@@ -59,8 +66,9 @@ export const DefinitionsPopover = () => {
       isOpen={isPopoverOpen}
       closePopover={closePopover}
       anchorPosition="rightCenter"
+      aria-labelledby={definitionsPopoverTitleId}
     >
-      <EuiPopoverTitle>{DEFINITIONS_LABEL}</EuiPopoverTitle>
+      <EuiPopoverTitle id={definitionsPopoverTitleId}>{DEFINITIONS_LABEL}</EuiPopoverTitle>
       <div style={{ width: '350px' }}>
         <EuiDescriptionList listItems={definitionList} />
       </div>

@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/273330
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Search and data
+title: Fix OpenTelemetry integrations that declare a storage extension within a data stream failing to start
+description: "Fleet now rewrites a receiver's storage reference to the per-stream extension ID it generates, matching the behavior already in place for `auth.authenticator` references."

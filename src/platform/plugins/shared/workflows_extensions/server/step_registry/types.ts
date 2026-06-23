@@ -13,13 +13,191 @@ import type { StepContext } from '@kbn/workflows';
 import type { z } from '@kbn/zod/v4';
 import type { CommonStepDefinition } from '../../common';
 
+// -----------------------------------------------------------------------------
+// Poll step types
+// -----------------------------------------------------------------------------
+
 /**
- * Definition of a server-side workflow step extension.
- * Contains the technical/behavioral implementation of a step.
+ * Applied by {@link createPollServerStepDefinition} when `policy` or `ceilings` fields are omitted
+ * (or when individual ceiling properties are missing). Override in your step definition for
+ * production integrations.
+ */
+export const PollStepDefaults = {
+  ceilings: {
+    maxAttempts: 60,
+    maxWaitMs: 60 * 1_000, // 1 minute
+  },
+  policy: {
+    strategy: 'fixed',
+    intervalMs: 1000,
+  },
+} as const satisfies {
+  ceilings: PollCeilings;
+  policy: PollPolicy;
+};
+
+// -----------------------------------------------------------------------------
+// Result types
+// -----------------------------------------------------------------------------
+
+/** Successful start/poll outcome — step has produced its final output. */
+export interface PhaseDoneResult<Output extends z.ZodType = z.ZodType> {
+  output: z.infer<Output>;
+  error?: never;
+}
+
+/**
+ * Poll-phase continuation: the step is not done yet. The engine schedules the
+ * next wake-up from {@link PollPolicy} unless a positive `nextPollDelayMs` is
+ * returned (that value is used from **now** for the next wake-up only).
  *
- * The input and output types are automatically inferred from the inputSchema and outputSchema,
- * so you don't need to specify them explicitly. Use `createServerStepDefinition` helper function
- * for the best type inference experience.
+ * Returning `undefined` (or an object without `output` / `error`) continues polling
+ * and keeps the previously persisted author state unless `state` is provided.
+ */
+export type PollContinueResult<State extends z.ZodObject = z.ZodObject> =
+  | {
+      output?: never;
+      /** Optional updated author state. Omit to keep the previously persisted state. */
+      state?: z.infer<State>;
+      /**
+       * Optional delay (ms) until the next poll. When omitted or non-positive, the
+       * engine uses {@link PollPolicy} for the next wake-up. Overrides only the
+       * upcoming sleep; the poll `attempt` counter still increments, and the
+       * following wake-up uses {@link PollPolicy} from that incremented attempt.
+       */
+      nextPollDelayMs?: number;
+      error?: never;
+    }
+  | undefined;
+
+/** Failure outcome — same shape as the existing single-handler result. */
+export interface PhaseErrorResult {
+  output?: undefined;
+  state?: undefined;
+  error: Error;
+}
+
+export type DurablePhaseResult<
+  Output extends z.ZodType = z.ZodType,
+  State extends z.ZodObject = z.ZodObject
+> = PhaseDoneResult<Output> | PollContinueResult<State> | PhaseErrorResult;
+
+/**
+ * Handler for a `start` phase that hands off to a `poll` phase.
+ * Returns either a final output (synchronous completion) or `{ state }`
+ * to start the polling loop.
+ */
+export type StartWithHandoffHandler<
+  Input extends z.ZodType = z.ZodType,
+  Output extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject,
+  State extends z.ZodObject = z.ZodObject
+> = (context: StepHandlerContext<Input, Config>) => Promise<DurablePhaseResult<Output, State>>;
+
+/**
+ * Handler for a `poll` phase. Receives the persisted author `state` alongside
+ * the regular step handler context. Returns the final output, a continuation
+ * ({@link PollContinueResult}), or `undefined` to continue with unchanged state.
+ */
+export type PollHandler<
+  Input extends z.ZodType = z.ZodType,
+  Output extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject,
+  State extends z.ZodObject = z.ZodObject
+> = (
+  context: PollHandlerContext<Input, Config, State>
+) => Promise<DurablePhaseResult<Output, State>>;
+
+/**
+ * Handler for a single-shot custom step ({@link createServerStepDefinition}).
+ * For durable start/poll work, use {@link createPollServerStepDefinition} instead.
+ *
+ * @param context - The runtime context for the step execution
+ * @returns The step output (should conform to outputSchema)
+ */
+export type StepHandler<
+  Input extends z.ZodType = z.ZodType,
+  Output extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject
+> = (context: StepHandlerContext<Input, Config>) => Promise<StepHandlerResult<Output>>;
+
+/**
+ * Cancellation cleanup handler for custom workflow steps.
+ * Receives the same context as the main handler so it has access to input,
+ * config, and runtime services needed for cleanup.
+ *
+ * `onCancel` fires after the abort signal triggers, in both the `RUNNING`
+ * and `WAITING` states. Durable poll steps therefore get a guaranteed
+ * cleanup entry point even when they were suspended between polls — handy
+ * for cancelling externally-tracked jobs (e.g. an Osquery action created in
+ * `start()`) without waiting for the next wake-up.
+ *
+ * Implementations must be idempotent. Errors thrown here are logged but do
+ * not disrupt the cancellation flow.
+ */
+export type OnCancelHandler<
+  Input extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject
+> = (context: StepHandlerContext<Input, Config>) => Promise<void> | void;
+
+// -----------------------------------------------------------------------------
+// Poll policy + ceilings
+// -----------------------------------------------------------------------------
+
+/**
+ * Strategy for computing the next poll wake-up. Cadence is owned by the step
+ * author at definition time and is intentionally not configurable from YAML.
+ *
+ * - `fixed`        — constant interval between every poll.
+ * - `exponential`  — `initialMs` scaled by `multiplier` (default 2, same name as
+ *                    on-failure retry) each attempt, capped at `maxMs`. With
+ *                    `jitter` enabled, uses the same backoff jitter as on-failure
+ *                    retry: a uniform delay in `[computed/2, computed]` ms.
+ */
+export type PollPolicy =
+  | { strategy: 'fixed'; intervalMs: number }
+  | {
+      strategy: 'exponential';
+      initialMs: number;
+      maxMs: number;
+      multiplier?: number;
+      jitter?: boolean;
+    };
+
+/**
+ * Engine-enforced ceilings for a poll-based step. At registration,
+ * {@link createPollServerStepDefinition} fills missing values from {@link PollStepDefaults}.
+ */
+export interface PollCeilings {
+  /**
+   * Maximum number of `poll` invocations before the engine fails the step with a
+   * generic execution error. Prefer returning `{ error }` from `poll` for
+   * integration-specific failure messages when the upstream job fails or times out.
+   */
+  maxAttempts: number;
+  /**
+   * Maximum delay (ms) until the next poll wake-up (from **now**). When policy or
+   * `nextPollDelayMs` would schedule a longer sleep, the engine caps it to this value.
+   * Does not fail the step.
+   */
+  maxWaitMs: number;
+}
+
+export interface CommonServerStepDefinition<
+  Input extends z.ZodType = z.ZodType,
+  Output extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject
+> extends CommonStepDefinition<Input, Output, Config> {
+  onCancel?: OnCancelHandler<Input, Config>;
+}
+
+// -----------------------------------------------------------------------------
+// Step definition union
+// -----------------------------------------------------------------------------
+
+/**
+ * Single-shot server-side workflow step (`handler` executes once per invocation).
+ * Use {@link createServerStepDefinition} for automatic type inference.
  *
  * @example
  * ```typescript
@@ -35,7 +213,7 @@ import type { CommonStepDefinition } from '../../common';
  * });
  *
  * // Option 2: Using type annotation (works but may require explicit types in some cases)
- * const myStepDefinition: ServerStepDefinition = {
+ * const myStepDefinition: ServerHandlerStepDefinition = {
  *   id: 'custom.myStep',
  *   inputSchema: z.object({ message: z.string() }),
  *   outputSchema: z.object({ result: z.string() }),
@@ -45,32 +223,54 @@ import type { CommonStepDefinition } from '../../common';
  * };
  * ```
  */
-export interface ServerStepDefinition<
+export interface ServerHandlerStepDefinition<
   Input extends z.ZodType = z.ZodType,
   Output extends z.ZodType = z.ZodType,
   Config extends z.ZodObject = z.ZodObject
-> extends CommonStepDefinition<Input, Output, Config> {
+> extends CommonServerStepDefinition<Input, Output, Config> {
   /**
    * The handler function that executes this step's logic.
    * Input and output types are automatically inferred from the schemas.
    */
   handler: StepHandler<Input, Output, Config>;
-
-  /**
-   * Optional cancellation cleanup handler.
-   *
-   * Called after the step's abort signal fires and `run()` completes, giving the
-   * step a guaranteed cleanup entry point (e.g. cancelling spawned child operations).
-   * Only invoked when the workflow is being cancelled — normal completions skip it.
-   *
-   * Implementations must be idempotent. Errors thrown here are logged but do not
-   * disrupt the cancellation flow.
-   */
-  onCancel?: OnCancelHandler<Input, Config>;
 }
 
+export type PollOnCancelHandler<
+  Input extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject,
+  State extends z.ZodObject = z.ZodObject
+> = (context: PollHandlerContext<Input, Config, State>) => Promise<void> | void;
+
 /**
- * Helper function to create a ServerStepDefinition with automatic type inference.
+ * Server definition for durable poll-based steps (`poll` required; optional `start`).
+ * Omit `policy` to use {@link PollStepDefaults.policy} (fixed 1 s interval) via
+ * {@link createPollServerStepDefinition}.
+ */
+export type ServerPollStepDefinition<
+  Input extends z.ZodType = z.ZodType,
+  Output extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject,
+  State extends z.ZodObject = z.ZodObject
+> = CommonServerStepDefinition<Input, Output, Config> & {
+  poll: PollHandler<Input, Output, Config, State>;
+  start?: StartWithHandoffHandler<Input, Output, Config, State>;
+  policy?: PollPolicy;
+  ceilings?: PollCeilings;
+  /**
+   * Optional Zod object used only for TypeScript inference of `context.state` and `{ state }`
+   * continuations. The engine does not validate author state at runtime.
+   */
+  stateSchema?: State;
+  onCancel?: PollOnCancelHandler<Input, Config, State>;
+};
+
+export const isPollStepDefinition = (
+  definition: CommonServerStepDefinition
+): definition is ServerPollStepDefinition =>
+  'poll' in definition && typeof definition.poll === 'function';
+
+/**
+ * Helper function to create a ServerHandlerStepDefinition with automatic type inference.
  * This ensures that the handler's input and output types are correctly inferred
  * from the inputSchema and outputSchema without needing explicit type annotations.
  *
@@ -93,33 +293,45 @@ export function createServerStepDefinition<
   Output extends z.ZodType = z.ZodType,
   Config extends z.ZodObject = z.ZodObject
 >(
-  definition: ServerStepDefinition<Input, Output, Config>
-): ServerStepDefinition<Input, Output, Config> {
+  definition: ServerHandlerStepDefinition<Input, Output, Config>
+): ServerHandlerStepDefinition<Input, Output, Config> {
   return definition;
 }
 
-/**
- * Handler function that executes a custom workflow step.
- * This function is called by the execution engine to run the step logic.
- *
- * @param context - The runtime context for the step execution
- * @returns The step output (should conform to outputSchema)
- */
-export type StepHandler<
-  Input extends z.ZodType = z.ZodType,
-  Output extends z.ZodType = z.ZodType,
-  Config extends z.ZodObject = z.ZodObject
-> = (context: StepHandlerContext<Input, Config>) => Promise<StepHandlerResult<Output>>;
+export const isOneShotStepDefinition = (
+  definition: CommonServerStepDefinition
+): definition is ServerHandlerStepDefinition =>
+  'handler' in definition && typeof definition.handler === 'function';
 
 /**
- * Cancellation cleanup handler for custom workflow steps.
- * Receives the same context as the main handler so it has access to input,
- * config, and runtime services needed for cleanup.
+ * Like {@link createServerStepDefinition} but only for definitions that include **`poll`**
+ * (`start` + `poll` or **`poll` only**). Narrows inference so single-`handler` steps are excluded.
+ *
+ * Merges {@link PollStepDefaults} when `policy` is omitted or `ceilings` / individual ceiling
+ * properties are missing (`maxAttempts` **60**, `maxWaitMs` **60_000** ms, fixed **1_000** ms poll interval).
  */
-export type OnCancelHandler<
+export function createPollServerStepDefinition<
   Input extends z.ZodType = z.ZodType,
-  Config extends z.ZodObject = z.ZodObject
-> = (context: StepHandlerContext<Input, Config>) => Promise<void> | void;
+  Output extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject,
+  State extends z.ZodObject = z.ZodObject
+>(
+  definition: ServerPollStepDefinition<Input, Output, Config, State>
+): ServerPollStepDefinition<Input, Output, Config, State> {
+  if (!definition.ceilings) {
+    definition.ceilings = PollStepDefaults.ceilings;
+  }
+
+  if (!definition.policy) {
+    definition.policy = PollStepDefaults.policy;
+  }
+
+  return definition;
+}
+
+// -----------------------------------------------------------------------------
+// Handler context shapes
+// -----------------------------------------------------------------------------
 
 /**
  * Context provided to custom step handlers during execution.
@@ -171,6 +383,25 @@ export interface StepHandlerContext<TInput = z.ZodType, TConfig = z.ZodObject> {
    * Current step's type
    */
   stepType: string;
+}
+
+/**
+ * Context passed to a {@link PollHandler}. Extends {@link StepHandlerContext}
+ * with the persisted author `state` from the previous start/poll invocation.
+ */
+export interface PollHandlerContext<TInput = z.ZodType, TConfig = z.ZodObject, TState = z.ZodObject>
+  extends StepHandlerContext<TInput, TConfig> {
+  /**
+   * Author state persisted by the most recent run/poll invocation.
+   * Undefined on the first poll of a poll-only step (no `start` to seed it).
+   */
+  state: z.infer<TState> | undefined;
+
+  /**
+   * 0-based index of this `poll` invocation (first poll is `0`, including
+   * the first wake-up after `start` returns `{ state }` on a `start` + `poll` step).
+   */
+  attempt: number;
 }
 
 /**
@@ -255,3 +486,17 @@ export interface StepHandlerResult<TOutput extends z.ZodType = z.ZodType> {
    */
   error?: Error;
 }
+
+/**
+ * Server-side workflow step definition registered by plugins.
+ * Union of {@link ServerHandlerStepDefinition} (single-shot `handler`) and
+ * {@link ServerPollStepDefinition} (durable `start`/`poll`).
+ */
+export type ServerStepDefinition<
+  Input extends z.ZodType = z.ZodType,
+  Output extends z.ZodType = z.ZodType,
+  Config extends z.ZodObject = z.ZodObject,
+  State extends z.ZodObject = z.ZodObject
+> =
+  | ServerHandlerStepDefinition<Input, Output, Config>
+  | ServerPollStepDefinition<Input, Output, Config, State>;

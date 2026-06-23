@@ -9,12 +9,11 @@ import { setMockValues } from '../../../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiText } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { ModelStarted } from './model_started';
-import { TextExpansionDismissButton, FineTuneModelsButton } from './text_expansion_callout';
 
 const DEFAULT_VALUES = {
   startTextExpansionModelError: undefined,
@@ -31,27 +30,37 @@ describe('ModelStarted', () => {
     setMockValues(DEFAULT_VALUES);
   });
   it('renders dismiss button if it is set to dismissable', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <ModelStarted dismiss={() => {}} isCompact={false} isDismissable isSingleThreaded />
     );
-    expect(wrapper.find(TextExpansionDismissButton).length).toBe(1);
+    expect(
+      screen.getByTestId('enterpriseSearchTextExpansionDismissButtonButton')
+    ).toBeInTheDocument();
   });
   it('does not render dismiss button if it is set to non-dismissable', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <ModelStarted dismiss={() => {}} isCompact={false} isDismissable={false} isSingleThreaded />
     );
-    expect(wrapper.find(TextExpansionDismissButton).length).toBe(0);
+    expect(
+      screen.queryByTestId('enterpriseSearchTextExpansionDismissButtonButton')
+    ).not.toBeInTheDocument();
   });
   it('renders fine-tune button if the model is running single-threaded', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <ModelStarted dismiss={() => {}} isCompact={false} isDismissable isSingleThreaded />
     );
-    expect(wrapper.find(FineTuneModelsButton).length).toBe(1);
+    expect(
+      screen.getByTestId('enterpriseSearchFineTuneModelsButtonFineTunePerformanceButton')
+    ).toBeInTheDocument();
   });
   it('does not render description if it is set to compact', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <ModelStarted dismiss={() => {}} isCompact isDismissable isSingleThreaded />
     );
-    expect(wrapper.find(EuiText).length).toBe(1); // Title only
+    // Title is present but body description is hidden when compact
+    expect(screen.getByText('Your ELSER model is running single-threaded.')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/This single-threaded configuration is great for testing/)
+    ).not.toBeInTheDocument();
   });
 });

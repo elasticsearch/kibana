@@ -36,7 +36,7 @@ export interface LegacyRuleTypeItem {
 interface RuleCreateOptionsPanelProps {
   onCreateEsqlRule: () => void;
   layout?: 'vertical' | 'horizontal';
-  onCreateWithAgent: () => void;
+  onCreateWithAgent?: () => void;
   onCreateThresholdAlert?: () => void;
   legacyRuleTypes?: LegacyRuleTypeItem[];
 }
@@ -181,8 +181,8 @@ const RuleCreateOptionsListEmptyState: React.FC<RuleCreateOptionsPanelProps> = (
 }) => {
   const styles = useMemoCss(listEmptyStateStyles);
 
-  const primaryCreateOptions = useMemo<RuleCreateOptionItem[]>(
-    () => [
+  const primaryCreateOptions = useMemo<RuleCreateOptionItem[]>(() => {
+    const options: RuleCreateOptionItem[] = [
       {
         id: 'create-esql-rule',
         iconType: 'productDiscover',
@@ -191,17 +191,19 @@ const RuleCreateOptionsListEmptyState: React.FC<RuleCreateOptionsPanelProps> = (
         onClick: onCreateEsqlRule,
         'data-test-subj': 'createEsqlRuleCard',
       },
-      {
+    ];
+    if (onCreateWithAgent) {
+      options.push({
         id: 'create-with-agent',
         iconType: 'productAgent',
         title: AI_AGENT_TITLE,
         description: AI_AGENT_DESCRIPTION,
         onClick: onCreateWithAgent,
         'data-test-subj': 'createWithAgentCard',
-      },
-    ],
-    [onCreateEsqlRule, onCreateWithAgent]
-  );
+      });
+    }
+    return options;
+  }, [onCreateEsqlRule, onCreateWithAgent]);
 
   const thresholdCreateOption = useMemo<RuleCreateOptionItem>(
     () => ({
@@ -328,19 +330,21 @@ const RuleCreateOptionsFlyoutPanel: React.FC<RuleCreateOptionsPanelProps> = ({
             data-test-subj="createEsqlRuleCard"
           />
         </EuiFlexItem>
-        <EuiFlexItem>
-          <EuiCard
-            layout="horizontal"
-            display="plain"
-            titleElement="h3"
-            titleSize="xs"
-            hasBorder={true}
-            title={AI_AGENT_TITLE}
-            description={AI_AGENT_DESCRIPTION}
-            onClick={onCreateWithAgent}
-            icon={<EuiIcon type="productAgent" color="text" size="l" aria-hidden={true} />}
-          />
-        </EuiFlexItem>
+        {onCreateWithAgent ? (
+          <EuiFlexItem>
+            <EuiCard
+              layout="horizontal"
+              display="plain"
+              titleElement="h3"
+              titleSize="xs"
+              hasBorder={true}
+              title={AI_AGENT_TITLE}
+              description={AI_AGENT_DESCRIPTION}
+              onClick={onCreateWithAgent}
+              icon={<EuiIcon type="productAgent" color="text" size="l" aria-hidden={true} />}
+            />
+          </EuiFlexItem>
+        ) : null}
       </EuiFlexGroup>
       <RuleBuilderSectionDivider />
       <EuiCard

@@ -35,7 +35,7 @@ export function useStreamKnowledgeIndicatorsBulkDelete({
     mutationFn: async (knowledgeIndicators) => {
       const featureUuids = knowledgeIndicators
         .filter((knowledgeIndicator) => knowledgeIndicator.kind === 'feature')
-        .map((knowledgeIndicator) => knowledgeIndicator.feature.id);
+        .map((knowledgeIndicator) => knowledgeIndicator.feature.uuid);
 
       const queryIds = knowledgeIndicators
         .filter((knowledgeIndicator) => knowledgeIndicator.kind === 'query')

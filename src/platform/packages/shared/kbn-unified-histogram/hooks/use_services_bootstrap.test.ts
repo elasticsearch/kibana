@@ -19,6 +19,7 @@ import { RequestAdapter } from '@kbn/inspector-plugin/common';
 jest.mock('../services/state_service');
 jest.mock('./use_state_props');
 jest.mock('@kbn/discover-utils', () => ({
+  ...jest.requireActual('@kbn/discover-utils/src/constants'),
   getBreakdownField: jest.fn(),
 }));
 

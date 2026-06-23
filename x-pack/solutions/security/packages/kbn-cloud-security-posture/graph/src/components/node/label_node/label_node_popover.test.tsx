@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { LabelNodePopoverContent } from './label_node_popover';
+import { LabelNodePopoverContent, TEST_SUBJ_TITLE } from './label_node_popover';
 import { analyzeDocuments } from './analyze_documents';
 
 const TEST_SUBJ_ALERT_SECTION = 'label-node-tooltip-alert-section';
@@ -120,5 +120,44 @@ describe('LabelNodePopoverContent', () => {
 
     // Check that the event count is present for multiple events
     expect(screen.getByTestId(TEST_SUBJ_EVENT_COUNT)).toHaveTextContent('1.2m');
+  });
+
+  describe('title', () => {
+    test('does not render the title when text prop is omitted', () => {
+      const analysis = analyzeDocuments({ uniqueEventsCount: 2, uniqueAlertsCount: 0 });
+
+      render(<LabelNodePopoverContent analysis={analysis} />);
+
+      expect(screen.queryByTestId(TEST_SUBJ_TITLE)).not.toBeInTheDocument();
+    });
+
+    test('does not render the title when text prop is an empty string', () => {
+      const analysis = analyzeDocuments({ uniqueEventsCount: 2, uniqueAlertsCount: 0 });
+
+      render(<LabelNodePopoverContent analysis={analysis} text="" />);
+
+      expect(screen.queryByTestId(TEST_SUBJ_TITLE)).not.toBeInTheDocument();
+    });
+
+    test('renders the full title when text prop is provided', () => {
+      const analysis = analyzeDocuments({ uniqueEventsCount: 2, uniqueAlertsCount: 0 });
+      const text = 'Short title';
+
+      render(<LabelNodePopoverContent analysis={analysis} text={text} />);
+
+      const title = screen.getByTestId(TEST_SUBJ_TITLE);
+      expect(title).toHaveTextContent(text);
+    });
+
+    test('renders the title even when there are no counters', () => {
+      const analysis = analyzeDocuments({ uniqueEventsCount: 0, uniqueAlertsCount: 0 });
+      const text = 'Title without counters';
+
+      render(<LabelNodePopoverContent analysis={analysis} text={text} />);
+
+      expect(screen.getByTestId(TEST_SUBJ_TITLE)).toHaveTextContent(text);
+      expect(screen.queryByTestId(TEST_SUBJ_ALERT_SECTION)).not.toBeInTheDocument();
+      expect(screen.queryByTestId(TEST_SUBJ_EVENT_SECTION)).not.toBeInTheDocument();
+    });
   });
 });

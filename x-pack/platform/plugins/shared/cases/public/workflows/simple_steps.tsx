@@ -10,6 +10,7 @@ import { addCommentStepCommonDefinition } from '../../common/workflows/steps/add
 import { addEventsStepCommonDefinition } from '../../common/workflows/steps/add_events';
 import { addObservablesStepCommonDefinition } from '../../common/workflows/steps/add_observables';
 import { addTagsStepCommonDefinition } from '../../common/workflows/steps/add_tags';
+import { removeTagsStepCommonDefinition } from '../../common/workflows/steps/remove_tags';
 import { assignCaseStepCommonDefinition } from '../../common/workflows/steps/assign_case';
 import { closeCaseStepCommonDefinition } from '../../common/workflows/steps/close_case';
 import { deleteCasesStepCommonDefinition } from '../../common/workflows/steps/delete_cases';
@@ -48,6 +49,10 @@ export const addObservablesStepDefinition = createPublicCaseStepDefinition({
 
 export const addTagsStepDefinition = createPublicCaseStepDefinition({
   ...addTagsStepCommonDefinition,
+});
+
+export const removeTagsStepDefinition = createPublicCaseStepDefinition({
+  ...removeTagsStepCommonDefinition,
 });
 
 export const assignCaseStepDefinition = createPublicCaseStepDefinition({

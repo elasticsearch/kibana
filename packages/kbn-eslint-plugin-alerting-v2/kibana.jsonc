@@ -1,0 +1,8 @@
+{
+  "type": "shared-common",
+  "id": "@kbn/eslint-plugin-alerting-v2",
+  "owner": "@elastic/rna-project-team",
+  "group": "platform",
+  "visibility": "private",
+  "devOnly": true
+}

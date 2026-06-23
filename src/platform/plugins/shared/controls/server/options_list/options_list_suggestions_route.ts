@@ -9,26 +9,79 @@
 
 import type { Observable } from 'rxjs';
 
+import type { SearchRequest } from '@elastic/elasticsearch/lib/api/types';
 import { schema } from '@kbn/config-schema';
 import type { CoreSetup, ElasticsearchClient } from '@kbn/core/server';
+import { UI_SETTINGS } from '@kbn/data-plugin/common';
 import { getKbnServerError, reportServerError } from '@kbn/kibana-utils-plugin/server';
 import type { PluginSetup as KqlPluginSetup } from '@kbn/kql/server';
 
-import type { SearchRequest } from '@elastic/elasticsearch/lib/api/types';
-import type { OptionsListRequestBody, OptionsListResponse } from '../../common/options_list/types';
+import { SELECTIONS_MAX } from '@kbn/controls-constants';
+import type { StartDeps } from '../plugin';
+
+import { getESQLSingleColumnValues } from '../../common/options_list/get_esql_single_column_values';
+import type {
+  OptionsListDSLFetchBody,
+  OptionsListESQLFetchBody,
+  OptionsListRequestBody,
+  OptionsListResponse,
+} from '../../common/options_list/types';
+import { esqlColumnValuesToOptionsListResponse } from './options_list_esql_response';
 import { getValidationAggregationBuilder } from './options_list_validation_queries';
 import { getSuggestionAggregationBuilder } from './suggestion_queries';
 
+const searchTechniqueSchema = schema.maybe(
+  schema.oneOf([schema.literal('exact'), schema.literal('prefix'), schema.literal('wildcard')])
+);
+
+const selectedOptionsSchema = schema.maybe(
+  schema.oneOf([
+    schema.arrayOf(schema.string(), { maxSize: SELECTIONS_MAX }), // maxSize for DoS prevention
+    schema.arrayOf(schema.number(), { maxSize: SELECTIONS_MAX }),
+  ])
+);
+
+const optionsListFetchBodyCommonSchema = schema.object(
+  {
+    searchString: schema.maybe(schema.string()),
+    searchTechnique: searchTechniqueSchema,
+    selectedOptions: selectedOptionsSchema,
+    ignoreValidations: schema.maybe(schema.boolean()),
+    isReload: schema.maybe(schema.boolean()),
+    sort: schema.maybe(schema.any()),
+  },
+  { unknowns: 'allow' }
+);
+
+const dslFetchBodySchema = optionsListFetchBodyCommonSchema.extends({
+  kind: schema.literal('dsl'),
+  index: schema.string(),
+  size: schema.number(),
+  fieldName: schema.string(),
+  filters: schema.maybe(schema.any()),
+  fieldSpec: schema.maybe(schema.any()),
+  runtimeFieldMap: schema.maybe(schema.any()),
+  runPastTimeout: schema.maybe(schema.boolean()),
+});
+
+const esqlFetchBodySchema = optionsListFetchBodyCommonSchema.extends({
+  kind: schema.literal('esql'),
+  esql: schema.string(),
+  timeRange: schema.maybe(schema.any()),
+  filter: schema.maybe(schema.any()),
+  esqlVariables: schema.maybe(schema.arrayOf(schema.any(), { maxSize: 1000 })),
+});
+
 export const setupOptionsListSuggestionsRoute = (
-  { http }: CoreSetup,
+  core: CoreSetup<StartDeps>,
   getAutocompleteSettings: KqlPluginSetup['autocomplete']['getAutocompleteSettings']
 ) => {
-  const router = http.createRouter();
+  const router = core.http.createRouter();
 
   router.versioned
     .post({
       access: 'internal',
-      path: '/internal/controls/optionsList/{index}',
+      path: '/internal/controls/optionsList/fetch',
       security: {
         authz: {
           enabled: false,
@@ -42,126 +95,144 @@ export const setupOptionsListSuggestionsRoute = (
         version: '1',
         validate: {
           request: {
-            params: schema.object(
-              {
-                index: schema.string(),
-              },
-              { unknowns: 'allow' }
-            ),
-            body: schema.object(
-              {
-                size: schema.number(),
-                fieldName: schema.string(),
-                sort: schema.maybe(schema.any()),
-                filters: schema.maybe(schema.any()),
-                fieldSpec: schema.maybe(schema.any()),
-                ignoreValidations: schema.maybe(schema.boolean()),
-                searchString: schema.maybe(schema.string()),
-                searchTechnique: schema.maybe(
-                  schema.oneOf([
-                    schema.literal('exact'),
-                    schema.literal('prefix'),
-                    schema.literal('wildcard'),
-                  ])
-                ),
-                selectedOptions: schema.maybe(
-                  schema.oneOf([schema.arrayOf(schema.string()), schema.arrayOf(schema.number())])
-                ),
-              },
-              { unknowns: 'allow' }
-            ),
+            body: schema.oneOf([dslFetchBodySchema, esqlFetchBodySchema]),
           },
         },
       },
       async (context, request, response) => {
         try {
-          const suggestionRequest: OptionsListRequestBody = request.body;
-          const { index } = request.params;
-          const esClient = (await context.core).elasticsearch.client.asCurrentUser;
+          const [, { data }] = await core.getStartServices();
 
-          const suggestionsResponse = await getOptionsListSuggestions({
-            abortedEvent$: request.events.aborted$,
-            request: suggestionRequest,
-            esClient,
-            index,
-          });
+          const suggestionsResponse =
+            request.body.kind === 'dsl'
+              ? await getOptionsListDslSuggestions({
+                  abortedEvent$: request.events.aborted$,
+                  request: request.body,
+                  esClient: (await context.core).elasticsearch.client.asCurrentUser,
+                  getAutocompleteSettings,
+                })
+              : await getOptionsListEsqlSuggestions({
+                  abortedEvent$: request.events.aborted$,
+                  request: request.body,
+                  searchAsScoped: data.search.asScoped(request),
+                  uiSettingsClient: (await context.core).uiSettings.client,
+                });
+
           return response.ok({ body: suggestionsResponse });
         } catch (e) {
-          const kbnErr = getKbnServerError(e);
+          const kbnErr = getKbnServerError(e as Error);
           return reportServerError(response, kbnErr);
         }
       }
     );
+};
 
-  const getOptionsListSuggestions = async ({
-    abortedEvent$,
-    esClient,
-    request,
-    index,
-  }: {
-    request: OptionsListRequestBody;
-    abortedEvent$: Observable<void>;
-    esClient: ElasticsearchClient;
-    index: string;
-  }): Promise<OptionsListResponse> => {
-    const abortController = new AbortController();
-    abortedEvent$.subscribe(() => abortController.abort());
+const getOptionsListDslSuggestions = async ({
+  abortedEvent$,
+  esClient,
+  request,
+  getAutocompleteSettings,
+}: {
+  request: OptionsListDSLFetchBody;
+  abortedEvent$: Observable<void>;
+  esClient: ElasticsearchClient;
+  getAutocompleteSettings: KqlPluginSetup['autocomplete']['getAutocompleteSettings'];
+}): Promise<OptionsListResponse> => {
+  const abortController = new AbortController();
+  abortedEvent$.subscribe(() => abortController.abort());
 
-    /**
-     * Build ES Query
-     */
-    const { runPastTimeout, filters, runtimeFieldMap, ignoreValidations } = request;
-    const { terminateAfter, timeout } = getAutocompleteSettings();
-    const timeoutSettings = runPastTimeout
-      ? {}
-      : { timeout: `${timeout}ms`, terminate_after: terminateAfter };
+  const { kind: _kind, index, ...rest } = request;
+  const suggestionRequest = rest as OptionsListRequestBody;
+  /**
+   * Build ES Query
+   */
+  const { runPastTimeout, filters, runtimeFieldMap, ignoreValidations } = suggestionRequest;
+  const { terminateAfter, timeout } = getAutocompleteSettings();
+  const timeoutSettings = runPastTimeout
+    ? {}
+    : { timeout: `${timeout}ms`, terminate_after: terminateAfter };
 
-    const suggestionBuilder = getSuggestionAggregationBuilder(request);
-    const validationBuilder = getValidationAggregationBuilder();
+  const suggestionBuilder = getSuggestionAggregationBuilder(suggestionRequest);
+  const validationBuilder = getValidationAggregationBuilder();
 
-    const suggestionAggregation: any = suggestionBuilder.buildAggregation(request) ?? {};
-    const validationAggregation: any = ignoreValidations
-      ? {}
-      : validationBuilder.buildAggregation(request);
+  const suggestionAggregation: any = suggestionBuilder.buildAggregation(suggestionRequest) ?? {};
+  const validationAggregation: any = ignoreValidations
+    ? {}
+    : validationBuilder.buildAggregation(suggestionRequest);
 
-    const body: SearchRequest = {
-      size: 0,
-      ...timeoutSettings,
-      query: {
-        bool: {
-          filter: filters,
-        },
+  const body: SearchRequest = {
+    size: 0,
+    ...timeoutSettings,
+    query: {
+      bool: {
+        filter: filters,
       },
-      aggs: {
-        ...suggestionAggregation,
-        ...validationAggregation,
-      },
-      runtime_mappings: {
-        ...runtimeFieldMap,
-      },
-    };
-
-    /**
-     * Run ES query
-     */
-    const rawEsResult = await esClient.search(
-      { index, ...body },
-      { signal: abortController.signal }
-    );
-
-    /**
-     * Parse ES response into Options List Response
-     */
-    const results = suggestionBuilder.parse(rawEsResult, request);
-    const totalCardinality = results.totalCardinality;
-    const invalidSelections = ignoreValidations
-      ? []
-      : validationBuilder.parse(rawEsResult, request);
-
-    return {
-      suggestions: results.suggestions,
-      totalCardinality,
-      invalidSelections,
-    };
+    },
+    aggs: {
+      ...suggestionAggregation,
+      ...validationAggregation,
+    },
+    runtime_mappings: {
+      ...runtimeFieldMap,
+    },
   };
+
+  /**
+   * Run ES query
+   */
+  const rawEsResult = await esClient.search({ index, ...body }, { signal: abortController.signal });
+
+  /**
+   * Parse ES response into Options List Response
+   */
+  const results = suggestionBuilder.parse(rawEsResult, suggestionRequest);
+  const totalCardinality = results.totalCardinality;
+  const invalidSelections = ignoreValidations
+    ? []
+    : validationBuilder.parse(rawEsResult, suggestionRequest);
+
+  return {
+    suggestions: results.suggestions,
+    totalCardinality,
+    invalidSelections,
+  };
+};
+
+const getOptionsListEsqlSuggestions = async ({
+  abortedEvent$,
+  request,
+  searchAsScoped,
+  uiSettingsClient,
+}: {
+  request: OptionsListESQLFetchBody;
+  abortedEvent$: Observable<void>;
+  searchAsScoped: { search: import('@kbn/search-types').ISearchGeneric };
+  uiSettingsClient: { get: <T = unknown>(key: string) => Promise<T> };
+}): Promise<OptionsListResponse> => {
+  const abortController = new AbortController();
+  abortedEvent$.subscribe(() => abortController.abort());
+
+  const timezone = (await uiSettingsClient.get(UI_SETTINGS.DATEFORMAT_TZ)) as string | undefined;
+
+  const result = await getESQLSingleColumnValues({
+    query: request.esql,
+    search: searchAsScoped.search,
+    signal: abortController.signal,
+    timeRange: request.timeRange,
+    filter: request.filter,
+    esqlVariables: request.esqlVariables ?? [],
+    timezone,
+  });
+
+  if (getESQLSingleColumnValues.isSuccess(result)) {
+    return esqlColumnValuesToOptionsListResponse(result, {
+      searchString: request.searchString,
+      searchTechnique: request.searchTechnique,
+      selectedOptions: request.selectedOptions,
+      ignoreValidations: request.ignoreValidations,
+      sort: request.sort,
+    });
+  }
+
+  return { error: result.errors[0] };
 };

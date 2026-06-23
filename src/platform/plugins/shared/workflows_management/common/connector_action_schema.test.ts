@@ -43,6 +43,15 @@ describe('ConnectorActionInputSchemas', () => {
       expect(schema).toBeInstanceOf(z.ZodType);
     }
   });
+
+  it('maps XSOAR actions to schemas used by workflow snippets and validation', () => {
+    const actions = ConnectorActionInputSchemas.get('.xsoar');
+
+    expect(actions).toBeDefined();
+    expect(Object.keys(actions!).toSorted()).toEqual(['getPlaybooks', 'run']);
+    expect(actions!.getPlaybooks.parse({})).toEqual({});
+    expect(actions!.run).toBeInstanceOf(z.ZodType);
+  });
 });
 
 describe('ConnectorActionOutputSchemas', () => {

@@ -7,6 +7,13 @@
 
 import { i18n } from '@kbn/i18n';
 
+export const HISTORY_FETCH_ERROR = i18n.translate(
+  'xpack.securitySolution.detectionEngine.ruleDetails.actions.historyFetchError',
+  {
+    defaultMessage: 'Failed to fetch rule change history',
+  }
+);
+
 export const CONNECTORS_FETCH_ERROR = i18n.translate(
   'xpack.securitySolution.detectionEngine.ruleDetails.actions.connectorsFetchError',
   {

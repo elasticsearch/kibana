@@ -8,7 +8,7 @@
  */
 
 import { esql } from '@elastic/esql';
-import { sanitazeESQLInput } from '@kbn/esql-utils';
+import { sanitazeESQLInput, isSingleSource } from '@kbn/esql-utils';
 import { createMetricAggregation, createTimeBucketAggregation } from './create_aggregation';
 import { firstNonNullable } from '../first_null_nullable';
 import type { ParsedMetricItem } from '../../../types';
@@ -26,19 +26,6 @@ interface CreateESQLQueryParams {
   splitAccessors?: string[];
   whereStatements?: string[];
   originalSource?: string;
-}
-
-/**
- * METRICS_INFO returns the parent source name (index or data stream), even
- * when invoked against a single backing index. Naively reusing that for the
- * rebuilt chart query widens the scope back to the whole source and
- * re-introduces any cross backing-index field-type conflicts that
- * METRICS_INFO had already filtered out at the narrower scope. When the user
- * typed a single concrete source (no glob, no comma list), prefer it so the
- * chart query stays at the same scope METRICS_INFO actually scanned.
- */
-function isConcreteSingleSource(source: string | undefined): source is string {
-  return !!source && !source.includes('*') && !source.includes(',');
 }
 
 /**
@@ -61,7 +48,7 @@ export function createESQLQuery({
   originalSource,
 }: CreateESQLQueryParams) {
   const { metricName, metricTypes, fieldTypes, indexName } = metricItem;
-  const index = isConcreteSingleSource(originalSource) ? originalSource : indexName;
+  const index = isSingleSource(originalSource) ? originalSource : indexName;
   const instrument = firstNonNullable(metricTypes);
 
   if (fieldTypes.length === 0 || !instrument) {

@@ -102,6 +102,7 @@ export async function generateKIQueries(
       })
     : undefined;
 
+  const startedAt = Date.now();
   const result = await generateSignificantEventDefinitions(
     {
       definition,
@@ -126,13 +127,17 @@ export async function generateKIQueries(
     }
     throw error;
   });
+  const durationMs = Date.now() - startedAt;
 
   telemetry.trackSignificantEventsQueriesGenerated({
     count: result.queries.length,
+    connector_id: connectorId,
     stream_name: definition.name,
     stream_type: getStreamTypeFromDefinition(definition),
     input_tokens_used: result.tokensUsed.prompt,
     output_tokens_used: result.tokensUsed.completion,
+    cached_tokens_used: result.tokensUsed.cached ?? 0,
+    duration_ms: durationMs,
     tool_usage: result.toolUsage,
   });
 

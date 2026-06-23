@@ -45,7 +45,11 @@ dependsOn:
   - '@kbn/control-group-renderer'
   - '@kbn/utility-types'
   - '@kbn/esql-language'
+  - '@kbn/es-types'
+  - '@kbn/esql'
+  - '@kbn/presentation-publishing-schemas'
   - '@kbn/controls-renderer'
+  - '@kbn/field-formats-common'
 tags:
   - plugin
   - prod

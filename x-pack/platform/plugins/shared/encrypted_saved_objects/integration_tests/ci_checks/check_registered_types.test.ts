@@ -167,6 +167,7 @@ describe('checking changes on all registered encrypted SO types', () => {
         "task|4",
         "task|3",
         "task|2",
+        "task|11",
         "task|10",
         "task|1",
         "user_connector_token|1",

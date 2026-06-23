@@ -227,10 +227,18 @@ export class DashboardApp {
   }
 
   async saveDashboard(name: string) {
-    await this.page.testSubj.click('dashboardInteractiveSaveMenuItem');
+    await this.clickAppMenuItem('dashboardInteractiveSaveMenuItem');
     await this.savedObjectTitleInput.fill(name);
     await this.confirmSaveButton.click();
     await expect(this.confirmSaveButton).toBeHidden();
+  }
+
+  private async clickAppMenuItem(testSubj: string) {
+    const item = this.page.testSubj.locator(testSubj);
+    if (!(await item.isVisible())) {
+      await this.page.testSubj.click('app-menu-overflow-button');
+    }
+    await item.click();
   }
 
   async saveChangesToExistingDashboard() {
@@ -1032,7 +1040,7 @@ export class DashboardApp {
   // ============================================================
 
   async enterFullscreen() {
-    await this.page.testSubj.click('dashboardFullScreenMode');
+    await this.clickAppMenuItem('dashboardFullScreenMode');
     await expect(this.page.testSubj.locator('exitFullScreenModeButton')).toBeVisible();
   }
 

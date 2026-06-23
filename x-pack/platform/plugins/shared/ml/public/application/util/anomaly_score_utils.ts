@@ -6,6 +6,7 @@
  */
 
 import type { SeverityThreshold } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
+import { getSeverityThresholdMax } from '../../../common/util/severity_threshold';
 
 /**
  * Determines if a point should be included based on its score and selected severity thresholds
@@ -27,7 +28,7 @@ export function shouldIncludePointByScore(
   // would return all scores, but we only want specific ranges
   return selectedSeverity.some((threshold) => {
     const minScore = threshold.min;
-    const maxScore = threshold.max;
+    const maxScore = getSeverityThresholdMax(threshold);
 
     if (maxScore !== undefined) {
       return score >= minScore && score <= maxScore;

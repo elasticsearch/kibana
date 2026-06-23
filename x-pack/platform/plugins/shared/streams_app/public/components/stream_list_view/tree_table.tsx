@@ -95,14 +95,6 @@ import {
   TechnicalPreviewBadge,
 } from '../stream_badges';
 
-const datePickerStyle = css`
-  .euiFormControlLayout,
-  .euiSuperDatePicker button,
-  .euiButton {
-    height: 40px;
-  }
-`;
-
 export function StreamsTreeTable({
   loading,
   streams = [],
@@ -430,6 +422,7 @@ export function StreamsTreeTable({
           <EuiFlexItem>
             <EuiFieldSearch
               fullWidth
+              compressed
               incremental
               aria-label={STREAMS_TABLE_SEARCH_ARIA_LABEL}
               value={searchText}
@@ -437,7 +430,7 @@ export function StreamsTreeTable({
             />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiFilterGroup>
+            <EuiFilterGroup compressed>
               {qualityLoaded && hasFailureStoreAccess && (
                 <FilterGroup
                   label={DATA_QUALITY_FILTER_LABEL}
@@ -461,9 +454,7 @@ export function StreamsTreeTable({
             </EuiFilterGroup>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <div className={datePickerStyle}>
-              <StreamsAppSearchBar showDatePicker />
-            </div>
+            <StreamsAppSearchBar showDatePicker />
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiFlexItem>

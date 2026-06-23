@@ -21,7 +21,7 @@ import type { TimeRange } from '@kbn/es-query';
 import { ML_APP_LOCATOR } from '@kbn/ml-common-types/locator_app_locator';
 import type { MlLocatorParams } from '@kbn/ml-common-types/locator';
 import { EXPLORER_ENTITY_FIELD_SELECTION_TRIGGER } from '@kbn/ui-actions-plugin/common/trigger_ids';
-import type { AnomalyChartsEmbeddableOverridableState } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
+import type { SeverityThreshold } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
 import type {
   AnomalyChartsEmbeddableServices,
   AnomalyChartsApi,
@@ -34,14 +34,14 @@ import { useAnomalyChartsData } from './use_anomaly_charts_data';
 import { useDateFormatTz, loadAnomaliesTableData } from '../../application/explorer/explorer_utils';
 import { useMlJobService } from '../../application/services/job_service';
 import { useThresholdToSeverity } from '../../application/explorer/hooks/use_threshold_to_severity';
-import { resolveSeverityFormat } from '../../application/components/controls/select_severity/severity_format_resolver';
+import { resolveSeverityFormat } from '../../../common/util/severity_threshold';
 import { useDefaultSeverity } from '../../application/components/controls/select_severity/select_severity';
 
 const RESIZE_THROTTLE_TIME_MS = 500;
 
-export interface AnomalyChartsContainerProps
-  extends Partial<AnomalyChartsEmbeddableOverridableState> {
+export interface AnomalyChartsContainerProps {
   lastReloadRequestTime?: number;
+  severityThreshold?: SeverityThreshold[];
   api: AnomalyChartsApi | AnomalyChartsAttachmentApi;
   id: string;
   services: AnomalyChartsEmbeddableServices;
@@ -175,7 +175,7 @@ const AnomalyChartsContainer: FC<AnomalyChartsContainerProps> = ({
           timeRangeBounds,
           'job ID',
           'auto',
-          { val: [{ min: 0 }] }
+          { val: defaultThreshold }
         );
 
         if (isMounted()) {

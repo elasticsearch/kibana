@@ -85,6 +85,7 @@ export const INTEGRATION_TILES: readonly IntegrationCategory[] = [
           { defaultMessage: 'Monitor pod health, resources, and deployments.' }
         ),
         logo: 'kubernetes',
+        route: '/kubernetes',
       },
       {
         id: 'docker',

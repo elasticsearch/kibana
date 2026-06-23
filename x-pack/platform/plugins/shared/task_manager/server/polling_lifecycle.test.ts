@@ -20,6 +20,8 @@ import type {
   TaskClaiming as TaskClaimingClass,
   ClaimOwnershipResult,
 } from './queries/task_claiming';
+import { TaskManagerRunner } from './task_running';
+import type { ConcreteTaskInstance } from './task';
 import type { Err, Ok } from './lib/result_type';
 import { asOk, isErr, isOk } from './lib/result_type';
 import { FillPoolResult } from './lib/fill_pool';
@@ -45,6 +47,14 @@ jest.mock('./queries/task_claiming', () => {
 jest.mock('./constants', () => ({
   CONCURRENCY_ALLOW_LIST_BY_TASK_TYPE: ['report', 'quickReport'],
 }));
+
+jest.mock('./task_running', () => {
+  const actual = jest.requireActual('./task_running');
+  return {
+    ...actual,
+    TaskManagerRunner: jest.fn(),
+  };
+});
 
 interface EsError extends Error {
   name: string;
@@ -134,6 +144,7 @@ describe('TaskPollingLifecycle', () => {
   beforeEach(() => {
     mockTaskClaiming = taskClaimingMock.create({});
     (TaskClaiming as jest.Mock<TaskClaimingClass>).mockClear();
+    (TaskManagerRunner as jest.Mock).mockClear();
     clock = sinon.useFakeTimers();
   });
 
@@ -564,6 +575,58 @@ describe('TaskPollingLifecycle', () => {
       expect(capacitySubscription).toHaveBeenNthCalledWith(1, 20);
       expect(pollIntervalSubscription).toHaveBeenCalledTimes(1);
       expect(pollIntervalSubscription).toHaveBeenNthCalledWith(1, 2);
+    });
+  });
+
+  describe('enrichFakeRequest', () => {
+    const buildMockTaskInstance = (): ConcreteTaskInstance => ({
+      id: 'foo',
+      taskType: 'bar',
+      runAt: new Date(),
+      scheduledAt: new Date(),
+      startedAt: new Date(),
+      retryAt: null,
+      attempts: 0,
+      params: {},
+      state: {},
+      status: 'idle' as ConcreteTaskInstance['status'],
+      ownerId: null,
+      traceparent: '',
+    });
+
+    test('stores the enrichFakeRequest option on the lifecycle instance', () => {
+      const enrichFakeRequest = jest.fn();
+      const elasticsearchAndSOAvailability$ = new Subject<boolean>();
+      const lifecycle = new TaskPollingLifecycle({
+        ...taskManagerOpts,
+        elasticsearchAndSOAvailability$,
+        enrichFakeRequest,
+      });
+
+      expect(
+        (lifecycle as unknown as { enrichFakeRequest: typeof enrichFakeRequest }).enrichFakeRequest
+      ).toBe(enrichFakeRequest);
+    });
+
+    test('forwards enrichFakeRequest to TaskManagerRunner when creating a runner for a task', () => {
+      const enrichFakeRequest = jest.fn();
+      const elasticsearchAndSOAvailability$ = new Subject<boolean>();
+      const lifecycle = new TaskPollingLifecycle({
+        ...taskManagerOpts,
+        elasticsearchAndSOAvailability$,
+        enrichFakeRequest,
+      });
+
+      (
+        lifecycle as unknown as {
+          createTaskRunnerForTask: (instance: ConcreteTaskInstance) => void;
+        }
+      ).createTaskRunnerForTask(buildMockTaskInstance());
+
+      expect(TaskManagerRunner).toHaveBeenCalledTimes(1);
+      expect(TaskManagerRunner).toHaveBeenCalledWith(
+        expect.objectContaining({ enrichFakeRequest })
+      );
     });
   });
 });

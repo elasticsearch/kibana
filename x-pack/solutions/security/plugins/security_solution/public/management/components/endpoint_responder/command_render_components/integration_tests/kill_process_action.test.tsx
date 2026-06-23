@@ -280,6 +280,7 @@ describe('When using the kill-process action from response actions console', () 
       'agent-a': {
         isCompleted: true,
         wasSuccessful: false,
+        wasCanceled: false,
         errors: ['error one', 'error two'],
         completedAt: new Date().toISOString(),
       },
@@ -308,6 +309,7 @@ describe('When using the kill-process action from response actions console', () 
         'agent-a': {
           isCompleted: true,
           wasSuccessful: false,
+          wasCanceled: false,
           errors: ['not found'],
           completedAt: new Date().toISOString(),
         },

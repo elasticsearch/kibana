@@ -4,7 +4,13 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import { EuiExpression, EuiPopover, EuiPopoverTitle, EuiSelectable } from '@elastic/eui';
+import {
+  EuiExpression,
+  EuiPopover,
+  EuiPopoverTitle,
+  EuiSelectable,
+  useGeneratedHtmlId,
+} from '@elastic/eui';
 import React, { useEffect, useState } from 'react';
 import { i18n } from '@kbn/i18n';
 import type { StatusRuleCondition } from '@kbn/response-ops-rule-params/synthetics_monitor_status';
@@ -90,6 +96,7 @@ export const ForTheLastExpression = ({ ruleParams, setRuleParams }: Props) => {
   const { useTimeWindow } = getConditionType(condition);
 
   const [isOpen, setIsOpen] = useState(false);
+  const forTheLastPopoverTitleId = useGeneratedHtmlId();
 
   const [options, setOptions] = useState<Option[]>(OPTIONS);
 
@@ -130,6 +137,7 @@ export const ForTheLastExpression = ({ ruleParams, setRuleParams }: Props) => {
       isOpen={isOpen}
       closePopover={() => setIsOpen(false)}
       anchorPosition="downLeft"
+      aria-labelledby={forTheLastPopoverTitleId}
     >
       <EuiSelectable<Option>
         singleSelection="always"
@@ -156,7 +164,7 @@ export const ForTheLastExpression = ({ ruleParams, setRuleParams }: Props) => {
       >
         {(list) => (
           <div style={{ width: 240 }}>
-            <EuiPopoverTitle>
+            <EuiPopoverTitle id={forTheLastPopoverTitleId}>
               {i18n.translate('xpack.synthetics.forTheLastExpression.whenPopoverTitleLabel', {
                 defaultMessage: 'When',
               })}

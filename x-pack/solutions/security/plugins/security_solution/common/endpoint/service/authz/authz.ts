@@ -115,6 +115,9 @@ export const calculateEndpointAuthz = (
   const canReadScriptsLibrary = hasAuth('readScriptsManagement');
   const canWriteScriptsLibrary = hasAuth('writeScriptsManagement');
 
+  const canReadCustomYaraSignatures = hasAuth('readCustomYaraSignatures');
+  const canWriteCustomYaraSignatures = hasAuth('writeCustomYaraSignatures');
+
   // These are currently tied to the superuser role on ESS and the admin role on Serverless
   const canReadAdminData = hasSuperuserPrivileges;
   const canWriteAdminData = hasSuperuserPrivileges;
@@ -184,6 +187,8 @@ export const calculateEndpointAuthz = (
     canReadEventFilters,
     canReadEndpointExceptions,
     canWriteEndpointExceptions,
+    canReadCustomYaraSignatures: canReadCustomYaraSignatures && isEnterpriseLicense,
+    canWriteCustomYaraSignatures: canWriteCustomYaraSignatures && isEnterpriseLicense,
     canManageGlobalArtifacts,
 
     // ---------------------------------------------------------
@@ -266,6 +271,8 @@ export const getEndpointAuthzInitialState = (): EndpointAuthz => {
     canWriteAdminData: false,
     canReadScriptsLibrary: false,
     canWriteScriptsLibrary: false,
+    canReadCustomYaraSignatures: false,
+    canWriteCustomYaraSignatures: false,
   };
 };
 

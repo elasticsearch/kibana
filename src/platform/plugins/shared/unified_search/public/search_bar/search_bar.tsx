@@ -79,8 +79,9 @@ export interface SearchBarOwnProps<QT extends AggregateQuery | Query = Query> {
   showDatePicker?: boolean;
   showAutoRefreshOnly?: boolean;
   /**
-   * Opt-in to the new DateRangePicker. Only takes effect when the
-   * `unifiedSearch.newDateRangePickerEnabled` feature flag is also enabled.
+   * Whether to use the new DateRangePicker. Defaults to `true`; pass `false`
+   * to opt out and keep the legacy EuiSuperDatePicker. Only takes effect when
+   * the `unifiedSearch.newDateRangePickerEnabled` feature flag is also enabled.
    */
   enableDateRangePicker?: boolean;
   filters?: Filter[];

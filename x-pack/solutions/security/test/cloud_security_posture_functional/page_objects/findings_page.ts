@@ -291,9 +291,6 @@ export function FindingsPageProvider({ getService, getPageObjects }: FtrProvider
   const thirdPartyIntegrationsNoVulnerabilitiesFindingsPrompt = createNotInstalledObject(
     '3p-integrations-no-vulnerabilities-findings-prompt'
   );
-  const thirdPartyIntegrationsNoMisconfigurationsFindingsPrompt = createNotInstalledObject(
-    '3p-integrations-no-misconfigurations-findings-prompt'
-  );
 
   const vulnerabilityDataGrid = {
     getVulnerabilityTable: async () => testSubjects.find('euiDataGrid'),
@@ -378,7 +375,6 @@ export function FindingsPageProvider({ getService, getPageObjects }: FtrProvider
     latestVulnerabilitiesTable,
     notInstalledVulnerabilities,
     notInstalledCSP,
-    thirdPartyIntegrationsNoMisconfigurationsFindingsPrompt,
     thirdPartyIntegrationsNoVulnerabilitiesFindingsPrompt,
     index,
     vulnerabilitiesIndex,

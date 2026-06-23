@@ -16,27 +16,30 @@ import type {
   PartitionElementEvent,
   SettingsProps,
   TooltipValue,
+  PointerValue,
 } from '@elastic/charts';
 import { Chart, Partition, Position, Settings, TooltipType, Tooltip } from '@elastic/charts';
 import { ESQL_TABLE_TYPE } from '@kbn/data-plugin/common';
 import { i18n } from '@kbn/i18n';
 import { useEuiTheme } from '@elastic/eui';
 import type { PaletteRegistry } from '@kbn/coloring';
+import type { FieldFormat } from '@kbn/field-formats-plugin/common';
 import type { ChartsPluginSetup } from '@kbn/charts-plugin/public';
 import { LegendToggle } from '@kbn/charts-plugin/public';
 import type { PersistedState } from '@kbn/visualizations-common';
-import { getColumnByAccessor } from '@kbn/chart-expressions-common';
+import {
+  ChartTooltipFooterMessage,
+  getColumnByAccessor,
+  getComputedColumnWarningForColumns,
+  getOverridesFor,
+  DEFAULT_LEGEND_SIZE,
+  LegendSizeToPixels,
+} from '@kbn/chart-expressions-common';
 import type {
   Datatable,
   DatatableColumn,
   IInterpreterRenderHandlers,
 } from '@kbn/expressions-plugin/public';
-import type { FieldFormat } from '@kbn/field-formats-plugin/common';
-import {
-  getOverridesFor,
-  DEFAULT_LEGEND_SIZE,
-  LegendSizeToPixels,
-} from '@kbn/chart-expressions-common';
 import { useKbnPalettes } from '@kbn/palettes';
 import { useAppFixedViewport } from '@kbn/core-rendering-browser';
 import { useKibanaIsDarkMode } from '@kbn/react-kibana-context-theme';
@@ -84,6 +87,7 @@ declare global {
     _echDebugStateFlag?: boolean;
   }
 }
+
 export type PartitionVisComponentProps = Omit<
   PartitionChartProps,
   'navigateToLens' | 'visConfig'
@@ -408,6 +412,28 @@ const PartitionVisComponent = (props: PartitionVisComponentProps) => {
   const hasTooltipActions =
     interactive && !isEsqlMode && bucketAccessors.filter((a) => a !== 'metric-name').length > 0;
 
+  // Compute warning message for ES|QL computed columns that cannot be filtered.
+  const warningMessage = useMemo(
+    () =>
+      isEsqlMode
+        ? getComputedColumnWarningForColumns(
+            bucketColumns.map((col) => visData.columns.find((c) => c.id === col.id))
+          )
+        : undefined,
+    [isEsqlMode, bucketColumns, visData.columns]
+  );
+
+  const TooltipFooter = useMemo<
+    | React.ComponentType<{
+        items: Array<TooltipValue<Record<'key', string | number>, SeriesIdentifier>>;
+        header: PointerValue<Record<'key', string | number>> | null;
+      }>
+    | 'default'
+  >(() => {
+    if (!warningMessage) return 'default';
+    return () => <ChartTooltipFooterMessage message={warningMessage} />;
+  }, [warningMessage]);
+
   const tooltip: TooltipProps = {
     ...(fixedViewPort ? { boundary: fixedViewPort } : {}),
     type: visParams.addTooltip ? TooltipType.Follow : TooltipType.None,
@@ -544,7 +570,7 @@ const PartitionVisComponent = (props: PartitionVisComponentProps) => {
                 splitColumnAccessor={splitChartColumnAccessor}
                 splitRowAccessor={splitChartRowAccessor}
               />
-              <Tooltip {...tooltip} />
+              <Tooltip {...tooltip} footer={TooltipFooter} />
               <Settings
                 noResults={
                   <VisualizationNoResults chartType={visType} renderComplete={onRenderChange} />

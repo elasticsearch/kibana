@@ -19,8 +19,17 @@ describe('getHistoryForRule', () => {
     rulesClient = rulesClientMock.create();
   });
 
+  const mockRuleChangesHistory = (items: ReturnType<typeof buildItems>) => {
+    rulesClient.getHistory
+      .mockResolvedValueOnce({ total: items.length, items })
+      .mockResolvedValueOnce({
+        total: items.length,
+        items: [items[items.length - 1]],
+      });
+  };
+
   it('requests size = perPage + 1 with offset 0 for page 1', async () => {
-    rulesClient.getHistory.mockResolvedValueOnce({ total: 0, items: buildItems(3) });
+    mockRuleChangesHistory(buildItems(3));
 
     await getHistoryForRule({ rulesClient, ruleId: 'rule-1', page: 1, perPage: 2 });
 
@@ -29,11 +38,12 @@ describe('getHistoryForRule', () => {
       ruleId: 'rule-1',
       from: 0,
       size: 3,
+      sort: [{ '@timestamp': { order: 'desc' } }],
     });
   });
 
   it('requests size = perPage + 1 with the correct offset for page > 1', async () => {
-    rulesClient.getHistory.mockResolvedValueOnce({ total: 0, items: buildItems(3) });
+    mockRuleChangesHistory(buildItems(3));
 
     await getHistoryForRule({ rulesClient, ruleId: 'rule-1', page: 4, perPage: 2 });
 
@@ -42,18 +52,26 @@ describe('getHistoryForRule', () => {
       ruleId: 'rule-1',
       from: 6,
       size: 3,
+      sort: [{ '@timestamp': { order: 'desc' } }],
+    });
+  });
+
+  it('fetches the oldest item with ascending timestamp sort for tracking_started_at', async () => {
+    mockRuleChangesHistory(buildItems(2));
+
+    await getHistoryForRule({ rulesClient, ruleId: 'rule-1', page: 1, perPage: 2 });
+
+    expect(rulesClient.getHistory).toHaveBeenCalledWith({
+      module: 'security',
+      ruleId: 'rule-1',
+      from: 0,
+      size: 1,
+      sort: [{ '@timestamp': { order: 'asc' } }],
     });
   });
 
   it('uses the trailing entry as the predecessor for the oldest item on the page', async () => {
-    rulesClient.getHistory.mockResolvedValueOnce({
-      total: 10,
-      items: [
-        generateHistoryDoc('1', { name: 'name-1' }),
-        generateHistoryDoc('2', { name: 'name-2' }),
-        generateHistoryDoc('3', { name: 'name-3' }),
-      ],
-    });
+    mockRuleChangesHistory(buildItems(3));
 
     const result = await getHistoryForRule({
       rulesClient,
@@ -64,13 +82,13 @@ describe('getHistoryForRule', () => {
 
     expect(result.items).toHaveLength(2);
     expect(result.items[0].id).toBe('event-1');
-    expect(result.items[0].old_values).toMatchObject({ name: 'name-2' });
+    expect(result.items[0].old_values).toMatchObject({ name: 'rule-2' });
     expect(result.items[1].id).toBe('event-2');
-    expect(result.items[1].old_values).toMatchObject({ name: 'name-3' });
+    expect(result.items[1].old_values).toMatchObject({ name: 'rule-3' });
   });
 
   it('returns the requested page/perPage and total in the response', async () => {
-    rulesClient.getHistory.mockResolvedValueOnce({ total: 100, items: buildItems(3) });
+    mockRuleChangesHistory(buildItems(3));
 
     const result = await getHistoryForRule({
       rulesClient,
@@ -79,12 +97,12 @@ describe('getHistoryForRule', () => {
       perPage: 2,
     });
 
-    expect(result).toMatchObject({ page: 3, perPage: 2, total: 100 });
+    expect(result).toMatchObject({ page: 3, per_page: 2, total: 3 });
     expect(result.items).toHaveLength(2);
   });
 
   it('exposes the post-change rule snapshot, action, and username on each item', async () => {
-    rulesClient.getHistory.mockResolvedValueOnce({ total: 2, items: buildItems(2) });
+    mockRuleChangesHistory(buildItems(3));
 
     const result = await getHistoryForRule({
       rulesClient,
@@ -95,7 +113,35 @@ describe('getHistoryForRule', () => {
 
     expect(result.items[0].action).toBe('rule_update');
     expect(result.items[0].user).toEqual({ name: 'test-user' });
-    expect(result.items[0].rule.name).toBe('Rule');
+    expect(result.items[0].rule.name).toBe('rule-1');
+  });
+
+  it('sets tracking_started_at from the oldest item timestamp', async () => {
+    const changeHistoryItems = buildItems(3);
+
+    mockRuleChangesHistory(changeHistoryItems);
+
+    const result = await getHistoryForRule({
+      rulesClient,
+      ruleId: 'rule-1',
+      page: 1,
+      perPage: 2,
+    });
+
+    expect(result.tracking_started_at).toBe(changeHistoryItems[2]['@timestamp']);
+  });
+
+  it('omits tracking_started_at when there are no history items', async () => {
+    mockRuleChangesHistory([]);
+
+    const result = await getHistoryForRule({
+      rulesClient,
+      ruleId: 'rule-1',
+      page: 1,
+      perPage: 20,
+    });
+
+    expect(result.tracking_started_at).toBeUndefined();
   });
 
   const buildRule = (overrides: Partial<Rule<RuleParams>> = {}): Rule<RuleParams> => ({
@@ -127,10 +173,11 @@ describe('getHistoryForRule', () => {
 
   const generateHistoryDoc = (
     id: string,
-    ruleOverrides: Partial<Rule<RuleParams>> = {}
+    ruleOverrides: Partial<Rule<RuleParams>> = {},
+    timestamp?: string
   ): RuleChangeHistoryDocument<RuleParams> => ({
     ...generateChangeHistoryDocument({
-      '@timestamp': `2026-05-01T10:00:0${id}.000Z`,
+      '@timestamp': timestamp ?? `2026-05-01T10:00:0${id}.000Z`,
       event: {
         id: `event-${id}`,
         action: 'rule_update',
@@ -143,5 +190,7 @@ describe('getHistoryForRule', () => {
   });
 
   const buildItems = (count: number) =>
-    Array.from({ length: count }, (_, i) => generateHistoryDoc(String(i + 1)));
+    Array.from({ length: count }, (_, i) =>
+      generateHistoryDoc(String(i + 1), { name: `rule-${i + 1}` })
+    );
 });

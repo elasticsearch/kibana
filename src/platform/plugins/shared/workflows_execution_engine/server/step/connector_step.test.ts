@@ -108,6 +108,57 @@ describe('ConnectorStepImpl', () => {
     );
   });
 
+  it('forwards email attachment inputs unchanged to the connector executor', async () => {
+    const { stepExecutionRuntime, connectorExecutor, workflowRuntime, workflowLogger } =
+      createMocks();
+    const attachments = [
+      {
+        filename: 'report.csv',
+        contentType: 'text/csv',
+        content: 'host,risk\nhost-1,high\n',
+      },
+    ];
+
+    connectorExecutor.execute.mockResolvedValue({
+      status: 'ok',
+      data: undefined,
+    });
+
+    const withInputs = {
+      to: ['ops@example.com'],
+      subject: 'Daily CSV report',
+      message: 'Attached is the generated report.',
+      attachments,
+    };
+
+    const step = {
+      name: 'send-report',
+      stepId: 'send-report',
+      type: 'email',
+      'connector-id': 'stakeholder-email',
+      with: withInputs,
+    };
+
+    const impl = new ConnectorStepImpl(
+      step,
+      stepExecutionRuntime as any,
+      connectorExecutor as any,
+      workflowRuntime as any,
+      workflowLogger as any
+    );
+
+    const result = await (impl as any)._run(withInputs);
+
+    expect(result.error).toBeUndefined();
+    expect(connectorExecutor.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        connectorType: 'email',
+        connectorNameOrId: 'stakeholder-email',
+        input: withInputs,
+      })
+    );
+  });
+
   it('executes a regular connector with a rendered connector-id', async () => {
     const { stepExecutionRuntime, connectorExecutor, workflowRuntime, workflowLogger } =
       createMocks();

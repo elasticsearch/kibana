@@ -7,7 +7,7 @@
 import { schema } from '@kbn/config-schema';
 import { sumBy, values } from 'lodash';
 import type { RouteRegisterParameters } from '..';
-import { getRoutePaths } from '../../../common';
+import { getRoutePaths, MAX_KUERY_LENGTH } from '../../../common';
 import type { StorageExplorerSummaryAPIResponse } from '../../../common/storage_explorer';
 import { IndexLifecyclePhaseSelectOption } from '../../../common/storage_explorer';
 import { getClient } from '../compat';
@@ -43,7 +43,7 @@ export function registerStorageExplorerRoute({
           ]),
           timeFrom: schema.number(),
           timeTo: schema.number(),
-          kuery: schema.string(),
+          kuery: schema.string({ maxLength: MAX_KUERY_LENGTH }),
         }),
       },
     },
@@ -130,7 +130,7 @@ export function registerStorageExplorerRoute({
           ]),
           timeFrom: schema.number(),
           timeTo: schema.number(),
-          kuery: schema.string(),
+          kuery: schema.string({ maxLength: MAX_KUERY_LENGTH }),
         }),
       },
     },

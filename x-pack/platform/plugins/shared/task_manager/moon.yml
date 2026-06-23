@@ -57,6 +57,7 @@ dependsOn:
   - '@kbn/core-execution-context-common'
   - '@kbn/core-http-server'
   - '@kbn/core-security-server'
+  - '@kbn/core-security-common'
   - '@kbn/scout'
 tags:
   - plugin

@@ -57,12 +57,6 @@ describe('SkillsStore', () => {
       const store = new SkillsStoreImpl({ skills: [skill] });
       expect(store.has('skill-1')).toBe(true);
     });
-
-    it('creates a volume with id "skills"', () => {
-      const store = new SkillsStoreImpl({ skills: [] });
-      const volume = store.getVolume();
-      expect(volume.id).toBe('skills');
-    });
   });
 
   describe('add', () => {
@@ -76,15 +70,14 @@ describe('SkillsStore', () => {
       expect(store.get('new-skill')).toEqual(skill);
     });
 
-    it('adds skill entry to volume', () => {
+    it('adds skill entry to volume', async () => {
       const store = new SkillsStoreImpl({ skills: [] });
       const skill = createMockSkill({ id: 'volume-skill', name: 'volume-skill' });
 
       store.add(skill);
 
-      const volume = store.getVolume();
-      const path = `/skills/platform/volume-skill/SKILL.md`;
-      expect(volume.has(path)).toBe(true);
+      const path = `/platform/volume-skill/SKILL.md`;
+      expect(await store.entryExists(path)).toBe(true);
     });
 
     it('overwrites existing skill with same id', () => {
@@ -138,18 +131,17 @@ describe('SkillsStore', () => {
       expect(store.has('remove-skill')).toBe(false);
     });
 
-    it('removes skill entry from volume', () => {
+    it('removes skill entry from volume', async () => {
       const store = new SkillsStoreImpl({ skills: [] });
       const skill = createMockSkill({ id: 'volume-remove-skill', name: 'volume-remove-skill' });
       store.add(skill);
 
-      const volume = store.getVolume();
-      const path = `/skills/platform/volume-remove-skill/SKILL.md`;
-      expect(volume.has(path)).toBe(true);
+      const path = `/platform/volume-remove-skill/SKILL.md`;
+      expect(await store.entryExists(path)).toBe(true);
 
       store.delete('volume-remove-skill');
 
-      expect(volume.has(path)).toBe(false);
+      expect(await store.entryExists(path)).toBe(false);
     });
 
     it('does not affect other skills when deleting', () => {
@@ -217,31 +209,16 @@ describe('SkillsStore', () => {
     });
   });
 
-  describe('getVolume', () => {
-    it('returns the same volume instance', () => {
-      const store = new SkillsStoreImpl({ skills: [] });
-      const volume1 = store.getVolume();
-      const volume2 = store.getVolume();
-
-      expect(volume1).toBe(volume2);
-    });
-
-    it('returns volume with id "skills"', () => {
-      const store = new SkillsStoreImpl({ skills: [] });
-      const volume = store.getVolume();
-      expect(volume.id).toBe('skills');
-    });
-
-    it('contains skill entries after adding skills', async () => {
+  describe('typed entry accessors', () => {
+    it('exposes added skill entries via entryExists + getEntry', async () => {
       const store = new SkillsStoreImpl({ skills: [] });
       const skill = createMockSkill({ id: 'volume-skill', name: 'volume-skill' });
       store.add(skill);
 
-      const volume = store.getVolume();
-      const path = `/skills/platform/volume-skill/SKILL.md`;
-      expect(volume.has(path)).toBe(true);
+      const path = `/platform/volume-skill/SKILL.md`;
+      expect(await store.entryExists(path)).toBe(true);
 
-      const entry = await volume.get(path);
+      const entry = await store.getEntry(path);
       expect(entry).toBeDefined();
       expect(entry?.metadata.type).toBe(FileEntryType.skill);
     });
@@ -298,15 +275,14 @@ describe('SkillsStore', () => {
       ...overrides,
     });
 
-    it('adds a persisted skill to the store and volume', () => {
+    it('adds a persisted skill to the store and volume', async () => {
       const store = new SkillsStoreImpl({ skills: [] });
       const skill = createPersistedSkill();
 
       store.add(skill);
 
       expect(store.has('custom-skill-1')).toBe(true);
-      const volume = store.getVolume();
-      expect(volume.has('/skills/custom-skill/SKILL.md')).toBe(true);
+      expect(await store.entryExists('/custom-skill/SKILL.md')).toBe(true);
     });
 
     it('mounts persisted skills alongside builtin skills', async () => {
@@ -314,9 +290,8 @@ describe('SkillsStore', () => {
       const persisted = createPersistedSkill({ id: 'custom-1', name: 'custom-skill' });
       const store = new SkillsStoreImpl({ skills: [builtin, persisted] });
 
-      const volume = store.getVolume();
-      expect(volume.has('/skills/platform/builtin-skill/SKILL.md')).toBe(true);
-      expect(volume.has('/skills/custom-skill/SKILL.md')).toBe(true);
+      expect(await store.entryExists('/platform/builtin-skill/SKILL.md')).toBe(true);
+      expect(await store.entryExists('/custom-skill/SKILL.md')).toBe(true);
     });
   });
 

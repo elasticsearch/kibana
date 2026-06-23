@@ -3,8 +3,10 @@
   "compilerOptions": {
     "outDir": "target/types",
   },
-  "include": ["common/**/*", "public/**/*", "server/**/*"],
+  "include": ["common/**/*", "public/**/*", "server/**/*", "test/scout/**/*"],
   "kbn_references": [
+    "@kbn/scout",
+    "@kbn/core-http-common",
     "@kbn/core",
     "@kbn/config-schema",
     "@kbn/core-http-request-handler-context-server",

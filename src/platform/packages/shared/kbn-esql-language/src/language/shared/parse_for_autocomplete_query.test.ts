@@ -66,6 +66,7 @@ describe('getAutocompleteCursorContext', () => {
       const parsed = parseAutocompleteQuery(query, query.length);
 
       expect(parsed.innerText).toBe(query);
+      expect(parsed.tokens.length).toBeGreaterThan(0);
       assertNoMarker(parsed.root, query, 'root');
 
       const { root, command, node, option, containingFunction } = findAutocompleteAstPosition(

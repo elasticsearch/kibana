@@ -77,10 +77,25 @@ const querySchema = z.object({
 // Time Range Schema
 // ============================================================================
 
-const timeRangeSchema = z.object({
-  from: z.string(),
-  to: z.string(),
-  mode: z.union([z.literal('absolute'), z.literal('relative')]).optional(),
+export const timeRangeSchema = z.object({
+  from: z
+    .string()
+    .max(100)
+    .describe(
+      'Start of the time range. Use Kibana date math for relative ranges (e.g. "now-30m", "now-24h", "now-90d") or ISO 8601 strings for absolute dates (e.g. "2024-05-20T00:00:00.000Z").'
+    ),
+  to: z
+    .string()
+    .max(100)
+    .describe(
+      'End of the time range. Use "now" for the current time, or an ISO 8601 string for an absolute end date (e.g. "2024-05-24T23:59:59.999Z").'
+    ),
+  mode: z
+    .union([z.literal('absolute'), z.literal('relative')])
+    .optional()
+    .describe(
+      'Optional mode hint. Use "relative" when from/to use date math expressions, "absolute" when using exact ISO 8601 timestamps.'
+    ),
 });
 
 // ============================================================================

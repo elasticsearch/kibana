@@ -13,6 +13,7 @@ import { map as mapOptional, none } from 'fp-ts/Option';
 import { tap } from 'rxjs';
 import type { UsageCounter } from '@kbn/usage-collection-plugin/server';
 import type { Logger, ExecutionContextStart } from '@kbn/core/server';
+import type { FakeRequestEnricher } from '@kbn/core-security-server';
 
 import type { Result } from './lib/result_type';
 import { asErr, mapErr, asOk, map, mapOk, isOk } from './lib/result_type';
@@ -82,6 +83,7 @@ export interface TaskPollingLifecycleOpts {
   startingCapacity: number;
   apiKeyStrategy: ApiKeyStrategy;
   eventLogger: TaskEventLogger;
+  enrichFakeRequest?: FakeRequestEnricher;
 }
 
 export type TaskLifecycleEvent =
@@ -123,6 +125,7 @@ export class TaskPollingLifecycle implements ITaskEventEmitter<TaskLifecycleEven
   private currentPollInterval: number;
   private apiKeyStrategy: ApiKeyStrategy;
   private currentTmUtilization$ = new BehaviorSubject<number>(0);
+  private enrichFakeRequest?: FakeRequestEnricher;
 
   private eventLogger: TaskEventLogger;
 
@@ -145,6 +148,7 @@ export class TaskPollingLifecycle implements ITaskEventEmitter<TaskLifecycleEven
     startingCapacity,
     apiKeyStrategy,
     eventLogger,
+    enrichFakeRequest,
   }: TaskPollingLifecycleOpts) {
     this.logger = logger;
     this.middleware = middleware;
@@ -154,6 +158,7 @@ export class TaskPollingLifecycle implements ITaskEventEmitter<TaskLifecycleEven
     this.usageCounter = usageCounter;
     this.config = config;
     this.apiKeyStrategy = apiKeyStrategy;
+    this.enrichFakeRequest = enrichFakeRequest;
     const { poll_interval: pollInterval, claim_strategy: claimStrategy } = config;
     this.currentPollInterval = pollInterval;
     this.eventLogger = eventLogger;
@@ -281,6 +286,7 @@ export class TaskPollingLifecycle implements ITaskEventEmitter<TaskLifecycleEven
       getPollInterval: () => this.currentPollInterval,
       apiKeyStrategy: this.apiKeyStrategy,
       eventLogger: this.eventLogger,
+      enrichFakeRequest: this.enrichFakeRequest,
     });
   };
 

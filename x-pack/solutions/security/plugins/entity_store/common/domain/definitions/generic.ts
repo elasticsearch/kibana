@@ -20,7 +20,7 @@ export const genericEntityDefinition = {
   indexPatterns: [],
   fieldEvaluations: [ENTITY_SOURCE_FIELD_EVALUATION],
   fields: [
-    // We want this to make sure it's also extracted on CCS logs extraction
+    // We want this to make sure it's also extracted on remote log extraction
     newestValue({ source: 'entity.id' }),
     newestValue({ source: 'entity.name' }),
     ...getEntityFieldsDescriptions(),

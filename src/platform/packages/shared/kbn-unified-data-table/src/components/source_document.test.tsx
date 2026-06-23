@@ -129,6 +129,43 @@ describe('Unified data table source document cell rendering', () => {
     expect(screen.getByText('—')).toBeVisible();
   });
 
+  it('does not let null fields consume the ES|QL document summary limit', () => {
+    const row = build({
+      _id: 'doc-001',
+      _source: {
+        field_1: null,
+        field_2: null,
+        field_3: null,
+        field_4: null,
+        field_5: null,
+        source: 'void_realm',
+        status: 'missing_in_action',
+      },
+    });
+
+    renderWithI18n(
+      <SourceDocument
+        columnId="_source"
+        columnsMeta={undefined}
+        dataView={dataViewMock}
+        fieldFormats={mockServices.fieldFormats as unknown as FieldFormatsStart}
+        isPlainRecord={true}
+        maxEntries={2}
+        row={row}
+        shouldShowFieldHandler={() => true}
+        useTopLevelObjectColumns={false}
+      />
+    );
+
+    const descriptionList = screen.getByTestId('discoverCellDescriptionList');
+    expect(within(descriptionList).getByText('source')).toBeVisible();
+    expect(within(descriptionList).getByText('void_realm')).toBeVisible();
+    expect(within(descriptionList).getByText('status')).toBeVisible();
+    expect(within(descriptionList).getByText('missing_in_action')).toBeVisible();
+    expect(within(descriptionList).queryByText('field_1')).not.toBeInTheDocument();
+    expect(within(descriptionList).queryByText(/and \d+ more fields/)).not.toBeInTheDocument();
+  });
+
   describe('with columnsMeta', () => {
     it('should use data view field type when columnsMeta is undefined', () => {
       const formatFieldValueReactSpy = createFormatFieldValueReactSpy();

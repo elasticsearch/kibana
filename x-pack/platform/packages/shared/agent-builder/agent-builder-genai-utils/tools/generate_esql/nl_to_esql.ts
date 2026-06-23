@@ -120,7 +120,7 @@ export const generateEsql = async ({
   });
 
   return withActiveInferenceSpan(
-    'GenerateEsqlGraph',
+    'generate_esql',
     {
       attributes: {
         [ElasticGenAIAttributes.InferenceSpanKind]: 'CHAIN',

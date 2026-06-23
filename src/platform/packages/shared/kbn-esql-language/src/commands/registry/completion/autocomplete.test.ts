@@ -162,15 +162,17 @@ describe('COMPLETION Autocomplete', () => {
   it('suggests pipe after complete command', async () => {
     await completionExpectSuggestions(
       `FROM a | COMPLETION "prompt" WITH { "inference_id": "inference_1" }`,
-      ['| ']
+      ['\n', '| ']
     );
   });
 
   it('suggests pipe after incomplete but enclosed map expression', async () => {
     await completionExpectSuggestions(`FROM a | COMPLETION "prompt" WITH { "inference_id": "" }`, [
+      '\n',
       '| ',
     ]);
     await completionExpectSuggestions(`FROM a | COMPLETION "prompt" WITH { "inference_id": "" } `, [
+      '\n',
       '| ',
     ]);
   });

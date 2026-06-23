@@ -16,6 +16,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 256
       requestBody:
         required: true
         content:
@@ -29,21 +30,27 @@ paths:
                   $ref: "./common.schema.yaml#/components/schemas/EntitySourceType"
                 name:
                   type: string
+                  maxLength: 256
                 indexPattern:
                   type: string
+                  maxLength: 1000
                 integrationName:
                   type: string
+                  maxLength: 256
                   description: Required when type is entity_analytics_integration. One of entityanalytics_okta, entityanalytics_ad.
                 enabled:
                   type: boolean
                 identifierField:
                   type: string
+                  maxLength: 256
                   description: Field used to query the entity store for index-type sources
                 queryRule:
                   type: string
+                  maxLength: 4096
                   description: KQL query used to filter data from the provided index patterns
                 matchers:
                   type: array
+                  maxItems: 100
                   items:
                     $ref: "./common.schema.yaml#/components/schemas/Matcher"
                 filter:

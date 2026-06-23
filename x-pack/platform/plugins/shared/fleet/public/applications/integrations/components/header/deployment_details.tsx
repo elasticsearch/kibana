@@ -47,6 +47,9 @@ export const DeploymentDetails = () => {
       docLinks={docLinks}
     >
       <EuiPopover
+        aria-label={i18n.translate('xpack.fleet.integrations.connectionDetailsPopoverAriaLabel', {
+          defaultMessage: 'Connection details',
+        })}
         isOpen={isOpen}
         closePopover={() => setIsOpen(false)}
         button={button}

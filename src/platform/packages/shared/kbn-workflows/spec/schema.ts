@@ -90,12 +90,44 @@ export const ConcurrencySettingsSchema = z.object({
 });
 export type ConcurrencySettings = z.infer<typeof ConcurrencySettingsSchema>;
 
+export const LIQUID_PARSE_LIMIT_MAX = 600_000;
+export const LIQUID_RENDER_LIMIT_MAX = 2_000;
+export const LIQUID_MEMORY_LIMIT_MAX = 60_000_000;
+
+export const LiquidSettingsSchema = z.object({
+  parseLimit: z
+    .number()
+    .int()
+    .min(1)
+    .max(LIQUID_PARSE_LIMIT_MAX)
+    .optional()
+    .describe('Liquid parse character limit. Defaults to 150000; maximum is 600000.'),
+  renderLimit: z
+    .number()
+    .int()
+    .min(1)
+    .max(LIQUID_RENDER_LIMIT_MAX)
+    .optional()
+    .describe('Liquid render time limit in milliseconds. Defaults to 1000; maximum is 2000.'),
+  memoryLimit: z
+    .number()
+    .int()
+    .min(1)
+    .max(LIQUID_MEMORY_LIMIT_MAX)
+    .optional()
+    .describe(
+      'Liquid memory operation limit for array and string operations. Defaults to 15000000; maximum is 60000000.'
+    ),
+});
+export type LiquidSettings = z.infer<typeof LiquidSettingsSchema>;
+
 export const WorkflowSettingsSchema = z.object({
   'on-failure': WorkflowOnFailureSchema.optional(),
   timezone: z.string().optional(), // Should follow IANA TZ format
   timeout: DurationSchema.optional(), // e.g., '5s', '1m', '2h'
   concurrency: ConcurrencySettingsSchema.optional(),
   'max-step-size': ByteSizeSchema.optional(), // e.g., '10mb', '15MB', '1gb'
+  liquid: LiquidSettingsSchema.optional(),
 });
 export type WorkflowSettings = z.infer<typeof WorkflowSettingsSchema>;
 

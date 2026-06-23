@@ -44,6 +44,16 @@ export const unsupported_field: ESQLFieldWithMetadata[] = [
   { name: 'unsupported_field', type: 'unsupported', userDefined: false },
 ];
 
+export const conflictingFields: ESQLFieldWithMetadata[] = [
+  {
+    name: 'conflictingField',
+    type: 'unsupported',
+    hasConflict: true,
+    originalTypes: ['text', 'keyword'],
+    userDefined: false,
+  },
+];
+
 export const indexes = [
   'a_index',
   'index',
@@ -51,6 +61,7 @@ export const indexes = [
   '.secret_index',
   'my-index',
   'unsupported_index',
+  'conflict_index',
 ];
 
 export const policies = [
@@ -166,6 +177,9 @@ export function getCallbackMocks(): ESQLCallbacks {
       }
       if (/unsupported_index/.test(query)) {
         return unsupported_field;
+      }
+      if (/conflict_index/.test(query)) {
+        return conflictingFields;
       }
       if (/join_index/.test(query)) {
         const field: ESQLFieldWithMetadata = {

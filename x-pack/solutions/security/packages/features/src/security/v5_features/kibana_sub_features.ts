@@ -27,6 +27,7 @@ import {
   trustedDevicesSubFeature,
   socManagementSubFeature,
   scriptsManagementSubFeature,
+  customYaraSignaturesSubFeature,
 } from '../kibana_sub_features';
 
 /**
@@ -58,6 +59,7 @@ export const getSecurityV5SubFeaturesMap = ({
     [SecuritySubFeatureId.blocklist, blocklistSubFeature()],
     [SecuritySubFeatureId.eventFilters, eventFiltersSubFeature()],
     [SecuritySubFeatureId.endpointExceptions, endpointExceptionsSubFeature()],
+    [SecuritySubFeatureId.customYaraSignatures, customYaraSignaturesSubFeature()],
     [SecuritySubFeatureId.policyManagement, policyManagementSubFeature()],
     [SecuritySubFeatureId.scriptsManagement, scriptsManagementSubFeature()],
     [SecuritySubFeatureId.responseActionsHistory, responseActionsHistorySubFeature()],
@@ -79,6 +81,10 @@ export const getSecurityV5SubFeaturesMap = ({
 
   if (!experimentalFeatures.responseActionsScriptLibraryManagement) {
     securitySubFeaturesMap.delete(SecuritySubFeatureId.scriptsManagement);
+  }
+
+  if (!experimentalFeatures.customYaraSignaturesEnabled) {
+    securitySubFeaturesMap.delete(SecuritySubFeatureId.customYaraSignatures);
   }
 
   return Object.freeze(securitySubFeaturesMap);

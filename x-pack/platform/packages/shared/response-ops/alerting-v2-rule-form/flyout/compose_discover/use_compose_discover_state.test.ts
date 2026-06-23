@@ -69,10 +69,10 @@ describe('createInitialState', () => {
     expect(withSignal.recoveryType).toBe('default');
   });
 
-  it('sets childOpen true in create mode when isBuilderMode is true', () => {
+  it('keeps the query preview closed in builder create mode', () => {
     const state = createInitialState({ mode: 'create', isBuilderMode: true });
 
-    expect(state.childOpen).toBe(true);
+    expect(state.childOpen).toBe(false);
     expect(state.queryCommitted).toBe(false);
   });
 

@@ -643,6 +643,47 @@ describe('UnifiedDataTable', () => {
     );
 
     it(
+      'should not apply client side sorting in ES|QL mode when isInMemorySortEnabled is false',
+      async () => {
+        await renderDataTable({
+          columns: ['message'],
+          isPlainRecord: true,
+          isInMemorySortEnabled: false,
+          rows: generateEsHits(dataViewMock, 10).map((hit) =>
+            buildDataTableRecord(hit, dataViewMock)
+          ),
+        });
+
+        let values = getCellValuesByColumn();
+
+        const initialOrder = [
+          'message_0',
+          'message_1',
+          'message_2',
+          'message_3',
+          'message_4',
+          'message_5',
+          'message_6',
+          'message_7',
+          'message_8',
+          'message_9',
+        ];
+
+        expect(values.message).toEqual(initialOrder);
+
+        await sortByColumn('message');
+
+        // Rows keep their original (server) order; the table does not re-sort them in memory.
+        await waitFor(() => {
+          values = getCellValuesByColumn();
+
+          expect(values.message).toEqual(initialOrder);
+        });
+      },
+      EXTENDED_JEST_TIMEOUT
+    );
+
+    it(
       'should not apply client side sorting if not in ES|QL mode',
       async () => {
         await renderDataTable({

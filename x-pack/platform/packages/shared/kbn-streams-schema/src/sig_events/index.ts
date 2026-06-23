@@ -9,8 +9,8 @@ export { detectionSchema, type Detection } from './detections';
 export { discoverySchema, type Discovery } from './discoveries';
 export type { KnowledgeIndicator } from '../queries';
 export {
-  SIG_EVENT_IMPACT_OPTIONS,
   SIG_EVENT_STATUS_OPTIONS,
+  SIG_EVENT_IMPACT_OPTIONS,
   sigEventSchema,
   sigEventStatusSchema,
   sigEventImpactSchema,

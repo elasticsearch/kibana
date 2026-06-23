@@ -58,6 +58,7 @@ import { DocumentEventTypes } from '../../../../../common/lib/telemetry/types';
 import { getTimelineRowTypeIndicator } from './get_row_indicator';
 import { isAttackDiscoveryRow } from './is_attack_discovery_row';
 import { DocumentFlyoutWrapper } from '../../../../../flyout_v2/document/main/document_flyout_wrapper';
+import { AttackFlyoutWrapper } from '../../../../../flyout_v2/attack/main/attack_flyout_wrapper';
 import { flyoutProviders } from '../../../../../flyout_v2/shared/components/flyout_provider';
 import { useDefaultDocumentFlyoutProperties } from '../../../../../flyout_v2/shared/hooks/use_default_flyout_properties';
 
@@ -188,12 +189,19 @@ export const TimelineDataTableComponent: React.FC<DataTableProps> = memo(
     const handleOnEventDetailPanelOpened = useCallback(
       (eventData: DataTableRecord & TimelineItem) => {
         if (newFlyoutSystemEnabled) {
+          const isAttackRow = isAttackDiscoveryRow(eventData);
           overlays.openSystemFlyout(
             flyoutProviders({
               services,
               store,
               history,
-              children: (
+              children: isAttackRow ? (
+                <AttackFlyoutWrapper
+                  attackId={eventData._id}
+                  indexName={eventData.ecs._index ?? ''}
+                  onAttackUpdated={refetch}
+                />
+              ) : (
                 <DocumentFlyoutWrapper
                   documentId={eventData._id}
                   indexName={eventData.ecs._index}

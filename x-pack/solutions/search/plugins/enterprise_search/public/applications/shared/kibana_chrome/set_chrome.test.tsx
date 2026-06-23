@@ -5,13 +5,12 @@
  * 2.0.
  */
 
-import '../../__mocks__/shallow_useeffect.mock';
 import { setMockValues, mockKibanaValues } from '../../__mocks__/kea_logic';
 import { mockHistory } from '../../__mocks__/react_router';
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 jest.mock('./generate_breadcrumbs', () => ({
   useGenerateBreadcrumbs: jest.requireActual('./generate_breadcrumbs').useGenerateBreadcrumbs,
@@ -39,7 +38,7 @@ describe('Set Kibana Chrome helpers', () => {
 
   describe('SetSearchChrome', () => {
     it('sets breadcrumbs and document title', () => {
-      shallow(<SetSearchChrome trail={['Hello World']} />);
+      renderWithKibanaRenderContext(<SetSearchChrome trail={['Hello World']} />);
 
       expect(searchTitle).toHaveBeenCalledWith(['Hello World']);
       expect(useSearchBreadcrumbs).toHaveBeenCalledWith([
@@ -51,7 +50,7 @@ describe('Set Kibana Chrome helpers', () => {
     });
 
     it('handles empty trails as a root-level page', () => {
-      shallow(<SetSearchChrome />);
+      renderWithKibanaRenderContext(<SetSearchChrome />);
 
       expect(searchTitle).toHaveBeenCalledWith([]);
       expect(useSearchBreadcrumbs).toHaveBeenCalledWith([]);

@@ -12,6 +12,7 @@ import {
   EuiFlexItem,
   EuiLoadingSpinner,
   EuiSwitch,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
@@ -113,14 +114,16 @@ const SummaryComponent: React.FC<Props> = ({
             </EuiFlexItem>
 
             <EuiFlexItem grow={false}>
-              <EuiButtonIcon
-                aria-label={ANONYMIZATION_ARIAL_LABEL}
-                data-test-subj="anonymizationSettings"
-                iconType="gear"
-                onClick={showAnonymizationModal}
-                size="s"
-                color="text"
-              />
+              <EuiToolTip content={ANONYMIZATION_ARIAL_LABEL} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  aria-label={ANONYMIZATION_ARIAL_LABEL}
+                  data-test-subj="anonymizationSettings"
+                  iconType="gear"
+                  onClick={showAnonymizationModal}
+                  size="s"
+                  color="text"
+                />
+              </EuiToolTip>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>

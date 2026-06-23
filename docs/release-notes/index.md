@@ -628,6 +628,41 @@ For the Elastic Security 9.4.0 release information, refer to [Elastic Security S
 * Prevents table sorting when toggling the workflow enable state [#252724]({{kib-pull}}252724).
 * Strips system-managed date fields from ingest pipelines before PUT [#252579]({{kib-pull}}252579).
 
+## 9.3.6 [kibana-9.3.6-release-notes]
+
+### Fixes [kibana-9.3.6-fixes]
+
+**Alerting**:
+* Fixes the **Stack Alerts** page fetching alerts twice on initial load by deferring table rendering until filter controls have finished initializing [#271441]({{kib-pull}}271441).
+
+**Connectivity**:
+* Removes the **Content Connectors** page from the menu for users who didn't have the appropriate role privileges [#271709]({{kib-pull}}271709).
+
+**Dashboards and Visualizations**:
+* Fixes a stale closure in the Canvas autoplay timer that could advance to the wrong slide when slides were added or removed while autoplay was running [#268398]({{kib-pull}}268398).
+
+**Data ingestion and Fleet**:
+* Improves `POST /api/fleet/setup` performance for deployments with a large number of configured outputs by replacing a full-output decrypt scan with targeted, non-decrypting queries for only the default outputs [#273848]({{kib-pull}}273848).
+* Optimizes `GET /api/fleet/agent_policies` (with `withAgentCount=true`) to compute agent counts in a single bucketed aggregation instead of multiple queries per policy, significantly reducing response time for deployments with many agent policies [#272429]({{kib-pull}}272429).
+* Fixes integration package reinstalls and upgrades performed from a space different from the original installation space incorrectly bucketing {{kib}} asset references, causing the **Assets** tab to display raw UUIDs instead of asset titles [#271800]({{kib-pull}}271800).
+* Fixes variable leakage and duplication between policy templates in input packages that define multiple policy templates [#273364]({{kib-pull}}273364).
+* Fixes security rule names not displaying in the integration **Assets** accordion when the rule object has no `title` field [#272089]({{kib-pull}}272089).
+* Fixes the agent logging level dropdown on the **Settings** tab not updating after **Reset to policy** is applied, so the displayed level now stays in sync with Fleet-polled agent metadata [#271964]({{kib-pull}}271964).
+
+**Discover**:
+* Fixes the {{esql}} document summary column incorrectly counting `null` and `undefined` field values against the `discover:maxDocFieldsDisplayed` limit, which caused fields with real values to be hidden behind an "and X more fields" label [#273610]({{kib-pull}}273610).
+* Fixes the **Extend** action icon in the **Background searches** row actions menu being invisible in dark mode by rendering it as an inline SVG that inherits the surrounding icon color [#272754]({{kib-pull}}272754).
+* Fixes slow KQL parsing caused by long runs of whitespace by improving keyword-adjacent whitespace handling in the KQL grammar [#266512]({{kib-pull}}266512).
+
+**Elastic Observability solution**:
+For the Elastic Observability 9.3.6 release information, refer to [Elastic Observability Solution Release Notes](docs-content://release-notes/elastic-observability/index.md).
+
+**Elastic Security solution**:
+For the Elastic Security 9.3.6 release information, refer to [Elastic Security Solution Release Notes](docs-content://release-notes/elastic-security/index.md).
+
+**Kibana platform**:
+* Adds `notifications.connectors.default.email` to the list of supported Docker environment variables [#272761]({{kib-pull}}272761).
+
 ## 9.3.5 [kibana-9.3.5-release-notes]
 
 :::{important}

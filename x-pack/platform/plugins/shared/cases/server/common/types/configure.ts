@@ -33,6 +33,8 @@ export interface ConfigurationPersistedAttributes {
   customFields?: PersistedCustomFieldsConfiguration;
   templates?: PersistedTemplatesConfiguration;
   observableTypes?: PersistedObservableTypesConfiguration;
+  legacyTemplatesMigrated?: boolean;
+  legacyCustomFieldsMigrated?: boolean;
 }
 
 type PersistedObservableTypesConfiguration = Array<{

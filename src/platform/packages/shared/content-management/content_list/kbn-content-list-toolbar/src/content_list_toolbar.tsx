@@ -88,17 +88,14 @@ const ContentListToolbarComponent = ({
   );
 
   const searchHint = useMemo(
-    () =>
-      parseError
-        ? {
-            content: (
-              <EuiText color="danger" size="s" data-test-subj={`${dataTestSubj}-searchParseError`}>
-                {parseErrorPrefix} {parseError}
-              </EuiText>
-            ),
-            popoverProps: { isOpen: true },
-          }
-        : undefined,
+    () => ({
+      content: (
+        <EuiText color="danger" size="s" data-test-subj={`${dataTestSubj}-searchParseError`}>
+          {parseErrorPrefix} {parseError}
+        </EuiText>
+      ),
+      popoverProps: { isOpen: Boolean(parseError) },
+    }),
     [parseError, dataTestSubj]
   );
 

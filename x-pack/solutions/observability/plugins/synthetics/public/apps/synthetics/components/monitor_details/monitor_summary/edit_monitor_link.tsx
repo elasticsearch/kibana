@@ -45,12 +45,14 @@ export const EditMonitorLink = () => {
   );
 };
 
-export const EditMonitorContextItem = () => {
+export const EditMonitorContextItem = ({ isRemote = false }: { isRemote?: boolean }) => {
   const { basePath } = useSyntheticsSettingsContext();
   const { monitorId } = useParams<{ monitorId: string }>();
   const { spaceId } = useGetUrlParams();
   const canEditSynthetics = useCanEditSynthetics();
-  const isLinkDisabled = !canEditSynthetics;
+  // Remote (CCS) monitors cannot be edited locally — there is no local saved
+  // object. Disable the item and surface the reason via the tooltip.
+  const isLinkDisabled = !canEditSynthetics || isRemote;
   const linkProps = isLinkDisabled
     ? { disabled: true }
     : {
@@ -65,6 +67,7 @@ export const EditMonitorContextItem = () => {
       data-test-subj="syntheticsEditMonitorContextItem"
       {...linkProps}
       disabled={isLinkDisabled}
+      toolTipContent={isRemote ? NOT_AVAILABLE_FOR_REMOTE_MONITORS : undefined}
     >
       {EDIT_MONITOR}
     </EuiContextMenuItem>
@@ -74,3 +77,10 @@ export const EditMonitorContextItem = () => {
 const EDIT_MONITOR = i18n.translate('xpack.synthetics.monitorSummary.editMonitor', {
   defaultMessage: 'Edit monitor',
 });
+
+const NOT_AVAILABLE_FOR_REMOTE_MONITORS = i18n.translate(
+  'xpack.synthetics.monitorDetails.actions.notAvailableForRemote',
+  {
+    defaultMessage: 'This action is not available for remote monitors',
+  }
+);

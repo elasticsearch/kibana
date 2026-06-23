@@ -38,6 +38,24 @@ const validateConfigForChartType = (
   config: unknown
 ): VisualizationConfig => chartTypeRegistry[chartType].schema.validate(config);
 
+interface EsqlDataSourceCarrier {
+  data_source?: { type?: string; query?: string };
+}
+
+/**
+ * Returns the objects that carry a `data_source` for this config shape:
+ * XY-ESQL configs keep one `data_source` per layer; every other ESQL chart
+ * (metric, gauge, tagcloud, ...) carries it on the config itself. Used both to
+ * read existing queries (edits) and to inject the validated query (generation).
+ */
+const getEsqlDataSourceCarriers = (config: unknown): EsqlDataSourceCarrier[] => {
+  if (!config || typeof config !== 'object') return [];
+  const { layers } = config as { layers?: unknown };
+  return Array.isArray(layers)
+    ? (layers as EsqlDataSourceCarrier[])
+    : [config as EsqlDataSourceCarrier];
+};
+
 /**
  * Helper to extract ESQL queries from a visualization config.
  * Handles both single-dataset configs (metric, gauge, tagcloud) and layers-based configs (XY).
@@ -47,25 +65,10 @@ function getExistingEsqlQueries(config: VisualizationConfig | null): string[] {
   if (!config) return [];
 
   const queries: string[] = [];
-
-  // For XY charts, check all layers' datasets
-  if ('layers' in config && Array.isArray(config.layers)) {
-    for (const layer of config.layers) {
-      if (layer && 'dataset' in layer && layer.dataset) {
-        const dataset = layer.dataset as { type?: string; query?: string };
-        if (dataset.type === 'esql' && dataset.query && !queries.includes(dataset.query)) {
-          queries.push(dataset.query);
-        }
-      }
-    }
-    return queries;
-  }
-
-  // For single-dataset configs (metric, gauge, tagcloud)
-  if ('dataset' in config && config.dataset) {
-    const dataset = config.dataset as { type?: string; query?: string };
-    if (dataset.type === 'esql' && dataset.query) {
-      queries.push(dataset.query);
+  for (const carrier of getEsqlDataSourceCarriers(config)) {
+    const dataSource = carrier.data_source;
+    if (dataSource?.type === 'esql' && dataSource.query && !queries.includes(dataSource.query)) {
+      queries.push(dataSource.query);
     }
   }
 
@@ -227,6 +230,14 @@ export const createVisualizationGraph = (
       // Verify it's a valid object
       if (!configResponse || typeof configResponse !== 'object') {
         throw new Error('Response is not a valid JSON object');
+      }
+
+      // Pin the validated ES|QL query before config validation. ES|QL generation owns the query;
+      // config generation only binds columns from it.
+      if (esqlQuery) {
+        for (const carrier of getEsqlDataSourceCarriers(configResponse)) {
+          carrier.data_source = { type: 'esql', query: esqlQuery };
+        }
       }
 
       action = {

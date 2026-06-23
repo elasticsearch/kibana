@@ -6,6 +6,7 @@
  */
 
 import type { Span } from '@opentelemetry/api';
+import { SpanKind } from '@opentelemetry/api';
 import { isPromise } from 'util/types';
 import { safeJsonStringify } from '@kbn/std';
 import type { WithActiveSpanOptions } from '@kbn/tracing-utils';
@@ -31,17 +32,19 @@ export function withExecuteToolSpan<T>(
   const { description, toolCallId, input } = options.tool;
 
   return withActiveInferenceSpan(
-    `Tool: ${toolName}`,
+    `execute_tool ${toolName}`,
     {
       ...options,
+      kind: SpanKind.INTERNAL,
       attributes: {
         ...options.attributes,
         [GenAISemanticConventions.GenAIToolName]: toolName,
         [GenAISemanticConventions.GenAIOperationName]: 'execute_tool',
         [GenAISemanticConventions.GenAIToolCallId]: toolCallId,
         [ElasticGenAIAttributes.InferenceSpanKind]: 'TOOL',
-        [ElasticGenAIAttributes.ToolDescription]: description,
-        [ElasticGenAIAttributes.ToolParameters]: safeJsonStringify(input),
+        [GenAISemanticConventions.GenAIToolDescription]: description,
+        [GenAISemanticConventions.GenAIToolCallArguments]: safeJsonStringify(input),
+        [GenAISemanticConventions.GenAIToolType]: 'extension',
       },
     },
     (span) => {
@@ -55,7 +58,7 @@ export function withExecuteToolSpan<T>(
         return res.then((value) => {
           const stringified = safeJsonStringify(value);
           if (stringified) {
-            span.setAttribute('output.value', stringified);
+            span.setAttribute(GenAISemanticConventions.GenAIToolCallResult, stringified);
           }
           return value;
         }) as T;

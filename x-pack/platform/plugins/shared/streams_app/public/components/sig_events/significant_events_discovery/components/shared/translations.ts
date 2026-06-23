@@ -6,7 +6,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import type { Detection, Discovery } from '@kbn/streams-schema';
+import type { Detection, Discovery, SigEventStatus } from '@kbn/streams-schema';
 
 export const FIND_SIGNIFICANT_EVENTS_LABEL = i18n.translate(
   'xpack.streams.significantEventsDiscovery.findSignificantEventsLabel',
@@ -132,10 +132,28 @@ export const DETECTION_KIND_LABELS: Record<Detection['kind'], string> = {
 };
 
 export const DISCOVERY_KIND_LABELS: Record<Discovery['kind'], string> = {
-  finding: i18n.translate('xpack.streams.discovery.kind.finding', {
-    defaultMessage: 'Open',
+  discovery: i18n.translate('xpack.streams.discovery.kind.discovery', {
+    defaultMessage: 'Discovery',
   }),
   clearance: i18n.translate('xpack.streams.discovery.kind.clearance', {
     defaultMessage: 'Cleared',
+  }),
+  handled: i18n.translate('xpack.streams.discovery.kind.handled', {
+    defaultMessage: 'Processed',
+  }),
+};
+
+export const SIG_EVENT_STATUS_LABELS: Record<SigEventStatus, string> = {
+  promoted: i18n.translate('xpack.streams.sigEvent.status.promoted', {
+    defaultMessage: 'Promoted',
+  }),
+  acknowledged: i18n.translate('xpack.streams.sigEvent.status.acknowledged', {
+    defaultMessage: 'Acknowledged',
+  }),
+  resolved: i18n.translate('xpack.streams.sigEvent.status.resolved', {
+    defaultMessage: 'Resolved',
+  }),
+  demoted: i18n.translate('xpack.streams.sigEvent.status.demoted', {
+    defaultMessage: 'Demoted',
   }),
 };

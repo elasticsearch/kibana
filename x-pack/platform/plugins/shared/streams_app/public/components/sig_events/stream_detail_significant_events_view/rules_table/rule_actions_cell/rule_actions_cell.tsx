@@ -5,7 +5,13 @@
  * 2.0.
  */
 
-import { EuiButtonIcon, EuiContextMenuItem, EuiContextMenuPanel, EuiPopover } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiContextMenuItem,
+  EuiContextMenuPanel,
+  EuiPopover,
+  EuiToolTip,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React, { useState } from 'react';
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
@@ -27,12 +33,14 @@ export function RuleActionsCell({
     <EuiPopover
       aria-label={RULE_ACTIONS_MENU_POPOVER_ARIA_LABEL}
       button={
-        <EuiButtonIcon
-          iconType="boxesVertical"
-          aria-label={RULE_ACTIONS_MENU_BUTTON_ARIA_LABEL}
-          isDisabled={isDisabled}
-          onClick={() => setIsActionsMenuOpen((current) => !current)}
-        />
+        <EuiToolTip content={RULE_ACTIONS_MENU_BUTTON_ARIA_LABEL} disableScreenReaderOutput>
+          <EuiButtonIcon
+            iconType="boxesVertical"
+            aria-label={RULE_ACTIONS_MENU_BUTTON_ARIA_LABEL}
+            isDisabled={isDisabled}
+            onClick={() => setIsActionsMenuOpen((current) => !current)}
+          />
+        </EuiToolTip>
       }
       isOpen={isActionsMenuOpen}
       closePopover={() => setIsActionsMenuOpen(false)}

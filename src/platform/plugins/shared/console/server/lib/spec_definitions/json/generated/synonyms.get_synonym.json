@@ -8,7 +8,8 @@
       "from": "",
       "size": [
         "10"
-      ]
+      ],
+      "search_after": ""
     },
     "methods": [
       "GET"

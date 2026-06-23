@@ -218,6 +218,7 @@ export enum PromQLFunctionDefinitionTypes {
   LABEL_MATCHING_OPERATOR = 'label_matching_operator',
   SCALAR_CONVERSION = 'scalar_conversion',
   TIME = 'time',
+  HISTOGRAM = 'histogram',
 }
 
 export type PromQLFunctionParamType = 'instant_vector' | 'range_vector' | 'scalar' | 'string';
@@ -371,6 +372,10 @@ export interface ValidationErrors {
   unsupportedFieldType: {
     message: string;
     type: { field: string };
+  };
+  columnTypeConflict: {
+    message: string;
+    type: { columnName: string; types?: string };
   };
   unsupportedMode: {
     message: string;

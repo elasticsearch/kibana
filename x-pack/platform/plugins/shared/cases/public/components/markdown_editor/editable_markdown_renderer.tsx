@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { EuiButtonSize } from '@elastic/eui';
 import React, { forwardRef, useCallback, useImperativeHandle } from 'react';
 
 import type { FormSchema } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
@@ -27,6 +28,7 @@ interface EditableMarkdownRendererProps {
   onSaveContent: (content: string) => void;
   editorRef: React.MutableRefObject<undefined | null | EditableMarkdownRefObject>;
   formSchema: FormSchema<{ content: string }> | undefined;
+  footerButtonSize?: EuiButtonSize;
 }
 
 const EditableMarkDownRenderer = forwardRef<
@@ -34,7 +36,17 @@ const EditableMarkDownRenderer = forwardRef<
   EditableMarkdownRendererProps
 >(
   (
-    { id, content, caseId, fieldName, onChangeEditable, onSaveContent, editorRef, formSchema },
+    {
+      id,
+      content,
+      caseId,
+      fieldName,
+      onChangeEditable,
+      onSaveContent,
+      editorRef,
+      formSchema,
+      footerButtonSize,
+    },
     ref
   ) => {
     const { owner } = useCasesContext();
@@ -93,6 +105,7 @@ const EditableMarkDownRenderer = forwardRef<
                 handleSaveAction={handleSaveAction}
                 handleCancelAction={handleCancelAction}
                 isSaveDisabled={isFormValid !== undefined && !isFormValid}
+                buttonSize={footerButtonSize}
               />
             ),
             initialValue: content,

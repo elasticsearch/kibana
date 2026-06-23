@@ -11,7 +11,7 @@ import { Query } from '@elastic/eui';
 import type { ParsedQuery, UrlStateSlices } from './types';
 import type { SortState } from './url_codec';
 
-const LEGACY_KEYS = ['s', 'title', 'sort', 'sortdir', 'created_by', 'favorites'] as const;
+const LEGACY_KEYS = ['s', 'title', 'filter', 'sort', 'sortdir', 'created_by', 'favorites'] as const;
 
 export interface LegacyDecodeResult {
   state: UrlStateSlices;
@@ -100,7 +100,10 @@ export const decodeLegacyParams = (
   }
 
   const state: UrlStateSlices = {};
-  const freeText = firstString(params.s) ?? firstString(params.title);
+  // Free-text precedence: prefer the modern `TableListView` key (`s`), fall back
+  // to its `title` alias, and finally accept the older `?filter=` bookmark seed
+  // some plugins (e.g. `graph`) used to feed `initialFilter` from the URL.
+  const freeText = firstString(params.s) ?? firstString(params.title) ?? firstString(params.filter);
   const createdBy = stringArray(params.created_by);
   const favorites = firstString(params.favorites) === 'true';
   const queryText = buildQueryText({ freeText, createdBy, favorites });

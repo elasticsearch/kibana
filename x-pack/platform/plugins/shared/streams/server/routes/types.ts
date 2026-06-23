@@ -26,7 +26,6 @@ import type { ProcessorSuggestionsService } from '../lib/streams/ingest_pipeline
 import type { IPatternExtractionService } from '../lib/pattern_extraction/pattern_extraction_service';
 import type { TaskClient } from '../lib/tasks/task_client';
 import type { StreamsTaskType } from '../lib/tasks/task_definitions';
-import type { InsightClient } from '../lib/sig_events/insights/client/insight_client';
 import type { StreamsSettingsStorageClient } from '../lib/streams/storage/streams_settings_storage_client';
 import type { ContinuousKiOnboardingWorkflowService } from '../lib/workflows/continuous_onboarding_workflow';
 import type { WorkflowClients } from '../lib/workflows/create_workflow_clients';
@@ -43,7 +42,6 @@ export interface RouteHandlerScopedClients extends SignificantEventsClients {
   attachmentClient: AttachmentClient;
   streamsClient: StreamsClient;
   getKnowledgeIndicatorClient: () => Promise<KnowledgeIndicatorClient>;
-  insightClient: InsightClient;
   inferenceClient: InferenceClient;
   contentClient: ContentClient;
   getAlertingV2RulesClient: () => Promise<RulesClientApi | undefined>;

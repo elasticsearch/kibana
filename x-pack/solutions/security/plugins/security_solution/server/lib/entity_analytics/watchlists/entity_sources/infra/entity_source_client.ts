@@ -63,11 +63,13 @@ export class WatchlistEntitySourceClient {
       }
       if (!request) {
         throw new Error('Cannot create index-type entity source without a request.');
-      } else {
-        const [coreStart] = await this.dependencies.getStartServices();
-        apiKey =
-          (await grantEntitySourceApiKey(coreStart.security, request, attributes.name)) ?? {};
       }
+
+      if (attributes.indexPattern) {
+        await validateIndexPermissions(this.dependencies.esClient, attributes.indexPattern);
+      }
+      const [coreStart] = await this.dependencies.getStartServices();
+      apiKey = (await grantEntitySourceApiKey(coreStart.security, request, attributes.name)) ?? {};
     }
 
     const { id, attributes: created } =
@@ -130,19 +132,17 @@ export class WatchlistEntitySourceClient {
     }
     // Needs new API key: index pattern changed, type changed from non-index to index, or API key is missing (re-auth)
     if (isNowIndex && (indexPatternChanged || !wasIndex || !currentSource.apiKeyId)) {
-      if (request) {
-        if (!this.dependencies.hasEncryptionKey) {
-          throw new Error(
-            'Index-type entity sources require encrypted saved objects. Ensure xpack.encryptedSavedObjects.encryptionKey is configured.'
-          );
-        }
-        apiKey =
-          (await grantEntitySourceApiKey(coreStart.security, request, entitySource.name)) ?? {};
-      } else {
-        logger.warn(
-          '[WatchlistEntitySourceClient] Could not grant and store index source API key.'
+      if (!this.dependencies.hasEncryptionKey) {
+        throw new Error(
+          'Index-type entity sources require encrypted saved objects. Ensure xpack.encryptedSavedObjects.encryptionKey is configured.'
         );
       }
+      if (!request) {
+        throw new Error('Cannot update index-type entity source without a request.');
+      }
+
+      apiKey =
+        (await grantEntitySourceApiKey(coreStart.security, request, entitySource.name)) ?? {};
     }
     // Clears API key fields: type changed from index to non-index
     if (wasIndex && !isNowIndex) {

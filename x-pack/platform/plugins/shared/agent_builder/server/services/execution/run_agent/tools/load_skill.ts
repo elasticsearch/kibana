@@ -17,8 +17,8 @@ import type {
 import { loadSkillTools } from '../../../skills/load_skill_tools';
 import { resolveSkill } from '../../../skills/utils';
 import {
-  getSkillEntryPath,
-  getSkillReferencedContentEntryPath,
+  getSkillAbsolutePath,
+  getSkillReferencedContentAbsolutePath,
 } from '../../runner/store/volumes/skills/utils';
 
 const schema = z.object({
@@ -88,12 +88,12 @@ The 'skill' parameter accepts the skill name, the full path of the skill's folde
           skill: {
             id: skill.id,
             name: skill.name,
-            path: getSkillEntryPath({ skill }),
+            path: getSkillAbsolutePath({ skill }),
           },
           content: skill.content,
           referenced_files: (skill.referencedContent ?? []).map((rc) => ({
             name: rc.name,
-            path: getSkillReferencedContentEntryPath({ skill, referencedContent: rc }),
+            path: getSkillReferencedContentAbsolutePath({ skill, referencedContent: rc }),
           })),
           loaded_tools: loadedToolIds,
         }),

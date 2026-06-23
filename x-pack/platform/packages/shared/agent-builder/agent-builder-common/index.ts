@@ -20,7 +20,6 @@ export {
   platformCoreTools,
   platformStreamsSigEventsTools,
   attachmentTools,
-  filestoreTools,
   internalTools,
   defaultAgentToolIds,
   editableToolTypes,

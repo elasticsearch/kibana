@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/273089
+issues:
+- https://github.com/elastic/kibana/issues/264029
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-18
+areas:
+- Dashboards and visualizations
+title: 'Add above top section when unpinning controls in Dashboard'

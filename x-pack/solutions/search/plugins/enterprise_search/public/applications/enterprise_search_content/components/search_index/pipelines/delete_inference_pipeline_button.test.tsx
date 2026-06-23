@@ -7,9 +7,9 @@
 
 import React from 'react';
 
-import { shallow } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiButtonEmpty, EuiToolTip } from '@elastic/eui';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import type { InferencePipeline } from '../../../../../../common/types/pipelines';
 import { TrainedModelState } from '../../../../../../common/types/pipelines';
@@ -29,21 +29,18 @@ describe('DeleteInferencePipelineButton', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
   it('renders button with defaults', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DeleteInferencePipelineButton onClick={onClickHandler} pipeline={DEFAULT_VALUES} />
     );
-    const tooltip = wrapper.find(EuiToolTip);
-    expect(tooltip).toHaveLength(0);
-
-    const btn = wrapper.find(EuiButtonEmpty);
-    expect(btn).toHaveLength(1);
-    expect(btn.prop('iconType')).toBe('trash');
-    expect(btn.prop('color')).toBe('text');
-    expect(btn.prop('children')).toBe('Delete pipeline');
+    const btn = screen.getByText('Delete pipeline');
+    expect(btn).toBeInTheDocument();
+    expect(btn.closest('button')).not.toBeDisabled();
   });
+
   it('renders disabled with tooltip with multiple references', () => {
-    const wrapper = shallow(
+    renderWithKibanaRenderContext(
       <DeleteInferencePipelineButton
         onClick={onClickHandler}
         pipeline={{
@@ -52,11 +49,7 @@ describe('DeleteInferencePipelineButton', () => {
         }}
       />
     );
-    const tooltip = wrapper.find(EuiToolTip);
-    expect(tooltip).toHaveLength(1);
-
-    const btn = wrapper.find(EuiButtonEmpty);
-    expect(btn).toHaveLength(1);
-    expect(btn.prop('disabled')).toBe(true);
+    const btn = screen.getByText('Delete pipeline');
+    expect(btn.closest('button')).toBeDisabled();
   });
 });

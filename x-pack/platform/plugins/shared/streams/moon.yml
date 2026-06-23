@@ -48,7 +48,6 @@ dependsOn:
   - '@kbn/es-query'
   - '@kbn/zod-helpers'
   - '@kbn/inference-common'
-  - '@kbn/inference-prompt-utils'
   - '@kbn/std'
   - '@kbn/core-http-server'
   - '@kbn/core-saved-objects-api-server'

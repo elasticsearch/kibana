@@ -21,6 +21,7 @@ import type {
   Logger,
   CoreStart,
 } from '@kbn/core/server';
+import type { FakeRequestEnricher } from '@kbn/core-security-server';
 import type { CloudSetup, CloudStart } from '@kbn/cloud-plugin/server';
 import type { EncryptedSavedObjectsClient } from '@kbn/encrypted-saved-objects-shared';
 import type { LicensingPluginStart } from '@kbn/licensing-plugin/server';
@@ -165,6 +166,7 @@ export class TaskManagerPlugin
   private taskStore?: TaskStore;
   private startContract?: TaskManagerStartContract;
   private uiamApiKeyProvisioningTask?: UiamApiKeyProvisioningTask;
+  private enrichFakeRequest?: FakeRequestEnricher;
 
   constructor(private readonly initContext: PluginInitializerContext) {
     this.initContext = initContext;
@@ -337,6 +339,8 @@ export class TaskManagerPlugin
       setupIntervalLogging(monitoredHealth$, this.logger, LogHealthForBackgroundTasksOnlyMinutes);
     }
 
+    this.enrichFakeRequest = core.security.acquireFakeRequestEnricher();
+
     return {
       index: TASK_MANAGER_INDEX,
       addMiddleware: (middleware: Middleware) => {
@@ -359,6 +363,7 @@ export class TaskManagerPlugin
     { cloud, licensing }: TaskManagerPluginsStart
   ): TaskManagerStartContract {
     const { savedObjects, elasticsearch, executionContext, security } = core;
+    const enrichFakeRequest = this.enrichFakeRequest;
     this.licenseSubscriber = new LicenseSubscriber(licensing.license$);
 
     const savedObjectsRepository = savedObjects.createInternalRepository([
@@ -460,6 +465,7 @@ export class TaskManagerPlugin
         startingCapacity,
         apiKeyStrategy,
         eventLogger: this.taskEventLogger!,
+        enrichFakeRequest,
       });
     }
 

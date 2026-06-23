@@ -26,17 +26,37 @@ import type { IScopedClusterClient } from './scoped_cluster_client';
  *
  * @public
  */
-export interface AsScopedOptions {
-  /**
-   * Controls how `project_routing` is automatically injected into Elasticsearch requests made
-   * through the scoped client.
-   *
-   * - `'space'`: Routes requests to the Named Project Routing Expression (NPRE) configured for
-   *   the current Kibana space. The active space is read from `request.spaceId`. Use this
-   *   when the scope of the query should match the data boundaries of the active space
-   *   (e.g. alerting rules).
-   */
+export type AsScopedOptions = SpaceProjectRoutingOptions | ExpressionProjectRoutingOptions;
+
+/**
+ * Routes requests to the Named Project Routing Expression (NPRE) configured for the current
+ * Kibana space. The active space is read from `request.spaceId`. Use this when the scope of the
+ * query should match the data boundaries of the active space (e.g. alerting rules).
+ *
+ * @public
+ */
+export interface SpaceProjectRoutingOptions {
   projectRouting: 'space';
+}
+
+/**
+ * Routes requests using a caller-supplied `project_routing` expression. Use this when the scope
+ * of the query is not the active space but a custom expression - for example a routing expression
+ * that a user explicitly configured for a specific rule, workflow, or agent.
+ *
+ * The provided `value` is injected verbatim as the `project_routing` parameter of the underlying
+ * Elasticsearch requests, so callers are responsible for ensuring it is a valid routing
+ * expression.
+ *
+ * @public
+ */
+export interface ExpressionProjectRoutingOptions {
+  projectRouting: 'expression';
+  /**
+   * The raw `project_routing` expression to inject into Elasticsearch requests
+   * (e.g. `'_alias:_origin'` or `'@kibana_space_my-space_default'`).
+   */
+  value: string;
 }
 
 /**
@@ -63,7 +83,8 @@ export interface IClusterClient {
    * forwarding the request's authentication headers to Elasticsearch.
    *
    * When `opts.projectRouting` is `'space'`, CPS routes to the NPRE for the active space
-   * (read from `request.spaceId`). Without opts, origin-only routing is used.
+   * (read from `request.spaceId`). When it is `'expression'`, CPS routes using the
+   * caller-supplied `opts.value` expression. Without opts, origin-only routing is used.
    *
    * @param request - A {@link ScopeableRequest} carrying authentication headers (and `spaceId` for space routing).
    * @param opts - Optional {@link AsScopedOptions} to configure CPS routing behavior.

@@ -42,7 +42,7 @@ describe('Rule changes history route', () => {
   test('returns 200 with the response from the detection rules client', async () => {
     const responseBody = {
       page: 1,
-      perPage: 20,
+      per_page: 20,
       total: 5,
       items: [],
     };
@@ -68,7 +68,7 @@ describe('Rule changes history route', () => {
   test('forwards page and per_page from the query', async () => {
     clients.detectionRulesClient.getHistoryForRule.mockResolvedValueOnce({
       page: 3,
-      perPage: 50,
+      per_page: 50,
       total: 0,
       items: [],
     });

@@ -15,6 +15,11 @@ describe('validateRelatedIntegration', () => {
       ['simple package version dependency', { package: 'some-package', version: '1.2.3' }],
       ['caret package version dependency', { package: 'some-package', version: '^1.2.3' }],
       ['tilde package version dependency', { package: 'some-package', version: '~1.2.3' }],
+      ['caret range-set dependency', { package: 'some-package', version: '^8.2.0 || ^9.0.0' }],
+      ['mixed range-set dependency', { package: 'some-package', version: '~1.2.3 || ^2.0.0' }],
+      ['comparator dependency', { package: 'some-package', version: '>=8.2.0' }],
+      ['compound comparator dependency', { package: 'some-package', version: '>1.0.0 <2.0.0' }],
+      ['spaced operator dependency', { package: 'some-package', version: ' ~ 1.2.3' }],
     ])(`validates %s`, (_, relatedIntegration) => {
       const arg = {
         value: relatedIntegration,
@@ -83,7 +88,8 @@ describe('validateRelatedIntegration', () => {
 
     it.each([
       ['invalid format version', { package: 'some-package', version: '^1.2.' }],
-      ['unexpected version spaces', { package: 'some-package', version: ' ~ 1.2.3' }],
+      ['non-semver version', { package: 'some-package', version: 'invalid' }],
+      ['range-set with invalid part', { package: 'some-package', version: '1.2.3 || invalid' }],
     ])(`validates %s`, (_, relatedIntegration) => {
       const arg = {
         value: relatedIntegration,

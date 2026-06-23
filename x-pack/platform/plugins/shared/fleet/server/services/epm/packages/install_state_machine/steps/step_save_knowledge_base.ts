@@ -16,6 +16,7 @@ import {
   saveKnowledgeBaseContentToIndex,
   deletePackageKnowledgeBase,
 } from '../../knowledge_base_index';
+import { getPackageKnowledgeBase } from '../../get';
 import type { InstallContext } from '../_state_machine_package_install';
 import { INSTALL_STATES } from '../../../../../../common/types';
 import { withPackageSpan } from '../../utils';
@@ -107,6 +108,30 @@ export async function stepSaveKnowledgeBase(
   if (!licenseService.isEnterprise()) {
     logger.debug(`Knowledge base step: Skipping knowledge base save - requires Enterprise license`);
     return { esReferences };
+  }
+
+  const existing = await getPackageKnowledgeBase({ esClient, pkgName: packageInfo.name });
+  if (
+    existing?.items.length &&
+    existing.items.every((item) => item.version === packageInfo.version)
+  ) {
+    logger.debug(
+      `Knowledge base already indexed for ${packageInfo.name}@${packageInfo.version}, skipping re-index`
+    );
+
+    // The content is already current, so skip the (expensive) re-indexing. But still ensure the
+    // es asset references are present: they may be missing if the epm-packages saved object was
+    // reset while the indexed content survived (e.g. after an install rollback).
+    const knowledgeBaseAssetRefs = existing.items.map((item) => ({
+      id: `${packageInfo.name}-${item.fileName}`,
+      type: ElasticsearchAssetType.knowledgeBase,
+    }));
+    const updatedEsReferences = await optimisticallyAddEsAssetReferences(
+      savedObjectsClient,
+      packageInfo.name,
+      knowledgeBaseAssetRefs
+    );
+    return { esReferences: updatedEsReferences };
   }
 
   return await indexKnowledgeBase(

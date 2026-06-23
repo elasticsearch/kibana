@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import _ from 'lodash';
 import type { Document } from 'yaml';
 import type { monaco } from '@kbn/monaco';
 import { DynamicStepContextSchema } from '@kbn/workflows';
@@ -20,6 +19,7 @@ import {
   getContextSchemaForStep,
 } from '../../workflow_context/lib/get_context_for_path';
 import { getNearestStepPath } from '../../workflow_context/lib/get_nearest_step_path';
+import { getValueAtYamlPath } from '../../workflow_context/lib/get_value_at_yaml_path';
 import { getWorkflowContextSchema } from '../../workflow_context/lib/get_workflow_context_schema';
 import type { VariableItem, YamlValidationResult } from '../model/types';
 
@@ -56,6 +56,8 @@ export function validateVariables(
   ) as typeof DynamicStepContextSchema;
 
   const stepSchemaCache = new Map<string | symbol, typeof DynamicStepContextSchema>();
+  const pathContextCache = new Map<string, typeof DynamicStepContextSchema>();
+  const fullContextCache = new Map<string, typeof DynamicStepContextSchema>();
 
   for (const variableItem of variableItems) {
     const { yamlPath: path, offset } = variableItem;
@@ -64,8 +66,8 @@ export function validateVariables(
     try {
       const nearestStepPath = getNearestStepPath(path);
       const nearestStep = nearestStepPath
-        ? (_.get(workflowDefinition, nearestStepPath) as { name?: string } | undefined)
-        : null;
+        ? getValueAtYamlPath<{ name?: string }>(workflowDefinition, nearestStepPath)
+        : undefined;
       const cacheKey = nearestStep?.name ?? ROOT_CACHE_KEY;
 
       let stepSchema = stepSchemaCache.get(cacheKey);
@@ -78,20 +80,34 @@ export function validateVariables(
         stepSchemaCache.set(cacheKey, stepSchema);
       }
 
-      stepSchema = nearestStepPath
-        ? extendWithPathSpecificContext(stepSchema, nearestStep, path.slice(nearestStepPath.length))
-        : stepSchema;
+      const pathSuffix = nearestStepPath ? path.slice(nearestStepPath.length) : [];
+      const pathContextKey = `${String(cacheKey)}:${pathSuffix.join('.')}`;
+
+      let pathSchema = pathContextCache.get(pathContextKey);
+      if (!pathSchema) {
+        pathSchema = nearestStepPath
+          ? extendWithPathSpecificContext(stepSchema, nearestStep, pathSuffix)
+          : stepSchema;
+        pathContextCache.set(pathContextKey, pathSchema);
+      }
 
       const variableOffset = offset ?? fallbackForOffsetValue(variableItem, yamlDocument, model);
       if (yamlDocument != null && variableOffset !== undefined) {
-        context = getContextSchemaWithTemplateLocals(
-          yamlDocument,
-          variableOffset,
-          stepSchema,
-          model?.getValue()
-        );
+        const fullContextKey = `${pathContextKey}:${variableOffset}`;
+        const cachedContext = fullContextCache.get(fullContextKey);
+        if (cachedContext) {
+          context = cachedContext;
+        } else {
+          context = getContextSchemaWithTemplateLocals(
+            yamlDocument,
+            variableOffset,
+            pathSchema,
+            model?.getValue()
+          );
+          fullContextCache.set(fullContextKey, context);
+        }
       } else {
-        context = stepSchema;
+        context = pathSchema;
       }
 
       const error = validateVariable(variableItem, context);

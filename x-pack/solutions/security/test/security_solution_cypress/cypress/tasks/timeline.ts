@@ -291,13 +291,23 @@ export const attachTimelineToExistingCase = () => {
 };
 
 export const closeTimeline = () => {
-  cy.get(CLOSE_TIMELINE_BTN).click();
-  // Assert on the CSS class that directly applies `display: none` to the overlay mask.
-  // This is more reliable than any visibility check because:
-  // - The class is applied synchronously by React (not affected by CSS animations/opacity)
-  // - Works regardless of how many events the timeline contains
-  // - Not affected by other elements (flyouts, etc.) covering the badge
-  cy.get(TIMELINE_WRAPPER).should('have.class', 'timeline-portal-overlay-mask--hidden');
+  // Retry closing the timeline until the overlay mask gets the --hidden class.
+  // Each iteration first checks whether the overlay is already hidden to avoid
+  // clicking a button that is no longer in the visible portal. When the overlay is
+  // still open, .should('be.visible') retries until the close button is actionable,
+  // letting any concurrent React re-renders (e.g. from markAsFavorite's Redux
+  // dispatches) settle before the click is issued.
+  recurse(
+    () => {
+      return cy.get(TIMELINE_WRAPPER).then(($wrapper) => {
+        if (!$wrapper.hasClass('timeline-portal-overlay-mask--hidden')) {
+          cy.get(CLOSE_TIMELINE_BTN).should('be.visible').click();
+        }
+        return cy.get(TIMELINE_WRAPPER);
+      });
+    },
+    ($timelineWrapper) => $timelineWrapper.hasClass('timeline-portal-overlay-mask--hidden')
+  );
 };
 
 export const createNewTimeline = () => {

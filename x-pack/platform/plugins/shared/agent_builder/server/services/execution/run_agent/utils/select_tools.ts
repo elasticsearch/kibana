@@ -18,16 +18,11 @@ import type { AgentConfiguration, ToolSelection } from '@kbn/agent-builder-commo
 import type { InternalSkillDefinition } from '@kbn/agent-builder-server/skills';
 import type { AttachmentsService, SkillsService } from '@kbn/agent-builder-server/runner';
 import type { ExecutableToolWithOrigin } from '@kbn/agent-builder-server/runner/tool_manager';
-import type { IFileStore } from '@kbn/agent-builder-server/runner/filestore';
 import type { AttachmentStateManager } from '@kbn/agent-builder-server/attachments';
 import type { Attachment } from '@kbn/agent-builder-common/attachments';
 import { getLatestVersion } from '@kbn/agent-builder-common/attachments';
 import type { AttachmentFormatContext } from '@kbn/agent-builder-server/attachments';
-import type { ExperimentalFeatures } from '@kbn/agent-builder-server';
-import type { TodoStateManager } from '@kbn/agent-builder-server/runner';
 import { createAttachmentTools } from '../../../tools/builtin/attachments';
-import { createTodoTool } from '../../../tools/builtin/todo';
-import { getStoreTools } from '../../runner/store';
 import type { ProcessedConversation } from './prepare_conversation';
 
 export interface SelectToolsResult {
@@ -44,11 +39,8 @@ export const selectTools = async ({
   toolProvider,
   agentConfiguration,
   attachmentsService,
-  filestore,
   spaceId,
   runner,
-  experimentalFeatures,
-  todoStateManager,
 }: {
   conversation: ProcessedConversation;
   previousDynamicToolIds: string[];
@@ -57,12 +49,9 @@ export const selectTools = async ({
   request: KibanaRequest;
   toolProvider: ToolProvider;
   attachmentsService: AttachmentsService;
-  filestore: IFileStore;
   agentConfiguration: AgentConfiguration;
   spaceId: string;
   runner: ScopedRunner;
-  experimentalFeatures: ExperimentalFeatures;
-  todoStateManager: TodoStateManager;
 }): Promise<SelectToolsResult> => {
   const formatContext: AttachmentFormatContext = { request, spaceId };
 
@@ -86,15 +75,6 @@ export const selectTools = async ({
     runner,
   });
 
-  // create tools for filesystem (only if feature is enabled)
-  const filestoreTools = experimentalFeatures.filestore
-    ? getStoreTools({ filestore }).map((tool) => builtinToolToExecutable({ tool, runner }))
-    : [];
-
-  const todoTools = experimentalFeatures.todos
-    ? [builtinToolToExecutable({ tool: createTodoTool({ todoStateManager }), runner })]
-    : [];
-
   // pick tools from provider (from agent config and attachment-type tools)
   const staticRegistryTools = await pickTools({
     selection: [
@@ -112,8 +92,6 @@ export const selectTools = async ({
     ...withOrigin(versionedAttachmentBoundTools, ToolOrigin.inline),
     ...withOrigin(versionedAttachmentTools, ToolOrigin.internal),
     ...withOrigin(staticRegistryTools, ToolOrigin.registry),
-    ...withOrigin(filestoreTools, ToolOrigin.internal),
-    ...withOrigin(todoTools, ToolOrigin.internal),
   ];
 
   const dedupedStaticTools = new Map<string, ExecutableToolWithOrigin>();

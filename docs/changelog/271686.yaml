@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/271686
+issues:
+- https://github.com/elastic/security-team/issues/17540
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-16
+areas:
+- Alerting and reporting
+title: Add supported features filter to connector selection
+description: The create connector flyout now includes a supported features multi-select filter alongside the existing search field.

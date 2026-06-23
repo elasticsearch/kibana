@@ -261,6 +261,15 @@
       "configPath": "x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/playwright.config.ts",
       "tags": ["security", "alert-triage"],
       "ciLabels": ["evals:security-alert-triage"]
+    },
+    {
+      "id": "siem-readiness",
+      "name": "SIEM Readiness",
+      "slackChannel": "#security-defend-workflows-tests",
+      "configPath": "x-pack/solutions/security/packages/kbn-evals-suite-siem-readiness/playwright.config.ts",
+      "tags": ["security", "siem-readiness"],
+      "ciLabels": ["evals:siem-readiness"],
+      "serverConfigSet": "evals_tracing"
     }
   ]
 }

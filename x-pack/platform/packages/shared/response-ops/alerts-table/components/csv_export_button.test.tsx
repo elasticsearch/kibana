@@ -61,6 +61,7 @@ describe('CsvExportButton', () => {
   };
 
   const defaultContext = {
+    kibanaVersion: '9.5.0',
     services: {
       http,
       notifications,
@@ -256,6 +257,22 @@ describe('CsvExportButton', () => {
     );
 
     expect(hasConsumerFilter).toBe(false);
+  });
+
+  it('includes the kibana version in the request', async () => {
+    render(<CsvExportButton />, { wrapper });
+    await userEvent.click(screen.getByTestId('alerts-csv-export-button'));
+
+    await waitFor(() => {
+      expect(http.post).toHaveBeenCalledTimes(1);
+    });
+
+    const body = JSON.parse(
+      (http.post.mock.calls[0] as unknown as [string, { body: string }])[1].body
+    );
+    const jobParams = JSON.parse(body.jobParams);
+
+    expect(jobParams.version).toBe('9.5.0');
   });
 
   it('maps column ids correctly', async () => {

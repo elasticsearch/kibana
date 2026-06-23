@@ -11,8 +11,9 @@ export const useAutoplayHelper = () => {
   const { nextPage, isFullscreen, autoplayInterval, isAutoplayPaused } =
     useContext(WorkpadRoutingContext);
   const timer = useRef<number | undefined>(undefined);
-  // Assign during render so the callback always captures the latest nextPage
-  // without restarting the timer when only the page count changes.
+  // Assign during the render phase so the callback always holds the latest
+  // nextPage even if the timer fires inside the post-paint window before the
+  // effect cleanup has had a chance to cancel the previous setTimeout.
   const nextPageRef = useRef(nextPage);
   nextPageRef.current = nextPage;
 
@@ -30,5 +31,7 @@ export const useAutoplayHelper = () => {
       clearTimeout(timer.current);
       timer.current = undefined;
     };
-  }, [isFullscreen, autoplayInterval, isAutoplayPaused]);
+    // nextPage is included so the effect re-runs after each navigation,
+    // scheduling the next tick and keeping the cycle going.
+  }, [isFullscreen, nextPage, autoplayInterval, isAutoplayPaused]);
 };

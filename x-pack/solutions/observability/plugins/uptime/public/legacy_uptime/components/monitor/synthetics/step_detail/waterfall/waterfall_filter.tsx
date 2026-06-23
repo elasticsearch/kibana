@@ -7,6 +7,7 @@
 
 import type { Dispatch, SetStateAction } from 'react';
 import React, { useEffect, useState } from 'react';
+import { i18n } from '@kbn/i18n';
 import {
   EuiButtonIcon,
   EuiCheckbox,
@@ -143,6 +144,9 @@ export const WaterfallFilter = ({
       </EuiFlexItem>
       <EuiFlexItem grow={false}>
         <EuiPopover
+          aria-label={i18n.translate('xpack.uptime.waterfallFilter.popoverAriaLabel', {
+            defaultMessage: 'Request filters',
+          })}
           button={
             <EuiToolTip content={FILTER_POPOVER_OPEN_LABEL} disableScreenReaderOutput>
               <EuiButtonIcon

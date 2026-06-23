@@ -1604,6 +1604,54 @@ export const labels = {
       'xpack.agentBuilder.agentConnectors.detail.removeCancelButton',
       { defaultMessage: 'Cancel' }
     ),
+    subActionsSectionTitle: (count: number) =>
+      i18n.translate('xpack.agentBuilder.agentConnectors.detail.subActionsSectionTitle', {
+        defaultMessage: 'Sub-actions ({count} available)',
+        values: { count },
+      }),
+    connectionSectionTitle: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.connectionSectionTitle',
+      { defaultMessage: 'Connection' }
+    ),
+    oauthConnectedStatus: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.oauthConnectedStatus',
+      { defaultMessage: 'OAuth connected' }
+    ),
+    oauthDisconnectedStatus: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.oauthDisconnectedStatus',
+      { defaultMessage: 'OAuth disconnected' }
+    ),
+    missingSecretsStatus: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.missingSecretsStatus',
+      { defaultMessage: 'Missing credentials' }
+    ),
+    sharedCredentialsStatus: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.sharedCredentialsStatus',
+      { defaultMessage: 'Shared credentials' }
+    ),
+    authenticateLink: i18n.translate('xpack.agentBuilder.agentConnectors.detail.authenticateLink', {
+      defaultMessage: 'Authenticate',
+    }),
+    reauthenticateLink: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.reauthenticateLink',
+      { defaultMessage: 'Re-authenticate' }
+    ),
+    usedBySectionTitle: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.usedBySectionTitle',
+      { defaultMessage: 'Used by' }
+    ),
+    usedByAgentsMessage: (count: number) =>
+      i18n.translate('xpack.agentBuilder.agentConnectors.detail.usedByAgentsMessage', {
+        defaultMessage: '{count} other {count, plural, one {agent} other {agents}}',
+        values: { count },
+      }),
+    notUsedByOtherAgents: i18n.translate(
+      'xpack.agentBuilder.agentConnectors.detail.notUsedByOtherAgents',
+      { defaultMessage: 'Not used by other agents' }
+    ),
+    usedByLoadError: i18n.translate('xpack.agentBuilder.agentConnectors.detail.usedByLoadError', {
+      defaultMessage: 'Failed to load agents',
+    }),
   },
   agentTools: {
     pageDescription: i18n.translate('xpack.agentBuilder.agentTools.pageDescription', {

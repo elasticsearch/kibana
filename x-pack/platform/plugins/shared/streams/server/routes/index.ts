@@ -30,7 +30,6 @@ import { internalAttachmentRoutes } from './internal/attachments/route';
 import { internalDescriptionGenerationRoutes } from './internal/sig_events/description_generation/route';
 import { featureRoutes as internalFeatureRoutes } from './internal/sig_events/features/route';
 import { identifyFeaturesRoutes as internalIdentifyFeaturesRoutes } from './internal/sig_events/features/identify_route';
-import { internalInsightsRoutes } from './internal/sig_events/insights/route';
 import { internalTasksRoutes } from './internal/streams/tasks/route';
 import { internalOnboardingRoutes } from './internal/streams/onboarding/route';
 import { internalQueriesRoutes } from './internal/sig_events/queries/route';
@@ -60,7 +59,6 @@ export const streamsRouteRepository = {
   ...internalDescriptionGenerationRoutes,
   ...internalFeatureRoutes,
   ...internalIdentifyFeaturesRoutes,
-  ...internalInsightsRoutes,
   ...internalTasksRoutes,
   ...internalOnboardingRoutes,
   ...internalQueriesRoutes,

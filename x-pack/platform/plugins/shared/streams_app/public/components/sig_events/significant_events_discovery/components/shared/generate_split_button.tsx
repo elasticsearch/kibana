@@ -19,7 +19,7 @@ import {
 import { buildConnectorMenuItem, buildConnectorSelectionPanel } from './context_menu_helpers';
 import type { OnboardingConfig } from './types';
 import { ContextMenuSplitButton } from './context_menu_split_button';
-import type { MenuHelpers } from './context_menu_split_button';
+import type { ContextMenuSplitButtonProps, MenuHelpers } from './context_menu_split_button';
 
 interface GenerateSplitButtonProps {
   config: OnboardingConfig;
@@ -34,6 +34,7 @@ interface GenerateSplitButtonProps {
   isRunDisabled: boolean;
   isConfigDisabled: boolean;
   isLoading?: boolean;
+  size?: ContextMenuSplitButtonProps['size'];
 }
 
 export const GenerateSplitButton = ({
@@ -49,6 +50,7 @@ export const GenerateSplitButton = ({
   isRunDisabled,
   isConfigDisabled,
   isLoading,
+  size,
 }: GenerateSplitButtonProps) => {
   const featuresConnector = useMemo(
     () => allConnectors.find((c) => c.connectorId === config.connectors.features),
@@ -145,6 +147,7 @@ export const GenerateSplitButton = ({
 
   return (
     <ContextMenuSplitButton
+      size={size}
       primaryLabel={GENERATE_BUTTON_LABEL}
       primaryIconType="radar"
       onPrimaryClick={onRun}

@@ -16,6 +16,7 @@ import {
   dashboardAttachmentDataSchema,
   panelGridSchema,
   sectionGridSchema,
+  timeRangeSchema,
   isSection,
 } from './dashboard_schema_types';
 
@@ -23,7 +24,13 @@ import {
 // NOTE: These types are temporary and should be replaced with types from @kbn/dashboard-plugin
 // once the dashboard plugin exports its schema types.
 export type { DashboardAttachmentData, AttachmentPanel, DashboardSection };
-export { dashboardAttachmentDataSchema, panelGridSchema, sectionGridSchema, isSection };
+export {
+  dashboardAttachmentDataSchema,
+  panelGridSchema,
+  sectionGridSchema,
+  timeRangeSchema,
+  isSection,
+};
 
 // ============================================================================
 // Attachment Type

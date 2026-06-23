@@ -74,21 +74,23 @@ export const AllFieldDefinitionsPage: React.FC<AllFieldDefinitionsPageProps> = (
       name,
       description,
       definition,
+      isGlobal,
     }: {
       name: string;
       description: string;
       definition: string;
+      isGlobal: boolean;
     }) => {
       const ownerValue = (Array.isArray(owner) ? owner[0] : owner) as Owner;
 
       if (editingFieldDef) {
         updateFieldDef({
           id: editingFieldDef.fieldDefinitionId,
-          fieldDefinition: { name, description, definition, owner: ownerValue },
+          fieldDefinition: { name, description, definition, owner: ownerValue, isGlobal },
         });
       } else {
         createFieldDef({
-          fieldDefinition: { name, description, definition, owner: ownerValue },
+          fieldDefinition: { name, description, definition, owner: ownerValue, isGlobal },
         });
       }
     },
@@ -124,9 +126,11 @@ export const AllFieldDefinitionsPage: React.FC<AllFieldDefinitionsPageProps> = (
       ),
     },
     {
-      field: 'owner',
-      name: i18n.OWNER_COLUMN,
-      truncateText: true,
+      field: 'isGlobal',
+      name: i18n.APPLY_TO_ALL_CASES_COLUMN,
+      render: (value: boolean | undefined) =>
+        value ? i18n.GLOBAL_FIELD_YES : i18n.GLOBAL_FIELD_NO,
+      'data-test-subj': 'fieldDefinitionApplyToAllCasesCell',
     },
     {
       name: i18n.ACTIONS_COLUMN,

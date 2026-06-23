@@ -9,7 +9,7 @@ import { schema } from '@kbn/config-schema';
 import { kqlQuery } from '@kbn/observability-plugin/server';
 import type { RouteRegisterParameters } from '.';
 import { IDLE_SOCKET_TIMEOUT } from '.';
-import { getRoutePaths } from '../../common';
+import { getRoutePaths, MAX_KUERY_LENGTH } from '../../common';
 import { handleRouteHandlerError } from '../utils/handle_route_error_handler';
 import { getClient } from './compat';
 
@@ -34,7 +34,7 @@ export function registerFlameChartSearchRoute({
         query: schema.object({
           timeFrom: schema.number(),
           timeTo: schema.number(),
-          kuery: schema.string(),
+          kuery: schema.string({ maxLength: MAX_KUERY_LENGTH }),
         }),
       },
     },

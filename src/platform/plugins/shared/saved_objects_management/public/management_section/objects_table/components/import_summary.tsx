@@ -21,6 +21,7 @@ import {
   EuiHorizontalRule,
   EuiTitle,
   EuiSpacer,
+  EuiTextTruncate,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -324,9 +325,7 @@ export const ImportSummary: FC<ImportSummaryProps> = ({
             </EuiFlexItem>
             <EuiFlexItem css={styles.title} data-test-subj="importSavedObjectsTitle">
               <EuiText size="s">
-                <p className="eui-textTruncate" title={title}>
-                  {title}
-                </p>
+                <EuiTextTruncate text={title} />
               </EuiText>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>

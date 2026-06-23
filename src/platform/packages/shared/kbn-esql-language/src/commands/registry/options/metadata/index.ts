@@ -12,7 +12,11 @@ import { isColumn, isOptionNode } from '@elastic/esql';
 import { withAutoSuggest } from '../../../definitions/utils/autocomplete/helpers';
 import type { ISuggestionItem } from '../../types';
 import { buildFieldsDefinitions } from '../../../definitions/utils/functions';
-import { commaCompleteItem, pipeCompleteItem } from '../../complete_items';
+import {
+  commaCompleteItem,
+  newLineAndPipeCompleteItems,
+  pipeCompleteItem,
+} from '../../complete_items';
 import { SuggestionCategory } from '../../../../language/autocomplete/utils/sorting/types';
 import { endsWithNonWhitespace } from '../../../definitions/utils/regex';
 
@@ -93,7 +97,7 @@ async function suggestForMetadata(metadata: ESQLCommandOption, innerText: string
       if (filteredMetaFields.length > 0) {
         suggestions.push(commaCompleteItem);
       }
-      suggestions.push(pipeCompleteItem);
+      suggestions.push(...newLineAndPipeCompleteItems);
     }
   }
 

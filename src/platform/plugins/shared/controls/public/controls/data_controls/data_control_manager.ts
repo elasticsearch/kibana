@@ -8,38 +8,60 @@
  */
 
 import { omit } from 'lodash';
-import { BehaviorSubject, combineLatest, merge, switchMap, tap } from 'rxjs';
+import {
+  BehaviorSubject,
+  combineLatest,
+  distinctUntilChanged,
+  filter,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
-import { DEFAULT_DATA_CONTROL_STATE } from '@kbn/controls-constants';
+import {
+  ControlValuesSource,
+  DEFAULT_CONTROL_VALUES_SOURCE,
+  DEFAULT_DATA_CONTROL_STATE,
+} from '@kbn/controls-constants';
 import type { DataControlState } from '@kbn/controls-schemas';
+
 import { type DataView, type DataViewField } from '@kbn/data-views-plugin/common';
 import type { Filter } from '@kbn/es-query';
+import type { ESQLControlVariable } from '@kbn/esql-types';
+import { apiPublishesESQLVariables } from '@kbn/esql-types';
 import { i18n } from '@kbn/i18n';
 import { type StateComparators } from '@kbn/presentation-publishing';
 import { initializeStateManager } from '@kbn/presentation-publishing/state_manager';
-import type { StateManager } from '@kbn/presentation-publishing/state_manager/types';
+import type { StateManager, WithAllKeys } from '@kbn/presentation-publishing/state_manager/types';
 
-import { dataViewsService } from '../../services/kibana_services';
+import { dataService, dataViewsService } from '../../services/kibana_services';
 import { openDataControlEditor } from './open_data_control_editor';
 import type { DataControlApi, DataControlFieldFormatter } from './types';
 import { initializeLabelManager, defaultControlLabelComparators } from '../control_labels';
+import { getESQLSingleColumnValues } from '../../../common/options_list';
+import { getControlsTimezone } from '../utils';
+import { getDataViewIdFromESQLQuery } from '../utils/get_data_view_id_from_esql_query';
 
 export const defaultDataControlComparators: StateComparators<DataControlState> = {
   ...defaultControlLabelComparators,
   data_view_id: 'referenceEquality',
   field_name: 'referenceEquality',
-  use_global_filters: (a, b) =>
+  values_source: 'referenceEquality',
+  esql_query: 'referenceEquality',
+  use_global_filters: (a: boolean | undefined, b: boolean | undefined) =>
     (a ?? DEFAULT_DATA_CONTROL_STATE.use_global_filters) ===
     (b ?? DEFAULT_DATA_CONTROL_STATE.use_global_filters),
-  ignore_validations: (a, b) =>
+  ignore_validations: (a: boolean | undefined, b: boolean | undefined) =>
     (a ?? DEFAULT_DATA_CONTROL_STATE.ignore_validations) ===
     (b ?? DEFAULT_DATA_CONTROL_STATE.ignore_validations),
 };
 
-export const defaultDataControlState = {
+export const defaultDataControlState: WithAllKeys<Omit<DataControlState, 'title'>> = {
   ...DEFAULT_DATA_CONTROL_STATE,
   data_view_id: '',
   field_name: '',
+  values_source: DEFAULT_CONTROL_VALUES_SOURCE,
+  esql_query: undefined,
 };
 
 export type DataControlStateManager = Omit<StateManager<DataControlState>, 'api'> & {
@@ -100,19 +122,23 @@ export const initializeDataControlManager = async <EditorState extends object = 
   const fieldFormatter = new BehaviorSubject<DataControlFieldFormatter>((toFormat: any) =>
     String(toFormat)
   );
-
-  const dataViewIdSubscription = dataControlStateManager.api.dataViewId$
+  const dataViewIdSubscription = combineLatest([
+    dataControlStateManager.api.dataViewId$,
+    dataControlStateManager.api.valuesSource$,
+  ])
     .pipe(
+      // Skip empty IDs only for ESQL controls so we don't fire a blocking "data view not found" error before the ID has been loaded
+      filter(([id, valuesSource]) => valuesSource !== ControlValuesSource.ESQL || Boolean(id)),
       tap(() => {
         filtersLoading$.next(true);
         if (blockingError$.value) {
           setBlockingError(undefined);
         }
       }),
-      switchMap(async (currentDataViewId) => {
+      switchMap(async ([currentDataViewId]) => {
         let dataView: DataView | undefined;
         try {
-          dataView = await dataViewsService.get(currentDataViewId);
+          dataView = await dataViewsService.get(currentDataViewId ?? '');
           return { dataView };
         } catch (error) {
           return { error };
@@ -131,9 +157,18 @@ export const initializeDataControlManager = async <EditorState extends object = 
       dataViews$.next(dataView ? [dataView] : undefined);
     });
 
-  const defaultFieldLabel$ = new BehaviorSubject<string>(state.field_name);
-  const fieldNameSubscription = combineLatest([dataViews$, dataControlStateManager.api.fieldName$])
+  const defaultFieldLabel$ = new BehaviorSubject<string>(state.field_name ?? '');
+  const fieldNameSubscription = combineLatest([
+    dataViews$,
+    dataControlStateManager.api.fieldName$,
+    dataControlStateManager.api.valuesSource$,
+  ])
     .pipe(
+      // Skip empty field names only for ESQL controls so we don't fire a blocking "could not locate field" error before field name has been loaded
+      filter(
+        ([_, fieldName, valuesSource]) =>
+          valuesSource !== ControlValuesSource.ESQL || Boolean(fieldName)
+      ),
       tap(() => {
         filtersLoading$.next(true);
       })
@@ -146,7 +181,7 @@ export const initializeDataControlManager = async <EditorState extends object = 
         return;
       }
 
-      const field = dataView.getFieldByName(nextFieldName);
+      const field = dataView.getFieldByName(nextFieldName ?? '');
       if (!field) {
         setBlockingError(
           new Error(
@@ -198,6 +233,64 @@ export const initializeDataControlManager = async <EditorState extends object = 
     });
   };
 
+  // Pull variables from the parent (typically the dashboard) so queries that
+  // reference ESQL controls in the same context resolve correctly
+  const parentEsqlVariables$ = apiPublishesESQLVariables(parentApi)
+    ? parentApi.esqlVariables$
+    : new BehaviorSubject<ESQLControlVariable[]>([]);
+
+  const esqlQueryDataSourceSubscription = combineLatest([
+    dataControlStateManager.api.esqlQuery$,
+    dataControlStateManager.api.valuesSource$,
+    // Re-derive the column when the set of available variables changes
+    parentEsqlVariables$.pipe(
+      distinctUntilChanged((prev, next) => {
+        if (prev.length !== next.length) return false;
+        const prevKeys = new Set(prev.map((v) => v.key));
+        return next.every((v) => prevKeys.has(v.key));
+      })
+    ),
+  ]).subscribe(async ([query, valuesSource, esqlVariables]) => {
+    if (valuesSource !== ControlValuesSource.ESQL) return;
+    try {
+      if (!query) {
+        throw new Error(
+          i18n.translate('controls.dataControl.esqlMissingQuery', {
+            defaultMessage: 'Variable control is missing a query',
+          })
+        );
+      }
+      const dataViewId = await getDataViewIdFromESQLQuery(query);
+      if (!dataViewId) {
+        throw new Error(
+          i18n.translate('controls.dataControl.esqlDataViewDeriveFailed', {
+            defaultMessage: 'Could not derive a data view from the ES|QL query',
+          })
+        );
+      }
+
+      dataControlStateManager.api.setDataViewId(dataViewId);
+      const result = await getESQLSingleColumnValues({
+        query,
+        search: dataService.search.search,
+        esqlVariables,
+        timeRange: dataService.query.timefilter.timefilter.getTime(),
+        timezone: getControlsTimezone(),
+      });
+      if (!getESQLSingleColumnValues.isSuccess(result)) {
+        throw result.errors[0];
+      }
+
+      dataControlStateManager.api.setFieldName(result.column.name);
+      if (blockingError$.value) {
+        setBlockingError(undefined);
+      }
+    } catch (e) {
+      setBlockingError(e);
+      if (willHaveInitialFilter && getInitialFilter) rejectInitialDataViewReady(e);
+    }
+  });
+
   // build initial filter
   let initialFilter: Filter | undefined;
   if (willHaveInitialFilter && getInitialFilter) {
@@ -236,6 +329,7 @@ export const initializeDataControlManager = async <EditorState extends object = 
     cleanup: () => {
       dataViewIdSubscription.unsubscribe();
       fieldNameSubscription.unsubscribe();
+      esqlQueryDataSourceSubscription.unsubscribe();
       labelManager.cleanup();
     },
     internalApi: {
@@ -248,10 +342,22 @@ export const initializeDataControlManager = async <EditorState extends object = 
       },
     },
     anyStateChange$: merge(dataControlStateManager.anyStateChange$, labelManager.anyStateChange$),
-    getLatestState: () => ({
-      ...labelManager.getLatestState(),
-      ...dataControlStateManager.getLatestState(),
-    }),
+    getLatestState: () => {
+      const { values_source, esql_query, field_name, data_view_id, ...rest } =
+        dataControlStateManager.getLatestState();
+      const dataControlState =
+        values_source === ControlValuesSource.ESQL
+          ? {
+              values_source,
+              esql_query,
+              ...rest,
+            }
+          : { values_source, data_view_id, field_name, ...rest };
+      return {
+        ...labelManager.getLatestState(),
+        ...dataControlState,
+      } as WithAllKeys<DataControlState>;
+    },
     reinitializeState: (newState) => {
       dataControlStateManager.reinitializeState(newState);
       labelManager.reinitializeState(newState);

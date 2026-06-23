@@ -75,6 +75,17 @@ export class LangfuseSpanProcessor extends BaseInferenceSpanProcessor {
       );
     }
 
+    if (span.attributes['gen_ai.operation.name'] === 'execute_tool') {
+      const toolResult = span.attributes['gen_ai.tool.call.result'];
+      if (toolResult) {
+        span.attributes['output.value'] = String(toolResult);
+      }
+      const toolArgs = span.attributes['gen_ai.tool.call.arguments'];
+      if (toolArgs) {
+        span.attributes['input.value'] = String(toolArgs);
+      }
+    }
+
     if (!span.parentSpanContext) {
       const traceId = span.spanContext().traceId;
       void this.getProjectId().then((projectId) => {

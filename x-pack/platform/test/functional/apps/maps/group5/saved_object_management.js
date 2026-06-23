@@ -43,7 +43,10 @@ export default function ({ getPageObjects, getService }) {
 
       it('should update global Kibana time to value stored with map', async () => {
         const timeConfig = await timePicker.getTimeConfig();
-        expect(timeConfig.start).to.equal('~ 17 minutes ago');
+        // Legacy picker shows the humanised label; new picker returns the raw
+        // dateMath from data-date-range (with optional rounding suffix from
+        // roundRelativeTime).
+        expect(timeConfig.start).to.match(/^~ 17 minutes ago$|^now-17m(\/m)?$/);
         expect(timeConfig.end).to.equal('now');
       });
 
@@ -73,7 +76,7 @@ export default function ({ getPageObjects, getService }) {
         await maps.waitForLayersToLoad();
 
         const timeConfig = await timePicker.getTimeConfig();
-        expect(timeConfig.start).to.equal('~ 36 minutes ago');
+        expect(timeConfig.start).to.match(/^~ 36 minutes ago$|^now-36m(\/m)?$/);
         expect(timeConfig.end).to.equal('now');
       });
 

@@ -19,6 +19,11 @@ jest.mock('../../templates_v2/hooks/use_get_template', () => ({
   useGetTemplate: (...args: unknown[]) => mockUseGetTemplate(...args),
 }));
 
+const mockUseGetFieldDefinitions = jest.fn();
+jest.mock('../../field_library/hooks/use_get_field_definitions', () => ({
+  useGetFieldDefinitions: (...args: unknown[]) => mockUseGetFieldDefinitions(...args),
+}));
+
 jest.mock('../../field_library/hooks/use_resolved_fields', () => ({
   useResolvedFields: (fields: unknown[]) => ({
     resolvedFields: fields,
@@ -75,11 +80,16 @@ describe('TemplateFields', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseGetTemplate.mockReturnValue({ data: mockTemplate, isLoading: false });
+    mockUseGetFieldDefinitions.mockReturnValue({
+      data: { fieldDefinitions: [] },
+      isLoading: false,
+    });
   });
 
-  it('renders fields for each template definition field', () => {
+  it('renders the Extended fields heading and all template fields', () => {
     render(<TemplateFields {...defaultProps} />);
 
+    expect(screen.getByText('Extended fields')).toBeInTheDocument();
     expect(screen.getByText('Summary')).toBeInTheDocument();
     expect(screen.getByText('Effort')).toBeInTheDocument();
     expect(screen.getByText('Notes')).toBeInTheDocument();

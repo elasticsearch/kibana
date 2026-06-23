@@ -12,15 +12,15 @@ import hash from 'object-hash';
 
 import dateMath from '@kbn/datemath';
 
-import { getEsQueryConfig } from '@kbn/data-plugin/public';
-import { buildEsQuery } from '@kbn/es-query';
+import type { TimeRange } from '@kbn/es-query';
+
 import type {
   OptionsListFailureResponse,
-  OptionsListRequest,
   OptionsListResponse,
   OptionsListSuccessResponse,
+  OptionsListUnifiedFetchBody,
 } from '../../../../common/options_list/types';
-import { coreServices, dataService } from '../../../services/kibana_services';
+import { coreServices } from '../../../services/kibana_services';
 
 const REQUEST_CACHE_SIZE = 50; // only store a max of 50 responses
 const REQUEST_CACHE_TTL = 1000 * 60; // time to live = 1 minute
@@ -41,84 +41,94 @@ export class OptionsListFetchCache {
     });
   }
 
-  private getRequestHash = (request: OptionsListRequest) => {
-    const {
-      size,
-      sort,
-      query,
-      filters,
-      timeRange,
-      searchString,
-      runPastTimeout,
-      selectedOptions,
-      searchTechnique,
-      ignoreValidations,
-      field: { name: fieldName },
-      dataView: { title: dataViewTitle },
-    } = request;
-    return hash({
-      // round timeRange to the minute to avoid cache misses
-      timeRange: timeRange
+  private getRequestHash = (request: OptionsListUnifiedFetchBody) => {
+    // round timeRange to the minute to avoid cache misses
+    const roundedTimeRange = (timeRange?: TimeRange) =>
+      timeRange
         ? JSON.stringify({
             from: dateMath.parse(timeRange.from)!.startOf('minute').toISOString(),
             to: dateMath.parse(timeRange.to)!.endOf('minute').toISOString(),
           })
-        : [],
-      selectedOptions,
-      filters,
-      query,
+        : [];
+
+    if (request.kind === 'dsl') {
+      const {
+        index,
+        size,
+        sort,
+        filters,
+        searchString,
+        runPastTimeout,
+        selectedOptions,
+        searchTechnique,
+        ignoreValidations,
+        fieldName,
+      } = request;
+
+      return hash({
+        kind: request.kind,
+        index,
+        selectedOptions,
+        filters,
+        sort,
+        searchTechnique,
+        ignoreValidations,
+        runPastTimeout,
+        searchString: searchString ?? '',
+        fieldName,
+        size,
+      });
+    }
+
+    const {
+      esql,
+      timeRange,
+      searchString,
+      esqlVariables,
+      filter,
       sort,
-      searchTechnique,
       ignoreValidations,
-      runPastTimeout,
-      dataViewTitle,
-      searchString: searchString ?? '',
-      fieldName,
-      size,
+      selectedOptions,
+      searchTechnique,
+    } = request;
+
+    return hash({
+      kind: request.kind,
+      esql,
+      timeRange: roundedTimeRange(timeRange),
+      searchString,
+      searchTechnique,
+      sort,
+      esqlVariables,
+      filter,
+      ignoreValidations,
+      selectedOptions: ignoreValidations ? undefined : selectedOptions,
     });
   };
 
   public async runFetchRequest(
-    request: OptionsListRequest,
+    request: OptionsListUnifiedFetchBody,
     abortSignal: AbortSignal
   ): Promise<OptionsListResponse> {
     const requestHash = this.getRequestHash(request);
     if (!request.isReload && this.cache.has(requestHash)) {
       return Promise.resolve(this.cache.get(requestHash)!);
-    } else {
-      const index = request.dataView.getIndexPattern();
-
-      const timeService = dataService.query.timefilter.timefilter;
-      const { query, filters, dataView, timeRange, field, ...passThroughProps } = request;
-      const timeFilter = timeRange ? timeService.createFilter(dataView, timeRange) : undefined;
-      const filtersToUse = [...(filters ?? []), ...(timeFilter ? [timeFilter] : [])];
-      const config = getEsQueryConfig(coreServices.uiSettings);
-      const esFilters = [buildEsQuery(dataView, query ?? [], filtersToUse ?? [], config)];
-
-      const requestBody = {
-        ...passThroughProps,
-        filters: esFilters,
-        fieldName: field.name,
-        fieldSpec: field,
-        runtimeFieldMap: dataView.toSpec?.(false).runtimeFieldMap,
-      };
-
-      const result = await coreServices.http.fetch<OptionsListResponse>(
-        `/internal/controls/optionsList/${index}`,
-        {
-          version: '1',
-          body: JSON.stringify(requestBody),
-          signal: abortSignal,
-          method: 'POST',
-        }
-      );
-
-      if (!optionsListResponseWasFailure(result)) {
-        // only add the success responses to the cache
-        this.cache.set(requestHash, result);
-      }
-      return result;
     }
+
+    const result = await coreServices.http.fetch<OptionsListResponse>(
+      `/internal/controls/optionsList/fetch`,
+      {
+        version: '1',
+        body: JSON.stringify(request),
+        signal: abortSignal,
+        method: 'POST',
+      }
+    );
+
+    if (!optionsListResponseWasFailure(result)) {
+      this.cache.set(requestHash, result);
+    }
+    return result;
   }
 
   public clearCache = () => {

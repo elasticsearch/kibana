@@ -17,12 +17,13 @@ import {
 
 interface ClosablePopoverTitleProps {
   children: JSX.Element;
+  id?: string;
   onClose: () => void;
 }
 
-export function ClosablePopoverTitle({ children, onClose }: ClosablePopoverTitleProps) {
+export function ClosablePopoverTitle({ children, id, onClose }: ClosablePopoverTitleProps) {
   return (
-    <EuiPopoverTitle>
+    <EuiPopoverTitle id={id}>
       <EuiFlexGroup alignItems="center" gutterSize="s">
         <EuiFlexItem>{children}</EuiFlexItem>
         <EuiFlexItem grow={false}>

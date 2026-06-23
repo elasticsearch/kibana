@@ -9,40 +9,50 @@ import { setMockValues } from '../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { mount } from 'enzyme';
+import { screen } from '@testing-library/react';
 
-import { EuiButton } from '@elastic/eui';
-
-import { EuiButtonTo } from '../react_router_helpers';
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { NotFoundPrompt } from '.';
 
 describe('NotFoundPrompt', () => {
-  const subject = (props?: object) => mount(<NotFoundPrompt productSupportUrl="" {...props} />);
-
   it('renders', () => {
-    const wrapper = subject({
-      productSupportUrl: 'https://discuss.elastic.co/c/enterprise-search/app-search/',
-    });
+    renderWithKibanaRenderContext(
+      <NotFoundPrompt productSupportUrl="https://discuss.elastic.co/c/enterprise-search/app-search/" />
+    );
 
-    expect(wrapper.find('h1').text()).toEqual('404 error');
-    expect(wrapper.find(EuiButtonTo).prop('to')).toEqual('/');
-    expect(wrapper.find(EuiButton).last().prop('href')).toContain('https://discuss.elastic.co');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('404 error');
+    expect(screen.getByRole('link', { name: 'Back to your dashboard' })).toHaveAttribute(
+      'href',
+      '/app/enterprise_search/'
+    );
+    expect(screen.getByRole('link', { name: 'Contact support' })).toHaveAttribute(
+      'href',
+      'https://discuss.elastic.co/c/enterprise-search/app-search/'
+    );
   });
 
   it('renders with a custom "Back to dashboard" link if passed', () => {
-    const wrapper = subject({
-      productSupportUrl: 'https://discuss.elastic.co/c/enterprise-search/workplace-search/',
-      backToLink: '/workplace_search/p/sources',
-    });
+    renderWithKibanaRenderContext(
+      <NotFoundPrompt
+        productSupportUrl="https://discuss.elastic.co/c/enterprise-search/workplace-search/"
+        backToLink="/workplace_search/p/sources"
+      />
+    );
 
-    expect(wrapper.find(EuiButtonTo).prop('to')).toEqual('/workplace_search/p/sources');
+    expect(screen.getByRole('link', { name: 'Back to your dashboard' })).toHaveAttribute(
+      'href',
+      '/app/enterprise_search/workplace_search/p/sources'
+    );
   });
 
   it('renders with a link to our licensed support URL for gold+ licenses', () => {
     setMockValues({ hasGoldLicense: true });
-    const wrapper = subject();
+    renderWithKibanaRenderContext(<NotFoundPrompt productSupportUrl="" />);
 
-    expect(wrapper.find(EuiButton).last().prop('href')).toEqual('https://support.elastic.co');
+    expect(screen.getByRole('link', { name: 'Contact support' })).toHaveAttribute(
+      'href',
+      'https://support.elastic.co'
+    );
   });
 });

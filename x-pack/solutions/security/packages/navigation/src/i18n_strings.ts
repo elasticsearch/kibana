@@ -332,12 +332,6 @@ export const i18nStrings = {
         defaultMessage: 'Kibana',
       }),
     },
-    v2AlertingPreview: {
-      title: i18n.translate(
-        'securitySolutionPackages.navLinks.stackManagement_v2.v2AlertingPreview',
-        { defaultMessage: 'V2 Alerting Preview' }
-      ),
-    },
     // serverless only
     access: {
       title: i18n.translate('securitySolutionPackages.navLinks.stackManagement_v2.access', {

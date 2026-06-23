@@ -1,0 +1,122 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`schema_to_skill_docs generateActionPolicySchemaDoc matches the snapshot 1`] = `
+"# Action Policy API Schema Reference
+
+Auto-generated from \`@kbn/alerting-v2-schemas\`. This is the source of truth for field names, types, and constraints.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`name\` | string | required | The name of the action policy. (min length: 1, max length: 256) |
+| \`description\` | string | required | A description of the action policy. (max length: 1024) |
+| \`destinations\` | { type: \\"workflow\\", ... }[] | required | The list of destinations. At least one is required. (min items: 1, max items: 10) |
+| \`matcher\` | string | optional | A KQL query string to match alerts. (max length: 4096) |
+| \`groupBy\` | string[] | optional | The fields used to group alerts. (max items: 16) |
+| \`tags\` | string[] | optional | Tags for categorizing the action policy. (max items: 20) |
+| \`groupingMode\` | \\"per_episode\\" | \\"all\\" | \\"per_field\\" | optional | The grouping mode for alert notifications. (enum: per_episode | all | per_field) |
+| \`throttle\` | object | optional | The throttle configuration for notifications. |"
+`;
+
+exports[`schema_to_skill_docs generateRuleOperationsDoc matches the snapshot 1`] = `
+"# Rule Operations Schema Reference
+
+Auto-generated from the \`manage_rule\` tool Zod schemas.
+
+#### \`operation: \\"set_metadata\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`name\` | string | optional | Rule name (must be unique within the space). (min length: 1, max length: 256) |
+| \`description\` | string | optional | Human-readable description of the rule. (max length: 1024) |
+| \`tags\` | string[] | optional | Tags for categorization, e.g. [\\"production\\", \\"infra\\"]. (min items: 1, max items: 20) |
+| \`builder_type\` | string | optional | Identifies the rule builder that authored this rule (e.g. \\"threshold\\"). Absent for rules authored directly in ES|QL. (max length: 64) |
+| \`operation\` | string | required |  |
+
+#### \`operation: \\"set_kind\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`operation\` | string | required |  |
+| \`kind\` | \\"alert\\" | \\"signal\\" | required | Rule kind: \\"alert\\" for stateful alerting with transitions, \\"signal\\" for stateless detection. (enum: alert | signal) |
+
+#### \`operation: \\"set_schedule\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`every\` | string | optional | Execution interval, e.g. 1m, 5m, 1h. |
+| \`lookback\` | string | optional | Lookback window for the query, e.g. 5m, 1h. Can also be expressed in ES|QL. |
+| \`operation\` | string | required |  |
+
+#### \`operation: \\"set_query\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`operation\` | string | required |  |
+| \`query\` | { format: \\"composed\\", ... } | { format: \\"standalone\\", ... } | required | Detection query configuration. |
+| \`recovery_strategy\` | \\"no_breach\\" | \\"query\\" | \\"none\\" | optional |  (enum: no_breach | query | none) |
+| \`no_data_strategy\` | \\"last_known_status\\" | \\"emit\\" | \\"recover\\" | \\"none\\" | optional |  (enum: last_known_status | emit | recover | none) |
+
+#### \`operation: \\"set_grouping\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`fields\` | string[] | required | Fields to group alerts by, e.g. [\\"host.name\\", \\"service.name\\"]. Should match ES|QL GROUP BY fields. (max items: 16) |
+| \`operation\` | string | required |  |
+
+#### \`operation: \\"set_state_transition\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`pending_count\` | integer | optional | Consecutive breaches before transitioning to active. (min: 0, max: 1000) |
+| \`pending_timeframe\` | string | optional | Time window for pending evaluation, e.g. 5m, 15m. |
+| \`recovering_count\` | integer | optional | Consecutive recoveries before transitioning to inactive. (min: 0, max: 1000) |
+| \`recovering_timeframe\` | string | optional | Time window for recovering evaluation, e.g. 5m, 15m. |
+| \`operation\` | string | required |  |
+
+#### \`operation: \\"validate\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`operation\` | string | required |  |"
+`;
+
+exports[`schema_to_skill_docs generateRuleSchemaDoc matches the snapshot 1`] = `
+"# Rule API Schema Reference
+
+Auto-generated from \`@kbn/alerting-v2-schemas\`. This is the source of truth for field names, types, and constraints.
+
+## Top-Level Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`kind\` | \\"alert\\" | \\"signal\\" | required | Rule kind: \\"alert\\" for stateful alerting with transitions, \\"signal\\" for stateless detection. (enum: alert | signal) |
+| \`metadata\` | object | required | Rule metadata. |
+| \`time_field\` | string | required | Time field used for the lookback window range filter. (min length: 1, max length: 128, default: \\"@timestamp\\") |
+| \`schedule\` | object | required | Execution schedule configuration. |
+| \`query\` | { format: \\"composed\\", ... } | { format: \\"standalone\\", ... } | required | Detection query configuration. |
+| \`recovery_strategy\` | \\"no_breach\\" | \\"query\\" | \\"none\\" | optional | How recovery is detected. \\"no_breach\\" recovers groups that stop breaching; \\"query\\" uses a custom recovery query; \\"none\\" disables recovery. (enum: no_breach | query | none) |
+| \`no_data_strategy\` | \\"last_known_status\\" | \\"emit\\" | \\"recover\\" | \\"none\\" | optional | How to handle no-data situations. \\"emit\\" emits a no-data event; \\"last_known_status\\" holds the last known status; \\"recover\\" forces recovery; \\"none\\" disables no-data detection. (enum: last_known_status | emit | recover | none) |
+| \`state_transition\` | object | null | optional |  |
+| \`grouping\` | object | optional | Grouping configuration. |
+| \`artifacts\` | object[] | optional |  (max items: 100) |
+
+## Query Formats
+
+#### \`format: \\"composed\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`format\` | string | required |  |
+| \`base\` | string | required | Base ES|QL query. Time filters are applied automatically via the lookback window. (min length: 1, max length: 10000) |
+| \`breach\` | object | required | Breach detection configuration (required). |
+| \`recovery\` | object | optional | Recovery query segment. Required when recovery_strategy is \\"query\\". |
+
+#### \`format: \\"standalone\\"\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`format\` | string | required |  |
+| \`breach\` | object | required | Breach detection configuration (required). |
+| \`recovery\` | object | optional | Recovery query. Required when recovery_strategy is \\"query\\". |
+| \`no_data\` | object | optional | No-data detection query. Required when no_data_strategy is not \\"none\\". |"
+`;

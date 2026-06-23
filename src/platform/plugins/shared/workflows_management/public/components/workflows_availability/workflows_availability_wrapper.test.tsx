@@ -127,6 +127,7 @@ describe('WorkflowsAvailabilityWrapper', () => {
           requiredProducts: ['Security Complete'],
         })
       );
+      mockUseKibanaServices.cloud.getPrivilegedUrls.mockResolvedValue({ billingUrl: undefined });
     });
 
     it('should render access denied with serverless tier title and description', () => {
@@ -157,21 +158,15 @@ describe('WorkflowsAvailabilityWrapper', () => {
     });
 
     it('should show contact admin text when billing URL is not available', async () => {
-      mockUseKibanaServices.cloud.getPrivilegedUrls.mockResolvedValue({
-        billingUrl: undefined,
-      });
-
       renderWithProviders(
         <WorkflowsAvailabilityWrapper>
           <div />
         </WorkflowsAvailabilityWrapper>
       );
 
-      await waitFor(() =>
-        expect(
-          screen.getByText('Contact your administrator to upgrade your subscription.')
-        ).toBeInTheDocument()
-      );
+      expect(
+        await screen.findByText('Contact your administrator to upgrade your subscription.')
+      ).toBeInTheDocument();
     });
 
     it('should show manage subscription button when billing URL is available', async () => {
@@ -185,7 +180,24 @@ describe('WorkflowsAvailabilityWrapper', () => {
         </WorkflowsAvailabilityWrapper>
       );
 
-      await waitFor(() => expect(screen.getByText('Manage subscription')).toBeInTheDocument());
+      expect(await screen.findByText('Manage subscription')).toBeInTheDocument();
+    });
+
+    it('should show contact admin text when billing URL is not https', async () => {
+      mockUseKibanaServices.cloud.getPrivilegedUrls.mockResolvedValue({
+        billingUrl: 'http://cloud.elastic.co/billing',
+      });
+
+      renderWithProviders(
+        <WorkflowsAvailabilityWrapper>
+          <div />
+        </WorkflowsAvailabilityWrapper>
+      );
+
+      expect(
+        await screen.findByText('Contact your administrator to upgrade your subscription.')
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Manage subscription')).not.toBeInTheDocument();
     });
 
     it('should report telemetry when workflows are unavailable due to serverless tier', async () => {

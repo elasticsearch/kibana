@@ -51,6 +51,7 @@ export class WorkflowsPlugin
 {
   private readonly logger: Logger;
   private config: WorkflowsManagementConfig;
+  private readonly kibanaVersion: string;
   private availabilityUpdater: AvailabilityUpdater | null = null;
   private api: WorkflowsManagementApi | null = null;
   private workflowsService: WorkflowsService | null = null;
@@ -58,6 +59,7 @@ export class WorkflowsPlugin
   constructor(initializerContext: PluginInitializerContext<WorkflowsManagementConfig>) {
     this.logger = initializerContext.logger.get();
     this.config = initializerContext.config.get<WorkflowsManagementConfig>();
+    this.kibanaVersion = initializerContext.env.packageInfo.version;
   }
 
   public setup(
@@ -72,7 +74,11 @@ export class WorkflowsPlugin
 
     this.logger.debug('Workflows Management: Creating workflows service');
 
-    const workflowsService = new WorkflowsService(core.getStartServices, this.logger);
+    const workflowsService = new WorkflowsService(
+      core.getStartServices,
+      this.logger,
+      this.kibanaVersion
+    );
     this.workflowsService = workflowsService;
 
     const api = new WorkflowsManagementApi(workflowsService, this.config.available);
@@ -136,6 +142,7 @@ export class WorkflowsPlugin
     }
 
     this.logger.debug('Workflows Management: Started');
+
     return {};
   }
 

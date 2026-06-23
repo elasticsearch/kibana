@@ -14,6 +14,7 @@ import { useHistory } from 'react-router-dom';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { toMountPoint } from '@kbn/react-kibana-mount';
+import { useQueryClient } from '@kbn/react-query';
 
 import type { PackageInfo } from '../../../types';
 import type { InstallationInfo } from '../../../../common/types';
@@ -48,6 +49,7 @@ type SetPackageInstallStatusProps = Pick<PackageInfo, 'name'> & PackageInstallIt
 function usePackageInstall({ startServices }: { startServices: StartServices }) {
   const history = useHistory();
   const { getPath } = useLink();
+  const queryClient = useQueryClient();
   const [packages, setPackage] = useState<PackagesInstall>({});
   const confirmForceInstall = useConfirmForceInstall();
   const setPackageInstallStatus = useCallback(
@@ -226,6 +228,9 @@ function usePackageInstall({ startServices }: { startServices: StartServices }) 
       } else {
         setPackageInstallStatus({ name, status: InstallStatus.notInstalled, version: null });
 
+        queryClient.invalidateQueries([name]);
+        queryClient.invalidateQueries(['get-packages']);
+
         notifications.toasts.addSuccess({
           title: toMountPoint(
             <FormattedMessage
@@ -252,7 +257,7 @@ function usePackageInstall({ startServices }: { startServices: StartServices }) 
         }
       }
     },
-    [notifications.toasts, setPackageInstallStatus, getPath, history, startServices]
+    [notifications.toasts, setPackageInstallStatus, getPath, history, startServices, queryClient]
   );
 
   const rollbackPackage = useCallback(

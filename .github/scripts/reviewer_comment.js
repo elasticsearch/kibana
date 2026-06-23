@@ -20,6 +20,12 @@ const REVIEWERS = Object.freeze({
     label: 'reviewer:claude',
     workflowId: 'reviewer-claude.lock.yml',
   }),
+  scout: Object.freeze({
+    id: 'scout',
+    command: '@scout',
+    label: 'reviewer:scout',
+    workflowId: 'reviewer-scout.lock.yml',
+  }),
 });
 
 const allowedPermissions = new Set(['admin', 'write']);

@@ -10,6 +10,7 @@
 import { schema } from '@kbn/config-schema';
 
 export const indexPatternSchema = schema.string({
+  minLength: 1,
   meta: {
     id: 'kbn-index-pattern-schema',
     title: 'Index pattern',

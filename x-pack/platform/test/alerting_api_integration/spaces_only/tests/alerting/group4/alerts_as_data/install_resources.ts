@@ -177,7 +177,7 @@ export default function createAlertsAsDataInstallResourcesTest({ getService }: F
             mapping: {
               ignore_malformed: 'true',
               total_fields: {
-                limit: '2500',
+                limit: '2800',
                 ignore_dynamic_beyond_limit: 'true',
               },
             },
@@ -214,7 +214,7 @@ export default function createAlertsAsDataInstallResourcesTest({ getService }: F
         expect(contextIndex[indexName].settings?.index?.mapping).to.eql({
           ignore_malformed: 'true',
           total_fields: {
-            limit: '2500',
+            limit: '2800',
             ignore_dynamic_beyond_limit: 'true',
           },
         });

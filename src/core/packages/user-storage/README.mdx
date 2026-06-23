@@ -1,9 +1,9 @@
 ---
 id: kibUserStorageService
-slug: /kibana-dev-docs/tutorials/user-storage-service
+slug: /kibana-dev-docs/user-storage
 title: User Storage service
 description: Per-user, per-space (or global) key/value storage for Kibana plugins, with synchronous reads at first paint.
-date: 2026-05-07
+date: 2026-06-18
 tags: ['kibana', 'dev', 'contributor', 'api docs', 'core', 'user storage', 'preferences']
 ---
 
@@ -15,9 +15,11 @@ A server-backed, per-user store for plugin state that should follow the user acr
 
 User Storage exists because over 30 plugins were independently writing to `localStorage` for per-user state, each handling serialization, scoping, and validation differently. There was no canonical pattern for "small, schema-validated, per-user data that follows the user." The service fills exactly that gap; it does not replace `localStorage`, `uiSettings`, or ES User Profile, all of which remain the right choice for their respective use cases.
 
-> ⚠️ Requires an authenticated user with a `profile_uid`. Anonymous pages and API-key requests have no profile: reads return defaults and writes get `403`. Don't build features on User Storage if they need to work without a logged-in user.
+<DocCallOut title="Requires an authenticated user with a profile_uid">
+  Anonymous pages and API-key requests have no user profile: reads return defaults and writes get `403`. Don't build features on User Storage if they need to work without a logged-in user — see [No fallback for missing `profile_uid`](#no-fallback-for-missing-profile_uid).
+</DocCallOut>
 
-### When to use it
+## When to use it
 
 Per-user preferences that should follow the user across browsers and devices. Example use cases include:
 
@@ -31,50 +33,113 @@ Per-space user state where the same user may want different settings in differen
 
 ### Adjacent systems
 
-User Storage co-exists with three other per-user storage layers; pick the one that fits the data, not the one that's most familiar.
+User Storage co-exists with several other per-user storage layers; pick the one that fits the data, not the one that's most familiar.
 
 | If the data is… | Use | Why |
 |---|---|---|
 | Ephemeral UI state — panel widths, collapsed/expanded states, sort orders, view-mode toggles, tour completions, callout dismissals | **`localStorage`** | Trivially re-set; no real cost when lost. Doesn't need to follow the user across devices. |
 | Identity / personalization that might follow the user across Elastic Cloud products — dark mode, avatar | **ES User Profile** | ES enforces per-user isolation; field set is small and stable. The right home for portable identity data, not for arbitrary plugin-owned state. |
-| Space-wide or cluster-wide admin-set defaults, *not* per-user | **`uiSettings`** | Admin-managed, scoped to a space or cluster. No user dimension. |
+| Space-wide or cluster-wide admin-set defaults, *not* per-user | **Advanced Settings (`uiSettings`)** | Admin-managed and shared by all users in a space or cluster; can be enforced via `kibana.yml` overrides. No user dimension — see [Deciding between Advanced Settings and User Storage](#deciding-between-advanced-settings-and-user-storage). |
 | Shared / multi-user data | **Saved Objects** | Has its own visibility and sharing model. |
 | Large blobs (>~few KB) | **file service** | Saved Objects are not blob storage. |
 | Frequently-changing high-volume telemetry | **analytics** | Persisting every event in a per-user SO is the wrong shape. |
 | Settings that must work for unauthenticated users | **`localStorage`** | User Storage requires a `profile_uid`; there is no anonymous fallback today. |
 
+## Deciding between Advanced Settings and User Storage
+
+Both store configuration-like values, so the two are easy to confuse. The deciding question is **who owns the value**: an Advanced Setting (`uiSettings`) is a single value per space (or global) shared by everyone, whereas a User Storage key is owned independently by each user.
+
+**Reach for Advanced Settings when:**
+
+- The value applies to everyone in a space or cluster — an admin-managed default.
+- An operator may need to enforce or lock the value (`uiSettings.overrides` in `kibana.yml`).
+- It must be readable by requests without a logged-in user (API-key or anonymous access).
+- You want the built-in Stack Management editing UI.
+
+**Reach for User Storage when:**
+
+- The value is personal — each user sets their own without affecting others.
+- It should follow the user across spaces (`scope: 'global'`) or vary per space (`scope: 'space'`).
+- You're replacing scattered `localStorage` usage with a server-backed, schema-validated store that survives device switches and cache clears.
+
+Three differences are worth weighing before choosing User Storage:
+
+- **No enforcement.** There is no equivalent of `uiSettings.overrides`; admins cannot pin a value for all users. If you need an enforced default *and* a per-user override, you need both systems.
+- **Requires a `profile_uid`.** Anonymous and API-key requests get defaults and cannot write; Advanced Settings have no such requirement.
+- **Reads aren't synchronous by default.** Advanced Settings reads are synchronous in the browser; User Storage reads are synchronous only for `preload: true` keys (see [Preloaded values](#key-concepts)).
+
+<DocCallOut title="Migrating an existing Advanced Setting is a behavior change">
+  Moving a setting from `uiSettings` to User Storage turns one shared value into per-user values — it is not a drop-in swap. Plan for the semantic shift, the loss of central enforcement, and a transition path for existing values.
+</DocCallOut>
+
+## Quickstart
+
+Register a key in your plugin's server `setup`, then read and write it in the browser with the `useUserStorage` hook.
+
+```typescript
+// server/plugin.ts
+import { z } from '@kbn/zod/v4';
+import type { Plugin, CoreSetup } from '@kbn/core/server';
+
+export class MyPlugin implements Plugin {
+  public setup(core: CoreSetup) {
+    core.userStorage.register({
+      'myPlugin:tour-dismissed': {
+        schema: z.boolean(),
+        defaultValue: false,
+        scope: 'global',
+      },
+    });
+  }
+  public start() {}
+}
+```
+
+```tsx
+// public — wrap your app once, then read/write anywhere beneath it
+import { UserStorageProvider, useUserStorage } from '@kbn/core-user-storage-browser';
+
+const App = ({ core }: { core: CoreStart }) => (
+  <UserStorageProvider userStorage={core.userStorage}>
+    <TourCallout />
+  </UserStorageProvider>
+);
+
+const TourCallout = () => {
+  const [dismissed, setDismissed] = useUserStorage<boolean>('myPlugin:tour-dismissed', false);
+  if (dismissed) return null;
+  return <button onClick={() => setDismissed(true)}>Got it</button>;
+};
+```
+
+That's the whole loop: one server registration, one provider, one hook. The rest of this document is reference detail for scope, preloading, the server API, observables, and testing.
+
 ## Key concepts
 
-### Registration
+**Registration.** Every key must be registered at server setup with a Zod schema, a default value, and a scope. Reads of unregistered keys throw; writes of unregistered keys return `400`. Reads always succeed: if no value is stored, the registered default is returned. Each key may only be registered once across all plugins — duplicate registrations throw at boot.
 
-Every key must be **registered** at server setup with a Zod schema, a default value, and a scope. Reads of unregistered keys throw; writes of unregistered keys return `400`. Reads always succeed: if no value is stored, the registered default is returned.
-
-### Scope
-
-A key is scoped either to a single space or globally across spaces:
+**Scope.** A key is scoped either to a single space or globally across spaces:
 
 - `'space'` — the value is stored per `(profile_uid, space_id)`. Use this for state that is meaningfully per-space (e.g. per-solution side-nav customization).
 - `'global'` — the value is stored per `profile_uid`, ignoring the active space. Use this for cross-space user preferences (e.g. a one-time tour dismissal).
 
 Once you pick a scope for a key, changing it later is a breaking change for users with existing values. Choose deliberately.
 
-### Schema validation
-
-The Zod schema runs:
+**Schema validation.** The Zod schema runs at three points:
 
 1. At registration, against the `defaultValue` (catches drift between the default and the schema at boot).
 2. At every `set`, against the incoming value (rejects invalid writes with `400`).
-3. At every `get`, against the stored value. If the stored value fails to parse — usually because the schema has been narrowed since the value was written — the registered default is returned and a warning is logged. This means you can safely tighten a schema without writing a migration, but consumers should treat the resulting value reset as a possible UX outcome.
+3. At every `get`, against the stored value. If the stored value fails to parse — usually because the schema has been narrowed since the value was written — the registered default is returned and a warning is logged. You can therefore tighten a schema without writing a migration, but consumers should treat the resulting value reset as a possible UX outcome.
 
-### Preloaded values
-
-By default, browser-side reads are **lazy**: the cache starts empty for a given key and the first `get(key)` / `get$(key)` call fires a `GET /internal/user_storage/{key}` request to hydrate it. While the request is in-flight `get(key)` returns `undefined` (or the provided `defaultValue`) and `get$(key)` emits `undefined` then emits again once the value arrives.
+**Preloaded values.** By default, browser-side reads are **lazy**: the cache starts empty for a given key and the first `get(key)` / `get$(key)` call fires a `GET /internal/user_storage/{key}` request to hydrate it. While the request is in-flight `get(key)` returns `undefined` (or the provided `defaultValue`) and `get$(key)` emits `undefined`, then emits again once the value arrives.
 
 For keys on the critical rendering path, opt in to **eager injection** by setting `preload: true` in the key's `UserStorageDefinition`. Core then calls `getForInjection()` during server-side rendering and embeds only the opted-in keys into `<kbn-injected-metadata>` under `userStorage.values`, so those values are available synchronously before the first React render without any in-browser fetch.
 
-## Registering keys (server)
+## Server API
 
-Register from your plugin's server-side `setup` lifecycle. The same `register()` call can include multiple keys.
+### `register(definitions)`
+
+Register from your plugin's server-side `setup` lifecycle. The same `register()` call can include multiple keys with different schemas, scopes, and preload settings.
 
 ```typescript
 import { z } from '@kbn/zod/v4';
@@ -105,13 +170,11 @@ export class MyPlugin implements Plugin {
 }
 ```
 
-Each key may only be registered once across all plugins. Duplicate registrations throw at boot.
+Registration rejects top-level Zod schemas that accept **`null`** (reserved as the removal tombstone in saved objects) or **`undefined`** (reserved for "no cached value" on the client, and unreliable over JSON since `JSON.stringify({ value: undefined })` drops the `value` key).
 
-Registration also rejects top-level Zod schemas that accept **`null`** (reserved as the removal tombstone in saved objects) or **`undefined`** (reserved for “no cached value” on the client and unreliable over JSON, since `JSON.stringify({ value: undefined })` drops the `value` key).
+### `asScoped(request)`
 
-## Reading and writing on the server
-
-`asScoped(request)` returns a client bound to the authenticated user behind a `KibanaRequest`. It returns `null` when the request has no `profile_uid` (typically API-key authentication or anonymous pages); always check.
+`asScoped(request)` returns a Promise-based client bound to the authenticated user behind a `KibanaRequest`. It returns `null` when the request has no `profile_uid` (typically API-key authentication or anonymous pages); always check.
 
 ```typescript
 const client = core.userStorage.asScoped(request);
@@ -127,34 +190,66 @@ await client.remove('myPlugin:tour-dismissed'); // resets the key to its default
 
 Server reads always return the resolved value (user override or registered default), never `undefined`. Writes are validated against the registered schema and reject with a Zod error on mismatch.
 
+The server client surface:
+
+| Method | Returns | Notes |
+|---|---|---|
+| `get<T>(key)` | `Promise<T>` | User override or registered default. |
+| `set<T>(key, value)` | `Promise<T>` | Validates, persists, resolves to the validated value. |
+| `remove(key)` | `Promise<void>` | Clears the user override; the key falls back to its default. |
+| `getForInjection()` | `Promise<Record<string, unknown>>` | Resolves all `preload: true` keys at once. Used by the rendering service; see below. |
+
+### Server-side read for rendering
+
+`getForInjection()` is how preloaded values reach the browser synchronously. The core rendering service calls it for you during SSR — you do not call it from a route — but the same `asScoped(request)` client is the entry point whenever you need a user's value on the server (for example, to seed a server-rendered page or to make a server-side decision based on a preference):
+
+```typescript
+// Inside a request handler, resolve the user's preference server-side.
+const client = core.userStorage.asScoped(request);
+const layout = client
+  ? await client.get<NavLayout>('myPlugin:nav-layout')
+  : defaultNavLayout; // no profile_uid — fall back to the default
+```
+
+Because `myPlugin:nav-layout` was registered with `preload: true`, the rendering service also embeds its resolved value into the initial HTML, so the browser cache is warm before the first React render — no extra fetch on the client.
+
 ### HTTP routes
 
-Three internal routes are exposed for the browser client; consumers do not normally call them directly:
+Three internal routes back the browser client; consumers do not normally call them directly:
 
-| Method | Path                                  | Body              | Returns                                              |
-|--------|---------------------------------------|-------------------|------------------------------------------------------|
-| `GET`  | `/internal/user_storage/{key}`        | —                 | `{ value }` — the stored value or registered default |
-| `PUT`  | `/internal/user_storage/{key}`        | `{ value }`       | `200` on success, `400` on validation                |
-| `DELETE` | `/internal/user_storage/{key}`      | —                 | `200` on success                                     |
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET`  | `/internal/user_storage/{key}` | — | `{ value }` — the stored value or registered default |
+| `PUT`  | `/internal/user_storage/{key}` | `{ value }` | `200` on success, `400` on validation |
+| `DELETE` | `/internal/user_storage/{key}` | — | `200` on success |
 
 All three return `403` when the request has no `profile_uid`.
 
-## Using the service in the browser
+## Browser API
 
 The browser surface is in `@kbn/core-user-storage-browser` and is exposed on `core.userStorage` at both `setup` and `start`. The client is **synchronous** for reads (cache-backed) and asynchronous for writes (HTTP-backed):
+
+| Method | Returns | Notes |
+|---|---|---|
+| `peek<T>(key, default?)` | `T \| undefined` | Pure cache read, never fetches. Safe in React render. |
+| `get<T>(key, default?)` | `T \| undefined` | Cache read; first miss on a lazy key triggers a background fetch. |
+| `get$<T>(key, default?)` | `Observable<T \| undefined>` | Current value, then every future value for the key. |
+| `set<T>(key, value)` | `Promise<T>` | `PUT`; caches the server-validated value on success. |
+| `remove(key)` | `Promise<void>` | `DELETE`; clears the cached override. |
+| `getUpdate$()` | `Observable<UserStorageUpdate>` | Successful `set`/`remove` events across all keys (not lazy hydrations). |
+| `getHttpError$()` | `Observable<Error>` | Errors from `set` / `remove` / lazy-fetch calls. |
 
 ```typescript
 import type { IUserStorageClient } from '@kbn/core-user-storage-browser';
 
-// somewhere with access to core:
 const layout = core.userStorage.get<NavLayout>('myPlugin:nav-layout', defaultLayout);
 await core.userStorage.set('myPlugin:nav-layout', nextLayout);
 await core.userStorage.remove('myPlugin:tour-dismissed');
 ```
 
-Pass a `defaultValue` to `get(key, default)` so that consumers never see `undefined`. For keys with `preload: true` the cache is pre-populated at first paint so `get` is truly synchronous. For lazy-loaded keys, the first `get` triggers a background fetch and returns `undefined` (or `defaultValue`) until the response arrives.
+Pass a `defaultValue` to `get(key, default)` so consumers never see `undefined`. For keys with `preload: true` the cache is pre-populated at first paint, so `get` is truly synchronous. For lazy keys, the first `get` triggers a background fetch and returns `undefined` (or `defaultValue`) until the response arrives.
 
-The client also exposes RxJS observables for live updates and HTTP errors:
+The observables drive live updates and centralized error handling:
 
 ```typescript
 core.userStorage.get$<NavLayout>('myPlugin:nav-layout').subscribe((layout) => {
@@ -169,7 +264,7 @@ core.userStorage.getUpdate$().subscribe((update) => {
 });
 
 core.userStorage.getHttpError$().subscribe((err) => {
-  // fires when a set/remove/lazy-fetch HTTP call fails
+  // fires when a set/remove/lazy-fetch HTTP call fails — wire to a toast / telemetry
 });
 ```
 
@@ -191,22 +286,29 @@ const App = ({ core }: { core: CoreStart }) => (
   </UserStorageProvider>
 );
 
-// In a component:
+// In a component — the nav-customization example:
+interface NavLayout {
+  hidden: string[];
+  order: string[];
+}
+
 const NavLayoutEditor = () => {
-  const [layout, setLayout] = useUserStorage<NavLayout>(
-    'myPlugin:nav-layout',
-    { hidden: [], order: [] }
-  );
+  const [layout, setLayout] = useUserStorage<NavLayout>('myPlugin:nav-layout', {
+    hidden: [],
+    order: [],
+  });
 
   return (
-    <button onClick={() => setLayout({ hidden: ['discover'], order: [] })}>
+    <button onClick={() => setLayout({ ...layout, hidden: [...layout.hidden, 'discover'] })}>
       Hide Discover
     </button>
   );
 };
 ```
 
-`useUserStorage(key, defaultValue?)` returns `[value, setter]`. The value reflects the synchronous cache and re-renders on change. The setter persists via HTTP and refreshes the cache on success. If the HTTP write fails, the cache is unchanged, the returned promise rejects, and the error is published to `getHttpError$`.
+`useUserStorage(key, defaultValue?)` returns `[value, setter]`. The value reflects the synchronous cache and re-renders on change. The setter persists via HTTP, refreshes the cache on success, and resolves to the validated value. If the HTTP write fails, the cache is unchanged, the returned promise rejects, and the error is published to `getHttpError$`.
+
+Because `myPlugin:nav-layout` is registered with `preload: true`, `layout` is populated synchronously on the very first render — no loading state needed.
 
 For the less common operations — `remove`, `getUpdate$`, `getHttpError$` — reach for the underlying client:
 
@@ -277,12 +379,12 @@ User Storage values are persisted in unencrypted system Saved Objects. Treat the
 
 ## Reference
 
-| Package                                       | Visibility | Contents                                                              |
-|-----------------------------------------------|------------|-----------------------------------------------------------------------|
-| `@kbn/core-user-storage-common`               | shared     | `UserStorageDefinition`, `UserStorageScope`, server `IUserStorageClient` |
-| `@kbn/core-user-storage-server`               | shared     | `UserStorageServiceSetup`, `UserStorageServiceStart`                  |
-| `@kbn/core-user-storage-browser`              | shared     | Browser `IUserStorageClient`, `UserStorageProvider`, `useUserStorage`, `useUserStorageClient` |
-| `@kbn/core-user-storage-server-mocks`         | dev only   | `userStorageServiceMock` (server)                                     |
-| `@kbn/core-user-storage-browser-mocks`        | dev only   | `userStorageServiceMock` (browser)                                    |
-| `@kbn/core-user-storage-server-internal`      | private    | Server implementation                                                 |
-| `@kbn/core-user-storage-browser-internal`     | private    | Browser implementation                                                |
+| Package | Visibility | Contents |
+|---|---|---|
+| `@kbn/core-user-storage-common`           | shared   | `UserStorageDefinition`, `UserStorageScope`, server `IUserStorageClient` |
+| `@kbn/core-user-storage-server`           | shared   | `UserStorageServiceSetup`, `UserStorageServiceStart` |
+| `@kbn/core-user-storage-browser`          | shared   | Browser `IUserStorageClient`, `UserStorageProvider`, `useUserStorage`, `useUserStorageClient` |
+| `@kbn/core-user-storage-server-mocks`     | dev only | `userStorageServiceMock` (server) |
+| `@kbn/core-user-storage-browser-mocks`    | dev only | `userStorageServiceMock` (browser) |
+| `@kbn/core-user-storage-server-internal`  | private  | Server implementation |
+| `@kbn/core-user-storage-browser-internal` | private  | Browser implementation |

@@ -43,12 +43,14 @@ const BaseCommentActionsComponent: React.FC<Props> = ({ message, children }) => 
         <EuiToolTip position="top" content={COPY_TO_CLIPBOARD}>
           <EuiCopy textToCopy={getSelfContainedContent(content)}>
             {(copy) => (
-              <EuiButtonIcon
-                aria-label={COPY_TO_CLIPBOARD}
-                color="primary"
-                iconType="copy"
-                onClick={copy}
-              />
+              <EuiToolTip content={COPY_TO_CLIPBOARD} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  aria-label={COPY_TO_CLIPBOARD}
+                  color="primary"
+                  iconType="copy"
+                  onClick={copy}
+                />
+              </EuiToolTip>
             )}
           </EuiCopy>
         </EuiToolTip>

@@ -153,9 +153,9 @@ export function useWorkflowExecutions(
     queryFn,
     getNextPageParam,
     enabled: params.workflowId !== null,
-    retry: MAX_RETRIES,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     ...options,
+    retry: options.retry ?? MAX_RETRIES,
+    retryDelay: options.retryDelay ?? ((attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)),
   });
 
   // Computed loading states for better semantics

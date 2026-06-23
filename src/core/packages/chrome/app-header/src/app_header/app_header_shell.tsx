@@ -30,9 +30,10 @@ export interface AppHeaderShellProps {
   padding?: AppHeaderPadding;
 }
 
-// Resolves the horizontal-only padding contract. Vertical padding is standardized internally
+// Resolves the outer spacing contract: horizontal padding for the scalar values, and the breakout
+// margin for the `bleed` variant. The header's internal vertical padding is standardized separately
 // (see `useHeaderStyles`) so the header keeps a consistent height regardless of this prop.
-const resolveHorizontalPadding = (
+const resolvePadding = (
   sticky: boolean,
   padding: AppHeaderPadding | undefined,
   euiTheme: ReturnType<typeof useEuiTheme>['euiTheme']
@@ -43,12 +44,13 @@ const resolveHorizontalPadding = (
     return { paddingInline: undefined, bleedMargin: undefined };
   }
 
-  if (resolved === 'm') {
-    return { paddingInline: euiTheme.size.m, bleedMargin: undefined };
+  if (resolved === 's' || resolved === 'm') {
+    return { paddingInline: euiTheme.size[resolved], bleedMargin: undefined };
   }
 
-  // `{ bleed }`: pull the header out to its padded container's edges (negative margin) and
-  // re-inset the content by the same amount so it stays aligned with the page gutter.
+  // `{ bleed }`: pull the header out to its padded container's top/left/right edges (negative margin)
+  // and re-inset the content by the same amount so it stays aligned with the page gutter. The value
+  // mirrors the container's symmetric padding, so it applies equally to the sides and the top.
   const value = resolved.bleed === 'l' ? euiTheme.size.l : euiTheme.size.m;
   return { paddingInline: value, bleedMargin: value };
 };
@@ -63,7 +65,7 @@ const useHeaderStyles = (
   const { euiTheme } = useEuiTheme();
 
   return useMemo(() => {
-    const { paddingInline, bleedMargin } = resolveHorizontalPadding(sticky, padding, euiTheme);
+    const { paddingInline, bleedMargin } = resolvePadding(sticky, padding, euiTheme);
 
     // Vertical padding is internal (independent of the `padding` prop). The primary row floors at a
     // consistent 48px regardless of title size; content is centered within it.

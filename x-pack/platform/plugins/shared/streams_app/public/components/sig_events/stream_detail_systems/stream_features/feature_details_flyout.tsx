@@ -19,6 +19,7 @@ import {
   EuiPopover,
   EuiSpacer,
   EuiTitle,
+  EuiToolTip,
   useEuiTheme,
   useGeneratedHtmlId,
 } from '@elastic/eui';
@@ -95,13 +96,15 @@ export function FeatureDetailsFlyout({
             <EuiPopover
               aria-label={ACTIONS_BUTTON_ARIA_LABEL}
               button={
-                <EuiButtonIcon
-                  data-test-subj="streamsAppFeatureDetailsFlyoutActionsButton"
-                  iconType="boxesVertical"
-                  aria-label={ACTIONS_BUTTON_ARIA_LABEL}
-                  onClick={toggleActionsPopover}
-                  isLoading={isExcluding || isRestoring}
-                />
+                <EuiToolTip content={ACTIONS_BUTTON_ARIA_LABEL} disableScreenReaderOutput>
+                  <EuiButtonIcon
+                    data-test-subj="streamsAppFeatureDetailsFlyoutActionsButton"
+                    iconType="boxesVertical"
+                    aria-label={ACTIONS_BUTTON_ARIA_LABEL}
+                    onClick={toggleActionsPopover}
+                    isLoading={isExcluding || isRestoring}
+                  />
+                </EuiToolTip>
               }
               isOpen={isActionsPopoverOpen}
               closePopover={closeActionsPopover}
@@ -161,12 +164,14 @@ export function FeatureDetailsFlyout({
           </EuiFlexItem>
         )}
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            data-test-subj="streamsAppFeatureDetailsFlyoutCloseButton"
-            iconType="cross"
-            aria-label={CLOSE_BUTTON_ARIA_LABEL}
-            onClick={onClose}
-          />
+          <EuiToolTip content={CLOSE_BUTTON_ARIA_LABEL} disableScreenReaderOutput>
+            <EuiButtonIcon
+              data-test-subj="streamsAppFeatureDetailsFlyoutCloseButton"
+              iconType="cross"
+              aria-label={CLOSE_BUTTON_ARIA_LABEL}
+              onClick={onClose}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
       </FlyoutToolbarHeader>
 

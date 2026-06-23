@@ -7,13 +7,12 @@
 
 import React from 'react';
 
+const MockPrompt = jest.fn<null, [object]>(() => null);
 jest.mock('react-router-dom', () => ({
-  Prompt: () => null,
+  Prompt: (props: object) => MockPrompt(props),
 }));
-import { Prompt } from 'react-router-dom';
 
-import type { ReactWrapper } from 'enzyme';
-import { shallow, mount } from 'enzyme';
+import { render } from '@testing-library/react';
 
 import { UnsavedChangesPrompt } from './unsaved_changes_prompt';
 
@@ -28,79 +27,80 @@ describe('UnsavedChangesPrompt', () => {
       .mockImplementation(() => true);
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   afterAll(() => {
     addEventListenerSpy.mockRestore();
     removeEventListenerSpy.mockRestore();
   });
 
   it('renders a React Router Prompt, which will show users a confirmation message when navigating within the SPA if hasUnsavedChanges is true', () => {
-    const wrapper = shallow(<UnsavedChangesPrompt hasUnsavedChanges />);
-    const prompt = wrapper.find(Prompt);
-    expect(prompt.exists()).toBe(true);
-    expect(prompt.prop('when')).toBe(true);
-    expect(prompt.prop('message')).toBe(
-      'Your changes have not been saved. Are you sure you want to leave?'
+    render(<UnsavedChangesPrompt hasUnsavedChanges />);
+
+    expect(MockPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        when: true,
+        message: 'Your changes have not been saved. Are you sure you want to leave?',
+      })
     );
   });
 
   it('the message text of the prompt can be customized', () => {
-    const wrapper = shallow(
-      <UnsavedChangesPrompt hasUnsavedChanges messageText="Some custom text" />
+    render(<UnsavedChangesPrompt hasUnsavedChanges messageText="Some custom text" />);
+
+    expect(MockPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Some custom text' })
     );
-    expect(wrapper.find(Prompt).prop('message')).toBe('Some custom text');
   });
 
   describe('external navigation', () => {
-    let wrapper: ReactWrapper;
-    const getAddBeforeUnloadEventCalls = () =>
+    const getAddBeforeUnloadCalls = () =>
       addEventListenerSpy.mock.calls.filter((call) => call[0] === 'beforeunload');
-    const getRemoveBeforeUnloadEventCalls = () =>
+    const getRemoveBeforeUnloadCalls = () =>
       removeEventListenerSpy.mock.calls.filter((call) => call[0] === 'beforeunload');
-    const getLastRegisteredBeforeUnloadEventHandler = () => {
-      const calls = getAddBeforeUnloadEventCalls();
+    const getLastHandler = () => {
+      const calls = getAddBeforeUnloadCalls();
       return calls[calls.length - 1][1];
     };
 
-    beforeAll(() => {
-      wrapper = mount(<UnsavedChangesPrompt hasUnsavedChanges />);
-    });
-
     it('sets up a handler for the beforeunload event', () => {
-      const calls = getAddBeforeUnloadEventCalls();
-      expect(calls.length).toBe(1);
+      render(<UnsavedChangesPrompt hasUnsavedChanges />);
+
+      expect(getAddBeforeUnloadCalls().length).toBe(1);
     });
 
     it('that handler will show users a confirmation message when navigating outside the SPA if hasUnsavedChanges is true', () => {
-      const handler = getLastRegisteredBeforeUnloadEventHandler();
-      const event = { returnValue: null, preventDefault: jest.fn() };
+      render(<UnsavedChangesPrompt hasUnsavedChanges />);
 
-      handler(event);
+      const event = { returnValue: null, preventDefault: jest.fn() };
+      getLastHandler()(event);
+
       expect(event.returnValue).toEqual('');
       expect(event.preventDefault).toHaveBeenCalled();
     });
 
     it('will not register a new handler if there is a re-render and hasUnsavedChanges is still true', () => {
-      wrapper.setProps({ hasUnsavedChanges: true, messageText: 'custom message text' });
-      const calls = getAddBeforeUnloadEventCalls();
-      expect(calls.length).toBe(1);
+      const { rerender } = render(<UnsavedChangesPrompt hasUnsavedChanges />);
+      rerender(<UnsavedChangesPrompt hasUnsavedChanges messageText="custom message text" />);
+
+      expect(getAddBeforeUnloadCalls().length).toBe(1);
     });
 
     it('when the hasUnsavedChanges prop changes to false, it will deregister the old handler and create a new one, which will not show users a confirmation', () => {
-      const initialHandler = getLastRegisteredBeforeUnloadEventHandler();
+      const { rerender } = render(<UnsavedChangesPrompt hasUnsavedChanges />);
+      const initialHandler = getLastHandler();
 
-      wrapper.setProps({ hasUnsavedChanges: false });
+      rerender(<UnsavedChangesPrompt hasUnsavedChanges={false} />);
 
-      // The old handler is unregistered
-      const unregisterCalls = getRemoveBeforeUnloadEventCalls();
+      const unregisterCalls = getRemoveBeforeUnloadCalls();
       expect(unregisterCalls.length).toBe(1);
       expect(unregisterCalls[0][1]).toBe(initialHandler);
 
-      // The new handler is registered
-      const calls = getAddBeforeUnloadEventCalls();
-      expect(calls.length).toBe(2);
-      const newHandler = getLastRegisteredBeforeUnloadEventHandler();
+      expect(getAddBeforeUnloadCalls().length).toBe(2);
+      const newHandler = getLastHandler();
 
-      // The new handler does not show a confirmation message
       const event = { returnValue: null, preventDefault: jest.fn() };
       newHandler(event);
       expect(event.returnValue).toEqual(null);

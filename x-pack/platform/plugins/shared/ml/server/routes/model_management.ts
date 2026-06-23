@@ -67,7 +67,6 @@ export function modelManagementRoutes({
       security: {
         authz: {
           requiredPrivileges: [
-            'ml:canViewMlNodes',
             'ml:canGetDataFrameAnalytics',
             'ml:canGetJobs',
             'ml:canGetTrainedModels',

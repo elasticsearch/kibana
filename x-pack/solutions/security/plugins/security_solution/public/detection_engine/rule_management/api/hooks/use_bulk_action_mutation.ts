@@ -24,6 +24,7 @@ import { useInvalidateFetchPrebuiltRulesInstallReviewQuery } from './prebuilt_ru
 import { useInvalidateFetchCoverageOverviewQuery } from './use_fetch_coverage_overview_query';
 import { useInvalidateFetchPrebuiltRuleBaseVersionQuery } from './prebuilt_rules/use_fetch_prebuilt_rule_base_version_query';
 import { useInvalidateFetchPrebuiltRulesDeprecationReviewQuery } from './prebuilt_rules/use_fetch_prebuilt_rules_deprecation_review_query';
+import { useInvalidateChangeHistory } from './use_infinite_change_history';
 
 export const BULK_ACTION_MUTATION_KEY = ['POST', DETECTION_ENGINE_RULES_BULK_ACTION];
 
@@ -46,6 +47,7 @@ export const useBulkActionMutation = (
   const invalidateFetchPrebuiltRuleBaseVerison = useInvalidateFetchPrebuiltRuleBaseVersionQuery();
   const invalidateFetchPrebuiltRulesDeprecationReview =
     useInvalidateFetchPrebuiltRulesDeprecationReviewQuery();
+  const invalidateChangeHistory = useInvalidateChangeHistory();
   const updateRulesCache = useUpdateRulesCache();
 
   return useMutation<
@@ -72,6 +74,7 @@ export const useBulkActionMutation = (
         case BulkActionTypeEnum.disable: {
           invalidateFetchRuleByIdQuery();
           invalidateFetchCoverageOverviewQuery();
+          invalidateChangeHistory();
           if (updatedRules) {
             // We have a list of updated rules, no need to invalidate all
             updateRulesCache(updatedRules);
@@ -110,6 +113,7 @@ export const useBulkActionMutation = (
           invalidateFetchCoverageOverviewQuery();
           invalidateFetchPrebuiltRulesUpgradeReviewQuery();
           invalidateFetchPrebuiltRuleBaseVerison();
+          invalidateChangeHistory();
           break;
       }
 

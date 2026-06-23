@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { load as parseYaml } from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import { render, renderHook, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 

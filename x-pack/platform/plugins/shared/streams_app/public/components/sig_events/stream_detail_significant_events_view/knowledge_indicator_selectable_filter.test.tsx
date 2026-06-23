@@ -16,6 +16,7 @@ import type { KnowledgeIndicatorFilterCriteria } from './utils/matches_knowledge
 function makeFeature(overrides: Partial<Feature> = {}): Feature {
   return {
     id: 'feature-id',
+    uuid: 'feature-uuid',
     stream_name: 'logs.test',
     type: 'entity',
     description: 'A feature',

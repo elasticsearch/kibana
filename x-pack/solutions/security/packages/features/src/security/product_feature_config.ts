@@ -96,6 +96,10 @@ export const securityDefaultProductFeaturesConfig: SecurityProductFeaturesConfig
     subFeatureIds: [SecuritySubFeatureId.trustedDevices],
   },
 
+  [ProductFeatureSecurityKey.endpointCustomYaraSignatures]: {
+    subFeatureIds: [SecuritySubFeatureId.customYaraSignatures],
+  },
+
   [ProductFeatureSecurityKey.endpointPolicyManagement]: {
     subFeatureIds: [SecuritySubFeatureId.policyManagement],
   },

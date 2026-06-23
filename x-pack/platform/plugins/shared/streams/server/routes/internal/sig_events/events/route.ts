@@ -7,6 +7,7 @@
 
 import {
   sigEventSchema,
+  type Detection,
   type SigEvent,
   type Discovery,
   type LifecycleDetection,
@@ -21,26 +22,24 @@ import { assertSignificantEventsAccess } from '../../../utils/assert_significant
 const toArray = (val: string | string[] | undefined): string[] | undefined =>
   val === undefined ? undefined : Array.isArray(val) ? val : [val];
 
-const collectDetections = (discoveries: Discovery[]): LifecycleDetection[] => {
+const isLifecycleDetection = (
+  hit: Detection
+): hit is Detection & { kind: LifecycleDetection['kind'] } => hit.kind !== 'handled';
+
+const collectEmbeddedDetections = (discoveries: Discovery[]) => {
   const seen = new Set<string>();
-  const detections: LifecycleDetection[] = [];
+  const result: Array<Omit<LifecycleDetection, 'kind' | '@timestamp'>> = [];
 
   for (const discovery of discoveries) {
     for (const det of discovery.detections ?? []) {
-      const { detection_id, rule_name, stream_name, change_point_type, detected_at } = det;
-      if (!detection_id || !detected_at || seen.has(detection_id)) continue;
+      const { detection_id, rule_name, stream_name, change_point_type } = det;
+      if (!detection_id || seen.has(detection_id)) continue;
       seen.add(detection_id);
-      detections.push({
-        detection_id,
-        rule_name,
-        stream_name,
-        change_point_type,
-        detected_at,
-      });
+      result.push({ detection_id, rule_name, stream_name, change_point_type });
     }
   }
 
-  return detections;
+  return result;
 };
 
 const eventsSearchRoute = createServerRoute({
@@ -161,7 +160,7 @@ const eventsLifecycleRoute = createServerRoute({
     getScopedClients,
     server,
   }): Promise<EventLifecycleResponse> => {
-    const { getEventClient, getDiscoveryClient, licensing, uiSettingsClient } =
+    const { getEventClient, getDiscoveryClient, getDetectionClient, licensing, uiSettingsClient } =
       await getScopedClients({ request });
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
@@ -178,11 +177,35 @@ const eventsLifecycleRoute = createServerRoute({
       getDiscoveryClient().findBySlug(slug),
     ]);
 
-    return {
-      detections: collectDetections(discoveries),
-      discoveries,
-      events,
-    };
+    const embedded = collectEmbeddedDetections(discoveries);
+    const { hits: allDetectionHits } = await getDetectionClient().findByIds(
+      embedded.map((e) => e.detection_id).filter(Boolean)
+    );
+    const hitsByDetectionId = new Map(
+      allDetectionHits.filter(isLifecycleDetection).map((h) => [h.detection_id, h])
+    );
+
+    const detections: LifecycleDetection[] = embedded.flatMap(
+      ({ detection_id, rule_name, stream_name, change_point_type }) => {
+        const hit = hitsByDetectionId.get(detection_id);
+        if (!hit) {
+          return [];
+        }
+
+        return [
+          {
+            detection_id,
+            rule_name: hit.rule_name ?? rule_name,
+            stream_name: hit.stream_name ?? stream_name,
+            change_point_type,
+            kind: hit.kind,
+            '@timestamp': hit['@timestamp'],
+          },
+        ];
+      }
+    );
+
+    return { detections, discoveries, events };
   },
 });
 

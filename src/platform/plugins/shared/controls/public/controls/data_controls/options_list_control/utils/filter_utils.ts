@@ -23,9 +23,13 @@ export const buildFilter = (
     OptionsListDSLControlState,
     'field_name' | 'exists_selected' | 'exclude' | 'selected_options'
   > & { sectionId?: string }
-) => {
+): Filter | undefined => {
+  const fieldName = filterState.field_name;
+  if (!fieldName) {
+    return undefined;
+  }
   let newFilter: Filter | undefined;
-  const field = dataView.getFieldByName(filterState.field_name);
+  const field = dataView.getFieldByName(fieldName);
   if (field) {
     if (filterState.exists_selected) {
       newFilter = buildExistsFilter(field, dataView);

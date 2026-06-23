@@ -44,13 +44,17 @@ describe('useToolbarOptions()', () => {
       }
     `);
     expect(result.result.current.additionalControls.right).toMatchInlineSnapshot(`
-      <EuiButtonIcon
-        aria-label="Inspect"
-        data-test-subj="tiIndicatorsGridInspect"
-        iconType="inspect"
-        onClick={[Function]}
-        title="Inspect"
-      />
+      <EuiToolTip
+        content="Inspect"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Inspect"
+          data-test-subj="tiIndicatorsGridInspect"
+          iconType="inspect"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     `);
   });
 
@@ -88,13 +92,17 @@ describe('useToolbarOptions()', () => {
       }
     `);
     expect(result.result.current.additionalControls.right).toMatchInlineSnapshot(`
-      <EuiButtonIcon
-        aria-label="Inspect"
-        data-test-subj="tiIndicatorsGridInspect"
-        iconType="inspect"
-        onClick={[Function]}
-        title="Inspect"
-      />
+      <EuiToolTip
+        content="Inspect"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Inspect"
+          data-test-subj="tiIndicatorsGridInspect"
+          iconType="inspect"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     `);
   });
 
@@ -132,13 +140,17 @@ describe('useToolbarOptions()', () => {
       }
     `);
     expect(result.result.current.additionalControls.right).toMatchInlineSnapshot(`
-      <EuiButtonIcon
-        aria-label="Inspect"
-        data-test-subj="tiIndicatorsGridInspect"
-        iconType="inspect"
-        onClick={[Function]}
-        title="Inspect"
-      />
+      <EuiToolTip
+        content="Inspect"
+        disableScreenReaderOutput={true}
+      >
+        <EuiButtonIcon
+          aria-label="Inspect"
+          data-test-subj="tiIndicatorsGridInspect"
+          iconType="inspect"
+          onClick={[Function]}
+        />
+      </EuiToolTip>
     `);
   });
 });

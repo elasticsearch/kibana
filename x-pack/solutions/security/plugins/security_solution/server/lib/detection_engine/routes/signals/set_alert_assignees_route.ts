@@ -16,7 +16,10 @@ import {
   DEFAULT_ALERTS_INDEX,
   DETECTION_ENGINE_ALERT_ASSIGNEES_URL,
 } from '../../../../../common/constants';
-import { setAlertAssigneesHandler } from '../common/set_alert_assignees_handler';
+import { buildSiemResponse } from '../utils';
+import { validateAlertAssigneesArrays } from '../common/validators/validate_alert_arrays';
+import { updateAlertsAssignees } from '../common/operations/update_alerts_assignees';
+import { withSiemErrorHandling } from '../with_siem_error_handling';
 
 export const setAlertAssigneesRoute = (router: SecuritySolutionPluginRouter) => {
   router.versioned
@@ -41,16 +44,21 @@ export const setAlertAssigneesRoute = (router: SecuritySolutionPluginRouter) => 
         },
       },
       async (context, request, response) => {
+        const siemResponse = buildSiemResponse(response);
+        const { ids, assignees } = request.body;
+
+        const validationErrors = validateAlertAssigneesArrays(assignees);
+        if (validationErrors.length) {
+          return siemResponse.error({ statusCode: 400, body: validationErrors });
+        }
+
         const securitySolution = await context.securitySolution;
         const spaceId = securitySolution?.getSpaceId() ?? 'default';
-        const getIndexPattern = async () => `${DEFAULT_ALERTS_INDEX}-${spaceId}`;
+        const index = `${DEFAULT_ALERTS_INDEX}-${spaceId}`;
 
-        return setAlertAssigneesHandler({
-          context,
-          request,
-          response,
-          getIndexPattern,
-        });
+        return withSiemErrorHandling(response, () =>
+          updateAlertsAssignees({ context, index, ids, assignees })
+        );
       }
     );
 };

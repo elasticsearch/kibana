@@ -302,9 +302,9 @@ export class EnterpriseSearchPlugin implements Plugin {
     import('./navigation_tree').then(({ getNavigationTreeDefinition }) => {
       return plugins.navigation.addSolutionNavigation(
         getNavigationTreeDefinition({
+          core,
           dynamicItems$: this.sideNavDynamicItems$,
           isCloudEnabled: plugins.cloud?.isCloudEnabled,
-          showAlertingV2: Boolean(core.application.capabilities.alertingVTwo),
         })
       );
     });

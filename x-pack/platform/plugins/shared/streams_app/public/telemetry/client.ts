@@ -29,7 +29,6 @@ import type {
   StreamsProcessingSimulationSamplesFetchLatencyProps,
   StreamsPartitioningSamplesFetchLatencyProps,
   StreamsTabVisitedProps,
-  StreamsInsightFeedbackProps,
 } from './types';
 import {
   STREAMS_AI_GROK_SUGGESTION_ACCEPTED_EVENT_TYPE,
@@ -54,7 +53,6 @@ import {
   STREAMS_PROCESSING_SIMULATION_SAMPLES_FETCH_LATENCY_EVENT_TYPE,
   STREAMS_PARTITIONING_SAMPLES_FETCH_LATENCY_EVENT_TYPE,
   STREAMS_TAB_VISITED_EVENT_TYPE,
-  STREAMS_SIGNIFICANT_EVENTS_INSIGHT_FEEDBACK_EVENT_TYPE,
 } from './constants';
 
 export class StreamsTelemetryClient {
@@ -136,10 +134,6 @@ export class StreamsTelemetryClient {
 
   public trackTabVisited(params: StreamsTabVisitedProps) {
     this.analytics.reportEvent(STREAMS_TAB_VISITED_EVENT_TYPE, params);
-  }
-
-  public trackInsightFeedback(params: StreamsInsightFeedbackProps) {
-    this.analytics.reportEvent(STREAMS_SIGNIFICANT_EVENTS_INSIGHT_FEEDBACK_EVENT_TYPE, params);
   }
 
   public startTrackingAIDissectSuggestionLatency(

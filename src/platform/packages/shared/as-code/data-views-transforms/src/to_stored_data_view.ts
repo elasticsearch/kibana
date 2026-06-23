@@ -19,6 +19,10 @@ import {
   toStoredRuntimeFields,
 } from './to_stored_fields';
 
+// Function overrides to better type the return value depending on the input type
+export function toStoredDataView(dataView: AsCodeDataView): string | DataViewSpec;
+export function toStoredDataView(dataView: AsCodeSavedDataView): DataViewSpec;
+
 /**
  * Convert an as-code data view back to a stored search-source `index` value
  * (string id for a referenced data view, or inline {@link DataViewSpec} fields).

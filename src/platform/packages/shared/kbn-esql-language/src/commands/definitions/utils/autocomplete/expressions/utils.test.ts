@@ -58,12 +58,10 @@ describe('getKqlSuggestionsIfApplicable', () => {
     const mockSuggestions = [
       {
         text: 'value1',
+        label: 'value1',
         kind: 'Value',
         detail: 'A value',
-        rangeToReplace: {
-          end: 12,
-          start: 7,
-        },
+        range: { start: 0, end: 5 },
       },
     ];
     const mockGetKqlSuggestions = jest.fn().mockResolvedValue(mockSuggestions);
@@ -71,6 +69,15 @@ describe('getKqlSuggestionsIfApplicable', () => {
 
     const result = await getKqlSuggestionsIfApplicable(ctx);
 
-    expect(result).toEqual(mockSuggestions);
+    expect(result).toEqual([
+      {
+        text: 'value1',
+        label: 'value1',
+        kind: 'Value',
+        detail: 'A value',
+        // rangeToReplace = mock range shifted by startOffset (innerText.length - kqlQuery.length = 7).
+        rangeToReplace: { start: 7, end: 12 },
+      },
+    ]);
   });
 });

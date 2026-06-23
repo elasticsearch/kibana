@@ -751,7 +751,7 @@ const ESQLEditorInternal = function ESQLEditor({
                   isNlToEsqlEnabled
                     ? i18n.translate('esqlEditor.placeholder', {
                         defaultMessage:
-                          "Start typing ES|QL, or write a // comment and press {commandKey}+J to describe what you're looking for",
+                          "Start typing ES|QL, or describe what you're looking for in a // comment, then press {commandKey}+J to generate the query",
                         values: { commandKey: isMac ? '⌘' : 'Ctrl' },
                       })
                     : i18n.translate('esqlEditor.placeholder.basic', {

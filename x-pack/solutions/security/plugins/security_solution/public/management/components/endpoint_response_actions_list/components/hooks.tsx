@@ -135,6 +135,8 @@ export const getActionStatus = (status: ResponseActionStatus): string => {
     return UX_MESSAGES.badge.successful;
   } else if (status === 'pending') {
     return UX_MESSAGES.badge.pending;
+  } else if (status === 'canceled') {
+    return UX_MESSAGES.badge.canceled;
   }
   return '';
 };
@@ -293,18 +295,7 @@ export const useActionsLogFilter = ({
       : isStatusesFilter
       ? RESPONSE_ACTION_STATUS.map((statusName) => ({
           key: statusName,
-          label: (
-            <ResponseActionStatusBadge
-              color={
-                statusName === 'successful'
-                  ? 'success'
-                  : statusName === 'failed'
-                  ? 'danger'
-                  : 'warning'
-              }
-              status={getActionStatus(statusName)}
-            />
-          ) as unknown as string,
+          label: (<ResponseActionStatusBadge status={statusName} />) as unknown as string,
           searchableLabel: statusName,
           checked: !isFlyout && statuses?.includes(statusName) ? 'on' : undefined,
           'data-test-subj': `${filterName}-filter-option`,

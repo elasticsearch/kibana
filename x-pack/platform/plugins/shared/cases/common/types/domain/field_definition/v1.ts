@@ -33,6 +33,13 @@ export const FieldDefinitionSchema = z.object({
    * Optional human-readable description of the field's purpose
    */
   description: z.string().optional(),
+
+  /**
+   * When true, this field is rendered in every case regardless of which template
+   * (if any) the case uses. Values are stored in extended_fields alongside
+   * template-specific fields.
+   */
+  isGlobal: z.boolean().optional(),
 });
 
 export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>;

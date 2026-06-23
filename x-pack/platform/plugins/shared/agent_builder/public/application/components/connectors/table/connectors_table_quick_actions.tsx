@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiButtonIcon, EuiFlexGroup } from '@elastic/eui';
+import { EuiButtonIcon, EuiFlexGroup, EuiToolTip } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { AGENT_BUILDER_UI_EBT } from '@kbn/agent-builder-common';
 import { getEbtProps } from '@kbn/ebt-click';
@@ -38,17 +38,19 @@ export const ConnectorQuickActions = ({ connector }: ConnectorQuickActionsProps)
       alignItems="center"
       component="span"
     >
-      <EuiButtonIcon
-        data-test-subj="agentBuilderConnectorsRowDeleteButton"
-        iconType="trash"
-        color="danger"
-        onClick={() => deleteConnector(connector)}
-        aria-label={labels.connectors.deleteConnectorButtonLabel}
-        {...getEbtProps({
-          element: AGENT_BUILDER_UI_EBT.element.pageContent,
-          action: AGENT_BUILDER_UI_EBT.action.connectors.DELETE_CONNECTOR,
-        })}
-      />
+      <EuiToolTip content={labels.connectors.deleteConnectorButtonLabel} disableScreenReaderOutput>
+        <EuiButtonIcon
+          data-test-subj="agentBuilderConnectorsRowDeleteButton"
+          iconType="trash"
+          color="danger"
+          onClick={() => deleteConnector(connector)}
+          aria-label={labels.connectors.deleteConnectorButtonLabel}
+          {...getEbtProps({
+            element: AGENT_BUILDER_UI_EBT.element.pageContent,
+            action: AGENT_BUILDER_UI_EBT.action.connectors.DELETE_CONNECTOR,
+          })}
+        />
+      </EuiToolTip>
     </EuiFlexGroup>
   );
 };

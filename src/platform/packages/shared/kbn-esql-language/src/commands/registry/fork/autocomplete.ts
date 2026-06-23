@@ -13,7 +13,7 @@ import type {
   ESQLAstQueryExpression,
 } from '@elastic/esql/types';
 import { withAutoSuggest } from '../../definitions/utils/autocomplete/helpers';
-import { pipeCompleteItem, getCommandAutocompleteDefinitions } from '../complete_items';
+import { newLineAndPipeCompleteItems, getCommandAutocompleteDefinitions } from '../complete_items';
 import { pipePrecedesCurrentWord } from '../../definitions/utils/shared';
 import type { ICommandCallbacks } from '../types';
 import { type ISuggestionItem, type ICommandContext } from '../types';
@@ -42,7 +42,7 @@ export async function autocomplete(
   if (!withinActiveBranch && /\)\s+$/i.test(innerText)) {
     const suggestions = [newBranchSuggestion];
     if (forkCommand.args.length > 0) {
-      suggestions.push(pipeCompleteItem);
+      suggestions.push(...newLineAndPipeCompleteItems);
     }
     return suggestions;
   }

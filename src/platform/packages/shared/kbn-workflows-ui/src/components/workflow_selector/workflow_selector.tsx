@@ -285,7 +285,7 @@ const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
   const renderListView = useCallback(
     (list: ReactElement, search?: ReactElement) => {
       return (
-        <EuiPanel paddingSize="none">
+        <>
           {search}
           <div>{list}</div>
           {workflowOptions.length > 0 && !finalConfig.hideViewWorkflowLink && (
@@ -305,7 +305,7 @@ const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
               </EuiText>
             </EuiPanel>
           )}
-        </EuiPanel>
+        </>
       );
     },
     [

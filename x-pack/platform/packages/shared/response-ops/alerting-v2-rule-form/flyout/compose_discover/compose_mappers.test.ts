@@ -7,11 +7,13 @@
 
 import type { RuleResponse } from '@kbn/alerting-v2-schemas';
 import { DASHBOARD_ARTIFACT_TYPE, RUNBOOK_ARTIFACT_TYPE } from '@kbn/alerting-v2-constants';
+import type { FormValues } from '../../form/types';
 import type { ComposeFormValues } from './compose_form_types';
 import {
   composeFormToCreateRequest,
   composeFormToUpdateRequest,
   mapRuleToComposeFormValues,
+  mapYamlFormValuesToComposeFormValues,
 } from './compose_mappers';
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
@@ -420,5 +422,42 @@ describe('mapRuleToComposeFormValues', () => {
     } as RuleResponse;
     const result = mapRuleToComposeFormValues(rule);
     expect(result.stateTransitionRecoveryDelayMode).toBe('recoveries');
+  });
+});
+
+describe('mapYamlFormValuesToComposeFormValues', () => {
+  const parsedYaml: FormValues = {
+    kind: 'alert',
+    metadata: { name: 'Test', enabled: true, description: '', tags: [] },
+    timeField: '@timestamp',
+    schedule: { every: '1m', lookback: '5m' },
+    query: {
+      format: 'composed',
+      base: BASE,
+      breach: { segment: `| ${ALERT_SEGMENT}` },
+    },
+    stateTransitionAlertDelayMode: 'immediate',
+    stateTransitionRecoveryDelayMode: 'immediate',
+    artifacts: [],
+  };
+
+  it('passes through composed alert queries', () => {
+    const result = mapYamlFormValuesToComposeFormValues(parsedYaml);
+
+    expect(result.query).toEqual(parsedYaml.query);
+  });
+
+  it('passes through standalone signal queries', () => {
+    const signalQuery = {
+      format: 'standalone' as const,
+      breach: { query: 'FROM logs-* | LIMIT 10' },
+    };
+    const result = mapYamlFormValuesToComposeFormValues({
+      ...parsedYaml,
+      kind: 'signal',
+      query: signalQuery,
+    });
+
+    expect(result.query).toEqual(signalQuery);
   });
 });

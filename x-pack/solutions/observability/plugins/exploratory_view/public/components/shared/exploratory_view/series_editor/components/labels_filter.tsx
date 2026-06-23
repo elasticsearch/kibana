@@ -13,6 +13,7 @@ import {
   EuiPopover,
   EuiIcon,
   EuiButtonEmpty,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 
 import { EuiSelectable } from '@elastic/eui';
@@ -25,6 +26,7 @@ import { useFilterValues } from '../use_filter_values';
 
 export function LabelsFieldFilter(props: FilterProps) {
   const { series } = props;
+  const labelsFilterPopoverTitleId = useGeneratedHtmlId();
 
   const [query, setQuery] = useState('');
 
@@ -73,10 +75,22 @@ export function LabelsFieldFilter(props: FilterProps) {
   };
 
   return (
-    <EuiPopover button={button} closePopover={closePopover} isOpen={isPopoverOpen}>
+    <EuiPopover
+      aria-label={
+        selectedLabel
+          ? undefined
+          : i18n.translate('xpack.exploratoryView.labelsFieldFilter.popoverAriaLabel', {
+              defaultMessage: 'Select label field',
+            })
+      }
+      aria-labelledby={selectedLabel ? labelsFilterPopoverTitleId : undefined}
+      button={button}
+      closePopover={closePopover}
+      isOpen={isPopoverOpen}
+    >
       {selectedLabel ? (
         <>
-          <EuiPopoverTitle>
+          <EuiPopoverTitle id={labelsFilterPopoverTitleId}>
             <EuiButtonEmpty
               data-test-subj="o11yLabelsFieldFilterButton"
               iconType="chevronSingleLeft"

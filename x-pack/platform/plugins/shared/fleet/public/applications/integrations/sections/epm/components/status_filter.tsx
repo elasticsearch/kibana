@@ -67,6 +67,9 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({
 
   return (
     <EuiPopover
+      aria-label={i18n.translate('xpack.fleet.epm.statusFilter.ariaLabel', {
+        defaultMessage: 'Status filter',
+      })}
       id={popoverId}
       isOpen={isOpen}
       closePopover={closePopover}

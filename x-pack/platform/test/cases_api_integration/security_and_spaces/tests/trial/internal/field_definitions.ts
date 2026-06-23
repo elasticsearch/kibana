@@ -9,9 +9,11 @@ import expect from '@kbn/expect';
 import type { FtrProviderContext } from '../../../../common/ftr_provider_context';
 import { deleteAllCaseItems, getSpaceUrlPrefix } from '../../../../common/lib/api';
 import {
+  noKibanaPrivileges,
   secOnly,
   secOnlyManageTemplates,
   secOnlyNoManageTemplates,
+  secOnlyRead,
 } from '../../../../common/lib/authentication/users';
 
 const FIELD_DEFINITIONS_URL = '/internal/cases/field_definitions';
@@ -140,11 +142,31 @@ export default ({ getService }: FtrProviderContext): void => {
         expect(body.fieldDefinitions).to.have.length(1);
       });
 
-      it('returns 403 for a user without manageTemplates privilege', async () => {
-        await supertestWithoutAuth
+      it('lists field definitions for a read-only user (cases.read is sufficient)', async () => {
+        const { body } = await supertestWithoutAuth
+          .get(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
+          .query({ owner: 'securitySolutionFixture' })
+          .auth(secOnlyRead.username, secOnlyRead.password)
+          .expect(200);
+
+        expect(body.fieldDefinitions).to.have.length(1);
+      });
+
+      it('lists field definitions for a user with full Cases access but no manageTemplates sub-privilege', async () => {
+        const { body } = await supertestWithoutAuth
           .get(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
           .query({ owner: 'securitySolutionFixture' })
           .auth(secOnlyNoManageTemplates.username, secOnlyNoManageTemplates.password)
+          .expect(200);
+
+        expect(body.fieldDefinitions).to.have.length(1);
+      });
+
+      it('returns 403 for a user with no Kibana privileges', async () => {
+        await supertestWithoutAuth
+          .get(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
+          .query({ owner: 'securitySolutionFixture' })
+          .auth(noKibanaPrivileges.username, noKibanaPrivileges.password)
           .expect(403);
       });
 
@@ -156,6 +178,55 @@ export default ({ getService }: FtrProviderContext): void => {
           .expect(200);
 
         expect(body.fieldDefinitions).to.have.length(0);
+      });
+
+      describe('isGlobal filter', () => {
+        beforeEach(async () => {
+          // Add a second definition with isGlobal: true alongside the one from the outer beforeEach
+          await supertest
+            .post(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
+            .set('kbn-xsrf', 'true')
+            .send(buildCreateBody({ name: 'severity', isGlobal: true }))
+            .expect(200);
+        });
+
+        it('returns only isGlobal definitions when filtered with isGlobal=true', async () => {
+          const { body } = await supertest
+            .get(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
+            .query({ owner: 'securitySolutionFixture', isGlobal: true })
+            .expect(200);
+
+          expect(body.fieldDefinitions).to.have.length(1);
+          expect(body.fieldDefinitions[0].name).to.eql('severity');
+          expect(body.fieldDefinitions[0].isGlobal).to.eql(true);
+        });
+
+        it('returns all definitions when isGlobal is not specified', async () => {
+          const { body } = await supertest
+            .get(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
+            .query({ owner: 'securitySolutionFixture' })
+            .expect(200);
+
+          expect(body.total).to.eql(2);
+        });
+
+        it('returns all definitions when isGlobal=false (no filter applied)', async () => {
+          const { body } = await supertest
+            .get(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
+            .query({ owner: 'securitySolutionFixture', isGlobal: false })
+            .expect(200);
+
+          expect(body.total).to.eql(2);
+        });
+
+        it('persists the isGlobal flag returned in the response', async () => {
+          const { body } = await supertest
+            .get(`${getSpaceUrlPrefix('space1')}${FIELD_DEFINITIONS_URL}`)
+            .query({ owner: 'securitySolutionFixture', isGlobal: true })
+            .expect(200);
+
+          expect(body.fieldDefinitions[0].isGlobal).to.eql(true);
+        });
       });
     });
 

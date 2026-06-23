@@ -61,6 +61,7 @@ const convertBaseFromEs = (document: Document) => {
     updated_at: document._source.updated_at,
     status: document._source.status,
     read: document._source.read,
+    ...(document._source.workspace_id ? { workspace_id: document._source.workspace_id } : {}),
   };
 };
 
@@ -235,6 +236,7 @@ export const toEs = (conversation: Conversation, space: string): ConversationPro
     state: conversation.state,
     status: conversation.status,
     read: conversation.read,
+    ...(conversation.workspace_id ? { workspace_id: conversation.workspace_id } : {}),
   };
 };
 
@@ -283,5 +285,6 @@ export const createRequestToEs = ({
     state: conversation.state,
     status: conversation.status,
     read: false,
+    ...(conversation.workspace_id ? { workspace_id: conversation.workspace_id } : {}),
   };
 };

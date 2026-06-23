@@ -9,7 +9,9 @@ import { setMockActions, setMockValues } from '../../../../__mocks__/kea_logic';
 
 import React from 'react';
 
-import { mount, shallow } from 'enzyme';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+
+import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 
 import { ExploreTables } from '../analytics_collection_explore_table_types';
 
@@ -31,40 +33,38 @@ describe('AnalyticsCollectionExplorerTable', () => {
     setMockActions(mockActions);
   });
 
-  it('should set default selectedTable', () => {
+  it('should set default selectedTable', async () => {
     setMockValues({ items: [], selectedTable: null });
-    const wrapper = mount(<AnalyticsCollectionExplorerTable />);
+    renderWithKibanaRenderContext(<AnalyticsCollectionExplorerTable />);
 
-    wrapper.update();
-
-    expect(mockActions.setSelectedTable).toHaveBeenCalledWith(ExploreTables.SearchTerms, {
-      direction: 'desc',
-      field: 'count',
+    await waitFor(() => {
+      expect(mockActions.setSelectedTable).toHaveBeenCalledWith(ExploreTables.SearchTerms, {
+        direction: 'desc',
+        field: 'count',
+      });
     });
   });
 
   it('should call setSelectedTable when click on a tab', () => {
-    const tabs = shallow(<AnalyticsCollectionExplorerTable />).find('EuiTab');
+    renderWithKibanaRenderContext(<AnalyticsCollectionExplorerTable />);
 
-    expect(tabs.length).toBe(5);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(5);
 
-    tabs.at(2).simulate('click');
+    fireEvent.click(tabs[2]);
     expect(mockActions.setSelectedTable).toHaveBeenCalledWith(ExploreTables.WorsePerformers, {
       direction: 'desc',
       field: 'count',
     });
   });
 
-  it('should call onTableChange when table called onChange', () => {
-    const table = shallow(<AnalyticsCollectionExplorerTable />).find('EuiBasicTable');
+  it('should call onTableChange when a sortable column header is clicked', () => {
+    renderWithKibanaRenderContext(<AnalyticsCollectionExplorerTable />);
 
-    table.simulate('change', {
-      page: { index: 23, size: 44 },
-      sort: { direction: 'asc', field: 'test' },
-    });
-    expect(mockActions.onTableChange).toHaveBeenCalledWith({
-      page: { index: 23, size: 44 },
-      sort: { direction: 'asc', field: 'test' },
-    });
+    fireEvent.click(screen.getByText('Count'));
+
+    expect(mockActions.onTableChange).toHaveBeenCalledWith(
+      expect.objectContaining({ sort: expect.objectContaining({ field: 'count' }) })
+    );
   });
 });

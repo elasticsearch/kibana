@@ -151,10 +151,11 @@ describe('FORK Autocomplete', () => {
     });
 
     test('suggests pipe and new branch after complete branch', async () => {
-      await forkExpectSuggestions('FROM a | FORK (LIMIT 100) ', ['($0)', '| ']);
+      await forkExpectSuggestions('FROM a | FORK (LIMIT 100) ', ['($0)', '| ', '\n']);
       await forkExpectSuggestions('FROM a | FORK (LIMIT 100) (SORT keywordField ASC) ', [
         '($0)',
         '| ',
+        '\n',
       ]);
     });
 
@@ -206,6 +207,7 @@ describe('FORK Autocomplete', () => {
             'DESC',
             ', ',
             '| ',
+            '\n',
             'NULLS FIRST',
             'NULLS LAST',
             ...getFunctionSignaturesByReturnType(
@@ -236,29 +238,29 @@ describe('FORK Autocomplete', () => {
           );
           await forkExpectSuggestions(
             'FROM a | FORK (DISSECT keywordField "" ',
-            ['APPEND_SEPARATOR = ', '| '],
+            ['APPEND_SEPARATOR = ', '| ', '\n'],
             mockCallbacks
           );
         });
 
         test('keep', async () => {
-          await forkExpectSuggestions('FROM a | FORK (KEEP ', getFieldNamesByType('any'));
-          await forkExpectSuggestions('FROM a | FORK (KEEP integerField ', [',', '| ']);
+          await forkExpectSuggestions('FROM a | FORK (KEEP ', [...getFieldNamesByType('any')]);
+          await forkExpectSuggestions('FROM a | FORK (KEEP integerField ', [',', '| ', '\n']);
         });
 
         test('drop', async () => {
-          await forkExpectSuggestions('FROM a | FORK (DROP ', getFieldNamesByType('any'));
-          await forkExpectSuggestions('FROM a | FORK (DROP integerField ', [',', '| ']);
+          await forkExpectSuggestions('FROM a | FORK (DROP ', [...getFieldNamesByType('any')]);
+          await forkExpectSuggestions('FROM a | FORK (DROP integerField ', [',', '| ', '\n']);
         });
 
         test('mv_expand', async () => {
           await forkExpectSuggestions('FROM a | FORK (MV_EXPAND ', getFieldNamesByType('any'));
-          await forkExpectSuggestions('FROM a | FORK (MV_EXPAND integerField ', ['| ']);
+          await forkExpectSuggestions('FROM a | FORK (MV_EXPAND integerField ', ['| ', '\n']);
         });
 
         test('sample', async () => {
           await forkExpectSuggestions('FROM a | FORK (SAMPLE ', ['.001 ', '.01 ', '.1 ']);
-          await forkExpectSuggestions('FROM a | FORK (SAMPLE 0.01 ', ['| ']);
+          await forkExpectSuggestions('FROM a | FORK (SAMPLE 0.01 ', ['| ', '\n']);
         });
 
         test('rename', async () => {
@@ -287,6 +289,7 @@ describe('FORK Autocomplete', () => {
               asCompletionItem.text,
               byCompleteItem.text,
               pipeCompleteItem.text,
+              '\n',
             ],
             mockCallbacks
           );

@@ -40,3 +40,38 @@ export const installMetricThresholdDataForge = (
 
 export const removeMetricThresholdDataForge = (esClient: Client, log: ScoutLogger): Promise<void> =>
   cleanup({ client: esClient, config: METRIC_THRESHOLD_DATA_FORGE_CONFIG, logger: log });
+
+/**
+ * The `fake_stack` index the custom-threshold rule under
+ * `related_dashboards.spec.ts` reads from, via the imported data view
+ * (`593f894a-…`, title `kbn-data-forge-fake_stack.message_processor-*`).
+ */
+export const FAKE_STACK_MESSAGE_PROCESSOR_INDEX = 'kbn-data-forge-fake_stack.message_processor-*';
+
+/**
+ * `fake_stack` "bad" schedule, ported from the FTR `suggested_dashboards`
+ * `before` hook. It drives a steady stream of rejected messages so the custom
+ * threshold rule (`1 - processor.processed / processor.accepted > 0.0005`,
+ * grouped by `host.name`) reliably fires.
+ */
+export const RELATED_DASHBOARDS_DATA_FORGE_CONFIG: PartialConfig = {
+  schedule: [{ template: 'bad', start: 'now-15m', end: 'now+5m' }],
+  indexing: {
+    dataset: 'fake_stack',
+    eventsPerCycle: 1,
+    interval: 10000,
+    alignEventsToInterval: true,
+  },
+};
+
+export const installRelatedDashboardsDataForge = (
+  esClient: Client,
+  log: ScoutLogger
+): Promise<string[]> =>
+  generate({ client: esClient, config: RELATED_DASHBOARDS_DATA_FORGE_CONFIG, logger: log });
+
+export const removeRelatedDashboardsDataForge = (
+  esClient: Client,
+  log: ScoutLogger
+): Promise<void> =>
+  cleanup({ client: esClient, config: RELATED_DASHBOARDS_DATA_FORGE_CONFIG, logger: log });
