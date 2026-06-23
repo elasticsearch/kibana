@@ -11,32 +11,10 @@
 //
 // In CI, @kbn/evals expects KIBANA_TESTING_AI_CONNECTORS to be base64-encoded JSON.
 
+const { parseMaybeBase64Json } = require('./ai_connectors');
+
 const rawLite = process.env.KIBANA_TESTING_AI_CONNECTORS || '';
 const rawEis = process.env.EIS_CONNECTORS_B64 || '';
-
-function tryParseJson(text) {
-  try {
-    const obj = JSON.parse(text);
-    if (obj && typeof obj === 'object') return obj;
-  } catch {
-    // ignore
-  }
-  return null;
-}
-
-function parseMaybeBase64Json(raw) {
-  if (!raw) return {};
-
-  const parsed = tryParseJson(raw);
-  if (parsed) return parsed;
-
-  try {
-    const decoded = Buffer.from(raw, 'base64').toString('utf8');
-    return tryParseJson(decoded) ?? {};
-  } catch {
-    return {};
-  }
-}
 
 const lite = parseMaybeBase64Json(rawLite);
 const eis = parseMaybeBase64Json(rawEis);

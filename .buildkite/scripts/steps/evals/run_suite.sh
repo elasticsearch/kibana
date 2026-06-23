@@ -29,6 +29,13 @@ fi
 # Bootstrap workspace deps + download build artifacts (same setup as FTR/Scout CI steps)
 source .buildkite/scripts/steps/functional/common.sh
 
+# TODO: revert before merge — always skip golden-cluster writes for notify testing.
+# Skip golden-cluster writes (scores/traces). Keeps golden reads (EVALUATIONS_KBN_*) and GCS snapshots.
+echo "--- Skipping golden-cluster export; dataset reads and GCS snapshots unchanged"
+unset EVALUATIONS_ES_URL EVALUATIONS_ES_API_KEY
+unset TRACING_ES_URL TRACING_ES_API_KEY TRACING_EXPORTERS
+export KBN_EVALS_SKIP_PREFLIGHT_EXPORT=true
+
 EVAL_SUITE_INFO="$(
   node x-pack/platform/packages/shared/kbn-evals/scripts/ci/get_suite_info.js "$EVAL_SUITE_ID" || true
 )"
@@ -67,6 +74,17 @@ record_suite_failure() {
   # Use one key per failing project to avoid non-atomic read/modify/write races when fanout steps fail concurrently.
   local failure_key="kbn-evals:suite-failures:${suite_key_safe}:${project_key_safe}"
   buildkite-agent meta-data set "$failure_key" "${EVAL_PROJECT}" >/dev/null 2>&1 || true
+
+  local failure_log_key="kbn-evals:suite-failure-log:${suite_key_safe}:${project_key_safe}"
+  if [[ -n "${KBN_EVALS_RUN_LOG:-}" && -f "${KBN_EVALS_RUN_LOG}" ]]; then
+    local excerpt
+    excerpt="$(
+      tail -c 4000 "${KBN_EVALS_RUN_LOG}" | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' || true
+    )"
+    if [[ -n "${excerpt}" ]]; then
+      buildkite-agent meta-data set "$failure_log_key" "${excerpt}" >/dev/null 2>&1 || true
+    fi
+  fi
 }
 
 on_exit() {
@@ -204,13 +222,42 @@ EOF
 EOF
       done <<<"$CONNECTOR_IDS"
 
+      # Resolve a PR number (if any) so triage can be posted as a PR comment:
+      # GITHUB_PR_NUMBER (PR-label CI) -> BUILDKITE_PULL_REQUEST -> refs/pull/<N>/head
+      # branch (how on-demand selects a PR via the New Build form).
+      resolved_pr_number=""
+      if [[ -n "${GITHUB_PR_NUMBER:-}" ]]; then
+        resolved_pr_number="${GITHUB_PR_NUMBER}"
+      elif [[ -n "${BUILDKITE_PULL_REQUEST:-}" && "${BUILDKITE_PULL_REQUEST}" != "false" ]]; then
+        resolved_pr_number="${BUILDKITE_PULL_REQUEST}"
+      elif [[ "${BUILDKITE_BRANCH:-}" =~ ^refs/pull/([0-9]+)/head$ ]]; then
+        resolved_pr_number="${BASH_REMATCH[1]}"
+      fi
+
+      # Enable the suite owner notify step when there is somewhere to send triage:
+      # - weekly: the suite's team channel
+      # - any run: a PR comment (PR context) or EVAL_SLACK_NOTIFICATION_CHANNEL
+      enable_suite_owner_notify="false"
       if [[ "${KBN_EVALS_WEEKLY:-}" =~ ^(1|true)$ ]] && [[ -n "${EVAL_SUITE_SLACK_CHANNEL:-}" ]]; then
+        enable_suite_owner_notify="true"
+      elif [[ -n "${resolved_pr_number}" ]]; then
+        enable_suite_owner_notify="true"
+      elif [[ -n "${EVAL_SLACK_NOTIFICATION_CHANNEL:-}" ]]; then
+        enable_suite_owner_notify="true"
+      fi
+
+      if [[ "${enable_suite_owner_notify}" == "true" ]]; then
         cat >>"$FANOUT_PIPELINE_FILE" <<EOF
       - label: "LLM Evals: ${EVAL_SUITE_ID} (suite owner notify)"
         key: "kbn-evals-${group_key_safe}-suite-owner-notify"
         command: "bash .buildkite/scripts/steps/evals/suite_owner_notify.sh"
         env:
+          KBN_EVALS: "1"
+          KBN_EVALS_WEEKLY: "${KBN_EVALS_WEEKLY:-}"
           EVAL_SUITE_ID: "${EVAL_SUITE_ID}"
+          EVAL_SUITE_SLACK_CHANNEL: "${EVAL_SUITE_SLACK_CHANNEL:-}"
+          EVAL_SLACK_NOTIFICATION_CHANNEL: "${EVAL_SLACK_NOTIFICATION_CHANNEL:-}"
+          EVAL_PR_NUMBER: "${resolved_pr_number}"
           EVAL_SUITE_NAME: "${EVAL_SUITE_NAME:-}"
         depends_on:
 EOF
@@ -221,17 +268,13 @@ EOF
         cat >>"$FANOUT_PIPELINE_FILE" <<EOF
         timeout_in_minutes: 10
         allow_dependency_failure: true
+        soft_fail: true
         agents:
           image: family/kibana-ubuntu-2404
           imageProject: elastic-images-prod
           provider: gcp
           machineType: n2-standard-2
           preemptible: true
-        notify:
-          - slack:
-              channels: ["${EVAL_SUITE_SLACK_CHANNEL}"]
-              message: ":rotating_light: LLM eval suite *${EVAL_SUITE_NAME:-$EVAL_SUITE_ID}* failed in <${BUILDKITE_BUILD_URL}|${BUILDKITE_PIPELINE_NAME:-Buildkite} #${BUILDKITE_BUILD_NUMBER:-}>."
-            if: step.outcome == "hard_failed"
 EOF
       fi
 
@@ -374,9 +417,19 @@ if [[ -n "${EVAL_GREP:-}" ]]; then
   EVAL_RUN_ARGS+=(--grep "${EVAL_GREP}")
 fi
 
-if [[ -n "${EVAL_PROJECT:-}" ]]; then
-  node scripts/evals run --suite "$EVAL_SUITE_ID" --project "$EVAL_PROJECT" "${EVAL_RUN_ARGS[@]}"
-else
+run_eval_suite() {
+  if [[ -n "${EVAL_PROJECT:-}" ]]; then
+    KBN_EVALS_RUN_LOG="$(mktemp -t kbn-evals-run.XXXXXX.log)"
+    export KBN_EVALS_RUN_LOG
+    set +e
+    node scripts/evals run --suite "$EVAL_SUITE_ID" --project "$EVAL_PROJECT" "${EVAL_RUN_ARGS[@]}" 2>&1 | tee "$KBN_EVALS_RUN_LOG"
+    local eval_exit="${PIPESTATUS[0]}"
+    set -e
+    return "${eval_exit}"
+  fi
+
   node scripts/evals run --suite "$EVAL_SUITE_ID" "${EVAL_RUN_ARGS[@]}"
-fi
+}
+
+run_eval_suite
 

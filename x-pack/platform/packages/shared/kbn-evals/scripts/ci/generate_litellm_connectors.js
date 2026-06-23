@@ -18,6 +18,8 @@
  * Auth: LiteLLM *virtual key* (sk-...) via Authorization Bearer.
  */
 
+const { slugifyId } = require('./slugify_id');
+
 function parseArgs(argv, { defaults = {} } = {}) {
   const out = { ...defaults };
   const rest = [];
@@ -66,14 +68,6 @@ function getArg(argv, name, envName) {
   return argv[name] || (envName ? process.env[envName] : undefined);
 }
 
-function sanitizeId(value) {
-  return String(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
 /** Model name returned by /team/info when a team has unrestricted access to all proxy models. */
 const ALL_PROXY_MODELS = 'all-proxy-models';
 
@@ -90,21 +84,12 @@ function unwrapCandidates(payload) {
   );
 }
 
-function normalizeTeamName(value) {
-  return String(value)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
 function findTeamIdByName(teams, teamName) {
-  const target = normalizeTeamName(teamName);
+  const target = slugifyId(teamName);
   for (const t of teams) {
     if (!t || typeof t !== 'object') continue;
     const aliasRaw = (t.team_alias ?? t.team_name ?? t.name ?? t.alias ?? '').toString();
-    const alias = normalizeTeamName(aliasRaw);
+    const alias = slugifyId(aliasRaw);
     if (alias && alias === target) {
       return t.team_id ?? t.id ?? t.teamId;
     }
@@ -348,7 +333,7 @@ async function main() {
       continue;
     }
 
-    const connectorId = `litellm-${sanitizeId(fullModel)}`;
+    const connectorId = `litellm-${slugifyId(fullModel)}`;
     // Temporary normalization: LiteLLM can expose a *public model name* (aka a "model group")
     // like `llm-gateway/gpt-5.2-chat`, while internally routing that group to a provider-specific
     // model name (e.g. `gpt-5.2-chat-latest` as shown in the LiteLLM UI).

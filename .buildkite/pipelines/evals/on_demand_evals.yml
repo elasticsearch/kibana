@@ -1,5 +1,6 @@
 env:
   KBN_EVALS: '1'
+  KBN_EVALS_ON_DEMAND: '1'
 steps:
   - label: '👨‍🔧 Pre-Build'
     command: .buildkite/scripts/lifecycle/pre_build.sh
@@ -25,20 +26,17 @@ steps:
 
   - label: 'LLM Evals: On-demand'
     key: kbn-evals-on-demand
-    command: bash .buildkite/scripts/steps/evals/run_suite.sh
+    command: bash .buildkite/scripts/steps/evals/on_demand.sh
     env:
       FTR_EIS_CCM: '1'
-      EVAL_FANOUT: '1'
-    timeout_in_minutes: 120
+    timeout_in_minutes: 15
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
       provider: gcp
-      machineType: n2-standard-8
+      machineType: n2-standard-2
       preemptible: true
     retry:
       automatic:
         - exit_status: '-1'
           limit: 3
-        - exit_status: '*'
-          limit: 1

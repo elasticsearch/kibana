@@ -210,23 +210,50 @@ Run a suite on any branch without a PR:
 2. Click **New build**, select branch/commit
 3. Add environment variables:
 
-| Variable                  | Required           | Description                                                                 |
-| ------------------------- | ------------------ | --------------------------------------------------------------------------- |
-| `EVAL_SUITE_ID`           | yes                | Suite id from `evals.suites.json`                                           |
-| `EVAL_MODEL_GROUPS`       | yes                | Comma-separated model groups, e.g. `eis/openai-gpt-5.4,llm-gateway/gpt-5.2` |
-| `EVAL_INCLUDE_EIS_MODELS` | for `eis/*` models | Set to `1` when using EIS models or an EIS judge                            |
-| `EVALUATION_CONNECTOR_ID` | no                 | LLM-as-judge connector override                                             |
-| `EVAL_SERVER_CONFIG_SET`  | some suites        | From `serverConfigSet` in `evals.suites.json`                               |
-| `KIBANA_BUILD_ID`         | no                 | Reuse a Kibana build from another job (skips build step)                    |
-| `EVAL_GREP`               | no                 | Playwright test name filter (same as `node scripts/evals run --grep`)       |
-| `EVALUATION_REPETITIONS`  | no                 | Repeat each example N times (same as `--repetitions`)                       |
+| Variable                          | Required           | Description                                                                                                  |
+| --------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `EVAL_SUITE_ID`                   | yes                | Suite id from `evals.suites.json`. Comma-separate to run several suites                                      |
+| `EVAL_MODEL_GROUPS`               | yes                | Comma-separated model groups, e.g. `eis/openai-gpt-5.4,llm-gateway/gpt-5.2`                                  |
+| `EVAL_INCLUDE_EIS_MODELS`         | for `eis/*` models | Set to `1` when using EIS models or an EIS judge                                                             |
+| `EVALUATION_CONNECTOR_ID`         | no                 | LLM-as-judge connector override                                                                              |
+| `EVAL_SERVER_CONFIG_SET`          | some suites        | From `serverConfigSet` in `evals.suites.json`                                                                |
+| `KIBANA_BUILD_ID`                 | no                 | Reuse a Kibana build from another job (skips build step)                                                     |
+| `EVAL_GREP`                       | no                 | Playwright test name filter (same as `node scripts/evals run --grep`)                                        |
+| `EVALUATION_REPETITIONS`          | no                 | Repeat each example N times (same as `--repetitions`)                                                        |
+| `EVAL_SLACK_NOTIFICATION_CHANNEL` | no                 | Slack channel or member ID to send the triage to. If unset, no Slack notification is sent for on-demand runs |
 
-Example:
+Example (single suite):
 
 ```text
 EVAL_SUITE_ID=agent-builder
 EVAL_MODEL_GROUPS=eis/openai-gpt-5.4
 EVAL_INCLUDE_EIS_MODELS=1
+```
+
+Example (multiple suites):
+
+```text
+EVAL_SUITE_ID=agent-builder,observability-ai,streams
+EVAL_MODEL_GROUPS=eis/openai-gpt-5.4
+EVAL_INCLUDE_EIS_MODELS=1
+```
+
+#### Where the triage summary is sent (on-demand)
+
+On-demand triage routing is "branch OR PR" (never both), plus an independent Slack opt-in:
+
+- Run a **branch**: set the New Build **Branch** to branch (e.g. `main`). No PR comment is posted.
+- Run a **PR**: set the New Build **Branch** to `refs/pull/<N>/head` (e.g. `refs/pull/123/head`), Commit `HEAD`.
+- **Slack** is independent: set `EVAL_SLACK_NOTIFICATION_CHANNEL` to send the triage to a Slack channel.
+
+Example (PR run + Slack)
+Set Branch to `refs/pull/<N>/head`, Commit `HEAD`, then under Options -> Environment Variables:
+
+```text
+EVAL_SUITE_ID=observability-ai
+EVAL_MODEL_GROUPS=eis/openai-gpt-5.4
+EVAL_INCLUDE_EIS_MODELS=1
+EVAL_SLACK_NOTIFICATION_CHANNEL=#my-test-channel
 ```
 
 ---

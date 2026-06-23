@@ -15,6 +15,7 @@
 
 const Fs = require('fs');
 const Path = require('path');
+const { slugifyId } = require('./slugify_id');
 
 function parseArgs(argv, { defaults = {} } = {}) {
   const out = { ...defaults };
@@ -60,14 +61,6 @@ function die(message) {
   process.exit(1);
 }
 
-function sanitizeId(value) {
-  return String(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
 function main() {
   const argv = parseArgs(process.argv.slice(2), {
     defaults: {
@@ -106,7 +99,7 @@ function main() {
       continue;
     }
 
-    const connectorId = `${connectorIdPrefix}${sanitizeId(modelId)}`;
+    const connectorId = `${connectorIdPrefix}${slugifyId(modelId)}`;
     connectors[connectorId] = {
       name: `EIS ${modelId}`,
       actionTypeId: '.inference',
