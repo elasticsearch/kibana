@@ -19,7 +19,7 @@ import {
 
 spaceTest.describe(
   'Lens open in Lens — agg-based Heatmap',
-  { tag: tags.deploymentAgnostic },
+  { tag: tags.stateful.classic },
   () => {
     let heatmapDashboardId: string;
 

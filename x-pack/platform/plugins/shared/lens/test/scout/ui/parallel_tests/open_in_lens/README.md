@@ -2,7 +2,7 @@
 
 These tests cover the **"Open in Lens"** conversion flow: the user right-clicks a visualization panel on a dashboard and chooses the action that opens it inside the Lens editor. Each test verifies that the converted visualization renders correctly — correct chart type, dimension labels, metric values, and colour configuration.
 
-All specs are deployment-agnostic (`tags.deploymentAgnostic`) and run in parallel using `spaceTest`.
+`agg_based/` specs run in parallel using `spaceTest` and are tagged **`tags.stateful.classic`** (stateful migration phase 1). Serverless coverage for agg-based open-in-Lens remains in serverless FTR until phase 2.
 
 ## Directory structure
 
@@ -17,9 +17,9 @@ open_in_lens/
 
 Each subdirectory loads its own kbn archive from `fixtures/kbn_archives/open_in_lens/` — pre-built dashboards that contain one panel per conversion scenario. The logstash ES archive is loaded once in `global.setup.ts` and shared across all specs.
 
-## FTR sources being replaced
+## Migration status (agg_based)
 
-| Scout spec | Replaces (stateful) | Replaces (serverless) |
+| Scout spec | Replaces (stateful FTR) | Serverless FTR (until phase 2) |
 |---|---|---|
 | `agg_based/metric.spec.ts` | `agg_based_1/metric.ts` | `group2/.../metric.ts` |
 | `agg_based/goal.spec.ts` | `agg_based_3/goal.ts` | `group9/.../goal.ts` |

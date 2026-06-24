@@ -18,7 +18,7 @@ import {
   loadDashboardInEditModeById,
 } from '../../../fixtures';
 
-spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.deploymentAgnostic }, () => {
+spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.classic }, () => {
   let pieDashboardId: string;
 
   spaceTest.beforeAll(async ({ scoutSpace }) => {

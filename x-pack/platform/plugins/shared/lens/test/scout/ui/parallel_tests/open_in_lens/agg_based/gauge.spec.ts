@@ -18,7 +18,7 @@ import {
   loadDashboardInEditModeById,
 } from '../../../fixtures';
 
-spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.deploymentAgnostic }, () => {
+spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.stateful.classic }, () => {
   let gaugeDashboardId: string;
 
   spaceTest.beforeAll(async ({ scoutSpace }) => {

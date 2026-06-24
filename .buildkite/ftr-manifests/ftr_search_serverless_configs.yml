@@ -16,6 +16,7 @@ enabled:
   - x-pack/platform/test/serverless/functional/configs/search/config.config_compat_mode.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group1.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group2.ts
+  - x-pack/platform/test/serverless/functional/configs/search/config.group3.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group4.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group5.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group6.ts
@@ -28,6 +29,8 @@ enabled:
   - x-pack/platform/test/serverless/functional/configs/search/config.group13.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group14.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group15.ts
+  - x-pack/platform/test/serverless/functional/configs/search/config.group16.ts
+  - x-pack/platform/test/serverless/functional/configs/search/config.group17.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group18.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group19.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group20.ts
