@@ -461,20 +461,8 @@ export class LensApp {
   }
 
   async openStyleSettingsFlyout() {
-    if (await this.closeDimensionEditorButton.isVisible()) {
-      await this.closeDimensionEditor();
-    }
-
     await this.page.locator('button[data-test-subj="style"]').click();
     await expect(this.page.locator('#lnsDimensionContainerTitle')).toBeVisible();
-  }
-
-  async closeStyleSettingsFlyout() {
-    const backButton = this.page.testSubj.locator('lns-indexPattern-dimensionContainerBack');
-    if (await backButton.isVisible()) {
-      await backButton.click();
-      await expect(backButton).toBeHidden();
-    }
   }
 
   /** Reads the selected donut hole size from the style settings flyout. */

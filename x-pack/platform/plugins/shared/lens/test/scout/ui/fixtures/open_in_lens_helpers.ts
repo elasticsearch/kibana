@@ -69,19 +69,6 @@ export async function loadDashboardInEditModeById(
   await dashboard.switchToEditMode();
 }
 
-/**
- * Opens a dashboard by title in edit mode.
- * Equivalent to the FTR `dashboard.loadDashboardInEditMode(title)`.
- */
-export async function loadDashboardInEditMode(
-  { dashboard }: Pick<PageObjects, 'dashboard'>,
-  dashboardTitle: string
-): Promise<void> {
-  await dashboard.goto();
-  await dashboard.clickDashboardTitleLink(dashboardTitle);
-  await dashboard.switchToEditMode();
-}
-
 /** Enables elastic-charts debug state for subsequent page loads in this browser context. */
 export async function enableElasticChartDebug(context: ElasticChartDebugContext): Promise<void> {
   await context.addInitScript(() => {
