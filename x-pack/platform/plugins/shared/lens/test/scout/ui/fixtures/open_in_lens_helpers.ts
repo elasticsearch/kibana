@@ -94,7 +94,7 @@ export async function getChartDebugData(
   page: ScoutPage,
   chartTestSubj: string
 ): Promise<DebugState> {
-  const chart = page.testSubj.locator(chartTestSubj);
+  const chart = page.testSubj.locator('lnsWorkspace').getByTestId(chartTestSubj);
   await chart.locator('.echChartStatus[data-ech-render-complete="true"]').waitFor({
     state: 'attached',
     timeout: 30_000,

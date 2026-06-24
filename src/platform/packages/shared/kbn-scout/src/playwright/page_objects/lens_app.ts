@@ -378,23 +378,39 @@ export class LensApp {
    * Waits for the Lens visualization workspace to finish rendering.
    * Polls `data-rendering-count` on the visualization container until it
    * stabilises across two consecutive reads (500 ms apart).
+   *
+   * Scopes to `lnsWorkspace` so Open in Lens flows on multi-panel dashboards
+   * do not match chart test subjects on other embeddables.
    */
   async waitForVisualization(chartSubj = 'lnsVisualizationContainer') {
-    const container = this.page.testSubj.locator(chartSubj);
+    const workspace = this.page.testSubj.locator('lnsWorkspace');
+    await workspace.waitFor({ state: 'visible', timeout: 30_000 });
+
+    const container = workspace.getByTestId(chartSubj);
     await container.waitFor({ state: 'visible', timeout: 30_000 });
 
     await this.page.waitForFunction(
-      (subj: string) => {
-        const el = document.querySelector(`[data-test-subj="${subj}"]`);
-        if (!el) return false;
+      ({ workspaceSubj, chartSubj: subj }) => {
+        const workspaceEl = document.querySelector(`[data-test-subj="${workspaceSubj}"]`);
+        if (!workspaceEl) {
+          return false;
+        }
+        const el = workspaceEl.querySelector(`[data-test-subj="${subj}"]`);
+        if (!el) {
+          return false;
+        }
         const count = el.getAttribute('data-rendering-count');
-        if (count === null) return true;
-        if (count === '0') return false;
+        if (count === null) {
+          return true;
+        }
+        if (count === '0') {
+          return false;
+        }
         const prev = el.getAttribute('data-lns-prev-count');
         el.setAttribute('data-lns-prev-count', count);
         return prev === count;
       },
-      chartSubj,
+      { workspaceSubj: 'lnsWorkspace', chartSubj },
       { timeout: 30_000, polling: 500 }
     );
   }
