@@ -11,6 +11,8 @@ import React from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import type { Store } from 'redux';
+import { ChromeServiceProvider } from '@kbn/core-chrome-browser-context';
+import { chromeServiceMock } from '@kbn/core-chrome-browser-mocks';
 import { I18nProvider } from '@kbn/i18n-react';
 import { type QueryClient, QueryClientProvider } from '@kbn/react-query';
 import { createMockStore } from '../../entities/workflows/store/__mocks__/store.mock';
@@ -36,7 +38,9 @@ export function TestWrapper({ store, queryClient, routerHistory, children }: Tes
   const content = (
     <MemoryRouter initialEntries={routerHistory}>
       <I18nProvider>
-        <ReduxProvider store={reduxStore}>{children}</ReduxProvider>
+        <ChromeServiceProvider value={{ chrome: chromeServiceMock.createStartContract() }}>
+          <ReduxProvider store={reduxStore}>{children}</ReduxProvider>
+        </ChromeServiceProvider>
       </I18nProvider>
     </MemoryRouter>
   );

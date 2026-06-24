@@ -40,6 +40,12 @@ jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useParams: () => mockUseParams(),
 }));
+// Force the app menu to render at the xl breakpoint so all menu items
+// (run, executions) are displayed inline instead of collapsed into an overflow popover.
+jest.mock('@elastic/eui', () => ({
+  ...jest.requireActual('@elastic/eui'),
+  useIsWithinBreakpoints: (breakpoints: string[]) => breakpoints.includes('xl'),
+}));
 jest.mock('@kbn/workflows-ui', () => ({
   ...jest.requireActual('@kbn/workflows-ui'),
   useWorkflowsCapabilities: jest.fn(),
@@ -161,9 +167,35 @@ describe('WorkflowDetailHeader', () => {
     mockUseMemoCss.mockReturnValue(jest.fn());
   });
 
+  // The app menu is rendered through a React.lazy boundary. Warm it up once so the
+  // synchronous tests below render the menu items without triggering an unwrapped
+  // Suspense resolution (which React reports as an act(...) warning).
+  beforeAll(async () => {
+    mockUseKibana.mockReturnValue({
+      services: {
+        application: { navigateToApp: jest.fn() },
+        settings: { client: { get: () => '' } },
+      },
+    });
+    mockUseParams.mockReturnValue({ id: 'test-123' });
+    mockUseWorkflowsCapabilities.mockReturnValue(createMockWorkflowsCapabilities());
+    mockUseWorkflowUrlState.mockReturnValue({ activeTab: 'workflow', setActiveTab: jest.fn() });
+    mockUseSaveYaml.mockReturnValue([
+      jest.fn(),
+      { isLoading: false, error: null, result: undefined },
+    ]);
+    mockUseUpdateWorkflow.mockReturnValue(jest.fn());
+    mockUseMemoCss.mockReturnValue(jest.fn());
+    const { findByTestId, unmount } = renderWithProviders(
+      <WorkflowDetailHeader {...defaultProps} />
+    );
+    await findByTestId('saveWorkflowHeaderButton');
+    unmount();
+  });
+
   it('should render', () => {
-    const { getByText } = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />);
-    expect(getByText('Test Workflow')).toBeInTheDocument();
+    const { getAllByText } = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />);
+    expect(getAllByText('Test Workflow').length).toBeGreaterThan(0);
   });
 
   it('shows saved status when no changes', () => {
@@ -304,7 +336,7 @@ describe('WorkflowDetailHeader', () => {
     });
     const { getByRole } = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />);
     const executionsTab = getByRole('button', { name: 'Executions' });
-    expect(executionsTab).toHaveAttribute('aria-disabled', 'true');
+    expect(executionsTab).toBeDisabled();
   });
 
   describe('Authorization matrix', () => {
@@ -386,7 +418,7 @@ describe('WorkflowDetailHeader', () => {
 
     it.each(matrix)(
       '$roleLabel: run disabled=$expectRunDisabled, save=$expectSaveDisabled, enabled switch=$expectEnabledSwitchDisabled, executions tab=$expectExecutionsTabDisabled',
-      ({
+      async ({
         capabilities,
         expectRunDisabled,
         expectSaveDisabled,
@@ -399,8 +431,8 @@ describe('WorkflowDetailHeader', () => {
         });
 
         const result = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />);
-        const runBtn = result.getByTestId('runWorkflowHeaderButton');
-        const saveBtn = result.getByTestId('saveWorkflowHeaderButton');
+        const runBtn = await result.findByTestId('runWorkflowHeaderButton');
+        const saveBtn = await result.findByTestId('saveWorkflowHeaderButton');
 
         if (expectRunDisabled) {
           expect(runBtn).toBeDisabled();
@@ -422,14 +454,14 @@ describe('WorkflowDetailHeader', () => {
 
         const executionsTab = result.getByRole('button', { name: 'Executions' });
         if (expectExecutionsTabDisabled) {
-          expect(executionsTab).toHaveAttribute('aria-disabled', 'true');
+          expect(executionsTab).toBeDisabled();
         } else {
-          expect(executionsTab).not.toHaveAttribute('aria-disabled', 'true');
+          expect(executionsTab).not.toBeDisabled();
         }
       }
     );
 
-    it('New workflow URL: save requires createWorkflow, not updateWorkflow', () => {
+    it('New workflow URL: save requires createWorkflow, not updateWorkflow', async () => {
       mockUseParams.mockReturnValue({});
       mockUseWorkflowsCapabilities.mockReturnValue({
         ...defaultWorkflowsCapabilities,
@@ -445,7 +477,7 @@ describe('WorkflowDetailHeader', () => {
       const result = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />, {
         hasChanges: true,
       });
-      expect(result.getByTestId('saveWorkflowHeaderButton')).not.toBeDisabled();
+      expect(await result.findByTestId('saveWorkflowHeaderButton')).not.toBeDisabled();
     });
   });
 });
