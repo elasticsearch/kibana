@@ -19,6 +19,8 @@ jest.mock('../../application/breadcrumb_context', () => ({
   useSetBreadcrumbs: () => jest.fn(),
 }));
 
+jest.mock('@kbn/app-header', () => jest.requireActual('../../test_utils/mock_app_header'));
+
 jest.mock('@kbn/core-di-browser', () => ({
   useService: (token: unknown) => {
     if (token === 'chrome') return { docTitle: { change: jest.fn() } };
@@ -27,6 +29,9 @@ jest.mock('@kbn/core-di-browser', () => ({
     }
     if (token === 'settings') {
       return { client: { get: () => 'YYYY-MM-DD HH:mm' } };
+    }
+    if (token === 'docLinks') {
+      return { links: { alerting: { guide: 'https://elastic.co/guide/alerting' } } };
     }
     return {};
   },
@@ -152,11 +157,15 @@ describe('ExecutionHistoryPage', () => {
     expect(screen.getByTestId('alertingV2ExperimentalBadge')).toBeInTheDocument();
   });
 
-  it('renders the denormalization info tooltip next to the Policies tab', () => {
+  it('attaches the denormalization tooltip to the Policies tab', () => {
     mockFetchResult();
     renderPage();
 
-    expect(screen.getByTestId('executionHistoryDenormalizationTip')).toBeInTheDocument();
+    const policiesTab = screen.getByRole('tab', { name: /policies/i });
+    expect(policiesTab).toHaveAttribute(
+      'data-tooltip-content',
+      expect.stringContaining('Pagination is by event')
+    );
   });
 
   it('shows the 24h time window in the page description', () => {

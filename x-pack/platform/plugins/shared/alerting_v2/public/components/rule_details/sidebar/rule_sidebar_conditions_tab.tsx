@@ -6,10 +6,11 @@
  */
 
 import React from 'react';
-import { EuiHorizontalRule } from '@elastic/eui';
+import { EuiHorizontalRule, EuiSpacer } from '@elastic/eui';
 import { useRule } from '../rule_context';
 import { RuleConditions } from './rule_conditions';
 import { RuleMetadata } from './rule_metadata';
+import { RuleHeaderDescription } from '../rule_header_description';
 
 export const RuleSidebarConditionsTab: React.FC = () => {
   const rule = useRule();
@@ -17,6 +18,8 @@ export const RuleSidebarConditionsTab: React.FC = () => {
 
   return (
     <>
+      <RuleHeaderDescription />
+      <EuiSpacer size="m" />
       <RuleConditions />
       {hasMetadata && (
         <>

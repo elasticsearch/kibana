@@ -6,7 +6,6 @@
  */
 
 import {
-  EuiButtonEmpty,
   EuiPanel,
   EuiSplitPanel,
   logicalCSS,
@@ -14,26 +13,43 @@ import {
   useEuiMinBreakpoint,
   useEuiTheme,
 } from '@elastic/eui';
+import moment from 'moment';
+import { AppHeader } from '@kbn/app-header';
+import type { AppHeaderBadge } from '@kbn/app-header';
+import type { AppMenuConfig } from '@kbn/core-chrome-app-menu-components';
+import type { AppHeaderMetadataItems } from '@kbn/app-header';
+import { CoreStart, useService } from '@kbn/core-di-browser';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
-import { FormattedMessage } from '@kbn/i18n-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
-import { RuleDetailsActionsMenu } from './rule_details_actions_menu';
 import { useBreadcrumbs } from '../../hooks/use_breadcrumbs';
 import { useDeleteRule } from '../../hooks/use_delete_rule';
 import { useComposeDiscoverFlyout } from '../../hooks/use_compose_discover_flyout';
 import { DeleteConfirmationModal } from '../rule/modals/delete_confirmation_modal';
-import { RuleHeaderDescription, RuleTitleWithBadges } from './rule_header_description';
+import { useToggleRuleEnabled } from '../../hooks/use_toggle_rule_enabled';
+import { useBulkGetUserProfiles } from '../../hooks/use_bulk_get_user_profiles';
+import { resolveDisplayName } from '../../utils/resolve_display_name';
 import { RuleOverviewSection } from './overview';
 import { RuleSidebar } from './sidebar/rule_sidebar';
 import { useRule } from './rule_context';
+import { paths } from '../../constants';
+import { APP_HEADER_BACK_LABEL } from '../../lib/app_header';
+
+const METADATA_DATE_FORMAT = 'MMM D, YYYY';
 
 export const RuleDetailPage: React.FunctionComponent = () => {
   const rule = useRule();
   useBreadcrumbs('rule_details', { ruleName: rule.metadata?.name });
   const { euiTheme } = useEuiTheme();
+  const docLinks = useService(CoreStart('docLinks'));
+  const { mutate: toggleRuleEnabled } = useToggleRuleEnabled();
+  const userUids = useMemo(
+    () => [rule.createdBy, rule.updatedBy].filter((uid): uid is string => Boolean(uid)),
+    [rule.createdBy, rule.updatedBy]
+  );
+  const { data: userProfileByUid } = useBulkGetUserProfiles({ uids: userUids });
 
   const smallMediaQuery = useEuiMaxBreakpoint('s');
   const largeMediaQuery = useEuiMinBreakpoint('m');
@@ -42,6 +58,11 @@ export const RuleDetailPage: React.FunctionComponent = () => {
   const { mutate: deleteRule, isLoading: isDeleting } = useDeleteRule();
   const { flyout, openEditFlyout, openCloneFlyout } = useComposeDiscoverFlyout();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = React.useState(false);
+
+  const KIND_LABELS: Record<string, string> = {
+    signal: i18n.translate('xpack.alertingV2.ruleDetails.kindSignal', { defaultMessage: 'Signal' }),
+    alert: i18n.translate('xpack.alertingV2.ruleDetails.kindAlert', { defaultMessage: 'Alert' }),
+  };
 
   const showDeleteConfirmationModal = () => {
     setShowDeleteConfirmation(true);
@@ -59,6 +80,115 @@ export const RuleDetailPage: React.FunctionComponent = () => {
     );
   };
 
+  const badges: AppHeaderBadge[] = [
+    {
+      label: KIND_LABELS[rule.kind] ?? rule.kind,
+      color: 'hollow',
+      tooltip: i18n.translate('xpack.alertingV2.ruleDetails.kindBadgeTooltip', {
+        defaultMessage: 'Mode can be changed in the rule edit form',
+      }),
+      'data-test-subj': 'kindBadge',
+    },
+    rule.enabled
+      ? {
+          label: i18n.translate('xpack.alertingV2.ruleDetails.enabled', {
+            defaultMessage: 'Enabled',
+          }),
+          color: 'success',
+          'data-test-subj': 'enabledBadge',
+        }
+      : {
+          label: i18n.translate('xpack.alertingV2.ruleDetails.disabled', {
+            defaultMessage: 'Disabled',
+          }),
+          color: 'default',
+          'data-test-subj': 'disabledBadge',
+        },
+  ];
+
+  const formatDate = (iso: string) => moment(iso).format(METADATA_DATE_FORMAT);
+
+  const metadata: AppHeaderMetadataItems = [
+    {
+      // rule.metadata.owner
+      //   ? {
+      //       type: 'text',
+      //       label: i18n.translate('xpack.alertingV2.ruleDetails.apiKeyOwner', {
+      //         defaultMessage: 'API key owner {owner}',
+      //         values: { owner: rule.metadata.owner },
+      //       }),
+      //       'data-test-subj': 'ruleDetailsApiKeyOwner',
+      //     }
+      //   : undefined,
+      type: 'text',
+      label: i18n.translate('xpack.alertingV2.ruleDetails.createdBy', {
+        defaultMessage: 'Created by {user} on {date}',
+        values: {
+          user: resolveDisplayName(rule.createdBy, userProfileByUid, rule.createdBy ?? '—'),
+          date: formatDate(rule.createdAt),
+        },
+      }),
+      'data-test-subj': 'ruleDetailsCreatedBy',
+    },
+    {
+      type: 'text',
+      label: i18n.translate('xpack.alertingV2.ruleDetails.lastUpdateBy', {
+        defaultMessage: 'Last update by {user} on {date}',
+        values: {
+          user: resolveDisplayName(rule.updatedBy, userProfileByUid, rule.updatedBy ?? '—'),
+          date: formatDate(rule.updatedAt),
+        },
+      }),
+      'data-test-subj': 'ruleDetailsLastUpdateBy',
+    },
+  ];
+
+  const appMenu: AppMenuConfig = {
+    primaryActionItem: {
+      id: 'editRule',
+      label: i18n.translate('xpack.alertingV2.sections.ruleDetails.editRuleButtonLabel', {
+        defaultMessage: 'Edit Rule',
+      }),
+      iconType: 'pencil',
+      testId: 'openEditRuleFlyoutButton',
+      run: () => openEditFlyout(rule),
+    },
+    switch: {
+      id: 'toggleEnabled',
+      label: i18n.translate('xpack.alertingV2.ruleDetails.enableSwitchLabel', {
+        defaultMessage: 'Enabled',
+      }),
+      labelProps: {},
+      checked: rule.enabled,
+      onChange: (checked) => toggleRuleEnabled({ id: rule.id, enabled: checked }),
+      'data-test-subj': 'ruleDetailsEnableSwitch',
+    },
+    items: [
+      {
+        id: 'cloneRule',
+        order: 200,
+        label: i18n.translate('xpack.alertingV2.ruleDetails.cloneRuleButtonLabel', {
+          defaultMessage: 'Clone rule',
+        }),
+        iconType: 'copy',
+        testId: 'ruleDetailsCloneButton',
+        run: () => openCloneFlyout(rule),
+        overflow: true,
+      },
+      {
+        id: 'deleteRule',
+        order: 900,
+        label: i18n.translate('xpack.alertingV2.ruleDetails.deleteRuleButtonLabel', {
+          defaultMessage: 'Delete rule',
+        }),
+        iconType: 'trash',
+        testId: 'ruleDetailsDeleteButton',
+        run: showDeleteConfirmationModal,
+        overflow: true,
+      },
+    ],
+  };
+
   return (
     <KibanaPageTemplate
       paddingSize="none"
@@ -71,40 +201,16 @@ export const RuleDetailPage: React.FunctionComponent = () => {
           block-size: calc(var(--kbn-application--content-height, 100vh) - ${euiTheme.size.l} * 2);
         }
       `}
-      pageHeader={{
-        'data-test-subj': 'ruleDetailsTitle',
-        pageTitle: <RuleTitleWithBadges />,
-        description: <RuleHeaderDescription />,
-        bottomBorder: true,
-        restrictWidth: false,
-        paddingSize: 'none',
-        rightSideGroupProps: { gutterSize: 's' },
-        rightSideItems: [
-          <RuleDetailsActionsMenu
-            key="actions"
-            showDeleteConfirmation={showDeleteConfirmationModal}
-            onClone={() => openCloneFlyout(rule)}
-          />,
-          <EuiButtonEmpty
-            key="edit"
-            aria-label={i18n.translate(
-              'xpack.alertingV2.sections.ruleDetails.editRuleButtonLabel',
-              { defaultMessage: 'Edit Rule' }
-            )}
-            data-test-subj="openEditRuleFlyoutButton"
-            color="text"
-            iconType="pencil"
-            name="edit"
-            onClick={() => openEditFlyout(rule)}
-          >
-            <FormattedMessage
-              id="xpack.alertingV2.sections.ruleDetails.editRuleButtonLabel"
-              defaultMessage="Edit Rule"
-            />
-          </EuiButtonEmpty>,
-        ],
-      }}
     >
+      <AppHeader
+        title={rule.metadata.name}
+        back={{ href: paths.ruleList, label: APP_HEADER_BACK_LABEL }}
+        badges={badges}
+        docLink={docLinks.links.alerting.guide}
+        menu={appMenu}
+        padding="none"
+        metadata={metadata}
+      />
       <KibanaPageTemplate.Section
         paddingSize="none"
         grow
@@ -174,7 +280,6 @@ export const RuleDetailPage: React.FunctionComponent = () => {
           </EuiSplitPanel.Inner>
         </EuiSplitPanel.Outer>
       </KibanaPageTemplate.Section>
-
       {showDeleteConfirmation && (
         <DeleteConfirmationModal
           onConfirm={handleRuleDelete}

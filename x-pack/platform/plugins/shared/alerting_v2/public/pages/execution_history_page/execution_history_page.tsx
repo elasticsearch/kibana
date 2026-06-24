@@ -6,18 +6,12 @@
  */
 
 import React, { useState } from 'react';
-import {
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiIconTip,
-  EuiPageHeader,
-  EuiSpacer,
-  EuiTab,
-  EuiTabs,
-} from '@elastic/eui';
+import { EuiSpacer } from '@elastic/eui';
+import { AppHeader } from '@kbn/app-header';
+import type { AppHeaderTab } from '@kbn/app-header';
+import { CoreStart, useService } from '@kbn/core-di-browser';
 import { i18n } from '@kbn/i18n';
-import { FormattedMessage } from '@kbn/i18n-react';
-import { ExperimentalBadge } from '../../components/experimental_badge';
+import { EXPERIMENTAL_APP_HEADER_BADGE } from '../../lib/app_header';
 import { ActionPolicyDetailsFlyoutContainer } from '../../components/action_policy/details_flyout/action_policy_details_flyout_container';
 import { RuleSummaryFlyoutContainer } from '../../components/rule/flyouts/rule_summary_flyout_container';
 import { useBreadcrumbs } from '../../hooks/use_breadcrumbs';
@@ -31,44 +25,35 @@ type TabId = typeof POLICIES_TAB_ID | typeof RULES_TAB_ID;
 
 export const ExecutionHistoryPage = () => {
   useBreadcrumbs('execution_history_list');
+  const docLinks = useService(CoreStart('docLinks'));
 
   const [selectedTabId, setSelectedTabId] = useState<TabId>(POLICIES_TAB_ID);
   const [policyToViewId, setPolicyToViewId] = useState<string | null>(null);
   const [ruleToViewId, setRuleToViewId] = useState<string | null>(null);
   const { flyout: composeFlyout, openEditFlyout, openCloneFlyout } = useComposeDiscoverFlyout();
 
-  const tabs: Array<{ id: TabId; label: React.ReactNode }> = [
+  const tabs: AppHeaderTab[] = [
     {
       id: POLICIES_TAB_ID,
-      label: (
-        <EuiFlexGroup component="span" alignItems="center" gutterSize="xs" responsive={false}>
-          <EuiFlexItem grow={false} component="span">
-            {i18n.translate('xpack.alertingV2.executionHistory.tabs.policiesLabel', {
-              defaultMessage: 'Policies',
-            })}
-          </EuiFlexItem>
-          <EuiFlexItem grow={false} component="span">
-            <span data-test-subj="executionHistoryDenormalizationTip">
-              <EuiIconTip
-                type="info"
-                content={i18n.translate(
-                  'xpack.alertingV2.executionHistory.denormalizationTooltip',
-                  {
-                    defaultMessage:
-                      'Pagination is by event. A single event may show as multiple rows — one per rule referenced by the event.',
-                  }
-                )}
-              />
-            </span>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      ),
+      label: i18n.translate('xpack.alertingV2.executionHistory.tabs.policiesLabel', {
+        defaultMessage: 'Policies',
+      }),
+      toolTipContent: i18n.translate('xpack.alertingV2.executionHistory.denormalizationTooltip', {
+        defaultMessage:
+          'Pagination is by event. A single event may show as multiple rows — one per rule referenced by the event.',
+      }),
+      isSelected: selectedTabId === POLICIES_TAB_ID,
+      onClick: () => setSelectedTabId(POLICIES_TAB_ID),
+      'data-test-subj': 'executionHistoryPoliciesTab',
     },
     // {
     //   id: RULES_TAB_ID,
     //   label: i18n.translate('xpack.alertingV2.executionHistory.tabs.rulesLabel', {
     //     defaultMessage: 'Rules',
     //   }),
+    //   isSelected: selectedTabId === RULES_TAB_ID,
+    //   onClick: () => setSelectedTabId(RULES_TAB_ID),
+    //   'data-test-subj': 'executionHistoryRulesTab',
     // },
   ];
 
@@ -84,33 +69,15 @@ export const ExecutionHistoryPage = () => {
 
   return (
     <>
-      <EuiPageHeader
-        pageTitle={
-          <EuiFlexGroup component="span" alignItems="center" gutterSize="s" responsive={false}>
-            <EuiFlexItem grow={false} component="span">
-              <FormattedMessage
-                id="xpack.alertingV2.executionHistory.pageTitle"
-                defaultMessage="Execution history"
-              />
-            </EuiFlexItem>
-            <EuiFlexItem grow={false} component="span">
-              <ExperimentalBadge />
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        }
+      <AppHeader
+        title={i18n.translate('xpack.alertingV2.executionHistory.pageTitle', {
+          defaultMessage: 'Execution history',
+        })}
+        badges={[EXPERIMENTAL_APP_HEADER_BADGE]}
+        docLink={docLinks.links.alerting.guide}
+        tabs={tabs}
+        padding="none"
       />
-      <EuiSpacer size="l" />
-      <EuiTabs>
-        {tabs.map((tab) => (
-          <EuiTab
-            key={tab.id}
-            isSelected={tab.id === selectedTabId}
-            onClick={() => setSelectedTabId(tab.id)}
-          >
-            {tab.label}
-          </EuiTab>
-        ))}
-      </EuiTabs>
       <EuiSpacer size="m" />
       {selectedTabId === POLICIES_TAB_ID ? (
         <PoliciesTabContent onPolicyClick={handlePolicyClick} onRuleClick={handleRuleClick} />

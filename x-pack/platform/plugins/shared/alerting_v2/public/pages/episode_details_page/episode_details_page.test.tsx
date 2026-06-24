@@ -27,6 +27,16 @@ jest.mock('@kbn/alerting-v2-episodes-ui/hooks/use_fetch_rule', () => ({
   useFetchRule: jest.fn(),
 }));
 
+jest.mock('@kbn/alerting-v2-episodes-ui/hooks/use_fetch_episode_actions', () => ({
+  useFetchEpisodeActions: () => ({ data: new Map(), isLoading: false }),
+}));
+
+jest.mock('@kbn/alerting-v2-episodes-ui/hooks/use_fetch_group_actions', () => ({
+  useFetchGroupActions: () => ({ data: new Map(), isLoading: false }),
+}));
+
+jest.mock('@kbn/app-header', () => jest.requireActual('../../test_utils/mock_app_header'));
+
 // Sections that call useFetchEpisodeQuery independently are mocked to keep the
 // test focused on the page-level layout and sidebar.
 jest.mock('@kbn/alerting-v2-episodes-ui/components/details/overview_list_section', () => ({

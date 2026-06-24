@@ -24,10 +24,15 @@ jest.mock('@kbn/core-di-browser', () => ({
     if (token === 'http') {
       return { basePath: { prepend: (p: string) => p } };
     }
+    if (token === 'docLinks') {
+      return { links: { alerting: { guide: 'https://elastic.co/guide/alerting' } } };
+    }
     return {};
   },
   CoreStart: (key: string) => key,
 }));
+
+jest.mock('@kbn/app-header', () => jest.requireActual('../../test_utils/mock_app_header'));
 
 const mockUseBreadcrumbs = jest.fn();
 jest.mock('../../hooks/use_breadcrumbs', () => ({
@@ -39,6 +44,15 @@ jest.mock('../../hooks/use_delete_rule', () => ({
   useDeleteRule: () => ({ mutate: mockDeleteRule, isLoading: false }),
 }));
 
+const mockToggleRuleEnabled = jest.fn();
+jest.mock('../../hooks/use_toggle_rule_enabled', () => ({
+  useToggleRuleEnabled: () => ({ mutate: mockToggleRuleEnabled, isLoading: false }),
+}));
+
+jest.mock('../../hooks/use_bulk_get_user_profiles', () => ({
+  useBulkGetUserProfiles: () => ({ data: new Map(), isLoading: false }),
+}));
+
 const mockOpenEditFlyout = jest.fn();
 const mockOpenCloneFlyout = jest.fn();
 jest.mock('../../hooks/use_compose_discover_flyout', () => ({
@@ -48,11 +62,6 @@ jest.mock('../../hooks/use_compose_discover_flyout', () => ({
     openEditFlyout: mockOpenEditFlyout,
     openCloneFlyout: mockOpenCloneFlyout,
   }),
-}));
-
-jest.mock('./rule_header_description', () => ({
-  RuleTitleWithBadges: () => <div data-test-subj="ruleTitleWithBadges">mocked-title</div>,
-  RuleHeaderDescription: () => <div data-test-subj="ruleHeaderDescription" />,
 }));
 
 jest.mock('./sidebar/rule_sidebar', () => ({
@@ -122,11 +131,12 @@ describe('RuleDetailPage', () => {
 
   it('renders core page sections and actions', () => {
     renderPage(baseRule);
-    expect(screen.getByTestId('ruleTitleWithBadges')).toBeInTheDocument();
-    expect(screen.getByTestId('ruleHeaderDescription')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Test Signal Rule' })).toBeInTheDocument();
+    expect(screen.getByTestId('kindBadge')).toBeInTheDocument();
+    expect(screen.getByTestId('enabledBadge')).toBeInTheDocument();
     expect(screen.getByTestId('ruleConditionsSection')).toBeInTheDocument();
     expect(screen.getByTestId('ruleMetadataSection')).toBeInTheDocument();
-    expect(screen.getByTestId('ruleDetailsActionsButton')).toBeInTheDocument();
+    expect(screen.getByTestId('ruleDetailsDeleteButton')).toBeInTheDocument();
     expect(screen.getByTestId('openEditRuleFlyoutButton')).toBeInTheDocument();
   });
 
@@ -138,13 +148,13 @@ describe('RuleDetailPage', () => {
 
   it('opens delete confirmation from actions menu', () => {
     renderPage(baseRule);
-    fireEvent.click(screen.getByTestId('ruleDetailsActionsButton'));
+    fireEvent.click(screen.getByTestId('ruleDetailsDeleteButton'));
     expect(screen.getByTestId('deleteRuleConfirmationModal')).toBeInTheDocument();
   });
 
   it('calls delete mutation and navigates on successful confirm', () => {
     renderPage(baseRule);
-    fireEvent.click(screen.getByTestId('ruleDetailsActionsButton'));
+    fireEvent.click(screen.getByTestId('ruleDetailsDeleteButton'));
     fireEvent.click(screen.getByTestId('confirmModalConfirmButton'));
 
     expect(mockDeleteRule).toHaveBeenCalledWith(
@@ -161,7 +171,7 @@ describe('RuleDetailPage', () => {
 
   it('closes delete modal when cancel is clicked', () => {
     renderPage(baseRule);
-    fireEvent.click(screen.getByTestId('ruleDetailsActionsButton'));
+    fireEvent.click(screen.getByTestId('ruleDetailsDeleteButton'));
     fireEvent.click(screen.getByText('Cancel'));
     expect(screen.queryByTestId('deleteRuleConfirmationModal')).not.toBeInTheDocument();
   });

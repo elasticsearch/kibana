@@ -83,6 +83,8 @@ jest.mock('react-use/lib/useObservable', () =>
   jest.fn().mockReturnValue({ from: 'now-24h', to: 'now' })
 );
 
+jest.mock('@kbn/app-header', () => jest.requireActual('../../test_utils/mock_app_header'));
+
 const mockHttp = httpServiceMock.createStartContract();
 const mockSpaces = createMockSpaces();
 
@@ -112,6 +114,7 @@ const mockServices = {
   dataViews: {},
   userProfile: {},
   uiActions: { getTriggerCompatibleActions: jest.fn().mockResolvedValue([]) },
+  docLinks: { links: { alerting: { guide: 'https://elastic.co/guide/alerting' } } },
   spaces: mockSpaces,
 };
 

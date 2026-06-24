@@ -29,6 +29,41 @@ export const METADATA_TAB_TITLE = i18n.translate(
   }
 );
 
+export const RELATED_TAB_TITLE = i18n.translate(
+  'xpack.alertingV2.episodeDetails.tabs.relatedLabel',
+  { defaultMessage: 'Related' }
+);
+
+export const triggeredLabel = (relative: string) =>
+  i18n.translate('xpack.alertingV2.episodeDetails.metadata.triggered', {
+    defaultMessage: 'Triggered {relative}',
+    values: { relative },
+  });
+export const TRIGGERED_LABEL_UNKNOWN = i18n.translate(
+  'xpack.alertingV2.episodeDetails.metadata.triggeredUnknown',
+  { defaultMessage: 'Triggered —' }
+);
+
+export const durationLabel = (minutes: number) =>
+  i18n.translate('xpack.alertingV2.episodeDetails.metadata.duration', {
+    defaultMessage: 'Duration {minutes} {minutes, plural, one {minute} other {minutes}}',
+    values: { minutes },
+  });
+export const DURATION_LABEL_UNKNOWN = i18n.translate(
+  'xpack.alertingV2.episodeDetails.metadata.durationUnknown',
+  { defaultMessage: 'Duration —' }
+);
+
+export const lastStatusUpdateLabel = (relative: string) =>
+  i18n.translate('xpack.alertingV2.episodeDetails.metadata.lastStatusUpdate', {
+    defaultMessage: 'Last status update {relative}',
+    values: { relative },
+  });
+export const LAST_STATUS_UPDATE_LABEL_UNKNOWN = i18n.translate(
+  'xpack.alertingV2.episodeDetails.metadata.lastStatusUpdateUnknown',
+  { defaultMessage: 'Last status update —' }
+);
+
 /** --- Duration (sidebar) --- */
 export const FORMAT_EPISODE_DURATION_MS = (ms: number): string => {
   if (ms < 1000) {

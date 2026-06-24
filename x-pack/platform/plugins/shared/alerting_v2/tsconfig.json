@@ -108,6 +108,7 @@
     "@kbn/agent-builder-common",
     "@kbn/agent-builder-browser",
     "@kbn/agent-context-layer-plugin",
+    "@kbn/app-header",
     "@kbn/core-saved-objects-api-server",
     "@kbn/core-elasticsearch-server",
     "@kbn/core-user-profile-browser",
@@ -120,7 +121,8 @@
     "@kbn/cps",
     "@kbn/core-ui-settings-browser",
     "@kbn/management-settings-ids",
-    "@kbn/core-logging-server-mocks"
+    "@kbn/core-logging-server-mocks",
+    "@kbn/core-chrome-app-menu-components"
   ],
   "exclude": ["target/**/*", ".storybook/**/*.js"]
 }

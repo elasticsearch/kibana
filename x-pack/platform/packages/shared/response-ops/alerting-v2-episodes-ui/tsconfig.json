@@ -50,6 +50,7 @@
     "@kbn/lens-plugin",
     "@kbn/charts-plugin",
     "@kbn/core-ui-settings-browser",
-    "@kbn/unified-doc-viewer-plugin"
+    "@kbn/unified-doc-viewer-plugin",
+    "@kbn/app-header"
   ]
 }

@@ -8,11 +8,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { EuiDataGridColumn, EuiThemeComputed } from '@elastic/eui';
 import {
-  EuiButton,
   EuiFlexGroup,
   EuiFlexItem,
   EuiLoadingSpinner,
-  EuiPageHeader,
   EuiScreenReaderOnly,
   EuiSpacer,
   logicalCSS,
@@ -20,8 +18,10 @@ import {
   EuiButtonEmpty,
   EuiText,
 } from '@elastic/eui';
-import { FormattedMessage } from '@kbn/i18n-react';
+import { AppHeader } from '@kbn/app-header';
+import type { AppMenuConfig } from '@kbn/core-chrome-app-menu-components';
 import { CellActionsProvider } from '@kbn/cell-actions';
+import { FormattedMessage } from '@kbn/i18n-react';
 import type { RenderDocumentViewCallback, SortOrder } from '@kbn/unified-data-table';
 import {
   DataLoadingState,
@@ -51,7 +51,7 @@ import {
   EpisodeRuleCell,
 } from '@kbn/alerting-v2-episodes-ui/components/episodes_table_cell_renderers';
 import { AlertEpisodeAssigneeCell } from '@kbn/alerting-v2-episodes-ui/components/assignee_cell';
-import { ExperimentalBadge } from '../../components/experimental_badge';
+import { EXPERIMENTAL_APP_HEADER_BADGE } from '../../lib/app_header';
 import { paths } from '../../constants';
 import type { AlertEpisodesKibanaServices } from '../../episodes_kibana_services';
 import { useBreadcrumbs } from '../../hooks/use_breadcrumbs';
@@ -340,6 +340,19 @@ export const AlertEpisodesListPage = () => {
     [rulesCache, isLoadingRules, rowHeight, services.userProfile]
   );
 
+  const appMenu = useMemo<AppMenuConfig>(
+    () => ({
+      primaryActionItem: {
+        id: 'manageRules',
+        label: i18n.EPISODES_LIST_MANAGE_RULES,
+        iconType: 'gear',
+        href: services.http.basePath.prepend(paths.ruleList),
+        testId: 'alertingV2EpisodesListManageRules',
+      },
+    }),
+    [services.http.basePath]
+  );
+
   return (
     <div
       data-test-subj="alertingV2EpisodesListPage"
@@ -351,30 +364,12 @@ export const AlertEpisodesListPage = () => {
         min-width: 0;
       `}
     >
-      <EuiPageHeader
-        bottomBorder
-        pageTitle={
-          <EuiFlexGroup component="span" alignItems="center" gutterSize="s" responsive={false}>
-            <EuiFlexItem grow={false} component="span">
-              {i18n.EPISODES_LIST_PAGE_TITLE}
-            </EuiFlexItem>
-            <EuiFlexItem grow={false} component="span">
-              <ExperimentalBadge />
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        }
-        rightSideItems={[
-          <EuiButton
-            key="manage-rules"
-            color="text"
-            size="s"
-            iconType="gear"
-            href={services.http.basePath.prepend(paths.ruleList)}
-            data-test-subj="alertingV2EpisodesListManageRules"
-          >
-            {i18n.EPISODES_LIST_MANAGE_RULES}
-          </EuiButton>,
-        ]}
+      <AppHeader
+        title={i18n.EPISODES_LIST_PAGE_TITLE}
+        badges={[EXPERIMENTAL_APP_HEADER_BADGE]}
+        docLink={services.docLinks.links.alerting.guide}
+        menu={appMenu}
+        padding="none"
       />
       <EuiSpacer size="m" />
 

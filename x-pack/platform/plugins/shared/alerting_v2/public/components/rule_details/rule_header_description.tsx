@@ -5,9 +5,10 @@
  * 2.0.
  */
 
-import { EuiBadge, EuiFlexGroup, EuiFlexItem, EuiText, EuiToolTip } from '@elastic/eui';
+import { EuiBadge, EuiFlexGroup, EuiFlexItem, EuiText, EuiToolTip, EuiPopover } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import React from 'react';
+import { css } from '@emotion/react';
+import React, { useState } from 'react';
 import { useRule } from './rule_context';
 
 const KIND_LABELS: Record<string, string> = {
@@ -28,6 +29,8 @@ const KIND_BADGE_TOOLTIP = i18n.translate('xpack.alertingV2.ruleDetails.kindBadg
   defaultMessage: 'Mode can be changed in the rule edit form',
 });
 
+const VISIBLE_TAGS_LIMIT = 5;
+
 /**
  * Renders the description and tags row below the page title.
  */
@@ -35,10 +38,14 @@ export const RuleHeaderDescription: React.FC = () => {
   const rule = useRule();
   const { description, tags } = rule.metadata;
   const hasTags = tags && tags.length > 0;
+  const [isOverflowOpen, setIsOverflowOpen] = useState(false);
 
   if (!description && !hasTags) {
     return null;
   }
+
+  const visibleTags = hasTags ? tags!.slice(0, VISIBLE_TAGS_LIMIT) : [];
+  const overflowTags = hasTags ? tags!.slice(VISIBLE_TAGS_LIMIT) : [];
 
   return (
     <EuiFlexGroup direction="column" gutterSize="m">
@@ -52,11 +59,58 @@ export const RuleHeaderDescription: React.FC = () => {
       {hasTags && (
         <EuiFlexItem grow={false}>
           <EuiFlexGroup gutterSize="xs" wrap responsive={false} data-test-subj="ruleTags">
-            {tags!.map((tag) => (
+            {visibleTags!.map((tag) => (
               <EuiFlexItem key={tag} grow={false}>
                 <EuiBadge color="hollow">{tag}</EuiBadge>
               </EuiFlexItem>
             ))}
+            {overflowTags.length > 0 && (
+              <EuiFlexItem grow={false}>
+                <EuiPopover
+                  button={
+                    <EuiBadge
+                      color="hollow"
+                      iconType="tag"
+                      iconSide="left"
+                      onClick={() => setIsOverflowOpen((open) => !open)}
+                      onClickAriaLabel={i18n.translate(
+                        'xpack.alertingV2.ruleDetails.moreTagsAriaLabel',
+                        {
+                          defaultMessage:
+                            'Show {count} more {count, plural, one {tag} other {tags}}',
+                          values: { count: overflowTags.length },
+                        }
+                      )}
+                      data-test-subj="ruleTagsOverflowBadge"
+                      aria-label="ruleTagsOverflowBadge"
+                    >
+                      +{overflowTags.length}
+                    </EuiBadge>
+                  }
+                  isOpen={isOverflowOpen}
+                  closePopover={() => setIsOverflowOpen(false)}
+                  anchorPosition="downCenter"
+                  panelPaddingSize="s"
+                  aria-label="ruleTagsOverflow"
+                >
+                  <EuiFlexGroup
+                    gutterSize="xs"
+                    wrap
+                    responsive={false}
+                    data-test-subj="ruleTagsOverflowList"
+                    css={css`
+                      max-inline-size: 320px;
+                    `}
+                  >
+                    {overflowTags.map((tag) => (
+                      <EuiFlexItem key={tag} grow={false}>
+                        <EuiBadge color="hollow">{tag}</EuiBadge>
+                      </EuiFlexItem>
+                    ))}
+                  </EuiFlexGroup>
+                </EuiPopover>
+              </EuiFlexItem>
+            )}
           </EuiFlexGroup>
         </EuiFlexItem>
       )}

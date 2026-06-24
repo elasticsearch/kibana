@@ -8,19 +8,19 @@
 import {
   EuiBadge,
   EuiBasicTable,
-  EuiButton,
   EuiCallOut,
   EuiFlexGroup,
   EuiFlexItem,
   EuiLink,
   EuiLoadingSpinner,
-  EuiPageHeader,
   EuiSpacer,
   EuiText,
   type CriteriaWithPagination,
   type EuiBasicTableColumn,
   type EuiTableSelectionType,
 } from '@elastic/eui';
+import { AppHeader } from '@kbn/app-header';
+import type { AppMenuConfig } from '@kbn/core-chrome-app-menu-components';
 import { css } from '@emotion/react';
 import type {
   ActionPolicyBulkAction,
@@ -32,7 +32,7 @@ import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import moment from 'moment';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ExperimentalBadge } from '../../components/experimental_badge';
+import { EXPERIMENTAL_APP_HEADER_BADGE } from '../../lib/app_header';
 import { ActionPolicyDestinationsSummary } from '../../components/action_policy/action_policy_destinations_summary';
 import { ActionPolicySnoozePopover } from '../../components/action_policy/action_policy_snooze_popover';
 import { ActionPolicyStateBadge } from '../../components/action_policy/action_policy_state_badge';
@@ -85,6 +85,7 @@ export const ListActionPoliciesPage = () => {
   const { basePath } = useService(CoreStart('http'));
   const settings = useService(CoreStart('settings'));
   const dateTimeFormat = settings.client.get<string>('dateFormat');
+  const docLinks = useService(CoreStart('docLinks'));
 
   const { mutate: createActionPolicy } = useCreateActionPolicy();
   const { mutate: deleteActionPolicy, isLoading: isDeleting } = useDeleteActionPolicy();
@@ -117,9 +118,9 @@ export const ListActionPoliciesPage = () => {
     setSelectedPolicies([]);
   }, []);
 
-  const navigateToCreate = () => {
+  const navigateToCreate = useCallback(() => {
     navigateToUrl(basePath.prepend(paths.actionPolicyCreate));
-  };
+  }, [navigateToUrl, basePath]);
 
   const navigateToEdit = (id: string) => {
     navigateToUrl(basePath.prepend(paths.actionPolicyEdit(id)));
@@ -173,6 +174,21 @@ export const ListActionPoliciesPage = () => {
   const updatedByUids = useMemo(
     () => items.map((policy) => policy.updatedBy).filter((uid): uid is string => Boolean(uid)),
     [items]
+  );
+
+  const appMenu = useMemo<AppMenuConfig>(
+    () => ({
+      primaryActionItem: {
+        id: 'createActionPolicy',
+        label: i18n.translate('xpack.alertingV2.actionPoliciesList.createPolicyButton', {
+          defaultMessage: 'Create policy',
+        }),
+        iconType: 'plusInCircle',
+        testId: 'createActionPolicyButton',
+        run: navigateToCreate,
+      },
+    }),
+    [navigateToCreate]
   );
 
   const { data: updatedByProfileByUid, isLoading: isLoadingUpdatedByProfiles } =
@@ -407,31 +423,17 @@ export const ListActionPoliciesPage = () => {
 
   return (
     <>
-      <EuiPageHeader
-        pageTitle={
-          <EuiFlexGroup component="span" alignItems="center" gutterSize="s" responsive={false}>
-            <EuiFlexItem grow={false} component="span">
-              <FormattedMessage
-                id="xpack.alertingV2.actionPoliciesList.pageTitle"
-                defaultMessage="Action Policies"
-              />
-            </EuiFlexItem>
-            <EuiFlexItem grow={false} component="span">
-              <ExperimentalBadge />
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        }
-        rightSideItems={[
-          <EuiButton key="create-policy" onClick={navigateToCreate} fill>
-            <FormattedMessage
-              id="xpack.alertingV2.actionPoliciesList.createPolicyButton"
-              defaultMessage="Create policy"
-            />
-          </EuiButton>,
-        ]}
+      <AppHeader
+        title={i18n.translate('xpack.alertingV2.actionPoliciesList.pageTitle', {
+          defaultMessage: 'Action Policies',
+        })}
+        badges={[EXPERIMENTAL_APP_HEADER_BADGE]}
+        docLink={docLinks.links.alerting.guide}
+        menu={appMenu}
+        padding="none"
       />
+      <EuiSpacer size="m" />
       <EuiFlexGroup direction="column" gutterSize="m" responsive={false}>
-        <EuiSpacer size="m" />
         <EuiFlexItem grow={false}>
           <ActionPoliciesSearchBar
             onSearchChange={handleSearchChange}

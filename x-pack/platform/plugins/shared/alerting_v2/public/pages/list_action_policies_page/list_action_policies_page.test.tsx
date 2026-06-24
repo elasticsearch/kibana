@@ -31,6 +31,8 @@ jest.mock('../../application/breadcrumb_context', () => ({
   useSetBreadcrumbs: () => jest.fn(),
 }));
 
+jest.mock('@kbn/app-header', () => jest.requireActual('../../test_utils/mock_app_header'));
+
 jest.mock('@kbn/core-di-browser', () => ({
   useService: (token: unknown) => {
     if (token === 'application') {
@@ -49,6 +51,10 @@ jest.mock('@kbn/core-di-browser', () => ({
         },
       };
     }
+    if (token === 'docLinks') {
+      return { links: { alerting: { guide: 'https://elastic.co/guide/alerting' } } };
+    }
+
     if (token === 'userProfile') {
       return { bulkGet: mockBulkGet };
     }
