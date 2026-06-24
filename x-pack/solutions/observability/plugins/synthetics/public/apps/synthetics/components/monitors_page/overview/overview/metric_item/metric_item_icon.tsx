@@ -69,10 +69,12 @@ export const MetricItemIcon = ({
 
   const inProgress = isTestRunning(testNowRun);
 
+  const stateId = latestPing?.state?.id;
   const errorLink = useErrorDetailsLink({
     locationId,
     configId: monitor.configId,
-    stateId: latestPing?.state?.id!,
+    stateId: stateId ?? '',
+    remoteName: monitor.remote?.remoteName,
   });
 
   const formatter = useDateFormat();
@@ -189,6 +191,7 @@ export const MetricItemIcon = ({
               fullWidth
               size="s"
               href={errorLink}
+              isDisabled={!stateId}
             >
               {ERROR_DETAILS}
             </EuiButton>

@@ -62,8 +62,7 @@ All paths relative to `x-pack/solutions/security/plugins/security_solution/`.
 |---|---|---|
 | `@elastic/security-solution` | `Team:SecuritySolution` | `security_solution/` (root-level, shared) |
 | `@elastic/security-entity-analytics` | `Team:Entity Analytics` | `server/lib/entity_analytics/`, `public/entity_analytics/` |
-| `@elastic/security-detection-engine` | `Team:Detection Engine` | `server/lib/detection_engine/`, `lists/` |
-| `@elastic/security-detection-rule-management` | `Team:Detection Rule Management` | `server/lib/detection_engine/rule_management/`, `prebuilt_rules/` |
+| `@elastic/security-detection-engineering` | `Team:Detection Engineering` | `server/lib/detection_engine/`, `lists/`, `server/lib/detection_engine/rule_management/`, `prebuilt_rules/` |
 | `@elastic/security-threat-hunting-investigations` | `Team:Threat Hunting` | `server/lib/timeline/`, `public/timelines/`, `timelines/` |
 | `@elastic/security-generative-ai` | `Team:Security Generative AI` | `elastic_assistant/`, `public/attack_discovery/` |
 | `@elastic/security-defend-workflows` | `Team:Defend Workflows` | `public/management/`, `server/endpoint/`, `osquery/` |

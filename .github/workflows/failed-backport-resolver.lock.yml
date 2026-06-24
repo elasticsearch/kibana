@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"fc0cd783d33767ea457e9b4e437e52bc29d24a1bbc2bd9e4e7c070229794094e","compiler_version":"v0.76.1","agent_id":"claude","agent_model":"opus"}
-# gh-aw-manifest: {"version":1,"secrets":["GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN","LITELLM_API_KEY"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9.0.0"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"46d564922b082d0db93244972e8005ea6904ee5f","version":"v0.76.1"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.55"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.55"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.55"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.19"},{"image":"ghcr.io/github/github-mcp-server:v1.0.4","digest":"sha256:e3816a476a977cfb836e7d221510011436c654d11861db66ecfd826601aba6a4","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.4@sha256:e3816a476a977cfb836e7d221510011436c654d11861db66ecfd826601aba6a4"},{"image":"node:lts-alpine","digest":"sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14","pinned_image":"node:lts-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14"}]}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"0c15abdd2256863f779e870019a23fb6153aca0647c6d68bc238874b8c4c2635","compiler_version":"v0.76.1","agent_id":"claude","agent_model":"opus"}
+# gh-aw-manifest: {"version":1,"secrets":["GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN","LITELLM_API_KEY"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9.0.0"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"46d564922b082d0db93244972e8005ea6904ee5f","version":"v0.76.1"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.55"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.55"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.55"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.19"},{"image":"ghcr.io/github/github-mcp-server:v1.0.4","digest":"sha256:e3816a476a977cfb836e7d221510011436c654d11861db66ecfd826601aba6a4","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.4@sha256:e3816a476a977cfb836e7d221510011436c654d11861db66ecfd826601aba6a4"},{"image":"node:lts-alpine","digest":"sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14","pinned_image":"node:lts-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -29,6 +29,7 @@
 #   - PR_NUMBER: (main workflow)
 #
 # Secrets used:
+#   - GH_AW_CI_TRIGGER_TOKEN
 #   - GH_AW_GITHUB_MCP_SERVER_TOKEN
 #   - GH_AW_GITHUB_TOKEN
 #   - GITHUB_TOKEN
@@ -143,7 +144,7 @@ jobs:
         env:
           GH_AW_SETUP_WORKFLOW_NAME: "Failed Backport Resolver"
           GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/failed-backport-resolver.lock.yml@${{ github.ref }}
-          GH_AW_INFO_VERSION: "2.1.111"
+          GH_AW_INFO_VERSION: "2.1.165"
           GH_AW_INFO_AWF_VERSION: "v0.25.55"
           GH_AW_INFO_ENGINE_ID: "claude"
       - name: Generate agentic run info
@@ -152,13 +153,13 @@ jobs:
           GH_AW_INFO_ENGINE_ID: "claude"
           GH_AW_INFO_ENGINE_NAME: "Claude Code"
           GH_AW_INFO_MODEL: "opus"
-          GH_AW_INFO_VERSION: "2.1.111"
-          GH_AW_INFO_AGENT_VERSION: "2.1.111"
+          GH_AW_INFO_VERSION: "2.1.165"
+          GH_AW_INFO_AGENT_VERSION: "2.1.165"
           GH_AW_INFO_CLI_VERSION: "v0.76.1"
           GH_AW_INFO_WORKFLOW_NAME: "Failed Backport Resolver"
           GH_AW_INFO_EXPERIMENTAL: "false"
           GH_AW_INFO_SUPPORTS_TOOLS_ALLOWLIST: "true"
-          GH_AW_INFO_STAGED: "true"
+          GH_AW_INFO_STAGED: "false"
           GH_AW_INFO_ALLOWED_DOMAINS: '["defaults","github","registry.npmjs.org","registry.yarnpkg.com","kibana-bazel-remote-h5qd3jkxkq-uc.a.run.app","elastic.litellm-prod.ai"]'
           GH_AW_INFO_FIREWALL_ENABLED: "true"
           GH_AW_INFO_AWF_VERSION: "v0.25.55"
@@ -250,23 +251,23 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_789d53383aa04e92_EOF'
+          cat << 'GH_AW_PROMPT_d8a31ed391440e39_EOF'
           <system>
-          GH_AW_PROMPT_789d53383aa04e92_EOF
+          GH_AW_PROMPT_d8a31ed391440e39_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_789d53383aa04e92_EOF'
+          cat << 'GH_AW_PROMPT_d8a31ed391440e39_EOF'
           <safe-output-tools>
           Tools: add_comment(max:2), create_pull_request(max:8), assign_to_user(max:8), missing_tool, missing_data, noop
-          GH_AW_PROMPT_789d53383aa04e92_EOF
+          GH_AW_PROMPT_d8a31ed391440e39_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
-          cat << 'GH_AW_PROMPT_789d53383aa04e92_EOF'
+          cat << 'GH_AW_PROMPT_d8a31ed391440e39_EOF'
           </safe-output-tools>
-          GH_AW_PROMPT_789d53383aa04e92_EOF
+          GH_AW_PROMPT_d8a31ed391440e39_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_789d53383aa04e92_EOF'
+          cat << 'GH_AW_PROMPT_d8a31ed391440e39_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if github.actor}}
@@ -295,15 +296,15 @@ jobs:
           {{/if}}
           </github-context>
           
-          GH_AW_PROMPT_789d53383aa04e92_EOF
+          GH_AW_PROMPT_d8a31ed391440e39_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           if [ "$GITHUB_EVENT_NAME" = "issue_comment" ] && [ -n "$GH_AW_IS_PR_COMMENT" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review_comment" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review" ]; then
             cat "${RUNNER_TEMP}/gh-aw/prompts/pr_context_prompt.md"
           fi
-          cat << 'GH_AW_PROMPT_789d53383aa04e92_EOF'
+          cat << 'GH_AW_PROMPT_d8a31ed391440e39_EOF'
           </system>
           {{#runtime-import .github/workflows/failed-backport-resolver.md}}
-          GH_AW_PROMPT_789d53383aa04e92_EOF
+          GH_AW_PROMPT_d8a31ed391440e39_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -422,7 +423,7 @@ jobs:
         env:
           GH_AW_SETUP_WORKFLOW_NAME: "Failed Backport Resolver"
           GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/failed-backport-resolver.lock.yml@${{ github.ref }}
-          GH_AW_INFO_VERSION: "2.1.111"
+          GH_AW_INFO_VERSION: "2.1.165"
           GH_AW_INFO_AWF_VERSION: "v0.25.55"
           GH_AW_INFO_ENGINE_ID: "claude"
       - name: Set runtime paths
@@ -503,7 +504,7 @@ jobs:
       - name: Install AWF binary
         run: bash "${RUNNER_TEMP}/gh-aw/actions/install_awf_binary.sh" v0.25.55
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code@2.1.111
+        run: npm install -g @anthropic-ai/claude-code@2.1.165
       - name: Parse integrity filter lists
         id: parse-guard-vars
         env:
@@ -538,9 +539,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_911cbb511774dbcd_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_3bc56ecb4931ea84_EOF'
           {"add_comment":{"footer":true,"max":2,"target":"${{ github.event.issue.number || github.event.inputs.pr_number }}"},"assign_to_user":{"max":8,"target":"*"},"create_pull_request":{"allowed_base_branches":["8.19","9.*"],"auto_close_issue":false,"draft":false,"fallback_as_issue":false,"footer":true,"labels":["backport"],"max":8,"max_patch_files":100,"max_patch_size":1024,"protect_top_level_dot_folders":true,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS","DESIGN.md","README.md","CONTRIBUTING.md","CHANGELOG.md","SECURITY.md","CODE_OF_CONDUCT.md","CLAUDE.md","AGENTS.md"],"protected_files_policy":"allowed"},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_911cbb511774dbcd_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_3bc56ecb4931ea84_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -795,7 +796,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v '"${DOCKER_SOCK_PATH}"':/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DOCKER_HOST=unix:///var/run/docker.sock -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.19'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_285b72162f0df2ef_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_f6e8751817a63276_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "github": {
@@ -838,7 +839,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_285b72162f0df2ef_EOF
+          GH_AW_MCP_CONFIG_f6e8751817a63276_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -958,12 +959,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.LITELLM_API_KEY }}
           ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai
           ANTHROPIC_DEFAULT_HAIKU_MODEL: llm-gateway/claude-haiku-4-5
-          ANTHROPIC_DEFAULT_OPUS_MODEL: llm-gateway/claude-opus-4-7[1m]
+          ANTHROPIC_DEFAULT_OPUS_MODEL: llm-gateway/claude-opus-4-8[1m]
           ANTHROPIC_DEFAULT_SONNET_MODEL: llm-gateway/claude-sonnet-4-6
           ANTHROPIC_MODEL: opus
           BASH_DEFAULT_TIMEOUT_MS: 60000
           BASH_MAX_TIMEOUT_MS: 60000
           CLAUDE_CODE_DISABLE_FAST_MODE: 1
+          CLAUDE_CODE_EFFORT_LEVEL: high
           CLAUDE_CODE_SUBAGENT_MODEL: opus[1m]
           DISABLE_BUG_COMMAND: 1
           DISABLE_ERROR_REPORTING: 1
@@ -974,7 +976,6 @@ jobs:
           GH_AW_PHASE: agent
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GH_AW_SAFE_OUTPUTS: ${{ steps.set-runtime-paths.outputs.GH_AW_SAFE_OUTPUTS }}
-          GH_AW_SAFE_OUTPUTS_STAGED: true
           GH_AW_VERSION: v0.76.1
           GITHUB_AW: true
           GITHUB_STEP_SUMMARY: /tmp/gh-aw/agent-step-summary.md
@@ -1146,7 +1147,10 @@ jobs:
       always() && (needs.agent.result != 'skipped' || needs.activation.outputs.lockdown_check_failed == 'true' ||
       needs.activation.outputs.stale_lock_file_failed == 'true')
     runs-on: ubuntu-slim
-    permissions: {}
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     concurrency:
       group: "gh-aw-conclusion-failed-backport-resolver"
       cancel-in-progress: false
@@ -1168,7 +1172,7 @@ jobs:
         env:
           GH_AW_SETUP_WORKFLOW_NAME: "Failed Backport Resolver"
           GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/failed-backport-resolver.lock.yml@${{ github.ref }}
-          GH_AW_INFO_VERSION: "2.1.111"
+          GH_AW_INFO_VERSION: "2.1.165"
           GH_AW_INFO_AWF_VERSION: "v0.25.55"
           GH_AW_INFO_ENGINE_ID: "claude"
       - name: Download agent output artifact
@@ -1312,7 +1316,7 @@ jobs:
         env:
           GH_AW_SETUP_WORKFLOW_NAME: "Failed Backport Resolver"
           GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/failed-backport-resolver.lock.yml@${{ github.ref }}
-          GH_AW_INFO_VERSION: "2.1.111"
+          GH_AW_INFO_VERSION: "2.1.165"
           GH_AW_INFO_AWF_VERSION: "v0.25.55"
           GH_AW_INFO_ENGINE_ID: "claude"
       - name: Download agent output artifact
@@ -1401,7 +1405,7 @@ jobs:
       - name: Install AWF binary
         run: bash "${RUNNER_TEMP}/gh-aw/actions/install_awf_binary.sh" v0.25.55
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code@2.1.111
+        run: npm install -g @anthropic-ai/claude-code@2.1.165
       - name: Execute Claude Code CLI
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         continue-on-error: true
@@ -1441,12 +1445,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.LITELLM_API_KEY }}
           ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai
           ANTHROPIC_DEFAULT_HAIKU_MODEL: llm-gateway/claude-haiku-4-5
-          ANTHROPIC_DEFAULT_OPUS_MODEL: llm-gateway/claude-opus-4-7[1m]
+          ANTHROPIC_DEFAULT_OPUS_MODEL: llm-gateway/claude-opus-4-8[1m]
           ANTHROPIC_DEFAULT_SONNET_MODEL: llm-gateway/claude-sonnet-4-6
           ANTHROPIC_MODEL: opus
           BASH_DEFAULT_TIMEOUT_MS: 60000
           BASH_MAX_TIMEOUT_MS: 60000
           CLAUDE_CODE_DISABLE_FAST_MODE: 1
+          CLAUDE_CODE_EFFORT_LEVEL: high
           CLAUDE_CODE_SUBAGENT_MODEL: opus[1m]
           DISABLE_BUG_COMMAND: 1
           DISABLE_ERROR_REPORTING: 1
@@ -1535,7 +1540,7 @@ jobs:
         env:
           GH_AW_SETUP_WORKFLOW_NAME: "Failed Backport Resolver"
           GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/failed-backport-resolver.lock.yml@${{ github.ref }}
-          GH_AW_INFO_VERSION: "2.1.111"
+          GH_AW_INFO_VERSION: "2.1.165"
           GH_AW_INFO_AWF_VERSION: "v0.25.55"
           GH_AW_INFO_ENGINE_ID: "claude"
       - name: Check team membership for workflow
@@ -1572,7 +1577,10 @@ jobs:
       - detection
     if: (!cancelled()) && needs.agent.result != 'skipped' && needs.detection.result == 'success'
     runs-on: ubuntu-slim
-    permissions: {}
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     timeout-minutes: 15
     env:
       GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/failed-backport-resolver"
@@ -1581,8 +1589,7 @@ jobs:
       GH_AW_EFFECTIVE_TOKENS: ${{ needs.agent.outputs.effective_tokens }}
       GH_AW_ENGINE_ID: "claude"
       GH_AW_ENGINE_MODEL: "opus"
-      GH_AW_ENGINE_VERSION: "2.1.111"
-      GH_AW_SAFE_OUTPUTS_STAGED: "true"
+      GH_AW_ENGINE_VERSION: "2.1.165"
       GH_AW_SAFE_OUTPUT_MESSAGES: "{\"activationComments\":\"true\"}"
       GH_AW_WORKFLOW_ID: "failed-backport-resolver"
       GH_AW_WORKFLOW_NAME: "Failed Backport Resolver"
@@ -1611,7 +1618,7 @@ jobs:
         env:
           GH_AW_SETUP_WORKFLOW_NAME: "Failed Backport Resolver"
           GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/failed-backport-resolver.lock.yml@${{ github.ref }}
-          GH_AW_INFO_VERSION: "2.1.111"
+          GH_AW_INFO_VERSION: "2.1.165"
           GH_AW_INFO_AWF_VERSION: "v0.25.55"
           GH_AW_INFO_ENGINE_ID: "claude"
       - name: Download agent output artifact
@@ -1628,6 +1635,65 @@ jobs:
           mkdir -p /tmp/gh-aw/
           find "/tmp/gh-aw/" -type f -print
           echo "GH_AW_AGENT_OUTPUT=/tmp/gh-aw/agent_output.json" >> "$GITHUB_OUTPUT"
+      - name: Download patch artifact
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: agent
+          path: /tmp/gh-aw/
+      - name: Extract base branch from agent output
+        id: extract-base-branch
+        if: steps.download-agent-output.outcome == 'success'
+        shell: bash
+        run: |
+          if [ -f "/tmp/gh-aw/agent_output.json" ]; then
+            GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
+            BASE_BRANCH=$("$GH_AW_NODE" -e "
+              try {
+                const data = JSON.parse(require('fs').readFileSync('/tmp/gh-aw/agent_output.json', 'utf8'));
+                const item = (data.items || []).find(i =>
+                  (i.type === 'create_pull_request' || i.type === 'push_to_pull_request_branch') &&
+                  i.base_branch
+                );
+                if (item) process.stdout.write(item.base_branch);
+              } catch(e) {}
+            " 2>/dev/null || true)
+            # Validate: only allow safe git branch name characters
+            if [[ "$BASE_BRANCH" =~ ^[a-zA-Z0-9/_.-]+$ ]] && [ ${#BASE_BRANCH} -le 255 ]; then
+              printf 'base-branch=%s\n' "$BASE_BRANCH" >> "$GITHUB_OUTPUT"
+              echo "Extracted base branch from safe output: $BASE_BRANCH"
+            fi
+          fi
+      - name: Checkout repository (trusted default branch for comment events)
+        if: (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'create_pull_request') && (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment')
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Checkout repository
+        if: (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'create_pull_request') && github.event_name != 'issue_comment' && github.event_name != 'pull_request_review_comment'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ steps.extract-base-branch.outputs.base-branch || github.base_ref || github.event.pull_request.base.ref || github.ref_name || github.event.repository.default_branch }}
+          token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Configure Git credentials
+        if: (!cancelled()) && needs.agent.result != 'skipped' && contains(needs.agent.outputs.output_types, 'create_pull_request')
+        env:
+          REPO_NAME: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+          GIT_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global am.keepcr true
+          # Re-authenticate git with GitHub token
+          SERVER_URL_STRIPPED="${SERVER_URL#https://}"
+          git remote set-url origin "https://x-access-token:${GIT_TOKEN}@${SERVER_URL_STRIPPED}/${REPO_NAME}.git"
+          echo "Git configured with standard GitHub Actions identity"
       - name: Configure GH_HOST for enterprise compatibility
         id: ghes-host-config
         shell: bash
@@ -1647,7 +1713,7 @@ jobs:
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
           GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"footer\":true,\"max\":2,\"target\":\"${{ github.event.issue.number || github.event.inputs.pr_number }}\"},\"assign_to_user\":{\"max\":8,\"target\":\"*\"},\"create_pull_request\":{\"allowed_base_branches\":[\"8.19\",\"9.*\"],\"auto_close_issue\":false,\"draft\":false,\"fallback_as_issue\":false,\"footer\":true,\"labels\":[\"backport\"],\"max\":8,\"max_patch_files\":100,\"max_patch_size\":1024,\"protect_top_level_dot_folders\":true,\"protected_files\":[\"package.json\",\"bun.lockb\",\"bunfig.toml\",\"deno.json\",\"deno.jsonc\",\"deno.lock\",\"global.json\",\"NuGet.Config\",\"Directory.Packages.props\",\"mix.exs\",\"mix.lock\",\"go.mod\",\"go.sum\",\"stack.yaml\",\"stack.yaml.lock\",\"pom.xml\",\"build.gradle\",\"build.gradle.kts\",\"settings.gradle\",\"settings.gradle.kts\",\"gradle.properties\",\"package-lock.json\",\"yarn.lock\",\"pnpm-lock.yaml\",\"npm-shrinkwrap.json\",\"requirements.txt\",\"Pipfile\",\"Pipfile.lock\",\"pyproject.toml\",\"setup.py\",\"setup.cfg\",\"Gemfile\",\"Gemfile.lock\",\"uv.lock\",\"CODEOWNERS\",\"DESIGN.md\",\"README.md\",\"CONTRIBUTING.md\",\"CHANGELOG.md\",\"SECURITY.md\",\"CODE_OF_CONDUCT.md\",\"CLAUDE.md\",\"AGENTS.md\"],\"protected_files_policy\":\"allowed\"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"report_incomplete\":{}}"
-          GH_AW_SAFE_OUTPUTS_STAGED: "true"
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -1655,4 +1721,13 @@ jobs:
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/safe_output_handler_manager.cjs');
             await main();
+      - name: Upload Safe Outputs Items
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: safe-outputs-items
+          path: |
+            /tmp/gh-aw/safe-output-items.jsonl
+            /tmp/gh-aw/temporary-id-map.json
+          if-no-files-found: ignore
 

@@ -11,6 +11,7 @@ import React from 'react';
 import type { Query } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useContentListConfig, CREATED_BY_FILTER_ID } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import { UserFieldFilterRenderer } from '../user_field';
 
 /**
@@ -49,7 +50,7 @@ const i18nText = {
 export const CreatedByFilterRenderer = ({
   query,
   onChange,
-  'data-test-subj': dataTestSubj = 'contentListCreatedByRenderer',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.createdByFilter,
 }: CreatedByFilterRendererProps) => {
   const { supports } = useContentListConfig();
 

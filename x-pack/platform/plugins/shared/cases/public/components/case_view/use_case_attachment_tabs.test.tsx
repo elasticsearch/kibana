@@ -30,7 +30,7 @@ const buildRegistry = () => {
   const registry = new UnifiedAttachmentTypeRegistry();
   registry.register({
     id: 'security.alert',
-    displayName: 'Alert',
+    displayName: 'Alerts',
     icon: 'bell',
     getAttachmentViewObject: () => ({ event: 'added an alert' }),
     getAttachmentTabViewObject: () => ({
@@ -42,7 +42,7 @@ const buildRegistry = () => {
   // comments — files are counted via the file stats API instead.
   registry.register({
     id: 'file',
-    displayName: 'File',
+    displayName: 'Files',
     icon: 'document',
     getAttachmentViewObject: () => ({ event: 'added a file' }),
     getAttachmentTabViewObject: () => ({

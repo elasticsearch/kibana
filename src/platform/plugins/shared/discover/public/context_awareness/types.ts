@@ -28,19 +28,8 @@ import type {
 } from '@kbn/unified-histogram/types';
 import type { TypedLensByValueInput } from '@kbn/lens-plugin/public';
 import type { RestorableStateProviderProps } from '@kbn/restorable-state';
-import type { ReactElement } from 'react';
 import type { DiscoverDataSource } from '../../common/data_sources';
 import type { DiscoverAppState } from '../application/main/state_management/redux';
-
-/**
- * Legacy rule type entry shown in the alerting v2 create-rule options flyout.
- */
-export interface AlertsLegacyRuleType {
-  id: string;
-  label: string;
-  render: (onClose: () => void) => ReactElement | null;
-  'data-test-subj'?: string;
-}
 
 export type UpdateESQLQueryFn = (queryOrUpdater: string | ((prevQuery: string) => string)) => void;
 
@@ -54,11 +43,6 @@ export interface AppMenuExtension {
    * @returns The updated app menu registry
    */
   appMenuRegistry: (prevRegistry: AppMenuRegistry) => AppMenuRegistry;
-  /**
-   * Additional legacy rule types for the alerting v2 create-rule options flyout.
-   * Used instead of alerts popover items when alerting v2 is enabled in ES|QL mode.
-   */
-  getAlertsLegacyRuleTypes?: () => AlertsLegacyRuleType[];
 }
 
 /**

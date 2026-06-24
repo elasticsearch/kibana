@@ -22,6 +22,7 @@ import { CaseViewSimilarCases } from './components/case_view_similar_cases';
 import { CaseViewAttachments } from './components/case_view_attachments';
 import { filterCaseAttachmentsBySearchTerm } from './components/helpers';
 import { ATTACHMENT_TAB_ALIASES } from './use_case_attachment_tabs';
+import { SavedObjectInAppUrlsProvider } from '../attachments/common/saved_object/saved_object_in_app_urls_context';
 
 const getActiveTabId = (tabId?: string) => {
   if (tabId && Object.values(CASE_VIEW_PAGE_TABS).includes(tabId as CASE_VIEW_PAGE_TABS)) {
@@ -114,22 +115,24 @@ export const CaseViewPage = React.memo<CaseViewPageProps>(({ caseData, refreshRe
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="l" />
-      <EuiFlexGroup data-test-subj={`case-view-tab-content-${activeTabId}`} alignItems="baseline">
-        {activeTabId === CASE_VIEW_PAGE_TABS.ACTIVITY && (
-          <CaseViewActivity caseData={caseWithFilteredAttachments} searchTerm={searchTerm} />
-        )}
-        {ATTACHMENT_TAB_ALIASES.has(activeTabId) && (
-          <CaseViewAttachments
-            onSearch={onSearch}
-            searchTerm={searchTerm}
-            caseData={caseWithFilteredAttachments}
-            onUpdateField={onUpdateField}
-          />
-        )}
-        {activeTabId === CASE_VIEW_PAGE_TABS.SIMILAR_CASES && (
-          <CaseViewSimilarCases caseData={caseWithFilteredAttachments} searchTerm={searchTerm} />
-        )}
-      </EuiFlexGroup>
+      <SavedObjectInAppUrlsProvider caseData={caseData}>
+        <EuiFlexGroup data-test-subj={`case-view-tab-content-${activeTabId}`} alignItems="baseline">
+          {activeTabId === CASE_VIEW_PAGE_TABS.ACTIVITY && (
+            <CaseViewActivity caseData={caseWithFilteredAttachments} searchTerm={searchTerm} />
+          )}
+          {ATTACHMENT_TAB_ALIASES.has(activeTabId) && (
+            <CaseViewAttachments
+              onSearch={onSearch}
+              searchTerm={searchTerm}
+              caseData={caseWithFilteredAttachments}
+              onUpdateField={onUpdateField}
+            />
+          )}
+          {activeTabId === CASE_VIEW_PAGE_TABS.SIMILAR_CASES && (
+            <CaseViewSimilarCases caseData={caseWithFilteredAttachments} searchTerm={searchTerm} />
+          )}
+        </EuiFlexGroup>
+      </SavedObjectInAppUrlsProvider>
     </>
   );
 });

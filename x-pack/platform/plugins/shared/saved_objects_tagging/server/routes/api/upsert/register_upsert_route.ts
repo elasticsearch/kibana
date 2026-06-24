@@ -26,6 +26,10 @@ export const registerUpsertRoute = (router: TagsPluginRouter, usageCounter?: Usa
   upsertRoute.addVersion(
     {
       version: routeVersion,
+      options: {
+        oasOperationObject: async () =>
+          (await import('../oas_examples')).upsertTagOASOperationObject,
+      },
       validate: {
         request: {
           params: tagIdParamSchema,

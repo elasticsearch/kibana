@@ -19,6 +19,7 @@ import { flyoutProviders } from './flyout_provider';
 jest.mock('../../../common/components/user_privileges/user_privileges_context', () => ({
   UserPrivilegesProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+
 jest.mock('../../../common/components/discover_in_timeline/provider', () => ({
   DiscoverInTimelineContextProvider: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
@@ -36,6 +37,13 @@ const services = {
     getTriggerCompatibleActions: jest.fn().mockResolvedValue([]),
   },
   upselling: new UpsellingService(),
+  data: {
+    query: {
+      timefilter: {
+        timefilter: { getAbsoluteTime: () => ({ from: '2024-01-01', to: '2024-01-02' }) },
+      },
+    },
+  },
   application: {
     capabilities: {
       [SECURITY_FEATURE_ID]: {

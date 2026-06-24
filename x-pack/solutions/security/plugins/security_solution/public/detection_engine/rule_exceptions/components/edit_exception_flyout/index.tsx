@@ -7,7 +7,7 @@
 
 import { isEmpty } from 'lodash/fp';
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 import {
   EuiHorizontalRule,
   EuiFlyoutBody,
@@ -88,17 +88,13 @@ interface EditExceptionFlyoutProps {
 }
 
 const FlyoutBodySection = styled(EuiFlyoutBody)`
-  ${() => css`
-    &.builder-section {
-      overflow-y: scroll;
-    }
-  `}
+  &.builder-section {
+    overflow-y: scroll;
+  }
 `;
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({

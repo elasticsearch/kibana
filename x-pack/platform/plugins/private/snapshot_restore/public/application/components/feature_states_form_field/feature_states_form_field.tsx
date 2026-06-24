@@ -53,7 +53,11 @@ export const FeatureStatesFormField: FunctionComponent<Props> = ({
   };
 
   return (
-    <EuiFormRow>
+    <EuiFormRow
+      label={i18n.translate('xpack.snapshotRestore.featureStatesFormField.featureStatesLabel', {
+        defaultMessage: 'Feature states',
+      })}
+    >
       <EuiComboBox
         data-test-subj="featureStatesDropdown"
         placeholder={i18n.translate(

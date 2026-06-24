@@ -32,9 +32,8 @@ export const MetricErrorIcon = ({ configIdByLocation }: { configIdByLocation: st
       css={css`
         box-sizing: border-box;
         display: flex;
-        flex-direction: column;
         align-items: center;
-        gap: 10px;
+        justify-content: center;
         width: 32px;
         height: 32px;
         background: ${darkMode ? theme.colors.backgroundBaseSubdued : theme.colors.lightestShade};
@@ -42,9 +41,6 @@ export const MetricErrorIcon = ({ configIdByLocation }: { configIdByLocation: st
           ${darkMode ? theme.colors.darkShade : theme.colors.lightShade};
         box-shadow: ${euiShadow};
         border-radius: 16px;
-        flex: none;
-        order: 0;
-        flex-grow: 0;
       `}
       onMouseEnter={() => {
         // show popover with delay

@@ -123,6 +123,7 @@ dependsOn:
   - '@kbn/cps'
   - '@kbn/core-ui-settings-browser'
   - '@kbn/management-settings-ids'
+  - '@kbn/core-logging-server-mocks'
 tags:
   - plugin
   - prod

@@ -14,6 +14,18 @@ const USER_ERRORS_EXCEPTIONS = [
   'x_content_parse_exception',
 ];
 
+// illegal_argument_exception is too broad to classify as a user error globally (ES itself
+// can produce it from framework-generated queries). These reason substrings identify cases
+// that are unambiguously caused by user data or configuration.
+const ILLEGAL_ARGUMENT_USER_REASON_SUBSTRINGS = [
+  'is not an IP string literal',
+  'Fielddata is disabled on',
+];
+
+const isIllegalArgumentUserError = (errorString: string): boolean =>
+  errorString.includes('illegal_argument_exception') &&
+  ILLEGAL_ARGUMENT_USER_REASON_SUBSTRINGS.some((reason) => errorString.includes(reason));
+
 /**
  *
  * @param error
@@ -53,7 +65,9 @@ export const checkErrorDetails = (error: unknown): { isUserError: boolean } => {
     (error instanceof Error &&
       USER_ERRORS_EXCEPTIONS.some((exception) => error.message.includes(exception))) ||
     (typeof error === 'string' &&
-      USER_ERRORS_EXCEPTIONS.some((exception) => error.includes(exception)));
+      USER_ERRORS_EXCEPTIONS.some((exception) => error.includes(exception))) ||
+    (error instanceof Error && isIllegalArgumentUserError(error.message)) ||
+    (typeof error === 'string' && isIllegalArgumentUserError(error));
 
   return { isUserError };
 };

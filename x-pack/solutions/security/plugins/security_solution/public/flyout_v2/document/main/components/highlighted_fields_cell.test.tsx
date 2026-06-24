@@ -23,7 +23,7 @@ import { HOST_PREVIEW_BANNER } from './host_entity_overview';
 import { UserPreviewPanelKey } from '../../../../flyout/entity_details/user_right';
 import { USER_PREVIEW_BANNER } from './user_entity_overview';
 import { createTelemetryServiceMock } from '../../../../common/lib/telemetry/telemetry_service.mock';
-import { ChildLink } from '../../../shared/components/child_link';
+import { OpenFlyoutLink } from '../../../shared/components/open_flyout_link';
 
 jest.mock('../../../../management/hooks');
 jest.mock('../../../../management/hooks/agents/use_get_agent_status');
@@ -141,19 +141,19 @@ describe('<HighlightedFieldsCell />', () => {
     });
   });
 
-  it('should open network details flyout when click on ip with renderChildLink', () => {
+  it('should open network details flyout when click on ip with renderFlyoutLink', () => {
     const { getByTestId } = render(
       <TestProviders>
         <HighlightedFieldsCell
           values={['100:XXX:XXX']}
           field="source.ip"
           scopeId={SCOPE_ID}
-          renderChildLink={ChildLink}
+          renderFlyoutLink={OpenFlyoutLink}
         />
       </TestProviders>
     );
 
-    getByTestId('securitySolutionFlyoutChildLink').click();
+    getByTestId('securitySolutionFlyoutOpenFlyoutLink').click();
     expect(mockOpenSystemFlyout).toHaveBeenCalled();
   });
 

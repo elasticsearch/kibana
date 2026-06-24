@@ -11,6 +11,7 @@ import { fireEvent } from '@testing-library/react';
 import { CertMonitors } from './cert_monitors';
 import { render } from '../../utils/testing';
 import type { CertMonitor } from '../../../../../common/runtime_types';
+import * as useKibanaSpaceModule from '../../../../hooks/use_kibana_space';
 
 const createMockMonitors = (count: number): CertMonitor[] =>
   Array.from({ length: count }, (_, i) => ({
@@ -76,5 +77,85 @@ describe('CertMonitors', () => {
 
     expect(queryByText('Monitor 11')).not.toBeInTheDocument();
     expect(getByTestId('certMonitorsViewAll')).toHaveTextContent('+5 more');
+  });
+
+  describe('remote (CCS) monitors', () => {
+    const localMonitor: CertMonitor = {
+      name: 'Local Monitor',
+      id: 'local-id',
+      configId: 'local-cfg',
+      url: 'https://local.example.com',
+    };
+    const remoteWithKibanaUrl: CertMonitor = {
+      name: 'Remote With URL',
+      id: 'remote-1',
+      configId: 'remote-cfg-1',
+      url: 'https://remote-1.example.com',
+      remote: { remoteName: 'cluster1', kibanaUrl: 'https://remote-1.kibana' },
+    };
+    const remoteWithoutKibanaUrl: CertMonitor = {
+      name: 'Remote No URL',
+      id: 'remote-2',
+      configId: 'remote-cfg-2',
+      url: 'https://remote-2.example.com',
+      remote: { remoteName: 'cluster2' },
+    };
+
+    it('shows only the url tooltip (no remote cluster title) for a local cert monitor', () => {
+      const { getByTestId, getByText, queryByText } = render(
+        <CertMonitors monitors={[localMonitor]} />
+      );
+      fireEvent.mouseOver(getByTestId('syntheticsMonitorPageLinkLink'));
+      expect(getByText(localMonitor.url!)).toBeInTheDocument();
+      expect(queryByText(/Loaded from remote cluster/)).not.toBeInTheDocument();
+    });
+
+    it('shows the remote cluster name as the tooltip title for a remote cert monitor', () => {
+      const { getByTestId, getByText } = render(<CertMonitors monitors={[remoteWithKibanaUrl]} />);
+      fireEvent.mouseOver(getByTestId('syntheticsMonitorPageLinkRemoteLink'));
+      expect(getByText(remoteWithKibanaUrl.url!)).toBeInTheDocument();
+      expect(getByText('Loaded from remote cluster cluster1')).toBeInTheDocument();
+    });
+
+    it('opens an external link to remote Kibana when a kibanaUrl is known', () => {
+      const { getByTestId } = render(<CertMonitors monitors={[remoteWithKibanaUrl]} />);
+      const link = getByTestId('syntheticsMonitorPageLinkRemoteLink') as HTMLAnchorElement;
+      expect(link).toBeInTheDocument();
+      expect(link.target).toBe('_blank');
+      // External link → no `remoteName=` query param.
+      expect(link.href).toContain('https://remote-1.kibana');
+      expect(link.href).toContain('remote-cfg-1');
+      expect(link.href).not.toContain('remoteName=');
+    });
+
+    it('threads the active space into the remote deep link', () => {
+      jest.spyOn(useKibanaSpaceModule, 'useKibanaSpace').mockReturnValue({
+        space: { id: 'team-a', name: 'Team A', disabledFeatures: [] },
+        loading: false,
+        error: undefined,
+      });
+      const { getByTestId } = render(<CertMonitors monitors={[remoteWithKibanaUrl]} />);
+      const link = getByTestId('syntheticsMonitorPageLinkRemoteLink') as HTMLAnchorElement;
+      expect(link.href).toContain('https://remote-1.kibana/s/team-a/app/synthetics/monitor/');
+    });
+
+    it('falls back to a local link with ?remoteName= when no kibanaUrl is known', () => {
+      const { getByTestId, queryByTestId } = render(
+        <CertMonitors monitors={[remoteWithoutKibanaUrl]} />
+      );
+      expect(queryByTestId('syntheticsMonitorPageLinkRemoteLink')).not.toBeInTheDocument();
+      const link = getByTestId('syntheticsMonitorPageLinkLink') as HTMLAnchorElement;
+      expect(link.target).not.toBe('_blank');
+      expect(link.getAttribute('href')).toContain('/app/synthetics/monitor/remote-cfg-2');
+      expect(link.getAttribute('href')).toContain('remoteName=cluster2');
+    });
+
+    it('keeps the plain local link for non-remote monitors', () => {
+      const { getByTestId } = render(<CertMonitors monitors={[localMonitor]} />);
+      const link = getByTestId('syntheticsMonitorPageLinkLink') as HTMLAnchorElement;
+      const href = link.getAttribute('href') ?? '';
+      expect(href).toContain('/app/synthetics/monitor/local-cfg');
+      expect(href).not.toContain('remoteName=');
+    });
   });
 });

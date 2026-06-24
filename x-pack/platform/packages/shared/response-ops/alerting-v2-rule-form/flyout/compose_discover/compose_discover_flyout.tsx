@@ -16,6 +16,7 @@ import {
   EuiFlyoutHeader,
   EuiSpacer,
   EuiTitle,
+  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -28,8 +29,9 @@ import type { RuleFormServices } from '../../form/contexts/rule_form_context';
 import { RuleFormProvider } from '../../form/contexts/rule_form_context';
 import { ConfirmRuleClose } from '../confirm_rule_close';
 import type { FormValues, RuleNotificationsValue, RuleQuery } from '../../form/types';
-import { getBreachQuery } from '../../form/types';
+import { getBreachQuery } from '../../form/utils/query_helpers';
 import { parseYamlToFormValues, serializeFormToYaml } from '../../form/utils/yaml_form_utils';
+import { isNonRepresentableRule } from '../../form/utils/is_non_representable';
 import { ComposeDiscoverFooter } from './compose_discover_footer';
 import { ComposeDiscoverForm, getSteps } from './compose_discover_form';
 import {
@@ -84,6 +86,14 @@ const CREATE_TITLE = i18n.translate('xpack.alertingV2.composeDiscover.flyout.cre
 const EDIT_TITLE = i18n.translate('xpack.alertingV2.composeDiscover.flyout.editTitleLabel', {
   defaultMessage: 'Edit alert rule',
 });
+
+const YAML_ONLY_TOOLTIP = i18n.translate(
+  'xpack.alertingV2.composeDiscover.editMode.yamlOnlyTooltip',
+  {
+    defaultMessage:
+      'The current YAML configuration contains features that cannot be represented in the GUI.',
+  }
+);
 
 const EDIT_MODE_OPTIONS = [
   { id: 'form', label: FORM_VIEW_LABEL, iconType: 'tableDensityNormal' },
@@ -184,6 +194,8 @@ export function ComposeDiscoverFlyout({
   const hasInitialCustomRecovery =
     initialMapped?.query?.format === 'composed' && !!initialMapped.query.recovery?.segment?.trim();
 
+  const forceYamlMode = Boolean(rule && isNonRepresentableRule(rule));
+
   const inlineResult = useMemo(
     () =>
       initialQuery !== undefined
@@ -205,6 +217,7 @@ export function ComposeDiscoverFlyout({
     initialRecoveryType: hasInitialCustomRecovery ? 'custom' : 'default',
     isBuilderMode,
     isQueryPrePopulated: isDiscoverQueryComplete,
+    forceYamlMode,
   });
 
   // Registered once here so providers persist across Sandbox open/close cycles.
@@ -554,7 +567,14 @@ export function ComposeDiscoverFlyout({
   const isLastStep = uiState.step === steps.length - 1;
 
   // ── YAML mode state ──────────────────────────────────────────────────────
-  const [yamlText, setYamlText] = useState('');
+  const [yamlText, setYamlText] = useState(() => {
+    if (forceYamlMode) {
+      const serialized = serializeFormToYaml(defaultValues);
+      yamlBaselineRef.current = serialized;
+      return serialized;
+    }
+    return '';
+  });
   yamlTextRef.current = yamlText;
   // Reflects Monaco markers set by the YAML editor's schema validator. Used to
   // disable the Save button while the buffer is invalid.
@@ -587,6 +607,8 @@ export function ComposeDiscoverFlyout({
 
   const handleToggleYamlMode = useCallback(
     (enabled: boolean) => {
+      if (forceYamlMode) return;
+
       if (enabled) {
         const serialized = serializeFormToYaml(methods.getValues());
         setYamlText(serialized);
@@ -617,7 +639,7 @@ export function ComposeDiscoverFlyout({
       }
       dispatch({ type: 'SET_YAML_MODE', enabled });
     },
-    [cancelYamlParse, methods, yamlText, applyYamlValuesToFormAndSandbox, dispatch]
+    [cancelYamlParse, methods, yamlText, applyYamlValuesToFormAndSandbox, dispatch, forceYamlMode]
   );
 
   const handleSandboxApply = useCallback(() => {
@@ -750,13 +772,14 @@ export function ComposeDiscoverFlyout({
   // Follow schema decisions in #268984 — if recoveryType is superseded by a
   // field on RuleQuery itself, gate this on query shape instead.
   const sandboxTabs = useMemo<QueryTab[] | undefined>(() => {
-    if (uiState.yamlMode && sandboxQuery.format === 'composed') {
-      return uiState.recoveryType === 'custom' ? ['base', 'alert', 'recovery'] : ['base', 'alert'];
+    if (!uiState.yamlMode) {
+      return getSandboxTabs(isAlert, {
+        step: uiState.step,
+        recoveryType: uiState.recoveryType,
+      });
     }
-    return getSandboxTabs(isAlert, {
-      step: uiState.step,
-      recoveryType: uiState.recoveryType,
-    });
+    if (sandboxQuery.format === 'standalone') return undefined;
+    return uiState.recoveryType === 'custom' ? ['base', 'alert', 'recovery'] : ['base', 'alert'];
   }, [uiState.yamlMode, uiState.recoveryType, uiState.step, sandboxQuery.format, isAlert]);
 
   const handleSandboxTabChange = useCallback(
@@ -816,15 +839,18 @@ export function ComposeDiscoverFlyout({
                 )}
                 {!isBuilderMode && (
                   <EuiFlexItem grow={false}>
-                    <EuiButtonGroup
-                      legend={EDIT_MODE_LEGEND}
-                      options={EDIT_MODE_OPTIONS}
-                      idSelected={uiState.yamlMode ? 'yaml' : 'form'}
-                      onChange={(id) => handleToggleYamlMode(id === 'yaml')}
-                      isIconOnly
-                      buttonSize="compressed"
-                      data-test-subj="composeDiscoverEditModeToggle"
-                    />
+                    <EuiToolTip content={forceYamlMode ? YAML_ONLY_TOOLTIP : undefined}>
+                      <EuiButtonGroup
+                        legend={EDIT_MODE_LEGEND}
+                        options={EDIT_MODE_OPTIONS}
+                        idSelected={uiState.yamlMode ? 'yaml' : 'form'}
+                        onChange={(id) => handleToggleYamlMode(id === 'yaml')}
+                        isIconOnly
+                        isDisabled={forceYamlMode}
+                        buttonSize="compressed"
+                        data-test-subj="composeDiscoverEditModeToggle"
+                      />
+                    </EuiToolTip>
                   </EuiFlexItem>
                 )}
               </EuiFlexGroup>

@@ -10,7 +10,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
-import { AgentVisibility } from '@kbn/agent-builder-common';
+import { AgentAccessControlMode } from '@kbn/agent-builder-common';
 import { AgentForm } from './agent_form';
 import type { AgentEditState } from '../../../hooks/agents/use_agent_edit';
 
@@ -20,7 +20,7 @@ const editModeState: AgentEditState = {
   id: 'test-agent-id',
   name: 'Test Agent',
   description: 'Test description',
-  visibility: AgentVisibility.Public,
+  access_control: { access_mode: AgentAccessControlMode.Public, entries: [] },
   labels: [],
   avatar_color: '',
   avatar_symbol: '',

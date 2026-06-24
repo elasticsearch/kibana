@@ -366,6 +366,8 @@ export type {
 } from '@kbn/core-saved-objects-api-server';
 export type {
   SavedObject,
+  SavedObjectErrorResult,
+  SavedObjectBulkResult,
   SavedObjectAccessControl,
   SavedObjectAttribute,
   SavedObjectAttributes,
@@ -431,6 +433,7 @@ export {
   SPACES_EXTENSION_ID,
   SavedObjectsErrorHelpers,
 } from '@kbn/core-saved-objects-server';
+export { isSavedObjectErrorResult } from '@kbn/core-saved-objects-server';
 export {
   SavedObjectsUtils,
   mergeSavedObjectMigrationMaps,

@@ -12,6 +12,10 @@ import { SML_HTTP_SEARCH_QUERY_MAX_LENGTH, SmlSearchFilterType } from '../../com
 import { smlSearchPath } from '../../common/constants';
 import type { SmlService } from '../services/sml/types';
 import type { AgentContextLayerStartDependencies, AgentContextLayerPluginStart } from '../types';
+import {
+  SmlAuthzEnumerationIncompleteError,
+  SmlCorpusTooLargeError,
+} from '../services/sml/sml_errors';
 import { READ_SECURITY, withSmlFeatureFlag } from './common';
 
 const SML_SEARCH_SIZE_MAX = 1000;
@@ -123,6 +127,20 @@ export const registerSearchRoute = ({
 
         return response.ok({ body });
       } catch (error) {
+        // Pre-aggregation fail-closed conditions: a partial permission-universe
+        // enumeration (transient ES error) or a corpus too large to enumerate
+        // safely. Both mean we cannot guarantee a correctly-authorized result
+        // set right now, so surface 503 rather than risk over-disclosure.
+        if (
+          error instanceof SmlAuthzEnumerationIncompleteError ||
+          error instanceof SmlCorpusTooLargeError
+        ) {
+          logger.warn(`SML search authorization unavailable: ${error.message}`);
+          return response.customError({
+            statusCode: 503,
+            body: { message: error.message },
+          });
+        }
         logger.error(`SML search route error: ${(error as Error).message}`);
         throw error;
       }

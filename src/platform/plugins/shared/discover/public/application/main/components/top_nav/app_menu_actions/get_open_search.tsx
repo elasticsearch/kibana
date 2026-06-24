@@ -26,7 +26,7 @@ export const getOpenSearchAppMenuItem = ({
     }),
     iconType: 'folderOpen',
     testId: 'discoverOpenButton',
-    run: ({ context: { onFinishAction } }) => {
+    render: ({ context: { onFinishAction } }) => {
       return <OpenSearchPanel onClose={onFinishAction} onOpenSavedSearch={onOpenSavedSearch} />;
     },
   };

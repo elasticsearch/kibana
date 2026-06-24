@@ -1,7 +1,7 @@
 {
   "type": "test-helper",
   "id": "@kbn/detections-response-ftr-services",
-  "owner": "@elastic/security-detection-engine",
+  "owner": "@elastic/security-detection-engineering",
   "group": "security",
   "visibility": "private",
   "devOnly": true

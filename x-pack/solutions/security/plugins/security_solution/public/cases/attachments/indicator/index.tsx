@@ -27,7 +27,7 @@ const IndicatorAttachmentChildrenLazy = React.lazy(
 );
 
 const DISPLAY_NAME = i18n.translate('xpack.securitySolution.threatIntelligence.cases.displayName', {
-  defaultMessage: 'Indicator',
+  defaultMessage: 'Indicators',
 });
 
 /**

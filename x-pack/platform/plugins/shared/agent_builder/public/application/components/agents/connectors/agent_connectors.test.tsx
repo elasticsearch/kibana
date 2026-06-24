@@ -69,13 +69,13 @@ jest.mock('./connectors_customize_empty_state', () => ({
 }));
 
 jest.mock('../../../hooks/agents/use_agent_by_id');
-jest.mock('../../../hooks/agents/use_can_edit_agent');
+jest.mock('../../../hooks/agents/use_can_update_agent');
 jest.mock('../../../hooks/connectors/use_agent_connectors');
 jest.mock('../../../hooks/use_has_connectors_all_privileges');
 jest.mock('../../../context/connectors_provider');
 
 const { useAgentBuilderAgentById } = jest.requireMock('../../../hooks/agents/use_agent_by_id');
-const { useCanEditAgent } = jest.requireMock('../../../hooks/agents/use_can_edit_agent');
+const { useCanUpdateAgent } = jest.requireMock('../../../hooks/agents/use_can_update_agent');
 const { useAgentConnectors } = jest.requireMock('../../../hooks/connectors/use_agent_connectors');
 const { useHasConnectorsAllPrivileges } = jest.requireMock(
   '../../../hooks/use_has_connectors_all_privileges'
@@ -113,7 +113,7 @@ describe('AgentConnectors', () => {
       error: null,
     });
 
-    useCanEditAgent.mockReturnValue(true);
+    useCanUpdateAgent.mockReturnValue(true);
 
     useAgentConnectors.mockReturnValue({
       assignedConnectors: [{ id: 'c1', name: 'Connector 1', actionTypeId: '.test' }],

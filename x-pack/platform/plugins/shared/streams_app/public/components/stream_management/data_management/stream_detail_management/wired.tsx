@@ -23,7 +23,9 @@ import { StreamsAppPageTemplate } from '../../../streams_app_page_template';
 import { WiredStreamBadge } from '../../../stream_badges';
 import { StreamDetailAttachments } from '../../../stream_detail_attachments';
 import { useKibana } from '../../../../hooks/use_kibana';
+import { useStreamsPrivileges } from '../../../../hooks/use_streams_privileges';
 import { LifecycleTabLabel } from './lifecycle_tab_label_with_actions';
+import { StreamDetailCanvas } from '../stream_detail_canvas';
 
 const wiredStreamManagementSubTabs = [
   'overview',
@@ -34,6 +36,7 @@ const wiredStreamManagementSubTabs = [
   'significantEvents',
   'dataQuality',
   'attachments',
+  'canvas',
 ] as const;
 
 type WiredStreamManagementSubTab = (typeof wiredStreamManagementSubTabs)[number];
@@ -70,6 +73,9 @@ export function WiredStreamDetailManagement({
     definition,
     refreshDefinition,
   });
+  const {
+    features: { canvas },
+  } = useStreamsPrivileges();
 
   if (!definition.privileges.view_index_metadata) {
     return (
@@ -240,6 +246,16 @@ export function WiredStreamDetailManagement({
         defaultMessage: 'Attachments',
       }),
     },
+    ...(canvas.enabled
+      ? {
+          canvas: {
+            content: <StreamDetailCanvas streamName={definition.stream.name} />,
+            label: i18n.translate('xpack.streams.streamDetailView.canvasTab', {
+              defaultMessage: 'Canvas',
+            }),
+          },
+        }
+      : {}),
     ...otherTabs,
   };
 
@@ -254,6 +270,12 @@ export function WiredStreamDetailManagement({
   }
 
   if (isValidManagementSubTab(tab)) {
+    if (tab === 'canvas' && !canvas.enabled) {
+      return (
+        <RedirectTo path="/{key}/management/{tab}" params={{ path: { key, tab: 'overview' } }} />
+      );
+    }
+
     return <Wrapper tabs={tabs} streamId={key} tab={tab} />;
   }
 

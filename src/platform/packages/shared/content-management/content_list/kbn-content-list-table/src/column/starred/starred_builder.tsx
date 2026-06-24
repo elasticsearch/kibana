@@ -12,6 +12,7 @@ import type { EuiBasicTableColumn } from '@elastic/eui';
 import { EuiIcon } from '@elastic/eui';
 import type { ContentListItem } from '@kbn/content-list-provider';
 import { useContentListFilters, getIncludeExcludeFlag } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import type { ColumnBuilderContext } from '../types';
 import { column } from '../part';
 import { getColumnLayoutProps, pickAttribute, type ColumnLayoutProps } from '../layout';
@@ -77,7 +78,7 @@ export const buildStarredColumn = (
       minWidth: pickAttribute(attributes, 'minWidth', DEFAULT_WIDTH),
       maxWidth: pickAttribute(attributes, 'maxWidth', DEFAULT_WIDTH),
     }),
-    'data-test-subj': 'content-list-table-column-starred',
+    'data-test-subj': CONTENT_LIST_TEST_SUBJECTS.columnStarred,
     render: (_value: string, item: ContentListItem) => {
       return <StarredCell id={item.id} />;
     },

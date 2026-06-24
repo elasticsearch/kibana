@@ -17,6 +17,7 @@ import {
   EuiIcon,
   EuiText,
   EuiTitle,
+  useEuiTheme,
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
@@ -41,6 +42,7 @@ export const AskUserQuestionPrompt = ({
   isLoading = false,
   isDisabled = false,
 }: AskUserQuestionPromptProps) => {
+  const { euiTheme } = useEuiTheme();
   const totalQuestions = questions.length;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [drafts, setDrafts] = useState<AnswerDraft[]>(() => questions.map(() => ({})));
@@ -168,7 +170,7 @@ export const AskUserQuestionPrompt = ({
     <EuiFlexGroup
       direction="column"
       responsive={false}
-      gutterSize="m"
+      gutterSize="none"
       css={containerStyles}
       data-test-subj="agentBuilderAskUserQuestionPrompt"
     >
@@ -208,7 +210,14 @@ export const AskUserQuestionPrompt = ({
       </EuiFlexItem>
 
       {/* Options */}
-      <EuiFlexGroup direction="column" gutterSize="xs" responsive={false}>
+      <EuiFlexGroup
+        direction="column"
+        gutterSize="xs"
+        responsive={false}
+        css={css`
+          margin-top: ${euiTheme.size.s};
+        `}
+      >
         {currentQuestion.options.map((option, optionIndex) => {
           const inputId = `${baseId}-q${currentIndex}-opt${optionIndex}`;
           const checked = (currentDraft.choice ?? []).includes(optionIndex);
@@ -297,6 +306,9 @@ export const AskUserQuestionPrompt = ({
         justifyContent="spaceBetween"
         alignItems="center"
         responsive={false}
+        css={css`
+          margin-top: ${euiTheme.size.base};
+        `}
       >
         <EuiFlexItem grow={false}>
           <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>

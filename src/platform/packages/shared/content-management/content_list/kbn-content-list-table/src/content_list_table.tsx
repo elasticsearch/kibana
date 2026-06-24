@@ -13,6 +13,7 @@ import { css } from '@emotion/react';
 import { EuiBasicTable, useEuiTheme } from '@elastic/eui';
 import type { EuiBreakpointSize, EuiThemeComputed } from '@elastic/eui';
 import { cssFavoriteHoverWithinEuiTableRow } from '@kbn/content-management-favorites-public';
+import { CONTENT_LIST_TEST_SUBJECTS, getContentListRowSubj } from '@kbn/content-list-common';
 import {
   useContentListConfig,
   useContentListItems,
@@ -98,7 +99,7 @@ export interface ContentListTableProps {
  * @param id - The item's ID.
  * @returns A stable row ID string.
  */
-export const getRowId = (id: string): string => `content-list-table-row-${id}`;
+export const getRowId = getContentListRowSubj;
 
 /**
  * Keep sticky cells (e.g. `Column.Actions` with `sticky: true`) in visual sync
@@ -336,7 +337,7 @@ const ContentListTableComponent = ({
   noItemsMessage,
   children,
   filter,
-  'data-test-subj': dataTestSubj = 'content-list-table',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.table,
 }: ContentListTableProps) => {
   const { supports } = useContentListConfig();
   const { euiTheme } = useEuiTheme();

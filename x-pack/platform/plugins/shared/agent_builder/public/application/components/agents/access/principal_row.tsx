@@ -14,18 +14,27 @@ import {
   EuiFlexItem,
   EuiSuperSelect,
   EuiText,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
-import type { AgentAclEntry, AgentAclRole, AgentVisibility } from '@kbn/agent-builder-common';
-import { ROLE_DESCRIPTION, ROLE_LABEL, selectableRolesForVisibility } from './role_to_capabilities';
+import type {
+  AgentAccessControlEntry,
+  AgentAccessControlRole,
+  AgentAccessControlMode,
+} from '@kbn/agent-builder-common';
+import {
+  ROLE_DESCRIPTION,
+  ROLE_LABEL,
+  selectableRolesForAccessControlMode,
+} from './role_to_capabilities';
 import { accessFlyoutRemoveAriaLabel, accessFlyoutRoleAriaLabel } from './access_i18n';
 
 interface PrincipalRowProps {
-  entry: AgentAclEntry;
+  entry: AgentAccessControlEntry;
   /** Used to constrain the selectable roles for Public/Shared agents. */
-  visibility?: AgentVisibility;
+  accessControlMode?: AgentAccessControlMode;
   isDisabled?: boolean;
-  onChangeRole: (next: AgentAclRole) => void;
+  onChangeRole: (next: AgentAccessControlRole) => void;
   onRemove: () => void;
 }
 
@@ -36,7 +45,7 @@ interface PrincipalRowProps {
  */
 export const PrincipalRow: React.FC<PrincipalRowProps> = ({
   entry,
-  visibility,
+  accessControlMode,
   isDisabled,
   onChangeRole,
   onRemove,
@@ -44,7 +53,7 @@ export const PrincipalRow: React.FC<PrincipalRowProps> = ({
   const { euiTheme } = useEuiTheme();
 
   const roleOptions = useMemo(() => {
-    const allowed = selectableRolesForVisibility(visibility);
+    const allowed = selectableRolesForAccessControlMode(accessControlMode);
     // Always include the entry's existing role even when not in the allowed list,
     // so admins can fix it without it disappearing from the select.
     const includeCurrent = allowed.includes(entry.role) ? allowed : [entry.role, ...allowed];
@@ -66,7 +75,7 @@ export const PrincipalRow: React.FC<PrincipalRowProps> = ({
         </EuiFlexGroup>
       ),
     }));
-  }, [entry.role, visibility]);
+  }, [entry.role, accessControlMode]);
 
   const avatarStyles = css`
     flex-shrink: 0;
@@ -101,7 +110,7 @@ export const PrincipalRow: React.FC<PrincipalRowProps> = ({
                 min-width: 180px;
               `}
             >
-              <EuiSuperSelect<AgentAclRole>
+              <EuiSuperSelect<AgentAccessControlRole>
                 compressed
                 aria-label={accessFlyoutRoleAriaLabel}
                 valueOfSelected={entry.role}
@@ -118,14 +127,16 @@ export const PrincipalRow: React.FC<PrincipalRowProps> = ({
             </EuiFlexItem>
 
             <EuiFlexItem grow={false}>
-              <EuiButtonIcon
-                iconType="trash"
-                color="danger"
-                aria-label={accessFlyoutRemoveAriaLabel}
-                onClick={onRemove}
-                isDisabled={isDisabled}
-                data-test-subj={`agentBuilderAclRemove-${entry.type}-${entry.name}`}
-              />
+              <EuiToolTip content={accessFlyoutRemoveAriaLabel} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  iconType="trash"
+                  color="danger"
+                  aria-label={accessFlyoutRemoveAriaLabel}
+                  onClick={onRemove}
+                  isDisabled={isDisabled}
+                  data-test-subj={`agentBuilderAclRemove-${entry.type}-${entry.name}`}
+                />
+              </EuiToolTip>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { FeedbackRegistryEntry } from '@kbn/feedback-components';
+import type { FeedbackRegistryEntry } from '@kbn/ui-feedback';
 import { DEFAULT_EXPERIENCE_QUESTION_ID, DEFAULT_GENERAL_QUESTION_ID } from '../constants';
 
 export const questions: FeedbackRegistryEntry[] = [

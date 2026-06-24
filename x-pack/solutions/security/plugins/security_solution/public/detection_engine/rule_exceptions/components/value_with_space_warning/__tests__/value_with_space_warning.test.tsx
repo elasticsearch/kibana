@@ -7,9 +7,7 @@
 
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react';
-// Necessary until components being tested are migrated of styled-components https://github.com/elastic/kibana/issues/219037
-import 'jest-styled-components';
-import { ThemeProvider } from 'styled-components';
+import { EuiProvider } from '@elastic/eui';
 
 import { ValueWithSpaceWarning } from '..';
 
@@ -25,7 +23,11 @@ describe('ValueWithSpaceWarning', () => {
       .mockReturnValue({ showSpaceWarningIcon: true, warningText: 'Warning Text' });
   });
   it('should not render if value is falsy', () => {
-    const container = render(<ValueWithSpaceWarning value="" />);
+    const container = render(
+      <EuiProvider>
+        <ValueWithSpaceWarning value="" />
+      </EuiProvider>
+    );
     expect(container.container).toMatchSnapshot();
   });
   it('should not render if showSpaceWarning is falsy', () => {
@@ -34,22 +36,26 @@ describe('ValueWithSpaceWarning', () => {
       .fn()
       .mockReturnValue({ showSpaceWarningIcon: false, warningText: '' });
 
-    const container = render(<ValueWithSpaceWarning value="Test" />);
+    const container = render(
+      <EuiProvider>
+        <ValueWithSpaceWarning value="Test" />
+      </EuiProvider>
+    );
     expect(container.container).toMatchSnapshot();
   });
   it('should render if showSpaceWarning is truthy', () => {
     const container = render(
-      <ThemeProvider theme={() => ({ eui: { euiSizeXS: '4px' } })}>
+      <EuiProvider>
         <ValueWithSpaceWarning value="Test" />
-      </ThemeProvider>
+      </EuiProvider>
     );
     expect(container.container).toMatchSnapshot();
   });
   it('should show the tooltip when the icon is hovered', async () => {
     const container = render(
-      <ThemeProvider theme={() => ({ eui: { euiSizeXS: '4px' } })}>
+      <EuiProvider>
         <ValueWithSpaceWarning value="Test" />
-      </ThemeProvider>
+      </EuiProvider>
     );
 
     fireEvent.mouseOver(container.getByTestId('value_with_space_warning_tooltip'));

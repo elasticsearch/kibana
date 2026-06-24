@@ -11,6 +11,8 @@ import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText, EuiTitle } from '@elasti
 import type { AlertEpisodeStatus } from '@kbn/alerting-v2-schemas';
 import { AlertEpisodeStatusBadges } from '../status/status_badges';
 import { AlertEpisodeTags } from '../actions/tags';
+import { AlertEpisodeSeverityBadge } from '../severity/episode_severity_badge';
+import { isSupportedEpisodeSeverity } from '../severity/severity_utils';
 import type { EpisodeActionState, AlertEpisodeGroupAction } from '../../types/action';
 import * as i18n from './translations';
 
@@ -19,6 +21,7 @@ export interface AlertEpisodeDetailsHeaderProps {
   description: string | undefined;
   tags: string[];
   status: AlertEpisodeStatus | undefined;
+  severity: string | undefined | null;
   episodeAction: EpisodeActionState | undefined;
   groupAction: AlertEpisodeGroupAction | undefined;
   titleSize?: EuiTitleSize;
@@ -29,6 +32,7 @@ export const AlertEpisodeDetailsHeader = ({
   description,
   tags,
   status,
+  severity,
   episodeAction,
   groupAction,
   titleSize = 'l',
@@ -57,6 +61,11 @@ export const AlertEpisodeDetailsHeader = ({
               episodeAction={episodeAction}
               groupAction={groupAction}
             />
+          </EuiFlexItem>
+        ) : null}
+        {isSupportedEpisodeSeverity(severity) ? (
+          <EuiFlexItem grow={false}>
+            <AlertEpisodeSeverityBadge severity={severity} />
           </EuiFlexItem>
         ) : null}
       </EuiFlexGroup>

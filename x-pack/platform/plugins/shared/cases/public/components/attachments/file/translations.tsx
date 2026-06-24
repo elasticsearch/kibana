@@ -8,7 +8,7 @@
 import { i18n } from '@kbn/i18n';
 
 export const FILE_DISPLAY_NAME = i18n.translate('xpack.cases.attachments.file.displayName', {
-  defaultMessage: 'File',
+  defaultMessage: 'Files',
 });
 
 export const ACTIONS = i18n.translate('xpack.cases.caseView.files.actions', {

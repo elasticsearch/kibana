@@ -9,6 +9,7 @@ import type { CoreStart, IToasts } from '@kbn/core/public';
 import type { IHttpFetchError, ResponseErrorBody } from '@kbn/core-http-browser';
 import type { ReactElement, PropsWithChildren } from 'react';
 import type React from 'react';
+import type { DashboardStart } from '@kbn/dashboard-plugin/public';
 import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
 import type { EmbeddableStart } from '@kbn/embeddable-plugin/public';
 import type { Storage } from '@kbn/kibana-utils-plugin/public';
@@ -16,6 +17,7 @@ import type { HomePublicPluginSetup } from '@kbn/home-plugin/public';
 import type { ManagementSetup, ManagementAppMountParams } from '@kbn/management-plugin/public';
 import type { FeaturesPluginStart } from '@kbn/features-plugin/public';
 import type { LensPublicStart } from '@kbn/lens-plugin/public';
+import type { MapsStartApi } from '@kbn/maps-plugin/public';
 import type { SecurityPluginSetup, SecurityPluginStart } from '@kbn/security-plugin/public';
 import type { SpacesPluginStart } from '@kbn/spaces-plugin/public';
 import type {
@@ -29,6 +31,7 @@ import type { FilesSetup, FilesStart } from '@kbn/files-plugin/public';
 import type { ContentManagementPublicStart } from '@kbn/content-management-plugin/public';
 import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 import type { ServerlessPluginSetup, ServerlessPluginStart } from '@kbn/serverless/public';
+import type { SavedObjectTaggingOssPluginStart } from '@kbn/saved-objects-tagging-oss-plugin/public';
 
 import type { CloudStart } from '@kbn/cloud-plugin/public';
 import type { FieldFormatsStart } from '@kbn/field-formats-plugin/public';
@@ -38,7 +41,6 @@ import type { UseCasesAddToNewCaseFlyout } from './components/create/flyout/use_
 import type { UseIsAddToCaseOpen } from './components/cases_context/state/use_is_add_to_case_open';
 import type { canUseCases } from './client/helpers/can_use_cases';
 import type { getRuleIdFromEvent } from './client/helpers/get_rule_id_from_event';
-import type { getObservablesFromEcs } from './client/helpers/get_observables_from_ecs';
 import type { GetCasesContextProps } from './client/ui/get_cases_context';
 import type { GetCasesProps } from './client/ui/get_cases';
 import type { GetAllCasesSelectorModalProps } from './client/ui/get_all_cases_selector_modal';
@@ -67,6 +69,9 @@ import type {
   EventAttachmentPayload,
   UnifiedAttachmentPayload,
 } from '../common/types/domain';
+import type { DashboardAttachmentPayload } from '../common/types/domain_zod/attachment/dashboard/v2';
+import type { MapAttachmentPayload } from '../common/types/domain_zod/attachment/map/v2';
+import type { DiscoverSessionAttachmentPayload } from '../common/types/domain_zod/attachment/saved_object/v2';
 
 export interface CasesPublicSetupDependencies {
   files: FilesSetup;
@@ -81,11 +86,13 @@ export interface CasesPublicSetupDependencies {
 export interface CasesPublicStartDependencies {
   apm?: ApmBase;
   cloud?: CloudStart;
+  dashboard?: DashboardStart;
   data: DataPublicPluginStart;
   embeddable: EmbeddableStart;
   features: FeaturesPluginStart;
   files: FilesStart;
   lens: LensPublicStart;
+  maps?: MapsStartApi;
   /**
    * Cases in used by other plugins. Plugins pass the
    * service to their KibanaContext. ML does not pass
@@ -101,6 +108,7 @@ export interface CasesPublicStartDependencies {
   uiActions: UiActionsStart;
   fieldFormats: FieldFormatsStart;
   toastNotifications: IToasts;
+  savedObjectsTaggingOss?: SavedObjectTaggingOssPluginStart;
 }
 
 /**
@@ -189,7 +197,6 @@ export interface CasesPublicStart {
     getUICapabilities: typeof getUICapabilities;
     getRuleIdFromEvent: typeof getRuleIdFromEvent;
     groupAlertsByRule: GroupAlertsByRule;
-    getObservablesFromEcs: typeof getObservablesFromEcs;
   };
 }
 
@@ -200,7 +207,13 @@ export type SupportedCaseAttachment =
   | PersistableStateAttachmentPayload
   | ExternalReferenceNoSOAttachmentPayload
   | ExternalReferenceSOAttachmentPayload
-  | UnifiedAttachmentPayload;
+  | UnifiedAttachmentPayload
+  // Born-unified, SO-backed reference attachments. Listed explicitly so the
+  // SO attach hook can build typed payloads without casting through the
+  // generic `UnifiedAttachmentPayload` shape.
+  | DashboardAttachmentPayload
+  | MapAttachmentPayload
+  | DiscoverSessionAttachmentPayload;
 
 export type CaseAttachments = SupportedCaseAttachment[];
 export type CaseAttachmentWithoutOwner = DistributiveOmit<SupportedCaseAttachment, 'owner'>;

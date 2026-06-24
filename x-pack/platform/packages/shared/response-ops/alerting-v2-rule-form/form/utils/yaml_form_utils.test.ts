@@ -589,5 +589,78 @@ describe('yaml_form_utils', () => {
       expect(result.error).toBeNull();
       expect(result.values?.query).toEqual(original.query);
     });
+
+    it('parse(serialize(values)) preserves recovery_strategy: no_breach', () => {
+      const original: FormValues = {
+        kind: 'alert',
+        metadata: { name: 'No-breach recovery', enabled: true },
+        timeField: '@timestamp',
+        schedule: { every: '5m', lookback: '1m' },
+        query: {
+          format: 'composed',
+          base: 'FROM logs-*',
+          breach: { segment: 'WHERE c > 100' },
+        },
+        recoveryStrategy: 'no_breach',
+        stateTransitionAlertDelayMode: 'immediate',
+        stateTransitionRecoveryDelayMode: 'immediate',
+      };
+
+      const yaml = serializeFormToYaml(original);
+      const result = parseYamlToFormValues(yaml);
+
+      expect(result.error).toBeNull();
+      expect(result.values?.recoveryStrategy).toBe('no_breach');
+    });
+
+    it('parse(serialize(values)) preserves no_data_strategy', () => {
+      const original: FormValues = {
+        kind: 'alert',
+        metadata: { name: 'No-data emit', enabled: true },
+        timeField: '@timestamp',
+        schedule: { every: '5m', lookback: '1m' },
+        query: {
+          format: 'standalone',
+          breach: { query: 'FROM logs-* | WHERE level == "error"' },
+          recovery: { query: 'FROM logs-* | WHERE level != "error"' },
+          no_data: { query: 'FROM logs-* | STATS c = COUNT(*)' },
+        },
+        recoveryStrategy: 'query',
+        noDataStrategy: 'emit',
+        stateTransitionAlertDelayMode: 'immediate',
+        stateTransitionRecoveryDelayMode: 'immediate',
+      };
+
+      const yaml = serializeFormToYaml(original);
+      const result = parseYamlToFormValues(yaml);
+
+      expect(result.error).toBeNull();
+      expect(result.values?.noDataStrategy).toBe('emit');
+      expect(result.values?.recoveryStrategy).toBe('query');
+      expect(result.values?.query).toEqual(original.query);
+    });
+
+    it('parse(serialize(values)) preserves recovery_strategy: none', () => {
+      const original: FormValues = {
+        kind: 'alert',
+        metadata: { name: 'Recovery none', enabled: true },
+        timeField: '@timestamp',
+        schedule: { every: '5m', lookback: '1m' },
+        query: {
+          format: 'composed',
+          base: 'FROM logs-*',
+          breach: { segment: 'WHERE c > 100' },
+        },
+        recoveryStrategy: 'none',
+        stateTransitionAlertDelayMode: 'immediate',
+        stateTransitionRecoveryDelayMode: 'immediate',
+      };
+
+      const yaml = serializeFormToYaml(original);
+      const result = parseYamlToFormValues(yaml);
+
+      expect(result.error).toBeNull();
+      expect(result.values?.recoveryStrategy).toBe('none');
+    });
   });
 });

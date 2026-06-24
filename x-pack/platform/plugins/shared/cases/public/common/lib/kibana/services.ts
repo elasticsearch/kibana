@@ -13,7 +13,7 @@ type GlobalServices = Pick<
   CoreStart,
   'application' | 'http' | 'theme' | 'uiSettings' | 'userProfile'
 > &
-  Pick<CasesPublicStartDependencies, 'serverless'>;
+  Pick<CasesPublicStartDependencies, 'serverless' | 'savedObjectsTaggingOss'>;
 
 export class KibanaServices {
   private static kibanaVersion?: string;
@@ -25,13 +25,14 @@ export class KibanaServices {
     config,
     http,
     serverless,
+    savedObjectsTaggingOss,
     kibanaVersion,
     ...startServices
   }: GlobalServices & {
     kibanaVersion: string;
     config: CasesUiConfigType;
   }) {
-    this.services = { application, http, serverless, ...startServices };
+    this.services = { application, http, serverless, savedObjectsTaggingOss, ...startServices };
     this.kibanaVersion = kibanaVersion;
     this.config = config;
   }

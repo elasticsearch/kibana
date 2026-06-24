@@ -5,13 +5,11 @@
  * 2.0.
  */
 
-import type { TypeOf } from '@kbn/config-schema';
 import type {
   ConditionEntryField,
   OperatingSystem,
   TrustedAppEntryTypes,
 } from '@kbn/securitysolution-utils';
-import type { PutTrustedAppUpdateRequestSchema } from '../schema/trusted_apps';
 import type { ConditionEntry } from './exception_list_items';
 export interface GetTrustedAppsListResponse {
   per_page: number;
@@ -19,9 +17,6 @@ export interface GetTrustedAppsListResponse {
   total: number;
   data: TrustedApp[];
 }
-
-/** API request params for updating a Trusted App */
-export type PutTrustedAppsRequestParams = TypeOf<typeof PutTrustedAppUpdateRequestSchema.params>;
 
 export enum OperatorFieldIds {
   is = 'is',

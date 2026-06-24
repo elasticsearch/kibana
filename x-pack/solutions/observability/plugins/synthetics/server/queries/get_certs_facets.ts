@@ -6,6 +6,7 @@
  */
 
 import type { CertFacets, Ping } from '../../common/runtime_types';
+import type { GetCertsFacetsRequestBodyOptions } from '../../common/requests/get_certs_facets_request_body';
 import {
   getCertsFacetsRequestBody,
   processCertsFacetsResult,
@@ -21,9 +22,18 @@ interface GetCertsFacetsParams {
 
 export const getSyntheticsCertsFacets = async ({
   syntheticsEsClient,
+  ccsEnabled,
+  remoteNames,
+  spaceId,
+  showFromAllSpaces,
   ...params
-}: GetCertsFacetsParams): Promise<CertFacets> => {
-  const searchBody = getCertsFacetsRequestBody(params);
+}: GetCertsFacetsParams & GetCertsFacetsRequestBodyOptions): Promise<CertFacets> => {
+  const searchBody = getCertsFacetsRequestBody(params, {
+    ccsEnabled,
+    remoteNames,
+    spaceId,
+    showFromAllSpaces,
+  });
 
   const { body: result } = await syntheticsEsClient.search<Ping, typeof searchBody>(searchBody);
 

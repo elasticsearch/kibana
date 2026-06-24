@@ -57,4 +57,47 @@ describe('transformAttributesForMode', () => {
       });
     }
   });
+
+  // Unified-only types (dashboard, map, discoverSession) have no v1 equivalent,
+  // so transformAttributesForMode must surface them as unified even when called
+  // with mode=legacy — otherwise the legacy decoder rejects them.
+  it('keeps a unified-only reference payload (dashboard) on the unified branch in legacy mode', () => {
+    const attrs = {
+      type: 'dashboard',
+      owner: 'cases',
+      attachmentId: 'dash-1',
+      metadata: { title: 'My dashboard', soType: 'dashboard' },
+      created_at: '2026-05-29T00:00:00.000Z',
+      created_by: { username: 'tester', full_name: null, email: null },
+      pushed_at: null,
+      pushed_by: null,
+      updated_at: null,
+      updated_by: null,
+    } as unknown as Parameters<typeof transformAttributesForMode>[0]['attributes'];
+    const out = transformAttributesForMode({ attributes: attrs, mode: 'legacy' });
+    expect(out.isUnified).toBe(true);
+    if (out.isUnified) {
+      expect(out.attributes.type).toBe('dashboard');
+    }
+  });
+
+  it('keeps a unified-only reference payload (discoverSession) on the unified branch in legacy mode', () => {
+    const attrs = {
+      type: 'discoverSession',
+      owner: 'cases',
+      attachmentId: 'search-1',
+      metadata: { title: 'Saved search', soType: 'search' },
+      created_at: '2026-05-29T00:00:00.000Z',
+      created_by: { username: 'tester', full_name: null, email: null },
+      pushed_at: null,
+      pushed_by: null,
+      updated_at: null,
+      updated_by: null,
+    } as unknown as Parameters<typeof transformAttributesForMode>[0]['attributes'];
+    const out = transformAttributesForMode({ attributes: attrs, mode: 'legacy' });
+    expect(out.isUnified).toBe(true);
+    if (out.isUnified) {
+      expect(out.attributes.type).toBe('discoverSession');
+    }
+  });
 });

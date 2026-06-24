@@ -7,10 +7,9 @@
 
 import type { FC } from 'react';
 import React, { useMemo, useRef } from 'react';
-import { css } from '@emotion/react';
 import type { z } from '@kbn/zod/v4';
 import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
-import { EuiIconTip, useEuiTheme } from '@elastic/eui';
+import { useEuiTheme } from '@elastic/eui';
 import type { ParsedTemplateDefinitionSchema } from '../../../../common/types/domain/template/latest';
 import type { InlineField } from '../../../../common/types/domain/template/fields';
 import { CASE_EXTENDED_FIELDS } from '../../../../common/constants';
@@ -21,7 +20,6 @@ import { getFieldSnakeKey } from '../../../../common/utils';
 import { getYamlDefaultAsString } from '../utils';
 import { useResolvedFields } from '../../field_library/hooks/use_resolved_fields';
 import { useCasesContext } from '../../cases_context/use_cases_context';
-import { INHERITED_FIELD_TOOLTIP } from '../translations';
 
 type ParsedTemplateDefinition = z.infer<typeof ParsedTemplateDefinitionSchema>;
 
@@ -29,16 +27,12 @@ export interface TemplateFieldRendererProps {
   parsedTemplate: ParsedTemplateDefinition;
   owner?: string;
   onFieldDefaultChange?: (fieldName: string, value: string, control: string) => void;
-  parentFieldNames?: Set<string>;
-  parentTemplateName?: string;
 }
 
 export const FieldsRenderer: FC<{
   resolvedFields: InlineField[];
-  parentFieldNames?: Set<string>;
-  parentTemplateName?: string;
   onFieldConfirm?: () => void;
-}> = ({ resolvedFields, parentFieldNames, parentTemplateName, onFieldConfirm }) => {
+}> = ({ resolvedFields, onFieldConfirm }) => {
   const { euiTheme } = useEuiTheme();
   const { control } = useFormContext();
 
@@ -103,31 +97,13 @@ export const FieldsRenderer: FC<{
           onConfirm: onFieldConfirm,
         };
 
-        const isInherited = parentFieldNames?.has(field.name) ?? false;
-
-        const fieldLabel =
-          isInherited && parentTemplateName ? (
-            <span css={css({ display: 'inline-flex', alignItems: 'center', gap: '4px' })}>
-              {field.label ?? field.name}
-              <EuiIconTip
-                content={INHERITED_FIELD_TOOLTIP(parentTemplateName)}
-                type="info"
-                size="s"
-                color="subdued"
-                data-test-subj={`inherited-field-icon-${field.name}`}
-              />
-            </span>
-          ) : (
-            field.label ?? field.name
-          );
-
         return (
           <div
             key={field.name}
             data-test-subj={`template-field-${field.name}`}
             css={{ marginBottom: euiTheme.size.m }}
           >
-            <Control {...controlProps} label={fieldLabel} />
+            <Control {...controlProps} />
           </div>
         );
       })}
@@ -141,15 +117,7 @@ const TemplateFieldRendererInner: FC<{
   resolvedFields: InlineField[];
   parsedTemplate: ParsedTemplateDefinition;
   onFieldDefaultChange?: (fieldName: string, value: string, control: string) => void;
-  parentFieldNames?: Set<string>;
-  parentTemplateName?: string;
-}> = ({
-  resolvedFields,
-  parsedTemplate,
-  onFieldDefaultChange,
-  parentFieldNames,
-  parentTemplateName,
-}) => {
+}> = ({ resolvedFields, parsedTemplate, onFieldDefaultChange }) => {
   const initialDefaultValues = React.useMemo(() => {
     const defaults: Record<string, Record<string, string>> = {
       [CASE_EXTENDED_FIELDS]: {},
@@ -170,11 +138,7 @@ const TemplateFieldRendererInner: FC<{
 
   return (
     <FormProvider key={parsedTemplate.name} {...form}>
-      <FieldsRenderer
-        resolvedFields={resolvedFields}
-        parentFieldNames={parentFieldNames}
-        parentTemplateName={parentTemplateName}
-      />
+      <FieldsRenderer resolvedFields={resolvedFields} />
     </FormProvider>
   );
 };
@@ -190,8 +154,6 @@ export const TemplateFieldRenderer: FC<TemplateFieldRendererProps> = ({
   parsedTemplate,
   owner,
   onFieldDefaultChange,
-  parentFieldNames,
-  parentTemplateName,
 }) => {
   const { owner: contextOwner } = useCasesContext();
   const resolvedOwner = owner ?? contextOwner[0];
@@ -221,8 +183,6 @@ export const TemplateFieldRenderer: FC<TemplateFieldRendererProps> = ({
       resolvedFields={stableResolvedFieldsRef.current}
       parsedTemplate={parsedTemplate}
       onFieldDefaultChange={onFieldDefaultChange}
-      parentFieldNames={parentFieldNames}
-      parentTemplateName={parentTemplateName}
     />
   );
 };

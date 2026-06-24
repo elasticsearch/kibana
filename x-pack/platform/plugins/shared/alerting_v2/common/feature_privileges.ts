@@ -85,7 +85,10 @@ type AlertingV2SubFeatureUICapability = NestedValueOf<
 >;
 type AlertingV2UICapability = AlertingV2TopLevelUICapability | AlertingV2SubFeatureUICapability;
 
-type AlertingV2FeaturePrivilege = Pick<FeatureKibanaPrivileges, 'api' | 'ui' | 'savedObject'> & {
+type AlertingV2FeaturePrivilege = Pick<
+  FeatureKibanaPrivileges,
+  'api' | 'ui' | 'savedObject' | 'alerts'
+> & {
   readonly api: readonly AlertingV2ApiPrivilege[];
   readonly ui: readonly AlertingV2TopLevelUICapability[];
   readonly savedObject: {
@@ -152,6 +155,7 @@ export const ALERTING_V2_FEATURES = {
     name: 'Alerts',
     privileges: {
       all: {
+        alerts: { read: true },
         api: [ALERTING_V2_API_PRIVILEGES.alerts.read, ALERTING_V2_API_PRIVILEGES.alerts.write],
         ui: [ALERTING_V2_UI_CAPABILITIES.alerts.all, ALERTING_V2_UI_CAPABILITIES.alerts.read],
         savedObject: {
@@ -160,6 +164,7 @@ export const ALERTING_V2_FEATURES = {
         },
       },
       read: {
+        alerts: { read: true },
         api: [ALERTING_V2_API_PRIVILEGES.alerts.read],
         ui: [ALERTING_V2_UI_CAPABILITIES.alerts.read],
         savedObject: {

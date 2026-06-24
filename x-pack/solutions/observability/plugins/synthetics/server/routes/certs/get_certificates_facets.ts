@@ -13,6 +13,8 @@ import { SYNTHETICS_API_URLS } from '../../../common/constants';
 import type { CertFacets } from '../../../common/runtime_types';
 import { ConfigKey } from '../../../common/constants/monitor_management';
 import { getSyntheticsCertsFacets } from '../../queries/get_certs_facets';
+import { isCCSEnabled } from '../../lib/remote_result_utils';
+import { parseRemoteNames } from '../../lib/parse_remote_names';
 
 const EMPTY_FACETS: CertFacets = {
   monitorTypes: [],
@@ -34,16 +36,37 @@ export const getSyntheticsCertsFacetsRoute: SyntheticsRestApiRouteFactory<{
     query: schema.object({
       from: schema.maybe(schema.string({ maxLength: 256 })),
       to: schema.maybe(schema.string({ maxLength: 256 })),
+      remoteNames: schema.maybe(schema.string({ maxLength: 1024 })),
     }),
   },
-  handler: async ({ request, syntheticsEsClient, monitorConfigRepository }) => {
-    const { from, to } = request.query;
+  handler: async ({
+    request,
+    response,
+    syntheticsEsClient,
+    monitorConfigRepository,
+    server,
+    spaceId,
+  }) => {
+    const { from, to, remoteNames } = request.query;
+
+    const ccsEnabled = isCCSEnabled(server);
+
+    const remoteNamesResult = parseRemoteNames(remoteNames);
+    if (!remoteNamesResult.ok) {
+      return response.badRequest({
+        body: {
+          message: `remoteNames must not exceed ${remoteNamesResult.max} entries (received ${remoteNamesResult.received})`,
+        },
+      });
+    }
+    const remoteNameList = remoteNamesResult.value;
 
     const monitors = await monitorConfigRepository.getAll({
       filter: `${syntheticsMonitorAttributes}.${ConfigKey.ENABLED}: true`,
     });
 
-    if (monitors.length === 0) {
+    // See `get_certificates.ts` for the CCS short-circuit rationale.
+    if (!ccsEnabled && monitors.length === 0) {
       return { data: EMPTY_FACETS };
     }
 
@@ -54,6 +77,9 @@ export const getSyntheticsCertsFacetsRoute: SyntheticsRestApiRouteFactory<{
       to,
       syntheticsEsClient,
       monitorIds: enabledMonitorQueryIds,
+      ccsEnabled,
+      remoteNames: remoteNameList,
+      spaceId,
     });
 
     return { data };

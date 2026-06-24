@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { EuiFlexItem } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 
 import { AndOrBadge } from '../and_or_badge';
 

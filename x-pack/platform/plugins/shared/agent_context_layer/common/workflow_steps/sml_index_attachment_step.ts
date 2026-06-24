@@ -39,6 +39,8 @@ const MAX_SML_DESCRIPTION_LENGTH = 8192;
 const MAX_SML_CONTENT_LENGTH = 50_000;
 const MAX_SML_REFERENCES = 100;
 const MAX_SML_PERMISSIONS = 100;
+const MAX_SML_TAGS = 100;
+const MAX_SML_TAG_LENGTH = 100;
 
 const ChunkSchema = z.object({
   type: z
@@ -72,6 +74,21 @@ const ChunkSchema = z.object({
     .max(MAX_SML_PERMISSIONS)
     .optional()
     .describe('Optional Kibana privilege strings required to view the chunk later.'),
+  tags: z
+    .array(
+      z
+        .string()
+        .max(MAX_SML_TAG_LENGTH)
+        .regex(
+          /^[a-z0-9][a-z0-9_-]*$/,
+          'Tag must be lowercase alphanumeric and may contain hyphens or underscores (e.g. "otel", "my-tag", "v2_data").'
+        )
+    )
+    .max(MAX_SML_TAGS)
+    .optional()
+    .describe(
+      'Optional tags for grouping and retrieval. Must be lowercase alphanumeric; hyphens and underscores are allowed (e.g. ["otel", "my-tag"]). Tags are matched with OR semantics on the list endpoint.'
+    ),
 });
 
 /**

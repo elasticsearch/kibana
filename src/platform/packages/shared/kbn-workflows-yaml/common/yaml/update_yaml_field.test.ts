@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { parse } from 'yaml';
 import { updateYamlField } from './update_yaml_field';
 
 describe('updateYamlField', () => {
@@ -208,5 +209,178 @@ steps: []`;
     expect(result).not.toContain('author: Old Author');
     expect(result).toContain('version: 1.0');
     expect(result).toContain('steps: []');
+  });
+
+  // The .toContain() checks above let the previous doc.toString()-based
+  // implementation pass while it silently reformatted the rest of the source.
+  // These tests assert byte-exact equality.
+  describe('byte-exact preservation', () => {
+    it('flips enabled without touching anything else', () => {
+      const yaml = `name: Test Workflow
+enabled: true
+steps: []`;
+      expect(updateYamlField(yaml, 'enabled', false)).toBe(
+        `name: Test Workflow
+enabled: false
+steps: []`
+      );
+    });
+
+    it('preserves 4-space indentation', () => {
+      const yaml = `name: Test
+enabled: true
+steps:
+    - name: step1
+      type: console
+      with:
+          message: hello`;
+      expect(updateYamlField(yaml, 'enabled', false)).toBe(
+        `name: Test
+enabled: false
+steps:
+    - name: step1
+      type: console
+      with:
+          message: hello`
+      );
+    });
+
+    it('preserves blank lines, comments, and sequence formatting', () => {
+      const yaml = `# Workflow configuration
+name: Test Workflow
+description: A workflow that does things
+
+# Whether the workflow is active
+enabled: false
+
+steps:
+  # Create a Jira ticket
+  - name: step1
+    type: jira
+    params:
+      summary: test
+
+  # Notify the user
+  - name: step2
+    type: slack
+    params:
+      channel: general`;
+      expect(updateYamlField(yaml, 'enabled', true)).toBe(
+        `# Workflow configuration
+name: Test Workflow
+description: A workflow that does things
+
+# Whether the workflow is active
+enabled: true
+
+steps:
+  # Create a Jira ticket
+  - name: step1
+    type: jira
+    params:
+      summary: test
+
+  # Notify the user
+  - name: step2
+    type: slack
+    params:
+      channel: general`
+      );
+    });
+
+    it('preserves single-quoted scalars elsewhere in the document', () => {
+      const yaml = `name: Test
+enabled: false
+steps:
+  - name: step1
+    type: jira
+    with:
+      summary: 'plain text'
+      comment: "{{ inputs.comment }}"`;
+      expect(updateYamlField(yaml, 'enabled', true)).toBe(
+        `name: Test
+enabled: true
+steps:
+  - name: step1
+    type: jira
+    with:
+      summary: 'plain text'
+      comment: "{{ inputs.comment }}"`
+      );
+    });
+
+    it('preserves block scalars', () => {
+      const yaml = `name: Test
+enabled: false
+steps:
+  - name: step1
+    type: console
+    with:
+      message: |
+        line one
+        line two
+      footer: >
+        folded
+        scalar`;
+      expect(updateYamlField(yaml, 'enabled', true)).toBe(
+        `name: Test
+enabled: true
+steps:
+  - name: step1
+    type: console
+    with:
+      message: |
+        line one
+        line two
+      footer: >
+        folded
+        scalar`
+      );
+    });
+
+    it('preserves a trailing newline', () => {
+      const yaml = `name: Test
+enabled: true
+steps: []
+`;
+      expect(updateYamlField(yaml, 'enabled', false)).toBe(
+        `name: Test
+enabled: false
+steps: []
+`
+      );
+    });
+
+    it('updates name while preserving the rest byte-exact', () => {
+      const yaml = `name: Old Name
+enabled: true
+steps: []`;
+      expect(updateYamlField(yaml, 'name', 'New Name')).toBe(
+        `name: New Name
+enabled: true
+steps: []`
+      );
+    });
+
+    it('updates a nested scalar byte-exact', () => {
+      const yaml = `metadata:
+  version: 1.0
+  author: Old Author
+steps: []`;
+      expect(updateYamlField(yaml, 'metadata.author', 'New Author')).toBe(
+        `metadata:
+  version: 1.0
+  author: New Author
+steps: []`
+      );
+    });
+
+    it('round-trips a string that needs quoting', () => {
+      const yaml = `name: Old
+enabled: true`;
+      const result = updateYamlField(yaml, 'name', 'has: colon');
+      expect(parse(result)).toEqual({ name: 'has: colon', enabled: true });
+      expect(result.endsWith('\nenabled: true')).toBe(true);
+    });
   });
 });

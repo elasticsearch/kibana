@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import type { FC } from 'react';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 
 import { EuiIconTip } from '@elastic/eui';
 import { useValueWithSpaceWarning } from './use_value_with_space_warning';
@@ -17,7 +17,7 @@ interface ValueWithSpaceWarningProps {
 }
 const Container = styled.div`
   display: inline;
-  margin-left: ${({ theme }) => `${theme.eui.euiSizeXS}`};
+  margin-left: ${({ theme }) => `${theme.euiTheme.size.xs}`};
 `;
 export const ValueWithSpaceWarning: FC<ValueWithSpaceWarningProps> = ({
   value,

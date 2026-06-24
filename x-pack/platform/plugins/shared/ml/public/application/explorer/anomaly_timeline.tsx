@@ -624,7 +624,7 @@ export const AnomalyTimeline: FC = () => {
       {selectedSwimlane && selectedJobs ? (
         <SavedObjectSaveModalDashboard
           canSaveByReference={false}
-          objectType={i18n.translate('xpack.ml.cases.anomalySwimLane.displayName', {
+          objectType={i18n.translate('xpack.ml.anomalySwimLane.objectTypeLabel', {
             defaultMessage: 'Anomaly swim lane',
           })}
           documentInfo={{

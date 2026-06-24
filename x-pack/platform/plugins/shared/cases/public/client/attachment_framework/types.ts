@@ -86,16 +86,18 @@ export interface RowContext {
 }
 
 /**
- * View props for reference-based unified attachments (e.g., alerts, events)
- * These attachments reference external entities by ID
+ * View props for reference-based unified attachments (e.g., alerts, events).
+ * These attachments reference external entities by id and may optionally
+ * carry an inline `data` snapshot
  */
 export interface UnifiedReferenceAttachmentViewProps<
   Metadata = UnifiedReferenceAttachmentPayload['metadata'],
-  AttachmentId = UnifiedReferenceAttachmentPayload['attachmentId']
+  AttachmentId = UnifiedReferenceAttachmentPayload['attachmentId'],
+  Data = UnifiedReferenceAttachmentPayload['data']
 > extends CommonAttachmentViewProps {
   attachmentId: AttachmentId;
   metadata?: Metadata;
-  data?: UnifiedReferenceAttachmentPayload['data'];
+  data?: Data;
   createdBy: CaseUser;
   version: string;
   rowContext: RowContext;
@@ -134,8 +136,9 @@ export type ExternalReferenceAttachmentType = AttachmentType<ExternalReferenceAt
 export type PersistableStateAttachmentType = AttachmentType<PersistableStateAttachmentViewProps>;
 export type UnifiedReferenceAttachmentType<
   Metadata = UnifiedReferenceAttachmentPayload['metadata'],
-  AttachmentId = UnifiedReferenceAttachmentPayload['attachmentId']
-> = AttachmentType<UnifiedReferenceAttachmentViewProps<Metadata, AttachmentId>> &
+  AttachmentId = UnifiedReferenceAttachmentPayload['attachmentId'],
+  Data = UnifiedReferenceAttachmentPayload['data']
+> = AttachmentType<UnifiedReferenceAttachmentViewProps<Metadata, AttachmentId, Data>> &
   UnifiedAttachmentSchema;
 export type UnifiedValueAttachmentType<Data = UnifiedValueAttachmentPayload['data']> =
   AttachmentType<UnifiedValueAttachmentViewProps<Data>> & UnifiedAttachmentSchema;
@@ -160,7 +163,8 @@ type IsReferenceSchema<S extends z.ZodType> = z.infer<S> extends { attachmentId:
 type UnifiedAttachmentTypeFromSchema<S extends z.ZodType> = IsReferenceSchema<S> extends true
   ? UnifiedReferenceAttachmentType<
       z.infer<S> extends { metadata?: infer M } ? M : never,
-      z.infer<S> extends { attachmentId: infer A } ? A : never
+      z.infer<S> extends { attachmentId: infer A } ? A : never,
+      z.infer<S> extends { data?: infer D } ? D : UnifiedReferenceAttachmentPayload['data']
     >
   : z.infer<S> extends { data: infer D }
   ? UnifiedValueAttachmentType<D>

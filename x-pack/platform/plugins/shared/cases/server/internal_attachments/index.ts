@@ -11,6 +11,9 @@ import {
   lensAttachmentType,
   stackAlertAttachmentType,
   fileAttachmentType,
+  dashboardAttachmentType,
+  mapAttachmentType,
+  discoverSessionAttachmentType,
 } from '../attachment_framework/attachments';
 
 export const registerInternalAttachments = (unifiedRegistry: UnifiedAttachmentTypeRegistry) => {
@@ -18,4 +21,7 @@ export const registerInternalAttachments = (unifiedRegistry: UnifiedAttachmentTy
   unifiedRegistry.register(lensAttachmentType);
   unifiedRegistry.register(commentAttachmentType);
   unifiedRegistry.register(stackAlertAttachmentType);
+  unifiedRegistry.register(dashboardAttachmentType);
+  unifiedRegistry.register(mapAttachmentType);
+  unifiedRegistry.register(discoverSessionAttachmentType);
 };

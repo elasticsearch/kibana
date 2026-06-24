@@ -29,7 +29,11 @@ import { createSmlIndexer, type SmlIndexer } from './sml_indexer';
 import { SmlCrawlerImpl } from './sml_crawler';
 import type { SmlCrawler } from './types';
 import { smlIndexName, createSmlStorage } from './sml_storage';
-import { SmlResultWindowExceededError } from './sml_errors';
+import {
+  SmlResultWindowExceededError,
+  SmlAuthzEnumerationIncompleteError,
+  SmlCorpusTooLargeError,
+} from './sml_errors';
 
 // ES client usage pattern in this module:
 // - Read operations (search, get, list, checkAccess) use `esClient.asInternalUser` directly with
@@ -162,7 +166,7 @@ class SmlServiceImpl implements SmlServiceInstance {
       getDocuments: async ({ ids, spaceId, esClient }) => {
         return getDocumentsByIds({ ids, spaceId, esClient, logger });
       },
-      listDocuments: async ({ spaceId, esClient, page, perPage, type, originUri }) => {
+      listDocuments: async ({ spaceId, esClient, page, perPage, type, originUri, tags }) => {
         return listDocuments({
           spaceId,
           esClient,
@@ -171,6 +175,7 @@ class SmlServiceImpl implements SmlServiceInstance {
           perPage,
           type,
           originId: originUri,
+          tags,
         });
       },
       upsertDocument: async ({ id, spaceId, document, esClient }) => {
@@ -298,6 +303,164 @@ const getAuthorizedPrivileges = async ({
     logger.warn(`SML privilege check failed; failing closed: ${(error as Error).message}`);
     return { authorizedPerms: new Set(), authorizedIndices: new Set() };
   }
+};
+
+/**
+ * Keyword leaf fields enumerated by the pre-aggregation pass. These are the
+ * concrete `_terms_enum`-addressable leaves of the nested `permissions` object
+ * (see sml_storage.ts) — the same paths the ES|QL authz filter references.
+ */
+const PERM_KIBANA_FIELD = 'permissions.kibana.privileges.name' as const;
+const PERM_ES_INDICES_FIELD = 'permissions.elasticsearch.indices.name' as const;
+
+type EnumerableAuthzField = typeof PERM_KIBANA_FIELD | typeof PERM_ES_INDICES_FIELD;
+
+/**
+ * Enumerate every distinct value of a keyword permission field across the SML
+ * corpus via `_terms_enum`, paginated by `search_after`.
+ *
+ * Pre-aggregation needs the full universe of permission values present in the
+ * corpus so it can resolve, up front, exactly which the caller is authorized
+ * for. `_terms_enum` reads the inverted index directly (no doc scan), which is
+ * far cheaper than aggregating, and is unaffected by Document Level Security on
+ * the SML system index (we always read as the internal user).
+ *
+ * Fail-closed contract: a `complete: false` response (node error / timeout)
+ * means the returned terms are a *subset* of the true universe. Authorizing
+ * against a truncated universe would silently grant access to values we never
+ * checked, so we throw rather than undercount. Likewise, exceeding the page
+ * ceiling throws instead of proceeding with a partial set.
+ *
+ * A missing index returns `[]` (empty corpus), mirroring the empty-results
+ * behavior of the search/autocomplete paths.
+ *
+ * `index_filter` is intentionally omitted: segment-level pruning is a no-op on
+ * our single-primary-shard system index.
+ */
+const enumerateDistinctValues = async ({
+  field,
+  esClient,
+  logger,
+  pageSize = 1000,
+  maxPages = 100,
+}: {
+  field: EnumerableAuthzField;
+  esClient: IScopedClusterClient;
+  logger: Logger;
+  pageSize?: number;
+  maxPages?: number;
+}): Promise<string[]> => {
+  const values: string[] = [];
+  let searchAfter: string | undefined;
+
+  try {
+    for (let page = 0; page < maxPages; page++) {
+      const response = await esClient.asInternalUser.termsEnum({
+        index: smlIndexName,
+        field,
+        size: pageSize,
+        ...(searchAfter !== undefined ? { search_after: searchAfter } : {}),
+      });
+
+      if (!response.complete) {
+        logger.warn(`_terms_enum on '${field}' returned complete=false; failing closed`);
+        throw new SmlAuthzEnumerationIncompleteError(
+          `Could not complete permission authorization for this search; please retry.`
+        );
+      }
+
+      values.push(...response.terms);
+
+      if (response.terms.length < pageSize) {
+        return values;
+      }
+      searchAfter = response.terms[response.terms.length - 1];
+    }
+  } catch (error) {
+    if (error instanceof SmlAuthzEnumerationIncompleteError) {
+      throw error;
+    }
+    if (isNotFoundError(error)) {
+      logger.debug(`SML index does not exist yet — '${field}' universe is empty`);
+      return [];
+    }
+    throw error;
+  }
+
+  throw new SmlCorpusTooLargeError(
+    `Too many distinct permission values to authorize this search; the limit is ${
+      maxPages * pageSize
+    }.`
+  );
+};
+
+/**
+ * Result of the request-scoped pre-aggregation pass.
+ *
+ * `authorizedActions` / `authorizedIndices` are the values the caller is
+ * authorized for, intersected against what the corpus actually uses. The
+ * `*UniverseNonEmpty` flags distinguish "the corpus uses this dimension but the
+ * caller holds nothing" (→ restrict to public KIs) from "the corpus does not
+ * use this dimension at all" (→ no filter needed).
+ */
+interface AuthorizedUniverse {
+  authorizedActions: string[];
+  authorizedIndices: string[];
+  kibanaUniverseNonEmpty: boolean;
+  indexUniverseNonEmpty: boolean;
+}
+
+/**
+ * Pre-aggregation pass: discover the corpus's permission universe and resolve,
+ * in a single `_has_privileges` call, which values the caller is authorized
+ * for. The resulting sets are pushed into the ES|QL search as an in-query
+ * authorization filter, replacing the old overfetch + JS post-filter.
+ *
+ * Both field enumerations run concurrently. If neither dimension is used by the
+ * corpus, the privilege check is skipped entirely.
+ */
+const resolveAuthorizedUniverse = async ({
+  esClient,
+  request,
+  securityAuthz,
+  logger,
+}: {
+  esClient: IScopedClusterClient;
+  request: KibanaRequest;
+  securityAuthz: AuthorizationServiceSetup;
+  logger: Logger;
+}): Promise<AuthorizedUniverse> => {
+  const [kibanaUniverse, indexUniverse] = await Promise.all([
+    enumerateDistinctValues({ field: PERM_KIBANA_FIELD, esClient, logger }),
+    enumerateDistinctValues({ field: PERM_ES_INDICES_FIELD, esClient, logger }),
+  ]);
+
+  const kibanaUniverseNonEmpty = kibanaUniverse.length > 0;
+  const indexUniverseNonEmpty = indexUniverse.length > 0;
+
+  if (!kibanaUniverseNonEmpty && !indexUniverseNonEmpty) {
+    return {
+      authorizedActions: [],
+      authorizedIndices: [],
+      kibanaUniverseNonEmpty,
+      indexUniverseNonEmpty,
+    };
+  }
+
+  const { authorizedPerms, authorizedIndices } = await getAuthorizedPrivileges({
+    permissions: kibanaUniverse,
+    indices: indexUniverse,
+    request,
+    securityAuthz,
+    logger,
+  });
+
+  return {
+    authorizedActions: [...authorizedPerms],
+    authorizedIndices: [...authorizedIndices],
+    kibanaUniverseNonEmpty,
+    indexUniverseNonEmpty,
+  };
 };
 
 /**
@@ -507,10 +670,12 @@ const checkItemsAccess = async ({
 };
 
 /**
- * Maximum docs scanned per search request — a cap on the total overfetch used
- * to absorb permission filtering. If size × MAX_SCAN_MULTIPLIER docs are
- * scanned without filling the page the caller's permissions are too restrictive
- * to reliably fill it — return what we have.
+ * Per-FORK-branch candidate depth multiplier. Each retrieval leg (BM25 +
+ * semantic) collects size × MAX_SCAN_MULTIPLIER candidates before FUSE computes
+ * RRF scores, so a relevant doc ranked outside the top `size` on one leg can
+ * still surface after fusion. Authorization is now enforced in-query (a
+ * pre-FORK WHERE), so this no longer absorbs a post-filter — the outer LIMIT
+ * bounds the final set to `size`.
  */
 const MAX_SCAN_MULTIPLIER = 10;
 
@@ -532,14 +697,17 @@ const SML_SEMANTIC_FIELDS = ['title.semantic', 'description.semantic', 'content.
  *
  * Empty string or `*`: plain sorted scan — no FORK/FUSE, no relevance signal.
  *
- * Spaces filter uses MV_CONTAINS rather than `==` because `==` returns null
- * (not false) when the field has multiple values — a known ES|QL multi-value
- * semantic that would silently drop multi-space documents.
+ * Spaces and tag filters use MV_CONTAINS rather than `==` because `==` returns
+ * null (not false) on multi-value fields — an ES|QL semantic that would
+ * silently drop multi-space / multi-tag documents.
  *
- * Tag filter similarly uses MV_CONTAINS for the same reason.
- *
- * The LIMIT is size × MAX_SCAN_MULTIPLIER to leave room for permission
- * post-filtering; the caller slices the authorized results to `size`.
+ * Authorization is enforced in-query via the `authz` param (pre-aggregation):
+ * a doc is authorized iff its required permissions are a subset of what the
+ * caller holds. `MV_CONTAINS(?authorized, permissions...name)` expresses
+ * exactly that (the authorized set is bound as a single multivalue param) —
+ * and because a null/empty permission field is treated as the empty set,
+ * public KIs (no required perms) pass automatically. This replaces the former
+ * overfetch + JS post-filter, so the outer LIMIT is just `size`.
  *
  * `references.uri` is extracted via EVAL before KEEP so the result column is
  * a flat keyword array that can be reconstructed into Array<{uri}> client-side.
@@ -551,6 +719,7 @@ const buildSmlEsqlQuery = ({
   spaceId,
   constraints,
   filters,
+  authz,
 }: {
   query: string;
   size: number;
@@ -558,14 +727,34 @@ const buildSmlEsqlQuery = ({
   spaceId: string;
   constraints?: SmlSearchConstraints;
   filters?: SmlSearchFilters;
+  authz?: AuthorizedUniverse;
 }): { esql: string; params: unknown[] } => {
   const params: unknown[] = [];
   // METADATA is required for FUSE (which needs _id, _index, _score to compute RRF).
   const lines: string[] = [`FROM ${smlIndexName} METADATA _id, _index, _score`];
 
-  // spaces filter — MV_CONTAINS handles multi-value docs (== returns null for them)
+  // spaces filter (see docblock for the MV_CONTAINS rationale)
   params.push(spaceId);
   lines.push('| WHERE MV_CONTAINS(spaces, ?)');
+
+  // Authorization pre-filter. The authorized set is bound as a single
+  // multivalue param (ES|QL rejects an inline `[?, ?]` list), and a clause is
+  // emitted only for dimensions the corpus actually uses. See docblock for the
+  // subset semantics.
+  if (authz) {
+    const pushAuthzClause = (
+      authorized: string[],
+      universeNonEmpty: boolean,
+      field: EnumerableAuthzField
+    ) => {
+      if (!universeNonEmpty) return;
+      params.push(authorized);
+      lines.push(`| WHERE MV_CONTAINS(?, ${field})`);
+    };
+
+    pushAuthzClause(authz.authorizedActions, authz.kibanaUniverseNonEmpty, PERM_KIBANA_FIELD);
+    pushAuthzClause(authz.authorizedIndices, authz.indexUniverseNonEmpty, PERM_ES_INDICES_FIELD);
+  }
 
   // runtime-imposed per-type id-allowlist constraints
   if (constraints) {
@@ -606,7 +795,8 @@ const buildSmlEsqlQuery = ({
   } else {
     // LIMIT inside each FORK branch caps the per-leg candidate set before FUSE
     // computes RRF scores; without it FUSE would merge all matches. The outer
-    // LIMIT after FUSE+SORT bounds the final set for RBAC post-filtering.
+    // LIMIT after FUSE+SORT bounds the final set to `size` (authorization is
+    // already enforced by the pre-FORK WHERE clauses above).
     lines.push('| FORK');
     const bm25Conditions = SML_BM25_FIELDS.map((field) => {
       params.push(trimmed);
@@ -622,7 +812,7 @@ const buildSmlEsqlQuery = ({
     lines.push('| SORT _score DESC, id ASC');
   }
 
-  lines.push(`| LIMIT ${size * MAX_SCAN_MULTIPLIER}`);
+  lines.push(`| LIMIT ${size}`);
 
   // description is included in the baseline (short summary, useful for triage).
   // content, tags, references, spaces, permissions are opt-in via the fields param.
@@ -767,20 +957,29 @@ const isEsqlIndexMissingError = (error: unknown): boolean => {
 };
 
 /**
- * Search the SML index using ES|QL FORK + FUSE hybrid retrieval.
+ * Search the SML index using ES|QL FORK + FUSE hybrid retrieval, with
+ * authorization enforced in-query via pre-aggregation.
  *
- * A single ES|QL query fetches size × MAX_SCAN_MULTIPLIER docs (to absorb
- * permission post-filtering). Docs are filtered by Kibana RBAC and the first
- * `size` authorized results are returned.
+ * Before the search, `resolveAuthorizedUniverse` enumerates the corpus's
+ * permission universe (`_terms_enum`) and resolves, in a single
+ * `_has_privileges` call, which Kibana actions and ES indices the caller is
+ * authorized for. Those sets are pushed into the ES|QL query as MV_CONTAINS
+ * subset filters, so the index returns only authorized docs — no overfetch, no
+ * JS post-filter. The outer LIMIT is exactly `size`.
+ *
+ * When the security plugin is absent (dev / test), enumeration is skipped and
+ * all docs in the space are returned (open-access parity with the prior
+ * behavior).
  *
  * Non-empty queries: two FORK branches (BM25 over all text fields + semantic
  * over all semantic multi-fields), merged by FUSE with RRF — mirrors the old
  * `retriever.rrf fields` two-retriever structure. Empty string or `*`: plain
  * sorted scan, no relevance signal.
  *
- * Filter composition: spaces (MV_CONTAINS) + constraints (runtime-imposed per-type
- * id-allowlist) + agent filters — each component is a separate WHERE clause (ANDed
- * across dimensions); within types and tags, matching is OR (any listed value matches).
+ * Filter composition: spaces (MV_CONTAINS) + authz (MV_CONTAINS) + constraints
+ * (runtime-imposed per-type id-allowlist) + agent filters — each component is a
+ * separate WHERE clause (ANDed across dimensions); within types and tags,
+ * matching is OR (any listed value matches).
  */
 const searchSml = async ({
   query,
@@ -807,6 +1006,17 @@ const searchSml = async ({
 }): Promise<{ results: SmlSearchResult[] }> => {
   logger.debug(`SML search: query=${JSON.stringify(query)}, size=${size}, spaceId='${spaceId}'`);
 
+  // Pre-aggregation: resolve the caller's authorized permission universe so the
+  // ES|QL query can filter to authorized docs in-query. Skipped when the
+  // security plugin is absent (dev / test) — open-access parity.
+  let authz: AuthorizedUniverse | undefined;
+  if (securityAuthz) {
+    authz = await resolveAuthorizedUniverse({ esClient, request, securityAuthz, logger });
+    logger.debug(
+      `SML search authz: actions=${authz.authorizedActions.length}, indices=${authz.authorizedIndices.length}`
+    );
+  }
+
   const { esql, params } = buildSmlEsqlQuery({
     query,
     size,
@@ -814,6 +1024,7 @@ const searchSml = async ({
     spaceId,
     constraints,
     filters,
+    authz,
   });
 
   let response: { columns: Array<{ name: string; type: string }>; values: unknown[][] };
@@ -838,7 +1049,9 @@ const searchSml = async ({
     return Array.isArray(v) ? (v as unknown[]).filter((s) => s != null).map(String) : [String(v)];
   };
 
-  // permissions is always in the columns for RBAC filtering; spaces only when requested.
+  // permissions columns are kept for optional surfacing (fields includes
+  // 'permissions'); authorization itself is enforced in-query. spaces is
+  // surfaced only when requested.
   type SmlSearchResultInternal = SmlSearchResult & { permissions: SmlPermissions };
 
   const allResults: SmlSearchResultInternal[] = response.values.map((row) => {
@@ -886,15 +1099,14 @@ const searchSml = async ({
     return result;
   });
 
-  const authorized = await filterPageByPermissions(allResults, { request, securityAuthz, logger });
-  logger.debug(
-    `SML search: scanned=${response.values.length}, authorized=${authorized.length}, size=${size}`
-  );
+  // Authorization is already enforced in-query (MV_CONTAINS subset filters), so
+  // every returned row is authorized and the ES|QL LIMIT bounds it to `size`.
+  logger.debug(`SML search: returned=${response.values.length}, size=${size}`);
   const includePermissions = fields !== undefined && fields.includes('permissions');
   return {
-    results: authorized
-      .slice(0, size)
-      .map(({ permissions, ...rest }) => (includePermissions ? { ...rest, permissions } : rest)),
+    results: allResults.map(({ permissions, ...rest }) =>
+      includePermissions ? { ...rest, permissions } : rest
+    ),
   };
 };
 
@@ -1263,6 +1475,7 @@ const listDocuments = async ({
   perPage = 20,
   type,
   originId,
+  tags,
 }: {
   spaceId: string;
   esClient: IScopedClusterClient;
@@ -1271,6 +1484,7 @@ const listDocuments = async ({
   perPage?: number;
   type?: string;
   originId?: string;
+  tags?: string[];
 }): Promise<{ total: number; results: SmlDocument[] }> => {
   const filters: Array<Record<string, unknown>> = [
     {
@@ -1285,6 +1499,9 @@ const listDocuments = async ({
   }
   if (originId) {
     filters.push({ term: { 'origin.uri': originId } });
+  }
+  if (tags && tags.length > 0) {
+    filters.push({ terms: { tags } });
   }
 
   try {
@@ -1325,6 +1542,7 @@ const listDocuments = async ({
           spaces: source.spaces ?? [],
           permissions: source.permissions ?? emptyPermissions(),
           ingestion_method: source.ingestion_method ?? 'crawled',
+          ...(source.tags !== undefined ? { tags: source.tags } : {}),
         };
       });
 
@@ -1416,6 +1634,8 @@ const upsertDocument = async ({
       kibana: { privileges: document.permissions?.kibana?.privileges ?? [] },
       elasticsearch: { indices: document.permissions?.elasticsearch?.indices ?? [] },
     },
+    // On create: default to []. On update: preserve existing tags if caller omits the field.
+    tags: document.tags ?? existing?.tags ?? [],
     // HTTP upserts are by definition manual writes; tagging here lets the crawler
     // (and origin-mode indexAttachment) skip these entries to avoid clobbering them.
     ingestion_method: 'manual',

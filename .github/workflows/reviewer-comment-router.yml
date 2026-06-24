@@ -28,7 +28,6 @@ jobs:
             )
             || (
               contains(github.event.comment.body, '@claude')
-              && contains(github.event.issue.labels.*.name, 'reviewer:claude')
             )
             || (
               contains(github.event.comment.body, '@scout')
@@ -46,7 +45,6 @@ jobs:
             )
             || (
               contains(github.event.comment.body, '@claude')
-              && contains(github.event.pull_request.labels.*.name, 'reviewer:claude')
             )
             || (
               contains(github.event.comment.body, '@scout')

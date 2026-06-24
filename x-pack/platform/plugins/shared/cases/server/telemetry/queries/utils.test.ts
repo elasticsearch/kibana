@@ -8,6 +8,7 @@
 import { savedObjectsRepositoryMock } from '@kbn/core/server/mocks';
 import { CustomFieldTypes } from '../../../common/types/domain';
 import {
+  AUTO_EXTRACT_OBSERVABLE_DESCRIPTION,
   OBSERVABLE_TYPE_IPV4,
   OBSERVABLE_TYPE_HOSTNAME,
 } from '../../../common/constants/observables';
@@ -72,7 +73,7 @@ describe('utils', () => {
         byDescription: {
           buckets: [
             {
-              key: 'Auto extract observables',
+              key: AUTO_EXTRACT_OBSERVABLE_DESCRIPTION,
               doc_count: 1,
               byType: {
                 buckets: [
@@ -1835,7 +1836,7 @@ describe('utils', () => {
           byDescription: {
             buckets: [
               {
-                key: 'Auto extract observables',
+                key: AUTO_EXTRACT_OBSERVABLE_DESCRIPTION,
                 doc_count: 2,
                 byType: {
                   buckets: [

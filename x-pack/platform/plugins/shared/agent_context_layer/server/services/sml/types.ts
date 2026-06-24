@@ -350,6 +350,11 @@ export interface SmlDocumentInput {
   origin_id: string;
   content: string;
   /**
+   * Free-form labels for filtering and retrieval. Optional — when absent
+   * on an update, the existing document's tags are preserved.
+   */
+  tags?: string[];
+  /**
    * Permissions required to access the underlying element. Optional on
    * input — when omitted, the upsert handler normalizes to an empty
    * `{ kibana: { privileges: [] }, elasticsearch: { indices: [] } }`.
@@ -573,6 +578,7 @@ export interface SmlService {
     perPage?: number;
     type?: string;
     originUri?: string;
+    tags?: string[];
   }) => Promise<{ total: number; results: SmlDocument[] }>;
 
   /**

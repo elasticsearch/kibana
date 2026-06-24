@@ -92,6 +92,11 @@ export function getChartAnomalyTimeseries({
       y: getSeverity(anomaly.y ?? 0).id === severity ? anomaly.actual : null,
     }));
 
+    // Only show the legend for a severity when this chart actually contains an
+    // anomaly of that severity, otherwise the legend would advertise (e.g.)
+    // "Critical anomaly" on a chart that has none.
+    const hasAnomalies = data.some(({ y }) => y !== null && y !== undefined);
+
     return {
       title: i18n.translate('xpack.apm.anomalyScore', {
         defaultMessage:
@@ -101,7 +106,7 @@ export function getChartAnomalyTimeseries({
         },
       }),
       type: 'line',
-      hideLegend: true,
+      hideLegend: !hasAnomalies,
       lineSeriesStyle: style,
       data,
       color,

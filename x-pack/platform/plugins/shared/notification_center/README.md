@@ -98,6 +98,17 @@ The structure of the notification document is defined in [`common/`](./common):
   `.kibana-notification-center` data stream. We use Zod because the shape is shared across
   server and browser code.
 
+### Severity
+
+`severity` is one of `info | warning | error | critical`. It is **optional on submit and
+defaults to `info`**. Severity drives the per-document retention TTL applied by the cleanup task.
+
+### Call-to-action (CTA)
+
+`cta` is optional: `{ link, linkText }`. `link` must be an **internal** root-relative path
+(starts with `/`), validated with `isInternalURL` from `@kbn/std` — external,
+protocol-relative (`//host`), and backslash (`/\host`) URLs are rejected.
+
 ## Notification id conventions
 
 A notification's `notification_id` is a deterministic idempotency key.

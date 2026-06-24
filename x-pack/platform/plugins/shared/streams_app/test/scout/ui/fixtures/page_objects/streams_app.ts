@@ -152,6 +152,10 @@ export class StreamsApp {
     await this.gotoStreamManagementTab(streamName, 'attachments');
   }
 
+  async gotoCanvasTab(streamName: string) {
+    await this.gotoStreamManagementTab(streamName, 'canvas');
+  }
+
   async clickStreamNameLink(streamName: string) {
     await this.page.getByTestId(`streamsNameLink-${streamName}`).click();
   }

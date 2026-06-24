@@ -29,14 +29,14 @@ export function registerSingleMetricViewerCasesAttachment(
     defineAttachment({
       id: ML_SINGLE_METRIC_VIEWER_ATTACHMENT_TYPE,
       icon: PLUGIN_ICON,
-      displayName: i18n.translate('xpack.ml.cases.registerSingleMetricViewer.displayName', {
-        defaultMessage: 'Single metric viewer',
+      displayName: i18n.translate('xpack.ml.cases.singleMetricViewer.displayName', {
+        defaultMessage: 'Single metric viewers',
       }),
       getAttachmentViewObject: () => ({
         event: (
           <FormattedMessage
             id="xpack.ml.cases.singleMetricViewer.embeddableAddedEvent"
-            defaultMessage="added single metric viewer"
+            defaultMessage="added a single metric viewer"
           />
         ),
         timelineAvatar: PLUGIN_ICON,

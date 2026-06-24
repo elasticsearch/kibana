@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { EuiButton, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 
 import * as i18n from './translations';
 

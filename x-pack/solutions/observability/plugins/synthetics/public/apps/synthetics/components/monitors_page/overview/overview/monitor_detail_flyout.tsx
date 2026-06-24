@@ -424,6 +424,10 @@ export function MonitorDetailFlyout(props: Props) {
                   setIsPopoverOpen={setIsActionsPopoverOpen}
                   position="default"
                   locationId={locationId}
+                  // Reuse the latestPing-derived `kibanaUrl` so the popover
+                  // doesn't issue its own CCS query — the flyout already
+                  // fetched it for the "View on remote cluster" link above.
+                  kibanaUrl={remoteKibanaUrl}
                   renderButton={(onClick) => (
                     <EuiButtonEmpty
                       data-test-subj="syntheticsFlyoutActionsButton"

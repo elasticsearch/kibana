@@ -19,6 +19,8 @@ project:
 dependsOn:
   - '@kbn/core'
   - '@kbn/scout'
+  - '@kbn/content-list-common'
+  - '@kbn/content-list-scout'
   - '@kbn/usage-collection-plugin'
   - '@kbn/management-plugin'
   - '@kbn/saved-objects-tagging-oss-plugin'

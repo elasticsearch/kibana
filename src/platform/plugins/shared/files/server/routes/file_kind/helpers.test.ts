@@ -9,9 +9,42 @@
 
 import type { IKibanaResponse } from '@kbn/core/server';
 import type { File, FileJSON, FileKind } from '../../../common';
-import { validateFileNameExtension, validateMimeType } from './helpers';
+import { createFileServiceMock, createFileMock } from '../../mocks';
+import { getById, validateFileNameExtension, validateMimeType } from './helpers';
 
 describe('helpers', () => {
+  describe('getById', () => {
+    it('returns the file when its fileKind matches the requested kind', async () => {
+      const fileService = createFileServiceMock();
+      const file = createFileMock({ fileKind: 'myKind' });
+      fileService.getById.mockResolvedValue(file);
+
+      const result = await getById(fileService, 'abc', 'myKind');
+      expect(result.error).toBeUndefined();
+      expect(result.result).toBe(file);
+    });
+
+    it('returns 404 when the resolved file belongs to a different kind', async () => {
+      const fileService = createFileServiceMock();
+      const file = createFileMock({ fileKind: 'securitySolutionFilesCases' });
+      fileService.getById.mockResolvedValue(file);
+
+      const result = await getById(fileService, 'abc', 'defaultImage');
+      expect(result.result).toBeUndefined();
+      expect((result.error as IKibanaResponse).status).toBe(404);
+    });
+
+    it('returns 404 when the file does not exist', async () => {
+      const { FileNotFoundError } = await import('../../file_service/errors');
+      const fileService = createFileServiceMock();
+      fileService.getById.mockRejectedValue(new FileNotFoundError('not found'));
+
+      const result = await getById(fileService, 'missing', 'myKind');
+      expect(result.result).toBeUndefined();
+      expect((result.error as IKibanaResponse).status).toBe(404);
+    });
+  });
+
   describe('validateMimeType', () => {
     const createFileKind = (allowedMimeTypes?: string[]): FileKind => ({
       id: 'test-file-kind',

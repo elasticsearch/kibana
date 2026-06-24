@@ -1,0 +1,52 @@
+responses:
+  200:
+    description: "Indicates a successful response"
+    content:
+      application/json:
+        examples:
+          getAgentAccessControlResponseExample:
+            description: "Example response for a caller who can manage access control — the agent has two grantees."
+            value:
+              access_control:
+                access_mode: private
+                entries:
+                  - type: user
+                    name: alice
+                    role: editor
+                  - type: user
+                    name: bob
+                    role: user
+              permissions:
+                update_access_control: true
+          getAgentAccessControlMaskedResponseExample:
+            description: "Example response for a caller without manage permission — only the caller's own entry is returned."
+            value:
+              access_control:
+                access_mode: private
+                entries:
+                  - type: user
+                    name: bob
+                    role: user
+              permissions:
+                update_access_control: false
+  404:
+    description: "Not Found — no agent with this ID is visible to the caller. Matches the existing `agentNotFound` shape, so unprivileged callers cannot probe for hidden agents."
+    content:
+      application/json:
+        examples:
+          agentNotFoundResponseExample:
+            value:
+              statusCode: 404
+              error: "Not Found"
+              message: "Agent custom-agent-id not found"
+              attributes:
+                trace_id: "8d4f2a3b-1c5e-4a9b-9f0d-2e6c1a3d4f5e"
+x-codeSamples:
+  - lang: curl
+    source: |
+      curl \
+        -X GET "${KIBANA_URL}/api/agent_builder/agents/{id}/access_control" \
+        -H "Authorization: ApiKey ${API_KEY}"
+  - lang: Console
+    source: |
+      GET kbn://api/agent_builder/agents/{id}/access_control

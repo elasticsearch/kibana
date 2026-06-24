@@ -40,7 +40,7 @@ export const NOTES_LOADING_TEST_ID = `${PREFIX}HeaderNotesLoading` as const;
 export const TOOLS_FLYOUT_HEADER_TEST_ID = `${PREFIX}ToolsFlyoutHeader` as const;
 export const TOOLS_FLYOUT_HEADER_TITLE_TEST_ID = `${PREFIX}ToolsFlyoutHeaderTitle` as const;
 
-export const CHILD_LINK_TEST_ID = `${PREFIX}ChildLink` as const;
+export const OPEN_FLYOUT_LINK_TEST_ID = `${PREFIX}OpenFlyoutLink` as const;
 
 export const FLYOUT_LOADING_TEST_ID = `${PREFIX}Loading` as const;
 export const FLYOUT_ERROR_TEST_ID = `${PREFIX}Error` as const;

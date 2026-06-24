@@ -112,7 +112,6 @@ export const ParsedTemplateDefinitionSchema = z.object({
   tags: z.array(z.string()).optional(),
   severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   category: z.string().nullable().optional(),
-  extends: z.string().optional(),
   fields: z.array(FieldSchema).refine(
     (fields) => {
       const fieldNames = new Set(

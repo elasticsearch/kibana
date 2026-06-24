@@ -9,6 +9,7 @@ import {
   deleteObservable,
   updateObservable,
   bulkAddObservables,
+  applyObservablesToCase,
 } from './observables';
 import Boom from '@hapi/boom';
 import { LICENSING_CASE_OBSERVABLES_FEATURE } from '../../common/constants';
@@ -462,5 +463,100 @@ describe('bulkAddObservables', () => {
         payload: { observables: { count: 2, actionType: 'add' } },
       },
     });
+  });
+});
+
+describe('applyObservablesToCase', () => {
+  beforeEach(() => {
+    mockCaseService.patchCase.mockResolvedValue(caseSO);
+    mockCaseService.getCase.mockResolvedValue(caseSO);
+    jest.clearAllMocks();
+  });
+
+  it('returns early without hitting the database when observables is empty', async () => {
+    await applyObservablesToCase(caseSO.id, [], mockClientArgs);
+
+    expect(mockCaseService.getCase).not.toHaveBeenCalled();
+    expect(mockCaseService.patchCase).not.toHaveBeenCalled();
+    expect(mockUserActionService.creator.createUserAction).not.toHaveBeenCalled();
+  });
+
+  it('patches the case with the new observables', async () => {
+    mockCaseService.getCase.mockResolvedValue({
+      ...caseSO,
+      attributes: { ...caseSO.attributes, observables: [] },
+    });
+
+    await applyObservablesToCase(caseSO.id, [mockObservablePost], mockClientArgs);
+
+    expect(mockCaseService.patchCase).toHaveBeenCalledWith(
+      expect.objectContaining({
+        caseId: caseSO.id,
+        updatedAttributes: expect.objectContaining({
+          observables: expect.arrayContaining([
+            expect.objectContaining({ value: mockObservablePost.value }),
+          ]),
+          total_observables: 1,
+        }),
+      })
+    );
+  });
+
+  it('deduplicates observables — skips both patchCase and user action when all incoming observables already exist', async () => {
+    mockCaseService.getCase.mockResolvedValue({
+      ...caseSO,
+      attributes: { ...caseSO.attributes, observables: [mockObservable] },
+    });
+
+    await applyObservablesToCase(caseSO.id, [mockObservablePost], mockClientArgs);
+
+    // No SO write and no user action because newObservablesCount === 0
+    expect(mockCaseService.patchCase).not.toHaveBeenCalled();
+    expect(mockUserActionService.creator.createUserAction).not.toHaveBeenCalled();
+  });
+
+  it('creates a user action when new observables are added', async () => {
+    mockCaseService.getCase.mockResolvedValue({
+      ...caseSO,
+      attributes: { ...caseSO.attributes, observables: [] },
+    });
+
+    await applyObservablesToCase(caseSO.id, [mockObservablePost], mockClientArgs);
+
+    expect(mockUserActionService.creator.createUserAction).toHaveBeenCalledWith({
+      userAction: expect.objectContaining({
+        type: UserActionTypes.observables,
+        caseId: caseSO.id,
+        payload: { observables: { count: 1, actionType: 'add' } },
+      }),
+    });
+  });
+
+  it('caps at MAX_OBSERVABLES_PER_CASE', async () => {
+    const existingObservables = Array.from({ length: MAX_OBSERVABLES_PER_CASE - 1 }, (_, i) => ({
+      ...mockObservable,
+      id: `obs-${i}`,
+      value: `10.0.0.${i}`,
+    }));
+
+    mockCaseService.getCase.mockResolvedValue({
+      ...caseSO,
+      attributes: { ...caseSO.attributes, observables: existingObservables },
+    });
+
+    const extraObservables: ObservablePost[] = [
+      { value: '192.168.1.1', typeKey: OBSERVABLE_TYPE_IPV4.key, description: null },
+      { value: '192.168.1.2', typeKey: OBSERVABLE_TYPE_IPV4.key, description: null },
+    ];
+
+    await applyObservablesToCase(caseSO.id, extraObservables, mockClientArgs);
+
+    expect(mockCaseService.patchCase).toHaveBeenCalledWith(
+      expect.objectContaining({
+        updatedAttributes: expect.objectContaining({
+          total_observables: MAX_OBSERVABLES_PER_CASE,
+        }),
+      })
+    );
   });
 });

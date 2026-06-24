@@ -1,0 +1,23 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": false,
+    "resolveJsonModule": true,
+    "noImplicitAny": false,
+    "baseUrl": ".",
+    "outDir": "target/types",
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "target/**/*"
+  ]
+}

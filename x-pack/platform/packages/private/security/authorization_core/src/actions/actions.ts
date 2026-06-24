@@ -8,6 +8,7 @@
 import type { Actions as ActionsType } from '@kbn/security-plugin-types-server';
 
 import { AlertingActions } from './alerting';
+import { AlertsActions } from './alerts';
 import { ApiActions } from './api';
 import { AppActions } from './app';
 import { CasesActions } from './cases';
@@ -20,6 +21,7 @@ import { UIActions } from './ui';
  * by the various `checkPrivilegesWithRequest` derivatives.
  */
 export class Actions implements ActionsType {
+  public readonly alerts: AlertsActions;
   public readonly api: ApiActions;
   public readonly app: AppActions;
   public readonly cases: CasesActions;
@@ -30,6 +32,7 @@ export class Actions implements ActionsType {
   public readonly ui: UIActions;
 
   constructor() {
+    this.alerts = new AlertsActions();
     this.api = new ApiActions();
     this.app = new AppActions();
     this.cases = new CasesActions();

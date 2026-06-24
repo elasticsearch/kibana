@@ -15,6 +15,10 @@ import {
   httpServiceMock,
 } from './test_helpers';
 import type { SmlSearchResult } from '../services/sml/types';
+import {
+  SmlAuthzEnumerationIncompleteError,
+  SmlCorpusTooLargeError,
+} from '../services/sml/sml_errors';
 import { registerSearchRoute } from './search';
 
 describe('registerSearchRoute', () => {
@@ -156,5 +160,43 @@ describe('registerSearchRoute', () => {
     mockSmlService.search.mockRejectedValue(new Error('ES connection failed'));
     await expect(callHandler({ query: 'test' })).rejects.toThrow('ES connection failed');
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('ES connection failed'));
+  });
+
+  it('returns 503 when authorization enumeration is incomplete (fail closed)', async () => {
+    mockSmlService.search.mockRejectedValue(
+      new SmlAuthzEnumerationIncompleteError(
+        'Could not complete permission authorization for this search; please retry.'
+      )
+    );
+    const response = await callHandler({ query: 'test' });
+    expect(response.customError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 503,
+        body: {
+          message: 'Could not complete permission authorization for this search; please retry.',
+        },
+      })
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('SML search authorization unavailable')
+    );
+  });
+
+  it('returns 503 when the corpus is too large to enumerate (fail closed)', async () => {
+    mockSmlService.search.mockRejectedValue(
+      new SmlCorpusTooLargeError(
+        'Too many distinct permission values to authorize this search; the limit is 100000.'
+      )
+    );
+    const response = await callHandler({ query: 'test' });
+    expect(response.customError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 503,
+        body: {
+          message:
+            'Too many distinct permission values to authorize this search; the limit is 100000.',
+        },
+      })
+    );
   });
 });

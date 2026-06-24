@@ -55,7 +55,7 @@ import {
 } from './transforms/charts/datatable';
 import type { LensApiConfig, LensApiConfigChartType } from './schema';
 import { filtersAndQueryToApiFormat, filtersAndQueryToLensState } from './transforms/utils';
-import { isLensLegacyFormat } from './utils';
+import { isLensLegacyFormat, isEsqlTableTypeDataSource } from './utils';
 
 const compatibilityMap: Record<string, LensApiConfigChartType> = {
   lnsMetric: 'metric',
@@ -313,9 +313,21 @@ export class LensConfigBuilder {
       throw new Error(`No API converter found for chart type: ${visType} as ${type}`);
     }
     const converter = this.apiConvertersByChart[type as keyof typeof this.apiConvertersByChart];
+    const chartConfig = converter.fromLensStateToAPI(config);
+    const panelFiltersAndQuery = filtersAndQueryToApiFormat(config);
+
+    // Omit panel-level query on ES|QL charts, query is on data_source
+    if ('data_source' in chartConfig && isEsqlTableTypeDataSource(chartConfig.data_source)) {
+      const { query: _, ...panelFiltersWithoutQuery } = panelFiltersAndQuery;
+      return {
+        ...chartConfig,
+        ...panelFiltersWithoutQuery,
+      };
+    }
+
     return {
-      ...converter.fromLensStateToAPI(config),
-      ...filtersAndQueryToApiFormat(config),
+      ...chartConfig,
+      ...panelFiltersAndQuery,
     };
   }
 }

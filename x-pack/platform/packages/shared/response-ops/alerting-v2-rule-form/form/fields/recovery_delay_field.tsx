@@ -11,7 +11,7 @@ import { i18n } from '@kbn/i18n';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { DELAY_MODE } from '../types';
 import type { FormValues } from '../types';
-import { deriveRecoveryDelayModeFromStateTransition } from '../types';
+import { deriveRecoveryDelayModeFromStateTransition } from '../utils/state_transition_helpers';
 import { StateTransitionCountField } from './state_transition_count_field';
 import { StateTransitionTimeframeField } from './state_transition_timeframe_field';
 import { useRuleFormMeta } from '../contexts';

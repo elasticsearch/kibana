@@ -50,6 +50,7 @@ export const storybookAliases = {
   infra: 'x-pack/solutions/observability/plugins/infra/.storybook',
   ingest_pipelines: 'x-pack/platform/packages/shared/ingest-pipelines/.storybook',
   kbn_split_button: 'src/platform/packages/private/kbn-split-button/.storybook',
+  kbn_ui: 'src/platform/kbn-ui/storybook-config',
   language_documentation_popover:
     'src/platform/packages/private/kbn-language-documentation/.storybook',
   lists: 'x-pack/solutions/security/plugins/lists/.storybook',

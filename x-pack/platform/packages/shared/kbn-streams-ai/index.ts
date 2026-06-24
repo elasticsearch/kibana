@@ -43,6 +43,14 @@ export {
   type IgnoredFeature,
 } from './src/features/identify_features';
 export { generateAllComputedFeatures } from './src/features/computed';
+export {
+  CODE_ANALYSIS_PROVIDER_KEY,
+  codeAnalysisGenerator,
+} from './src/features/computed/code_analysis';
+export type {
+  ComputedFeatureProvider,
+  ComputedFeatureGeneratorOptions,
+} from './src/features/computed/types';
 
 export {
   searchKnowledgeIndicators,

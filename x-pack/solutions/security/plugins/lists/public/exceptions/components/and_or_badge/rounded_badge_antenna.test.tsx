@@ -7,16 +7,16 @@
 
 import React from 'react';
 import { mount } from 'enzyme';
-import { EuiThemeProvider } from '@kbn/kibana-react-plugin/common';
+import { EuiProvider } from '@elastic/eui';
 
 import { RoundedBadgeAntenna } from './rounded_badge_antenna';
 
 describe('RoundedBadgeAntenna', () => {
   test('it renders top and bottom antenna bars', () => {
     const wrapper = mount(
-      <EuiThemeProvider>
+      <EuiProvider>
         <RoundedBadgeAntenna type="and" />
-      </EuiThemeProvider>
+      </EuiProvider>
     );
 
     expect(wrapper.find('[data-test-subj="and-or-badge"]').at(0).text()).toEqual('AND');
@@ -26,9 +26,9 @@ describe('RoundedBadgeAntenna', () => {
 
   test('it renders "and" when "type" is "and"', () => {
     const wrapper = mount(
-      <EuiThemeProvider>
+      <EuiProvider>
         <RoundedBadgeAntenna type="and" />
-      </EuiThemeProvider>
+      </EuiProvider>
     );
 
     expect(wrapper.find('[data-test-subj="and-or-badge"]').at(0).text()).toEqual('AND');
@@ -36,9 +36,9 @@ describe('RoundedBadgeAntenna', () => {
 
   test('it renders "or" when "type" is "or"', () => {
     const wrapper = mount(
-      <EuiThemeProvider>
+      <EuiProvider>
         <RoundedBadgeAntenna type="or" />
-      </EuiThemeProvider>
+      </EuiProvider>
     );
 
     expect(wrapper.find('[data-test-subj="and-or-badge"]').at(0).text()).toEqual('OR');

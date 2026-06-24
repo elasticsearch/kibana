@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { QueryClientProvider } from '@kbn/react-query';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
@@ -92,49 +92,6 @@ const Wrapper: React.FC<{
       </QueryClientProvider>
     </IntlProvider>
   );
-};
-
-const renderStep = ({
-  builderState = makeBuilderState(),
-  stateOverrides = {},
-  formValueOverrides = {},
-}: {
-  builderState?: ThresholdFormValues;
-  stateOverrides?: Partial<ComposeDiscoverState>;
-  formValueOverrides?: Partial<ComposeFormValues>;
-} = {}) => {
-  const state = createState(stateOverrides);
-  const dispatch = jest.fn();
-  const services = createMockServices();
-  const setBuilderState = jest.fn();
-  const queryClient = createTestQueryClient();
-  const defaultValues: ComposeFormValues = { ...BASE_COMPOSE_VALUES, ...formValueOverrides };
-
-  const StepWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const form = useForm<ComposeFormValues>({ defaultValues });
-    return (
-      <IntlProvider locale="en">
-        <QueryClientProvider client={queryClient}>
-          <FormProvider {...form}>
-            <RuleFormProvider services={services} meta={{ layout: 'flyout' }}>
-              <BuilderStateProvider
-                builderState={builderState}
-                setBuilderState={setBuilderState as (s: unknown) => void}
-              >
-                {children}
-              </BuilderStateProvider>
-            </RuleFormProvider>
-          </FormProvider>
-        </QueryClientProvider>
-      </IntlProvider>
-    );
-  };
-
-  render(<RuleBuilderAlertConditionStep state={state} dispatch={dispatch} services={services} />, {
-    wrapper: StepWrapper,
-  });
-
-  return { dispatch, services, setBuilderState };
 };
 
 describe('RuleBuilderAlertConditionStep', () => {
@@ -289,50 +246,5 @@ describe('RuleBuilderAlertConditionStep', () => {
     );
 
     expect(screen.getByText('Field is required.')).toBeInTheDocument();
-  });
-});
-
-describe('RuleBuilderAlertConditionStep - alert delay', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders AlertDelayField when kind is alert', () => {
-    renderStep({ formValueOverrides: { kind: 'alert' } });
-
-    expect(screen.getByTestId('alertDelayFormRow')).toBeTruthy();
-  });
-
-  it('does not render AlertDelayField when kind is signal', () => {
-    renderStep({
-      formValueOverrides: {
-        kind: 'signal',
-        query: { format: 'standalone', breach: { query: 'FROM logs-* | WHERE count > 100' } },
-      },
-    });
-
-    expect(screen.queryByTestId('alertDelayFormRow')).toBeNull();
-  });
-
-  it('defaults to Immediate mode', () => {
-    renderStep({ formValueOverrides: { stateTransitionAlertDelayMode: 'immediate' } });
-
-    const alertRow = screen.getByTestId('alertDelayFormRow');
-    expect(within(alertRow).getByTestId('stateTransitionImmediateDescription')).toBeTruthy();
-  });
-
-  it('switches between Immediate, Breaches, and Duration modes', () => {
-    renderStep({ formValueOverrides: { stateTransitionAlertDelayMode: 'immediate' } });
-
-    const alertRow = screen.getByTestId('alertDelayFormRow');
-
-    fireEvent.click(within(alertRow).getByText('Breaches'));
-    expect(screen.getByTestId('stateTransitionCountInput')).toBeTruthy();
-
-    fireEvent.click(within(alertRow).getByText('Duration'));
-    expect(screen.getByTestId('stateTransitionTimeframeNumberInput')).toBeTruthy();
-
-    fireEvent.click(within(alertRow).getByText('Immediate'));
-    expect(screen.getByTestId('stateTransitionImmediateDescription')).toBeTruthy();
   });
 });

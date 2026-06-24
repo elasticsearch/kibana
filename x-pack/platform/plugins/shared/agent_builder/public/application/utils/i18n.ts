@@ -2691,22 +2691,27 @@ export const labels = {
         { defaultMessage: 'Enter a color hex code' }
       ),
       accessTitle: i18n.translate('xpack.agentBuilder.overview.editDetails.accessTitle', {
-        defaultMessage: 'Access',
+        defaultMessage: 'Access control',
       }),
       accessDescription: i18n.translate(
         'xpack.agentBuilder.overview.editDetails.accessDescription',
         { defaultMessage: 'Control who can view and edit this agent.' }
       ),
-      visibilityLabel: i18n.translate('xpack.agentBuilder.overview.editDetails.visibilityLabel', {
-        defaultMessage: 'Visibility',
-      }),
-      visibilityDisabledReason: i18n.translate(
-        'xpack.agentBuilder.overview.editDetails.visibilityDisabledReason',
-        { defaultMessage: 'Only the owner or an administrator can change visibility.' }
+      accessControlModeLabel: i18n.translate(
+        'xpack.agentBuilder.overview.editDetails.accessControlModeLabel',
+        {
+          defaultMessage: 'Access control',
+        }
       ),
-      visibilityAriaLabel: i18n.translate(
-        'xpack.agentBuilder.overview.editDetails.visibilityAriaLabel',
-        { defaultMessage: 'Agent visibility' }
+      accessControlModeDisabledReason: i18n.translate(
+        'xpack.agentBuilder.overview.editDetails.accessControlModeDisabledReason',
+        {
+          defaultMessage: 'Only the owner or an administrator can change the access control mode.',
+        }
+      ),
+      accessControlModeAriaLabel: i18n.translate(
+        'xpack.agentBuilder.overview.editDetails.accessControlModeAriaLabel',
+        { defaultMessage: 'Agent access control mode' }
       ),
       customizationTitle: i18n.translate(
         'xpack.agentBuilder.overview.editDetails.customizationTitle',

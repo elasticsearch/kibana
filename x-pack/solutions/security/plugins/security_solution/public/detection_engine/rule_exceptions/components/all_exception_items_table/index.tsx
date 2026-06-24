@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useReducer } from 'react';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 
 import { EuiPanel, EuiSpacer, EuiText } from '@elastic/eui';
 

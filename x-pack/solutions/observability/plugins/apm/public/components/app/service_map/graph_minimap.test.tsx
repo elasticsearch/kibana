@@ -234,6 +234,42 @@ describe('ServiceMapGraph - MiniMap', () => {
     expect(reactFlow).toContainElement(background);
   });
 
+  describe('when isEmbedded', () => {
+    it('hides the minimap and options toggle in a normal embedded panel', () => {
+      render(
+        <ReactFlowProvider>
+          <ServiceMapGraph {...defaultProps} isEmbedded />
+        </ReactFlowProvider>
+      );
+
+      expect(screen.queryByTestId('serviceMapMinimap')).toBeNull();
+      expect(screen.queryByTestId('serviceMapOptionsPanelToggle')).toBeNull();
+    });
+
+    it('shows the minimap and options toggle when the panel is maximized (showEmbeddedControls)', () => {
+      render(
+        <ReactFlowProvider>
+          <ServiceMapGraph {...defaultProps} isEmbedded showEmbeddedControls />
+        </ReactFlowProvider>
+      );
+
+      expect(screen.getByTestId('serviceMapMinimap')).toBeInTheDocument();
+      expect(screen.getByTestId('serviceMapOptionsPanelToggle')).toBeInTheDocument();
+    });
+
+    it('auto-expands the quick-filters panel when maximized so users immediately see the controls', () => {
+      render(
+        <ReactFlowProvider>
+          <ServiceMapGraph {...defaultProps} isEmbedded showEmbeddedControls />
+        </ReactFlowProvider>
+      );
+
+      // The options panel itself (not just the toggle) should be visible without the user
+      // having to click anything.
+      expect(screen.getByTestId('serviceMapOptionsPanel')).toBeInTheDocument();
+    });
+  });
+
   describe('nodeColor', () => {
     it('returns primary color for service nodes without anomaly stats', () => {
       render(

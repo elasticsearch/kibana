@@ -23,6 +23,20 @@ describe('useDataGridDensity', () => {
     localStorageMock.set.mockClear();
   });
 
+  it('should default to compact density', () => {
+    localStorageMock.get.mockReturnValue(undefined);
+    const { result } = renderHook(() =>
+      useDataGridDensity({
+        storage: localStorageMock as unknown as Storage,
+        consumer: 'discover',
+      })
+    );
+    const {
+      current: { dataGridDensity },
+    } = result;
+    expect(dataGridDensity).toBe(DataGridDensity.COMPACT);
+  });
+
   it('should read from local storage', () => {
     localStorageMock.get.mockReturnValue(DataGridDensity.NORMAL);
     const { result } = renderHook(() =>

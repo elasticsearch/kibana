@@ -16,6 +16,7 @@ project:
   sourceRoot: src/platform/test
 dependsOn:
   - '@kbn/core'
+  - '@kbn/content-list-common'
   - '@kbn/dashboard-plugin'
   - '@kbn/expressions-plugin'
   - '@kbn/saved-objects-management-plugin'
@@ -69,7 +70,6 @@ dependsOn:
   - '@kbn/ai-assistant-management-plugin'
   - '@kbn/setup-node-env'
   - '@kbn/visualizations-common'
-  - '@kbn/unified-data-table'
   - '@kbn/session-notifications-plugin'
   - '@kbn/ui-actions-plugin'
   - '@kbn/deeplinks-analytics'

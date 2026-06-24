@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { FeedbackRegistryEntry } from '@kbn/feedback-components';
+import type { FeedbackRegistryEntry } from '@kbn/ui-feedback';
 import { DEFAULT_REGISTRY_ID } from './constants';
 import type { FeedbackRegistry } from './types';
 

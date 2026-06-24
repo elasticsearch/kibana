@@ -64,16 +64,17 @@ timeout-minutes: 120
 
 engine:
   id: claude
-  version: "2.1.111"
+  version: "2.1.165"
   model: opus
   max-turns: 120
   env:
     ANTHROPIC_API_KEY: ${{ secrets.LITELLM_API_KEY }}
     ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai
     ENABLE_PROMPT_CACHING_1H: "1"
-    ANTHROPIC_DEFAULT_OPUS_MODEL: llm-gateway/claude-opus-4-7[1m]
+    ANTHROPIC_DEFAULT_OPUS_MODEL: llm-gateway/claude-opus-4-8[1m]
     ANTHROPIC_DEFAULT_HAIKU_MODEL: llm-gateway/claude-haiku-4-5
     ANTHROPIC_DEFAULT_SONNET_MODEL: llm-gateway/claude-sonnet-4-6
+    CLAUDE_CODE_EFFORT_LEVEL: high
     CLAUDE_CODE_SUBAGENT_MODEL: opus[1m]
 
 tools:
@@ -95,9 +96,6 @@ sandbox:
   agent: awf
 
 safe-outputs:
-  # TODO: remove after testing
-  # https://github.github.com/gh-aw/reference/staged-mode/
-  staged: true
   activation-comments: true
   footer: true
   report-failure-as-issue: false
@@ -179,7 +177,7 @@ Resolve failed automatic backports for the pull request identified by the inject
 12. Post exactly one final `add_comment` following the exact template below after all branch tasks finish. Include a compact table with `Branch`, `Status`, and `Result`. Use statuses: `created`, `existing`, `skipped`, `needs manual backport`, or `failed`. The status for each worker branch must match the validated status from step 11. Do not fabricate PR URLs; gh-aw safe outputs will attach related created PRs to the comment after processing.
    - Keep every `Result` cell to one concise sentence that is under 80 characters.
    - For conflicts or manual-backport cases, summarize the blocker category. Do not include long conflict explanations, implementation analysis, or full file lists in the table.
-   - For created PR requests, use a short phrase such as `Created a staged backport PR request.` If assignment was missing, append `Assignment request missing.`
+   - For created PR requests, use a short phrase such as `Created backport PR.` If assignment was missing, append `Author assignment request missing.`
    - Do not add diagnostic paragraphs after the table; workflow logs and the agent summary contain detailed run information.
 
 ## Final Comment Template
@@ -191,7 +189,7 @@ Use this shape for the final source PR comment:
 
 | Branch | Status | Result |
 | --- | --- | --- |
-| 8.19 | created | Created a staged backport PR request. |
+| 8.19 | created | Created backport PR. |
 | 9.4 | needs manual backport | Structural OAS conflicts need manual resolution; see workflow logs. |
 
 These backports were prepared by an agent. Please review the generated PRs carefully before merging.

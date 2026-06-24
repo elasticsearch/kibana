@@ -22,7 +22,6 @@ import { usePostPushToService } from '../../containers/use_post_push_to_service'
 import { useGetSupportedActionConnectors } from '../../containers/configure/use_get_supported_action_connectors';
 import { useLicense } from '../../common/use_license';
 import { useAvailableCasesOwners } from '../app/use_available_owners';
-import { useBulkPostObservables } from '../../containers/use_bulk_post_observables';
 import { useSubmitCase, type UseSubmitCaseProps } from './use_submit_case';
 import { TestProviders } from '../../common/mock/test_providers';
 
@@ -36,7 +35,6 @@ import {
 
 jest.mock('../../containers/use_post_case');
 jest.mock('../../containers/use_create_attachments');
-jest.mock('../../containers/use_bulk_post_observables');
 jest.mock('../../containers/use_post_push_to_service');
 jest.mock('../../containers/use_get_tags');
 jest.mock('../../containers/configure/use_get_supported_action_connectors');
@@ -55,7 +53,6 @@ const useGetConnectorsMock = useGetSupportedActionConnectors as jest.Mock;
 const useGetAllCaseConfigurationsMock = useGetAllCaseConfigurations as jest.Mock;
 const usePostCaseMock = usePostCase as jest.Mock;
 const useCreateAttachmentsMock = useCreateAttachments as jest.Mock;
-const useBulkPostObservablesMock = useBulkPostObservables as jest.Mock;
 const usePostPushToServiceMock = usePostPushToService as jest.Mock;
 const useGetIssueTypesMock = useGetIssueTypes as jest.Mock;
 const useGetFieldsByIssueTypeMock = useGetFieldsByIssueType as jest.Mock;
@@ -98,7 +95,6 @@ describe('useSubmitCase', () => {
     usePostCaseMock.mockImplementation(() => defaultPostCase);
 
     const createAttachments = jest.fn();
-    const bulkPostObservables = jest.fn();
 
     postCase.mockResolvedValue({
       id: sampleId,
@@ -106,7 +102,6 @@ describe('useSubmitCase', () => {
     });
     usePostCaseMock.mockImplementation(() => defaultPostCase);
     useCreateAttachmentsMock.mockImplementation(() => ({ mutateAsync: createAttachments }));
-    useBulkPostObservablesMock.mockImplementation(() => ({ mutateAsync: bulkPostObservables }));
     usePostPushToServiceMock.mockImplementation(() => defaultPostPushToService);
     useGetConnectorsMock.mockReturnValue(sampleConnectorData);
     useGetAllCaseConfigurationsMock.mockImplementation(() => useGetAllCaseConfigurationsResponse);
@@ -136,7 +131,6 @@ describe('useSubmitCase', () => {
 
       const { result } = renderUseSubmitCase({
         attachments: [],
-        observables: [],
         onSuccess,
         afterCaseCreated,
       });
@@ -164,7 +158,6 @@ describe('useSubmitCase', () => {
 
       const { result } = renderUseSubmitCase({
         attachments: [],
-        observables: [],
         onSuccess,
         afterCaseCreated,
       });

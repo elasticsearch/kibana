@@ -69,10 +69,10 @@ describe('createInitialState', () => {
     expect(withSignal.recoveryType).toBe('default');
   });
 
-  it('keeps the query preview closed in builder create mode', () => {
+  it('opens the query preview in builder create mode', () => {
     const state = createInitialState({ mode: 'create', isBuilderMode: true });
 
-    expect(state.childOpen).toBe(false);
+    expect(state.childOpen).toBe(true);
     expect(state.queryCommitted).toBe(false);
   });
 
@@ -87,6 +87,20 @@ describe('createInitialState', () => {
     const state = createInitialState({ mode: 'create', isQueryPrePopulated: false });
 
     expect(state.queryCommitted).toBe(false);
+  });
+
+  it('starts in YAML mode with sandbox open when forceYamlMode is true', () => {
+    const state = createInitialState({ mode: 'edit', forceYamlMode: true });
+
+    expect(state.yamlMode).toBe(true);
+    expect(state.childOpen).toBe(true);
+  });
+
+  it('does not start in YAML mode when forceYamlMode is false', () => {
+    const state = createInitialState({ mode: 'edit', forceYamlMode: false });
+
+    expect(state.yamlMode).toBe(false);
+    expect(state.childOpen).toBe(false);
   });
 });
 

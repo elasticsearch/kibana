@@ -259,7 +259,7 @@ export function VisualizeESQL({
                   <EuiDescriptionListDescription key={index}>
                     <EuiFlexGroup gutterSize="s" alignItems="center">
                       <EuiFlexItem grow={false}>
-                        <EuiIcon type="error" color="danger" size="s" />
+                        <EuiIcon type="error" color="danger" size="s" aria-hidden={true} />
                       </EuiFlexItem>
                       <EuiFlexItem grow={false}>{error}</EuiFlexItem>
                     </EuiFlexGroup>

@@ -43,7 +43,6 @@ import {
   getSimilarCases,
   patchObservable,
   deleteObservable,
-  bulkPostObservables,
 } from './api';
 
 import {
@@ -1385,64 +1384,6 @@ describe('Cases API', () => {
     it('should return correct response', async () => {
       const resp = await deleteObservable(mockCase.id, observableId, abortCtrl.signal);
       expect(resp).toEqual(undefined);
-    });
-  });
-
-  describe('bulkPostObservables', () => {
-    beforeEach(() => {
-      fetchMock.mockClear();
-      fetchMock.mockResolvedValue(basicCaseSnake);
-    });
-
-    it('should be called with correct check url, method, signal', async () => {
-      await bulkPostObservables(
-        {
-          caseId: mockCase.id,
-          observables: [
-            {
-              typeKey: '18b62f19-8c60-415e-8a08-706d1078c556',
-              value: 'test value',
-              description: '',
-            },
-          ],
-        },
-        abortCtrl.signal
-      );
-
-      expect(fetchMock).toHaveBeenCalledWith(
-        `${CASES_INTERNAL_URL}/${mockCase.id}/observables/_bulk_create`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            caseId: mockCase.id,
-            observables: [
-              {
-                typeKey: '18b62f19-8c60-415e-8a08-706d1078c556',
-                value: 'test value',
-                description: '',
-              },
-            ],
-          }),
-          signal: abortCtrl.signal,
-        }
-      );
-    });
-
-    it('should return correct response', async () => {
-      const resp = await bulkPostObservables(
-        {
-          caseId: mockCase.id,
-          observables: [
-            {
-              typeKey: '18b62f19-8c60-415e-8a08-706d1078c556',
-              value: 'test value',
-              description: '',
-            },
-          ],
-        },
-        abortCtrl.signal
-      );
-      expect(resp).toEqual(basicCase);
     });
   });
 });

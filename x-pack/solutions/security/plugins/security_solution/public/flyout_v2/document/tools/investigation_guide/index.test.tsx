@@ -14,9 +14,9 @@ import { mockContextValue } from '../../../../flyout/document_details/shared/moc
 import { useRuleWithFallback } from '../../../../detection_engine/rule_management/logic/use_rule_with_fallback';
 
 jest.mock('../../../../detection_engine/rule_management/logic/use_rule_with_fallback');
-jest.mock('../../../shared/components/tools_flyout_header', () => ({
-  ToolsFlyoutHeader: ({ title }: { title: string }) => (
-    <div data-test-subj="mockToolsFlyoutHeader">{title}</div>
+jest.mock('../../../shared/components/document_tools_flyout_header', () => ({
+  DocumentToolsFlyoutHeader: ({ title }: { title: string }) => (
+    <div data-test-subj="mockDocumentToolsFlyoutHeader">{title}</div>
   ),
 }));
 

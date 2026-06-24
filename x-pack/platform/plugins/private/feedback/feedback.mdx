@@ -32,7 +32,7 @@ To define application-specific questions, add them to the `@kbn/feedback-registr
 1. Create a new file for your application's questions at `x-pack/platform/packages/private/feedback-registry/src/questions/<your_app>.ts`. Define up to two questions:
 
 ```ts
-import type { FeedbackRegistryEntry } from '@kbn/feedback-components';
+import type { FeedbackRegistryEntry } from '@kbn/ui-feedback';
 
 export const questions: FeedbackRegistryEntry[] = [
   {

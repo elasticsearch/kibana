@@ -6,6 +6,7 @@
  */
 
 import { useMutation } from '@kbn/react-query';
+import type { attachmentApiV2 } from '../../common/types/api';
 import { createAttachments } from './api';
 import * as i18n from './translations';
 import type { CaseAttachmentsWithoutOwner, ServerError } from '../types';
@@ -28,7 +29,17 @@ export const useCreateAttachments = () => {
         owner: request.caseOwner,
       }));
 
-      return createAttachments({ attachments, caseId: request.caseId });
+      // The v2 io-ts `BulkCreateAttachmentsRequestV2` types `data`/`metadata`
+      // through io-ts's `JsonValue`, which doesn't structurally accept the
+      // Zod-derived `Record<string, unknown>` shapes used by the new SO
+      // attachment payloads (dashboard `data.config`, map `data.attributes`,
+      // etc.). Both contracts describe the same runtime JSON; this cast just
+      // bridges the two type systems at the wire boundary. Server-side
+      // validation re-runs through the per-type Zod schemas.
+      return createAttachments({
+        attachments: attachments as unknown as attachmentApiV2.BulkCreateAttachmentsRequestV2,
+        caseId: request.caseId,
+      });
     },
     {
       mutationKey: casesMutationsKeys.bulkCreateAttachments,

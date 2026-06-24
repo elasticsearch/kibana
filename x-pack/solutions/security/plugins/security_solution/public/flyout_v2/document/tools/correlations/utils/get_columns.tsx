@@ -14,7 +14,7 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { SeverityBadge } from '../../../../../common/components/severity_badge';
 import { PreviewLink } from '../../../../../flyout/shared/components/preview_link';
-import { ChildLink } from '../../../../shared/components/child_link';
+import { OpenFlyoutLink } from '../../../../shared/components/open_flyout_link';
 
 export const TIMESTAMP_DATE_FORMAT = 'MMM D, YYYY @ HH:mm:ss.SSS';
 
@@ -103,13 +103,13 @@ export const getColumns = ({
               <span>{ruleName}</span>
             </PreviewLink>
           ) : (
-            <ChildLink
+            <OpenFlyoutLink
               field={ALERT_RULE_NAME}
               value={ruleId}
               data-test-subj={`${dataTestSubj}RuleLink`}
             >
               <span>{ruleName}</span>
-            </ChildLink>
+            </OpenFlyoutLink>
           )}
         </EuiToolTip>
       );

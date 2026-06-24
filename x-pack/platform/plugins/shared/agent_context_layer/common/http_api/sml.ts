@@ -92,6 +92,7 @@ export interface SmlHttpItem {
   created_at: string;
   updated_at: string;
   spaces: string[];
+  tags: string[];
   /**
    * Permissions required to access the underlying element. Always
    * present; inner arrays may be empty.

@@ -19,6 +19,9 @@ import { getColumns, TIMESTAMP_DATE_FORMAT } from './get_columns';
 
 jest.mock('@kbn/expandable-flyout');
 jest.mock('../../../../../common/components/user_privileges');
+jest.mock('../../../../../common/hooks/is_in_security_app', () => ({
+  useIsInSecurityApp: () => false,
+}));
 jest.mock('../../../../../common/lib/kibana', () => ({
   useKibana: () => ({
     services: {
@@ -152,7 +155,7 @@ describe('getColumns', () => {
       expect(screen.getByTestId(`${dataTestSubj}RulePreview`)).toBeInTheDocument();
     });
 
-    it('renders rule name as a ChildLink when useLegacyExpandableFlyout is false', () => {
+    it('renders rule name as an OpenFlyoutLink when useLegacyExpandableFlyout is false', () => {
       const [, , ruleColumn] = getColumns({
         scopeId,
         dataTestSubj,

@@ -92,17 +92,19 @@ export const Source: React.FC<SourceProps> = ({ node, index }) => {
         </EuiFormRow>
         <div style={{ position: 'absolute', right: 0, top: 0 }}>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="cross"
-              aria-label="Remove"
-              onClick={() => {
-                if (!query) return;
-                const from = state.from$.getValue();
-                if (!from) return;
-                from.args = from.args.filter((c) => c !== node);
-                state.reprint();
-              }}
-            />
+            <EuiToolTip content="Remove" disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="cross"
+                aria-label="Remove"
+                onClick={() => {
+                  if (!query) return;
+                  const from = state.from$.getValue();
+                  if (!from) return;
+                  from.args = from.args.filter((c) => c !== node);
+                  state.reprint();
+                }}
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         </div>
       </div>

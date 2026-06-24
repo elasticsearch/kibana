@@ -6,22 +6,12 @@
  */
 
 import React from 'react';
-import { ThemeProvider } from 'styled-components';
 import { mount } from 'enzyme';
 
 import { getExceptionListItemSchemaMock } from '@kbn/lists-plugin/common/schemas/response/exception_list_item_schema.mock';
 
 import { ExceptionsViewerItems } from './all_items';
-import { getMockTheme } from '../../../../common/lib/kibana/kibana_react.mock';
 import { TestProviders } from '../../../../common/mock';
-
-const mockTheme = getMockTheme({
-  eui: {
-    euiSize: '10px',
-    euiColorPrimary: '#ece',
-    euiColorDanger: '#ece',
-  },
-});
 
 describe('ExceptionsViewerItems', () => {
   it('it renders empty prompt if "viewerState" is "empty"', () => {
@@ -50,19 +40,17 @@ describe('ExceptionsViewerItems', () => {
   it('it renders no search results found prompt if "viewerState" is "empty_search"', () => {
     const wrapper = mount(
       <TestProviders>
-        <ThemeProvider theme={mockTheme}>
-          <ExceptionsViewerItems
-            disableActions={false}
-            exceptions={[]}
-            isEndpoint={false}
-            ruleReferences={null}
-            viewerState="empty_search"
-            onCreateExceptionListItem={jest.fn()}
-            onDeleteException={jest.fn()}
-            onEditExceptionItem={jest.fn()}
-            isReadOnly={false}
-          />
-        </ThemeProvider>
+        <ExceptionsViewerItems
+          disableActions={false}
+          exceptions={[]}
+          isEndpoint={false}
+          ruleReferences={null}
+          viewerState="empty_search"
+          onCreateExceptionListItem={jest.fn()}
+          onDeleteException={jest.fn()}
+          onEditExceptionItem={jest.fn()}
+          isReadOnly={false}
+        />
       </TestProviders>
     );
 
@@ -75,19 +63,17 @@ describe('ExceptionsViewerItems', () => {
   it('it renders exceptions if "viewerState" and "null"', () => {
     const wrapper = mount(
       <TestProviders>
-        <ThemeProvider theme={mockTheme}>
-          <ExceptionsViewerItems
-            disableActions={false}
-            exceptions={[getExceptionListItemSchemaMock()]}
-            isEndpoint={false}
-            ruleReferences={null}
-            viewerState={null}
-            onCreateExceptionListItem={jest.fn()}
-            onDeleteException={jest.fn()}
-            onEditExceptionItem={jest.fn()}
-            isReadOnly={false}
-          />
-        </ThemeProvider>
+        <ExceptionsViewerItems
+          disableActions={false}
+          exceptions={[getExceptionListItemSchemaMock()]}
+          isEndpoint={false}
+          ruleReferences={null}
+          viewerState={null}
+          onCreateExceptionListItem={jest.fn()}
+          onDeleteException={jest.fn()}
+          onEditExceptionItem={jest.fn()}
+          isReadOnly={false}
+        />
       </TestProviders>
     );
 

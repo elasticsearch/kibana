@@ -5125,6 +5125,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/content-list-common@link:src/platform/packages/shared/content-management/content_list/kbn-content-list-common":
+  version "0.0.0"
+  uid ""
+
 "@kbn/content-list-docs@link:src/platform/packages/shared/content-management/content_list/kbn-content-list-docs":
   version "0.0.0"
   uid ""
@@ -5146,6 +5150,10 @@
   uid ""
 
 "@kbn/content-list-provider@link:src/platform/packages/shared/content-management/content_list/kbn-content-list-provider":
+  version "0.0.0"
+  uid ""
+
+"@kbn/content-list-scout@link:src/platform/packages/shared/content-management/content_list/kbn-content-list-scout":
   version "0.0.0"
   uid ""
 
@@ -7134,10 +7142,6 @@
   uid ""
 
 "@kbn/fec-alerts-test-plugin@link:x-pack/platform/test/functional_execution_context/plugins/alerts":
-  version "0.0.0"
-  uid ""
-
-"@kbn/feedback-components@link:src/platform/packages/shared/feedback-components":
   version "0.0.0"
   uid ""
 
@@ -9749,6 +9753,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/ui-feedback@link:src/platform/kbn-ui/feedback":
+  version "0.0.0"
+  uid ""
+
 "@kbn/ui-settings-plugin@link:src/platform/test/plugin_functional/plugins/ui_settings_plugin":
   version "0.0.0"
   uid ""
@@ -9762,6 +9770,10 @@
   uid ""
 
 "@kbn/ui-side-navigation@link:src/platform/kbn-ui/side-navigation":
+  version "0.0.0"
+  uid ""
+
+"@kbn/ui-storybook-config@link:src/platform/kbn-ui/storybook-config":
   version "0.0.0"
   uid ""
 

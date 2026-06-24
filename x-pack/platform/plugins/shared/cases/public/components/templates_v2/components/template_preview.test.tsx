@@ -19,10 +19,6 @@ jest.mock('../../cases_context/use_cases_context', () => ({
   useCasesContext: () => ({ owner: ['securitySolution'] }),
 }));
 
-jest.mock('../hooks/use_parent_template_definition', () => ({
-  useParentTemplateDefinition: jest.fn(() => ({ definition: undefined, isFetched: true })),
-}));
-
 describe('CreateTemplatePreview', () => {
   const renderPreview = (definition: string) => {
     const Wrapper = () => {

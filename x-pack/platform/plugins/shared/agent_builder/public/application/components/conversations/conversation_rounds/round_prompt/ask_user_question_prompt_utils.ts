@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { euiShadow } from '@elastic/eui';
 import type { UseEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
@@ -14,7 +13,7 @@ import type {
   AskUserQuestionPromptResponse,
   AskUserQuestionItem,
 } from '@kbn/agent-builder-common/agents';
-import { borderRadiusXlStyles } from '../../../../../common.styles';
+export { promptContainerStyles as containerStyles } from './prompt_container.styles';
 
 /** In-progress (mutable) answer for a single question, before it is mapped to the wire shape. */
 export interface AnswerDraft {
@@ -55,17 +54,6 @@ export const labels = {
   customError: i18n.translate('xpack.agentBuilder.askUserQuestionPrompt.customError', {
     defaultMessage: 'Enter a response or choose a different option.',
   }),
-};
-
-export const containerStyles = (euiThemeContext: UseEuiTheme) => {
-  const { euiTheme } = euiThemeContext;
-  return css`
-    background-color: ${euiTheme.colors.backgroundBasePlain};
-    ${borderRadiusXlStyles}
-    border: ${euiTheme.border.width.thin} solid ${euiTheme.colors.borderBasePlain};
-    padding: ${euiTheme.size.base};
-    ${euiShadow(euiThemeContext, 's')};
-  `;
 };
 
 export const optionCardStyles = ({ euiTheme }: UseEuiTheme) => css`

@@ -8,13 +8,14 @@
 import React, { useMemo } from 'react';
 import { BasicTable } from '../../../../../common/components/ml/tables/basic_table';
 import { getEntityTableColumns } from './columns';
-import type { BasicEntityData, EntityTableRows } from './types';
+import type { BasicEntityData, EntityTableLinkRenderer, EntityTableRows } from './types';
 
 interface EntityTableProps<T extends BasicEntityData> {
   contextID: string;
   scopeId: string;
   data: T;
   entityFields: EntityTableRows<T>;
+  entityLink?: EntityTableLinkRenderer;
 }
 
 export const EntityTable = <T extends BasicEntityData>({
@@ -22,6 +23,7 @@ export const EntityTable = <T extends BasicEntityData>({
   scopeId,
   data,
   entityFields,
+  entityLink,
 }: EntityTableProps<T>) => {
   const items = useMemo(
     () => entityFields.filter(({ isVisible }) => (isVisible ? isVisible(data) : true)),
@@ -29,8 +31,8 @@ export const EntityTable = <T extends BasicEntityData>({
   );
 
   const entityTableColumns = useMemo(
-    () => getEntityTableColumns<T>(contextID, scopeId, data),
-    [contextID, scopeId, data]
+    () => getEntityTableColumns<T>(contextID, scopeId, data, entityLink),
+    [contextID, scopeId, data, entityLink]
   );
   return (
     <BasicTable

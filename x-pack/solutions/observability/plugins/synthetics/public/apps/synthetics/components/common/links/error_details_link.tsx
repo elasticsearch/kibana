@@ -63,14 +63,17 @@ export const useErrorDetailsLink = ({
   stateId,
   configId,
   locationId,
+  remoteName: remoteNameOverride,
 }: {
   configId: string;
   stateId: string;
   locationId?: string;
+  remoteName?: string;
 }) => {
   const { basePath } = useSyntheticsSettingsContext();
   const spaceId = useUrlSpaceId();
-  const { remoteName } = useGetUrlParams();
+  const { remoteName: remoteNameFromUrl } = useGetUrlParams();
+  const remoteName = remoteNameOverride ?? remoteNameFromUrl;
 
   return getErrorDetailsUrl({
     basePath,

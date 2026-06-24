@@ -20,6 +20,7 @@ describe('AlertEpisodeDetailsHeader', () => {
           description="Some description"
           tags={['t1']}
           status={ALERT_EPISODE_STATUS.ACTIVE}
+          severity={undefined}
           episodeAction={undefined}
           groupAction={undefined}
         />
@@ -39,11 +40,30 @@ describe('AlertEpisodeDetailsHeader', () => {
           description={undefined}
           tags={[]}
           status={undefined}
+          severity={undefined}
           episodeAction={undefined}
           groupAction={undefined}
         />
       </I18nProvider>
     );
     expect(screen.getByTestId('alertingV2EpisodeDetailsHeaderLoadingTitle')).toBeInTheDocument();
+  });
+
+  it('renders the severity badge after the status badge', () => {
+    render(
+      <I18nProvider>
+        <AlertEpisodeDetailsHeader
+          title="Rule 1"
+          description={undefined}
+          tags={[]}
+          status={ALERT_EPISODE_STATUS.ACTIVE}
+          severity="high"
+          episodeAction={undefined}
+          groupAction={undefined}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('alertingV2EpisodeSeverityBadge-high')).toHaveTextContent('High');
   });
 });

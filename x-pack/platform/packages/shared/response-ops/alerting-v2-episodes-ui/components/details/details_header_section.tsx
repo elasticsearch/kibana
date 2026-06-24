@@ -30,6 +30,7 @@ export const AlertEpisodeDetailsHeaderSection = ({
   const ruleId = episode?.['rule.id'];
   const groupHash = episode?.group_hash;
   const lastStatus = episode?.['episode.status'];
+  const severity = episode?.severity;
 
   const { data: episodeActionsMap } = useFetchEpisodeActions({
     episodeIds: [episodeId],
@@ -51,6 +52,7 @@ export const AlertEpisodeDetailsHeaderSection = ({
       description={rule?.metadata.description}
       tags={tags}
       status={lastStatus}
+      severity={severity}
       episodeAction={episodeAction}
       groupAction={groupAction}
       titleSize={titleSize}

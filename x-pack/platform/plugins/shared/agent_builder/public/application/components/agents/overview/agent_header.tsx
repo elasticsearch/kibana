@@ -26,7 +26,7 @@ import { getEbtProps } from '@kbn/ebt-click';
 import { css } from '@emotion/react';
 import { labels } from '../../../utils/i18n';
 import { AgentAvatar } from '../../common/agent_avatar';
-import { AgentVisibilityBadge } from '../list/agent_visibility_badge';
+import { AgentAccessControlModeBadge } from '../list/agent_access_control_mode_badge';
 import { AgentDescription } from './agent_description';
 import { accessSummaryManageButton } from '../access/access_i18n';
 
@@ -115,7 +115,7 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
                   </EuiFlexGroup>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
-                  <AgentVisibilityBadge agent={agent} />
+                  <AgentAccessControlModeBadge agent={agent} />
                 </EuiFlexItem>
               </EuiFlexGroup>
             </EuiFlexGroup>

@@ -206,6 +206,13 @@ function mergeWithSubFeatures(
           }
         : {}),
     };
+
+    // `alerts.read` is a boolean flag, so a sub-feature privilege included in the primary
+    // privilege grants alerts read access to it without ever revoking access the primary
+    // privilege already grants on its own.
+    if (subFeaturePrivilege.alerts?.read) {
+      mergedConfig.alerts = { ...mergedConfig.alerts, read: true };
+    }
   }
   return mergedConfig;
 }

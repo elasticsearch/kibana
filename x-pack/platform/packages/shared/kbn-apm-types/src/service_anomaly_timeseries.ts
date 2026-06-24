@@ -14,6 +14,6 @@ export interface ServiceAnomalyTimeseries {
   serviceName: string;
   version: number;
   transactionType: string;
-  anomalies: Array<Coordinate & { actual: number | null }>;
+  anomalies: Array<Coordinate & { actual: number | null; environment?: string }>;
   bounds: Array<{ x: number; y0: number | null; y1: number | null }>;
 }

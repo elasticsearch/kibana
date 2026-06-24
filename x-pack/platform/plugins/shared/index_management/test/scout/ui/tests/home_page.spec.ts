@@ -15,7 +15,8 @@ const testIndexName = `index-test-${Math.random()}`;
 const byteUnitsDataStreamName = `byte-units-data-stream-${Math.random().toString(36).slice(2)}`;
 const byteUnitsTemplateName = `${byteUnitsDataStreamName}-template`;
 
-test.describe('Home page', { tag: tags.stateful.classic }, () => {
+// Failing: See https://github.com/elastic/kibana/issues/274798
+test.describe.skip('Home page', { tag: tags.stateful.classic }, () => {
   test.beforeAll(async ({ esClient, log }) => {
     const { policies } = await esClient.enrich.getPolicy();
     for (const policy of policies as EnrichSummary[]) {

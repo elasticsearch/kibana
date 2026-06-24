@@ -9,6 +9,7 @@ import React from 'react';
 import { EuiSpacer } from '@elastic/eui';
 import { AlertEpisodeOverviewListSection } from './overview_list_section';
 import { AlertEpisodeLifecycleHeatmapSection } from './lifecycle_heatmap_section';
+import { AlertEpisodeSeverityHeatmapSection } from './severity_heatmap_section';
 import { AlertEpisodeRuleOverviewPanelSection } from './rule_overview_panel_section';
 import type { AlertEpisodeDetailsServices } from './types';
 
@@ -34,6 +35,8 @@ export const AlertEpisodeOverviewSection = ({
     />
     <EuiSpacer size="l" />
     <AlertEpisodeLifecycleHeatmapSection episodeId={episodeId} services={services} />
+    <EuiSpacer size="l" />
+    <AlertEpisodeSeverityHeatmapSection episodeId={episodeId} services={services} />
     <EuiSpacer size="l" />
     <AlertEpisodeRuleOverviewPanelSection episodeId={episodeId} services={services} />
   </>

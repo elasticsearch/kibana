@@ -16,6 +16,7 @@ import { createInitialState } from '../use_compose_discover_state';
 import type { ComposeDiscoverState } from '../types';
 import type { ComposeFormValues, RuleQuery } from '../compose_form_types';
 import { RecoveryConditionStep } from './recovery_condition_step';
+import { EsqlRecoveryContent } from './esql_recovery_content';
 
 jest.mock('@kbn/code-editor', () => ({
   ...jest.requireActual('@kbn/code-editor'),
@@ -99,6 +100,7 @@ const renderRecoveryStep = (
       state={state}
       dispatch={dispatch}
       onRecoveryTypeChange={onRecoveryTypeChange}
+      renderCustomRecovery={EsqlRecoveryContent}
     />,
     { wrapper: createComposeFormWrapper(queryOverride, services) }
   );

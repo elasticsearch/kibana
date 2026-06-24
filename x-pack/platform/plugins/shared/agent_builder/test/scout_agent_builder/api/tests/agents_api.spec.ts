@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { AgentVisibility } from '@kbn/agent-builder-common';
+import { AgentAccessControlMode } from '@kbn/agent-builder-common';
 import { tags } from '@kbn/scout';
 import { expect } from '@kbn/scout/api';
 import { apiTest } from '../fixtures';
@@ -101,15 +101,18 @@ apiTest.describe(
     });
 
     apiTest(
-      'POST /api/agent_builder/agents defaults visibility to public with created_by',
+      'POST /api/agent_builder/agents defaults access-control mode to public with created_by',
       async ({ asAdmin }) => {
-        const agentId = `visibility-default-agent-${Date.now()}`;
+        const agentId = `access-control-default-agent-${Date.now()}`;
         const response = await asAdmin.post(`${API_AGENT_BUILDER}/agents`, {
           body: { ...mockAgent, id: agentId },
           responseType: 'json',
         });
         expect(response).toHaveStatusCode(200);
-        expect(response.body).toMatchObject({ id: agentId, visibility: AgentVisibility.Public });
+        expect(response.body).toMatchObject({
+          id: agentId,
+          access_control: { access_mode: AgentAccessControlMode.Public, entries: [] },
+        });
         expect(response.body.created_by).toBeDefined();
         expect(typeof response.body.created_by.username).toBe('string');
         createdAgentIds.push(agentId);

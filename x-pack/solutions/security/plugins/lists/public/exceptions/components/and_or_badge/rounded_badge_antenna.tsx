@@ -7,37 +7,28 @@
 
 import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import React from 'react';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 
 import { RoundedBadge } from './rounded_badge';
 
 import type { AndOr } from '.';
 
-const antennaStyles = css`
-  background: ${({ theme }): string => theme.eui.euiColorLightShade};
+const Antenna = styled(EuiFlexItem, {
+  shouldForwardProp: (prop) => prop !== '$position',
+})<{ $position: 'top' | 'bottom' }>`
+  background: ${({ theme }): string => theme.euiTheme.colors.borderBasePlain};
   position: relative;
   width: 2px;
+
   &:after {
-    background: ${({ theme }): string => theme.eui.euiColorLightShade};
+    background: ${({ theme }): string => theme.euiTheme.colors.borderBasePlain};
     content: '';
     height: 8px;
     right: -4px;
     position: absolute;
     width: 10px;
     clip-path: circle();
-  }
-`;
-
-const TopAntenna = styled(EuiFlexItem)`
-  ${antennaStyles}
-  &:after {
-    top: 0;
-  }
-`;
-const BottomAntenna = styled(EuiFlexItem)`
-  ${antennaStyles}
-  &:after {
-    bottom: 0;
+    ${({ $position }): string => $position}: 0;
   }
 `;
 
@@ -48,11 +39,11 @@ export const RoundedBadgeAntenna: React.FC<{ type: AndOr }> = ({ type }) => (
     direction="column"
     alignItems="center"
   >
-    <TopAntenna data-test-subj="andOrBadgeBarTop" grow={1} />
+    <Antenna $position="top" data-test-subj="andOrBadgeBarTop" grow={1} />
     <EuiFlexItem grow={false}>
       <RoundedBadge type={type} />
     </EuiFlexItem>
-    <BottomAntenna data-test-subj="andOrBadgeBarBottom" grow={1} />
+    <Antenna $position="bottom" data-test-subj="andOrBadgeBarBottom" grow={1} />
   </EuiFlexGroup>
 );
 

@@ -30,6 +30,18 @@ export const AIOPS_CHANGE_POINT_CHART_ATTACHMENT_TYPE = 'aiops.change_point_char
 export const AIOPS_PATTERN_ANALYSIS_ATTACHMENT_TYPE = 'aiops.pattern_analysis';
 export const AIOPS_LOG_RATE_ANALYSIS_ATTACHMENT_TYPE = 'aiops.log_rate_analysis';
 
+export const DASHBOARD_ATTACHMENT_TYPE = 'dashboard';
+export const DISCOVER_SESSION_ATTACHMENT_TYPE = 'discoverSession';
+export const MAP_ATTACHMENT_TYPE = 'map';
+
+/**
+ * Saved-object type identifiers as understood by core saved-objects and the
+ * management `_find` API.
+ */
+export const DASHBOARD_SO_TYPE = 'dashboard';
+export const MAP_SO_TYPE = 'map';
+export const DISCOVER_SESSION_SO_TYPE = 'search';
+
 // ----------------Legacy attachment types-------------------------
 export const LEGACY_ACTIONS_TYPE = 'actions';
 export const LEGACY_ALERT_TYPE = 'alert';
@@ -80,6 +92,9 @@ export const UNIFIED_ATTACHMENT_TYPES = new Set([
   OSQUERY_ATTACHMENT_TYPE,
   INDICATOR_ATTACHMENT_TYPE,
   SECURITY_TIMELINE_ATTACHMENT_TYPE,
+  DASHBOARD_ATTACHMENT_TYPE,
+  DISCOVER_SESSION_ATTACHMENT_TYPE,
+  MAP_ATTACHMENT_TYPE,
 ]);
 
 export const PERSISTABLE_STATE_LEGACY_TO_UNIFIED_MAP: Record<string, string> = {
@@ -154,6 +169,9 @@ export const MIGRATED_ATTACHMENT_TYPES = new Set<string>([
   INDICATOR_ATTACHMENT_TYPE,
   SECURITY_TIMELINE_ATTACHMENT_TYPE,
   ...PERSISTABLE_ATTACHMENT_TYPES,
+  DASHBOARD_ATTACHMENT_TYPE,
+  DISCOVER_SESSION_ATTACHMENT_TYPE,
+  MAP_ATTACHMENT_TYPE,
 ]);
 
 export const OWNER_TO_PREFIX_MAP: Partial<Record<string, string>> = {

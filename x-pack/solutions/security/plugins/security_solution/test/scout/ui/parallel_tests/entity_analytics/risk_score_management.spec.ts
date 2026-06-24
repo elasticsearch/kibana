@@ -17,7 +17,8 @@ const RISK_SCORE_RULE: typeof CUSTOM_QUERY_RULE = {
   rule_id: 'risk-score-tab-rule',
 };
 
-spaceTest.describe(
+// Failing: See https://github.com/elastic/kibana/issues/266895
+spaceTest.describe.skip(
   'Entity analytics management page - Risk Score tab',
   { tag: [...tags.stateful.classic, ...tags.serverless.security.complete] },
   () => {

@@ -5,7 +5,11 @@
  * 2.0.
  */
 
-import { createRemoteMonitorDetailUrl } from './remote_monitor_urls';
+import {
+  createRemoteMonitorCloneUrl,
+  createRemoteMonitorDetailUrl,
+  createRemoteMonitorEditUrl,
+} from './remote_monitor_urls';
 
 const baseMonitor = {
   configId: 'monitor-abc',
@@ -135,5 +139,123 @@ describe('createRemoteMonitorDetailUrl', () => {
       locationId: '',
     });
     expect(url).toBe('https://remote.example.com/app/synthetics/monitor/monitor-abc');
+  });
+});
+
+describe('createRemoteMonitorEditUrl', () => {
+  it('returns undefined when the monitor is not remote', () => {
+    expect(
+      createRemoteMonitorEditUrl({
+        monitor: { configId: 'monitor-abc', remote: undefined },
+      })
+    ).toBeUndefined();
+  });
+
+  it('returns undefined when kibanaUrl is missing', () => {
+    expect(
+      createRemoteMonitorEditUrl({
+        monitor: { configId: 'monitor-abc', remote: { remoteName: 'remote-cluster-1' } },
+      })
+    ).toBeUndefined();
+  });
+
+  it('uses the explicit kibanaUrl fallback when the monitor metadata lacks one', () => {
+    const url = createRemoteMonitorEditUrl({
+      monitor: { configId: 'monitor-abc', remote: { remoteName: 'remote-cluster-1' } },
+      kibanaUrl: 'https://from-ping.example.com',
+    });
+    expect(url).toBe('https://from-ping.example.com/app/synthetics/edit-monitor/monitor-abc');
+  });
+
+  it('builds the default-space edit deep link without an /s/ prefix', () => {
+    expect(createRemoteMonitorEditUrl({ monitor: baseMonitor, spaceId: 'default' })).toBe(
+      'https://remote.example.com/app/synthetics/edit-monitor/monitor-abc'
+    );
+  });
+
+  it('adds an /s/<spaceId> prefix for non-default spaces', () => {
+    expect(createRemoteMonitorEditUrl({ monitor: baseMonitor, spaceId: 'team-a' })).toBe(
+      'https://remote.example.com/s/team-a/app/synthetics/edit-monitor/monitor-abc'
+    );
+  });
+
+  it('normalizes trailing slashes on kibanaUrl', () => {
+    const url = createRemoteMonitorEditUrl({
+      monitor: {
+        ...baseMonitor,
+        remote: { remoteName: 'remote-cluster-1', kibanaUrl: 'https://remote.example.com//' },
+      },
+      spaceId: 'team-a',
+    });
+    expect(url).toBe('https://remote.example.com/s/team-a/app/synthetics/edit-monitor/monitor-abc');
+  });
+
+  it('URL-encodes configIds that contain reserved characters', () => {
+    expect(
+      createRemoteMonitorEditUrl({
+        monitor: { ...baseMonitor, configId: 'weird/id with:colon' },
+      })
+    ).toBe('https://remote.example.com/app/synthetics/edit-monitor/weird%2Fid%20with%3Acolon');
+  });
+});
+
+describe('createRemoteMonitorCloneUrl', () => {
+  it('returns undefined when the monitor is not remote', () => {
+    expect(
+      createRemoteMonitorCloneUrl({
+        monitor: { configId: 'monitor-abc', remote: undefined },
+      })
+    ).toBeUndefined();
+  });
+
+  it('returns undefined when kibanaUrl is missing', () => {
+    expect(
+      createRemoteMonitorCloneUrl({
+        monitor: { configId: 'monitor-abc', remote: { remoteName: 'remote-cluster-1' } },
+      })
+    ).toBeUndefined();
+  });
+
+  it('uses the explicit kibanaUrl fallback when the monitor metadata lacks one', () => {
+    expect(
+      createRemoteMonitorCloneUrl({
+        monitor: { configId: 'monitor-abc', remote: { remoteName: 'remote-cluster-1' } },
+        kibanaUrl: 'https://from-ping.example.com',
+      })
+    ).toBe('https://from-ping.example.com/app/synthetics/add-monitor?cloneId=monitor-abc');
+  });
+
+  it('builds the default-space clone deep link without an /s/ prefix', () => {
+    expect(createRemoteMonitorCloneUrl({ monitor: baseMonitor, spaceId: 'default' })).toBe(
+      'https://remote.example.com/app/synthetics/add-monitor?cloneId=monitor-abc'
+    );
+  });
+
+  it('adds an /s/<spaceId> prefix for non-default spaces', () => {
+    expect(createRemoteMonitorCloneUrl({ monitor: baseMonitor, spaceId: 'team-a' })).toBe(
+      'https://remote.example.com/s/team-a/app/synthetics/add-monitor?cloneId=monitor-abc'
+    );
+  });
+
+  it('normalizes trailing slashes on kibanaUrl', () => {
+    expect(
+      createRemoteMonitorCloneUrl({
+        monitor: {
+          ...baseMonitor,
+          remote: { remoteName: 'remote-cluster-1', kibanaUrl: 'https://remote.example.com//' },
+        },
+        spaceId: 'team-a',
+      })
+    ).toBe('https://remote.example.com/s/team-a/app/synthetics/add-monitor?cloneId=monitor-abc');
+  });
+
+  it('URL-encodes configIds that contain reserved characters via searchParams', () => {
+    // searchParams.append uses application/x-www-form-urlencoded encoding,
+    // so spaces become `+` and `/` becomes `%2F`.
+    expect(
+      createRemoteMonitorCloneUrl({
+        monitor: { ...baseMonitor, configId: 'weird/id with:colon' },
+      })
+    ).toBe('https://remote.example.com/app/synthetics/add-monitor?cloneId=weird%2Fid+with%3Acolon');
   });
 });

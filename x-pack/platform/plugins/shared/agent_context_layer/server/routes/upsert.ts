@@ -38,6 +38,28 @@ export const registerUpsertRoute = ({
           title: schema.string({ minLength: 1 }),
           origin_id: schema.string({ minLength: 1 }),
           content: schema.string(),
+          tags: schema.maybe(
+            schema.arrayOf(
+              schema.string({
+                maxLength: 100,
+                validate: (v) =>
+                  /^[a-z0-9][a-z0-9_-]*$/.test(v)
+                    ? undefined
+                    : 'must be lowercase alphanumeric and may contain hyphens or underscores (e.g. "my-tag", "otel_v2")',
+                meta: {
+                  description:
+                    'A single tag value. Must be lowercase alphanumeric; hyphens and underscores are allowed (e.g. "otel", "my-tag", "v2_data"). Commas are not allowed — use separate array entries.',
+                },
+              }),
+              {
+                maxSize: 100,
+                meta: {
+                  description:
+                    'Optional tags for grouping and retrieval. Tags are matched with OR semantics on the list endpoint — a document is returned if it has any of the requested tags. Maximum 100 tags per document; each tag is at most 100 characters.',
+                },
+              }
+            )
+          ),
           permissions: schema.maybe(
             schema.object({
               kibana: schema.maybe(

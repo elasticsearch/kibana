@@ -20,6 +20,7 @@ import {
   EuiCode,
   EuiDescriptionList,
   EuiSpacer,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import type { FilterMode } from '../../../../contexts/output_filter_context';
 
@@ -89,6 +90,7 @@ const jqExamples = [
 ];
 
 export const FilterHelpModal = ({ mode, onClose }: FilterHelpModalProps) => {
+  const modalTitleId = useGeneratedHtmlId();
   const examples = mode === 'jq' ? jqExamples : regexExamples;
   const title =
     mode === 'jq'
@@ -111,9 +113,9 @@ export const FilterHelpModal = ({ mode, onClose }: FilterHelpModalProps) => {
         });
 
   return (
-    <EuiModal onClose={onClose} style={{ maxWidth: 480 }}>
+    <EuiModal onClose={onClose} style={{ maxWidth: 480 }} aria-labelledby={modalTitleId}>
       <EuiModalHeader>
-        <EuiModalHeaderTitle>{title}</EuiModalHeaderTitle>
+        <EuiModalHeaderTitle id={modalTitleId}>{title}</EuiModalHeaderTitle>
       </EuiModalHeader>
       <EuiModalBody>
         <EuiText size="s" color="subdued">

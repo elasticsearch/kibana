@@ -27,5 +27,10 @@ export default ({ loadTestFile, getService }: FtrProviderContext): void => {
     loadTestFile(require.resolve('./unified_persistable_state'));
     loadTestFile(require.resolve('./mixed_reads'));
     loadTestFile(require.resolve('./unified_validation'));
+
+    // Unified only attachments
+    loadTestFile(require.resolve('./dashboard'));
+    loadTestFile(require.resolve('./discover_session'));
+    loadTestFile(require.resolve('./map'));
   });
 };

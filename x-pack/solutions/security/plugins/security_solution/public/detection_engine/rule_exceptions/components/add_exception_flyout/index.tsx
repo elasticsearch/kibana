@@ -6,18 +6,18 @@
  */
 
 import React, { memo, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 import { isEmpty } from 'lodash/fp';
 
 import {
   EuiButton,
   EuiCallOut,
+  EuiFlexGroup,
   EuiFlyout,
   EuiFlyoutBody,
   EuiHorizontalRule,
   EuiSkeletonText,
   EuiSpacer,
-  EuiFlexGroup,
   EuiText,
   EuiTitle,
   useGeneratedHtmlId,
@@ -76,9 +76,7 @@ import { isSubmitDisabled, prepareNewItemsForSubmission, prepareToCloseAlerts } 
 import { useAlertsPrivileges } from '../../../../detections/containers/detection_engine/alerts/use_alerts_privileges';
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 export interface AddExceptionFlyoutProps {
@@ -101,11 +99,9 @@ export interface AddExceptionFlyoutProps {
 }
 
 const FlyoutBodySection = styled(EuiFlyoutBody)`
-  ${() => css`
-    &.builder-section {
-      overflow-y: scroll;
-    }
-  `}
+  &.builder-section {
+    overflow-y: scroll;
+  }
 `;
 
 export const AddExceptionFlyout = memo(function AddExceptionFlyout({

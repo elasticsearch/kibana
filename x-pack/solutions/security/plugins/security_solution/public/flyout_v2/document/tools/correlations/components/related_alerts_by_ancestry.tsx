@@ -27,7 +27,7 @@ export interface RelatedAlertsByAncestryProps {
    */
   onShowAlert: (id: string, indexName: string) => void;
   /**
-   * Whether to render rule links as PreviewLink (legacy expandable flyout) instead of ChildLink (new flyout system)
+   * Whether to render rule links as PreviewLink (legacy expandable flyout) instead of OpenFlyoutLink (new flyout system)
    */
   useLegacyExpandableFlyout: boolean;
 }

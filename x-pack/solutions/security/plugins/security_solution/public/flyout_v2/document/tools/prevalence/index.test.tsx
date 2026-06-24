@@ -34,6 +34,11 @@ import { createTelemetryServiceMock } from '../../../../common/lib/telemetry/tel
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 
 jest.mock('../../../../common/components/user_privileges');
+jest.mock('../../../shared/components/document_tools_flyout_header', () => ({
+  DocumentToolsFlyoutHeader: ({ title }: { title: string }) => (
+    <div data-test-subj="mockDocumentToolsFlyoutHeader">{title}</div>
+  ),
+}));
 
 const mockedTelemetry = createTelemetryServiceMock();
 const mockStorage = jest.fn();

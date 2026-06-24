@@ -18,4 +18,4 @@ export type {
   RuleKind,
   RuleArtifact as ComposeRuleArtifact,
 } from '../../form/types';
-export { getBreachQuery, getRecoverQuery } from '../../form/types';
+export { getBreachQuery, getRecoverQuery } from '../../form/utils/query_helpers';

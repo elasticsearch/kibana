@@ -55,7 +55,7 @@ if [[ ${#commit_message_parts[@]} -gt 0 ]]; then
   commit_message="$commit_message ${joined%, }"
 fi
 
-check_for_changed_files "Renovate helper auto-fixes" true "$commit_message"
+check_for_changed_files "Renovate helper auto-fixes" true "$commit_message" true
 
 echo --- Additional helpers
 # We only want the deploy label on the main branch instead of all branches in the Renovate group

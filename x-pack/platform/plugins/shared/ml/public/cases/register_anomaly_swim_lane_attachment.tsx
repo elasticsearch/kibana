@@ -23,13 +23,13 @@ export function registerAnomalySwimLaneCasesAttachment(
       id: ML_ANOMALY_SWIMLANE_ATTACHMENT_TYPE,
       icon: PLUGIN_ICON,
       displayName: i18n.translate('xpack.ml.cases.anomalySwimLane.displayName', {
-        defaultMessage: 'Anomaly swim lane',
+        defaultMessage: 'Anomaly swim lanes',
       }),
       getAttachmentViewObject: () => ({
         event: (
           <FormattedMessage
             id="xpack.ml.cases.anomalySwimLane.embeddableAddedEvent"
-            defaultMessage="added anomaly swim lane"
+            defaultMessage="added an anomaly swim lane"
           />
         ),
         timelineAvatar: PLUGIN_ICON,

@@ -103,6 +103,22 @@ describe('registerListRoute', () => {
     });
   });
 
+  it('passes tags filter to sml.listDocuments when provided (comma-delimited)', async () => {
+    mockSmlService.listDocuments.mockResolvedValue({ total: 0, results: [] });
+    await callHandler({ page: 1, per_page: 20, tags: 'otel,claude-code' });
+    expect(mockSmlService.listDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: ['otel', 'claude-code'] })
+    );
+  });
+
+  it('omits tags from sml.listDocuments when not provided', async () => {
+    mockSmlService.listDocuments.mockResolvedValue({ total: 0, results: [] });
+    await callHandler({ page: 1, per_page: 20 });
+    expect(mockSmlService.listDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: undefined })
+    );
+  });
+
   it('falls back to default space when spaces plugin is unavailable', async () => {
     const localRouter = httpServiceMock.createRouter();
     registerListRoute({

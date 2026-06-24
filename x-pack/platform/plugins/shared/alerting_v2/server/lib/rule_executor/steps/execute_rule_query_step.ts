@@ -16,7 +16,7 @@ import {
   type LoggerServiceContract,
 } from '../../services/logger_service/logger_service';
 import type { QueryServiceContract } from '../../services/query_service/query_service';
-import { QueryServiceScopedToken } from '../../services/query_service/tokens';
+import { QueryServiceScopedSpaceRoutingToken } from '../../services/query_service/tokens';
 import { guardedExpandStep } from '../stream_utils';
 
 @injectable()
@@ -25,7 +25,7 @@ export class ExecuteRuleQueryStep implements RuleExecutionStep {
 
   constructor(
     @inject(LoggerServiceToken) private readonly logger: LoggerServiceContract,
-    @inject(QueryServiceScopedToken) private readonly queryService: QueryServiceContract
+    @inject(QueryServiceScopedSpaceRoutingToken) private readonly queryService: QueryServiceContract
   ) {}
 
   public executeStream(streamState: PipelineStateStream): PipelineStateStream {

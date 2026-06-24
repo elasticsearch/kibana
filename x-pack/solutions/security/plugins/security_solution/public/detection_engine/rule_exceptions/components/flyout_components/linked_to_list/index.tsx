@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { EuiTitle, EuiSpacer, EuiPanel, EuiInMemoryTable, EuiSkeletonText } from '@elastic/eui';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 
 import * as i18n from './translations';
 import type { ExceptionListRuleReferencesSchema } from '../../../../../../common/api/detection_engine/rule_exceptions';
@@ -20,9 +20,7 @@ interface ExceptionsLinkedToListComponentProps {
 }
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 const ExceptionsLinkedToListsComponent: React.FC<ExceptionsLinkedToListComponentProps> = ({

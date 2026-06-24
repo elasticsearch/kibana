@@ -14,8 +14,8 @@ import { OsqueryAttachmentPayloadSchema } from '../../../common/cases/attachment
 import { getLazyContent } from './lazy_content';
 import type { ServicesWrapperProps } from '../services_wrapper';
 
-const DISPLAY_NAME = i18n.translate('xpack.osquery.cases.attachments.displayName', {
-  defaultMessage: 'Osquery',
+const DISPLAY_NAME = i18n.translate('xpack.osquery.cases.osquery.displayName', {
+  defaultMessage: 'Osquery results',
 });
 
 const ATTACHED_RESULTS_EVENT = i18n.translate('xpack.osquery.cases.attachments.attachedEvent', {

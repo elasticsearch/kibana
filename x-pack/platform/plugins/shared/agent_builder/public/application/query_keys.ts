@@ -22,7 +22,8 @@ export const queryKeys = {
   agentProfiles: {
     all: ['agentProfiles'] as const,
     byId: (agentProfileId?: string) => ['agentProfiles', agentProfileId],
-    acl: (agentProfileId: string) => ['agentProfiles', agentProfileId, 'acl'] as const,
+    accessControl: (agentProfileId: string) =>
+      ['agentProfiles', agentProfileId, 'accessControl'] as const,
   },
   security: {
     users: ['security', 'users'] as const,

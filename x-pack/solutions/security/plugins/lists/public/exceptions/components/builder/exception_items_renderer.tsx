@@ -8,7 +8,7 @@
 import type { ElementType } from 'react';
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import type { HttpStart } from '@kbn/core/public';
 import { addIdToItem } from '@kbn/securitysolution-utils';
 import type {
@@ -48,6 +48,7 @@ import { BuilderLogicButtons } from './logic_buttons';
 import { getTotalErrorExist } from './selectors';
 import type { EntryFieldError, State } from './reducer';
 import { exceptionsBuilderReducer } from './reducer';
+
 const MyInvisibleAndBadge = styled(EuiFlexItem)`
   visibility: hidden;
 `;

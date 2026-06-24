@@ -9,6 +9,7 @@
 
 import { i18n } from '@kbn/i18n';
 import type { ContentListItem } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import type { DeleteActionProps, ActionOutput, ActionBuilderContext } from '../types';
 
 /** Default i18n-translated label for the delete action. */
@@ -82,6 +83,6 @@ export const buildDeleteAction = (
     isPrimary: true,
     onClick: (item) => actions?.onDelete?.([item]),
     enabled,
-    'data-test-subj': 'content-list-table-action-delete',
+    'data-test-subj': CONTENT_LIST_TEST_SUBJECTS.actionDelete,
   };
 };

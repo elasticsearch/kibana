@@ -54,6 +54,8 @@ interface GetEntityAnomaliesParams {
   esClient: ElasticsearchClient;
   fromMs?: number;
   toMs?: number;
+  minScore?: number;
+  maxScore?: number;
   jobIds?: string[];
   threatTactics?: string[];
   logger: Logger;
@@ -75,6 +77,8 @@ export const getEntityAnomalies = async ({
   esClient,
   fromMs,
   toMs,
+  minScore,
+  maxScore,
   jobIds,
   threatTactics,
   logger,
@@ -106,6 +110,8 @@ export const getEntityAnomalies = async ({
     entityId,
     fromMs,
     toMs,
+    minScore,
+    maxScore,
     jobIds: resolvedJobIds,
     sort,
     from: offset,

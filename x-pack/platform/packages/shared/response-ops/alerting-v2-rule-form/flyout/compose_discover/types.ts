@@ -9,7 +9,7 @@ import type React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import type { RuleFormServices } from '../../form/contexts/rule_form_context';
 import type { ComposeFormValues } from './compose_form_types';
-import type { BuilderState, RuleBuilderRecoveryProps } from './rule_builder/types';
+import type { BuilderState } from './rule_builder/types';
 
 export type ComposeDiscoverMode = 'create' | 'edit' | 'clone';
 
@@ -24,15 +24,22 @@ export type StepId =
   | 'details'
   | 'notifications';
 
+export const isAlertConditionStepId = (id: StepId): boolean =>
+  id === 'alertCondition' || id === 'builderCondition';
+
+export interface CustomRecoveryRenderProps {
+  state: ComposeDiscoverState;
+  dispatch: React.Dispatch<ComposeDiscoverAction>;
+}
+
 export interface StepRenderProps {
   state: ComposeDiscoverState;
   dispatch: React.Dispatch<ComposeDiscoverAction>;
   services: RuleFormServices;
   onRecoveryTypeChange: (type: RecoveryType) => void;
-  onKindChange: (kind: 'signal' | 'alert') => void;
   isEditing: boolean;
   ruleId?: string;
-  renderBuilderRecovery?: (props: RuleBuilderRecoveryProps) => React.ReactNode;
+  renderCustomRecovery?: (props: CustomRecoveryRenderProps) => React.ReactNode;
 }
 
 export interface StepDefinition {

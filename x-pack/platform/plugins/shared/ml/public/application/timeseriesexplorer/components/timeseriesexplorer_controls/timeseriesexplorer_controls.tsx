@@ -309,7 +309,7 @@ export const TimeSeriesExplorerControls: FC<Props> = ({
       {createInDashboard ? (
         <SavedObjectSaveModalDashboard
           canSaveByReference={false}
-          objectType={i18n.translate('xpack.ml.cases.singleMetricViewer.displayName', {
+          objectType={i18n.translate('xpack.ml.singleMetricViewer.objectTypeLabel', {
             defaultMessage: 'Single Metric Viewer',
           })}
           documentInfo={{

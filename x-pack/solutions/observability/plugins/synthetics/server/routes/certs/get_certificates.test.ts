@@ -12,6 +12,16 @@ import { MonitorConfigRepository } from '../../services/monitor_config_repositor
 import { savedObjectsClientMock } from '@kbn/core-saved-objects-api-server-mocks';
 import { encryptedSavedObjectsMock } from '@kbn/encrypted-saved-objects-plugin/server/mocks';
 
+const buildServer = (ccsEnabled: boolean) =>
+  ({
+    isElasticsearchServerless: false,
+    config: {
+      experimental: {
+        ccs: { enabled: ccsEnabled },
+      },
+    },
+  } as any);
+
 describe('getSyntheticsCertsRoute', () => {
   afterEach(() => jest.clearAllMocks());
   const soClient = savedObjectsClientMock.create();
@@ -22,7 +32,7 @@ describe('getSyntheticsCertsRoute', () => {
     encryptedSavedObjectsClient
   );
 
-  it('returns empty set when no monitors are found', async () => {
+  it('returns empty set when no monitors are found and CCS is disabled', async () => {
     const route = getSyntheticsCertsRoute();
     mockMonitorConfigRepository.getAll = jest.fn().mockReturnValue([]);
     expect(
@@ -33,6 +43,8 @@ describe('getSyntheticsCertsRoute', () => {
         syntheticsEsClient: jest.fn(),
         savedObjectClient: soClient,
         monitorConfigRepository: mockMonitorConfigRepository,
+        server: buildServer(false),
+        spaceId: 'default',
       })
     ).toEqual({
       data: {
@@ -93,11 +105,66 @@ describe('getSyntheticsCertsRoute', () => {
       savedObjectClient: jest.fn(),
       // @ts-expect-error partial implementation for testing
       monitorConfigRepository: { getAll },
+      server: buildServer(false),
+      spaceId: 'default',
     });
     expect(getAll).toHaveBeenCalledTimes(1);
     expect(processMonitorsSpy).toHaveBeenCalledTimes(1);
     expect(processMonitorsSpy).toHaveBeenCalledWith(getMonitorsResult);
     expect(getSyntheticsCertsSpy).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ data: { ...getCertsResult } });
+  });
+
+  it('runs the cert search even with no local monitors when CCS is enabled', async () => {
+    // Remote-only monitors have no local SO; the search itself surfaces them
+    // via the route wrapper's CCS-expanded index pattern.
+    // @ts-expect-error partial implementation for testing
+    jest.spyOn(getAllMonitors, 'processMonitors').mockReturnValue({
+      enabledMonitorQueryIds: [],
+    });
+    const remoteOnlyCerts = {
+      total: 1,
+      certs: [
+        {
+          monitors: [
+            {
+              name: 'remote-monitor',
+              id: 'remote-id',
+              configId: 'remote-id',
+              url: 'https://example.com',
+              remote: { remoteName: 'cluster1' },
+            },
+          ],
+          sha256: 'remote-hash',
+          configId: 'remote-id',
+          remote: { remoteName: 'cluster1' },
+        },
+      ],
+    };
+    const getSyntheticsCertsSpy = jest
+      .spyOn(getCerts, 'getSyntheticsCerts')
+      // @ts-expect-error partial implementation for testing
+      .mockReturnValue(remoteOnlyCerts);
+    const route = getSyntheticsCertsRoute();
+    const getAll = jest.fn().mockReturnValue([]);
+    const result = await route.handler({
+      // @ts-expect-error partial implementation for testing
+      request: { query: { remoteNames: 'cluster1,cluster2' } },
+      // @ts-expect-error partial implementation for testing
+      syntheticsEsClient: jest.fn(),
+      // @ts-expect-error partial implementation for testing
+      monitorConfigRepository: { getAll },
+      server: buildServer(true),
+      spaceId: 'default',
+    });
+    expect(getSyntheticsCertsSpy).toHaveBeenCalledTimes(1);
+    const passed = getSyntheticsCertsSpy.mock.calls[0][0];
+    expect(passed).toMatchObject({
+      ccsEnabled: true,
+      remoteNames: ['cluster1', 'cluster2'],
+      spaceId: 'default',
+      includeBrowserCerts: true,
+    });
+    expect(result).toEqual({ data: { ...remoteOnlyCerts } });
   });
 });

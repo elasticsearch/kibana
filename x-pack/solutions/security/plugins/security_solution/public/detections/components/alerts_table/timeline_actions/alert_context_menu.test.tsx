@@ -83,7 +83,6 @@ const mockUseKibanaReturnValue = {
           manageTemplates: true,
         }),
         getRuleIdFromEvent: jest.fn(),
-        getObservablesFromEcs: jest.fn().mockReturnValue([]),
       },
     },
   },

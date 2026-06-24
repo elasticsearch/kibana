@@ -87,6 +87,7 @@ export async function generateSignificantEvents({
   additionalToolCallbacks,
   existingQueries,
   maxExistingQueriesForContext = DEFAULT_MAX_EXISTING_QUERIES_FOR_CONTEXT,
+  maxSteps,
 }: {
   stream: Streams.all.Definition;
   esClient: ElasticsearchClient;
@@ -103,6 +104,12 @@ export async function generateSignificantEvents({
   additionalToolCallbacks?: Record<string, ToolCallback>;
   existingQueries?: ExistingQuerySummary[];
   maxExistingQueriesForContext?: number;
+  /**
+   * Overrides the reasoning agent step budget. Defaults to 6 when extra tool
+   * callbacks are provided, otherwise 4. Pass a higher value when additional
+   * tools (e.g. code grounding) add round-trips.
+   */
+  maxSteps?: number;
 }): Promise<{
   queries: ParsedToolQuery[];
   tokensUsed: ChatCompletionTokenCount;
@@ -142,7 +149,7 @@ export async function generateSignificantEvents({
         computed_feature_instructions: getComputedFeatureInstructions(),
         existing_queries: existingQueriesContext,
       },
-      maxSteps: additionalToolCallbacks ? 6 : 4,
+      maxSteps: maxSteps ?? (additionalToolCallbacks ? 6 : 4),
       prompt,
       inferenceClient,
       toolCallbacks: {

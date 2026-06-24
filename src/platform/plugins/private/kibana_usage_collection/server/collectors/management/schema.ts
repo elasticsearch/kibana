@@ -769,6 +769,12 @@ export const stackManagementSchema: MakeSchemaFrom<UsageStats> = {
       description: 'Enable draft streams with read-time ES|QL views',
     },
   },
+  'observability:streamsEnableCanvas': {
+    type: 'boolean',
+    _meta: {
+      description: 'Enable Streams Canvas',
+    },
+  },
   'observability:streamsSigEventsIndexPatterns': {
     type: 'keyword',
     _meta: {

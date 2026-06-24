@@ -13,6 +13,12 @@ import type { CertMonitor } from '../../../../../common/runtime_types';
 
 const DEFAULT_DISPLAY_COUNT = 10;
 
+const getRemoteClusterLabel = (remoteName: string) =>
+  i18n.translate('xpack.synthetics.certs.monitors.remoteClusterTooltip', {
+    defaultMessage: 'Loaded from remote cluster {remoteName}',
+    values: { remoteName },
+  });
+
 interface Props {
   monitors: CertMonitor[];
 }
@@ -27,8 +33,15 @@ export const CertMonitors: React.FC<Props> = ({ monitors }) => {
       {monitorsToDisplay.map((mon: CertMonitor, ind: number) => (
         <span key={mon.id}>
           {ind > 0 && ', '}
-          <EuiToolTip content={mon.url}>
-            <MonitorPageLink configId={mon.configId!}>{mon.name || mon.id}</MonitorPageLink>
+          <EuiToolTip
+            content={mon.url}
+            title={
+              mon.remote?.remoteName ? getRemoteClusterLabel(mon.remote.remoteName) : undefined
+            }
+          >
+            <MonitorPageLink configId={mon.configId!} remote={mon.remote}>
+              {mon.name || mon.id}
+            </MonitorPageLink>
           </EuiToolTip>
         </span>
       ))}

@@ -10,7 +10,7 @@ import { css } from '@emotion/react';
 import { EuiFlyoutBody, EuiFlyoutHeader, useEuiTheme } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { DataTableRecord } from '@kbn/discover-utils';
-import { ToolsFlyoutHeader } from '../../../shared/components/tools_flyout_header';
+import { DocumentToolsFlyoutHeader } from '../../../shared/components/document_tools_flyout_header';
 import { CorrelationsDetailsView } from './components/correlations_details_view';
 
 const TITLE = i18n.translate('xpack.securitySolution.flyout.correlations.title', {
@@ -58,7 +58,7 @@ export const CorrelationsDetails = memo(
             padding-block: ${euiTheme.size.s} !important;
           `}
         >
-          <ToolsFlyoutHeader hit={hit} title={TITLE} />
+          <DocumentToolsFlyoutHeader title={TITLE} hit={hit} />
         </EuiFlyoutHeader>
         <EuiFlyoutBody>
           <CorrelationsDetailsView

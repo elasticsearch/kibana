@@ -23,6 +23,7 @@ import type { BulkCreateArgs } from './types';
 import { validateRegisteredAttachments } from './validators';
 import { validateMaxUserActions } from '../../common/validators';
 import { emitAttachmentsAddedEvent } from './trigger_utils';
+import { extractAndAddObservables } from './extract_observables';
 
 export const bulkCreate = async (
   args: BulkCreateArgs,
@@ -96,6 +97,9 @@ export const bulkCreate = async (
     for (const [type, ids] of idsByType) {
       emitAttachmentsAddedEvent(clientArgs, updatedCase, ids, type);
     }
+
+    // This call never throws — failures are logged and do not abort the attachment creation.
+    await extractAndAddObservables(caseId, attachments, updatedCase, clientArgs);
 
     return updatedCase;
   } catch (error) {

@@ -16,6 +16,7 @@ import {
   EuiFormRow,
   EuiPanel,
   EuiTitle,
+  EuiToolTip,
 } from '@elastic/eui';
 import { Builder } from '@elastic/esql';
 import { useEsqlInspector } from '../../../../../../context';
@@ -108,16 +109,18 @@ export const LimitCommand: React.FC = () => {
         </div>
         <div style={{ position: 'absolute', right: 0, top: 0 }}>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="cross"
-              aria-label="Remove"
-              onClick={() => {
-                const query = state.query$.getValue();
-                if (!query) return;
-                query.ast.commands = query.ast.commands.filter((c) => c !== limit);
-                state.reprint();
-              }}
-            />
+            <EuiToolTip content="Remove" disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="cross"
+                aria-label="Remove"
+                onClick={() => {
+                  const query = state.query$.getValue();
+                  if (!query) return;
+                  query.ast.commands = query.ast.commands.filter((c) => c !== limit);
+                  state.reprint();
+                }}
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         </div>
       </div>

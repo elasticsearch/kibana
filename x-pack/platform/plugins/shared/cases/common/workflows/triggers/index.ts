@@ -23,7 +23,11 @@ import {
 export const CaseCreatedTriggerId = 'cases.caseCreated' as const;
 
 const baseCaseEventSchema = z.object({
-  owner: OwnerSchema.meta({ description: CASE_TRIGGER_EVENT_SCHEMA_OWNER_DESCRIPTION }),
+  // We're adding `string()` to the union to allow for more lenient runtime checks in test envs.
+  // The OwnerSchema is still needed and should not be removed.
+  owner: z
+    .union([OwnerSchema, z.string().min(1).max(50)])
+    .meta({ description: CASE_TRIGGER_EVENT_SCHEMA_OWNER_DESCRIPTION }),
   caseId: z.string().meta({ description: CASE_TRIGGER_EVENT_SCHEMA_CASE_ID_DESCRIPTION }),
 });
 

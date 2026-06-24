@@ -1,0 +1,33 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "noEmit": true,
+    "jsx": "react",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "declaration": false,
+    "paths": {
+      "@kbn/i18n": [
+        "./react/services/i18n.tsx"
+      ],
+      "@kbn/i18n-react": [
+        "./react/services/i18n.tsx"
+      ]
+    }
+  },
+  "include": [
+    "react/**/*.ts",
+    "react/**/*.tsx",
+    "../src/**/*.ts",
+    "../src/**/*.tsx"
+  ],
+  "exclude": [
+    "../src/**/*.test.*",
+    "../src/**/*.stories.*",
+    "../src/**/__stories__/**",
+    "node_modules"
+  ]
+}

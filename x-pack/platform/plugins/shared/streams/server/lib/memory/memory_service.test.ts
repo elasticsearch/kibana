@@ -89,6 +89,25 @@ const collapseDocuments = (
     .slice(0, size);
 };
 
+// For retriever-based queries (semantic/hybrid), extract the effective filter so the mock can
+// apply the same ids-based correctness invariant as a plain bool query.
+const extractRetrieverFilter = (retriever: Record<string, unknown>): Record<string, unknown> => {
+  const rrf = retriever.rrf as { filter?: Record<string, unknown> } | undefined;
+  if (rrf?.filter) return rrf.filter;
+
+  interface InnerStandard {
+    retriever?: { standard?: { filter?: Record<string, unknown> } };
+  }
+  interface LinearRetriever {
+    retrievers?: InnerStandard[];
+  }
+  const linear = retriever.linear as LinearRetriever | undefined;
+  const innerFilter = linear?.retrievers?.[0]?.retriever?.standard?.filter;
+  if (innerFilter) return innerFilter;
+
+  return { match_all: {} };
+};
+
 const createInMemoryEsClient = () => {
   const memoryDocs: MemoryDocument[] = [];
   let docCounter = 0;
@@ -116,17 +135,22 @@ const createInMemoryEsClient = () => {
     const request = params as {
       index?: string;
       query?: Record<string, unknown>;
+      retriever?: Record<string, unknown>;
       collapse?: { field?: string };
       size?: number;
       _source?: boolean;
       fields?: string[];
     };
 
-    if (request.index !== MEMORIES_DATA_STREAM || !request.query) {
+    if (request.index !== MEMORIES_DATA_STREAM || (!request.query && !request.retriever)) {
       return { hits: { hits: [], total: { value: 0 } } } as never;
     }
 
-    const filtered = filterByQuery(memoryDocs, request.query);
+    // Retriever-based queries (semantic/hybrid) embed the ids filter inside the retriever.
+    // Extract it so the mock can apply the same correctness invariant as a plain query.
+    const effectiveQuery = request.query ?? extractRetrieverFilter(request.retriever!);
+
+    const filtered = filterByQuery(memoryDocs, effectiveQuery);
     const collapseField = request.collapse?.field as keyof MemoryDocument | undefined;
     const size = request.size ?? filtered.length;
 
@@ -437,6 +461,68 @@ describe('MemoryServiceImpl', () => {
 
     // Two-phase read must resolve the latest version and exclude the stale match.
     await expect(service.listByCategory({ category: 'services' })).resolves.toEqual([]);
+  });
+
+  describe('search mode behaviour', () => {
+    it('mode: keyword does not widen Phase 1 to match-all — no retriever is issued', async () => {
+      mockedUuidV4.mockReturnValueOnce('k-entry').mockReturnValueOnce('k-hist');
+      const { service, esClient } = createService();
+
+      await service.create({ name: 'page', title: 'Page', content: 'content', user });
+
+      // Override: throw if a retriever-based request is ever issued
+      const base = esClient.search.getMockImplementation()!;
+      esClient.search.mockImplementation(async (params) => {
+        if ((params as { retriever?: unknown }).retriever) {
+          throw new Error('retriever must not be used in keyword mode');
+        }
+        return base(params as never);
+      });
+
+      await expect(service.search({ query: 'page', mode: 'keyword' })).resolves.toHaveLength(1);
+    });
+
+    it('auto-resolved hybrid falls back to keyword and warns when retriever search throws', async () => {
+      mockedUuidV4.mockReturnValueOnce('fb-entry').mockReturnValueOnce('fb-hist');
+      const { service, esClient } = createService();
+
+      await service.create({ name: 'fallback-page', title: 'Fallback', content: 'content', user });
+
+      const base = esClient.search.getMockImplementation()!;
+      esClient.search.mockImplementation(async (params) => {
+        if ((params as { retriever?: unknown }).retriever) {
+          throw new Error('inference_service_not_found: model still loading');
+        }
+        return base(params as never);
+      });
+
+      // No explicit mode → auto-resolves to hybrid → falls back to keyword on error
+      const results = await service.search({ query: 'fallback-page' });
+
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({ name: 'fallback-page' });
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('falling back to keyword'));
+    });
+
+    it('explicit hybrid mode propagates retriever errors without fallback', async () => {
+      mockedUuidV4.mockReturnValueOnce('ex-entry').mockReturnValueOnce('ex-hist');
+      const { service, esClient } = createService();
+
+      await service.create({ name: 'explicit-page', title: 'Explicit', content: 'content', user });
+
+      const base = esClient.search.getMockImplementation()!;
+      esClient.search.mockImplementation(async (params) => {
+        if ((params as { retriever?: unknown }).retriever) {
+          throw new Error('inference endpoint unavailable');
+        }
+        return base(params as never);
+      });
+
+      // Explicit mode → no fallback → error propagates
+      await expect(service.search({ query: 'explicit-page', mode: 'hybrid' })).rejects.toThrow(
+        'inference endpoint unavailable'
+      );
+    });
   });
 
   it('getBacklinks does not return a page whose latest version dropped the reference', async () => {

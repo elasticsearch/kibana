@@ -24,6 +24,24 @@ export interface AnomalyHit {
   partitionFieldValue?: string;
 }
 
+export interface RawAnomalyRecord {
+  _id?: string;
+  timestamp: number;
+  job_id: string;
+  detector_index: number;
+  function?: string;
+  record_score: number;
+  field_name?: string;
+  by_field_name?: string;
+  by_field_value?: string;
+  over_field_name?: string;
+  over_field_value?: string;
+  partition_field_name?: string;
+  partition_field_value?: string;
+  actual?: number[];
+  typical?: number[];
+}
+
 export type EnrichedAnomalyHit = AnomalyHit & {
   // anomalous value - this is copied from the anomaly record
   anomalousValue?: number | string;

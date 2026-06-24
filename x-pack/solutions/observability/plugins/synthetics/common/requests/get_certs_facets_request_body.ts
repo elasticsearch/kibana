@@ -17,6 +17,7 @@ import { MIME_TYPE_CATEGORIES, mimeCategoryQuery } from '../constants/mime_types
 import {
   absoluteDate,
   BROWSER_NETWORK_INFO,
+  buildMonitorScopingFilter,
   CERT_HASH_SHA256,
   CERT_ISSUER_COMMON_NAME,
   CERT_SUBJECT_COMMON_NAME,
@@ -48,15 +49,26 @@ interface GetCertsFacetsParams {
   to?: string;
 }
 
+export interface GetCertsFacetsRequestBodyOptions {
+  ccsEnabled?: boolean;
+  remoteNames?: string[];
+  spaceId?: string;
+  showFromAllSpaces?: boolean;
+}
+
 const distinctAgg: Record<string, estypes.AggregationsAggregationContainer> = {
   distinct: { cardinality: { field: CERT_ID_FIELD } },
 };
 
-export const getCertsFacetsRequestBody = ({
-  monitorIds,
-  from = DEFAULT_FROM,
-  to = DEFAULT_TO,
-}: GetCertsFacetsParams) => {
+export const getCertsFacetsRequestBody = (
+  { monitorIds, from = DEFAULT_FROM, to = DEFAULT_TO }: GetCertsFacetsParams,
+  {
+    ccsEnabled = false,
+    remoteNames,
+    spaceId,
+    showFromAllSpaces = false,
+  }: GetCertsFacetsRequestBodyOptions = {}
+) => {
   const lightweightBranchFilter = [FINAL_SUMMARY_FILTER, { exists: { field: CERT_HASH_SHA256 } }];
   const browserBranchFilter = [
     { term: { 'synthetics.type': BROWSER_NETWORK_INFO } },
@@ -146,7 +158,13 @@ export const getCertsFacetsRequestBody = ({
         filter: [
           certTypeFilter,
           EXCLUDE_RUN_ONCE_FILTER,
-          ...(monitorIds && monitorIds.length > 0 ? [{ terms: { 'monitor.id': monitorIds } }] : []),
+          ...buildMonitorScopingFilter({
+            monitorIds,
+            ccsEnabled,
+            remoteNames,
+            spaceId,
+            showFromAllSpaces,
+          }),
           getRangeFilter({ from: 'now-7d', to: 'now' }),
           {
             range: {

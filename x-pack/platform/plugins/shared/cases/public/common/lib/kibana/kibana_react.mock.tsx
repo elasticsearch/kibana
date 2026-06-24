@@ -20,6 +20,7 @@ import { securityMock } from '@kbn/security-plugin/public/mocks';
 import { spacesPluginMock } from '@kbn/spaces-plugin/public/mocks';
 import { triggersActionsUiMock } from '@kbn/triggers-actions-ui-plugin/public/mocks';
 import { licensingMock } from '@kbn/licensing-plugin/public/mocks';
+import { savedObjectTaggingOssPluginMock } from '@kbn/saved-objects-tagging-oss-plugin/public/mocks';
 import { registerConnectorsToMockActionRegistry } from '../../mock/register_connectors';
 import { connectorsMock } from '../../mock/connectors';
 import { lazyObject } from '@kbn/lazy-object';
@@ -46,6 +47,19 @@ export const createStartServicesMock = ({ license }: StartServiceArgs = {}): Sta
       canUseEditor: jest.fn(),
       navigateToPrefilledEditor: jest.fn(),
     }),
+    dashboard: lazyObject({
+      findDashboardsService: jest.fn(),
+    }),
+    maps: lazyObject({
+      Map: () => null,
+      PassiveMap: () => null,
+      createLayerDescriptors: lazyObject({
+        createSecurityLayerDescriptors: jest.fn(),
+        createBasemapLayerDescriptor: jest.fn(),
+        createESSearchSourceLayerDescriptor: jest.fn(),
+      }),
+      suggestEMSTermJoinConfig: jest.fn(),
+    }),
     security: securityMock.createStart(),
     triggersActionsUi: lazyObject({
       actionTypeRegistry: triggersActionsUi.actionTypeRegistry,
@@ -56,6 +70,7 @@ export const createStartServicesMock = ({ license }: StartServiceArgs = {}): Sta
       license != null
         ? { ...licensingPluginMock, license$: new BehaviorSubject(license) }
         : licensingPluginMock,
+    savedObjectsTaggingOss: savedObjectTaggingOssPluginMock.createStart(),
   }) as unknown as StartServices;
 
   services.application.currentAppId$ = new BehaviorSubject<string>('testAppId');

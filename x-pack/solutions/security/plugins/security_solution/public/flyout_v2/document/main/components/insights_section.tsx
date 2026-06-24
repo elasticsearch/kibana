@@ -32,11 +32,13 @@ import { flyoutProviders } from '../../../shared/components/flyout_provider';
 import { useIsInSecurityApp } from '../../../../common/hooks/is_in_security_app';
 import { CorrelationsDetails } from '../../tools/correlations';
 import { ThreatIntelligenceDetails } from '../../tools/threat_intelligence';
-import { ChildLink } from '../../../shared/components/child_link';
 import {
   defaultToolsFlyoutProperties,
   useDefaultDocumentFlyoutProperties,
 } from '../../../shared/hooks/use_default_flyout_properties';
+import type { OpenFlyoutLinkProps } from '../../../shared/components/open_flyout_link';
+import { OpenFlyoutLink } from '../../../shared/components/open_flyout_link';
+import { HOST_NAME_FIELD_NAME } from '../../../../timelines/components/timeline/body/renderers/constants';
 
 export const INSIGHTS_SECTION_TEST_ID = `${PREFIX}InsightsSection` as const;
 
@@ -172,6 +174,13 @@ export const InsightsSection = memo(
       );
     }, [history, historyKey, hit, onShowAlert, overlays, services, store]);
 
+    const renderFlyoutLink = useCallback(
+      (props: OpenFlyoutLinkProps) => (
+        <OpenFlyoutLink {...props} asParent={props.field === HOST_NAME_FIELD_NAME} />
+      ),
+      []
+    );
+
     const onShowPrevalenceDetails = useCallback(() => {
       overlays.openSystemFlyout(
         flyoutProviders({
@@ -183,7 +192,7 @@ export const InsightsSection = memo(
               hit={hit}
               investigationFields={investigationFields}
               scopeId={''}
-              columns={getColumns(renderCellActions, isInSecurityApp, '', ChildLink)}
+              columns={getColumns(renderCellActions, isInSecurityApp, '', renderFlyoutLink)}
             />
           ),
         }),
@@ -203,6 +212,7 @@ export const InsightsSection = memo(
       overlays,
       services,
       store,
+      renderFlyoutLink,
     ]);
 
     return (

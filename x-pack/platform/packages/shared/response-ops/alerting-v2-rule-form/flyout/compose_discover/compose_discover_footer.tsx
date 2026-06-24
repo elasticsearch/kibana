@@ -17,6 +17,7 @@ import {
 import { i18n } from '@kbn/i18n';
 import { useWatch } from 'react-hook-form';
 import type { ComposeDiscoverAction, ComposeDiscoverState, StepDefinition } from './types';
+import { isAlertConditionStepId } from './types';
 import type { ComposeFormValues } from './compose_form_types';
 
 const CREATE_RULE_BUTTON_LABEL = i18n.translate(
@@ -93,8 +94,7 @@ export const ComposeDiscoverFooter = ({
   const isAlert = useWatch<ComposeFormValues, 'kind'>({ name: 'kind' }) === 'alert';
   const watchedQuery = useWatch<ComposeFormValues, 'query'>({ name: 'query' });
 
-  const isConditionStep =
-    currentStep?.id === 'alertCondition' || currentStep?.id === 'builderCondition';
+  const isConditionStep = currentStep ? isAlertConditionStepId(currentStep.id) : false;
 
   const missingBreachQuery =
     currentStep?.id === 'alertCondition' &&

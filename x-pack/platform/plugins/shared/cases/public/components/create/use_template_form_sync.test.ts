@@ -29,14 +29,6 @@ jest.mock('../field_library/hooks/use_get_field_definitions', () => ({
   useGetFieldDefinitions: (...args: unknown[]) => mockUseGetFieldDefinitions(...args),
 }));
 
-const mockUseParentTemplateDefinition = jest.fn((_id: string | undefined) => ({
-  definition: undefined,
-  isFetched: true,
-}));
-jest.mock('../templates_v2/hooks/use_parent_template_definition', () => ({
-  useParentTemplateDefinition: (id: string | undefined) => mockUseParentTemplateDefinition(id),
-}));
-
 const mockTemplate = {
   templateId: 'template-1',
   templateVersion: 1,

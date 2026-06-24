@@ -662,42 +662,6 @@ export const TEMPLATE_TITLE = i18n.translate('xpack.cases.templates.title', {
   defaultMessage: 'Templates',
 });
 
-export const EXTENDS_LABEL = i18n.translate('xpack.cases.templates.extendsLabel', {
-  defaultMessage: 'Extends',
-});
-
-export const EXTENDS_SELECTOR_PLACEHOLDER = i18n.translate(
-  'xpack.cases.templates.extendsSelectorPlaceholder',
-  {
-    defaultMessage: 'Select a parent template',
-  }
-);
-
-export const VIEW_PARENT_TEMPLATE = i18n.translate('xpack.cases.templates.viewParentTemplate', {
-  defaultMessage: 'View',
-});
-
-export const INHERITED_FIELD_BADGE = i18n.translate('xpack.cases.templates.inheritedFieldBadge', {
-  defaultMessage: 'Inherited',
-});
-
-export const INHERITED_FIELD_TOOLTIP = (parentName: string) =>
-  i18n.translate('xpack.cases.templates.inheritedFieldTooltip', {
-    defaultMessage: 'Inherited from {parentName}',
-    values: { parentName },
-  });
-
-export const EXTENDS_CHAINING_ERROR = i18n.translate('xpack.cases.templates.extendsChainingError', {
-  defaultMessage:
-    'Template chaining is not allowed. The referenced template already extends another template.',
-});
-
-export const EXTENDS_NOT_FOUND_ERROR = (name: string) =>
-  i18n.translate('xpack.cases.templates.extendsNotFoundError', {
-    defaultMessage: 'Template "{name}" not found.',
-    values: { name },
-  });
-
 export const CONFIRM_FIELD_EDIT = i18n.translate('xpack.cases.templates.confirmFieldEdit', {
   defaultMessage: 'Save field',
 });

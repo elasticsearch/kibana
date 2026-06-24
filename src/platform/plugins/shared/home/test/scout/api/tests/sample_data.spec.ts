@@ -34,6 +34,17 @@ apiTest.describe('sample data API', { tag: tags.stateful.classic }, () => {
     await kbnClient.spaces.create({ id: TEST_SPACE_ID, name: 'Scout sample data test space' });
   });
 
+  // Guarantee the default space is left clean after every test. The flights dashboard is a
+  // multiple-isolated saved object, so a canonical-ID copy leaked into the default space by a
+  // mid-test failure would force the importer to regenerate the ID when the non-default-space
+  // test installs, breaking its ID-preservation assertion. uninstall is idempotent, so this is
+  // safe to run even when nothing is installed.
+  apiTest.afterEach(async ({ apiClient }) => {
+    await apiClient.delete(`${sampleDataApiPath('default')}/${FLIGHTS_DATASET_ID}`, {
+      headers: { ...COMMON_HEADERS, ...credentials.apiKeyHeader },
+    });
+  });
+
   apiTest.afterAll(async ({ kbnClient }) => {
     await kbnClient.spaces.delete(TEST_SPACE_ID);
   });
@@ -77,6 +88,10 @@ apiTest.describe('sample data API', { tag: tags.stateful.classic }, () => {
       await apiTest.step(
         'ES index contains timestamps relative to current time (no ?now= param)',
         async () => {
+          // Sample data is bulk-inserted without a refresh, so wait for the docs to become
+          // searchable before reading them back; otherwise the search can race the refresh
+          // interval and return zero hits.
+          await esClient.indices.refresh({ index: FLIGHTS_ES_INDEX });
           const result = await esClient.search<{ timestamp: string }>({
             index: FLIGHTS_ES_INDEX,
             sort: [{ timestamp: { order: 'desc' } }],
@@ -96,6 +111,9 @@ apiTest.describe('sample data API', { tag: tags.stateful.classic }, () => {
             { headers: { ...COMMON_HEADERS, ...credentials.apiKeyHeader } }
           );
           expect(reinstallResponse).toHaveStatusCode(200);
+          // Reinstall recreates the index and bulk-inserts without a refresh; wait for the
+          // docs to be searchable before reading them back.
+          await esClient.indices.refresh({ index: FLIGHTS_ES_INDEX });
           const result = await esClient.search<{ timestamp: string }>({
             index: FLIGHTS_ES_INDEX,
             sort: [{ timestamp: { order: 'desc' } }],

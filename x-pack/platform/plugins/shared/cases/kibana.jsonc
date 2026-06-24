@@ -29,8 +29,24 @@
       "uiActions",
       "workflowsExtensions"
     ],
-    "optionalPlugins": ["cloud", "home", "taskManager", "usageCollection", "spaces", "serverless"],
-    "requiredBundles": ["esUiShared", "kibanaReact", "kibanaUtils", "savedObjectsFinder"],
+    "optionalPlugins": [
+      "cloud",
+      "dashboard",
+      "home",
+      "maps",
+      "taskManager",
+      "usageCollection",
+      "spaces",
+      "serverless",
+      "savedObjectsTaggingOss"
+    ],
+    "requiredBundles": [
+      "esUiShared",
+      "kibanaReact",
+      "kibanaUtils",
+      "savedObjectsFinder",
+      "dashboard"
+    ],
     "extraPublicDirs": ["common"]
   }
 }

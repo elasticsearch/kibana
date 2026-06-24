@@ -8,6 +8,7 @@
 import moment from 'moment';
 import { i18n } from '@kbn/i18n';
 import type { Environment } from '../../../../common/environment_rt';
+import { ENVIRONMENT_ALL } from '../../../../common/environment_filter_values';
 import type { AnomalyDetectionJobsContextValue } from '../../../context/anomaly_detection_jobs/anomaly_detection_jobs_context';
 import { getOffsetInMs } from '../../../../common/utils/get_offset_in_ms';
 
@@ -16,6 +17,24 @@ export enum TimeRangeComparisonEnum {
   DayBefore = 'day',
   PeriodBefore = 'period',
   ExpectedBounds = 'expected_bounds',
+}
+
+/**
+ * Stable `data-test-subj` values for the "Expected bounds" option. Each value
+ * encodes the option state so tests can assert behaviour without depending on
+ * the (translated) option copy.
+ */
+export const EXPECTED_BOUNDS_TEST_SUBJ = {
+  enabled: 'comparisonSelectExpectedBounds',
+  allEnvironmentsDisabled: 'comparisonSelectExpectedBoundsAllEnvironments',
+  disabled: 'comparisonSelectExpectedBoundsDisabled',
+} as const;
+
+interface ComparisonOption {
+  value: string;
+  text: string;
+  disabled?: boolean;
+  'data-test-subj'?: string;
 }
 
 export const isTimeComparison = (v: string | undefined) =>
@@ -61,7 +80,7 @@ function getSelectOptions({
   start: moment.Moment;
   end: moment.Moment;
   msDiff: number;
-}): Array<{ value: string; text: string; disabled?: boolean }> {
+}): ComparisonOption[] {
   return comparisonTypes
     .map((value) => {
       switch (value) {
@@ -102,6 +121,48 @@ function getSelectOptions({
       }
     })
     .filter(isDefined);
+}
+
+function getExpectedBoundsText({
+  isAllEnvironments,
+  disabled,
+}: {
+  isAllEnvironments: boolean;
+  disabled: boolean;
+}) {
+  if (isAllEnvironments) {
+    return i18n.translate('xpack.apm.comparison.mlExpectedBoundsAllEnvironmentsText', {
+      defaultMessage: 'Expected bounds (Select a specific environment to use Expected bounds)',
+    });
+  }
+
+  if (disabled) {
+    return i18n.translate('xpack.apm.comparison.mlExpectedBoundsDisabledText', {
+      defaultMessage: 'Expected bounds (Anomaly detection must be enabled for this environment)',
+    });
+  }
+
+  return i18n.translate('xpack.apm.comparison.mlExpectedBoundsText', {
+    defaultMessage: 'Expected bounds',
+  });
+}
+
+function getExpectedBoundsTestSubj({
+  isAllEnvironments,
+  disabled,
+}: {
+  isAllEnvironments: boolean;
+  disabled: boolean;
+}) {
+  if (isAllEnvironments) {
+    return EXPECTED_BOUNDS_TEST_SUBJ.allEnvironmentsDisabled;
+  }
+
+  if (disabled) {
+    return EXPECTED_BOUNDS_TEST_SUBJ.disabled;
+  }
+
+  return EXPECTED_BOUNDS_TEST_SUBJ.enabled;
 }
 
 export function getComparisonOptions({
@@ -147,19 +208,21 @@ export function getComparisonOptions({
   });
 
   if (showSelectedBoundsOption && hasMLJob) {
-    const disabled =
+    // Expected bounds are independent per environment and can't be combined,
+    // so the option is disabled unless a specific environment is selected.
+    const isAllEnvironments = preferredEnvironment === ENVIRONMENT_ALL.value;
+    const hasJobForEnvironment =
       anomalyDetectionJobsStatus === 'success' &&
-      !anomalyDetectionJobsData.jobs.some((j) => j.environment === preferredEnvironment);
+      anomalyDetectionJobsData.jobs.some((j) => j.environment === preferredEnvironment);
+
+    const disabled =
+      isAllEnvironments || (anomalyDetectionJobsStatus === 'success' && !hasJobForEnvironment);
+
     comparisonOptions.push({
       value: TimeRangeComparisonEnum.ExpectedBounds,
-      text: disabled
-        ? i18n.translate('xpack.apm.comparison.mlExpectedBoundsDisabledText', {
-            defaultMessage: 'Expected bounds (Anomaly detection must be enabled for env)',
-          })
-        : i18n.translate('xpack.apm.comparison.mlExpectedBoundsText', {
-            defaultMessage: 'Expected bounds',
-          }),
+      text: getExpectedBoundsText({ isAllEnvironments, disabled }),
       disabled,
+      'data-test-subj': getExpectedBoundsTestSubj({ isAllEnvironments, disabled }),
     });
   }
 

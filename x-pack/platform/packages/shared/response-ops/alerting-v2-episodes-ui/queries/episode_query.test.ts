@@ -33,4 +33,13 @@ describe('buildEpisodeQuery', () => {
     expect(queryString).toContain('triggered_at');
     expect(queryString).toContain('"active"');
   });
+
+  it('aggregates severity from breached rule events', () => {
+    const queryString = buildEpisodeQuery(SPACE_ID, 'ep-1').print('basic');
+    expect(queryString).toContain(
+      'severity = LAST(severity, @timestamp) WHERE status == "breached" AND severity IS NOT NULL'
+    );
+    expect(queryString).toContain('KEEP');
+    expect(queryString).toContain('severity');
+  });
 });

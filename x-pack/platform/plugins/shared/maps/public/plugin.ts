@@ -194,14 +194,14 @@ export class MapsPlugin
           core.getStartServices(),
           import('./render_app'),
         ]);
-        const [coreStart, { savedObjectsTagging, spaces }] = startServices;
+        const [coreStart, { spaces }] = startServices;
         const UsageTracker =
           plugins.usageCollection?.components.ApplicationUsageTrackingProvider ?? React.Fragment;
         const activeSpace = await spaces?.getActiveSpace();
         if (activeSpace) {
           setSpaceId(activeSpace.id);
         }
-        return renderApp(params, { coreStart, AppUsageTracker: UsageTracker, savedObjectsTagging });
+        return renderApp(params, { coreStart, AppUsageTracker: UsageTracker });
       },
     });
 

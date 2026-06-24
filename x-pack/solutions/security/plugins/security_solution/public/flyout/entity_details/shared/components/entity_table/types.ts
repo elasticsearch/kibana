@@ -5,8 +5,20 @@
  * 2.0.
  */
 
+import type { ComponentType, ReactNode } from 'react';
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import type { XOR } from '../../../../../../common/utility_types';
+
+/**
+ * Optional renderer for entity table values that wraps the value in a link
+ * (e.g., a v2 flyout link). Receives the field name and value, and may render `children`
+ * as the visible content.
+ */
+export type EntityTableLinkRenderer = ComponentType<{
+  field: string;
+  value: string;
+  children?: ReactNode;
+}>;
 
 export type EntityTableRow<T extends BasicEntityData> = XOR<
   {

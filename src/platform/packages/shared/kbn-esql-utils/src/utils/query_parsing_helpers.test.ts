@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import type { DatatableColumn } from '@kbn/expressions-plugin/common';
-import type { monaco } from '@kbn/monaco';
+import type { monaco } from '@kbn/code-editor';
 import type { ESQLColumn } from '@elastic/esql/types';
 import { Parser, walk } from '@elastic/esql';
 import { ESQLVariableType, type ESQLControlVariable } from '@kbn/esql-types';

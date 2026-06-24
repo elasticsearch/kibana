@@ -7,26 +7,26 @@
 
 import { i18n } from '@kbn/i18n';
 
-export const VISUALIZATIONS = i18n.translate('xpack.cases.caseView.visualizations.displayName', {
+export const VISUALIZATIONS = i18n.translate('xpack.cases.attachments.lens.displayName', {
   defaultMessage: 'Visualizations',
 });
 
 export const ADDED_VISUALIZATION = i18n.translate(
-  'xpack.cases.caseView.visualizations.addedVisualization',
+  'xpack.cases.attachments.lens.addedVisualization',
   {
     defaultMessage: 'added visualization',
   }
 );
 
 export const REMOVED_VISUALIZATION = i18n.translate(
-  'xpack.cases.caseView.visualizations.removedVisualization',
+  'xpack.cases.attachments.lens.removedVisualization',
   {
     defaultMessage: 'removed visualization',
   }
 );
 
 export const OPEN_IN_VISUALIZATION = i18n.translate(
-  'xpack.cases.caseView.visualizations.openVisualizationButtonLabel',
+  'xpack.cases.attachments.lens.openVisualizationButtonLabel',
   {
     defaultMessage: 'Open visualization',
   }

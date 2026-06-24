@@ -28,4 +28,11 @@ describe('getStreamsLocation', () => {
       path: '/logs.nginx/management/significantEvents',
     });
   });
+
+  it('returns canvas management tab path', () => {
+    expect(getStreamsLocation({ name: 'logs.nginx', managementTab: 'canvas' })).toEqual({
+      app: 'streams',
+      path: '/logs.nginx/management/canvas',
+    });
+  });
 });

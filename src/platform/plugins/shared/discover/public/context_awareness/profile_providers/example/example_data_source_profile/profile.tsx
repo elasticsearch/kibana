@@ -98,8 +98,8 @@ export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvi
         };
       },
     /**
-     * The `getAppMenu` extension point gives access to AppMenuRegistry with methods `registerCustomItem` and
-     * `registerCustomPopoverItem`.
+     * The `getAppMenu` extension point gives access to AppMenuRegistry with methods like `registerCustomItem` and
+     * `registerPopoverItem`.
      * The extension also provides the essential params like current dataView, adHocDataViews etc when defining a custom action implementation.
      * And it supports opening custom flyouts and any other modals on the click.
      * `getAppMenu` can be configured in both root and data source profiles.
@@ -149,7 +149,7 @@ export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvi
           });
 
           // This example shows how to add a custom action under the Alerts submenu
-          registry.registerCustomPopoverItem(AppMenuActionId.alerts, {
+          registry.registerPopoverItem(AppMenuActionId.alerts, {
             // It's also possible to override the submenu actions by using the same id
             // as `AppMenuActionId.createRule` or `AppMenuActionId.manageRulesAndConnectors`
             id: 'example-custom-action4',
@@ -157,7 +157,7 @@ export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvi
             label: 'Create SLO (Custom action)',
             iconType: 'chartGauge',
             testId: 'example-custom-action-under-alerts',
-            run: ({ context: { onFinishAction } }) => {
+            render: ({ context: { onFinishAction } }) => {
               // This is an example of a custom action that opens a flyout or any other custom modal.
               // To do so, simply return a React element and call onFinishAction when you're done.
               return (
@@ -170,7 +170,7 @@ export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvi
 
           // This submenu was defined in the root profile example_root_pofile/profile.tsx
           // And we can still add actions to it from the data source profile here.
-          registry.registerCustomPopoverItem('example-custom-root-submenu', {
+          registry.registerPopoverItem('example-custom-root-submenu', {
             id: 'example-custom-action5',
             order: 1,
             label: 'Custom action (from Data Source profile)',

@@ -23,6 +23,7 @@ import { getNonEmptyField } from './utils';
 import {
   DELETE_EVENTS_SUCCESS_TITLE,
   EVENT_COMMENT_LABEL_TITLE,
+  EVENT_DISPLAY_NAME,
   MULTIPLE_EVENTS_COMMENT_LABEL_TITLE,
   REMOVED_EVENT_LABEL_TITLE,
   REMOVED_EVENTS_LABEL_TITLE,
@@ -96,7 +97,7 @@ const getAttachmentRemovalObject = (props: UnifiedReferenceAttachmentViewProps) 
  */
 export const getEventType = (): UnifiedReferenceAttachmentType => ({
   id: SECURITY_EVENT_ATTACHMENT_TYPE,
-  displayName: 'Event',
+  displayName: EVENT_DISPLAY_NAME,
   icon: 'bell',
   getAttachmentViewObject: (props) => getAttachmentViewObject(props),
   getAttachmentRemovalObject: (props) => getAttachmentRemovalObject(props),

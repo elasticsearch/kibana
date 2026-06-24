@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import type { DataTableRecord } from '@kbn/discover-utils';
 import { getEcsField } from '../../../flyout/document_details/right/components/table_field_name_cell';
 import {
   IP_FIELD_TYPE,
@@ -23,8 +24,14 @@ import { RuleDetails } from '../../rule/main';
  * Currently supports:
  * - IP fields → Network details flyout (value = IP address)
  * - Rule name field → Rule details flyout (value = rule ID)
+ *
+ * @param hit - Optional hit record for entity resolution (used by Host flyout, wired up in a later PR)
  */
-export const buildFlyoutContent = (field: string, value: string): React.ReactElement | null => {
+export const buildFlyoutContent = (
+  field: string,
+  value: string,
+  _hit?: DataTableRecord
+): React.ReactElement | null => {
   const ecsField = getEcsField(field);
 
   if (ecsField?.type === IP_FIELD_TYPE) {

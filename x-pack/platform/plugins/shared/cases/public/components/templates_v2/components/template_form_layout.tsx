@@ -217,7 +217,6 @@ export const TemplateFormLayout: React.FC<TemplateFormLayoutProps> = ({
             isYamlSaved={isYamlSaved}
             previewWidth={previewWidth}
             onPreviewWidthChange={setPreviewWidth}
-            currentTemplateId={templateId}
             savedValue={isEdit ? initialValue : undefined}
           />
         </EuiFlexItem>

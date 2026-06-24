@@ -5,13 +5,10 @@
  * 2.0.
  */
 
-import { schema } from '@kbn/config-schema';
-
 import {
   GetMetadataListRequestSchema,
   GetMetadataRequestSchema,
 } from '../../../../common/api/endpoint';
-import { HostStatus } from '../../../../common/endpoint/types';
 import type { EndpointAppContext } from '../../types';
 import {
   getLogger,
@@ -26,23 +23,6 @@ import {
   METADATA_TRANSFORMS_STATUS_INTERNAL_ROUTE,
 } from '../../../../common/endpoint/constants';
 import { withEndpointAuthz } from '../with_endpoint_authz';
-
-/* Filters that can be applied to the endpoint fetch route */
-export const endpointFilters = schema.object({
-  kql: schema.nullable(schema.string()),
-  host_status: schema.nullable(
-    schema.arrayOf(
-      schema.oneOf([
-        schema.literal(HostStatus.HEALTHY.toString()),
-        schema.literal(HostStatus.OFFLINE.toString()),
-        schema.literal(HostStatus.UPDATING.toString()),
-        schema.literal(HostStatus.UNHEALTHY.toString()),
-        schema.literal(HostStatus.INACTIVE.toString()),
-      ]),
-      { maxSize: 20 }
-    )
-  ),
-});
 
 export function registerEndpointRoutes(
   router: SecuritySolutionPluginRouter,

@@ -8,6 +8,11 @@
  */
 
 import {
+  PostBlockkitSubActionParamsSchema as SlackApiPostBlockkitParamsSchema,
+  PostMessageSubActionParamsSchema as SlackApiPostMessageParamsSchema,
+  ValidChannelIdSubActionParamsSchema as SlackApiValidChannelIdParamsSchema,
+} from '@kbn/connector-schemas/slack_api';
+import {
   XSOARPlaybooksActionResponseSchema,
   XSOARRunActionParamsSchema,
   XSOARRunActionResponseSchema,
@@ -100,9 +105,6 @@ import {
   ServiceNowGetIncidentParamsSchema,
   ServiceNowIncidentResponseSchema,
   ServiceNowUpdateIncidentParamsSchema,
-  SlackApiGetChannelsParamsSchema,
-  SlackApiGetUsersParamsSchema,
-  SlackApiPostMessageParamsSchema,
   SlackApiResponseSchema,
   SlackParamsSchema,
   SlackResponseSchema,
@@ -236,9 +238,9 @@ export const ConnectorActionInputSchemas = new Map<string, Record<string, z.ZodS
   [
     '.slack_api',
     {
+      validChannelId: SlackApiValidChannelIdParamsSchema,
       postMessage: SlackApiPostMessageParamsSchema,
-      getChannels: SlackApiGetChannelsParamsSchema,
-      getUsers: SlackApiGetUsersParamsSchema,
+      postBlockkit: SlackApiPostBlockkitParamsSchema,
     },
   ],
   [
@@ -401,9 +403,9 @@ export const ConnectorActionOutputSchemas = new Map<string, Record<string, z.Zod
   [
     '.slack_api',
     {
+      validChannelId: SlackApiResponseSchema,
       postMessage: SlackApiResponseSchema,
-      getChannels: SlackApiResponseSchema,
-      getUsers: SlackApiResponseSchema,
+      postBlockkit: SlackApiResponseSchema,
     },
   ],
   [

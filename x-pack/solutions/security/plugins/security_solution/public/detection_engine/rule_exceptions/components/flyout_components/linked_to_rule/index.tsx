@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { EuiTitle, EuiSpacer, EuiInMemoryTable } from '@elastic/eui';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 
 import * as i18n from './translations';
 import type { Rule } from '../../../../rule_management/logic/types';
@@ -18,9 +18,7 @@ interface ExceptionsLinkedToRuleComponentProps {
 }
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 const ExceptionsLinkedToRuleComponent: React.FC<ExceptionsLinkedToRuleComponentProps> = ({

@@ -10,6 +10,8 @@
 import React from 'react';
 import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { waitForEuiPopoverOpen } from '@elastic/eui/lib/test/rtl';
 import type { GetStateReturn } from './services/context_state';
 import type { SortDirection } from '@kbn/data-plugin/public';
 import type { ContextAppContentProps } from './context_app_content';
@@ -25,7 +27,7 @@ const dataViewMock = buildDataViewMock({
 });
 
 describe('ContextAppContent test', () => {
-  const renderComponent = async () => {
+  const renderComponent = async (overrides: Partial<ContextAppContentProps> = {}) => {
     const hit = {
       _id: '123',
       _index: 'test_index',
@@ -67,6 +69,7 @@ describe('ContextAppContent test', () => {
       setAppState: () => {},
       addFilter: () => {},
       interceptedWarnings: [],
+      ...overrides,
     } as unknown as ContextAppContentProps;
     renderWithKibanaRenderContext(
       <DiscoverTestProvider>
@@ -91,5 +94,23 @@ describe('ContextAppContent test', () => {
 
     expect(screen.getByTestId('unifiedDataTableToolbar')).toBeVisible();
     expect(screen.queryByTestId('dataGridDisplaySelectorButton')).not.toBeInTheDocument();
+  });
+
+  it('should reset column width in surrounding documents app state', async () => {
+    const user = userEvent.setup();
+    const setAppState = jest.fn();
+
+    await renderComponent({
+      grid: { columns: { _source: { width: 250 } } },
+      setAppState,
+    });
+
+    await user.click(screen.getByTestId('dataGridHeaderCellActionButton-_source'));
+    await waitForEuiPopoverOpen();
+    await user.click(screen.getByTestId('unifiedDataTableResetColumnWidth'));
+
+    expect(setAppState).toHaveBeenCalledWith({
+      grid: { columns: { _source: {} } },
+    });
   });
 });

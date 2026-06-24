@@ -19,7 +19,7 @@ import {
   EuiText,
   useEuiPaddingSize,
 } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import type {
   ExceptionListType,
   ListSchema,
@@ -257,6 +257,7 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
                     type="warning"
                     size="s"
                     css={warningIconCss}
+                    aria-hidden={true}
                   />
                   {i18n.FIELD_CONFLICT_INDICES_WARNING_DESCRIPTION}
                 </>

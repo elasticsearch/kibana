@@ -25,6 +25,7 @@ export interface CertFiltersState {
   party: string[];
   tags: string[];
   issuers: string[];
+  remoteNames: string[];
   expiringWithin?: string;
 }
 
@@ -35,18 +36,25 @@ export interface CertFiltersActions {
   setParty: (values: string[]) => void;
   setTags: (values: string[]) => void;
   setIssuers: (values: string[]) => void;
+  setRemoteNames: (values: string[]) => void;
   setExpiringWithin: (value?: string) => void;
 }
 
 /**
- * Backs the Certificates page quick filters with the URL query string so a
- * filtered view survives a refresh and can be shared. Reuses the shared
- * `search`/`monitorTypes`/`tags` params and adds the certificates-page
- * `issuers`/`browserResourceTypes`/`party`/`expiringWithin` ones.
+ * Persists the Certificates page quick filters in the URL so a filtered view
+ * survives a refresh and is shareable.
  */
 export const useCertFilters = (): CertFiltersState & CertFiltersActions => {
-  const { search, monitorTypes, tags, issuers, browserResourceTypes, party, expiringWithin } =
-    useGetUrlParams();
+  const {
+    search,
+    monitorTypes,
+    tags,
+    issuers,
+    browserResourceTypes,
+    party,
+    expiringWithin,
+    remoteNames,
+  } = useGetUrlParams();
   const [, updateUrlParams] = useUrlParams();
 
   const setSearch = useCallback(
@@ -73,6 +81,10 @@ export const useCertFilters = (): CertFiltersState & CertFiltersActions => {
     (values: string[]) => updateUrlParams({ issuers: serializeArray(values) }),
     [updateUrlParams]
   );
+  const setRemoteNames = useCallback(
+    (values: string[]) => updateUrlParams({ remoteNames: serializeArray(values) }),
+    [updateUrlParams]
+  );
   const setExpiringWithin = useCallback(
     (value?: string) => updateUrlParams({ expiringWithin: value || '' }),
     [updateUrlParams]
@@ -86,6 +98,7 @@ export const useCertFilters = (): CertFiltersState & CertFiltersActions => {
       party: toArray(party),
       tags: toArray(tags),
       issuers: toArray(issuers),
+      remoteNames: toArray(remoteNames),
       expiringWithin,
       setSearch,
       setMonitorTypes,
@@ -93,6 +106,7 @@ export const useCertFilters = (): CertFiltersState & CertFiltersActions => {
       setParty,
       setTags,
       setIssuers,
+      setRemoteNames,
       setExpiringWithin,
     }),
     [
@@ -102,6 +116,7 @@ export const useCertFilters = (): CertFiltersState & CertFiltersActions => {
       party,
       tags,
       issuers,
+      remoteNames,
       expiringWithin,
       setSearch,
       setMonitorTypes,
@@ -109,6 +124,7 @@ export const useCertFilters = (): CertFiltersState & CertFiltersActions => {
       setParty,
       setTags,
       setIssuers,
+      setRemoteNames,
       setExpiringWithin,
     ]
   );

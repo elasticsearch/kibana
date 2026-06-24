@@ -26,7 +26,7 @@ describe('getFileType', () => {
     expect(fileType).toStrictEqual({
       id: FILE_ATTACHMENT_TYPE,
       icon: 'document',
-      displayName: 'File',
+      displayName: 'Files',
       getAttachmentViewObject: expect.any(Function),
       getAttachmentRemovalObject: expect.any(Function),
       getAttachmentTabViewObject: expect.any(Function),

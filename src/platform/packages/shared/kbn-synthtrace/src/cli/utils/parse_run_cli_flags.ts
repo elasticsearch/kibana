@@ -24,6 +24,7 @@ const REPO_ROOT = discoverRepoRoot();
 const SCENARIO_ALIASES: Record<string, string> = {
   agent_config: 'x-pack/solutions/observability/plugins/apm/test/scenarios/agent_config.ts',
   apache_logs: 'x-pack/platform/plugins/shared/streams/test/scenarios/apache_logs.ts',
+  apm_anomalies: 'x-pack/solutions/observability/plugins/apm/test/scenarios/apm_anomalies.ts',
   apm_jvm_metrics_type_conflict:
     'x-pack/solutions/observability/plugins/apm/test/scenarios/apm_jvm_metrics_type_conflict.ts',
   apm_metrics_dashboards:

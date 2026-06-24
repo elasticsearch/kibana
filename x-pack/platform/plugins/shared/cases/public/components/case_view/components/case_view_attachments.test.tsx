@@ -36,7 +36,7 @@ const buildRegistry = () => {
   const registry = new UnifiedAttachmentTypeRegistry();
   registry.register({
     id: 'security.alert',
-    displayName: 'Alert',
+    displayName: 'Alerts',
     icon: 'bell',
     getAttachmentViewObject: () => ({ event: 'added an alert' }),
     getAttachmentTabViewObject: () => ({
@@ -46,7 +46,7 @@ const buildRegistry = () => {
   });
   registry.register({
     id: 'security.event',
-    displayName: 'Event',
+    displayName: 'Events',
     icon: 'bell',
     getAttachmentViewObject: () => ({ event: 'added an event' }),
     getAttachmentTabViewObject: () => ({
@@ -56,7 +56,7 @@ const buildRegistry = () => {
   });
   registry.register({
     id: 'file',
-    displayName: 'File',
+    displayName: 'Files',
     icon: 'document',
     getAttachmentViewObject: () => ({ event: 'added a file' }),
     getAttachmentTabViewObject: () => ({

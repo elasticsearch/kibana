@@ -7,7 +7,7 @@
 
 import React from 'react';
 import type { FC } from 'react';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { Pagination } from '@elastic/eui';
 import { EuiFlexGroup, EuiFlexItem, EuiText } from '@elastic/eui';
@@ -22,7 +22,7 @@ import {
 
 const StyledText = styled.span`
   font-weight: bold;
-  color: ${({ theme }) => theme.eui.euiColorDarkestShade};
+  color: ${({ theme }) => theme.euiTheme.colors.textParagraph};
 `;
 
 const MyUtilities = styled(EuiFlexGroup)`

@@ -20,6 +20,11 @@ import {
   isUnifiedAlertAttachment,
   isUnifiedEventAttachment,
 } from '../../../../common/utils/attachments';
+import {
+  getSavedObjectAttachmentAttributes,
+  isSavedObjectAttachment,
+} from '../../attachments/common/saved_object/helpers';
+import type { SavedObjectAttachmentAttributes } from '../../attachments/common/saved_object/types';
 import { UNKNOWN } from '../../../common/translations';
 
 /**
@@ -83,6 +88,23 @@ const filterLegacyEventCommentByIds = (
   };
 };
 
+/**
+ * SO-typed unified reference attachments (dashboard, map, discoverSession)
+ * filter on title (cached in `metadata.title` at attach time) as well as the
+ * foreign SO id, case-insensitively — matching the experience the user gets
+ * when typing into the modal search.
+ */
+const filterSavedObjectCommentBySearchTerm = (
+  comment: AttachmentUIV2,
+  attributes: SavedObjectAttachmentAttributes,
+  searchTerm: string
+): AttachmentUIV2 | null => {
+  const term = searchTerm.toLowerCase();
+  const title = (attributes.title ?? '').toLowerCase();
+  const id = attributes.attachmentId.toLowerCase();
+  return title.includes(term) || id.includes(term) ? comment : null;
+};
+
 const filterUnifiedCommentById = (
   comment: UnifiedReferenceAttachmentPayload,
   searchTerm: string
@@ -114,6 +136,10 @@ export const filterCaseAttachmentsBySearchTerm = (caseData: CaseUI, searchTerm: 
         }
         if (isLegacyEventAttachment(comment)) {
           return filterLegacyEventCommentByIds(comment, searchTerm);
+        }
+        if (isSavedObjectAttachment(comment)) {
+          const savedObjectAttributes = getSavedObjectAttachmentAttributes(comment);
+          return filterSavedObjectCommentBySearchTerm(comment, savedObjectAttributes, searchTerm);
         }
         if (isUnifiedEventAttachment(comment) || isUnifiedAlertAttachment(comment)) {
           return filterUnifiedCommentById(comment, searchTerm);

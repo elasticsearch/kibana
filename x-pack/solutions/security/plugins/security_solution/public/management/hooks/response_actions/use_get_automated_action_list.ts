@@ -23,10 +23,18 @@ import type {
   ActionResponsesRequestStrategyResponse,
 } from '../../../../common/search_strategy/endpoint/response_actions';
 import { useKibana } from '../../../common/lib/kibana';
-import type {
-  EndpointAutomatedActionListRequestQuery,
-  EndpointAutomatedActionResponseRequestQuery,
-} from '../../../../common/endpoint/schema/automated_actions';
+
+interface EndpointAutomatedActionListRequestQuery {
+  alertIds: string[];
+}
+
+interface EndpointAutomatedActionResponseRequestQuery {
+  expiration: string;
+  actionId: string;
+  agent: {
+    id: string | string[];
+  };
+}
 
 interface GetAutomatedActionsListOptions {
   enabled: boolean;

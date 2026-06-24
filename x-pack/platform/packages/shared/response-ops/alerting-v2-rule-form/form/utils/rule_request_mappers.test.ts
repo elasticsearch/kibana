@@ -492,6 +492,8 @@ describe('rule_request_mappers', () => {
       expect(updateRequest.grouping).toBeNull();
       expect(updateRequest.state_transition).toBeNull();
       expect(updateRequest.artifacts).toBeNull();
+      expect(updateRequest.recovery_strategy).toBeNull();
+      expect(updateRequest.no_data_strategy).toBeNull();
     });
 
     it('does not include kind in the update payload', () => {
@@ -505,6 +507,8 @@ describe('rule_request_mappers', () => {
         ...baseFormValues,
         kind: 'alert',
         grouping: { fields: ['host.name'] },
+        recoveryStrategy: 'no_breach',
+        noDataStrategy: 'emit',
         stateTransitionAlertDelayMode: 'duration',
         stateTransitionRecoveryDelayMode: 'immediate',
         stateTransition: { pendingCount: 2, pendingTimeframe: '5m' },
@@ -513,6 +517,8 @@ describe('rule_request_mappers', () => {
       const result = mapFormValuesToUpdateRequest(formValues);
 
       expect(result.grouping).toEqual({ fields: ['host.name'] });
+      expect(result.recovery_strategy).toBe('no_breach');
+      expect(result.no_data_strategy).toBe('emit');
       expect(result.state_transition).toEqual({
         pending_count: 2,
         pending_timeframe: '5m',
@@ -557,6 +563,33 @@ describe('rule_request_mappers', () => {
       const result = mapFormValuesToUpdateRequest(formValues);
 
       expect(result.artifacts).toBeNull();
+    });
+
+    it('infers recovery_strategy: query when user adds recovery via form (recoveryStrategy undefined)', () => {
+      const formValues: FormValues = {
+        ...baseFormValues,
+        query: {
+          format: 'composed',
+          base: 'FROM logs-*',
+          breach: { segment: 'WHERE count > 100' },
+          recovery: { segment: 'WHERE count < 50' },
+        },
+      };
+
+      const result = mapFormValuesToUpdateRequest(formValues);
+
+      expect(result.recovery_strategy).toBe('query');
+    });
+
+    it('nullifies recovery_strategy when user removes recovery from a loaded rule', () => {
+      const formValues: FormValues = {
+        ...baseFormValues,
+        recoveryStrategy: 'query',
+      };
+
+      const result = mapFormValuesToUpdateRequest(formValues);
+
+      expect(result.recovery_strategy).toBeNull();
     });
   });
 

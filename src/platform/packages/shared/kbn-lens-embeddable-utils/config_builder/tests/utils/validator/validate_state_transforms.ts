@@ -23,6 +23,7 @@ const strictChartTypes = new Set([
   'waffle',
   'tag_cloud',
   'region_map',
+  'metric',
 ]);
 
 /**

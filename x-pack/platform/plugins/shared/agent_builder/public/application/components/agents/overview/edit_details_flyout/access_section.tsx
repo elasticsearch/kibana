@@ -17,19 +17,22 @@ import {
   EuiTitle,
 } from '@elastic/eui';
 import type { IconType } from '@elastic/eui';
-import { AgentVisibility, VISIBILITY_ICON } from '@kbn/agent-builder-common';
+import { AgentAccessControlMode, ACCESS_CONTROL_MODE_ICON } from '@kbn/agent-builder-common';
 import { Controller, useFormContext } from 'react-hook-form';
 import { labels } from '../../../../utils/i18n';
-import { VISIBILITY_LABELS, VISIBILITY_TOOLTIPS } from '../../../../utils/visibility_i18n';
+import {
+  ACCESS_CONTROL_MODE_LABELS,
+  ACCESS_CONTROL_MODE_TOOLTIPS,
+} from '../../../../utils/access_control_mode_i18n';
 import type { EditDetailsFormData } from './types';
 
 const { editDetails: flyoutLabels } = labels.agentOverview;
 
 interface AccessSectionProps {
-  canChangeVisibility: boolean;
+  canChangeAccessControlMode: boolean;
 }
 
-const renderVisibilityOption = ({ icon, label }: { icon: IconType; label: string }) => (
+const renderAccessControlModeOption = ({ icon, label }: { icon: IconType; label: string }) => (
   <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
     <EuiFlexItem grow={false}>
       <EuiIcon type={icon} aria-hidden={true} />
@@ -38,68 +41,68 @@ const renderVisibilityOption = ({ icon, label }: { icon: IconType; label: string
   </EuiFlexGroup>
 );
 
-const visibilityOptions = [
+const accessControlModeOptions = [
   {
-    value: AgentVisibility.Private,
-    inputDisplay: renderVisibilityOption({
-      icon: VISIBILITY_ICON[AgentVisibility.Private],
-      label: VISIBILITY_LABELS[AgentVisibility.Private],
+    value: AgentAccessControlMode.Private,
+    inputDisplay: renderAccessControlModeOption({
+      icon: ACCESS_CONTROL_MODE_ICON[AgentAccessControlMode.Private],
+      label: ACCESS_CONTROL_MODE_LABELS[AgentAccessControlMode.Private],
     }),
     dropdownDisplay: (
       <EuiFlexGroup direction="column" gutterSize="xs" responsive={false}>
         <EuiFlexItem>
-          {renderVisibilityOption({
-            icon: VISIBILITY_ICON[AgentVisibility.Private],
-            label: VISIBILITY_LABELS[AgentVisibility.Private],
+          {renderAccessControlModeOption({
+            icon: ACCESS_CONTROL_MODE_ICON[AgentAccessControlMode.Private],
+            label: ACCESS_CONTROL_MODE_LABELS[AgentAccessControlMode.Private],
           })}
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiText size="xs" color="subdued">
-            {VISIBILITY_TOOLTIPS[AgentVisibility.Private]}
+            {ACCESS_CONTROL_MODE_TOOLTIPS[AgentAccessControlMode.Private]}
           </EuiText>
         </EuiFlexItem>
       </EuiFlexGroup>
     ),
   },
   {
-    value: AgentVisibility.Shared,
-    inputDisplay: renderVisibilityOption({
-      icon: VISIBILITY_ICON[AgentVisibility.Shared],
-      label: VISIBILITY_LABELS[AgentVisibility.Shared],
+    value: AgentAccessControlMode.Shared,
+    inputDisplay: renderAccessControlModeOption({
+      icon: ACCESS_CONTROL_MODE_ICON[AgentAccessControlMode.Shared],
+      label: ACCESS_CONTROL_MODE_LABELS[AgentAccessControlMode.Shared],
     }),
     dropdownDisplay: (
       <EuiFlexGroup direction="column" gutterSize="xs" responsive={false}>
         <EuiFlexItem>
-          {renderVisibilityOption({
-            icon: VISIBILITY_ICON[AgentVisibility.Shared],
-            label: VISIBILITY_LABELS[AgentVisibility.Shared],
+          {renderAccessControlModeOption({
+            icon: ACCESS_CONTROL_MODE_ICON[AgentAccessControlMode.Shared],
+            label: ACCESS_CONTROL_MODE_LABELS[AgentAccessControlMode.Shared],
           })}
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiText size="xs" color="subdued">
-            {VISIBILITY_TOOLTIPS[AgentVisibility.Shared]}
+            {ACCESS_CONTROL_MODE_TOOLTIPS[AgentAccessControlMode.Shared]}
           </EuiText>
         </EuiFlexItem>
       </EuiFlexGroup>
     ),
   },
   {
-    value: AgentVisibility.Public,
-    inputDisplay: renderVisibilityOption({
-      icon: VISIBILITY_ICON[AgentVisibility.Public],
-      label: VISIBILITY_LABELS[AgentVisibility.Public],
+    value: AgentAccessControlMode.Public,
+    inputDisplay: renderAccessControlModeOption({
+      icon: ACCESS_CONTROL_MODE_ICON[AgentAccessControlMode.Public],
+      label: ACCESS_CONTROL_MODE_LABELS[AgentAccessControlMode.Public],
     }),
     dropdownDisplay: (
       <EuiFlexGroup direction="column" gutterSize="xs" responsive={false}>
         <EuiFlexItem>
-          {renderVisibilityOption({
-            icon: VISIBILITY_ICON[AgentVisibility.Public],
-            label: VISIBILITY_LABELS[AgentVisibility.Public],
+          {renderAccessControlModeOption({
+            icon: ACCESS_CONTROL_MODE_ICON[AgentAccessControlMode.Public],
+            label: ACCESS_CONTROL_MODE_LABELS[AgentAccessControlMode.Public],
           })}
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiText size="xs" color="subdued">
-            {VISIBILITY_TOOLTIPS[AgentVisibility.Public]}
+            {ACCESS_CONTROL_MODE_TOOLTIPS[AgentAccessControlMode.Public]}
           </EuiText>
         </EuiFlexItem>
       </EuiFlexGroup>
@@ -107,7 +110,7 @@ const visibilityOptions = [
   },
 ];
 
-export const AccessSection: React.FC<AccessSectionProps> = ({ canChangeVisibility }) => {
+export const AccessSection: React.FC<AccessSectionProps> = ({ canChangeAccessControlMode }) => {
   const { control, formState } = useFormContext<EditDetailsFormData>();
 
   return (
@@ -121,24 +124,26 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ canChangeVisibilit
       </EuiText>
       <EuiSpacer size="l" />
       <EuiFormRow
-        label={flyoutLabels.visibilityLabel}
-        helpText={!canChangeVisibility ? flyoutLabels.visibilityDisabledReason : undefined}
-        isInvalid={!!formState.errors.visibility}
-        error={formState.errors.visibility?.message}
+        label={flyoutLabels.accessControlModeLabel}
+        helpText={
+          !canChangeAccessControlMode ? flyoutLabels.accessControlModeDisabledReason : undefined
+        }
+        isInvalid={!!formState.errors.access_control?.access_mode}
+        error={formState.errors.access_control?.access_mode?.message}
         fullWidth
       >
         <Controller
-          name="visibility"
+          name="access_control.access_mode"
           control={control}
           render={({ field: { onChange, value } }) => (
             <EuiSuperSelect
               fullWidth
-              options={visibilityOptions}
+              options={accessControlModeOptions}
               valueOfSelected={value}
               onChange={onChange}
-              disabled={!canChangeVisibility}
-              aria-label={flyoutLabels.visibilityAriaLabel}
-              data-test-subj="editDetailsVisibilitySelect"
+              disabled={!canChangeAccessControlMode}
+              aria-label={flyoutLabels.accessControlModeAriaLabel}
+              data-test-subj="editDetailsAccessControlModeSelect"
             />
           )}
         />

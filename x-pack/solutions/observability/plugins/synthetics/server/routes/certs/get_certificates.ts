@@ -13,6 +13,8 @@ import { SYNTHETICS_API_URLS } from '../../../common/constants';
 import type { CertResult, GetCertsParams } from '../../../common/runtime_types';
 import { ConfigKey } from '../../../common/constants/monitor_management';
 import { getSyntheticsCerts } from '../../queries/get_certs';
+import { isCCSEnabled } from '../../lib/remote_result_utils';
+import { parseRemoteNames } from '../../lib/parse_remote_names';
 
 export const getSyntheticsCertsRoute: SyntheticsRestApiRouteFactory<
   { data: CertResult },
@@ -43,19 +45,56 @@ export const getSyntheticsCertsRoute: SyntheticsRestApiRouteFactory<
       // Comma-separated issuer (certificate authority) common names; scopes the
       // list to certs signed by the selected CA(s).
       issuers: schema.maybe(schema.string({ maxLength: 4096 })),
+      // Comma-separated remote cluster aliases; honoured only when CCS is on.
+      // Empty/absent → every configured cluster.
+      remoteNames: schema.maybe(schema.string({ maxLength: 1024 })),
     }),
   },
-  handler: async ({ request, syntheticsEsClient, monitorConfigRepository }) => {
-    const { monitorTypes, browserResourceTypes, party, tags, issuers, ...queryParams } =
-      request.query;
+  handler: async ({
+    request,
+    response,
+    syntheticsEsClient,
+    monitorConfigRepository,
+    server,
+    spaceId,
+  }) => {
+    const {
+      monitorTypes,
+      browserResourceTypes,
+      party,
+      tags,
+      issuers,
+      remoteNames,
+      ...queryParams
+    } = request.query;
 
-    const toList = (value?: string) => (value ? value.split(',').filter(Boolean) : undefined);
+    const toList = (value?: string) =>
+      value
+        ? value
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined;
+
+    const ccsEnabled = isCCSEnabled(server);
+
+    const remoteNamesResult = parseRemoteNames(remoteNames);
+    if (!remoteNamesResult.ok) {
+      return response.badRequest({
+        body: {
+          message: `remoteNames must not exceed ${remoteNamesResult.max} entries (received ${remoteNamesResult.received})`,
+        },
+      });
+    }
+    const remoteNameList = remoteNamesResult.value;
 
     const monitors = await monitorConfigRepository.getAll({
       filter: `${syntheticsMonitorAttributes}.${ConfigKey.ENABLED}: true`,
     });
 
-    if (monitors.length === 0) {
+    // Without CCS, no local monitors = no certs. With CCS, remote-only
+    // monitors may still contribute, so the search has to run.
+    if (!ccsEnabled && monitors.length === 0) {
       return {
         data: {
           certs: [],
@@ -78,6 +117,9 @@ export const getSyntheticsCertsRoute: SyntheticsRestApiRouteFactory<
       // The certificates page lists certs from every enabled monitor, including
       // the certificate captured on a browser monitor's navigation request.
       includeBrowserCerts: true,
+      ccsEnabled,
+      remoteNames: remoteNameList,
+      spaceId,
     });
     return { data };
   },

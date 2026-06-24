@@ -273,7 +273,7 @@ export const CaseViewActivity = ({
                   ) : null
                 }
                 // Permission gating lives inside `CaseViewAttachButton`.
-                attachActionButton={<CaseViewAttachButton caseId={caseData.id} />}
+                attachActionButton={<CaseViewAttachButton caseData={caseData} />}
                 userActivityQueryParams={userActivityQueryParams}
                 userActionsStats={userActionsStats}
               />

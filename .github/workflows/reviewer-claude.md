@@ -2,7 +2,7 @@
 name: Claude Reviewer
 on:
   pull_request_target:
-    types: [synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -37,8 +37,7 @@ engine:
     CLAUDE_CODE_SUBAGENT_MODEL: opus[1m]
 # Activation rules:
 # - Manual runs always activate.
-# - Reviewer label events activate, including labels added while creating a PR.
-# - Synchronize/reopened PR events activate when the reviewer label is already present.
+# - Opened/synchronize/reopened PR events activate unless reviewer:skip-ai is present.
 # - Comment follow-up runs are dispatched by Reviewer Comment Dispatcher after fork-safe validation.
 if: >-
   !github.event.repository.fork &&
@@ -47,32 +46,13 @@ if: >-
     (
       github.event.sender.type != 'Bot' &&
       !contains(github.event.pull_request.labels.*.name, 'reviewer:skip-ai') &&
-      github.event_name == 'pull_request_target' &&
-      (
-        (
-          github.event.action == 'labeled' &&
-          github.event.label.name == 'reviewer:claude'
-        ) ||
-        (
-          github.event.action != 'labeled' &&
-          contains(github.event.pull_request.labels.*.name, 'reviewer:claude')
-        )
-      )
+      github.event_name == 'pull_request_target'
     )
   )
 concurrency:
-  # Keep one review lane per PR/comment. Unrelated label events get their own group suffix so they can skip without canceling an in-flight review.
+  # Keep one review lane per PR/comment.
   group: >-
-    gh-aw-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}-${{
-      github.event.inputs.comment_id ||
-      (
-        github.event.action == 'labeled' &&
-        github.event.label.name != 'reviewer:claude' &&
-        github.event.label.name != 'reviewer:skip-ai' &&
-        github.event.label.name
-      ) ||
-      'pr-review'
-    }}
+    gh-aw-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}-${{ github.event.inputs.comment_id || 'pr-review' }}
   cancel-in-progress: true
   job-discriminator: ${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}
 permissions:

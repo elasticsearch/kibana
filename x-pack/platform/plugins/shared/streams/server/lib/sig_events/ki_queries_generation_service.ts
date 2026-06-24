@@ -12,6 +12,7 @@ import type {
   Logger,
 } from '@kbn/core/server';
 import type { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
+import type { ToolsStart } from '@kbn/agent-builder-server';
 import type { InferenceClient } from '@kbn/inference-common';
 import {
   getStreamTypeFromDefinition,
@@ -22,6 +23,8 @@ import { isInferenceProviderError } from '@kbn/inference-common';
 import type { SearchInferenceEndpointsPluginStart } from '@kbn/search-inference-endpoints/server';
 import type { SignificantEventsToolUsage } from '@kbn/streams-ai';
 import { isSignificantEventsMemoryEnabled } from '../memory/is_significant_events_memory_enabled';
+import { isSignificantEventsSemanticCodeSearchGroundingEnabled } from '../semantic_code_search_grounding/is_significant_events_semantic_code_search_grounding_enabled';
+import { createSemanticCodeSearchTools } from '../semantic_code_search_grounding/semantic_code_search_tools';
 import type { StreamsClient } from '../streams/client';
 import type { KnowledgeIndicatorClient } from '../streams/ki';
 import type { EbtTelemetryClient } from '../telemetry';
@@ -50,6 +53,7 @@ export interface GenerateKIQueriesDependencies {
   logger: Logger;
   signal: AbortSignal;
   telemetry: EbtTelemetryClient;
+  agentBuilderTools?: ToolsStart;
 }
 
 export async function generateKIQueries(
@@ -74,6 +78,7 @@ export async function generateKIQueries(
     logger,
     signal,
     telemetry,
+    agentBuilderTools,
   } = deps;
 
   const connectorId =
@@ -87,10 +92,16 @@ export async function generateKIQueries(
 
   logger.debug(`Using connector ${connectorId} for query generation`);
 
-  const [definition, { significantEventsPromptOverride }, useMemory] = await Promise.all([
+  const [
+    definition,
+    { significantEventsPromptOverride },
+    useMemory,
+    useSemanticCodeSearchGrounding,
+  ] = await Promise.all([
     streamsClient.getStream(streamName),
     new PromptsConfigService({ soClient, logger }).getPrompt(),
     isSignificantEventsMemoryEnabled(featureFlags),
+    isSignificantEventsSemanticCodeSearchGroundingEnabled(featureFlags),
   ]);
 
   const memoryTools = useMemory
@@ -101,6 +112,26 @@ export async function generateKIQueries(
         }),
       })
     : undefined;
+
+  const semanticCodeSearchLogger = logger.get('semantic_code_search_grounding');
+
+  const isCodeGroundingActive = useSemanticCodeSearchGrounding && Boolean(agentBuilderTools);
+
+  const semanticCodeSearchTools =
+    isCodeGroundingActive && agentBuilderTools
+      ? await createSemanticCodeSearchTools({
+          agentBuilderTools,
+          request,
+          esClient,
+          logger: semanticCodeSearchLogger,
+        })
+      : undefined;
+
+  if (useSemanticCodeSearchGrounding && !semanticCodeSearchTools) {
+    semanticCodeSearchLogger.debug(
+      `Semantic code search grounding enabled but inactive for stream "${streamName}" (agentBuilder unavailable or SCS tools not installed).`
+    );
+  }
 
   const startedAt = Date.now();
   const result = await generateSignificantEventDefinitions(
@@ -117,6 +148,7 @@ export async function generateKIQueries(
       logger: logger.get('significant_events_generation'),
       signal,
       memoryTools,
+      semanticCodeSearchTools,
     }
   ).catch(async (error) => {
     if (isInferenceProviderError(error)) {

@@ -43,6 +43,15 @@ export const registerListRoute = ({
           }),
           type: schema.maybe(schema.string({ minLength: 1 })),
           origin_uri: schema.maybe(schema.string({ minLength: 1, maxLength: 512 })),
+          tags: schema.maybe(
+            schema.string({
+              maxLength: 2000,
+              meta: {
+                description:
+                  'Comma-delimited list of tags to filter by (OR semantics — returns documents matching any supplied tag). Tag values must be lowercase alphanumeric with optional hyphens or underscores. Example: `?tags=otel,my-tag`.',
+              },
+            })
+          ),
         }),
       },
       options: { access: 'internal' },
@@ -56,17 +65,26 @@ export const registerListRoute = ({
           per_page: perPage,
           type,
           origin_uri: originUri,
+          tags: tagsParam,
         } = request.query as {
           page: number;
           per_page: number;
           type?: string;
           origin_uri?: string;
+          tags?: string;
         };
         const coreContext = await ctx.core;
         const esClient = coreContext.elasticsearch.client;
 
         const [, startDeps] = await coreSetup.getStartServices();
         const spaceId = startDeps.spaces?.spacesService?.getSpaceId(request) ?? 'default';
+
+        const tags = tagsParam
+          ? tagsParam
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : undefined;
 
         const { results } = await sml.listDocuments({
           spaceId,
@@ -75,6 +93,7 @@ export const registerListRoute = ({
           perPage,
           type,
           originUri,
+          tags,
         });
 
         // TODO: Push permission filtering into the ES query for accurate pagination.

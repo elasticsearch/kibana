@@ -15,11 +15,12 @@
     "@kbn/telemetry-plugin",
     "@kbn/config-schema",
     "@kbn/feedback-registry",
-    "@kbn/feedback-components",
+    "@kbn/ui-feedback",
     "@kbn/core-http-router-server-mocks",
     "@kbn/core-chrome-feature-flags",
     "@kbn/react-kibana-mount",
-    "@kbn/i18n"
+    "@kbn/i18n",
+    "@kbn/core-http-router-server-mocks"
   ],
   "exclude": [
     "target/**/*",

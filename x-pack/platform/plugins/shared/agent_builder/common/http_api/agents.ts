@@ -5,36 +5,50 @@
  * 2.0.
  */
 
-import type { AgentAcl, AgentAclEntry, AgentDefinition } from '@kbn/agent-builder-common';
+import type {
+  AgentAccessControl,
+  AgentAccessControlEntry,
+  AgentDefinition,
+} from '@kbn/agent-builder-common';
 
-export type GetAgentResponse = AgentDefinition;
-
-export interface ListAgentResponse {
-  results: AgentDefinition[];
+export interface AgentPermissions {
+  update_agent: boolean;
+  update_access_control: boolean;
 }
 
-export type UpdateAgentResponse = AgentDefinition;
+export type AgentDefinitionWithPermissions = AgentDefinition & {
+  permissions: AgentPermissions;
+};
 
-export type CreateAgentResponse = AgentDefinition;
+export type GetAgentResponse = AgentDefinitionWithPermissions;
+
+export interface ListAgentResponse {
+  results: AgentDefinitionWithPermissions[];
+}
+
+export type UpdateAgentResponse = AgentDefinitionWithPermissions;
+
+export type CreateAgentResponse = AgentDefinitionWithPermissions;
 
 export interface DeleteAgentResponse {
   success: boolean;
 }
 
 /**
- * Response shape for `GET /api/agent_builder/agents/{id}/acl`.
+ * Response shape for `GET /api/agent_builder/agents/{id}/access_control`.
  *
- * `can_manage` indicates whether the requesting user can edit the ACL via PUT.
- * `acl` is always present and reflects the current persisted entries.
+ * `permissions.update_access_control` indicates whether the requesting user can edit access
+ * control via PUT.
+ * `access_control` is always present and reflects the current persisted scope and entries.
  */
-export interface GetAgentAclResponse {
-  can_manage: boolean;
-  acl: AgentAcl;
+export interface GetAgentAccessControlResponse {
+  access_control: AgentAccessControl;
+  permissions: Pick<AgentPermissions, 'update_access_control'>;
 }
 
-/** Body for `PUT /api/agent_builder/agents/{id}/acl`. */
-export interface UpdateAgentAclRequestBody {
-  entries: AgentAclEntry[];
+/** Body for `PUT /api/agent_builder/agents/{id}/access_control`. */
+export interface UpdateAgentAccessControlRequestBody {
+  entries: AgentAccessControlEntry[];
 }
 
-export type UpdateAgentAclResponse = AgentAcl;
+export type UpdateAgentAccessControlResponse = AgentAccessControl;

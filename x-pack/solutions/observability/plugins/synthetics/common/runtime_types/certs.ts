@@ -6,6 +6,7 @@
  */
 
 import * as t from 'io-ts';
+import { remoteMonitorInfoSchema } from './remote';
 
 export const GetCertsParamsType = t.partial({
   pageIndex: t.number,
@@ -25,6 +26,7 @@ export const GetCertsParamsType = t.partial({
   tags: t.array(t.string),
   issuers: t.array(t.string),
   includeBrowserCerts: t.boolean,
+  remoteNames: t.array(t.string),
 });
 
 export type GetCertsParams = t.TypeOf<typeof GetCertsParamsType>;
@@ -35,6 +37,7 @@ export const CertMonitorType = t.partial({
   configId: t.string,
   url: t.string,
   type: t.string,
+  remote: remoteMonitorInfoSchema,
 });
 
 export const CertType = t.intersection([
@@ -65,6 +68,7 @@ export const CertType = t.intersection([
     labels: t.record(t.string, t.string),
     tags: t.array(t.string),
     monitorTags: t.array(t.string),
+    remote: remoteMonitorInfoSchema,
   }),
 ]);
 

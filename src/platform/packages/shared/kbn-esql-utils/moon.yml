@@ -29,7 +29,7 @@ dependsOn:
   - '@kbn/i18n'
   - '@kbn/datemath'
   - '@kbn/es-query'
-  - '@kbn/monaco'
+  - '@kbn/code-editor'
   - '@kbn/core'
   - '@kbn/index-management-shared-types'
   - '@kbn/licensing-types'

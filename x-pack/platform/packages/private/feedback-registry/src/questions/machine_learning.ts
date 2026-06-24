@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { FeedbackRegistryEntry } from '@kbn/feedback-components';
+import type { FeedbackRegistryEntry } from '@kbn/ui-feedback';
 
 /**
  * Custom page-specific ML feedback questions live in this module. When you add

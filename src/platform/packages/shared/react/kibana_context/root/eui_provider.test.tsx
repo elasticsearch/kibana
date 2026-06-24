@@ -124,6 +124,11 @@ describe('KibanaEuiProvider', () => {
           EuiToolTip: {
             repositionOnScroll: true,
           },
+          EuiTable: {
+            scrollableInline: true,
+            tableLayout: 'auto',
+            responsiveBreakpoint: false,
+          },
         },
       }),
       expect.anything()

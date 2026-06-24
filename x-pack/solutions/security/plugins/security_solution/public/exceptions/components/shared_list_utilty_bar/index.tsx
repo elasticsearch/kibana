@@ -8,7 +8,7 @@
 import React from 'react';
 
 import type { Sort } from '@kbn/securitysolution-io-ts-list-types';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { EuiContextMenuPanel, EuiContextMenuItem, EuiIcon } from '@elastic/eui';
 
 import {

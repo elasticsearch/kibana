@@ -6,16 +6,14 @@
  */
 
 import React, { memo, useMemo } from 'react';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 
 import { EuiFlyoutFooter, EuiButton, EuiButtonEmpty, EuiFlexGroup } from '@elastic/eui';
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
 import * as i18n from './translations';
 
 const FlyoutFooterGroup = styled(EuiFlexGroup)`
-  ${({ theme }) => css`
-    padding: ${theme.eui.euiSizeS};
-  `}
+  padding: ${({ theme }) => theme.euiTheme.size.s};
 `;
 
 export interface ExceptionFlyoutFooterProps {

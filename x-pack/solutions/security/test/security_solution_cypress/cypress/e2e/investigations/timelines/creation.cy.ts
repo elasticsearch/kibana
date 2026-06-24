@@ -19,9 +19,12 @@ import {
   SAVE_TIMELINE_ACTION_BTN,
   SAVE_TIMELINE_TOOLTIP,
 } from '../../../screens/timeline';
-import { LOADING_INDICATOR } from '../../../screens/security_header';
 import { ROWS } from '../../../screens/timelines';
-import { createTimelineTemplate, deleteTimelines } from '../../../tasks/api_calls/timelines';
+import {
+  createTimelineTemplate,
+  deleteTimelines,
+  deleteTimelineTemplates,
+} from '../../../tasks/api_calls/timelines';
 
 import { login } from '../../../tasks/login';
 import { visit, visitWithTimeRange } from '../../../tasks/navigation';
@@ -47,6 +50,7 @@ const mockTimeline = getTimeline();
 describe('Timelines', { tags: ['@ess', '@serverless'] }, (): void => {
   beforeEach(() => {
     deleteTimelines();
+    deleteTimelineTemplates();
   });
 
   it('should create a timeline from a template and should have the same query and open the timeline modal', () => {
@@ -102,11 +106,6 @@ describe('Timelines', { tags: ['@ess', '@serverless'] }, (): void => {
     // Saved
     cy.get(TIMELINE_STATUS).should('not.exist');
 
-    // Offsetting the extra save that is happening in the background
-    // for the saved search object.
-    cy.get(LOADING_INDICATOR).should('be.visible');
-    cy.get(LOADING_INDICATOR).should('not.exist');
-
     executeTimelineKQL('agent.name : *');
 
     // Saved but has unsaved changes
@@ -123,11 +122,6 @@ describe('Timelines', { tags: ['@ess', '@serverless'] }, (): void => {
 
     openTimelineUsingToggle();
     addNameToTimelineAndSave('First');
-
-    // Offsetting the extra save that is happening in the background
-    // for the saved search object.
-    cy.get(LOADING_INDICATOR).should('be.visible');
-    cy.get(LOADING_INDICATOR).should('not.exist');
 
     addNameToTimelineAndSaveAsNew('Second');
     closeTimeline();

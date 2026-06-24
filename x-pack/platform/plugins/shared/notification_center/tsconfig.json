@@ -9,5 +9,6 @@
     "@kbn/core",
     "@kbn/config-schema",
     "@kbn/zod",
+    "@kbn/std",
   ]
 }

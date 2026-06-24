@@ -12,7 +12,7 @@ import { useHistory } from 'react-router-dom';
 jest.mock('@kbn/security-solution-navigation', () => ({
   ...jest.requireActual('@kbn/security-solution-navigation'),
   useNavigateTo: jest.fn(),
-  SecurityPageName: { landing: 'landing' },
+  SecurityPageName: { landing: 'landing', siemMigrationsManage: 'siemMigrationsManage' },
 }));
 
 jest.mock('./use_stored_state', () => ({
@@ -197,8 +197,10 @@ describe('useSyncUrlDetails', () => {
   let mockReportCardOpen: jest.Mock;
   let mockStartGetCloudTopicId: jest.Mock;
   let mockConfigHas: jest.Mock;
+  let mockCloudOnComplete: (topicId: OnboardingTopicId | null) => void;
 
   beforeEach(() => {
+    window.history.replaceState({}, '', '/app/security/get_started');
     mockSetStoredUrlDetail = jest.fn();
     mockNavigateTo = jest.fn();
     mockReportCardOpen = jest.fn();
@@ -209,12 +211,16 @@ describe('useSyncUrlDetails', () => {
     (useStoredUrlDetails as jest.Mock).mockReturnValue([null, mockSetStoredUrlDetail]);
     (useNavigateTo as jest.Mock).mockReturnValue({ navigateTo: mockNavigateTo });
     (useTopicId as jest.Mock).mockReturnValue(OnboardingTopicId.default);
-    (useCloudTopicId as jest.Mock).mockReturnValue({
-      start: mockStartGetCloudTopicId,
-      isLoading: false,
+    (useCloudTopicId as jest.Mock).mockImplementation(({ onComplete }) => {
+      mockCloudOnComplete = onComplete;
+      return {
+        start: mockStartGetCloudTopicId,
+        isLoading: false,
+      };
     });
     (useOnboardingContext as jest.Mock).mockReturnValue({
       config: { has: mockConfigHas },
+      spaceId: 'test-space',
       telemetry: { reportCardOpen: mockReportCardOpen },
     });
   });
@@ -251,6 +257,32 @@ describe('useSyncUrlDetails', () => {
     });
   });
 
+  it('clears stored siem migrations topic when URL is empty', () => {
+    (useStoredUrlDetails as jest.Mock).mockReturnValue([
+      OnboardingTopicId.siemMigrations,
+      mockSetStoredUrlDetail,
+    ]);
+
+    renderHook(() => useSyncUrlDetails({ pathTopicId: null, hashCardId: null }));
+
+    expect(mockSetStoredUrlDetail).toHaveBeenCalledWith(null);
+    expect(mockNavigateTo).not.toHaveBeenCalled();
+    expect(mockStartGetCloudTopicId).not.toHaveBeenCalled();
+  });
+
+  it('clears stored siem migrations topic with card detail when URL is empty', () => {
+    (useStoredUrlDetails as jest.Mock).mockReturnValue([
+      `${OnboardingTopicId.siemMigrations}#migrate_rules`,
+      mockSetStoredUrlDetail,
+    ]);
+
+    renderHook(() => useSyncUrlDetails({ pathTopicId: null, hashCardId: null }));
+
+    expect(mockSetStoredUrlDetail).toHaveBeenCalledWith(null);
+    expect(mockNavigateTo).not.toHaveBeenCalled();
+    expect(mockStartGetCloudTopicId).not.toHaveBeenCalled();
+  });
+
   it('calls startGetCloudTopicId when URL is empty and stored detail is undefined', () => {
     // Simulate no stored detail (undefined) – e.g. first time onboarding
     (useStoredUrlDetails as jest.Mock).mockReturnValue([undefined, mockSetStoredUrlDetail]);
@@ -258,6 +290,19 @@ describe('useSyncUrlDetails', () => {
     renderHook(() => useSyncUrlDetails({ pathTopicId: null, hashCardId: null }));
 
     expect(mockStartGetCloudTopicId).toHaveBeenCalled();
+  });
+
+  it('navigates to SIEM migrations topic after clearing stored detail', () => {
+    renderHook(() => useSyncUrlDetails({ pathTopicId: null, hashCardId: null }));
+
+    act(() => {
+      mockCloudOnComplete(OnboardingTopicId.siemMigrations);
+    });
+    expect(mockNavigateTo).toHaveBeenCalledWith({
+      deepLinkId: SecurityPageName.landing,
+      path: OnboardingTopicId.siemMigrations,
+    });
+    expect(mockSetStoredUrlDetail).toHaveBeenCalledWith(null);
   });
 
   it('clears stored detail if the stored topic is invalid', () => {

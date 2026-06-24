@@ -1,7 +1,7 @@
 {
   "slug": "detection-rule-management",
   "name": "Detection Rule Management",
-  "owners": ["@elastic/security-detection-rule-management"],
+  "owners": ["@elastic/security-detection-engineering"],
   "paths": [
     "x-pack/solutions/security/plugins/security_solution/common/api/detection_engine/model/rule_schema/**",
     "x-pack/solutions/security/plugins/security_solution/common/api/detection_engine/rule_management/**",

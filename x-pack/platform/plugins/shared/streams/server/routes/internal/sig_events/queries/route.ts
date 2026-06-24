@@ -519,6 +519,7 @@ const generateQueriesRoute = createServerRoute({
         logger: logger.get('significant_events_queries_generation'),
         signal: getRequestAbortSignal(request),
         telemetry,
+        agentBuilderTools: server.agentBuilder?.tools,
       }
     );
 

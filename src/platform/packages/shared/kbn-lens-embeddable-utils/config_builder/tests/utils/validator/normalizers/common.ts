@@ -127,8 +127,13 @@ function normalizeESQLAdHocDataViews(
       const timeFieldName = esqlQuery
         ? getTimeFieldFromESQLQuery(esqlQuery)
         : adHocDataView.timeFieldName ?? layer.timeField ?? undefined;
+      // The transform re-derives the index pattern (and the data view title/name) from the ES|QL
+      // query, so a stale persisted name (e.g. a broader multi-index pattern) is normalized away.
+      const indexPattern = esqlQuery
+        ? getIndexPatternFromESQLQuery(esqlQuery)
+        : adHocDataView.name ?? '';
       const newId = generateAdHocDataViewId({
-        index: adHocDataView.name ?? '',
+        index: indexPattern,
         dataSourceType: 'esql',
         esqlQuery,
         timeFieldName,
@@ -136,6 +141,8 @@ function normalizeESQLAdHocDataViews(
 
       layer.index = newId;
       adHocDataView.id = newId;
+      adHocDataView.name = indexPattern;
+      adHocDataView.title = indexPattern;
       // Transform always sets type: 'esql' on ESQL adHocDataViews (via getAdHocDataViewSpec)
       adHocDataView.type = 'esql';
       attributes.state.adHocDataViews[newId] = adHocDataView;
@@ -292,12 +299,9 @@ function normalizeESQLQuery(attributes: LensAttributes) {
   const textBasedLayers = Object.values(attributes.state.datasourceStates.textBased?.layers ?? {});
   if (textBasedLayers.length > 0) {
     const layerQuery = textBasedLayers[0].query;
-    if (
-      layerQuery?.esql &&
-      attributes.state.query &&
-      'esql' in attributes.state.query &&
-      attributes.state.query.esql !== layerQuery.esql
-    ) {
+    // For ES|QL panels the layer query is authoritative; the transform always promotes it to the
+    // top-level state query, replacing any stale legacy query (even a different language).
+    if (layerQuery?.esql && attributes.state.query) {
       attributes.state.query = layerQuery;
     }
   }

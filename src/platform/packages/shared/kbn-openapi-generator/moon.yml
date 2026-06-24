@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/openapi-generator'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/security-detection-rule-management'
+  defaultOwner: '@elastic/security-detection-engineering'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/openapi-generator'
   description: Moon project for @kbn/openapi-generator
   channel: ''
-  owner: '@elastic/security-detection-rule-management'
+  owner: '@elastic/security-detection-engineering'
   sourceRoot: src/platform/packages/shared/kbn-openapi-generator
 dependsOn:
   - '@kbn/repo-info'

@@ -399,6 +399,7 @@ describe('Serialization utils', () => {
           },
           savedSearch: {
             ...savedSearch,
+            grid: { columns: { _source: { width: 250 } } },
             sampleSize: 500,
             sort: sortOverride,
           } as Parameters<typeof serializeState>[0]['savedSearch'],
@@ -414,6 +415,11 @@ describe('Serialization utils', () => {
         // are stored in the dashboard document but not part of the simplified by-ref schema
         expect(serializedState).toMatchObject({
           ref_id: 'test-id',
+          overrides: {
+            column_settings: { _source: { width: 250 } },
+            sample_size: 500,
+            sort: [{ name: 'order_date', direction: 'asc' }],
+          },
         });
       });
 

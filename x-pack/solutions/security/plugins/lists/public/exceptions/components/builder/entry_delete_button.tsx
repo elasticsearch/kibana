@@ -7,7 +7,7 @@
 
 import React, { useCallback } from 'react';
 import { EuiButtonIcon, EuiFlexItem, EuiToolTip } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import type { BuilderEntry } from '@kbn/securitysolution-list-utils';
 
 import * as i18n from './translations';

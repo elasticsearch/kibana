@@ -13,7 +13,8 @@ import { FULL_KIBANA_SECURITY_ROLE } from '../../common/roles';
 
 const ALERT_COUNT = 3;
 
-spaceTest.describe(
+// Failing: See https://github.com/elastic/kibana/issues/274822
+spaceTest.describe.skip(
   'Bulk add alerts to chat',
   // Serverless excluded: agent builder feature not yet available on serverless
   { tag: [...tags.stateful.classic] },

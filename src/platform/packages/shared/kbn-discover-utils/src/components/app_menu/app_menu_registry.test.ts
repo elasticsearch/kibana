@@ -161,6 +161,152 @@ describe('AppMenuRegistry', () => {
       expect(parent?.items).toHaveLength(1);
       expect(parent?.items?.[0]).toEqual(popoverItem);
     });
+
+    it('should convert an action parent into a submenu item', () => {
+      const parentItem: DiscoverAppMenuItemType = {
+        id: 'parent',
+        order: 1,
+        label: 'Parent',
+        iconType: 'warning',
+        href: '/parent',
+        run: jest.fn(),
+      };
+
+      const popoverItem: DiscoverAppMenuPopoverItem = {
+        id: 'child-1',
+        order: 1,
+        label: 'Child 1',
+        iconType: 'bell',
+        run: jest.fn(),
+      };
+
+      registry.registerItem(parentItem);
+      registry.registerPopoverItem('parent', popoverItem);
+
+      const config = registry.getAppMenuConfig();
+      const parent = config.items?.find((item) => item.id === 'parent');
+
+      expect(parent).toEqual({
+        id: 'parent',
+        order: 1,
+        label: 'Parent',
+        iconType: 'warning',
+        items: [popoverItem],
+      });
+    });
+  });
+
+  describe('getPopoverItems', () => {
+    it('should return popover items registered under a parent menu item', () => {
+      const parentItem: DiscoverAppMenuItemType = {
+        id: 'parent',
+        order: 1,
+        label: 'Parent',
+        iconType: 'warning',
+        items: [],
+      };
+
+      const popoverItem: DiscoverAppMenuPopoverItem = {
+        id: 'child-1',
+        order: 1,
+        label: 'Child 1',
+        iconType: 'bell',
+        run: jest.fn(),
+      };
+
+      registry.registerItem(parentItem);
+      registry.registerPopoverItem('parent', popoverItem);
+
+      expect(registry.getPopoverItems('parent')).toEqual([popoverItem]);
+    });
+
+    it('should return an empty array when the parent menu item does not exist', () => {
+      expect(registry.getPopoverItems('missing-parent')).toEqual([]);
+    });
+
+    it('should return a copy of the registered popover items', () => {
+      const parentItem: DiscoverAppMenuItemType = {
+        id: 'parent',
+        order: 1,
+        label: 'Parent',
+        iconType: 'warning',
+        items: [],
+      };
+
+      const popoverItem: DiscoverAppMenuPopoverItem = {
+        id: 'child-1',
+        order: 1,
+        label: 'Child 1',
+        iconType: 'bell',
+        run: jest.fn(),
+      };
+
+      registry.registerItem(parentItem);
+      registry.registerPopoverItem('parent', popoverItem);
+
+      const popoverItems = registry.getPopoverItems('parent');
+      popoverItems.push({
+        id: 'child-2',
+        order: 2,
+        label: 'Child 2',
+        iconType: 'bell',
+        run: jest.fn(),
+      });
+
+      expect(registry.getPopoverItems('parent')).toEqual([popoverItem]);
+    });
+  });
+
+  describe('getItem', () => {
+    it('should return a registered menu item', () => {
+      const item: DiscoverAppMenuItemType = {
+        id: 'test-item',
+        order: 1,
+        label: 'Test Item',
+        iconType: 'magnify',
+        run: jest.fn(),
+      };
+
+      registry.registerItem(item);
+
+      expect(registry.getItem('test-item')).toEqual(item);
+    });
+
+    it('should return undefined when the menu item does not exist', () => {
+      expect(registry.getItem('missing-item')).toBeUndefined();
+    });
+
+    it('should return a copy of nested popover items', () => {
+      const parentItem: DiscoverAppMenuItemType = {
+        id: 'parent',
+        order: 1,
+        label: 'Parent',
+        iconType: 'warning',
+        items: [],
+      };
+
+      const popoverItem: DiscoverAppMenuPopoverItem = {
+        id: 'child-1',
+        order: 1,
+        label: 'Child 1',
+        iconType: 'bell',
+        run: jest.fn(),
+      };
+
+      registry.registerItem(parentItem);
+      registry.registerPopoverItem('parent', popoverItem);
+
+      const item = registry.getItem('parent');
+      item?.items?.push({
+        id: 'child-2',
+        order: 2,
+        label: 'Child 2',
+        iconType: 'bell',
+        run: jest.fn(),
+      });
+
+      expect(registry.getItem('parent')?.items).toEqual([popoverItem]);
+    });
   });
 
   describe('registerCustomItem', () => {
@@ -267,7 +413,7 @@ describe('AppMenuRegistry', () => {
     });
   });
 
-  describe('registerCustomPopoverItem', () => {
+  describe('registerPopoverItem with custom items', () => {
     it('should register a popover item under a custom parent menu item', () => {
       const parentItem: DiscoverAppMenuItemType = {
         id: 'custom-parent',
@@ -286,7 +432,7 @@ describe('AppMenuRegistry', () => {
       };
 
       registry.registerCustomItem(parentItem);
-      registry.registerCustomPopoverItem('custom-parent', popoverItem);
+      registry.registerPopoverItem('custom-parent', popoverItem);
 
       const config = registry.getAppMenuConfig();
       const parent = config.items?.find((item) => item.id === 'custom-parent');
@@ -305,7 +451,7 @@ describe('AppMenuRegistry', () => {
       };
 
       // Register popover item first
-      registry.registerCustomPopoverItem('custom-parent', popoverItem);
+      registry.registerPopoverItem('custom-parent', popoverItem);
 
       const parentItem: DiscoverAppMenuItemType = {
         id: 'custom-parent',
@@ -349,8 +495,8 @@ describe('AppMenuRegistry', () => {
       };
 
       registry.registerCustomItem(parentItem);
-      registry.registerCustomPopoverItem('custom-parent', popoverItem1);
-      registry.registerCustomPopoverItem('custom-parent', popoverItem2);
+      registry.registerPopoverItem('custom-parent', popoverItem1);
+      registry.registerPopoverItem('custom-parent', popoverItem2);
 
       const config = registry.getAppMenuConfig();
       const parent = config.items?.find((item) => item.id === 'custom-parent');

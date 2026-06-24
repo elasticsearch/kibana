@@ -5,19 +5,47 @@
  * 2.0.
  */
 
-import type { RuleResponse, CreateRuleData, Query, UpdateRuleData } from '@kbn/alerting-v2-schemas';
+import type {
+  RuleResponse,
+  CreateRuleData,
+  Query,
+  UpdateRuleData,
+  RecoveryStrategy,
+  NoDataStrategy,
+} from '@kbn/alerting-v2-schemas';
 import { DELAY_MODE } from '../types';
-import type { FormValues, StateTransition, RuleQuery } from '../types';
+import type { FormValues, StateTransition } from '../types';
 import {
   deriveAlertDelayModeFromStateTransition,
   deriveRecoveryDelayModeFromStateTransition,
-} from '../types';
+} from './state_transition_helpers';
+import { ruleQueryToApiQuery, apiQueryToFormQuery } from './query_mappers';
 import {
   mapArtifacts,
   mergeArtifactsByType,
   splitArtifactsByType,
   type RuleArtifactPayload,
 } from './artifact_mappers';
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves the recovery_strategy for an API request.
+ * Non-representable strategies (no_breach, none) are preserved as-is.
+ * 'query' is always derived from the recovery block presence — never
+ * kept as a stale value — because the form can add/remove recovery
+ * without updating the recoveryStrategy field.
+ */
+export const resolveRecoveryStrategy = (
+  formValues: Pick<FormValues, 'recoveryStrategy' | 'query'>
+): RecoveryStrategy | undefined => {
+  if (formValues.recoveryStrategy && formValues.recoveryStrategy !== 'query') {
+    return formValues.recoveryStrategy;
+  }
+  return formValues.query.recovery != null ? ('query' as const) : undefined;
+};
 
 // ---------------------------------------------------------------------------
 // FormValues → API request
@@ -34,22 +62,6 @@ const mapSchedule = (schedule: FormValues['schedule']) => ({
   every: schedule.every,
   lookback: schedule.lookback,
 });
-
-const mapQuery = (query: RuleQuery): Query => {
-  if (query.format === 'composed') {
-    return {
-      format: 'composed',
-      base: query.base,
-      breach: { segment: query.breach.segment },
-      ...(query.recovery ? { recovery: { segment: query.recovery.segment } } : {}),
-    };
-  }
-  return {
-    format: 'standalone',
-    breach: { query: query.breach.query },
-    ...(query.recovery ? { recovery: { query: query.recovery.query } } : {}),
-  };
-};
 
 const mapGrouping = (grouping: FormValues['grouping']) =>
   grouping?.fields?.length ? { fields: grouping.fields } : undefined;
@@ -106,7 +118,8 @@ export interface RuleRequestCommon {
   time_field: string;
   schedule: { every: string; lookback?: string };
   query: Query;
-  recovery_strategy?: 'query';
+  recovery_strategy?: RecoveryStrategy;
+  no_data_strategy?: NoDataStrategy;
   grouping?: { fields: string[] };
   state_transition?: {
     pending_count?: number;
@@ -120,14 +133,15 @@ export interface RuleRequestCommon {
 export const mapFormValuesToRuleRequest = (formValues: FormValues): RuleRequestCommon => {
   const { metadata, timeField, schedule, query, grouping } = formValues;
   const mappedArtifacts = mapArtifacts(mergeArtifactsByType(formValues));
-  const hasRecovery = query.recovery != null;
+  const recoveryStrategy = resolveRecoveryStrategy(formValues);
 
   return {
     metadata: mapMetadata(metadata),
     time_field: timeField,
     schedule: mapSchedule(schedule),
-    query: mapQuery(query),
-    ...(hasRecovery ? { recovery_strategy: 'query' as const } : {}),
+    query: ruleQueryToApiQuery(query),
+    ...(recoveryStrategy ? { recovery_strategy: recoveryStrategy } : {}),
+    ...(formValues.noDataStrategy ? { no_data_strategy: formValues.noDataStrategy } : {}),
     grouping: mapGrouping(grouping),
     state_transition: mapStateTransition(formValues),
     ...(mappedArtifacts ? { artifacts: mappedArtifacts } : {}),
@@ -140,10 +154,13 @@ export const mapFormValuesToCreateRequest = (formValues: FormValues): CreateRule
 });
 
 export const mapFormValuesToUpdateRequest = (formValues: FormValues): UpdateRuleData => {
-  const { grouping, state_transition, artifacts, ...rest } = mapFormValuesToRuleRequest(formValues);
+  const { grouping, state_transition, artifacts, recovery_strategy, no_data_strategy, ...rest } =
+    mapFormValuesToRuleRequest(formValues);
 
   return {
     ...rest,
+    recovery_strategy: resolveRecoveryStrategy(formValues) ?? null,
+    no_data_strategy: no_data_strategy ?? null,
     grouping: grouping ?? null,
     state_transition: state_transition ?? null,
     artifacts: artifacts ?? null,
@@ -153,29 +170,6 @@ export const mapFormValuesToUpdateRequest = (formValues: FormValues): UpdateRule
 // ---------------------------------------------------------------------------
 // API response → FormValues
 // ---------------------------------------------------------------------------
-
-const apiQueryToRuleQuery = (
-  q: RuleResponse['query'],
-  recoveryStrategy?: RuleResponse['recovery_strategy']
-): RuleQuery => {
-  if (q.format === 'composed') {
-    return {
-      format: 'composed',
-      base: q.base,
-      breach: { segment: q.breach.segment },
-      ...(recoveryStrategy === 'query' && q.recovery
-        ? { recovery: { segment: q.recovery.segment } }
-        : {}),
-    };
-  }
-  return {
-    format: 'standalone',
-    breach: { query: q.breach.query },
-    ...(recoveryStrategy === 'query' && q.recovery
-      ? { recovery: { query: q.recovery.query } }
-      : {}),
-  };
-};
 
 export const mapRuleResponseToFormValues = (rule: RuleResponse): Partial<FormValues> => {
   const stateTransition: StateTransition = {
@@ -199,7 +193,9 @@ export const mapRuleResponseToFormValues = (rule: RuleResponse): Partial<FormVal
       every: rule.schedule.every,
       lookback: rule.schedule.lookback ?? '1m',
     },
-    query: apiQueryToRuleQuery(rule.query, rule.recovery_strategy),
+    query: apiQueryToFormQuery(rule.query, rule.recovery_strategy),
+    recoveryStrategy: rule.recovery_strategy ?? undefined,
+    noDataStrategy: rule.no_data_strategy ?? undefined,
     ...(rule.grouping ? { grouping: { fields: rule.grouping.fields } } : {}),
     stateTransition,
     stateTransitionAlertDelayMode: deriveAlertDelayModeFromStateTransition(stateTransition),

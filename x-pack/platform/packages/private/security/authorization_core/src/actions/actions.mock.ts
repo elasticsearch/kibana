@@ -7,6 +7,7 @@
 
 import type { Actions } from './actions';
 import { AlertingActions } from './alerting';
+import { AlertsActions } from './alerts';
 import { ApiActions } from './api';
 import { AppActions } from './app';
 import { CasesActions } from './cases';
@@ -20,10 +21,12 @@ jest.mock('./saved_object');
 jest.mock('./space');
 jest.mock('./ui');
 jest.mock('./alerting');
+jest.mock('./alerts');
 jest.mock('./cases');
 
 const create = (versionNumber: string) => {
   const t = {
+    alerts: new AlertsActions(),
     api: new ApiActions(),
     app: new AppActions(),
     login: 'login:',

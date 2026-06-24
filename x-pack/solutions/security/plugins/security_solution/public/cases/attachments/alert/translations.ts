@@ -7,10 +7,9 @@
 
 import { i18n } from '@kbn/i18n';
 
-export const ALERT_DISPLAY_NAME = i18n.translate(
-  'xpack.securitySolution.cases.alertAttachment.displayName',
-  { defaultMessage: 'Alert' }
-);
+export const ALERT_DISPLAY_NAME = i18n.translate('xpack.securitySolution.cases.alert.displayName', {
+  defaultMessage: 'Alerts',
+});
 
 export const ALERT_AVATAR_ARIA_LABEL = i18n.translate(
   'xpack.securitySolution.cases.alertAttachment.avatarAriaLabel',

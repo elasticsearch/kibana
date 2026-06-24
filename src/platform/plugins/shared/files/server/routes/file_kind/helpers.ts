@@ -20,11 +20,13 @@ type ResultOrHttpError =
 
 /**
  * A helper that given an ID will return a file or map errors to an http response.
+ * Enforces that the resolved file belongs to the requested file kind so that
+ * authorization on the URL kind cannot be bypassed by supplying a cross-kind ID.
  */
 export async function getById(
   fileService: FileServiceStart,
   id: string,
-  _fileKind: string
+  fileKind: string
 ): Promise<ResultOrHttpError> {
   let result: undefined | File;
   try {
@@ -37,6 +39,12 @@ export async function getById(
       error = kibanaResponseFactory.custom({ statusCode: 500, body: { message: e.message } });
     }
     return { error };
+  }
+
+  if (result.data.fileKind !== fileKind) {
+    return {
+      error: kibanaResponseFactory.notFound({ body: { message: 'File not found' } }),
+    };
   }
 
   return { result };

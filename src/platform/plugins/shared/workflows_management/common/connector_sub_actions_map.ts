@@ -40,6 +40,10 @@ import {
   SUB_ACTION as OpsgenieSubActions,
 } from '@kbn/connector-schemas/opsgenie/constants';
 import {
+  CONNECTOR_ID as SLACK_API_CONNECTOR_ID,
+  SUB_ACTION as SLACK_API_SUB_ACTION,
+} from '@kbn/connector-schemas/slack_api/constants';
+import {
   CONNECTOR_ID as THEHIVE_CONNECTOR_ID,
   SUB_ACTION as THEHIVE_SUB_ACTION,
 } from '@kbn/connector-schemas/thehive/constants';
@@ -125,6 +129,7 @@ function createSubActionsMapping() {
     { id: JIRA_SERVICE_MANAGEMENT_CONNECTOR_TYPE_ID, actions: JiraServiceManagementSubActions },
     { id: OpsgenieConnectorTypeId, actions: OpsgenieSubActions },
     { id: MCP_CONNECTOR_ID, actions: MCP_SUB_ACTION },
+    { id: SLACK_API_CONNECTOR_ID, actions: SLACK_API_SUB_ACTION },
     // Legacy connectors (using older ActionType pattern)
     { id: '.jira', actions: JIRA_SUB_ACTIONS },
     { id: '.servicenow-itsm', actions: SERVICENOW_ITSM_SUB_ACTIONS },

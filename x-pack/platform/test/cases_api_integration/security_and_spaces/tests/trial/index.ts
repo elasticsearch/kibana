@@ -40,6 +40,8 @@ export default ({ loadTestFile, getService }: FtrProviderContext): void => {
     loadTestFile(require.resolve('./user_profiles/get_current'));
     // case observables are only available with a license above basic
     loadTestFile(require.resolve('./internal/observables'));
+    // end-to-end observable extraction via the attachment bulkCreate side effect
+    loadTestFile(require.resolve('./internal/extract_observables'));
 
     // Internal routes
     loadTestFile(require.resolve('./internal/get_user_action_stats'));

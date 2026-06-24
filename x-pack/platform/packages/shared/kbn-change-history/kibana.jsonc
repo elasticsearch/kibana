@@ -1,7 +1,7 @@
 {
   "type": "shared-common",
   "id": "@kbn/change-history",
-  "owner": "@elastic/security-detection-rule-management",
+  "owner": "@elastic/security-detection-engineering",
   "group": "platform",
   "visibility": "shared"
 }

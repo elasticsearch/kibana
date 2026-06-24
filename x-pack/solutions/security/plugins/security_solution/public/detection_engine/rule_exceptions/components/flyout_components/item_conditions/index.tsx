@@ -25,7 +25,7 @@ import type {
   ExceptionsBuilderReturnExceptionItem,
 } from '@kbn/securitysolution-list-utils';
 import type { DataViewBase } from '@kbn/es-query';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 import { ENDPOINT_ARTIFACT_LISTS } from '@kbn/securitysolution-list-constants';
 import { hasEqlSequenceQuery } from '../../../../../../common/detection_engine/utils';
 import type { Rule } from '../../../../rule_management/logic/types';
@@ -54,9 +54,7 @@ const OS_OPTIONS: Array<EuiComboBoxOptionOption<OsTypeArray>> = [
 ];
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 interface ExceptionsFlyoutConditionsComponentProps {

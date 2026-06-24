@@ -150,7 +150,7 @@
     "@kbn/logging",
     "@kbn/logging-mocks",
     "@kbn/react-hooks",
-    "@kbn/app-header"
+    "@kbn/app-header",
   ],
   "exclude": ["target/**/*"]
 }

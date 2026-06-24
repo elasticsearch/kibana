@@ -19,6 +19,7 @@ export * from './src/apm_timeseries';
 export * from './src/connections';
 export type * from './src/container_type';
 export type * from './src/coordinate';
+export * from './src/correlations_constants';
 export type * from './src/correlations';
 export * from './src/custom_dashboards';
 export * from './src/custom_link';

@@ -74,6 +74,7 @@ export const CertificatesPage: React.FC = () => {
     party,
     tags,
     issuers,
+    remoteNames,
     expiringWithin,
     setSearch,
     setMonitorTypes,
@@ -86,7 +87,8 @@ export const CertificatesPage: React.FC = () => {
 
   const dispatch = useDispatch();
 
-  const facets = useCertFacets();
+  // URL-driven cluster selection — see #273622 for the planned quick filter.
+  const facets = useCertFacets(remoteNames);
 
   const monitorTypeOptions = useMemo(
     () => withCounts(MONITOR_TYPE_FILTER_OPTIONS, facets?.monitorTypes),
@@ -132,6 +134,7 @@ export const CertificatesPage: React.FC = () => {
     tags,
     issuers,
     notValidAfter: expiringWithin,
+    remoteNames,
   });
 
   useEffect(() => {

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { FeedbackRegistryEntry } from '@kbn/feedback-components';
+import type { FeedbackRegistryEntry } from '@kbn/ui-feedback';
 
 /**
  * The id of the application associated with this feedback entry, e.g. 'dashboard', 'discover'

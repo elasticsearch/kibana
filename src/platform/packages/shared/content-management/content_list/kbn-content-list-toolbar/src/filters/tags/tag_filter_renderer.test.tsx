@@ -154,7 +154,7 @@ describe('TagFilterRenderer', () => {
 
     fireEvent.click(screen.getByText('Tags'));
 
-    const productionOption = await screen.findByTestId('tag-searchbar-option-tag-1');
+    const productionOption = await screen.findByTestId('tag-searchbar-option-Production');
     expect(productionOption).toBeInTheDocument();
   });
 
@@ -166,9 +166,9 @@ describe('TagFilterRenderer', () => {
     fireEvent.click(screen.getByText('Tags'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('tag-searchbar-option-tag-1')).toBeInTheDocument();
-      expect(screen.getByTestId('tag-searchbar-option-tag-2')).toBeInTheDocument();
-      expect(screen.getByTestId('tag-searchbar-option-tag-3')).toBeInTheDocument();
+      expect(screen.getByTestId('tag-searchbar-option-Production')).toBeInTheDocument();
+      expect(screen.getByTestId('tag-searchbar-option-Development')).toBeInTheDocument();
+      expect(screen.getByTestId('tag-searchbar-option-Archived')).toBeInTheDocument();
     });
   });
 

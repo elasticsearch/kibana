@@ -16,7 +16,7 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { css, cx } from '@emotion/css';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import type {
   EntryExists,
   EntryList,
@@ -62,7 +62,7 @@ const OPERATOR_TYPE_LABELS_EXCLUDED = Object.freeze({
 });
 
 const EuiFlexGroupNested = styled(EuiFlexGroup)`
-  margin-left: ${({ theme }) => theme.eui.euiSizeXL};
+  margin-left: ${({ theme }) => theme.euiTheme.size.xl};
 `;
 
 const EuiFlexItemNested = styled(EuiFlexItem)`

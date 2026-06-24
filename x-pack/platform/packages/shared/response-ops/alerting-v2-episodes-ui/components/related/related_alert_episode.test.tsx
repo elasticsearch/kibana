@@ -48,6 +48,18 @@ describe('RelatedAlertEpisode', () => {
     expect(screen.getByLabelText('host.name: server-1')).toBeInTheDocument();
   });
 
+  it('renders the severity badge after the status badge', () => {
+    render(
+      <RelatedAlertEpisode
+        episode={makeEpisode({ 'episode.id': 'ep-3', severity: 'high' })}
+        rule={rule}
+        href="/app/management/alertingV2/episodes/ep-3"
+      />
+    );
+
+    expect(screen.getByTestId('alertingV2EpisodeSeverityBadge-high')).toHaveTextContent('High');
+  });
+
   it('omits status badges when episode status is missing', () => {
     const { 'episode.status': _status, ...episodeWithoutStatus } = makeEpisode({
       'episode.id': 'ep-2',

@@ -34,7 +34,7 @@ export function registerAnomalyChartsCasesAttachment(
         event: (
           <FormattedMessage
             id="xpack.ml.cases.anomalyCharts.embeddableAddedEvent"
-            defaultMessage="added anomaly chart"
+            defaultMessage="added anomaly charts"
           />
         ),
         timelineAvatar: PLUGIN_ICON,

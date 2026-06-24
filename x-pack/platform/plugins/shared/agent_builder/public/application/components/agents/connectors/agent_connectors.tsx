@@ -20,7 +20,7 @@ import {
 } from '@elastic/eui';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAgentBuilderAgentById } from '../../../hooks/agents/use_agent_by_id';
-import { useCanEditAgent } from '../../../hooks/agents/use_can_edit_agent';
+import { useCanUpdateAgent } from '../../../hooks/agents/use_can_update_agent';
 import { useAgentConnectors } from '../../../hooks/connectors/use_agent_connectors';
 import { useConnectorsActions } from '../../../context/connectors_provider';
 import { useKibana } from '../../../hooks/use_kibana';
@@ -49,7 +49,7 @@ export const AgentConnectors = ({ agentId }: AgentConnectorsProps) => {
   const agentQuery = useAgentBuilderAgentById(agentId);
   const { openCreateFlyout } = useConnectorsActions();
   const hasAllPrivileges = useHasConnectorsAllPrivileges();
-  const canEditAgent = useCanEditAgent({ agent: agentQuery.agent ?? null });
+  const canEditAgent = useCanUpdateAgent({ agent: agentQuery.agent ?? null });
 
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

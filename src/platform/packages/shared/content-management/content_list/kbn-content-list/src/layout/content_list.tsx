@@ -11,6 +11,7 @@ import React, { type ReactNode } from 'react';
 import { useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { useContentListPhase } from '@kbn/content-list-provider';
+import { CONTENT_LIST_TEST_SUBJECTS } from '@kbn/content-list-common';
 import { ContentListEmptyState } from '../empty_state';
 
 /**
@@ -48,7 +49,7 @@ export const ContentList = ({
     return (
       <div data-test-subj={`${dataTestSubj}-emptyState`}>
         {emptyState === undefined ? (
-          <ContentListEmptyState data-test-subj="content-list-default-empty-state" />
+          <ContentListEmptyState data-test-subj={CONTENT_LIST_TEST_SUBJECTS.defaultEmptyState} />
         ) : (
           emptyState
         )}

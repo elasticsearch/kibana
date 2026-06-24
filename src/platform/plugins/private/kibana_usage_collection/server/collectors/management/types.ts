@@ -195,6 +195,7 @@ export interface UsageStats {
   'observability:streamsEnableQueryStreams': boolean;
   'observability:streamsEnableWiredStreamViews': boolean;
   'observability:streamsEnableDraftStreams': boolean;
+  'observability:streamsEnableCanvas': boolean;
   'observability:streamsSigEventsIndexPatterns': string;
   'securitySolution:entityStoreEnableV2': boolean;
   'elasticRamen:enabled': boolean;

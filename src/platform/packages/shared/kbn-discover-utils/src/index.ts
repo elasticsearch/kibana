@@ -21,6 +21,7 @@ export type {
   DiscoverAppMenuItemType,
   DiscoverAppMenuPopoverItem,
   DiscoverAppMenuPrimaryActionItem,
+  DiscoverAppMenuRenderAction,
   DiscoverAppMenuRunAction,
   DiscoverAppMenuRunActionParams,
   DiscoverAppMenuContext,

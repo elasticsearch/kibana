@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 
 import type { ExceptionListItemSchema } from '@kbn/securitysolution-io-ts-list-types';
 
@@ -18,9 +18,9 @@ import type { ViewerState } from './reducer';
 import { ExeptionItemsViewerEmptyPrompts } from './empty_viewer_state';
 
 const MyFlexItem = styled(EuiFlexItem)`
-  margin: ${({ theme }) => `${theme.eui.euiSize} 0`};
+  margin: ${({ theme }) => `${theme.euiTheme.size.base} 0`};
   &:first-child {
-    margin: ${({ theme }) => `${theme.eui.euiSizeXS} 0 ${theme.eui.euiSize}`};
+    margin: ${({ theme }) => `${theme.euiTheme.size.xs} 0 ${theme.euiTheme.size.base}`};
   }
 `;
 

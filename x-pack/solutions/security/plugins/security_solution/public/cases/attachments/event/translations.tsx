@@ -7,6 +7,10 @@
 
 import { i18n } from '@kbn/i18n';
 
+export const EVENT_DISPLAY_NAME = i18n.translate('xpack.securitySolution.cases.event.displayName', {
+  defaultMessage: 'Events',
+});
+
 export const DATA_VIEW_ERROR = i18n.translate('xpack.securitySolution.caseEvents.dataViewError', {
   defaultMessage: 'Data View Error',
 });

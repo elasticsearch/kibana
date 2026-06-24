@@ -20,7 +20,7 @@ import { useKibana } from '../../../common/lib/kibana';
 import { NetworkDetailsLink } from '../../../common/components/links';
 import { NetworkPanelKey } from '../../../flyout/network_details';
 import { FlyoutLink } from '../../../flyout/shared/components/flyout_link';
-import { ChildLink } from '../../../flyout_v2/shared/components/child_link';
+import { OpenFlyoutLink } from '../../../flyout_v2/shared/components/open_flyout_link';
 import { Network } from '../../../flyout_v2/network/main';
 import { flyoutProviders } from '../../../flyout_v2/shared/components/flyout_provider';
 import { useDefaultDocumentFlyoutProperties } from '../../../flyout_v2/shared/hooks/use_default_flyout_properties';
@@ -134,7 +134,12 @@ const AddressLinksItemComponent: React.FC<AddressLinksItemProps> = ({
           title={title}
         />
       ) : newFlyoutSystemEnabled ? (
-        <ChildLink field={fieldName} value={address} data-test-subj="network-details" />
+        <OpenFlyoutLink
+          field={fieldName}
+          value={address}
+          asParent
+          data-test-subj="network-details"
+        />
       ) : (
         <FlyoutLink
           field={fieldName}

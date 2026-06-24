@@ -6,6 +6,7 @@
  */
 
 import expect from 'expect';
+import { AttachmentType } from '@kbn/cases-plugin/common';
 import { OBSERVABLE_TYPE_IPV4 } from '@kbn/cases-plugin/common/constants';
 import type { CasesTelemetry } from '@kbn/cases-plugin/server/telemetry/types';
 import { getPostCaseRequest, postCommentAlertReq } from '../../../common/lib/mock';
@@ -16,7 +17,7 @@ import {
   runTelemetryTask,
   createComment,
   bulkCreateAttachments,
-  bulkAddObservables,
+  addObservable,
 } from '../../../common/lib/api';
 import type { FtrProviderContext } from '../../../../common/ftr_provider_context';
 import { superUser } from '../../../common/lib/authentication/users';
@@ -122,64 +123,89 @@ export default ({ getService }: FtrProviderContext): void => {
     });
 
     it('should return the correct telemetry for cases with observables', async () => {
+      // Index synthetic alert docs with ECS source.ip fields.  The server-side
+      // extraction path fetches these via mget so we can control exactly which
+      // observables are produced without needing real detection-engine alerts.
+      const alertIndex = 'synthetic-cases-telemetry-alerts';
+
+      // First case: one alert whose source.ip produces 1 auto-extracted observable
+      await es.index({
+        index: alertIndex,
+        id: 'alert-telemetry-1',
+        refresh: 'true',
+        document: { 'source.ip': '127.0.0.2' },
+      });
+
+      // Second case: 50 alerts each with a distinct source.ip so they produce
+      // 50 distinct observables — hitting MAX_OBSERVABLES_PER_CASE exactly.
+      const bulkOps: Array<Record<string, unknown>> = [];
+      for (let i = 0; i < 50; i++) {
+        bulkOps.push({ index: { _index: alertIndex, _id: `alert-telemetry-2-${i}` } });
+        bulkOps.push({ 'source.ip': `10.0.0.${i}` });
+      }
+      await es.bulk({ operations: bulkOps, refresh: 'true' });
+
+      const caseSettings = { syncAlerts: false, extractObservables: true };
+
       const firstCase = await createCase(
         supertest,
-        getPostCaseRequest({ owner: 'securitySolution' }),
+        getPostCaseRequest({ owner: 'securitySolution', settings: caseSettings }),
         200,
-        {
-          user: superUser,
-          space: 'space1',
-        }
+        { user: superUser, space: 'space1' }
       );
 
       const secondCase = await createCase(
         supertest,
-        getPostCaseRequest({ owner: 'securitySolution' }),
+        getPostCaseRequest({ owner: 'securitySolution', settings: caseSettings }),
         200,
-        {
-          user: superUser,
-          space: 'space2',
-        }
+        { user: superUser, space: 'space2' }
       );
 
-      const firstObservables = [
-        {
-          typeKey: OBSERVABLE_TYPE_IPV4.key,
-          value: '127.0.0.1',
-          description: 'Manually added observable',
-        },
-        {
-          typeKey: OBSERVABLE_TYPE_IPV4.key,
-          value: '127.0.0.2',
-          description: 'Auto extract observables',
-        },
-      ];
-
-      const secondObservables = [];
-      for (let i = 0; i < 100; i++) {
-        secondObservables.push({
-          typeKey: OBSERVABLE_TYPE_IPV4.key,
-          value: `127.0.0.${i}`,
-          description: 'Auto extract observables',
-        });
-      }
-
-      await bulkAddObservables({
+      // 1 manual observable on the first case
+      await addObservable({
         supertest,
+        caseId: firstCase.id,
         params: {
-          caseId: firstCase.id,
-          observables: firstObservables,
+          observable: {
+            typeKey: OBSERVABLE_TYPE_IPV4.key,
+            value: '127.0.0.1',
+            description: 'Manually added observable',
+          },
         },
+        auth: { user: superUser, space: 'space1' },
+      });
+
+      // 1 auto-extracted observable: attach the first alert to the first case.
+      // extractAndAddObservables fires on bulkCreate and pulls source.ip from the doc.
+      await bulkCreateAttachments({
+        supertest,
+        caseId: firstCase.id,
+        params: [
+          {
+            type: AttachmentType.alert,
+            alertId: 'alert-telemetry-1',
+            index: alertIndex,
+            rule: { id: 'rule-1', name: 'Rule 1' },
+            owner: 'securitySolution',
+          },
+        ],
         auth: { user: superUser, space: 'space1' },
         expectedHttpCode: 200,
       });
 
-      await bulkAddObservables({
+      // 50 auto-extracted observables: one attachment per alert on the second case.
+      // This reaches MAX_OBSERVABLES_PER_CASE (50) making totalWithMaxObservables = 1.
+      const secondCaseAttachments = Array.from({ length: 50 }, (_, i) => ({
+        type: AttachmentType.alert as const,
+        alertId: `alert-telemetry-2-${i}`,
+        index: alertIndex,
+        rule: { id: 'rule-2', name: 'Rule 2' },
+        owner: 'securitySolution',
+      }));
+      await bulkCreateAttachments({
         supertest,
-        params: {
-          caseId: secondCase.id,
-          observables: secondObservables,
-        },
+        caseId: secondCase.id,
+        params: secondCaseAttachments,
         auth: { user: superUser, space: 'space2' },
         expectedHttpCode: 200,
       });
@@ -193,12 +219,18 @@ export default ({ getService }: FtrProviderContext): void => {
         const securityCasesTelemetry = casesTelemetry.cases.sec;
 
         for (const telemetry of [allCasesTelemetry, securityCasesTelemetry]) {
+          // 1 manual (addObservable call)
           expect(telemetry.observables.manual.default).toBe(1);
+          // 1 from first case + 50 from second case = 51 auto-extracted
           expect(telemetry.observables.auto.default).toBe(51);
           expect(telemetry.observables.total).toBe(52);
+          // second case has exactly MAX_OBSERVABLES_PER_CASE observables
           expect(telemetry.totalWithMaxObservables).toBe(1);
         }
       });
+
+      // Clean up synthetic index
+      await es.indices.delete({ index: alertIndex, ignore_unavailable: true });
     });
   });
 };

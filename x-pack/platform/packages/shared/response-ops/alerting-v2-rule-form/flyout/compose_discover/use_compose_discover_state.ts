@@ -33,6 +33,8 @@ export interface InitialStateConfig {
   isBuilderMode?: boolean;
   /** When true, the query is already populated (e.g. from Discover) and the sandbox gate is skipped. */
   isQueryPrePopulated?: boolean;
+  /** When true, the flyout opens directly in YAML mode with the sandbox open. */
+  forceYamlMode?: boolean;
 }
 
 export const createInitialState = ({
@@ -41,6 +43,7 @@ export const createInitialState = ({
   initialRecoveryType = 'default',
   isBuilderMode = false,
   isQueryPrePopulated = false,
+  forceYamlMode = false,
 }: InitialStateConfig): ComposeDiscoverState => {
   const recoveryType = initialKind === 'alert' ? initialRecoveryType : 'default';
   return {
@@ -50,9 +53,9 @@ export const createInitialState = ({
     activeTab: defaultTabForTabs(
       getSandboxTabs(initialKind === 'alert', { step: 0, recoveryType })
     ),
-    childOpen: mode === 'create' && !isBuilderMode,
+    childOpen: forceYamlMode || mode === 'create',
     queryCommitted: mode === 'edit' || isQueryPrePopulated,
-    yamlMode: false,
+    yamlMode: forceYamlMode,
   };
 };
 

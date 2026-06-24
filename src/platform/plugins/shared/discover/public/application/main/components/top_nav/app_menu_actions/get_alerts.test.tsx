@@ -7,40 +7,42 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { isValidElement, type ReactElement } from 'react';
 import { dataViewMock } from '@kbn/discover-utils/src/__mocks__';
 import { ES_QUERY_ID } from '@kbn/rule-data-utils';
-import { getAlertsAppMenuItem } from './get_alerts';
+import {
+  AppMenuActionId,
+  type DiscoverAppMenuItemType,
+  type DiscoverAppMenuPopoverItem,
+  type DiscoverAppMenuRunActionParams,
+} from '@kbn/discover-utils';
+import { ESQLVariableType } from '@kbn/esql-types';
+import type { CreateRuleOptionsFlyoutProps } from '@kbn/alerting-v2-plugin/public';
+import { getAlertsAppMenuItem, getCreateRuleOptionsAppMenuItem } from './get_alerts';
 import { createDiscoverServicesMock } from '../../../../../__mocks__/services';
 import { dataViewWithTimefieldMock } from '../../../../../__mocks__/data_view_with_timefield';
 import { dataViewWithNoTimefieldMock } from '../../../../../__mocks__/data_view_no_timefield';
 import { getDiscoverInternalStateMock } from '../../../../../__mocks__/discover_state.mock';
-import type {
-  AlertsLegacyRuleType,
-  AppMenuExtensionParams,
-} from '../../../../../context_awareness';
-import type { DiscoverAppMenuItemType } from '@kbn/discover-utils';
+import type { AppMenuExtensionParams } from '../../../../../context_awareness';
 import type { DataView } from '@kbn/data-views-plugin/common';
 import type { DiscoverServices } from '../../../../../build_services';
 import { internalStateActions } from '../../../state_management/redux';
-import type { ReactElement } from 'react';
 
-const getAlertsMenuItem = async ({
-  dataView = dataViewMock,
-  isEsqlMode = false,
-  authorizedRuleTypeIds = [ES_QUERY_ID],
-  services = createDiscoverServicesMock(),
-  showCreateRuleV2,
-  esqlQuery = 'FROM logs-*',
-  additionalLegacyRuleTypes,
-}: {
+interface SetupAlertsMenuItemParams {
   dataView?: DataView;
   isEsqlMode?: boolean;
   authorizedRuleTypeIds?: string[];
   services?: DiscoverServices;
-  showCreateRuleV2?: boolean;
   esqlQuery?: string;
-  additionalLegacyRuleTypes?: AlertsLegacyRuleType[];
-} = {}): Promise<DiscoverAppMenuItemType> => {
+}
+
+const setupAlertsMenuItem = async ({
+  dataView = dataViewMock,
+  isEsqlMode = false,
+  authorizedRuleTypeIds = [ES_QUERY_ID],
+  services = createDiscoverServicesMock(),
+  esqlQuery = 'FROM logs-*',
+}: SetupAlertsMenuItemParams = {}) => {
   const toolkit = getDiscoverInternalStateMock({ services });
 
   await toolkit.initializeTabs();
@@ -66,16 +68,67 @@ const getAlertsMenuItem = async ({
     authorizedRuleTypeIds,
   };
 
-  return getAlertsAppMenuItem({
+  const alertsMenuItem = getAlertsAppMenuItem({
     discoverParams: discoverParamsMock,
     services,
     tabId: currentTab.id,
     getState: toolkit.internalState.getState,
     dispatch: toolkit.internalState.dispatch,
-    showCreateRuleV2,
-    subscribe: (listener) => toolkit.internalState.subscribe(listener),
-    additionalLegacyRuleTypes,
   });
+
+  return { alertsMenuItem, currentTab, discoverParamsMock, services, toolkit };
+};
+
+const getAlertsMenuItem = async (
+  params: SetupAlertsMenuItemParams = {}
+): Promise<DiscoverAppMenuItemType> => {
+  return (await setupAlertsMenuItem(params)).alertsMenuItem;
+};
+
+const getCreateRuleOptionsFlyout = (services: DiscoverServices) => {
+  const CreateRuleOptionsFlyout = services.alertingVTwo?.CreateRuleOptionsFlyout;
+
+  if (!CreateRuleOptionsFlyout) {
+    throw new Error('Expected create rule options flyout to be available');
+  }
+
+  return CreateRuleOptionsFlyout;
+};
+
+const setupCreateRuleOptionsMenuItem = async (
+  params: SetupAlertsMenuItemParams & {
+    alertsPopoverItems?: DiscoverAppMenuPopoverItem[];
+  } = {}
+) => {
+  const setup = await setupAlertsMenuItem({ ...params, isEsqlMode: params.isEsqlMode ?? true });
+  const createRuleOptionsAppMenuItem = getCreateRuleOptionsAppMenuItem({
+    CreateRuleOptionsFlyout: getCreateRuleOptionsFlyout(setup.services),
+    baseItem: setup.alertsMenuItem,
+    alertsPopoverItems: params.alertsPopoverItems ?? setup.alertsMenuItem.items ?? [],
+    services: setup.services,
+    tabId: setup.currentTab.id,
+    getState: setup.toolkit.internalState.getState,
+    subscribe: (listener) => setup.toolkit.internalState.subscribe(listener),
+  });
+
+  return { ...setup, createRuleOptionsAppMenuItem };
+};
+
+const renderCreateRuleOptionsFlyout = (
+  appMenuItem: DiscoverAppMenuItemType,
+  runParams: DiscoverAppMenuRunActionParams
+): ReactElement<CreateRuleOptionsFlyoutProps> => {
+  if (!appMenuItem.render) {
+    throw new Error('Expected create rule options app menu item to render content');
+  }
+
+  const flyoutElement = appMenuItem.render(runParams);
+
+  if (!isValidElement<CreateRuleOptionsFlyoutProps>(flyoutElement)) {
+    throw new Error('Expected create rule options app menu item to render a flyout');
+  }
+
+  return flyoutElement;
 };
 
 describe('getAlertsAppMenuItem', () => {
@@ -181,10 +234,8 @@ describe('getAlertsAppMenuItem', () => {
   describe('Manage rules and connectors link', () => {
     it('should link to the unified rules page when rules app is registered', async () => {
       const services = createDiscoverServicesMock();
-      (services.application.isAppRegistered as jest.Mock).mockReturnValue(true);
-      (services.application.getUrlForApp as jest.Mock).mockImplementation(
-        (appId: string) => `/app/${appId}`
-      );
+      jest.mocked(services.application.isAppRegistered).mockReturnValue(true);
+      jest.mocked(services.application.getUrlForApp).mockImplementation((appId) => `/app/${appId}`);
       const alertsMenuItem = await getAlertsMenuItem({ services });
       const manageAlertsItem = alertsMenuItem.items?.find(
         (item) => item.testId === 'discoverManageAlertsButton'
@@ -194,36 +245,28 @@ describe('getAlertsAppMenuItem', () => {
   });
 
   describe('v2 selector flyout', () => {
-    it('should return a direct action (no popover items) when showCreateRuleV2 is true', async () => {
-      const alertsMenuItem = await getAlertsMenuItem({ showCreateRuleV2: true });
+    it('should return a direct render action that preserves base item metadata', async () => {
+      const { alertsMenuItem, currentTab, services, toolkit } = await setupAlertsMenuItem();
+      const createRuleOptionsAppMenuItem = getCreateRuleOptionsAppMenuItem({
+        CreateRuleOptionsFlyout: getCreateRuleOptionsFlyout(services),
+        baseItem: { ...alertsMenuItem, separator: 'above' },
+        alertsPopoverItems: alertsMenuItem.items ?? [],
+        services,
+        tabId: currentTab.id,
+        getState: toolkit.internalState.getState,
+        subscribe: (listener) => toolkit.internalState.subscribe(listener),
+      });
 
-      expect(alertsMenuItem.items).toBeUndefined();
-      expect(alertsMenuItem.run).toBeDefined();
-      expect(alertsMenuItem.testId).toBe('discoverAlertsButton');
-    });
-
-    it('should have label "Create alert rule" when showCreateRuleV2 is true', async () => {
-      const alertsMenuItem = await getAlertsMenuItem({ showCreateRuleV2: true });
-
-      expect(alertsMenuItem.label).toBe('Create alert rule');
-    });
-
-    it('should return popover items when showCreateRuleV2 is false', async () => {
-      const alertsMenuItem = await getAlertsMenuItem({ showCreateRuleV2: false });
-
-      expect(alertsMenuItem.items).toBeDefined();
-      expect(alertsMenuItem.items!.length).toBeGreaterThan(0);
-    });
-
-    it('should return popover items when showCreateRuleV2 is undefined', async () => {
-      const alertsMenuItem = await getAlertsMenuItem();
-
-      expect(alertsMenuItem.items).toBeDefined();
-      expect(alertsMenuItem.items!.length).toBeGreaterThan(0);
+      expect(createRuleOptionsAppMenuItem.id).toBe(AppMenuActionId.alerts);
+      expect(createRuleOptionsAppMenuItem.label).toBe('Create alert rule');
+      expect(createRuleOptionsAppMenuItem.testId).toBe('discoverAlertsButton');
+      expect(createRuleOptionsAppMenuItem.separator).toBe('above');
+      expect(createRuleOptionsAppMenuItem.render).toEqual(expect.any(Function));
+      expect(createRuleOptionsAppMenuItem.items).toBeUndefined();
     });
   });
 
-  describe('alertsMenuItem.run', () => {
+  describe('createRuleOptionsAppMenuItem.render', () => {
     const createRunParams = (onFinishAction = jest.fn()) => ({
       triggerElement: document.createElement('button'),
       returnFocus: jest.fn(),
@@ -232,19 +275,19 @@ describe('getAlertsAppMenuItem', () => {
 
     it('should render CreateRuleOptionsFlyout with the current ES|QL query and subscribe handler', async () => {
       const createRuleOptionsFlyoutMock = jest.fn(() => null);
-      const services = {
-        ...createDiscoverServicesMock(),
-        alertingVTwo: { CreateRuleOptionsFlyout: createRuleOptionsFlyoutMock },
-      } as DiscoverServices;
-      const alertsMenuItem = await getAlertsMenuItem({
+      const services = createDiscoverServicesMock();
+      services.alertingVTwo = { CreateRuleOptionsFlyout: createRuleOptionsFlyoutMock };
+      const { createRuleOptionsAppMenuItem } = await setupCreateRuleOptionsMenuItem({
         services,
-        showCreateRuleV2: true,
         isEsqlMode: true,
         esqlQuery: 'FROM test-index | WHERE message != ""',
       });
 
       const onFinishAction = jest.fn();
-      const flyoutElement = alertsMenuItem.run!(createRunParams(onFinishAction)) as ReactElement;
+      const flyoutElement = renderCreateRuleOptionsFlyout(
+        createRuleOptionsAppMenuItem,
+        createRunParams(onFinishAction)
+      );
 
       expect(flyoutElement.type).toBe(createRuleOptionsFlyoutMock);
       expect(flyoutElement.props.initialQuery).toBe('FROM test-index | WHERE message != ""');
@@ -255,93 +298,145 @@ describe('getAlertsAppMenuItem', () => {
       expect(flyoutElement.props.history).toBe(services.history);
     });
 
-    it('should include the search threshold legacy rule when v1 rule creation is authorized', async () => {
-      const alertsMenuItem = await getAlertsMenuItem({
-        showCreateRuleV2: true,
+    it('should map renderable popover items into legacy rule types', async () => {
+      const customRuleRender = jest.fn(() => null);
+      const customRuleItem: DiscoverAppMenuPopoverItem = {
+        id: 'custom-threshold-rule',
+        order: 2,
+        label: 'Create custom threshold rule',
+        render: customRuleRender,
+        testId: 'discoverAppMenuCustomThresholdRule',
+      };
+
+      const alertsMenuItem = await getAlertsMenuItem({ isEsqlMode: true });
+
+      const { createRuleOptionsAppMenuItem } = await setupCreateRuleOptionsMenuItem({
         isEsqlMode: true,
         authorizedRuleTypeIds: [ES_QUERY_ID],
+        alertsPopoverItems: [...(alertsMenuItem.items ?? []), customRuleItem],
       });
 
-      const flyoutElement = alertsMenuItem.run!(createRunParams()) as ReactElement;
+      const runParams = createRunParams();
+      const flyoutElement = renderCreateRuleOptionsFlyout(createRuleOptionsAppMenuItem, runParams);
+      const legacyRuleTypes = flyoutElement.props.legacyRuleTypes ?? [];
+      const legacyRuleType = legacyRuleTypes.find(({ id }) => id === 'custom-threshold-rule');
 
-      expect(flyoutElement.props.legacyRuleTypes).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 'search-threshold-rule',
-            label: 'Search threshold rule',
-            'data-test-subj': 'discoverLegacySearchThresholdRule',
-          }),
-        ])
-      );
+      if (!legacyRuleType) {
+        throw new Error('Expected custom threshold legacy rule type to be mapped');
+      }
+
+      expect(
+        legacyRuleTypes.map(({ id, label, 'data-test-subj': testSubj }) => ({
+          id,
+          label,
+          'data-test-subj': testSubj,
+        }))
+      ).toEqual([
+        {
+          id: AppMenuActionId.createRule,
+          label: 'Create search threshold rule',
+          'data-test-subj': 'discoverCreateAlertButton',
+        },
+        {
+          id: 'custom-threshold-rule',
+          label: 'Create custom threshold rule',
+          'data-test-subj': 'discoverAppMenuCustomThresholdRule',
+        },
+      ]);
+
+      const onClose = jest.fn();
+      expect(legacyRuleType.render(onClose)).toBeNull();
+      expect(customRuleRender).toHaveBeenCalledWith({
+        ...runParams,
+        context: {
+          ...runParams.context,
+          onFinishAction: onClose,
+        },
+      });
     });
 
-    it('should merge additional legacy rule types from profile extensions', async () => {
-      const profileLegacyRule: AlertsLegacyRuleType = {
-        id: 'custom-threshold-rule',
-        label: 'Create custom threshold rule',
+    it('should only map enabled renderable popover items', async () => {
+      const actionOnlyRuleItem: DiscoverAppMenuPopoverItem = {
+        id: 'action-only-rule',
+        order: 1,
+        label: 'Action-only rule',
+        run: jest.fn(),
+      };
+      const disabledRuleItem: DiscoverAppMenuPopoverItem = {
+        id: 'disabled-rule',
+        order: 2,
+        label: 'Disabled rule',
+        render: jest.fn(() => null),
+        disableButton: true,
+      };
+      const enabledRuleItem: DiscoverAppMenuPopoverItem = {
+        id: 'enabled-rule',
+        order: 3,
+        label: 'Enabled rule',
         render: jest.fn(() => null),
       };
 
-      const alertsMenuItem = await getAlertsMenuItem({
-        showCreateRuleV2: true,
+      const { createRuleOptionsAppMenuItem } = await setupCreateRuleOptionsMenuItem({
         isEsqlMode: true,
-        additionalLegacyRuleTypes: [profileLegacyRule],
+        alertsPopoverItems: [actionOnlyRuleItem, disabledRuleItem, enabledRuleItem],
       });
 
-      const flyoutElement = alertsMenuItem.run!(createRunParams()) as ReactElement;
-
-      expect(flyoutElement.props.legacyRuleTypes).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 'custom-threshold-rule',
-            label: 'Create custom threshold rule',
-          }),
-        ])
+      const flyoutElement = renderCreateRuleOptionsFlyout(
+        createRuleOptionsAppMenuItem,
+        createRunParams()
       );
+
+      expect(flyoutElement.props.legacyRuleTypes?.map(({ id }) => id)).toEqual(['enabled-rule']);
     });
 
-    it('should expose getQuery that reads the latest tab query when invoked', async () => {
+    it('should expose getters that read the latest tab state when invoked', async () => {
       const services = createDiscoverServicesMock();
-      const toolkit = getDiscoverInternalStateMock({ services });
-
-      await toolkit.initializeTabs();
-      await toolkit.initializeSingleTab({ tabId: toolkit.getCurrentTab().id });
-
-      const currentTab = toolkit.getCurrentTab();
-      const discoverParamsMock: AppMenuExtensionParams = {
-        dataView: dataViewMock,
-        adHocDataViews: [],
+      const { createRuleOptionsAppMenuItem, toolkit } = await setupCreateRuleOptionsMenuItem({
+        services,
         isEsqlMode: true,
-        authorizedRuleTypeIds: [ES_QUERY_ID],
-      };
+      });
 
       toolkit.internalState.dispatch(
         toolkit.injectCurrentTab(internalStateActions.setAppState)({
           appState: { query: { esql: 'FROM initial-index' } },
         })
       );
+      toolkit.internalState.dispatch(
+        toolkit.injectCurrentTab(internalStateActions.setEsqlVariables)({
+          esqlVariables: [{ key: 'host', value: 'web-1', type: ESQLVariableType.VALUES }],
+        })
+      );
 
-      const alertsMenuItem = getAlertsAppMenuItem({
-        discoverParams: discoverParamsMock,
-        services,
-        tabId: currentTab.id,
-        getState: toolkit.internalState.getState,
-        dispatch: toolkit.internalState.dispatch,
-        showCreateRuleV2: true,
-        subscribe: (listener) => toolkit.internalState.subscribe(listener),
-      });
+      const flyoutElement = renderCreateRuleOptionsFlyout(
+        createRuleOptionsAppMenuItem,
+        createRunParams()
+      );
+      const { getQuery, getEsqlVariables } = flyoutElement.props;
 
-      const flyoutElement = alertsMenuItem.run!(createRunParams()) as ReactElement;
+      if (!getQuery || !getEsqlVariables) {
+        throw new Error('Expected create rule options flyout getters to be defined');
+      }
 
-      expect(flyoutElement.props.getQuery()).toBe('FROM initial-index');
+      expect(getQuery()).toBe('FROM initial-index');
+      expect(getEsqlVariables()).toEqual([
+        { key: 'host', value: 'web-1', type: ESQLVariableType.VALUES },
+      ]);
 
       toolkit.internalState.dispatch(
         toolkit.injectCurrentTab(internalStateActions.setAppState)({
           appState: { query: { esql: 'FROM updated-index | WHERE status == "open"' } },
         })
       );
+      toolkit.internalState.dispatch(
+        toolkit.injectCurrentTab(internalStateActions.setEsqlVariables)({
+          esqlVariables: [{ key: 'host', value: 'web-2', type: ESQLVariableType.VALUES }],
+        })
+      );
 
-      expect(flyoutElement.props.getQuery()).toBe('FROM updated-index | WHERE status == "open"');
+      expect(getQuery()).toBe('FROM updated-index | WHERE status == "open"');
+      expect(getEsqlVariables()).toEqual([
+        { key: 'host', value: 'web-2', type: ESQLVariableType.VALUES },
+      ]);
     });
   });
 });

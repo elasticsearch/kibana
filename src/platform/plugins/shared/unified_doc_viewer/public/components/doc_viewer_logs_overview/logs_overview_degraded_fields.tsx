@@ -220,6 +220,7 @@ export const LogsOverviewDegradedFields = forwardRef<
             >
               <EuiPanel hasBorder={true} hasShadow={false} paddingSize="s">
                 <EuiBasicTable
+                  tableCaption={qualityIssuesAccordionTitle}
                   tableLayout="fixed"
                   columns={columns}
                   items={renderedItems ?? []}

@@ -247,6 +247,7 @@ export const onMouseDownResizeHandler = (
 
   document.body.addEventListener('mousemove', onMouseMove);
   document.body.addEventListener('mouseup', onMouseUp, { once: true });
+  document.body.addEventListener('touchend', onMouseUp, { once: true });
 };
 
 export const onKeyDownResizeHandler = (
@@ -464,27 +465,33 @@ export const shouldAutoTriggerSuggestions = (lineContentBeforeCursor: string): b
 export const trackSuggestionPopupState = (
   editor: monaco.editor.IStandaloneCodeEditor,
   isSuggestionPopupOpenRef: React.MutableRefObject<boolean>
-) => {
+): monaco.IDisposable => {
   const suggestionController = editor.getContribution('editor.contrib.suggestController') as
     | (monaco.editor.IEditorContribution & {
         widget?: {
           value?: {
-            onDidShow?: (cb: () => void) => void;
-            onDidHide?: (cb: () => void) => void;
+            onDidShow?: (cb: () => void) => monaco.IDisposable;
+            onDidHide?: (cb: () => void) => monaco.IDisposable;
           };
         };
       })
     | undefined;
   const suggestionWidget = suggestionController?.widget?.value;
 
+  const disposables: monaco.IDisposable[] = [];
   if (suggestionWidget?.onDidShow && suggestionWidget?.onDidHide) {
-    suggestionWidget.onDidShow(() => {
-      isSuggestionPopupOpenRef.current = true;
-    });
-    suggestionWidget.onDidHide(() => {
-      isSuggestionPopupOpenRef.current = false;
-    });
+    disposables.push(
+      suggestionWidget.onDidShow(() => {
+        isSuggestionPopupOpenRef.current = true;
+      })
+    );
+    disposables.push(
+      suggestionWidget.onDidHide(() => {
+        isSuggestionPopupOpenRef.current = false;
+      })
+    );
   }
+  return { dispose: () => disposables.forEach((d) => d.dispose()) };
 };
 
 /**

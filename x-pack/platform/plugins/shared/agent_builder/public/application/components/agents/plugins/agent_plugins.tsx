@@ -39,7 +39,7 @@ import { PluginAddMenuPanel } from './plugin_add_menu_panel';
 import { PageWrapper } from '../common/page_wrapper';
 import { PluginsCustomizeEmptyState } from './plugins_customize_empty_state';
 import { useListDetailPageStyles } from '../common/styles';
-import { useCanEditAgent } from '../../../hooks/agents/use_can_edit_agent';
+import { useCanUpdateAgent } from '../../../hooks/agents/use_can_update_agent';
 import { usePluginsMutation } from './use_plugins_mutation';
 
 export const AgentPlugins: React.FC = () => {
@@ -49,7 +49,7 @@ export const AgentPlugins: React.FC = () => {
 
   const { agent, isLoading: agentLoading } = useAgentBuilderAgentById(agentId);
   const { plugins: allPlugins, isLoading: pluginsLoading } = usePluginsService();
-  const canEditAgent = useCanEditAgent({ agent });
+  const canEditAgent = useCanUpdateAgent({ agent });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPluginId, setSelectedPluginId] = useQueryState<string>(searchParamNames.pluginId);

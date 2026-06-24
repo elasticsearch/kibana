@@ -300,7 +300,9 @@ export function Wrapper({
           };
         })}
       />
-      <StreamsAppPageTemplate.Body noPadding={tab === 'partitioning' || tab === 'processing'}>
+      <StreamsAppPageTemplate.Body
+        noPadding={tab === 'partitioning' || tab === 'processing' || tab === 'canvas'}
+      >
         {topContent}
         {Streams.ingest.all.GetResponse.is(definition) && definition.replicated && (
           <>

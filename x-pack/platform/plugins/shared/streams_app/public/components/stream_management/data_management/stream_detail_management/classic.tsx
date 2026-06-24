@@ -25,6 +25,7 @@ import { StreamDetailSchemaEditor } from '../stream_detail_schema_editor';
 import { StreamDetailAttachments } from '../../../stream_detail_attachments';
 import { ClassicStreamPartitioning } from '../stream_detail_routing/classic_stream_partitioning';
 import { LifecycleTabLabel } from './lifecycle_tab_label_with_actions';
+import { StreamDetailCanvas } from '../stream_detail_canvas';
 
 const classicStreamManagementSubTabs = [
   'overview',
@@ -36,6 +37,7 @@ const classicStreamManagementSubTabs = [
   'schemaEditor',
   'schema',
   'attachments',
+  'canvas',
 ] as const;
 
 type ClassicStreamManagementSubTab = (typeof classicStreamManagementSubTabs)[number];
@@ -69,7 +71,7 @@ export function ClassicStreamDetailManagement({
   } = useStreamsAppParams('/{key}/management/{tab}');
 
   const {
-    features: { queryStreams },
+    features: { canvas, queryStreams },
   } = useStreamsPrivileges();
 
   const { processing, isLoading, ...otherTabs } = useStreamsDetailManagementTabs({
@@ -178,6 +180,15 @@ export function ClassicStreamDetailManagement({
     }),
   };
 
+  if (canvas.enabled) {
+    tabs.canvas = {
+      content: <StreamDetailCanvas streamName={definition.stream.name} />,
+      label: i18n.translate('xpack.streams.streamDetailView.canvasTab', {
+        defaultMessage: 'Canvas',
+      }),
+    };
+  }
+
   if (otherTabs.significantEvents) {
     tabs.significantEvents = otherTabs.significantEvents;
   }
@@ -185,6 +196,12 @@ export function ClassicStreamDetailManagement({
   if (tab === 'partitioning' && !queryStreams.enabled) {
     return (
       <RedirectTo path="/{key}/management/{tab}" params={{ path: { key, tab: 'lifecycle' } }} />
+    );
+  }
+
+  if (tab === 'canvas' && !canvas.enabled) {
+    return (
+      <RedirectTo path="/{key}/management/{tab}" params={{ path: { key, tab: 'overview' } }} />
     );
   }
 

@@ -19,8 +19,12 @@ import {
   useEuiTheme,
   type EuiThemeComputed,
 } from '@elastic/eui';
-import { type AgentAclEntry, AgentAclRole, type AgentDefinition } from '@kbn/agent-builder-common';
-import { selectableRolesForVisibility } from './role_to_capabilities';
+import {
+  type AgentAccessControlEntry,
+  AgentAccessControlRole,
+  type AgentDefinition,
+} from '@kbn/agent-builder-common';
+import { selectableRolesForAccessControlMode } from './role_to_capabilities';
 import { PrincipalRow } from './principal_row';
 import { UserPicker } from './user_picker';
 import {
@@ -30,11 +34,11 @@ import {
 } from './access_i18n';
 
 interface AccessFormProps {
-  agent: AgentDefinition;
-  entries: AgentAclEntry[];
+  agent: Pick<AgentDefinition, 'access_control'>;
+  entries: AgentAccessControlEntry[];
   ownerName?: string;
   isDisabled?: boolean;
-  onChange: (entries: AgentAclEntry[]) => void;
+  onChange: (entries: AgentAccessControlEntry[]) => void;
 }
 
 const sectionStyles = (euiTheme: EuiThemeComputed) => css`
@@ -89,24 +93,24 @@ export const AccessForm: React.FC<AccessFormProps> = ({
   onChange,
 }) => {
   const { euiTheme } = useEuiTheme();
-  const visibility = agent.visibility;
+  const accessControlMode = agent.access_control?.access_mode;
 
   const defaultRole = useMemo(() => {
-    const allowed = selectableRolesForVisibility(visibility);
-    return allowed.includes(AgentAclRole.User) ? AgentAclRole.User : allowed[0];
-  }, [visibility]);
+    const allowed = selectableRolesForAccessControlMode(accessControlMode);
+    return allowed.includes(AgentAccessControlRole.User) ? AgentAccessControlRole.User : allowed[0];
+  }, [accessControlMode]);
 
-  const handleAdd = (entry: AgentAclEntry) => {
+  const handleAdd = (entry: AgentAccessControlEntry) => {
     onChange([...entries, entry]);
   };
 
-  const handleChangeRole = (target: AgentAclEntry, role: AgentAclRole) => {
+  const handleChangeRole = (target: AgentAccessControlEntry, role: AgentAccessControlRole) => {
     onChange(
       entries.map((e) => (e.type === target.type && e.name === target.name ? { ...e, role } : e))
     );
   };
 
-  const handleRemove = (target: AgentAclEntry) => {
+  const handleRemove = (target: AgentAccessControlEntry) => {
     onChange(entries.filter((e) => !(e.type === target.type && e.name === target.name)));
   };
 
@@ -147,7 +151,7 @@ export const AccessForm: React.FC<AccessFormProps> = ({
                 <PrincipalRow
                   key={`user:${entry.name}`}
                   entry={entry}
-                  visibility={visibility}
+                  accessControlMode={accessControlMode}
                   isDisabled={isDisabled}
                   onChangeRole={(role) => handleChangeRole(entry, role)}
                   onRemove={() => handleRemove(entry)}

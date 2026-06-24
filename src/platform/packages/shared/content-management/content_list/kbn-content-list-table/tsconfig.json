@@ -20,6 +20,7 @@
   ],
   "kbn_references": [
     "@kbn/content-list-assembly",
+    "@kbn/content-list-common",
     "@kbn/content-list-provider",
     "@kbn/content-management-tags",
     "@kbn/content-management-favorites-public",

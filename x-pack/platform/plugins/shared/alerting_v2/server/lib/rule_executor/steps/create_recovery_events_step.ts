@@ -19,7 +19,7 @@ import {
 } from '../../services/logger_service/logger_service';
 import {
   QueryServiceInternalToken,
-  QueryServiceScopedToken,
+  QueryServiceScopedSpaceRoutingToken,
 } from '../../services/query_service/tokens';
 import type { QueryServiceContract } from '../../services/query_service/query_service';
 import { getActiveAlertGroupHashesQuery, type ActiveAlertGroupHash } from '../queries';
@@ -35,7 +35,8 @@ export class CreateRecoveryEventsStep implements RuleExecutionStep {
   constructor(
     @inject(LoggerServiceToken) private readonly logger: LoggerServiceContract,
     @inject(QueryServiceInternalToken) private readonly internalQueryService: QueryServiceContract,
-    @inject(QueryServiceScopedToken) private readonly scopedQueryService: QueryServiceContract
+    @inject(QueryServiceScopedSpaceRoutingToken)
+    private readonly scopedQueryService: QueryServiceContract
   ) {}
 
   public executeStream(streamState: PipelineStateStream): PipelineStateStream {

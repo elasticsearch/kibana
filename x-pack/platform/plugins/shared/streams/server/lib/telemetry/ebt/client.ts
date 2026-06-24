@@ -17,6 +17,7 @@ import type {
   StreamsAgentToolKiIdentificationStartedProps,
   StreamsAgentToolEventCreateProps,
   StreamsAgentToolEventStatusUpdateProps,
+  StreamsCodeAnalysisGroundingProps,
   StreamsSignificantEventsDiscoveryTriggeredProps,
   StreamsOnboardingScheduledProps,
 } from './types';
@@ -31,6 +32,7 @@ import {
   STREAMS_AGENT_TOOL_KI_IDENTIFICATION_STARTED_EVENT_TYPE,
   STREAMS_AGENT_TOOL_EVENT_CREATE_EVENT_TYPE,
   STREAMS_AGENT_TOOL_EVENT_STATUS_UPDATE_EVENT_TYPE,
+  STREAMS_CODE_ANALYSIS_GROUNDING_EVENT_TYPE,
   STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_TRIGGERED_EVENT_TYPE,
   STREAMS_ONBOARDING_SCHEDULED_EVENT_TYPE,
 } from './constants';
@@ -118,6 +120,10 @@ export class EbtTelemetryClient {
 
   public trackAgentToolEventStatusUpdate(params: StreamsAgentToolEventStatusUpdateProps) {
     this.analytics.reportEvent(STREAMS_AGENT_TOOL_EVENT_STATUS_UPDATE_EVENT_TYPE, params);
+  }
+
+  public trackCodeAnalysisGrounding(params: StreamsCodeAnalysisGroundingProps) {
+    this.analytics.reportEvent(STREAMS_CODE_ANALYSIS_GROUNDING_EVENT_TYPE, params);
   }
 
   public trackSignificantEventsDiscoveryTriggered(

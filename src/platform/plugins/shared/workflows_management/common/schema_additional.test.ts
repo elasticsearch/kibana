@@ -9,6 +9,7 @@
 
 import { getWorkflowJsonSchema, isDynamicConnector, StepCategory } from '@kbn/workflows';
 import { z } from '@kbn/zod/v4';
+import { CONNECTOR_SUB_ACTIONS_MAP } from './connector_sub_actions_map';
 import {
   createMockConnectorInstance,
   createMockConnectorTypeInfo,
@@ -361,6 +362,43 @@ describe('schema - additional coverage', () => {
         isRuleSeverity: false,
         body: null,
       });
+    });
+
+    it('should create Slack API sub-action contracts that accept flat workflow params', () => {
+      const types = {
+        '.slack_api': createMockConnectorTypeInfo({
+          actionTypeId: '.slack_api',
+          displayName: 'Slack API',
+          subActions: CONNECTOR_SUB_ACTIONS_MAP['.slack_api'],
+        }),
+      };
+
+      const contracts = convertDynamicConnectorsToContracts(types);
+
+      expect(contracts.map((contract) => contract.type)).toEqual([
+        'slack_api.validChannelId',
+        'slack_api.postMessage',
+        'slack_api.postBlockkit',
+      ]);
+
+      const schema = getWorkflowZodSchema(types);
+      expect(() =>
+        schema.parse({
+          name: 'slack api workflow',
+          triggers: [{ type: 'manual' }],
+          steps: [
+            {
+              name: 'post_digest_to_slack',
+              type: 'slack_api.postBlockkit',
+              'connector-id': 'slackybot',
+              with: {
+                channelNames: ['#triage'],
+                text: JSON.stringify({ blocks: [] }),
+              },
+            },
+          ],
+        })
+      ).not.toThrow();
     });
   });
 

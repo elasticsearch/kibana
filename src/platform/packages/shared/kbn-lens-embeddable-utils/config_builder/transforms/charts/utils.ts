@@ -49,7 +49,7 @@ export function getSharedChartAPIToLensState(config: { title?: string; descripti
 
 export function getMetricAccessor(
   visualization: GaugeVisualizationState | MetricVisualizationState
-) {
+): string | undefined {
   // @ts-expect-error Unfortunately for some obscure reasons there are SO out there with the accessor property instead of the correct one
   return visualization.metricAccessor ?? visualization.accessor;
 }

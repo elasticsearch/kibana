@@ -19,6 +19,8 @@ export const memoriesMappings = {
     name: mappings.keyword(),
     title: mappings.text({ fields: { keyword: { type: 'keyword', ignore_above: 512 } } }),
     content: mappings.text(),
+    // Semantic embedding — populated on write, queried via 'semantic' or 'hybrid' search mode
+    search_embedding: mappings.semanticText(),
     // Classification
     categories: mappings.keyword(),
     tags: mappings.keyword(),
@@ -38,7 +40,7 @@ export type StoredMemoryPage = GetFieldsOf<typeof memoriesMappings>;
 
 export const memoriesDataStream: DataStreamDefinition<typeof memoriesMappings, StoredMemoryPage> = {
   name: MEMORIES_DATA_STREAM,
-  version: 1,
+  version: 2,
   hidden: true,
   template: {
     priority: 500,

@@ -9,7 +9,7 @@ import { EuiDatePicker, EuiFieldText, EuiFormRow, EuiSpacer, EuiTitle } from '@e
 import type { Moment } from 'moment';
 import moment from 'moment';
 import React, { useCallback, useState } from 'react';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 import * as i18n from './translations';
 
 interface ExceptionItmeExpireTimeProps {
@@ -19,9 +19,7 @@ interface ExceptionItmeExpireTimeProps {
 }
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 const ExceptionItemExpireTime: React.FC<ExceptionItmeExpireTimeProps> = ({

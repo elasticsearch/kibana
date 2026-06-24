@@ -36,6 +36,7 @@ import {
   identifyInferredFeatures,
   identifyComputedFeatures,
 } from '../../../sig_events/features';
+import { isSignificantEventsSemanticCodeSearchGroundingEnabled } from '../../../semantic_code_search_grounding/is_significant_events_semantic_code_search_grounding_enabled';
 
 export interface FeaturesIdentificationTaskParams {
   start: number;
@@ -159,6 +160,12 @@ async function runFeaturesIdentification(
     // inferred-features loop below throws before we reach the `await`. An
     // unhandled rejection on this promise (e.g. `index_not_found_exception`
     // when a wired stream has no backing data stream yet) crashes Kibana.
+    const codeGroundingEnabled =
+      Boolean(taskContext.server.agentBuilder?.tools) &&
+      (await isSignificantEventsSemanticCodeSearchGroundingEnabled(
+        taskContext.server.core.featureFlags
+      ));
+
     const computedFeaturesPromise = identifyComputedFeatures({
       stream,
       streamName: stream.name,
@@ -168,6 +175,13 @@ async function runFeaturesIdentification(
       kiClient,
       logger: taskLogger,
       runId,
+      ...(codeGroundingEnabled
+        ? {
+            agentBuilderTools: taskContext.server.agentBuilder?.tools,
+            request: fakeRequest,
+            telemetry: taskContext.telemetry,
+          }
+        : {}),
     }).catch((err) => {
       // Computed features generation is not expected to fail; surface it as
       // an error so it's actionable, but swallow the rejection so it cannot

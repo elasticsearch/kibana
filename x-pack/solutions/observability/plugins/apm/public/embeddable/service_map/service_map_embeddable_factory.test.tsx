@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { BehaviorSubject, Subject } from 'rxjs';
 import {
   ENVIRONMENT_ALL,
@@ -36,6 +36,11 @@ jest.mock('@kbn/presentation-publishing', () => ({
   timeRangeComparators: { time_range: 'deepEquality' },
   useBatchedPublishingSubjects: (...args: unknown[]) => mockUseBatchedPublishingSubjects(...args),
   useFetchContext: (...args: unknown[]) => mockUseFetchContext(...args),
+  apiHasParentApi: (api: unknown) =>
+    Boolean((api as { parentApi?: unknown } | null)?.parentApi !== undefined),
+  apiCanExpandPanels: (api: unknown) =>
+    Boolean((api as { expandPanel?: unknown } | null)?.expandPanel !== undefined),
+  getViewModeSubject: (api: unknown) => (api as { viewMode$?: unknown } | null)?.viewMode$,
 }));
 
 jest.mock('../embeddable_context', () => ({
@@ -517,6 +522,138 @@ describe('getServiceMapEmbeddableFactory', () => {
       const api = await buildEmbeddableWithApi({});
 
       expect(api.filters$.getValue()).toHaveLength(0);
+    });
+  });
+
+  describe('showEmbeddedControls', () => {
+    function buildWithExpandableParent(uuid: string, viewMode: 'view' | 'edit' = 'view') {
+      const expandedPanelId$ = new BehaviorSubject<string | undefined>(undefined);
+      const viewMode$ = new BehaviorSubject<string>(viewMode);
+      const parentApi = {
+        query$: new BehaviorSubject({ query: '' }),
+        expandPanel: jest.fn(),
+        expandedPanelId$,
+        viewMode$,
+      };
+      const finalizeApi = jest.fn((apiRegistration: Record<string, unknown>) => ({
+        ...apiRegistration,
+        parentApi,
+      }));
+      const factory = getServiceMapEmbeddableFactory({
+        coreStart: {},
+      } as unknown as EmbeddableDeps);
+
+      return { expandedPanelId$, factory, finalizeApi, parentApi, uuid };
+    }
+
+    it('is false when the panel is not expanded', async () => {
+      const uuid = 'panel-not-expanded';
+      const {
+        expandedPanelId$: _,
+        factory,
+        finalizeApi,
+        parentApi,
+      } = buildWithExpandableParent(uuid);
+
+      const embeddable = await factory.buildEmbeddable({
+        initialState: {},
+        finalizeApi,
+        uuid,
+        parentApi,
+        initializeDrilldownsManager: jest.fn(),
+      } as never);
+
+      render(<embeddable.Component />);
+
+      expect(mockServiceMapEmbeddable).toHaveBeenCalledWith(
+        expect.objectContaining({ showEmbeddedControls: false })
+      );
+    });
+
+    it('becomes true when expandedPanelId$ emits this panel uuid in view mode', async () => {
+      const uuid = 'panel-maximize-view';
+      const { expandedPanelId$, factory, finalizeApi, parentApi } = buildWithExpandableParent(
+        uuid,
+        'view'
+      );
+
+      const embeddable = await factory.buildEmbeddable({
+        initialState: {},
+        finalizeApi,
+        uuid,
+        parentApi,
+        initializeDrilldownsManager: jest.fn(),
+      } as never);
+
+      render(<embeddable.Component />);
+
+      act(() => {
+        expandedPanelId$.next(uuid);
+      });
+
+      expect(mockServiceMapEmbeddable).toHaveBeenLastCalledWith(
+        expect.objectContaining({ showEmbeddedControls: true })
+      );
+    });
+
+    it('stays false when panel is expanded but dashboard is in edit mode', async () => {
+      const uuid = 'panel-maximize-edit';
+      const { expandedPanelId$, factory, finalizeApi, parentApi } = buildWithExpandableParent(
+        uuid,
+        'edit'
+      );
+
+      const embeddable = await factory.buildEmbeddable({
+        initialState: {},
+        finalizeApi,
+        uuid,
+        parentApi,
+        initializeDrilldownsManager: jest.fn(),
+      } as never);
+
+      render(<embeddable.Component />);
+
+      act(() => {
+        expandedPanelId$.next(uuid);
+      });
+
+      expect(mockServiceMapEmbeddable).toHaveBeenLastCalledWith(
+        expect.objectContaining({ showEmbeddedControls: false })
+      );
+    });
+
+    it('resets to false when panel collapses again', async () => {
+      const uuid = 'panel-collapse';
+      const { expandedPanelId$, factory, finalizeApi, parentApi } = buildWithExpandableParent(
+        uuid,
+        'view'
+      );
+
+      const embeddable = await factory.buildEmbeddable({
+        initialState: {},
+        finalizeApi,
+        uuid,
+        parentApi,
+        initializeDrilldownsManager: jest.fn(),
+      } as never);
+
+      render(<embeddable.Component />);
+
+      act(() => {
+        expandedPanelId$.next(uuid);
+      });
+
+      expect(mockServiceMapEmbeddable).toHaveBeenLastCalledWith(
+        expect.objectContaining({ showEmbeddedControls: true })
+      );
+
+      act(() => {
+        expandedPanelId$.next(undefined);
+      });
+
+      expect(mockServiceMapEmbeddable).toHaveBeenLastCalledWith(
+        expect.objectContaining({ showEmbeddedControls: false })
+      );
     });
   });
 

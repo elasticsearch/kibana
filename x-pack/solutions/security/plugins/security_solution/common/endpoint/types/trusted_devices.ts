@@ -5,17 +5,11 @@
  * 2.0.
  */
 
-import type { TypeOf } from '@kbn/config-schema';
 import type {
   OperatingSystem,
   TrustedDeviceConditionEntryField,
 } from '@kbn/securitysolution-utils';
-import type { PutTrustedDeviceUpdateRequestSchema } from '../schema/trusted_devices';
 import type { EffectScope } from './trusted_apps';
-
-export type PutTrustedDevicesRequestParams = TypeOf<
-  typeof PutTrustedDeviceUpdateRequestSchema.params
->;
 
 export interface TrustedDeviceConditionEntry<
   T extends TrustedDeviceConditionEntryField = TrustedDeviceConditionEntryField

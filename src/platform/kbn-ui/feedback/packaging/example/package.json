@@ -1,0 +1,10 @@
+{
+  "name": "feedback-example",
+  "version": "1.0.0",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "description": "Example application demonstrating FeedbackTriggerButton usage. Uses dependencies from Kibana root.",
+  "scripts": {
+    "start": "./start.sh"
+  }
+}

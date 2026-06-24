@@ -1,0 +1,10 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/ui-storybook-config",
+  "owner": [
+    "@elastic/appex-sharedux"
+  ],
+  "group": "platform",
+  "visibility": "private",
+  "devOnly": true
+}

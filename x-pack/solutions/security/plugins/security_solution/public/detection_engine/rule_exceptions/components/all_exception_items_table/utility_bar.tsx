@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { EuiText, EuiButtonGroup, EuiFlexGroup } from '@elastic/eui';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { ExceptionsPagination } from '../../utils/types';
@@ -32,7 +32,7 @@ const StyledBarGroup = styled(EuiFlexGroup)`
   align-items: center;
 `;
 
-const PaginationUtilityBarText = styled(UtilityBarText)`
+const PaginationWrapper = styled.div`
   align-self: center;
 `;
 
@@ -60,21 +60,23 @@ const ExceptionsViewerUtilityComponent: React.FC<ExceptionsViewerUtilityProps> =
       <UtilityBar>
         <UtilityBarSection>
           <UtilityBarGroup>
-            <PaginationUtilityBarText dataTestSubj="exceptionsShowing">
-              <FormattedMessage
-                id="xpack.securitySolution.exceptions.viewer.paginationDetails"
-                defaultMessage="Showing {partOne} of {partTwo}"
-                values={{
-                  partOne: (
-                    <StyledText>{`${pagination.totalItemCount === 0 ? '0' : '1'}-${Math.min(
-                      pagination.pageSize,
-                      pagination.totalItemCount
-                    )}`}</StyledText>
-                  ),
-                  partTwo: <StyledText>{`${pagination.totalItemCount}`}</StyledText>,
-                }}
-              />
-            </PaginationUtilityBarText>
+            <PaginationWrapper>
+              <UtilityBarText dataTestSubj="exceptionsShowing">
+                <FormattedMessage
+                  id="xpack.securitySolution.exceptions.viewer.paginationDetails"
+                  defaultMessage="Showing {partOne} of {partTwo}"
+                  values={{
+                    partOne: (
+                      <StyledText>{`${pagination.totalItemCount === 0 ? '0' : '1'}-${Math.min(
+                        pagination.pageSize,
+                        pagination.totalItemCount
+                      )}`}</StyledText>
+                    ),
+                    partTwo: <StyledText>{`${pagination.totalItemCount}`}</StyledText>,
+                  }}
+                />
+              </UtilityBarText>
+            </PaginationWrapper>
           </UtilityBarGroup>
         </UtilityBarSection>
         <UtilityBarSection>

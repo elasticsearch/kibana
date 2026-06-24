@@ -7,8 +7,6 @@
 
 import {
   EuiButton,
-  EuiButtonEmpty,
-  EuiButtonIcon,
   EuiCallOut,
   EuiFlexGroup,
   EuiFlexItem,
@@ -20,7 +18,6 @@ import {
   EuiTabs,
   EuiText,
   EuiTitle,
-  EuiToolTip,
   useIsWithinBreakpoints,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -48,7 +45,6 @@ export const ApiEndpoints = () => {
   const { endpoints, isLoading, isError } = useApiEndpoints();
   const { encodedApiKeys, creatingEndpointId, createApiKey } = useApiKeys();
   const canCreateApiKey = Boolean(application.capabilities.api_keys?.save);
-  const [isOpen, setIsOpen] = useState<boolean>(true);
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | undefined>(undefined);
   const [apiKeysManagementUrl, setApiKeysManagementUrl] = useState<string | undefined>(undefined);
 
@@ -64,10 +60,6 @@ export const ApiEndpoints = () => {
   const selectedEndpoint =
     endpoints.find((endpoint) => endpoint.id === selectedEndpointId) ?? endpoints[0];
 
-  const toggleLabel = i18n.translate(
-    'xpack.observability_onboarding.apiEndpoints.toggleAriaLabel',
-    { defaultMessage: 'Toggle API endpoints' }
-  );
   const openInApiKeysLabel = i18n.translate(
     'xpack.observability_onboarding.apiEndpoints.openInApiKeys',
     { defaultMessage: 'Open in API keys' }
@@ -109,63 +101,43 @@ export const ApiEndpoints = () => {
         </EuiText>
         <EuiSpacer size="l" />
         <EuiPanel hasShadow={false} hasBorder paddingSize="l">
-          <EuiFlexGroup gutterSize="s" direction={isMobile ? 'column' : 'row'} responsive={false}>
+          <EuiFlexGroup
+            gutterSize="s"
+            direction={isMobile ? 'column' : 'row'}
+            responsive={false}
+            alignItems={isMobile ? undefined : 'center'}
+          >
             <EuiFlexItem>
-              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                <EuiFlexItem grow={false}>
-                  <EuiToolTip content={toggleLabel} disableScreenReaderOutput>
-                    <EuiButtonIcon
-                      iconType={isOpen ? 'arrowDown' : 'arrowRight'}
-                      color="text"
-                      onClick={() => setIsOpen((open) => !open)}
-                      aria-expanded={isOpen}
-                      aria-label={toggleLabel}
-                      data-test-subj="observabilityOnboardingApiEndpointsToggle"
-                    />
-                  </EuiToolTip>
-                </EuiFlexItem>
-                <EuiFlexItem css={{ minWidth: 0 }}>
-                  <EuiTabs bottomBorder={false}>
-                    {endpoints.map((endpoint) => (
-                      <EuiTab
-                        key={endpoint.id}
-                        isSelected={endpoint.id === selectedEndpoint.id}
-                        onClick={() => {
-                          setSelectedEndpointId(endpoint.id);
-                          setIsOpen(true);
-                        }}
-                        prepend={
-                          <LogoIcon
-                            logo={endpoint.logo}
-                            euiIconType={endpoint.euiIconType}
-                            size="m"
-                          />
-                        }
-                        data-test-subj={`observabilityOnboardingApiEndpointTab-${endpoint.id}`}
-                      >
-                        {endpoint.label}
-                      </EuiTab>
-                    ))}
-                  </EuiTabs>
-                </EuiFlexItem>
-              </EuiFlexGroup>
+              <EuiTabs bottomBorder={false}>
+                {endpoints.map((endpoint) => (
+                  <EuiTab
+                    key={endpoint.id}
+                    isSelected={endpoint.id === selectedEndpoint.id}
+                    onClick={() => setSelectedEndpointId(endpoint.id)}
+                    prepend={
+                      <LogoIcon logo={endpoint.logo} euiIconType={endpoint.euiIconType} size="m" />
+                    }
+                    data-test-subj={`observabilityOnboardingApiEndpointTab-${endpoint.id}`}
+                  >
+                    {endpoint.label}
+                  </EuiTab>
+                ))}
+              </EuiTabs>
             </EuiFlexItem>
             {!isMobile && canCreateApiKey && (
-              <EuiFlexItem grow={false}>
-                <EuiButtonEmpty
-                  size="s"
-                  href={apiKeysManagementUrl}
-                  data-test-subj="observabilityOnboardingApiEndpointsOpenInApiKeys"
-                >
-                  {openInApiKeysLabel}
-                </EuiButtonEmpty>
-              </EuiFlexItem>
+              <EuiLink
+                href={apiKeysManagementUrl}
+                data-test-subj="observabilityOnboardingApiEndpointsOpenInApiKeys"
+              >
+                {openInApiKeysLabel}
+              </EuiLink>
             )}
           </EuiFlexGroup>
           {isError && (
             <>
               <EuiSpacer size="m" />
               <EuiCallOut
+                announceOnMount
                 color="warning"
                 iconType="warning"
                 size="s"
@@ -180,28 +152,20 @@ export const ApiEndpoints = () => {
               />
             </>
           )}
-          {isOpen && (
-            <>
-              <EuiSpacer size="m" />
-              <EuiFlexGroup
-                direction={isMobile ? 'column' : 'row'}
-                gutterSize="m"
-                responsive={false}
-              >
-                <EuiFlexItem>
-                  <EndpointField url={selectedEndpoint.url} isLoading={isLoading} />
-                </EuiFlexItem>
-                <EuiFlexItem>
-                  <ApiKeyField
-                    encodedApiKey={encodedApiKeys[selectedEndpoint.id]}
-                    isCreating={creatingEndpointId === selectedEndpoint.id}
-                    canCreate={canCreateApiKey}
-                    onCreate={() => createApiKey(selectedEndpoint.id)}
-                  />
-                </EuiFlexItem>
-              </EuiFlexGroup>
-            </>
-          )}
+          <EuiSpacer size="m" />
+          <EuiFlexGroup direction={isMobile ? 'column' : 'row'} gutterSize="s" responsive={false}>
+            <EuiFlexItem>
+              <EndpointField url={selectedEndpoint.url} isLoading={isLoading} />
+            </EuiFlexItem>
+            <EuiFlexItem>
+              <ApiKeyField
+                encodedApiKey={encodedApiKeys[selectedEndpoint.id]}
+                isCreating={creatingEndpointId === selectedEndpoint.id}
+                canCreate={canCreateApiKey}
+                onCreate={() => createApiKey(selectedEndpoint.id)}
+              />
+            </EuiFlexItem>
+          </EuiFlexGroup>
           {isMobile && canCreateApiKey && (
             <>
               <EuiSpacer size="m" />

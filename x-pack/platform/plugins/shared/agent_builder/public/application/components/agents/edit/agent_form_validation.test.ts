@@ -6,6 +6,11 @@
  */
 
 import {
+  AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH,
+  AgentAccessControlRole,
+  AgentAccessControlMode,
+} from '@kbn/agent-builder-common';
+import {
   isValidAvatarSymbol,
   truncateAvatarSymbol,
   agentFormSchema,
@@ -89,7 +94,7 @@ describe('agentFormSchema avatar_symbol', () => {
     id: 'my-agent',
     name: 'My Agent',
     description: 'A test agent',
-    visibility: 'private' as const,
+    access_control: { access_mode: 'private' as const, entries: [] },
     configuration: { tools: [] },
   };
 
@@ -131,5 +136,33 @@ describe('agentFormSchema avatar_symbol', () => {
   it('accepts a ZWJ sequence (single grapheme cluster)', () => {
     const family = '👨‍👩‍👧‍👦';
     expect(parse(family).success).toBe(true);
+  });
+});
+
+describe('agentFormSchema access_control entries', () => {
+  const baseData = {
+    id: 'my-agent',
+    name: 'My Agent',
+    description: 'A test agent',
+    access_control: { access_mode: AgentAccessControlMode.Private, entries: [] },
+    configuration: { tools: [] },
+  };
+
+  it('rejects principal names longer than the access-control maximum', () => {
+    const result = agentFormSchema.safeParse({
+      ...baseData,
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [
+          {
+            type: 'user',
+            name: 'a'.repeat(AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH + 1),
+            role: AgentAccessControlRole.User,
+          },
+        ],
+      },
+    });
+
+    expect(result.success).toBe(false);
   });
 });

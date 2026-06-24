@@ -141,6 +141,37 @@ export interface SavedObject<T = unknown> {
 }
 
 /**
+ * An error entry returned for a single object by the bulk Saved Objects APIs.
+ * Unlike a successful {@link SavedObject}, it carries no `attributes`.
+ *
+ * @public
+ */
+export interface SavedObjectErrorResult {
+  id: string;
+  type: string;
+  error: SavedObjectError;
+}
+
+/**
+ * A single entry in a bulk Saved Objects response: either a successful
+ * {@link SavedObject} or a {@link SavedObjectErrorResult}. Narrow with
+ * {@link isSavedObjectErrorResult} before accessing `attributes`.
+ *
+ * @public
+ */
+export type SavedObjectBulkResult<T = unknown> = SavedObject<T> | SavedObjectErrorResult;
+
+/**
+ * Type guard that narrows a bulk Saved Objects result to a
+ * {@link SavedObjectErrorResult}.
+ *
+ * @public
+ */
+export const isSavedObjectErrorResult = (result: {
+  error?: SavedObjectError;
+}): result is SavedObjectErrorResult => result.error !== undefined;
+
+/**
  * Saved object document as stored in `_source` of doc in ES index
  * Similar to SavedObjectDoc and excludes `version`, includes `references`, has `attributes` in [typeMapping]
  *

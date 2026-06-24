@@ -15,6 +15,7 @@ import {
   OBSERVABILITY_STREAMS_ENABLE_QUERY_STREAMS,
   OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS,
   OBSERVABILITY_STREAMS_ENABLE_DRAFT_STREAMS,
+  OBSERVABILITY_STREAMS_ENABLE_CANVAS,
   OBSERVABILITY_STREAMS_CONTINUOUS_KI_EXTRACTION_ENABLED,
   OBSERVABILITY_STREAMS_CONTINUOUS_KI_EXTRACTION_INTERVAL_HOURS,
   OBSERVABILITY_STREAMS_CONTINUOUS_KI_EXTRACTION_EXCLUDED_STREAM_PATTERNS,
@@ -300,6 +301,23 @@ export function registerFeatureFlags(
       description: i18n.translate('xpack.streams.draftStreamsSettingsDescription', {
         defaultMessage:
           'Enable draft streams. Draft streams use ES|QL views for read-time processing and can be materialized to ingest pipelines.',
+      }),
+      type: 'boolean',
+      schema: schema.boolean(),
+      requiresPageReload: true,
+      solutionViews: ['classic', 'oblt'],
+      technicalPreview: true,
+      readonly: true,
+      readonlyMode: 'ui',
+    },
+    [OBSERVABILITY_STREAMS_ENABLE_CANVAS]: {
+      category: ['observability'],
+      name: i18n.translate('xpack.streams.canvasSettingsName', {
+        defaultMessage: 'Streams Canvas',
+      }),
+      value: false,
+      description: i18n.translate('xpack.streams.canvasSettingsDescription', {
+        defaultMessage: 'Enable the Streams Canvas experience.',
       }),
       type: 'boolean',
       schema: schema.boolean(),

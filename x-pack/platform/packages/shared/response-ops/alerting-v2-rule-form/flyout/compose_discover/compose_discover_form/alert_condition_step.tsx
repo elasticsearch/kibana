@@ -27,10 +27,6 @@ import type { ComposeDiscoverAction, ComposeDiscoverState } from '../types';
 import type { ComposeFormValues } from '../compose_form_types';
 import { QuerySummary } from '../query_summary';
 import type { RuleFormServices } from '../../../form/contexts/rule_form_context';
-import { ScheduleField } from '../../../form/fields/schedule_field';
-import { LookbackWindowField } from '../../../form/fields/lookback_window_field';
-import { AlertDelayField } from '../../../form/fields/alert_delay_field';
-import { ModeSelect } from '../../../form/fields/mode_select';
 import { useComposeDiscoverTimeField } from '../compose_discover_time_field_context';
 import { getTimeFieldResolutionQuery } from '../get_time_field_resolution_query';
 
@@ -38,7 +34,6 @@ interface AlertConditionStepProps {
   state: ComposeDiscoverState;
   dispatch: React.Dispatch<ComposeDiscoverAction>;
   services: RuleFormServices;
-  onKindChange: (kind: 'signal' | 'alert') => void;
   isEditing: boolean;
 }
 
@@ -46,7 +41,6 @@ export function AlertConditionStep({
   state,
   dispatch,
   services,
-  onKindChange,
   isEditing,
 }: AlertConditionStepProps) {
   const { setValue, watch } = useFormContext<ComposeFormValues>();
@@ -128,14 +122,6 @@ export function AlertConditionStep({
 
   return (
     <>
-      <ModeSelect
-        value={isAlert ? 'alert' : 'signal'}
-        onChange={onKindChange}
-        disabled={!state.queryCommitted || isEditing}
-        compressed
-        data-test-subj="composeDiscoverModeSelect"
-      />
-      <EuiSpacer size="m" />
       <EuiTitle size="xs">
         <h3>
           <FormattedMessage
@@ -328,19 +314,6 @@ export function AlertConditionStep({
           data-test-subj="composeDiscoverGroupFields"
         />
       </EuiFormRow>
-
-      {isAlert && (
-        <>
-          <EuiSpacer size="m" />
-          <AlertDelayField />
-        </>
-      )}
-
-      {/* Schedule and lookback -- connected to RHF via useFormContext() internally */}
-      <EuiSpacer size="m" />
-      <ScheduleField />
-      <EuiSpacer size="m" />
-      <LookbackWindowField />
     </>
   );
 }

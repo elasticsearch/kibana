@@ -10,8 +10,7 @@ import { expect } from '@kbn/scout-oblt/ui';
 import { test } from '../../fixtures';
 import { EXTENDED_TIMEOUT } from '../../fixtures/constants';
 
-// Failing: See https://github.com/elastic/kibana/issues/267137
-test.describe.skip(
+test.describe(
   'Hosts Page - Empty State',
   { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {

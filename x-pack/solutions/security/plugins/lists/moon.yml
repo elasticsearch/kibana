@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/lists-plugin'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/security-detection-engine'
+  defaultOwner: '@elastic/security-detection-engineering'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/lists-plugin'
   description: Moon project for @kbn/lists-plugin
   channel: ''
-  owner: '@elastic/security-detection-engine'
+  owner: '@elastic/security-detection-engineering'
   sourceRoot: x-pack/solutions/security/plugins/lists
 dependsOn:
   - '@kbn/core'

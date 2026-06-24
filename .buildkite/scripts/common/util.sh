@@ -37,6 +37,30 @@ should_enable_fips() {
   is_pr_with_label "ci:enable-fips-140-2-agent" || is_pr_with_label "ci:enable-fips-140-3-agent"
 }
 
+# Buildkite checkouts push with the Buildkite GitHub App credential, which has limited scopes. It cannot push to workflows for example.
+# Use an isolated git config so gh can provide GITHUB_TOKEN credentials for this push without changing global auth.
+push_as_github_token() {
+  local required_env_var
+
+  for required_env_var in GITHUB_TOKEN GITHUB_PR_OWNER GITHUB_PR_REPO GITHUB_PR_BRANCH; do
+    if [[ -z "${!required_env_var:-}" ]]; then
+      echo "Missing required environment variable for GITHUB_TOKEN push: $required_env_var" >&2
+      exit 1
+    fi
+  done
+
+  (
+    git_config_global="$(mktemp)"
+    trap 'rm -f "$git_config_global"' EXIT
+
+
+    GH_TOKEN="$GITHUB_TOKEN" GIT_CONFIG_GLOBAL="$git_config_global" gh auth setup-git --hostname github.com --force
+    GH_TOKEN="$GITHUB_TOKEN" GIT_CONFIG_GLOBAL="$git_config_global" git push \
+      "https://github.com/${GITHUB_PR_OWNER}/${GITHUB_PR_REPO}.git" \
+      "HEAD:${GITHUB_PR_BRANCH}"
+  )
+}
+
 check_for_changed_files() {
   RED='\033[0;31m'
   YELLOW='\033[0;33m'
@@ -44,6 +68,7 @@ check_for_changed_files() {
 
   SHOULD_AUTO_COMMIT_CHANGES="${2:-}"
   CUSTOM_FIX_MESSAGE="${3:-Changes from $1}"
+  FORCE_GITHUB_TOKEN_PUSH_ARG="${4:-}"
   GIT_CHANGES="$(git status --porcelain -- . ':!:config/node.options' ':!config/kibana.yml')"
 
   if [ "$GIT_CHANGES" ]; then
@@ -66,7 +91,11 @@ check_for_changed_files() {
         echo "$CUSTOM_FIX_MESSAGE" >> "$COLLECT_COMMITS_MARKER_FILE"
       else
         echo "Auto-committing and pushing these changes."
-        git push
+        if [[ "${FORCE_GITHUB_TOKEN_PUSH:-}" == "true" || "$FORCE_GITHUB_TOKEN_PUSH_ARG" == "true" ]]; then
+          push_as_github_token
+        else
+          git push
+        fi
       fi
       exit 1
     else

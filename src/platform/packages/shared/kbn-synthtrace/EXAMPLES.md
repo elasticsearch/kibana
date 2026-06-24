@@ -376,6 +376,34 @@ Generates data designed to trigger ML anomaly detection.
 node scripts/synthtrace apm_ml_anomalies --live
 ```
 
+#### `apm_anomalies`
+
+Generates APM transactions engineered so that, once APM anomaly-detection ML jobs run, the UI surfaces anomaly badges that exercise multi-detector and multi-environment scoring. Every service exists in both `production` and `development`, and each environment is anomalous at a different time (the trailing anomaly span is split in half: production earlier, development later), so the "all environments" combined chart shows two distinct anomaly clusters each tagged with its environment. Production is the higher (critical) score, so the badge / open-anomalies link still surfaces production.
+
+Services generated:
+
+- `synth-anomaly-detectors` — critical failure-rate anomaly plus a minor latency bump in production (so the badge surfaces failure rate, not latency), and a major failure-rate anomaly in development.
+- `synth-anomaly-environments` — critical latency spike in production, major in development.
+- `synth-anomaly-side-by-side` — the SAME critical latency spike in both environments, optionally offset in time by `sideBySideOffsetMinutes`, so the combined view shows two identical anomalies side by side.
+- `synth-anomaly-throughput` — large throughput spike in production, smaller one in development.
+- `synth-anomaly-all-metrics` — trips all three detectors (latency, failure rate, throughput) on one service in both environments, each in its own sub-window at a different time but with intentional overlaps (failure rate ramps from major to critical). The two environments use shifted windows, so some anomalous times line up across environments and others do not, and some buckets are anomalous on two or three detectors at once (so the badge surfaces the highest-scoring detector).
+
+**Options:**
+
+- `anomalyWindowHours` (number, default: 2): Trailing hours that are anomalous (split in half across the two environments).
+- `baselineRate` (number, default: 10): Transactions per minute during the baseline.
+- `sideBySideOffsetMinutes` (number, default: 15): Time offset applied to the `synth-anomaly-side-by-side` service's development environment relative to production. Both environments get the same anomaly, so the combined view shows identical anomalies side by side; `15` makes them land on the exact same time bucket.
+
+**Do not run with `--live`** (no baseline would exist for ML to learn). Use a fixed past range wider than the anomaly window. After ingesting, create APM ML jobs (APM > Settings > Anomaly detection) for the `production` and `development` environments and run their datafeeds over the ingested range for the badges to appear.
+
+**Usage:**
+
+```sh
+node scripts/synthtrace apm_anomalies --from=now-7d --to=now --clean
+node scripts/synthtrace apm_anomalies --from=now-7d --to=now --clean --scenarioOpts.anomalyWindowHours=4
+node scripts/synthtrace apm_anomalies --from=now-7d --to=now --clean --scenarioOpts.sideBySideOffsetMinutes=30
+```
+
 ### Log Scenarios
 
 #### `simple_logs`

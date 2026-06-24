@@ -317,11 +317,7 @@ export const DataStreamList: React.FunctionComponent<RouteComponentProps<MatchPa
         <EuiSpacer size="l" />
 
         <DataStreamTable
-          filters={
-            isDeepLink && decodedDataStreamName !== undefined
-              ? `name="${decodedDataStreamName}"`
-              : ''
-          }
+          filters={isDeepLink && decodedDataStreamName !== undefined ? decodedDataStreamName : ''}
           dataStreams={filteredDataStreams}
           isLoading={isLoading}
           reload={reload}

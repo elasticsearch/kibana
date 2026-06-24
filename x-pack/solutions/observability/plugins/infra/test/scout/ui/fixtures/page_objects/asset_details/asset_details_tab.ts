@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { expect } from '@kbn/scout-oblt/ui';
 import type { KibanaUrl, Locator, ScoutPage } from '@kbn/scout-oblt';
 
 export type AssetDetailsPageTabName =
@@ -29,6 +30,7 @@ export abstract class AssetDetailsTab {
   }
 
   public async clickTab() {
+    await expect(this.tab).toBeVisible();
     await this.tab.click();
   }
 }

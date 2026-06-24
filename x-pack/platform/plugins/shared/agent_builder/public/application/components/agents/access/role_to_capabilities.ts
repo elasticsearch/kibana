@@ -6,45 +6,58 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import { AgentAclRole, AgentVisibility } from '@kbn/agent-builder-common';
+import { AgentAccessControlRole, AgentAccessControlMode } from '@kbn/agent-builder-common';
 
-export const ROLE_LABEL: Record<AgentAclRole, string> = {
-  [AgentAclRole.User]: i18n.translate('xpack.agentBuilder.acl.role.user.label', {
+export const ROLE_LABEL: Record<AgentAccessControlRole, string> = {
+  [AgentAccessControlRole.User]: i18n.translate('xpack.agentBuilder.acl.role.user.label', {
     defaultMessage: 'User',
   }),
-  [AgentAclRole.Editor]: i18n.translate('xpack.agentBuilder.acl.role.editor.label', {
+  [AgentAccessControlRole.Editor]: i18n.translate('xpack.agentBuilder.acl.role.editor.label', {
     defaultMessage: 'Editor',
   }),
-  [AgentAclRole.Manager]: i18n.translate('xpack.agentBuilder.acl.role.manager.label', {
+  [AgentAccessControlRole.Manager]: i18n.translate('xpack.agentBuilder.acl.role.manager.label', {
     defaultMessage: 'Manager',
   }),
 };
 
-export const ROLE_DESCRIPTION: Record<AgentAclRole, string> = {
-  [AgentAclRole.User]: i18n.translate('xpack.agentBuilder.acl.role.user.description', {
+export const ROLE_DESCRIPTION: Record<AgentAccessControlRole, string> = {
+  [AgentAccessControlRole.User]: i18n.translate('xpack.agentBuilder.acl.role.user.description', {
     defaultMessage: 'Can find, view, and run this agent.',
   }),
-  [AgentAclRole.Editor]: i18n.translate('xpack.agentBuilder.acl.role.editor.description', {
-    defaultMessage: 'User + edit configuration.',
-  }),
-  [AgentAclRole.Manager]: i18n.translate('xpack.agentBuilder.acl.role.manager.description', {
-    defaultMessage: 'Editor + delete and manage access.',
-  }),
+  [AgentAccessControlRole.Editor]: i18n.translate(
+    'xpack.agentBuilder.acl.role.editor.description',
+    {
+      defaultMessage: 'User + edit configuration.',
+    }
+  ),
+  [AgentAccessControlRole.Manager]: i18n.translate(
+    'xpack.agentBuilder.acl.role.manager.description',
+    {
+      defaultMessage: 'Editor + delete and manage access.',
+    }
+  ),
 };
 
-const ROLE_ORDER: AgentAclRole[] = [AgentAclRole.User, AgentAclRole.Editor, AgentAclRole.Manager];
+const ROLE_ORDER: AgentAccessControlRole[] = [
+  AgentAccessControlRole.User,
+  AgentAccessControlRole.Editor,
+  AgentAccessControlRole.Manager,
+];
 
 /**
- * Roles that meaningfully grant something on top of a given visibility.
+ * Roles that meaningfully grant something on top of a given access control mode.
  *
  * For Public/Shared agents the see/use baseline is already global, so a `User` entry
  * would be a no-op. We hide it in the role dropdown to prevent misleading rows.
  */
-export const selectableRolesForVisibility = (
-  visibility: AgentVisibility | undefined
-): AgentAclRole[] => {
-  if (visibility === AgentVisibility.Public || visibility === AgentVisibility.Shared) {
-    return [AgentAclRole.Editor, AgentAclRole.Manager];
+export const selectableRolesForAccessControlMode = (
+  accessControlMode: AgentAccessControlMode | undefined
+): AgentAccessControlRole[] => {
+  if (
+    accessControlMode === AgentAccessControlMode.Public ||
+    accessControlMode === AgentAccessControlMode.Shared
+  ) {
+    return [AgentAccessControlRole.Editor, AgentAccessControlRole.Manager];
   }
   return ROLE_ORDER;
 };

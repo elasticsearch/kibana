@@ -6,15 +6,15 @@
  */
 
 import React, { memo, useMemo } from 'react';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 
 import { EuiTitle, EuiSpacer, EuiFlyoutHeader } from '@elastic/eui';
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
 import * as i18n from './translations';
 
 const FlyoutHeader = styled(EuiFlyoutHeader)`
-  ${({ theme }) => css`
-    border-bottom: 1px solid ${theme.eui.euiColorLightShade};
+  ${({ theme }) => `
+    border-bottom: 1px solid ${theme.euiTheme.colors.borderBasePlain};
   `}
 `;
 

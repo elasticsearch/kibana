@@ -56,6 +56,12 @@ export const paths = {
       ':monitorId?',
       encodeURIComponent(configId)
     )}`,
+  monitorEdit: (configId: string) =>
+    `${SYNTHETICS_APP_BASE_PATH}${MONITOR_EDIT_ROUTE.replace(
+      ':monitorId',
+      encodeURIComponent(configId)
+    )}`,
+  monitorAdd: `${SYNTHETICS_APP_BASE_PATH}${MONITOR_ADD_ROUTE}`,
 };
 
 export enum STATUS {

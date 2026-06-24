@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { EuiCallOut } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { buildDataTableRecord } from '@kbn/discover-utils';
@@ -39,12 +39,17 @@ export interface AttackFlyoutWrapperProps {
  */
 export const AttackFlyoutWrapper = memo(
   ({ attackId, indexName, onAttackUpdated }: AttackFlyoutWrapperProps) => {
-    const { loading, searchHit } = useAttackDetails({ attackId, indexName });
+    const { loading, searchHit, refetch } = useAttackDetails({ attackId, indexName });
 
     const hit = useMemo(
       () => (searchHit ? buildDataTableRecord(searchHit as EsHitRecord) : null),
       [searchHit]
     );
+
+    const handleAttackUpdated = useCallback(async () => {
+      await refetch();
+      onAttackUpdated();
+    }, [refetch, onAttackUpdated]);
 
     if (loading) {
       return <FlyoutLoading data-test-subj="attack-flyout-wrapper-loading" />;
@@ -62,7 +67,7 @@ export const AttackFlyoutWrapper = memo(
       );
     }
 
-    return <AttackFlyout hit={hit} onAttackUpdated={onAttackUpdated} />;
+    return <AttackFlyout hit={hit} onAttackUpdated={handleAttackUpdated} />;
   }
 );
 

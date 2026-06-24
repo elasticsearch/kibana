@@ -36,8 +36,7 @@ import type { OnUpdateFields } from '../types';
 import { AttachmentAccordion } from './attachment_accordion';
 import { useGetCaseFileStats } from '../../../containers/use_get_case_file_stats';
 import { getAttachmentItemCount } from './helpers';
-import { NO_SEARCH_RESULTS_TITLE, NO_SEARCH_RESULTS_BODY } from '../translations';
-import { CLEAR_FILTERS } from './translations';
+import { NO_SEARCH_RESULTS_TITLE, NO_SEARCH_RESULTS_BODY, CLEAR_FILTERS } from './translations';
 
 interface CaseViewAttachmentsProps {
   caseData: CaseUI;
@@ -102,10 +101,14 @@ export const CaseViewAttachments = ({
         .flatMap((type) => {
           if (!isTypeVisible(type.id)) return [];
           const Children = type.getAttachmentTabViewObject?.()?.children;
-          if (!Children) return [];
+          if (!Children) {
+            return [];
+          }
           const count =
             type.id === FILE_ATTACHMENT_TYPE ? effectiveFileCount : countsByType.get(type.id) ?? 0;
-          if (count < 1) return [];
+          if (count < 1) {
+            return [];
+          }
           return [{ id: type.id, displayName: type.displayName, count, Children }];
         })
         .sort((a, b) => a.displayName.localeCompare(b.displayName)),
@@ -179,7 +182,7 @@ export const CaseViewAttachments = ({
             />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <CaseViewAttachButton caseId={caseData.id} fill />
+            <CaseViewAttachButton caseData={caseData} fill />
           </EuiFlexItem>
         </EuiFlexGroup>
         {hasActiveFilter ? (

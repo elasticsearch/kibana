@@ -15,6 +15,8 @@ export interface EpisodeEventRow {
   'episode.status': AlertEpisodeStatus;
   'rule.id': string;
   group_hash: string;
+  severity?: string | null;
+  data?: string | Record<string, unknown> | null;
 }
 
 const ALERT_EPISODE_EVENT_FIELDS = [
@@ -23,6 +25,8 @@ const ALERT_EPISODE_EVENT_FIELDS = [
   'episode.status',
   'rule.id',
   'group_hash',
+  'severity',
+  'data',
 ] as const;
 
 /**
@@ -30,10 +34,11 @@ const ALERT_EPISODE_EVENT_FIELDS = [
  */
 export const buildEpisodeEventsEsqlQuery = (spaceId: string, episodeId: string) => {
   // prettier-ignore
-  return esql.from(ALERT_EVENTS_DATA_STREAM)
+  return esql.from([ALERT_EVENTS_DATA_STREAM], ['_source'])
     .where`space_id == ${spaceId}`
     .where`type == "alert"`
     .where`episode.id == ${episodeId}`
+    .pipe`EVAL data = JSON_EXTRACT(_source, "$.data")`
     .sort([TIME_FIELD, 'ASC'])
     .keep(...ALERT_EPISODE_EVENT_FIELDS);
 };

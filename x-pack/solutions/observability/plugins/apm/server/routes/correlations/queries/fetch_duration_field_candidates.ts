@@ -15,16 +15,15 @@ import {
   FIELDS_TO_EXCLUDE_AS_CANDIDATE,
 } from '../../../../common/correlations/constants';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
+import type { FieldCandidatesResponse } from './types';
+
+export type { FieldCandidatesResponse as DurationFieldCandidatesResponse } from './types';
 
 const SUPPORTED_ES_FIELD_TYPES = [
   ES_FIELD_TYPES.KEYWORD,
   ES_FIELD_TYPES.IP,
   ES_FIELD_TYPES.BOOLEAN,
 ];
-
-export interface DurationFieldCandidatesResponse {
-  fieldCandidates: string[];
-}
 
 export async function fetchDurationFieldCandidates({
   apmEventClient,
@@ -35,7 +34,7 @@ export async function fetchDurationFieldCandidates({
   query: estypes.QueryDslQueryContainer;
   apmEventClient: APMEventClient;
   eventType: ProcessorEvent;
-}): Promise<DurationFieldCandidatesResponse> {
+}): Promise<FieldCandidatesResponse> {
   // Get all supported fields
   const respMapping = await apmEventClient.fieldCaps('get_field_caps', {
     apm: {

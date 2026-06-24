@@ -17,6 +17,7 @@ project:
   owner: '@elastic/appex-sharedux'
   sourceRoot: src/platform/packages/shared/content-management/content_list/kbn-content-list
 dependsOn:
+  - '@kbn/content-list-common'
   - '@kbn/content-list-provider'
   - '@kbn/content-list-toolbar'
   - '@kbn/content-list-table'

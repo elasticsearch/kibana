@@ -1,0 +1,22 @@
+{
+  "name": "@kbn/ui-feedback",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Universal Elastic feedback UI components for standalone distribution",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.js.map",
+    "index.d.ts",
+    "metadata.json",
+    "package.json"
+  ],
+  "peerDependencies": {
+    "@elastic/eui": ">=112.0.0",
+    "@emotion/react": ">=11.14.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0"
+}

@@ -83,4 +83,7 @@ export type {
   SavedObjectAttributeSingle,
   SavedObjectReference,
   SavedObjectsRawDocSource,
+  SavedObjectErrorResult,
+  SavedObjectBulkResult,
 } from '@kbn/core-saved-objects-common/src/server_types';
+export { isSavedObjectErrorResult } from '@kbn/core-saved-objects-common/src/server_types';

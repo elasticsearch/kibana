@@ -152,6 +152,7 @@ export const OBSERVABILITY_STREAMS_ENABLE_CONTENT_PACKS = 'observability:streams
 export const OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS =
   'observability:streamsEnableWiredStreamViews';
 export const OBSERVABILITY_STREAMS_ENABLE_DRAFT_STREAMS = 'observability:streamsEnableDraftStreams';
+export const OBSERVABILITY_STREAMS_ENABLE_CANVAS = 'observability:streamsEnableCanvas';
 export const OBSERVABILITY_STREAMS_CONTINUOUS_KI_EXTRACTION_ENABLED =
   'observability:streamsContinuousKiExtractionEnabled';
 export const OBSERVABILITY_STREAMS_CONTINUOUS_KI_EXTRACTION_INTERVAL_HOURS =

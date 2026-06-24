@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo } from 'react';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 
 import { EuiTitle, EuiFormRow, EuiCheckbox, EuiSpacer, EuiText } from '@elastic/eui';
 import type { ExceptionListType } from '@kbn/securitysolution-io-ts-list-types';
@@ -28,9 +28,7 @@ const FlyoutCheckboxesSection = styled.section`
 `;
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 interface ExceptionsFlyoutAlertsActionsComponentProps {

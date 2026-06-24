@@ -8,24 +8,15 @@
 import React from 'react';
 import { mount } from 'enzyme';
 import { getExceptionListItemSchemaMock } from '@kbn/lists-plugin/common/schemas/response/exception_list_item_schema.mock';
-import { ThemeProvider } from 'styled-components';
 
 import * as i18n from './translations';
 import { ExceptionItemCardHeader } from './header';
-import { getMockTheme } from '../../../../common/lib/kibana/kibana_react.mock';
-
-const mockTheme = getMockTheme({
-  eui: {
-    euiSize: '10px',
-    euiColorPrimary: '#ece',
-    euiColorDanger: '#ece',
-  },
-});
+import { TestProviders } from '../../../../common/mock';
 
 describe('ExceptionItemCardHeader', () => {
   it('it renders item name', () => {
     const wrapper = mount(
-      <ThemeProvider theme={mockTheme}>
+      <TestProviders>
         <ExceptionItemCardHeader
           item={getExceptionListItemSchemaMock()}
           dataTestSubj="exceptionItemHeader"
@@ -44,7 +35,7 @@ describe('ExceptionItemCardHeader', () => {
             },
           ]}
         />
-      </ThemeProvider>
+      </TestProviders>
     );
 
     expect(wrapper.find('[data-test-subj="exceptionItemHeader-title"]').at(0).text()).toEqual(
@@ -56,7 +47,7 @@ describe('ExceptionItemCardHeader', () => {
     const handleEdit = jest.fn();
     const handleDelete = jest.fn();
     const wrapper = mount(
-      <ThemeProvider theme={mockTheme}>
+      <TestProviders>
         <ExceptionItemCardHeader
           actions={[
             {
@@ -75,7 +66,7 @@ describe('ExceptionItemCardHeader', () => {
           item={getExceptionListItemSchemaMock()}
           dataTestSubj="exceptionItemHeader"
         />
-      </ThemeProvider>
+      </TestProviders>
     );
 
     // click on popover
@@ -97,7 +88,7 @@ describe('ExceptionItemCardHeader', () => {
     const handleEdit = jest.fn();
     const handleDelete = jest.fn();
     const wrapper = mount(
-      <ThemeProvider theme={mockTheme}>
+      <TestProviders>
         <ExceptionItemCardHeader
           actions={[
             {
@@ -117,7 +108,7 @@ describe('ExceptionItemCardHeader', () => {
           disableActions
           dataTestSubj="exceptionItemHeader"
         />
-      </ThemeProvider>
+      </TestProviders>
     );
 
     expect(

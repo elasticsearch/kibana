@@ -86,9 +86,6 @@ enabled:
   - src/platform/test/functional/apps/discover/esql_3/config.ts
   - src/platform/test/functional/apps/discover/esql_4/config.ts
   - src/platform/test/functional/apps/discover/group1/config.ts
-  - src/platform/test/functional/apps/discover/group2_data_grid1/config.ts
-  - src/platform/test/functional/apps/discover/group2_data_grid2/config.ts
-  - src/platform/test/functional/apps/discover/group2_data_grid3/config.ts
   - src/platform/test/functional/apps/discover/group3/config.ts
   - src/platform/test/functional/apps/discover/group4/config.ts
   - src/platform/test/functional/apps/discover/group5/config.ts

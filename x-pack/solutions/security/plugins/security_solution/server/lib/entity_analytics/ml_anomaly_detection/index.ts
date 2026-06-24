@@ -12,4 +12,3 @@ export type { JobConfig } from './get_job_config';
 export { getJobConfig } from './get_job_config';
 export { fetchBaselineBehavior } from './fetch_baseline_behavior';
 export { getSecurityMlJobIds } from './get_security_ml_job_ids';
-export { DEFAULT_ML_AD_LOOKBACK } from './constants';

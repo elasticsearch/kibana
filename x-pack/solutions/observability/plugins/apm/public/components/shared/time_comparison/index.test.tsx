@@ -18,6 +18,7 @@ import {
   MockApmPluginContextWrapper,
 } from '../../../context/apm_plugin/mock_apm_plugin_context';
 import { ENVIRONMENT_ALL } from '../../../../common/environment_filter_values';
+import { EXPECTED_BOUNDS_TEST_SUBJ } from './get_comparison_options';
 import * as useAnomalyDetectionJobsContextModule from '../../../context/anomaly_detection_jobs/use_anomaly_detection_jobs_context';
 import * as useEnvironmentContextModule from '../../../context/environments_context/use_environments_context';
 import type { ApmPluginContextValue } from '../../../context/apm_plugin/apm_plugin_context';
@@ -86,6 +87,12 @@ function getWrapper({
   };
 }
 
+const expectNoExpectedBoundsOption = (component: ReturnType<typeof render>) => {
+  Object.values(EXPECTED_BOUNDS_TEST_SUBJ).forEach((testSubj) => {
+    expect(component.queryByTestId(testSubj)).toBeNull();
+  });
+};
+
 describe('TimeComparison component', () => {
   const mockMLJobs = () => {
     jest
@@ -143,10 +150,10 @@ describe('TimeComparison component', () => {
         wrapper: Wrapper,
       });
       expect(spy).not.toHaveBeenCalled();
-      expectTextsInDocument(component, [
-        '20/05/19 18:32 - 27/05/20 18:32',
-        'Expected bounds (Anomaly detection must be enabled for env)',
-      ]);
+      const expectedBoundsOption = component.getByTestId(
+        EXPECTED_BOUNDS_TEST_SUBJ.allEnvironmentsDisabled
+      );
+      expect(expectedBoundsOption).toBeDisabled();
       expect(
         (component.getByTestId('comparisonSelect') as HTMLSelectElement).selectedIndex
       ).toEqual(0);
@@ -173,7 +180,8 @@ describe('TimeComparison component', () => {
         wrapper: Wrapper,
       });
       expect(spy).not.toHaveBeenCalled();
-      expectTextsInDocument(component, ['20/05/19 18:32 - 27/05/20 18:32', 'Expected bounds']);
+      const expectedBoundsOption = component.getByTestId(EXPECTED_BOUNDS_TEST_SUBJ.enabled);
+      expect(expectedBoundsOption).not.toBeDisabled();
       expect(
         (component.getByTestId('comparisonSelect') as HTMLSelectElement).selectedIndex
       ).toEqual(0);
@@ -202,11 +210,7 @@ describe('TimeComparison component', () => {
         wrapper: Wrapper,
       });
       expect(spy).not.toHaveBeenCalled();
-      expectTextsNotInDocument(component, [
-        'Expected bounds',
-        'Expected bounds (Anomaly detection must be enabled for env)',
-      ]);
-      expectTextsInDocument(component, ['20/05/19 18:32 - 27/05/20 18:32']);
+      expectNoExpectedBoundsOption(component);
       expect(
         (component.getByTestId('comparisonSelect') as HTMLSelectElement).selectedIndex
       ).toEqual(0);
@@ -232,10 +236,7 @@ describe('TimeComparison component', () => {
           wrapper: Wrapper,
         });
         expect(spy).not.toHaveBeenCalled();
-        expectTextsNotInDocument(component, [
-          'Expected bounds',
-          'Expected bounds (Anomaly detection must be enabled for env)',
-        ]);
+        expectNoExpectedBoundsOption(component);
       });
     });
 
@@ -263,10 +264,7 @@ describe('TimeComparison component', () => {
         wrapper: Wrapper,
       });
       expect(spy).not.toHaveBeenCalled();
-      expectTextsNotInDocument(component, [
-        'Expected bounds',
-        'Expected bounds (Anomaly detection must be enabled for env)',
-      ]);
+      expectNoExpectedBoundsOption(component);
       expect(
         (component.getByTestId('comparisonSelect') as HTMLSelectElement).selectedIndex
       ).toEqual(0);

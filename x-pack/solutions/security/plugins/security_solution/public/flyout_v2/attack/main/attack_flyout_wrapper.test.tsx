@@ -63,13 +63,25 @@ describe('<AttackFlyoutWrapper />', () => {
     expect(getByTestId('attackFlyoutStub')).toBeInTheDocument();
   });
 
-  it('passes onAttackUpdated to AttackFlyout', () => {
+  it('passes a wrapped onAttackUpdated handler to AttackFlyout that calls refetch then the callback', async () => {
     const onAttackUpdated = jest.fn();
-    (useAttackDetails as jest.Mock).mockReturnValue({ loading: false, searchHit: mockSearchHit });
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    (useAttackDetails as jest.Mock).mockReturnValue({
+      loading: false,
+      searchHit: mockSearchHit,
+      refetch,
+    });
 
     renderWrapper({ onAttackUpdated });
 
-    expect(mockAttackFlyout).toHaveBeenCalledWith(expect.objectContaining({ onAttackUpdated }));
+    const [receivedProps] = mockAttackFlyout.mock.calls[0] as [
+      { onAttackUpdated: () => Promise<void> }
+    ];
+    expect(typeof receivedProps.onAttackUpdated).toBe('function');
+
+    await receivedProps.onAttackUpdated();
+    expect(refetch).toHaveBeenCalled();
+    expect(onAttackUpdated).toHaveBeenCalled();
   });
 
   it('calls useAttackDetails with the provided attackId and indexName', () => {

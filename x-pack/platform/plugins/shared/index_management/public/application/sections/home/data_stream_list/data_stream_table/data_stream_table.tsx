@@ -20,6 +20,8 @@ import {
   EuiFlexItem,
   EuiSwitch,
   EuiIconTip,
+  EuiFieldSearch,
+  EuiSpacer,
   RIGHT_ALIGNMENT,
 } from '@elastic/eui';
 import type { ScopedHistory } from '@kbn/core/public';
@@ -94,6 +96,7 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
   const [dataStreamsToEditDataRetention, setDataStreamsToEditDataRetention] = useState<
     DataStream[]
   >([]);
+  const [searchValue, setSearchValue] = useState(filters ?? '');
   const { config } = useAppContext();
 
   const data = useMemo(() => {
@@ -102,6 +105,12 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
       isNextGenIlm: isNextGenIlm(dataStream),
     }));
   }, [dataStreams]);
+
+  const filteredData = useMemo(() => {
+    const q = searchValue.trim().toLowerCase();
+    if (!q) return data;
+    return data.filter((ds) => ds.name.toLowerCase().includes(q));
+  }, [data, searchValue]);
 
   const columns: Array<EuiBasicTableColumn<TableDataStream>> = [];
 
@@ -353,63 +362,6 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
     });
   }
 
-  const searchConfig = {
-    query: filters,
-    box: {
-      incremental: true,
-    },
-    toolsLeft:
-      selection.length > 0 && dataStreamActions.length > 0 ? (
-        <DataStreamActionsMenu
-          dataStreamActions={dataStreamActions}
-          selectedDataStreamsCount={selection.length}
-        />
-      ) : undefined,
-    toolsRight: [
-      <EuiFlexGroup gutterSize="s" key="includeStats">
-        <EuiFlexItem grow={false}>
-          <EuiSwitch
-            label={i18n.translate('xpack.idxMgmt.dataStreamListControls.includeStatsSwitchLabel', {
-              defaultMessage: 'Include stats',
-            })}
-            checked={includeStats}
-            onChange={(e) => setIncludeStats(e.target.checked)}
-            data-test-subj="includeStatsSwitch"
-          />
-        </EuiFlexItem>
-
-        <EuiFlexItem grow={false}>
-          <EuiIconTip
-            content={i18n.translate(
-              'xpack.idxMgmt.dataStreamListControls.includeStatsSwitchToolTip',
-              {
-                defaultMessage: 'Including stats can increase reload times',
-              }
-            )}
-            position="top"
-          />
-        </EuiFlexItem>
-      </EuiFlexGroup>,
-      <FilterListButton<DataStreamFilterName>
-        filters={viewFilters}
-        onChange={onViewFilterChange}
-        key="filterListButton"
-      />,
-      <EuiButton
-        color="success"
-        iconType="refresh"
-        onClick={reload}
-        data-test-subj="reloadButton"
-        key="reloadButton"
-      >
-        <FormattedMessage
-          id="xpack.idxMgmt.dataStreamList.reloadDataStreamsButtonLabel"
-          defaultMessage="Reload"
-        />
-      </EuiButton>,
-    ],
-  };
-
   const { pageSize, sorting, onTableChange } = useEuiTablePersist<TableDataStream>({
     tableId: 'dataStreams',
     initialPageSize: 20,
@@ -450,11 +402,76 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
           dataStreams={dataStreamsToDelete}
         />
       ) : null}
+      <EuiFlexGroup gutterSize="s" alignItems="center">
+        {selection.length > 0 && dataStreamActions.length > 0 && (
+          <EuiFlexItem grow={false}>
+            <DataStreamActionsMenu
+              dataStreamActions={dataStreamActions}
+              selectedDataStreamsCount={selection.length}
+            />
+          </EuiFlexItem>
+        )}
+        <EuiFlexItem>
+          <EuiFieldSearch
+            incremental
+            fullWidth
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder={i18n.translate('xpack.idxMgmt.dataStreamList.table.searchPlaceholder', {
+              defaultMessage: 'Search data streams',
+            })}
+            data-test-subj="dataStreamSearch"
+          />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <EuiFlexGroup gutterSize="s" alignItems="center">
+            <EuiFlexItem grow={false}>
+              <EuiSwitch
+                label={i18n.translate(
+                  'xpack.idxMgmt.dataStreamListControls.includeStatsSwitchLabel',
+                  { defaultMessage: 'Include stats' }
+                )}
+                checked={includeStats}
+                onChange={(e) => setIncludeStats(e.target.checked)}
+                data-test-subj="includeStatsSwitch"
+              />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <EuiIconTip
+                content={i18n.translate(
+                  'xpack.idxMgmt.dataStreamListControls.includeStatsSwitchToolTip',
+                  { defaultMessage: 'Including stats can increase reload times' }
+                )}
+                position="top"
+              />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <FilterListButton<DataStreamFilterName>
+                filters={viewFilters}
+                onChange={onViewFilterChange}
+              />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <EuiButton
+                color="success"
+                iconType="refresh"
+                onClick={reload}
+                data-test-subj="reloadButton"
+              >
+                <FormattedMessage
+                  id="xpack.idxMgmt.dataStreamList.reloadDataStreamsButtonLabel"
+                  defaultMessage="Reload"
+                />
+              </EuiButton>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+      <EuiSpacer size="m" />
       <EuiInMemoryTable
-        items={data}
+        items={filteredData}
         itemId="name"
         columns={columns}
-        search={searchConfig}
         sorting={sorting}
         selection={selectionConfig}
         pagination={pagination}

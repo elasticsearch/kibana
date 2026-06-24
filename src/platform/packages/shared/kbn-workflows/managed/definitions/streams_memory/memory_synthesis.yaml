@@ -20,14 +20,20 @@ tags:
 
 triggers:
   - type: manual
+    inputs:
+      - name: connectorId
+        type: string
+        default: ".anthropic-claude-4.6-sonnet-chat_completion"
+        required: false
+        description: "AI connector ID to use for the synthesis agent."
 
 steps:
   - name: synthesize_memory
     type: ai.agent
-    connector-id: ".anthropic-claude-4.6-sonnet-chat_completion"
+    connector-id: "${{ inputs.connectorId }}"
     create-conversation: true
+    timeout: 1800s
     with:
-      timeout: 1800s
       message: |
         First, call the load_skill tool with skill path skills/platform/streams/streams-memory-synthesis.
         Wait for the skill to load before calling any other tools.

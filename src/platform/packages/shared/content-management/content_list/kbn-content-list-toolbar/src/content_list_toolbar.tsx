@@ -18,6 +18,10 @@ import {
   useContentListPhase,
 } from '@kbn/content-list-provider';
 import { i18n } from '@kbn/i18n';
+import {
+  CONTENT_LIST_TEST_SUBJECTS,
+  getContentListToolbarSubjects,
+} from '@kbn/content-list-common';
 import { Filters } from './filters';
 import { useFilters } from './hooks';
 import { SelectionBar } from './selection_bar';
@@ -53,8 +57,9 @@ const parseErrorPrefix = i18n.translate(
  */
 const ContentListToolbarComponent = ({
   children,
-  'data-test-subj': dataTestSubj = 'contentListToolbar',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.toolbar,
 }: ContentListToolbarProps) => {
+  const subjects = useMemo(() => getContentListToolbarSubjects(dataTestSubj), [dataTestSubj]);
   const phase = useContentListPhase();
   const { labels, supports } = useContentListConfig();
   const {
@@ -90,13 +95,13 @@ const ContentListToolbarComponent = ({
   const searchHint = useMemo(
     () => ({
       content: (
-        <EuiText color="danger" size="s" data-test-subj={`${dataTestSubj}-searchParseError`}>
+        <EuiText color="danger" size="s" data-test-subj={subjects.searchParseError}>
           {parseErrorPrefix} {parseError}
         </EuiText>
       ),
       popoverProps: { isOpen: Boolean(parseError) },
     }),
-    [parseError, dataTestSubj]
+    [parseError, subjects]
   );
 
   // Build an EuiSearchBar schema so it recognizes registered fields (e.g., `tag`,
@@ -119,9 +124,9 @@ const ContentListToolbarComponent = ({
   const toolsLeft = useMemo(
     () =>
       supports.selection && selectedCount > 0
-        ? [<SelectionBar key="selection" data-test-subj={`${dataTestSubj}-selectionBar`} />]
+        ? [<SelectionBar key="selection" data-test-subj={subjects.selectionBar} />]
         : undefined,
-    [supports.selection, selectedCount, dataTestSubj]
+    [supports.selection, selectedCount, subjects]
   );
 
   if (phase === 'initialLoad') {
@@ -129,7 +134,7 @@ const ContentListToolbarComponent = ({
       <ToolbarSkeleton
         filterCount={filters.length}
         hasSelection={supports.selection}
-        data-test-subj={`${dataTestSubj}-skeleton`}
+        data-test-subj={subjects.skeleton}
       />
     );
   }
@@ -140,7 +145,7 @@ const ContentListToolbarComponent = ({
       box={{
         placeholder: labels.searchPlaceholder ?? defaultPlaceholder,
         incremental: true,
-        'data-test-subj': `${dataTestSubj}-searchBox`,
+        'data-test-subj': subjects.searchBox,
         disabled: !searchIsSupported,
         ...(boxSchema && { schema: boxSchema }),
       }}

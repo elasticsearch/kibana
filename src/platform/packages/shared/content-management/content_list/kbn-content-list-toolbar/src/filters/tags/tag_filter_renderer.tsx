@@ -19,6 +19,7 @@ import {
 import { i18n } from '@kbn/i18n';
 import { useContentListConfig, useFilterFacets, TAG_FILTER_ID } from '@kbn/content-list-provider';
 import type { Tag } from '@kbn/content-management-tags';
+import { CONTENT_LIST_TEST_SUBJECTS, getContentListTagOptionSubj } from '@kbn/content-list-common';
 import {
   SelectableFilterPopover,
   StandardFilterOption,
@@ -71,7 +72,7 @@ const i18nText = {
 export const TagFilterRenderer = ({
   query,
   onChange,
-  'data-test-subj': dataTestSubj = 'contentListTagsRenderer',
+  'data-test-subj': dataTestSubj = CONTENT_LIST_TEST_SUBJECTS.tagsFilter,
 }: TagFilterRendererProps) => {
   const { euiTheme } = useEuiTheme();
   const { supports } = useContentListConfig();
@@ -101,7 +102,7 @@ export const TagFilterRenderer = ({
           <EuiFlexItem grow={false}>
             <EuiHealth
               color={option.data?.color}
-              data-test-subj={`tag-searchbar-option-${option.key}`}
+              data-test-subj={getContentListTagOptionSubj(option.label)}
             >
               <EuiText size="s">{option.label}</EuiText>
             </EuiHealth>

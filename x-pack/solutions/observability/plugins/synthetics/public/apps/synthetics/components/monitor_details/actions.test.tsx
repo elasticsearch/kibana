@@ -11,6 +11,7 @@ import { Actions } from './actions';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { useParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useSelectedMonitor } from './hooks/use_selected_monitor';
 
 jest.mock('@kbn/kibana-react-plugin/public', () => ({
   useKibana: jest.fn(),
@@ -28,6 +29,10 @@ jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
 }));
 
+jest.mock('./hooks/use_selected_monitor', () => ({
+  useSelectedMonitor: jest.fn(),
+}));
+
 describe('Actions Component', () => {
   let mockDispatch: jest.Mock;
 
@@ -38,6 +43,12 @@ describe('Actions Component', () => {
     (useSelector as jest.Mock).mockReturnValue([]);
     (useParams as jest.Mock).mockReturnValue({ monitorId: 'test-monitor-id' });
     (useLocation as jest.Mock).mockReturnValue({ search: '?test=true' });
+    (useSelectedMonitor as jest.Mock).mockReturnValue({
+      monitor: null,
+      loading: false,
+      error: null,
+      isMonitorMissing: false,
+    });
     (useKibana as jest.Mock).mockReturnValue({
       services: {
         notifications: {
@@ -90,14 +101,6 @@ describe('Actions Component', () => {
       (useLocation as jest.Mock).mockReturnValue({ search: '?remoteName=cluster-1' });
     });
 
-    it('disables Edit monitor', () => {
-      render(<Actions />);
-
-      fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
-
-      expect(screen.getByTestId('syntheticsEditMonitorContextItem')).toBeDisabled();
-    });
-
     it('disables Run test manually', () => {
       render(<Actions />);
 
@@ -112,6 +115,66 @@ describe('Actions Component', () => {
       fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
 
       expect(screen.getByTestId('syntheticsRefreshContextItem')).not.toBeDisabled();
+    });
+
+    describe('Edit monitor', () => {
+      it('redirects to the remote cluster when kibanaUrl is known', () => {
+        (useSelectedMonitor as jest.Mock).mockReturnValue({
+          monitor: {
+            config_id: 'test-monitor-id',
+            remote: { remoteName: 'cluster-1', kibanaUrl: 'https://remote.example.com' },
+          },
+          loading: false,
+          error: null,
+          isMonitorMissing: false,
+        });
+
+        render(<Actions />);
+        fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+        const editItem = screen.getByTestId('syntheticsEditMonitorContextItem');
+        expect(editItem).not.toBeDisabled();
+        expect(editItem).toHaveAttribute(
+          'href',
+          'https://remote.example.com/app/synthetics/edit-monitor/test-monitor-id'
+        );
+        expect(editItem).toHaveAttribute('target', '_blank');
+      });
+
+      it('renders disabled with a kibanaUrl-missing tooltip when remote.kibanaUrl is missing', () => {
+        (useSelectedMonitor as jest.Mock).mockReturnValue({
+          monitor: {
+            config_id: 'test-monitor-id',
+            remote: { remoteName: 'cluster-1' },
+          },
+          loading: false,
+          error: null,
+          isMonitorMissing: false,
+        });
+
+        render(<Actions />);
+        fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+        const editItem = screen.getByTestId('syntheticsEditMonitorContextItem');
+        expect(editItem).toBeDisabled();
+        expect(editItem).not.toHaveAttribute('href');
+      });
+
+      it('renders disabled when the remote monitor is not yet resolved', () => {
+        // `useSelectedMonitor` returns `null` while the CCS lookup is in-flight,
+        // so we treat the URL as missing and disable the item.
+        (useSelectedMonitor as jest.Mock).mockReturnValue({
+          monitor: null,
+          loading: true,
+          error: null,
+          isMonitorMissing: false,
+        });
+
+        render(<Actions />);
+        fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+        expect(screen.getByTestId('syntheticsEditMonitorContextItem')).toBeDisabled();
+      });
     });
   });
 });

@@ -14,14 +14,15 @@ import {
   toFieldRendererItems,
 } from '../../../../../timelines/components/field_renderers/default_renderer';
 import { getEmptyTagValue } from '../../../../../common/components/empty_value';
-import type { BasicEntityData, EntityTableColumns } from './types';
+import type { BasicEntityData, EntityTableColumns, EntityTableLinkRenderer } from './types';
 import { isFlyoutLink } from '../../../../shared/utils/link_utils';
 import { PreviewLink } from '../../../../shared/components/preview_link';
 
 export const getEntityTableColumns = <T extends BasicEntityData>(
   contextID: string,
   scopeId: string,
-  data: T
+  data: T,
+  entityLink?: EntityTableLinkRenderer
 ): EntityTableColumns<T> => [
   {
     name: (
@@ -55,17 +56,28 @@ export const getEntityTableColumns = <T extends BasicEntityData>(
       const values = getValues && getValues(data);
 
       if (field) {
-        const showPreviewLink = values && isFlyoutLink({ field, scopeId });
-        const renderPreviewLink = (value: string) => (
-          <PreviewLink field={field} value={value} entityId={data.entityId} scopeId={scopeId} />
-        );
+        let renderValue: ((value: string) => JSX.Element) | undefined;
+        if (entityLink) {
+          const EntityLink = entityLink;
+          renderValue = (value: string) => (
+            <EntityLink field={field} value={value}>
+              {value}
+            </EntityLink>
+          );
+        } else if (values && isFlyoutLink({ field, scopeId })) {
+          renderValue = (value: string) => (
+            <PreviewLink field={field} value={value} entityId={data.entityId} scopeId={scopeId} />
+          );
+        } else {
+          renderValue = renderField;
+        }
         return (
           <DefaultFieldRenderer
             rowItems={toFieldRendererItems(values)}
             attrName={field}
             idPrefix={contextID ? `entityTable-${contextID}` : 'entityTable'}
             scopeId={scopeId}
-            render={showPreviewLink ? renderPreviewLink : renderField}
+            render={renderValue}
             data-test-subj="entity-table-value"
           />
         );

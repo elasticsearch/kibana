@@ -118,11 +118,21 @@ export const OutputFilterRow = () => {
             value={draftMode}
             onChange={(e) => handleModeChange(e.target.value as FilterMode)}
             compressed
+            aria-label={i18n.translate('console.outputFilter.modeSelect.ariaLabel', {
+              defaultMessage: 'Filter mode',
+            })}
           />
         </EuiFlexItem>
 
         <EuiFlexItem>
-          <EuiFormRow isInvalid={isInvalid} error={errorText} display="rowCompressed">
+          <EuiFormRow
+            isInvalid={isInvalid}
+            error={errorText}
+            display="rowCompressed"
+            aria-label={i18n.translate('console.outputFilter.expressionFormRow.ariaLabel', {
+              defaultMessage: 'Filter expression',
+            })}
+          >
             <EuiFieldText
               data-test-subj={draftMode === 'regex' ? 'filterRegex' : 'filterJq'}
               value={draftExpression}

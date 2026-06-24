@@ -9,7 +9,13 @@ import type { SerializableRecord } from '@kbn/utility-types';
 
 export interface StreamsAppLocationParams extends SerializableRecord {
   name?: string;
-  managementTab?: 'retention' | 'partitioning' | 'processing' | 'significantEvents' | string;
+  managementTab?:
+    | 'retention'
+    | 'partitioning'
+    | 'processing'
+    | 'significantEvents'
+    | 'canvas'
+    | string;
 }
 
 export interface StreamsAppLocation {

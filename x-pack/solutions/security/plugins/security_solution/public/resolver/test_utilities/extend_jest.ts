@@ -55,6 +55,12 @@ expect.extend({
       received.push(next);
       // Use deep equals to compare the value to the expected value
       if (this.equals(next, expected)) {
+        if (lastCheckPassed) {
+          // Two consecutive matches confirms stability — break early to avoid
+          // consuming all remaining iterations under CI-loaded conditions where
+          // each setTimeout(0) can take hundreds of milliseconds.
+          break;
+        }
         lastCheckPassed = true;
         break;
       }

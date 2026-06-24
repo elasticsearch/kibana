@@ -18,6 +18,7 @@ import {
 import type { SavedObjectReference } from '@kbn/core/types';
 import type { KbnPaletteId } from '@kbn/palettes';
 import type { DataViewSpec } from '@kbn/data-views-plugin/common';
+import { LENS_ITEM_LATEST_VERSION } from '@kbn/lens-common/content_management/constants';
 import type { DeepWriteable, LensAttributes } from '../../types';
 import {
   DEFAULT_PRIMARY_POSITION,
@@ -87,7 +88,7 @@ const LENS_METRIC_COMPARE_TO_REVERSED = false;
 type MetricStyling = NonNullable<MetricConfig['styling']>;
 type MetricIconName = NonNullable<NonNullable<MetricStyling['icon']>['name']>;
 
-const iconCompat = getReversibleMappings<MetricIconName, string>([
+export const iconCompat = getReversibleMappings<MetricIconName, string>([
   ['alert', 'alert'],
   ['asterisk', 'asterisk'],
   ['bell', 'bell'],
@@ -187,10 +188,12 @@ function convertStylingToAPIFormat(
   visualization: MetricVisualizationState,
   hasSecondary: boolean
 ): MetricStyling {
+  const iconName = visualization.icon ? iconCompat.toAPI(visualization.icon) : undefined;
+
   return stripUndefined({
-    icon: visualization.icon
+    icon: iconName
       ? {
-          name: iconCompat.toAPI(visualization.icon),
+          name: iconName,
           alignment: visualization.iconAlign ?? DEFAULT_PRIMARY_ICON_ALIGNMENT,
         }
       : undefined,
@@ -274,7 +277,7 @@ function buildVisualizationState(config: MetricConfig): MetricVisualizationState
           maxCols: layer.breakdown_by.columns,
         }
       : {}),
-    collapseFn: layer.breakdown_by?.collapse_by,
+    ...(layer.breakdown_by?.collapse_by ? { collapseFn: layer.breakdown_by.collapse_by } : {}),
     ...(primaryMetric?.background_chart?.type === 'bar'
       ? {
           maxAccessor: getAccessorName('max'),
@@ -347,7 +350,7 @@ function buildFromTextBasedLayer(
                   type: 'bar',
                   max_value: getValueApiColumn(visualization.maxAccessor, layer),
                   ...(visualization.progressDirection
-                    ? { direction: visualization.progressDirection }
+                    ? { orientation: visualization.progressDirection }
                     : {}),
                 },
               }
@@ -468,7 +471,8 @@ function enrichConfigurationWithVisualizationProperties(
     }
 
     if (visualization.trendlineLayerType) {
-      primaryMetric.background_chart = { ...primaryMetric.background_chart, type: 'trend' };
+      // Trend takes precedence; do not retain bar-only fields (e.g. max_value) on the API config.
+      primaryMetric.background_chart = { type: 'trend' };
     }
 
     if (visualization.palette) {
@@ -481,7 +485,8 @@ function enrichConfigurationWithVisualizationProperties(
       primaryMetric.color = AUTO_COLOR;
     }
 
-    if (visualization.applyColorTo) {
+    // Check for valid enum, some integration panels have applyColorTo === 'bar', which is not a valid API enum; treat unknown values as unselected.
+    if (visualization.applyColorTo === 'value' || visualization.applyColorTo === 'background') {
       primaryMetric.apply_color_to = visualization.applyColorTo;
     }
   }
@@ -689,6 +694,7 @@ export function fromAPItoLensState(config: MetricConfig): MetricAttributesWithou
     visualizationType: 'lnsMetric',
     ...getSharedChartAPIToLensState(config),
     references,
+    version: LENS_ITEM_LATEST_VERSION,
     state: {
       datasourceStates: layers,
       internalReferences,

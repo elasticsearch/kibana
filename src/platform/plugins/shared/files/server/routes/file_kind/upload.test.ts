@@ -40,7 +40,7 @@ describe('upload', () => {
     deleteFn = jest.fn(async () => {}); // We need it to be a promise, or it'll crash because of missing `.catch`
     fileService.getById.mockResolvedValueOnce({
       id: 'test',
-      data: { size: 1 },
+      data: { size: 1, fileKind: 'test' },
       uploadContent,
       delete: deleteFn,
     } as unknown as File);

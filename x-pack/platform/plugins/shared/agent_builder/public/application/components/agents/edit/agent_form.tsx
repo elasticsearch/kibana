@@ -33,7 +33,6 @@ import { i18n } from '@kbn/i18n';
 import { formatAgentBuilderErrorMessage } from '@kbn/agent-builder-browser';
 import {
   defaultAgentToolIds,
-  hasAgentWriteAccess,
   AGENT_BUILDER_UI_EBT,
   type AgentDefinition,
 } from '@kbn/agent-builder-common';
@@ -64,7 +63,6 @@ import { PluginsTab } from './tabs/plugins_tab';
 import { useExperimentalFeatures } from '../../../hooks/use_experimental_features';
 import { useAgentBuilderServices } from '../../../hooks/use_agent_builder_service';
 import { useUiPrivileges } from '../../../hooks/use_ui_privileges';
-import { useCurrentUser } from '../../../hooks/agents/use_current_user';
 import {
   getActivePlugins,
   getActiveSkills,
@@ -97,8 +95,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ editingAgentId, onDelete }
   const isMobile = useIsWithinBreakpoints(['xs', 's']);
   const { services } = useKibana();
   const isExperimentalFeaturesEnabled = useExperimentalFeatures();
-  const { manageAgents, isAdmin } = useUiPrivileges();
-  const { currentUser } = useCurrentUser();
+  const { manageAgents } = useUiPrivileges();
   const { navigateToAgentBuilderUrl } = useNavigation();
   const { docLinksService } = useAgentBuilderServices();
   // Resolve state updates before navigation to avoid triggering unsaved changes prompt
@@ -155,6 +152,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ editingAgentId, onDelete }
     tools,
     skills,
     plugins,
+    permissions,
     error,
   } = useAgentEdit({
     editingAgentId,
@@ -162,14 +160,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ editingAgentId, onDelete }
     onSaveError,
   });
 
-  const canEditAgent = !manageAgents
-    ? false
-    : hasAgentWriteAccess({
-        visibility: agentState?.visibility,
-        owner: agentState?.created_by,
-        currentUser: currentUser ?? undefined,
-        isAdmin,
-      });
+  const canEditAgent = isCreateMode ? manageAgents : permissions?.update_agent ?? false;
 
   const formMethods = useForm<AgentFormData>({
     defaultValues: { ...agentState },
@@ -277,6 +268,9 @@ export const AgentForm: React.FC<AgentFormProps> = ({ editingAgentId, onDelete }
             formState={formState}
             isCreateMode={isCreateMode}
             isFormDisabled={isFormDisabled || !canEditAgent}
+            canChangeAccessControl={
+              isCreateMode ? manageAgents : permissions?.update_access_control ?? false
+            }
             owner={agentState?.created_by}
             agentId={editingAgentId}
           />
@@ -385,6 +379,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ editingAgentId, onDelete }
       activeSkillsCount,
       activePluginsCount,
       manageAgents,
+      permissions?.update_access_control,
       isExperimentalFeaturesEnabled,
       enableElasticCapabilities,
     ]

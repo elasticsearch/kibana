@@ -7,14 +7,19 @@
 
 import type { PromiseType } from 'utility-types';
 import type { CertResult, GetCertsParams, Ping } from '../../common/runtime_types';
+import type { GetCertsRequestBodyOptions } from '../../common/requests/get_certs_request_body';
 import {
   getCertsRequestBody,
   processCertsResult,
 } from '../../common/requests/get_certs_request_body';
 import type { SyntheticsEsClient } from '../lib';
 
+export type GetSyntheticsCertsParams = GetCertsParams & {
+  syntheticsEsClient: SyntheticsEsClient;
+} & GetCertsRequestBodyOptions;
+
 export const getSyntheticsCerts = async (
-  requestParams: GetCertsParams & { syntheticsEsClient: SyntheticsEsClient }
+  requestParams: GetSyntheticsCertsParams
 ): Promise<CertResult> => {
   const result = await getCertsResults(requestParams);
 
@@ -23,12 +28,16 @@ export const getSyntheticsCerts = async (
 
 export type CertificatesResults = PromiseType<ReturnType<typeof getCertsResults>>;
 
-const getCertsResults = async (
-  requestParams: GetCertsParams & { syntheticsEsClient: SyntheticsEsClient }
-) => {
-  const { syntheticsEsClient } = requestParams;
+const getCertsResults = async (requestParams: GetSyntheticsCertsParams) => {
+  const { syntheticsEsClient, ccsEnabled, remoteNames, spaceId, showFromAllSpaces, ...rest } =
+    requestParams;
 
-  const searchBody = getCertsRequestBody(requestParams);
+  const searchBody = getCertsRequestBody(rest, {
+    ccsEnabled,
+    remoteNames,
+    spaceId,
+    showFromAllSpaces,
+  });
 
   const { body: result } = await syntheticsEsClient.search<Ping, typeof searchBody>(searchBody);
 

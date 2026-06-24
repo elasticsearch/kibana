@@ -52,6 +52,7 @@ export type {
   CasesActions,
   CheckPrivileges,
   AlertingActions,
+  AlertsActions,
   AppActions,
   ApiActions,
   CheckPrivilegesDynamically,

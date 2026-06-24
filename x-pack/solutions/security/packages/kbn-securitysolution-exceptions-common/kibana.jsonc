@@ -2,7 +2,7 @@
   "type": "shared-common",
   "id": "@kbn/securitysolution-exceptions-common",
   "owner": [
-    "@elastic/security-detection-engine"
+    "@elastic/security-detection-engineering"
   ],
   "group": "security",
   "visibility": "private"

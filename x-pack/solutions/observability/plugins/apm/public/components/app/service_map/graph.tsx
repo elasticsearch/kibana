@@ -106,6 +106,11 @@ interface GraphProps {
   fullMapHref?: string;
   /** When true, hides minimap, options panel, and navigation actions that don't apply in dashboard embeds. */
   isEmbedded?: boolean;
+  /**
+   * When true, shows the quick-filters toggle/menu and minimap even in embedded mode.
+   * Used by the dashboard embeddable when the panel is maximized in view mode.
+   */
+  showEmbeddedControls?: boolean;
   /** Override for the popover's Focus map button visibility. Defaults to `!isEmbedded`. */
   showFocusMap?: boolean;
   /** Focus button always navigates, even for the currently focused service. */
@@ -150,6 +155,7 @@ function GraphInner({
   onToggleFullscreen,
   fullMapHref,
   isEmbedded = false,
+  showEmbeddedControls = false,
   showFocusMap,
   alwaysNavigateOnPopoverFocus,
   clearKueryOnPopoverNavigation,
@@ -213,6 +219,16 @@ function GraphInner({
     viewFilters.anomalySeverityFilter.length > 0 ||
     searchQuery.trim().length > 0;
   const [panelExpanded, setPanelExpanded] = useState(!isEmbedded);
+  // When the panel is maximized in a dashboard (view mode), we show the quick-filters and minimap
+  // even though we're embedded. In all other embedded states they stay hidden.
+  const showControls = !isEmbedded || showEmbeddedControls;
+  // Auto-open the quick-filters panel the moment the dashboard panel is maximized so users
+  // immediately discover the controls. The user can still close it manually mid-session.
+  useEffect(() => {
+    if (showEmbeddedControls) {
+      setPanelExpanded(true);
+    }
+  }, [showEmbeddedControls]);
   const [internalOrientation, setInternalOrientation] = useState<ServiceMapOrientation>(
     controlledOrientation ?? 'horizontal'
   );
@@ -705,7 +721,7 @@ function GraphInner({
             )}
             <Panel position="top-left" css={topLeftToolbarStyles}>
               <div css={topLeftToolbarColumnStyles}>
-                {!isEmbedded && (
+                {showControls && (
                   <ServiceMapOptionsPanelToggle
                     isExpanded={panelExpanded}
                     onExpandedChange={setPanelExpanded}
@@ -805,7 +821,7 @@ function GraphInner({
                   <ServiceMapLegend controlIconCss={mapToolbarControlIconCss} />
                 </EuiPanel>
               </div>
-              {!isEmbedded && panelExpanded && (
+              {showControls && panelExpanded && (
                 <ServiceMapOptionsPanel
                   nodes={nodesAfterFilters}
                   filterOptionCounts={filterOptionCounts}
@@ -857,7 +873,7 @@ function GraphInner({
                 </EuiPanel>
               </Panel>
             )}
-            {!isEmbedded && <ServiceMapMinimap />}
+            {showControls && <ServiceMapMinimap />}
           </ReactFlow>
           <MapPopover
             selectedNode={selectedNodeForPopover}

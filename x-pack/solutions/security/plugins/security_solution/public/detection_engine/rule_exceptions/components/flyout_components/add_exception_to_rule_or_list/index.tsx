@@ -7,7 +7,7 @@
 
 import React, { useMemo } from 'react';
 import { EuiTitle, EuiSpacer, EuiPanel } from '@elastic/eui';
-import styled, { css } from 'styled-components';
+import styled from '@emotion/styled';
 import type { ExceptionListSchema } from '@kbn/securitysolution-io-ts-list-types';
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
 
@@ -28,9 +28,7 @@ interface ExceptionsAddToRulesOrListsComponentProps {
 }
 
 const SectionHeader = styled(EuiTitle)`
-  ${() => css`
-    font-weight: ${({ theme }) => theme.eui.euiFontWeightSemiBold};
-  `}
+  font-weight: ${({ theme }) => theme.euiTheme.font.weight.semiBold};
 `;
 
 const ExceptionsAddToRulesOrListsComponent: React.FC<ExceptionsAddToRulesOrListsComponentProps> = ({

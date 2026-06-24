@@ -32,6 +32,7 @@ const buildKibanaFeature = (feature: AlertingV2FeatureDefinition): KibanaFeature
   privileges: {
     all: {
       app: [APP_ID],
+      ...(feature.privileges.all.alerts ? { alerts: { ...feature.privileges.all.alerts } } : {}),
       savedObject: {
         all: [...feature.privileges.all.savedObject.all],
         read: [...feature.privileges.all.savedObject.read],
@@ -41,6 +42,7 @@ const buildKibanaFeature = (feature: AlertingV2FeatureDefinition): KibanaFeature
     },
     read: {
       app: [APP_ID],
+      ...(feature.privileges.read.alerts ? { alerts: { ...feature.privileges.read.alerts } } : {}),
       savedObject: {
         all: [...feature.privileges.read.savedObject.all],
         read: [...feature.privileges.read.savedObject.read],

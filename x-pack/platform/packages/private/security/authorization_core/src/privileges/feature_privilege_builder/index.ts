@@ -10,6 +10,7 @@ import { flatten } from 'lodash';
 import type { FeatureKibanaPrivileges, KibanaFeature } from '@kbn/features-plugin/server';
 
 import { FeaturePrivilegeAlertingBuilder } from './alerting';
+import { FeaturePrivilegeAlertsBuilder } from './alerts';
 import { FeaturePrivilegeApiBuilder } from './api';
 import { FeaturePrivilegeAppBuilder } from './app';
 import { FeaturePrivilegeCasesBuilder } from './cases';
@@ -26,6 +27,7 @@ export type { FeaturePrivilegeBuilder };
 
 export const featurePrivilegeBuilderFactory = (actions: Actions): FeaturePrivilegeBuilder => {
   const builders = [
+    new FeaturePrivilegeAlertsBuilder(actions),
     new FeaturePrivilegeApiBuilder(actions),
     new FeaturePrivilegeAppBuilder(actions),
     new FeaturePrivilegeCatalogueBuilder(actions),

@@ -63,6 +63,11 @@ export interface ServiceMapEmbeddableProps {
   parentQuery?: Query | AggregateQuery;
   viewFilters?: ServiceMapViewFilters;
   onViewFiltersChange?: (next: ServiceMapViewFilters) => void;
+  /**
+   * When true, shows the quick-filters toggle/menu and minimap even though this is an embed.
+   * Set by the dashboard embeddable factory when the panel is maximized in view mode.
+   */
+  showEmbeddedControls?: boolean;
 }
 
 function LoadingSpinner() {
@@ -98,6 +103,7 @@ export function ServiceMapEmbeddable({
   parentQuery,
   viewFilters,
   onViewFiltersChange,
+  showEmbeddedControls,
 }: ServiceMapEmbeddableProps) {
   const license = useLicenseContext();
   const { config } = useApmPluginContext();
@@ -338,6 +344,7 @@ export function ServiceMapEmbeddable({
           isFullscreen={false}
           fullMapHref={fullMapHref}
           isEmbedded
+          showEmbeddedControls={showEmbeddedControls}
           showFocusMap={showFocusMapInPopover}
           alwaysNavigateOnPopoverFocus={alwaysNavigateOnPopoverFocus}
           clearKueryOnPopoverNavigation={clearKueryOnPopoverNavigation}

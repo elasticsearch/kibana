@@ -11,7 +11,7 @@ import { EuiFlyoutBody, EuiFlyoutHeader, useEuiTheme } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import type { CellActionRenderer } from '../../../shared/components/cell_actions';
-import { ToolsFlyoutHeader } from '../../../shared/components/tools_flyout_header';
+import { DocumentToolsFlyoutHeader } from '../../../shared/components/document_tools_flyout_header';
 import { PREFIX } from '../../../../flyout/shared/test_ids';
 import { PageScope } from '../../../../data_view_manager/constants';
 import { useSelectedPatterns } from '../../../../data_view_manager/hooks/use_selected_patterns';
@@ -66,9 +66,9 @@ export const AnalyzerGraph = memo(
             padding-block: ${euiTheme.size.s} !important;
           `}
         >
-          <ToolsFlyoutHeader
-            hit={hit}
+          <DocumentToolsFlyoutHeader
             title={TITLE}
+            hit={hit}
             renderCellActions={renderCellActions}
             onAlertUpdated={onAlertUpdated}
           />

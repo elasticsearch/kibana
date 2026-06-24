@@ -13,7 +13,7 @@ import type {
 } from '@elastic/elasticsearch/lib/api/types';
 import type { EntityType } from '@kbn/entity-store/common';
 import { euid } from '@kbn/entity-store/common/euid_helpers';
-import { DEFAULT_ML_AD_LOOKBACK } from './constants';
+import { ENTITY_ANOMALY_DEFAULT_LOOKBACK } from '../../../../common/constants';
 import type { AnomalyHit, EnrichedAnomalyHit } from './types';
 import type { JobConfig } from './get_job_config';
 
@@ -142,7 +142,7 @@ const fetchRareBaselineForAnomaly = async ({
                     toMs !== undefined
                       ? Math.min(toMs, anomaly.timestamp + jobConfig.bucketSpanMs)
                       : anomaly.timestamp + jobConfig.bucketSpanMs,
-                  gte: fromMs ?? `now-${DEFAULT_ML_AD_LOOKBACK}`,
+                  gte: fromMs ?? `now-${ENTITY_ANOMALY_DEFAULT_LOOKBACK}`,
                 },
               },
             },
@@ -255,7 +255,7 @@ const fetchTimeBaselineForAnomaly = async ({
                     toMs !== undefined
                       ? Math.min(toMs, anomaly.timestamp + jobConfig.bucketSpanMs)
                       : anomaly.timestamp + jobConfig.bucketSpanMs,
-                  gte: fromMs ?? `now-${DEFAULT_ML_AD_LOOKBACK}`,
+                  gte: fromMs ?? `now-${ENTITY_ANOMALY_DEFAULT_LOOKBACK}`,
                 },
               },
             },

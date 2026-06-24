@@ -215,6 +215,21 @@ export class DatePicker {
     await this.getTestSubjLocator('querySubmitButton', containerLocator).click();
   }
 
+  private async openDateRangePickerSettings() {
+    await this.page.testSubj.locator('dateRangePickerControlButton').click();
+
+    const settingsPanel = this.page.testSubj.locator('dateRangePickerSettingsPanel');
+    const settingsPanelOpened = await settingsPanel
+      .waitFor({ timeout: 1000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!settingsPanelOpened) {
+      await this.page.testSubj.locator('dateRangePickerSettingsButton').click();
+      await settingsPanel.waitFor();
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Public API (dual-path)
   // ---------------------------------------------------------------------------
@@ -353,9 +368,7 @@ export class DatePicker {
 
   async startAutoRefresh(interval: number, dateUnit: DateUnitSelector = DateUnitSelector.Seconds) {
     if (await this.isNewDateRangePicker()) {
-      await this.page.testSubj.locator('dateRangePickerControlButton').click();
-      await this.page.testSubj.locator('dateRangePickerSettingsButton').click();
-      await this.page.testSubj.locator('dateRangePickerSettingsPanel').waitFor();
+      await this.openDateRangePickerSettings();
 
       const toggle = this.page.testSubj.locator('dateRangePickerAutoRefreshToggle');
       const isPaused = (await toggle.getAttribute('aria-checked')) !== 'true';
@@ -381,6 +394,26 @@ export class DatePicker {
       await this.refreshIntervalInput.fill(interval.toString());
       await this.refreshIntervalUnitSelect.selectOption({ value: dateUnit });
       await this.refreshIntervalInput.press('Enter');
+      await this.quickMenuButton.click();
+    }
+  }
+
+  async pauseAutoRefresh() {
+    if (await this.isNewDateRangePicker()) {
+      await this.openDateRangePickerSettings();
+
+      const toggle = this.page.testSubj.locator('dateRangePickerAutoRefreshToggle');
+      const isRunning = (await toggle.getAttribute('aria-checked')) === 'true';
+
+      if (isRunning) await toggle.click();
+
+      await this.page.keyboard.press('Escape');
+    } else {
+      await this.quickMenuButton.click();
+      const isRunning = (await this.toggleRefreshButton.getAttribute('aria-checked')) === 'true';
+
+      if (isRunning) await this.toggleRefreshButton.click();
+
       await this.quickMenuButton.click();
     }
   }

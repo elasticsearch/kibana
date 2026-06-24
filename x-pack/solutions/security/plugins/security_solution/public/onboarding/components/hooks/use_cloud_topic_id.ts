@@ -39,11 +39,7 @@ export const useCloudTopicId = ({ onComplete }: UseCloudTopicIdParams) => {
   return { start, isLoading };
 };
 
-const isSiemMigrationsCloudOnboarding = (data: CloudDataAttributes) => {
-  const { security } = data.onboardingData ?? {};
-  return (
-    security?.useCase === 'siem' &&
-    security?.migration?.value &&
-    security?.migration?.type === 'splunk'
-  );
+export const isSiemMigrationsCloudOnboarding = (data: CloudDataAttributes | null) => {
+  const { security } = data?.onboardingData ?? {};
+  return security?.useCase === 'siem' && security?.migration?.value === true;
 };
