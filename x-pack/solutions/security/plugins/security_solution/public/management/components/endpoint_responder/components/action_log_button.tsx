@@ -12,14 +12,17 @@ import {
   EuiFlyoutBody,
   EuiFlyoutHeader,
   EuiTitle,
+  useEuiTheme,
   useGeneratedHtmlId,
 } from '@elastic/eui';
+import { css } from '@emotion/react';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { EndpointResponderExtensionComponentProps } from '../types';
 import { ResponseActionsLog } from '../../endpoint_response_actions_list/response_actions_log';
 import { UX_MESSAGES } from '../../endpoint_response_actions_list/translations';
 
 export const ActionLogButton = memo<EndpointResponderExtensionComponentProps>((props) => {
+  const { euiTheme } = useEuiTheme();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [showActionLogFlyout, setShowActionLogFlyout] = useState<boolean>(false);
   const toggleActionLog = useCallback(() => {
@@ -36,6 +39,11 @@ export const ActionLogButton = memo<EndpointResponderExtensionComponentProps>((p
   const responderActionLogFlyoutTitleId = useGeneratedHtmlId({
     prefix: 'responderActionLogFlyoutTitle',
   });
+
+  // This flyout is opened from within the console `PageOverlay` (which sits at `levels.flyout + 500`),
+  // so it must be raised above the overlay to remain visible. The `+ 503` keeps both the flyout panel
+  // and its mask (`flyoutZIndex - 2`) above the overlay so the overlay is dimmed behind the flyout.
+  const flyoutZIndex = (euiTheme.levels.flyout as number) + 503;
 
   return (
     <>
@@ -59,6 +67,10 @@ export const ActionLogButton = memo<EndpointResponderExtensionComponentProps>((p
           aria-labelledby={responderActionLogFlyoutTitleId}
           data-test-subj="responderActionLogFlyout"
           session="never"
+          css={css`
+            z-index: ${flyoutZIndex} !important;
+          `}
+          maskProps={{ style: `z-index: ${flyoutZIndex - 2} !important` }}
         >
           <EuiFlyoutHeader hasBorder>
             <EuiTitle size="m">

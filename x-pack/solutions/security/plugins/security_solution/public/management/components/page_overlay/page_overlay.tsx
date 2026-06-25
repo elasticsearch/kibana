@@ -33,7 +33,10 @@ const OverlayRootContainer = styled.div`
 
   border-left: 1px solid ${({ theme }) => theme.euiTheme.colors.backgroundBaseSubdued};
 
-  z-index: ${({ theme }) => theme.euiTheme.levels.flyout};
+  // We're adding 500 to ensure that the overlay sits above the EUI flyout stacking range (each stacked flyout bumps its z-index by 3).
+  // Users would have to go through over 150 flyouts before getting into a position where the overlay would be behind the flyouts.
+  // We also want to ensure that popovers, dropdowns, and tooltips still render on top of the overlay, those are at 2000.
+  z-index: ${({ theme }) => (theme.euiTheme.levels.flyout as number) + 500};
 
   background-color: ${({ theme }) => theme.euiTheme.colors.backgroundBasePlain};
 
