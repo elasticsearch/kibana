@@ -140,7 +140,7 @@
     "@elastic/ecs": "9.3.0",
     "@elastic/elasticsearch": "9.4.0",
     "@elastic/ems-client": "8.7.0",
-    "@elastic/esql": "4.4.0",
+    "@elastic/esql": "file:../esql-js/elastic-esql-0.0.1.tgz",
     "@elastic/eui": "116.3.1",
     "@elastic/eui-theme-borealis": "8.0.0",
     "@elastic/filesaver": "1.1.2",
