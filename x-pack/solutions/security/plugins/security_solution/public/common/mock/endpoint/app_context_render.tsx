@@ -39,6 +39,7 @@ import type { MiddlewareActionSpyHelper } from '../../store/test_utils';
 import { createSpyMiddleware } from '../../store/test_utils';
 import type { State } from '../../store';
 import { AppRootProvider } from './app_root_provider';
+import { resetConsoleManagerStateForTesting } from '../../../management/components/console/components/console_manager/console_manager';
 import { managementMiddlewareFactory } from '../../../management/store/middleware';
 import { createStartServicesMock } from '../../lib/kibana/kibana_react.mock';
 import { SUB_PLUGINS_REDUCER, mockGlobalState, createMockStore } from '..';
@@ -252,6 +253,11 @@ const experimentalFeaturesReducer: Reducer<State['app'], UpdateExperimentalFeatu
  * for further customization.
  */
 export const createAppRootMockRenderer = (): AppContextTestRender => {
+  // The console manager keeps its running consoles in a module-level store that intentionally
+  // outlives `<ConsoleManager>` unmounts (so console state survives navigation/flyouts in the app).
+  // Reset it per renderer creation so console state does not leak between test cases.
+  resetConsoleManagerStateForTesting();
+
   const history = createMemoryHistory<never>();
   const coreStart = createCoreStartMock(history);
   const middlewareSpy = createSpyMiddleware();

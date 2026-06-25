@@ -6,7 +6,15 @@
  */
 
 import type { PropsWithChildren } from 'react';
-import React, { memo, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
 import type { ConsoleDataState } from '../console_state/types';
 import { ConsolePageOverlay } from './components/console_page_overlay';
 import type {
@@ -56,6 +64,89 @@ const ConsoleManagerContext = React.createContext<ConsoleManagerContextClients |
   undefined
 );
 
+// -------------------------------------------------------------------------------------------------
+// Module-level shared console store
+//
+// The running consoles and their internal state live OUTSIDE React, at module scope, so that EVERY
+// mounted `<ConsoleManager>` - the one in the Security app shell AND the ones mounted inside each
+// detached flyout React tree (including Discover doc-viewer fragments) - reads from and writes to the
+// SAME data. This is what allows a console (and its in-memory state, e.g. command/input history) to
+// survive across pages, flyouts, and the Security-app/Discover boundary, instead of each manager
+// owning its own isolated copy that is lost the moment that particular tree unmounts.
+// -------------------------------------------------------------------------------------------------
+let currentConsoleStorage: RunningConsoleStorage = {};
+const consoleStateStorage = new Map<ManagedConsole['key'], ConsoleDataState>();
+const consoleStorageListeners = new Set<() => void>();
+
+const emitConsoleStorageChange = (): void => {
+  consoleStorageListeners.forEach((listener) => listener());
+};
+
+const consoleStore = {
+  subscribe: (listener: () => void): (() => void) => {
+    consoleStorageListeners.add(listener);
+    return () => {
+      consoleStorageListeners.delete(listener);
+    };
+  },
+  getStorage: (): RunningConsoleStorage => currentConsoleStorage,
+  setStorage: (updater: (prev: RunningConsoleStorage) => RunningConsoleStorage): void => {
+    currentConsoleStorage = updater(currentConsoleStorage);
+    emitConsoleStorageChange();
+  },
+  getManagedConsoleState: (key: ManagedConsole['key']): ConsoleDataState | undefined =>
+    consoleStateStorage.get(key),
+  storeManagedConsoleState: (key: ManagedConsole['key'], state: ConsoleDataState): void => {
+    consoleStateStorage.set(key, state);
+  },
+};
+
+// -------------------------------------------------------------------------------------------------
+// Renderer election
+//
+// Because the console store is shared, every mounted `<ConsoleManager>` would otherwise render the
+// `ConsolePageOverlay` for the visible console - producing duplicate overlays whenever more than one
+// manager is mounted (e.g. the app shell + a flyout, or several Discover fragments at once). To avoid
+// that, each manager registers a token on mount and only the "primary" (first-registered) one renders
+// the overlay. When the primary unmounts, the next registered manager takes over.
+// -------------------------------------------------------------------------------------------------
+let primaryElectionTokens: object[] = [];
+const primaryElectionListeners = new Set<() => void>();
+
+const emitPrimaryElectionChange = (): void => {
+  primaryElectionListeners.forEach((listener) => listener());
+};
+
+const rendererElection = {
+  subscribe: (listener: () => void): (() => void) => {
+    primaryElectionListeners.add(listener);
+    return () => {
+      primaryElectionListeners.delete(listener);
+    };
+  },
+  register: (token: object): void => {
+    primaryElectionTokens = [...primaryElectionTokens, token];
+    emitPrimaryElectionChange();
+  },
+  unregister: (token: object): void => {
+    primaryElectionTokens = primaryElectionTokens.filter((current) => current !== token);
+    emitPrimaryElectionChange();
+  },
+  isPrimary: (token: object): boolean => primaryElectionTokens[0] === token,
+};
+
+/**
+ * Test-only helper that clears the module-level console store + renderer election between test cases.
+ * The store intentionally outlives individual `<ConsoleManager>` unmounts in production (so console
+ * state survives navigation/flyouts), which means tests must reset it explicitly to avoid leaking
+ * state across cases. This is wired into `createAppRootMockRenderer()`.
+ */
+export const resetConsoleManagerStateForTesting = (): void => {
+  currentConsoleStorage = {};
+  consoleStateStorage.clear();
+  primaryElectionTokens = [];
+};
+
 export type ConsoleManagerProps = PropsWithChildren<{
   storage?: RunningConsoleStorage;
 }>;
@@ -65,17 +156,37 @@ export type ConsoleManagerProps = PropsWithChildren<{
  * command history while running in "hidden" mode.
  */
 export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, children }) => {
-  const [consoleStorage, setConsoleStorage] = useState<RunningConsoleStorage>(storage);
-  const [consoleStateStorage] = useState(new Map<ManagedConsole['key'], ConsoleDataState>());
+  // Subscribe to the module-level shared store (see above) so every manager re-renders together when
+  // a console is registered/shown/hidden/terminated, regardless of which manager applied the change.
+  const consoleStorage = useSyncExternalStore(consoleStore.subscribe, consoleStore.getStorage);
 
-  // `consoleStorageRef` keeps a copy (reference) to the latest copy of the `consoleStorage` so that
-  // some exposed methods (ex. `RegisteredConsoleClient`) are guaranteed to be immutable and function
-  // as expected between state updates without having to re-update every record stored in the `ConsoleStorage`
-  const consoleStorageRef = useRef<RunningConsoleStorage>();
-  consoleStorageRef.current = consoleStorage;
+  // Renderer election: a stable per-instance token, registered on mount. Only the primary instance
+  // renders the `ConsolePageOverlay` so we never render duplicate overlays from multiple managers.
+  const electionTokenRef = useRef<object>();
+  if (!electionTokenRef.current) {
+    electionTokenRef.current = {};
+  }
+  const electionToken = electionTokenRef.current;
+
+  useEffect(() => {
+    rendererElection.register(electionToken);
+    return () => rendererElection.unregister(electionToken);
+  }, [electionToken]);
+
+  const isPrimaryRenderer = useSyncExternalStore(rendererElection.subscribe, () =>
+    rendererElection.isPrimary(electionToken)
+  );
+
+  // Seed the shared store from the `storage` prop the first time a manager mounts with one. Guarded
+  // on the store being empty so additional (e.g. flyout-mounted) managers don't clobber live state.
+  useEffect(() => {
+    if (Object.keys(storage).length > 0 && Object.keys(consoleStore.getStorage()).length === 0) {
+      consoleStore.setStorage(() => ({ ...storage }));
+    }
+  }, [storage]);
 
   const validateIdOrThrow = useCallback((id: string) => {
-    if (!consoleStorageRef.current?.[id]) {
+    if (!consoleStore.getStorage()[id]) {
       throw new Error(`Console with id ${id} not found`);
     }
   }, []); // << IMPORTANT: this callback should have no dependencies
@@ -84,7 +195,7 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
     (id) => {
       validateIdOrThrow(id);
 
-      setConsoleStorage((prevState) => {
+      consoleStore.setStorage((prevState) => {
         const newState = { ...prevState };
 
         // if any is visible, hide it
@@ -112,7 +223,7 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
     (id) => {
       validateIdOrThrow(id);
 
-      setConsoleStorage((prevState) => {
+      consoleStore.setStorage((prevState) => {
         const newState = { ...prevState };
         newState[id].isOpen = false;
         return newState;
@@ -125,7 +236,7 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
     (id) => {
       validateIdOrThrow(id);
 
-      setConsoleStorage((prevState) => {
+      consoleStore.setStorage((prevState) => {
         const newState = { ...prevState };
         delete newState[id];
 
@@ -137,8 +248,9 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
 
   const getOne = useCallback<ConsoleManagerClient['getOne']>(
     <Meta extends object = Record<string, unknown>>(id: string) => {
-      if (consoleStorageRef.current?.[id]) {
-        return consoleStorageRef.current[id].client as Readonly<RegisteredConsoleClient<Meta>>;
+      const managedConsole = consoleStore.getStorage()[id];
+      if (managedConsole) {
+        return managedConsole.client as Readonly<RegisteredConsoleClient<Meta>>;
       }
     },
     [] // << IMPORTANT: this callback should have no dependencies or only immutable dependencies
@@ -153,16 +265,12 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
   }, [consoleStorage]); // << This callback should always use `consoleStorage`
 
   const isVisible = useCallback((id: string): boolean => {
-    if (consoleStorageRef.current?.[id]) {
-      return consoleStorageRef.current[id].isOpen;
-    }
-
-    return false;
+    return consoleStore.getStorage()[id]?.isOpen ?? false;
   }, []); // << IMPORTANT: this callback should have no dependencies
 
   const register = useCallback<ConsoleManagerClient['register']>(
     ({ id, meta, consoleProps, ...otherRegisterProps }) => {
-      if (consoleStorage[id]) {
+      if (consoleStore.getStorage()[id]) {
         throw new Error(`Console with id ${id} already registered`);
       }
 
@@ -203,7 +311,7 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
         key: managedKey,
       };
 
-      setConsoleStorage((prevState) => {
+      consoleStore.setStorage((prevState) => {
         return {
           ...prevState,
           [id]: managedConsole,
@@ -212,7 +320,7 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
 
       return managedConsole.client;
     },
-    [consoleStorage, hide, isVisible, show, terminate]
+    [hide, isVisible, show, terminate]
   );
 
   const consoleManagerClient = useMemo<ConsoleManagerClient>(() => {
@@ -236,15 +344,15 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
         },
 
         getManagedConsoleState(key: ManagedConsole['key']): ConsoleDataState | undefined {
-          return consoleStateStorage.get(key);
+          return consoleStore.getManagedConsoleState(key);
         },
 
         storeManagedConsoleState(key: ManagedConsole['key'], state: ConsoleDataState) {
-          consoleStateStorage.set(key, state);
+          consoleStore.storeManagedConsoleState(key, state);
         },
       },
     };
-  }, [consoleManagerClient, consoleStateStorage, consoleStorage]);
+  }, [consoleManagerClient, consoleStorage]);
 
   const visibleConsole = useMemo(() => {
     return Object.values(consoleStorage).find((managedConsole) => managedConsole.isOpen);
@@ -264,7 +372,7 @@ export const ConsoleManager = memo<ConsoleManagerProps>(({ storage = {}, childre
     <ConsoleManagerContext.Provider value={consoleManageContextClients}>
       {children}
 
-      {visibleConsole && (
+      {isPrimaryRenderer && visibleConsole && (
         <ConsolePageOverlay
           onHide={handleOnHide}
           console={
