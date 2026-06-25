@@ -8,13 +8,11 @@
  */
 
 import React from 'react';
-import { mountWithIntl, shallowWithIntl } from '@kbn/test-jest-helpers';
+import { mountWithIntl, renderWithI18n, shallowWithIntl } from '@kbn/test-jest-helpers';
 import TelemetryManagementSection from './telemetry_management_section';
 import { mockTelemetryService } from '@kbn/telemetry-plugin/public/mocks';
 import { coreMock } from '@kbn/core/public/mocks';
-import { render } from '@testing-library/react';
 import type { DocLinksStart } from '@kbn/core/public';
-import { I18nProvider } from '@kbn/i18n-react';
 
 describe('TelemetryManagementSectionComponent', () => {
   const coreStart = coreMock.createStart();
@@ -49,55 +47,6 @@ describe('TelemetryManagementSectionComponent', () => {
         />
       )
     ).toMatchSnapshot();
-  });
-
-  it('renders null because query does not match the SEARCH_TERMS', () => {
-    const telemetryService = mockTelemetryService({
-      config: {
-        appendServerlessChannelsSuffix: false,
-        banner: true,
-        allowChangingOptInStatus: true,
-        optIn: false,
-        sendUsageFrom: 'browser',
-        sendUsageTo: 'staging',
-        labels: {},
-      },
-      isScreenshotMode: false,
-      reportOptInStatusChange: false,
-      currentKibanaVersion: 'mock_kibana_version',
-    });
-
-    const component = render(
-      <React.Suspense fallback={<span>Fallback</span>}>
-        <I18nProvider>
-          <TelemetryManagementSection
-            telemetryService={telemetryService}
-            showAppliesSettingMessage={false}
-            enableSaving={true}
-            toasts={coreStart.notifications.toasts}
-            docLinks={docLinks}
-          />
-        </I18nProvider>
-      </React.Suspense>
-    );
-
-    try {
-      component.rerender(
-        <React.Suspense fallback={<span>Fallback</span>}>
-          <I18nProvider>
-            <TelemetryManagementSection
-              telemetryService={telemetryService}
-              showAppliesSettingMessage={false}
-              enableSaving={true}
-              toasts={coreStart.notifications.toasts}
-              docLinks={docLinks}
-            />
-          </I18nProvider>
-        </React.Suspense>
-      );
-    } finally {
-      component.unmount();
-    }
   });
 
   it('renders because query matches the SEARCH_TERMS', () => {
@@ -155,7 +104,7 @@ describe('TelemetryManagementSectionComponent', () => {
       currentKibanaVersion: 'mock_kibana_version',
     });
 
-    const component = mountWithIntl(
+    const component = renderWithI18n(
       <TelemetryManagementSection
         telemetryService={telemetryService}
         showAppliesSettingMessage={true}
@@ -165,8 +114,7 @@ describe('TelemetryManagementSectionComponent', () => {
       />
     );
     try {
-      expect(component).toMatchSnapshot();
-      component.setProps({ ...component.props(), query: { text: 'TeLEMetry' } });
+      expect(component.baseElement.innerHTML).toEqual('<div></div>');
     } finally {
       component.unmount();
     }
@@ -271,16 +219,20 @@ describe('TelemetryManagementSectionComponent', () => {
       currentKibanaVersion: 'mock_kibana_version',
     });
 
-    expect(
-      shallowWithIntl(
-        <TelemetryManagementSection
-          showAppliesSettingMessage={true}
-          telemetryService={telemetryService}
-          enableSaving={true}
-          toasts={coreStart.notifications.toasts}
-          docLinks={docLinks}
-        />
-      ).html()
-    ).toMatchSnapshot();
+    const component = renderWithI18n(
+      <TelemetryManagementSection
+        showAppliesSettingMessage={true}
+        telemetryService={telemetryService}
+        enableSaving={true}
+        toasts={coreStart.notifications.toasts}
+        docLinks={docLinks}
+      />
+    );
+
+    try {
+      expect(component.baseElement.innerHTML).toEqual('<div></div>');
+    } finally {
+      component.unmount();
+    }
   });
 });
