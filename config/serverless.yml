@@ -254,6 +254,10 @@ xpack.alerting.rules.maxScheduledPerMinute: 400
 xpack.actions.run.maxAttempts: 10
 xpack.actions.queued.max: 10000
 
+xpack.actions.auth.ears:
+  enabled: true
+  enableExperimental: true
+
 uiSettings:
   overrides:
     # Disables ESQL in advanced settings (hides it from the UI)
@@ -261,6 +265,7 @@ uiSettings:
     bfetch:disable: true
     # Disables `Defer loading panels below "the fold"`
     labs:dashboard:deferBelowFold: false
+    agentBuilder:experimentalFeatures: true
 
 # Task Manager
 xpack.task_manager.allow_reading_invalid_state: false

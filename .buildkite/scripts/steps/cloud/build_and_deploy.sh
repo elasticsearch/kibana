@@ -150,14 +150,16 @@ if [ -z "${CLOUD_DEPLOYMENT_ID}" ] || [ "${CLOUD_DEPLOYMENT_ID}" = 'null' ]; the
   sleep 120
   retry 5 60 ecctl deployment update "$CLOUD_DEPLOYMENT_ID" --track --output json --file /tmp/stack_monitoring.json > "$ECCTL_LOGS"
 
-  echo "Enabling verbose logging..."
+  echo "Enabling verbose logging and EARS..."
   ecctl deployment show "$CLOUD_DEPLOYMENT_ID" --generate-update-payload | jq '
-    .resources.kibana[0].plan.kibana.user_settings_yaml = "logging.root.level: all"
+    .resources.kibana[0].plan.kibana.user_settings_yaml = "logging.root.level: all" |
+    .resources.kibana[0].plan.kibana.user_settings_override_json = {"xpack.actions.auth.ears.enabled": true, "xpack.actions.auth.ears.enableExperimental": true}
     ' > /tmp/verbose_logging.json
   ecctl deployment update "$CLOUD_DEPLOYMENT_ID" --track --output json --file /tmp/verbose_logging.json > "$ECCTL_LOGS"
 else
   ecctl deployment show "$CLOUD_DEPLOYMENT_ID" --generate-update-payload | jq '
     .resources.kibana[0].plan.kibana.docker_image = "'$KIBANA_CLOUD_IMAGE'" |
+    .resources.kibana[0].plan.kibana.user_settings_override_json = {"xpack.actions.auth.ears.enabled": true, "xpack.actions.auth.ears.enableExperimental": true} |
     (.. | select(.version? != null).version) = "'$VERSION'" |
     (.resources.elasticsearch[0].plan.cluster_topology[]? | select(.zone_count != null) | .zone_count) = '$ES_ZONE_COUNT' |
     (.resources.elasticsearch[0].plan.cluster_topology[]? | select(.id == "hot_content") | .size.value) = '$ES_HOT_TIER_MEMORY_SIZE'
