@@ -15,18 +15,30 @@ import * as i18n from './translations';
 
 interface ThresholdAlertSuppressionEditProps {
   suppressionFieldNames: string[] | undefined;
+  labelAppend?: React.ReactNode;
   disabled?: boolean;
   disabledText?: string;
 }
 
 export const ThresholdAlertSuppressionEdit = memo(function ThresholdAlertSuppressionEdit({
   suppressionFieldNames,
+  labelAppend,
   disabled,
   disabledText,
 }: ThresholdAlertSuppressionEditProps): JSX.Element {
   const [{ [THRESHOLD_ALERT_SUPPRESSION_ENABLED]: suppressionEnabled }] = useFormData({
     watch: THRESHOLD_ALERT_SUPPRESSION_ENABLED,
   });
+  const labelText = suppressionFieldNames?.length
+    ? i18n.enableSuppressionForFields(suppressionFieldNames)
+    : i18n.SUPPRESS_ALERTS;
+  const checkboxLabel = labelAppend ? (
+    <>
+      {labelText} {labelAppend}
+    </>
+  ) : (
+    labelText
+  );
   const content = (
     <>
       <UseField
@@ -36,12 +48,7 @@ export const ThresholdAlertSuppressionEdit = memo(function ThresholdAlertSuppres
           idAria: 'thresholdAlertSuppressionEnabled',
           'data-test-subj': 'thresholdAlertSuppressionEnabled',
         }}
-        euiFieldProps={{
-          label: suppressionFieldNames?.length
-            ? i18n.enableSuppressionForFields(suppressionFieldNames)
-            : i18n.SUPPRESS_ALERTS,
-          disabled,
-        }}
+        euiFieldProps={{ label: checkboxLabel, disabled }}
       />
       <EuiPanel paddingSize="m" hasShadow={false}>
         <SuppressionDurationSelector

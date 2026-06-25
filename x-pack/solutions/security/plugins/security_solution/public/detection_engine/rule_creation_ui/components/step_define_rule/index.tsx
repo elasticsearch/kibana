@@ -669,6 +669,7 @@ const StepDefineRuleComponent: FC<StepDefineRuleProps> = ({
             {isThresholdRule ? (
               <ThresholdAlertSuppressionEdit
                 suppressionFieldNames={threshold?.field}
+                labelAppend={alertSuppressionFieldsAppendText}
                 disabled={!isAlertSuppressionLicenseValid}
                 disabledText={alertSuppressionUpsellingMessage}
               />
