@@ -177,7 +177,7 @@ export class LensApp {
   /** Closes the open dimension editor flyout. */
   async closeDimensionEditor() {
     await this.closeDimensionEditorButton.click();
-    await expect(this.closeDimensionEditorButton).toBeHidden();
+    await this.closeDimensionEditorButton.waitFor({ state: 'hidden' });
   }
 
   /**
@@ -192,7 +192,7 @@ export class LensApp {
     }
 
     await tab.click();
-    await expect(this.page.testSubj.locator(`lns-layerPanel-${index}`)).toBeVisible();
+    await this.page.testSubj.locator(`lns-layerPanel-${index}`).waitFor({ state: 'visible' });
   }
 
   /** Returns the selected axis side label from an open dimension editor. */
@@ -275,7 +275,7 @@ export class LensApp {
 
   private async openDimensionSelector(dimension: string) {
     await this.page.testSubj.locator(dimension).click();
-    await expect(this.closeDimensionEditorButton).toBeVisible();
+    await this.closeDimensionEditorButton.waitFor({ state: 'visible' });
   }
 
   /**
@@ -293,7 +293,7 @@ export class LensApp {
       );
     }
     await editor.click();
-    await expect(this.closeDimensionEditorButton).toBeVisible();
+    await this.closeDimensionEditorButton.waitFor({ state: 'visible' });
   }
 
   /** Returns the selected option labels from an EUI combo box test subject. */
@@ -441,13 +441,13 @@ export class LensApp {
 
   /** Returns the chart type label shown in the chart switcher popover. */
   async getChartSwitchType(): Promise<string> {
-    await expect(this.chartSwitchPopover).toBeVisible();
+    await this.chartSwitchPopover.waitFor({ state: 'visible' });
     return (await this.chartSwitchPopover.innerText()).trim();
   }
 
   async openStyleSettingsFlyout() {
     await this.page.locator('button[data-test-subj="style"]').click();
-    await expect(this.page.locator('#lnsDimensionContainerTitle')).toBeVisible();
+    await this.page.locator('#lnsDimensionContainerTitle').waitFor({ state: 'visible' });
   }
 
   /** Reads the selected donut hole size from the style settings flyout. */
