@@ -335,6 +335,11 @@ export enum Location {
    * In the PROMQL command (PromQL query expression)
    */
   PROMQL = 'promql',
+
+  /**
+   * In the HIGHLIGHT command
+   */
+  HIGHLIGHT = 'highlight',
 }
 
 export enum UnmappedFieldsStrategy {
