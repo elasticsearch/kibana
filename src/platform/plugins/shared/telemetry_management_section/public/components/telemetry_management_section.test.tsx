@@ -114,7 +114,7 @@ describe('TelemetryManagementSectionComponent', () => {
       />
     );
     try {
-      expect(component.baseElement.innerHTML).toEqual('<div></div>');
+      expect(component.container).toBeEmptyDOMElement();
     } finally {
       component.unmount();
     }
@@ -230,7 +230,7 @@ describe('TelemetryManagementSectionComponent', () => {
     );
 
     try {
-      expect(component.baseElement.innerHTML).toEqual('<div></div>');
+      expect(component.container).toBeEmptyDOMElement();
     } finally {
       component.unmount();
     }
