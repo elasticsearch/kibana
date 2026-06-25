@@ -8,17 +8,19 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import { type Observable, ReplaySubject, distinctUntilChanged } from 'rxjs';
+import { type Observable, ReplaySubject, distinctUntilChanged, map } from 'rxjs';
 import type { CoreSetup, CoreStart } from '@kbn/core/public';
 import {
   LastReportedRoute,
   INTERNAL_VERSION,
   OptInRoute,
   FetchSnapshotTelemetry,
+  FetchTelemetryConfigRoute,
   UserHasSeenNoticeRoute,
 } from '../../common/routes';
 import type { TelemetryPluginConfig } from '../plugin';
 import { getTelemetryChannelEndpoint } from '../../common/telemetry_config';
+import type { v2 } from '../../common/types';
 import type {
   UnencryptedTelemetryPayload,
   EncryptedTelemetryPayload,
@@ -46,6 +48,16 @@ export class TelemetryService {
   private readonly defaultConfig: TelemetryPluginConfig;
   private readonly isScreenshotMode: boolean;
   private updatedConfig?: TelemetryPluginConfig;
+
+  /**
+   * Monotonic counter bumped on every local config write (initial server seed, `setOptIn`, and any
+   * other setter). A config refresh snapshots this value before its (async) server fetch; if the
+   * counter moved by the time the fetch resolves, a newer local write happened and the fetched
+   * snapshot is considered stale, so it is discarded in favor of the local config. This prevents a
+   * slow in-flight refresh from clobbering a `setOptIn` the user triggered while it was running (e.g.
+   * the "start trial" / "upload license" opt-in flows racing the eager startup refresh).
+   */
+  private configRevision = 0;
 
   /**
    * Emits the opt-in status. It withholds the synchronous injected/default value and only starts
@@ -81,6 +93,8 @@ export class TelemetryService {
    */
   public set config(updatedConfig: TelemetryPluginConfig) {
     this.updatedConfig = updatedConfig;
+    // Track every write so an in-flight config refresh can detect it raced with a newer local write.
+    this.configRevision++;
     // Every config update goes through this setter (initial server fetch and `setOptIn`), so it is
     // the single funnel to notify subscribers about the resolved opt-in status. The injected default
     // is assigned to `defaultConfig` in the constructor and never flows through here, which is why
@@ -92,6 +106,55 @@ export class TelemetryService {
   public get config() {
     return { ...this.defaultConfig, ...this.updatedConfig };
   }
+
+  /**
+   * Fetches the latest telemetry config from the server and applies it to the local cache.
+   *
+   * Concurrency: the config revision is snapshotted before the (async) server fetch. If a local write
+   * landed while the fetch was running (e.g. a `setOptIn` from the "start trial" / "upload license"
+   * flows), the fetched snapshot predates the user's intent and is discarded entirely, keeping the
+   * local config. Otherwise the fetched config is applied.
+   * @returns The config that was applied (or the preserved local config if the fetch was superseded).
+   */
+  public refreshConfig = async (): Promise<TelemetryPluginConfig> => {
+    const revisionAtFetchStart = this.configRevision;
+    const updatedConfig = await this.fetchUpdatedConfig();
+
+    const localConfigChangedDuringRefresh = revisionAtFetchStart !== this.configRevision;
+    if (localConfigChangedDuringRefresh) {
+      // A newer local write superseded this fetch; the whole fetched snapshot is stale. Keep local.
+      return this.config;
+    }
+
+    this.config = updatedConfig;
+    return this.config;
+  };
+
+  /**
+   * Fetches the telemetry config from the server and merges it with the config already known locally.
+   */
+  private fetchUpdatedConfig = async (): Promise<TelemetryPluginConfig> => {
+    const {
+      allowChangingOptInStatus,
+      optIn,
+      sendUsageFrom,
+      telemetryNotifyUserAboutOptInDefault,
+      labels,
+    } = await this.http.get<v2.FetchTelemetryConfigResponse>(
+      FetchTelemetryConfigRoute,
+      INTERNAL_VERSION
+    );
+
+    return {
+      ...this.config,
+      allowChangingOptInStatus,
+      optIn,
+      sendUsageFrom,
+      telemetryNotifyUserAboutOptInDefault,
+      labels,
+      userCanChangeSettings: this.userCanChangeSettings,
+    };
+  };
 
   /**
    * Emits the user's opt-in preference.
@@ -185,10 +248,26 @@ export class TelemetryService {
     return this.isOptedIn;
   };
 
-  /** Are there any blockers for sending telemetry */
+  /**
+   * Are there any blockers for sending telemetry?
+   * @deprecated Subscribe to {@link TelemetryService.canSendTelemetry$ | canSendTelemetry$} instead.
+   * Reading this synchronously at `start()` time or initial render may return a value derived from the
+   * stale injected default before the user's saved preference has been fetched from the server.
+   */
   public canSendTelemetry = (): boolean => {
     return !this.isScreenshotMode && this.getIsOptedIn();
   };
+
+  /**
+   * Emits whether telemetry can be sent: the user is opted in AND Kibana is not in a "skip" mode
+   * (screenshot/synthetics). Like {@link TelemetryService.isOptedIn$ | isOptedIn$}, it withholds the
+   * synchronous injected default and emits once the preference is resolved from the server, then on
+   * every change. Replays the latest value to late subscribers.
+   */
+  public readonly canSendTelemetry$: Observable<boolean> = this.isOptedIn$.pipe(
+    map((isOptedIn) => !this.isScreenshotMode && isOptedIn),
+    distinctUntilChanged()
+  );
 
   public fetchLastReported = async (): Promise<number | undefined> => {
     const response = await this.http.get<FetchLastReportedResponse>(
@@ -245,6 +324,8 @@ export class TelemetryService {
         signal,
       });
       optInUpdated = true;
+      // Bumps `configRevision` so a config refresh that's in flight discards its (older) server value
+      // instead of clobbering this explicit choice.
       this.isOptedIn = optedIn;
       if (this.reportOptInStatusChange) {
         // Use the response to report about the change to the remote telemetry cluster.
