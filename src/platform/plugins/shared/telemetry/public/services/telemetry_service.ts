@@ -8,7 +8,22 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import { type Observable, ReplaySubject, distinctUntilChanged, map } from 'rxjs';
+import {
+  type Observable,
+  ReplaySubject,
+  Subject,
+  catchError,
+  distinctUntilChanged,
+  exhaustMap,
+  finalize,
+  firstValueFrom,
+  from,
+  map,
+  of,
+  share,
+  tap,
+  throwError,
+} from 'rxjs';
 import type { CoreSetup, CoreStart } from '@kbn/core/public';
 import {
   LastReportedRoute,
@@ -50,21 +65,39 @@ export class TelemetryService {
   private updatedConfig?: TelemetryPluginConfig;
 
   /**
-   * Monotonic counter bumped on every local config write (initial server seed, `setOptIn`, and any
-   * other setter). A config refresh snapshots this value before its (async) server fetch; if the
-   * counter moved by the time the fetch resolves, a newer local write happened and the fetched
-   * snapshot is considered stale, so it is discarded in favor of the local config. This prevents a
-   * slow in-flight refresh from clobbering a `setOptIn` the user triggered while it was running (e.g.
-   * the "start trial" / "upload license" opt-in flows racing the eager startup refresh).
-   */
-  private configRevision = 0;
-
-  /**
    * Emits the opt-in status. It withholds the synchronous injected/default value and only starts
    * emitting once the config has been updated (i.e. the first value fetched from the server), then
    * emits again on every subsequent opt-in change (e.g. `setOptIn`).
    */
   private readonly isOptedIn$$ = new ReplaySubject<boolean>(1);
+
+  private configRefreshController?: AbortController;
+  private readonly refreshConfigRequests$ = new Subject<void>();
+  private readonly refreshedConfig$ = this.refreshConfigRequests$.pipe(
+    exhaustMap(() => {
+      const controller = new AbortController();
+      this.configRefreshController = controller;
+
+      return from(this.fetchUpdatedConfig(controller.signal)).pipe(
+        tap((updatedConfig) => {
+          this.config = updatedConfig;
+        }),
+        catchError((err) => {
+          if (controller.signal.aborted) {
+            return of(this.config);
+          }
+
+          return throwError(() => err);
+        }),
+        finalize(() => {
+          if (this.configRefreshController === controller) {
+            this.configRefreshController = undefined;
+          }
+        })
+      );
+    }),
+    share()
+  );
 
   /** Current version of Kibana */
   public readonly currentKibanaVersion: string;
@@ -93,8 +126,6 @@ export class TelemetryService {
    */
   public set config(updatedConfig: TelemetryPluginConfig) {
     this.updatedConfig = updatedConfig;
-    // Track every write so an in-flight config refresh can detect it raced with a newer local write.
-    this.configRevision++;
     // Every config update goes through this setter (initial server fetch and `setOptIn`), so it is
     // the single funnel to notify subscribers about the resolved opt-in status. The injected default
     // is assigned to `defaultConfig` in the constructor and never flows through here, which is why
@@ -110,40 +141,31 @@ export class TelemetryService {
   /**
    * Fetches the latest telemetry config from the server and applies it to the local cache.
    *
-   * Concurrency: the config revision is snapshotted before the (async) server fetch. If a local write
-   * landed while the fetch was running (e.g. a `setOptIn` from the "start trial" / "upload license"
-   * flows), the fetched snapshot predates the user's intent and is discarded entirely, keeping the
-   * local config. Otherwise the fetched config is applied.
-   * @returns The config that was applied (or the preserved local config if the fetch was superseded).
+   * Concurrency: refreshes are serialized with `exhaustMap`; callers that invoke this while a refresh
+   * is in flight share the current refresh result instead of starting another HTTP request. `setOptIn`
+   * aborts the in-flight request so a stale server snapshot cannot clobber the user's newer choice.
+   * @returns The config that was applied (or the preserved local config if the fetch was aborted).
    */
   public refreshConfig = async (): Promise<TelemetryPluginConfig> => {
-    const revisionAtFetchStart = this.configRevision;
-    const updatedConfig = await this.fetchUpdatedConfig();
-
-    const localConfigChangedDuringRefresh = revisionAtFetchStart !== this.configRevision;
-    if (localConfigChangedDuringRefresh) {
-      // A newer local write superseded this fetch; the whole fetched snapshot is stale. Keep local.
-      return this.config;
-    }
-
-    this.config = updatedConfig;
-    return this.config;
+    const refreshedConfig = firstValueFrom(this.refreshedConfig$);
+    this.refreshConfigRequests$.next();
+    return refreshedConfig;
   };
 
   /**
    * Fetches the telemetry config from the server and merges it with the config already known locally.
    */
-  private fetchUpdatedConfig = async (): Promise<TelemetryPluginConfig> => {
+  private fetchUpdatedConfig = async (signal: AbortSignal): Promise<TelemetryPluginConfig> => {
     const {
       allowChangingOptInStatus,
       optIn,
       sendUsageFrom,
       telemetryNotifyUserAboutOptInDefault,
       labels,
-    } = await this.http.get<v2.FetchTelemetryConfigResponse>(
-      FetchTelemetryConfigRoute,
-      INTERNAL_VERSION
-    );
+    } = await this.http.get<v2.FetchTelemetryConfigResponse>(FetchTelemetryConfigRoute, {
+      ...INTERNAL_VERSION,
+      signal,
+    });
 
     return {
       ...this.config,
@@ -324,8 +346,9 @@ export class TelemetryService {
         signal,
       });
       optInUpdated = true;
-      // Bumps `configRevision` so a config refresh that's in flight discards its (older) server value
-      // instead of clobbering this explicit choice.
+      // Cancel any in-flight config refresh so its older server snapshot can't clobber this explicit
+      // choice after the opt-in update has been persisted.
+      this.configRefreshController?.abort();
       this.isOptedIn = optedIn;
       if (this.reportOptInStatusChange) {
         // Use the response to report about the change to the remote telemetry cluster.

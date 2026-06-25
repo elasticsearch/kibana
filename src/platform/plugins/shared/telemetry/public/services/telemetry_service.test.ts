@@ -487,7 +487,7 @@ describe('TelemetryService', () => {
     });
   });
 
-  describe('config refresh race with setOptIn', () => {
+  describe('refreshConfig concurrency', () => {
     /**
      * A deferred so a test can control exactly when the config `http.get` resolves, letting a
      * `setOptIn` land while the refresh is "in flight".
@@ -510,22 +510,35 @@ describe('TelemetryService', () => {
       labels,
     });
 
-    it('does not let a stale refresh overwrite a setOptIn that landed while it was in flight', async () => {
+    const mockAbortableConfigRequest = (
+      telemetryService: ReturnType<typeof mockTelemetryService>,
+      response = deferred<ReturnType<typeof serverConfigResponse>>()
+    ) => {
+      let receivedSignal: AbortSignal | undefined;
+      telemetryService['http'].get = jest.fn().mockImplementation((_path, { signal }) => {
+        receivedSignal = signal;
+        signal.addEventListener('abort', () => response.reject(new Error('aborted')));
+        return response.promise;
+      });
+
+      return { response, getSignal: () => receivedSignal };
+    };
+
+    it('does not let an aborted refresh overwrite a setOptIn that landed while it was in flight', async () => {
       const telemetryService = mockTelemetryService({
         reportOptInStatusChange: false,
         config: { optIn: false, allowChangingOptInStatus: true },
       });
-      const fetched = deferred<ReturnType<typeof serverConfigResponse>>();
-      telemetryService['http'].get = jest.fn().mockReturnValue(fetched.promise);
+      const { getSignal } = mockAbortableConfigRequest(telemetryService);
 
       // A refresh starts but its server fetch hasn't resolved yet.
       const refreshPromise = telemetryService.refreshConfig();
+      expect(getSignal()?.aborted).toBe(false);
 
       // While the refresh is in flight, the user opts in (e.g. "start trial" / "upload license").
       await telemetryService.setOptIn(true);
+      expect(getSignal()?.aborted).toBe(true);
 
-      // The now-stale fetch resolves with the pre-opt-in server value.
-      fetched.resolve(serverConfigResponse(false));
       await refreshPromise;
 
       // The user's newer preference must win.
@@ -538,15 +551,13 @@ describe('TelemetryService', () => {
         reportOptInStatusChange: false,
         config: { optIn: false, allowChangingOptInStatus: true },
       });
-      const fetched = deferred<ReturnType<typeof serverConfigResponse>>();
-      telemetryService['http'].get = jest.fn().mockReturnValue(fetched.promise);
+      mockAbortableConfigRequest(telemetryService);
 
       const emissions: boolean[] = [];
       const subscription = telemetryService.isOptedIn$.subscribe((v) => emissions.push(v));
 
       const refreshPromise = telemetryService.refreshConfig();
       await telemetryService.setOptIn(true);
-      fetched.resolve(serverConfigResponse(false));
       await refreshPromise;
 
       // Only the real opt-in transition is observed; no transient flip back to false.
@@ -564,38 +575,34 @@ describe('TelemetryService', () => {
       expect(await firstValueFrom(telemetryService.isOptedIn$)).toBe(true);
     });
 
-    it('discards the entire stale response, preserving the local config as a whole', async () => {
-      const telemetryService = mockTelemetryService({
-        reportOptInStatusChange: false,
-        config: { optIn: false, allowChangingOptInStatus: true, labels: { local: 'value' } },
-      });
+    it('shares the in-flight refresh result instead of starting another request', async () => {
+      const telemetryService = mockTelemetryService({ config: { optIn: false } });
       const fetched = deferred<ReturnType<typeof serverConfigResponse>>();
       telemetryService['http'].get = jest.fn().mockReturnValue(fetched.promise);
 
-      const refreshPromise = telemetryService.refreshConfig();
-      await telemetryService.setOptIn(true);
-      // The stale response carries different values for every field; none of them should be applied.
-      fetched.resolve(serverConfigResponse(false, { stale: 'from-server' }));
-      await refreshPromise;
+      const firstRefresh = telemetryService.refreshConfig();
+      const secondRefresh = telemetryService.refreshConfig();
 
-      // The whole local config wins: opt-in stays true and the fetched labels are not applied.
+      expect(telemetryService['http'].get).toHaveBeenCalledTimes(1);
+
+      fetched.resolve(serverConfigResponse(true));
+      await Promise.all([firstRefresh, secondRefresh]);
+
       expect(telemetryService.getIsOptedIn()).toBe(true);
-      expect(telemetryService.config.labels).toEqual({ local: 'value' });
     });
 
-    it('discards a stale response even when an unrelated local write raced with it', async () => {
-      const telemetryService = mockTelemetryService({ config: { optIn: false, labels: {} } });
-      const fetched = deferred<ReturnType<typeof serverConfigResponse>>();
-      telemetryService['http'].get = jest.fn().mockReturnValue(fetched.promise);
+    it('starts a new request after the previous refresh completes', async () => {
+      const telemetryService = mockTelemetryService({ config: { optIn: false } });
+      telemetryService['http'].get = jest
+        .fn()
+        .mockResolvedValueOnce(serverConfigResponse(false))
+        .mockResolvedValueOnce(serverConfigResponse(true));
 
-      const refreshPromise = telemetryService.refreshConfig();
-      // A non-opt-in local write (e.g. capabilities resolved during start()) also supersedes the fetch.
-      telemetryService.userCanChangeSettings = false;
-      fetched.resolve(serverConfigResponse(true, { stale: 'from-server' }));
-      await refreshPromise;
+      await telemetryService.refreshConfig();
+      await telemetryService.refreshConfig();
 
-      expect(telemetryService.config.labels).toEqual({});
-      expect(telemetryService.userCanChangeSettings).toBe(false);
+      expect(telemetryService['http'].get).toHaveBeenCalledTimes(2);
+      expect(telemetryService.getIsOptedIn()).toBe(true);
     });
   });
 
