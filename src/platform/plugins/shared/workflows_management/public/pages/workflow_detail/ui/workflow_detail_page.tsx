@@ -34,6 +34,7 @@ import {
 import { loadConnectorsThunk } from '../../../entities/workflows/store/workflow_detail/thunks/load_connectors_thunk';
 import { loadWorkflowThunk } from '../../../entities/workflows/store/workflow_detail/thunks/load_workflow_thunk';
 import { loadWorkflowsThunk } from '../../../entities/workflows/store/workflow_detail/thunks/load_workflows_thunk';
+import { WorkflowChangeHistoryProvider } from '../../../features/change_history';
 import { WorkflowExecutionDetail } from '../../../features/workflow_execution_detail';
 import { WorkflowExecutionList } from '../../../features/workflow_execution_list/ui/workflow_execution_list_stateful';
 import { useAsyncThunkState } from '../../../hooks/use_async_thunk';
@@ -168,7 +169,7 @@ export function WorkflowDetailPage({ id }: { id?: string }) {
     );
   }
 
-  return (
+  const pageContent = (
     <EuiFlexGroup direction="column" gutterSize="none" css={kbnFullBodyHeightCss()}>
       <EuiFlexItem grow={false}>
         <WorkflowDetailHeader
@@ -205,5 +206,15 @@ export function WorkflowDetailPage({ id }: { id?: string }) {
         <WorkflowDetailTestStepModal />
       </EuiFlexItem>
     </EuiFlexGroup>
+  );
+
+  if (!id) {
+    return pageContent;
+  }
+
+  return (
+    <WorkflowChangeHistoryProvider workflowId={id} workflowName={workflowName ?? workflowId}>
+      {pageContent}
+    </WorkflowChangeHistoryProvider>
   );
 }

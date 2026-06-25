@@ -21,12 +21,12 @@ import type {
 import type { WorkflowsExecutionEnginePluginStart } from '@kbn/workflows-execution-engine/server';
 import { WorkflowConflictError } from '@kbn/workflows-yaml';
 import { ManagedWorkflowsService } from './managed_workflows_service';
-import { WorkflowChangeHistoryAction } from './workflow_change_history_constants';
 import type { VersionedWorkflowDocument, WorkflowCrudService } from './workflow_crud_service';
 import type {
   ReadModifyWriteWorkflowDocumentParams,
   WriteWorkflowDocumentWithOccParams,
 } from './workflow_occ_types';
+import { WorkflowChangeHistoryAction } from '../../common/lib/workflow_change_history/constants';
 import { INITIAL_WORKFLOW_VERSION } from '../lib/workflow_version';
 import type { WorkflowProperties } from '../storage/workflow_storage';
 

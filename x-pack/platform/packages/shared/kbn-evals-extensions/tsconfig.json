@@ -2,21 +2,15 @@
   "extends": "@kbn/tsconfig-base/tsconfig.json",
   "compilerOptions": {
     "outDir": "target/types",
-    "types": [
-      "jest",
-      "node",
-      "@kbn/ambient-common-types"
-    ]
+    "types": ["jest", "node", "@kbn/ambient-common-types"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.json"
-  ],
-  "exclude": [
-    "target/**/*"
-  ],
+  "include": ["**/*.ts", "**/*.json"],
+  "exclude": ["target/**/*"],
   "kbn_references": [
     "@kbn/evals",
     "@kbn/evals-common",
+    "@kbn/dev-cli-runner",
+    "@kbn/dev-cli-errors",
+    "@kbn/tooling-log"
   ]
 }

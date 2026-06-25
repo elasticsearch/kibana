@@ -265,4 +265,65 @@ describe('getScheduledQueryResultsRoute', () => {
       body: { message: 'ES unavailable' },
     });
   });
+
+  describe('space scoping', () => {
+    const runWithActiveSpace = async (getActiveSpace?: jest.Mock) => {
+      const mockSearchFn = jest
+        .fn()
+        .mockReturnValue(
+          of({ edges: [], rawResponse: { hits: { total: 0 } }, inspect: { dsl: [] } })
+        );
+      mockOsqueryContext = {
+        service: {
+          getIntegrationNamespaces: jest.fn().mockResolvedValue({}),
+          ...(getActiveSpace ? { getActiveSpace } : {}),
+        },
+        logFactory: { get: jest.fn() },
+      } as unknown as OsqueryAppContext;
+
+      registerRoute();
+
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { scheduleId: 'sched-1', executionCount: 1 },
+        query: {},
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(createMockContext(mockSearchFn) as any, mockRequest, mockResponse);
+
+      return mockSearchFn;
+    };
+
+    it('passes the active named space to the search strategy', async () => {
+      const getActiveSpace = jest.fn().mockResolvedValue({ id: 'my-space' });
+
+      const mockSearchFn = await runWithActiveSpace(getActiveSpace);
+
+      expect(getActiveSpace).toHaveBeenCalled();
+      expect(mockSearchFn).toHaveBeenCalledWith(
+        expect.objectContaining({ spaceId: 'my-space' }),
+        expect.objectContaining({ strategy: 'osquerySearchStrategy' })
+      );
+    });
+
+    it('falls back to the default space when getActiveSpace resolves no space', async () => {
+      const getActiveSpace = jest.fn().mockResolvedValue(undefined);
+
+      const mockSearchFn = await runWithActiveSpace(getActiveSpace);
+
+      expect(mockSearchFn).toHaveBeenCalledWith(
+        expect.objectContaining({ spaceId: 'default' }),
+        expect.any(Object)
+      );
+    });
+
+    it('falls back to the default space when the spaces service is unavailable', async () => {
+      const mockSearchFn = await runWithActiveSpace(undefined);
+
+      expect(mockSearchFn).toHaveBeenCalledWith(
+        expect.objectContaining({ spaceId: 'default' }),
+        expect.any(Object)
+      );
+    });
+  });
 });

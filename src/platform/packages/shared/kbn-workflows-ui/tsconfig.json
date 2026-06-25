@@ -20,5 +20,6 @@
     "@kbn/zod",
     "@kbn/data-views-plugin",
     "@kbn/monaco",
+    "@kbn/use-observable",
   ]
 }

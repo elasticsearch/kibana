@@ -95,7 +95,13 @@ export const getLiveQueryDetailsRoute = (
           const responseData = await lastValueFrom(
             zip(
               ...map(queries, (query) =>
-                getActionResponses(search, query.action_id, query.agents?.length ?? 0)
+                getActionResponses(
+                  search,
+                  query.action_id,
+                  query.agents?.length ?? 0,
+                  undefined,
+                  spaceId
+                )
               )
             )
           );

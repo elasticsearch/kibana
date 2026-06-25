@@ -1,0 +1,11 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "jsx": "react",
+    "types": ["jest", "node", "react", "@kbn/ambient-ui-types", "@emotion/react/types/css-prop"]
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["target/**/*"],
+  "kbn_references": ["@kbn/i18n", "@kbn/i18n-react"]
+}

@@ -9,7 +9,7 @@ import { z } from '@kbn/zod/v4';
 import type { Logger } from '@kbn/logging';
 import { withExecuteToolSpan } from '@kbn/inference-tracing';
 import { tool as toTool } from '@langchain/core/tools';
-import type { ScopedModel, ToolEventEmitter } from '@kbn/agent-builder-server';
+import type { ModelProvider, ScopedModel, ToolEventEmitter } from '@kbn/agent-builder-server';
 import type { TimeRange } from '@kbn/agent-builder-common';
 import type { Resource, ResourceListResult, ToolResult } from '@kbn/agent-builder-common/tools';
 import { ToolResultType } from '@kbn/agent-builder-common/tools';
@@ -98,7 +98,7 @@ export const createRelevanceSearchTool = ({
 export const naturalLanguageSearchToolName = 'natural_language_search';
 
 export const createNaturalLanguageSearchTool = ({
-  model,
+  modelProvider,
   esClient,
   events,
   logger,
@@ -106,7 +106,7 @@ export const createNaturalLanguageSearchTool = ({
   customInstructions,
   timeRange,
 }: {
-  model: ScopedModel;
+  modelProvider: ModelProvider;
   esClient: ElasticsearchClient;
   events: ToolEventEmitter;
   logger: Logger;
@@ -124,7 +124,7 @@ export const createNaturalLanguageSearchTool = ({
           const response = await naturalLanguageSearch({
             nlQuery: query,
             target: index,
-            model,
+            modelProvider,
             esClient,
             events,
             logger,

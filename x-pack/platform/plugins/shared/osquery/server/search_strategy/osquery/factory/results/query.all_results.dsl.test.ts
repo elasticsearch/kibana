@@ -451,4 +451,19 @@ describe('buildResultsQuery', () => {
       expect(queryString).not.toContain('schedule_id');
     });
   });
+
+  describe('space_id scoping', () => {
+    const baseOptions: ResultsRequestOptions = {
+      actionId: 'action-123',
+      pagination: { activePage: 0, querySize: 100, cursorStart: 0 },
+      sort: [{ field: '@timestamp', direction: Direction.desc }],
+      kuery: '',
+    };
+
+    it('does not scope space_id in the builder (centralized in the search strategy)', () => {
+      const result = buildResultsQuery({ ...baseOptions, spaceId: 'my-space' });
+      const filter = (result.query as any).bool.filter;
+      expect(JSON.stringify(filter)).not.toContain('space_id');
+    });
+  });
 });

@@ -252,9 +252,9 @@ export class TaskScheduling {
 
   /**
    * Bulk updates schedules for tasks by ids.
-   * Only tasks with `idle` status will be updated, as for the tasks which have `running` status,
-   * `schedule` and `runAt` will be recalculated after task run finishes
-   *
+   * Only tasks with `idle` status will be updated. Running tasks are skipped even when
+   * `regenerateApiKey` is provided, because their `schedule` and `runAt` are recalculated after
+   * the task run finishes.
    * @param {string[]} taskIds  - list of task ids
    * @param {IntervalSchedule | RruleSchedule} schedule  - new schedule
    * @returns {Promise<BulkUpdateTaskResult>}
@@ -264,12 +264,20 @@ export class TaskScheduling {
     schedule: IntervalSchedule | RruleSchedule,
     options?: ApiKeyOptions
   ): Promise<BulkUpdateTaskResult> {
+    const shouldRegenerateApiKey = options?.regenerateApiKey === true;
+
     return retryableBulkUpdate({
       taskIds,
       store: this.store,
       getTasks: async (ids) => await this.bulkGetTasksHelper(ids),
-      filter: (task) => task.status === TaskStatus.Idle && !isEqual(task.schedule, schedule),
+      filter: (task) =>
+        task.status === TaskStatus.Idle &&
+        (shouldRegenerateApiKey || !isEqual(task.schedule, schedule)),
       map: (task) => {
+        if (isEqual(task.schedule, schedule)) {
+          return task;
+        }
+
         const newRunAtInMs = calculateNextRunAtFromSchedule({
           schedule,
           startDate: task.scheduledAt,

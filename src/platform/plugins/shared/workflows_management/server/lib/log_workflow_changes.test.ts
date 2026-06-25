@@ -13,7 +13,7 @@ import { logWorkflowChanges } from './log_workflow_changes';
 import {
   WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE,
   WorkflowChangeHistoryAction,
-} from '../services/workflow_change_history_constants';
+} from '../../common/lib/workflow_change_history/constants';
 import type { IScopedWorkflowChangeHistoryService } from '../services/workflow_change_history_types';
 import type { WorkflowProperties } from '../storage/workflow_storage';
 

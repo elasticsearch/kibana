@@ -69,6 +69,7 @@ export const buildResultsQuery = ({
       ? buildQueryFromFilters(parsedEsFilters, undefined)
       : { filter: [], must_not: [] };
 
+  // Space scoping is enforced centrally in the search strategy (enforceSpaceScope).
   const filterQuery = [...timeRangeFilter, kqlFilterClause, ...esFilterClauses];
 
   let index: string;

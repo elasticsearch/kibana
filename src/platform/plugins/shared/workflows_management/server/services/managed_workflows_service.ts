@@ -28,8 +28,8 @@ import type {
 } from '@kbn/workflows/server/types';
 import type { WorkflowsExecutionEnginePluginStart } from '@kbn/workflows-execution-engine/server';
 import { updateYamlField } from '@kbn/workflows-yaml';
-import { WorkflowChangeHistoryAction } from './workflow_change_history_constants';
 import type { WorkflowCrudService } from './workflow_crud_service';
+import { WorkflowChangeHistoryAction } from '../../common/lib/workflow_change_history/constants';
 import { maybeApplyWorkflowVersion } from '../lib/workflow_version';
 import { isRetryableWorkflowWriteConflict } from '../lib/workflow_write_conflicts';
 import type { WorkflowProperties } from '../storage/workflow_storage';

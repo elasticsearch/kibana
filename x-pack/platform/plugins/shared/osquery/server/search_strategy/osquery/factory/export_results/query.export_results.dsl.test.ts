@@ -223,4 +223,11 @@ describe('buildExportResultsQuery', () => {
       expect(dsl.sort).toEqual([{ '@timestamp': { order: 'desc' } }, '_doc']);
     });
   });
+
+  describe('space_id scoping', () => {
+    it('does not scope space_id in the builder (centralized in the search strategy)', () => {
+      const dsl = buildExportResultsQuery({ ...baseOptions, spaceId: 'my-space' });
+      expect(JSON.stringify((dsl.query as any).bool.filter)).not.toContain('space_id');
+    });
+  });
 });

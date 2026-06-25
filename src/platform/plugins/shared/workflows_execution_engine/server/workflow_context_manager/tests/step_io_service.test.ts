@@ -497,6 +497,98 @@ describe('StepIoService', () => {
       expect(service.hasEvictedOutputs()).toBe(false);
     });
 
+    describe('loop source pinning (pinForeachSource / unpinForeachScope)', () => {
+      it('keeps a pinned loop source resident across an eviction cycle', async () => {
+        const { state, service } = buildHarness({ evictionMinBytes: EVICTION_THRESHOLD });
+        // A >threshold source output the loop iterates over.
+        seedCompletedStepWithSize(
+          state,
+          service,
+          'source-exec',
+          'bigSource',
+          { items: 'x'.repeat(200) },
+          250,
+          'connector'
+        );
+
+        // Pin it as a foreach source (the expression references `bigSource`).
+        service.pinForeachSource('myForeach', '{{ steps.bigSource.output.items }}');
+
+        await service.flushStepChanges();
+        await service.flushStepChanges();
+
+        // Without the pin this would be evicted (it is above threshold); the
+        // pin must keep it resident for the lifetime of the loop.
+        expect(service.getStepOutput('source-exec')).toEqual({ items: 'x'.repeat(200) });
+        expect(service.hasEvictedOutputs()).toBe(false);
+      });
+
+      it('allows the source to be evicted again after the loop scope is unpinned', async () => {
+        const { state, service } = buildHarness({ evictionMinBytes: EVICTION_THRESHOLD });
+        seedCompletedStepWithSize(
+          state,
+          service,
+          'source-exec',
+          'bigSource',
+          { items: 'x'.repeat(200) },
+          250,
+          'connector'
+        );
+
+        service.pinForeachSource('myForeach', '{{ steps.bigSource.output.items }}');
+
+        await service.flushStepChanges();
+        await service.flushStepChanges();
+        expect(service.getStepOutput('source-exec')).toBeDefined();
+
+        // Loop exits -> release the pin. The output is no longer protected:
+        // re-touching it re-queues it for the deferred eviction cycle (mirrors a
+        // subsequent step write in the same flush), and it is now evicted.
+        service.unpinForeachScope('myForeach');
+        service.setStepOutput('source-exec', { items: 'x'.repeat(200) }, 250);
+
+        await service.flushStepChanges();
+        await service.flushStepChanges();
+
+        expect(service.getStepOutput('source-exec')).toBeUndefined();
+        expect(service.hasEvictedOutputs()).toBe(true);
+      });
+
+      it('keeps the source pinned until every loop scope that pinned it has unpinned', async () => {
+        const { state, service } = buildHarness({ evictionMinBytes: EVICTION_THRESHOLD });
+        seedCompletedStepWithSize(
+          state,
+          service,
+          'source-exec',
+          'bigSource',
+          { items: 'x'.repeat(200) },
+          250,
+          'connector'
+        );
+
+        // Two distinct loop scopes pin the same source (nested/sibling loops).
+        service.pinForeachSource('loopA', '{{ steps.bigSource.output.items }}');
+        service.pinForeachSource('loopB', '{{ steps.bigSource.output.items }}');
+
+        // Inner loop exits — source must stay resident for the outer loop. Even
+        // re-touching it (re-queuing for eviction) must not evict while loopA
+        // still holds the pin.
+        service.unpinForeachScope('loopB');
+        service.setStepOutput('source-exec', { items: 'x'.repeat(200) }, 250);
+        await service.flushStepChanges();
+        await service.flushStepChanges();
+        expect(service.getStepOutput('source-exec')).toBeDefined();
+        expect(service.hasEvictedOutputs()).toBe(false);
+
+        // Outer loop exits — now nothing pins it and it can be evicted.
+        service.unpinForeachScope('loopA');
+        service.setStepOutput('source-exec', { items: 'x'.repeat(200) }, 250);
+        await service.flushStepChanges();
+        await service.flushStepChanges();
+        expect(service.getStepOutput('source-exec')).toBeUndefined();
+      });
+    });
+
     it('does not evict failed steps (output: null is semantic)', async () => {
       const { state, service } = buildHarness({ evictionMinBytes: EVICTION_THRESHOLD });
       state.upsertStep({

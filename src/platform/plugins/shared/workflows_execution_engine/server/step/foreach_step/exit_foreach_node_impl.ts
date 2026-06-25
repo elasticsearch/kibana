@@ -47,6 +47,7 @@ export class ExitForeachNodeImpl implements NodeImplementation {
     if (maxReached && hasMoreItems && this.node.onLimit === 'fail') {
       // Evict before throwing — high-iteration loops that fail at the limit
       // are precisely the scenario most likely to cause memory pressure.
+      this.stepIoService.unpinForeachScope(this.node.stepId);
       const innerStepIds = this.workflowGraph.getInnerStepIds(this.node.stepId);
       this.stepIoService.evictStaleLoopOutputs(innerStepIds);
       throw new Error(
@@ -56,6 +57,10 @@ export class ExitForeachNodeImpl implements NodeImplementation {
     }
 
     this.stepExecutionRuntime.finishStep();
+    // Unpin the loop's source outputs now that the loop has finished iterating.
+    // They were pinned during the loop scope-walk to keep them resident across
+    // the per-iteration source re-evaluation (see StepIoService.pinLatestExecutionIdsForScope).
+    this.stepIoService.unpinForeachScope(this.node.stepId);
     const innerStepIds = this.workflowGraph.getInnerStepIds(this.node.stepId);
     this.stepIoService.evictStaleLoopOutputs(innerStepIds);
     this.workflowLogger.logDebug(

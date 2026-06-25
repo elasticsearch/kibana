@@ -68,7 +68,7 @@ import type {
   WorkflowsService,
 } from './workflows_management_service';
 import { connectorParamsSchemaResolver } from '../../common/lib/connector_params_schema_resolver';
-import type { WorkflowChangesHistoryResponse } from '../types/workflow_change_history';
+import type { WorkflowChangesHistoryResponse } from '../../common/lib/workflow_change_history/types';
 
 export type SmlIndexAttachmentFn = (params: SmlIndexAttachmentParams) => Promise<void>;
 

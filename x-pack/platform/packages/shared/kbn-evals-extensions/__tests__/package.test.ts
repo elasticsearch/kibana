@@ -9,14 +9,8 @@
  * Basic package health checks for @kbn/evals-extensions
  */
 
-import { EVALS_EXTENSIONS_VERSION } from '..';
-
 describe('@kbn/evals-extensions', () => {
   describe('package structure', () => {
-    it('should export EVALS_EXTENSIONS_VERSION', () => {
-      expect(EVALS_EXTENSIONS_VERSION).toBe('1.0.0');
-    });
-
     it('should be importable without errors', async () => {
       const mod = await import('..');
       expect(mod).toBeDefined();

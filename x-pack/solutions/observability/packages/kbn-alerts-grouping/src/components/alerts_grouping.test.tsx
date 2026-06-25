@@ -9,7 +9,7 @@
  * Adapted from x-pack/solutions/security/plugins/security_solution/public/detections/components/alerts_table/alerts_grouping.test.tsx
  */
 import React from 'react';
-import { render, within, screen } from '@testing-library/react';
+import { fireEvent, render, waitFor, within, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Filter } from '@kbn/es-query';
 
@@ -90,8 +90,28 @@ const mockAlertsGroupingState = {
   updateGrouping: jest.fn(),
 };
 
-// FLAKY: https://github.com/elastic/kibana/issues/253312
-describe.skip('AlertsGrouping', () => {
+const expandGroup = (groupElement: HTMLElement) => {
+  fireEvent.click(within(groupElement).getByTestId('group-panel-toggle'));
+};
+
+const goToPage = (container: HTMLElement, pageNumber: number) => {
+  fireEvent.click(within(container).getByTestId(`pagination-button-${pageNumber}`));
+};
+
+const setupThreeLevelPagination = async () => {
+  fireEvent.click(screen.getByTestId('pagination-button-1'));
+  expandGroup(screen.getByTestId('level-0-group-0'));
+  await screen.findByTestId('grouping-level-1-pagination');
+
+  goToPage(screen.getByTestId('level-0-group-0'), 1);
+  expandGroup(screen.getByTestId('level-1-group-0'));
+  await screen.findByTestId('grouping-level-2-pagination');
+
+  goToPage(screen.getByTestId('level-1-group-0'), 1);
+  expandGroup(screen.getByTestId('level-2-group-0'));
+};
+
+describe('AlertsGrouping', () => {
   beforeEach(() => {
     window.localStorage.clear();
     mockUseGetAlertsGroupAggregationsQuery.mockImplementation(() => ({
@@ -215,19 +235,19 @@ describe.skip('AlertsGrouping', () => {
       </TestProviders>
     );
 
-    await userEvent.click(screen.getByTestId('pagination-button-1'));
-    await userEvent.click(
+    fireEvent.click(screen.getByTestId('pagination-button-1'));
+    fireEvent.click(
       within(screen.getByTestId('level-0-group-0')).getByTestId('group-panel-toggle')
     );
 
-    await userEvent.click(
+    fireEvent.click(
       within(screen.getByTestId('level-0-group-0')).getByTestId('pagination-button-1')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(screen.getByTestId('level-1-group-0')).getByTestId('group-panel-toggle')
     );
 
-    await userEvent.click(
+    fireEvent.click(
       within(screen.getByTestId('level-1-group-0')).getByTestId('pagination-button-1')
     );
 
@@ -244,9 +264,8 @@ describe.skip('AlertsGrouping', () => {
       ).toEqual('page');
     });
 
-    await userEvent.click(screen.getAllByTestId('group-selector-dropdown')[0]);
-    // Wait for element to have pointer events enabled
-    await userEvent.click(screen.getAllByTestId('panel-user.name')[0]);
+    fireEvent.click(screen.getAllByTestId('group-selector-dropdown')[0]);
+    fireEvent.click(screen.getAllByTestId('panel-user.name')[0]);
 
     [
       screen.getByTestId('grouping-level-0-pagination'),
@@ -277,17 +296,17 @@ describe.skip('AlertsGrouping', () => {
       </TestProviders>
     );
 
-    await userEvent.click(screen.getByTestId('pagination-button-1'));
-    await userEvent.click(
+    fireEvent.click(screen.getByTestId('pagination-button-1'));
+    fireEvent.click(
       within(screen.getByTestId('level-0-group-0')).getByTestId('group-panel-toggle')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(screen.getByTestId('level-0-group-0')).getByTestId('pagination-button-1')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(screen.getByTestId('level-1-group-0')).getByTestId('group-panel-toggle')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(screen.getByTestId('level-1-group-0')).getByTestId('pagination-button-1')
     );
 
@@ -301,17 +320,19 @@ describe.skip('AlertsGrouping', () => {
       </TestProviders>
     );
 
-    [
-      screen.getByTestId('grouping-level-0-pagination'),
-      screen.getByTestId('grouping-level-1-pagination'),
-      screen.getByTestId('grouping-level-2-pagination'),
-    ].forEach((pagination) => {
-      expect(
-        within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
-      ).toEqual('page');
-      expect(
-        within(pagination).getByTestId('pagination-button-1').getAttribute('aria-current')
-      ).toEqual(null);
+    await waitFor(() => {
+      [
+        screen.getByTestId('grouping-level-0-pagination'),
+        screen.getByTestId('grouping-level-1-pagination'),
+        screen.getByTestId('grouping-level-2-pagination'),
+      ].forEach((pagination) => {
+        expect(
+          within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
+        ).toEqual('page');
+        expect(
+          within(pagination).getByTestId('pagination-button-1').getAttribute('aria-current')
+        ).toEqual(null);
+      });
     });
   });
 
@@ -330,57 +351,34 @@ describe.skip('AlertsGrouping', () => {
       </TestProviders>
     );
 
-    // set level 0 page to 2
-    await userEvent.click(screen.getByTestId('pagination-button-1'));
-    await userEvent.click(
-      within(screen.getByTestId('level-0-group-0')).getByTestId('group-panel-toggle')
-    );
+    await setupThreeLevelPagination();
 
-    // set level 1 page to 2
-    await userEvent.click(
-      within(screen.getByTestId('level-0-group-0')).getByTestId('pagination-button-1')
-    );
-    await userEvent.click(
-      within(screen.getByTestId('level-1-group-0')).getByTestId('group-panel-toggle')
-    );
+    expandGroup(await screen.findByTestId('level-1-group-1'));
 
-    // set level 2 page to 2
-    await userEvent.click(
-      within(screen.getByTestId('level-1-group-0')).getByTestId('pagination-button-1')
-    );
-    await userEvent.click(
-      within(screen.getByTestId('level-2-group-0')).getByTestId('group-panel-toggle')
-    );
+    await waitFor(() => {
+      [
+        screen.getByTestId('grouping-level-0-pagination'),
+        screen.getByTestId('grouping-level-1-pagination'),
+      ].forEach((pagination) => {
+        expect(
+          within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
+        ).toEqual(null);
+        expect(
+          within(pagination).getByTestId('pagination-button-1').getAttribute('aria-current')
+        ).toEqual('page');
+      });
 
-    // open different level 1 group
-
-    // level 0, 1 pagination is the same
-    await userEvent.click(
-      within(screen.getByTestId('level-1-group-1')).getByTestId('group-panel-toggle')
-    );
-    [
-      screen.getByTestId('grouping-level-0-pagination'),
-      screen.getByTestId('grouping-level-1-pagination'),
-    ].forEach((pagination) => {
       expect(
-        within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
-      ).toEqual(null);
-      expect(
-        within(pagination).getByTestId('pagination-button-1').getAttribute('aria-current')
+        within(screen.getByTestId('grouping-level-2-pagination'))
+          .getByTestId('pagination-button-0')
+          .getAttribute('aria-current')
       ).toEqual('page');
+      expect(
+        within(screen.getByTestId('grouping-level-2-pagination'))
+          .getByTestId('pagination-button-1')
+          .getAttribute('aria-current')
+      ).toEqual(null);
     });
-
-    // level 2 pagination is reset
-    expect(
-      within(screen.getByTestId('grouping-level-2-pagination'))
-        .getByTestId('pagination-button-0')
-        .getAttribute('aria-current')
-    ).toEqual('page');
-    expect(
-      within(screen.getByTestId('grouping-level-2-pagination'))
-        .getByTestId('pagination-button-1')
-        .getAttribute('aria-current')
-    ).toEqual(null);
   });
 
   it(`resets innermost level's current page when that level's page size updates`, async () => {
@@ -398,26 +396,26 @@ describe.skip('AlertsGrouping', () => {
       </TestProviders>
     );
 
-    await userEvent.click(await screen.findByTestId('pagination-button-1'));
-    await userEvent.click(
+    fireEvent.click(await screen.findByTestId('pagination-button-1'));
+    fireEvent.click(
       within(await screen.findByTestId('level-0-group-0')).getByTestId('group-panel-toggle')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(await screen.findByTestId('level-0-group-0')).getByTestId('pagination-button-1')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(await screen.findByTestId('level-1-group-0')).getByTestId('group-panel-toggle')
     );
 
-    await userEvent.click(
+    fireEvent.click(
       within(await screen.findByTestId('level-1-group-0')).getByTestId('pagination-button-1')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(await screen.findByTestId('grouping-level-2')).getByTestId(
         'tablePaginationPopoverButton'
       )
     );
-    await userEvent.click(await screen.findByTestId('tablePagination-100-rows'));
+    fireEvent.click(await screen.findByTestId('tablePagination-100-rows'));
 
     [
       await screen.findByTestId('grouping-level-0-pagination'),
@@ -455,43 +453,45 @@ describe.skip('AlertsGrouping', () => {
       </TestProviders>
     );
 
-    await userEvent.click(screen.getByTestId('pagination-button-1'));
-    await userEvent.click(
+    fireEvent.click(screen.getByTestId('pagination-button-1'));
+    fireEvent.click(
       within(await screen.findByTestId('level-0-group-0')).getByTestId('group-panel-toggle')
     );
 
-    await userEvent.click(
+    fireEvent.click(
       within(await screen.findByTestId('level-0-group-0')).getByTestId('pagination-button-1')
     );
-    await userEvent.click(
+    fireEvent.click(
       within(await screen.findByTestId('level-1-group-0')).getByTestId('group-panel-toggle')
     );
 
-    await userEvent.click(
+    fireEvent.click(
       within(await screen.findByTestId('level-1-group-0')).getByTestId('pagination-button-1')
     );
     const tablePaginations = await screen.findAllByTestId('tablePaginationPopoverButton');
-    await userEvent.click(tablePaginations[tablePaginations.length - 1]);
-    await userEvent.click(screen.getByTestId('tablePagination-100-rows'));
+    fireEvent.click(tablePaginations[tablePaginations.length - 1]);
+    fireEvent.click(await screen.findByTestId('tablePagination-100-rows'));
 
-    [
-      screen.getByTestId('grouping-level-0-pagination'),
-      screen.getByTestId('grouping-level-1-pagination'),
-      screen.getByTestId('grouping-level-2-pagination'),
-    ].forEach((pagination, i) => {
-      if (i !== 0) {
-        expect(
-          within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
-        ).toEqual(null);
-        expect(
-          within(pagination).getByTestId('pagination-button-1').getAttribute('aria-current')
-        ).toEqual('page');
-      } else {
-        expect(
-          within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
-        ).toEqual('page');
-        expect(within(pagination).queryByTestId('pagination-button-1')).not.toBeInTheDocument();
-      }
+    await waitFor(() => {
+      [
+        screen.getByTestId('grouping-level-0-pagination'),
+        screen.getByTestId('grouping-level-1-pagination'),
+        screen.getByTestId('grouping-level-2-pagination'),
+      ].forEach((pagination, i) => {
+        if (i !== 0) {
+          expect(
+            within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
+          ).toEqual(null);
+          expect(
+            within(pagination).getByTestId('pagination-button-1').getAttribute('aria-current')
+          ).toEqual('page');
+        } else {
+          expect(
+            within(pagination).getByTestId('pagination-button-0').getAttribute('aria-current')
+          ).toEqual('page');
+          expect(within(pagination).queryByTestId('pagination-button-1')).not.toBeInTheDocument();
+        }
+      });
     });
   });
 });

@@ -19,6 +19,9 @@ project:
 dependsOn:
   - '@kbn/evals'
   - '@kbn/evals-common'
+  - '@kbn/dev-cli-runner'
+  - '@kbn/dev-cli-errors'
+  - '@kbn/tooling-log'
 tags:
   - test-helper
   - package

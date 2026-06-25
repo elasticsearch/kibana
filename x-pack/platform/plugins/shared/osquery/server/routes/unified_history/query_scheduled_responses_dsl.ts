@@ -6,6 +6,7 @@
  */
 
 import type { estypes } from '@elastic/elasticsearch';
+import { buildSpaceIdFilter } from '../../utils/build_space_id_filter';
 
 interface ScheduledResponsesQueryOptions {
   cursor?: string;
@@ -32,20 +33,10 @@ export const buildScheduledResponsesQuery = ({
 }: ScheduledResponsesQueryOptions): {
   body: Record<string, unknown>;
 } => {
-  const filters: estypes.QueryDslQueryContainer[] = [{ exists: { field: 'schedule_id' } }];
-
-  if (spaceId === 'default') {
-    filters.push({
-      bool: {
-        should: [
-          { term: { space_id: 'default' } },
-          { bool: { must_not: { exists: { field: 'space_id' } } } },
-        ],
-      },
-    });
-  } else {
-    filters.push({ term: { space_id: spaceId } });
-  }
+  const filters: estypes.QueryDslQueryContainer[] = [
+    { exists: { field: 'schedule_id' } },
+    buildSpaceIdFilter(spaceId) as estypes.QueryDslQueryContainer,
+  ];
 
   if (packIds !== undefined || scheduleIds !== undefined) {
     const hasPackIds = packIds && packIds.length > 0;

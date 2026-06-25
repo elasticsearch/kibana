@@ -17,6 +17,7 @@ import {
   EuiText,
   EuiToolTip,
   EuiCallOut,
+  EuiLiveAnnouncer,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
@@ -144,18 +145,32 @@ export const TestQueryRow: React.FC<TestQueryRowProps> = ({
         </EuiFormRow>
       )}
       {testQueryResult && (
-        <EuiFormRow>
-          <EuiText data-test-subj="testQuerySuccess" color="subdued" size="s">
-            <p>{testQueryResult}</p>
-          </EuiText>
-        </EuiFormRow>
+        <>
+          <EuiFormRow>
+            <EuiText data-test-subj="testQuerySuccess" color="subdued" size="s">
+              <p>{testQueryResult}</p>
+            </EuiText>
+          </EuiFormRow>
+          <EuiLiveAnnouncer data-test-subj="testQuerySuccessAnnouncement" isActive>
+            {testQueryResult}
+          </EuiLiveAnnouncer>
+        </>
       )}
       {testQueryError && (
-        <EuiFormRow>
-          <EuiText data-test-subj="testQueryError" color="danger" size="s">
-            <p>{testQueryError}</p>
-          </EuiText>
-        </EuiFormRow>
+        <>
+          <EuiFormRow>
+            <EuiText data-test-subj="testQueryError" color="danger" size="s">
+              <p>{testQueryError}</p>
+            </EuiText>
+          </EuiFormRow>
+          <EuiLiveAnnouncer
+            aria-live="assertive"
+            data-test-subj="testQueryErrorAnnouncement"
+            isActive
+          >
+            {testQueryError}
+          </EuiLiveAnnouncer>
+        </>
       )}
       {copyQueryError && (
         <EuiFormRow>

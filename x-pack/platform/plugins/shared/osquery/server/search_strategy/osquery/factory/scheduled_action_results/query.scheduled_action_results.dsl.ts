@@ -9,6 +9,7 @@ import type { ISearchRequestParams } from '@kbn/search-types';
 import { ACTION_RESPONSES_DATA_STREAM_INDEX } from '../../../../../common/constants';
 import type { ScheduledActionResultsRequestOptions } from '../../../../../common/search_strategy';
 import { prefixIndexPatternsWithCcs } from '../../../../utils/ccs_utils';
+import { buildSpaceIdFilter } from '../../../../utils/build_space_id_filter';
 
 export const buildScheduledActionResultsQuery = ({
   scheduleId,
@@ -18,27 +19,16 @@ export const buildScheduledActionResultsQuery = ({
   pagination,
   ccsEnabled,
 }: ScheduledActionResultsRequestOptions): ISearchRequestParams => {
-  // Scheduled action_responses emitted by osquerybeat may not carry a
-  // `space_id` field. Mirror the history aggregation (buildScheduledResponsesQuery):
-  // in the default space match `space_id: default` OR a missing `space_id`;
-  // in a named space match the space exactly.
-  const spaceIdFilter: Record<string, unknown> | undefined = !spaceId
-    ? undefined
-    : spaceId === 'default'
-    ? {
-        bool: {
-          should: [
-            { term: { space_id: 'default' } },
-            { bool: { must_not: { exists: { field: 'space_id' } } } },
-          ],
-        },
-      }
-    : { term: { space_id: spaceId } };
+  // Top-level hit scoping is enforced centrally in the search strategy
+  // (enforceSpaceScope). The aggregation below is a separate filter context that
+  // the top-level query does not constrain, so it is scoped explicitly here.
+  // Scheduled action_responses emitted by osquerybeat may not carry a `space_id`
+  // field; buildSpaceIdFilter matches a missing field in the default space.
+  const spaceIdFilter = buildSpaceIdFilter(spaceId);
 
   const filterQuery: Array<Record<string, unknown>> = [
     { term: { schedule_id: scheduleId } },
     { term: { schedule_execution_count: executionCount } },
-    ...(spaceIdFilter ? [spaceIdFilter] : []),
   ];
 
   const index = prefixIndexPatternsWithCcs(
@@ -60,7 +50,7 @@ export const buildScheduledActionResultsQuery = ({
                 must: [
                   { term: { schedule_id: scheduleId } },
                   { term: { schedule_execution_count: executionCount } },
-                  ...(spaceIdFilter ? [spaceIdFilter] : []),
+                  spaceIdFilter,
                 ],
               },
             },

@@ -20,3 +20,5 @@ export const WorkflowChangeHistoryAction = {
 
 export type WorkflowChangeHistoryActionType =
   (typeof WorkflowChangeHistoryAction)[keyof typeof WorkflowChangeHistoryAction];
+
+export const WORKFLOW_CHANGE_HISTORY_LIST_PATH = '/internal/workflows/workflow';

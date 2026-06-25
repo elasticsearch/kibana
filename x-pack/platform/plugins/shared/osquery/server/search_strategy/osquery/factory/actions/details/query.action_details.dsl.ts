@@ -16,7 +16,6 @@ export const buildActionDetailsQuery = ({
   actionId,
   kuery,
   componentTemplateExists,
-  spaceId,
 }: ActionDetailsRequestOptions): ISearchRequestParams => {
   const actionIdQuery = `action_id: ${actionId}`;
   let filter = actionIdQuery;
@@ -28,31 +27,12 @@ export const buildActionDetailsQuery = ({
     bool: { filter: baseFilter },
   } = getQueryFilter({ filter });
 
-  let extendedFilter = baseFilter;
-
-  if (spaceId === 'default') {
-    // For default space, include docs where space_id matches 'default' OR where space_id field does not exist
-    extendedFilter = [
-      {
-        bool: {
-          should: [
-            { term: { space_id: 'default' } },
-            { bool: { must_not: { exists: { field: 'space_id' } } } },
-          ],
-        },
-      },
-      ...baseFilter,
-    ];
-  } else {
-    // For other spaces, only include docs where space_id matches the current spaceId
-    extendedFilter = [...baseFilter, { term: { space_id: spaceId } }];
-  }
-
+  // Space scoping is enforced centrally in the search strategy (enforceSpaceScope).
   const dslQuery = {
     allow_no_indices: true,
     index: componentTemplateExists ? `${ACTIONS_INDEX}*` : AGENT_ACTIONS_INDEX,
     ignore_unavailable: true,
-    query: { bool: { filter: extendedFilter } },
+    query: { bool: { filter: baseFilter } },
     size: 1,
     fields: ['*'],
   };

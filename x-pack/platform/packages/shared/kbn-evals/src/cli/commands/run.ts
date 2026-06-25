@@ -5,21 +5,13 @@
  * 2.0.
  */
 
-import Path from 'path';
 import { spawn } from 'child_process';
-import { createFlagError } from '@kbn/dev-cli-errors';
 import type { Command } from '@kbn/dev-cli-runner';
-import type { ToolingLog } from '@kbn/tooling-log';
-import { resolveEvalSuites } from '../suites';
-import { promptForSuite, promptForConnector, isTTY } from '../prompts';
 import {
-  defaultExportProfile,
-  envFromDatasetsProfile,
-  envFromExportProfile,
-  stripTrailingSlash,
-  probeHttp,
-  isExportProfileImplicitLocal,
-} from '../profiles';
+  resolveEvalSuite,
+  resolveEvaluationConnectorId,
+  resolveProfileEnvOverrides,
+} from '../run_helpers';
 
 const EXECUTORS = ['phoenix', 'kibana'] as const;
 type Executor = (typeof EXECUTORS)[number];
@@ -35,28 +27,6 @@ const formatEnvPrefix = (overrides: Record<string, string>) =>
       return `${key}=${isSensitive ? '[redacted]' : value}`;
     })
     .join(' ');
-
-const ensureSuite = (suiteId: string, repoRoot: string, log: ToolingLog) => {
-  const suites = resolveEvalSuites(repoRoot, log);
-  const match = suites.find((suite) => suite.id === suiteId);
-
-  if (match) {
-    return match;
-  }
-
-  log.info(`Suite "${suiteId}" not found in metadata; refreshing discovery...`);
-  const refreshed = resolveEvalSuites(repoRoot, log, { refresh: true });
-  const refreshedMatch = refreshed.find((suite) => suite.id === suiteId);
-
-  if (refreshedMatch) {
-    return refreshedMatch;
-  }
-
-  const available = refreshed.map((suite) => suite.id).join(', ');
-  throw createFlagError(
-    `Unknown suite "${suiteId}". Available suites: ${available || 'none found'}`
-  );
-};
 
 export const runSuiteCmd: Command<void> = {
   name: 'run',
@@ -94,40 +64,11 @@ export const runSuiteCmd: Command<void> = {
   },
   run: async ({ log, flagsReader }) => {
     const repoRoot = process.cwd();
-    let suiteId = flagsReader.string('suite');
-    const configPath = flagsReader.string('config');
     const executor = flagsReader.enum('executor', EXECUTORS) as Executor | undefined;
 
-    if (!suiteId && !configPath) {
-      if (isTTY()) {
-        const selected = await promptForSuite(repoRoot, log);
-        suiteId = selected.id;
-      } else {
-        throw createFlagError('Missing --suite (or provide --config).');
-      }
-    }
+    const { suite, resolvedConfigPath } = await resolveEvalSuite(repoRoot, log, flagsReader);
 
-    if (suiteId && configPath) {
-      throw createFlagError('Use either --suite or --config, not both.');
-    }
-
-    const suite = suiteId ? ensureSuite(suiteId, repoRoot, log) : undefined;
-    const resolvedConfigPath = suite
-      ? suite.absoluteConfigPath
-      : Path.resolve(repoRoot, configPath as string);
-
-    let evaluationConnectorId =
-      flagsReader.string('evaluation-connector-id') ?? process.env.EVALUATION_CONNECTOR_ID;
-
-    if (!evaluationConnectorId) {
-      if (isTTY()) {
-        evaluationConnectorId = await promptForConnector(repoRoot, log);
-      } else {
-        throw createFlagError(
-          'EVALUATION_CONNECTOR_ID is required. Set --evaluation-connector-id or env.'
-        );
-      }
-    }
+    const evaluationConnectorId = await resolveEvaluationConnectorId(repoRoot, log, flagsReader);
 
     const envOverrides: Record<string, string> = {
       EVALUATION_CONNECTOR_ID: evaluationConnectorId,
@@ -137,35 +78,14 @@ export const runSuiteCmd: Command<void> = {
       envOverrides.EVAL_SUITE_ID = suite.id;
     }
 
-    const baseProfile = flagsReader.string('profile') ?? undefined;
-    const datasetsProfile = flagsReader.string('datasets-profile') ?? baseProfile;
-    const exportProfile =
-      flagsReader.string('export-profile') ?? baseProfile ?? defaultExportProfile(repoRoot);
-
-    Object.assign(envOverrides, envFromDatasetsProfile(repoRoot, datasetsProfile));
-    Object.assign(
-      envOverrides,
-      envFromExportProfile(repoRoot, exportProfile, {
-        defaultTracingExporters: exportProfile === 'local',
-      })
-    );
-
-    if (isExportProfileImplicitLocal(flagsReader, exportProfile)) {
-      const tracingEsUrl = envOverrides.TRACING_ES_URL;
-
-      const tracingReachable = tracingEsUrl
-        ? await probeHttp(stripTrailingSlash(tracingEsUrl))
-        : true;
-
-      if (!tracingReachable) {
-        log.warning(
-          `Export profile \"local\" was auto-selected but TRACING_ES_URL is not reachable (${tracingEsUrl}). ` +
-            'Continuing without external trace queries. To require export, pass --export-profile local.'
-        );
-        delete envOverrides.TRACING_ES_URL;
-        delete envOverrides.TRACING_ES_API_KEY;
-      }
-    }
+    const { datasetsProfile, exportProfile, profileEnvOverrides } =
+      await resolveProfileEnvOverrides({
+        repoRoot,
+        log,
+        flagsReader,
+        profile: flagsReader.string('profile') ?? undefined,
+      });
+    Object.assign(envOverrides, profileEnvOverrides);
 
     log.info(`Profiles: datasets=${datasetsProfile ?? 'config'} export=${exportProfile ?? 'none'}`);
 

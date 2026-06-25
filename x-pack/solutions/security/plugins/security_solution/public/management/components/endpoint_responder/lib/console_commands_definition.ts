@@ -697,13 +697,7 @@ export const getEndpointConsoleCommands = ({
               force: {
                 required: false,
                 allowMultiples: false,
-                about: i18n.translate(
-                  'xpack.securitySolution.endpointConsoleCommands.cancel.force.about',
-                  {
-                    defaultMessage:
-                      'Forcefully cancel the action, even if it is already in progress.',
-                  }
-                ),
+                about: CONSOLE_COMMANDS.cancel.forceArgInfo,
                 mustHaveValue: false,
               },
             }

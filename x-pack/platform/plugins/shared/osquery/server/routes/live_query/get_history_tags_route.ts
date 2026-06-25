@@ -12,6 +12,7 @@ import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import type { OsqueryAppContext } from '../../lib/osquery_app_context_services';
 import { API_VERSIONS, ACTIONS_INDEX } from '../../../common/constants';
 import { PLUGIN_ID } from '../../../common';
+import { buildSpaceIdFilter } from '../../utils/build_space_id_filter';
 
 // Max unique tags returned by the aggregation; results beyond this are truncated
 const TAGS_AGG_SIZE = 200;
@@ -56,25 +57,13 @@ export const getHistoryTagsRoute = (
 
           const index = actionsIndexExists ? `${ACTIONS_INDEX}*` : AGENT_ACTIONS_INDEX;
 
-          const spaceFilter =
-            spaceId === 'default'
-              ? {
-                  bool: {
-                    should: [
-                      { term: { space_id: 'default' } },
-                      { bool: { must_not: { exists: { field: 'space_id' } } } },
-                    ],
-                  },
-                }
-              : { term: { space_id: spaceId } };
-
           const result = await esClient.search({
             index,
             size: 0,
             query: {
               bool: {
                 filter: [
-                  spaceFilter,
+                  buildSpaceIdFilter(spaceId),
                   { term: { type: 'INPUT_ACTION' } },
                   { term: { input_type: 'osquery' } },
                   { exists: { field: 'tags' } },

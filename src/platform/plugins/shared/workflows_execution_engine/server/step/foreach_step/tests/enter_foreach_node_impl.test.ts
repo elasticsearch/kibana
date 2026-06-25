@@ -10,6 +10,7 @@
 import type { ForEachStep } from '@kbn/workflows';
 import type { EnterForeachNode } from '@kbn/workflows/graph';
 import type { StepExecutionRuntime } from '../../../workflow_context_manager/step_execution_runtime';
+import type { StepIoService } from '../../../workflow_context_manager/step_io_service';
 import type { WorkflowExecutionRuntimeManager } from '../../../workflow_context_manager/workflow_execution_runtime_manager';
 import type { IWorkflowEventLogger } from '../../../workflow_event_logger';
 import { EnterForeachNodeImpl } from '../enter_foreach_node_impl';
@@ -19,6 +20,7 @@ describe('EnterForeachNodeImpl', () => {
   let workflowExecutionRuntimeManager: WorkflowExecutionRuntimeManager;
   let stepExecutionRuntime: StepExecutionRuntime;
   let workflowLogger: IWorkflowEventLogger;
+  let stepIoService: StepIoService;
   let underTest: EnterForeachNodeImpl;
 
   beforeEach(() => {
@@ -50,11 +52,16 @@ describe('EnterForeachNodeImpl', () => {
 
     workflowLogger = {} as unknown as IWorkflowEventLogger;
     workflowLogger.logDebug = jest.fn();
+    stepIoService = {
+      pinForeachSource: jest.fn(),
+      unpinForeachScope: jest.fn(),
+    } as unknown as StepIoService;
     underTest = new EnterForeachNodeImpl(
       node,
       workflowExecutionRuntimeManager,
       stepExecutionRuntime,
-      workflowLogger
+      workflowLogger,
+      stepIoService
     );
   });
 
@@ -97,6 +104,17 @@ describe('EnterForeachNodeImpl', () => {
           index: 0,
           total: 3,
         });
+      });
+
+      it('should pin the foreach source for the lifetime of the loop', async () => {
+        await underTest.run();
+
+        expect(stepIoService.pinForeachSource).toHaveBeenCalledWith(
+          'testStep',
+          node.configuration.foreach
+        );
+        // The loop runs, so the pin must NOT be released on enter.
+        expect(stepIoService.unpinForeachScope).not.toHaveBeenCalled();
       });
     });
 
@@ -246,6 +264,18 @@ describe('EnterForeachNodeImpl', () => {
           `Foreach step "testStep" has no items to iterate over. Skipping execution.`,
           { workflow: { step_id: 'testStep' } }
         );
+      });
+
+      it('should release the source pin when there are no items to iterate', async () => {
+        await underTest.run();
+
+        // Pin is taken eagerly before items are evaluated; an empty array means
+        // no iterations will run, so the pin must be released immediately.
+        expect(stepIoService.pinForeachSource).toHaveBeenCalledWith(
+          'testStep',
+          node.configuration.foreach
+        );
+        expect(stepIoService.unpinForeachScope).toHaveBeenCalledWith('testStep');
       });
     });
 

@@ -204,6 +204,10 @@ export function resolveArgumentTypes(
     literalMask: args.map((arg) => {
       const unwrapped = Array.isArray(arg) ? arg[0] : arg;
 
+      if (!Array.isArray(unwrapped) && unwrapped.type === 'list') {
+        return unwrapped.values.length > 0 && unwrapped.values.every(isLiteral);
+      }
+
       return isLiteral(unwrapped);
     }),
   };

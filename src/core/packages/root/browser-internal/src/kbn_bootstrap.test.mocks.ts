@@ -33,12 +33,14 @@ jest.doMock('./apm_system', () => ({
 }));
 
 export const i18nLoad = jest.fn().mockResolvedValue(undefined);
+export const i18nInitDefault = jest.fn().mockReturnValue(undefined);
 export const i18nGetIsInitialized = jest.fn().mockReturnValue(false);
 export const setAvailableLocalesMock = jest.fn();
 jest.doMock('@kbn/i18n', () => ({
   i18n: {
     ...jest.requireActual('@kbn/i18n').i18n,
     load: i18nLoad,
+    initDefault: i18nInitDefault,
     getIsInitialized: i18nGetIsInitialized,
   },
   setAvailableLocales: setAvailableLocalesMock,

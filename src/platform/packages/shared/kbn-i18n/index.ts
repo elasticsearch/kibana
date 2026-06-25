@@ -14,6 +14,7 @@ import {
   getTranslation,
   handleIntlError,
   init,
+  initDefault,
   load,
   translate,
 } from './src/core';
@@ -33,6 +34,7 @@ const i18n = {
   translate,
   formatList,
   init,
+  initDefault,
   load,
   handleIntlError,
   getIsInitialized,
@@ -49,6 +51,7 @@ const i18nLoader = {
 
 export type { Translation, TranslationInput } from './src/translation';
 export type { Formats, TranslateArguments } from './src/core';
+export { EN_LOCALE } from './src/core';
 export {
   SUPPORTED_LOCALE_IDS,
   getLocaleLabel,

@@ -8,7 +8,10 @@
  */
 
 import type { KibanaRequest, Logger } from '@kbn/core/server';
-import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
+import {
+  calculateNextRunAtFromSchedule,
+  type TaskManagerStartContract,
+} from '@kbn/task-manager-plugin/server';
 import type { EsWorkflow } from '@kbn/workflows';
 import { getReadableFrequency, getReadableInterval } from '../lib/rrule_logging_utils';
 import type { WorkflowTrigger } from '../lib/schedule_utils';
@@ -64,7 +67,8 @@ export class WorkflowTaskScheduler {
   /**
    * Schedules a single workflow task for a specific trigger.
    * Idempotent: if the task already exists (409 conflict), updates the schedule in place
-   * via bulkUpdateSchedules instead of failing. This handles both interval and RRule schedules.
+   * via bulkUpdateSchedules instead of failing. If Task Manager skips the update, recreates
+   * the deterministic task with the latest schedule and execution credentials.
    */
   async scheduleWorkflowTask(
     workflowId: string,
@@ -113,7 +117,10 @@ export class WorkflowTaskScheduler {
       if ((err as { statusCode?: number }).statusCode === VERSION_CONFLICT_STATUS) {
         // Task already exists — update its schedule in place rather than failing.
         // This handles both interval and RRule schedule types.
-        const result = await this.taskManager.bulkUpdateSchedules([taskId], schedule, { request });
+        const result = await this.taskManager.bulkUpdateSchedules([taskId], schedule, {
+          request,
+          regenerateApiKey: true,
+        });
         if (result.errors.length > 0) {
           const firstError = result.errors[0].error;
           // 409 (concurrent update) and 404 (task was just removed) are non-fatal
@@ -125,6 +132,35 @@ export class WorkflowTaskScheduler {
               `Failed to update schedule for workflow task "${taskId}": ${firstError.message}`
             );
           }
+        }
+        // Task Manager intentionally skips running tasks when updating schedules, and skipped tasks
+        // are not returned in either `tasks` or `errors`. Recreate the deterministic workflow task
+        // so it picks up the latest schedule interval and refreshed execution credentials.
+        if (!result.tasks.some((task) => task.id === taskId)) {
+          const existingTask = await this.taskManager.get(taskId).catch((error) => {
+            if ((error as { statusCode?: number }).statusCode === NOT_FOUND_STATUS) {
+              return undefined;
+            }
+            throw error;
+          });
+          const recreatedTaskInstance = existingTask
+            ? {
+                ...taskInstance,
+                scheduledAt: existingTask.scheduledAt,
+                runAt: new Date(
+                  calculateNextRunAtFromSchedule({
+                    schedule,
+                    startDate: existingTask.scheduledAt,
+                  })
+                ),
+              }
+            : taskInstance;
+          await this.taskManager.removeIfExists(taskId);
+          const scheduledTask = await this.taskManager.schedule(recreatedTaskInstance, { request });
+          this.logger.debug(
+            `Recreated scheduled task for workflow ${workflowId} after in-place update was skipped`
+          );
+          return scheduledTask.id;
         }
         this.logger.debug(
           `Updated existing scheduled task for workflow ${workflowId} (schedule updated in place)`

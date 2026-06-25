@@ -27,7 +27,9 @@ export const buildExportResultsQuery = ({
   integrationNamespaces,
   trackTotalHits,
   ccsEnabled,
-}: ExportResultsRequestOptions & { ccsEnabled?: boolean }): ISearchRequestParams => {
+}: ExportResultsRequestOptions & {
+  ccsEnabled?: boolean;
+}): ISearchRequestParams => {
   const baseIndex = `logs-${OSQUERY_INTEGRATION_NAME}.result*`;
 
   const filter = composeExportKuery({ baseFilter, kuery, agentIds });
@@ -63,6 +65,7 @@ export const buildExportResultsQuery = ({
     pit,
     query: {
       bool: {
+        // Space scoping is enforced centrally in the search strategy (enforceSpaceScope).
         filter: [kqlFilterClause, ...(esFilterClauses as Array<Record<string, unknown>>)],
         ...(esFilterMustNotClauses.length > 0 ? { must_not: esFilterMustNotClauses } : {}),
       },

@@ -234,6 +234,8 @@
       "@kbn/cell-actions/*": ["src/platform/packages/shared/kbn-cell-actions/*"],
       "@kbn/change-history": ["x-pack/platform/packages/shared/kbn-change-history"],
       "@kbn/change-history/*": ["x-pack/platform/packages/shared/kbn-change-history/*"],
+      "@kbn/change-history-ui": ["x-pack/platform/packages/shared/kbn-change-history-ui"],
+      "@kbn/change-history-ui/*": ["x-pack/platform/packages/shared/kbn-change-history-ui/*"],
       "@kbn/change-point-chart-viewer": ["src/platform/packages/shared/kbn-change-point-chart-viewer"],
       "@kbn/change-point-chart-viewer/*": ["src/platform/packages/shared/kbn-change-point-chart-viewer/*"],
       "@kbn/chart-expressions-common": ["src/platform/packages/shared/chart-expressions-common"],

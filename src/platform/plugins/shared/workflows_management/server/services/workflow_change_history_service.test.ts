@@ -11,13 +11,13 @@ import { ChangeHistoryClient } from '@kbn/change-history';
 import { elasticsearchServiceMock } from '@kbn/core/server/mocks';
 import { loggerMock } from '@kbn/logging-mocks';
 
+import { WorkflowChangeHistoryService } from './workflow_change_history_service';
 import {
   WORKFLOW_CHANGE_HISTORY_DATASET,
   WORKFLOW_CHANGE_HISTORY_MODULE,
   WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE,
   WORKFLOW_CHANGE_HISTORY_SYSTEM_USER,
-} from './workflow_change_history_constants';
-import { WorkflowChangeHistoryService } from './workflow_change_history_service';
+} from '../../common/lib/workflow_change_history/constants';
 
 jest.mock('@kbn/change-history', () => {
   const actual = jest.requireActual('@kbn/change-history');

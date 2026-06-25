@@ -8,27 +8,28 @@ import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { i18n } from '@kbn/i18n';
 import {
   type CriteriaWithPagination,
-  EuiAvatar,
   EuiBasicTable,
+  type EuiBasicTableColumn,
   EuiButtonIcon,
-  EuiFacetButton,
   EuiHorizontalRule,
   EuiI18nNumber,
   EuiScreenReaderOnly,
   EuiSkeletonText,
   EuiText,
   EuiToolTip,
+  CENTER_ALIGNMENT,
   type HorizontalAlignment,
-  RIGHT_ALIGNMENT,
 } from '@elastic/eui';
-import styled from '@emotion/styled';
 import { FormattedMessage } from '@kbn/i18n-react';
 
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
+import { ActionCreatedBy } from './action_created_by';
+import { canUserCancelCommand } from '../../../../../common/endpoint/service/authz/cancel_authz_utils';
+import { useUserPrivileges } from '../../../../common/components/user_privileges';
+import { CancelActionModal } from './cancel_action_modal';
+import { isResponseActionCancelable } from '../../../../../common/endpoint/service/response_actions/is_response_action_cancelable';
 import { RESPONSE_ACTION_API_COMMAND_TO_CONSOLE_COMMAND_MAP } from '../../../../../common/endpoint/service/response_actions/constants';
-import { SecurityPageName } from '../../../../../common/constants';
-import { getRuleDetailsUrl } from '../../../../common/components/link_to';
-import { SecuritySolutionLinkAnchor } from '../../../../common/components/links';
-import type { ActionListApiResponse } from '../../../../../common/endpoint/types';
+import type { ActionDetails, ActionListApiResponse } from '../../../../../common/endpoint/types';
 import type { EndpointActionListRequestQuery } from '../../../../../common/api/endpoint';
 import { FormattedDate } from '../../../../common/components/formatted_date';
 import { ARIA_LABELS, TABLE_COLUMN_NAMES, UX_MESSAGES } from '../translations';
@@ -41,220 +42,9 @@ import { useUrlPagination } from '../../../hooks/use_url_pagination';
 
 const emptyValue = getEmptyValue();
 
-// Truncated usernames
-const StyledFacetButtonBase = styled(EuiFacetButton)`
-  .euiText {
-    margin-top: 0.38rem;
-    overflow-y: visible !important;
-  }
-`;
-const StyledFacetButton = (props: React.ComponentProps<typeof EuiFacetButton>) => (
-  <StyledFacetButtonBase {...props} title={undefined} />
-);
-
 interface ExpandedRowMapType {
   [k: string]: React.ReactNode;
 }
-
-const getResponseActionListTableColumns = ({
-  getTestId,
-  expandedRowMap,
-  showHostNames,
-  onClickCallback,
-}: {
-  getTestId: (suffix?: string | undefined) => string | undefined;
-  expandedRowMap: ExpandedRowMapType;
-  showHostNames: boolean;
-  onClickCallback: (actionListDataItem: ActionListApiResponse['data'][number]) => () => void;
-}) => {
-  const columns = [
-    {
-      field: 'startedAt',
-      name: TABLE_COLUMN_NAMES.time,
-      width: !showHostNames ? '21%' : '15%',
-      truncateText: true,
-      render: (startedAt: ActionListApiResponse['data'][number]['startedAt']) => {
-        return (
-          <FormattedDate
-            fieldName={TABLE_COLUMN_NAMES.time}
-            value={startedAt}
-            className="eui-textTruncate"
-          />
-        );
-      },
-    },
-    {
-      field: 'command',
-      name: TABLE_COLUMN_NAMES.command,
-      width: !showHostNames ? '21%' : '10%',
-      truncateText: true,
-      render: (_command: ActionListApiResponse['data'][number]['command']) => {
-        const command = RESPONSE_ACTION_API_COMMAND_TO_CONSOLE_COMMAND_MAP[_command];
-        return (
-          <EuiToolTip content={command} anchorClassName="eui-textTruncate">
-            <EuiText
-              size="s"
-              className="eui-textTruncate eui-fullWidth"
-              data-test-subj={getTestId('column-command')}
-              tabIndex={0}
-            >
-              {command}
-            </EuiText>
-          </EuiToolTip>
-        );
-      },
-    },
-    {
-      name: TABLE_COLUMN_NAMES.user,
-      width: !showHostNames ? '21%' : '14%',
-      truncateText: true,
-      render: ({ createdBy, ruleId }: ActionListApiResponse['data'][number]) => {
-        if (createdBy === 'unknown' && ruleId) {
-          return (
-            <EuiToolTip content={UX_MESSAGES.triggeredByRule} anchorClassName="eui-textTruncate">
-              <SecuritySolutionLinkAnchor
-                data-test-subj="ruleName"
-                deepLinkId={SecurityPageName.rules}
-                path={getRuleDetailsUrl(ruleId)}
-              >
-                <EuiText
-                  size="s"
-                  className="eui-textTruncate eui-fullWidth"
-                  data-test-subj={getTestId('column-user-name')}
-                >
-                  {UX_MESSAGES.triggeredByRule}
-                </EuiText>
-              </SecuritySolutionLinkAnchor>
-            </EuiToolTip>
-          );
-        }
-        return (
-          <StyledFacetButton
-            icon={
-              <EuiAvatar
-                // We've a EuiTooltip that shows for createdBy below,
-                // Thus we don't need to add a title tooltip as well.
-                aria-hidden={true}
-                title=""
-                name={createdBy}
-                data-test-subj={getTestId('column-user-avatar')}
-                size="s"
-              />
-            }
-          >
-            <EuiToolTip content={createdBy} anchorClassName="eui-textTruncate">
-              <EuiText
-                size="s"
-                className="eui-textTruncate eui-fullWidth"
-                data-test-subj={getTestId('column-user-name')}
-                tabIndex={0}
-              >
-                {createdBy}
-              </EuiText>
-            </EuiToolTip>
-          </StyledFacetButton>
-        );
-      },
-    },
-    // conditional hostnames column
-    {
-      field: 'hosts',
-      name: TABLE_COLUMN_NAMES.hosts,
-      width: '20%',
-      truncateText: true,
-      render: (_hosts: ActionListApiResponse['data'][number]['hosts']) => {
-        const hostnames = Object.entries(_hosts)
-          .reduce<string[]>((acc, [agentId, { name: hostName }]) => {
-            acc.push(hostName || `${agentId} (${UX_MESSAGES.unenrolled.host})`);
-            return acc;
-          }, [])
-          .join(', ');
-
-        return (
-          <EuiToolTip content={hostnames} anchorClassName="eui-textTruncate">
-            <EuiText
-              size="s"
-              className="eui-textTruncate eui-fullWidth"
-              data-test-subj={getTestId('column-hostname')}
-              tabIndex={0}
-            >
-              {hostnames}
-            </EuiText>
-          </EuiToolTip>
-        );
-      },
-    },
-    {
-      field: 'comment',
-      name: TABLE_COLUMN_NAMES.comments,
-      width: !showHostNames ? '21%' : '30%',
-      truncateText: true,
-      render: (comment: ActionListApiResponse['data'][number]['comment']) => {
-        return (
-          <EuiToolTip content={comment} anchorClassName="eui-textTruncate">
-            <EuiText
-              size="s"
-              className="eui-textTruncate eui-fullWidth"
-              data-test-subj={getTestId('column-comments')}
-              tabIndex={0}
-            >
-              {comment ?? emptyValue}
-            </EuiText>
-          </EuiToolTip>
-        );
-      },
-    },
-    {
-      field: 'status',
-      name: TABLE_COLUMN_NAMES.status,
-      width: !showHostNames ? '15%' : '10%',
-      render: (status: ActionListApiResponse['data'][number]['status']) => {
-        return (
-          <EuiToolTip content={status} anchorClassName="eui-textTruncate">
-            <ResponseActionStatusBadge
-              data-test-subj={getTestId('column-status')}
-              status={status}
-              tabIndex={0}
-            />
-          </EuiToolTip>
-        );
-      },
-    },
-    {
-      field: '',
-      align: RIGHT_ALIGNMENT as HorizontalAlignment,
-      width: '40px',
-      isExpander: true,
-      name: (
-        <EuiScreenReaderOnly>
-          <span>{UX_MESSAGES.screenReaderExpand}</span>
-        </EuiScreenReaderOnly>
-      ),
-      render: (actionListDataItem: ActionListApiResponse['data'][number]) => {
-        const actionId = actionListDataItem.id;
-        return (
-          <EuiToolTip
-            content={expandedRowMap[actionId] ? ARIA_LABELS.collapse : ARIA_LABELS.expand}
-            disableScreenReaderOutput
-          >
-            <EuiButtonIcon
-              data-test-subj={getTestId('expand-button')}
-              onClick={onClickCallback(actionListDataItem)}
-              aria-label={expandedRowMap[actionId] ? ARIA_LABELS.collapse : ARIA_LABELS.expand}
-              iconType={expandedRowMap[actionId] ? 'chevronSingleUp' : 'chevronSingleDown'}
-            />
-          </EuiToolTip>
-        );
-      },
-    },
-  ];
-  // filter out the `hosts` column
-  // if showHostNames is FALSE
-  if (!showHostNames) {
-    return columns.filter((column) => column.field !== 'hosts');
-  }
-  return columns;
-};
 
 interface ActionsLogTableProps {
   error?: string;
@@ -267,6 +57,8 @@ interface ActionsLogTableProps {
     page: _page,
   }: CriteriaWithPagination<ActionListApiResponse['data'][number]>) => void;
   onShowActionDetails: (actionIds: string[]) => void;
+  /** Callback for when table actions may have changed the `items` and thus they should be refreshed */
+  onDataNeedsRefresh: () => void;
   queryParams: EndpointActionListRequestQuery;
   showHostNames: boolean;
   totalItemCount: number;
@@ -280,6 +72,7 @@ export const ActionsLogTable = memo<ActionsLogTableProps>(
     isFlyout,
     loading,
     onChange,
+    onDataNeedsRefresh,
     onShowActionDetails,
     queryParams,
     showHostNames,
@@ -287,8 +80,13 @@ export const ActionsLogTable = memo<ActionsLogTableProps>(
   }) => {
     const getTestId = useTestIdGenerator(dataTestSubj);
     const { pagination: paginationFromUrlParams } = useUrlPagination();
+    const authz = useUserPrivileges().endpointPrivileges;
+    const isEndpointCancelActionEnabled = useIsExperimentalFeatureEnabled(
+      'responseActionsEndpointCancel'
+    );
 
     const [expandedRowMap, setExpandedRowMap] = useState<ExpandedRowMapType>({});
+    const [actionToCancel, setActionToCancel] = useState<ActionDetails | null>(null);
 
     const actionIdsWithOpenTrays = useMemo(
       (): string[] =>
@@ -344,6 +142,11 @@ export const ActionsLogTable = memo<ActionsLogTableProps>(
       },
       [expandedRowMap, onShowActionDetails, dataTestSubj]
     );
+
+    const onCloseCancelModalHandler = useCallback(() => {
+      setActionToCancel(null);
+      onDataNeedsRefresh();
+    }, [onDataNeedsRefresh]);
 
     // memoized callback for toggleDetails
     const onClickCallback = useCallback(
@@ -405,16 +208,212 @@ export const ActionsLogTable = memo<ActionsLogTableProps>(
       [getTestId, pagedResultsCount.fromCount, pagedResultsCount.toCount, totalItemCount]
     );
 
-    const columns = useMemo(
-      () =>
-        getResponseActionListTableColumns({
-          getTestId,
-          expandedRowMap,
-          onClickCallback,
-          showHostNames,
-        }),
-      [expandedRowMap, getTestId, onClickCallback, showHostNames]
-    );
+    const columns = useMemo(() => {
+      let columnDef: EuiBasicTableColumn<ActionDetails>[] = [
+        {
+          field: '',
+          align: CENTER_ALIGNMENT as HorizontalAlignment,
+          width: '30px',
+          isExpander: true,
+          name: (
+            <EuiScreenReaderOnly>
+              <span>{UX_MESSAGES.screenReaderExpand}</span>
+            </EuiScreenReaderOnly>
+          ),
+          render: (actionListDataItem: ActionListApiResponse['data'][number]) => {
+            const actionId = actionListDataItem.id;
+            return (
+              <EuiToolTip
+                content={expandedRowMap[actionId] ? ARIA_LABELS.collapse : ARIA_LABELS.expand}
+                disableScreenReaderOutput
+              >
+                <EuiButtonIcon
+                  data-test-subj={getTestId('expand-button')}
+                  onClick={onClickCallback(actionListDataItem)}
+                  aria-label={expandedRowMap[actionId] ? ARIA_LABELS.collapse : ARIA_LABELS.expand}
+                  iconType={expandedRowMap[actionId] ? 'chevronSingleUp' : 'chevronSingleDown'}
+                />
+              </EuiToolTip>
+            );
+          },
+        },
+        {
+          field: 'startedAt',
+          name: TABLE_COLUMN_NAMES.time,
+          width: !showHostNames ? '21%' : '15%',
+          truncateText: true,
+          render: (startedAt: ActionListApiResponse['data'][number]['startedAt']) => {
+            return (
+              <FormattedDate
+                fieldName={TABLE_COLUMN_NAMES.time}
+                value={startedAt}
+                className="eui-textTruncate"
+              />
+            );
+          },
+        },
+        {
+          field: 'command',
+          name: TABLE_COLUMN_NAMES.command,
+          width: !showHostNames ? '21%' : '10%',
+          truncateText: true,
+          render: (_command: ActionListApiResponse['data'][number]['command']) => {
+            const command = RESPONSE_ACTION_API_COMMAND_TO_CONSOLE_COMMAND_MAP[_command];
+            return (
+              <EuiToolTip content={command} anchorClassName="eui-textTruncate">
+                <EuiText
+                  size="s"
+                  className="eui-textTruncate eui-fullWidth"
+                  data-test-subj={getTestId('column-command')}
+                  tabIndex={0}
+                >
+                  {command}
+                </EuiText>
+              </EuiToolTip>
+            );
+          },
+        },
+        {
+          field: 'createdBy',
+          name: TABLE_COLUMN_NAMES.user,
+          width: !showHostNames ? '21%' : '14%',
+          truncateText: true,
+          render: (_, action: ActionListApiResponse['data'][number]) => {
+            return <ActionCreatedBy action={action} data-test-subj={getTestId('column')} />;
+          },
+        },
+        // conditional hostnames column
+        {
+          field: 'hosts',
+          name: TABLE_COLUMN_NAMES.hosts,
+          width: '20%',
+          truncateText: true,
+          render: (_hosts: ActionListApiResponse['data'][number]['hosts']) => {
+            const hostnames = Object.entries(_hosts)
+              .reduce<string[]>((acc, [agentId, { name: hostName }]) => {
+                acc.push(hostName || `${agentId} (${UX_MESSAGES.unenrolled.host})`);
+                return acc;
+              }, [])
+              .join(', ');
+
+            return (
+              <EuiToolTip content={hostnames} anchorClassName="eui-textTruncate">
+                <EuiText
+                  size="s"
+                  className="eui-textTruncate eui-fullWidth"
+                  data-test-subj={getTestId('column-hostname')}
+                  tabIndex={0}
+                >
+                  {hostnames}
+                </EuiText>
+              </EuiToolTip>
+            );
+          },
+        },
+        {
+          field: 'comment',
+          name: TABLE_COLUMN_NAMES.comments,
+          width: !showHostNames ? '21%' : '30%',
+          truncateText: true,
+          render: (comment: ActionListApiResponse['data'][number]['comment']) => {
+            return (
+              <EuiToolTip content={comment} anchorClassName="eui-textTruncate">
+                <EuiText
+                  size="s"
+                  className="eui-textTruncate eui-fullWidth"
+                  data-test-subj={getTestId('column-comments')}
+                  tabIndex={0}
+                >
+                  {comment ?? emptyValue}
+                </EuiText>
+              </EuiToolTip>
+            );
+          },
+        },
+        {
+          field: 'status',
+          name: TABLE_COLUMN_NAMES.status,
+          width: !showHostNames ? '15%' : '10%',
+          render: (status: ActionListApiResponse['data'][number]['status']) => {
+            return (
+              <EuiToolTip content={status} anchorClassName="eui-textTruncate">
+                <ResponseActionStatusBadge
+                  data-test-subj={getTestId('column-status')}
+                  status={status}
+                  tabIndex={0}
+                />
+              </EuiToolTip>
+            );
+          },
+        },
+        {
+          field: '',
+          width: '65px',
+          name: TABLE_COLUMN_NAMES.actions,
+          actions: [
+            {
+              render: (actionDetailsItem: ActionDetails) => {
+                if (actionDetailsItem.isCompleted) {
+                  return <></>;
+                }
+
+                let tooltipText: React.ReactNode = UX_MESSAGES.cancelAction;
+                const buttonProps: React.ComponentProps<typeof EuiButtonIcon> = {
+                  iconType: 'stop',
+                  'data-test-subj': 'responseActionRowActions',
+                  'aria-label': UX_MESSAGES.cancelAction,
+                  isDisabled: !!actionToCancel,
+                };
+
+                if (
+                  !isResponseActionCancelable(
+                    actionDetailsItem.command,
+                    actionDetailsItem.agentType
+                  )
+                ) {
+                  buttonProps.isDisabled = true;
+                  tooltipText = UX_MESSAGES.cancelActionNotSupportedTooltip;
+                } else if (!canUserCancelCommand(authz, actionDetailsItem.command)) {
+                  buttonProps.isDisabled = true;
+                  tooltipText = UX_MESSAGES.cancelActionNotPermittedTooltip;
+                } else {
+                  buttonProps.onClick = () => {
+                    setActionToCancel(actionDetailsItem);
+                  };
+                }
+
+                return (
+                  <EuiToolTip content={tooltipText}>
+                    <EuiButtonIcon {...buttonProps} />
+                  </EuiToolTip>
+                );
+              },
+            },
+          ],
+        },
+      ];
+
+      // filter out the `hosts` column
+      // if showHostNames is FALSE
+      if (!showHostNames) {
+        columnDef = columnDef.filter((column) => 'field' in column && column.field !== 'hosts');
+      }
+
+      // Remove actions if cancel feature flag is disabled
+      if (!isEndpointCancelActionEnabled) {
+        columnDef = columnDef.filter((column) => !('actions' in column));
+      }
+
+      return columnDef;
+    }, [
+      actionToCancel,
+      authz,
+      expandedRowMap,
+      getTestId,
+      isEndpointCancelActionEnabled,
+      onClickCallback,
+      showHostNames,
+    ]);
 
     return (
       <>
@@ -437,6 +436,14 @@ export const ActionsLogTable = memo<ActionsLogTableProps>(
           loading={loading}
           error={error}
         />
+
+        {actionToCancel && (
+          <CancelActionModal
+            action={actionToCancel}
+            onClose={onCloseCancelModalHandler}
+            data-test-subj={getTestId('cancelActionModal')}
+          />
+        )}
       </>
     );
   }

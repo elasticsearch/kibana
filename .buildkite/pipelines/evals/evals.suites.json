@@ -265,7 +265,7 @@
     {
       "id": "siem-readiness",
       "name": "SIEM Readiness",
-      "slackChannel": "#security-defend-workflows-tests",
+      "slackChannel": "#siem-readiness",
       "configPath": "x-pack/solutions/security/packages/kbn-evals-suite-siem-readiness/playwright.config.ts",
       "tags": ["security", "siem-readiness"],
       "ciLabels": ["evals:siem-readiness"],

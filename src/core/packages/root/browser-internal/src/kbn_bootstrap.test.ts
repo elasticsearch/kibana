@@ -11,13 +11,14 @@ import {
   apmSystem,
   fatalErrorMock,
   i18nLoad,
+  i18nInitDefault,
   i18nGetIsInitialized,
   setAvailableLocalesMock,
 } from './kbn_bootstrap.test.mocks';
 import { __kbnBootstrap__ } from '.';
 
 const setMetadata = (
-  translationsUrl = '/translations/abc123/en.json',
+  translationsUrl: string | null = '/translations/abc123/en.json',
   availableLocales: Array<{ id: string; label: string }> = [{ id: 'en', label: 'English' }]
 ) => {
   const metadata = {
@@ -69,6 +70,25 @@ describe('kbn_bootstrap', () => {
     await __kbnBootstrap__();
 
     expect(i18nLoad).toHaveBeenCalledWith('/translations/ghi789/ja-JP.json');
+  });
+
+  it('calls initDefault and skips i18n.load when translationsUrl is null', async () => {
+    setMetadata(null);
+
+    await __kbnBootstrap__();
+
+    expect(i18nLoad).not.toHaveBeenCalled();
+    expect(i18nInitDefault).toHaveBeenCalledTimes(1);
+    expect(fatalErrorMock.add).not.toHaveBeenCalled();
+  });
+
+  it('calls i18n.load and skips initDefault when translationsUrl is a string', async () => {
+    setMetadata('/translations/abc123/fr.json');
+
+    await __kbnBootstrap__();
+
+    expect(i18nLoad).toHaveBeenCalledWith('/translations/abc123/fr.json');
+    expect(i18nInitDefault).not.toHaveBeenCalled();
   });
 
   it('hydrates the available locale registry from injected metadata', async () => {

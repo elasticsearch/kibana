@@ -45,6 +45,7 @@ describe('ExitForeachNodeImpl', () => {
 
     stepIoService = {
       evictStaleLoopOutputs: jest.fn(),
+      unpinForeachScope: jest.fn(),
     } as unknown as StepIoService;
 
     workflowGraph = {
@@ -217,6 +218,12 @@ describe('ExitForeachNodeImpl', () => {
 
       expect(workflowGraph.getInnerStepIds).toHaveBeenCalledWith('testStep');
       expect(stepIoService.evictStaleLoopOutputs).toHaveBeenCalledWith(new Set(['innerStep']));
+    });
+
+    it('should release the source pin when the loop completes normally', async () => {
+      await underTest.run();
+
+      expect(stepIoService.unpinForeachScope).toHaveBeenCalledWith('testStep');
     });
 
     it('should evict stale loop outputs when max-iterations reached with on-limit continue', async () => {

@@ -28,6 +28,42 @@ import './src/setup_dot_text';
 
 // CLI tools
 export * as cli from './src/cli';
+export {
+  ensureEvalStack,
+  ensureEdot,
+  ensureScout,
+  ensureEisCcm,
+  type EnsureEvalStackOptions,
+  type EnsureEdotOptions,
+  type EnsureScoutOptions,
+  type EnsureEisCcmOptions,
+} from './src/cli/eval_stack';
+
+export {
+  ensureEvalInit,
+  resolveEvalSuite,
+  resolveEvaluationConnectorId,
+  resolveProfileEnvOverrides,
+  resolveEvalRunContext,
+  buildEvalRunEnv,
+  buildEvalRunArgs,
+  formatEvalCliCommand,
+  evalRunFlags,
+  type EvalSuiteResolution,
+  type ResolvedProfileEnv,
+  type ResolveProfileEnvOverridesOptions,
+  type EvalRunContext,
+  type ResolveEvalRunContextOptions,
+  type BuildEvalRunArgsOptions,
+} from './src/cli/run_helpers';
+
+export {
+  resolveEvalSuites,
+  readSuiteMetadata,
+  discoverEvalSuites,
+  type EvalSuiteDefinition,
+  type EvalSuiteMetadata,
+} from './src/cli/suites';
 
 export { evaluate } from './src/evaluate';
 export type { DefaultEvaluators, ReportDisplayOptions } from './src/types';

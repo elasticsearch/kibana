@@ -12,17 +12,17 @@ import { ChangeHistoryClient } from '@kbn/change-history';
 import type { KibanaRequest } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
 
-import {
-  WORKFLOW_CHANGE_HISTORY_DATASET,
-  WORKFLOW_CHANGE_HISTORY_MODULE,
-  WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE,
-  WORKFLOW_CHANGE_HISTORY_SYSTEM_USER,
-} from './workflow_change_history_constants';
 import type {
   IScopedWorkflowChangeHistoryService,
   IWorkflowChangeHistoryService,
   WorkflowChangeHistoryServiceInitializeParams,
 } from './workflow_change_history_types';
+import {
+  WORKFLOW_CHANGE_HISTORY_DATASET,
+  WORKFLOW_CHANGE_HISTORY_MODULE,
+  WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE,
+  WORKFLOW_CHANGE_HISTORY_SYSTEM_USER,
+} from '../../common/lib/workflow_change_history/constants';
 
 export class WorkflowChangeHistoryService implements IWorkflowChangeHistoryService {
   private readonly client: ChangeHistoryClient;

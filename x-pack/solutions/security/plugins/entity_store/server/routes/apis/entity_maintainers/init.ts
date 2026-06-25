@@ -13,7 +13,7 @@ import { DEFAULT_ENTITY_STORE_PERMISSIONS } from '../../constants';
 import { ENTITY_STORE_STATUS } from '../../../domain/constants';
 import type { EntityStorePluginRouter } from '../../../types';
 import { wrapMiddlewares } from '../../middleware';
-import { getMissingPrivileges } from '../utils/get_missing_privileges';
+import { enforceEntityStorePrivileges } from '../utils/check_entity_store_privileges';
 import type { AssetManagerClient } from '../../../domain/asset_manager';
 import { initMaintainersBodySchema } from './utils/validator';
 
@@ -68,15 +68,8 @@ async function validateInitMaintainersRequest(
   req: KibanaRequest,
   res: KibanaResponseFactory
 ): Promise<IKibanaResponse | null> {
-  const privileges = await assetManagerClient.getPrivileges(req);
-  if (!privileges.hasAllRequested) {
-    return res.forbidden({
-      body: {
-        attributes: getMissingPrivileges(privileges),
-        message: `User '${privileges.username}' has insufficient privileges`,
-      },
-    });
-  }
+  const forbidden = await enforceEntityStorePrivileges(assetManagerClient, req, res);
+  if (forbidden) return forbidden;
 
   const { status } = await assetManagerClient.getStatus(false);
   if (status === ENTITY_STORE_STATUS.NOT_INSTALLED) {

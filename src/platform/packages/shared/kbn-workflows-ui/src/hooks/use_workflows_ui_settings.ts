@@ -7,14 +7,40 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { EMPTY } from 'rxjs';
 import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
-import { WORKFLOWS_UI_SETTING_ID } from '@kbn/workflows';
+import { useObservable } from '@kbn/use-observable';
+import {
+  WORKFLOWS_UI_SETTING_ID,
+  WORKFLOWS_UI_SHOW_MANAGED_WORKFLOWS_SETTING_ID,
+} from '@kbn/workflows';
+
+interface WorkflowsUiSettingsServices {
+  settings?: {
+    client?: IUiSettingsClient;
+  };
+  uiSettings?: IUiSettingsClient;
+}
 
 export const useWorkflowsUIEnabledSetting = (): boolean => {
   const {
-    services: { uiSettings },
-  } = useKibana<{ uiSettings: IUiSettingsClient }>();
+    services: { settings, uiSettings },
+  } = useKibana<WorkflowsUiSettingsServices>();
+  const uiSettingsClient = settings?.client ?? uiSettings;
 
-  return uiSettings?.get<boolean>(WORKFLOWS_UI_SETTING_ID, true);
+  return uiSettingsClient?.get<boolean>(WORKFLOWS_UI_SETTING_ID, true) ?? true;
+};
+
+export const useShowManagedWorkflowsSetting = (): boolean => {
+  const {
+    services: { settings, uiSettings },
+  } = useKibana<WorkflowsUiSettingsServices>();
+  const uiSettingsClient = settings?.client ?? uiSettings;
+  const observable =
+    uiSettingsClient?.get$<boolean>(WORKFLOWS_UI_SHOW_MANAGED_WORKFLOWS_SETTING_ID, false) ?? EMPTY;
+  const defaultValue =
+    uiSettingsClient?.get<boolean>(WORKFLOWS_UI_SHOW_MANAGED_WORKFLOWS_SETTING_ID, false) ?? false;
+
+  return useObservable(observable, defaultValue) === true;
 };

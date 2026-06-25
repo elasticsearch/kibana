@@ -5,152 +5,18 @@
  * 2.0.
  */
 
-import Fs from 'fs';
-import Path from 'path';
 import { spawn } from 'child_process';
-import inquirer from 'inquirer';
-import { createFlagError } from '@kbn/dev-cli-errors';
 import type { Command } from '@kbn/dev-cli-runner';
-import type { ToolingLog } from '@kbn/tooling-log';
-import { resolveCcmApiKey } from '@kbn/es';
-import { resolveEvalSuites } from '../suites';
+import { ensureEvalStack } from '../eval_stack';
 import {
-  promptForSuite,
-  promptForConnector,
-  promptForProject,
-  isTTY,
-  getAllAvailableConnectors,
-  scoutEvalsArgs,
-} from '../prompts';
-import {
-  isServiceRunning,
-  isScoutStale,
-  startService,
-  stopService,
-  connectorsHash,
-  scoutEnvHash,
-  tailLog,
-  isEdotDockerRunning,
-} from '../services';
-import { readCachedEisConnectors } from '../eis_connectors_cache';
-import {
-  defaultExportProfile,
-  envFromDatasetsProfile,
-  envFromExportProfile,
-  stripTrailingSlash,
-  probeHttp,
-  isExportProfileImplicitLocal,
-  isDevVaultProfile,
-  resolveVaultConfigPath,
-} from '../profiles';
-import { runConfigInit, runConnectorSetup, ensureVaultAuth, ensureLocalConfig } from './init';
-
-const SCOUT_LOCAL_CONFIG = '.scout/servers/local.json';
-const SCOUT_READY_POLL_INTERVAL_MS = 3000;
-const SCOUT_READY_TIMEOUT_MS = 180_000;
-
-const waitForScoutReady = async (repoRoot: string, log: ToolingLog): Promise<void> => {
-  const configPath = Path.join(repoRoot, SCOUT_LOCAL_CONFIG);
-  const startTime = Date.now();
-  let esUrl: string | undefined;
-  let kbnUrl: string | undefined;
-
-  while (Date.now() - startTime < SCOUT_READY_TIMEOUT_MS) {
-    if (!esUrl && Fs.existsSync(configPath)) {
-      try {
-        const raw = Fs.readFileSync(configPath, 'utf-8');
-        const parsed = JSON.parse(raw) as { hosts?: { kibana?: string; elasticsearch?: string } };
-        esUrl = parsed.hosts?.elasticsearch;
-        kbnUrl = parsed.hosts?.kibana;
-      } catch {
-        // file not fully written yet
-      }
-    }
-
-    if (esUrl && kbnUrl) {
-      const [esOk, kbnOk] = await Promise.all([
-        probeHttp(esUrl),
-        probeHttp(`${kbnUrl}/api/status`),
-      ]);
-      if (esOk && kbnOk) {
-        return;
-      }
-    }
-
-    await new Promise((r) => setTimeout(r, SCOUT_READY_POLL_INTERVAL_MS));
-  }
-
-  throw new Error(`Scout did not become ready within ${SCOUT_READY_TIMEOUT_MS / 1000}s`);
-};
-
-/**
- * Verify the Scout-managed ES and Kibana are actually reachable, not just that
- * the parent PID is alive. Covers the common case where ES crashes while the
- * Scout orchestrator (and Kibana) keep running.
- */
-const probeScoutHealth = async (repoRoot: string): Promise<{ ok: boolean; reason?: string }> => {
-  const configPath = Path.join(repoRoot, SCOUT_LOCAL_CONFIG);
-  if (!Fs.existsSync(configPath)) {
-    return { ok: false, reason: 'local config missing (.scout/servers/local.json)' };
-  }
-
-  try {
-    const raw = Fs.readFileSync(configPath, 'utf-8');
-    const parsed = JSON.parse(raw) as { hosts?: { kibana?: string; elasticsearch?: string } };
-    const esUrl = parsed.hosts?.elasticsearch;
-    const kbnUrl = parsed.hosts?.kibana;
-
-    if (!esUrl || !kbnUrl) {
-      return { ok: false, reason: 'hosts missing from local config' };
-    }
-
-    const [esOk, kbnOk] = await Promise.all([probeHttp(esUrl), probeHttp(`${kbnUrl}/api/status`)]);
-
-    if (!esOk && !kbnOk) {
-      return { ok: false, reason: `ES (${esUrl}) and Kibana (${kbnUrl}) are unreachable` };
-    }
-    if (!esOk) {
-      return { ok: false, reason: `ES is unreachable (${esUrl})` };
-    }
-    if (!kbnOk) {
-      return { ok: false, reason: `Kibana is unreachable (${kbnUrl})` };
-    }
-
-    return { ok: true };
-  } catch {
-    return { ok: false, reason: 'failed to read local config' };
-  }
-};
-
-const isEisConnectorId = (id: string): boolean => id.startsWith('eis-');
-
-const shellQuote = (value: string): string => {
-  // Prefer single quotes for bash/zsh. If the string contains single quotes, fall back to double quotes.
-  if (!value.includes("'")) {
-    return `'${value}'`;
-  }
-  const escaped = value.replace(/(["\\$`])/g, '\\$1');
-  return `"${escaped}"`;
-};
-
-const formatRerunCommand = (args: string[]): string =>
-  ['node', 'scripts/evals', ...args.map((a) => (a.includes(' ') ? shellQuote(a) : a))].join(' ');
-
-const ensureSuite = (suiteId: string, repoRoot: string, log: ToolingLog) => {
-  const suites = resolveEvalSuites(repoRoot, log);
-  const match = suites.find((suite) => suite.id === suiteId);
-  if (match) return match;
-
-  log.info(`Suite "${suiteId}" not found in metadata; refreshing discovery...`);
-  const refreshed = resolveEvalSuites(repoRoot, log, { refresh: true });
-  const refreshedMatch = refreshed.find((suite) => suite.id === suiteId);
-  if (refreshedMatch) return refreshedMatch;
-
-  const available = refreshed.map((suite) => suite.id).join(', ');
-  throw createFlagError(
-    `Unknown suite "${suiteId}". Available suites: ${available || 'none found'}`
-  );
-};
+  ensureEvalInit,
+  resolveEvalSuite,
+  resolveEvalRunContext,
+  buildEvalRunArgs,
+  buildEvalRunEnv,
+  formatEvalCliCommand,
+  evalRunFlags,
+} from '../run_helpers';
 
 export const startCmd: Command<void> = {
   name: 'start',
@@ -169,198 +35,27 @@ export const startCmd: Command<void> = {
     node scripts/evals start --suite agent-builder --skip-server
     node scripts/evals stop
   `,
-  flags: {
-    string: [
-      'suite',
-      'config',
-      'evaluation-connector-id',
-      'project',
-      'repetitions',
-      'grep',
-      'profile',
-      'datasets-profile',
-      'export-profile',
-      'evaluations-kbn-url',
-      'evaluations-kbn-api-key',
-    ],
-    boolean: ['skip-server', 'dry-run', 'skip-init'],
-    alias: { model: 'project', judge: 'evaluation-connector-id' },
-    default: { 'skip-server': false, 'dry-run': false, 'skip-init': false },
-  },
+  flags: evalRunFlags,
   run: async ({ log, flagsReader }) => {
     const repoRoot = process.cwd();
-    let profile = flagsReader.string('profile') ?? undefined;
+    const profile = await ensureEvalInit(repoRoot, log, flagsReader);
 
-    if (!flagsReader.boolean('skip-init')) {
-      if (!profile) {
-        if (!isTTY()) {
-          throw createFlagError(
-            '--profile is required in non-interactive mode (e.g. --profile dev-vault, --profile local).'
-          );
-        }
+    const { suite, suiteId, configPath, resolvedConfigPath } = await resolveEvalSuite(
+      repoRoot,
+      log,
+      flagsReader
+    );
 
-        type InfraChoice = 'local' | 'golden-cluster' | 'custom';
-        const { choice } = await inquirer.prompt<{ choice: InfraChoice }>({
-          type: 'list',
-          name: 'choice',
-          message: 'How do you want to run evals and export results and traces?',
-          choices: [
-            { name: 'Local (localhost ES/Kibana)', value: 'local' },
-            {
-              name: 'Golden cluster (uses Vault -- no config file needed)',
-              value: 'golden-cluster',
-            },
-            { name: 'Custom (create a config file with your own URLs)', value: 'custom' },
-          ],
-        });
-
-        if (choice === 'local') {
-          await ensureLocalConfig(repoRoot, log);
-          profile = 'local';
-        } else if (choice === 'golden-cluster') {
-          await ensureVaultAuth(log);
-          profile = 'dev-vault';
-        } else {
-          const { customProfile } = await inquirer.prompt<{ customProfile: string }>({
-            type: 'input',
-            name: 'customProfile',
-            message: 'Config profile name (creates config.<name>.json, or empty for config.json):',
-            default: '',
-          });
-          const resolvedProfile = customProfile.trim() || 'default';
-          await runConfigInit(repoRoot, log, { profile: resolvedProfile });
-          profile = resolvedProfile;
-        }
-      } else if (isDevVaultProfile(profile)) {
-        await ensureVaultAuth(log);
-      } else if (profile === 'local') {
-        await ensureLocalConfig(repoRoot, log);
-      } else {
-        const configPath = resolveVaultConfigPath(repoRoot, profile);
-        if (!Fs.existsSync(configPath)) {
-          if (!isTTY()) {
-            throw createFlagError(
-              `Config not found: ${configPath}. Run \`node scripts/evals init config --profile ${profile}\` to create it.`
-            );
-          }
-          log.info(`Config file for profile "${profile}" not found. Running setup wizard...`);
-          log.info('');
-          await runConfigInit(repoRoot, log, { profile });
-        }
-      }
-
-      if (getAllAvailableConnectors(repoRoot).length === 0) {
-        if (!isTTY()) {
-          throw createFlagError(
-            'No connectors available. Set KIBANA_TESTING_AI_CONNECTORS or run with a TTY to use the setup wizard.'
-          );
-        }
-      }
-
-      if (isTTY()) {
-        await runConnectorSetup(repoRoot, log);
-      }
-    }
-
-    // --- Resolve suite ---
-    let suiteId = flagsReader.string('suite');
-    const configPath = flagsReader.string('config');
-
-    if (!suiteId && !configPath) {
-      if (isTTY()) {
-        const selected = await promptForSuite(repoRoot, log);
-        suiteId = selected.id;
-      } else {
-        throw createFlagError('Missing --suite (or provide --config).');
-      }
-    }
-
-    if (suiteId && configPath) {
-      throw createFlagError('Use either --suite or --config, not both.');
-    }
-
-    const suite = suiteId ? ensureSuite(suiteId, repoRoot, log) : undefined;
-    const resolvedConfigPath = suite
-      ? suite.absoluteConfigPath
-      : Path.resolve(repoRoot, configPath as string);
-
-    // --- Resolve connector ---
-    let evaluationConnectorId =
-      flagsReader.string('evaluation-connector-id') ?? process.env.EVALUATION_CONNECTOR_ID;
-
-    if (!evaluationConnectorId) {
-      if (isTTY()) {
-        evaluationConnectorId = await promptForConnector(repoRoot, log);
-      } else {
-        throw createFlagError(
-          'EVALUATION_CONNECTOR_ID is required. Set --evaluation-connector-id or env.'
-        );
-      }
-    }
-
-    // --- Resolve project (which model(s) to evaluate) ---
-    let projects: string[] = [];
-    const projectFlag = flagsReader.string('project');
-
-    if (projectFlag) {
-      projects = projectFlag.split(',').map((p) => p.trim());
-    } else {
-      const allConnectors = getAllAvailableConnectors(repoRoot);
-      if (allConnectors.length > 1 && isTTY()) {
-        projects = await promptForProject(repoRoot, log);
-      }
-    }
+    const {
+      evaluationConnectorId,
+      projects,
+      profileEnvOverrides,
+      exportProfile,
+      datasetsProfile,
+      requiresEisCcm,
+    } = await resolveEvalRunContext({ repoRoot, log, flagsReader, profile });
 
     const skipServer = flagsReader.boolean('skip-server');
-    const requiresEisCcm =
-      isEisConnectorId(evaluationConnectorId) ||
-      (projects.length > 0
-        ? projects.some(isEisConnectorId)
-        : getAllAvailableConnectors(repoRoot).some((c) => isEisConnectorId(c.id)));
-
-    if (requiresEisCcm && !process.env.KIBANA_TESTING_AI_CONNECTORS) {
-      const cached = readCachedEisConnectors();
-      if (cached) {
-        process.env.KIBANA_TESTING_AI_CONNECTORS = Buffer.from(JSON.stringify(cached)).toString(
-          'base64'
-        );
-        log.info('EIS connectors loaded from cache (~/.elastic/eis-connectors-cache.json)');
-      }
-    }
-
-    const baseProfile = profile;
-    const datasetsProfile = flagsReader.string('datasets-profile') ?? baseProfile;
-    const exportProfile =
-      flagsReader.string('export-profile') ?? baseProfile ?? defaultExportProfile(repoRoot);
-
-    const profileEnvOverrides: Record<string, string> = {
-      ...envFromDatasetsProfile(repoRoot, datasetsProfile),
-      ...envFromExportProfile(repoRoot, exportProfile, {
-        defaultTracingExporters: exportProfile === 'local',
-      }),
-    };
-
-    // Best-effort default: if we implicitly resolved an export profile, don't fail the run when the
-    // export ES isn't reachable. Instead, warn and continue without export (preflight won't run).
-    // When the user actively chose a profile (via CLI flag or wizard), trust their config.
-    const exportProfileIsImplicit =
-      !profile && isExportProfileImplicitLocal(flagsReader, exportProfile);
-    if (exportProfileIsImplicit) {
-      const tracingEsUrl = profileEnvOverrides.TRACING_ES_URL;
-
-      const tracingReachable = tracingEsUrl
-        ? await probeHttp(stripTrailingSlash(tracingEsUrl))
-        : true;
-
-      if (!tracingReachable) {
-        log.warning(
-          `Export profile \"local\" was auto-selected but TRACING_ES_URL is not reachable (${tracingEsUrl}). ` +
-            'Continuing without external trace queries. To require export, pass --export-profile local.'
-        );
-        delete profileEnvOverrides.TRACING_ES_URL;
-        delete profileEnvOverrides.TRACING_ES_API_KEY;
-      }
-    }
 
     log.info('');
     log.info(`Suite:     ${suiteId ?? configPath}`);
@@ -379,46 +74,17 @@ export const startCmd: Command<void> = {
     );
     log.info('');
 
-    const rerunArgs: string[] = [];
-    if (suiteId) {
-      rerunArgs.push('--suite', suiteId);
-    } else if (configPath) {
-      rerunArgs.push('--config', configPath);
-    }
+    const rerunArgs = buildEvalRunArgs({
+      suiteId,
+      configPath,
+      evaluationConnectorId,
+      projects,
+      profile,
+      flagsReader,
+      skipServer,
+    });
 
-    rerunArgs.push('--judge', evaluationConnectorId);
-
-    if (projects.length > 0) {
-      rerunArgs.push('--model', projects.join(','));
-    }
-
-    if (profile) {
-      rerunArgs.push('--profile', profile);
-    }
-    const passedDatasetsProfile = flagsReader.string('datasets-profile');
-    const passedExportProfile = flagsReader.string('export-profile');
-    if (passedDatasetsProfile) {
-      rerunArgs.push('--datasets-profile', passedDatasetsProfile);
-    }
-    if (passedExportProfile) {
-      rerunArgs.push('--export-profile', passedExportProfile);
-    }
-
-    const grep = flagsReader.string('grep');
-    if (grep) {
-      rerunArgs.push('--grep', grep);
-    }
-
-    const repetitions = flagsReader.string('repetitions');
-    if (repetitions) {
-      rerunArgs.push('--repetitions', repetitions);
-    }
-
-    if (skipServer) {
-      rerunArgs.push('--skip-server');
-    }
-
-    log.info(`Re-run command: ${formatRerunCommand(['start', ...rerunArgs])}`);
+    log.info(`Re-run command: ${formatEvalCliCommand(['start', ...rerunArgs])}`);
     log.info('');
 
     if (flagsReader.boolean('dry-run')) {
@@ -427,168 +93,34 @@ export const startCmd: Command<void> = {
     }
 
     if (!skipServer) {
-      // --- Step 1: EDOT collector (exports traces to configured ES) ---
-      if (isServiceRunning(repoRoot, 'edot') || isEdotDockerRunning()) {
-        log.info('[1/4] EDOT collector already running -- reusing');
-      } else {
-        log.info('[1/4] Starting EDOT collector (backgrounded)...');
-
-        const elasticsearchHost = profileEnvOverrides.TRACING_ES_URL;
-        if (elasticsearchHost) {
-          log.info(`[1/4] EDOT collector will export to: ${elasticsearchHost}`);
-        }
-        startService(repoRoot, 'edot', 'node', ['scripts/edot_collector.js'], log, {
-          env: elasticsearchHost ? { ELASTICSEARCH_HOST: elasticsearchHost } : undefined,
-        });
-
-        const stopTail = tailLog(repoRoot, 'edot', log, { fromStart: true });
-        await new Promise((r) => setTimeout(r, 5000));
-        stopTail();
-
-        if (!isEdotDockerRunning()) {
-          log.warning(
-            'EDOT collector may not have started. Check logs: node scripts/evals logs --service edot'
-          );
-        } else {
-          log.info('[1/4] EDOT collector started');
-        }
-      }
-
-      // --- Step 2: Scout server ---
-      const serverConfigSet = suite?.serverConfigSet ?? 'evals_tracing';
-      const scoutEnv: Record<string, string> = {};
-      if (profileEnvOverrides.GCS_CREDENTIALS) {
-        scoutEnv.GCS_CREDENTIALS = profileEnvOverrides.GCS_CREDENTIALS;
-      }
-      if (profileEnvOverrides.TRACING_EXPORTERS) {
-        scoutEnv.TRACING_EXPORTERS = profileEnvOverrides.TRACING_EXPORTERS;
-      }
-
-      const scoutAlive = isServiceRunning(repoRoot, 'scout');
-      const staleCheck = scoutAlive
-        ? isScoutStale(repoRoot, serverConfigSet, scoutEnv)
-        : { stale: false };
-
-      if (staleCheck.stale) {
-        log.warning(`[2/4] Scout server is stale (${staleCheck.reason}). Restarting...`);
-        await stopService(repoRoot, 'scout', log);
-      }
-
-      let scoutReusable = scoutAlive && !staleCheck.stale;
-
-      if (scoutReusable) {
-        const health = await probeScoutHealth(repoRoot);
-        if (!health.ok) {
-          log.warning(`[2/4] Scout PID alive but ${health.reason}. Restarting...`);
-          await stopService(repoRoot, 'scout', log);
-          scoutReusable = false;
-        }
-      }
-
-      if (scoutReusable) {
-        log.info('[2/4] Scout server already running -- reusing');
-      } else {
-        const scoutConfigPath = Path.join(repoRoot, SCOUT_LOCAL_CONFIG);
-        if (Fs.existsSync(scoutConfigPath)) {
-          Fs.unlinkSync(scoutConfigPath);
-        }
-
-        log.info(
-          `[2/4] Starting Scout server (backgrounded, stateful/classic, ${serverConfigSet})...`
-        );
-        startService(
-          repoRoot,
-          'scout',
-          'node',
-          ['scripts/scout.js', ...scoutEvalsArgs(serverConfigSet)],
-          log,
-          {
-            connectorsHash: connectorsHash(),
-            serverConfigSet,
-            envHash: scoutEnvHash(scoutEnv),
-            env: Object.keys(scoutEnv).length > 0 ? scoutEnv : undefined,
-          }
-        );
-
-        const stopTail = tailLog(repoRoot, 'scout', log, { fromStart: true });
-        log.info('[2/4] Waiting for ES + Kibana to be ready...');
-        await waitForScoutReady(repoRoot, log);
-        stopTail();
-        log.info('[2/4] Scout server ready');
-      }
-
-      // --- Step 3: EIS CCM ---
-      if (requiresEisCcm) {
-        log.info('[3/4] Enabling EIS (Cloud Connected Mode)...');
-        const ccmApiKey = await resolveCcmApiKey(log);
-
-        const ccmResult = spawn(
-          'node',
-          ['x-pack/platform/packages/shared/kbn-evals/scripts/local_repros/enable_eis_ccm.js'],
-          {
-            cwd: repoRoot,
-            stdio: 'inherit',
-            env: { ...process.env, KIBANA_EIS_CCM_API_KEY: ccmApiKey },
-          }
-        );
-
-        await new Promise<void>((resolve, reject) => {
-          ccmResult.on('exit', (code) => {
-            if (code === 0) {
-              resolve();
-            } else {
-              reject(new Error(`enable_eis_ccm exited with code ${code}`));
-            }
-          });
-          ccmResult.on('error', reject);
-        });
-
-        log.info('[3/4] EIS CCM enabled');
-      } else {
-        log.info('[3/4] Skipping EIS CCM (no eis- judge/models selected)');
-      }
+      await ensureEvalStack({
+        repoRoot,
+        log,
+        profileEnvOverrides,
+        serverConfigSet: suite?.serverConfigSet,
+        requiresEisCcm,
+      });
     }
 
-    // --- Step 4: Run the eval suite ---
-    log.info(`[4/4] Running suite: ${suiteId ?? configPath}`);
+    log.info(`[run] Running suite: ${suiteId ?? configPath}`);
     log.info('');
 
-    const envOverrides: Record<string, string> = {
-      EVALUATION_CONNECTOR_ID: evaluationConnectorId,
-    };
-
-    if (requiresEisCcm && !skipServer) {
-      envOverrides.KBN_EVALS_AWAIT_CCM_CONNECTORS = '1';
-    }
-
-    if (suite) {
-      envOverrides.EVAL_SUITE_ID = suite.id;
-    }
-
-    Object.assign(envOverrides, profileEnvOverrides);
-
-    if (envOverrides.TRACING_ES_URL) {
-      log.info(`Trace evaluators will query: ${envOverrides.TRACING_ES_URL}`);
-    }
-    if (repetitions) {
-      envOverrides.EVALUATION_REPETITIONS = repetitions;
-    }
-
-    const evaluationsKbnUrl = flagsReader.string('evaluations-kbn-url');
-    if (evaluationsKbnUrl) {
-      envOverrides.EVALUATIONS_KBN_URL = evaluationsKbnUrl;
-    }
-
-    const evaluationsKbnApiKey = flagsReader.string('evaluations-kbn-api-key');
-    if (evaluationsKbnApiKey) {
-      envOverrides.EVALUATIONS_KBN_API_KEY = evaluationsKbnApiKey;
-    }
+    const envOverrides = buildEvalRunEnv({
+      evaluationConnectorId,
+      requiresEisCcm,
+      skipServer,
+      suite,
+      profileEnvOverrides,
+      flagsReader,
+      log,
+    });
 
     const args = ['scripts/playwright', 'test', '--config', resolvedConfigPath];
     for (const p of projects) {
       args.push('--project', p);
     }
 
+    const grep = flagsReader.string('grep');
     if (grep) {
       args.push('--grep', grep);
     }

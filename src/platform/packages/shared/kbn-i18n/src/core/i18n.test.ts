@@ -720,4 +720,41 @@ describe.skip('I18n engine', () => {
       expect(i18n.getTranslation()).toEqual(createExpectedTranslations('en-xa', translations));
     });
   });
+
+  // Note: initDefault tests are below in a separate non-skipped block.
+});
+
+// Tests for initDefault are in their own describe so they are not affected
+// by the skip on the main block (which is gated on a broader i18n tooling fix).
+describe('i18n.initDefault', () => {
+  let i18n: typeof i18nModule;
+
+  beforeEach(() => {
+    i18n = jest.requireActual('./i18n');
+  });
+
+  afterEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+  });
+
+  test('marks the engine as initialized', () => {
+    expect(i18n.getIsInitialized()).toBe(false);
+    i18n.initDefault();
+    expect(i18n.getIsInitialized()).toBe(true);
+  });
+
+  test('locale remains English and no messages are loaded', () => {
+    i18n.initDefault();
+    expect(i18n.getLocale()).toBe('en');
+    expect(i18n.getTranslation().messages).toEqual({});
+  });
+
+  test('is idempotent — calling twice does not throw', () => {
+    expect(() => {
+      i18n.initDefault();
+      i18n.initDefault();
+    }).not.toThrow();
+    expect(i18n.getIsInitialized()).toBe(true);
+  });
 });

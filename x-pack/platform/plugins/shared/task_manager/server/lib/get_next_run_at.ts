@@ -41,7 +41,7 @@ export function calculateNextRunAtFromSchedule({
 }: {
   schedule?: IntervalSchedule | RruleSchedule;
   startDate: Date;
-}) {
+}): number {
   const { rrule, interval } = schedule || {};
 
   let nextRunAt: Date | undefined | null;

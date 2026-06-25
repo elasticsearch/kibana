@@ -2,6 +2,6 @@
   "type": "test-helper",
   "id": "@kbn/evals-extensions",
   "owner": ["@elastic/obs-ai-team", "@elastic/security-genai-research-and-development"],
-  "description": "Advanced evaluation capabilities for @kbn/evals - standalone extensions package. Home for features ported from cursor-plugin-evals and Phases 3-5 of evals roadmap.",
+  "description": "Experimental and advanced extension capabilities for @kbn/evals.",
   "devOnly": true
 }

@@ -61,6 +61,7 @@ export const processLiveHistory = async ({
         liveHits,
         liveRows,
         osqueryContext,
+        spaceId,
         integrationNamespaces ?? [spaceId],
         ccsEnabled
       );
@@ -76,6 +77,7 @@ const enrichWithResultCounts = async (
   liveHits: LiveActionHit[],
   liveRows: LiveHistoryRow[],
   osqueryContext: OsqueryAppContext,
+  spaceId: string,
   integrationNamespaces: readonly string[],
   ccsEnabled: boolean
 ): Promise<void> => {
@@ -89,6 +91,7 @@ const enrichWithResultCounts = async (
   const resultCountsMap = await getResultCountsForActions(
     internalEsClient,
     uniqueActionIds,
+    spaceId,
     integrationNamespaces,
     ccsEnabled
   );

@@ -13,6 +13,7 @@ import { i18n } from '@kbn/i18n';
 import {
   WORKFLOWS_EXPERIMENTAL_FEATURES_SETTING_ID,
   WORKFLOWS_UI_SETTING_ID,
+  WORKFLOWS_UI_SHOW_MANAGED_WORKFLOWS_SETTING_ID,
   WORKFLOWS_VERSIONING_SETTING_ID,
 } from '@kbn/workflows/common/constants';
 import type { WorkflowsServerPluginSetupDeps } from './types';
@@ -51,7 +52,25 @@ export const registerUISettings = (
       value: true,
       readonly: false,
       requiresPageReload: true,
-      category: ['general'],
+      category: ['workflows'],
+    },
+    [WORKFLOWS_UI_SHOW_MANAGED_WORKFLOWS_SETTING_ID]: {
+      description: i18n.translate(
+        'workflowsManagement.uiSettings.showManagedWorkflows.description',
+        {
+          defaultMessage:
+            'Allows users with the required workflow privileges to display managed workflows and their executions in workflow experiences. ' +
+            'Managed workflows are maintained by Elastic and power certain functionality. ' +
+            'Editing, disabling, or deleting them may cause unexpected behavior or break product functionality.',
+        }
+      ),
+      name: i18n.translate('workflowsManagement.uiSettings.showManagedWorkflows.name', {
+        defaultMessage: 'Show managed workflows',
+      }),
+      schema: schema.boolean(),
+      value: false,
+      readonly: false,
+      category: ['workflows'],
     },
     [WORKFLOWS_EXPERIMENTAL_FEATURES_SETTING_ID]: {
       description: i18n.translate(

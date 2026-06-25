@@ -10,6 +10,7 @@
 import type { ChangeHistoryDocument } from '@kbn/change-history';
 
 import { mapWorkflowHistoryItem } from './map_workflow_history_item';
+import { WORKFLOW_CHANGE_HISTORY_SYSTEM_USER } from '../../common/lib/workflow_change_history/constants';
 
 const createDocument = (overrides: Partial<ChangeHistoryDocument> = {}): ChangeHistoryDocument => ({
   '@timestamp': '2026-06-17T10:00:00.000Z',
@@ -49,7 +50,7 @@ describe('mapWorkflowHistoryItem', () => {
     expect(result).toEqual({
       timestamp: '2026-06-17T10:00:00.000Z',
       id: 'event-1',
-      user: { id: 'profile-1', name: 'alice' },
+      user: { profileId: 'profile-1', name: 'alice' },
       action: 'workflow_update',
       version: 3,
       workflow: {
@@ -79,7 +80,7 @@ describe('mapWorkflowHistoryItem', () => {
     );
 
     expect(result.version).toBeUndefined();
-    expect(result.user).toBeNull();
+    expect(result.user).toEqual({ name: WORKFLOW_CHANGE_HISTORY_SYSTEM_USER });
     expect(result.workflow).toEqual({ yaml: '' });
   });
 });

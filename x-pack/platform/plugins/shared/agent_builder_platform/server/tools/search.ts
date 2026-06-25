@@ -106,7 +106,7 @@ Note:
         allowPatternTarget: true,
         timeRange,
         esClient: esClient.asCurrentUser,
-        model: await modelProvider.getDefaultModel(),
+        modelProvider,
         events,
         logger,
         topSnippetsConfig,

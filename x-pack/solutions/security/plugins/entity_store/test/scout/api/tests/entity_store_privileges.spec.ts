@@ -20,7 +20,7 @@ import { FF_ENABLE_ENTITY_STORE_V2 } from '../../../../common';
 import { clearEntityStoreIndices } from '../fixtures/helpers';
 import { getUpdatesEntitiesDataStreamName } from '../../../../server/domain/asset_manager/updates_data_stream';
 
-apiTest.describe('Entity Store install - privilege checks', { tag: ENTITY_STORE_TAGS }, () => {
+apiTest.describe('Entity Store - privilege checks', { tag: ENTITY_STORE_TAGS }, () => {
   const TARGET_INDEX_LATEST = getEntitiesAlias(ENTITY_LATEST, 'default');
   const TARGET_INDEX_UPDATES = getUpdatesEntitiesDataStreamName('default');
 
@@ -90,8 +90,10 @@ apiTest.describe('Entity Store install - privilege checks', { tag: ENTITY_STORE_
     await clearEntityStoreIndices(esClient);
   });
 
+  // --- install API ---
+
   apiTest(
-    'Should fail when user lacks permissions for source index patterns',
+    'install - Should fail when user lacks permissions for source index patterns',
     async ({ apiClient, esClient, requestAuth }) => {
       const restrictedIndex = 'restricted-test-logs';
       additionalIndicesToCleanup = [restrictedIndex];
@@ -117,7 +119,7 @@ apiTest.describe('Entity Store install - privilege checks', { tag: ENTITY_STORE_
   );
 
   apiTest(
-    'Should fail when user lacks permissions for target index patterns',
+    'install - Should fail when user lacks permissions for target index patterns',
     async ({ apiClient, requestAuth }) => {
       const { apiKeyHeader } = await requestAuth.getApiKeyForCustomRole(
         getRoleWithoutTargetIndexPrivileges()
@@ -145,7 +147,7 @@ apiTest.describe('Entity Store install - privilege checks', { tag: ENTITY_STORE_
   );
 
   apiTest(
-    'Should fail when user lacks permissions for entity store saved object descriptor',
+    'install - Should fail when user lacks permissions for entity store saved object descriptor',
     async ({ apiClient, requestAuth }) => {
       const { apiKeyHeader } = await requestAuth.getApiKeyForCustomRole(
         getRoleWithoutSavedObjectCreate()
@@ -155,6 +157,82 @@ apiTest.describe('Entity Store install - privilege checks', { tag: ENTITY_STORE_
         headers: { ...PUBLIC_HEADERS, ...apiKeyHeader },
         responseType: 'json',
         body: {},
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.body.attributes).toMatchObject({
+        missing_kibana_privileges: [SAVED_OBJECT_PRIVILEGE],
+      });
+    }
+  );
+
+  // --- update API ---
+
+  apiTest(
+    'update - Should fail when user lacks permissions for source index patterns',
+    async ({ apiClient, esClient, requestAuth }) => {
+      const restrictedIndex = 'restricted-test-logs';
+      additionalIndicesToCleanup = [restrictedIndex];
+
+      await esClient.indices.create({ index: restrictedIndex });
+
+      const { apiKeyHeader } = await requestAuth.getApiKeyForCustomRole(getRoleWithAllPrivileges());
+
+      const response = await apiClient.put(ENTITY_STORE_ROUTES.public.UPDATE, {
+        headers: { ...PUBLIC_HEADERS, ...apiKeyHeader },
+        responseType: 'json',
+        body: { logExtraction: { additionalIndexPatterns: [restrictedIndex] } },
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.body.attributes).toMatchObject({
+        missing_elasticsearch_privileges: {
+          cluster: [],
+          index: [{ index: restrictedIndex, privileges: ENTITY_STORE_SOURCE_INDICES_PRIVILEGES }],
+        },
+      });
+    }
+  );
+
+  apiTest(
+    'update - Should fail when user lacks permissions for target index patterns',
+    async ({ apiClient, requestAuth }) => {
+      const { apiKeyHeader } = await requestAuth.getApiKeyForCustomRole(
+        getRoleWithoutTargetIndexPrivileges()
+      );
+
+      const response = await apiClient.put(ENTITY_STORE_ROUTES.public.UPDATE, {
+        headers: { ...PUBLIC_HEADERS, ...apiKeyHeader },
+        responseType: 'json',
+        body: { logExtraction: {} },
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.body.attributes).toMatchObject({
+        missing_elasticsearch_privileges: {
+          cluster: [],
+          index: [
+            {
+              index: TARGET_INDEX_LATEST,
+              privileges: expect.arrayContaining(ENTITY_STORE_TARGET_INDICES_PRIVILEGES),
+            },
+          ],
+        },
+      });
+    }
+  );
+
+  apiTest(
+    'update - Should fail when user lacks permissions for entity store saved object descriptor',
+    async ({ apiClient, requestAuth }) => {
+      const { apiKeyHeader } = await requestAuth.getApiKeyForCustomRole(
+        getRoleWithoutSavedObjectCreate()
+      );
+
+      const response = await apiClient.put(ENTITY_STORE_ROUTES.public.UPDATE, {
+        headers: { ...PUBLIC_HEADERS, ...apiKeyHeader },
+        responseType: 'json',
+        body: { logExtraction: {} },
       });
 
       expect(response.statusCode).toBe(403);

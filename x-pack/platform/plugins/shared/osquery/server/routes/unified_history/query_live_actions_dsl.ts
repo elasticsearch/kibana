@@ -7,6 +7,7 @@
 
 import type { estypes } from '@elastic/elasticsearch';
 import type { SourceFilter } from '../../../common/api/unified_history/types';
+import { buildSpaceIdFilter } from '../../utils/build_space_id_filter';
 
 export type SortValues = Array<string | number>;
 
@@ -40,20 +41,8 @@ export const buildLiveActionsQuery = ({
   const filters: estypes.QueryDslQueryContainer[] = [
     { term: { type: { value: 'INPUT_ACTION' } } },
     { term: { input_type: { value: 'osquery' } } },
+    buildSpaceIdFilter(spaceId) as estypes.QueryDslQueryContainer,
   ];
-
-  if (spaceId === 'default') {
-    filters.push({
-      bool: {
-        should: [
-          { term: { space_id: 'default' } },
-          { bool: { must_not: { exists: { field: 'space_id' } } } },
-        ],
-      },
-    });
-  } else {
-    filters.push({ term: { space_id: spaceId } });
-  }
 
   if (startDate || endDate) {
     const rangeFilter: Record<string, string> = {};

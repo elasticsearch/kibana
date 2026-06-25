@@ -16,8 +16,8 @@ export const AGENT_BUILDER_RECOMMENDED_ENDPOINTS = [
 ];
 
 export const AGENT_BUILDER_FAST_RECOMMENDED_ENDPOINTS = [
-  '.google-gemini-3.0-flash-chat_completion',
   '.anthropic-claude-4.5-haiku-chat_completion',
+  '.google-gemini-3.0-flash-chat_completion',
 ];
 
 /**

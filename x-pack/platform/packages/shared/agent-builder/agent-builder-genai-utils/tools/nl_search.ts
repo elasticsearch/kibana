@@ -8,7 +8,7 @@
 import type { TimeRange } from '@kbn/agent-builder-common';
 import type { Logger } from '@kbn/logging';
 import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
-import type { ScopedModel, ToolEventEmitter } from '@kbn/agent-builder-server';
+import type { ModelProvider, ToolEventEmitter } from '@kbn/agent-builder-server';
 import type { EsqlResponse } from './utils/esql';
 import { generateEsql } from './generate_esql';
 
@@ -30,7 +30,7 @@ export interface NaturalLanguageSearchResponse {
 export const naturalLanguageSearch = async ({
   nlQuery,
   target,
-  model,
+  modelProvider,
   esClient,
   logger,
   events,
@@ -40,7 +40,7 @@ export const naturalLanguageSearch = async ({
 }: {
   nlQuery: string;
   target: string;
-  model: ScopedModel;
+  modelProvider: ModelProvider;
   esClient: ElasticsearchClient;
   logger: Logger;
   events: ToolEventEmitter;
@@ -52,7 +52,7 @@ export const naturalLanguageSearch = async ({
     nlQuery,
     index: target,
     executeQuery: true,
-    model,
+    modelProvider,
     esClient,
     logger,
     events,

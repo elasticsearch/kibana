@@ -672,5 +672,86 @@ apiTest.describe(
         ]);
       }
     );
+
+    apiTest(
+      'Should succeed when a data stream used as remote index pattern has a closed backing index',
+      async ({ apiClient, esClient }) => {
+        const DATA_STREAM = 'logs-ccs-closed-smoke';
+        const FROM = '2026-06-24T09:59:00Z';
+        const TO = '2026-06-24T11:00:00Z';
+        const TS = '2026-06-24T10:00:00Z';
+
+        try {
+          await esClient.indices.putIndexTemplate({
+            name: 'logs-ccs-closed-smoke-template',
+            index_patterns: [`${DATA_STREAM}*`],
+            data_stream: {},
+            priority: 500,
+          });
+
+          // First ingest creates the data stream and its first (soon-to-be-closed) backing index.
+          await ingestDoc(esClient, DATA_STREAM, {
+            '@timestamp': TS,
+            host: { name: 'ccs-closed-host' },
+          });
+
+          // Discover the first backing index name before rolling over.
+          const beforeRollover = await esClient.indices.resolveIndex({
+            name: DATA_STREAM,
+            expand_wildcards: ['open', 'closed', 'hidden'] as Array<'open' | 'closed' | 'hidden'>,
+          });
+          const firstBacking = ([] as string[]).concat(
+            beforeRollover.data_streams[0]?.backing_indices ?? []
+          )[0];
+
+          // Roll over to create a second (open) backing index.
+          await esClient.indices.rollover({ alias: DATA_STREAM });
+
+          // The entity we will assert on lands in the new open backing index.
+          await ingestDoc(esClient, DATA_STREAM, {
+            '@timestamp': TS,
+            host: { name: 'ccs-open-host' },
+          });
+
+          // Simulate the production scenario: close the older backing index.
+          await esClient.indices.close({ index: firstBacking });
+
+          // Remote extraction with the data stream name as the index pattern must not throw
+          // cluster_block_exception. Only the entity in the open backing index is extracted.
+          const extractResponse = await apiClient.post(
+            ENTITY_STORE_ROUTES.internal.FORCE_REMOTE_EXTRACT_TO_UPDATES('host'),
+            {
+              headers: internalHeaders,
+              responseType: 'json',
+              body: {
+                indexPatterns: [DATA_STREAM],
+                fromDateISO: FROM,
+                toDateISO: TO,
+                docsLimit: DOCS_LIMIT,
+              },
+            }
+          );
+          expect(extractResponse.statusCode).toBe(200);
+          expect(extractResponse.body).toMatchObject({ count: 1, pages: 1 });
+        } finally {
+          // Re-open closed backing indices before deleting the data stream.
+          const resolved = await esClient.indices.resolveIndex({
+            name: DATA_STREAM,
+            expand_wildcards: ['open', 'closed', 'hidden'] as Array<'open' | 'closed' | 'hidden'>,
+          });
+          if (resolved.data_streams.length > 0) {
+            const allBacking = resolved.data_streams.flatMap((ds) =>
+              ([] as string[]).concat(ds.backing_indices)
+            );
+            await esClient.indices.open({ index: allBacking, ignore_unavailable: true });
+          }
+          await esClient.indices.deleteDataStream({ name: DATA_STREAM }, { ignore: [404] });
+          await esClient.indices.deleteIndexTemplate(
+            { name: 'logs-ccs-closed-smoke-template' },
+            { ignore: [404] }
+          );
+        }
+      }
+    );
   }
 );

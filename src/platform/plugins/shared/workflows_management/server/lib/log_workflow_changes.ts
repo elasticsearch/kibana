@@ -15,7 +15,7 @@ import { isRetryableChangeHistoryError } from './is_retryable_change_history_err
 import {
   WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE,
   type WorkflowChangeHistoryActionType,
-} from '../services/workflow_change_history_constants';
+} from '../../common/lib/workflow_change_history/constants';
 import type {
   IScopedWorkflowChangeHistoryService,
   IWorkflowChangeHistoryService,

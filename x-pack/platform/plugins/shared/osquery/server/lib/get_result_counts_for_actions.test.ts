@@ -16,7 +16,7 @@ const createMockEsClient = (searchResponse: object): ElasticsearchClient =>
 describe('getResultCountsForActions', () => {
   it('returns empty map when no action IDs provided', async () => {
     const esClient = createMockEsClient({});
-    const result = await getResultCountsForActions(esClient, []);
+    const result = await getResultCountsForActions(esClient, [], 'default');
 
     expect(result.size).toBe(0);
     expect(esClient.search).not.toHaveBeenCalled();
@@ -51,7 +51,7 @@ describe('getResultCountsForActions', () => {
       },
     });
 
-    const result = await getResultCountsForActions(esClient, ['action-1', 'action-2']);
+    const result = await getResultCountsForActions(esClient, ['action-1', 'action-2'], 'default');
 
     expect(result.get('action-1')).toEqual({
       totalRows: 42,
@@ -85,7 +85,11 @@ describe('getResultCountsForActions', () => {
       },
     });
 
-    const result = await getResultCountsForActions(esClient, ['action-1', 'action-missing']);
+    const result = await getResultCountsForActions(
+      esClient,
+      ['action-1', 'action-missing'],
+      'default'
+    );
 
     expect(result.get('action-1')).toEqual({
       totalRows: 5,
@@ -106,7 +110,7 @@ describe('getResultCountsForActions', () => {
       aggregations: { action_ids: { buckets: [] } },
     });
 
-    await getResultCountsForActions(esClient, ['action-1'], ['production']);
+    await getResultCountsForActions(esClient, ['action-1'], 'default', ['production']);
 
     expect(esClient.search).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -122,7 +126,7 @@ describe('getResultCountsForActions', () => {
       aggregations: { action_ids: { buckets: [] } },
     });
 
-    await getResultCountsForActions(esClient, ['action-1'], ['prod', 'default']);
+    await getResultCountsForActions(esClient, ['action-1'], 'default', ['prod', 'default']);
 
     expect(esClient.search).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -137,7 +141,7 @@ describe('getResultCountsForActions', () => {
       aggregations: { action_ids: { buckets: [] } },
     });
 
-    await getResultCountsForActions(esClient, ['action-1'], ['default'], true);
+    await getResultCountsForActions(esClient, ['action-1'], 'default', ['default'], true);
 
     expect(esClient.search).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -154,7 +158,7 @@ describe('getResultCountsForActions', () => {
       aggregations: { action_ids: { buckets: [] } },
     });
 
-    await getResultCountsForActions(esClient, actionIds);
+    await getResultCountsForActions(esClient, actionIds, 'default');
 
     expect(esClient.search).toHaveBeenCalledTimes(2);
 
@@ -201,7 +205,7 @@ describe('getResultCountsForActions', () => {
         }),
     } as unknown as ElasticsearchClient;
 
-    const result = await getResultCountsForActions(esClient, actionIds);
+    const result = await getResultCountsForActions(esClient, actionIds, 'default');
 
     expect(result.get('action-0')).toEqual({
       totalRows: 10,
@@ -223,7 +227,7 @@ describe('getResultCountsForActions', () => {
       aggregations: { action_ids: { buckets: [] } },
     });
 
-    const result = await getResultCountsForActions(esClient, ['action-1']);
+    const result = await getResultCountsForActions(esClient, ['action-1'], 'default');
 
     expect(result.get('action-1')).toEqual({
       totalRows: 0,
@@ -236,13 +240,56 @@ describe('getResultCountsForActions', () => {
   it('handles missing aggregations gracefully', async () => {
     const esClient = createMockEsClient({});
 
-    const result = await getResultCountsForActions(esClient, ['action-1']);
+    const result = await getResultCountsForActions(esClient, ['action-1'], 'default');
 
     expect(result.get('action-1')).toEqual({
       totalRows: 0,
       respondedAgents: 0,
       successfulAgents: 0,
       errorAgents: 0,
+    });
+  });
+
+  describe('space scoping', () => {
+    it('scopes the query to a named space with an exact space_id term', async () => {
+      const esClient = createMockEsClient({
+        aggregations: { action_ids: { buckets: [] } },
+      });
+
+      await getResultCountsForActions(esClient, ['action-1'], 'my-space');
+
+      const query = (esClient.search as jest.Mock).mock.calls[0][0].query;
+      expect(query.bool.filter).toContainEqual({ terms: { action_id: ['action-1'] } });
+      expect(query.bool.filter).toContainEqual({ term: { space_id: 'my-space' } });
+    });
+
+    it('matches default space OR missing space_id when spaceId is "default"', async () => {
+      const esClient = createMockEsClient({
+        aggregations: { action_ids: { buckets: [] } },
+      });
+
+      await getResultCountsForActions(esClient, ['action-1'], 'default');
+
+      const query = (esClient.search as jest.Mock).mock.calls[0][0].query;
+      expect(query.bool.filter).toContainEqual({
+        bool: {
+          should: [
+            { term: { space_id: 'default' } },
+            { bool: { must_not: { exists: { field: 'space_id' } } } },
+          ],
+        },
+      });
+    });
+
+    it('always applies the space_id filter', async () => {
+      const esClient = createMockEsClient({
+        aggregations: { action_ids: { buckets: [] } },
+      });
+
+      await getResultCountsForActions(esClient, ['action-1'], 'my-space');
+
+      const query = (esClient.search as jest.Mock).mock.calls[0][0].query;
+      expect(JSON.stringify(query)).toContain('space_id');
     });
   });
 });

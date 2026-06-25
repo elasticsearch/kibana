@@ -22,7 +22,7 @@ export const MAX_TRIGGER_EVENT_SEARCH_TIME_STRING_LENGTH = 64;
 
 // Versioned API constants
 export const API_VERSION = '2023-10-31';
-export const INTERNAL_API_VERSION = '1';
+export { INTERNAL_API_VERSION } from '../../../../common/lib/api_constants';
 export const OAS_TAG = 'oas-tag:workflows';
 export const AVAILABILITY = { since: '9.4.0', stability: 'stable' } as const;
 

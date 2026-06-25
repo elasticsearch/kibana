@@ -6,94 +6,97 @@
  */
 
 import React from 'react';
+import { Subject } from 'rxjs';
 import { FeedbackPlugin } from './plugin';
 import { coreMock } from '@kbn/core/public/mocks';
 import { cloudMock } from '@kbn/cloud-plugin/public/mocks';
-import { telemetryPluginMock } from '@kbn/telemetry-plugin/public/mocks';
-
-const coreStartMock = coreMock.createStart();
-const cloudStartMock = cloudMock.createStart();
-const telemetryStartMock = telemetryPluginMock.createStartContract();
-const plugin = new FeedbackPlugin();
+import type { TelemetryPluginStart } from '@kbn/telemetry-plugin/public';
 
 describe('Feedback Plugin', () => {
-  describe('start', () => {
+  let coreStartMock: ReturnType<typeof coreMock.createStart>;
+  let cloudStartMock: ReturnType<typeof cloudMock.createStart>;
+  let isOptedIn$: Subject<boolean>;
+  let telemetryStartMock: TelemetryPluginStart;
+  let plugin: FeedbackPlugin;
+
+  const startPlugin = () =>
+    plugin.start(coreStartMock, { cloud: cloudStartMock, telemetry: telemetryStartMock });
+
+  const enableFeedback = () => coreStartMock.notifications.feedback.isEnabled.mockReturnValue(true);
+
+  const enableChromeNext = () => coreStartMock.featureFlags.getBooleanValue.mockReturnValue(true);
+
+  beforeEach(() => {
+    coreStartMock = coreMock.createStart();
+    cloudStartMock = cloudMock.createStart();
+    isOptedIn$ = new Subject<boolean>();
+    // The plugin only consumes `isOptedIn$`, so a Subject we can emit on is all we need.
+    telemetryStartMock = {
+      telemetryService: { isOptedIn$ },
+    } as unknown as TelemetryPluginStart;
+    plugin = new FeedbackPlugin();
+  });
+
+  it('registers the feedback button when feedback is enabled', () => {
+    enableFeedback();
+
+    startPlugin();
+
+    expect(coreStartMock.chrome.navControls.registerRight).toHaveBeenCalledWith({
+      order: 1001,
+      content: expect.anything(),
+    });
+    const [[{ content }]] = coreStartMock.chrome.navControls.registerRight.mock.calls;
+    expect(React.isValidElement(content)).toBe(true);
+  });
+
+  it('does not register the feedback button when feedback is disabled', () => {
+    coreStartMock.notifications.feedback.isEnabled.mockReturnValue(false);
+
+    startPlugin();
+
+    expect(coreStartMock.chrome.navControls.registerRight).not.toHaveBeenCalled();
+  });
+
+  describe('Chrome Next', () => {
     beforeEach(() => {
-      jest.clearAllMocks();
-      sessionStorage.clear();
+      enableFeedback();
+      enableChromeNext();
     });
 
-    const enableFeedback = () => {
-      coreStartMock.notifications.feedback.isEnabled.mockReturnValue(true);
-      jest.spyOn(telemetryStartMock.telemetryService, 'canSendTelemetry').mockReturnValue(true);
-      jest.spyOn(telemetryStartMock.telemetryService, 'getIsOptedIn').mockReturnValue(true);
-    };
+    it('registers the feedback handler only once opt-in resolves to true', () => {
+      startPlugin();
 
-    it('should register feedback button when feedback is enabled, telemetry is enabled and user is opted in', () => {
-      enableFeedback();
+      expect(coreStartMock.chrome.next.registerFeedbackHandler).not.toHaveBeenCalled();
 
-      plugin.start(coreStartMock, { cloud: cloudStartMock, telemetry: telemetryStartMock });
-
-      expect(coreStartMock.notifications.feedback.isEnabled).toHaveBeenCalled();
-      const [[{ content }]] = coreStartMock.chrome.navControls.registerRight.mock.calls;
-      expect(coreStartMock.chrome.navControls.registerRight).toHaveBeenCalledWith({
-        order: 1001,
-        content: expect.anything(),
-      });
-      expect(React.isValidElement(content)).toBe(true);
-    });
-
-    it('should register feedback handler in the Chrome Next namespace when Chrome Next is enabled', () => {
-      enableFeedback();
-      coreStartMock.featureFlags.getBooleanValue.mockReturnValue(true);
-
-      plugin.start(coreStartMock, { cloud: cloudStartMock, telemetry: telemetryStartMock });
+      isOptedIn$.next(true);
 
       expect(coreStartMock.chrome.next.registerFeedbackHandler).toHaveBeenCalledWith(
         expect.any(Function)
       );
     });
 
-    it('should not register feedback handler when Chrome Next is disabled', () => {
-      enableFeedback();
-      coreStartMock.featureFlags.getBooleanValue.mockReturnValue(false);
+    it('unregisters the feedback handler when opt-in becomes false', () => {
+      const unregister = jest.fn();
+      coreStartMock.chrome.next.registerFeedbackHandler.mockReturnValue(unregister);
 
-      plugin.start(coreStartMock, { cloud: cloudStartMock, telemetry: telemetryStartMock });
+      startPlugin();
 
-      expect(coreStartMock.chrome.next.registerFeedbackHandler).not.toHaveBeenCalled();
+      isOptedIn$.next(true);
+      expect(coreStartMock.chrome.next.registerFeedbackHandler).toHaveBeenCalledTimes(1);
+
+      isOptedIn$.next(false);
+      expect(unregister).toHaveBeenCalled();
     });
+  });
 
-    it('should not register feedback button when feedback is disabled', () => {
-      coreStartMock.notifications.feedback.isEnabled.mockReturnValue(false);
+  it('does not register the feedback handler when Chrome Next is disabled', () => {
+    enableFeedback();
+    coreStartMock.featureFlags.getBooleanValue.mockReturnValue(false);
 
-      plugin.start(coreStartMock, { cloud: cloudStartMock, telemetry: telemetryStartMock });
+    startPlugin();
+    isOptedIn$.next(true);
 
-      expect(coreStartMock.notifications.feedback.isEnabled).toHaveBeenCalled();
-      expect(coreStartMock.chrome.navControls.registerRight).not.toHaveBeenCalled();
-    });
-
-    it('should not register feedback button when telemetry is disabled', () => {
-      coreStartMock.notifications.feedback.isEnabled.mockReturnValue(true);
-      jest.spyOn(telemetryStartMock.telemetryService, 'canSendTelemetry').mockReturnValue(false);
-
-      plugin.start(coreStartMock, { cloud: cloudStartMock, telemetry: telemetryStartMock });
-
-      expect(coreStartMock.notifications.feedback.isEnabled).toHaveBeenCalled();
-      expect(telemetryStartMock.telemetryService.canSendTelemetry).toHaveBeenCalled();
-      expect(coreStartMock.chrome.navControls.registerRight).not.toHaveBeenCalled();
-    });
-
-    it('should not register feedback button when user is opted out of telemetry', () => {
-      coreStartMock.notifications.feedback.isEnabled.mockReturnValue(true);
-      jest.spyOn(telemetryStartMock.telemetryService, 'canSendTelemetry').mockReturnValue(true);
-      jest.spyOn(telemetryStartMock.telemetryService, 'getIsOptedIn').mockReturnValue(false);
-
-      plugin.start(coreStartMock, { cloud: cloudStartMock, telemetry: telemetryStartMock });
-
-      expect(coreStartMock.notifications.feedback.isEnabled).toHaveBeenCalled();
-      expect(telemetryStartMock.telemetryService.canSendTelemetry).toHaveBeenCalled();
-      expect(telemetryStartMock.telemetryService.getIsOptedIn).toHaveBeenCalled();
-      expect(coreStartMock.chrome.navControls.registerRight).not.toHaveBeenCalled();
-    });
+    expect(coreStartMock.chrome.next.registerFeedbackHandler).not.toHaveBeenCalled();
   });
 });

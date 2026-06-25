@@ -60,6 +60,7 @@ dependsOn:
   - '@kbn/storage-adapter'
   - '@kbn/occ'
   - '@kbn/change-history'
+  - '@kbn/change-history-ui'
   - '@kbn/core-i18n-browser-mocks'
   - '@kbn/core-lifecycle-browser-mocks'
   - '@kbn/serverless'

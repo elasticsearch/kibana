@@ -247,6 +247,12 @@ export const ResponseActionsLog = memo<
       [isFlyout, reFetchEndpointActionList, setQueryParams, setPaginationOnUrlParams]
     );
 
+    const handleDataNeedsRefresh = useCallback(() => {
+      if (!isFetching) {
+        reFetchEndpointActionList();
+      }
+    }, [reFetchEndpointActionList, isFetching]);
+
     // handle on details open
     const onShowActionDetails = useCallback(
       (actionIds: string[]) => {
@@ -318,6 +324,7 @@ export const ResponseActionsLog = memo<
             isFlyout={isFlyout}
             loading={isFetching}
             onChange={handleTableOnChange}
+            onDataNeedsRefresh={handleDataNeedsRefresh}
             onShowActionDetails={onShowActionDetails}
             queryParams={queryParams}
             showHostNames={showHostNames}

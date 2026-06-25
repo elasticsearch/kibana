@@ -55,6 +55,7 @@ describe('LoopBreakNodeImpl', () => {
 
     stepIoService = {
       evictStaleLoopOutputs: jest.fn(),
+      unpinForeachScope: jest.fn(),
     } as unknown as StepIoService;
 
     workflowGraph = {
@@ -99,5 +100,15 @@ describe('LoopBreakNodeImpl', () => {
 
     expect(workflowGraph.getInnerStepIds).toHaveBeenCalledWith('my_loop');
     expect(stepIoService.evictStaleLoopOutputs).toHaveBeenCalledWith(new Set(['innerAction']));
+  });
+
+  it('should unpin the loop source scope so it can be evicted after break', () => {
+    // loop.break navigates *past* the exit-foreach node, so
+    // ExitForeachNodeImpl.run() (which holds the only unpinForeachScope call)
+    // never runs. Without an explicit unpin here, the loop source output stays
+    // pinned for the rest of the execution and can never be evicted.
+    underTest.run();
+
+    expect(stepIoService.unpinForeachScope).toHaveBeenCalledWith('my_loop');
   });
 });

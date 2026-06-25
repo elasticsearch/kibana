@@ -21,7 +21,8 @@ export const getActionResponses = (
   search: IScopedSearchClient,
   actionId: string,
   agentsCount: number,
-  integrationNamespaces?: string[]
+  integrationNamespaces: string[] | undefined,
+  spaceId: string
 ): Observable<{
   action_id: string;
   docs: number;
@@ -61,6 +62,7 @@ export const getActionResponses = (
           field: '@timestamp',
         },
         integrationNamespaces,
+        spaceId,
       },
       {
         strategy: 'osquerySearchStrategy',

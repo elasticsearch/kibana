@@ -15,6 +15,7 @@ import { DEFAULT_ENTITY_STORE_PERMISSIONS } from '../constants';
 import type { EntityStorePluginRouter } from '../../types';
 import { wrapMiddlewares } from '../middleware';
 import { LogExtractionUpdadeSchema } from './utils/log_extraction_validator';
+import { enforceEntityStorePrivileges } from './utils/check_entity_store_privileges';
 
 const bodySchema = z.object({
   logExtraction: LogExtractionUpdadeSchema,
@@ -48,8 +49,20 @@ export function registerUpdate(router: EntityStorePluginRouter) {
         },
       },
       wrapMiddlewares(async (ctx, req, res): Promise<IKibanaResponse> => {
-        const { logsExtractionClient, logger } = await ctx.entityStore;
+        const {
+          logsExtractionClient,
+          assetManagerClient: assetManager,
+          logger,
+        } = await ctx.entityStore;
         logger.debug('Update api called');
+
+        const forbidden = await enforceEntityStorePrivileges(
+          assetManager,
+          req,
+          res,
+          req.body.logExtraction?.additionalIndexPatterns
+        );
+        if (forbidden) return forbidden;
 
         try {
           await logsExtractionClient.updateConfig(req.body.logExtraction);

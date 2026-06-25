@@ -10,7 +10,9 @@ import type { ISearchStrategy, PluginStart } from '@kbn/data-plugin/server';
 import { shimHitsTotal } from '@kbn/data-plugin/server';
 import { ENHANCED_ES_SEARCH_STRATEGY } from '@kbn/data-plugin/common';
 import type { CoreStart } from '@kbn/core/server';
+import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import { ACTION_RESPONSES_DATA_STREAM_INDEX, ACTIONS_INDEX } from '../../../common/constants';
+import { enforceSpaceScope } from './enforce_space_scope';
 import type {
   FactoryQueryTypes,
   StrategyResponseType,
@@ -78,11 +80,19 @@ export const osquerySearchStrategyProvider = <T extends FactoryQueryTypes>(
               : {}),
           } as StrategyRequestType<T>;
 
-          const dsl = queryFactory.buildDsl({
-            ...strictRequest,
-            componentTemplateExists: actionsIndexExists,
-            ccsEnabled,
-          } as StrategyRequestType<T>);
+          const spaceId =
+            ('spaceId' in strictRequest && (strictRequest as { spaceId?: string }).spaceId) ||
+            DEFAULT_SPACE_ID;
+
+          const dsl = enforceSpaceScope(
+            queryFactory.buildDsl({
+              ...strictRequest,
+              spaceId,
+              componentTemplateExists: actionsIndexExists,
+              ccsEnabled,
+            } as StrategyRequestType<T>),
+            spaceId
+          );
 
           // Select internal client for all osquery indices that require it.
           // The 'osquery_manager' substring matches both local and CCS-prefixed patterns
@@ -125,12 +135,16 @@ export const osquerySearchStrategyProvider = <T extends FactoryQueryTypes>(
                 request.factoryQueryType === OsqueryQueries.actionResults &&
                 (newDataStreamIndexExists || ccsEnabled)
               ) {
-                const dataStreamDsl = queryFactory.buildDsl({
-                  ...strictRequest,
-                  componentTemplateExists: actionsIndexExists,
-                  ccsEnabled,
-                  useNewDataStream: true,
-                } as StrategyRequestType<T>);
+                const dataStreamDsl = enforceSpaceScope(
+                  queryFactory.buildDsl({
+                    ...strictRequest,
+                    spaceId,
+                    componentTemplateExists: actionsIndexExists,
+                    ccsEnabled,
+                    useNewDataStream: true,
+                  } as StrategyRequestType<T>),
+                  spaceId
+                );
 
                 return from(
                   es.search(

@@ -592,4 +592,48 @@ describe('getActionResultsRoute', () => {
       });
     });
   });
+
+  describe('space scoping', () => {
+    it('passes the active default space to the search strategy', async () => {
+      const mockSearchFn = createMockSearchStrategy(createMockActionResultsResponse(1));
+      const mockContext = createMockContext(mockSearchFn);
+      const mockRequest = createMockRequest({ actionId: 'test-action-id', query: {} });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(mockContext, mockRequest, mockResponse);
+
+      expect(mockSearchFn).toHaveBeenCalledWith(
+        expect.objectContaining({ spaceId: 'default' }),
+        expectedSearchOptions
+      );
+    });
+
+    it('passes a named active space to the search strategy', async () => {
+      // Re-register the route against a context whose active space is named.
+      const namedSpaceContext = createMockOsqueryContext();
+      (namedSpaceContext.service.getActiveSpace as jest.Mock).mockResolvedValue({
+        id: 'my-space',
+        name: 'My Space',
+      });
+      const namedRouter = createMockRouter();
+      getActionResultsRoute(namedRouter, namedSpaceContext);
+      const namedHandler = namedRouter.versioned.getRoute(
+        'get',
+        '/api/osquery/action_results/{actionId}'
+      ).versions['2023-10-31']!.handler;
+
+      const mockSearchFn = createMockSearchStrategy(createMockActionResultsResponse(1));
+      const mockContext = createMockContext(mockSearchFn);
+      const mockRequest = createMockRequest({ actionId: 'test-action-id', query: {} });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await namedHandler(mockContext, mockRequest, mockResponse);
+
+      expect(namedSpaceContext.service.getActiveSpace).toHaveBeenCalled();
+      expect(mockSearchFn).toHaveBeenCalledWith(
+        expect.objectContaining({ spaceId: 'my-space' }),
+        expectedSearchOptions
+      );
+    });
+  });
 });

@@ -166,6 +166,7 @@ export interface ExportShare<S extends SharingData = SharingData>
        */
       supportsAbsoluteTime?: boolean;
       renderTotalHitsSizeWarning?: (totalHits?: number) => ReactNode | undefined;
+      flyoutAriaLabel?: string;
     } & (
       | {
           generateAssetComponent?: never;
@@ -195,6 +196,7 @@ export interface ExportShareParameters extends Record<string, unknown> {
     flyoutRef: React.RefObject<HTMLDivElement>;
   }>;
   flyoutSizing?: Pick<EuiFlyoutProps, 'size' | 'maxWidth'>;
+  flyoutAriaLabel?: string;
   shouldRender: ({
     availableExportItems,
   }: {

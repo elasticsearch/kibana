@@ -27,4 +27,5 @@ export interface ResultsRequestOptions extends Omit<RequestOptionsPaginated, 'so
   scheduleId?: string;
   executionCount?: number;
   esFilters?: string;
+  spaceId?: string;
 }

@@ -61,6 +61,20 @@ describe('shouldShowWorkflowsEmptyState', () => {
     expect(shouldShowWorkflowsEmptyState(workflows, search)).toBe(false);
   });
 
+  it('should return false when there is a tags filter', () => {
+    const workflows: WorkflowsData = { total: 0 };
+    const search = createSearchParams({ tags: ['tag1'] });
+
+    expect(shouldShowWorkflowsEmptyState(workflows, search)).toBe(false);
+  });
+
+  it('should return false when there is a managed filter', () => {
+    const workflows: WorkflowsData = { total: 0 };
+    const search = createSearchParams({ managed: 'managed' });
+
+    expect(shouldShowWorkflowsEmptyState(workflows, search)).toBe(false);
+  });
+
   it('should return true when filters are empty arrays', () => {
     const workflows: WorkflowsData = { total: 0 };
     const search = createSearchParams({ enabled: [], createdBy: [] });

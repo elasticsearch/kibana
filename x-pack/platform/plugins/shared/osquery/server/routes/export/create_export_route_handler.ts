@@ -13,6 +13,7 @@ import type { AuditEvent } from '@kbn/core-security-server';
 
 import type { Filter } from '@kbn/es-query';
 import { buildQueryFromFilters, isFilters } from '@kbn/es-query';
+import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import { OSQUERY_INTEGRATION_NAME } from '../../../common';
 import { getQueryFilter } from '../../utils/build_query';
 import { createInternalSavedObjectsClientForSpaceId } from '../../utils/get_internal_saved_object_client';
@@ -127,6 +128,10 @@ export const createExportRouteHandler =
       }
     }
 
+    const spaceId = osqueryContext?.service?.getActiveSpace
+      ? (await osqueryContext.service.getActiveSpace(request))?.id ?? DEFAULT_SPACE_ID
+      : DEFAULT_SPACE_ID;
+
     const auditLabels = {
       action_id: routeMetadata.action_id,
       format,
@@ -173,7 +178,7 @@ export const createExportRouteHandler =
       try {
         await esClient.closePointInTime({ id });
       } catch (e) {
-        // Leaked PITs consume cluster memory until keep_alive expires (5m).
+        // An unclosed PIT holds cluster memory until keep_alive expires (5m).
         // Surface at warn so cluster-memory pressure is visible in ops dashboards.
         logger.warn(`Failed to close PIT ${id}: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -217,6 +222,7 @@ export const createExportRouteHandler =
           size: 1_000,
           ecsMapping,
           integrationNamespaces,
+          spaceId,
         },
         formatter,
         metadata: {

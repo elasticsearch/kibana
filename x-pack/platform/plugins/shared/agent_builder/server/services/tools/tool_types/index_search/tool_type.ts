@@ -69,7 +69,7 @@ export const getIndexSearchToolType = (
               rowLimit,
               customInstructions,
               esClient: esClient.asCurrentUser,
-              model: await modelProvider.getDefaultModel(),
+              modelProvider,
               events,
               logger,
               topSnippetsConfig,

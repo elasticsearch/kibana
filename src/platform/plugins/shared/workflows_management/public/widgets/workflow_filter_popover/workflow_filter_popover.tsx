@@ -26,6 +26,7 @@ interface WorkflowFilterPopoverProps {
   title: string;
   selectedValues: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
   values: EuiSelectableOption[];
+  singleSelection?: boolean;
   onSelectedValuesChanged: (newValues: any[]) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
@@ -34,6 +35,7 @@ const WorkflowsFilterPopoverComponent = ({
   title,
   values,
   selectedValues,
+  singleSelection = false,
   onSelectedValuesChanged,
 }: WorkflowFilterPopoverProps) => {
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
@@ -108,6 +110,7 @@ const WorkflowsFilterPopoverComponent = ({
         aria-label="Search"
         options={selectableOptions}
         onChange={handleSelectableOptionsChange}
+        singleSelection={singleSelection}
         emptyMessage="No items available"
         noMatchesMessage="No items available"
       >

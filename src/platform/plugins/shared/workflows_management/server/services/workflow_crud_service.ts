@@ -31,10 +31,6 @@ import type { WorkflowPartialDetailDto } from '@kbn/workflows/types/v1';
 import { WorkflowConflictError } from '@kbn/workflows-yaml';
 import type { z } from '@kbn/zod/v4';
 import type { WorkflowCrudDeps } from './types';
-import {
-  WorkflowChangeHistoryAction,
-  type WorkflowChangeHistoryActionType,
-} from './workflow_change_history_constants';
 import type {
   IndexWorkflowDocumentOptions,
   ReadModifyWriteWorkflowDocumentParams,
@@ -42,6 +38,10 @@ import type {
   WorkflowDocumentGetOptions,
   WriteWorkflowDocumentWithOccParams,
 } from './workflow_occ_types';
+import {
+  WorkflowChangeHistoryAction,
+  type WorkflowChangeHistoryActionType,
+} from '../../common/lib/workflow_change_history/constants';
 import { getWorkflowZodSchema } from '../../common/schema';
 import { extractBulkItemError } from '../api/lib/bulk_response_helpers';
 import { deleteWorkflows } from '../api/lib/workflow_deletion';
@@ -66,6 +66,7 @@ import {
 } from '../lib/bulk_id_helpers';
 import { getAuthenticatedUser } from '../lib/get_user';
 import { logWorkflowChanges } from '../lib/log_workflow_changes';
+import { hasScheduledTriggers } from '../lib/schedule_utils';
 import { resolveUniqueWorkflowIds, validateWorkflowId } from '../lib/workflow_id_resolver';
 import { maybeApplyWorkflowVersion } from '../lib/workflow_version';
 import type { WorkflowProperties } from '../storage/workflow_storage';
@@ -828,17 +829,13 @@ export class WorkflowCrudService {
         },
       });
 
-      const taskScheduler = this.deps.getTaskScheduler();
-      if (shouldUpdateScheduler && taskScheduler) {
-        await syncSchedulerAfterSave({
-          workflowId: id,
-          spaceId,
-          request,
-          getWorkflow: (wfId, sp) => this.getEsWorkflowForScheduler(wfId, sp),
-          taskScheduler,
-          logger: this.deps.logger,
-        });
-      }
+      await this.syncSchedulerAfterWorkflowUpdate({
+        id,
+        spaceId,
+        request,
+        finalData,
+        shouldUpdateScheduler,
+      });
 
       await this.logWorkflowChangesAfterWrite({
         workflows: [{ id, document: finalData }],
@@ -945,6 +942,40 @@ export class WorkflowCrudService {
     };
   }
 
+  private async syncSchedulerAfterWorkflowUpdate(params: {
+    id: string;
+    spaceId: string;
+    request: KibanaRequest;
+    finalData: WorkflowProperties;
+    shouldUpdateScheduler: boolean;
+  }): Promise<void> {
+    const { id, spaceId, request, finalData, shouldUpdateScheduler } = params;
+    const shouldRefreshScheduledTaskCredentials =
+      Boolean(finalData.definition) &&
+      finalData.valid &&
+      finalData.enabled &&
+      hasScheduledTriggers(finalData.definition?.triggers ?? []);
+    if (!shouldUpdateScheduler && !shouldRefreshScheduledTaskCredentials) {
+      return;
+    }
+
+    const taskScheduler = this.deps.getTaskScheduler();
+    if (!taskScheduler) {
+      this.deps.logger.warn(
+        `Skipping scheduler sync for workflow ${id} in space ${spaceId}: task scheduler is unavailable`
+      );
+      return;
+    }
+
+    await syncSchedulerAfterSave({
+      workflowId: id,
+      spaceId,
+      request,
+      getWorkflow: (wfId, sp) => this.getEsWorkflowForScheduler(wfId, sp),
+      taskScheduler,
+      logger: this.deps.logger,
+    });
+  }
   private async resolveAndDeduplicateBulkIds(
     validWorkflows: readonly BulkWorkflowEntry[],
     overwrite: boolean

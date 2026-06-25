@@ -58,7 +58,11 @@ const DEFAULT_MAX_LOGS_PER_PAGE = 10000;
 
 describe('RemoteLogsExtractionClient', () => {
   const mockLogger = loggerMock.create();
-  const mockEsClient = {} as unknown as jest.Mocked<ElasticsearchClient>;
+  const mockEsClient = {
+    indices: {
+      resolveIndex: jest.fn().mockResolvedValue({ indices: [], aliases: [], data_streams: [] }),
+    },
+  } as unknown as jest.Mocked<ElasticsearchClient>;
   const namespace = 'default';
 
   const mockStateClient = {

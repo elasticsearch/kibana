@@ -38,6 +38,8 @@ export async function __kbnBootstrap__() {
     apmSystem.setup().catch(console.warn),
     i18n.getIsInitialized()
       ? Promise.resolve()
+      : injectedMetadata.i18n.translationsUrl === null
+      ? Promise.resolve(i18n.initDefault())
       : i18n.load(injectedMetadata.i18n.translationsUrl).catch((error) => {
           i18nError = error;
         }),

@@ -5,7 +5,9 @@
  * 2.0.
  */
 
+import type { IKibanaResponse, KibanaRequest, KibanaResponseFactory } from '@kbn/core/server';
 import type { CheckPrivilegesResponse } from '@kbn/security-plugin-types-server';
+import type { AssetManagerClient } from '../../../domain/asset_manager/asset_manager_client';
 
 export function getMissingPrivileges({
   privileges: { kibana, elasticsearch },
@@ -26,4 +28,22 @@ export function getMissingPrivileges({
       }, []),
     },
   };
+}
+
+export async function enforceEntityStorePrivileges(
+  assetManager: AssetManagerClient,
+  req: KibanaRequest,
+  res: KibanaResponseFactory,
+  additionalIndexPatterns?: string[]
+): Promise<IKibanaResponse | null> {
+  const privileges = await assetManager.getPrivileges(req, additionalIndexPatterns);
+  if (!privileges.hasAllRequested) {
+    return res.forbidden({
+      body: {
+        attributes: getMissingPrivileges(privileges),
+        message: `User '${privileges.username}' has insufficient privileges`,
+      },
+    });
+  }
+  return null;
 }

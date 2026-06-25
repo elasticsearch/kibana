@@ -405,7 +405,7 @@ function renderTestCases(
       expect(data.apmConfig).toEqual(someApmConfig);
     });
 
-    it('use the correct translation url when CDN is enabled', async () => {
+    it('sets translationsUrl to null for the English locale (CDN enabled)', async () => {
       const userSettings = { 'theme:darkMode': { userValue: true } };
       uiSettings.client.getUserProvided.mockResolvedValue(userSettings);
 
@@ -419,11 +419,12 @@ function renderTestCases(
       });
       const dom = load(content);
       const data = JSON.parse(dom('kbn-injected-metadata').attr('data') ?? '""');
-      expect(data.i18n.translationsUrl).toEqual('http://foo.bar:1773/translations/en.json');
+      // English is the default locale — no fetch is needed, so the URL must be null.
+      expect(data.i18n.translationsUrl).toBeNull();
       expect(uiSettings.client.getUserProvided).toHaveBeenCalledWith(true);
     });
 
-    it('use the correct translation url when CDN is disabled', async () => {
+    it('sets translationsUrl to null for the English locale (CDN disabled)', async () => {
       const userSettings = { 'theme:darkMode': { userValue: true } };
       uiSettings.client.getUserProvided.mockResolvedValue(userSettings);
 
@@ -437,9 +438,8 @@ function renderTestCases(
       });
       const dom = load(content);
       const data = JSON.parse(dom('kbn-injected-metadata').attr('data') ?? '""');
-      expect(data.i18n.translationsUrl).toEqual(
-        '/mock-server-basepath/translations/MOCK_HASH/en.json'
-      );
+      // English is the default locale — no fetch is needed, so the URL must be null.
+      expect(data.i18n.translationsUrl).toBeNull();
       expect(uiSettings.client.getUserProvided).toHaveBeenCalledWith(true);
     });
   });
@@ -701,6 +701,72 @@ describe('RenderingService', () => {
     renderDarkModeTestCases(async () => {
       await service.preboot(mockRenderingPrebootDeps);
       return [(await service.setup(mockRenderingSetupDeps)).render, mockRenderingSetupDeps];
+    });
+
+    describe('translationsUrl for non-English locales', () => {
+      let uiSettings: {
+        client: ReturnType<typeof uiSettingsServiceMock.createClient>;
+        globalClient: ReturnType<typeof uiSettingsServiceMock.createClient>;
+      };
+
+      beforeEach(() => {
+        uiSettings = {
+          client: uiSettingsServiceMock.createClient(),
+          globalClient: uiSettingsServiceMock.createClient(),
+        };
+        uiSettings.client.getRegistered.mockReturnValue({});
+      });
+
+      it('constructs a CDN url for a non-English user locale', async () => {
+        // setup() itself calls getHrefBase() once, so we do setup first and then
+        // add our per-render mock afterward so render() sees the CDN base.
+        await service.preboot(mockRenderingPrebootDeps);
+        const { render } = await service.setup(mockRenderingSetupDeps);
+
+        mockRenderingSetupDeps.i18n.getTranslationHashes.mockReturnValueOnce({
+          en: 'MOCK_HASH',
+          fr: 'MOCK_FR_HASH',
+        });
+        mockRenderingSetupDeps.userSettings.getUserSettingLocale.mockReturnValueOnce(
+          Promise.resolve('fr')
+        );
+        (mockRenderingSetupDeps.http.staticAssets.getHrefBase as jest.Mock).mockReturnValueOnce(
+          'http://cdn.example.com'
+        );
+        (mockRenderingSetupDeps.http.staticAssets.isUsingCdn as jest.Mock).mockReturnValueOnce(
+          true
+        );
+
+        const { body: content } = await render(createKibanaRequest(), uiSettings);
+        const dom = load(content);
+        const data = JSON.parse(dom('kbn-injected-metadata').attr('data') ?? '""');
+
+        expect(data.i18n.translationsUrl).toEqual('http://cdn.example.com/translations/fr.json');
+      });
+
+      it('constructs a hashed url for a non-English user locale (CDN disabled)', async () => {
+        await service.preboot(mockRenderingPrebootDeps);
+        const { render } = await service.setup(mockRenderingSetupDeps);
+
+        mockRenderingSetupDeps.i18n.getTranslationHashes.mockReturnValueOnce({
+          en: 'MOCK_HASH',
+          fr: 'MOCK_FR_HASH',
+        });
+        mockRenderingSetupDeps.userSettings.getUserSettingLocale.mockReturnValueOnce(
+          Promise.resolve('fr')
+        );
+        (mockRenderingSetupDeps.http.staticAssets.isUsingCdn as jest.Mock).mockReturnValueOnce(
+          false
+        );
+
+        const { body: content } = await render(createKibanaRequest(), uiSettings);
+        const dom = load(content);
+        const data = JSON.parse(dom('kbn-injected-metadata').attr('data') ?? '""');
+
+        expect(data.i18n.translationsUrl).toEqual(
+          '/mock-server-basepath/translations/MOCK_FR_HASH/fr.json'
+        );
+      });
     });
 
     describe('allowLocaleCookie', () => {

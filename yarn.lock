@@ -2521,10 +2521,10 @@
     "@elastic/react-search-ui-views" "1.24.2"
     "@elastic/search-ui" "1.24.2"
 
-"@elastic/request-converter@9.4.0":
-  version "9.4.0"
-  resolved "https://registry.yarnpkg.com/@elastic/request-converter/-/request-converter-9.4.0.tgz#afa14b1c18550b20210a56d593be5660247fae10"
-  integrity sha512-pl9UVMFKuOleeH6Mwm8IIaacZgbtx8m/EslhiXPFXAkf1NUOxoECIHpSjyD5tp+HppRXxdU6zEySQ9nFgN25OA==
+"@elastic/request-converter@9.5.0":
+  version "9.5.0"
+  resolved "https://registry.yarnpkg.com/@elastic/request-converter/-/request-converter-9.5.0.tgz#ead78480c94a56dfc9fb2a414b1b3056d73ba868"
+  integrity sha512-PEcvvCtE/pthy+WWQ4AELymWMOLHTm7yjANDMozcmIY8NT9vTlJmeEGL/0fD3lQ1lCkriPrZwallasDRj3vX+w==
   dependencies:
     base64url "^3.0.1"
     commander "^12.1.0"
@@ -4946,6 +4946,10 @@
   uid ""
 
 "@kbn/cell-actions@link:src/platform/packages/shared/kbn-cell-actions":
+  version "0.0.0"
+  uid ""
+
+"@kbn/change-history-ui@link:x-pack/platform/packages/shared/kbn-change-history-ui":
   version "0.0.0"
   uid ""
 

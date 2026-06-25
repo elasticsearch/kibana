@@ -11,7 +11,7 @@ import type { BaseMessage } from '@langchain/core/messages';
 import { ToolMessage } from '@langchain/core/messages';
 import { messagesStateReducer } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
-import type { ScopedModel, ToolEventEmitter, ToolHandlerResult } from '@kbn/agent-builder-server';
+import type { ModelProvider, ToolEventEmitter, ToolHandlerResult } from '@kbn/agent-builder-server';
 import { createErrorResult } from '@kbn/agent-builder-server';
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import { createToolCallMessage, extractTextContent, generateFakeToolCallId } from '../../langchain';
@@ -61,29 +61,31 @@ const isPatternTargetEnabled = (state: StateType): state is StateType & { target
       state.targetPattern !== '*'
   );
 
-export const createSearchToolGraph = ({
-  model,
+export const createSearchToolGraph = async ({
+  modelProvider,
   esClient,
   logger,
   events,
   topSnippetsConfig,
 }: {
-  model: ScopedModel;
+  modelProvider: ModelProvider;
   esClient: ElasticsearchClient;
   logger: Logger;
   events: ToolEventEmitter;
   topSnippetsConfig?: TopSnippetsConfig;
 }) => {
+  const defaultModel = await modelProvider.getDefaultModel();
+
   const getTools = (state: StateType) => {
     const relevanceTool = createRelevanceSearchTool({
-      model,
+      model: defaultModel,
       esClient,
       events,
       logger,
       topSnippetsConfig,
     });
     const nlSearchTool = createNaturalLanguageSearchTool({
-      model,
+      modelProvider,
       esClient,
       events,
       logger,
@@ -136,7 +138,7 @@ export const createSearchToolGraph = ({
     }
 
     const tools = getTools(state);
-    const searchModel = model.chatModel.bindTools(tools, { tool_choice: 'any' }).withConfig({
+    const searchModel = defaultModel.chatModel.bindTools(tools, { tool_choice: 'any' }).withConfig({
       tags: ['agent-builder-search-tool'],
     });
 

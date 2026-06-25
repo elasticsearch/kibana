@@ -10,6 +10,7 @@ import type { estypes } from '@elastic/elasticsearch';
 import { chunk } from 'lodash';
 import { ACTION_RESPONSES_DATA_STREAM_INDEX } from '../../common/constants';
 import { buildIndexNameWithNamespace } from '../utils/build_index_name_with_namespace';
+import { buildSpaceIdFilter } from '../utils/build_space_id_filter';
 import { prefixIndexPatternsWithCcs } from '../utils/ccs_utils';
 
 const MAX_ACTION_IDS_PER_BATCH = 1000;
@@ -42,6 +43,7 @@ interface ActionResponseAggregation {
 export const getResultCountsForActions = async (
   esClient: ElasticsearchClient,
   actionIds: string[],
+  spaceId: string,
   integrationNamespaces: readonly string[] = ['default'],
   ccsEnabled = false
 ): Promise<ResultCountsMap> => {
@@ -53,7 +55,7 @@ export const getResultCountsForActions = async (
 
   const batchResults = await Promise.all(
     batches.map((batchIds) =>
-      fetchResultCountsBatch(esClient, batchIds, integrationNamespaces, ccsEnabled)
+      fetchResultCountsBatch(esClient, batchIds, spaceId, integrationNamespaces, ccsEnabled)
     )
   );
 
@@ -70,6 +72,7 @@ export const getResultCountsForActions = async (
 const fetchResultCountsBatch = async (
   esClient: ElasticsearchClient,
   actionIds: string[],
+  spaceId: string,
   integrationNamespaces: readonly string[],
   ccsEnabled: boolean
 ): Promise<ResultCountsMap> => {
@@ -88,8 +91,8 @@ const fetchResultCountsBatch = async (
     ignore_unavailable: true,
     size: 0,
     query: {
-      terms: {
-        action_id: actionIds,
+      bool: {
+        filter: [{ terms: { action_id: actionIds } }, buildSpaceIdFilter(spaceId)],
       },
     },
     aggs: {

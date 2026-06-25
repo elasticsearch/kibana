@@ -351,6 +351,7 @@ function runFastHelp() {
   logInfo('  doctor                        Check local prerequisites');
   logInfo('  env                           List environment variables');
   logInfo('  ci-map [--json]               Output CI label mapping');
+  logInfo('  ext <command> [...]           Run the experimental evals extensions CLI');
   logInfo('');
   logInfo('Examples:');
   logInfo('  node scripts/evals init');
@@ -358,6 +359,7 @@ function runFastHelp() {
   logInfo('  node scripts/evals stop');
   logInfo('  node scripts/evals logs --service scout');
   logInfo('  node scripts/evals run --suite agent-builder --judge eis-gpt-4.1');
+  logInfo('  node scripts/evals ext red-team --suite agent-builder --dry-run');
   return true;
 }
 
@@ -368,6 +370,15 @@ function main() {
     command = null;
   }
   var repoRoot = process.cwd();
+
+  // Delegate the experimental extensions CLI: `node scripts/evals ext <command> [...]`.
+  if (command === 'ext') {
+    process.argv = [process.argv[0], process.argv[1]].concat(args.slice(1));
+    process.env.KBN_PEGGY_REQUIRE_HOOK_LOG ??= 'false';
+    require('@kbn/setup-node-env');
+    void require('@kbn/evals-extensions').cli.run();
+    return;
+  }
 
   var hasHelpFlag = hasFlag(args, '--help') || hasFlag(args, '-h');
 

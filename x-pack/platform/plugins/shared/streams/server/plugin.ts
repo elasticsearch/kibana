@@ -71,6 +71,7 @@ import {
 import { baseFields } from './lib/streams/component_templates/logs_layer';
 import { ecsBaseFields } from './lib/streams/component_templates/logs_ecs_layer';
 import { createMemoryToolsOptions, registerStreamsAgentBuilder } from './agent_builder/register';
+import { registerAgentBuilderSmlTypes } from './agent_builder/sml/register_sml_types';
 import { registerStreamsMemoryAgentBuilder } from './agent_builder/skills/register_memory_skills';
 import { registerSignificantEventsInferenceFeatures } from './register_significant_events_inference_features';
 import { registerSuggestionsInferenceFeatures } from './register_suggestions_inference_features';
@@ -322,6 +323,17 @@ export class StreamsPlugin
     );
     const streamsKIsOnboardingClient = workflowClients.streamsKIsOnboardingClient;
 
+    // Register SML types synchronously during setup so agent_context_layer can schedule
+    // their crawler tasks during its start phase. Must happen in setup() — scheduling
+    // snapshots the registry at start() and types registered later are never crawled.
+    // Matches the contract followed by alerting_v2 and agent_builder_dashboards.
+    if (plugins.agentContextLayer && this.streamsGetScopedClients) {
+      registerAgentBuilderSmlTypes({
+        agentContextLayer: plugins.agentContextLayer,
+        getScopedClients: this.streamsGetScopedClients,
+      });
+    }
+
     if (plugins.agentBuilder) {
       void core
         .getStartServices()
@@ -333,7 +345,6 @@ export class StreamsPlugin
           await registerStreamsAgentBuilder({
             agentBuilder: plugins.agentBuilder!,
             getScopedClients: streamsGetScopedClients,
-            agentContextLayer: plugins.agentContextLayer,
             server,
             logger: this.logger,
             telemetry: telemetryClient,

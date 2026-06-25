@@ -1238,4 +1238,86 @@ apiTest.describe('Entity Store Main logs extraction', { tag: ENTITY_STORE_TAGS }
       expect(normalizeKeywordList(supervisesUser?.name)).toStrictEqual(['supervisor_login']);
     }
   );
+
+  apiTest(
+    'Should succeed when a data stream matched by the data view has a closed backing index',
+    async ({ apiClient, esClient }) => {
+      const DATA_STREAM = 'logs-closed-smoke';
+      const FROM = '2026-06-24T09:59:00Z';
+      const TO = '2026-06-24T11:00:00Z';
+      const TS = '2026-06-24T10:00:00Z';
+
+      try {
+        // Create a composable index template so the data stream can be created.
+        await esClient.indices.putIndexTemplate({
+          name: 'logs-closed-smoke-template',
+          index_patterns: [`${DATA_STREAM}*`],
+          data_stream: {},
+          priority: 500,
+        });
+
+        // First ingest creates the data stream and its first (soon-to-be-closed) backing index.
+        await esClient.index({
+          index: DATA_STREAM,
+          refresh: 'wait_for',
+          body: { '@timestamp': TS, host: { name: 'closed-backing-host' } },
+        });
+
+        // Discover the first backing index name before rolling over.
+        const beforeRollover = await esClient.indices.resolveIndex({
+          name: DATA_STREAM,
+          expand_wildcards: ['open', 'closed', 'hidden'] as Array<'open' | 'closed' | 'hidden'>,
+        });
+        const firstBacking = ([] as string[]).concat(
+          beforeRollover.data_streams[0]?.backing_indices ?? []
+        )[0];
+
+        // Roll over to create a second (open) backing index.
+        await esClient.indices.rollover({ alias: DATA_STREAM });
+
+        // The entity we will assert on lands in the new open backing index.
+        await esClient.index({
+          index: DATA_STREAM,
+          refresh: 'wait_for',
+          body: { '@timestamp': TS, host: { name: 'open-smoke-host' } },
+        });
+
+        // Simulate the production scenario: close the older backing index.
+        await esClient.indices.close({ index: firstBacking });
+
+        // Extraction must not throw cluster_block_exception and must succeed.
+        const extractionResponse = await forceLogExtraction(
+          apiClient,
+          internalHeaders,
+          'host',
+          FROM,
+          TO
+        );
+        expect(extractionResponse.statusCode).toBe(200);
+        expect(extractionResponse.body).toMatchObject({ success: true });
+
+        // The entity from the open backing index must be extracted.
+        const hit = await searchDocById(esClient, 'host:open-smoke-host');
+        expect(hit.hits.hits).toHaveLength(1);
+      } finally {
+        // Re-open closed backing indices before deleting the data stream (ES rejects
+        // deleteDataStream when backing indices are closed).
+        const resolved = await esClient.indices.resolveIndex({
+          name: DATA_STREAM,
+          expand_wildcards: ['open', 'closed', 'hidden'] as Array<'open' | 'closed' | 'hidden'>,
+        });
+        if (resolved.data_streams.length > 0) {
+          const allBacking = resolved.data_streams.flatMap((ds) =>
+            ([] as string[]).concat(ds.backing_indices)
+          );
+          await esClient.indices.open({ index: allBacking, ignore_unavailable: true });
+        }
+        await esClient.indices.deleteDataStream({ name: DATA_STREAM }, { ignore: [404] });
+        await esClient.indices.deleteIndexTemplate(
+          { name: 'logs-closed-smoke-template' },
+          { ignore: [404] }
+        );
+      }
+    }
+  );
 });

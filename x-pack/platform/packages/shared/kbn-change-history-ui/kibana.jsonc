@@ -1,0 +1,7 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/change-history-ui",
+  "owner": ["@elastic/workflows-eng"],
+  "group": "platform",
+  "visibility": "shared"
+}

@@ -6,7 +6,7 @@
  */
 import { z } from '@kbn/zod/v4';
 import { StateGraph, Annotation } from '@langchain/langgraph';
-import type { ScopedModel, ToolEventEmitter } from '@kbn/agent-builder-server';
+import type { ModelProvider, ToolEventEmitter } from '@kbn/agent-builder-server';
 import type { Logger } from '@kbn/logging';
 import { type IScopedClusterClient } from '@kbn/core-elasticsearch-server';
 import type { SupportedChartType } from '@kbn/agent-builder-common/tools/tool_result';
@@ -98,14 +98,16 @@ const VisualizationStateAnnotation = Annotation.Root({
 
 type VisualizationState = typeof VisualizationStateAnnotation.State;
 
-export const createVisualizationGraph = (
-  model: ScopedModel,
+export const createVisualizationGraph = async (
+  modelProvider: ModelProvider,
   logger: Logger,
   events: ToolEventEmitter,
   esClient: IScopedClusterClient,
   includeTimeRange = true,
   additionalChartConfigInstructions?: string
 ) => {
+  const defaultModel = await modelProvider.getDefaultModel();
+
   // Node: Generate ES|QL query
   const generateESQLNode = async (state: VisualizationState) => {
     logger.debug('Generating ES|QL query for visualization');
@@ -127,7 +129,7 @@ export const createVisualizationGraph = (
       const generateEsqlResponse = await generateEsql({
         nlQuery: nlQueryWithContext,
         index: state.index,
-        model,
+        modelProvider,
         events,
         logger,
         esClient: esClient.asCurrentUser,
@@ -213,7 +215,7 @@ export const createVisualizationGraph = (
     let action: GenerateConfigAction;
     try {
       // Invoke model without schema validation
-      const response = await model.chatModel.invoke(prompt);
+      const response = await defaultModel.chatModel.invoke(prompt);
       const responseText = extractTextFromMessage(response);
 
       // Try to extract JSON from markdown code blocks
@@ -340,7 +342,7 @@ export const createVisualizationGraph = (
 
     let action: GenerateTimeRangeAction;
     try {
-      const timeRangeModel = model.chatModel.withStructuredOutput(
+      const timeRangeModel = defaultModel.chatModel.withStructuredOutput(
         z.object({
           from: z
             .string()

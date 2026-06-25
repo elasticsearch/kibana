@@ -51,22 +51,28 @@ describe('createVisualizationGraph', () => {
   const events = {} as ToolEventEmitter;
   const esClient = { asCurrentUser: {} } as IScopedClusterClient;
 
-  const createMockModel = (invokeResult: string = '```json\n{"type":"metric"}\n```') =>
-    ({
+  // Returns a ModelProvider-shaped mock. `createVisualizationGraph` resolves the default model
+  // via `getDefaultModel()` for the config / time-range nodes.
+  const createMockModel = (invokeResult: string = '```json\n{"type":"metric"}\n```') => {
+    const scopedModel = {
       chatModel: {
         // invoke resolves to a message-like object; graph_lens reads `.content` via
         // extractTextFromMessage.
         invoke: jest.fn().mockResolvedValue({ content: invokeResult }),
         withStructuredOutput: jest.fn(),
       },
-    } as const);
+    };
+    return {
+      getDefaultModel: jest.fn().mockResolvedValue(scopedModel),
+    } as const;
+  };
 
   beforeEach(() => {
     mockedGenerateEsql.mockReset();
   });
 
   it('uses the provided esql query without generating a new one', async () => {
-    const graph = createVisualizationGraph(
+    const graph = await createVisualizationGraph(
       createMockModel() as never,
       logger,
       events,
@@ -98,7 +104,7 @@ describe('createVisualizationGraph', () => {
       query: 'FROM logs-* | WHERE response.code != 503 | STATS count = COUNT(*)',
     } as Awaited<ReturnType<typeof generateEsql>>);
 
-    const graph = createVisualizationGraph(
+    const graph = await createVisualizationGraph(
       createMockModel() as never,
       logger,
       events,
@@ -150,7 +156,7 @@ describe('createVisualizationGraph', () => {
       }) +
       '\n```';
 
-    const graph = createVisualizationGraph(
+    const graph = await createVisualizationGraph(
       createMockModel(corruptedConfig) as never,
       logger,
       events,
@@ -182,7 +188,7 @@ describe('createVisualizationGraph', () => {
     const canonicalQuery = 'FROM logs-* | STATS count = COUNT(*)';
     const configWithoutDataSource = '```json\n' + JSON.stringify({ type: 'metric' }) + '\n```';
 
-    const graph = createVisualizationGraph(
+    const graph = await createVisualizationGraph(
       createMockModel(configWithoutDataSource) as never,
       logger,
       events,
@@ -221,7 +227,7 @@ describe('createVisualizationGraph', () => {
       }) +
       '\n```';
 
-    const graph = createVisualizationGraph(
+    const graph = await createVisualizationGraph(
       createMockModel(xyConfigWithoutDataSource) as never,
       logger,
       events,

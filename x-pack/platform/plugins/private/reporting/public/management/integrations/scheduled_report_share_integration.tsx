@@ -11,7 +11,7 @@ import type { ReportingSharingData } from '@kbn/reporting-public/share/share_con
 import { EuiButton } from '@elastic/eui';
 import type { ReportingAPIClient } from '@kbn/reporting-public';
 import type { ReportTypeId } from '../../types';
-import { SCHEDULE_EXPORT_BUTTON_LABEL } from '../translations';
+import { SCHEDULE_EXPORT_BUTTON_LABEL, SCHEDULED_REPORT_FLYOUT_TITLE } from '../translations';
 import type { ReportingPublicPluginStartDependencies } from '../../plugin';
 import { supportedReportTypes } from '../report_params';
 import { ScheduledReportFlyoutShareWrapper } from '../components/scheduled_report_flyout_share_wrapper';
@@ -46,5 +46,6 @@ export function getReportingShareIntegrationConfig(
       );
     },
     flyoutSizing: { size: 'm', maxWidth: 500 },
+    flyoutAriaLabel: SCHEDULED_REPORT_FLYOUT_TITLE,
   };
 }

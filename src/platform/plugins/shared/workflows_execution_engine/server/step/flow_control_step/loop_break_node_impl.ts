@@ -44,6 +44,12 @@ export class LoopBreakNodeImpl implements NodeImplementation {
     );
     const innerStepIds = this.workflowGraph.getInnerStepIds(this.node.loopStepId);
     this.stepIoService.evictStaleLoopOutputs(innerStepIds);
+    // Release the loop's pinned source. A normal loop exit goes through
+    // exit-foreach/exit-while which unpins; `loop.break` short-circuits that
+    // path, so without this the source stays pinned for the rest of the
+    // execution (memory leak, and it can shield a later step's output from
+    // eviction). Idempotent — safe even if the loop never pinned anything.
+    this.stepIoService.unpinForeachScope(this.node.loopStepId);
     this.workflowLogger.logDebug(
       `Evicted stale in-memory outputs for ${innerStepIds.size} inner step(s) of loop "${this.node.loopStepId}" after break`,
       { workflow: { step_id: this.node.stepId } }

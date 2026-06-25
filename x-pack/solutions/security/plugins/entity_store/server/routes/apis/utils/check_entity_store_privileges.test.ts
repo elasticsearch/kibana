@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { getMissingPrivileges } from './get_missing_privileges';
+import { getMissingPrivileges } from './check_entity_store_privileges';
 import type { CheckPrivilegesResponse } from '@kbn/security-plugin-types-server';
 
 function createMockPrivilegesResponse(

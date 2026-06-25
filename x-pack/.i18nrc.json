@@ -135,6 +135,7 @@
     "xpack.securitySolutionServerless": "solutions/security/plugins/security_solution_serverless",
     "xpack.sessionView": "solutions/security/plugins/session_view",
     "xpack.sharedComponents": "platform/packages/shared/kbn-shared-components",
+    "xpack.changeHistoryUi": "platform/packages/shared/kbn-change-history-ui",
     "xpack.streams": ["platform/plugins/shared/streams_app"],
     "xpack.slo": "solutions/observability/plugins/slo",
     "xpack.snapshotRestore": "platform/plugins/private/snapshot_restore",

@@ -21,7 +21,9 @@ export function shouldShowWorkflowsEmptyState(
   const hasNoFilters =
     !search.query &&
     (!search.enabled || search.enabled.length === 0) &&
-    (!search.createdBy || search.createdBy.length === 0);
+    (!search.createdBy || search.createdBy.length === 0) &&
+    (!search.tags || search.tags.length === 0) &&
+    search.managed === undefined;
 
   return hasNoWorkflows && hasNoFilters;
 }

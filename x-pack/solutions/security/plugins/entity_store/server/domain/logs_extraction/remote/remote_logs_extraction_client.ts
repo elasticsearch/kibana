@@ -33,6 +33,7 @@ import {
 } from '../log_pagination_probe_query_builder';
 import { executeEsqlQuery } from '../../../infra/elasticsearch/esql';
 import { ingestEntities } from '../../../infra/elasticsearch/ingest';
+import { resolveClosedIndexAdjustments } from '../../../infra/elasticsearch/resolve_closed_indices';
 import { getUpdatesEntitiesDataStreamName } from '../../asset_manager/updates_data_stream';
 import {
   applyMaxLagCutoff,
@@ -112,6 +113,16 @@ export class RemoteLogsExtractionClient {
       return { count: 0, pages: 0 };
     }
 
+    const { openBackingIndices, negations: closedNegations } = await resolveClosedIndexAdjustments(
+      this.strategy.client,
+      remoteIndexPatterns,
+      this.logger
+    );
+    const effectiveRemoteIndexPatterns =
+      openBackingIndices.length > 0 || closedNegations.length > 0
+        ? [...remoteIndexPatterns, ...openBackingIndices, ...closedNegations]
+        : remoteIndexPatterns;
+
     const state =
       windowOverride != null
         ? { checkpointTimestamp: null, paginationRecoveryId: null }
@@ -150,7 +161,7 @@ export class RemoteLogsExtractionClient {
       // Manual windowOverride runs as a single pass without persisting checkpoint.
       const result = await this.runLogsPaginationOuterLoop({
         type,
-        remoteIndexPatterns,
+        remoteIndexPatterns: effectiveRemoteIndexPatterns,
         toDateISO: effectiveWindowEnd,
         docsLimit,
         maxLogsPerPage,
@@ -211,7 +222,7 @@ export class RemoteLogsExtractionClient {
       const remainingCap = maxLogsPerWindow > 0 ? maxLogsPerWindow - totalLogs : 0;
       const subResult = await this.runLogsPaginationOuterLoop({
         type,
-        remoteIndexPatterns,
+        remoteIndexPatterns: effectiveRemoteIndexPatterns,
         toDateISO: subWindowEnd,
         docsLimit,
         maxLogsPerPage,

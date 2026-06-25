@@ -1032,6 +1032,7 @@ x-pack/platform/packages/shared/kbn-apm-api-shared @elastic/obs-presentation-tea
 x-pack/platform/packages/shared/kbn-apm-common @elastic/obs-presentation-team @elastic/obs-exploration-team
 x-pack/platform/packages/shared/kbn-apm-types @elastic/obs-presentation-team @elastic/obs-exploration-team
 x-pack/platform/packages/shared/kbn-change-history @elastic/security-detection-engineering
+x-pack/platform/packages/shared/kbn-change-history-ui @elastic/workflows-eng
 x-pack/platform/packages/shared/kbn-classic-stream-flyout @elastic/kibana-management
 x-pack/platform/packages/shared/kbn-content-packs-schema @elastic/obs-onboarding-team
 x-pack/platform/packages/shared/kbn-data-forge @elastic/actionable-obs-team

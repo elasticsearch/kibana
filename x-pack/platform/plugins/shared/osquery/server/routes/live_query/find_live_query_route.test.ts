@@ -160,6 +160,7 @@ describe('findLiveQueryRoute', () => {
     expect(getResultCountsForActions).toHaveBeenCalledWith(
       mockEsClient,
       ['query-1'],
+      'default',
       ['default'],
       false
     );
@@ -320,6 +321,7 @@ describe('findLiveQueryRoute', () => {
     expect(getResultCountsForActions).toHaveBeenCalledWith(
       mockEsClient,
       ['query-1'],
+      'custom-space',
       ['custom-space'],
       false
     );
@@ -376,6 +378,7 @@ describe('findLiveQueryRoute', () => {
     expect(getResultCountsForActions).toHaveBeenCalledWith(
       mockEsClient,
       ['query-1'],
+      'production',
       ['prod'],
       false
     );

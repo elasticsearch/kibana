@@ -83,6 +83,7 @@ export const getShareMenuItems =
   ({ apiClient, startServices$, csvConfig, isServerless = false }: ExportModalShareOpts) =>
   ({
     objectType,
+    objectTypeAlias,
     sharingData,
     shareableUrlLocatorParams,
   }: ShareContext<ReportingCSVSharingData>): Awaited<
@@ -187,6 +188,12 @@ export const getShareMenuItems =
       exportType: reportType,
       label: 'CSV',
       icon: 'table',
+      flyoutAriaLabel: i18n.translate('reporting.export.csv.exportFlyout.ariaLabel', {
+        defaultMessage: 'Export {objectType} as CSV',
+        values: {
+          objectType: objectTypeAlias ?? objectType.toLocaleLowerCase(),
+        },
+      }),
       supportsAbsoluteTime: true,
       generateAssetExport: generateReportingJobCSV,
       helpText: (

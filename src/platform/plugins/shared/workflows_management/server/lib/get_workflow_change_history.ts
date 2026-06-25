@@ -12,8 +12,8 @@ import { WorkflowNotFoundError } from '@kbn/workflows/common/errors';
 
 import { mapWorkflowHistoryItem } from './map_workflow_history_item';
 import { WorkflowChangeHistoryDisabledError } from './workflow_change_history_disabled_error';
+import type { WorkflowChangesHistoryResponse } from '../../common/lib/workflow_change_history/types';
 import type { IWorkflowChangeHistoryService } from '../services/workflow_change_history_types';
-import type { WorkflowChangesHistoryResponse } from '../types/workflow_change_history';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PER_PAGE = 20;
