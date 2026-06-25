@@ -22,7 +22,7 @@ interface IndexMappingResponse {
     };
   };
 }
-// INDEX_MISSING_EVENT_ORIGINAL
+
 export interface UseValidateIndexResult {
   isValidating: boolean;
   validationError: string | null;
@@ -49,9 +49,9 @@ export function useValidateIndex(): UseValidateIndexResult {
       setValidationError(null);
 
       try {
-        // TODO: Do I need react query here?
+        // Use Automatic Import mapping endpoint
         const response = await http.get<IndexMappingResponse>(
-          `/api/index_management/mapping/${encodeURIComponent(indexName)}`,
+          `/api/automatic_import/index_mappings/${encodeURIComponent(indexName)}`,
           { version: '1' }
         );
 
@@ -64,8 +64,8 @@ export function useValidateIndex(): UseValidateIndexResult {
         }
 
         return true;
-      } catch (error) {
-        setValidationError(i18n.INDEX_MISSING_EVENT_ORIGINAL);
+      } catch {
+        setValidationError(i18n.INDEX_VALIDATION_FAILED);
         return false;
       } finally {
         setIsValidating(false);

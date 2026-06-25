@@ -97,9 +97,12 @@ describe('useValidateIndex', () => {
 
       expect(isValid).toBe(true);
       expect(result.current.validationError).toBeNull();
-      expect(mockHttpGet).toHaveBeenCalledWith('/api/index_management/mapping/some-valid-index', {
-        version: '1',
-      });
+      expect(mockHttpGet).toHaveBeenCalledWith(
+        '/api/automatic_import/index_mappings/some-valid-index',
+        {
+          version: '1',
+        }
+      );
     });
 
     it('should return false and set error when event.original field is missing', async () => {
@@ -138,7 +141,7 @@ describe('useValidateIndex', () => {
       expect(result.current.validationError).toBe(i18n.INDEX_MISSING_EVENT_ORIGINAL);
     });
 
-    it('should handle API errors gracefully', async () => {
+    it('should set a generic translated error when the request fails', async () => {
       mockHttpGet.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useValidateIndex());
@@ -149,7 +152,7 @@ describe('useValidateIndex', () => {
       });
 
       expect(isValid).toBe(false);
-      expect(result.current.validationError).toBe(i18n.INDEX_MISSING_EVENT_ORIGINAL);
+      expect(result.current.validationError).toBe(i18n.INDEX_VALIDATION_FAILED);
       expect(result.current.isValidating).toBe(false);
     });
 
@@ -165,7 +168,7 @@ describe('useValidateIndex', () => {
       });
 
       expect(mockHttpGet).toHaveBeenCalledWith(
-        '/api/index_management/mapping/some-index',
+        '/api/automatic_import/index_mappings/some-index',
         expect.any(Object)
       );
     });
