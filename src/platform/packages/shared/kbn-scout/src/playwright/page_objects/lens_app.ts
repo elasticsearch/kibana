@@ -166,10 +166,6 @@ export class LensApp {
     }
   }
 
-  async openDimensionEditorFor(dimension: string) {
-    await this.openDimensionSelector(dimension);
-  }
-
   async closeDimensionEditorPanel() {
     await this.closeDimensionEditor();
   }
@@ -422,7 +418,7 @@ export class LensApp {
   }
 
   /** Returns visible labels for all dimension triggers inside a dimension panel. */
-  async getDimensionTriggersTexts(dimension: string): Promise<string[]> {
+  private async getDimensionTriggersTexts(dimension: string): Promise<string[]> {
     const triggers = await this.page.testSubj.locator(`${dimension} > lns-dimensionTrigger`).all();
     const texts = await Promise.all(triggers.map((trigger) => trigger.innerText()));
     // Lens inserts zero-width spaces around dots in field names for line-breaking.
@@ -445,7 +441,7 @@ export class LensApp {
     return (await this.chartSwitchPopover.innerText()).trim();
   }
 
-  async openStyleSettingsFlyout() {
+  private async openStyleSettingsFlyout() {
     await this.page.locator('button[data-test-subj="style"]').click();
     await this.page.locator('#lnsDimensionContainerTitle').waitFor({ state: 'visible' });
   }
