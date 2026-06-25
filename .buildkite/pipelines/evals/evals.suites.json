@@ -120,6 +120,19 @@
       ]
     },
     {
+      "id": "rca-benchmark",
+      "name": "RCA Benchmark",
+      "slackChannel": "#obs-nightshift",
+      "configPath": "x-pack/solutions/observability/packages/kbn-evals-suite-rca-benchmark/playwright.config.ts",
+      "tags": [
+        "observability",
+        "rca-benchmark"
+      ],
+      "ciLabels": [
+        "evals:rca-benchmark"
+      ]
+    },
+    {
       "id": "security-ai-rules",
       "name": "Security AI Rules",
       "slackChannel": "#security-detection-engine-alerts",

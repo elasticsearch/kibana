@@ -1,0 +1,7 @@
+{
+  "type": "functional-tests",
+  "id": "@kbn/evals-suite-rca-benchmark",
+  "owner": "@elastic/obs-nightshift",
+  "group": "observability",
+  "visibility": "private"
+}
