@@ -24,7 +24,7 @@ import { suggestFieldsList } from '../../definitions/utils/autocomplete/fields_l
 import type { MapParameters } from '../../definitions/utils/autocomplete/map_expression';
 import { getCommandMapExpressionSuggestions } from '../../definitions/utils/autocomplete/map_expression';
 
-export const QUERY_TEXT = 'Your search query' as const;
+export const QUERY_TEXT = 'The text to highlight' as const;
 export const QUERY_TEXT_SNIPPET = `"$\{0:${QUERY_TEXT}}"`;
 
 export async function autocomplete(
