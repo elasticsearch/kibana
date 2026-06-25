@@ -15,7 +15,6 @@ import {
   getChartDebugData,
   getImportedDashboardId,
   getPieChartLabels,
-  loadDashboardInEditModeById,
 } from '../../../fixtures';
 
 spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.classic }, () => {
@@ -37,7 +36,7 @@ spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.c
   spaceTest.beforeEach(async ({ browserAuth, context, pageObjects }) => {
     await enableElasticChartDebug(context);
     await browserAuth.loginAsPrivilegedUser();
-    await loadDashboardInEditModeById(pageObjects, pieDashboardId);
+    await pageObjects.dashboard.openDashboardWithIdInEditMode(pieDashboardId);
   });
 
   spaceTest.afterAll(async ({ scoutSpace }) => {
@@ -67,7 +66,7 @@ spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.c
 
     await convertToLensByTitle({ dashboard }, 'Pie - Agg with params');
     await lens.waitForVisualization('partitionVisChart');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const sliceByText = await lens.getDimensionTriggerText('lnsPie_sliceByDimensionPanel', 0);
     const sizeByText = await lens.getDimensionTriggerText('lnsPie_sizeByDimensionPanel', 0);

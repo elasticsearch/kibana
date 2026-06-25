@@ -54,21 +54,6 @@ export async function canConvertToLensByTitle(
   return dashboard.panelHasAction(CONVERT_TO_LENS_ACTION, panelTitle);
 }
 
-/**
- * Opens a dashboard in edit mode by saved object id.
- * Prefer this over the listing-page link when tests may end in the Lens editor.
- */
-export async function loadDashboardInEditModeById(
-  { dashboard }: Pick<PageObjects, 'dashboard'>,
-  dashboardId: string,
-  options?: { timeout?: number }
-): Promise<void> {
-  // Open-in-Lens dashboards pack many panels per fixture; viewport render can exceed 10s.
-  const timeout = options?.timeout ?? 60_000;
-  await dashboard.openDashboardWithId(dashboardId, { timeout });
-  await dashboard.switchToEditMode();
-}
-
 /** Enables elastic-charts debug state for subsequent page loads in this browser context. */
 export async function enableElasticChartDebug(context: ElasticChartDebugContext): Promise<void> {
   await context.addInitScript(() => {

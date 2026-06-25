@@ -129,9 +129,9 @@ export class DashboardApp {
     await this.page.gotoApp('dashboards');
   }
 
-  async openDashboardWithId(id: string, options?: TimeoutOptions) {
+  async openDashboardWithId(id: string) {
     await this.page.gotoApp('dashboards', { hash: `/view/${id}` });
-    await this.waitForRenderComplete(options);
+    await this.waitForRenderComplete();
   }
 
   /** Navigates to the new dashboard creation page and waits for the editor toolbar to load. */
@@ -184,7 +184,21 @@ export class DashboardApp {
    */
   async switchToEditMode() {
     await this.editModeButton.click();
-    // Wait for edit mode to be active (drag handles appear)
+    await this.waitForEditModeActive();
+  }
+
+  /**
+   * Opens a dashboard by saved object id in edit mode via URL state.
+   * Prefer this over the listing-page link when tests may end in the Lens editor.
+   */
+  async openDashboardWithIdInEditMode(id: string) {
+    await this.page.gotoApp('dashboards', { hash: `/view/${id}?_a=(viewMode:edit)` });
+    await this.waitForRenderComplete();
+    await this.waitForEditModeActive();
+  }
+
+  private async waitForEditModeActive() {
+    // Wait for edit mode to be active (drag handles appear).
     // Multiple drag handles are expected when multiple panels exist.
     await expect
       .poll(() => this.page.testSubj.locator('embeddablePanelDragHandle').count())
@@ -551,9 +565,8 @@ export class DashboardApp {
    * Waits for all dashboard controls and panels to finish rendering.
    * Uses the data-render-complete attribute to determine panel rendering completion.
    */
-  async waitForRenderComplete(options?: TimeoutOptions) {
-    const timeout = options?.timeout ?? 10_000;
-    await expect(this.dashboardViewport).toBeVisible({ timeout });
+  async waitForRenderComplete() {
+    await expect(this.dashboardViewport).toBeVisible();
 
     await this.waitForControlsReady();
 

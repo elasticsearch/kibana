@@ -12,7 +12,6 @@ import {
   canConvertToLensByTitle,
   convertToLensByTitle,
   getImportedDashboardId,
-  loadDashboardInEditModeById,
 } from '../../../fixtures';
 
 spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful.classic }, () => {
@@ -33,7 +32,7 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
 
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsPrivilegedUser();
-    await loadDashboardInEditModeById(pageObjects, tableDashboardId);
+    await pageObjects.dashboard.openDashboardWithIdInEditMode(tableDashboardId);
   });
 
   spaceTest.afterAll(async ({ scoutSpace }) => {
@@ -58,7 +57,7 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
 
     await convertToLensByTitle({ dashboard }, 'Table - Agg with params');
     await lens.waitForVisualization('lnsDataTable');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const dimensions = await lens.getDimensionTriggers();
     expect(dimensions).toHaveLength(1);
@@ -70,7 +69,7 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
 
     await convertToLensByTitle({ dashboard }, 'Table - Summary row');
     await lens.waitForVisualization('lnsDataTable');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const dimensions = await lens.getDimensionTriggers();
     expect(dimensions).toHaveLength(1);
@@ -87,7 +86,7 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
 
     await convertToLensByTitle({ dashboard }, 'Table - Sibling pipeline agg');
     await lens.waitForVisualization('lnsDataTable');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const metricText = await lens.getDimensionTriggerText('lnsDatatable_metrics', 0);
     const splitRowText = await lens.getDimensionTriggerText('lnsDatatable_rows', 0);
@@ -103,7 +102,7 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
 
     await convertToLensByTitle({ dashboard }, 'Table - Parent pipeline agg');
     await lens.waitForVisualization('lnsDataTable');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const metricText = await lens.getDimensionTriggerText('lnsDatatable_metrics', 0);
     const splitRowText = await lens.getDimensionTriggerText('lnsDatatable_rows', 0);
@@ -121,7 +120,7 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
 
       await convertToLensByTitle({ dashboard }, 'Table - Split rows and tables');
       await lens.waitForVisualization('lnsDataTable');
-      await lens.assertLayerCount(1);
+      expect(await lens.getLayerCount()).toBe(1);
 
       const metricText = await lens.getDimensionTriggerText('lnsDatatable_metrics', 0);
       const splitRowText1 = await lens.getDimensionTriggerText('lnsDatatable_rows', 0);
@@ -140,7 +139,7 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
 
     await convertToLensByTitle({ dashboard }, 'Table - Percentage Column');
     await lens.waitForVisualization('lnsDataTable');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const metricText = await lens.getDimensionTriggerText('lnsDatatable_metrics', 0);
     const percentageColumnText = await lens.getDimensionTriggerText('lnsDatatable_metrics', 1);

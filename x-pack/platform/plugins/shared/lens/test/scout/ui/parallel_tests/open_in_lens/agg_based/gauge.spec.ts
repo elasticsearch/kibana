@@ -15,7 +15,6 @@ import {
   enableElasticChartDebug,
   getChartDebugData,
   getImportedDashboardId,
-  loadDashboardInEditModeById,
 } from '../../../fixtures';
 
 spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.stateful.classic }, () => {
@@ -37,7 +36,7 @@ spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.stateful
   spaceTest.beforeEach(async ({ browserAuth, context, pageObjects }) => {
     await enableElasticChartDebug(context);
     await browserAuth.loginAsPrivilegedUser();
-    await loadDashboardInEditModeById(pageObjects, gaugeDashboardId);
+    await pageObjects.dashboard.openDashboardWithIdInEditMode(gaugeDashboardId);
   });
 
   spaceTest.afterAll(async ({ scoutSpace }) => {
@@ -64,7 +63,7 @@ spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.stateful
 
     await convertToLensByTitle({ dashboard }, 'Gauge - Agg with params');
     await lens.waitForVisualization('gaugeChart');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const dimensions = await lens.getDimensionTriggers();
     expect(dimensions).toHaveLength(3);
@@ -85,7 +84,7 @@ spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.stateful
 
     await convertToLensByTitle({ dashboard }, 'Gauge - Color ranges');
     await lens.waitForVisualization('gaugeChart');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const dimensions = await lens.getDimensionTriggers();
     expect(dimensions).toHaveLength(3);

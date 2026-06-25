@@ -12,7 +12,6 @@ import {
   canConvertToLensByTitle,
   convertToLensByTitle,
   getImportedDashboardId,
-  loadDashboardInEditModeById,
 } from '../../../fixtures';
 
 spaceTest.describe('Lens open in Lens — agg-based Goal', { tag: tags.stateful.classic }, () => {
@@ -33,7 +32,7 @@ spaceTest.describe('Lens open in Lens — agg-based Goal', { tag: tags.stateful.
 
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsPrivilegedUser();
-    await loadDashboardInEditModeById(pageObjects, goalDashboardId);
+    await pageObjects.dashboard.openDashboardWithIdInEditMode(goalDashboardId);
   });
 
   spaceTest.afterAll(async ({ scoutSpace }) => {
@@ -74,7 +73,7 @@ spaceTest.describe('Lens open in Lens — agg-based Goal', { tag: tags.stateful.
 
     await convertToLensByTitle({ dashboard }, 'Goal - Agg with params');
     await lens.waitForVisualization('mtrVis');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const dimensions = await lens.getDimensionTriggers();
     expect(dimensions).toHaveLength(2);
@@ -103,7 +102,7 @@ spaceTest.describe('Lens open in Lens — agg-based Goal', { tag: tags.stateful.
 
     await convertToLensByTitle({ dashboard }, 'Goal - Sibling pipeline agg');
     await lens.waitForVisualization('mtrVis');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const dimensions = await lens.getDimensionTriggers();
     expect(dimensions).toHaveLength(3);
@@ -133,7 +132,7 @@ spaceTest.describe('Lens open in Lens — agg-based Goal', { tag: tags.stateful.
 
     await convertToLensByTitle({ dashboard }, 'Goal - Color ranges');
     await lens.waitForVisualization('mtrVis');
-    await lens.assertLayerCount(1);
+    expect(await lens.getLayerCount()).toBe(1);
 
     const dimensions = await lens.getDimensionTriggers();
     expect(dimensions).toHaveLength(3);

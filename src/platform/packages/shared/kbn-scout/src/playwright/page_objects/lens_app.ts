@@ -181,19 +181,14 @@ export class LensApp {
   }
 
   /**
-   * Activates the layer tab at `index` when multiple layers are present.
-   * No-op when there is only one layer (tabs are hidden).
+   * Activates the layer tab at `index`. Requires the tabs row to be visible (multi-layer charts).
+   * Tab `data-test-subj` values use layer ids (not numeric indices), so tabs are resolved by order.
    */
-  async ensureLayerTabIsActive(index = 0) {
+  async activateLayerTab(index: number) {
     const tabs = await this.page.locator('[data-test-subj^="unifiedTabs_tab_"]').all();
     const tab = tabs[index];
     if (!tab) {
-      return;
-    }
-
-    if ((await tab.getAttribute('aria-selected')) === 'true') {
-      await expect(this.page.testSubj.locator(`lns-layerPanel-${index}`)).toBeVisible();
-      return;
+      throw new Error(`Layer tab not found at index ${index}`);
     }
 
     await tab.click();
@@ -415,20 +410,10 @@ export class LensApp {
     );
   }
 
-  /**
-   * Asserts the number of layers in the Lens editor.
-   * When there is only 1 layer the unified-tabs row is hidden.
-   */
-  async assertLayerCount(expectedCount: number) {
-    const layerPanels = this.page.locator('[data-test-subj^="lns-layerPanel-"]');
-    await expect(layerPanels).toHaveCount(1);
-
-    const tabs = this.page.locator('[data-test-subj^="unifiedTabs_tab_"]');
-    if (expectedCount <= 1) {
-      await expect(tabs).toHaveCount(0);
-    } else {
-      await expect(tabs).toHaveCount(expectedCount);
-    }
+  /** Returns the number of layers in the Lens editor (unified-tabs row is hidden for a single layer). */
+  async getLayerCount(): Promise<number> {
+    const tabs = await this.page.locator('[data-test-subj^="unifiedTabs_tab_"]').count();
+    return tabs === 0 ? 1 : tabs;
   }
 
   /** Returns all dimension-trigger button locators currently rendered in the editor. */
