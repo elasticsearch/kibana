@@ -14,7 +14,7 @@ import type { FieldOption } from '../types';
 
 export interface IOption {
   label: string;
-  options: Array<{ value: string; label: string }>;
+  options: Array<{ value: string; label: string; 'data-test-subj'?: string }>;
 }
 
 export const getIndexOptions = async (
@@ -51,6 +51,7 @@ export const getIndexOptions = async (
         return {
           label: match,
           value: match,
+          'data-test-subj': `thresholdIndexOption-${match}`,
         };
       }),
     });

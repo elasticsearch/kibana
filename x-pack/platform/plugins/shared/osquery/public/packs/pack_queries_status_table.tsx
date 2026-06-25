@@ -37,9 +37,11 @@ import { useSpaceId } from '../common/hooks/use_space_id';
 import { ScheduledQueryErrorsTable } from './scheduled_query_errors_table';
 import { usePackQueryLastResults } from './use_pack_query_last_results';
 import { usePackQueryErrors } from './use_pack_query_errors';
-import type { PackQueryFormData } from './queries/use_pack_query_form';
+import type { PackQueryFormData, UsePackQueryFormProps } from './queries/use_pack_query_form';
 import type { LogsDataView } from '../common/hooks/use_logs_data_view';
 import { useLogsDataView } from '../common/hooks/use_logs_data_view';
+import { ExperimentalFeaturesService } from '../common/experimental_features_service';
+import { formatQuerySchedule } from './format_query_schedule';
 
 const VIEW_IN_DISCOVER = i18n.translate(
   'xpack.osquery.pack.queriesTable.viewDiscoverResultsActionAriaLabel',
@@ -681,14 +683,17 @@ interface PackQueriesStatusTableProps {
   agentIds?: string[];
   data: PackQueryFormData[];
   packName: string;
+  packSchedule?: UsePackQueryFormProps['packSchedule'];
 }
 
 const PackQueriesStatusTableComponent: React.FC<PackQueriesStatusTableProps> = ({
   agentIds,
   data,
   packName,
+  packSchedule,
 }) => {
   const spaceId = useSpaceId();
+  const isRruleSchedulingEnabled = ExperimentalFeaturesService.get().rruleScheduling;
   const [itemIdToExpandedRowMap, setItemIdToExpandedRowMap] = useState<
     Record<string, ReturnType<typeof ScheduledQueryExpandedContent>>
   >({});
@@ -710,6 +715,20 @@ const PackQueriesStatusTableComponent: React.FC<PackQueriesStatusTableProps> = (
       </EuiToolTip>
     );
   }, []);
+
+  const renderScheduleColumn = useCallback(
+    (_: unknown, item: PackQueryFormData) =>
+      formatQuerySchedule(
+        item.schedule_type
+          ? {
+              schedule_type: item.schedule_type,
+              interval: item.interval,
+              rrule_schedule: item.rrule_schedule,
+            }
+          : packSchedule ?? { interval: item.interval }
+      ),
+    [packSchedule]
+  );
 
   // Scheduled-pack docs filter by `schedule_id`; live-action docs by `action_id`.
   // Hooks downstream prefer `scheduleId` when both are present, so callers can
@@ -821,13 +840,22 @@ const PackQueriesStatusTableComponent: React.FC<PackQueriesStatusTableProps> = (
         width: '15%',
         truncateText: true,
       },
-      {
-        field: 'interval',
-        name: i18n.translate('xpack.osquery.pack.queriesTable.intervalColumnTitle', {
-          defaultMessage: 'Interval (s)',
-        }),
-        width: '80px',
-      },
+      isRruleSchedulingEnabled
+        ? {
+            field: 'interval',
+            name: i18n.translate('xpack.osquery.pack.queriesTable.scheduleColumnTitle', {
+              defaultMessage: 'Schedule',
+            }),
+            render: renderScheduleColumn,
+            width: '12%',
+          }
+        : {
+            field: 'interval',
+            name: i18n.translate('xpack.osquery.pack.queriesTable.intervalColumnTitle', {
+              defaultMessage: 'Interval (s)',
+            }),
+            width: '80px',
+          },
       {
         field: 'query',
         name: i18n.translate('xpack.osquery.pack.queriesTable.queryColumnTitle', {
@@ -877,6 +905,8 @@ const PackQueriesStatusTableComponent: React.FC<PackQueriesStatusTableProps> = (
       },
     ],
     [
+      isRruleSchedulingEnabled,
+      renderScheduleColumn,
       renderQueryColumn,
       renderLastResultsColumn,
       renderDocsColumn,

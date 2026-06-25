@@ -180,7 +180,9 @@ export class WorkflowExecutionQueryService {
     try {
       return await this.deps.esClient.search({
         index: WORKFLOWS_EXECUTIONS_INDEX,
-        query: buildWorkflowExecutionsSearchQuery(params.query, spaceId),
+        query: buildWorkflowExecutionsSearchQuery(params.query, spaceId, {
+          includeManagedExecutions: params.includeManagedExecutions,
+        }),
         sort: params.sort,
         from: params.from,
         size: params.size,

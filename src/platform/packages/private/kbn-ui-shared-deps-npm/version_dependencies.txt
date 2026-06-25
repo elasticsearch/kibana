@@ -18,7 +18,7 @@
 @elastic/esql@4.4.0
 @elastic/eui-theme-borealis@8.0.0
 @elastic/eui-theme-common@10.0.0
-@elastic/eui@116.2.0
+@elastic/eui@116.3.1
 @elastic/numeral@2.5.1
 @elastic/prismjs-esql@1.1.2
 @emotion/babel-plugin@11.13.5

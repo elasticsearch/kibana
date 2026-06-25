@@ -58,14 +58,19 @@ export class EsqlService {
     // It doesn't return hidden indices
     const sources = (await client.indices.resolveIndex({
       name: sourcesToQuery,
-      expand_wildcards: 'open',
+      expand_wildcards: mode === 'lookup' ? ['open', 'closed'] : 'open',
       mode,
     })) as ResolveIndexResponse;
 
     const mappedMode = this.getIndexSourceType(mode);
 
     sources.indices?.forEach((index) => {
-      indices.push({ name: index.name, mode: mappedMode, aliases: index.aliases ?? [] });
+      indices.push({
+        name: index.name,
+        mode: mappedMode,
+        aliases: index.aliases ?? [],
+        ...(index.attributes?.includes('closed') ? { isClosed: true } : {}),
+      });
     });
 
     sources.data_streams?.forEach((dataStream) => {

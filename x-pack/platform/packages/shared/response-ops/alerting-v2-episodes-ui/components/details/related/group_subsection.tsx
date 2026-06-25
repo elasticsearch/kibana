@@ -19,9 +19,9 @@ import {
 import type { CoreStart } from '@kbn/core/public';
 import type { ExpressionsStart } from '@kbn/expressions-plugin/public';
 import type { SpacesPluginStart } from '@kbn/spaces-plugin/public';
-import type { RuleResponse } from '@kbn/alerting-v2-schemas';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { css } from '@emotion/react';
+import { getRuleIdFromRuleState, type RuleState } from '../../../types/rule_state';
 import { RELATED_ALERT_EPISODES_PAGE_SIZE } from '../../../constants';
 import { useFetchEpisodeActions } from '../../../hooks/use_fetch_episode_actions';
 import { useFetchGroupActions } from '../../../hooks/use_fetch_group_actions';
@@ -38,7 +38,7 @@ interface RelatedEpisodesGroupSubsectionServices {
 export interface RelatedEpisodesGroupSubsectionProps {
   currentEpisodeId: string | undefined;
   groupHash: string | undefined;
-  rule: RuleResponse;
+  ruleState: RuleState;
   getEpisodeDetailsHref: (episodeId: string) => string;
   /**
    * When `true`, drop the inner horizontal padding so the subsection sits
@@ -54,7 +54,7 @@ export interface RelatedEpisodesGroupSubsectionProps {
 export function RelatedEpisodesGroupSubsection({
   currentEpisodeId,
   groupHash,
-  rule,
+  ruleState,
   getEpisodeDetailsHref,
   compressed = false,
 }: RelatedEpisodesGroupSubsectionProps) {
@@ -69,9 +69,11 @@ export function RelatedEpisodesGroupSubsection({
     [notifications]
   );
 
+  const ruleId = getRuleIdFromRuleState(ruleState);
+
   const { data: sameGroupRows = [], isLoading: isLoadingSameGroupRows } =
     useFetchSameGroupEpisodesQuery({
-      ruleId: rule.id,
+      ruleId,
       excludeEpisodeId: currentEpisodeId,
       pageSize: RELATED_ALERT_EPISODES_PAGE_SIZE,
       groupHash,
@@ -103,6 +105,10 @@ export function RelatedEpisodesGroupSubsection({
     groupHashes: sameGroupGroupHashes,
     services: { expressions, spaces },
   });
+
+  if (!ruleId || !groupHash) {
+    return null;
+  }
 
   return (
     <div
@@ -149,7 +155,7 @@ export function RelatedEpisodesGroupSubsection({
       ) : (
         <RelatedAlertEpisodesList
           rows={sameGroupRows}
-          rule={rule}
+          ruleState={ruleState}
           getEpisodeAction={(id) => sameGroupEpisodeActionsMap?.get(id)}
           getGroupAction={(gh) => sameGroupGroupActionsMap?.get(gh)}
           getEpisodeDetailsHref={getEpisodeDetailsHref}

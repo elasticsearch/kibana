@@ -2180,7 +2180,7 @@ paths:
                             interval: 15m
                             license: Elastic License v2
                             machine_learning_job_id:
-                              - packetbeat_dns_tunneling_ea
+                              - dns_tunneling_ea
                             max_signals: 100
                             name: DNS Tunneling [Duplicate]
                             references:

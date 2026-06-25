@@ -102,6 +102,10 @@ function transformToWorkflowExecutionListModel(
         acc.push({
           spaceId: source.spaceId,
           id,
+          managed: source.managed,
+          managedBy: source.managedBy,
+          originManagedWorkflowId: source.originManagedWorkflowId,
+          managedVersion: source.managedVersion,
           stepId: source.stepId,
           status: source.status,
           error: source.error || null,

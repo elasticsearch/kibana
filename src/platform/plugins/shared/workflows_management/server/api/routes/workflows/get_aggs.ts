@@ -13,7 +13,11 @@ import { i18n } from '@kbn/i18n';
 import type { RouteDependencies } from '../types';
 import { API_VERSION, AVAILABILITY, OAS_TAG } from '../utils/route_constants';
 import { handleRouteError } from '../utils/route_error_handlers';
-import { WORKFLOW_READ_SECURITY } from '../utils/route_security';
+import {
+  hasWorkflowReadPrivilege,
+  resolveAuthorizedManagedFilter,
+  WORKFLOW_READ_WITH_MANAGED_SECURITY,
+} from '../utils/route_security';
 import { withAvailabilityCheck } from '../utils/with_availability_check';
 
 const MAX_AGG_FIELDS = 25;
@@ -45,7 +49,7 @@ export function registerGetAggsRoute({ router, api, spaces }: RouteDependencies)
     .get({
       path: '/api/workflows/aggs',
       access: 'public',
-      security: WORKFLOW_READ_SECURITY,
+      security: WORKFLOW_READ_WITH_MANAGED_SECURITY,
       summary: 'Get workflow aggregations',
       description:
         'Retrieve distinct values and their counts for the specified workflow fields. Useful for building filters such as lists of tags or creators.',
@@ -88,12 +92,14 @@ export function registerGetAggsRoute({ router, api, spaces }: RouteDependencies)
       },
       withAvailabilityCheck(async (context, request, response) => {
         try {
+          if (!hasWorkflowReadPrivilege(request)) {
+            return response.forbidden();
+          }
           const { fields: rawFields, managed } = request.query;
           const fields = Array.isArray(rawFields) ? rawFields : [rawFields];
           const spaceId = spaces.getSpaceId(request);
-          const aggs = managed
-            ? await api.getWorkflowAggs(fields, spaceId, { managedFilter: managed })
-            : await api.getWorkflowAggs(fields, spaceId);
+          const managedFilter = resolveAuthorizedManagedFilter(request, managed);
+          const aggs = await api.getWorkflowAggs(fields, spaceId, { managedFilter });
           return response.ok({ body: aggs || {} });
         } catch (error) {
           return handleRouteError(response, error);

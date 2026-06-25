@@ -30,6 +30,7 @@ import type {
 import type { Template } from '../../../common/types/domain/template/latest';
 import { AttachmentType, CaseStatuses, UserActionTypes } from '../../../common/types/domain';
 import type {
+  AttachmentRequestV2,
   CasePostRequest,
   CaseRequestCustomFields,
   CaseUserActionsDeprecatedResponse,
@@ -39,10 +40,15 @@ import { CASE_VIEW_PAGE_TABS } from '../../../common/types';
 import { isPushedUserAction } from '../../../common/utils/user_actions';
 import type { CasesClientGetAlertsResponse } from '../alerts/types';
 import type { ExternalServiceComment, ExternalServiceIncident } from './types';
-import { getAlertIds } from '../utils';
 import type { CasesConnectorsMap } from '../../connectors';
 import { getCaseViewPath } from '../../common/utils';
-import { isLegacyAttachmentRequest } from '../../../common/utils/attachments';
+import {
+  isCommentAttachmentType,
+  isLegacyAttachmentRequest,
+  isUnifiedAlertAttachment,
+  toStringArray,
+} from '../../../common/utils/attachments';
+import { COMMENT_ATTACHMENT_TYPE } from '../../../common/constants/attachments';
 import * as i18n from './translations';
 
 interface CreateIncidentArgs {
@@ -93,33 +99,17 @@ export const getLatestPushInfo = (
 };
 
 /**
- * Builds the connector-comment string that gets posted alongside the case to
- * external incident systems (ServiceNow, Jira, Resilient, Swimlane).
- *
- * The legacy `actions` branch is intentionally absent: legacy `actions`
- * attachments are projected to the unified `security.endpoint` shape on read
- * (see `actionsAttachmentTransformer`), so they never surface here as
- * `AttachmentType.actions`. The user-facing host-isolation comment now lives
- * on the unified attachment's `data.content`, which the registry-hook
- * redesign tracked in https://github.com/elastic/kibana/issues/262574 will
- * surface to push-to-connector. Today host-isolation comments are not pushed
- * (matches existing behavior for the `externalReference` + `endpoint` shape
- * that has been in place since multi-EDR support landed).
- *
- * Likewise the `alert` branch below is currently unreachable because
- * `formatComments` filters alerts out before this function is called; that
- * dead code is preserved here intentionally as a placeholder for the same
- * registry-hook redesign (#262574), which will fold both alert and unified
- * attachment formatting into per-type registrations.
+ * Returns the body text for a comment pushed to an external incident system
+ * (ServiceNow, Jira, Resilient, Swimlane).
  */
 const getCommentContent = (comment: AttachmentV2): string => {
-  if (isLegacyAttachmentRequest(comment)) {
-    if (comment.type === AttachmentType.user) {
-      return comment.comment;
-    } else if (comment.type === AttachmentType.alert) {
-      const ids = getAlertIds(comment);
-      return `Alert with ids ${ids.join(', ')} added to case`;
-    }
+  if (isLegacyAttachmentRequest(comment) && comment.type === AttachmentType.user) {
+    return comment.comment;
+  }
+
+  if (comment.type === COMMENT_ATTACHMENT_TYPE && 'data' in comment) {
+    const content = comment.data?.content;
+    return typeof content === 'string' ? content : '';
   }
 
   return '';
@@ -131,6 +121,19 @@ interface CountAlertsInfo {
   totalAlerts: number;
 }
 
+// Returns the number of alert ids on the attachment, or `null` when the
+// attachment is not an alert
+const countAlertIds = (comment: AttachmentV2): number | null => {
+  if (isLegacyAttachmentRequest(comment) && comment.type === AttachmentType.alert) {
+    return toStringArray(comment.alertId).length;
+  }
+  const asRequest = comment as AttachmentRequestV2;
+  if (isUnifiedAlertAttachment(asRequest)) {
+    return toStringArray(asRequest.attachmentId).length;
+  }
+  return null;
+};
+
 const getAlertsInfo = (
   comments: Case['comments']
 ): { totalAlerts: number; hasUnpushedAlertComments: boolean } => {
@@ -138,14 +141,16 @@ const getAlertsInfo = (
 
   const res =
     comments?.reduce<CountAlertsInfo>(({ totalComments, pushed, totalAlerts }, comment) => {
-      if (isLegacyAttachmentRequest(comment) && comment.type === AttachmentType.alert) {
-        return {
-          totalComments: totalComments + 1,
-          pushed: comment.pushed_at != null ? pushed + 1 : pushed,
-          totalAlerts: totalAlerts + (Array.isArray(comment.alertId) ? comment.alertId.length : 1),
-        };
+      const alertIdCount = countAlertIds(comment);
+      if (alertIdCount === null) {
+        return { totalComments, pushed, totalAlerts };
       }
-      return { totalComments, pushed, totalAlerts };
+
+      return {
+        totalComments: totalComments + 1,
+        pushed: comment.pushed_at != null ? pushed + 1 : pushed,
+        totalAlerts: totalAlerts + alertIdCount,
+      };
     }, countingInfo) ?? countingInfo;
 
   return {
@@ -279,13 +284,8 @@ export const formatComments = ({
   );
 
   const commentsToBeUpdated = theCase.comments?.filter(
-    // We push only user-authored comments. `AttachmentType.actions` was dropped
-    // when legacy `actions` attachments were folded into `security.endpoint`
-    // (the unified type does not surface here as legacy `actions`). The
-    // registry-hook redesign tracked in
-    // https://github.com/elastic/kibana/issues/262574 will let unified
-    // attachment types opt into push-to-connector formatting.
-    (comment) => comment.type === AttachmentType.user && commentsIdsToBeUpdated.has(comment.id)
+    // Push only user-authored comments — legacy `user` and unified `comment`.
+    (comment) => isCommentAttachmentType(comment.type) && commentsIdsToBeUpdated.has(comment.id)
   );
 
   let comments: ExternalServiceComment[] = [];

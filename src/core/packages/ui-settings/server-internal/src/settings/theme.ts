@@ -20,23 +20,33 @@ import {
 } from '@kbn/core-ui-settings-common';
 import { defaultThemeSchema } from '../ui_settings_config';
 
-interface ThemeInfo {
-  defaultDarkMode: boolean;
-}
-
-const getThemeInfo = ({ isDist }: GetThemeSettingsOptions): ThemeInfo => {
-  const themeTags = parseThemeTags(process.env.KBN_OPTIMIZER_THEMES);
-
-  const themeInfo: ThemeInfo = {
-    defaultDarkMode: false,
-  };
-
-  if (!isDist) {
-    // Allow environment-specific config when not building for distribution
-    themeInfo.defaultDarkMode = themeTags[0]?.endsWith('dark') || false;
+/**
+ * Resolves the default value for the `theme:darkMode` setting.
+ *
+ * The default is `'system'` so a brand-new user (with no persisted preference) gets a theme that
+ * follows their OS appearance on first load. `'system'` requires that both the light and dark
+ * stylesheets be available: dist builds always ship both, but a dev build may be restricted to a
+ * single theme via `KBN_OPTIMIZER_THEMES` — in that case we must fall back to the one compiled
+ * theme, otherwise `'system'` could reference an uncompiled stylesheet.
+ */
+const getDefaultDarkModeValue = ({
+  isDist,
+}: GetThemeSettingsOptions): 'enabled' | 'disabled' | 'system' => {
+  // dist builds always ship both light and dark stylesheets, so `'system'` is always safe
+  if (isDist) {
+    return 'system';
   }
 
-  return themeInfo;
+  const themeTags = parseThemeTags(process.env.KBN_OPTIMIZER_THEMES);
+  const hasLight = themeTags.some((tag) => tag.endsWith('light'));
+  const hasDark = themeTags.some((tag) => tag.endsWith('dark'));
+
+  if (hasLight && hasDark) {
+    return 'system';
+  }
+
+  // single-theme dev build: default to whichever theme is actually compiled
+  return hasDark ? 'enabled' : 'disabled';
 };
 
 export interface GetThemeSettingsOptions {
@@ -48,7 +58,7 @@ export interface GetThemeSettingsOptions {
 export const getThemeSettings = (
   options: GetThemeSettingsOptions
 ): Record<string, UiSettingsParams> => {
-  const { defaultDarkMode } = getThemeInfo(options);
+  const defaultDarkMode = getDefaultDarkModeValue(options);
   const defaultTheme = options.defaultTheme ?? DEFAULT_THEME_NAME;
 
   return {
@@ -56,7 +66,7 @@ export const getThemeSettings = (
       name: i18n.translate('core.ui_settings.params.darkModeTitle', {
         defaultMessage: 'Dark mode',
       }),
-      value: defaultDarkMode ? 'enabled' : 'disabled',
+      value: defaultDarkMode,
       description: i18n.translate('core.ui_settings.params.darkModeText', {
         defaultMessage:
           `The UI theme that the Kibana UI should use. ` +

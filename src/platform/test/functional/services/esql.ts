@@ -251,6 +251,19 @@ export class ESQLService extends FtrService {
     );
   }
 
+  public async getEsqlBadgeHoverText(badgeClassName: string): Promise<string> {
+    return this.retry.try(async () => {
+      await this.browser.moveMouseTo({ x: 0, y: 0 });
+      const badge = await this.findService.byCssSelector(`.${badgeClassName}`);
+      await badge.moveMouseTo();
+
+      await this.findService.byCssSelector(`.monaco-hover`);
+      const rows = await this.findService.allByCssSelector(`.monaco-hover .hover-row`);
+      const texts = await Promise.all(rows.map((row) => row.getVisibleText()));
+      return texts.join(' ').trim();
+    });
+  }
+
   public async selectEsqlBadgeHoverOption(badgeClassName: string, optionText: string) {
     await this.retry.try(async () => {
       await this.browser.moveMouseTo({ x: 0, y: 0 });

@@ -25,10 +25,6 @@ export const SIG_EVENT_STATUS_OPTIONS = [
 export const sigEventStatusSchema = z.enum(SIG_EVENT_STATUS_OPTIONS);
 export type SigEventStatus = z.infer<typeof sigEventStatusSchema>;
 
-export const SIG_EVENT_IMPACT_OPTIONS = ['critical', 'high', 'medium', 'low'] as const;
-export const sigEventImpactSchema = z.enum(SIG_EVENT_IMPACT_OPTIONS);
-export type SigEventImpact = z.infer<typeof sigEventImpactSchema>;
-
 export const sigEventSchema = z.object({
   '@timestamp': z.iso.datetime({ offset: true }),
   created_at: z.iso.datetime({ offset: true }),
@@ -45,7 +41,6 @@ export const sigEventSchema = z.object({
   root_cause: z.string().max(4000),
   criticality: z.number(),
   confidence: z.number(),
-  impact: sigEventImpactSchema,
   recommendations: z.array(z.string().max(1000)).max(50),
   dependency_edges: z.array(dependencyEdgeSchema).optional(),
   infra_components: z.array(infraComponentSchema).optional(),

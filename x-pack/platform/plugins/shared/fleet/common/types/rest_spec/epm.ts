@@ -62,6 +62,7 @@ export interface InstalledPackage {
   title?: string;
   description?: string;
   icons?: PackageSpecIcon[];
+  rolledBack?: boolean;
 }
 export interface GetInstalledPackagesResponse {
   items: InstalledPackage[];

@@ -1,8 +1,50 @@
 {
-  "sha1": "dd314c748e3fce5aa782de0bca383531025b046e",
+  "sha1": "f601eb9198e31163ca8ca05623619a5bb7f85789",
   "tests": [
     {
-      "id": "23fa02f46a56f43-4512d1a251a937e",
+      "id": "d18f81a84aa5c84-01def2558f31c21",
+      "title": "Agent Builder — agents access-control API POST allows explicit private access-control mode",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
+        "line": 324,
+        "column": 12
+      }
+    },
+    {
+      "id": "d18f81a84aa5c84-59ff86426426626",
+      "title": "Agent Builder — agents access-control API PUT updates access-control mode explicitly",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
+        "line": 339,
+        "column": 12
+      }
+    },
+    {
+      "id": "d18f81a84aa5c84-a36af989fc96c45",
+      "title": "Agent Builder — agents access-control API PUT rejects access-control mode change for default agent (404)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
+        "line": 359,
+        "column": 12
+      }
+    },
+    {
+      "id": "d18f81a84aa5c84-ba3c4ccaaaab9a1",
       "title": "Agent Builder — agents access-control API non-owner gets 404 on a Private agent until granted",
       "expectedStatus": "passed",
       "tags": [
@@ -11,13 +53,13 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 223,
-        "column": 10
+        "line": 384,
+        "column": 12
       }
     },
     {
-      "id": "23fa02f46a56f43-b539fc98b2a96fa",
-      "title": "Agent Builder — agents access-control API GET /agents/{id} redacts acl.entries for non-managers",
+      "id": "d18f81a84aa5c84-4730ee7d11f26a2",
+      "title": "Agent Builder — agents access-control API legacy visibility and acl are honored for read, list, and access-control APIs",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -25,13 +67,13 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 264,
-        "column": 10
+        "line": 441,
+        "column": 12
       }
     },
     {
-      "id": "23fa02f46a56f43-45fb1940d294f6d",
-      "title": "Agent Builder — agents access-control API GET /agents/{id}/access_control returns can_manage_access_control and redacts entries for non-managers",
+      "id": "d18f81a84aa5c84-69bf56f647371d6",
+      "title": "Agent Builder — agents access-control API GET /agents/{id} keeps only the caller's access_control entry for non-managers",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -39,13 +81,13 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 292,
-        "column": 10
+        "line": 537,
+        "column": 12
       }
     },
     {
-      "id": "23fa02f46a56f43-b20de015f475d9a",
-      "title": "Agent Builder — agents access-control API PUT /agents/{id}/access_control gates on write access (User → 404, Editor → 200)",
+      "id": "d18f81a84aa5c84-84de39b31cd1b72",
+      "title": "Agent Builder — agents access-control API GET /agents/{id}/access_control returns permissions and redacts entries for non-managers",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -53,12 +95,40 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 322,
-        "column": 10
+        "line": 593,
+        "column": 12
       }
     },
     {
-      "id": "23fa02f46a56f43-d9a1b949866e89a",
+      "id": "d18f81a84aa5c84-4a8865c385008a4",
+      "title": "Agent Builder — agents access-control API PUT /agents/{id}/access_control gates on access-control management (User and Editor → 404, Manager → 200)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
+        "line": 628,
+        "column": 12
+      }
+    },
+    {
+      "id": "d18f81a84aa5c84-2a247bc6014e0da",
+      "title": "Agent Builder — agents access-control API legacy Manager acl can change access-control mode",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
+        "line": 660,
+        "column": 12
+      }
+    },
+    {
+      "id": "d18f81a84aa5c84-2fe900b04db094d",
       "title": "Agent Builder — agents access-control API PUT /agents/{id}/access_control rejects callers without manageAgents (403)",
       "expectedStatus": "passed",
       "tags": [
@@ -67,12 +137,12 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 344,
-        "column": 10
+        "line": 684,
+        "column": 12
       }
     },
     {
-      "id": "23fa02f46a56f43-d2168f01973b14c",
+      "id": "d18f81a84aa5c84-ab362410b67d64c",
       "title": "Agent Builder — agents access-control API PUT /access_control on the default agent returns 400",
       "expectedStatus": "passed",
       "tags": [
@@ -81,13 +151,13 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 357,
-        "column": 10
+        "line": 697,
+        "column": 12
       }
     },
     {
-      "id": "23fa02f46a56f43-d31f223e0dbf85c",
-      "title": "Agent Builder — agents access-control API cluster admin can read a Private agent they are not in the ACL of",
+      "id": "d18f81a84aa5c84-d904341290ecaa5",
+      "title": "Agent Builder — agents access-control API cluster admin can read a Private agent they are not in the access control of",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -95,12 +165,12 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 371,
-        "column": 10
+        "line": 715,
+        "column": 12
       }
     },
     {
-      "id": "23fa02f46a56f43-d310e0b65173d25",
+      "id": "d18f81a84aa5c84-645b019a74319ed",
       "title": "Agent Builder — agents access-control API /_suggest_user_profiles requires manageAgents (reader gets 403)",
       "expectedStatus": "passed",
       "tags": [
@@ -109,8 +179,8 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_api.spec.ts",
-        "line": 386,
-        "column": 10
+        "line": 733,
+        "column": 12
       }
     },
     {
@@ -178,8 +248,8 @@
       }
     },
     {
-      "id": "bff1cb9c45e581b-a94a1d5e0090347",
-      "title": "Agent Builder — agents API POST /api/agent_builder/agents defaults access-control scope to public with created_by",
+      "id": "bff1cb9c45e581b-2fcaeb58d47d62f",
+      "title": "Agent Builder — agents API POST /api/agent_builder/agents defaults access-control mode to public with created_by",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -205,7 +275,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 119,
+        "line": 122,
         "column": 12
       }
     },
@@ -221,7 +291,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 141,
+        "line": 144,
         "column": 12
       }
     },
@@ -237,7 +307,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 153,
+        "line": 156,
         "column": 12
       }
     },
@@ -253,7 +323,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 179,
+        "line": 182,
         "column": 12
       }
     },
@@ -269,7 +339,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 200,
+        "line": 203,
         "column": 12
       }
     },
@@ -285,7 +355,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 219,
+        "line": 222,
         "column": 12
       }
     },
@@ -301,7 +371,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 230,
+        "line": 233,
         "column": 12
       }
     },
@@ -317,49 +387,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_api.spec.ts",
-        "line": 249,
-        "column": 12
-      }
-    },
-    {
-      "id": "2beeca8c68780a0-f370e79e23c9074",
-      "title": "Agent Builder — agents access-control scope API POST allows explicit private access-control scope",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_scope_api.spec.ts",
-        "line": 36,
-        "column": 12
-      }
-    },
-    {
-      "id": "2beeca8c68780a0-dbb4b75aeab0077",
-      "title": "Agent Builder — agents access-control scope API PUT updates access-control scope explicitly",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_scope_api.spec.ts",
-        "line": 47,
-        "column": 12
-      }
-    },
-    {
-      "id": "2beeca8c68780a0-3e667e492409f16",
-      "title": "Agent Builder — agents access-control scope API PUT rejects access-control scope change for default agent (404)",
-      "expectedStatus": "passed",
-      "tags": [
-        "@local-stateful-classic",
-        "@cloud-stateful-classic"
-      ],
-      "location": {
-        "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/agents_access_control_scope_api.spec.ts",
-        "line": 66,
+        "line": 252,
         "column": 12
       }
     },
@@ -1127,8 +1155,8 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/agent_builder/test/scout_agent_builder/api/tests/plugins_installation_api.spec.ts",
-        "line": 62,
-        "column": 12
+        "line": 64,
+        "column": 21
       }
     },
     {

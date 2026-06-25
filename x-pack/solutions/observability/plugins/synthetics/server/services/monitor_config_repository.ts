@@ -231,7 +231,13 @@ export class MonitorConfigRepository {
     const spaces = (data.spaces || []).sort();
     // If the spaces have changed, we need to delete the saved object and recreate it
     if (isEqual(prevSpaces, spaces)) {
-      return this.soClient.update<MonitorFields>(soType, id, data, { references });
+      // `mergeAttributes: false` fully replaces the attributes. The default deep-merge
+      // keeps stale keys in top-level map fields that aren't mapped as `flattened`
+      // (notably `labels`), making it impossible to delete individual entries. See #274387.
+      return this.soClient.update<MonitorFields>(soType, id, data, {
+        references,
+        mergeAttributes: false,
+      });
     } else {
       await this.soClient.delete(soType, id, { force: true });
       return await this.soClient.create(syntheticsMonitorSavedObjectType, data, {
@@ -267,6 +273,7 @@ export class MonitorConfigRepository {
       attributes: MonitorFields;
       namespace?: string;
       references?: SavedObjectReference[];
+      mergeAttributes?: boolean;
     }> = [];
 
     for (const monitor of monitors) {
@@ -284,6 +291,8 @@ export class MonitorConfigRepository {
         attributes,
         namespace,
         references,
+        // See `update` above: avoid deep-merging so removed map-field keys are deleted.
+        mergeAttributes: false,
       });
     }
 

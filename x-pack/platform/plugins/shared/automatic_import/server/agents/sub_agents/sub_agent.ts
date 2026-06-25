@@ -294,7 +294,10 @@ export const createTaskTool = (params: TaskToolParams) => {
       }
 
       try {
-        const result = await subAgent.invoke(modifiedState);
+        const result = await subAgent.invoke(modifiedState, {
+          callbacks: config?.callbacks,
+          signal: config?.signal,
+        });
 
         return new Command({
           update: {

@@ -15,10 +15,10 @@ import {
 import type { SignificantEventAttachment } from '@kbn/streams-plugin/common';
 import { SIGNIFICANT_EVENT_ATTACHMENT_TYPE } from '@kbn/streams-plugin/common';
 import type { ChromeStart } from '@kbn/core/public';
+
 import type { StreamsAppStartDependencies } from '../../../types';
 import { getSigEventStatusColor } from '../significant_events_discovery/components/shared/status_display';
 import { SigEventDetails } from '../sig_event_details/sig_event_details';
-import sigEventIcon from '../../asset_image/sig_event_icon.svg';
 import type { FocusedSignificantEventService } from '../../../services/significant_events/focused_significant_event_service';
 import { registerSignificantEventAutoAttach } from '../lib/significant_event_auto_attach';
 
@@ -34,9 +34,9 @@ const labels = {
 export const significantEventAttachmentDefinition: AttachmentUIDefinition<SignificantEventAttachment> =
   {
     getLabel: (attachment) => attachment.data.title || labels.fallback,
-    getIcon: () => sigEventIcon,
+    getIcon: () => 'significantEvents',
     getHeader: ({ attachment }) => ({
-      icon: sigEventIcon,
+      icon: 'significantEvents',
       subtitle: labels.fallback,
       badges: [
         { label: attachment.data.status, color: getSigEventStatusColor(attachment.data.status) },

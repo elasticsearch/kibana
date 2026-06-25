@@ -10,15 +10,25 @@ import { render, screen } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
 import type { RuleResponse } from '@kbn/alerting-v2-schemas';
 import type { AlertEpisode } from '../../../queries/episodes_query';
+import { RuleStateStatus } from '../../../types/rule_state';
 import { RelatedAlertEpisodesList } from './related_list';
 
 jest.mock('../../related/related_alert_episode', () => ({
-  RelatedAlertEpisode: ({ episode }: { episode: AlertEpisode }) => (
-    <div data-test-subj="mockRelatedAlertEpisode">{episode['episode.id']}</div>
+  RelatedAlertEpisode: ({ episode, ruleName }: { episode: AlertEpisode; ruleName: string }) => (
+    <div data-test-subj="mockRelatedAlertEpisode">{ruleName || episode['episode.id']}</div>
   ),
 }));
 
-const mockRule = { id: 'rule-1', metadata: { name: 'Test Rule' } } as RuleResponse;
+const mockRule = {
+  id: 'rule-1',
+  metadata: { name: 'Test Rule' },
+} as RuleResponse;
+
+const loadedRuleState = {
+  status: RuleStateStatus.loaded,
+  ruleId: 'rule-1',
+  rule: mockRule,
+} as const;
 
 const makeRow = (id: string): AlertEpisode =>
   ({
@@ -38,7 +48,7 @@ describe('RelatedAlertEpisodesList', () => {
       <I18nProvider>
         <RelatedAlertEpisodesList
           rows={[makeRow('ep-1'), makeRow('ep-2')]}
-          rule={mockRule}
+          ruleState={loadedRuleState}
           getEpisodeAction={() => undefined}
           getGroupAction={() => undefined}
           getEpisodeDetailsHref={(id) => `/base/${id}`}
@@ -48,9 +58,23 @@ describe('RelatedAlertEpisodesList', () => {
 
     expect(screen.getAllByTestId('mockRelatedAlertEpisode')).toHaveLength(2);
     expect(screen.getByTestId('alertingV2RelatedEpisodesList')).toBeInTheDocument();
+    expect(screen.getAllByText('Test Rule')).toHaveLength(2);
+  });
 
-    expect(screen.getByText('ep-1')).toBeInTheDocument();
-    expect(screen.getByText('ep-2')).toBeInTheDocument();
+  it('uses the episode id label when the rule is missing', () => {
+    render(
+      <I18nProvider>
+        <RelatedAlertEpisodesList
+          rows={[makeRow('ep-missing-rule')]}
+          ruleState={{ status: RuleStateStatus.not_found, ruleId: 'rule-1' }}
+          getEpisodeAction={() => undefined}
+          getGroupAction={() => undefined}
+          getEpisodeDetailsHref={(id) => `/base/${id}`}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText('Episode ID: ep-missing-rule')).toBeInTheDocument();
   });
 
   it('renders nothing inside the list when rows is empty', () => {
@@ -58,7 +82,7 @@ describe('RelatedAlertEpisodesList', () => {
       <I18nProvider>
         <RelatedAlertEpisodesList
           rows={[]}
-          rule={mockRule}
+          ruleState={loadedRuleState}
           getEpisodeAction={() => undefined}
           getGroupAction={() => undefined}
           getEpisodeDetailsHref={(id) => `/base/${id}`}

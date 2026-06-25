@@ -98,6 +98,13 @@ export const HEADER_LOADING_TITLE = i18n.translate(
   }
 );
 
+export const HEADER_EPISODE_TITLE_FALLBACK = i18n.translate(
+  'xpack.alertingV2EpisodesUi.details.header.episodeTitleFallback',
+  {
+    defaultMessage: 'Alert episode',
+  }
+);
+
 /** --- Lifecycle heatmap --- */
 export const LIFECYCLE_HEATMAP_TITLE = i18n.translate(
   'xpack.alertingV2EpisodesUi.details.lifecycleHeatmap.title',

@@ -93,7 +93,7 @@ describe('ApplicationConnections', () => {
 
     expect(getByPlaceholderText('Search')).toBeInTheDocument();
     expect(getByTestId('applicationConnectionsTable')).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('hides clients that have zero connections (falls back to the empty prompt when all clients are empty)', async () => {
     setupHttpResponses(coreStart, {

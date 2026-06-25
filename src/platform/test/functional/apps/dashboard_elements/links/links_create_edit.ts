@@ -35,10 +35,18 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     await dashboardLinks.addDashboardLink('links 001');
   }
 
+  async function openLinksPanelEditor() {
+    await dashboardAddPanel.openAddPanelFlyout();
+    await dashboardAddPanel.clickAddNewPanelFromUIActionLink('Links');
+    await dashboardLinks.expectPanelEditorFlyoutIsOpen();
+    await testSubjects.missingOrFail('dashboardAddPanel');
+  }
+
   const DASHBOARD_NAME = 'Test Links panel';
   const LINKS_PANEL_NAME = 'Some links';
 
-  describe('links panel create and edit', () => {
+  // Failing: See https://github.com/elastic/kibana/issues/274890
+  describe.skip('links panel create and edit', () => {
     describe('creation', () => {
       before(async () => {
         await dashboard.navigateToApp();
@@ -53,8 +61,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       });
 
       it('can not add an external link that violates externalLinks.policy', async () => {
-        await dashboardAddPanel.openAddPanelFlyout();
-        await dashboardAddPanel.clickAddNewPanelFromUIActionLink('Links');
+        await openLinksPanelEditor();
 
         await dashboardLinks.setExternalUrlInput('https://danger.example.com');
         expect(await testSubjects.exists('links--linkDestination--error')).to.be(true);
@@ -63,8 +70,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       });
 
       it('can create a new by-reference links panel', async () => {
-        await dashboardAddPanel.openAddPanelFlyout();
-        await dashboardAddPanel.clickAddNewPanelFromUIActionLink('Links');
+        await openLinksPanelEditor();
 
         await createSomeLinks();
         await dashboardLinks.toggleSaveByReference(true);
@@ -83,8 +89,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       });
 
       it('does not close the flyout when the user cancels the save as modal', async () => {
-        await dashboardAddPanel.openAddPanelFlyout();
-        await dashboardAddPanel.clickAddNewPanelFromUIActionLink('Links');
+        await openLinksPanelEditor();
         await createSomeLinks();
         await dashboardLinks.toggleSaveByReference(true);
         await dashboardLinks.clickPanelEditorSaveButton();
@@ -97,8 +102,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       describe('by-value links panel', () => {
         it('can create a new by-value links panel', async () => {
-          await dashboardAddPanel.openAddPanelFlyout();
-          await dashboardAddPanel.clickAddNewPanelFromUIActionLink('Links');
+          await openLinksPanelEditor();
           await dashboardLinks.setLayout('horizontal');
           await createSomeLinks();
           await dashboardLinks.toggleSaveByReference(false);

@@ -18,7 +18,7 @@ import {
   EuiTitle,
   EuiToolTip,
 } from '@elastic/eui';
-import { getRootEsqlQuery, type RuleResponse } from '@kbn/alerting-v2-schemas';
+import { getBreachEsqlQuery, type RuleResponse } from '@kbn/alerting-v2-schemas';
 import * as i18n from './translations';
 
 export interface AlertEpisodeRuleOverviewPanelProps {
@@ -102,7 +102,7 @@ export const AlertEpisodeRuleOverviewPanel = ({
         overflowHeight={240}
         data-test-subj="alertingV2EpisodeDetailsRuleQueryCodeBlock"
       >
-        {getRootEsqlQuery(rule.query)}
+        {getBreachEsqlQuery(rule.query)}
       </EuiCodeBlock>
     </>
   );

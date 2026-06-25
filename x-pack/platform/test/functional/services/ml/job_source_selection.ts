@@ -41,7 +41,9 @@ export function MachineLearningJobSourceSelectionProvider({ getService }: FtrPro
         await testSubjects.existOrFail('indexPattern-switcher', { timeout: 10 * 1000 });
         await testSubjects.setValue('indexPattern-switcher--input', name);
         const indexPatternSwitcher = await testSubjects.find('indexPattern-switcher', 500);
-        await (await indexPatternSwitcher.findByCssSelector(`[title="${name}"]`)).click();
+        await (
+          await indexPatternSwitcher.findByCssSelector(`[data-test-subj="dataView-${name}"]`)
+        ).click();
         // Wait for picker to close, confirming selection was made
         await testSubjects.missingOrFail('indexPattern-switcher', { timeout: 10 * 1000 });
       });

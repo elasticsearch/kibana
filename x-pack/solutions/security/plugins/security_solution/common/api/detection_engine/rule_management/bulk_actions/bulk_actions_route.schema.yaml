@@ -470,7 +470,7 @@ paths:
                             type: 'machine_learning'
                             anomaly_threshold: 50
                             machine_learning_job_id:
-                              - 'packetbeat_dns_tunneling_ea'
+                              - 'dns_tunneling_ea'
                             execution_summary:
                               last_execution:
                                 date: '2022-03-23T16:06:12.787Z'

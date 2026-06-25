@@ -23,8 +23,10 @@ export const convertPackQueriesToSO = (queries: Record<string, Omit<PackQueryFor
           'platform',
           'version',
           'ecs_mapping',
+          'schedule_type',
+          'rrule_schedule',
         ]),
-      });
+      } as PackQueryFormData);
 
       return acc;
     },

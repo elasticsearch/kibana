@@ -17,11 +17,6 @@ export const useEditDeletePhaseFlyoutStyles = () => {
       headerStyles: css`
         padding: ${euiTheme.size.xl};
       `,
-      flyoutBodyStyles: css`
-        .euiFlyoutBody__overflowContent {
-          height: 100%;
-        }
-      `,
       sectionStyles: css`
         padding: ${euiTheme.size.base} ${euiTheme.size.xl};
       `,

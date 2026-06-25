@@ -7,19 +7,16 @@
 
 import { expect } from '@kbn/scout/ui';
 import { tags } from '@kbn/scout';
+import { omit } from 'lodash';
 import { test } from '../../../fixtures';
 import { generateLogsData } from '../../../fixtures/generators';
 import {
   disableInheritFailureStoreIfEnabled,
-  openRetentionModal,
   saveFailureStoreChanges,
-  saveRetentionChanges,
-  setCustomRetention,
   setFailureStoreRetention,
   toggleFailureStore,
-  toggleInheritSwitch,
-  verifyRetentionDisplay,
 } from '../../../fixtures/retention_helpers';
+import { setCustomRetention } from '../../../fixtures/data_lifecycle_helpers';
 
 test.describe('Stream data retention - updating failure store', () => {
   test.beforeAll(async ({ apiServices, logsSynthtraceEsClient, esClient }) => {
@@ -80,7 +77,7 @@ test.describe('Stream data retention - updating failure store', () => {
         await pageObjects.streams.gotoDataRetentionTab(streamName);
 
         await setFailureStoreRetention(page, '7', 'd');
-        await verifyRetentionDisplay(page, '7 days', true);
+        await expect(page.getByTestId('failureStoreRetention-metric')).toContainText('7 days');
         await expect(page.getByTestId('failureStoreRetention-metric-subtitle')).toContainText(
           '2 data phases'
         );
@@ -109,7 +106,7 @@ test.describe('Stream data retention - updating failure store', () => {
         // Ensure a consistent starting point (other tests may leave the failure store enabled).
         await toggleFailureStore(page, false);
         await toggleFailureStore(page, true);
-        await verifyRetentionDisplay(page, '30 days', true);
+        await expect(page.getByTestId('failureStoreRetention-metric')).toContainText('30 days');
         await expect(page.getByTestId('failureStoreRetention-metric-subtitle')).toContainText(
           '2 data phases'
         );
@@ -180,15 +177,26 @@ test.describe('Stream data retention - updating failure store', () => {
   test(
     'should set failure store retention to different value than main retention',
     { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
-    async ({ page, pageObjects }) => {
+    async ({ page, pageObjects, apiServices }) => {
+      // Make the starting state deterministic regardless of other tests in this
+      // suite (or a retry of this test): set an explicit empty DSL lifecycle so
+      // DSL is already effective and there is no delete phase yet. A classic
+      // stream accepts an explicit DSL override (see lifecycle API tests), so
+      // the subsequent UI action does not need a confirmation modal and can add
+      // the delete phase unconditionally.
+      const definition = await apiServices.streams.getStreamDefinition('logs-generic-default');
+      await apiServices.streams.updateStream('logs-generic-default', {
+        ingest: {
+          ...definition.stream.ingest,
+          processing: omit(definition.stream.ingest.processing, 'updated_at'),
+          lifecycle: { dsl: {} },
+        },
+      });
+
       await pageObjects.streams.gotoDataRetentionTab('logs-generic-default');
 
-      // Set main retention to 30 days
-      await openRetentionModal(page);
-      await toggleInheritSwitch(page, false);
       await setCustomRetention(page, '30', 'd');
-      await saveRetentionChanges(page);
-      await verifyRetentionDisplay(page, '30 days');
+      await expect(page.getByTestId('retention-metric')).toContainText('30 days');
 
       // Set failure store retention to 7 days
       await setFailureStoreRetention(page, '7', 'd');

@@ -10,12 +10,22 @@ import { BooleanFromString } from '@kbn/zod-helpers/v4';
 import type { IndicesGetResponse } from '@elastic/elasticsearch/lib/api/types';
 import type { IScopedClusterClient } from '@kbn/core/server';
 import { isNotFoundError } from '@kbn/es-errors';
-import { Streams, isIlmLifecycle, type IlmPolicyWithUsage } from '@kbn/streams-schema';
+import {
+  MAX_STREAM_NAME_LENGTH,
+  Streams,
+  findInheritedLifecycle,
+  isIlmLifecycle,
+  type IlmPolicyWithUsage,
+} from '@kbn/streams-schema';
 import { processAsyncInChunks } from '../../../../utils/process_async_in_chunks';
 import { STREAMS_API_PRIVILEGES } from '../../../../../common/constants';
 import { createServerRoute } from '../../../create_server_route';
 import { ilmPhases } from '../../../../lib/streams/lifecycle/ilm_phases';
 import { getEffectiveLifecycle } from '../../../../lib/streams/lifecycle/get_effective_lifecycle';
+import {
+  getTemplateLifecycle,
+  simulateClassicStreamTemplate,
+} from '../../../../lib/streams/data_streams/manage_data_streams';
 import {
   buildPolicyUsage,
   normalizeIlmPhases,
@@ -72,7 +82,7 @@ const lifecycleStatsRoute = createServerRoute({
     },
   },
   params: z.object({
-    path: z.object({ name: z.string() }),
+    path: z.object({ name: z.string().max(MAX_STREAM_NAME_LENGTH) }),
   }),
   handler: async ({ params, request, getScopedClients }) => {
     const { scopedClusterClient, streamsClient } = await getScopedClients({ request });
@@ -129,7 +139,7 @@ const lifecycleIlmExplainRoute = createServerRoute({
     },
   },
   params: z.object({
-    path: z.object({ name: z.string() }),
+    path: z.object({ name: z.string().max(MAX_STREAM_NAME_LENGTH) }),
   }),
   handler: async ({ params, request, getScopedClients }) => {
     const { scopedClusterClient, streamsClient } = await getScopedClients({ request });
@@ -141,6 +151,55 @@ const lifecycleIlmExplainRoute = createServerRoute({
     return scopedClusterClient.asCurrentUser.ilm.explainLifecycle({
       index: name,
     });
+  },
+});
+
+const lifecycleInheritedRoute = createServerRoute({
+  endpoint: 'GET /internal/streams/{name}/lifecycle/_inherited',
+  options: {
+    access: 'internal',
+  },
+  security: {
+    authz: {
+      requiredPrivileges: [STREAMS_API_PRIVILEGES.read],
+    },
+  },
+  params: z.object({
+    path: z.object({ name: z.string().max(MAX_STREAM_NAME_LENGTH) }),
+  }),
+  handler: async ({ params, request, getScopedClients, logger }) => {
+    const { scopedClusterClient, streamsClient } = await getScopedClients({ request });
+    const name = params.path.name;
+
+    const definition = await streamsClient.getStream(name);
+    if (!Streams.ingest.all.Definition.is(definition)) {
+      throw new StatusError('Inherited lifecycle is only available for ingest streams', 400);
+    }
+
+    if (Streams.WiredStream.Definition.is(definition)) {
+      const ancestors = await streamsClient.getAncestors(name);
+      const inheritingDefinition: Streams.WiredStream.Definition = {
+        ...definition,
+        ingest: { ...definition.ingest, lifecycle: { inherit: {} } },
+      };
+
+      return { lifecycle: findInheritedLifecycle(inheritingDefinition, ancestors) };
+    }
+
+    const template = await simulateClassicStreamTemplate({
+      esClient: scopedClusterClient.asCurrentUser,
+      name,
+      logger,
+    });
+
+    if (!template || !template.settings) {
+      throw new StatusError(
+        `Cannot determine template lifecycle for ${name} — the data stream may be replicated and managed by a remote cluster`,
+        400
+      );
+    }
+
+    return { lifecycle: getTemplateLifecycle(template) };
   },
 });
 
@@ -271,6 +330,7 @@ const lifecycleSnapshotRepositoriesRoute = createServerRoute({
 export const internalLifecycleRoutes = {
   ...lifecycleStatsRoute,
   ...lifecycleIlmExplainRoute,
+  ...lifecycleInheritedRoute,
   ...lifecycleIlmPoliciesRoute,
   ...lifecycleIlmPoliciesUpdateRoute,
   ...lifecycleSnapshotRepositoriesRoute,

@@ -65,7 +65,7 @@ export class NetworkEventsPageObject extends FtrService {
   }
 
   async ensureOnNetworkEventsPage(): Promise<void> {
-    await this.testSubjects.existOrFail('network-details-headline');
+    await this.testSubjects.existOrFail('header-page-title');
   }
 
   async waitForListToHaveEvents(timeoutMs?: number): Promise<void> {

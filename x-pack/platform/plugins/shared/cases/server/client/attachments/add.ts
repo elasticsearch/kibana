@@ -18,7 +18,9 @@ import { Operations } from '../../authorization';
 import type { AddArgs } from './types';
 import { validateRegisteredAttachments } from './validators';
 import { validateMaxUserActions } from '../../common/validators';
+import { extractAndAddObservables } from './extract_observables';
 import { emitAttachmentsAddedEvent } from './trigger_utils';
+
 /**
  * Create an attachment to a case.
  *
@@ -76,6 +78,9 @@ export const addComment = async (addArgs: AddArgs, clientArgs: CasesClientArgs):
     const updatedCase = await updatedModel.encodeWithComments({ mode });
 
     emitAttachmentsAddedEvent(clientArgs, updatedCase, [savedObjectID], query.type);
+
+    // This call never throws — failures are logged and do not abort the attachment creation.
+    await extractAndAddObservables(caseId, [comment], updatedCase, clientArgs);
 
     return updatedCase;
   } catch (error) {

@@ -79,7 +79,7 @@ export function createCachedTokensEvaluator({
       buildQuery: (traceId) => `FROM traces-*
         | WHERE trace.id == "${traceId}"
         | STATS 
-        cached_tokens = SUM(attributes.gen_ai.usage.cached_input_tokens)`,
+        cached_tokens = SUM(attributes.gen_ai.usage.cache_read.input_tokens)`,
       extractResult: (response) => {
         const { columns, values } = response;
         const row = values[0];

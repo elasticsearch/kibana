@@ -23,6 +23,7 @@ import { useKibana } from '../../../../../hooks/use_kibana';
 import { useIlmPhasesColorAndDescription } from './use_ilm_phases_color_and_description';
 import type { DataStreamStats } from './use_data_stream_stats';
 import { formatBytes } from '../helpers/format_bytes';
+import { useLifecyclePreview } from '../common/hooks/lifecycle_preview';
 import { OverrideSettingsModal } from '../data_phases/override_settings_modal/override_settings_modal';
 import { EditDslStepsFlyout } from '../data_phases/edit_dsl_steps_flyout/edit_dsl_steps_flyout';
 import { MAX_DOWNSAMPLE_STEPS } from '../data_phases/edit_dsl_steps_flyout/form';
@@ -66,6 +67,7 @@ export const useDslLifecycleSummary = ({
 
   const { euiTheme } = useEuiTheme();
   const { ilmPhases } = useIlmPhasesColorAndDescription();
+  const { setIsDslDownsampleFlyoutOpen } = useLifecyclePreview();
 
   const [uiState, dispatchUi] = useReducer(
     dslLifecycleSummaryUiReducer,
@@ -177,8 +179,9 @@ export const useDslLifecycleSummary = ({
   };
 
   const closeEditFlyout = useCallback(() => {
+    setIsDslDownsampleFlyoutOpen(false);
     dispatchUi({ type: 'closeEditFlyout' });
-  }, []);
+  }, [setIsDslDownsampleFlyoutOpen]);
 
   const openEditFlyout = useCallback(
     ({ stepNumber }: { stepNumber?: number } = {}) => {
@@ -201,6 +204,7 @@ export const useDslLifecycleSummary = ({
         return;
       }
 
+      setIsDslDownsampleFlyoutOpen(true);
       dispatchUi({
         type: 'openEditFlyout',
         payload: {
@@ -209,7 +213,7 @@ export const useDslLifecycleSummary = ({
         },
       });
     },
-    [definition.effective_lifecycle, uiState.isEditDslStepsFlyoutOpen]
+    [definition.effective_lifecycle, setIsDslDownsampleFlyoutOpen, uiState.isEditDslStepsFlyoutOpen]
   );
 
   const handleEditDslDownsampleStep = (stepNumber: number) => {

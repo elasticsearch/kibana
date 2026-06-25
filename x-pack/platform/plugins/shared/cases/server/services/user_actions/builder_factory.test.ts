@@ -14,6 +14,8 @@ import {
   UserActionTypes,
 } from '../../../common/types/domain';
 import { SECURITY_SOLUTION_OWNER } from '../../../common';
+import { CASE_ATTACHMENT_SAVED_OBJECT } from '../../../common/constants';
+import { CASE_ATTACHMENT_REF_NAME } from '../../common/constants';
 import {
   externalReferenceAttachmentES,
   externalReferenceAttachmentSO,
@@ -194,6 +196,30 @@ describe('UserActionBuilder', () => {
           ],
         }
       `);
+    });
+
+    it('builds a comment user action with the attachment saved object type', () => {
+      const builder = builderFactory.getBuilder(UserActionTypes.comment)!;
+      const userAction = builder.build({
+        action: UserActionActions.update,
+        payload: {
+          attachment: {
+            comment: 'a comment!',
+            type: AttachmentType.user,
+            owner: SECURITY_SOLUTION_OWNER,
+          },
+        },
+        savedObjectId: 'test-id',
+        savedObjectType: CASE_ATTACHMENT_SAVED_OBJECT,
+        ...commonArgs,
+      });
+
+      expect(userAction!.parameters.references).toContainEqual({
+        id: 'test-id',
+        name: CASE_ATTACHMENT_REF_NAME,
+        type: CASE_ATTACHMENT_SAVED_OBJECT,
+      });
+      expect(userAction!.eventDetails.savedObjectType).toBe(CASE_ATTACHMENT_SAVED_OBJECT);
     });
 
     it('builds an external reference attachment (savedObject) user action correctly', () => {

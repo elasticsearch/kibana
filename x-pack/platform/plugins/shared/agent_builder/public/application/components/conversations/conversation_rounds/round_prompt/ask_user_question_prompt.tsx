@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   EuiButton,
   EuiButtonEmpty,
@@ -30,6 +30,7 @@ import {
   draftToAnswer,
   isDraftAnswerable,
   isCustomTextMissing,
+  useAskUserQuestionTelemetry,
 } from './ask_user_question_prompt_utils';
 import type { AnswerDraft, AskUserQuestionPromptProps } from './ask_user_question_prompt_utils';
 
@@ -48,6 +49,15 @@ export const AskUserQuestionPrompt = ({
   const [drafts, setDrafts] = useState<AnswerDraft[]>(() => questions.map(() => ({})));
   const [showCustomError, setShowCustomError] = useState(false);
   const baseId = useGeneratedHtmlId({ prefix: 'askUserQuestionPrompt' });
+
+  const { reportPromptShown, reportQuestionAnswered } = useAskUserQuestionTelemetry({
+    promptId,
+    questions,
+  });
+
+  useEffect(() => {
+    reportPromptShown();
+  }, [reportPromptShown]);
 
   const currentQuestion = questions[currentIndex];
   const currentDraft = drafts[currentIndex];
@@ -83,23 +93,32 @@ export const AskUserQuestionPrompt = ({
       setShowCustomError(true);
       return;
     }
+    reportQuestionAnswered(currentIndex, currentDraft, 'answered');
     if (isFinalQuestion) {
       handleSubmit();
       return;
     }
     setShowCustomError(false);
     setCurrentIndex((idx) => idx + 1);
-  }, [canConfirm, currentDraft, handleSubmit, isFinalQuestion]);
+  }, [
+    canConfirm,
+    currentDraft,
+    currentIndex,
+    handleSubmit,
+    isFinalQuestion,
+    reportQuestionAnswered,
+  ]);
 
   const handleSkip = useCallback(() => {
     const skippedDraft: AnswerDraft = { skipped: true };
+    reportQuestionAnswered(currentIndex, skippedDraft, 'skipped');
     if (isFinalQuestion) {
       handleSubmit(skippedDraft);
       return;
     }
     updateDraft(skippedDraft);
     setCurrentIndex((idx) => idx + 1);
-  }, [handleSubmit, isFinalQuestion, updateDraft]);
+  }, [currentIndex, handleSubmit, isFinalQuestion, reportQuestionAnswered, updateDraft]);
 
   const handleBack = useCallback(() => {
     setShowCustomError(false);
@@ -107,8 +126,9 @@ export const AskUserQuestionPrompt = ({
   }, []);
 
   const handleSkipAll = useCallback(() => {
+    reportQuestionAnswered(currentIndex, {}, 'skipped_all');
     onSubmit({ answers: questions.map(() => ({ skipped: true })) });
-  }, [onSubmit, questions]);
+  }, [currentIndex, onSubmit, questions, reportQuestionAnswered]);
 
   const handleOptionPick = useCallback(
     (optionIndex: number, checked: boolean) => {

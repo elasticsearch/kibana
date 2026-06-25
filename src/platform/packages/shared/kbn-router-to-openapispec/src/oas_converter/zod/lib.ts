@@ -419,7 +419,7 @@ const OAS_EXTENSIONS_MARKER = 'x-kbn-oas-extensions';
 export interface OasMetaExtensions {
   discriminator?: OpenAPIV3.DiscriminatorObject;
   availability?: {
-    stability?: 'experimental' | 'beta' | 'stable' | 'tech_preview';
+    stability?: 'experimental' | 'stable' | 'tech_preview';
     since?: string;
   };
 }

@@ -230,7 +230,7 @@ export const allowedExperimentalValues = Object.freeze({
   /**
    * Enables the Automatic Troubleshooting Agent Builder skill
    */
-  automaticTroubleshootingSkill: false,
+  automaticTroubleshootingSkill: true,
 
   /**
    * Enables the PCI DSS v4.0.1 Compliance Agent Builder skill and its backing tools.

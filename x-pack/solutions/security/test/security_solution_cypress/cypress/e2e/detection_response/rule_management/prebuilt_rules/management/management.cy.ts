@@ -114,7 +114,7 @@ describe('Prebuilt rules', { tags: ['@ess', '@serverless', '@skipInServerlessMKI
         selectAllRules();
 
         cy.get(COLLAPSED_ACTION_BTN).each((collapsedItemActionBtn) => {
-          cy.wrap(collapsedItemActionBtn).should('have.attr', 'disabled');
+          cy.wrap(collapsedItemActionBtn).should('have.attr', 'aria-disabled', 'true');
         });
       });
 

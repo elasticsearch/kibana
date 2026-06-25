@@ -76,7 +76,15 @@ describe('useField', () => {
         useEsField({ indexPattern: newIndexPattern, onChange: onChangeMock })
       );
       const { comboOptions, selectedComboOptions } = result.current;
-      expect(comboOptions).toEqual([{ label: 'bytes' }, { label: 'ssl' }, { label: '@timestamp' }]);
+      expect(comboOptions).toEqual([
+        { label: 'bytes', disabled: undefined, 'data-test-subj': 'filterFieldOption-bytes' },
+        { label: 'ssl', disabled: undefined, 'data-test-subj': 'filterFieldOption-ssl' },
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
+      ]);
       expect(selectedComboOptions).toEqual([]);
     });
     it('should not return a selected field when empty string as a combo option', () => {
@@ -125,7 +133,15 @@ describe('useField', () => {
         })
       );
       const { comboOptions, selectedComboOptions } = result.current;
-      expect(comboOptions).toEqual([{ label: 'bytes' }, { label: 'ssl' }, { label: '@timestamp' }]);
+      expect(comboOptions).toEqual([
+        { label: 'bytes', disabled: undefined, 'data-test-subj': 'filterFieldOption-bytes' },
+        { label: 'ssl', disabled: undefined, 'data-test-subj': 'filterFieldOption-ssl' },
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
+      ]);
       expect(selectedComboOptions).toEqual([]);
     });
     it('should not return a selected field when string with spaces is written as a combo option', () => {
@@ -174,7 +190,15 @@ describe('useField', () => {
         })
       );
       const { comboOptions, selectedComboOptions } = result.current;
-      expect(comboOptions).toEqual([{ label: 'bytes' }, { label: 'ssl' }, { label: '@timestamp' }]);
+      expect(comboOptions).toEqual([
+        { label: 'bytes', disabled: undefined, 'data-test-subj': 'filterFieldOption-bytes' },
+        { label: 'ssl', disabled: undefined, 'data-test-subj': 'filterFieldOption-ssl' },
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
+      ]);
       expect(selectedComboOptions).toEqual([]);
     });
     it('should map fields to comboOptions correctly and return selectedComboOptions', () => {
@@ -219,8 +243,22 @@ describe('useField', () => {
         useEsField({ indexPattern: newIndexPattern, onChange: onChangeMock, selectedField })
       );
       const { comboOptions, selectedComboOptions } = result.current;
-      expect(comboOptions).toEqual([{ label: 'bytes' }, { label: 'ssl' }, { label: '@timestamp' }]);
-      expect(selectedComboOptions).toEqual([{ label: '@timestamp' }]);
+      expect(comboOptions).toEqual([
+        { label: 'bytes', disabled: undefined, 'data-test-subj': 'filterFieldOption-bytes' },
+        { label: 'ssl', disabled: undefined, 'data-test-subj': 'filterFieldOption-ssl' },
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
+      ]);
+      expect(selectedComboOptions).toEqual([
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
+      ]);
     });
   });
 
@@ -270,10 +308,14 @@ describe('useField', () => {
       const { result } = renderHook(() => useEsField({ indexPattern, onChange: onChangeMock }));
       const { comboOptions, renderFields } = result.current;
       expect(comboOptions).toEqual([
-        { label: 'blob' },
-        { label: 'bytes' },
-        { label: 'ssl' },
-        { label: '@timestamp' },
+        { label: 'blob', disabled: undefined, 'data-test-subj': 'filterFieldOption-blob' },
+        { label: 'bytes', disabled: undefined, 'data-test-subj': 'filterFieldOption-bytes' },
+        { label: 'ssl', disabled: undefined, 'data-test-subj': 'filterFieldOption-ssl' },
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
       ]);
       act(() => {
         const label = renderFields({ label: 'blob' }) as ReactElement;
@@ -325,10 +367,14 @@ describe('useField', () => {
       const { result } = renderHook(() => useEsField({ indexPattern, onChange: onChangeMock }));
       const { comboOptions, renderFields } = result.current;
       expect(comboOptions).toEqual([
-        { label: 'blob' },
-        { label: 'bytes' },
-        { label: 'ssl' },
-        { label: '@timestamp' },
+        { label: 'blob', disabled: undefined, 'data-test-subj': 'filterFieldOption-blob' },
+        { label: 'bytes', disabled: undefined, 'data-test-subj': 'filterFieldOption-bytes' },
+        { label: 'ssl', disabled: undefined, 'data-test-subj': 'filterFieldOption-ssl' },
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
       ]);
       act(() => {
         const label = renderFields({ label: 'blob' }) as ReactElement;
@@ -370,7 +416,15 @@ describe('useField', () => {
       ] as unknown as DataViewFieldBase[];
       const { result } = renderHook(() => useEsField({ indexPattern, onChange: onChangeMock }));
       const { comboOptions, renderFields } = result.current;
-      expect(comboOptions).toEqual([{ label: 'bytes' }, { label: 'ssl' }, { label: '@timestamp' }]);
+      expect(comboOptions).toEqual([
+        { label: 'bytes', disabled: undefined, 'data-test-subj': 'filterFieldOption-bytes' },
+        { label: 'ssl', disabled: undefined, 'data-test-subj': 'filterFieldOption-ssl' },
+        {
+          label: '@timestamp',
+          disabled: undefined,
+          'data-test-subj': 'filterFieldOption-@timestamp',
+        },
+      ]);
       act(() => {
         const label = renderFields({ label: '@timestamp' }) as ReactElement;
         expect(label).toEqual('@timestamp');

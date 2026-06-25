@@ -53,6 +53,7 @@ export const EditDeletePhaseFlyout = ({
   defaultRetentionPeriod,
   maximumRetentionPeriod,
   showRestoreDefaultButton = Boolean(defaultRetentionPeriod),
+  allowRemoveDeletePhase = true,
   onChange,
   onChangeDebounceMs = 250,
   onSave,
@@ -63,8 +64,7 @@ export const EditDeletePhaseFlyout = ({
   const flyoutTitleId = useGeneratedHtmlId({ prefix: 'streamsEditDeletePhaseFlyoutTitle' });
   const formId = useGeneratedHtmlId({ prefix: 'streamsEditDeletePhaseFlyoutForm' });
   const dataTestSubj = dataTestSubjProp ?? 'streamsEditDeletePhaseFlyout';
-  const { flyoutBodyStyles, footerStyles, headerStyles, sectionStyles } =
-    useEditDeletePhaseFlyoutStyles();
+  const { footerStyles, headerStyles, sectionStyles } = useEditDeletePhaseFlyoutStyles();
 
   const schema = useMemo(
     () => getEditDeletePhaseFlyoutFormSchema({ maximumRetentionPeriod }),
@@ -191,7 +191,8 @@ export const EditDeletePhaseFlyout = ({
   }, [currentMappedValue, errors, isDirty, scheduleOnChangeEmit]);
 
   const hasFormErrors = Object.keys(errors).length > 0;
-  const isApplyDisabled = hasFormErrors || !hasChanges || isSubmitting;
+  const isAddingDeletePhase = initialValue.deletePhaseEnabled === false;
+  const isApplyDisabled = hasFormErrors || isSubmitting || (!isAddingDeletePhase && !hasChanges);
   const disabledApplyTooltip = isSubmitting
     ? editDeletePhaseFlyoutI18n.applySubmittingDisabledTooltip
     : hasFormErrors
@@ -267,7 +268,7 @@ export const EditDeletePhaseFlyout = ({
         </EuiFlexGroup>
       </EuiFlyoutHeader>
 
-      <EuiFlyoutBody css={flyoutBodyStyles}>
+      <EuiFlyoutBody>
         <FormProvider {...methods}>
           <form
             id={formId}
@@ -284,7 +285,7 @@ export const EditDeletePhaseFlyout = ({
               />
             </EuiPanel>
 
-            {!maximumRetentionPeriod ? (
+            {allowRemoveDeletePhase && !maximumRetentionPeriod ? (
               <>
                 <EuiHorizontalRule margin="none" />
 

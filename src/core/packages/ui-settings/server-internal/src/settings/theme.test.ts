@@ -35,6 +35,11 @@ describe('theme settings', () => {
       expect(() => validate('foo')).toThrowError();
       expect(() => validate(12)).toThrowError();
     });
+
+    it('should default to `system` for dist builds', () => {
+      // dist builds always ship both light and dark stylesheets, so `system` is safe
+      expect(themeSettings['theme:darkMode'].value).toBe('system');
+    });
   });
 
   describe('theme:name', () => {
@@ -90,19 +95,39 @@ describe('theme settings', () => {
 });
 
 describe('process.env.KBN_OPTIMIZER_THEMES handling', () => {
-  it('defaults to properties of first tag', () => {
+  const originalThemes = process.env.KBN_OPTIMIZER_THEMES;
+
+  afterEach(() => {
+    if (originalThemes === undefined) {
+      delete process.env.KBN_OPTIMIZER_THEMES;
+    } else {
+      process.env.KBN_OPTIMIZER_THEMES = originalThemes;
+    }
+  });
+
+  it('defaults to `system` when both light and dark themes are built', () => {
     process.env.KBN_OPTIMIZER_THEMES = 'borealisdark,borealislight';
+    let settings = getThemeSettings({ ...defaultOptions, isDist: false });
+    expect(settings['theme:darkMode'].value).toBe('system');
+
+    process.env.KBN_OPTIMIZER_THEMES = 'borealislight,borealisdark';
+    settings = getThemeSettings({ ...defaultOptions, isDist: false });
+    expect(settings['theme:darkMode'].value).toBe('system');
+  });
+
+  it('falls back to the single compiled theme for a single-theme dev build', () => {
+    process.env.KBN_OPTIMIZER_THEMES = 'borealisdark';
     let settings = getThemeSettings({ ...defaultOptions, isDist: false });
     expect(settings['theme:darkMode'].value).toBe('enabled');
 
-    process.env.KBN_OPTIMIZER_THEMES = 'borealislight,borealisdark';
+    process.env.KBN_OPTIMIZER_THEMES = 'borealislight';
     settings = getThemeSettings({ ...defaultOptions, isDist: false });
     expect(settings['theme:darkMode'].value).toBe('disabled');
   });
 
-  it('ignores the value when isDist is true', () => {
+  it('always defaults to `system` when isDist is true', () => {
     process.env.KBN_OPTIMIZER_THEMES = 'borealisdark';
     const settings = getThemeSettings({ ...defaultOptions, isDist: true });
-    expect(settings['theme:darkMode'].value).toBe('disabled');
+    expect(settings['theme:darkMode'].value).toBe('system');
   });
 });

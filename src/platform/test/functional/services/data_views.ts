@@ -142,7 +142,7 @@ export class DataViewsService extends FtrService {
     await this.testSubjects.existOrFail('indexPattern-switcher');
     await this.testSubjects.setValue('indexPattern-switcher--input', name);
     await this.find.clickByCssSelector(
-      `[data-test-subj="indexPattern-switcher"] [title="${name}"]`
+      `[data-test-subj="indexPattern-switcher"] [data-test-subj="dataView-${name}"]`
     );
   }
 

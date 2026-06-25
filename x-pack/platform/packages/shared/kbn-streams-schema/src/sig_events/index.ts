@@ -10,13 +10,10 @@ export { discoverySchema, type Discovery } from './discoveries';
 export type { KnowledgeIndicator } from '../queries';
 export {
   SIG_EVENT_STATUS_OPTIONS,
-  SIG_EVENT_IMPACT_OPTIONS,
   sigEventSchema,
   sigEventStatusSchema,
-  sigEventImpactSchema,
   type SigEvent,
   type SigEventStatus,
-  type SigEventImpact,
 } from './events';
 export {
   MAX_ID_LENGTH,

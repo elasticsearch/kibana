@@ -14,6 +14,8 @@ export const ALERT_ACTIONS_DATA_STREAM = '.alert-actions';
 export const LAST_EPISODE_TIMESTAMP_ESQL_VARIABLE = 'lastEpisodeTimestamp';
 export const PAGE_SIZE_ESQL_VARIABLE = 'pageSize';
 export const RELATED_ALERT_EPISODES_PAGE_SIZE = 5;
+/** Max episodes returned per list page (ESQL LIMIT) and max unique rules resolved in one batch. */
+export const ALERT_EPISODES_LIST_PAGE_SIZE = 1000;
 export const QUERY_STALE_TIME = 30_000;
 export const TIME_FIELD = '@timestamp';
 /**

@@ -30,7 +30,7 @@ import { Reference } from '../references';
  */
 export interface TypeMetaAvailability {
   /** @default stable */
-  stability?: 'experimental' | 'beta' | 'stable';
+  stability?: 'experimental' | 'stable' | 'tech_preview';
   /**
    * The stack version in which this field was introduced (eg: 9.4.0).
    */

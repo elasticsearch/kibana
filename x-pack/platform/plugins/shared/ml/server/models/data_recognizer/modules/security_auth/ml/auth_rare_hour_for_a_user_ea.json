@@ -11,11 +11,13 @@
         "detector_description": "Detects rare hour for a user.",
         "function": "time_of_day",
         "by_field_name": "user.name",
+        "over_field_name": "source.geo.region_iso_code",
         "detector_index": 0
       }
     ],
     "influencers": [
       "source.ip",
+      "source.geo.region_iso_code",
       "host.name",
       "user.name",
       "user.id",

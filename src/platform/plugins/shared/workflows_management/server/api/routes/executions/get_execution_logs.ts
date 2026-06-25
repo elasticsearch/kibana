@@ -12,7 +12,11 @@ import { schema } from '@kbn/config-schema';
 import type { RouteDependencies } from '../types';
 import { API_VERSION, AVAILABILITY, MAX_PAGE_SIZE, OAS_TAG } from '../utils/route_constants';
 import { handleRouteError } from '../utils/route_error_handlers';
-import { WORKFLOW_EXECUTION_READ_SECURITY } from '../utils/route_security';
+import {
+  assertCanReadManagedWorkflowExecution,
+  hasWorkflowExecutionReadPrivilege,
+  WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
+} from '../utils/route_security';
 import { executionIdParamSchema } from '../utils/schemas';
 import { withAvailabilityCheck } from '../utils/with_availability_check';
 
@@ -21,7 +25,7 @@ export function registerGetExecutionLogsRoute({ router, api, spaces }: RouteDepe
     .get({
       path: '/api/workflows/executions/{executionId}/logs',
       access: 'public',
-      security: WORKFLOW_EXECUTION_READ_SECURITY,
+      security: WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
       summary: 'Get execution logs',
       description:
         'Retrieve paginated logs for a workflow execution. Optionally filter by a specific step execution.',
@@ -70,9 +74,17 @@ export function registerGetExecutionLogsRoute({ router, api, spaces }: RouteDepe
       },
       withAvailabilityCheck(async (context, request, response) => {
         try {
+          if (!hasWorkflowExecutionReadPrivilege(request)) {
+            return response.forbidden();
+          }
           const { executionId } = request.params;
           const { size, page, sortField, sortOrder, stepExecutionId } = request.query;
           const spaceId = spaces.getSpaceId(request);
+          const workflowExecution = await api.getWorkflowExecution(executionId, spaceId);
+          if (!workflowExecution) {
+            return response.notFound();
+          }
+          assertCanReadManagedWorkflowExecution(request, workflowExecution);
 
           const logs = await api.getWorkflowExecutionLogs({
             executionId,

@@ -18,6 +18,9 @@ export interface ComboBoxInputOptions {
   useFill?: boolean;
 }
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const exactText = (value: string) => new RegExp(`^\\s*${escapeRegExp(value)}\\s*$`);
+
 // https://eui.elastic.co/docs/components/forms/selection/combo-box/
 export class EuiComboBoxWrapper {
   private readonly page: ScoutPage;
@@ -58,10 +61,12 @@ export class EuiComboBoxWrapper {
     }
   }
 
+  private badgeLocator(value: string) {
+    return this.comboBoxWrapper.locator('.euiBadge', { hasText: exactText(value) });
+  }
+
   private async waitForBadgeToBe(value: string, state: 'visible' | 'hidden') {
-    await this.comboBoxWrapper
-      .locator(`.euiBadge[title="${value}"]`)
-      .waitFor({ state, timeout: 5000 });
+    await this.badgeLocator(value).waitFor({ state, timeout: 5000 });
   }
 
   private async verifySelectionAndClose(value: string) {
@@ -87,7 +92,7 @@ export class EuiComboBoxWrapper {
     await this.typeValueInSearch(value, options);
     // select the option that matches the value
     const trimmedValue = value.trim();
-    await this.page.locator(`.euiComboBoxOption[title="${trimmedValue}"]`).click();
+    await this.page.locator('.euiComboBoxOption', { hasText: exactText(trimmedValue) }).click();
     // wait for the new badge to be visible
     await this.waitForBadgeToBe(value, 'visible');
     // Verify option was selected
@@ -108,7 +113,7 @@ export class EuiComboBoxWrapper {
     for (const value of values) {
       await this.typeValueInSearch(value, options);
       const trimmedValue = value.trim();
-      await this.page.locator(`.euiComboBoxOption[title="${trimmedValue}"]`).click();
+      await this.page.locator('.euiComboBoxOption', { hasText: exactText(trimmedValue) }).click();
       await this.waitForBadgeToBe(value, 'visible');
       const updatedOptions = await this.getSelectedMultiOptions();
       expect(updatedOptions).toContain(value);
@@ -150,7 +155,7 @@ export class EuiComboBoxWrapper {
       throw Error(`Value "${value}" is not selected in the comboBox`);
     }
     // pill delete button
-    await this.comboBoxWrapper.locator(`.euiBadge[title="${value}"]`).locator('button').click();
+    await this.badgeLocator(value).locator('button').click();
     await this.waitForBadgeToBe(value, 'hidden');
     expect(await this.getSelectedMultiOptions()).not.toContain(value);
   }
@@ -173,7 +178,7 @@ export class EuiComboBoxWrapper {
       ? this.page.testSubj.locator(options.optionTestSubj)
       : this.page
           .getByRole('option', { name: options.optionRoleName ?? value, exact: false })
-          .or(this.page.locator(`.euiFilterSelectItem[title="${trimmedValue}"]`));
+          .or(this.page.locator('.euiFilterSelectItem', { hasText: exactText(trimmedValue) }));
 
     await optionLocator.waitFor({
       state: 'visible',

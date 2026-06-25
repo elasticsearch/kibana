@@ -1635,3 +1635,201 @@
     }
   }
 }
+
+{
+  "type": "doc",
+  "value": {
+    "id": "40",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "id": "host:over-split-actor-1",
+        "name": "over-split-actor-1",
+        "type": "Host",
+        "sub_type": "Linux Host",
+        "source": "manual",
+        "relationships": {
+          "communicates_with": {
+            "ids": ["host:over-split-target"]
+          }
+        },
+        "EngineMetadata": { "Type": "host" }
+      },
+      "host": { "name": "over-split-actor-1", "ip": ["10.0.1.1"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "41",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "id": "host:over-split-actor-2",
+        "name": "over-split-actor-2",
+        "type": "Host",
+        "sub_type": "Linux Host",
+        "source": "manual",
+        "relationships": {
+          "communicates_with": {
+            "ids": ["host:over-split-target"]
+          }
+        },
+        "EngineMetadata": { "Type": "host" }
+      },
+      "host": { "name": "over-split-actor-2", "ip": ["10.0.1.2"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "42",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "id": "host:over-split-target",
+        "name": "over-split-target",
+        "type": "Host",
+        "sub_type": "Linux Host",
+        "source": "manual",
+        "EngineMetadata": { "Type": "host" }
+      },
+      "host": { "name": "over-split-target", "ip": ["10.0.1.9"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "43",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:origin-pinned-server",
+        "name": "Origin Pinned Server",
+        "source": "manual",
+        "sub_type": "AWS EC2 Instance",
+        "type": "Linux Server",
+        "relationships": {
+          "communicates_with": {
+            "ids": ["host:relationship-target-server"]
+          }
+        }
+      },
+      "host": { "name": "origin-pinned-server", "id": "pinned-hw-uuid-1", "ip": ["10.0.2.1"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "44",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:grouped-actor-server-1",
+        "name": "Grouped Actor Server 1",
+        "source": "manual",
+        "sub_type": "AWS EC2 Instance",
+        "type": "Linux Server",
+        "relationships": {
+          "communicates_with": {
+            "ids": ["host:relationship-target-server"]
+          }
+        }
+      },
+      "host": { "name": "grouped-actor-server-1", "id": "pinned-hw-uuid-2", "ip": ["10.0.2.2"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "45",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:grouped-actor-server-2",
+        "name": "Grouped Actor Server 2",
+        "source": "manual",
+        "sub_type": "AWS EC2 Instance",
+        "type": "Linux Server",
+        "relationships": {
+          "communicates_with": {
+            "ids": ["host:relationship-target-server"]
+          }
+        }
+      },
+      "host": { "name": "grouped-actor-server-2", "id": "pinned-hw-uuid-3", "ip": ["10.0.2.3"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "46",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:relationship-target-server",
+        "name": "Relationship Target Server",
+        "source": "manual",
+        "sub_type": "AWS EC2 Instance",
+        "type": "Linux Server"
+      },
+      "host": { "name": "relationship-target-server", "id": "pinned-hw-uuid-4", "ip": ["10.0.2.4"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "47",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:different-subtype-actor-server",
+        "name": "Different Subtype Actor Server",
+        "source": "manual",
+        "sub_type": "GCP Compute Instance",
+        "type": "Linux Server",
+        "relationships": {
+          "communicates_with": {
+            "ids": ["host:relationship-target-server"]
+          }
+        }
+      },
+      "host": { "name": "different-subtype-actor-server", "id": "pinned-hw-uuid-5", "ip": ["10.0.2.5"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}

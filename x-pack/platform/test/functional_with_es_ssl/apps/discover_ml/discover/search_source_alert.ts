@@ -460,7 +460,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       }
       const dataViewsElem = await testSubjects.find('euiSelectableList');
       const sourceDataViewOption = await dataViewsElem.findByCssSelector(
-        `[title="${SOURCE_DATA_VIEW}"]`
+        `[data-test-subj="dataView-${SOURCE_DATA_VIEW}"]`
       );
       await sourceDataViewOption.click();
 
@@ -691,7 +691,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       }
       const dataViewsElem = await testSubjects.find('euiSelectableList');
       const sourceDataViewOption = await dataViewsElem.findByCssSelector(
-        `[title="${SOURCE_DATA_VIEW}"]`
+        `[data-test-subj="dataView-${SOURCE_DATA_VIEW}"]`
       );
       await sourceDataViewOption.click();
 

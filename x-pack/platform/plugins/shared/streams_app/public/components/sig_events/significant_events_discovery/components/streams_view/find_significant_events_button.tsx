@@ -58,7 +58,7 @@ export const FindSignificantEventsButton = ({
   return (
     <ContextMenuSplitButton
       primaryLabel={FIND_SIGNIFICANT_EVENTS_LABEL}
-      primaryIconType="sparkles"
+      primaryIconType="significantEvents"
       onPrimaryClick={onRun}
       isPrimaryDisabled={isDisabled || isRunning}
       isPrimaryLoading={isRunning}

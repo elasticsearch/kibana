@@ -767,6 +767,40 @@ describe('IndexActionsContextMenu', () => {
 
         expect(getByName).not.toHaveBeenCalled();
       });
+
+      it.each(['close', 'closed'])(
+        'SHOULD NOT call getByName when the index status is %s',
+        async (status) => {
+          const props = getBaseProps();
+          const getByName = jest.fn();
+          const emptyDocCount$ = of<Record<string, DocCountResult>>({});
+          const closedIndexProps: MenuProps = {
+            ...props,
+            indices: [
+              {
+                name: 'index-1',
+                status: status as Index['status'],
+                primary: 1,
+                hidden: false,
+                aliases: [],
+                isFrozen: false,
+                // documents intentionally omitted
+              } satisfies Partial<Index>,
+            ] as Index[],
+            indexStatusByName: { 'index-1': status as Index['status'] },
+            docCountApi: {
+              getByName,
+              getObservable: () => emptyDocCount$,
+              abort: jest.fn(),
+            },
+          };
+
+          renderWithProviders(<IndexActionsContextMenu {...closedIndexProps} />);
+          await openContextMenu();
+
+          expect(getByName).not.toHaveBeenCalled();
+        }
+      );
     });
 
     describe('AND WHEN index is hidden or already a lookup index', () => {

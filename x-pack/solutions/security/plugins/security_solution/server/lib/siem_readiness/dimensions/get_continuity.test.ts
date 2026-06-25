@@ -97,5 +97,109 @@ describe('getContinuity', () => {
       expect(result.actionableFindings[0].message).toContain('my-pipeline');
       expect(result.actionableFindings[0].message).toContain('10');
     });
+
+    it('emits a silence CRITICAL finding for a pipeline where isSilent is true', async () => {
+      mockFetchPipelines.mockResolvedValueOnce([
+        makePipeline({
+          name: 'silent-pipeline',
+          docsCount: 1000,
+          failedDocsCount: 0,
+          isSilent: true,
+          silenceMs: 4 * 60 * 60 * 1000, // 4 hours
+        }),
+      ]);
+      const result = await getContinuity({ esClient, isServerless: false, logger });
+      const silenceFinding = result.actionableFindings.find((f) => f.type === 'silence');
+      expect(silenceFinding).toBeDefined();
+      expect(silenceFinding?.severity).toBe('CRITICAL');
+      expect(silenceFinding?.resource).toBe('silent-pipeline');
+      expect(silenceFinding?.message).toContain('silent-pipeline');
+    });
+
+    it('merges silence and volume-drop into ONE finding when both apply to the same pipeline', async () => {
+      mockFetchPipelines.mockResolvedValueOnce([
+        makePipeline({
+          name: 'silent-and-dropped-pipeline',
+          docsCount: 1000,
+          failedDocsCount: 0,
+          isSilent: true,
+          silenceMs: 2 * 60 * 60 * 1000,
+          volumeDropPct: 100,
+          lastFullDayDocs: 0,
+          baseline7dAvg: 50,
+        }),
+      ]);
+      const result = await getContinuity({ esClient, isServerless: false, logger });
+      // Must emit exactly one finding — not one for silence + one for volume drop
+      expect(result.actionableFindings).toHaveLength(1);
+      const finding = result.actionableFindings[0];
+      expect(finding.type).toBe('silence');
+      expect(finding.severity).toBe('CRITICAL');
+      // Message must contain both the silence fact and the volume context
+      expect(finding.message).toContain('silent-and-dropped-pipeline');
+      expect(finding.message).toContain('100%');
+      expect(finding.message).toContain('50');
+    });
+
+    it('emits a volume_drop_warning finding when volumeDropPct >= 50 and < 90', async () => {
+      mockFetchPipelines.mockResolvedValueOnce([
+        makePipeline({
+          name: 'low-volume-pipeline',
+          docsCount: 1000,
+          failedDocsCount: 0,
+          volumeDropPct: 60,
+          lastFullDayDocs: 40,
+          baseline7dAvg: 100,
+        }),
+      ]);
+      const result = await getContinuity({ esClient, isServerless: false, logger });
+      const finding = result.actionableFindings.find((f) => f.type === 'volume_drop_warning');
+      expect(finding).toBeDefined();
+      expect(finding?.severity).toBe('WARNING');
+      expect(finding?.resource).toBe('low-volume-pipeline');
+      expect(finding?.message).toContain('60%');
+    });
+
+    it('emits a volume_drop_critical finding when volumeDropPct >= 90', async () => {
+      mockFetchPipelines.mockResolvedValueOnce([
+        makePipeline({
+          name: 'critical-volume-pipeline',
+          docsCount: 1000,
+          failedDocsCount: 0,
+          volumeDropPct: 95,
+          lastFullDayDocs: 5,
+          baseline7dAvg: 100,
+        }),
+      ]);
+      const result = await getContinuity({ esClient, isServerless: false, logger });
+      const finding = result.actionableFindings.find((f) => f.type === 'volume_drop_critical');
+      expect(finding).toBeDefined();
+      expect(finding?.severity).toBe('CRITICAL');
+      expect(finding?.resource).toBe('critical-volume-pipeline');
+    });
+
+    it('does not emit volume-drop findings when volumeDropPct is null', async () => {
+      mockFetchPipelines.mockResolvedValueOnce([
+        makePipeline({
+          name: 'young-pipeline',
+          docsCount: 100,
+          failedDocsCount: 0,
+          volumeDropPct: null,
+        }),
+      ]);
+      const result = await getContinuity({ esClient, isServerless: false, logger });
+      const volumeFindings = result.actionableFindings.filter(
+        (f) => f.type === 'volume_drop_warning' || f.type === 'volume_drop_critical'
+      );
+      expect(volumeFindings).toHaveLength(0);
+    });
+
+    it('pipeline_failure finding has type field set to pipeline_failure', async () => {
+      mockFetchPipelines.mockResolvedValueOnce([
+        makePipeline({ docsCount: 100, failedDocsCount: 10 }),
+      ]);
+      const result = await getContinuity({ esClient, isServerless: false, logger });
+      expect(result.actionableFindings[0].type).toBe('pipeline_failure');
+    });
   });
 });

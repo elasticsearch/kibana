@@ -442,6 +442,7 @@ export class UserActionPersister {
         user,
         owner: attachment.owner,
         savedObjectId: attachment.id,
+        savedObjectType: attachment.savedObjectType,
         payload: { attachment: attachment.attachment },
       });
 
@@ -510,7 +511,17 @@ export class UserActionPersister {
     userAction,
     refresh,
   }: CreateUserActionArgs<T>): Promise<void> {
-    const { action, type, caseId, user, owner, payload, connectorId, savedObjectId } = userAction;
+    const {
+      action,
+      type,
+      caseId,
+      user,
+      owner,
+      payload,
+      connectorId,
+      savedObjectId,
+      savedObjectType,
+    } = userAction;
 
     try {
       this.context.log.debug(`Attempting to create a user action of type: ${type}`);
@@ -523,6 +534,7 @@ export class UserActionPersister {
         owner,
         connectorId,
         savedObjectId,
+        savedObjectType,
         payload,
       });
 
@@ -547,24 +559,37 @@ export class UserActionPersister {
       }
 
       const userActionsPayload = userActions
-        .map(({ action, type, caseId, user, owner, payload, connectorId, savedObjectId }) => {
-          const userActionBuilder = this.builderFactory.getBuilder<T>(type);
-          const userAction = userActionBuilder?.build({
+        .map(
+          ({
             action,
+            type,
             caseId,
             user,
             owner,
+            payload,
             connectorId,
             savedObjectId,
-            payload,
-          });
+            savedObjectType,
+          }) => {
+            const userActionBuilder = this.builderFactory.getBuilder<T>(type);
+            const userAction = userActionBuilder?.build({
+              action,
+              caseId,
+              user,
+              owner,
+              connectorId,
+              savedObjectId,
+              savedObjectType,
+              payload,
+            });
 
-          if (userAction == null) {
-            return null;
+            if (userAction == null) {
+              return null;
+            }
+
+            return userAction;
           }
-
-          return userAction;
-        })
+        )
         .filter(Boolean) as UserActionEvent[];
 
       await this.bulkCreateAndLog({ userActions: userActionsPayload, refresh });

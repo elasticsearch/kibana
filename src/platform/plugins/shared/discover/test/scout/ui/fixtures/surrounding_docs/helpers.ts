@@ -26,12 +26,12 @@ export async function addFilterWithoutStrictCheck(
   await page.testSubj.click('addFilter');
   await page.testSubj.waitForSelector('addFilterPopover');
   await page.testSubj.typeWithDelay('filterFieldSuggestionList > comboBoxSearchInput', field);
-  await page.locator(`.euiComboBoxOption[title="${field}"]`).click();
+  await page.testSubj.click(`filterFieldOption-${field}`);
   await expect(page.testSubj.locator('filterOperatorList')).not.toHaveClass(
     /euiComboBox-isDisabled/
   );
   await page.testSubj.typeWithDelay('filterOperatorList > comboBoxSearchInput', 'is');
-  await page.locator('.euiComboBoxOption[title="is"]').click();
+  await page.testSubj.click('filterOperatorOption-is');
   const filterParamsInput = page.locator('[data-test-subj="filterParams"] input');
   await expect(filterParamsInput).toBeEditable();
   await filterParamsInput.focus();

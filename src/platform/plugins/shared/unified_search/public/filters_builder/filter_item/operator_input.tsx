@@ -56,6 +56,7 @@ export function OperatorInput<TParams = unknown>({
       options={operators}
       selectedOptions={operator ? [operator] : []}
       getLabel={({ message }) => message}
+      getOptionTestSubj={({ message }) => `filterOperatorOption-${message}`}
       onChange={onOperatorChange}
       singleSelection={{ asPlainText: true }}
       isClearable={false}

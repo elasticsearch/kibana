@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
 import { httpServiceMock } from '@kbn/core-http-browser-mocks';
 import { ALERT_EPISODE_STATUS } from '@kbn/alerting-v2-schemas';
@@ -86,7 +86,10 @@ describe('AlertEpisodeRuleOverviewPanelSection', () => {
       ],
       values: [['2024-01-01T00:00:00.000Z', ALERT_EPISODE_STATUS.ACTIVE, 'rule-1', 'gh-1']],
     });
-    mockHttp.get.mockRejectedValueOnce(new Error('boom'));
+    mockHttp.get.mockRejectedValueOnce({
+      response: { status: 500 },
+      body: { code: 'INTERNAL_ERROR', error: 'Internal Server Error', message: 'Failed' },
+    });
 
     render(
       <I18nProvider>
@@ -98,5 +101,37 @@ describe('AlertEpisodeRuleOverviewPanelSection', () => {
     expect(
       await screen.findByTestId('alertingV2EpisodeRuleOverviewPanelSectionError')
     ).toBeInTheDocument();
+  });
+
+  it('renders nothing when the rule returns 404', async () => {
+    runEsqlAsyncSearchMock.mockResolvedValue({
+      columns: [
+        { name: '@timestamp', type: 'date' },
+        { name: 'episode.status', type: 'keyword' },
+        { name: 'rule.id', type: 'keyword' },
+        { name: 'group_hash', type: 'keyword' },
+      ],
+      values: [['2024-01-01T00:00:00.000Z', ALERT_EPISODE_STATUS.ACTIVE, 'rule-1', 'gh-1']],
+    });
+    mockHttp.get.mockRejectedValueOnce({
+      response: { status: 404 },
+      body: { code: 'RULE_NOT_FOUND', error: 'Not Found', message: 'Rule not found' },
+    });
+
+    render(
+      <I18nProvider>
+        <AlertEpisodeRuleOverviewPanelSection episodeId="ep-1" services={mockServices} />
+      </I18nProvider>,
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('alertingV2EpisodeRuleOverviewPanelSectionDeleted')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('alertingV2EpisodeDetailsRuleOverviewPanel')
+      ).not.toBeInTheDocument();
+    });
   });
 });

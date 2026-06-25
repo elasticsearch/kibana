@@ -18,6 +18,8 @@ import { usePackQueryErrors } from './use_pack_query_errors';
 import { useLogsDataView } from '../common/hooks/use_logs_data_view';
 import { useKibana } from '../common/lib/kibana';
 import { useSpaceId } from '../common/hooks/use_space_id';
+import { ExperimentalFeaturesService } from '../common/experimental_features_service';
+import { allowedExperimentalValues } from '../../common/experimental_features';
 
 jest.mock('./use_pack_query_last_results');
 jest.mock('./use_pack_query_errors');
@@ -46,6 +48,12 @@ const renderWithContext = (Element: React.ReactElement) => {
     </EuiProvider>
   );
 };
+
+beforeAll(() => {
+  ExperimentalFeaturesService.init({
+    experimentalFeatures: { ...allowedExperimentalValues, rruleScheduling: false },
+  });
+});
 
 describe('PackQueriesStatusTable', () => {
   beforeEach(() => {
@@ -185,5 +193,103 @@ describe('PackQueriesStatusTable', () => {
 
     expect(screen.getByText('150')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
+  });
+
+  describe('Schedule column (rruleScheduling on)', () => {
+    beforeAll(() => {
+      ExperimentalFeaturesService.init({
+        experimentalFeatures: { ...allowedExperimentalValues, rruleScheduling: true },
+      });
+    });
+
+    afterAll(() => {
+      ExperimentalFeaturesService.init({
+        experimentalFeatures: { ...allowedExperimentalValues, rruleScheduling: false },
+      });
+    });
+
+    beforeEach(() => {
+      usePackQueryLastResultsMock.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+      } as unknown as ReturnType<typeof usePackQueryLastResults>);
+      usePackQueryErrorsMock.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+      } as unknown as ReturnType<typeof usePackQueryErrors>);
+    });
+
+    it('renders the "Schedule" column header instead of "Interval (s)"', () => {
+      const data: PackQueryFormData[] = [
+        { id: 'q1', query: 'SELECT 1;', interval: 3600, ecs_mapping: {} },
+      ];
+
+      renderWithContext(
+        <PackQueriesStatusTable agentIds={['a-1']} data={data} packName="pack-name" />
+      );
+
+      expect(screen.getByText('Schedule')).toBeInTheDocument();
+      expect(screen.queryByText('Interval (s)')).not.toBeInTheDocument();
+    });
+
+    it('renders rrule override text for a per-query rrule schedule', () => {
+      const data: PackQueryFormData[] = [
+        {
+          id: 'q1',
+          query: 'SELECT 1;',
+          interval: 3600,
+          ecs_mapping: {},
+          schedule_type: 'rrule',
+          rrule_schedule: {
+            rrule: 'FREQ=WEEKLY;BYDAY=TU',
+            start_date: '2024-01-01T00:00:00.000Z',
+          },
+        },
+      ];
+
+      renderWithContext(
+        <PackQueriesStatusTable agentIds={['a-1']} data={data} packName="pack-name" />
+      );
+
+      expect(screen.getByText('Every week on Tue')).toBeInTheDocument();
+    });
+
+    it('renders the inherited pack schedule for a row without an override', () => {
+      const data: PackQueryFormData[] = [
+        { id: 'q1', query: 'SELECT 1;', interval: 3600, ecs_mapping: {} },
+      ];
+
+      renderWithContext(
+        <PackQueriesStatusTable
+          agentIds={['a-1']}
+          data={data}
+          packName="pack-name"
+          packSchedule={{
+            schedule_type: 'rrule',
+            rrule_schedule: {
+              rrule: 'FREQ=DAILY',
+              start_date: '2024-01-01T00:00:00.000Z',
+            },
+          }}
+        />
+      );
+
+      expect(screen.getByText('Daily')).toBeInTheDocument();
+    });
+
+    it('falls back to the row interval for an inherited row when packSchedule is undefined', () => {
+      // Inherited row (no per-query schedule_type) and no packSchedule prop —
+      // exercises the `?? { interval: item.interval }` fallback so the column
+      // still shows the query's own interval rather than blank/zero.
+      const data: PackQueryFormData[] = [
+        { id: 'q1', query: 'SELECT 1;', interval: 3600, ecs_mapping: {} },
+      ];
+
+      renderWithContext(
+        <PackQueriesStatusTable agentIds={['a-1']} data={data} packName="pack-name" />
+      );
+
+      expect(screen.getByText('3600s')).toBeInTheDocument();
+    });
   });
 });

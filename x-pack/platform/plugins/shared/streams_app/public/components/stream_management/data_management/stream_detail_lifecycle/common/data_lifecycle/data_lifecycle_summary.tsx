@@ -43,6 +43,8 @@ export interface DataLifecycleSummaryPhaseActions {
   onPhaseClick?: (phase: LifecyclePhase, index: number) => void;
   onRemovePhase?: (phaseName: string) => void;
   onEditPhase?: (phaseName: string) => void;
+  shouldShowEditPhaseAction?: (phaseName: string) => boolean;
+  shouldShowRemovePhaseAction?: (phaseName: string) => boolean;
   showPhaseActions?: boolean;
 }
 
@@ -159,6 +161,8 @@ export const DataLifecycleSummary = ({
                   showPhaseActions={showPhaseActions}
                   onRemovePhase={phaseActions?.onRemovePhase}
                   onEditPhase={phaseActions?.onEditPhase}
+                  shouldShowEditPhaseAction={phaseActions?.shouldShowEditPhaseAction}
+                  shouldShowRemovePhaseAction={phaseActions?.shouldShowRemovePhaseAction}
                   editedPhaseName={editedPhaseName}
                   testSubjPrefix={testSubjPrefix}
                   canManageLifecycle={canManageLifecycle}

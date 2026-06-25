@@ -41,11 +41,10 @@ steps:
     key: build_scout_tests
     timeout_in_minutes: 30
     env:
-      SCOUT_TEST_DISTRIBUTION_STRATEGY: 'configs'
-      SCOUT_CONFIGS_DEPS: 'build_scout_tests,build'
+      SCOUT_TEST_DISTRIBUTION_STRATEGY: 'lanes'
+      SCOUT_TEST_LANES_GROUP_DEPS: 'build_scout_tests,build'
       UIAM_COSMOSDB_DOCKER_IMAGE: $UIAM_COSMOSDB_IMAGE
       SERVERLESS_TESTS_ONLY: 'true'
-      SCOUT_CONFIGS_SCRIPT: '.buildkite/scripts/steps/test/scout/configs.sh'
     retry:
       automatic:
         - exit_status: '*'

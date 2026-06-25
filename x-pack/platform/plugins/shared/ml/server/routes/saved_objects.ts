@@ -247,7 +247,7 @@ export function savedObjectsRoutes(
         tags: ['oas-tag:machine learning'],
         availability: {
           since: '9.3.0',
-          stability: 'beta',
+          stability: 'stable',
         },
       },
     })
@@ -335,7 +335,7 @@ export function savedObjectsRoutes(
         tags: ['oas-tag:machine learning'],
         availability: {
           since: '9.3.0',
-          stability: 'beta',
+          stability: 'stable',
         },
       },
     })

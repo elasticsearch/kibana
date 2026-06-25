@@ -1,0 +1,30 @@
+{
+  "description": "Security: Network - Looks for unusual DNS activity that could indicate command-and-control activity.",
+  "groups": ["security", "network", "dns"],
+  "analysis_config": {
+    "bucket_span": "15m",
+    "detectors": [
+      {
+        "detector_description": "Detects rare DNS question names.",
+        "function": "rare",
+        "by_field_name": "dns.question.name"
+      }
+    ],
+    "influencers": ["host.name", "host.id", "dns.question.name"]
+  },
+  "allow_lazy_open": true,
+  "analysis_limits": {
+    "model_memory_limit": "256mb"
+  },
+  "data_description": {
+    "time_field": "@timestamp"
+  },
+  "custom_settings": {
+    "created_by": "ml-module-security-network",
+    "security_app_display_name": "Unusual DNS Activity",
+    "managed": true,
+    "job_revision": 4,
+    "threat_tactics": ["TA0011", "TA0010", "TA0001"],
+    "threat_techniques": ["T1071", "T1071.004", "T1568", "T1048", "T1566"]
+  }
+}

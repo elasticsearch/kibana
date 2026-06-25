@@ -14,11 +14,12 @@ import { AlertEpisodeTags } from '../actions/tags';
 import { AlertEpisodeSeverityBadge } from '../severity/episode_severity_badge';
 import { isSupportedEpisodeSeverity } from '../severity/severity_utils';
 import type { EpisodeActionState, AlertEpisodeGroupAction } from '../../types/action';
+import { isRuleLoaded, isRuleLoading, type RuleState } from '../../types/rule_state';
 import * as i18n from './translations';
 
 export interface AlertEpisodeDetailsHeaderProps {
-  title: string | undefined;
-  description: string | undefined;
+  isLoadingEpisode: boolean;
+  ruleState: RuleState;
   tags: string[];
   status: AlertEpisodeStatus | undefined;
   severity: string | undefined | null;
@@ -28,8 +29,8 @@ export interface AlertEpisodeDetailsHeaderProps {
 }
 
 export const AlertEpisodeDetailsHeader = ({
-  title,
-  description,
+  isLoadingEpisode,
+  ruleState,
   tags,
   status,
   severity,
@@ -37,21 +38,21 @@ export const AlertEpisodeDetailsHeader = ({
   groupAction,
   titleSize = 'l',
 }: AlertEpisodeDetailsHeaderProps) => {
+  const isLoading = isLoadingEpisode || isRuleLoading(ruleState);
+  const titleContent = isLoading
+    ? i18n.HEADER_LOADING_TITLE
+    : isRuleLoaded(ruleState)
+    ? ruleState.rule.metadata.name
+    : i18n.HEADER_EPISODE_TITLE_FALLBACK;
+  const description = isRuleLoaded(ruleState) ? ruleState.rule.metadata.description : undefined;
   const showTags = tags.length > 0;
+
   return (
     <>
       <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
         <EuiFlexItem grow={false}>
           <EuiTitle size={titleSize}>
-            <h1
-              data-test-subj={
-                title
-                  ? 'alertingV2EpisodeDetailsRuleTitle'
-                  : 'alertingV2EpisodeDetailsHeaderLoadingTitle'
-              }
-            >
-              {title ?? i18n.HEADER_LOADING_TITLE}
-            </h1>
+            <h1 data-test-subj="alertingV2EpisodeDetailsHeaderTitle">{titleContent}</h1>
           </EuiTitle>
         </EuiFlexItem>
         {status ? (

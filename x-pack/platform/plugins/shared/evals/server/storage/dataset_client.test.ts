@@ -49,23 +49,64 @@ const createDatasetStorageClient = () => {
   const docs = new Map<string, DatasetStorageDocument>();
 
   const search = jest.fn(async (params: Record<string, unknown>) => {
-    const termQuery = (params.query as { term?: Record<string, string> } | undefined)?.term;
+    const query = (params.query ?? {}) as {
+      term?: Record<string, string>;
+      bool?: {
+        should?: Array<Record<string, any>>;
+        must_not?: Array<Record<string, any>>;
+      };
+    };
+    const termQuery = query.term;
+    const boolQuery = query.bool;
     let rows = Array.from(docs.entries()).map(([id, document]) => ({ _id: id, _source: document }));
 
     if (termQuery?.name) {
       rows = rows.filter((row) => row._source.name === termQuery.name);
     } else if (termQuery?._id) {
       rows = rows.filter((row) => row._id === termQuery._id);
+    } else if (boolQuery) {
+      // Backfill query: datasets missing the denormalized count.
+      for (const clause of boolQuery.must_not ?? []) {
+        if (clause.exists?.field === 'examples_count') {
+          rows = rows.filter((row) => row._source.examples_count === undefined);
+        }
+      }
+
+      // Search query: wildcard on name (keyword) OR match on description (text).
+      const shouldClauses = boolQuery.should;
+      if (shouldClauses && shouldClauses.length > 0) {
+        const wildcardValue = shouldClauses
+          .map((clause) => clause.wildcard?.name?.value as string | undefined)
+          .find((value): value is string => typeof value === 'string');
+        const matchValue = shouldClauses
+          .map((clause) => clause.match?.description as string | undefined)
+          .find((value): value is string => typeof value === 'string');
+        const needle = (wildcardValue ?? '').replace(/^\*/, '').replace(/\*$/, '').toLowerCase();
+        rows = rows.filter((row) => {
+          const nameMatch = needle ? row._source.name.toLowerCase().includes(needle) : false;
+          const descMatch = matchValue
+            ? row._source.description.toLowerCase().includes(matchValue.toLowerCase())
+            : false;
+          return nameMatch || descMatch;
+        });
+      }
     }
 
-    const sortOrder = (
-      params.sort as Array<{ updated_at?: { order?: 'asc' | 'desc' } }> | undefined
-    )?.[0]?.updated_at?.order;
-    if (sortOrder) {
+    const sortClause = (
+      params.sort as Array<Record<string, { order?: 'asc' | 'desc' }>> | undefined
+    )?.[0];
+    if (sortClause) {
+      const [field, { order = 'asc' }] = Object.entries(sortClause)[0];
       rows.sort((left, right) => {
-        const leftAt = left._source.updated_at ?? '';
-        const rightAt = right._source.updated_at ?? '';
-        return sortOrder === 'desc' ? rightAt.localeCompare(leftAt) : leftAt.localeCompare(rightAt);
+        const leftVal = (left._source as unknown as Record<string, unknown>)[field];
+        const rightVal = (right._source as unknown as Record<string, unknown>)[field];
+        let comparison: number;
+        if (typeof leftVal === 'number' && typeof rightVal === 'number') {
+          comparison = leftVal - rightVal;
+        } else {
+          comparison = String(leftVal ?? '').localeCompare(String(rightVal ?? ''));
+        }
+        return order === 'desc' ? -comparison : comparison;
       });
     }
 
@@ -104,10 +145,40 @@ const createDatasetStorageClient = () => {
     return { result: deleted ? 'deleted' : 'not_found' };
   });
 
+  const bulk = jest.fn(
+    async ({
+      operations,
+    }: {
+      operations: Array<{
+        index?: { _id: string; document: DatasetStorageDocument };
+        delete?: { _id: string };
+      }>;
+    }) => {
+      const items: Array<{ index?: { status: number }; delete?: { status: number } }> = [];
+
+      for (const operation of operations) {
+        if (operation.index) {
+          // ES `index` action overwrites (no 409), matching the storage adapter.
+          docs.set(operation.index._id, operation.index.document);
+          items.push({ index: { status: 200 } });
+          continue;
+        }
+
+        if (operation.delete) {
+          docs.delete(operation.delete._id);
+          items.push({ delete: { status: 200 } });
+        }
+      }
+
+      return { items };
+    }
+  );
+
   const client = {
     search,
     index,
     delete: remove,
+    bulk,
   } as unknown as InternalIStorageClient<DatasetStorageDocument>;
 
   return { docs, client };
@@ -516,5 +587,76 @@ describe('DatasetClient', () => {
 
     const dataset = await client.get(created.id);
     expect(dataset?.examples).toHaveLength(1);
+  });
+
+  it('filters datasets by name via search', async () => {
+    const { client } = createClient();
+
+    await client.create('kibana-dataset', 'About dashboards', [baseExampleA]);
+    await client.create('elasticsearch-dataset', 'About queries', [baseExampleB]);
+
+    const result = await client.list({ search: 'kibana' });
+
+    expect(result.total).toBe(1);
+    expect(result.datasets.map((dataset) => dataset.name)).toEqual(['kibana-dataset']);
+  });
+
+  it('filters datasets by description via search', async () => {
+    const { client } = createClient();
+
+    await client.create('dataset-a', 'covers dashboards', [baseExampleA]);
+    await client.create('dataset-b', 'covers ingest pipelines', [baseExampleB]);
+
+    const result = await client.list({ search: 'ingest' });
+
+    expect(result.total).toBe(1);
+    expect(result.datasets.map((dataset) => dataset.name)).toEqual(['dataset-b']);
+  });
+
+  it('sorts datasets by example count', async () => {
+    const { client } = createClient();
+
+    await client.create('few', 'A dataset', [baseExampleA]);
+    await client.create('many', 'A dataset', [baseExampleA, baseExampleB, baseExampleC]);
+
+    const ascending = await client.list({ sortField: 'examples_count', sortOrder: 'asc' });
+    expect(ascending.datasets.map((dataset) => dataset.name)).toEqual(['few', 'many']);
+
+    const descending = await client.list({ sortField: 'examples_count', sortOrder: 'desc' });
+    expect(descending.datasets.map((dataset) => dataset.name)).toEqual(['many', 'few']);
+  });
+
+  it('maintains examples_count as examples are added and removed', async () => {
+    const { client } = createClient();
+
+    const created = await client.create('dataset-1', 'A dataset', [baseExampleA]);
+    expect((await client.list()).datasets[0].examples_count).toBe(1);
+
+    await client.addExamples(created.id, [baseExampleB]);
+    expect((await client.list()).datasets[0].examples_count).toBe(2);
+
+    await client.deleteExample(created.examples[0].id, created.id);
+    expect((await client.list()).datasets[0].examples_count).toBe(1);
+  });
+
+  it('backfills examples_count for datasets missing it and is idempotent', async () => {
+    const { client, datasetsStorage } = createClient();
+
+    const created = await client.create('legacy', 'legacy dataset', [baseExampleA, baseExampleB]);
+
+    // Simulate a dataset written before examples_count existed.
+    const stored = datasetsStorage.docs.get(created.id);
+    expect(stored).toBeDefined();
+    const updatedAtBefore = stored!.updated_at;
+    delete (stored as { examples_count?: number }).examples_count;
+
+    const firstRun = await client.backfillDatasetCounts();
+    expect(firstRun.updated).toBe(1);
+    expect(datasetsStorage.docs.get(created.id)?.examples_count).toBe(2);
+    // Backfill preserves updated_at (it is not a user-facing modification).
+    expect(datasetsStorage.docs.get(created.id)?.updated_at).toBe(updatedAtBefore);
+
+    const secondRun = await client.backfillDatasetCounts();
+    expect(secondRun.updated).toBe(0);
   });
 });

@@ -12,9 +12,11 @@ import {
   EpisodeStatusCell,
   EpisodeTagsCell,
   EpisodeRuleCell,
+  EpisodeSeverityCell,
 } from './episodes_table_cell_renderers';
 import { AlertEpisodeStatusBadges } from './status/status_badges';
 import { AlertEpisodeTags } from './actions/tags';
+import { AlertEpisodeSeverityBadge } from './severity/episode_severity_badge';
 
 jest.mock('./status/status_badges', () => ({
   AlertEpisodeStatusBadges: jest.fn(() => <div data-test-subj="statusBadges" />),
@@ -22,9 +24,13 @@ jest.mock('./status/status_badges', () => ({
 jest.mock('./actions/tags', () => ({
   AlertEpisodeTags: jest.fn(() => <div data-test-subj="episodeTags" />),
 }));
+jest.mock('./severity/episode_severity_badge', () => ({
+  AlertEpisodeSeverityBadge: jest.fn(() => <div data-test-subj="severityBadge" />),
+}));
 
 const mockStatusBadges = jest.mocked(AlertEpisodeStatusBadges);
 const mockTags = jest.mocked(AlertEpisodeTags);
+const mockSeverityBadge = jest.mocked(AlertEpisodeSeverityBadge);
 
 type Rule = FindRulesResponse['items'][number];
 
@@ -122,6 +128,21 @@ describe('EpisodeTagsCell', () => {
   });
 });
 
+describe('EpisodeSeverityCell', () => {
+  it('passes severity from row flattened field', () => {
+    const row = makeRow({ severity: 'high' });
+    render(<EpisodeSeverityCell {...baseCellProps} row={row} />);
+    expect(screen.getByTestId('severityBadge')).toBeInTheDocument();
+    expect(mockSeverityBadge.mock.calls[0][0].severity).toBe('high');
+  });
+
+  it('passes undefined severity when row field is absent', () => {
+    const row = makeRow({});
+    render(<EpisodeSeverityCell {...baseCellProps} row={row} />);
+    expect(mockSeverityBadge.mock.calls[0][0].severity).toBeUndefined();
+  });
+});
+
 describe('EpisodeRuleCell', () => {
   const makeRule = (name: string, grouping?: { fields: string[] }): Rule =>
     ({
@@ -143,6 +164,21 @@ describe('EpisodeRuleCell', () => {
       />
     );
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('renders the raw ruleId when the rule id is missing from bulk get', () => {
+    const row = makeRow({ 'rule.id': 'deleted-rule' });
+    render(
+      <EpisodeRuleCell
+        {...baseCellProps}
+        columnId="rule.id"
+        row={row}
+        rulesCache={{}}
+        isLoadingRules={false}
+        rowHeight={1}
+      />
+    );
+    expect(screen.getByText('deleted-rule')).toBeInTheDocument();
   });
 
   it('renders the raw ruleId when the rule is not in cache', () => {

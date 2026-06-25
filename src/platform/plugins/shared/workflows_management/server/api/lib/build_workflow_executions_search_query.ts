@@ -18,13 +18,27 @@ export const buildWorkflowExecutionsSpaceFilter = (
   },
 });
 
+export const buildManagedWorkflowExecutionsFilter = (): estypes.QueryDslQueryContainer => ({
+  term: { managed: true },
+});
+
+export const buildUnmanagedWorkflowExecutionsFilter = (): estypes.QueryDslQueryContainer => ({
+  bool: {
+    must_not: [buildManagedWorkflowExecutionsFilter()],
+  },
+});
+
 export const buildWorkflowExecutionsSearchQuery = (
   userQuery: estypes.QueryDslQueryContainer | undefined,
-  spaceId: string
+  spaceId: string,
+  options?: { includeManagedExecutions?: boolean }
 ): estypes.QueryDslQueryContainer => ({
   bool: {
     must: [userQuery ?? { match_all: {} }, buildWorkflowExecutionsSpaceFilter(spaceId)],
-    must_not: [{ exists: { field: 'stepId' } }],
+    must_not: [
+      { exists: { field: 'stepId' } },
+      ...(options?.includeManagedExecutions ? [] : [buildManagedWorkflowExecutionsFilter()]),
+    ],
   },
 });
 

@@ -35,8 +35,7 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
   const expandedFlyoutGraph = pageObjects.expandedFlyoutGraph;
   const entityFlyout = pageObjects.entityFlyout;
 
-  // Failing: See https://github.com/elastic/kibana/issues/261460
-  describe.skip('Security Network Page - Entity Preview flyout', function () {
+  describe('Security Network Page - Entity Preview flyout', function () {
     this.tags(['cloud_security_posture_graph_viz']);
 
     before(async () => {
@@ -122,7 +121,7 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
           logger,
           retry,
           entitiesIndex: getEntitiesLatestIndexName(),
-          expectedCount: 36,
+          expectedCount: 41,
         });
       });
 
@@ -238,7 +237,7 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
 
         // Verify entity preview panel is open
         await entityFlyout.assertEntityPanelIsOpen('host');
-        await entityFlyout.assertEntityPanelHeader('host', 'host-instance-1');
+        await entityFlyout.assertEntityPanelHeader('host', 'HostInstance1');
       });
     });
   });

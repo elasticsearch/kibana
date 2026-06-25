@@ -20,14 +20,18 @@ import type {
   GetChangeHistoryOptions,
 } from '@kbn/change-history';
 import { ChangeHistoryClient } from '@kbn/change-history';
-import { RULE_SAVED_OBJECT_TYPE } from '../../../saved_objects';
+import { RULE_SAVED_OBJECT_TYPE, RuleAttributesToEncrypt } from '../../../saved_objects';
 import type {
   ChangeTrackingServiceInitializeParams,
   IChangeTrackingService,
   IScopedChangeTrackingService,
   RuleChange,
 } from './types';
-import { ALERTING_RULE_DATASET, ALERTING_RULE_CHANGE_HISTORY_SENSITIVE_FIELDS } from './constants';
+import { ALERTING_RULE_DATASET } from './constants';
+
+const RULE_SO_FIELDS_TO_HASH = Object.fromEntries(
+  RuleAttributesToEncrypt.map((field) => [field, true] as [string, true])
+);
 
 export class ChangeTrackingService implements IChangeTrackingService {
   private clients: Record<RuleTypeSolution, ChangeHistoryClient>;
@@ -151,7 +155,7 @@ export class ChangeTrackingService implements IChangeTrackingService {
           await client.logBulk(groupedChanges, {
             ...opts,
             correlationId,
-            fieldsToHash: ALERTING_RULE_CHANGE_HISTORY_SENSITIVE_FIELDS,
+            fieldsToHash: RULE_SO_FIELDS_TO_HASH,
           });
           this.logger.trace(
             `Logged ${groupedChanges.length} change/s to history stream for [${module}, ${this.dataset}] correlationId=${correlationId}`

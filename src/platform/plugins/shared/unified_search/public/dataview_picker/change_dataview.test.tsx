@@ -201,8 +201,8 @@ describe('DataView component', () => {
 
     // Verify both saved and ad hoc dataviews are visible
     expect(screen.getAllByRole('option')).toHaveLength(2);
-    expect(screen.getByRole('option', { name: 'dataview-1' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'the-data-view' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^dataview-1 / })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^the-data-view / })).toBeInTheDocument();
 
     // Verify the ad hoc data view has the "Temporary" badge
     expect(screen.getByTestId('dataViewItemTempBadge-the-data-view')).toBeInTheDocument();
@@ -226,8 +226,8 @@ describe('DataView component', () => {
 
     // Verify that ES|QL ad hoc dataviews are filtered out, only saved dataview should be visible
     expect(screen.getAllByRole('option')).toHaveLength(1);
-    expect(screen.getByRole('option', { name: 'dataview-1' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'the-data-view-esql' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^dataview-1 / })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^the-data-view-esql / })).not.toBeInTheDocument();
   });
 
   it('should properly handle managed data views', async () => {
@@ -253,8 +253,8 @@ describe('DataView component', () => {
 
     // Verify both saved and managed dataviews are visible
     expect(screen.getAllByRole('option')).toHaveLength(2);
-    expect(screen.getByRole('option', { name: 'dataview-1' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'the-data-view' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^dataview-1 / })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^the-data-view / })).toBeInTheDocument();
 
     // Verify the managed data view has the "Managed" badge
     expect(screen.getByTestId('dataViewItemManagedBadge-the-data-view')).toBeInTheDocument();
@@ -285,9 +285,9 @@ describe('DataView component', () => {
 
     // Verify all three data views are visible (saved, ad hoc, and managed)
     expect(screen.getAllByRole('option')).toHaveLength(3);
-    expect(screen.getByRole('option', { name: 'dataview-1' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'the-data-view' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'managed-dataview' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^dataview-1 / })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^the-data-view / })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^managed-dataview / })).toBeInTheDocument();
 
     // Verify the badges for special types
     expect(screen.getByTestId('dataViewItemTempBadge-the-data-view')).toBeInTheDocument();

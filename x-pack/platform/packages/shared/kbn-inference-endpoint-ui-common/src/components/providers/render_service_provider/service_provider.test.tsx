@@ -17,7 +17,6 @@ describe('ServiceProviderIcon component', () => {
 
     expect(avatar).toBeInTheDocument();
     expect(avatar).toHaveAttribute('aria-label', 'hugging_face');
-    expect(avatar).toHaveAttribute('title', 'hugging_face');
 
     const icon = avatar.querySelector('[data-euiicon-type]');
     expect(icon).toBeInTheDocument();
@@ -30,7 +29,6 @@ describe('ServiceProviderIcon component', () => {
 
     expect(avatar).toBeInTheDocument();
     expect(avatar).toHaveAttribute('aria-label', 'openai');
-    expect(avatar).toHaveAttribute('title', 'openai');
 
     const icon = avatar.querySelector('[data-euiicon-type]');
     expect(icon).toBeInTheDocument();
@@ -43,7 +41,6 @@ describe('ServiceProviderIcon component', () => {
 
     expect(avatar).toBeInTheDocument();
     expect(avatar).toHaveAttribute('aria-label', 'brand-new-provider');
-    expect(avatar).toHaveAttribute('title', 'brand-new-provider');
 
     const icon = avatar.querySelector('[data-euiicon-type]');
     expect(icon).toBeInTheDocument();

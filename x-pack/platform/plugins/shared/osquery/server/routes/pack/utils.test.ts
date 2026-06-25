@@ -228,6 +228,104 @@ describe('Pack utils', () => {
       expect(out.queries.q1).not.toHaveProperty('rrule_schedule');
     });
 
+    // Regression: per-query rrule override must NOT emit a top-level start_date.
+    // The stale create-time start_date in the SO (e.g. 11:37Z) would shadow the
+    // user-chosen rrule_schedule.start_date (e.g. 13:38Z), causing osquerybeat
+    // to compute the next fire from the wrong baseline and never execute the query.
+    test('per-query rrule override — no top-level start_date emitted (shadowing fix)', () => {
+      const overrideRrule = {
+        rrule: 'FREQ=DAILY',
+        start_date: '2026-06-18T13:38:00.000Z',
+      };
+      const out = convertSOQueriesToPackConfig(
+        [
+          {
+            id: 'uptime',
+            name: 'uptime',
+            query: 'select * from uptime;',
+            schedule_type: 'rrule',
+            rrule_schedule: overrideRrule,
+            schedule_id: 'cffd6216-09d7-43c3-8c90-0cc61bab38bc',
+            start_date: '2026-06-18T11:37:48.355Z', // stale create-time value
+          },
+        ],
+        {
+          packSchedule: {
+            schedule_type: 'rrule',
+            rrule_schedule: { rrule: 'FREQ=DAILY', start_date: '2026-06-18T11:37:48.355Z' },
+          },
+          isRruleFeatureEnabled: true,
+        }
+      );
+      // The stale top-level start_date must not appear — only rrule_schedule.start_date.
+      expect(out.queries.uptime).not.toHaveProperty('start_date');
+      expect(out.queries.uptime.rrule_schedule).toEqual(overrideRrule);
+    });
+
+    // Pack-inheriting query (no per-query override) in rrule mode also must not
+    // emit the stale top-level start_date — the pack default_rrule_schedule is
+    // the authoritative time source.
+    test('pack-inheriting rrule query — no top-level start_date emitted', () => {
+      const out = convertSOQueriesToPackConfig(
+        [
+          {
+            id: 'q1',
+            name: 'q1',
+            query: 'SELECT 1',
+            schedule_id: 'sid-1',
+            start_date: '2026-06-18T11:37:48.355Z', // stale create-time value
+          },
+        ],
+        {
+          packSchedule: {
+            schedule_type: 'rrule',
+            rrule_schedule: { rrule: 'FREQ=DAILY', start_date: '2026-06-18T13:38:00.000Z' },
+          },
+          isRruleFeatureEnabled: true,
+        }
+      );
+      expect(out.queries.q1).not.toHaveProperty('start_date');
+      expect(out.queries.q1).not.toHaveProperty('rrule_schedule');
+    });
+
+    // Legacy / interval mode must still emit top-level start_date (unchanged behaviour).
+    test('legacy query — top-level start_date preserved (interval mode)', () => {
+      const out = convertSOQueriesToPackConfig(
+        [
+          {
+            id: 'q1',
+            name: 'q1',
+            query: 'SELECT 1',
+            interval: 3600,
+            schedule_id: 'sid-1',
+            start_date: '2026-06-18T11:37:48.355Z',
+          },
+        ],
+        { isRruleFeatureEnabled: true }
+      );
+      expect(out.queries.q1.start_date).toBe('2026-06-18T11:37:48.355Z');
+    });
+
+    // Wire-gate off: even with an rrule query on the SO, top-level start_date
+    // must be emitted (legacy mode, flag is off).
+    test('wire-gate off — top-level start_date preserved on rrule SO query (legacy fallback)', () => {
+      const out = convertSOQueriesToPackConfig(
+        [
+          {
+            id: 'q1',
+            name: 'q1',
+            query: 'SELECT 1',
+            schedule_type: 'rrule',
+            rrule_schedule: { rrule: 'FREQ=DAILY', start_date: '2026-06-18T13:38:00.000Z' },
+            interval: 3600,
+            start_date: '2026-06-18T11:37:48.355Z',
+          },
+        ],
+        { isRruleFeatureEnabled: false }
+      );
+      expect(out.queries.q1.start_date).toBe('2026-06-18T11:37:48.355Z');
+    });
+
     test('wire-gate off — RRULE on SO is ignored, legacy interval emission', () => {
       const out = convertSOQueriesToPackConfig(
         [

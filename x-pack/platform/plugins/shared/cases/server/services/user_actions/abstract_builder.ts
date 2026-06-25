@@ -10,11 +10,13 @@ import { ACTION_SAVED_OBJECT_TYPE } from '@kbn/actions-plugin/server';
 import type { CaseConnector, ExternalService, User } from '../../../common/types/domain';
 import { UserActionTypes } from '../../../common/types/domain';
 import {
+  CASE_ATTACHMENT_SAVED_OBJECT,
   CASE_COMMENT_SAVED_OBJECT,
   CASE_SAVED_OBJECT,
   NONE_CONNECTOR_ID,
 } from '../../../common/constants';
 import {
+  CASE_ATTACHMENT_REF_NAME,
   CASE_REF_NAME,
   COMMENT_REF_NAME,
   CONNECTOR_ID_REFERENCE_NAME,
@@ -26,6 +28,7 @@ import type {
   SavedObjectParameters,
   UserActionParameters,
   UserActionEvent,
+  AttachmentSavedObjectType,
 } from './types';
 
 export abstract class UserActionBuilder {
@@ -58,12 +61,20 @@ export abstract class UserActionBuilder {
       : [];
   }
 
-  protected createCommentReferences(id: string | null): SavedObjectReference[] {
+  protected createCommentReferences(
+    id: string | null,
+    savedObjectType: AttachmentSavedObjectType = CASE_COMMENT_SAVED_OBJECT
+  ): SavedObjectReference[] {
+    const referenceName =
+      savedObjectType === CASE_ATTACHMENT_SAVED_OBJECT
+        ? CASE_ATTACHMENT_REF_NAME
+        : COMMENT_REF_NAME;
+
     return id != null
       ? [
           {
-            type: CASE_COMMENT_SAVED_OBJECT,
-            name: COMMENT_REF_NAME,
+            type: savedObjectType,
+            name: referenceName,
             id,
           },
         ]
@@ -93,6 +104,7 @@ export abstract class UserActionBuilder {
     valueKey,
     caseId,
     savedObjectId,
+    savedObjectType,
     connectorId,
     type,
   }: CommonBuilderArguments): SavedObjectParameters => {
@@ -105,7 +117,10 @@ export abstract class UserActionBuilder {
       },
       references: [
         ...this.createCaseReferences(caseId),
-        ...this.createCommentReferences(savedObjectId ?? null),
+        ...this.createCommentReferences(
+          savedObjectId ?? null,
+          savedObjectType ?? CASE_COMMENT_SAVED_OBJECT
+        ),
         ...(type === UserActionTypes.connector
           ? this.createConnectorReference(connectorId ?? null)
           : []),

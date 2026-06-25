@@ -11,13 +11,23 @@ interface SectionPanelProps {
   topCard: React.ReactNode;
   bottomCard: React.ReactNode;
   children: React.ReactNode;
+  isHighlighted?: boolean;
 }
 
-export const SectionPanel = ({ topCard, bottomCard, children }: SectionPanelProps) => {
+export const SectionPanel = ({
+  topCard,
+  bottomCard,
+  children,
+  isHighlighted = false,
+}: SectionPanelProps) => {
   const { euiTheme } = useEuiTheme();
 
+  const highlightCss = isHighlighted
+    ? { boxShadow: `0 0 0 ${euiTheme.border.width.thick} ${euiTheme.colors.text}` }
+    : undefined;
+
   return (
-    <EuiPanel hasShadow={false} hasBorder grow={false} paddingSize="none">
+    <EuiPanel hasShadow={false} hasBorder grow={false} paddingSize="none" css={highlightCss}>
       <EuiFlexGroup gutterSize="none">
         <EuiFlexItem grow={2}>
           <EuiFlexGroup gutterSize="none" direction="column" css={{ height: '100%' }}>

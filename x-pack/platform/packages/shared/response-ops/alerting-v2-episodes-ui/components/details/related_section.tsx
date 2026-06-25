@@ -9,6 +9,7 @@ import React, { useCallback } from 'react';
 import { EuiLoadingSpinner, EuiText } from '@elastic/eui';
 import { useFetchEpisodeQuery } from '../../hooks/use_fetch_episode_query';
 import { useFetchRule } from '../../hooks/use_fetch_rule';
+import { isRuleLoading } from '../../types/rule_state';
 import { getAlertEpisodeDetailsPath } from '../../constants';
 import { AlertEpisodesRelated } from './related/related';
 import type { AlertEpisodeDetailsServices } from './types';
@@ -40,17 +41,13 @@ export const AlertEpisodesRelatedSection = ({
   const ruleId = episode?.['rule.id'];
   const groupHash = episode?.group_hash;
 
-  const {
-    data: rule,
-    isLoading: isLoadingRule,
-    isError: isRuleError,
-  } = useFetchRule({ id: ruleId, http: services.http });
+  const { ruleState } = useFetchRule({ id: ruleId, http: services.http });
 
-  if (isLoadingEpisode || (ruleId && isLoadingRule)) {
+  if (isLoadingEpisode || (ruleId && isRuleLoading(ruleState))) {
     return <EuiLoadingSpinner size="m" data-test-subj="alertingV2EpisodesRelatedSectionLoading" />;
   }
 
-  if (isEpisodeError || isRuleError || !rule) {
+  if (isEpisodeError || !ruleId) {
     return (
       <EuiText size="s" color="danger" data-test-subj="alertingV2EpisodesRelatedSectionError">
         {i18n.RELATED_SECTION_LOAD_ERROR}
@@ -62,7 +59,7 @@ export const AlertEpisodesRelatedSection = ({
     <AlertEpisodesRelated
       currentEpisodeId={episodeId}
       groupHash={groupHash}
-      rule={rule}
+      ruleState={ruleState}
       getEpisodeDetailsHref={getEpisodeDetailsHref}
       showHeading={showHeading}
       compressed={compressed}

@@ -10,7 +10,7 @@
             "add": {
               "index": "{index}",
               "alias": "",
-              "filter": {},
+              "filter": { "__scope_link": "GLOBAL.query" },
               "routing": "1",
               "search_routing": "1,2",
               "index_routing": "1"

@@ -52,4 +52,27 @@ describe('EditDataLifecycleFlyoutBodyContent', () => {
 
     expect(screen.getByTestId('editDataLifecycle-noInheritedPolicyPanel')).toBeInTheDocument();
   });
+
+  it('renders a loading panel when inheriting and inherited lifecycle is still resolving', () => {
+    const retentionOptions: RetentionOption[] = [
+      { name: 'policy-a', descriptionParts: ['30d'], inspectable: false },
+    ];
+
+    renderWithTheme(
+      <EditDataLifecycleFlyoutBodyContent
+        inheritLifecycle
+        lifecycleMethod="ilm"
+        showLifecycleMethodPicker
+        method={{ value: 'ilm', onChange: () => {} }}
+        ilm={{
+          retentionOptions,
+          selectedPolicyName: undefined,
+          isLoadingInherited: true,
+          onSelect: () => {},
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('editDataLifecycle-loadingInheritedPanel')).toBeInTheDocument();
+  });
 });

@@ -126,12 +126,12 @@ describe('derivePeriodSeconds', () => {
   });
 
   describe('YEARLY', () => {
-    test('FREQ=YEARLY → 28 × 86400s (conservative floor, INTERVAL ignored)', () => {
-      expect(derivePeriodSeconds(parseRRule('FREQ=YEARLY'))).toBe(28 * 86400);
+    test('FREQ=YEARLY → 365 × 86400s (conservative floor, no leap day)', () => {
+      expect(derivePeriodSeconds(parseRRule('FREQ=YEARLY'))).toBe(365 * 86400);
     });
 
-    test('FREQ=YEARLY;INTERVAL=2 → still 28 × 86400s (YEARLY always floors to 28d)', () => {
-      expect(derivePeriodSeconds(parseRRule('FREQ=YEARLY;INTERVAL=2'))).toBe(28 * 86400);
+    test('FREQ=YEARLY;INTERVAL=2 → 2 × 365 × 86400s (INTERVAL folded in)', () => {
+      expect(derivePeriodSeconds(parseRRule('FREQ=YEARLY;INTERVAL=2'))).toBe(2 * 365 * 86400);
     });
   });
 });

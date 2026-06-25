@@ -1,5 +1,5 @@
 {
-  "sha1": "fee5365a110baa2968d08376ba9f1537c4c13e55",
+  "sha1": "8883461afd05fa49154b03fa94e4bef8f2d6b88d",
   "tests": [
     {
       "id": "4402bb6f4421c38-1054e603e578b92",
@@ -203,7 +203,7 @@
     {
       "id": "1615ae6cdd866ca-4d3a81e2c9a2ebd",
       "title": "Entity analytics management page - Risk Score tab Risk Score tab is selected by default",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -212,14 +212,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/entity_analytics/risk_score_management.spec.ts",
-        "line": 41,
+        "line": 42,
         "column": 14
       }
     },
     {
       "id": "1615ae6cdd866ca-0d4aa171beff992",
       "title": "Entity analytics management page - Risk Score tab should show preview error panel when API fails",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -228,14 +228,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/entity_analytics/risk_score_management.spec.ts",
-        "line": 49,
+        "line": 50,
         "column": 14
       }
     },
     {
       "id": "1615ae6cdd866ca-ed4dbcbf851573b",
       "title": "Entity analytics management page - Risk Score tab should show save bar when toggling retain checkbox",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -244,14 +244,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/entity_analytics/risk_score_management.spec.ts",
-        "line": 70,
+        "line": 71,
         "column": 14
       }
     },
     {
       "id": "1615ae6cdd866ca-f58e084bddd50df",
       "title": "Entity analytics management page - Risk Score tab should show save bar when toggling closed alerts switch",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -260,14 +260,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/entity_analytics/risk_score_management.spec.ts",
-        "line": 88,
+        "line": 89,
         "column": 14
       }
     },
     {
       "id": "1615ae6cdd866ca-ca0f8d19aa15832",
       "title": "Entity analytics management page - Risk Score tab should discard changes when clicking discard button",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -276,14 +276,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/entity_analytics/risk_score_management.spec.ts",
-        "line": 106,
+        "line": 107,
         "column": 14
       }
     },
     {
       "id": "1615ae6cdd866ca-02f079bc2cd45e2",
       "title": "Entity analytics management page - Risk Score tab should save changes and persist after page reload",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -292,7 +292,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/entity_analytics/risk_score_management.spec.ts",
-        "line": 129,
+        "line": 130,
         "column": 14
       }
     },
@@ -315,28 +315,28 @@
     {
       "id": "105a595b3d3179c-668900ccdf79d81",
       "title": "Bulk add alerts to chat should disable the \"Add to chat\" bulk action when all alerts are selected via the query button",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/investigations/bulk_add_alerts_to_chat.spec.ts",
-        "line": 60,
+        "line": 61,
         "column": 14
       }
     },
     {
       "id": "105a595b3d3179c-236824c49e31bf1",
       "title": "Bulk add alerts to chat should open agent builder conversation with attachment chip and pre-filled prompt, and send multiple alerts to the LLM",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/investigations/bulk_add_alerts_to_chat.spec.ts",
-        "line": 89,
+        "line": 90,
         "column": 14
       }
     },

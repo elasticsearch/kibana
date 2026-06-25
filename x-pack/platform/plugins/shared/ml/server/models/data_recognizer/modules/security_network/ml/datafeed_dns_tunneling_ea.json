@@ -1,0 +1,62 @@
+{
+  "job_id": "JOB_ID",
+  "indices": [
+    "INDEX_PATTERN_NAME"
+  ],
+  "max_empty_searches": 10,
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "event.category": "network"
+          }
+        },
+        {
+          "bool": {
+            "should": [
+              { "exists": { "field": "dns.question.registered_domain" } },
+              { "exists": { "field": "network_traffic.dns.question.etld_plus_one" } }
+            ],
+            "minimum_should_match": 1
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "bool": {
+            "filter": {
+              "term": {
+                "destination.ip": "169.254.169.254"
+              }
+            }
+          }
+        },
+        {
+          "terms": {
+            "process.name": [
+              "elastic-agent.exe",
+              "elastic-agent",
+              "metricbeat.exe",
+              "metricbeat",
+              "filebeat.exe",
+              "filebeat",
+              "packetbeat.exe",
+              "packetbeat",
+              "winlogbeat.exe",
+              "winlogbeat"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "runtime_mappings": {
+    "dns_question_etld": {
+      "type": "keyword",
+      "script": {
+        "source": "if(!doc.containsKey('network_traffic.dns.question.etld_plus_one') || doc['network_traffic.dns.question.etld_plus_one'].size() == 0)\r\n{\r\n  if(doc.containsKey('dns.question.registered_domain') && doc['dns.question.registered_domain'].size() != 0)\r\n  { emit(doc['dns.question.registered_domain'].value); }\r\n  else { emit('None'); }\r\n}\r\nelse { emit(doc['network_traffic.dns.question.etld_plus_one'].value); }"
+      }
+    }
+  }
+}

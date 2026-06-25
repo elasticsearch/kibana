@@ -13,6 +13,7 @@ import {
   parseSplayPermissive,
   serializeSplay,
   splayInSeconds,
+  sumCompoundSeconds,
 } from './splay_utils';
 
 describe('splayInSeconds', () => {
@@ -191,5 +192,37 @@ describe('parseSplayPermissive', () => {
   it('rejects non-string input', () => {
     // @ts-expect-error -- exercising runtime guard
     expect(() => parseSplayPermissive(undefined)).toThrowError(/must be a string/);
+  });
+});
+
+describe('sumCompoundSeconds', () => {
+  it('sums hours, minutes, and seconds segments', () => {
+    expect(sumCompoundSeconds('1h30m')).toBe(5400);
+    expect(sumCompoundSeconds('45m30s')).toBe(2730);
+    expect(sumCompoundSeconds('1h30m45s')).toBe(5445);
+  });
+
+  it('folds sub-second segments into the total as fractional seconds', () => {
+    expect(sumCompoundSeconds('1s500ms')).toBe(1.5);
+    expect(sumCompoundSeconds('2us')).toBeCloseTo(0.000002, 9);
+    expect(sumCompoundSeconds('1µs')).toBeCloseTo(0.000001, 9);
+    expect(sumCompoundSeconds('1ns')).toBeCloseTo(0.000000001, 12);
+  });
+
+  it('totals a single-segment duration', () => {
+    expect(sumCompoundSeconds('13h')).toBe(46800);
+    expect(sumCompoundSeconds('30s')).toBe(30);
+  });
+
+  it('returns 0 for input with no recognizable segments', () => {
+    expect(sumCompoundSeconds('')).toBe(0);
+    expect(sumCompoundSeconds('abc')).toBe(0);
+  });
+
+  it('decides the 12h cap from the summed total', () => {
+    expect(sumCompoundSeconds('12h') <= MAX_SPLAY_SECONDS).toBe(true);
+    expect(sumCompoundSeconds('11h59m59s') <= MAX_SPLAY_SECONDS).toBe(true);
+    expect(sumCompoundSeconds('12h0m1s') > MAX_SPLAY_SECONDS).toBe(true);
+    expect(sumCompoundSeconds('13h0m') > MAX_SPLAY_SECONDS).toBe(true);
   });
 });

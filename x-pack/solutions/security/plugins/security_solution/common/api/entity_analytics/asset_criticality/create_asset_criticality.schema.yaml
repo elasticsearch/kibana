@@ -8,9 +8,12 @@ paths:
     post:
       x-labels: [ess, serverless]
       x-codegen-enabled: true
+      deprecated: true
       operationId: CreateAssetCriticalityRecord
       summary: Upsert an asset criticality record
       description: |
+        **Deprecated in 9.4.0.** Use the Entity Store APIs to assign asset criticality to an entity.
+
         Create or update an asset criticality record for a specific entity.
 
         If a record already exists for the specified entity, that record is overwritten with the specified value. If a record doesn't exist for the specified entity, a new record is created.

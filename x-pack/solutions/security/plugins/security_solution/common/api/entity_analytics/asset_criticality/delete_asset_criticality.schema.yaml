@@ -8,9 +8,13 @@ paths:
     delete:
       x-labels: [ess, serverless]
       x-codegen-enabled: true
+      deprecated: true
       operationId: DeleteAssetCriticalityRecord
       summary: Delete an asset criticality record
-      description: Delete the asset criticality record for a specific entity.
+      description: |
+        **Deprecated in 9.4.0.** Use the Entity Store APIs to unassign asset criticality for a specific entity.
+
+        Delete the asset criticality record for a specific entity.
       parameters:
         - name: id_value
           in: query

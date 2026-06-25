@@ -268,7 +268,7 @@ describe('DataStreamsTable', () => {
       renderWithProvider(<DataStreamsTable {...defaultProps} items={items} />);
 
       const deleteButton = screen.getByTestId('deleteDataStreamButton');
-      expect(deleteButton).toBeDisabled();
+      expect(deleteButton).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('should pass isDeleting to Status when server status is deleting', () => {
@@ -285,7 +285,7 @@ describe('DataStreamsTable', () => {
       renderWithProvider(<DataStreamsTable {...defaultProps} items={items} />);
 
       const deleteButton = screen.getByTestId('deleteDataStreamButton');
-      expect(deleteButton).toBeDisabled();
+      expect(deleteButton).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('should disable refresh button when server status is deleting', () => {
@@ -294,7 +294,7 @@ describe('DataStreamsTable', () => {
       renderWithProvider(<DataStreamsTable {...defaultProps} items={items} />);
 
       const refreshButton = screen.getByTestId('refreshDataStreamButton');
-      expect(refreshButton).toBeDisabled();
+      expect(refreshButton).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('should disable expand button when server status is deleting', () => {
@@ -303,7 +303,7 @@ describe('DataStreamsTable', () => {
       renderWithProvider(<DataStreamsTable {...defaultProps} items={items} />);
 
       const expandButton = screen.getByTestId('expandDataStreamButton');
-      expect(expandButton).toBeDisabled();
+      expect(expandButton).toHaveAttribute('aria-disabled', 'true');
     });
   });
 
@@ -367,7 +367,7 @@ describe('DataStreamsTable', () => {
       renderWithProvider(<DataStreamsTable {...defaultProps} />);
 
       const refreshButton = screen.getByTestId('refreshDataStreamButton');
-      expect(refreshButton).toBeDisabled();
+      expect(refreshButton).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('should not disable refresh button for other items when reanalyze is in progress', () => {
@@ -392,7 +392,7 @@ describe('DataStreamsTable', () => {
       renderWithProvider(<DataStreamsTable {...defaultProps} items={items} />);
 
       const expandButton = screen.getByTestId('expandDataStreamButton');
-      expect(expandButton).toBeDisabled();
+      expect(expandButton).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('should enable expand button for completed data streams', () => {
@@ -410,7 +410,7 @@ describe('DataStreamsTable', () => {
       renderWithProvider(<DataStreamsTable {...defaultProps} items={items} />);
 
       const refreshButton = screen.getByTestId('refreshDataStreamButton');
-      expect(refreshButton).toBeDisabled();
+      expect(refreshButton).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('should enable refresh button for completed data streams', () => {

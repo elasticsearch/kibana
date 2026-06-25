@@ -15,11 +15,18 @@ import type {
 } from '@kbn/controls-plugin/common/options_list/types';
 import type { OptionsListSelection } from '@kbn/controls-schemas';
 import { WORKFLOWS_EXECUTIONS_INDEX } from '../../../../common';
-import { buildWorkflowExecutionsSpaceFilter } from '../../lib/build_workflow_executions_search_query';
+import {
+  buildUnmanagedWorkflowExecutionsFilter,
+  buildWorkflowExecutionsSpaceFilter,
+} from '../../lib/build_workflow_executions_search_query';
 import type { RouteDependencies } from '../types';
 import { INTERNAL_API_VERSION, MAX_EXECUTION_FIELD_NAME_LENGTH } from '../utils/route_constants';
 import { handleRouteError } from '../utils/route_error_handlers';
-import { WORKFLOW_EXECUTION_READ_SECURITY } from '../utils/route_security';
+import {
+  canReadManagedWorkflowExecutions,
+  hasWorkflowExecutionReadPrivilege,
+  WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
+} from '../utils/route_security';
 import { withAvailabilityCheck } from '../utils/with_availability_check';
 
 const getSearchFilter = (request: OptionsListRequestBody) => {
@@ -66,7 +73,7 @@ export function registerExecutionOptionsListRoute({ router, service, spaces }: R
     .post({
       path: '/internal/workflows/executions/options_list',
       access: 'internal',
-      security: WORKFLOW_EXECUTION_READ_SECURITY,
+      security: WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
     })
     .addVersion(
       {
@@ -103,6 +110,9 @@ export function registerExecutionOptionsListRoute({ router, service, spaces }: R
       },
       withAvailabilityCheck(async (_context, request, response) => {
         try {
+          if (!hasWorkflowExecutionReadPrivilege(request)) {
+            return response.forbidden();
+          }
           const coreStart = await service.getCoreStart();
           const esClient = coreStart.elasticsearch.client.asInternalUser;
           const spaceId = spaces.getSpaceId(request);
@@ -121,6 +131,9 @@ export function registerExecutionOptionsListRoute({ router, service, spaces }: R
                   ...optionsListFilters,
                   buildWorkflowExecutionsSpaceFilter(spaceId),
                   { bool: { must_not: { exists: { field: 'stepId' } } } },
+                  ...(canReadManagedWorkflowExecutions(request)
+                    ? []
+                    : [buildUnmanagedWorkflowExecutionsFilter()]),
                   ...(searchFilter ? [searchFilter] : []),
                 ],
               },

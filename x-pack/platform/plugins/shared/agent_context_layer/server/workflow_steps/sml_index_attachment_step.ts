@@ -150,12 +150,15 @@ export const createContextEngineAddEntryStepDefinition = ({
             ...(chunk.references !== undefined
               ? { references: chunk.references.map((uri) => ({ uri })) }
               : {}),
-            // The workflow input carries flat Kibana privilege strings; map
-            // them into the nested permissions shape (no ES index gating is
-            // expressible via this step yet).
+            // Map the workflow input's flat permission lists into the nested
+            // SML permissions shape: `permissions` -> Kibana privilege names,
+            // `elasticsearchIndices` -> ES index / alias / data-stream names
+            // that gate the chunk behind the viewer's ES `read` privilege.
             permissions: {
               kibana: { privileges: (chunk.permissions ?? []).map((name) => ({ name })) },
-              elasticsearch: { indices: [] },
+              elasticsearch: {
+                indices: (chunk.elasticsearchIndices ?? []).map((name) => ({ name })),
+              },
             },
           }));
 

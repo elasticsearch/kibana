@@ -99,6 +99,24 @@ export class EsqlServiceTestbed {
     });
   }
 
+  public async setupClosedLookupIndex() {
+    const client = this.esClient();
+
+    await client.indices.create({
+      index: 'closed_lookup_index',
+      settings: {
+        'index.mode': 'lookup',
+      },
+      mappings: {
+        properties: {
+          field1: { type: 'keyword' },
+        },
+      },
+    });
+
+    await client.indices.close({ index: 'closed_lookup_index' });
+  }
+
   public async setupTimeseriesIndices() {
     const client = this.esClient();
 

@@ -11,7 +11,7 @@ import { i18n } from '@kbn/i18n';
 export const EPISODE_DETAILS_BREADCRUMB_FALLBACK = i18n.translate(
   'xpack.alertingV2.breadcrumbs.episodeDetailsFallback',
   {
-    defaultMessage: 'Episode',
+    defaultMessage: 'Alert episode',
   }
 );
 

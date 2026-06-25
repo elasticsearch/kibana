@@ -161,6 +161,10 @@ export const DataStreamResponse = lazySchema(() =>
      * The status of the data stream
      */
     status: TaskStatus,
+    /**
+     * The current phase of the data stream generation workflow
+     */
+    phase: z.string().max(64).optional(),
   })
 );
 export type DataStreamResponse = z.infer<typeof DataStreamResponse>;

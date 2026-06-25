@@ -96,6 +96,7 @@ const getComboBoxProps = (fields: ComboBoxFields): GetFieldComboBoxPropsReturn =
 
   const genericProps = getGenericComboBoxProps<DataViewFieldBase>({
     getLabel: (field) => field.name,
+    getOptionTestSubj: (field) => `filterFieldOption-${field.name}`,
     options: availableFields,
     selectedOptions: selectedFields,
   });

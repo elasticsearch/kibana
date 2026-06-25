@@ -13,3 +13,32 @@ export const RELATED_EPISODES_LOAD_ERROR = i18n.translate(
     defaultMessage: 'Failed to load related alert episodes',
   }
 );
+
+export const RULE_FIELD_LABEL = i18n.translate('xpack.alertingV2EpisodesUi.ruleFieldLabel', {
+  defaultMessage: 'Rule',
+});
+
+export const STATUS_FIELD_LABEL = i18n.translate('xpack.alertingV2EpisodesUi.statusFieldLabel', {
+  defaultMessage: 'Status',
+});
+
+export const SEVERITY_FIELD_LABEL = i18n.translate(
+  'xpack.alertingV2EpisodesUi.severityFieldLabel',
+  {
+    defaultMessage: 'Severity',
+  }
+);
+
+export const DURATION_FIELD_LABEL = i18n.translate(
+  'xpack.alertingV2EpisodesUi.durationFieldLabel',
+  {
+    defaultMessage: 'Duration',
+  }
+);
+
+export const ASSIGNEES_FIELD_LABEL = i18n.translate(
+  'xpack.alertingV2EpisodesUi.assigneesFieldLabel',
+  {
+    defaultMessage: 'Assignee',
+  }
+);

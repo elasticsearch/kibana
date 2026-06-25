@@ -14,8 +14,23 @@ import type { SavedObjectError } from '@kbn/core/types';
 import { RULE_SAVED_OBJECT_TYPE } from '../../../saved_objects';
 import type { RuleSavedObjectAttributes } from '../../../saved_objects';
 import type { AlertingServerStartDependencies } from '../../../types';
+import { convertEveryToSchedulesPerMinute } from '../../duration';
 import { spaceIdToNamespace } from '../../space_id_to_namespace';
 import { RuleSavedObjectsClientToken } from './tokens';
+
+/**
+ * Upper bound on the number of distinct `schedule.every` values the
+ * frequency aggregation will sum. Distinct interval strings are few in
+ * practice; this is large enough to avoid undercounting the limit.
+ */
+const SCHEDULE_INTERVAL_AGG_SIZE = 1000;
+
+interface ScheduleEveryAggregationResult {
+  schedule_intervals: {
+    sum_other_doc_count: number;
+    buckets: Array<{ key: string; doc_count: number }>;
+  };
+}
 
 export type RulesSavedObjectsBulkGetResultItem =
   | {
@@ -78,6 +93,7 @@ export interface RulesSavedObjectServiceContract {
     total: number;
   }>;
   findTags(params?: { filter?: string }): Promise<string[]>;
+  getTotalScheduledPerMinute(): Promise<number>;
 }
 
 @injectable()
@@ -266,6 +282,40 @@ export class RulesSavedObjectService implements RulesSavedObjectServiceContract 
       ...(filter ? { filter } : {}),
       ...(search ? { search, searchFields, defaultSearchOperator: 'AND' as const } : {}),
     });
+  }
+
+  /**
+   * Sums the scheduled rule runs per minute across all enabled rules in every
+   * space. Used to enforce the `maxScheduledPerMinute` guardrail. Uses a terms
+   * aggregation on the indexed `schedule.every` field, so its cost scales with
+   * the number of distinct intervals rather than the number of rules.
+   */
+  public async getTotalScheduledPerMinute(): Promise<number> {
+    const result = await this.client.find<
+      RuleSavedObjectAttributes,
+      ScheduleEveryAggregationResult
+    >({
+      type: RULE_SAVED_OBJECT_TYPE,
+      perPage: 0,
+      namespaces: ['*'],
+      filter: `${RULE_SAVED_OBJECT_TYPE}.attributes.enabled: true`,
+      aggs: {
+        schedule_intervals: {
+          terms: {
+            field: `${RULE_SAVED_OBJECT_TYPE}.attributes.schedule.every`,
+            size: SCHEDULE_INTERVAL_AGG_SIZE,
+          },
+        },
+      },
+    });
+
+    const buckets = result.aggregations?.schedule_intervals.buckets ?? [];
+
+    return buckets.reduce(
+      (total, { key, doc_count: occurrences }) =>
+        total + convertEveryToSchedulesPerMinute(key) * occurrences,
+      0
+    );
   }
 
   public async findTags({ filter }: { filter?: string } = {}): Promise<string[]> {

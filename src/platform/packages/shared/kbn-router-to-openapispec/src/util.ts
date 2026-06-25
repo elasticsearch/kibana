@@ -196,7 +196,7 @@ export const setXState = (
 export const getXState = (
   availability:
     | {
-        stability?: 'experimental' | 'beta' | 'stable' | 'tech_preview';
+        stability?: 'experimental' | 'stable' | 'tech_preview';
         since?: string;
       }
     | undefined,
@@ -211,8 +211,6 @@ export const getXState = (
     state = 'Technical Preview';
   } else if (availability.stability === 'experimental') {
     state = 'Experimental';
-  } else if (availability.stability === 'beta') {
-    state = 'Beta';
   }
   if (!env.serverless && availability.since) {
     state = state ? `${state}; added in ${availability.since}` : `Added in ${availability.since}`;

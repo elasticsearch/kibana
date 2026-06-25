@@ -25,6 +25,7 @@ import { EMPTY } from 'rxjs';
 
 import type { HttpSetup } from '@kbn/core-http-browser';
 import { flattenPanelTree } from '../../../../lib/flatten_panel_tree';
+import { isClosedIndexStatus } from '../../../../lib/is_closed_index_status';
 import {
   INDEX_OPEN,
   IndexDetailsSection,
@@ -149,7 +150,12 @@ export const IndexActionsContextMenu = ({
     if (!isPopoverOpen && indexNames.length === 1 && docCountApi) {
       const indexName = indexNames[0];
       const selectedIndex = indices.find((index) => index.name === indexName);
-      if (selectedIndex?.documents === undefined && !docCountMap?.[indexName]) {
+      const indexStatus = indexStatusByName[indexName] ?? selectedIndex?.status;
+      if (
+        selectedIndex?.documents === undefined &&
+        !docCountMap?.[indexName] &&
+        !isClosedIndexStatus(indexStatus)
+      ) {
         docCountApi.getByName(indexName);
       }
     }

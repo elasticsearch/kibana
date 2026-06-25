@@ -11,7 +11,7 @@ import { BehaviorSubject } from 'rxjs';
 import { QueryClient } from '@kbn/react-query';
 import { coreLifecycleMock } from '@kbn/core-lifecycle-browser-mocks';
 import { useWorkflowsCapabilities } from '@kbn/workflows-ui';
-import { createMockWorkflowApi } from '@kbn/workflows-ui/mocks';
+import { createMockWorkflowApi, createMockWorkflowsCapabilities } from '@kbn/workflows-ui/mocks';
 import type { WorkflowsBaseTelemetry } from '@kbn/workflows-management-plugin/public';
 import { createWorkflowYamlAttachmentUiDefinition } from './workflow_yaml_attachment_renderer';
 import { WORKFLOW_YAML_ATTACHMENT_TYPE } from '@kbn/workflows/common/constants';
@@ -24,22 +24,14 @@ jest.mock('@kbn/workflows-ui', () => ({
 
 const mockWorkflowApi = createMockWorkflowApi();
 
-const allWorkflowCapabilitiesTrue = {
-  canCreateWorkflow: true,
-  canReadWorkflow: true,
-  canUpdateWorkflow: true,
-  canDeleteWorkflow: true,
-  canExecuteWorkflow: true,
-  canReadWorkflowExecution: true,
-  canCancelWorkflowExecution: true,
-};
+const mockAllWorkflowCapabilitiesTrue = createMockWorkflowsCapabilities();
 
 jest.mock('@kbn/workflows-ui', () => {
   const actual = jest.requireActual('@kbn/workflows-ui');
   return {
     ...actual,
     useWorkflowsApi: jest.fn(() => mockWorkflowApi),
-    useWorkflowsCapabilities: jest.fn(() => allWorkflowCapabilitiesTrue),
+    useWorkflowsCapabilities: jest.fn(() => mockAllWorkflowCapabilitiesTrue),
   };
 });
 
@@ -82,7 +74,7 @@ const createAttachment = (
 
 describe('createWorkflowYamlAttachmentUiDefinition', () => {
   beforeEach(() => {
-    mockUseWorkflowsCapabilities.mockReturnValue(allWorkflowCapabilitiesTrue);
+    mockUseWorkflowsCapabilities.mockReturnValue(mockAllWorkflowCapabilitiesTrue);
   });
 
   it('returns an object with the expected shape', () => {
@@ -346,7 +338,7 @@ describe('createWorkflowYamlAttachmentUiDefinition', () => {
     describe('authorization (capabilities)', () => {
       it('omits Save for new workflow when createWorkflow is false', () => {
         mockUseWorkflowsCapabilities.mockReturnValue({
-          ...allWorkflowCapabilitiesTrue,
+          ...mockAllWorkflowCapabilitiesTrue,
           canCreateWorkflow: false,
         });
         const services = createMockServices();
@@ -369,7 +361,7 @@ describe('createWorkflowYamlAttachmentUiDefinition', () => {
 
       it('omits Override when updateWorkflow is false but keeps Save as new when createWorkflow is true', () => {
         mockUseWorkflowsCapabilities.mockReturnValue({
-          ...allWorkflowCapabilitiesTrue,
+          ...mockAllWorkflowCapabilitiesTrue,
           canUpdateWorkflow: false,
         });
         const services = createMockServices();
@@ -393,7 +385,7 @@ describe('createWorkflowYamlAttachmentUiDefinition', () => {
 
       it('omits Save as new when createWorkflow is false but keeps Override when updateWorkflow is true', () => {
         mockUseWorkflowsCapabilities.mockReturnValue({
-          ...allWorkflowCapabilitiesTrue,
+          ...mockAllWorkflowCapabilitiesTrue,
           canCreateWorkflow: false,
         });
         const services = createMockServices();
@@ -417,7 +409,7 @@ describe('createWorkflowYamlAttachmentUiDefinition', () => {
 
       it('omits Open in editor when readWorkflow is false', () => {
         mockUseWorkflowsCapabilities.mockReturnValue({
-          ...allWorkflowCapabilitiesTrue,
+          ...mockAllWorkflowCapabilitiesTrue,
           canReadWorkflow: false,
         });
         const services = createMockServices();

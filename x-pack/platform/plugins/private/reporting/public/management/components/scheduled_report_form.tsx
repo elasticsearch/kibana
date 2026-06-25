@@ -384,7 +384,6 @@ export const ScheduledReportForm = ({
                     compressed: true,
                     fullWidth: true,
                     showTimeSelect: true,
-                    minDate: now,
                     readOnly,
                     'data-test-subj': 'startDatePicker',
                   },

@@ -58,19 +58,19 @@ describe('BreakdownFieldSelector', () => {
       Array [
         Object {
           "checked": null,
-          "label": "No breakdown",
+          "label": null,
           "selected": "true",
           "value": "__EMPTY_SELECTOR_OPTION__",
         },
         Object {
           "checked": null,
-          "label": "bytes",
+          "label": null,
           "selected": "false",
           "value": "bytes",
         },
         Object {
           "checked": null,
-          "label": "extension",
+          "label": null,
           "selected": "false",
           "value": "extension",
         },
@@ -116,19 +116,19 @@ describe('BreakdownFieldSelector', () => {
       Array [
         Object {
           "checked": null,
-          "label": "No breakdown",
+          "label": null,
           "selected": "true",
           "value": "__EMPTY_SELECTOR_OPTION__",
         },
         Object {
           "checked": null,
-          "label": "bytes",
+          "label": null,
           "selected": "false",
           "value": "bytes",
         },
         Object {
           "checked": null,
-          "label": "extension",
+          "label": null,
           "selected": "false",
           "value": "extension",
         },
@@ -161,19 +161,19 @@ describe('BreakdownFieldSelector', () => {
       Array [
         Object {
           "checked": null,
-          "label": "No breakdown",
+          "label": null,
           "selected": "false",
           "value": "__EMPTY_SELECTOR_OPTION__",
         },
         Object {
           "checked": null,
-          "label": "bytes",
+          "label": null,
           "selected": "false",
           "value": "bytes",
         },
         Object {
           "checked": null,
-          "label": "extension",
+          "label": null,
           "selected": "true",
           "value": "extension",
         },
@@ -207,19 +207,19 @@ describe('BreakdownFieldSelector', () => {
       Array [
         Object {
           "checked": null,
-          "label": "No breakdown",
+          "label": null,
           "selected": "true",
           "value": "__EMPTY_SELECTOR_OPTION__",
         },
         Object {
           "checked": null,
-          "label": "bytes",
+          "label": null,
           "selected": "false",
           "value": "bytes",
         },
         Object {
           "checked": null,
-          "label": "extension",
+          "label": null,
           "selected": "false",
           "value": "extension",
         },
@@ -239,7 +239,7 @@ describe('BreakdownFieldSelector', () => {
         Array [
           Object {
             "checked": null,
-            "label": "extension",
+            "label": null,
             "selected": "false",
             "value": "extension",
           },
@@ -267,7 +267,7 @@ describe('BreakdownFieldSelector', () => {
     });
 
     act(() => {
-      screen.getByTitle('bytes').click();
+      screen.getByRole('option', { name: /bytes/ }).click();
     });
 
     expect(onBreakdownFieldChange).toHaveBeenCalledWith(selectedField);
@@ -349,7 +349,7 @@ describe('BreakdownFieldSelector', () => {
     });
 
     act(() => {
-      screen.getByTitle('bytes').click();
+      screen.getByRole('option', { name: /bytes/ }).click();
     });
 
     expect(onBreakdownFieldChange).toHaveBeenCalledWith(selectedField);

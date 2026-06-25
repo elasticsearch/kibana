@@ -15,6 +15,7 @@ export const datasetsStorageSettings = {
     properties: {
       name: types.keyword({}),
       description: types.text({}),
+      examples_count: types.long({}),
       created_at: types.date({}),
       updated_at: types.date({}),
     },
@@ -24,6 +25,7 @@ export const datasetsStorageSettings = {
 export interface DatasetStorageProperties {
   name: string;
   description: string;
+  examples_count?: number;
   created_at: string;
   updated_at: string;
 }

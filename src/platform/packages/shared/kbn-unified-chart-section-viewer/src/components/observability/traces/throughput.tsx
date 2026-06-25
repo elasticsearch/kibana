@@ -63,7 +63,6 @@ const ThroughputChartContent = ({
       title={title}
       chartLayers={chartLayers}
       legend={breakdownField ? BREAKDOWN_LEGEND_CONFIG : undefined}
-      syncTooltips
       syncCursor
       extraDisabledActions={[ACTION_OPEN_IN_DISCOVER]}
       profileId={profileId}

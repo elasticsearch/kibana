@@ -26,6 +26,11 @@ export interface EditDeletePhaseFlyoutProps {
   defaultRetentionPeriod?: string;
   maximumRetentionPeriod?: string;
   showRestoreDefaultButton?: boolean;
+  /**
+   * Whether the "Remove delete phase" button is shown. Removing the delete phase
+   * disables the lifecycle (infinite retention), which is not supported in Serverless.
+   */
+  allowRemoveDeletePhase?: boolean;
   onChange?: (next: EditDeletePhaseFlyoutValue, meta?: EditDeletePhaseFlyoutChangeMeta) => void;
   onChangeDebounceMs?: number;
   onSave: (next: EditDeletePhaseFlyoutValue) => void;

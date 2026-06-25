@@ -33,6 +33,14 @@
     {
       "id": "rare_destination_country",
       "file": "rare_destination_country.json"
+    },
+    {
+      "id": "dns_tunneling_ea",
+      "file": "dns_tunneling_ea.json"
+    },
+    {
+      "id": "rare_dns_question_ea",
+      "file": "rare_dns_question_ea.json"
     }
   ],
   "datafeeds": [
@@ -55,6 +63,16 @@
       "id": "datafeed-rare_destination_country",
       "file": "datafeed_rare_destination_country.json",
       "job_id": "rare_destination_country"
+    },
+    {
+      "id": "datafeed-dns_tunneling_ea",
+      "file": "datafeed_dns_tunneling_ea.json",
+      "job_id": "dns_tunneling_ea"
+    },
+    {
+      "id": "datafeed-rare_dns_question_ea",
+      "file": "datafeed_rare_dns_question_ea.json",
+      "job_id": "rare_dns_question_ea"
     }
   ],
   "tags": [

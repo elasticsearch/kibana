@@ -51,6 +51,21 @@ export const SECTION_DATASETS = i18n.translate('xpack.evals.experimentDetail.sec
   defaultMessage: 'Datasets',
 });
 
+export const DELETED_DATASET_SUFFIX = i18n.translate(
+  'xpack.evals.experimentDetail.deletedDatasetSuffix',
+  {
+    defaultMessage: '(deleted)',
+  }
+);
+
+export const DELETED_DATASET_TOOLTIP = i18n.translate(
+  'xpack.evals.experimentDetail.deletedDatasetTooltip',
+  {
+    defaultMessage:
+      'This dataset has been deleted. Past results are preserved, but the dataset can no longer be opened.',
+  }
+);
+
 export const SECTION_EVALUATOR_STATS = i18n.translate(
   'xpack.evals.experimentDetail.section.evaluatorStats',
   { defaultMessage: 'Evaluator Statistics' }

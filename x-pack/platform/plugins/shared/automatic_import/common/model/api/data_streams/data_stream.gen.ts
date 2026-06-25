@@ -55,7 +55,7 @@ export const GetDataStreamResultsResponse = lazySchema(() =>
   z
     .object({
       /**
-       * The ingest pipeline as a string up to 10MiB.
+       * The ingest pipeline as a JSON string up to 10MiB.
        */
       ingest_pipeline: NonEmptyIngestPipeline,
       /**
@@ -208,7 +208,7 @@ export const UploadSamplesToDataStreamRequestBody = lazySchema(() =>
       /**
        * Log lines to upload when the source is a file (omit when using sourceIndex).
        */
-      samples: z.array(z.string().max(10000)).max(1000).optional(),
+      samples: z.array(z.string().max(100000)).max(1000).optional(),
       /**
        * Index name to pick samples from.
        */

@@ -27,6 +27,7 @@ export const indexStatsEnricher = {
             health: indices[name]?.health,
             status: indices[name]?.status,
             uuid: indices[name]?.uuid,
+            documents: indices[name]?.primaries?.docs?.count ?? 0,
             documents_deleted: indices[name]?.primaries?.docs?.deleted ?? 0,
             primary_size: indices[name]?.primaries?.store?.size_in_bytes ?? 0,
             size: indices[name]?.total?.store?.size_in_bytes ?? 0,

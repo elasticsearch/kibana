@@ -7,28 +7,87 @@
 
 import type { ElasticsearchClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
-import type { ActionableFinding, ContinuityPayload } from '@kbn/siem-readiness';
-import { isCriticalFailureRate } from '@kbn/siem-readiness';
+import type { ActionableFinding, CategoriesResponse, ContinuityPayload } from '@kbn/siem-readiness';
+import {
+  isCriticalFailureRate,
+  VOLUME_DROP_WARNING_PCT,
+  VOLUME_DROP_CRITICAL_PCT,
+} from '@kbn/siem-readiness';
 import { fetchPipelines } from '../fetchers';
 
 export const getContinuity = async ({
   esClient,
   isServerless,
   logger,
+  categoriesData,
 }: {
   esClient: ElasticsearchClient;
   isServerless: boolean;
   logger: Logger;
+  /** Pre-fetched categories result; passed to fetchPipelines so per-category silence thresholds apply. */
+  categoriesData?: CategoriesResponse;
 }): Promise<ContinuityPayload> => {
-  const pipelines = await fetchPipelines({ esClient, isServerless, logger });
+  const pipelines = await fetchPipelines({ esClient, isServerless, logger, categoriesData });
 
-  const actionableFindings: ActionableFinding[] = pipelines
+  const actionableFindings: ActionableFinding[] = [];
+
+  // pipeline failure-rate findings (existing)
+  pipelines
     .filter((p) => p.statsAvailable && isCriticalFailureRate(p.failedDocsCount, p.docsCount))
-    .map((p) => ({
-      severity: 'CRITICAL' as const,
-      message: `Pipeline ${p.name} has a critical document failure rate (${p.failedDocsCount} of ${p.docsCount} failed)`,
-      resource: p.name,
-    }));
+    .forEach((p) =>
+      actionableFindings.push({
+        severity: 'CRITICAL' as const,
+        type: 'pipeline_failure' as const,
+        message: `Pipeline ${p.name} has a critical document failure rate (${p.failedDocsCount} of ${p.docsCount} failed)`,
+        resource: p.name,
+      })
+    );
+
+  // silence and volume-drop findings — merged when both apply to the same pipeline
+  pipelines.forEach((p) => {
+    const hasSilence = p.isSilent;
+    const volumeDropPct = p.volumeDropPct ?? null;
+    const isVolumeCritical = volumeDropPct !== null && volumeDropPct >= VOLUME_DROP_CRITICAL_PCT;
+    const isVolumeWarning =
+      volumeDropPct !== null && !isVolumeCritical && volumeDropPct >= VOLUME_DROP_WARNING_PCT;
+
+    if (hasSilence) {
+      // Silence is the primary signal. Include volume context when a baseline exists
+      // so the operator sees both facts in one finding rather than two separate bullets.
+      const volumeContext =
+        volumeDropPct !== null && p.baseline7dAvg != null
+          ? ` (${volumeDropPct}% volume drop vs ~${Math.round(p.baseline7dAvg)} docs/day baseline)`
+          : '';
+      actionableFindings.push({
+        severity: 'CRITICAL' as const,
+        type: 'silence' as const,
+        message: `Data stream serving pipeline ${p.name} has gone silent${volumeContext}`,
+        resource: p.name,
+      });
+    } else if (isVolumeCritical) {
+      const baseline =
+        p.baseline7dAvg != null
+          ? `~${Math.round(p.baseline7dAvg)} docs/day baseline`
+          : 'unknown baseline';
+      actionableFindings.push({
+        severity: 'CRITICAL' as const,
+        type: 'volume_drop_critical' as const,
+        message: `Pipeline ${p.name} volume dropped ${volumeDropPct}% vs 7-day (${baseline})`,
+        resource: p.name,
+      });
+    } else if (isVolumeWarning) {
+      const baseline =
+        p.baseline7dAvg != null
+          ? `~${Math.round(p.baseline7dAvg)} docs/day baseline`
+          : 'unknown baseline';
+      actionableFindings.push({
+        severity: 'WARNING' as const,
+        type: 'volume_drop_warning' as const,
+        message: `Pipeline ${p.name} volume dropped ${volumeDropPct}% vs 7-day (${baseline})`,
+        resource: p.name,
+      });
+    }
+  });
 
   const status =
     pipelines.length === 0
@@ -37,7 +96,7 @@ export const getContinuity = async ({
       ? ('actionsRequired' as const)
       : ('healthy' as const);
 
-  const summary = buildContinuitySummary(status, pipelines.length, actionableFindings.length);
+  const summary = buildContinuitySummary(status, pipelines.length, actionableFindings);
 
   return { status, summary, items: pipelines, actionableFindings };
 };
@@ -45,11 +104,21 @@ export const getContinuity = async ({
 const buildContinuitySummary = (
   status: string,
   pipelineCount: number,
-  criticalCount: number
+  findings: ActionableFinding[]
 ): string => {
   if (status === 'noData') return 'No active ingest pipelines found.';
-  if (criticalCount > 0) {
-    return `${criticalCount} of ${pipelineCount} pipelines have critical failure rates and require immediate attention.`;
-  }
-  return `All ${pipelineCount} active ingest pipelines are healthy.`;
+  if (findings.length === 0) return `All ${pipelineCount} active ingest pipelines are healthy.`;
+
+  const silentCount = findings.filter((f) => f.type === 'silence').length;
+  const dropCritical = findings.filter((f) => f.type === 'volume_drop_critical').length;
+  const dropWarning = findings.filter((f) => f.type === 'volume_drop_warning').length;
+  const failureCount = findings.filter((f) => f.type === 'pipeline_failure').length;
+
+  const parts: string[] = [];
+  if (silentCount) parts.push(`${silentCount} silent`);
+  if (dropCritical) parts.push(`${dropCritical} critical volume drop`);
+  if (dropWarning) parts.push(`${dropWarning} volume drop warning`);
+  if (failureCount) parts.push(`${failureCount} pipeline failure`);
+
+  return `${parts.join(', ')} across ${pipelineCount} active pipelines.`;
 };

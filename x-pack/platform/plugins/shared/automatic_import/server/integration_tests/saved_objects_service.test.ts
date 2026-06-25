@@ -1163,6 +1163,44 @@ describe('AutomaticImportSavedObjectService', () => {
       await savedObjectsClient.delete(INTEGRATION_SAVED_OBJECT_TYPE, 'test-update-ds-integration');
     });
 
+    it('should update the data stream phase', async () => {
+      const integrationParams: IntegrationParams = {
+        ...mockIntegrationParams,
+        integrationId: 'test-phase-integration',
+      };
+      await savedObjectService.insertIntegration(integrationParams, authenticatedUser);
+
+      const dataStreamParams: DataStreamParams = {
+        ...mockDataStreamParams,
+        integrationId: 'test-phase-integration',
+        dataStreamId: 'test-phase-ds',
+        jobInfo: {
+          jobId: 'test-job-id',
+          jobType: 'autoImport-dataStream-task',
+          status: TASK_STATUSES.processing,
+        },
+      };
+      await savedObjectService.insertDataStream(dataStreamParams, authenticatedUser);
+
+      await savedObjectService.updateDataStreamPhase(
+        'test-phase-ds',
+        'test-phase-integration',
+        'mapping_to_ecs'
+      );
+
+      const withPhase = await savedObjectService.getDataStream(
+        'test-phase-ds',
+        'test-phase-integration'
+      );
+      expect(withPhase.attributes.job_info.phase).toBe('mapping_to_ecs');
+
+      await savedObjectsClient.delete(
+        DATA_STREAM_SAVED_OBJECT_TYPE,
+        'test-phase-integration-test-phase-ds'
+      );
+      await savedObjectsClient.delete(INTEGRATION_SAVED_OBJECT_TYPE, 'test-phase-integration');
+    });
+
     it('should throw error when integration ID is missing', async () => {
       await expect(
         savedObjectService.updateDataStreamSavedObjectAttributes({

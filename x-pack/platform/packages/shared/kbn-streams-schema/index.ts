@@ -278,18 +278,15 @@ export { tokenCountSchema, iterationResultSchema } from './src/api/features';
 
 export {
   SIG_EVENT_STATUS_OPTIONS,
-  SIG_EVENT_IMPACT_OPTIONS,
   detectionSchema,
   type Detection,
   discoverySchema,
   type Discovery,
   sigEventSchema,
   sigEventStatusSchema,
-  sigEventImpactSchema,
   type SigEvent,
   type KnowledgeIndicator,
   type SigEventStatus,
-  type SigEventImpact,
 } from './src/sig_events';
 export type {
   StreamsKIsOnboardingResult,

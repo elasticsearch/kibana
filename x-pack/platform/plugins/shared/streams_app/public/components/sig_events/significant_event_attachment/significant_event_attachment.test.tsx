@@ -33,7 +33,6 @@ const attachment: SignificantEventAttachment = {
     root_cause: 'Payment gateway timeout.',
     criticality: 90,
     confidence: 0.8,
-    impact: 'high',
     recommendations: ['Restart gateway client'],
   },
 };

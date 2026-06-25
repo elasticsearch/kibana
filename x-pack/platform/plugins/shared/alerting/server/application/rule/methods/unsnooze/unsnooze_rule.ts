@@ -15,7 +15,7 @@ import { WriteOperations, AlertingAuthorizationEntity } from '../../../../author
 import { retryIfConflicts } from '../../../../lib/retry_if_conflicts';
 import type { RulesClientContext } from '../../../../rules_client/types';
 import { getUnsnoozeAttributes } from '../../../../rules_client/common';
-import { updateRuleSo } from '../../../../data/rule';
+import { updateRuleSo, getDecryptedRuleSo } from '../../../../data/rule';
 import { updateMetaAttributes } from '../../../../rules_client/lib/update_meta_attributes';
 import { logRuleChanges } from '../common_utils/log_rule_changes';
 import { unsnoozeRuleParamsSchema } from './schemas';
@@ -92,6 +92,22 @@ async function unsnoozeWithOCC(context: RulesClientContext, { id, scheduleIds }:
     }),
   });
 
+  let decryptedApiKey: string | null | undefined;
+  let decryptedUiamApiKey: string | null | undefined;
+  try {
+    const decryptedRule = await getDecryptedRuleSo({
+      encryptedSavedObjectsClient: context.encryptedSavedObjectsClient,
+      id,
+      savedObjectsGetOptions: { namespace: context.namespace },
+    });
+    decryptedApiKey = decryptedRule.attributes.apiKey;
+    decryptedUiamApiKey = decryptedRule.attributes.uiamApiKey ?? null;
+  } catch (e) {
+    context.logger.debug(
+      `unsnoozeRule(): could not load decrypted API key for rule "${id}": ${e.message}`
+    );
+  }
+
   await logRuleChanges({
     ruleSOs: [
       {
@@ -100,6 +116,10 @@ async function unsnoozeWithOCC(context: RulesClientContext, { id, scheduleIds }:
         references: updatedRuleRaw.references ?? [],
       },
     ],
+    encryptedFieldsMap:
+      decryptedApiKey !== undefined
+        ? new Map([[id, { apiKey: decryptedApiKey, uiamApiKey: decryptedUiamApiKey ?? null }]])
+        : undefined,
     rulesClientContext: context,
     changesContext: {
       action: RuleChangeTrackingAction.ruleUnsnooze,

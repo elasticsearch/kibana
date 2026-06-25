@@ -85,6 +85,17 @@ function deriveIntegrationStatus(
   return 'pending' as TaskStatus;
 }
 
+/**
+ * The job phase is only meaningful while a data stream is still being generated. For terminal
+ * statuses (completed, failed, cancelled) the stored phase is stale, so we filter it out here in
+ * code rather than mutating the saved object to clear it.
+ */
+function getInProgressPhase(jobInfo: DataStreamAttributes['job_info']): string | undefined {
+  const isInProgress =
+    jobInfo.status === TASK_STATUSES.pending || jobInfo.status === TASK_STATUSES.processing;
+  return isInProgress ? jobInfo.phase : undefined;
+}
+
 interface ElasticsearchErrorDetails {
   reason?: string;
   caused_by?: ElasticsearchErrorDetails;
@@ -227,13 +238,17 @@ export class AutomaticImportService {
       integrationId
     );
 
-    const dataStreamsResponses: DataStreamResponse[] = dataStreamsSO.map((dataStream) => ({
-      dataStreamId: dataStream.data_stream_id,
-      title: dataStream.title,
-      description: dataStream.description,
-      inputTypes: dataStream.input_types.map((type) => ({ name: type })) as InputType[],
-      status: dataStream.job_info.status as TaskStatus,
-    }));
+    const dataStreamsResponses: DataStreamResponse[] = dataStreamsSO.map((dataStream) => {
+      const phase = getInProgressPhase(dataStream.job_info);
+      return {
+        dataStreamId: dataStream.data_stream_id,
+        title: dataStream.title,
+        description: dataStream.description,
+        inputTypes: dataStream.input_types.map((type) => ({ name: type })) as InputType[],
+        status: dataStream.job_info.status as TaskStatus,
+        ...(phase ? { phase } : {}),
+      };
+    });
 
     const integrationResponse: IntegrationResponse = {
       integrationId: integrationSO.integration_id,
@@ -260,13 +275,17 @@ export class AutomaticImportService {
     return Promise.all(
       integrations.map(async (integration) => {
         const dataStreams = await savedObjectService.getAllDataStreams(integration.integration_id);
-        const dataStreamsResponses: DataStreamResponse[] = dataStreams.map((dataStream) => ({
-          dataStreamId: dataStream.data_stream_id,
-          title: dataStream.title,
-          description: dataStream.description,
-          inputTypes: dataStream.input_types.map((type) => ({ name: type })) as InputType[],
-          status: dataStream.job_info.status as TaskStatus,
-        }));
+        const dataStreamsResponses: DataStreamResponse[] = dataStreams.map((dataStream) => {
+          const phase = getInProgressPhase(dataStream.job_info);
+          return {
+            dataStreamId: dataStream.data_stream_id,
+            title: dataStream.title,
+            description: dataStream.description,
+            inputTypes: dataStream.input_types.map((type) => ({ name: type })) as InputType[],
+            status: dataStream.job_info.status as TaskStatus,
+            ...(phase ? { phase } : {}),
+          };
+        });
         return {
           integrationId: integration.integration_id,
           title: integration.metadata.title,

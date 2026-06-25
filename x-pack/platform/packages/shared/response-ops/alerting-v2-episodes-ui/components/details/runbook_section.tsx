@@ -9,6 +9,7 @@ import React from 'react';
 import { EuiLoadingSpinner, EuiText } from '@elastic/eui';
 import { useFetchEpisodeQuery } from '../../hooks/use_fetch_episode_query';
 import { useFetchRule } from '../../hooks/use_fetch_rule';
+import { isRuleError, isRuleLoaded, isRuleLoading } from '../../types/rule_state';
 import { AlertEpisodeRunbook } from './runbook';
 import type { AlertEpisodeDetailsServices } from './types';
 import * as i18n from './translations';
@@ -30,17 +31,16 @@ export const AlertEpisodeRunbookSection = ({
 
   const ruleId = episode?.['rule.id'];
 
-  const {
-    data: rule,
-    isLoading: isLoadingRule,
-    isError: isRuleError,
-  } = useFetchRule({ id: ruleId, http: services.http });
+  const { ruleState } = useFetchRule({
+    id: ruleId,
+    http: services.http,
+  });
 
-  if (isLoadingEpisode || (ruleId && isLoadingRule)) {
+  if (isLoadingEpisode || (ruleId && isRuleLoading(ruleState))) {
     return <EuiLoadingSpinner size="m" data-test-subj="alertingV2EpisodeRunbookSectionLoading" />;
   }
 
-  if (isEpisodeError || isRuleError) {
+  if (isEpisodeError || isRuleError(ruleState)) {
     return (
       <EuiText size="s" color="danger" data-test-subj="alertingV2EpisodeRunbookSectionError">
         {i18n.RUNBOOK_SECTION_LOAD_ERROR}
@@ -48,7 +48,11 @@ export const AlertEpisodeRunbookSection = ({
     );
   }
 
-  const runbookContent = rule?.artifacts?.find((a) => a.type === 'runbook')?.value;
+  if (!isRuleLoaded(ruleState)) {
+    return null;
+  }
+
+  const runbookContent = ruleState.rule.artifacts?.find((a) => a.type === 'runbook')?.value;
 
   return <AlertEpisodeRunbook content={runbookContent} />;
 };

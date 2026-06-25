@@ -36,7 +36,7 @@ export const deleteEntity = (
       options: {
         availability: {
           since: '9.3.0',
-          stability: 'beta',
+          stability: 'tech_preview',
         },
       },
       security: {

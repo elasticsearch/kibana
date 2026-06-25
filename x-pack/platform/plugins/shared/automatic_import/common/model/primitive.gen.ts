@@ -26,7 +26,7 @@ export const NonEmptyString = lazySchema(() =>
 export type NonEmptyString = z.infer<typeof NonEmptyString>;
 
 /**
- * A string that contains a valid ingest pipeline up to 10MiB
+ * A JSON string that contains a valid ingest pipeline up to 10MiB
  */
 export const NonEmptyIngestPipeline = lazySchema(() =>
   z.string().min(1).max(10485760).superRefine(isNonEmptyString)

@@ -82,20 +82,24 @@ describe('SecurityNavControl', () => {
             <span
               class="euiHeaderSectionItemButton__content emotion-euiHeaderSectionItemButton__content"
             >
-              <div
-                aria-label="some@email"
-                class="euiAvatar euiAvatar--s euiAvatar--user emotion-euiAvatar-user-s-uppercase"
-                data-test-subj="userMenuAvatar"
-                role="img"
-                style="background-color: rgb(255, 199, 219); color: rgb(0, 0, 0);"
-                title="some@email"
+              <span
+                class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock-user"
+                id="generated-id_euiToolTipAnchor"
               >
-                <span
-                  aria-hidden="true"
+                <div
+                  aria-label="some@email"
+                  class="euiAvatar euiAvatar--s euiAvatar--user emotion-euiAvatar-user-s-uppercase"
+                  data-test-subj="userMenuAvatar"
+                  role="img"
+                  style="background-color: rgb(255, 199, 219); color: rgb(0, 0, 0);"
                 >
-                  s
-                </span>
-              </div>
+                  <span
+                    aria-hidden="true"
+                  >
+                    s
+                  </span>
+                </div>
+              </span>
             </span>
           </span>
         </span>

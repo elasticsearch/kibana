@@ -82,4 +82,38 @@ describe('SizeDocCountDetails', () => {
     expect(screen.getByText(Number(1234).toLocaleString())).toBeInTheDocument();
     expect(screen.getByText('Documents')).toBeInTheDocument();
   });
+
+  it('shows the read-access tooltip when metadata count is used after an exact count failure', () => {
+    renderComponent({
+      docCount: {
+        isLoading: false,
+        isError: false,
+        count: 1234,
+        approximateReason: 'requires_read',
+      },
+    });
+
+    expect(
+      screen.getByText(
+        'Approximate — actual document count may be lower. An exact count requires read access.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('shows the closed-index tooltip when metadata count is used for a closed index', () => {
+    renderComponent({
+      docCount: {
+        isLoading: false,
+        isError: false,
+        count: 1234,
+        approximateReason: 'closed_index',
+      },
+    });
+
+    expect(
+      screen.getByText(
+        'Approximate — actual document count may be lower. Exact counts are not available for closed indices.'
+      )
+    ).toBeInTheDocument();
+  });
 });

@@ -2,7 +2,7 @@
   "description": "Security: Linux - Looks for processes that are unusual to a particular Linux host. Such unusual processes may indicate unauthorized software, malware, or persistence mechanisms.",
   "groups": ["linux", "security"],
   "analysis_config": {
-    "bucket_span": "15m",
+    "bucket_span": "45m",
     "detectors": [
       {
         "detector_description": "Detects rare processes for a host.",

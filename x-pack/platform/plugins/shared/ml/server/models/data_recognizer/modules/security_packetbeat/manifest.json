@@ -13,14 +13,6 @@
   },
   "jobs": [
     {
-      "id": "packetbeat_dns_tunneling_ea",
-      "file": "packetbeat_dns_tunneling_ea.json"
-    },
-    {
-      "id": "packetbeat_rare_dns_question_ea",
-      "file": "packetbeat_rare_dns_question_ea.json"
-    },
-    {
       "id": "packetbeat_rare_server_domain_ea",
       "file": "packetbeat_rare_server_domain_ea.json"
     },
@@ -34,16 +26,6 @@
     }
   ],
   "datafeeds": [
-    {
-      "id": "datafeed-packetbeat_dns_tunneling_ea",
-      "file": "datafeed_packetbeat_dns_tunneling_ea.json",
-      "job_id": "packetbeat_dns_tunneling_ea"
-    },
-    {
-      "id": "datafeed-packetbeat_rare_dns_question_ea",
-      "file": "datafeed_packetbeat_rare_dns_question_ea.json",
-      "job_id": "packetbeat_rare_dns_question_ea"
-    },
     {
       "id": "datafeed-packetbeat_rare_server_domain_ea",
       "file": "datafeed_packetbeat_rare_server_domain_ea.json",

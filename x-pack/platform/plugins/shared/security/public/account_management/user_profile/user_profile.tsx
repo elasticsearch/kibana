@@ -963,7 +963,7 @@ export function useUserProfileForm({ user, data }: UserProfileProps) {
             imageUrl: data.avatar?.imageUrl || '',
           },
           userSettings: {
-            darkMode: data.userSettings?.darkMode || 'space_default',
+            darkMode: data.userSettings?.darkMode || 'system',
             contrastMode: data.userSettings?.contrastMode || 'system',
             locale:
               data.userSettings?.locale ||

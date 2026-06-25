@@ -28,10 +28,12 @@ jest.mock('@kbn/workflows-ui', () => ({
 const defaultWorkflowsCapabilities = {
   canCreateWorkflow: true,
   canReadWorkflow: true,
+  canReadManagedWorkflow: true,
   canUpdateWorkflow: true,
   canDeleteWorkflow: true,
   canExecuteWorkflow: true,
   canReadWorkflowExecution: true,
+  canReadManagedWorkflowExecution: true,
   canCancelWorkflowExecution: true,
 };
 

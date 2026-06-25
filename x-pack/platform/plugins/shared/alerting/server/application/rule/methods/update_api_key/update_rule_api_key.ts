@@ -136,6 +136,9 @@ async function updateApiKeyWithOCC(context: RulesClientContext, { id }: UpdateAp
 
     await logRuleChanges({
       ruleSOs: [updatedRuleSavedObject] as Array<SavedObject<RawRule>>,
+      encryptedFieldsMap: new Map([
+        [id, { apiKey: apiKeyAttributes.apiKey, uiamApiKey: apiKeyAttributes.uiamApiKey ?? null }],
+      ]),
       rulesClientContext: context,
       changesContext: {
         action: RuleChangeTrackingAction.ruleUpdateApiKey,

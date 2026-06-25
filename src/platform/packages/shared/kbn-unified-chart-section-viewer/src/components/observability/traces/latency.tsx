@@ -57,7 +57,6 @@ const LatencyChartContent = ({ esqlQuery, seriesType, color, title }: LatencyCha
       chartLayers={chartLayers}
       legend={breakdownField ? BREAKDOWN_LEGEND_CONFIG : undefined}
       syncCursor
-      syncTooltips
       extraDisabledActions={[ACTION_OPEN_IN_DISCOVER]}
       profileId={profileId}
     />

@@ -19,28 +19,30 @@ const mockStreamsRepositoryClient = { fetch: mockFetch };
 const mockAddSuccess = jest.fn();
 const mockAddError = jest.fn();
 
+const mockKibana = {
+  core: {
+    application: {
+      navigateToApp: jest.fn(),
+    },
+    notifications: {
+      toasts: {
+        addSuccess: mockAddSuccess,
+        addError: mockAddError,
+      },
+    },
+  },
+  dependencies: {
+    start: {
+      streams: {
+        streamsRepositoryClient: mockStreamsRepositoryClient,
+      },
+    },
+  },
+  isServerless: false,
+};
+
 jest.mock('../../../../../hooks/use_kibana', () => ({
-  useKibana: () => ({
-    core: {
-      application: {
-        navigateToApp: jest.fn(),
-      },
-      notifications: {
-        toasts: {
-          addSuccess: mockAddSuccess,
-          addError: mockAddError,
-        },
-      },
-    },
-    dependencies: {
-      start: {
-        streams: {
-          streamsRepositoryClient: mockStreamsRepositoryClient,
-        },
-      },
-    },
-    isServerless: false,
-  }),
+  useKibana: () => mockKibana,
 }));
 
 import { useStreamsAppFetch } from '../../../../../hooks/use_streams_app_fetch';
@@ -178,6 +180,7 @@ describe('LifecycleSummary', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockKibana.isServerless = false;
 
     // Default: avoid noisy async errors from useSnapshotRepositories
     mockFetch.mockImplementation((endpoint: string) => {
@@ -213,6 +216,44 @@ describe('LifecycleSummary', () => {
       await waitFor(() =>
         expect(screen.getByTestId('streamsEditDslStepsFlyoutFromSummary')).toBeInTheDocument()
       );
+    });
+
+    it('should disable "Add delete phase" when the DSL downsample flyout is open', async () => {
+      const definition = createDslDefinition(undefined, [{ after: '1d', fixed_interval: '1d' }]);
+
+      renderWithSync(
+        <LifecycleSummary definition={definition} isMetricsStream onAddDeletePhase={jest.fn()} />
+      );
+
+      const addDeletePhaseButton = screen.getByTestId('dataLifecycleSummaryAddDeletePhase');
+      expect(addDeletePhaseButton).toBeEnabled();
+
+      fireEvent.click(screen.getByTestId('downsamplingPhase-1d-label'));
+      await waitFor(() =>
+        expect(screen.getByTestId('downsamplingPopover-step1-editButton')).toBeInTheDocument()
+      );
+      fireEvent.click(screen.getByTestId('downsamplingPopover-step1-editButton'));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('streamsEditDslStepsFlyoutFromSummary')).toBeInTheDocument()
+      );
+
+      await waitFor(() => expect(addDeletePhaseButton).toBeDisabled());
+    });
+
+    it('should disable "Add delete phase" and show tooltip when delete phase already exists', async () => {
+      const definition = createDslDefinition('30d');
+
+      renderWithSync(
+        <LifecycleSummary definition={definition} isMetricsStream onAddDeletePhase={jest.fn()} />
+      );
+
+      const addDeletePhaseButton = screen.getByTestId('dataLifecycleSummaryAddDeletePhase');
+      expect(addDeletePhaseButton).toBeDisabled();
+
+      fireEvent.mouseOver(addDeletePhaseButton.parentElement ?? addDeletePhaseButton);
+
+      expect(await screen.findByText('Delete phase is already in use')).toBeInTheDocument();
     });
 
     it('should disable "Add downsample step" button when there are 10 steps', () => {
@@ -383,6 +424,25 @@ describe('LifecycleSummary', () => {
       renderWithSync(<LifecycleSummary definition={definition} isMetricsStream />);
 
       expect(screen.queryByText('Inherited')).not.toBeInTheDocument();
+    });
+
+    it('does not show edit lifecycle method button for serverless wired root streams', async () => {
+      mockKibana.isServerless = true;
+      const definition = createWiredDslDefinition({ name: 'logs', isRoot: true });
+
+      renderWithSync(
+        <LifecycleSummary
+          definition={definition}
+          isMetricsStream
+          onAddDeletePhase={jest.fn()}
+          onEditSuccessfulLifecycle={jest.fn()}
+        />
+      );
+
+      expect(
+        screen.queryByTestId('dataLifecycleSummaryEditLifecycleMethod')
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('dataLifecycleSummaryAddDeletePhase')).toBeInTheDocument();
     });
 
     it('should require override confirmation for wired root streams when lifecycle is inherited', async () => {

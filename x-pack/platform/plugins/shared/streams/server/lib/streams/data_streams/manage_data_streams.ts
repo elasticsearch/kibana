@@ -15,6 +15,8 @@ import type {
 import type { Streams } from '@kbn/streams-schema';
 import type {
   IndicesDataStreamFailureStore,
+  IndicesDataStreamLifecycle,
+  IndicesDataStreamOptions,
   IndicesDataStreamOptionsTemplate,
   IndicesPutDataLifecycleRequest,
   IndicesSimulateTemplateTemplate,
@@ -188,15 +190,12 @@ export async function updateDataStreamsLifecycle({
       });
     } else if (isDslLifecycle(lifecycle)) {
       const dslDownsampling = lifecycle.dsl.downsample;
-      await retryTransientEsErrors(
-        () =>
-          esClient.indices.putDataLifecycle({
-            name: names,
-            data_retention: lifecycle.dsl.data_retention,
-            ...(dslDownsampling?.length ? { downsampling: dslDownsampling } : {}),
-          } as IndicesPutDataLifecycleRequest),
-        { logger }
-      );
+      const request: IndicesPutDataLifecycleRequest = {
+        name: names,
+        data_retention: lifecycle.dsl.data_retention,
+        ...(dslDownsampling?.length ? { downsampling: dslDownsampling } : {}),
+      };
+      await retryTransientEsErrors(() => esClient.indices.putDataLifecycle(request), { logger });
 
       if (!isServerless) {
         // we don't need overrides for serverless since data streams can
@@ -217,16 +216,7 @@ export async function updateDataStreamsLifecycle({
       // for ILM or disabled we only have to unset any overrides
       await Promise.all(
         names.map(async (name) => {
-          const { template } = (await retryTransientEsErrors(
-            () => esClient.indices.simulateIndexTemplate({ name }),
-            {
-              logger,
-            }
-          )) as {
-            template: IndicesSimulateTemplateTemplate & {
-              lifecycle?: { enabled: boolean; data_retention?: string };
-            };
-          };
+          const template = await simulateClassicStreamTemplate({ esClient, name, logger });
 
           // simulateIndexTemplate returns an empty response for replicated data streams
           // that have no local index template
@@ -240,15 +230,14 @@ export async function updateDataStreamsLifecycle({
           const templateLifecycle = getTemplateLifecycle(template);
           if (isDslLifecycle(templateLifecycle)) {
             const templateDownsampling = templateLifecycle.dsl.downsample;
-            await retryTransientEsErrors(
-              () =>
-                esClient.indices.putDataLifecycle({
-                  name,
-                  data_retention: templateLifecycle.dsl.data_retention,
-                  ...(templateDownsampling?.length ? { downsampling: templateDownsampling } : {}),
-                } as IndicesPutDataLifecycleRequest),
-              { logger }
-            );
+            const request: IndicesPutDataLifecycleRequest = {
+              name,
+              data_retention: templateLifecycle.dsl.data_retention,
+              ...(templateDownsampling?.length ? { downsampling: templateDownsampling } : {}),
+            };
+            await retryTransientEsErrors(() => esClient.indices.putDataLifecycle(request), {
+              logger,
+            });
           } else {
             await retryTransientEsErrors(() => esClient.indices.deleteDataLifecycle({ name }), {
               logger,
@@ -406,10 +395,45 @@ export async function updateDataStreamsFailureStore({
   }
 }
 
-export function getTemplateLifecycle(
-  template: IndicesSimulateTemplateTemplate & {
-    lifecycle?: { enabled: boolean; data_retention?: string };
+export type SimulatedClassicStreamTemplate = IndicesSimulateTemplateTemplate & {
+  lifecycle?: IndicesDataStreamLifecycle;
+  data_stream_options?: IndicesDataStreamOptions;
+};
+
+export async function simulateClassicStreamTemplate({
+  esClient,
+  name,
+  logger,
+}: {
+  esClient: ElasticsearchClient;
+  name: string;
+  logger: Logger;
+}): Promise<SimulatedClassicStreamTemplate | undefined> {
+  const dataStream = await retryTransientEsErrors(() => esClient.indices.getDataStream({ name }), {
+    logger,
+  })
+    .then((response) => response.data_streams?.[0])
+    .catch(() => undefined);
+
+  const templateName = dataStream?.template;
+  if (!templateName) {
+    const simulation = await retryTransientEsErrors(
+      () => esClient.indices.simulateIndexTemplate({ name: dataStream?.name ?? name }),
+      { logger }
+    ).catch(() => undefined);
+    return simulation?.template;
   }
+
+  const simulation = await retryTransientEsErrors(
+    () => esClient.indices.simulateTemplate({ name: templateName }),
+    { logger }
+  ).catch(() => undefined);
+
+  return simulation?.template;
+}
+
+export function getTemplateLifecycle(
+  template: SimulatedClassicStreamTemplate
 ): IngestStreamLifecycleILM | IngestStreamLifecycleDSL | IngestStreamLifecycleDisabled {
   const toBoolean = (value: boolean | string | undefined): boolean => {
     if (typeof value === 'boolean') {
@@ -418,20 +442,39 @@ export function getTemplateLifecycle(
     return value === 'true';
   };
 
-  const hasEffectiveDsl =
-    toBoolean(template.lifecycle?.enabled) &&
-    !(
-      toBoolean(template.settings.index?.lifecycle?.prefer_ilm) &&
-      template.settings.index?.lifecycle?.name
-    );
+  const dslEnabled =
+    template.lifecycle?.enabled !== undefined
+      ? toBoolean(template.lifecycle.enabled)
+      : template.lifecycle?.data_retention != null;
+
+  const ilmPolicyName = template.settings?.index?.lifecycle?.name;
+  const preferIlmSetting = template.settings?.index?.lifecycle?.prefer_ilm;
+  const preferIlm = preferIlmSetting === undefined ? true : toBoolean(preferIlmSetting);
+
+  const hasEffectiveDsl = dslEnabled && !(preferIlm && ilmPolicyName);
   if (hasEffectiveDsl) {
-    return { dsl: { data_retention: template.lifecycle!.data_retention } };
+    const dataRetention =
+      typeof template.lifecycle?.data_retention === 'string'
+        ? template.lifecycle.data_retention
+        : undefined;
+    const downsample: IngestStreamLifecycleDSL['dsl']['downsample'] = Array.isArray(
+      template.lifecycle?.downsampling
+    )
+      ? template.lifecycle.downsampling.flatMap(({ after, fixed_interval }) => {
+          return typeof after === 'string' ? [{ after, fixed_interval }] : [];
+        })
+      : undefined;
+
+    return {
+      dsl: {
+        data_retention: dataRetention,
+        ...(downsample?.length ? { downsample } : {}),
+      },
+    };
   }
 
-  if (template.settings.index?.lifecycle?.name) {
-    // if dsl is not enabled and a policy is set, the ilm will be effective
-    // regardless of the prefer_ilm setting
-    return { ilm: { policy: template.settings.index.lifecycle.name } };
+  if (ilmPolicyName) {
+    return { ilm: { policy: ilmPolicyName } };
   }
 
   return { disabled: {} };

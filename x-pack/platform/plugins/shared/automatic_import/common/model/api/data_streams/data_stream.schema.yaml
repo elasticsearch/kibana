@@ -147,7 +147,7 @@ paths:
                     Log lines to upload when the source is a file (omit when using sourceIndex).
                   items:
                     type: string
-                    maxLength: 10000
+                    maxLength: 100000
                 sourceIndex:
                   type: string
                   minLength: 1

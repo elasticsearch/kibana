@@ -8,8 +8,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
-import type { RuleResponse } from '@kbn/alerting-v2-schemas';
 import type { AlertEpisode } from '../../../queries/episodes_query';
+import type { RuleResponse } from '@kbn/alerting-v2-schemas';
+import { RuleStateStatus, type LoadedRuleState } from '../../../types/rule_state';
 import { RelatedEpisodesGroupSubsection } from './group_subsection';
 import { useFetchSameGroupEpisodesQuery } from '../../../hooks/use_fetch_same_group_episodes_query';
 jest.mock('../../../hooks/use_fetch_same_group_episodes_query');
@@ -38,7 +39,15 @@ jest.mock('./related_list', () => ({
 
 const mockUseFetch = jest.mocked(useFetchSameGroupEpisodesQuery);
 
-const mockRule = { id: 'rule-1', metadata: { name: 'Test Rule' } } as RuleResponse;
+const loadedRuleState: LoadedRuleState = {
+  status: RuleStateStatus.loaded,
+  ruleId: 'rule-1',
+  rule: { id: 'rule-1', metadata: { name: 'Test Rule' } } as RuleResponse,
+};
+
+const mockRuleProps = {
+  ruleState: loadedRuleState,
+};
 const mockGetEpisodeDetailsHref = (id: string) => `/base/${id}`;
 
 describe('RelatedEpisodesGroupSubsection', () => {
@@ -61,7 +70,7 @@ describe('RelatedEpisodesGroupSubsection', () => {
         <RelatedEpisodesGroupSubsection
           currentEpisodeId="ep-1"
           groupHash="gh-1"
-          rule={mockRule}
+          {...mockRuleProps}
           getEpisodeDetailsHref={mockGetEpisodeDetailsHref}
         />
       </I18nProvider>
@@ -79,7 +88,7 @@ describe('RelatedEpisodesGroupSubsection', () => {
         <RelatedEpisodesGroupSubsection
           currentEpisodeId="ep-1"
           groupHash="gh-1"
-          rule={mockRule}
+          {...mockRuleProps}
           getEpisodeDetailsHref={mockGetEpisodeDetailsHref}
         />
       </I18nProvider>
@@ -96,7 +105,7 @@ describe('RelatedEpisodesGroupSubsection', () => {
         <RelatedEpisodesGroupSubsection
           currentEpisodeId="ep-1"
           groupHash="gh-1"
-          rule={mockRule}
+          {...mockRuleProps}
           getEpisodeDetailsHref={mockGetEpisodeDetailsHref}
         />
       </I18nProvider>

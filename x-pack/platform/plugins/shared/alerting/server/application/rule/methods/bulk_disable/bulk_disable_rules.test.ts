@@ -924,7 +924,7 @@ describe('bulkDisableRules', () => {
       );
     });
 
-    test('captures the full post-disable attributes and references of each rule', async () => {
+    test('captures the full post-disable attributes of each rule', async () => {
       const changeTrackingService = createChangeTrackingService();
       const trackingClient = new RulesClient({ ...rulesClientParams, changeTrackingService });
       setRuleType();
@@ -937,17 +937,39 @@ describe('bulkDisableRules', () => {
 
       expect(changeTrackingService.logBulk).toHaveBeenCalledWith(
         [
-          {
-            // setGlobalDate pins Date.now() to mockedDateString.
-            timestamp: '2019-02-12T21:01:22.479Z',
+          expect.objectContaining({
+            snapshot: expect.objectContaining({
+              id: disabledRuleForBulkDisable1.id,
+              name: disabledRuleForBulkDisable1.attributes.name,
+              enabled: false,
+              alertTypeId: disabledRuleForBulkDisable1.attributes.alertTypeId,
+              createdAt: disabledRuleForBulkDisable1.attributes.createdAt,
+              updatedAt: disabledRuleForBulkDisable1.attributes.updatedAt,
+            }),
+          }),
+        ],
+        expect.any(Object)
+      );
+    });
+
+    test('captures the context of each rule', async () => {
+      const changeTrackingService = createChangeTrackingService();
+      const trackingClient = new RulesClient({ ...rulesClientParams, changeTrackingService });
+      setRuleType();
+      mockUnsecuredSavedObjectFind(1);
+      unsecuredSavedObjectsClient.bulkCreate.mockResolvedValue({
+        saved_objects: [disabledRuleForBulkDisable1],
+      });
+
+      await trackingClient.bulkDisableRules({ filter: 'fake_filter' });
+
+      expect(changeTrackingService.logBulk).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
             objectId: disabledRuleForBulkDisable1.id,
             objectType: RULE_SAVED_OBJECT_TYPE,
             module: 'stack',
-            snapshot: {
-              attributes: disabledRuleForBulkDisable1.attributes,
-              references: disabledRuleForBulkDisable1.references ?? [],
-            },
-          },
+          }),
         ],
         expect.any(Object)
       );
@@ -1064,6 +1086,27 @@ describe('bulkDisableRules', () => {
 
       // Negative assertion is exercised at the helper level.
       expect(unsecuredSavedObjectsClient.bulkCreate).toHaveBeenCalled();
+    });
+
+    test('captures rule.revision in object.sequence', async () => {
+      const changeTrackingService = createChangeTrackingService();
+      const trackingClient = new RulesClient({ ...rulesClientParams, changeTrackingService });
+      setRuleType();
+      mockUnsecuredSavedObjectFind(1);
+      unsecuredSavedObjectsClient.bulkCreate.mockResolvedValue({
+        saved_objects: [disabledRuleForBulkDisable1],
+      });
+
+      await trackingClient.bulkDisableRules({ filter: 'fake_filter' });
+
+      expect(changeTrackingService.logBulk).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            sequence: 1,
+          }),
+        ],
+        expect.any(Object)
+      );
     });
   });
 });

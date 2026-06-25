@@ -11,6 +11,7 @@ import type { IRouter } from '@kbn/core/server';
 import { httpServerMock, loggingSystemMock } from '@kbn/core/server/mocks';
 import { WorkflowsManagementApiActions } from '@kbn/workflows';
 import { registerWorkflowRoutes } from '.';
+import { ManagedWorkflowReadForbiddenError } from '../../managed_workflow_read_error';
 import type { RouteDependencies } from '../types';
 import { handleRouteError } from '../utils/route_error_handlers';
 import { createWorkflowManagementAuditLogMock } from '../utils/workflow_audit_logging.mock';
@@ -60,6 +61,12 @@ describe('Workflow routes', () => {
   let mockLogger: ReturnType<typeof loggingSystemMock.createLogger>;
 
   const mockResponse = () => httpServerMock.createResponseFactory();
+  const defaultAuthzResult = {
+    [WorkflowsManagementApiActions.read]: true,
+    [WorkflowsManagementApiActions.readManaged]: true,
+    [WorkflowsManagementApiActions.readExecution]: true,
+    [WorkflowsManagementApiActions.readManagedExecution]: true,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -88,7 +95,12 @@ describe('Workflow routes', () => {
       addVersion: jest
         .fn()
         .mockImplementation((_config: unknown, handler: (...args: any[]) => Promise<any>) => {
-          routeHandlers[`${method}:${path}`] = { handler };
+          routeHandlers[`${method}:${path}`] = {
+            handler: async (context, request, response) => {
+              request.authzResult ??= defaultAuthzResult;
+              return handler(context, request, response);
+            },
+          };
           return { addVersion: jest.fn() };
         }),
     });
@@ -162,9 +174,10 @@ describe('Workflow routes', () => {
           createdBy: ['user-1'],
           tags: ['a'],
           query: 'search',
+          managedFilter: 'unmanaged',
         },
         'default-space',
-        { includeExecutionHistory: false }
+        { includeExecutionHistory: false, includeManagedExecutionHistory: false }
       );
       expect(response.ok).toHaveBeenCalledWith({ body: list });
     });
@@ -186,7 +199,7 @@ describe('Workflow routes', () => {
           sortOrder: 'asc',
         }),
         'default-space',
-        { includeExecutionHistory: false }
+        { includeExecutionHistory: false, includeManagedExecutionHistory: false }
       );
     });
 
@@ -205,6 +218,7 @@ describe('Workflow routes', () => {
 
       expect(mockApi.getWorkflows).toHaveBeenCalledWith(expect.any(Object), 'default-space', {
         includeExecutionHistory: true,
+        includeManagedExecutionHistory: false,
       });
     });
 
@@ -217,6 +231,21 @@ describe('Workflow routes', () => {
       await routeHandlers[key].handler(context, request, response);
 
       expect(response.forbidden).toHaveBeenCalled();
+      expect(mockApi.getWorkflows).not.toHaveBeenCalled();
+    });
+
+    it('should reject managed workflow filters without managed workflow read privilege', async () => {
+      const request = httpServerMock.createKibanaRequest({ query: { managed: 'all' } });
+      (request as any).authzResult = { [WorkflowsManagementApiActions.read]: true };
+      const response = mockResponse();
+      const context = createLicensingContext() as any;
+
+      await routeHandlers[key].handler(context, request, response);
+
+      expect(handleRouteError).toHaveBeenCalledWith(
+        response,
+        expect.any(ManagedWorkflowReadForbiddenError)
+      );
       expect(mockApi.getWorkflows).not.toHaveBeenCalled();
     });
 
@@ -263,6 +292,22 @@ describe('Workflow routes', () => {
       await routeHandlers[key].handler(context, request, response);
 
       expect(response.notFound).toHaveBeenCalledWith({ body: { message: 'Workflow not found' } });
+    });
+
+    it('should reject managed workflow details without managed workflow read privilege', async () => {
+      mockApi.getWorkflow.mockResolvedValue({ id: 'managed-wf', managed: true });
+      const request = httpServerMock.createKibanaRequest({ params: { id: 'managed-wf' } });
+      (request as any).authzResult = { [WorkflowsManagementApiActions.read]: true };
+      const response = mockResponse();
+      const context = createLicensingContext() as any;
+
+      await routeHandlers[key].handler(context, request, response);
+
+      expect(handleRouteError).toHaveBeenCalledWith(
+        response,
+        expect.any(ManagedWorkflowReadForbiddenError)
+      );
+      expect(response.ok).not.toHaveBeenCalled();
     });
 
     it('should delegate errors to handleRouteError', async () => {
@@ -511,6 +556,7 @@ describe('Workflow routes', () => {
 
     it('should call api.getWorkflowsSourceByIds with ids, space id, and source', async () => {
       const workflows = [{ id: 'a', name: 'Existing' }];
+      mockApi.getWorkflowsByIds.mockResolvedValue([{ id: 'a', name: 'Existing', managed: false }]);
       mockApi.getWorkflowsSourceByIds.mockResolvedValue(workflows);
       const request = httpServerMock.createKibanaRequest({ body: { ids: ['a'] } });
       const response = mockResponse();
@@ -518,6 +564,7 @@ describe('Workflow routes', () => {
 
       await routeHandlers[key].handler(context, request, response);
 
+      expect(mockApi.getWorkflowsByIds).toHaveBeenCalledWith(['a'], 'default-space');
       expect(mockApi.getWorkflowsSourceByIds).toHaveBeenCalledWith(
         ['a'],
         'default-space',
@@ -702,6 +749,7 @@ describe('Workflow routes', () => {
 
       expect(mockApi.getWorkflowStats).toHaveBeenCalledWith('default-space', {
         includeExecutionStats: false,
+        includeManagedExecutionStats: false,
       });
       expect(response.ok).toHaveBeenCalledWith({ body: stats });
     });
@@ -733,6 +781,27 @@ describe('Workflow routes', () => {
 
       expect(mockApi.getWorkflowStats).toHaveBeenCalledWith('default-space', {
         includeExecutionStats: true,
+        includeManagedExecutionStats: false,
+      });
+    });
+
+    it('should include managed execution stats when user has managed execution read privilege', async () => {
+      const stats = { total: 3 };
+      mockApi.getWorkflowStats.mockResolvedValue(stats);
+      const request = httpServerMock.createKibanaRequest();
+      (request as any).authzResult = {
+        [WorkflowsManagementApiActions.read]: true,
+        [WorkflowsManagementApiActions.readExecution]: true,
+        [WorkflowsManagementApiActions.readManagedExecution]: true,
+      };
+      const response = mockResponse();
+      const context = createLicensingContext() as any;
+
+      await routeHandlers[key].handler(context, request, response);
+
+      expect(mockApi.getWorkflowStats).toHaveBeenCalledWith('default-space', {
+        includeExecutionStats: true,
+        includeManagedExecutionStats: true,
       });
     });
   });
@@ -753,7 +822,9 @@ describe('Workflow routes', () => {
 
       await routeHandlers[key].handler(context, request, response);
 
-      expect(mockApi.getWorkflowAggs).toHaveBeenCalledWith(['tags'], 'default-space');
+      expect(mockApi.getWorkflowAggs).toHaveBeenCalledWith(['tags'], 'default-space', {
+        managedFilter: 'unmanaged',
+      });
       expect(response.ok).toHaveBeenCalledWith({ body: aggs });
     });
 
@@ -766,7 +837,9 @@ describe('Workflow routes', () => {
 
       await routeHandlers[key].handler(context, request, response);
 
-      expect(mockApi.getWorkflowAggs).toHaveBeenCalledWith(['tags'], 'default-space');
+      expect(mockApi.getWorkflowAggs).toHaveBeenCalledWith(['tags'], 'default-space', {
+        managedFilter: 'unmanaged',
+      });
       expect(response.ok).toHaveBeenCalledWith({ body: aggs });
     });
 

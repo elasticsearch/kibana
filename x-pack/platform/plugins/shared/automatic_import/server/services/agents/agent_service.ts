@@ -31,6 +31,7 @@ import type { AutomaticImportSamplesIndexService } from '../samples_index/index_
 import type { AutomaticImportAgentStateUpdateType } from '../../agents/state';
 import { INGEST_PIPELINE_GENERATOR_PROMPT } from '../../agents/prompts';
 import type { LangSmithOptions } from '../../routes/types';
+import { PhaseCallbackHandler, type ReportPhaseFn } from '../../agents/phase_callback_handler';
 
 export class AgentService {
   private logger: Logger;
@@ -49,7 +50,8 @@ export class AgentService {
     model: InferenceChatModel,
     fieldsMetadataClient: IFieldsMetadataClient,
     langSmithOptions?: LangSmithOptions,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    reportPhase?: ReportPhaseFn
   ) {
     this.logger.debug(
       `invokeAutomaticImportAgent: Invoking automatic import agent for integration ${integrationId} and data stream ${dataStreamId}`
@@ -139,6 +141,10 @@ ${ecsRootFieldsSummary}
           })
         : [];
 
+    const phaseCallbackHandler = reportPhase
+      ? new PhaseCallbackHandler(reportPhase, this.logger)
+      : undefined;
+
     const invokeInput: AutomaticImportAgentStateUpdateType = {
       messages: [
         new HumanMessage({
@@ -151,12 +157,16 @@ ${ecsRootFieldsSummary}
     const result = await automaticImportAgent.invoke(
       invokeInput as Parameters<typeof automaticImportAgent.invoke>[0],
       {
-        callbacks: [...langSmithTracers],
+        callbacks: [...langSmithTracers, ...(phaseCallbackHandler ? [phaseCallbackHandler] : [])],
         runName: 'automatic_import_agent',
         tags: ['automatic_import_agent'],
         signal: abortSignal,
       }
     );
+
+    if (phaseCallbackHandler) {
+      await phaseCallbackHandler.flushPendingPhase();
+    }
 
     return result;
   }

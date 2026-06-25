@@ -54,7 +54,7 @@ export const upsertEntity = (
       path: '/api/entity_store/entities/{entityType}',
       options: {
         availability: {
-          stability: 'beta',
+          stability: 'tech_preview',
         },
       },
       security: {

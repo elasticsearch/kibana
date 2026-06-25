@@ -91,8 +91,6 @@ const PreviewInitializer = ({ initialState }: { initialState: Partial<LifecycleP
 };
 
 describe('RetentionCard', () => {
-  const mockOpenEditModal = jest.fn();
-
   const renderWithSync = (
     ui: React.ReactElement,
     initialState?: Partial<LifecyclePreviewState>
@@ -143,7 +141,7 @@ describe('RetentionCard', () => {
     it('renders em dash when ILM stats are unavailable', () => {
       const definition = createMockDefinition({ ilm: { policy: 'my-ilm-policy' } });
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
+      renderWithSync(<RetentionCard definition={definition} />);
 
       expect(screen.getByTestId('retention-metric')).toHaveTextContent('—');
     });
@@ -165,7 +163,7 @@ describe('RetentionCard', () => {
 
       renderWithSync(
         <>
-          <RetentionCard definition={definition} openEditModal={mockOpenEditModal} />
+          <RetentionCard definition={definition} />
           <AfterSaveTrigger />
         </>
       );
@@ -195,7 +193,7 @@ describe('RetentionCard', () => {
         },
       });
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
+      renderWithSync(<RetentionCard definition={definition} />);
 
       expect(screen.getByTestId('retentionCard-title')).toBeInTheDocument();
       expect(screen.getByTestId('retention-metric')).toHaveTextContent('60 days');
@@ -215,7 +213,7 @@ describe('RetentionCard', () => {
         'time_series'
       );
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />, {
+      renderWithSync(<RetentionCard definition={definition} />, {
         isActive: true,
         retentionPeriod: '60d',
         dataPhasesCount: 3,
@@ -278,7 +276,7 @@ describe('RetentionCard', () => {
         },
       };
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
+      renderWithSync(<RetentionCard definition={definition} />);
 
       const subtitle = screen.getByTestId('retention-metric-subtitle');
       expect(subtitle).not.toHaveTextContent('Inherit from');
@@ -305,7 +303,7 @@ describe('RetentionCard', () => {
 
       renderWithSync(
         <>
-          <RetentionCard definition={definition} openEditModal={mockOpenEditModal} />
+          <RetentionCard definition={definition} />
           <AfterSaveTrigger />
         </>
       );
@@ -328,7 +326,7 @@ describe('RetentionCard', () => {
         'time_series'
       );
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
+      renderWithSync(<RetentionCard definition={definition} />);
 
       expect(screen.getByTestId('retentionCard-title')).toBeInTheDocument();
       expect(screen.getByTestId('retention-metric')).toHaveTextContent('30 days');
@@ -347,7 +345,7 @@ describe('RetentionCard', () => {
         'time_series'
       );
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
+      renderWithSync(<RetentionCard definition={definition} />);
 
       expect(screen.getByTestId('retention-metric')).toHaveTextContent('∞');
       expect(screen.getByTestId('retention-metric-subtitle')).toHaveTextContent('1 data phase');
@@ -362,7 +360,7 @@ describe('RetentionCard', () => {
         'time_series'
       );
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />, {
+      renderWithSync(<RetentionCard definition={definition} />, {
         isActive: true,
         retentionPeriod: null,
         dataPhasesCount: 1,
@@ -381,7 +379,7 @@ describe('RetentionCard', () => {
         disabled: {},
       });
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
+      renderWithSync(<RetentionCard definition={definition} />);
 
       expect(screen.getByTestId('retention-metric')).toHaveTextContent('∞');
       expect(screen.getByTestId('retention-metric-subtitle')).toHaveTextContent('1 data phase');
@@ -394,62 +392,9 @@ describe('RetentionCard', () => {
         unknown: {},
       });
 
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
+      renderWithSync(<RetentionCard definition={definition} />);
 
       expect(screen.getByTestId('retention-metric')).toHaveTextContent('—');
-    });
-  });
-
-  describe('Edit interactions & privileges', () => {
-    it('invokes openEditModal when edit button clicked', async () => {
-      const definition = createMockDefinition({ dsl: { data_retention: '30d' } });
-
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
-
-      const editButton = screen.getByTestId('streamsAppRetentionMetadataEditDataRetentionButton');
-      await userEvent.click(editButton);
-
-      expect(mockOpenEditModal).toHaveBeenCalledTimes(1);
-    });
-
-    it('disables edit button without lifecycle privilege', () => {
-      const definition = createMockDefinition(
-        { dsl: { data_retention: '30d' } },
-        undefined,
-        'logs-test',
-        { lifecycle: false }
-      );
-
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
-
-      const editButton = screen.getByTestId('streamsAppRetentionMetadataEditDataRetentionButton');
-      expect(editButton).toBeDisabled();
-    });
-
-    it('provides accessibility label on edit button', () => {
-      const definition = createMockDefinition({ dsl: { data_retention: '30d' } });
-
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />);
-
-      const editButton = screen.getByTestId('streamsAppRetentionMetadataEditDataRetentionButton');
-      expect(editButton).toHaveAttribute('aria-label', 'Edit lifecycle method');
-    });
-
-    it('disables edit button when edit lifecycle flyout is open', async () => {
-      const definition = createMockDefinition({ dsl: { data_retention: '30d' } });
-
-      renderWithSync(<RetentionCard definition={definition} openEditModal={mockOpenEditModal} />, {
-        isActive: true,
-        retentionPeriod: '30d',
-        dataPhasesCount: 2,
-        downsampleStepsCount: 0,
-      });
-
-      const editButton = screen.getByTestId('streamsAppRetentionMetadataEditDataRetentionButton');
-      expect(editButton).toBeDisabled();
-
-      await userEvent.click(editButton);
-      expect(mockOpenEditModal).not.toHaveBeenCalled();
     });
   });
 });

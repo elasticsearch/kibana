@@ -267,7 +267,7 @@ export class WorkflowsManagementApi {
   public async getWorkflows(
     params: GetWorkflowsParams,
     spaceId: string,
-    options?: { includeExecutionHistory?: boolean }
+    options?: { includeExecutionHistory?: boolean; includeManagedExecutionHistory?: boolean }
   ): Promise<WorkflowListDto> {
     return this.workflowsService.getWorkflows(params, spaceId, options);
   }
@@ -890,7 +890,10 @@ export class WorkflowsManagementApi {
     return this.workflowsService.listWaitingForInputSteps(spaceId, params);
   }
 
-  public async getWorkflowStats(spaceId: string, options?: { includeExecutionStats?: boolean }) {
+  public async getWorkflowStats(
+    spaceId: string,
+    options?: { includeExecutionStats?: boolean; includeManagedExecutionStats?: boolean }
+  ) {
     return this.workflowsService.getWorkflowStats(spaceId, options);
   }
 

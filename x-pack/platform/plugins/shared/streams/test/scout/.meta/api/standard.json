@@ -1,5 +1,5 @@
 {
-  "sha1": "f0f47bc3d5813d360763b9200f4cc744c2389b91",
+  "sha1": "3320bd045a90ca6fb751c1379f6f8cda92025265",
   "tests": [
     {
       "id": "4aaafd2a7000640-70ec3e6d9549722",
@@ -275,6 +275,68 @@
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/draft_stream_simulate.spec.ts",
         "line": 230,
         "column": 10
+      }
+    },
+    {
+      "id": "bf9123d2f461ba3-a9d65106606d0b3",
+      "title": "Stream lifecycle - inherited ILM config API (classic) returns the ILM policy a classic stream would inherit from its index template",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/lifecycle_inherited_ilm.spec.ts",
+        "line": 61,
+        "column": 12
+      }
+    },
+    {
+      "id": "65f024391566ce3-7ad9dced46360db",
+      "title": "Stream lifecycle - inherited config API returns the lifecycle inherited from the parent wired stream",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/lifecycle_inherited.spec.ts",
+        "line": 85,
+        "column": 12
+      }
+    },
+    {
+      "id": "65f024391566ce3-1c5362de43bf137",
+      "title": "Stream lifecycle - inherited config API reflects the parent retention even when the child has its own override",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/lifecycle_inherited.spec.ts",
+        "line": 119,
+        "column": 12
+      }
+    },
+    {
+      "id": "65f024391566ce3-2ca65ae63b3ec24",
+      "title": "Stream lifecycle - inherited config API returns 404 for a non-existent stream lifecycle inheritance",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/lifecycle_inherited.spec.ts",
+        "line": 154,
+        "column": 12
       }
     },
     {
@@ -1953,6 +2015,54 @@
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/schema_persistence.spec.ts",
         "line": 648,
         "column": 12
+      }
+    },
+    {
+      "id": "65096526c5619bd-f75acbd504e73c9",
+      "title": "Memory managed workflows system-streams-memory-synthesis: is installed and valid",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/workflows/managed_workflows.spec.ts",
+        "line": 40,
+        "column": 14
+      }
+    },
+    {
+      "id": "65096526c5619bd-80513cd613ff114",
+      "title": "Memory managed workflows system-streams-memory-consolidation: is installed and valid",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/workflows/managed_workflows.spec.ts",
+        "line": 40,
+        "column": 14
+      }
+    },
+    {
+      "id": "65096526c5619bd-7d45219dead2acf",
+      "title": "Memory managed workflows system-streams-memory-conversation-scraper: is installed and valid",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/workflows/managed_workflows.spec.ts",
+        "line": 40,
+        "column": 14
       }
     }
   ]

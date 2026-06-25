@@ -164,8 +164,26 @@ describe('getHistory()', () => {
           hashed: [],
         },
         snapshot: {
-          attributes: ruleSO.attributes,
-          references: ruleSO.references,
+          id: ruleSO.id,
+          enabled: ruleSO.attributes.enabled,
+          name: ruleSO.attributes.name,
+          tags: ruleSO.attributes.tags,
+          alertTypeId: ruleSO.attributes.alertTypeId,
+          consumer: ruleSO.attributes.consumer,
+          legacyId: ruleSO.attributes.legacyId,
+          schedule: ruleSO.attributes.schedule,
+          actions: ruleSO.attributes.actions,
+          params: ruleSO.attributes.params,
+          createdBy: ruleSO.attributes.createdBy,
+          updatedBy: ruleSO.attributes.updatedBy,
+          createdAt: ruleSO.attributes.createdAt,
+          updatedAt: ruleSO.attributes.updatedAt,
+          apiKey: ruleSO.attributes.apiKey,
+          apiKeyOwner: ruleSO.attributes.apiKeyOwner,
+          throttle: ruleSO.attributes.throttle,
+          notifyWhen: ruleSO.attributes.notifyWhen,
+          muteAll: ruleSO.attributes.muteAll,
+          revision: ruleSO.attributes.revision,
         },
       },
     });
@@ -298,7 +316,7 @@ describe('getHistory()', () => {
   });
 
   describe('rule hydration', () => {
-    test('hydrates `rule` from `object.snapshot.attributes` on each item', async () => {
+    test('hydrates `rule` from `object.snapshot` on each item', async () => {
       unsecuredSavedObjectsClient.get.mockResolvedValueOnce(getRuleSavedObject());
       ruleTypeRegistry.get.mockReturnValue({
         id: 'siem.queryRule',
@@ -322,8 +340,23 @@ describe('getHistory()', () => {
               hash: 'h',
               fields: { hashed: [] },
               snapshot: {
-                attributes: { alertTypeId: 'siem.queryRule', name: 'My rule' },
-                references: [],
+                id: 'rule-1',
+                alertTypeId: 'siem.queryRule',
+                name: 'My rule',
+                enabled: true,
+                consumer: 'rule-consumer',
+                schedule: { interval: '1m' },
+                revision: 0,
+                muteAll: false,
+                actions: [],
+                tags: [],
+                params: {},
+                createdBy: null,
+                updatedBy: null,
+                createdAt: '2026-05-01T10:00:00.000Z',
+                updatedAt: '2026-05-01T10:00:00.000Z',
+                apiKey: null,
+                apiKeyOwner: null,
               },
             },
           } as never,

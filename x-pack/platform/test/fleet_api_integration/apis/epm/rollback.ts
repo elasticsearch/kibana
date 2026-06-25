@@ -282,6 +282,22 @@ export default function (providerContext: FtrProviderContext) {
 
         await assertPackageInstallVersion(pkgName, oldPkgVersion);
         await assertPackagePoliciesVersion(policyIds, oldPkgVersion);
+
+        // Verify rolled_back is set on the installation SO.
+        const packageSOAfter = await kibanaServer.savedObjects.get({
+          type: PACKAGES_SAVED_OBJECT_TYPE,
+          id: pkgName,
+        });
+        expect(packageSOAfter.attributes.rolled_back).to.be(true);
+
+        // Verify inputs_for_versions is cleared on the live package policy SOs.
+        const packagePolicySORollbackRes = await kibanaServer.savedObjects.find({
+          type: PACKAGE_POLICY_SAVED_OBJECT_TYPE,
+        });
+        for (const id of policyIds) {
+          const livePolicySO = packagePolicySORollbackRes.saved_objects.find((so) => so.id === id);
+          expect(livePolicySO?.attributes.inputs_for_versions ?? {}).to.eql({});
+        }
       });
 
       it('should fail when rollback TTL expired', async () => {

@@ -461,6 +461,12 @@ async function runBatch<Params extends RuleParams>({
   if (successfulSavedObjects.length > 0) {
     await logRuleChanges({
       ruleSOs: successfulSavedObjects,
+      encryptedFieldsMap: new Map(
+        [...apiKeys.entries()].map(([ruleId, { apiKey, uiamApiKey }]) => [
+          ruleId,
+          { apiKey, uiamApiKey },
+        ])
+      ),
       rulesClientContext: context,
       changesContext: {
         action: changeTracking?.action ?? RuleChangeTrackingAction.ruleCreate,

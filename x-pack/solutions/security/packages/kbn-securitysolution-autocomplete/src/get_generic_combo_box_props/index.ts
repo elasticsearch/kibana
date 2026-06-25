@@ -21,21 +21,34 @@ export interface GetGenericComboBoxPropsReturn {
  */
 export const getGenericComboBoxProps = <T>({
   getLabel,
+  getOptionTestSubj,
   options,
   selectedOptions,
   disabledOptions,
 }: {
   getLabel: (value: T) => string;
+  /**
+   * Returns a stable `data-test-subj` for each option. EUI 116.3.0 no longer
+   * exposes the option label via the native `title` attribute when
+   * truncation is in play, so consumers that need a stable test hook should
+   * provide one here.
+   */
+  getOptionTestSubj?: (value: T) => string | undefined;
   options: T[];
   selectedOptions: T[];
   disabledOptions?: T[];
 }): GetGenericComboBoxPropsReturn => {
   const newLabels = options.map(getLabel);
   const disabledLabels = disabledOptions?.map(getLabel);
-  const newComboOptions: EuiComboBoxOptionOption[] = newLabels.map((label) => ({
-    label,
-    disabled: disabledLabels && disabledLabels.length !== 0 && disabledLabels.includes(label),
-  }));
+  const newComboOptions: EuiComboBoxOptionOption[] = options.map((option, idx) => {
+    const label = newLabels[idx];
+    const testSubj = getOptionTestSubj?.(option);
+    return {
+      label,
+      disabled: disabledLabels && disabledLabels.length !== 0 && disabledLabels.includes(label),
+      ...(testSubj ? { 'data-test-subj': testSubj } : {}),
+    };
+  });
   const newSelectedComboOptions = selectedOptions
     .map(getLabel)
     .filter((option) => {

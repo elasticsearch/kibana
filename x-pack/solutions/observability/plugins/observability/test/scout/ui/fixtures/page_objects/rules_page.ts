@@ -556,7 +556,9 @@ export class RulesPage {
     await this.dataViewExpression.click();
     await expect(this.indexPatternInput).toBeVisible();
     await this.indexPatternInput.fill(name);
-    await this.page.locator(`[data-test-subj="indexPattern-switcher"] [title="${name}"]`).click();
+    await this.page
+      .locator(`[data-test-subj="indexPattern-switcher"] [data-test-subj="dataView-${name}"]`)
+      .click();
     await expect(this.dataViewExpression).toContainText(name, { timeout: BIGGER_TIMEOUT });
   }
 

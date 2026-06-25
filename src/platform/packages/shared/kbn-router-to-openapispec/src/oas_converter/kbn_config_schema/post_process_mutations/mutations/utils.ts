@@ -48,7 +48,7 @@ export const processAvailability = (ctx: IContext, schema: OpenAPIV3.SchemaObjec
   if (metaFields.META_FIELD_X_OAS_AVAILABILITY in schema) {
     const state = getXState(
       schema[metaFields.META_FIELD_X_OAS_AVAILABILITY] as {
-        stability?: 'experimental' | 'beta' | 'stable' | 'tech_preview';
+        stability?: 'experimental' | 'stable' | 'tech_preview';
         since?: string;
       },
       ctx.getEnv()

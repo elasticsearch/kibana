@@ -272,8 +272,8 @@ describe('Migrations: Translated Rules Page', () => {
       expect(screen.getAllByTestId(/ruleName/)).toHaveLength(2);
       expect(screen.getAllByTestId(/ruleName/)[0]).toHaveTextContent(/Converted Splunk Rule -/);
       // only successful is selectable
-      expect(screen.getAllByTitle(/Select row 1/)).toHaveLength(1);
-      expect(screen.getByTitle(/Not fully translated migration rule/)).toBeDisabled();
+      expect(screen.getAllByLabelText(/Select row 1/)).toHaveLength(1);
+      expect(screen.getByLabelText(/Not fully translated migration rule/)).toBeDisabled();
     });
   });
 });

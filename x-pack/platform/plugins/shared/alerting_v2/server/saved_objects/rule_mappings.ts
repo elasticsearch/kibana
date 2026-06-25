@@ -24,5 +24,12 @@ export const ruleMappings: SavedObjectsTypeMappingDefinition = {
       },
     },
     enabled: { type: 'boolean' },
+    schedule: {
+      properties: {
+        // Indexed so the maxScheduledPerMinute guardrail can aggregate the
+        // scheduled frequency of enabled rules instead of scanning every rule.
+        every: { type: 'keyword', ignore_above: 256 },
+      },
+    },
   },
 };

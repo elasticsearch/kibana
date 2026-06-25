@@ -272,7 +272,7 @@ export const updatePackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
           queries: queries as Record<string, PackQueryInput> | undefined,
         });
         if (scheduleErr) {
-          return response.badRequest({ body: scheduleErr });
+          return response.badRequest({ body: { message: scheduleErr } });
         }
 
         if (name) {

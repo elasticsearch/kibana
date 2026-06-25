@@ -95,8 +95,8 @@ export const registerInternalTools = async ({
     tools.push(createSleepTool());
   }
 
-  // ask_user_question — experimental, and not available in standalone mode.
-  if (experimentalFeatures.askUserQuestion && interactive) {
+  // ask_user_question — not available in standalone mode.
+  if (interactive) {
     tools.push(createAskUserQuestionTool());
   }
 

@@ -12,6 +12,7 @@ import { getRootEsqlQuery } from '@kbn/alerting-v2-schemas';
 import { useFetchEpisodeQuery } from '../../hooks/use_fetch_episode_query';
 import { useFetchEpisodeEventDataQuery } from '../../hooks/use_fetch_episode_event_data_query';
 import { useFetchRule } from '../../hooks/use_fetch_rule';
+import { isRuleLoaded, isRuleLoading } from '../../types/rule_state';
 import { useAlertingEpisodeSourceDataView } from '../../hooks/use_alerting_episode_source_data_view';
 import { AlertEpisodeMetadataTable } from './metadata_table';
 import type { AlertEpisodeMetadataTableProps } from './metadata_table';
@@ -46,7 +47,7 @@ export const AlertEpisodeMetadataSection = ({
   });
   const ruleId = episode?.['rule.id'];
 
-  const { data: rule } = useFetchRule({ id: ruleId, http: services.http });
+  const { ruleState } = useFetchRule({ id: ruleId, http: services.http });
 
   const {
     data: eventData,
@@ -58,13 +59,11 @@ export const AlertEpisodeMetadataSection = ({
   });
 
   const { value: dataView, loading: isDataViewLoading } = useAlertingEpisodeSourceDataView({
-    query: rule?.query ? getRootEsqlQuery(rule.query) : undefined,
+    query: isRuleLoaded(ruleState) ? getRootEsqlQuery(ruleState.rule.query) : undefined,
     dataViews: services.dataViews,
     http: services.http,
   });
 
-  // Resolve the table render function from the registry once — avoids the
-  // EuiTabbedContent wrapper that UnifiedDocViewer adds around all doc views.
   const tableDocView = useMemo(
     () => services.unifiedDocViewer.registry.getAll().find((dv) => dv.id === 'doc_view_table'),
     [services.unifiedDocViewer.registry]
@@ -89,8 +88,17 @@ export const AlertEpisodeMetadataSection = ({
     );
   }
 
-  if (isLoadingEpisode || isEventDataLoading || isDataViewLoading) {
+  if (
+    isLoadingEpisode ||
+    isEventDataLoading ||
+    (ruleId && isRuleLoading(ruleState)) ||
+    isDataViewLoading
+  ) {
     return <EuiLoadingSpinner size="m" data-test-subj="alertingV2EpisodeMetadataSectionLoading" />;
+  }
+
+  if (!isRuleLoaded(ruleState)) {
+    return null;
   }
 
   if (!hit || !dataView || !eventData) {

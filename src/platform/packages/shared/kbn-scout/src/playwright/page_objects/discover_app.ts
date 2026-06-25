@@ -84,7 +84,7 @@ export class DiscoverApp {
     await this.page.testSubj.typeWithDelay('indexPattern-switcher--input', name);
     const matchingDataViewLocator = this.page.testSubj
       .locator('indexPattern-switcher')
-      .locator(`[title="${name}"]`);
+      .locator(`[data-test-subj="dataView-${name}"]`);
     if (await matchingDataViewLocator.isVisible()) {
       await matchingDataViewLocator.click();
     } else {

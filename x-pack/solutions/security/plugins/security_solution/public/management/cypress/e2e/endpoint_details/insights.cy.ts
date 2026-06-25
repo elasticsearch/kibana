@@ -40,7 +40,8 @@ const {
   validateErrorToastContent,
 } = workflowInsightsSelectors;
 
-describe(
+// legacy path tests, intentionally skipping instead of deleting until new skill based path is confirmed stable
+describe.skip(
   'Workflow Insights',
   {
     tags: ['@ess', '@serverless', '@skipInServerlessMKI'],

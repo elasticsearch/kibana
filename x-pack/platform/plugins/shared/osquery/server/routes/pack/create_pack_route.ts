@@ -145,7 +145,7 @@ export const createPackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
           queries: gatedQueries as Record<string, PackQueryInput>,
         });
         if (scheduleErr) {
-          return response.badRequest({ body: scheduleErr });
+          return response.badRequest({ body: { message: scheduleErr } });
         }
 
         const now = moment().toISOString();

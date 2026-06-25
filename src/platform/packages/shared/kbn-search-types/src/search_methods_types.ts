@@ -220,6 +220,10 @@ export interface IEsqlSearchResult {
    * Request parameters for inspector
    */
   requestParams?: SanitizedConnectionRequestParams;
+  /**
+   * Warning message from the ES Warning HTTP response header
+   */
+  warning?: string;
 }
 
 // ============================================================================

@@ -14,15 +14,10 @@ import {
   isCreateCaseUserAction,
   isCommentUserAction,
 } from '../../../common/utils/user_actions';
-import {
-  CASE_SAVED_OBJECT,
-  CASE_COMMENT_SAVED_OBJECT,
-  NONE_CONNECTOR_ID,
-} from '../../../common/constants';
+import { CASE_SAVED_OBJECT, NONE_CONNECTOR_ID } from '../../../common/constants';
 import {
   ATTACHMENT_ID_REF_NAME,
   CASE_REF_NAME,
-  COMMENT_REF_NAME,
   CONNECTOR_ID_REFERENCE_NAME,
   EXTERNAL_REFERENCE_REF_NAME,
   PUSH_CONNECTOR_ID_REFERENCE_NAME,
@@ -32,7 +27,7 @@ import {
   isCommentRequestTypeExternalReferenceSO,
   isUnifiedAttachmentWithSoReference,
 } from '../type_guards';
-import { findReferenceId } from '../../common/references';
+import { findCommentReferenceId, findReferenceId } from '../../common/references';
 import type {
   UserActionPersistedAttributes,
   UserActionSavedObjectTransformed,
@@ -57,8 +52,7 @@ export function transformToExternalModel(
 ): UserActionSavedObjectTransformed {
   const { references } = userAction;
 
-  const commentId =
-    findReferenceId(COMMENT_REF_NAME, CASE_COMMENT_SAVED_OBJECT, references) ?? null;
+  const commentId = findCommentReferenceId(references) ?? null;
   const payload = addReferenceIdToPayload(userAction);
 
   return {
@@ -98,8 +92,7 @@ function legacyTransformToExternalModel(
   const { references } = userAction;
 
   const caseId = findReferenceId(CASE_REF_NAME, CASE_SAVED_OBJECT, references) ?? '';
-  const commentId =
-    findReferenceId(COMMENT_REF_NAME, CASE_COMMENT_SAVED_OBJECT, references) ?? null;
+  const commentId = findCommentReferenceId(references) ?? null;
   const payload = addReferenceIdToPayload(userAction);
 
   return {

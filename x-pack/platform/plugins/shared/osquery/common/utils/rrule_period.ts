@@ -14,6 +14,7 @@ const SEC = {
   DAY: 86400,
   WEEK: 604800,
   MONTH_FLOOR: 28 * 86400,
+  YEAR_FLOOR: 365 * 86400,
 } as const;
 
 // Worst-case month length used for the BYMONTHDAY cyclic gap. February's 28
@@ -132,7 +133,7 @@ export const derivePeriodSeconds = (fields: ReturnType<typeof parseRRule>): numb
       return SEC.MONTH_FLOOR * interval;
 
     case Frequency.YEARLY:
-      return SEC.MONTH_FLOOR;
+      return SEC.YEAR_FLOOR * interval;
 
     default:
       return SEC.MIN;

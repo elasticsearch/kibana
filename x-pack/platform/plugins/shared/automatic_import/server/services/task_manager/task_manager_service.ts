@@ -34,6 +34,7 @@ import type { LangSmithOptions } from '../../routes/types';
 import type { AutomaticImportPluginStartDependencies } from '../../types';
 import type { AutomaticImportSavedObjectService } from '../saved_objects/saved_objects_service';
 import { AutomaticImportTelemetryEventType } from '../../../common';
+import { DATA_STREAM_PHASES, type DataStreamPhase } from '../../../common/phases';
 
 export const DATA_STREAM_CREATION_TASK_TYPE = 'autoImport-dataStream-task';
 
@@ -266,6 +267,27 @@ export class TaskManagerService {
 
       const fieldsMetadataClient = await pluginsStart.fieldsMetadata.getClient(request);
 
+      await automaticImportSavedObjectService.updateDataStreamSavedObjectAttributes({
+        integrationId,
+        dataStreamId,
+        status: TASK_STATUSES.processing,
+      });
+      await automaticImportSavedObjectService.updateDataStreamPhase(
+        dataStreamId,
+        integrationId,
+        DATA_STREAM_PHASES.analyzingLogs
+      );
+      this.throwIfAborted(abortSignal);
+
+      const reportPhase = async (phase: DataStreamPhase) => {
+        this.throwIfAborted(abortSignal);
+        await automaticImportSavedObjectService.updateDataStreamPhase(
+          dataStreamId,
+          integrationId,
+          phase
+        );
+      };
+
       const result = await this.agentService.invokeAutomaticImportAgent(
         integrationId,
         dataStreamId,
@@ -273,7 +295,8 @@ export class TaskManagerService {
         model,
         fieldsMetadataClient,
         langSmithOptions,
-        abortSignal
+        abortSignal,
+        reportPhase
       );
 
       this.logger.debug(`Task ${taskId} completed successfully`);
@@ -292,6 +315,8 @@ export class TaskManagerService {
       );
 
       const agentFieldMappings = (result.field_mappings as FieldMapping[] | undefined) ?? undefined;
+
+      await reportPhase(DATA_STREAM_PHASES.mappingEventFields);
       const fieldMapping = await generateFieldMappings(
         (pipelineGenerationResultsObjects ?? []) as Array<Record<string, unknown>>,
         fieldsMetadataClient,
@@ -300,6 +325,9 @@ export class TaskManagerService {
       this.logger.debug(`Generated field mappings: ${JSON.stringify(fieldMapping)}`);
       this.throwIfAborted(abortSignal);
 
+      await reportPhase(DATA_STREAM_PHASES.mappingRelatedFields);
+
+      await reportPhase(DATA_STREAM_PHASES.finalizing);
       const validationResult = await validateFieldMappings(
         esClient,
         fieldMapping,

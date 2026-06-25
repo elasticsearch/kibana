@@ -36,7 +36,7 @@ export const upsertEntitiesBulk = (
       path: '/api/entity_store/entities/bulk',
       options: {
         availability: {
-          stability: 'beta',
+          stability: 'tech_preview',
         },
       },
       security: {

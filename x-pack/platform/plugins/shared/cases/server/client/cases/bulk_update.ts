@@ -77,8 +77,11 @@ import { CaseStatuses, AttachmentType } from '../../../common/types/domain';
 import {
   validateCustomFields,
   validateExtendedFieldsInRequest,
+  validateExtendedFieldsOnClose,
+  resolveTemplateFieldsForClose,
   resolveGlobalFields,
 } from './validators';
+import type { InlineField } from '../../../common/types/domain/template/fields';
 import { emptyCasesAssigneesSanitizer } from './sanitizers';
 /**
  * Throws an error if any of the requests attempt to update the owner of a case.
@@ -583,15 +586,21 @@ export const bulkUpdate = async (
     await validateCustomFieldsInRequest({ casesToUpdate, customFieldsConfigurationMap });
 
     // Pre-resolve global fields once per owner to avoid N SO queries inside Promise.all.
-    const uniqueOwnersWithExtendedFields = [
+    // Owners are collected for both cases that include extended_fields in the request and
+    // cases that are transitioning to closed (close-time validation needs the global fields
+    // even when the request does not include extended_fields).
+    const uniqueOwnersNeedingFields = [
       ...casesToUpdate.reduce((owners, { updateReq, originalCase }) => {
-        if (updateReq.extended_fields) owners.add(originalCase.attributes.owner);
+        const isBeingClosed =
+          updateReq.status === CaseStatuses.closed &&
+          originalCase.attributes.status !== CaseStatuses.closed;
+        if (updateReq.extended_fields || isBeingClosed) owners.add(originalCase.attributes.owner);
         return owners;
       }, new Set<string>()),
     ];
     const globalFieldsByOwner = new Map(
       await Promise.all(
-        uniqueOwnersWithExtendedFields.map(async (owner) => {
+        uniqueOwnersNeedingFields.map(async (owner) => {
           const fields = await resolveGlobalFields(owner, fieldDefinitionsService);
           return [owner, fields] as const;
         })
@@ -608,6 +617,60 @@ export const bulkUpdate = async (
         })
       )
     );
+
+    // Pre-resolve template fields for cases transitioning to closed.
+    // Deduplicates SO fetches: N cases sharing the same (template id, version) pair issue only one getTemplate call.
+    const getEffectiveTemplate = (
+      updateReq: CasePatchRequest,
+      originalCase: CaseSavedObjectTransformed
+    ): { id: string; version: number } | null => {
+      if (updateReq.template === null) return null;
+      if (updateReq.template != null) {
+        return { id: updateReq.template.id, version: updateReq.template.version };
+      }
+      const t = originalCase.attributes.template;
+      return t != null ? { id: t.id, version: t.version } : null;
+    };
+
+    // Deduplicate by "id@version" so different versions of the same template are fetched separately.
+    const closingCasesTemplates = [
+      ...new Map(
+        casesToUpdate
+          .filter(
+            ({ updateReq, originalCase }) =>
+              updateReq.status === CaseStatuses.closed &&
+              originalCase.attributes.status !== CaseStatuses.closed
+          )
+          .map(({ updateReq, originalCase }) => getEffectiveTemplate(updateReq, originalCase))
+          .filter((t): t is { id: string; version: number } => t != null)
+          .map((t) => [`${t.id}@${t.version}`, t] as const)
+      ).values(),
+    ];
+    const templateFieldsByKey = new Map<string, InlineField[]>(
+      await Promise.all(
+        closingCasesTemplates.map(async ({ id, version }) => {
+          const fields = await resolveTemplateFieldsForClose({
+            templateId: id,
+            templateVersion: version,
+            templatesService,
+            logger,
+          });
+          return [`${id}@${version}`, fields] as [string, InlineField[]];
+        })
+      )
+    );
+
+    for (const { updateReq, originalCase } of casesToUpdate) {
+      const effectiveTemplate = getEffectiveTemplate(updateReq, originalCase);
+      const templateKey =
+        effectiveTemplate != null ? `${effectiveTemplate.id}@${effectiveTemplate.version}` : null;
+      validateExtendedFieldsOnClose({
+        updateReq,
+        originalCase,
+        templateFields: templateKey != null ? templateFieldsByKey.get(templateKey) ?? [] : [],
+        globalFields: globalFieldsByOwner.get(originalCase.attributes.owner) ?? [],
+      });
+    }
 
     const patchCasesPayload = createPatchCasesPayload({
       user,

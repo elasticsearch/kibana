@@ -134,6 +134,44 @@ apiTest.describe(
       );
     });
 
+    apiTest(
+      'persists deletion of label and header keys instead of deep-merging them',
+      async ({ apiClient }) => {
+        // Regression test for #274387. `labels` is a top-level map attribute, so a
+        // deep-merging saved-object update silently kept removed keys and they could
+        // never be deleted. Headers live in the encrypted `secrets` string (replaced
+        // wholesale), so they already worked; asserting them here guards that the
+        // full-attribute replacement keeps round-tripping secrets. The edit *response*
+        // is built from the in-memory monitor and looks correct even when persistence
+        // is broken, so this asserts a subsequent GET.
+        const savedMonitor = await saveMonitor(apiClient, {
+          ...httpMonitorJson,
+          name: 'monitor with maps to prune',
+          [ConfigKey.LABELS]: { team: 'obs', env: 'prod' },
+          [ConfigKey.REQUEST_HEADERS_CHECK]: {
+            sampleHeader: 'sampleHeaderValue',
+            extra: 'extraValue',
+          },
+        });
+        const monitorId = savedMonitor[ConfigKey.CONFIG_ID] as string;
+
+        const toUpdate = {
+          ...savedMonitor,
+          [ConfigKey.LABELS]: { team: 'obs' },
+          [ConfigKey.REQUEST_HEADERS_CHECK]: { sampleHeader: 'sampleHeaderValue' },
+        };
+        await editMonitorInternal(apiClient, editorHeaders, monitorId, toUpdate);
+
+        const { body } = await getMonitor(apiClient, editorHeaders, monitorId, {
+          internal: true,
+        });
+        expect(body[ConfigKey.LABELS]).toStrictEqual({ team: 'obs' });
+        expect(body[ConfigKey.REQUEST_HEADERS_CHECK]).toStrictEqual({
+          sampleHeader: 'sampleHeaderValue',
+        });
+      }
+    );
+
     apiTest('strips unknown keys from monitor edits', async ({ apiClient }) => {
       const newMonitor = { ...httpMonitorJson, name: 'yet another' };
 

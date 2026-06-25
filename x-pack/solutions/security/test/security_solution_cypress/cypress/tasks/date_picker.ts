@@ -149,10 +149,10 @@ export const expectDateRangeToBe = (
     () => {
       cy.get(`${container} [data-test-subj="superDatePickerstartDatePopoverButton"]`)
         .first()
-        .should('have.attr', 'title', expected.start);
+        .should('have.text', expected.start);
       cy.get(`${container} [data-test-subj="superDatePickerendDatePopoverButton"]`)
         .first()
-        .should('have.attr', 'title', expected.end);
+        .should('have.text', expected.end);
     }
   );
 };

@@ -463,8 +463,10 @@ export const GraphInvestigation = memo<GraphInvestigationProps>(
           if (isEntityNode(node)) {
             const nodeIps = node.ips || [];
             const nodeCountryCodes = node.countryCodes || [];
+            const isOrigin = originEntityIdsSet.has(node.id);
             return {
               ...node,
+              ...(isOrigin && { isOrigin }),
               expandButtonClick: nodeExpandButtonClickHandler,
               ipClickHandler: createIpClickHandler(nodeIps),
               countryClickHandler: createCountryClickHandler(nodeCountryCodes),

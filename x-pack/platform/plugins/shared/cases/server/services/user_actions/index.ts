@@ -18,6 +18,7 @@ import { AttachmentType, UserActionActions, UserActionTypes } from '../../../com
 import { decodeOrThrow } from '../../common/runtime_types';
 import {
   CASE_COMMENT_SAVED_OBJECT,
+  CASE_ATTACHMENT_SAVED_OBJECT,
   CASE_SAVED_OBJECT,
   CASE_USER_ACTION_SAVED_OBJECT,
   MAX_DOCS_PER_PAGE,
@@ -747,8 +748,9 @@ export class CaseUserActionService {
      * Calculate total_hidden_comment_updates by summing updates for DELETED comments.
      * These are edit actions that are no longer visible to users because the comment was deleted.
      */
-    const commentBuckets =
-      response.aggregations?.nonDeletedCommentUpdates?.comments?.byCommentId?.buckets ?? [];
+    const commentBuckets = Object.values(
+      response.aggregations?.nonDeletedCommentUpdates?.comments?.buckets ?? {}
+    ).flatMap((bucket) => bucket.byCommentId?.buckets ?? []);
 
     for (const bucket of commentBuckets) {
       const hasBeenDeleted = bucket.reverse?.hasDelete?.doc_count > 0;
@@ -823,9 +825,19 @@ export class CaseUserActionService {
         },
         aggs: {
           comments: {
-            filter: {
-              term: {
-                [`${CASE_USER_ACTION_SAVED_OBJECT}.references.type`]: CASE_COMMENT_SAVED_OBJECT,
+            filters: {
+              filters: {
+                [CASE_COMMENT_SAVED_OBJECT]: {
+                  term: {
+                    [`${CASE_USER_ACTION_SAVED_OBJECT}.references.type`]: CASE_COMMENT_SAVED_OBJECT,
+                  },
+                },
+                [CASE_ATTACHMENT_SAVED_OBJECT]: {
+                  term: {
+                    [`${CASE_USER_ACTION_SAVED_OBJECT}.references.type`]:
+                      CASE_ATTACHMENT_SAVED_OBJECT,
+                  },
+                },
               },
             },
             aggs: {

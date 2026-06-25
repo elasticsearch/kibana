@@ -221,8 +221,7 @@ export const ALERT_ASSIGNEES_SELECTABLE_OPTIONS =
 export const ALERT_USER_AVATAR = (assignee: string) => {
   const expectedAssignee = assignee;
 
-  // Use partial match (^=) for title to handle cases where email is appended in parentheses
-  return `[data-test-subj^="securitySolutionUsersAvatar-"][title^='${expectedAssignee}']`;
+  return `[data-test-subj^="securitySolutionUsersAvatar-"][aria-label^='${expectedAssignee}']`;
 };
 
 export const ALERT_AVATARS_PANEL = '[data-test-subj="securitySolutionUsersAvatarsPanel"]';

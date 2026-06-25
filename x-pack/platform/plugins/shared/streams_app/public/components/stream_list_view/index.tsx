@@ -198,7 +198,7 @@ export function StreamListView() {
               <EuiFlexItem grow={false}>
                 <EuiButton
                   href={router.link('/_discovery')}
-                  iconType="crosshairs"
+                  iconType="significantEvents"
                   size="s"
                   data-test-subj="streamsSignificantEventsDiscoveryButton"
                 >

@@ -44,6 +44,9 @@ export const editDataLifecycleFlyoutStrings = {
   noInheritedPolicyDescription: i18n.translate(`${PREFIX}.noInheritedPolicyDescription`, {
     defaultMessage: 'No ILM policy is inherited from the parent.',
   }),
+  loadingInheritedDescription: i18n.translate(`${PREFIX}.loadingInheritedDescription`, {
+    defaultMessage: 'Loading inherited lifecycle…',
+  }),
   ilmNotConfiguredDescription: i18n.translate(`${PREFIX}.ilmNotConfiguredDescription`, {
     defaultMessage: 'ILM policies are not available.',
   }),

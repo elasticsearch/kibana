@@ -14,7 +14,22 @@ import type {
   AskUserQuestionPromptResponse,
   AskUserQuestionItem,
 } from '@kbn/agent-builder-common/agents';
+import { AGENT_BUILDER_EVENT_TYPES } from '@kbn/agent-builder-common/telemetry';
 import { AskUserQuestionPrompt } from './ask_user_question_prompt';
+
+const mockReportEvent = jest.fn();
+
+jest.mock('../../../../hooks/use_kibana', () => ({
+  useKibana: () => ({ services: { analytics: { reportEvent: mockReportEvent } } }),
+}));
+
+jest.mock('../../../../hooks/use_conversation', () => ({
+  useAgentId: () => 'agent-1',
+}));
+
+jest.mock('../../../../context/conversation/use_conversation_id', () => ({
+  useConversationId: () => 'conv-1',
+}));
 
 const renderWithProviders = (ui: React.ReactElement) =>
   render(
@@ -62,6 +77,8 @@ const threeQuestions: AskUserQuestionItem[] = [
 ];
 
 describe('AskUserQuestionPrompt', () => {
+  beforeEach(() => mockReportEvent.mockClear());
+
   describe('Confirm gating', () => {
     it('Confirm is disabled until the current question is answered', async () => {
       renderWithProviders(
@@ -320,6 +337,71 @@ describe('AskUserQuestionPrompt', () => {
       expect(onSubmit).toHaveBeenCalledWith({
         answers: [{ choice: [0] }, { skipped: true }, { custom: 'free text' }],
       } satisfies AskUserQuestionPromptResponse);
+    });
+  });
+
+  describe('Telemetry', () => {
+    it('fires HitlPromptShown on mount', () => {
+      renderWithProviders(
+        <AskUserQuestionPrompt promptId="p1" questions={singleQuestion} onSubmit={jest.fn()} />
+      );
+      expect(mockReportEvent).toHaveBeenCalledWith(
+        AGENT_BUILDER_EVENT_TYPES.HitlPromptShown,
+        expect.objectContaining({ prompt_id: 'p1', total_questions: 1 })
+      );
+    });
+
+    it('fires HitlQuestionAnswered with outcome=answered on Submit', async () => {
+      renderWithProviders(
+        <AskUserQuestionPrompt promptId="p1" questions={singleQuestion} onSubmit={jest.fn()} />
+      );
+      await userEvent.click(screen.getByLabelText('Red'));
+      await userEvent.click(screen.getByRole('button', { name: 'Submit' }));
+      expect(mockReportEvent).toHaveBeenCalledWith(
+        AGENT_BUILDER_EVENT_TYPES.HitlQuestionAnswered,
+        expect.objectContaining({
+          prompt_id: 'p1',
+          outcome: 'answered',
+          question_index: 0,
+          is_multi_select: false,
+          selected_option_count: 1,
+          used_custom_text: false,
+        })
+      );
+    });
+
+    it('fires HitlQuestionAnswered with outcome=skipped on Skip', async () => {
+      renderWithProviders(
+        <AskUserQuestionPrompt promptId="p1" questions={singleQuestion} onSubmit={jest.fn()} />
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Skip' }));
+      expect(mockReportEvent).toHaveBeenCalledWith(
+        AGENT_BUILDER_EVENT_TYPES.HitlQuestionAnswered,
+        expect.objectContaining({ outcome: 'skipped', selected_option_count: 0 })
+      );
+    });
+
+    it('fires HitlQuestionAnswered with outcome=skipped_all on Skip all', async () => {
+      renderWithProviders(
+        <AskUserQuestionPrompt promptId="p1" questions={threeQuestions} onSubmit={jest.fn()} />
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Skip all' }));
+      expect(mockReportEvent).toHaveBeenCalledWith(
+        AGENT_BUILDER_EVENT_TYPES.HitlQuestionAnswered,
+        expect.objectContaining({ outcome: 'skipped_all' })
+      );
+    });
+
+    it('fires HitlQuestionAnswered with used_custom_text=true when Other is filled', async () => {
+      renderWithProviders(
+        <AskUserQuestionPrompt promptId="p1" questions={singleQuestion} onSubmit={jest.fn()} />
+      );
+      await userEvent.type(screen.getByRole('textbox'), 'magenta');
+      await userEvent.click(screen.getByRole('button', { name: 'Submit' }));
+      expect(mockReportEvent).toHaveBeenCalledWith(
+        AGENT_BUILDER_EVENT_TYPES.HitlQuestionAnswered,
+        expect.objectContaining({ outcome: 'answered', used_custom_text: true })
+      );
     });
   });
 });

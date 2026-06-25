@@ -28,7 +28,7 @@ export const search = (specService: SpecDefinitionsService) => {
       },
 
       post_filter: {
-        __scope_link: 'GLOBAL.filter',
+        __scope_link: 'GLOBAL.query',
       },
       size: {
         __template: 20,
@@ -56,7 +56,7 @@ export const search = (specService: SpecDefinitionsService) => {
               },
               nested_path: '',
               nested_filter: {
-                __scope_link: 'GLOBAL.filter',
+                __scope_link: 'GLOBAL.query',
               },
             },
           },
@@ -238,7 +238,7 @@ export const search = (specService: SpecDefinitionsService) => {
         __one_of: [
           {
             field: '{field}',
-            filter: { __scope_link: 'GLOBAL.filter' },
+            filter: { __scope_link: 'GLOBAL.query' },
             k: 10,
             num_candidates: 100,
             query_vector: [],
@@ -257,7 +257,7 @@ export const search = (specService: SpecDefinitionsService) => {
           [
             {
               field: '{field}',
-              filter: { __scope_link: 'GLOBAL.filter' },
+              filter: { __scope_link: 'GLOBAL.query' },
               k: 10,
               num_candidates: 100,
               query_vector: [],

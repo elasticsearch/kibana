@@ -60,8 +60,12 @@ export class EuiSelectableWrapper {
     return selectedOptions.includes(value);
   }
 
+  private optionLocator(value: string) {
+    return this.selectableList.getByRole('option', { name: value, exact: true });
+  }
+
   private async clickOption(value: string) {
-    await this.selectableList.locator(`li[role="option"][title="${value}"]`).click();
+    await this.optionLocator(value).click();
   }
 
   async searchAndSelectFirst(value: string) {
@@ -76,9 +80,7 @@ export class EuiSelectableWrapper {
       throw Error(`Value "${value}" is already selected in the selectable`);
     }
     await this.clickOption(value);
-    await expect(
-      this.selectableList.locator(`li[role="option"][title="${value}"]`)
-    ).toHaveAttribute('aria-checked', 'true');
+    await expect(this.optionLocator(value)).toHaveAttribute('aria-checked', 'true');
   }
 
   async unselect(value: string) {
@@ -86,8 +88,6 @@ export class EuiSelectableWrapper {
       throw Error(`Value "${value}" is not selected in the selectable`);
     }
     await this.clickOption(value);
-    await expect(
-      this.selectableList.locator(`li[role="option"][title="${value}"]`)
-    ).toHaveAttribute('aria-checked', 'false');
+    await expect(this.optionLocator(value)).toHaveAttribute('aria-checked', 'false');
   }
 }

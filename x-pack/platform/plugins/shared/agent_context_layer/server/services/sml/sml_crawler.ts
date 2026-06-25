@@ -65,7 +65,7 @@ export class SmlCrawlerImpl implements SmlCrawler {
     };
 
     const crawlStartTime = new Date().toISOString();
-    this.logger.info(`SML crawler: starting crawl for type '${definition.id}' across all spaces`);
+    this.logger.debug(`SML crawler: starting crawl for type '${definition.id}' across all spaces`);
 
     const indexRecreated = await this.recreateIndexIfMappingsChanged({ esClient });
 
@@ -117,7 +117,7 @@ export class SmlCrawlerImpl implements SmlCrawler {
       return;
     }
 
-    this.logger.info(
+    this.logger.debug(
       `SML crawler: enumerated ${totalItems} item(s) for type '${definition.id}': ${newCount} new, ${updatedCount} updated, ${unchangedCount} unchanged`
     );
 
@@ -134,7 +134,7 @@ export class SmlCrawlerImpl implements SmlCrawler {
     }
 
     if (newCount === 0 && updatedCount === 0 && deletedCount === 0) {
-      this.logger.info(`SML crawler: no state changes needed for type '${definition.id}'`);
+      this.logger.debug(`SML crawler: no state changes needed for type '${definition.id}'`);
     }
 
     // Process queued actions (create/update/delete)
@@ -163,7 +163,7 @@ export class SmlCrawlerImpl implements SmlCrawler {
     if (stateCount === 0) return false;
 
     const smlDataCount = await this.countSmlDocuments({ esClient, attachmentType });
-    this.logger.info(
+    this.logger.debug(
       `SML crawler: integrity check for type '${attachmentType}' — ${stateCount} state doc(s), ${smlDataCount} SML data doc(s) in index '${smlIndexName}'`
     );
     if (smlDataCount === 0) {
@@ -324,14 +324,14 @@ export class SmlCrawlerImpl implements SmlCrawler {
       const pendingItems = pendingResponse.hits.hits;
       if (pendingItems.length === 0) {
         if (processedCount === 0) {
-          this.logger.info(
+          this.logger.debug(
             `SML crawler: no pending actions to process for type '${attachmentType}'`
           );
         }
         break;
       }
 
-      this.logger.info(
+      this.logger.debug(
         `SML crawler: processing batch of ${pendingItems.length} pending action(s) for type '${attachmentType}'`
       );
 

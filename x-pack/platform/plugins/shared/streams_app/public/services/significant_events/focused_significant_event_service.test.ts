@@ -19,7 +19,6 @@ const createEvent = (discoverySlug: string): SigEvent => ({
   root_cause: 'Root cause',
   criticality: 90,
   confidence: 0.8,
-  impact: 'high',
   recommendations: [],
   status: 'promoted',
 });

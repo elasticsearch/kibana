@@ -384,16 +384,6 @@ describe('setXState', () => {
         expected: 'Technical Preview',
       },
       {
-        name: 'beta with since',
-        availability: { stability: 'beta' as const, since: '8.0.0' },
-        expected: 'Beta; added in 8.0.0',
-      },
-      {
-        name: 'beta without since',
-        availability: { stability: 'beta' as const },
-        expected: 'Beta',
-      },
-      {
         name: 'no availability',
         availability: undefined,
         expected: undefined,
@@ -448,16 +438,6 @@ describe('setXState', () => {
         name: 'tech_preview without since',
         availability: { stability: 'tech_preview' as const },
         expected: 'Technical Preview',
-      },
-      {
-        name: 'beta with since',
-        availability: { stability: 'beta' as const, since: '8.0.0' },
-        expected: 'Beta',
-      },
-      {
-        name: 'beta without since',
-        availability: { stability: 'beta' as const },
-        expected: 'Beta',
       },
       {
         name: 'no availability',

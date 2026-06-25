@@ -8,12 +8,16 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { httpServiceMock } from '@kbn/core-http-browser-mocks';
+import { useFetchRule } from '../../hooks/use_fetch_rule';
+import { RuleStateStatus } from '../../types/rule_state';
 import {
   createMockServices,
   createTestQueryClient,
   createQueryClientWrapper,
 } from '../../hooks/test_utils';
 import { AlertEpisodeDetailsFlyout } from './details_flyout';
+
+jest.mock('../../hooks/use_fetch_rule');
 
 jest.mock('./details_header_section', () => ({
   AlertEpisodeDetailsHeaderSection: () => <div data-test-subj="headerSectionStub" />,
@@ -31,9 +35,17 @@ jest.mock('./runbook_section', () => ({
   AlertEpisodeRunbookSection: () => <div data-test-subj="runbookSectionStub" />,
 }));
 
+const mockUseFetchRule = jest.mocked(useFetchRule);
+
 const mockHttp = httpServiceMock.createStartContract();
 const mockServices = createMockServices({ http: mockHttp });
 const Wrapper = createQueryClientWrapper(createTestQueryClient());
+
+const loadedRuleState = {
+  status: RuleStateStatus.loaded,
+  ruleId: 'rule-1',
+  rule: { id: 'rule-1', metadata: { name: 'Rule A' } },
+} as const;
 
 const baseProps = {
   episodeId: 'ep-1',
@@ -43,6 +55,13 @@ const baseProps = {
 };
 
 describe('AlertEpisodeDetailsFlyout', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseFetchRule.mockReturnValue({
+      ruleState: loadedRuleState,
+    } as ReturnType<typeof useFetchRule>);
+  });
+
   it('renders header, overview tab body by default, and footer button with the right href', () => {
     render(<AlertEpisodeDetailsFlyout {...baseProps} />, { wrapper: Wrapper });
     expect(screen.getByTestId('headerSectionStub')).toBeInTheDocument();
@@ -59,16 +78,27 @@ describe('AlertEpisodeDetailsFlyout', () => {
     expect(screen.getByTestId('relatedSectionStub')).toBeInTheDocument();
   });
 
-  it('switches to metadata tab', () => {
+  it('switches to metadata tab when the rule is loaded', () => {
     render(<AlertEpisodeDetailsFlyout {...baseProps} />, { wrapper: Wrapper });
     fireEvent.click(screen.getByTestId('alertingV2EpisodeFlyoutTabMetadata'));
     expect(screen.getByTestId('metadataSectionStub')).toBeInTheDocument();
   });
 
-  it('switches to runbook tab', () => {
+  it('switches to runbook tab when the rule is loaded', () => {
     render(<AlertEpisodeDetailsFlyout {...baseProps} />, { wrapper: Wrapper });
     fireEvent.click(screen.getByTestId('alertingV2EpisodeFlyoutTabRunbook'));
     expect(screen.getByTestId('runbookSectionStub')).toBeInTheDocument();
+  });
+
+  it('hides metadata and runbook tabs when the rule is not loaded', () => {
+    mockUseFetchRule.mockReturnValue({
+      ruleState: { status: RuleStateStatus.not_found, ruleId: 'rule-1' },
+    } as ReturnType<typeof useFetchRule>);
+
+    render(<AlertEpisodeDetailsFlyout {...baseProps} />, { wrapper: Wrapper });
+
+    expect(screen.queryByTestId('alertingV2EpisodeFlyoutTabMetadata')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('alertingV2EpisodeFlyoutTabRunbook')).not.toBeInTheDocument();
   });
 
   it('calls onClose when the footer close button is clicked', () => {

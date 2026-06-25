@@ -20,6 +20,8 @@ export interface LifecycleBarProps {
   showPhaseActions?: boolean;
   onRemovePhase?: (phaseName: string) => void;
   onEditPhase?: (phaseName: string) => void;
+  shouldShowEditPhaseAction?: (phaseName: string) => boolean;
+  shouldShowRemovePhaseAction?: (phaseName: string) => boolean;
   editedPhaseName?: string;
   canManageLifecycle: boolean;
   isEditLifecycleFlyoutOpen?: boolean;
@@ -32,11 +34,17 @@ const renderLifecyclePhase = (
   showPhaseActions?: boolean,
   onRemovePhase?: (phaseName: string) => void,
   onEditPhase?: (phaseName: string) => void,
+  shouldShowEditPhaseAction?: (phaseName: string) => boolean,
+  shouldShowRemovePhaseAction?: (phaseName: string) => boolean,
   editedPhaseName?: string,
   canManageLifecycle?: boolean,
   isEditLifecycleFlyoutOpen?: boolean,
   testSubjPrefix?: string
 ) => {
+  const shouldShowEdit = shouldShowEditPhaseAction ? shouldShowEditPhaseAction(phase.label) : true;
+  const shouldShowRemove = shouldShowRemovePhaseAction
+    ? shouldShowRemovePhaseAction(phase.label)
+    : true;
   const commonProps = {
     description: phase.description,
     isReadOnly: phase.isReadOnly,
@@ -49,8 +57,8 @@ const renderLifecyclePhase = (
     showActions: showPhaseActions,
     minAge: phase.min_age,
     testSubjPrefix,
-    onRemovePhase,
-    onEditPhase,
+    onRemovePhase: shouldShowRemove ? onRemovePhase : undefined,
+    onEditPhase: shouldShowEdit ? onEditPhase : undefined,
     isBeingEdited: Boolean(editedPhaseName && editedPhaseName === phase.label),
     canManageLifecycle: canManageLifecycle ?? false,
     isEditLifecycleFlyoutOpen,
@@ -79,6 +87,8 @@ export const LifecycleBar: React.FC<LifecycleBarProps> = ({
   showPhaseActions,
   onRemovePhase,
   onEditPhase,
+  shouldShowEditPhaseAction,
+  shouldShowRemovePhaseAction,
   editedPhaseName,
   canManageLifecycle,
   isEditLifecycleFlyoutOpen,
@@ -134,6 +144,8 @@ export const LifecycleBar: React.FC<LifecycleBarProps> = ({
                 showPhaseActions,
                 onRemovePhase,
                 onEditPhase,
+                shouldShowEditPhaseAction,
+                shouldShowRemovePhaseAction,
                 editedPhaseName,
                 canManageLifecycle,
                 isEditLifecycleFlyoutOpen,

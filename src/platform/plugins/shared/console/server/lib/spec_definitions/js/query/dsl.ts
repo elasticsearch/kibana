@@ -281,7 +281,7 @@ export const query = (specService: SpecDefinitionsService) => {
       ],
       filter: [
         {
-          __scope_link: 'GLOBAL.filter',
+          __scope_link: '.',
         },
       ],
       minimum_should_match: 1,
@@ -306,7 +306,7 @@ export const query = (specService: SpecDefinitionsService) => {
         boost: 1.2,
       },
       query: {},
-      filter: {},
+      filter: { __scope_link: 'GLOBAL.query' },
       boost: 1.2,
     },
     dis_max: {
@@ -395,7 +395,7 @@ export const query = (specService: SpecDefinitionsService) => {
         },
       },
       field: '{field}',
-      filter: { __scope_link: 'GLOBAL.filter' },
+      filter: { __scope_link: 'GLOBAL.query' },
       k: 10,
       num_candidates: 100,
       query_vector: [],
@@ -704,7 +704,7 @@ export const query = (specService: SpecDefinitionsService) => {
       query: {},
       filters: [
         {
-          filter: {},
+          filter: { __scope_link: 'GLOBAL.query' },
           boost: 2.0,
           script: {
             // populated by a global rule
@@ -742,7 +742,20 @@ export const query = (specService: SpecDefinitionsService) => {
           relation: 'within',
         },
       },
-      __scope_link: '.filter.geo_shape',
+      '{field}': {
+        shape: {
+          type: '',
+          coordinates: [],
+        },
+        indexed_shape: {
+          id: '',
+          index: '{index}',
+          shape_field_name: 'shape',
+        },
+        relation: {
+          __one_of: ['within', 'intersects', 'disjoint'],
+        },
+      },
     },
     geo_bounding_box: {
       __template: {
@@ -757,7 +770,19 @@ export const query = (specService: SpecDefinitionsService) => {
           },
         },
       },
-      __scope_link: '.filter.geo_bounding_box',
+      '{field}': {
+        top_left: {
+          lat: 40.73,
+          lon: -74.1,
+        },
+        bottom_right: {
+          lat: 40.73,
+          lon: -74.1,
+        },
+      },
+      type: {
+        __one_of: ['memory', 'indexed'],
+      },
     },
     geo_distance: {
       __template: {
@@ -767,7 +792,17 @@ export const query = (specService: SpecDefinitionsService) => {
           lon: -74.1,
         },
       },
-      __scope_link: '.filter.geo_distance',
+      distance: 100,
+      distance_type: {
+        __one_of: ['arc', 'plane'],
+      },
+      optimize_bbox: {
+        __one_of: ['memory', 'indexed', 'none'],
+      },
+      '{field}': {
+        lat: 40.73,
+        lon: -74.1,
+      },
     },
     geo_polygon: {
       __template: {
@@ -784,7 +819,14 @@ export const query = (specService: SpecDefinitionsService) => {
           ],
         },
       },
-      __scope_link: '.filter.geo_polygon',
+      '{field}': {
+        points: [
+          {
+            lat: 40.73,
+            lon: -74.1,
+          },
+        ],
+      },
     },
     // js hint gets confused here
     /* jshint -W015 */
@@ -798,7 +840,7 @@ export const query = (specService: SpecDefinitionsService) => {
         functions: [
           _.defaults(
             {
-              filter: {},
+              filter: { __scope_link: 'GLOBAL.query' },
               weight: 1.0,
             },
             SCORING_FUNCS

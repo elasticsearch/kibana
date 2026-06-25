@@ -27,6 +27,8 @@ import { parseEpisodeDataJson } from '../utils/episode_grouping_data';
 import { AlertingEpisodeGroupingTags } from './grouping/alerting_episode_grouping_tags';
 import { AlertEpisodeStatusBadges } from './status/status_badges';
 import { AlertEpisodeTags } from './actions/tags';
+import { AlertEpisodeSeverityBadge } from './severity/episode_severity_badge';
+import type { EpisodeSeverity } from './severity/severity_utils';
 
 type Rule = FindRulesResponse['items'][number];
 type CellRendererProps = Parameters<CustomCellRenderer[string]>[0];
@@ -69,6 +71,12 @@ export const EpisodeTagsCell = ({ row }: CellRendererProps) => {
   return <AlertEpisodeTags tags={tags} />;
 };
 
+export const EpisodeSeverityCell = ({ row }: CellRendererProps) => {
+  const severity = row.flattened.severity as EpisodeSeverity | undefined | null;
+
+  return <AlertEpisodeSeverityBadge severity={severity} />;
+};
+
 export interface EpisodeRuleCellProps extends CellRendererProps {
   rulesCache: Record<string, Rule>;
   isLoadingRules: boolean;
@@ -84,11 +92,13 @@ export const EpisodeRuleCell = ({
 }: EpisodeRuleCellProps) => {
   const { euiTheme } = useEuiTheme();
 
-  if (!Object.keys(rulesCache).length && isLoadingRules) {
-    return <EuiSkeletonText />;
-  }
   const ruleId = row.flattened[columnId] as string;
   const rule = rulesCache[ruleId];
+
+  if (isLoadingRules && !rule) {
+    return <EuiSkeletonText />;
+  }
+
   if (!rule) {
     return <>{ruleId}</>;
   }

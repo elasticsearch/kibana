@@ -9,6 +9,7 @@ import React from 'react';
 import {
   EuiFlexGroup,
   EuiFlexItem,
+  EuiLoadingSpinner,
   EuiPanel,
   EuiSpacer,
   EuiText,
@@ -42,6 +43,7 @@ interface InternalMethodArgs {
 interface InternalIlmArgs {
   retentionOptions: RetentionOption[];
   selectedPolicyName?: string;
+  isLoadingInherited?: boolean;
   onSelect: (policyName: string) => void;
   onInspect?: (policyName: string) => void;
 }
@@ -146,6 +148,25 @@ export const EditDataLifecycleFlyoutBodyContent = ({
               <EuiText color="subdued" size="s">
                 {strings.ilmNotConfiguredDescription}
               </EuiText>
+            </EuiPanel>
+          ) : inheritLifecycle && ilm.isLoadingInherited ? (
+            <EuiPanel
+              hasBorder
+              color="subdued"
+              paddingSize="l"
+              css={styles.noInheritedPolicyPanel}
+              data-test-subj="editDataLifecycle-loadingInheritedPanel"
+            >
+              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                <EuiFlexItem grow={false}>
+                  <EuiLoadingSpinner size="m" />
+                </EuiFlexItem>
+                <EuiFlexItem>
+                  <EuiText color="subdued" size="s">
+                    {strings.loadingInheritedDescription}
+                  </EuiText>
+                </EuiFlexItem>
+              </EuiFlexGroup>
             </EuiPanel>
           ) : inheritLifecycle && !ilm.selectedPolicyName ? (
             <EuiPanel

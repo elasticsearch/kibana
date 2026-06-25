@@ -316,7 +316,7 @@ describe('SmlCrawlerImpl', () => {
         )
       );
       expect(stateWriteCalls.length).toBe(0);
-      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('no state changes needed'));
+      expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('no state changes needed'));
     });
   });
 
@@ -762,7 +762,7 @@ describe('SmlCrawlerImpl', () => {
       );
       expect(stateWriteCalls.length).toBe(2);
 
-      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('enumerated 2 item(s)'));
+      expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('enumerated 2 item(s)'));
     });
   });
 });

@@ -10,7 +10,6 @@ import type {
   ElasticsearchClient,
   KibanaRequest,
 } from '@kbn/core/server';
-import type { SavedObjectReference } from '@kbn/core/server';
 import type { RuleTypeSolution } from '@kbn/alerting-types';
 import type {
   ObjectChange,
@@ -18,17 +17,35 @@ import type {
   LogChangeHistoryOptions,
   GetChangeHistoryOptions,
 } from '@kbn/change-history';
-import type { RawRule } from '../../../types';
+import type { RuleDomain } from '../../../application/rule/types';
 
-export interface RuleSnapshot {
-  attributes: RawRule;
-  references: SavedObjectReference[];
-}
+/**
+ * The rule state captured at each change event. Contains only user-controlled configuration
+ * fields from {@link RuleDomain} — runtime fields (execution status, scheduling state, snooze,
+ * monitoring) are excluded because they change autonomously and do not represent user intent.
+ * `createdAt`/`updatedAt` are re-typed as `string` for serialization stability.
+ */
+export type RuleChangeHistorySnapshot = Omit<
+  RuleDomain,
+  | 'monitoring'
+  | 'executionStatus'
+  | 'lastRun'
+  | 'nextRun'
+  | 'running'
+  | 'lastEnabledAt'
+  | 'activeSnoozes'
+  | 'isSnoozedUntil'
+  | 'viewInAppRelativeUrl'
+  | 'scheduledTaskId'
+  | 'mutedInstanceIds'
+  | 'createdAt'
+  | 'updatedAt'
+> & { createdAt: string; updatedAt: string };
 
 export interface RuleChange extends Omit<ObjectChange, 'snapshot'> {
   module: RuleTypeSolution;
   /** Post-change rule state; persisted as `object.snapshot` by @kbn/change-history. */
-  snapshot: RuleSnapshot;
+  snapshot: RuleChangeHistorySnapshot;
 }
 
 export interface ChangeTrackingServiceInitializeParams {

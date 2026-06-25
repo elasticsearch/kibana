@@ -84,3 +84,11 @@ export {
 } from './telemetry/types';
 
 export { MAX_STRING_LENGTH } from './constants';
+
+export {
+  DATA_STREAM_PHASES,
+  DATA_STREAM_PHASE_ORDER,
+  getDataStreamPhaseIndex,
+  getDataStreamPhaseProgress,
+} from './phases';
+export type { DataStreamPhase } from './phases';

@@ -40,6 +40,10 @@ export function registerEmbeddables(
       return getAnomalyChartsReactEmbeddableFactory(core.getStartServices, usageCollection);
     }
   );
+  embeddable.registerLegacyURLTransform(ANOMALY_EXPLORER_CHARTS_EMBEDDABLE_TYPE, async () => {
+    const { transformOut } = await import('../../common/embeddables/anomaly_charts/transform_out');
+    return transformOut as (storedState: object, references?: Reference[]) => object;
+  });
 
   embeddable.registerEmbeddablePublicDefinition(
     ANOMALY_SINGLE_METRIC_VIEWER_EMBEDDABLE_TYPE,

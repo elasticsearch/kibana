@@ -115,6 +115,8 @@ export default function ({ getService }: FtrProviderContext) {
         'workflow_read',
         'workflow_execution_read',
         'workflow_execution_cancel',
+        'workflow_read_managed',
+        'workflow_execution_read_managed',
         'workflow_update_managed',
       ],
       searchInferenceEndpoints: ['all', 'read', 'minimal_all', 'minimal_read'],

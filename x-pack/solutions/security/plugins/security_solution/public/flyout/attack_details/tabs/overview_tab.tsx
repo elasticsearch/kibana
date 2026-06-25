@@ -5,19 +5,25 @@
  * 2.0.
  */
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 
 import { i18n } from '@kbn/i18n';
 import { EuiHorizontalRule, EuiPanel } from '@elastic/eui';
+import type { EsHitRecord } from '@kbn/discover-utils';
+import { buildDataTableRecord } from '@kbn/discover-utils';
 import { OVERVIEW_TAB_TEST_ID } from '../constants/test_ids';
-import { AISummarySection } from '../components/ai_summary_section';
+import { AISummarySection } from '../../../flyout_v2/attack/main/components/ai_summary_section';
 import { VisualizationsSection } from '../components/visualizations_section';
 import { InsightsSection } from '../components/insights_section';
+import { useAttackDetailsContext } from '../context';
 
 /**
  * Renders the Overview tab content in the Attack Details flyout.
  */
 export const OverviewTab = memo(() => {
+  const { searchHit } = useAttackDetailsContext();
+  const hit = useMemo(() => buildDataTableRecord(searchHit as EsHitRecord), [searchHit]);
+
   return (
     <EuiPanel
       hasBorder={false}
@@ -29,7 +35,7 @@ export const OverviewTab = memo(() => {
         { defaultMessage: 'Overview' }
       )}
     >
-      <AISummarySection />
+      <AISummarySection hit={hit} />
       <EuiHorizontalRule margin="m" />
       <VisualizationsSection />
       <EuiHorizontalRule margin="m" />

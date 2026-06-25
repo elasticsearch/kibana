@@ -9,7 +9,6 @@ import { i18n } from '@kbn/i18n';
 import type { Streams } from '@kbn/streams-schema';
 import { isIlmLifecycle } from '@kbn/streams-schema';
 import React, { useEffect } from 'react';
-import { EuiButton } from '@elastic/eui';
 import { useKibana } from '../../../../../../hooks/use_kibana';
 import { useStreamsAppFetch } from '../../../../../../hooks/use_streams_app_fetch';
 import { BaseMetricCard } from '../../common/base_metric_card';
@@ -17,13 +16,7 @@ import { useLifecyclePreview } from '../../common/hooks/lifecycle_preview';
 import { useLifecycleAfterSave } from '../../common/hooks/lifecycle_after_save';
 import { getRetentionSubtitles, getRetentionValue } from './retention_card_helpers';
 
-export const RetentionCard = ({
-  definition,
-  openEditModal,
-}: {
-  definition: Streams.ingest.all.GetResponse;
-  openEditModal: () => void;
-}) => {
+export const RetentionCard = ({ definition }: { definition: Streams.ingest.all.GetResponse }) => {
   const { refreshToken } = useLifecycleAfterSave();
   const {
     isActive: isPreviewActive,
@@ -107,30 +100,5 @@ export const RetentionCard = ({
 
   const metrics = getMetrics();
 
-  return (
-    <BaseMetricCard
-      title={title}
-      actions={
-        <EuiButton
-          data-test-subj="streamsAppRetentionMetadataEditDataRetentionButton"
-          size="s"
-          color="text"
-          onClick={openEditModal}
-          disabled={!definition.privileges.lifecycle || isPreviewActive}
-          aria-label={i18n.translate(
-            'xpack.streams.entityDetailViewWithoutParams.editLifecycleMethodAriaLabel',
-            {
-              defaultMessage: 'Edit lifecycle method',
-            }
-          )}
-        >
-          {i18n.translate('xpack.streams.entityDetailViewWithoutParams.editLifecycleMethod', {
-            defaultMessage: 'Edit lifecycle method',
-          })}
-        </EuiButton>
-      }
-      metrics={metrics}
-      data-test-subj="retentionCard"
-    />
-  );
+  return <BaseMetricCard title={title} metrics={metrics} data-test-subj="retentionCard" />;
 };

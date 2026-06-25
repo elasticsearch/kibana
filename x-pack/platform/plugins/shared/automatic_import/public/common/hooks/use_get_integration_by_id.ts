@@ -36,11 +36,16 @@ export function useGetIntegrationById(
 
       return response.integrationResponse;
     },
-    refetchInterval: (queryData, query) => {
+    refetchInterval: (integration, query) => {
       if (query.state.status === 'error') {
         return false;
       }
-      return 30 * 1000;
+
+      const hasInProgressDataStream = integration?.dataStreams?.some(
+        (dataStream) => dataStream.status === 'pending' || dataStream.status === 'processing'
+      );
+
+      return hasInProgressDataStream ? 4 * 1000 : 30 * 1000;
     },
     retry: (failureCount, err) => {
       const fetchError = err as { response?: { status?: number } };

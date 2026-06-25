@@ -29,6 +29,10 @@ jest.mock('./header', () => ({
   ),
 }));
 
+jest.mock('./tabs/overview_tab', () => ({
+  OverviewTab: () => <div data-test-subj="mock-overview-tab" />,
+}));
+
 jest.mock('../../shared/tools/notes', () => ({
   NotesDetails: () => <div data-test-subj="mock-notes-details" />,
 }));
@@ -36,7 +40,7 @@ jest.mock('../../shared/tools/notes', () => ({
 const createAttackHit = (extra: DataTableRecord['flattened'] = {}): DataTableRecord =>
   ({
     id: 'attack-1',
-    raw: {},
+    raw: { _id: 'attack-1', _index: '.alerts-security.attack-discovery.alerts-default' },
     flattened: {
       _id: 'attack-1',
       _index: '.alerts-security.attack-discovery.alerts-default',
@@ -112,9 +116,10 @@ describe('<AttackFlyout />', () => {
   });
 
   it('passes onAttackUpdated callback to the header', () => {
+    const onAttackUpdated = jest.fn();
     const { getByTestId } = render(
       <TestProviders>
-        <AttackFlyout hit={createAttackHit()} onAttackUpdated={jest.fn()} />
+        <AttackFlyout hit={createAttackHit()} onAttackUpdated={onAttackUpdated} />
       </TestProviders>
     );
 

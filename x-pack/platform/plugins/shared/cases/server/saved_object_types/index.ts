@@ -48,7 +48,7 @@ export const registerSavedObjects = ({
   core.savedObjects.registerType(caseConfigureSavedObjectType);
   core.savedObjects.registerType(caseConnectorMappingsSavedObjectType);
   core.savedObjects.registerType(caseIdIncrementerSavedObjectType);
-  core.savedObjects.registerType(createCaseSavedObjectType(core, logger));
+  core.savedObjects.registerType(createCaseSavedObjectType(core, logger, config));
   core.savedObjects.registerType(
     createCaseUserActionSavedObjectType({
       persistableStateAttachmentTypeRegistry,

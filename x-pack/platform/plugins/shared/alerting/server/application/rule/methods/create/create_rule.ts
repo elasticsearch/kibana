@@ -257,6 +257,9 @@ export async function createRule<Params extends RuleParams = never>(
 
   await logRuleChanges({
     ruleSOs: [createdRuleSavedObject],
+    encryptedFieldsMap: new Map([
+      [id, { apiKey: ruleAttributes.apiKey, uiamApiKey: ruleAttributes.uiamApiKey ?? null }],
+    ]),
     rulesClientContext: context,
     changesContext: {
       action: changeTracking?.action ?? RuleChangeTrackingAction.ruleCreate,

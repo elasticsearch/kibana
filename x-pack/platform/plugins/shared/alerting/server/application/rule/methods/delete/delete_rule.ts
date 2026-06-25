@@ -141,6 +141,9 @@ async function deleteRuleWithOCC(
 
   await logRuleChanges({
     ruleSOs: [rule],
+    encryptedFieldsMap: new Map([
+      [id, { apiKey: apiKeyToInvalidate, uiamApiKey: uiamApiKeyToInvalidate }],
+    ]),
     rulesClientContext: context,
     changesContext: {
       action: RuleChangeTrackingAction.ruleDelete,

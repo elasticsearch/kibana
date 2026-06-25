@@ -146,9 +146,12 @@ export function FieldPicker({
   );
 }
 
-function toOptions(
-  fields: WorkspaceField[]
-): Array<{ label: string; checked?: 'on' | 'off'; prepend?: ReactNode }> {
+function toOptions(fields: WorkspaceField[]): Array<{
+  label: string;
+  checked?: 'on' | 'off';
+  prepend?: ReactNode;
+  'data-test-subj': string;
+}> {
   return (
     fields
       // don't show non-aggregatable fields, except for the case when they are already selected.
@@ -159,6 +162,7 @@ function toOptions(
         label: field.name,
         prepend: <FieldIcon className="eui-alignMiddle" type={field.type} fill="none" />,
         checked: field.selected ? 'on' : undefined,
+        'data-test-subj': `graph-field-option-${field.name}`,
       }))
   );
 }

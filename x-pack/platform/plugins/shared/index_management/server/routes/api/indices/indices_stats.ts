@@ -31,6 +31,7 @@ export function registerIndicesStats({ router, lib: { handleEsError } }: RouteDe
             '*.*.uuid',
             '*.*.status',
             '*.*.health',
+            '*.*.primaries.docs.count',
             '*.*.primaries.docs.deleted',
             '*.*.total.store.size_in_bytes',
             '*.*.primaries.store.size_in_bytes',

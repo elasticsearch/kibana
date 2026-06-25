@@ -21,7 +21,6 @@ describe('createEventToolHandler', () => {
         root_cause: 'R',
         stream_names: ['logs.a'],
         criticality: 60,
-        impact: 'high',
         confidence: 0.7,
         recommendations: ['create incident'],
       },

@@ -1904,5 +1904,12 @@ export const getEuiContextMapping = (): EuiTokensObject => {
         defaultMessage: 'Close current panel:',
       }
     ),
+    'euiBanner.dismissAriaLabel': ({ title }: EuiValues) =>
+      i18n.translate('core.euiBanner.dismissAriaLabel', {
+        defaultMessage: 'Dismiss "{title}" announcement',
+        values: {
+          title,
+        },
+      }),
   };
 };

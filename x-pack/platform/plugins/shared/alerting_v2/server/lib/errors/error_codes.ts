@@ -34,6 +34,10 @@ export const ALERTING_V2_ERROR_CODES = {
   INVALID_FILTER_FIELD: 'INVALID_FILTER_FIELD',
   /** Filter expression used an unsupported KQL function. */
   UNSUPPORTED_FILTER_FUNCTION: 'UNSUPPORTED_FILTER_FUNCTION',
+  /** The rule's `schedule.every` is shorter than the configured minimum interval. */
+  SCHEDULE_INTERVAL_TOO_SHORT: 'SCHEDULE_INTERVAL_TOO_SHORT',
+  /** Scheduling the rule would exceed the configured maximum rule runs per minute. */
+  MAX_SCHEDULES_PER_MINUTE_EXCEEDED: 'MAX_SCHEDULES_PER_MINUTE_EXCEEDED',
 
   // ────────────────────── Action policies ────────────────────
   /** An action policy with the given identifier does not exist. */

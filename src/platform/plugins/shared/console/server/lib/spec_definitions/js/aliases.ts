@@ -11,7 +11,7 @@ import type { SpecDefinitionsService } from '../../../services';
 
 export const aliases = (specService: SpecDefinitionsService) => {
   const aliasRules = {
-    filter: {},
+    filter: { __scope_link: 'GLOBAL.query' },
     routing: '1',
     search_routing: '1,2',
     index_routing: '1',

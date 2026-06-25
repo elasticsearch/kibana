@@ -56,4 +56,21 @@ describe('AlertEpisodeRuleOverviewPanel', () => {
     const badge = screen.getByTestId('alertingV2EpisodeDetailsRuleKindBadge');
     expect(badge).toHaveTextContent('Alert');
   });
+
+  it('renders composed query with breach segment (alert condition)', () => {
+    const composedRule = {
+      ...mockRule,
+      query: {
+        format: 'composed',
+        base: 'FROM logs-*',
+        breach: { segment: '| WHERE foo > 10' },
+      },
+    } as RuleResponse;
+
+    renderPanel(composedRule);
+
+    expect(screen.getByTestId('alertingV2EpisodeDetailsRuleQueryCodeBlock')).toHaveTextContent(
+      'FROM logs-* | WHERE foo > 10'
+    );
+  });
 });

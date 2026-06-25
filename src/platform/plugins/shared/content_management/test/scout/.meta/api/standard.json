@@ -1,0 +1,259 @@
+{
+  "sha1": "d71462b8f1261e2b76434114b052920c73fc9155",
+  "tests": [
+    {
+      "id": "bdfc1e4829de7d6-86c899d5899d3d0",
+      "title": "content management - created_by created_by is absent for non-interactive user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/created_by.spec.ts",
+        "line": 36,
+        "column": 10
+      }
+    },
+    {
+      "id": "bdfc1e4829de7d6-743b1dcf274dc41",
+      "title": "content management - created_by created_by is set to profile_uid for interactive user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/created_by.spec.ts",
+        "line": 49,
+        "column": 10
+      }
+    },
+    {
+      "id": "c88ee1b064ea0a4-70d18576702ef34",
+      "title": "content management - dashboard favorites: access control non-interactive user gets 403 on all favorites endpoints",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/favorites_dashboard_access.spec.ts",
+        "line": 31,
+        "column": 12
+      }
+    },
+    {
+      "id": "c88ee1b064ea0a4-ca265ef946bedda",
+      "title": "content management - dashboard favorites: access control favoriting with an invalid type returns 400",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/favorites_dashboard_access.spec.ts",
+        "line": 49,
+        "column": 12
+      }
+    },
+    {
+      "id": "c88ee1b064ea0a4-e0fbec5faf8331f",
+      "title": "content management - dashboard favorites: access control providing metadata for a type that does not support it returns 400",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/favorites_dashboard_access.spec.ts",
+        "line": 56,
+        "column": 12
+      }
+    },
+    {
+      "id": "69e89a37c690656-30794f555dadeb8",
+      "title": "content management - dashboard favorites: CRUD and telemetry dashboard favorites: add, remove, cross-user isolation, cross-space isolation, reader can favorite",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/favorites_dashboard_crud.spec.ts",
+        "line": 66,
+        "column": 12
+      }
+    },
+    {
+      "id": "69e89a37c690656-73e4a3da00b1e51",
+      "title": "content management - dashboard favorites: CRUD and telemetry favorites stats reflect delta of added favorites",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/favorites_dashboard_crud.spec.ts",
+        "line": 193,
+        "column": 12
+      }
+    },
+    {
+      "id": "34721fab67a5b73-e92e94bb984df0c",
+      "title": "content management - esql_query favorites favoriting with missing or invalid metadata returns 400",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/favorites_esql_query.spec.ts",
+        "line": 40,
+        "column": 12
+      }
+    },
+    {
+      "id": "34721fab67a5b73-afc70284f129702",
+      "title": "content management - esql_query favorites esql_query favorites: add, list with metadata, remove",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/favorites_esql_query.spec.ts",
+        "line": 58,
+        "column": 12
+      }
+    },
+    {
+      "id": "43d0250c0498650-606f808ecf09890",
+      "title": "content management - updated_by updated_by is absent for non-interactive user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/updated_by.spec.ts",
+        "line": 83,
+        "column": 10
+      }
+    },
+    {
+      "id": "43d0250c0498650-0e760c8c6be747c",
+      "title": "content management - updated_by updated_by is set to profile_uid of the creating user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/updated_by.spec.ts",
+        "line": 100,
+        "column": 10
+      }
+    },
+    {
+      "id": "43d0250c0498650-226f93a38289773",
+      "title": "content management - updated_by updated_by is cleared when a non-interactive user updates the dashboard",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/updated_by.spec.ts",
+        "line": 109,
+        "column": 10
+      }
+    },
+    {
+      "id": "43d0250c0498650-5fd1277b8383d39",
+      "title": "content management - updated_by updated_by reflects the profile_uid of a different user who updated the dashboard",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/content_management/test/scout/api/tests/updated_by.spec.ts",
+        "line": 134,
+        "column": 10
+      }
+    }
+  ]
+}

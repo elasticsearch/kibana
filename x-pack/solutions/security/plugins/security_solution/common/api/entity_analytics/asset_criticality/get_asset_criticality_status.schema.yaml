@@ -8,8 +8,11 @@ paths:
       x-labels: [ess, serverless]
       x-internal: true
       x-codegen-enabled: true
+      deprecated: true
       operationId: GetAssetCriticalityStatus
       summary: Get Asset Criticality Status
+      description: |
+        **Deprecated in 9.4.0.** Use the Entity Store APIs to get asset criticality status for a specific entity.
       responses:
         '200':
           description: Successful response

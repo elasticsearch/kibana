@@ -20,7 +20,6 @@ test('renders without crashing', () => {
       data-test-subj="space-avatar-"
       role="img"
       style="background-color: rgb(255, 201, 194); color: rgb(0, 0, 0);"
-      title=""
     >
       <span
         aria-hidden="true"
@@ -39,7 +38,6 @@ test('renders with a space name entirely made of whitespace', () => {
       data-test-subj="space-avatar-"
       role="img"
       style="background-color: rgb(97, 162, 255); color: rgb(0, 0, 0);"
-      title=""
     >
       <span
         aria-hidden="true"
@@ -61,7 +59,6 @@ test('removes aria-label when instructed not to announce the space name', () => 
       data-test-subj="space-avatar-"
       role="img"
       style="background-color: rgb(255, 201, 194); color: rgb(0, 0, 0);"
-      title=""
     >
       <span
         aria-hidden="true"

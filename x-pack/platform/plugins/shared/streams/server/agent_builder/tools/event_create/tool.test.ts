@@ -60,7 +60,6 @@ describe('event_create tool', () => {
         root_cause: 'R',
         stream_names: ['logs.a'],
         criticality: 40,
-        impact: 'high',
         confidence: 0.8,
         recommendations: ['open incident'],
       },

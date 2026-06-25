@@ -77,3 +77,9 @@ export const RELATED_OTHER_GROUPS_EMPTY = i18n.translate(
     defaultMessage: 'No other related episodes for this rule.',
   }
 );
+
+export const getRelatedEpisodeMissingRuleTitle = (episodeId: string) =>
+  i18n.translate('xpack.alertingV2EpisodesUi.details.related.missingRuleEpisodeTitle', {
+    defaultMessage: 'Episode ID: {episodeId}',
+    values: { episodeId },
+  });

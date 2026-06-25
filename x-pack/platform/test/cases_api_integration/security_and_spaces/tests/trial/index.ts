@@ -51,6 +51,7 @@ export default ({ loadTestFile, getService }: FtrProviderContext): void => {
     loadTestFile(require.resolve('./internal/bulk_delete_file_attachments'));
     loadTestFile(require.resolve('./internal/field_definitions'));
     loadTestFile(require.resolve('./internal/extended_fields_global'));
+    loadTestFile(require.resolve('./internal/required_on_close'));
     loadTestFile(require.resolve('./internal/search_cases_extended_fields'));
 
     /**

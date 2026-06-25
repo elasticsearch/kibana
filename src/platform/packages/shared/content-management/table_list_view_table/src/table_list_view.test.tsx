@@ -1886,8 +1886,8 @@ describe('TableListView', () => {
 
       expect(firstCheckBox.props().disabled).toBe(false);
       expect(secondCheckBox.props().disabled).toBe(true);
-      // EUI changes the check "title" from "Select this row" to the reason to disable the checkbox
-      expect(secondCheckBox.props().title).toBe(reasonMessage);
+      // EUI changes the check "aria-label" from "Select this row" to the reason to disable the checkbox
+      expect(secondCheckBox.props()['aria-label']).toBe(reasonMessage);
     });
   });
 });

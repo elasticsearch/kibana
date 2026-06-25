@@ -1,7 +1,7 @@
 {
   "indices.put_alias": {
     "data_autocomplete_rules": {
-      "filter": {},
+      "filter": { "__scope_link": "GLOBAL.query" },
       "routing": "1",
       "search_routing": "1,2",
       "index_routing": "1"

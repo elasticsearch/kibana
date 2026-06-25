@@ -897,6 +897,7 @@ describe('AutomaticImportSetupService', () => {
       // Mock the saved object service methods
       asPrivate(service).savedObjectService = {
         updateDataStreamSavedObjectAttributes: mockUpdateDataStream,
+        updateDataStreamPhase: jest.fn().mockResolvedValue(undefined),
         getDataStream: mockGetDataStream,
       } as unknown as AutomaticImportSavedObjectService;
 
@@ -998,9 +999,16 @@ describe('AutomaticImportSetupService', () => {
       // Run the task
       await taskRunner.run();
 
-      // Verify that updateDataStreamSavedObjectAttributes was called
-      expect(mockUpdateDataStream).toHaveBeenCalledTimes(1);
-      expect(mockUpdateDataStream).toHaveBeenCalledWith(
+      // Verify that updateDataStreamSavedObjectAttributes was called: first to mark
+      // the data stream as processing at task start, then to persist the completed result.
+      expect(mockUpdateDataStream).toHaveBeenCalledTimes(2);
+      expect(mockUpdateDataStream).toHaveBeenNthCalledWith(1, {
+        integrationId: 'test-integration',
+        dataStreamId: 'test-datastream',
+        status: 'processing',
+      });
+      expect(mockUpdateDataStream).toHaveBeenNthCalledWith(
+        2,
         {
           integrationId: 'test-integration',
           dataStreamId: 'test-datastream',

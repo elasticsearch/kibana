@@ -79,7 +79,7 @@ describe('AlertEpisodeDetailsHeaderSection', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId('alertingV2EpisodeDetailsRuleTitle')).toHaveTextContent('My rule')
+      expect(screen.getByTestId('alertingV2EpisodeDetailsHeaderTitle')).toHaveTextContent('My rule')
     );
     await waitFor(() =>
       expect(screen.getByTestId('alertingV2EpisodeDetailsHeaderTags')).toBeInTheDocument()
@@ -129,6 +129,40 @@ describe('AlertEpisodeDetailsHeaderSection', () => {
       { wrapper }
     );
 
-    expect(screen.getByTestId('alertingV2EpisodeDetailsHeaderLoadingTitle')).toBeInTheDocument();
+    expect(screen.getByTestId('alertingV2EpisodeDetailsHeaderTitle')).toHaveTextContent('Loading…');
+  });
+
+  it('renders the episode fallback title when the rule fetch returns 404', async () => {
+    runEsqlAsyncSearchMock.mockResolvedValue({
+      columns: [
+        { name: '@timestamp', type: 'date' },
+        { name: 'episode.status', type: 'keyword' },
+        { name: 'rule.id', type: 'keyword' },
+        { name: 'group_hash', type: 'keyword' },
+      ],
+      values: [['2024-01-01T00:00:00.000Z', ALERT_EPISODE_STATUS.ACTIVE, 'deleted-rule', 'gh-1']],
+    });
+    fetchEpisodeActionsMock.mockResolvedValue([]);
+    fetchGroupActionsMock.mockResolvedValue([]);
+    mockHttp.get.mockRejectedValueOnce({
+      response: { status: 404 },
+      body: { code: 'RULE_NOT_FOUND', error: 'Not Found', message: 'Rule not found' },
+    });
+
+    render(
+      <I18nProvider>
+        <AlertEpisodeDetailsHeaderSection episodeId="ep-1" services={mockServices} />
+      </I18nProvider>,
+      { wrapper }
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('alertingV2EpisodeDetailsHeaderTitle')).toHaveTextContent(
+        'Alert episode'
+      )
+    );
+    expect(
+      screen.queryByTestId('alertingV2EpisodeDetailsHeaderDeletedRuleId')
+    ).not.toBeInTheDocument();
   });
 });

@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import type { Filter } from '@kbn/es-query';
-import { getOrCreateFilterStore, destroyFilterStore } from './filter_store';
+import { getOrCreateFilterStore, destroyFilterStore, emitPinnedEuidToggle } from './filter_store';
 
 /**
  * Hook that manages graph filter state for a specific scope.
@@ -48,11 +48,15 @@ export const useGraphFilters = (
   // Get or create the FilterStore for this scopeId
   const store = useMemo(() => getOrCreateFilterStore(scopeId), [scopeId]);
 
-  // Update dataViewId when it changes
+  // Update dataViewId when it changes; auto-pin origin entities so they always
+  // appear as individual nodes and are never merged into a grouped actor node.
   useEffect(() => {
     store.setDataViewId(dataViewId);
     store.setInitialEntityIds(initialEntityIds);
-  }, [store, dataViewId, initialEntityIds]);
+    initialEntityIds
+      .filter(({ isOrigin }) => isOrigin)
+      .forEach(({ id }) => emitPinnedEuidToggle(scopeId, id, 'show'));
+  }, [store, dataViewId, initialEntityIds, scopeId]);
 
   // Clean up store on unmount or when scopeId changes
   useEffect(() => {

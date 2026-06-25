@@ -157,8 +157,10 @@ export const useEntityNodeExpandPopover = (
         },
         isEntityRelationshipsExpanded: isEntityRelationshipExpandedForScope(scopeId, node.id),
         isInitialEntity,
-        toggleEntityRelationships: (action) =>
-          emitEntityRelationshipToggle(scopeId, node.id, action),
+        toggleEntityRelationships: (action) => {
+          emitEntityRelationshipToggle(scopeId, node.id, action);
+          emitPinnedEuidToggle(scopeId, node.id, action);
+        },
         showEntityRelationshipsDisabled: !isEnriched || isInitialEntity,
         showEntityDetailsDisabled: isSingleEntity && !isEnriched,
       });

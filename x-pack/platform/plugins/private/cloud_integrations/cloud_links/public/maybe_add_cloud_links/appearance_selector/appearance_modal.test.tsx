@@ -188,6 +188,30 @@ describe('AppearanceModal', () => {
     expect(closeModal).toHaveBeenCalled();
   });
 
+  it('defaults color mode to "system" when the user has no persisted preference', () => {
+    // No `darkMode` persisted in the user profile -> falls back to the default
+    (useUpdateUserProfile as jest.Mock).mockImplementation(() => ({
+      userProfileData: {
+        userSettings: {
+          contrastMode: 'standard',
+        },
+      },
+      isLoading: false,
+      update: updateMock,
+      userProfileLoaded: true,
+    }));
+
+    const { getByTestId } = render(
+      <AppearanceModal
+        closeModal={closeModal}
+        uiSettingsClient={uiSettingsClient}
+        isServerless={false}
+      />
+    );
+
+    expect(getByTestId('values-group-Color mode')).toHaveTextContent('Selected: system');
+  });
+
   it('shows contrast options even in serverless mode', () => {
     const { getByTestId } = render(
       <AppearanceModal

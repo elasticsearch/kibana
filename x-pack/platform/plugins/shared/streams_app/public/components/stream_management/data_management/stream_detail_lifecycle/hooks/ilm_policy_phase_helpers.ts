@@ -13,6 +13,7 @@ import type {
   IlmPolicyPhases,
   PhaseName,
 } from '@kbn/streams-schema';
+import { PHASE_ORDER } from '@kbn/data-lifecycle-phases';
 
 export interface DeleteContext {
   type: 'phase' | 'downsampleStep';
@@ -38,7 +39,6 @@ export interface EsIlmPolicyPhases {
   delete?: EsIlmPhase;
 }
 
-const allPhaseNames: readonly PhaseName[] = ['hot', 'warm', 'cold', 'frozen', 'delete'];
 const nonDeletePhaseNames: readonly NonDeletePhaseName[] = ['hot', 'warm', 'cold', 'frozen'];
 const standardNonDeletePhaseNames: readonly Exclude<NonDeletePhaseName, 'hot'>[] = [
   'warm',
@@ -229,7 +229,7 @@ export const buildModifiedPhasesFromEdit = (
 ): EsIlmPolicyPhases => {
   const modifiedPhases = toEsPolicyPhases(policy.phases);
 
-  for (const phaseName of allPhaseNames) {
+  for (const phaseName of PHASE_ORDER) {
     if (policy.phases[phaseName] && !nextPhases[phaseName]) {
       delete modifiedPhases[phaseName];
     }

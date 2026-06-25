@@ -39,6 +39,7 @@ import {
   EVENT_PREVIEW_BANNER,
 } from '../../../constants';
 import { useOpenEntityPreviewPanel } from '../../../hooks/use_open_entity_preview_panel';
+import { isInitialEntityForScope } from '../../../../filters/filter_store';
 
 const entityUnavailableTooltip = i18n.translate(
   'securitySolutionPackages.csp.graph.groupedItem.entityUnavailable.tooltip',
@@ -164,7 +165,11 @@ export const HeaderRow = ({ item, scopeId }: HeaderRowProps) => {
       </EuiFlexItem>
       <EuiFlexItem grow={false}>
         {item.itemType === DOCUMENT_TYPE_ENTITY ? (
-          <EntityActionsButton item={item as EntityItem} scopeId={scopeId} />
+          <EntityActionsButton
+            item={item as EntityItem}
+            scopeId={scopeId}
+            isInitialEntity={isInitialEntityForScope(scopeId, (item as EntityItem).id)}
+          />
         ) : (
           <EventActionsButton item={item as EventItem | AlertItem} scopeId={scopeId} />
         )}

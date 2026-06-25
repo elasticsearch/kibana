@@ -8,7 +8,6 @@
  */
 
 import type { Locator, ScoutPage } from '@kbn/scout';
-import { EuiSelectableWrapper } from '@kbn/scout';
 
 export interface BreakdownSelector {
   readonly toggleButton: Locator;
@@ -19,16 +18,13 @@ export interface BreakdownSelector {
 }
 
 export function createBreakdownSelector(page: ScoutPage): BreakdownSelector {
-  const selectableWrapper = new EuiSelectableWrapper(
-    page,
-    'metricsExperienceBreakdownSelectorSelectable'
-  );
   const button = page.testSubj.locator('metricsExperienceBreakdownSelectorButton');
   const selectable = page.testSubj.locator('metricsExperienceBreakdownSelectorSelectable');
+  const searchInput = page.testSubj.locator('metricsExperienceBreakdownSelectorSelectorSearch');
 
   return {
     toggleButton: button,
-    searchInput: page.testSubj.locator('metricsExperienceBreakdownSelectorSelectorSearch'),
+    searchInput,
     selectable,
     getToggleWithSelection: (dimensionName: string) =>
       page.locator(
@@ -39,7 +35,8 @@ export function createBreakdownSelector(page: ScoutPage): BreakdownSelector {
         await button.click();
         await selectable.waitFor({ state: 'visible' });
       }
-      await selectableWrapper.searchAndSelectFirst(dimensionName);
+      await searchInput.fill(dimensionName);
+      await page.testSubj.click(`dimensionSelectorOption-${dimensionName}`);
       if (await selectable.isVisible()) {
         await page.keyboard.press('Escape');
         await selectable.waitFor({ state: 'hidden' });

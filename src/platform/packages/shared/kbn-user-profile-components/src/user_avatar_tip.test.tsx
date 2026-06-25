@@ -33,13 +33,17 @@ describe('UserAvatarTip', () => {
         class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
         id="generated-id-wrapper"
       >
-        <div
-          aria-label="Delighted Nightingale (delighted_nightingale@elastic.co)"
-          class="euiAvatar euiAvatar--m euiAvatar--user emotion-euiAvatar-user-m-uppercase-plain"
-          role="img"
-          style="background-image: url(https://source.unsplash.com/64x64/?cat);"
-          title="Delighted Nightingale (delighted_nightingale@elastic.co)"
-        />
+        <span
+          class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock-user"
+          id="generated-id_euiToolTipAnchor"
+        >
+          <div
+            aria-label="Delighted Nightingale (delighted_nightingale@elastic.co)"
+            class="euiAvatar euiAvatar--m euiAvatar--user emotion-euiAvatar-user-m-uppercase-plain"
+            role="img"
+            style="background-image: url(https://source.unsplash.com/64x64/?cat);"
+          />
+        </span>
       </span>
     `);
   });
@@ -52,7 +56,6 @@ describe('UserAvatarTip', () => {
         class="euiAvatar euiAvatar--m euiAvatar--user emotion-euiAvatar-user-m-uppercase"
         role="img"
         style="background-color: rgb(236, 241, 249); color: rgb(0, 0, 0);"
-        title=""
       >
         <span
           aria-hidden="true"

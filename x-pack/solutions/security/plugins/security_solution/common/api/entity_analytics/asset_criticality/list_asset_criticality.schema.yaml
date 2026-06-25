@@ -8,9 +8,10 @@ paths:
     get:
       x-labels: [ess, serverless]
       x-codegen-enabled: true
+      deprecated: true
       operationId: FindAssetCriticalityRecords
       summary: List asset criticality records
-      description: List asset criticality records, paging, sorting and filtering as needed.
+      description: '**Deprecated in 9.4.0.** List asset criticality records, paging, sorting and filtering as needed.'
       parameters:
         - name: sort_field
           in: query

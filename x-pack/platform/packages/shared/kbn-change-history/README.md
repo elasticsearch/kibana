@@ -81,6 +81,10 @@ Each persisted document gets a unique `event.id` assigned by the package (UUID v
 
 UUID v7 values are monotonically increasing within the same millisecond. That matters when two change history events are written back-to-back with the same timestamp (for example `rule_install` and `rule_enable` when a user chooses "Install and enable"): `getHistory()` sorts by `sequence`, then `@timestamp`, then `event.id`, so ordering stays deterministic.
 
+### Backwards/forwards compatibility in `object.snapshot`
+
+`object.snapshot` is stored unmapped in the `.kibana_change_history` data stream, separate from the original tracked object. Because of this, it is recommended that callers store an application-layer type rather than a raw on-disk format. If/when there are underlying changes in tracked object storage format, using an application-layer type will likely save on having to introduce a compensating storage-layer transform to keep old snapshots readable. See [#273561](https://github.com/elastic/kibana/pull/273561) for more context and a concrete example.
+
 ## API
 
 ### Client

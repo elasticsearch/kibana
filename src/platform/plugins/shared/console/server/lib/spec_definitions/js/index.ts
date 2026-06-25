@@ -12,7 +12,6 @@ import type { SpecDefinitionsService } from '../../../services';
 import { aggs } from './aggregations';
 import { aliases } from './aliases';
 import { document } from './document';
-import { filter } from './filter';
 import { globals } from './globals';
 import { ingest } from './ingest';
 import { mappings } from './mappings';
@@ -26,7 +25,6 @@ export const jsSpecLoaders: Array<(registry: SpecDefinitionsService) => void> = 
   aggs,
   aliases,
   document,
-  filter,
   globals,
   ingest,
   mappings,

@@ -6,29 +6,23 @@
  */
 
 import type { DataTableRecord } from '@kbn/discover-utils';
+import { EuiSpacer } from '@elastic/eui';
 import React, { useEffect, useState } from 'react';
-import { i18n } from '@kbn/i18n';
 import type { SecurityAppStore } from '../../common/store/types';
 import type { StartServices } from '../../types';
 import { flyoutProviders } from '../../flyout_v2/shared/components/flyout_provider';
-
-const PLACEHOLDER_LABEL = i18n.translate(
-  'xpack.securitySolution.oneDiscover.attackFlyoutOverviewTab.placeholder',
-  { defaultMessage: 'attack body placeholder' }
-);
+import { OverviewTab } from '../../flyout_v2/attack/main/tabs/overview_tab';
 
 export interface AttackFlyoutOverviewTabProps {
   hit: DataTableRecord;
   servicesPromise: Promise<StartServices>;
   storePromise: Promise<SecurityAppStore>;
-  onAttackUpdated: () => void;
 }
 
 export const AttackFlyoutOverviewTab = ({
-  hit: _hit,
+  hit,
   servicesPromise,
   storePromise,
-  onAttackUpdated: _onAttackUpdated,
 }: AttackFlyoutOverviewTabProps) => {
   const [services, setServices] = useState<StartServices | null>(null);
   const [store, setStore] = useState<SecurityAppStore | null>(null);
@@ -64,6 +58,22 @@ export const AttackFlyoutOverviewTab = ({
   return flyoutProviders({
     services,
     store,
-    children: <div data-test-subj="attackFlyoutOverviewTabPlaceholder">{PLACEHOLDER_LABEL}</div>,
+    children: <AttackFlyoutOverviewTabContent hit={hit} />,
   });
+};
+
+interface AttackFlyoutOverviewTabContentProps {
+  hit: DataTableRecord;
+}
+
+/**
+ * Rendered inside flyoutProviders so it has access to Redux store and services.
+ */
+const AttackFlyoutOverviewTabContent = ({ hit }: AttackFlyoutOverviewTabContentProps) => {
+  return (
+    <>
+      <EuiSpacer size="m" />
+      <OverviewTab hit={hit} />
+    </>
+  );
 };

@@ -388,6 +388,15 @@ async function updateRuleAttributes<Params extends RuleParams = never>({
 
     await logRuleChanges({
       ruleSOs: [updatedRuleSavedObject],
+      encryptedFieldsMap: new Map([
+        [
+          id,
+          {
+            apiKey: updatedRuleAttributes.apiKey,
+            uiamApiKey: updatedRuleAttributes.uiamApiKey ?? null,
+          },
+        ],
+      ]),
       rulesClientContext: context,
       changesContext: {
         action: changeTracking?.action ?? RuleChangeTrackingAction.ruleUpdate,

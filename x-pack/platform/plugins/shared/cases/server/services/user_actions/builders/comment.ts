@@ -16,6 +16,7 @@ import { getPastTenseVerb } from './audit_logger_utils';
 
 export class CommentUserActionBuilder extends UserActionBuilder {
   build(args: UserActionParameters<'comment'>): UserActionEvent {
+    const savedObjectType = args.savedObjectType ?? CASE_COMMENT_SAVED_OBJECT;
     const soExtractor = getAttachmentSOExtractor(args.payload.attachment);
     const { transformedFields, references: refsWithExternalRefId } =
       soExtractor.extractFieldsToReferences<CommentUserAction['payload']['comment']>({
@@ -53,7 +54,7 @@ export class CommentUserActionBuilder extends UserActionBuilder {
       action,
       descriptiveAction: `case_user_action_${action}_comment`,
       savedObjectId: args.savedObjectId ?? args.caseId,
-      savedObjectType: CASE_COMMENT_SAVED_OBJECT,
+      savedObjectType,
     };
 
     return {

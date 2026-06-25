@@ -26,11 +26,6 @@ import type { datasetExamplesStorageSettings } from './examples_storage';
 type DatasetStorageDocument = DatasetStorageProperties & { _id?: string };
 type DatasetExampleStorageDocument = DatasetExampleStorageProperties & { _id?: string };
 
-interface AggregationBucket {
-  key: string;
-  doc_count: number;
-}
-
 interface ExampleDocument extends DatasetExampleStorageProperties {
   id: string;
 }
@@ -49,15 +44,31 @@ export interface DatasetExampleInput {
 
 export interface DatasetDocument extends DatasetStorageProperties {
   id: string;
+  // Normalized on read: legacy documents missing the stored field are
+  // backfilled to 0, so callers can always rely on a number here.
+  examples_count: number;
 }
 
 export interface DatasetWithExamples extends DatasetDocument {
   examples: ExampleDocument[];
 }
 
+export type DatasetSortField = 'name' | 'created_at' | 'updated_at' | 'examples_count';
+export type DatasetSortOrder = 'asc' | 'desc';
+
+const DATASET_SORTABLE_FIELDS: readonly DatasetSortField[] = [
+  'name',
+  'created_at',
+  'updated_at',
+  'examples_count',
+];
+
 export interface DatasetListOptions {
   page?: number;
   perPage?: number;
+  search?: string;
+  sortField?: DatasetSortField;
+  sortOrder?: DatasetSortOrder;
 }
 
 export interface DatasetListItem extends DatasetDocument {
@@ -132,6 +143,7 @@ export class DatasetClient {
         document: {
           name,
           description,
+          examples_count: 0,
           created_at: now,
           updated_at: now,
         },
@@ -145,6 +157,8 @@ export class DatasetClient {
 
     if (examples.length > 0) {
       await this.addExamples(datasetId, examples, { touchDataset: false });
+      // Persist the count without advancing updated_at past the creation timestamp.
+      await this.touchDataset(datasetId, { bumpUpdatedAt: false });
     }
 
     const created = await this.get(datasetId);
@@ -208,20 +222,46 @@ export class DatasetClient {
     const perPage = Math.max(1, options.perPage ?? 20);
     const from = (page - 1) * perPage;
 
+    const search = options.search?.trim();
+    const sortField =
+      options.sortField != null && DATASET_SORTABLE_FIELDS.includes(options.sortField)
+        ? options.sortField
+        : 'updated_at';
+    const sortOrder: DatasetSortOrder = options.sortOrder === 'asc' ? 'asc' : 'desc';
+
+    // The leading `*` wildcard on the `name` keyword field can't use the inverted
+    // index and scans all dataset name terms, so cost grows with the number of
+    // datasets. This is fine at evals scale; if dataset counts grow large, switch
+    // `name` to a `text`/`search_as_you_type` mapping with a `match` query.
+    const query = search
+      ? {
+          bool: {
+            should: [
+              {
+                wildcard: {
+                  name: {
+                    value: `*${escapeWildcard(search)}*`,
+                    case_insensitive: true,
+                  },
+                },
+              },
+              {
+                match: {
+                  description: search,
+                },
+              },
+            ],
+            minimum_should_match: 1,
+          },
+        }
+      : { match_all: {} };
+
     const datasetsResponse = await this.datasetsStorage.search({
       track_total_hits: true,
       from,
       size: perPage,
-      sort: [
-        {
-          updated_at: {
-            order: 'desc',
-          },
-        },
-      ],
-      query: {
-        match_all: {},
-      },
+      sort: [{ [sortField]: { order: sortOrder } }],
+      query,
     });
 
     const datasets = datasetsResponse.hits.hits
@@ -232,16 +272,11 @@ export class DatasetClient {
       .map((hit) => ({
         id: hit._id,
         ...hit._source,
+        examples_count: hit._source.examples_count ?? 0,
       }));
 
-    const datasetIds = datasets.map(({ id }) => id);
-    const exampleCounts = await this.getExamplesCountByDatasetId(datasetIds);
-
     return {
-      datasets: datasets.map((dataset) => ({
-        ...dataset,
-        examples_count: exampleCounts.get(dataset.id) ?? 0,
-      })),
+      datasets,
       total:
         typeof datasetsResponse.hits.total === 'number'
           ? datasetsResponse.hits.total
@@ -253,7 +288,10 @@ export class DatasetClient {
     datasetId: string,
     updates: Pick<DatasetStorageProperties, 'description'>
   ): Promise<DatasetWithExamples | undefined> {
-    const existing = await this.get(datasetId);
+    // A description-only update doesn't change the example count, so read just
+    // the dataset document and reuse the denormalized count rather than loading
+    // every example via `get()`.
+    const existing = await this.getDatasetById(datasetId);
     if (!existing) {
       return undefined;
     }
@@ -265,6 +303,7 @@ export class DatasetClient {
       document: {
         name: existing.name,
         description: updates.description,
+        examples_count: existing.examples_count,
         created_at: existing.created_at,
         updated_at: updatedAt,
       },
@@ -514,21 +553,29 @@ export class DatasetClient {
         })),
         throwOnFail: true,
       }),
-      description !== existing.description
-        ? this.datasetsStorage.index({
-            id: existing.id,
-            document: {
-              name: existing.name,
-              description,
-              created_at: existing.created_at,
-              updated_at: new Date().toISOString(),
-            },
-          })
-        : Promise.resolve(),
     ]);
 
-    if (added > 0 || toDelete.length > 0) {
-      await this.touchDataset(existing.id);
+    const examplesChanged = added > 0 || toDelete.length > 0;
+    const descriptionChanged = description !== existing.description;
+
+    // Write the dataset document at most once. When examples changed we recompute
+    // the count (and fold in any new description); otherwise the count is
+    // unchanged, so a description-only edit reuses the known count.
+    if (examplesChanged) {
+      await this.touchDataset(existing.id, {
+        description: descriptionChanged ? description : undefined,
+      });
+    } else if (descriptionChanged) {
+      await this.datasetsStorage.index({
+        id: existing.id,
+        document: {
+          name: existing.name,
+          description,
+          examples_count: existing.examples_count,
+          created_at: existing.created_at,
+          updated_at: new Date().toISOString(),
+        },
+      });
     }
 
     return {
@@ -558,6 +605,7 @@ export class DatasetClient {
     return {
       id: hit._id,
       ...hit._source,
+      examples_count: hit._source.examples_count ?? 0,
     };
   }
 
@@ -637,9 +685,30 @@ export class DatasetClient {
     return response.hits.hits[0]?._source?.dataset_id;
   }
 
-  private async getExamplesCountByDatasetId(datasetIds: string[]): Promise<Map<string, number>> {
+  private async countExamplesByDatasetId(datasetId: string): Promise<number> {
+    const response = await this.examplesStorage.search({
+      track_total_hits: true,
+      size: 0,
+      query: {
+        term: {
+          dataset_id: datasetId,
+        },
+      },
+    });
+
+    return typeof response.hits.total === 'number'
+      ? response.hits.total
+      : response.hits.total?.value ?? 0;
+  }
+
+  /**
+   * Counts examples for many datasets in a single request via a `terms`
+   * aggregation. Used by the backfill to avoid one count search per dataset.
+   * Datasets with no examples are absent from the result (callers default to 0).
+   */
+  private async countExamplesByDatasetIds(datasetIds: string[]): Promise<Map<string, number>> {
     if (datasetIds.length === 0) {
-      return new Map<string, number>();
+      return new Map();
     }
 
     const response = await this.examplesStorage.search({
@@ -660,34 +729,112 @@ export class DatasetClient {
       },
     });
 
-    const buckets = (response.aggregations?.by_dataset_id as { buckets?: AggregationBucket[] })
-      ?.buckets;
-    const counts = new Map<string, number>();
+    const buckets =
+      (
+        response.aggregations?.by_dataset_id as
+          | { buckets?: Array<{ key: string; doc_count: number }> }
+          | undefined
+      )?.buckets ?? [];
 
-    for (const bucket of buckets ?? []) {
+    const counts = new Map<string, number>();
+    for (const bucket of buckets) {
       counts.set(bucket.key, bucket.doc_count);
     }
-
     return counts;
   }
 
-  private async touchDataset(datasetId: string): Promise<void> {
+  /**
+   * Recomputes the denormalized `examples_count` for a dataset and writes it
+   * back. By default this also advances `updated_at` (a "touch"); pass
+   * `bumpUpdatedAt: false` to refresh the count while preserving the timestamp.
+   * Recompute-after-write (rather than incrementing) keeps the count correct
+   * even when duplicate examples are skipped or writes race.
+   */
+  private async touchDataset(
+    datasetId: string,
+    options: { bumpUpdatedAt?: boolean; description?: string } = {}
+  ): Promise<void> {
+    const { bumpUpdatedAt = true, description } = options;
     const dataset = await this.getDatasetById(datasetId);
     if (!dataset) {
       return;
     }
 
+    const examplesCount = await this.countExamplesByDatasetId(datasetId);
+
     await this.datasetsStorage.index({
       id: datasetId,
       document: {
         name: dataset.name,
-        description: dataset.description,
+        description: description ?? dataset.description,
+        examples_count: examplesCount,
         created_at: dataset.created_at,
-        updated_at: new Date().toISOString(),
+        updated_at: bumpUpdatedAt ? new Date().toISOString() : dataset.updated_at,
       },
     });
   }
+
+  /**
+   * Backfills the denormalized `examples_count` on datasets that predate the
+   * field. Idempotent: only datasets missing the field are processed, so reruns
+   * (and fresh/empty deployments) are no-ops. Intended to run once on plugin
+   * start.
+   */
+  async backfillDatasetCounts(): Promise<{ updated: number }> {
+    const batchSize = 100;
+    let updated = 0;
+
+    for (;;) {
+      const response = await this.datasetsStorage.search({
+        track_total_hits: false,
+        size: batchSize,
+        _source: ['name', 'description', 'created_at', 'updated_at'],
+        query: {
+          bool: {
+            must_not: [{ exists: { field: 'examples_count' } }],
+          },
+        },
+      });
+
+      const hits = response.hits.hits.filter(
+        (hit): hit is typeof hit & { _source: DatasetStorageDocument; _id: string } =>
+          Boolean(hit._source) && typeof hit._id === 'string'
+      );
+
+      if (hits.length === 0) {
+        break;
+      }
+
+      const counts = await this.countExamplesByDatasetIds(hits.map((hit) => hit._id));
+
+      const operations: Array<StorageClientBulkOperation<DatasetStorageDocument>> = hits.map(
+        (hit) => ({
+          index: {
+            _id: hit._id,
+            document: {
+              name: hit._source.name,
+              description: hit._source.description,
+              examples_count: counts.get(hit._id) ?? 0,
+              created_at: hit._source.created_at,
+              updated_at: hit._source.updated_at,
+            },
+          },
+        })
+      );
+
+      await this.datasetsStorage.bulk({ operations, refresh: 'wait_for', throwOnFail: true });
+      updated += operations.length;
+    }
+
+    return { updated };
+  }
 }
+
+/**
+ * Escapes Elasticsearch wildcard metacharacters (`\`, `*`, `?`) so user input
+ * is matched literally inside a `wildcard` query rather than interpreted.
+ */
+const escapeWildcard = (input: string): string => input.replace(/[\\*?]/g, (ch) => `\\${ch}`);
 
 const EMPTY_EXAMPLE_METADATA = { description: 'empty-example' } as const;
 

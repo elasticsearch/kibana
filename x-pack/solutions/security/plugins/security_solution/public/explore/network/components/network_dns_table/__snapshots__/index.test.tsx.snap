@@ -1075,20 +1075,24 @@ exports[`NetworkTopNFlow Table Component rendering it renders the default Networ
             </button>
           </li>
         </ul>
-        <button
-          aria-label="Next page"
-          class="euiButtonIcon euiPaginationArrowButton emotion-euiButtonIcon-xs-empty-text-euiPaginationButton"
-          data-test-subj="pagination-button-next"
-          title="Next page"
-          type="button"
+        <span
+          class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+          id="generated-id_euiToolTipAnchor"
         >
-          <span
-            aria-hidden="true"
-            class="euiButtonIcon__icon"
-            color="inherit"
-            data-euiicon-type="chevronSingleRight"
-          />
-        </button>
+          <button
+            aria-label="Next page"
+            class="euiButtonIcon euiPaginationArrowButton emotion-euiButtonIcon-xs-empty-text-euiPaginationButton"
+            data-test-subj="pagination-button-next"
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              class="euiButtonIcon__icon"
+              color="inherit"
+              data-euiicon-type="chevronSingleRight"
+            />
+          </button>
+        </span>
       </nav>
     </div>
   </div>

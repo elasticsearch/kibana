@@ -36,6 +36,7 @@ import { parseRRule } from '../../../common/utils/rrule_parser';
 import {
   parseSplayPermissive,
   isSplayWithinHalfRecurrence,
+  sumCompoundSeconds,
 } from '../../../common/utils/splay_utils';
 import { safeDerivePeriodSeconds } from '../../../common/utils/rrule_period';
 
@@ -338,17 +339,13 @@ export const convertSOQueriesToPackConfig = (
         interval,
         schedule_type: querySchedType,
         rrule_schedule: queryRrule,
+        start_date: legacyStartDate,
         ...rest
       }: SOPackQuery,
       key: number
     ) => {
       const resultType = snapshot === false ? { removed, snapshot } : {};
       const index = queryId ? queryId : key;
-
-      // Strip the mode-specific override fields from `rest`. We rebuild them
-      // below according to the per-query / pack-mode rules so the output
-      // never carries both `interval` and `rrule_schedule` on one query.
-      const baseRest = { ...rest };
 
       let scheduleFields: Record<string, unknown> = {};
 
@@ -389,9 +386,21 @@ export const convertSOQueriesToPackConfig = (
         }
       }
 
+      // Suppress the legacy top-level `start_date` for rrule-mode queries.
+      // The authoritative time-of-day lives in `rrule_schedule.start_date`;
+      // emitting both causes osquerybeat to honour the stale create-time
+      // top-level value instead of the user-chosen override.
+      const startDateField =
+        isRruleFeatureEnabled && (packMode === 'rrule' || querySchedType === 'rrule')
+          ? {}
+          : legacyStartDate !== undefined
+          ? { start_date: legacyStartDate }
+          : {};
+
       queriesOut[index] = omitBy(
         {
-          ...baseRest,
+          ...rest,
+          ...startDateField,
           ...scheduleFields,
           query: removeMultilines(query),
           ...(!isEmpty(ecs_mapping)
@@ -426,43 +435,6 @@ export const convertSOQueriesToPackConfig = (
   }
 
   return output;
-};
-
-/**
- * Best-effort seconds extractor for compound Go duration strings (e.g. `"1h30m"`).
- * Used by the splay 12h-cap check on compound values that `parseSplayPermissive`
- * accepts but does not decompose. Mirrors beats's `time.ParseDuration` so a value
- * Kibana accepts is one beats will also accept.
- */
-const GO_DURATION_SEGMENT = /(\d+(?:\.\d+)?)(ms|us|µs|ns|h|m|s)/g;
-const goDurationToSeconds = (raw: string): number => {
-  let total = 0;
-  for (const match of raw.matchAll(GO_DURATION_SEGMENT)) {
-    const value = Number(match[1]);
-    switch (match[2]) {
-      case 'h':
-        total += value * 3600;
-        break;
-      case 'm':
-        total += value * 60;
-        break;
-      case 's':
-        total += value;
-        break;
-      case 'ms':
-        total += value / 1_000;
-        break;
-      case 'us':
-      case 'µs':
-        total += value / 1_000_000;
-        break;
-      case 'ns':
-        total += value / 1_000_000_000;
-        break;
-    }
-  }
-
-  return total;
 };
 
 /**
@@ -580,7 +552,7 @@ export const validateRruleConfig = (
     const seconds =
       parsedSplay.kind === 'simple'
         ? parsedSplay.value * ({ seconds: 1, minutes: 60, hours: 3600 }[parsedSplay.unit] as number)
-        : goDurationToSeconds(parsedSplay.raw);
+        : sumCompoundSeconds(parsedSplay.raw);
     if (seconds > MAX_SPLAY_SECONDS) {
       return `rrule_schedule.splay must not exceed ${MAX_SPLAY_SECONDS} seconds (12 hours)`;
     }

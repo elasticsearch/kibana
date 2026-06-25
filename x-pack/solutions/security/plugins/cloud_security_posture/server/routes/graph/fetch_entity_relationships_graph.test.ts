@@ -265,7 +265,7 @@ const buildRelationshipEsqlRow = (
 });
 
 describe('regroupRelationships', () => {
-  it('single record with no enrichment produces one group with targetNodeId equal to targetId and raw docData passed through', () => {
+  it('single record with no enrichment produces one group with actorNodeId/targetNodeId equal to the single IDs and raw docData passed through', () => {
     const record = buildRelationshipEsqlRow({
       actorId: 'host:webserver',
       targetId: 'user:alice',
@@ -275,10 +275,10 @@ describe('regroupRelationships', () => {
     expect(result).toHaveLength(1);
     const [group] = result;
     expect(group.actorNodeId).toBe('host:webserver');
+    expect(group.actorIdsCount).toBe(1);
+    expect(group.actorIds).toEqual(['host:webserver']);
     expect(group.targetNodeId).toBe('user:alice');
     expect(group.targetEntityType).toBeNull();
-
-    // Raw docData should be passed through unchanged (no entity object built yet)
     expect(group.targetsDocData).toEqual([record.targetDocData]);
   });
 
@@ -301,16 +301,10 @@ describe('regroupRelationships', () => {
     expect(group.targetEntityType).toBe('user');
     expect(group.targetEntitySubType).toBe('admin');
     expect(group.targetEntityName).toBe('Alice');
-
-    // Raw docData still passed through (no entity object built yet)
     expect(group.targetsDocData).toEqual([record.targetDocData]);
   });
 
   it('badge counts the number of per-triple rows merged into a group', () => {
-    // Three per-triple rows: actor → alice (twice), actor → bob (once); all user type.
-    // After regroup → two groups (one per distinct target), since each row holds one target,
-    // and the group key includes the targetType which is the same. Actually: same actor,
-    // same relationship, same targetType → ONE group with targetIds=[alice, bob], badge=3.
     const r1 = buildRelationshipEsqlRow({ actorId: 'host:webserver', targetId: 'user:alice' });
     const r2 = buildRelationshipEsqlRow({ actorId: 'host:webserver', targetId: 'user:alice' });
     const r3 = buildRelationshipEsqlRow({ actorId: 'host:webserver', targetId: 'user:bob' });
@@ -345,11 +339,155 @@ describe('regroupRelationships', () => {
 
     const result = regroupRelationships([record1, record2], enrichmentMap);
 
-    // Different target types → two separate groups
     expect(result).toHaveLength(2);
     const targetNodeIds = result.map((r) => r.targetNodeId).sort();
     expect(targetNodeIds).toContain('user:alice');
     expect(targetNodeIds).toContain('host:db');
+  });
+
+  it('two actors of the same type with the same relationship and target type produce one merged group', () => {
+    const r1 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-7',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host',
+      actorEntitySubType: 'Linux Host',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-7-communicates_with',
+    });
+    const r2 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-8',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host',
+      actorEntitySubType: 'Linux Host',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-8-communicates_with',
+    });
+
+    const enrichmentMap = new Map<string, EntityEnrichmentFields>([
+      [
+        'host:my-server-9',
+        {
+          name: 'my-server-9',
+          type: 'Host',
+          subType: 'Linux Host',
+          engineType: 'ecs',
+          hostIps: [],
+        },
+      ],
+    ]);
+
+    const result = regroupRelationships([r1, r2], enrichmentMap);
+
+    expect(result).toHaveLength(1);
+    const [group] = result;
+    expect(group.actorIdsCount).toBe(2);
+    expect(group.actorIds.sort()).toEqual(['host:my-server-7', 'host:my-server-8']);
+    expect(group.actorNodeId).not.toBe('host:my-server-7');
+    expect(group.actorNodeId).not.toBe('host:my-server-8');
+    expect(group.targetNodeId).toBe('host:my-server-9');
+    expect(group.badge).toBe(2);
+    expect(group.relationshipNodeId).toBe(`${group.actorNodeId}-communicates_with`);
+  });
+
+  it('two actors of different types produce separate groups even with same relationship and target', () => {
+    const r1 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-7',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host',
+      actorEntitySubType: 'Linux Host',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-7-communicates_with',
+    });
+    const r2 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-10',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host1',
+      actorEntitySubType: 'Linux Host1',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-10-communicates_with',
+    });
+
+    const enrichmentMap = new Map<string, EntityEnrichmentFields>([
+      [
+        'host:my-server-9',
+        {
+          name: 'my-server-9',
+          type: 'Host',
+          subType: 'Linux Host',
+          engineType: 'ecs',
+          hostIps: [],
+        },
+      ],
+    ]);
+
+    const result = regroupRelationships([r1, r2], enrichmentMap);
+
+    expect(result).toHaveLength(2);
+    expect(result.every((g) => g.actorIdsCount === 1)).toBe(true);
+  });
+
+  it('single actor preserves raw entity.id-based relationshipNodeId format', () => {
+    const record = buildRelationshipEsqlRow({
+      actorId: 'user:data-pipeline@my-project.iam.gserviceaccount.com@gcp',
+      targetId: 'host:some-host',
+      actorEntityType: 'Service Account',
+      actorEntitySubType: 'GCP Service Account',
+      relationship: 'owns',
+      relationshipNodeId: 'user:data-pipeline@my-project.iam.gserviceaccount.com@gcp-owns',
+    });
+
+    const result = regroupRelationships([record], new Map());
+
+    expect(result).toHaveLength(1);
+    expect(result[0].relationshipNodeId).toBe(
+      'user:data-pipeline@my-project.iam.gserviceaccount.com@gcp-owns'
+    );
+    expect(result[0].actorNodeId).toBe('user:data-pipeline@my-project.iam.gserviceaccount.com@gcp');
+  });
+
+  it('relationshipNodeId is stable across actor merges and not derived from any individual entity.id', () => {
+    const r1 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-7',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host',
+      actorEntitySubType: 'Linux Host',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-7-communicates_with',
+    });
+    const r2 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-8',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host',
+      actorEntitySubType: 'Linux Host',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-8-communicates_with',
+    });
+    const result = regroupRelationships([r1, r2], new Map());
+
+    expect(result).toHaveLength(1);
+    expect(result[0].relationshipNodeId).not.toContain('my-server-7');
+    expect(result[0].relationshipNodeId).not.toContain('my-server-8');
+    expect(result[0].relationshipNodeId).toMatch(/-communicates_with$/);
+
+    const r3 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-11',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host',
+      actorEntitySubType: 'Linux Host',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-11-communicates_with',
+    });
+    const r4 = buildRelationshipEsqlRow({
+      actorId: 'host:my-server-12',
+      targetId: 'host:my-server-9',
+      actorEntityType: 'Host',
+      actorEntitySubType: 'Linux Host',
+      relationship: 'communicates_with',
+      relationshipNodeId: 'host:my-server-12-communicates_with',
+    });
+    const result2 = regroupRelationships([r3, r4], new Map());
+    expect(result2[0].actorNodeId).not.toBe(result[0].actorNodeId);
+    expect(result2[0].relationshipNodeId).toMatch(/-communicates_with$/);
   });
 });
 

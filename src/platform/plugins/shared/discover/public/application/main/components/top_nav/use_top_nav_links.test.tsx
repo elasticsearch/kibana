@@ -66,6 +66,12 @@ const createTestServices = (overrides: Partial<DiscoverServices> = {}): Discover
   };
 
   services.settings.globalClient.get = <T,>(_key: string) => true as T;
+  services.core.application.capabilities = {
+    ...services.core.application.capabilities,
+    alerting_v2_rules: {
+      all: true,
+    },
+  };
 
   // Apply overrides
   return {
@@ -386,13 +392,17 @@ describe('useTopNavLinks', () => {
               triggersActions: true,
             },
           },
-          ...(alertingV2Enabled ? { alertingVTwo: {} } : {}),
         },
         alertingVTwo: alertingV2Enabled ? baseMock.alertingVTwo : undefined,
         triggersActionsUi: triggersActionsUiMock.createStart(),
       });
 
       v2Services.settings.globalClient.get = <T,>(_key: string) => alertingV2Enabled as T;
+      if (!alertingV2Enabled) {
+        const { alerting_v2_rules: _alertingV2Rules, ...capabilitiesWithoutRules } =
+          v2Services.core.application.capabilities;
+        v2Services.core.application.capabilities = capabilitiesWithoutRules;
+      }
 
       const toolkit = getDiscoverInternalStateMock({ services: v2Services });
       await toolkit.initializeTabs();
@@ -548,13 +558,17 @@ describe('useTopNavLinks', () => {
             ...baseMock.capabilities.management,
             insightsAndAlerting: {},
           },
-          ...(alertingVTwoEnabled ? { alertingVTwo: {} } : {}),
         },
         alertingVTwo: alertingVTwoEnabled ? baseMock.alertingVTwo : undefined,
         triggersActionsUi: triggersActionsUiMock.createStart(),
       });
 
       v2OnlyServices.settings.globalClient.get = <T,>(_key: string) => alertingVTwoEnabled as T;
+      if (!alertingVTwoEnabled) {
+        const { alerting_v2_rules: _alertingV2Rules, ...capabilitiesWithoutRules } =
+          v2OnlyServices.core.application.capabilities;
+        v2OnlyServices.core.application.capabilities = capabilitiesWithoutRules;
+      }
 
       return v2OnlyServices;
     };

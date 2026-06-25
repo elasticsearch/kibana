@@ -34,6 +34,7 @@ export interface EditDataLifecycleFlyoutBodyMethodConfig {
 export interface EditDataLifecycleFlyoutBodyIlmConfig {
   policies: IlmPolicyForFlyout[];
   selectedPolicyName?: string;
+  isLoadingInherited?: boolean;
   onSelect: (policyName: string) => void;
   onInspect?: (policyName: string) => void;
 }
@@ -151,6 +152,7 @@ export const EditDataLifecycleFlyoutBody = (props: EditDataLifecycleFlyoutBodyPr
             ? {
                 retentionOptions: visibleRetentionOptions,
                 selectedPolicyName: selectedIlmPolicyName,
+                isLoadingInherited: props.ilm.isLoadingInherited,
                 onSelect: props.ilm.onSelect,
                 onInspect: props.ilm.onInspect,
               }

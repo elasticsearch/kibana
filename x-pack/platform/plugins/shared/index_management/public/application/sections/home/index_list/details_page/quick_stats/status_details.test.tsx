@@ -65,8 +65,8 @@ describe('StatusDetails', () => {
     expect(screen.getByText('Open')).toBeInTheDocument();
   });
 
-  it('shows "Closed" when the index status is close', () => {
-    renderComponent({ status: 'close' });
+  it.each(['close', 'closed'])('shows "Closed" when the index status is %s', (status) => {
+    renderComponent({ status: status as Index['status'] });
 
     expect(screen.getByText('Closed')).toBeInTheDocument();
   });
@@ -112,5 +112,40 @@ describe('StatusDetails', () => {
     });
 
     expect(screen.getByText('500 Documents / 12 Deleted')).toBeInTheDocument();
+  });
+
+  it('shows the read-access tooltip when metadata count is used after an exact count failure', () => {
+    renderComponent({
+      docCount: {
+        isLoading: false,
+        isError: false,
+        count: 500,
+        approximateReason: 'requires_read',
+      },
+    });
+
+    expect(
+      screen.getByText(
+        'Approximate — actual document count may be lower. An exact count requires read access.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('shows the closed-index tooltip when metadata count is used for a closed index', () => {
+    renderComponent({
+      status: 'closed' as Index['status'],
+      docCount: {
+        isLoading: false,
+        isError: false,
+        count: 500,
+        approximateReason: 'closed_index',
+      },
+    });
+
+    expect(
+      screen.getByText(
+        'Approximate — actual document count may be lower. Exact counts are not available for closed indices.'
+      )
+    ).toBeInTheDocument();
   });
 });

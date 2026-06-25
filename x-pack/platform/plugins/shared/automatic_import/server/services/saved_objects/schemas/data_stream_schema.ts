@@ -31,6 +31,7 @@ export const dataStreamSchemaV1 = schema.object({
     status: schema.oneOf(
       Object.values(TASK_STATUSES).map((status) => schema.literal(status)) as [Type<string>]
     ),
+    phase: schema.maybe(schema.string()),
   }),
   metadata: schema.object(
     {

@@ -243,6 +243,35 @@ describe('AutoInstallContentPackagesTask', () => {
       expect(dataStreamService.getAllFleetDataStreamNames).not.toHaveBeenCalled();
     });
 
+    it('should not install package that has been rolled back', async () => {
+      mockGetInstalledPackages.mockResolvedValue({
+        items: [
+          {
+            name: 'kubernetes_otel',
+            version: '1.0.0',
+            rolledBack: true,
+          },
+          {
+            name: 'test_package',
+            version: '1.0.0',
+          },
+        ],
+      });
+
+      await runTask();
+
+      expect(packageClientMock.installPackage).toHaveBeenCalledTimes(1);
+      expect(packageClientMock.installPackage).toHaveBeenCalledWith({
+        pkgName: 'test_package',
+        pkgVersion: '1.1.0',
+        useStreaming: true,
+        automaticInstall: true,
+      });
+      expect(packageClientMock.installPackage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ pkgName: 'kubernetes_otel' })
+      );
+    });
+
     it('should not downgrade package when a newer prerelease version is installed', async () => {
       // Registry has 1.1.0, but a prerelease 2.0.0-preview is already installed.
       // The task must not downgrade to 1.1.0.

@@ -1086,6 +1086,66 @@ describe('updatePackRoute', () => {
     });
   });
 
+  describe('schedule-validation error response shape (6.8 / design D4)', () => {
+    it('returns a 400 whose body.message carries the human-readable validator string', async () => {
+      // A same-mode rrule pack (no transition → no per-query strip) whose query
+      // override carries both `interval` and `rrule_schedule` is a mixed payload
+      // the validator rejects. The rejection MUST be a structured `{ message }`
+      // body — not a bare string — so the client toast (`error.body.message`)
+      // renders the reason.
+      const rruleValue = { rrule: 'FREQ=DAILY', start_date: '2026-01-01T00:00:00Z' };
+      const currentSO = {
+        ...basePackSO,
+        attributes: {
+          ...basePackSO.attributes,
+          schedule_type: 'rrule' as const,
+          interval: null,
+          rrule_schedule: rruleValue,
+        },
+      };
+      const mockClient = buildMockSavedObjectsClient(currentSO, {});
+
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(mockClient);
+
+      setupRoute(true);
+
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: {
+          name: 'my-pack',
+          // Same mode (rrule) — the route does NOT strip per-query fields.
+          schedule_type: 'rrule',
+          rrule_schedule: rruleValue,
+          queries: {
+            q1: {
+              query: 'SELECT 1',
+              // Both interval AND rrule_schedule → mutual-exclusivity error
+              // (utils.ts:717).
+              interval: 30,
+              schedule_type: 'rrule',
+              rrule_schedule: rruleValue,
+            },
+          },
+        },
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
+
+      expect(mockResponse.badRequest).toHaveBeenCalledTimes(1);
+      const badRequestArg = mockResponse.badRequest.mock.calls[0][0] as {
+        body: { message: string };
+      };
+      // Structured body — `message` is a non-empty human-readable string, not
+      // a bare-string body (which would leave `error.body.message` undefined).
+      expect(typeof badRequestArg.body).toBe('object');
+      expect(typeof badRequestArg.body.message).toBe('string');
+      expect(badRequestArg.body.message.length).toBeGreaterThan(0);
+      // The mode-mismatch message names the conflict.
+      expect(badRequestArg.body.message).toMatch(/interval|rrule|schedule/i);
+    });
+  });
+
   describe('response contract (PUT/GET parity)', () => {
     // Regression for CodeRabbit PR#270639 r4381326725 — buildResponseData was
     // pulling `policy_ids` from `attrs.policy_ids` (always undefined: the route

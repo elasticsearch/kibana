@@ -31,7 +31,7 @@ export const journey = new Journey({
     await page.locator(subj('indexPattern-switcher--input')).fill(DATA_VIEW_NAME);
     await page
       .locator(subj('indexPattern-switcher'))
-      .locator(`[title="${DATA_VIEW_NAME}"]`)
+      .locator(subj(`dataView-${DATA_VIEW_NAME}`))
       .click();
     await page.waitForSelector(subj('dataVisualizerIndexPage'), { timeout: 60000 });
     await page.click(subj('mlDatePickerButtonUseFullData'));

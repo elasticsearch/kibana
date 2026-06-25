@@ -25,7 +25,7 @@ describe('logBulkRuleChanges', () => {
     changeTrackingService = createMockChangeTrackingService();
   });
 
-  it('logs every successful saved object in a single bulk call', async () => {
+  it('logs every successful rule change in a single bulk call', async () => {
     const context = buildContext({ changeTrackingService });
     const ruleSOs = [buildRuleSO('rule-1'), buildRuleSO('rule-2')];
 
@@ -46,14 +46,14 @@ describe('logBulkRuleChanges', () => {
         objectId: 'rule-1',
         objectType: RULE_SAVED_OBJECT_TYPE,
         module: 'stack',
-        snapshot: { attributes: expect.objectContaining({ name: 'rule rule-1' }), references: [] },
+        snapshot: expect.objectContaining({ id: 'rule-1', name: 'rule rule-1' }),
       },
       {
         timestamp: REFERENCE_TIMESTAMP_ISO,
         objectId: 'rule-2',
         objectType: RULE_SAVED_OBJECT_TYPE,
         module: 'stack',
-        snapshot: { attributes: expect.objectContaining({ name: 'rule rule-2' }), references: [] },
+        snapshot: expect.objectContaining({ id: 'rule-2', name: 'rule rule-2' }),
       },
     ]);
     expect(opts).toEqual({
@@ -62,7 +62,7 @@ describe('logBulkRuleChanges', () => {
     });
   });
 
-  it('skips saved objects that have an error (e.g. partial bulk failures)', async () => {
+  it('skips rule change that have an error (e.g. partial bulk failures)', async () => {
     const context = buildContext({ changeTrackingService });
     const ruleSOs = [
       buildRuleSO('rule-1'),
@@ -134,7 +134,7 @@ describe('logBulkRuleChanges', () => {
     ]);
   });
 
-  it('does not call logBulk when every saved object failed', async () => {
+  it('does not call logBulk when every rule change failed', async () => {
     const context = buildContext({ changeTrackingService });
     const ruleSOs = [buildErroredRuleSO('rule-1'), buildErroredRuleSO('rule-2')];
 
@@ -199,7 +199,7 @@ describe('logBulkRuleChanges', () => {
     expect(changeTrackingService.logBulk).not.toHaveBeenCalled();
   });
 
-  it('falls back to an empty references array when a saved object omits references', async () => {
+  it('succeeds when a rule saved object omits references (treats them as empty)', async () => {
     const context = buildContext({ changeTrackingService });
     const ruleSOWithoutRefs = buildRuleSO('rule-1');
     delete (ruleSOWithoutRefs as Partial<SavedObject<RawRule>>).references;
@@ -214,7 +214,7 @@ describe('logBulkRuleChanges', () => {
     });
 
     const [changes] = changeTrackingService.logBulk.mock.calls[0];
-    expect(changes[0].snapshot.references).toEqual([]);
+    expect(changes[0].snapshot).toEqual(expect.objectContaining({ id: 'rule-1', actions: [] }));
   });
 
   it('swallows registry errors', async () => {
@@ -380,7 +380,12 @@ const buildRuleSO = (
 ): SavedObject<RawRule> => ({
   id,
   type: RULE_SAVED_OBJECT_TYPE,
-  attributes: { alertTypeId, name: `rule ${id}` } as RawRule,
+  attributes: {
+    alertTypeId,
+    name: `rule ${id}`,
+    createdAt: new Date().toDateString(),
+    updatedAt: new Date().toDateString(),
+  } as RawRule,
   references: [],
   ...overrides,
 });
@@ -428,6 +433,7 @@ const buildContext = (
     logger: loggingSystemMock.createLogger(),
     spaceId: 'default',
     ruleTypeRegistry,
+    isSystemAction: jest.fn().mockReturnValue(false),
     ...overrides,
   } as unknown as RulesClientContext;
 };

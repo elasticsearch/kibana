@@ -224,6 +224,25 @@ describe('WorkflowSearchService', () => {
         duration: 5000,
       });
     });
+
+    it('omits recent-execution history for managed workflows without managed execution access', async () => {
+      const { deps, storageClient, esClient } = makeDeps();
+      storageClient.search.mockResolvedValue({
+        hits: {
+          total: { value: 1 },
+          hits: [{ _id: 'managed-wf', _source: makeSource({ name: 'managed-wf', managed: true }) }],
+        },
+      });
+
+      const service = new WorkflowSearchService(deps);
+      const result = await service.getWorkflows({ size: 10, page: 1 } as any, 'default', {
+        includeExecutionHistory: true,
+        includeManagedExecutionHistory: false,
+      });
+
+      expect(esClient.search).not.toHaveBeenCalled();
+      expect(result.results[0].history).toEqual([]);
+    });
   });
 
   describe('getWorkflowStats', () => {
@@ -279,6 +298,51 @@ describe('WorkflowSearchService', () => {
           cancelled: 0,
         },
       ]);
+      expect(esClient.search).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: {
+            bool: {
+              must: expect.any(Array),
+              must_not: [{ term: { managed: true } }],
+            },
+          },
+        })
+      );
+    });
+
+    it('includes managed executions in history stats when includeManagedExecutionStats=true', async () => {
+      const { deps, storageClient, esClient } = makeDeps();
+      storageClient.search.mockResolvedValue({
+        aggregations: {
+          enabled_count: { doc_count: 1 },
+          disabled_count: { doc_count: 0 },
+        },
+      });
+      esClient.search.mockResolvedValue({
+        aggregations: {
+          daily_stats: {
+            buckets: [],
+          },
+        },
+      } as any);
+
+      const service = new WorkflowSearchService(deps);
+      await service.getWorkflowStats('default', {
+        includeExecutionStats: true,
+        includeManagedExecutionStats: true,
+      });
+
+      expect(esClient.search).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: {
+            bool: {
+              must: expect.any(Array),
+            },
+          },
+        })
+      );
+      const executionStatsQuery = esClient.search.mock.calls[0]?.[0]?.query;
+      expect(executionStatsQuery?.bool?.must_not).toBeUndefined();
     });
 
     it('returns an empty execution-history array when the executions index is missing', async () => {

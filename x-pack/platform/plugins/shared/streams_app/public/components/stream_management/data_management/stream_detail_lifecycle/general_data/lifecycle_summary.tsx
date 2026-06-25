@@ -5,10 +5,11 @@
  * 2.0.
  */
 
-import React, { useEffect } from 'react';
-import type { Streams, IngestStreamLifecycleILM } from '@kbn/streams-schema';
+import React from 'react';
+import type { Streams, IngestStreamLifecycle, IngestStreamLifecycleILM } from '@kbn/streams-schema';
 import {
   Streams as StreamsSchema,
+  effectiveToIngestLifecycle,
   isDslLifecycle,
   isIlmLifecycle,
   isInheritLifecycle,
@@ -16,7 +17,18 @@ import {
 } from '@kbn/streams-schema';
 import type { PhaseName } from '@kbn/streams-schema';
 import { i18n } from '@kbn/i18n';
-import { EuiBadge, EuiButton, EuiCallOut, EuiSpacer, EuiToolTip } from '@elastic/eui';
+import { css } from '@emotion/react';
+import {
+  EuiBadge,
+  EuiButton,
+  EuiButtonIcon,
+  EuiCallOut,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiSpacer,
+  EuiToolTip,
+  useEuiTheme,
+} from '@elastic/eui';
 import type { DataStreamStats } from '../hooks/use_data_stream_stats';
 import { DataLifecycleSummary } from '../common/data_lifecycle/data_lifecycle_summary';
 import { useUpdateStreamLifecycle } from '../hooks/use_update_stream_lifecycle';
@@ -24,6 +36,9 @@ import { useIlmLifecycleSummary } from '../hooks/use_ilm_lifecycle_summary';
 import { useDslLifecycleSummary } from '../hooks/use_dsl_lifecycle_summary';
 import { MAX_DOWNSAMPLE_STEPS } from '../data_phases/edit_dsl_steps_flyout/form';
 import { useLifecyclePreview } from '../common/hooks/lifecycle_preview';
+import { useEditFlyoutPreviewSync } from '../common/hooks/use_edit_flyout_preview_sync';
+import { useOverrideSettingsConfirmation } from '../common/hooks/use_override_settings_confirmation';
+import { useKibana } from '../../../../../hooks/use_kibana';
 import type {
   IlmPhaseSelectOption,
   IlmPhaseSelectRenderButtonProps,
@@ -64,6 +79,28 @@ const maxDownsampleStepsTooltip = i18n.translate(
   }
 );
 
+const deletePhaseAlreadyInUseTooltip = i18n.translate(
+  'xpack.streams.dataLifecycleSummary.deletePhaseAlreadyInUseTooltip',
+  { defaultMessage: 'Delete phase is already in use' }
+);
+
+const HeaderActionsSeparator = () => {
+  const { euiTheme } = useEuiTheme();
+
+  return (
+    <span
+      aria-hidden="true"
+      css={css({
+        display: 'block',
+        width: euiTheme.border.width.thin,
+        height: euiTheme.size.l,
+        backgroundColor: euiTheme.border.color,
+        marginBlock: 'auto',
+      })}
+    />
+  );
+};
+
 const renderAddPhaseButton = (label: string) => (buttonProps: IlmPhaseSelectRenderButtonProps) => {
   const button = (
     <EuiButton {...buttonProps} color="text" size="s" iconType="chevronSingleDown" iconSide="right">
@@ -85,6 +122,21 @@ interface LifecycleSummaryProps {
   isMetricsStream: boolean;
   stats?: DataStreamStats;
   refreshDefinition?: () => void;
+  onEditSuccessfulLifecycle?: () => void;
+  onAddDeletePhase?: () => void;
+  isExternalFlyoutOpen?: boolean;
+  isDataPhaseFlyoutOpen?: boolean;
+  onDataPhaseFlyoutOpenChange?: (isOpen: boolean) => void;
+  previewHeader?: {
+    inheritLifecycle: boolean;
+    method: 'dlm' | 'ilm';
+    ilmPolicyName?: string;
+    canShowInheritBadge: boolean;
+  };
+}
+
+interface InternalLifecycleSummaryProps extends LifecycleSummaryProps {
+  editLifecycleMethodButton?: React.ReactNode;
 }
 
 const dataStreamLifecycleTitle = i18n.translate('xpack.streams.dataLifecycleSummary.title.dlm', {
@@ -100,6 +152,92 @@ const getIlmTitle = (policyName: string) =>
 const inheritedBadgeLabel = i18n.translate('xpack.streams.dataLifecycleSummary.inheritedBadge', {
   defaultMessage: 'Inherited',
 });
+
+const getPreviewTitle = (
+  savedTitle: string,
+  previewHeader?: LifecycleSummaryProps['previewHeader']
+) => {
+  if (!previewHeader) return undefined;
+  if (previewHeader.method === 'ilm' && previewHeader.ilmPolicyName) {
+    return getIlmTitle(previewHeader.ilmPolicyName);
+  }
+  return dataStreamLifecycleTitle;
+};
+
+const getSummaryTitleAndBadge = ({
+  savedTitle,
+  shouldShowInheritedBadge,
+  previewHeader,
+  isPreviewActive,
+  isExternalFlyoutOpen,
+}: {
+  savedTitle: string;
+  shouldShowInheritedBadge: boolean;
+  previewHeader?: LifecycleSummaryProps['previewHeader'];
+  isPreviewActive: boolean;
+  isExternalFlyoutOpen: boolean;
+}): { title: string; titleBadge?: React.ReactNode } => {
+  const previewTitle = getPreviewTitle(savedTitle, previewHeader);
+  const title = isPreviewActive && isExternalFlyoutOpen && previewTitle ? previewTitle : savedTitle;
+
+  const savedBadge = shouldShowInheritedBadge ? (
+    <EuiBadge>{inheritedBadgeLabel}</EuiBadge>
+  ) : undefined;
+  const previewBadge =
+    previewHeader && previewHeader.canShowInheritBadge && previewHeader.inheritLifecycle ? (
+      <EuiBadge>{inheritedBadgeLabel}</EuiBadge>
+    ) : undefined;
+  const titleBadge = isPreviewActive && isExternalFlyoutOpen ? previewBadge : savedBadge;
+
+  return { title, titleBadge };
+};
+
+const getEditLifecycleMethodButton = ({
+  onEditSuccessfulLifecycle,
+  canManageLifecycle,
+  isDisabled,
+}: {
+  onEditSuccessfulLifecycle?: () => void;
+  canManageLifecycle: boolean;
+  isDisabled: boolean;
+}) => {
+  if (!onEditSuccessfulLifecycle || !canManageLifecycle) return null;
+  const tooltipLabel = i18n.translate(
+    'xpack.streams.dataLifecycleSummary.editLifecycleMethodAriaLabel',
+    {
+      defaultMessage: 'Edit lifecycle method',
+    }
+  );
+  return (
+    <EuiToolTip content={tooltipLabel} disableScreenReaderOutput>
+      <EuiButtonIcon
+        iconType="controlsHorizontal"
+        size="s"
+        display="base"
+        color="text"
+        aria-label={tooltipLabel}
+        data-test-subj="dataLifecycleSummaryEditLifecycleMethod"
+        onClick={onEditSuccessfulLifecycle}
+        disabled={isDisabled}
+      />
+    </EuiToolTip>
+  );
+};
+
+const composeHeaderActions = (...items: Array<React.ReactNode | undefined | null>) => {
+  const filtered = items.filter(Boolean);
+  if (filtered.length === 0) return undefined;
+
+  return (
+    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+      {filtered.map((item, index) => (
+        <EuiFlexItem key={index} grow={false}>
+          {item}
+        </EuiFlexItem>
+      ))}
+    </EuiFlexGroup>
+  );
+};
 
 const shouldShowLifecycleInheritedBadge = (definition: Streams.ingest.all.GetResponse): boolean => {
   const isClassicStream = StreamsSchema.ClassicStream.GetResponse.is(definition);
@@ -118,18 +256,15 @@ const IlmLifecycleSummary = ({
   isMetricsStream,
   stats,
   refreshDefinition,
-}: LifecycleSummaryProps) => {
+  isExternalFlyoutOpen = false,
+  onDataPhaseFlyoutOpenChange,
+  previewHeader,
+  editLifecycleMethodButton,
+}: InternalLifecycleSummaryProps) => {
   const {
     isActive: isPreviewActive,
     timelineDownsampleSteps: previewTimelineDownsampleSteps,
     timelinePhases: previewTimelinePhases,
-    clearPreview,
-    setDataPhasesCount,
-    setDownsampleStepsCount,
-    setHasUnsavedChanges,
-    setIsActive,
-    setRetentionPeriod,
-    setTimelineModel,
   } = useLifecyclePreview();
   const shouldShowInheritedBadge = shouldShowLifecycleInheritedBadge(definition);
 
@@ -143,57 +278,16 @@ const IlmLifecycleSummary = ({
   });
 
   const isEditLifecycleFlyoutOpen = ilmSummary.isEditLifecycleFlyoutOpen;
-  const hasUnsavedChangesInFlyout = ilmSummary.hasUnsavedEditLifecycleFlyoutChanges;
   const invalidPhases = ilmSummary.flyoutInvalidPhases;
 
-  useEffect(() => {
-    if (!isEditLifecycleFlyoutOpen) {
-      clearPreview();
-      return;
-    }
-
-    setIsActive(true);
-  }, [clearPreview, isEditLifecycleFlyoutOpen, setIsActive]);
-
-  useEffect(() => {
-    if (!isEditLifecycleFlyoutOpen) {
-      return;
-    }
-
-    setHasUnsavedChanges(hasUnsavedChangesInFlyout);
-  }, [hasUnsavedChangesInFlyout, isEditLifecycleFlyoutOpen, setHasUnsavedChanges]);
-
-  useEffect(() => {
-    if (!isEditLifecycleFlyoutOpen) {
-      return;
-    }
-
-    const retentionPeriod =
-      ilmSummary.phases.find((phase) => Boolean(phase.isDelete))?.min_age ?? null;
-
-    setTimelineModel({ phases: ilmSummary.phases, downsampleSteps: null });
-    setRetentionPeriod(retentionPeriod);
-    setDataPhasesCount(ilmSummary.phases.length);
-  }, [
-    ilmSummary.phases,
-    isEditLifecycleFlyoutOpen,
-    setDataPhasesCount,
-    setRetentionPeriod,
-    setTimelineModel,
-  ]);
-
-  useEffect(() => {
-    if (!isEditLifecycleFlyoutOpen) {
-      return;
-    }
-
-    if (!isMetricsStream) {
-      setDownsampleStepsCount(null);
-      return;
-    }
-
-    setDownsampleStepsCount(ilmSummary.phases.filter((phase) => Boolean(phase.downsample)).length);
-  }, [ilmSummary.phases, isEditLifecycleFlyoutOpen, isMetricsStream, setDownsampleStepsCount]);
+  useEditFlyoutPreviewSync({
+    isFlyoutOpen: isEditLifecycleFlyoutOpen,
+    isExternalFlyoutOpen,
+    phases: ilmSummary.phases,
+    isMetricsStream,
+    hasUnsavedChangesInFlyout: ilmSummary.hasUnsavedEditLifecycleFlyoutChanges,
+    onDataPhaseFlyoutOpenChange,
+  });
 
   const headerActions =
     definition.privileges.lifecycle &&
@@ -203,6 +297,7 @@ const IlmLifecycleSummary = ({
         selectedPhases={ilmSummary.ilmSelectedPhasesForAdd}
         excludedPhases={ilmSummary.ilmExcludedPhasesForAdd}
         onSelect={(phase: IlmPhaseSelectOption) => ilmSummary.onAddIlmPhase?.(phase)}
+        disabled={isExternalFlyoutOpen}
         data-test-subj="dataLifecycleSummaryAddPhase"
         anchorPosition="downRight"
         renderButton={renderAddPhaseButton(
@@ -210,6 +305,22 @@ const IlmLifecycleSummary = ({
         )}
       />
     ) : undefined;
+
+  const headerActionsWithEditButton = composeHeaderActions(
+    editLifecycleMethodButton,
+    editLifecycleMethodButton && headerActions ? <HeaderActionsSeparator /> : undefined,
+    headerActions
+  );
+
+  const { title, titleBadge } = getSummaryTitleAndBadge({
+    savedTitle: isIlmLifecycle(definition.effective_lifecycle)
+      ? getIlmTitle(definition.effective_lifecycle.ilm.policy)
+      : dataStreamLifecycleTitle,
+    shouldShowInheritedBadge,
+    previewHeader,
+    isPreviewActive,
+    isExternalFlyoutOpen,
+  });
 
   return (
     <>
@@ -242,17 +353,13 @@ const IlmLifecycleSummary = ({
             loading: ilmSummary.loading,
             downsampleSteps: previewTimelineDownsampleSteps ?? undefined,
           }}
-          title={
-            isIlmLifecycle(definition.effective_lifecycle)
-              ? getIlmTitle(definition.effective_lifecycle.ilm.policy)
-              : dataStreamLifecycleTitle
-          }
-          titleBadge={
-            shouldShowInheritedBadge ? <EuiBadge>{inheritedBadgeLabel}</EuiBadge> : undefined
-          }
+          title={title}
+          titleBadge={titleBadge}
           showDownsampling={isMetricsStream}
-          capabilities={{ canManageLifecycle: definition.privileges.lifecycle }}
-          headerActions={headerActions}
+          capabilities={{
+            canManageLifecycle: definition.privileges.lifecycle && !isExternalFlyoutOpen,
+          }}
+          headerActions={headerActionsWithEditButton}
           phaseActions={{
             onRemovePhase: ilmSummary.onRemovePhase,
             onEditPhase: (phaseName) => ilmSummary.onEditPhase?.(phaseName as PhaseName),
@@ -281,23 +388,29 @@ const NonIlmLifecycleSummary = ({
   isMetricsStream,
   stats,
   refreshDefinition,
-}: LifecycleSummaryProps) => {
+  onAddDeletePhase,
+  isExternalFlyoutOpen = false,
+  isDataPhaseFlyoutOpen = false,
+  onDataPhaseFlyoutOpenChange,
+  previewHeader,
+  editLifecycleMethodButton,
+}: InternalLifecycleSummaryProps) => {
+  const {
+    core: { notifications },
+  } = useKibana();
   const {
     isActive: isPreviewActive,
+    isDslDownsampleFlyoutOpen,
     timelineDownsampleSteps: previewTimelineDownsampleSteps,
     timelinePhases: previewTimelinePhases,
-    clearPreview,
-    setDataPhasesCount,
-    setDownsampleStepsCount,
-    setHasUnsavedChanges,
-    setIsActive,
-    setRetentionPeriod,
-    setTimelineModel,
   } = useLifecyclePreview();
   const shouldShowInheritedBadge = shouldShowLifecycleInheritedBadge(definition);
 
   const isDsl = isDslLifecycle(definition.effective_lifecycle);
   const { updateStreamLifecycle } = useUpdateStreamLifecycle(definition);
+  const { confirmOverride, modal: overrideModal } = useOverrideSettingsConfirmation({
+    definition,
+  });
   const dslSummary = useDslLifecycleSummary({
     definition,
     stats,
@@ -305,62 +418,26 @@ const NonIlmLifecycleSummary = ({
     updateStreamLifecycle,
   });
 
-  useEffect(() => {
-    if (!dslSummary.isEditLifecycleFlyoutOpen) {
-      clearPreview();
-      return;
-    }
-
-    setIsActive(true);
-    // For now DSL downsampling edits don't surface an external "unsaved changes" indicator.
-    setHasUnsavedChanges(false);
-  }, [clearPreview, dslSummary.isEditLifecycleFlyoutOpen, setHasUnsavedChanges, setIsActive]);
-
-  useEffect(() => {
-    if (!dslSummary.isEditLifecycleFlyoutOpen) {
-      return;
-    }
-
-    const retentionPeriod =
-      dslSummary.phases.find((phase) => Boolean(phase.isDelete))?.min_age ?? null;
-
-    setTimelineModel({
-      phases: dslSummary.phases,
-      downsampleSteps: isDsl ? dslSummary.downsampleSteps ?? null : null,
-    });
-    setRetentionPeriod(retentionPeriod);
-    setDataPhasesCount(dslSummary.phases.length);
-  }, [
-    dslSummary.downsampleSteps,
-    dslSummary.isEditLifecycleFlyoutOpen,
-    dslSummary.phases,
-    isDsl,
-    setDataPhasesCount,
-    setRetentionPeriod,
-    setTimelineModel,
-  ]);
-
-  useEffect(() => {
-    if (!dslSummary.isEditLifecycleFlyoutOpen) {
-      return;
-    }
-
-    if (!isMetricsStream) {
-      setDownsampleStepsCount(null);
-      return;
-    }
-
-    setDownsampleStepsCount(dslSummary.downsampleSteps?.length ?? 0);
-  }, [
-    dslSummary.downsampleSteps,
-    dslSummary.isEditLifecycleFlyoutOpen,
+  useEditFlyoutPreviewSync({
+    isFlyoutOpen: dslSummary.isEditLifecycleFlyoutOpen,
+    isExternalFlyoutOpen,
+    phases: dslSummary.phases,
+    downsampleSteps: dslSummary.downsampleSteps,
     isMetricsStream,
-    setDownsampleStepsCount,
-  ]);
+    onDataPhaseFlyoutOpenChange,
+    includeDownsampleStepsInTimeline: isDsl,
+    countDownsampleFromPhases: false,
+  });
 
   const currentDslStepsCount = dslSummary.downsampleSteps?.length ?? 0;
   const isAddDownsampleStepDisabled = currentDslStepsCount >= MAX_DOWNSAMPLE_STEPS;
   const invalidStepIndices = dslSummary.flyoutInvalidStepIndices;
+  const hasDeletePhase = dslSummary.phases.some((p) => p.isDelete);
+  const isDslDownsampleFlyoutBlocking =
+    isDslDownsampleFlyoutOpen || dslSummary.isEditLifecycleFlyoutOpen || isDataPhaseFlyoutOpen;
+  const isAddDeletePhaseDisabled = isExternalFlyoutOpen || isDslDownsampleFlyoutBlocking;
+  const isAddDeletePhaseAlreadyInUse = hasDeletePhase;
+  const isAddDeletePhaseButtonDisabled = isAddDeletePhaseDisabled || isAddDeletePhaseAlreadyInUse;
 
   const addDownsampleStepButton = (
     <EuiButton
@@ -368,11 +445,42 @@ const NonIlmLifecycleSummary = ({
       size="s"
       data-test-subj="dataLifecycleSummaryAddDownsampleStep"
       onClick={() => dslSummary.onAddDownsampleStep?.()}
-      disabled={isAddDownsampleStepDisabled}
+      disabled={isAddDownsampleStepDisabled || isExternalFlyoutOpen}
     >
       {addDownsampleStepButtonLabel}
     </EuiButton>
   );
+
+  const addDeletePhaseButtonLabel = i18n.translate(
+    'xpack.streams.dataLifecycleSummary.addDeletePhaseButtonLabel',
+    { defaultMessage: 'Add delete phase' }
+  );
+
+  const addDeletePhaseButtonIsDisabled = isAddDeletePhaseAlreadyInUse
+    ? true
+    : isAddDeletePhaseButtonDisabled;
+
+  const addDeletePhaseButtonElement =
+    onAddDeletePhase && definition.privileges.lifecycle ? (
+      <EuiButton
+        color="text"
+        size="s"
+        data-test-subj="dataLifecycleSummaryAddDeletePhase"
+        onClick={onAddDeletePhase}
+        isDisabled={addDeletePhaseButtonIsDisabled}
+      >
+        {addDeletePhaseButtonLabel}
+      </EuiButton>
+    ) : null;
+
+  const addDeletePhaseButton =
+    addDeletePhaseButtonElement && isAddDeletePhaseAlreadyInUse && !isAddDeletePhaseDisabled ? (
+      <EuiToolTip position="top" content={deletePhaseAlreadyInUseTooltip}>
+        {addDeletePhaseButtonElement}
+      </EuiToolTip>
+    ) : (
+      addDeletePhaseButtonElement
+    );
 
   const dslHeaderActions =
     definition.privileges.lifecycle &&
@@ -388,6 +496,23 @@ const NonIlmLifecycleSummary = ({
       )
     ) : undefined;
 
+  const headerActionsWithEditButton = composeHeaderActions(
+    editLifecycleMethodButton,
+    editLifecycleMethodButton && (addDeletePhaseButton || dslHeaderActions) ? (
+      <HeaderActionsSeparator />
+    ) : undefined,
+    addDeletePhaseButton,
+    dslHeaderActions
+  );
+
+  const { title, titleBadge } = getSummaryTitleAndBadge({
+    savedTitle: dataStreamLifecycleTitle,
+    shouldShowInheritedBadge,
+    previewHeader,
+    isPreviewActive,
+    isExternalFlyoutOpen,
+  });
+
   return (
     <>
       <DataLifecycleSummary
@@ -400,17 +525,68 @@ const NonIlmLifecycleSummary = ({
             ? dslSummary.downsampleSteps
             : undefined,
         }}
-        title={dataStreamLifecycleTitle}
-        titleBadge={
-          shouldShowInheritedBadge ? <EuiBadge>{inheritedBadgeLabel}</EuiBadge> : undefined
-        }
+        title={title}
+        titleBadge={titleBadge}
         showDownsampling={isMetricsStream}
         downsamplingActions={{
           onRemoveDownsampleStep: dslSummary.onRemoveDownsampleStep,
           onEditDownsampleStep: dslSummary.onEditDownsampleStep,
         }}
-        capabilities={{ canManageLifecycle: definition.privileges.lifecycle }}
-        headerActions={dslHeaderActions}
+        capabilities={{
+          canManageLifecycle: definition.privileges.lifecycle && !isExternalFlyoutOpen,
+        }}
+        headerActions={headerActionsWithEditButton}
+        phaseActions={
+          definition.privileges.lifecycle && hasDeletePhase
+            ? {
+                showPhaseActions: true,
+                onEditPhase: (phaseName) => {
+                  if (phaseName === 'delete' && onAddDeletePhase && !isAddDeletePhaseDisabled) {
+                    onAddDeletePhase();
+                  }
+                },
+                onRemovePhase: (phaseName) => {
+                  if (phaseName !== 'delete' || isExternalFlyoutOpen) {
+                    return;
+                  }
+
+                  if (!isDslLifecycle(definition.effective_lifecycle)) {
+                    return;
+                  }
+
+                  const baseline = effectiveToIngestLifecycle(definition.effective_lifecycle);
+                  if (!('dsl' in baseline)) return;
+
+                  const { data_retention: _removed, ...rest } = baseline.dsl;
+                  const nextLifecycle: IngestStreamLifecycle = { dsl: { ...rest } };
+
+                  const performRemove = async () => {
+                    try {
+                      await updateStreamLifecycle(nextLifecycle);
+                      notifications.toasts.addSuccess({
+                        title: i18n.translate(
+                          'xpack.streams.dataLifecycleSummary.removeDeletePhaseSuccess',
+                          { defaultMessage: 'Delete phase removed' }
+                        ),
+                      });
+                      await Promise.resolve(refreshDefinition?.());
+                    } catch (error) {
+                      notifications.toasts.addError(error as Error, {
+                        title: i18n.translate(
+                          'xpack.streams.dataLifecycleSummary.removeDeletePhaseError',
+                          { defaultMessage: 'Failed to remove delete phase' }
+                        ),
+                      });
+                    }
+                  };
+
+                  confirmOverride(() => performRemove());
+                },
+                shouldShowEditPhaseAction: (phaseName) => phaseName === 'delete',
+                shouldShowRemovePhaseAction: (phaseName) => phaseName === 'delete',
+              }
+            : undefined
+        }
         uiState={{
           editedPhaseName: undefined,
           editedDownsampleStepIndex: dslSummary.isEditLifecycleFlyoutOpen
@@ -422,11 +598,31 @@ const NonIlmLifecycleSummary = ({
       />
 
       {dslSummary.modals}
+      {overrideModal}
     </>
   );
 };
 
 export const LifecycleSummary = (props: LifecycleSummaryProps) => {
+  const { isServerless } = useKibana();
   const isIlm = isIlmLifecycle(props.definition.effective_lifecycle);
-  return isIlm ? <IlmLifecycleSummary {...props} /> : <NonIlmLifecycleSummary {...props} />;
+
+  const isServerlessWiredRootStream =
+    isServerless &&
+    StreamsSchema.WiredStream.GetResponse.is(props.definition) &&
+    isRoot(props.definition.stream.name);
+
+  const editLifecycleMethodButton = isServerlessWiredRootStream
+    ? null
+    : getEditLifecycleMethodButton({
+        onEditSuccessfulLifecycle: props.onEditSuccessfulLifecycle,
+        canManageLifecycle: Boolean(props.definition.privileges.lifecycle),
+        isDisabled: Boolean(props.isExternalFlyoutOpen) || Boolean(props.isDataPhaseFlyoutOpen),
+      });
+
+  return isIlm ? (
+    <IlmLifecycleSummary {...props} editLifecycleMethodButton={editLifecycleMethodButton} />
+  ) : (
+    <NonIlmLifecycleSummary {...props} editLifecycleMethodButton={editLifecycleMethodButton} />
+  );
 };

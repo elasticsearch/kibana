@@ -174,11 +174,9 @@ const renderList = (options?: { item?: typeof defaultWorkflow }) =>
 
 function expectControlDisabled(testId: string, disabled: boolean): void {
   const el = screen.getByTestId(testId);
-  if (disabled) {
-    expect(el).toBeDisabled();
-  } else {
-    expect(el).not.toBeDisabled();
-  }
+  const isDisabled = el.hasAttribute('disabled') || el.getAttribute('aria-disabled') === 'true';
+
+  expect(isDisabled).toBe(disabled);
 }
 
 /** Clone / export / delete live in the collapsed “All actions” popover when there are >2 actions. */

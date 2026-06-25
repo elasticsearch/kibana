@@ -9,7 +9,28 @@ import { validateDuration } from '@kbn/alerting-v2-schemas';
 
 const DURATION_RE = /^(\d+)(ms|s|m|h|d|w)$/;
 
+const MS_PER_MINUTE = 60 * 1000;
+
 export { validateDuration };
+
+/**
+ * Converts a `schedule.every` duration into the number of rule runs it
+ * represents per minute. Returns 0 for invalid or non-positive durations.
+ */
+export function convertEveryToSchedulesPerMinute(every: string): number {
+  let durationMs: number;
+  try {
+    durationMs = parseDurationToMs(every);
+  } catch {
+    return 0;
+  }
+
+  if (!Number.isFinite(durationMs) || durationMs <= 0) {
+    return 0;
+  }
+
+  return MS_PER_MINUTE / durationMs;
+}
 
 export function parseDurationToMs(value: string): number {
   const match = value.match(DURATION_RE);

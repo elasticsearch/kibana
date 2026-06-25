@@ -115,40 +115,35 @@ export class ComboBoxService extends FtrService {
     await this.openOptionsList(comboBoxElement);
 
     if (trimmedValue !== undefined) {
-      const selectOptions = await this.find.allByCssSelector(
-        `.euiComboBoxOption[title="${trimmedValue}"]`,
-        this.WAIT_FOR_EXISTS_TIME
+      // Find options by visible text content.
+      const optionsWithText = await Promise.all(
+        (
+          await this.find.allByCssSelector(`.euiComboBoxOption`, this.WAIT_FOR_EXISTS_TIME)
+        ).map(async (e) => {
+          const text = (await e.getVisibleText()) ?? '';
+          return { element: e, text, formattedText: text.toLowerCase().trim() };
+        })
       );
 
-      if (selectOptions.length > 0) {
-        await this.clickOption(options.clickWithMouse, selectOptions[0]);
-      } else {
-        // Try to find alternate title casing
-        const alternateTitle = (
-          await Promise.all(
-            (
-              await this.find.allByCssSelector(`.euiComboBoxOption`, this.WAIT_FOR_EXISTS_TIME)
-            ).map(async (e) => {
-              const title = (await e.getAttribute('title')) ?? '';
-              return { title, formattedTitle: title.toLowerCase().trim() };
-            })
-          )
-        ).find(({ formattedTitle }) => {
-          return formattedTitle === trimmedValue;
-        })?.title;
+      const exactMatch = optionsWithText.find(
+        ({ formattedText }) => formattedText === trimmedValue
+      );
 
-        const [alternate] = alternateTitle
-          ? await this.find.allByCssSelector(
-              `.euiComboBoxOption[title="${alternateTitle}" i]`,
-              this.WAIT_FOR_EXISTS_TIME
-            )
-          : [];
+      if (exactMatch) {
+        await this.clickOption(options.clickWithMouse, exactMatch.element);
+      } else {
+        // Fall back to a case-insensitive match (any option whose text equals
+        // the requested value when normalized).
+        const alternate = optionsWithText.find(
+          ({ formattedText }) =>
+            formattedText.toLowerCase() === trimmedValue.toLowerCase() && formattedText !== ''
+        );
 
         if (alternate) {
           this.log.warning(
-            `comboBox.setElement - Found similar option [${alternateTitle}] not [${trimmedValue}]`
+            `comboBox.setElement - Found similar option [${alternate.text}] not [${trimmedValue}]`
           );
-          await this.clickOption(options.clickWithMouse, alternate);
+          await this.clickOption(options.clickWithMouse, alternate.element);
         } else {
           // if it doesn't find the item which text starts with value, it will choose the first option
           this.log.warning(

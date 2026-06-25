@@ -1,0 +1,70 @@
+{
+  "10.1.0": [
+    {
+      "kind": "alert",
+      "metadata": {
+        "name": "test rule",
+        "description": "a test alerting v2 rule",
+        "tags": ["test"]
+      },
+      "time_field": "@timestamp",
+      "schedule": {
+        "every": "1m",
+        "lookback": "5m"
+      },
+      "recovery_strategy": "no_breach",
+      "query": {
+        "format": "standalone",
+        "breach": {
+          "query": "FROM logs-* | LIMIT 10"
+        }
+      },
+      "state_transition": {
+        "pending_count": 0,
+        "recovering_count": 0
+      },
+      "grouping": {
+        "fields": ["host.name"]
+      },
+      "enabled": true,
+      "createdBy": "elastic",
+      "updatedBy": "elastic",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "10.2.0": [
+    {
+      "kind": "alert",
+      "metadata": {
+        "name": "test rule",
+        "description": "a test alerting v2 rule",
+        "tags": ["test"]
+      },
+      "time_field": "@timestamp",
+      "schedule": {
+        "every": "1m",
+        "lookback": "5m"
+      },
+      "recovery_strategy": "no_breach",
+      "query": {
+        "format": "standalone",
+        "breach": {
+          "query": "FROM logs-* | LIMIT 10"
+        }
+      },
+      "state_transition": {
+        "pending_count": 0,
+        "recovering_count": 0
+      },
+      "grouping": {
+        "fields": ["host.name"]
+      },
+      "enabled": true,
+      "createdBy": "elastic",
+      "updatedBy": "elastic",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}

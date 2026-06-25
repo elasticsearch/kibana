@@ -17,10 +17,12 @@ import { WorkflowsManagementUiActions } from '@kbn/workflows/common/privileges';
 const CapabilitiesMap = {
   canCreateWorkflow: WorkflowsManagementUiActions.create,
   canReadWorkflow: WorkflowsManagementUiActions.read,
+  canReadManagedWorkflow: WorkflowsManagementUiActions.readManaged,
   canUpdateWorkflow: WorkflowsManagementUiActions.update,
   canDeleteWorkflow: WorkflowsManagementUiActions.delete,
   canExecuteWorkflow: WorkflowsManagementUiActions.execute,
   canReadWorkflowExecution: WorkflowsManagementUiActions.readExecution,
+  canReadManagedWorkflowExecution: WorkflowsManagementUiActions.readManagedExecution,
   canCancelWorkflowExecution: WorkflowsManagementUiActions.cancelExecution,
 } as const;
 

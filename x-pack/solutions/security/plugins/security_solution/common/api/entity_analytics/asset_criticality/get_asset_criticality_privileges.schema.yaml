@@ -8,8 +8,11 @@ paths:
       x-labels: [ess, serverless]
       x-internal: true
       x-codegen-enabled: true
+      deprecated: true
       operationId: AssetCriticalityGetPrivileges
       summary: Get Asset Criticality Privileges
+      description: |
+        **Deprecated in 9.4.0.** Use the Entity Store APIs to check privileges for managing asset criticality.
       responses:
         '200':
           description: Successful response

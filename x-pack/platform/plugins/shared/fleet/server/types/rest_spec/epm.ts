@@ -331,6 +331,7 @@ export const InstalledPackageSchema = schema.object(
       }),
       { maxSize: 10000 }
     ),
+    rolledBack: schema.maybe(schema.boolean()),
   },
   { meta: { id: 'installed_package' } }
 );

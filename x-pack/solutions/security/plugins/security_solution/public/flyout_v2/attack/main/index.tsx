@@ -16,10 +16,7 @@ import { flyoutProviders } from '../../shared/components/flyout_provider';
 import { NotesDetails } from '../../shared/tools/notes';
 import { useKibana } from '../../../common/lib/kibana';
 import { Header } from './header';
-
-const BODY_PLACEHOLDER = i18n.translate('xpack.securitySolution.flyoutV2.attack.body.placeholder', {
-  defaultMessage: 'Attack details body',
-});
+import { OverviewTab } from './tabs/overview_tab';
 
 const FOOTER_PLACEHOLDER = i18n.translate(
   'xpack.securitySolution.flyoutV2.attack.footer.placeholder',
@@ -32,15 +29,18 @@ export interface AttackFlyoutProps {
    */
   hit: DataTableRecord;
   /**
-   * Callback invoked after attack mutations (status change, assignee update, etc.) to refresh related views.
+   * Callback invoked after attack mutations (status change, assignee update, etc.).
+   * Provided by `AttackFlyoutWrapper`; it refetches the attack document so the
+   * flyout UI reflects the mutation without the user having to close and re-open it,
+   * and notifies the surface that opened the flyout to refresh as well.
    */
   onAttackUpdated: () => void;
 }
 
 /**
- * Content for the attack flyout v2. Renders the header with all sub-components
- * (title, status, assignees, notes, share action). Body and footer are wired in
- * subsequent PRs; they currently render placeholders.
+ * Content for the attack flyout. Receives a fully-resolved `hit` from
+ * `AttackFlyoutWrapper` and renders the header and overview tab. The footer is
+ * wired in a subsequent PR; it currently renders a placeholder.
  */
 export const AttackFlyout = memo(({ hit, onAttackUpdated }: AttackFlyoutProps) => {
   const { services } = useKibana();
@@ -66,9 +66,7 @@ export const AttackFlyout = memo(({ hit, onAttackUpdated }: AttackFlyoutProps) =
         <Header hit={hit} onAttackUpdated={onAttackUpdated} onShowNotes={onShowNotes} />
       </EuiFlyoutHeader>
       <EuiFlyoutBody data-test-subj="attack-flyout-body">
-        <EuiText>
-          <p>{BODY_PLACEHOLDER}</p>
-        </EuiText>
+        <OverviewTab hit={hit} />
       </EuiFlyoutBody>
       <EuiFlyoutFooter data-test-subj="attack-flyout-footer">
         <EuiText>

@@ -1,115 +1,115 @@
 {
-  "sha1": "9d58493d56d08ec156b9dca742f157c04c1bab6a",
+  "sha1": "cc9ae60c8779fd5c34242a99da9a81e6c0ebdf2b",
   "tests": [
     {
       "id": "e7ca8c886a58426-d57f60fe1d6db3b",
       "title": "Home page Loads the app and renders the indices tab by default",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 66,
+        "line": 67,
         "column": 7
       }
     },
     {
       "id": "e7ca8c886a58426-27b5341489d2049",
       "title": "Home page Indices - renders the indices tab",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 84,
+        "line": 85,
         "column": 7
       }
     },
     {
       "id": "e7ca8c886a58426-8af903399832657",
       "title": "Home page Indices - can create an index",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 95,
+        "line": 96,
         "column": 7
       }
     },
     {
       "id": "e7ca8c886a58426-6254649b2eeb89f",
       "title": "Home page Data streams - renders the data streams tab",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 105,
+        "line": 106,
         "column": 7
       }
     },
     {
       "id": "e7ca8c886a58426-cd9616071db0523",
       "title": "Home page Data streams - renders storage size units in uppercase",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 116,
+        "line": 117,
         "column": 7
       }
     },
     {
       "id": "e7ca8c886a58426-c4e1c8ec6b68b76",
       "title": "Home page Index templates - renders the index templates tab",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 170,
+        "line": 171,
         "column": 7
       }
     },
     {
       "id": "e7ca8c886a58426-9c13e3ee7e1f9fe",
       "title": "Home page Component templates - renders the component templates tab",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 181,
+        "line": 182,
         "column": 7
       }
     },
     {
       "id": "e7ca8c886a58426-9b94d3afcaf88b6",
       "title": "Home page Enrich policies - renders the enrich policies tab",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/index_management/test/scout/ui/tests/home_page.spec.ts",
-        "line": 196,
+        "line": 197,
         "column": 7
       }
     },

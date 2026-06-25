@@ -15,8 +15,10 @@ import {
   EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { PackQueryFormData } from './queries/use_pack_query_form';
+import type { PackQueryFormData, UsePackQueryFormProps } from './queries/use_pack_query_form';
 import { OS_LABELS, PLATFORM_IDS, isPlatformId } from './queries/platforms';
+import { ExperimentalFeaturesService } from '../common/experimental_features_service';
+import { formatQuerySchedule } from './format_query_schedule';
 
 export interface PackQueriesTableProps {
   data: PackQueryFormData[];
@@ -25,6 +27,7 @@ export interface PackQueriesTableProps {
   onEditClick?: (item: PackQueryFormData) => void;
   selectedItems?: PackQueryFormData[];
   setSelectedItems?: (selection: PackQueryFormData[]) => void;
+  packSchedule?: UsePackQueryFormProps['packSchedule'];
 }
 
 const PackQueriesTableComponent: React.FC<PackQueriesTableProps> = ({
@@ -34,7 +37,23 @@ const PackQueriesTableComponent: React.FC<PackQueriesTableProps> = ({
   onEditClick,
   selectedItems,
   setSelectedItems,
+  packSchedule,
 }) => {
+  const isRruleSchedulingEnabled = ExperimentalFeaturesService.get().rruleScheduling;
+
+  const renderScheduleColumn = useCallback(
+    (_: unknown, item: PackQueryFormData) =>
+      formatQuerySchedule(
+        item.schedule_type
+          ? {
+              schedule_type: item.schedule_type,
+              interval: item.interval,
+              rrule_schedule: item.rrule_schedule,
+            }
+          : packSchedule ?? { interval: item.interval }
+      ),
+    [packSchedule]
+  );
   const renderDeleteAction = useCallback(
     (item: PackQueryFormData) => (
       <EuiToolTip
@@ -129,13 +148,20 @@ const PackQueriesTableComponent: React.FC<PackQueriesTableProps> = ({
         }),
         width: '20%',
       },
-      {
-        field: 'interval',
-        name: i18n.translate('xpack.osquery.pack.queriesTable.intervalColumnTitle', {
-          defaultMessage: 'Interval (s)',
-        }),
-        width: '100px',
-      },
+      // Flag off: keep the legacy "Interval (s)" column in its original
+      // position (right after ID). Flag on: the Schedule column moves to the
+      // end (after platform / version).
+      ...(!isRruleSchedulingEnabled
+        ? [
+            {
+              field: 'interval',
+              name: i18n.translate('xpack.osquery.pack.queriesTable.intervalColumnTitle', {
+                defaultMessage: 'Interval (s)',
+              }),
+              width: '100px',
+            },
+          ]
+        : []),
       {
         field: 'platform',
         name: i18n.translate('xpack.osquery.pack.queriesTable.osColumnTitle', {
@@ -150,6 +176,17 @@ const PackQueriesTableComponent: React.FC<PackQueriesTableProps> = ({
         }),
         render: renderVersionColumn,
       },
+      ...(isRruleSchedulingEnabled
+        ? [
+            {
+              field: 'interval',
+              name: i18n.translate('xpack.osquery.pack.queriesTable.scheduleColumnTitle', {
+                defaultMessage: 'Schedule',
+              }),
+              render: renderScheduleColumn,
+            },
+          ]
+        : []),
       ...(!isReadOnly
         ? [
             {
@@ -169,7 +206,15 @@ const PackQueriesTableComponent: React.FC<PackQueriesTableProps> = ({
           ]
         : []),
     ],
-    [isReadOnly, renderDeleteAction, renderEditAction, renderPlatformColumn, renderVersionColumn]
+    [
+      isReadOnly,
+      isRruleSchedulingEnabled,
+      renderDeleteAction,
+      renderEditAction,
+      renderPlatformColumn,
+      renderScheduleColumn,
+      renderVersionColumn,
+    ]
   );
 
   const sorting = useMemo(

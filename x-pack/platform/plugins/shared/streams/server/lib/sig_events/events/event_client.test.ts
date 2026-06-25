@@ -22,7 +22,6 @@ const createEvent = (): SigEvent => ({
   root_cause: 'Test root cause',
   criticality: 50,
   confidence: 0.8,
-  impact: 'medium',
   recommendations: ['Investigate the test signal'],
 });
 

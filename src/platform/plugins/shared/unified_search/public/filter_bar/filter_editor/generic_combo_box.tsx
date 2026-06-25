@@ -16,6 +16,14 @@ export interface GenericComboBoxProps<T> {
   options: T[];
   selectedOptions: T[];
   getLabel: (value: T) => string;
+  /**
+   * Returns a stable `data-test-subj` for each option.
+   *
+   * EUI no longer exposes the option label with the native `title`
+   * attribute when truncating, so consumers should provide a stable
+   * test hook here instead of relying on `[title="..."]`.
+   */
+  getOptionTestSubj?: (value: T) => string | undefined;
   onChange: (values: T[]) => void;
   renderOption?: (
     option: EuiComboBoxOptionOption,
@@ -34,10 +42,13 @@ export interface GenericComboBoxProps<T> {
  * selected objects, rather than an option object.
  */
 export function GenericComboBox<T>(props: GenericComboBoxProps<T>) {
-  const { options, selectedOptions, getLabel, onChange, ...otherProps } = props;
+  const { options, selectedOptions, getLabel, getOptionTestSubj, onChange, ...otherProps } = props;
   const { euiTheme } = useEuiTheme();
   const labels = options.map(getLabel);
-  const euiOptions: EuiComboBoxOptionOption[] = labels.map((label) => ({ label }));
+  const euiOptions: EuiComboBoxOptionOption[] = options.map((option, idx) => {
+    const testSubj = getOptionTestSubj?.(option);
+    return testSubj ? { label: labels[idx], 'data-test-subj': testSubj } : { label: labels[idx] };
+  });
   const selectedEuiOptions = selectedOptions
     .filter((option) => {
       return options.indexOf(option) !== -1;

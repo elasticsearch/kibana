@@ -145,6 +145,10 @@ components:
             status:
               description: The status of the data stream
               $ref: "#/components/schemas/TaskStatus"
+            phase:
+              description: The current phase of the data stream generation workflow
+              type: string
+              maxLength: 64
     IntegrationResponse:
       description: The integration response object with its settings.
       allOf:

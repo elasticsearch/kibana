@@ -75,7 +75,7 @@ describe('EditDeletePhaseFlyout', () => {
 
     expect(screen.getByTestId(`${DATA_TEST_SUBJ}DeleteAfterValue`)).toHaveValue(30);
     expect(screen.getByTestId(`${DATA_TEST_SUBJ}DeleteAfterUnit`)).toHaveValue('d');
-    expect(screen.getByTestId(`${DATA_TEST_SUBJ}ApplyButton`)).toBeDisabled();
+    expect(screen.getByTestId(`${DATA_TEST_SUBJ}ApplyButton`)).toBeEnabled();
     expect(screen.queryByTestId(`${DATA_TEST_SUBJ}DeleteAfterError`)).not.toBeInTheDocument();
   });
 

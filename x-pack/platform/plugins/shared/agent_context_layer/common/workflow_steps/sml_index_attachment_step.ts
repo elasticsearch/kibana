@@ -41,6 +41,7 @@ const MAX_SML_REFERENCES = 100;
 const MAX_SML_PERMISSIONS = 100;
 const MAX_SML_TAGS = 100;
 const MAX_SML_TAG_LENGTH = 100;
+const MAX_SML_ES_INDICES = 100;
 
 const ChunkSchema = z.object({
   type: z
@@ -88,6 +89,13 @@ const ChunkSchema = z.object({
     .optional()
     .describe(
       'Optional tags for grouping and retrieval. Must be lowercase alphanumeric; hyphens and underscores are allowed (e.g. ["otel", "my-tag"]). Tags are matched with OR semantics on the list endpoint.'
+    ),
+  elasticsearchIndices: z
+    .array(z.string().max(MAX_SML_IDENTIFIER_LENGTH))
+    .max(MAX_SML_ES_INDICES)
+    .optional()
+    .describe(
+      'Optional Elasticsearch index / alias / data-stream names whose data this chunk depends on. Viewers must hold the ES `read` privilege on every listed name to see the chunk at search time.'
     ),
 });
 

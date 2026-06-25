@@ -14,6 +14,7 @@ import type { LifecyclePhase } from '../data_lifecycle/lifecycle_types';
 export interface LifecyclePreviewState {
   isActive: boolean;
   hasUnsavedChanges: boolean;
+  isDslDownsampleFlyoutOpen: boolean;
   retentionPeriod: string | null;
   dataPhasesCount: number | null;
   downsampleStepsCount: number | null;
@@ -31,6 +32,7 @@ export interface LifecyclePreviewApi extends LifecyclePreviewState {
     phases: LifecyclePhase[];
     downsampleSteps: DownsampleStep[] | null;
   }) => void;
+  setIsDslDownsampleFlyoutOpen: (isOpen: boolean) => void;
   clearPreview: () => void;
 }
 
@@ -39,6 +41,7 @@ const LifecyclePreviewContext = createContext<LifecyclePreviewApi | undefined>(u
 const defaultState: LifecyclePreviewState = {
   isActive: false,
   hasUnsavedChanges: false,
+  isDslDownsampleFlyoutOpen: false,
   retentionPeriod: null,
   dataPhasesCount: null,
   downsampleStepsCount: null,
@@ -103,13 +106,26 @@ export const LifecyclePreviewProvider = ({ children }: { children: React.ReactNo
     []
   );
 
+  const setIsDslDownsampleFlyoutOpen = useCallback((isDslDownsampleFlyoutOpen: boolean) => {
+    setState((prev) =>
+      prev.isDslDownsampleFlyoutOpen === isDslDownsampleFlyoutOpen
+        ? prev
+        : { ...prev, isDslDownsampleFlyoutOpen }
+    );
+  }, []);
+
   const clearPreview = useCallback(() => {
     setState((prev) => {
-      if (isEqual(prev, defaultState)) {
+      const next = {
+        ...defaultState,
+        isDslDownsampleFlyoutOpen: prev.isDslDownsampleFlyoutOpen,
+      };
+
+      if (isEqual(prev, next)) {
         return prev;
       }
 
-      return { ...defaultState };
+      return next;
     });
   }, []);
 
@@ -122,6 +138,7 @@ export const LifecyclePreviewProvider = ({ children }: { children: React.ReactNo
       setDataPhasesCount,
       setDownsampleStepsCount,
       setTimelineModel,
+      setIsDslDownsampleFlyoutOpen,
       clearPreview,
     };
   }, [
@@ -129,6 +146,7 @@ export const LifecyclePreviewProvider = ({ children }: { children: React.ReactNo
     setDataPhasesCount,
     setDownsampleStepsCount,
     setHasUnsavedChanges,
+    setIsDslDownsampleFlyoutOpen,
     setRetentionPeriod,
     setIsActive,
     setTimelineModel,

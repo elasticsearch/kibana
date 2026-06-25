@@ -666,24 +666,6 @@ describe('generateOpenApiDocument', () => {
         expectedState: 'Experimental',
       },
       {
-        name: 'router with beta stability',
-        routerConfig: {
-          routers: {
-            testRouter: {
-              routes: [
-                {
-                  path: '/test-path/{id}/{path*}',
-                  options: { availability: { stability: 'beta' }, access: 'public' },
-                },
-              ],
-            },
-          },
-          versionedRouters: {},
-        } as CreateTestRouterArgs,
-        expectedPath: '/test-path/{id}/{path}',
-        expectedState: 'Beta',
-      },
-      {
         name: 'router with stable stability',
         routerConfig: {
           routers: {
@@ -741,32 +723,6 @@ describe('generateOpenApiDocument', () => {
         expectedState: 'Experimental',
       },
       {
-        name: 'versioned router with beta stability',
-        routerConfig: {
-          routers: {},
-          versionedRouters: {
-            testVersionedRouter: {
-              routes: [
-                {
-                  path: '/test-path',
-                  options: {
-                    access: 'public',
-                    options: { availability: { stability: 'beta' } },
-                    security: {
-                      authz: {
-                        requiredPrivileges: ['foo'],
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        } as CreateTestRouterArgs,
-        expectedPath: '/test-path',
-        expectedState: 'Beta',
-      },
-      {
         name: 'versioned router with stable stability',
         routerConfig: {
           routers: {},
@@ -791,6 +747,50 @@ describe('generateOpenApiDocument', () => {
         } as CreateTestRouterArgs,
         expectedPath: '/test-path',
         expectedState: 'Generally available',
+      },
+      {
+        name: 'router with tech_preview stability',
+        routerConfig: {
+          routers: {
+            testRouter: {
+              routes: [
+                {
+                  path: '/test-path/{id}/{path*}',
+                  options: { availability: { stability: 'tech_preview' }, access: 'public' },
+                },
+              ],
+            },
+          },
+          versionedRouters: {},
+        } as CreateTestRouterArgs,
+        expectedPath: '/test-path/{id}/{path}',
+        expectedState: 'Technical Preview',
+      },
+      {
+        name: 'versioned router with tech_preview stability',
+        routerConfig: {
+          routers: {},
+          versionedRouters: {
+            testVersionedRouter: {
+              routes: [
+                {
+                  path: '/test-path',
+                  options: {
+                    access: 'public',
+                    options: { availability: { stability: 'tech_preview' } },
+                    security: {
+                      authz: {
+                        requiredPrivileges: ['foo'],
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        } as CreateTestRouterArgs,
+        expectedPath: '/test-path',
+        expectedState: 'Technical Preview',
       },
       {
         name: 'versioned router without availability',

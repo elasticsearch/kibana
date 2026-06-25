@@ -76,10 +76,22 @@ export const registerListDatasetsRoute = ({
             });
           }
 
-          const { page, per_page: perPage } = request.query;
+          const {
+            page,
+            per_page: perPage,
+            search,
+            sort_field: sortField,
+            sort_order: sortOrder,
+          } = request.query;
           const evalsContext = await context.evals;
           const datasetClient = evalsContext.datasetService.getClient();
-          const datasets = await datasetClient.list({ page, perPage });
+          const datasets = await datasetClient.list({
+            page,
+            perPage,
+            search,
+            sortField,
+            sortOrder,
+          });
 
           return response.ok({
             body: datasets,

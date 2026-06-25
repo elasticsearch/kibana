@@ -7,16 +7,17 @@
 
 import React from 'react';
 import { EuiFlexGroup } from '@elastic/eui';
-import type { RuleResponse } from '@kbn/alerting-v2-schemas';
 import {
   RelatedAlertEpisode,
   type RelatedAlertEpisodeProps,
 } from '../../related/related_alert_episode';
 import type { AlertEpisode } from '../../../queries/episodes_query';
+import { isRuleLoaded, type RuleState } from '../../../types/rule_state';
+import { getRelatedEpisodeMissingRuleTitle } from './translations';
 
 export interface RelatedAlertEpisodesListProps {
   rows: AlertEpisode[];
-  rule: RuleResponse;
+  ruleState: RuleState;
   getEpisodeAction: (episodeId: string) => RelatedAlertEpisodeProps['episodeAction'];
   getGroupAction: (groupHash: string) => RelatedAlertEpisodeProps['groupAction'];
   getEpisodeDetailsHref: (episodeId: string) => string;
@@ -27,9 +28,23 @@ export interface RelatedAlertEpisodesListProps {
   compressed?: boolean;
 }
 
+const getRuleDisplayFromState = (ruleState: RuleState, episodeId: string | undefined) => {
+  if (isRuleLoaded(ruleState)) {
+    return {
+      ruleName: ruleState.rule.metadata.name,
+      groupingFields: ruleState.rule.grouping?.fields ?? [],
+    };
+  }
+
+  return {
+    ruleName: episodeId ? getRelatedEpisodeMissingRuleTitle(episodeId) : '',
+    groupingFields: [],
+  };
+};
+
 export function RelatedAlertEpisodesList({
   rows,
-  rule,
+  ruleState,
   getEpisodeAction,
   getGroupAction,
   getEpisodeDetailsHref,
@@ -40,11 +55,13 @@ export function RelatedAlertEpisodesList({
       {rows.map((row) => {
         const relatedId = row['episode.id'];
         const relatedGroupHash = row.group_hash;
+        const { ruleName, groupingFields } = getRuleDisplayFromState(ruleState, relatedId);
         return (
           <RelatedAlertEpisode
             key={relatedId}
             episode={row}
-            rule={rule}
+            ruleName={ruleName}
+            groupingFields={groupingFields}
             episodeAction={getEpisodeAction(relatedId)}
             groupAction={relatedGroupHash ? getGroupAction(relatedGroupHash) : undefined}
             href={getEpisodeDetailsHref(relatedId)}

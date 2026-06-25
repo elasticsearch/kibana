@@ -43,6 +43,7 @@ export const buildDimensionOption = ({
     disabled: isDisabled,
     key: dimension.name,
     dimension,
+    'data-test-subj': `dimensionSelectorOption-${dimension.name}`,
   };
   if (appendNode) {
     option.append = appendNode;

@@ -6,7 +6,3 @@
  */
 
 export const ALERTING_RULE_DATASET = 'alerting-rules';
-
-export const ALERTING_RULE_CHANGE_HISTORY_SENSITIVE_FIELDS = {
-  attributes: { apiKey: true, uiamApiKey: true },
-} as const;

@@ -241,7 +241,7 @@ export const createTemplatesServiceMock = (): TemplatesServiceMock => {
 
 export const createFieldDefinitionsServiceMock = (): FieldDefinitionsServiceMock => {
   const service: PublicMethodsOf<FieldDefinitionsService> = lazyObject({
-    getFieldDefinitions: jest.fn(),
+    getFieldDefinitions: jest.fn().mockResolvedValue({ fieldDefinitions: [], total: 0 }),
     getFieldDefinition: jest.fn(),
     createFieldDefinition: jest.fn(),
     updateFieldDefinition: jest.fn(),

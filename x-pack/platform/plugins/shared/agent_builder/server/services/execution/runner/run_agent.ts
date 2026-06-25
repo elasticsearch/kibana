@@ -77,7 +77,6 @@ export const createAgentHandlerContext = async <TParams = Record<string, unknown
     skills: true,
     subagents: isExperimentalEnabled,
     todos: isExperimentalEnabled,
-    askUserQuestion: isExperimentalEnabled,
     bash: isBashEnabled,
   };
 

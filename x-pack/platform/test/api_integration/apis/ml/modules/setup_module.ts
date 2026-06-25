@@ -327,16 +327,6 @@ export default ({ getService }: FtrProviderContext) => {
         responseCode: 200,
         jobs: [
           {
-            jobId: 'pf12_packetbeat_dns_tunneling_ea',
-            jobState: JOB_STATE.CLOSED,
-            datafeedState: DATAFEED_STATE.STOPPED,
-          },
-          {
-            jobId: 'pf12_packetbeat_rare_dns_question_ea',
-            jobState: JOB_STATE.CLOSED,
-            datafeedState: DATAFEED_STATE.STOPPED,
-          },
-          {
             jobId: 'pf12_packetbeat_rare_server_domain_ea',
             jobState: JOB_STATE.CLOSED,
             datafeedState: DATAFEED_STATE.STOPPED,

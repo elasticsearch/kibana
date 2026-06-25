@@ -66,6 +66,18 @@ const PackDetailsPageComponent = () => {
     [data]
   );
 
+  const packSchedule = useMemo(
+    () =>
+      data?.schedule_type
+        ? {
+            schedule_type: data.schedule_type,
+            interval: data.interval,
+            rrule_schedule: data.rrule_schedule,
+          }
+        : undefined,
+    [data?.schedule_type, data?.interval, data?.rrule_schedule]
+  );
+
   const backLink = useMemo(
     () => (
       <EuiButtonEmpty iconType="chevronSingleLeft" {...packsListProps} flush="left" size="xs">
@@ -207,7 +219,12 @@ const PackDetailsPageComponent = () => {
         )}
         <EuiSpacer size="l" />
         {data && (
-          <PackQueriesStatusTable agentIds={agentIds} packName={data.name} data={queriesArray} />
+          <PackQueriesStatusTable
+            agentIds={agentIds}
+            packName={data.name}
+            data={queriesArray}
+            packSchedule={packSchedule}
+          />
         )}
       </div>
     );

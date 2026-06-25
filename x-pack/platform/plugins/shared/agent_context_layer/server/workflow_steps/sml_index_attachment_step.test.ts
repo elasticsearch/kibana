@@ -220,6 +220,7 @@ describe('createContextEngineAddEntryStepDefinition', () => {
           user_id: 'u',
           references: ['r1'],
           permissions: ['p1'],
+          elasticsearchIndices: ['idx1'],
         },
       ],
     });
@@ -235,7 +236,7 @@ describe('createContextEngineAddEntryStepDefinition', () => {
       references: [{ uri: 'r1' }],
       permissions: {
         kibana: { privileges: [{ name: 'p1' }] },
-        elasticsearch: { indices: [] },
+        elasticsearch: { indices: [{ name: 'idx1' }] },
       },
     });
   });

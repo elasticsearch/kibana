@@ -32,7 +32,7 @@ import { EditConnector } from '../../../edit_connector';
 import { StatusActionButton } from '../../../status/button';
 import { CaseViewAttachButton } from '../../../case_view/components/case_view_attach_button';
 import { EditTags } from '../../../case_view/components/edit_tags';
-import { UserActions } from '../../../user_actions';
+import { UserActions } from '../../user_actions';
 import { UserList } from '../../../case_view/components/user_list';
 import { useOnUpdateField } from '../../../case_view/use_on_update_field';
 import { useCasesContext } from '../../../cases_context/use_cases_context';
@@ -48,7 +48,7 @@ import type {
 } from '../../../user_actions_activity_bar/types';
 import { CASE_VIEW_PAGE_TABS } from '../../../../../common/types';
 import { CaseViewTabs } from '../../../case_view/case_view_tabs';
-import { Description } from '../../description';
+import { Description } from '../../../description';
 import { EditCategory } from '../../../case_view/components/edit_category';
 import { parseCaseUsers } from '../../../utils';
 import { CustomFields } from '../../../case_view/components/custom_fields';

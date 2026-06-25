@@ -8,9 +8,10 @@ paths:
     get:
       x-labels: [ess, serverless]
       x-codegen-enabled: true
+      deprecated: true
       operationId: GetAssetCriticalityRecord
       summary: Get an asset criticality record
-      description: Get the asset criticality record for a specific entity.
+      description: '**Deprecated in 9.4.0.** Get the asset criticality record for a specific entity.'
       parameters:
         - name: id_value
           in: query

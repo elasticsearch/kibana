@@ -9,7 +9,9 @@
 
 import type { Logger } from '@kbn/core/server';
 import { httpServerMock } from '@kbn/core/server/mocks';
+import { IndexPatternsFetcher } from '@kbn/data-views-plugin/server';
 import { KQLSyntaxError } from '@kbn/es-query';
+import { WorkflowsManagementApiActions } from '@kbn/workflows';
 import type { SearchTriggerEventLogResult } from '@kbn/workflows-ui';
 import { registerInternalRoutes } from '.';
 import { WORKFLOWS_EXECUTIONS_INDEX } from '../../../../common';
@@ -63,6 +65,10 @@ describe('Internal Routes', () => {
         hasAtLeast: jest.fn().mockReturnValue(true),
         type: 'enterprise',
       },
+    }),
+    core: Promise.resolve({
+      elasticsearch: { client: { asInternalUser: {} } },
+      uiSettings: { client: {} },
     }),
   };
 
@@ -144,6 +150,22 @@ describe('Internal Routes', () => {
     registerInternalRoutes(routeDependencies);
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  const createExecutionReadRequest = (
+    requestOptions?: Parameters<typeof httpServerMock.createKibanaRequest>[0],
+    authzResult: Record<string, boolean> = {
+      [WorkflowsManagementApiActions.readExecution]: true,
+      [WorkflowsManagementApiActions.readManagedExecution]: false,
+    }
+  ) => {
+    const request = httpServerMock.createKibanaRequest(requestOptions);
+    (request as any).authzResult = authzResult;
+    return request;
+  };
+
   it('should register the config route handler', () => {
     expect(routeHandlers[`GET:/internal/workflows/config`]).toBeDefined();
     expect(routeHandlers[`GET:/internal/workflows/config`].handler).toEqual(expect.any(Function));
@@ -201,13 +223,58 @@ describe('Internal Routes', () => {
     );
   });
 
+  it('should filter execution fields to unmanaged executions by default', async () => {
+    const getFieldsForWildcard = jest
+      .spyOn(IndexPatternsFetcher.prototype, 'getFieldsForWildcard')
+      .mockResolvedValue({ fields: [], indices: [] });
+    const response = httpServerMock.createResponseFactory();
+    const request = createExecutionReadRequest();
+
+    await routeHandlers[`GET:/internal/workflows/executions/fields`].handler(
+      mockContext,
+      request,
+      response
+    );
+
+    expect(getFieldsForWildcard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pattern: WORKFLOWS_EXECUTIONS_INDEX,
+        indexFilter: { bool: { must_not: [{ term: { managed: true } }] } },
+      })
+    );
+  });
+
+  it('should not filter execution fields when the user can read managed executions', async () => {
+    const getFieldsForWildcard = jest
+      .spyOn(IndexPatternsFetcher.prototype, 'getFieldsForWildcard')
+      .mockResolvedValue({ fields: [], indices: [] });
+    const response = httpServerMock.createResponseFactory();
+    const request = createExecutionReadRequest(
+      {},
+      {
+        [WorkflowsManagementApiActions.readExecution]: true,
+        [WorkflowsManagementApiActions.readManagedExecution]: true,
+      }
+    );
+
+    await routeHandlers[`GET:/internal/workflows/executions/fields`].handler(
+      mockContext,
+      request,
+      response
+    );
+
+    expect(getFieldsForWildcard).toHaveBeenCalledWith(
+      expect.not.objectContaining({ indexFilter: expect.anything() })
+    );
+  });
+
   it('should call api.searchExecutionsView with parsed query params and space id', async () => {
     mockApi.searchExecutionsView.mockResolvedValue({
       hits: { hits: [], total: { value: 0, relation: 'eq' } },
     });
 
     const response = httpServerMock.createResponseFactory();
-    const request = httpServerMock.createKibanaRequest({
+    const request = createExecutionReadRequest({
       query: {
         query: JSON.stringify({ term: { workflowId: 'wf-1' } }),
         from: 25,
@@ -230,6 +297,7 @@ describe('Internal Routes', () => {
         size: 25,
         sort: [{ startedAt: { order: 'desc' } }],
         trackTotalHits: true,
+        includeManagedExecutions: false,
       },
       'default'
     );
@@ -240,7 +308,7 @@ describe('Internal Routes', () => {
 
   it('should return bad request for invalid JSON query params', async () => {
     const response = httpServerMock.createResponseFactory();
-    const request = httpServerMock.createKibanaRequest({
+    const request = createExecutionReadRequest({
       query: {
         query: '{invalid-json',
       },
@@ -256,6 +324,32 @@ describe('Internal Routes', () => {
       body: { message: 'Invalid JSON in query' },
     });
     expect(mockApi.searchExecutionsView).not.toHaveBeenCalled();
+  });
+
+  it('should include managed execution results when the user has managed execution read', async () => {
+    mockApi.searchExecutionsView.mockResolvedValue({
+      hits: { hits: [], total: { value: 0, relation: 'eq' } },
+    });
+
+    const response = httpServerMock.createResponseFactory();
+    const request = createExecutionReadRequest(
+      {},
+      {
+        [WorkflowsManagementApiActions.readExecution]: true,
+        [WorkflowsManagementApiActions.readManagedExecution]: true,
+      }
+    );
+
+    await routeHandlers[`GET:/internal/workflows/executions`].handler(
+      mockContext,
+      request,
+      response
+    );
+
+    expect(mockApi.searchExecutionsView).toHaveBeenCalledWith(
+      expect.objectContaining({ includeManagedExecutions: true }),
+      'default'
+    );
   });
 
   it('should register trigger event log search routes', () => {
@@ -410,7 +504,7 @@ describe('Internal Routes', () => {
     });
 
     const response = httpServerMock.createResponseFactory();
-    const request = httpServerMock.createKibanaRequest({
+    const request = createExecutionReadRequest({
       method: 'post',
       path: '/internal/workflows/executions/options_list',
       body: {
@@ -444,6 +538,7 @@ describe('Internal Routes', () => {
                 },
               },
               { bool: { must_not: { exists: { field: 'stepId' } } } },
+              { bool: { must_not: [{ term: { managed: true } }] } },
             ]),
           },
         },
@@ -457,5 +552,44 @@ describe('Internal Routes', () => {
         invalidSelections: [],
       },
     });
+  });
+
+  it('should not exclude managed executions from options list when the user can read them', async () => {
+    mockSearch.mockResolvedValue({
+      aggregations: {
+        suggestions: { buckets: [] },
+        totalCardinality: { value: 0 },
+        validation: { buckets: {} },
+      },
+    });
+
+    const response = httpServerMock.createResponseFactory();
+    const request = createExecutionReadRequest(
+      {
+        method: 'post',
+        path: '/internal/workflows/executions/options_list',
+        body: {
+          size: 10,
+          fieldName: 'status',
+          filters: [],
+          selectedOptions: [],
+        },
+      },
+      {
+        [WorkflowsManagementApiActions.readExecution]: true,
+        [WorkflowsManagementApiActions.readManagedExecution]: true,
+      }
+    );
+
+    await routeHandlers[`POST:/internal/workflows/executions/options_list`].handler(
+      mockContext,
+      request,
+      response
+    );
+
+    const filter = mockSearch.mock.calls[0][0].query.bool.filter;
+    expect(filter).not.toEqual(
+      expect.arrayContaining([{ bool: { must_not: [{ term: { managed: true } }] } }])
+    );
   });
 });

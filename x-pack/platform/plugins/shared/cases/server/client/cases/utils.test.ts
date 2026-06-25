@@ -40,6 +40,7 @@ import {
 } from './utils';
 
 import type {
+  AttachmentV2,
   CaseCustomFields,
   CustomFieldsConfiguration,
   Observable,
@@ -50,6 +51,7 @@ import {
   CaseStatuses,
   CustomFieldTypes,
   UserActionActions,
+  UserActionTypes,
   CaseSeverity,
   ConnectorTypes,
 } from '../../../common/types/domain';
@@ -58,7 +60,7 @@ import { SECURITY_SOLUTION_OWNER } from '../../../common/constants';
 import { casesConnectors } from '../../connectors';
 import { userProfiles, userProfilesMap } from '../user_profiles.mock';
 import { mappings, mockCases } from '../../mocks';
-import type { ObservablePost } from '../../../common/types/api';
+import type { ObservablePost, CaseUserActionsDeprecatedResponse } from '../../../common/types/api';
 import { createMockConnector } from '@kbn/actions-plugin/server/application/connector/mocks';
 
 const allComments = [
@@ -477,6 +479,66 @@ describe('utils', () => {
           commentId: 'comment-user-1',
         },
       ]);
+    });
+
+    it('counts unified alert attachments toward the alerts total', async () => {
+      const unifiedAlertSingle = {
+        ...omit(commentAlert, ['alertId', 'index', 'rule']),
+        id: 'unified-alert-1',
+        type: 'security.alert',
+        attachmentId: 'alert-id-3',
+      } as unknown as AttachmentV2;
+      const unifiedAlertMulti = {
+        ...omit(commentAlert, ['alertId', 'index', 'rule']),
+        id: 'unified-alert-2',
+        type: 'security.alert',
+        attachmentId: ['alert-id-4', 'alert-id-5'],
+      } as unknown as AttachmentV2;
+
+      const res = await createIncident({
+        theCase: {
+          ...theCase,
+          // 1 legacy alert (1 id) + 2 unified alerts (1 + 2 ids) = 4 alerts total
+          comments: [commentAlert, unifiedAlertSingle, unifiedAlertMulti],
+        },
+        userActions,
+        connector,
+        alerts: [],
+        casesConnectors,
+        spaceId: 'default',
+      });
+
+      expect(res.comments).toEqual([
+        {
+          comment: 'Elastic Alerts attached to the case: 4',
+          commentId: 'mock-id-1-total-alerts',
+        },
+      ]);
+    });
+
+    it('skips the alerts summary when every alert (legacy or unified) has been pushed', async () => {
+      const pushedAt = '2019-11-25T21:55:00.177Z';
+      const unifiedAlertPushed = {
+        ...omit(commentAlert, ['alertId', 'index', 'rule']),
+        id: 'unified-alert-1',
+        type: 'security.alert',
+        attachmentId: ['alert-id-3', 'alert-id-4'],
+        pushed_at: pushedAt,
+      } as unknown as AttachmentV2;
+
+      const res = await createIncident({
+        theCase: {
+          ...theCase,
+          comments: [{ ...commentAlertMultipleIds, pushed_at: pushedAt }, unifiedAlertPushed],
+        },
+        userActions,
+        connector,
+        alerts: [],
+        casesConnectors,
+        spaceId: 'default',
+      });
+
+      expect(res.comments).toEqual([]);
     });
 
     it('adds the backlink to cases correctly', async () => {
@@ -949,6 +1011,46 @@ describe('utils', () => {
           comment:
             'Elastic Alerts attached to the case: 1\n\nFor more details, view the alerts in Kibana\nAlerts URL: https://example.com/s/test-space/app/security/cases/mock-id-1/?tabId=alerts',
           commentId: 'mock-id-1-total-alerts',
+        },
+      ]);
+    });
+
+    it('formats unified `comment` attachments using data.content', () => {
+      const unifiedComment = {
+        ...omit(commentObj, ['comment']),
+        id: 'comment-unified-1',
+        type: 'comment',
+        data: { content: 'Unified comment body' },
+      } as unknown as AttachmentV2;
+
+      const userActionsWithUnified = [
+        ...userActions,
+        {
+          ...userActions.find((action) => action.type === UserActionTypes.comment)!,
+          comment_id: unifiedComment.id,
+        },
+      ] as CaseUserActionsDeprecatedResponse;
+
+      const theCase = {
+        ...flattenCaseSavedObject({ savedObject: mockCases[0] }),
+        comments: [unifiedComment],
+        totalComments: 1,
+      };
+
+      const latestPushInfo = getLatestPushInfo('not-exists', userActionsWithUnified);
+
+      expect(
+        formatComments({
+          userActions: userActionsWithUnified,
+          theCase,
+          latestPushInfo,
+          userProfiles: userProfilesMap,
+          spaceId: 'default',
+        })
+      ).toEqual([
+        {
+          comment: 'Unified comment body\n\nAdded by elastic.',
+          commentId: 'comment-unified-1',
         },
       ]);
     });

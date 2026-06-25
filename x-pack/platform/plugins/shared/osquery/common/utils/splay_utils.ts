@@ -49,6 +49,50 @@ const SINGLE_UNIT_DURATION_REGEX = /^(\d+)\s*(s|m|h)$/i;
 const GO_COMPOUND_DURATION_REGEX = /^(?:\d+(?:\.\d+)?(?:ms|us|µs|ns|s|m|h))+$/;
 
 /**
+ * Single-segment matcher for {@link sumCompoundSeconds}. Globally matches each
+ * `<number><unit>` pair so the total can be accumulated across a compound
+ * string.
+ */
+const GO_DURATION_SEGMENT_REGEX = /(\d+(?:\.\d+)?)(ms|us|µs|ns|h|m|s)/g;
+
+/**
+ * Total a Go compound duration string (`"1h30m"` → `5400`) into seconds.
+ * Mirrors `time.ParseDuration` so a value Kibana accepts is one beats accepts.
+ * Sub-second segments (`ms`, `us`, `µs`, `ns`) fold into the total as
+ * fractional seconds. Unmatched input yields `0` — callers should pre-validate
+ * with {@link parseSplayPermissive} (which rejects non-duration shapes).
+ */
+export const sumCompoundSeconds = (raw: string): number => {
+  let total = 0;
+  for (const match of raw.matchAll(GO_DURATION_SEGMENT_REGEX)) {
+    const value = Number(match[1]);
+    switch (match[2]) {
+      case 'h':
+        total += value * 3600;
+        break;
+      case 'm':
+        total += value * 60;
+        break;
+      case 's':
+        total += value;
+        break;
+      case 'ms':
+        total += value / 1_000;
+        break;
+      case 'us':
+      case 'µs':
+        total += value / 1_000_000;
+        break;
+      case 'ns':
+        total += value / 1_000_000_000;
+        break;
+    }
+  }
+
+  return total;
+};
+
+/**
  * Discriminated result from {@link parseSplayPermissive}.
  *
  * - `kind: 'simple'` — the duration is a single-unit value the form can render

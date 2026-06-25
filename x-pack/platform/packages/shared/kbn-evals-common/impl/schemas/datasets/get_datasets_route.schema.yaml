@@ -28,6 +28,33 @@ paths:
             minimum: 1
             maximum: 1000
             default: 25
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Filter datasets by name or description
+        - name: sort_field
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - name
+              - created_at
+              - updated_at
+              - examples_count
+            default: updated_at
+        - name: sort_order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
       responses:
         "200":
           description: Successful response

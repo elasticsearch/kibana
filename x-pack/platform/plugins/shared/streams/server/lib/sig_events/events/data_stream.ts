@@ -22,7 +22,6 @@ export const eventsMappings = {
     previous_event_id: mappings.keyword(),
     stream_names: mappings.keyword(),
     status: mappings.keyword(),
-    impact: mappings.keyword(),
     title: mappings.text(),
     summary: mappings.text(),
   },
@@ -32,7 +31,7 @@ export type { SigEvent };
 
 export const eventsDataStream: DataStreamDefinition<typeof eventsMappings, StoredEvent> = {
   name: EVENTS_DATA_STREAM,
-  version: 5,
+  version: 6,
   hidden: true,
   template: {
     priority: 500,

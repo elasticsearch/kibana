@@ -105,6 +105,38 @@ describe('getMonacoCommandString', () => {
     });
     expect(result).toBeUndefined();
   });
+
+  it('should return a non-clickable warning message for a closed index', () => {
+    const result = getMonacoCommandString(
+      'test-index',
+      true,
+      {
+        canCreateIndex: true,
+        canEditIndex: true,
+        canReadIndex: true,
+      },
+      true
+    );
+    expect(result).toContain('⚠');
+    expect(result).toContain('closed');
+    expect(result).not.toContain('command:');
+  });
+
+  it('should return closed warning regardless of permissions when index is closed', () => {
+    const result = getMonacoCommandString(
+      'test-index',
+      false,
+      {
+        canCreateIndex: true,
+        canEditIndex: false,
+        canReadIndex: false,
+      },
+      true
+    );
+    expect(result).toContain('⚠');
+    expect(result).toContain('closed');
+    expect(result).not.toContain('Create lookup index');
+  });
 });
 
 describe('useCanCreateLookupIndex', () => {
@@ -268,6 +300,46 @@ describe('useLookupIndexCommand', () => {
         }),
       ])
     );
+  });
+
+  it('should show closed warning decoration for a closed lookup index', async () => {
+    mockGetLookupIndices.mockResolvedValue({
+      indices: [{ name: 'test-index', isClosed: true }],
+    });
+
+    const { result } = renderHook(
+      () =>
+        useLookupIndexCommand(
+          mockEditorRef,
+          mockEditorModel,
+          mockGetLookupIndices,
+          mockQuery,
+          mockOnIndexCreated
+        ),
+      { wrapper: createWrapper }
+    );
+
+    result.current.addLookupIndicesDecorator();
+
+    await jest.advanceTimersByTimeAsync(600);
+
+    expect(mockModel.deltaDecorations).toHaveBeenCalledWith(
+      [],
+      expect.arrayContaining([
+        expect.objectContaining({
+          options: expect.objectContaining({
+            inlineClassName: expect.stringContaining('lookupIndexClosedBadge'),
+            hoverMessage: expect.objectContaining({
+              value: expect.stringContaining('closed'),
+            }),
+          }),
+        }),
+      ])
+    );
+
+    const call = (mockModel.deltaDecorations as jest.Mock).mock.calls[0];
+    const decoration = call[1][0];
+    expect(decoration.options.hoverMessage.value).not.toContain('command:');
   });
 
   it('should handle flyout close with index creation', async () => {

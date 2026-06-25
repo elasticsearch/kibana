@@ -137,6 +137,28 @@ export const WorkflowsManagementFeatureConfig: KibanaFeatureConfig = {
           groupType: 'independent',
           privileges: [
             {
+              id: 'workflow_read_managed',
+              name: i18n.translate(
+                'platform.plugins.shared.workflows_management.featureRegistry.readManagedWorkflowsSubFeaturePrivilege',
+                { defaultMessage: 'Read managed workflows' }
+              ),
+              includeIn: 'read',
+              savedObject: { all: [], read: [] },
+              api: [WorkflowsManagementApiActions.readManaged],
+              ui: [WorkflowsManagementUiActions.readManaged],
+            },
+            {
+              id: 'workflow_execution_read_managed',
+              name: i18n.translate(
+                'platform.plugins.shared.workflows_management.featureRegistry.readManagedWorkflowExecutionSubFeaturePrivilege',
+                { defaultMessage: 'Read managed workflow execution' }
+              ),
+              includeIn: 'read',
+              savedObject: { all: [], read: [] },
+              api: [WorkflowsManagementApiActions.readManagedExecution],
+              ui: [WorkflowsManagementUiActions.readManagedExecution],
+            },
+            {
               id: 'workflow_update_managed',
               name: i18n.translate(
                 'platform.plugins.shared.workflows_management.featureRegistry.updateManagedWorkflowsSubFeaturePrivilege',

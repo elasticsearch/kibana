@@ -327,7 +327,6 @@ export const createAgentHandlerContextMock = (): AgentHandlerContextMock => {
       skills: false,
       subagents: false,
       todos: false,
-      askUserQuestion: false,
       bash: false,
     },
     subAgentExecutor: {

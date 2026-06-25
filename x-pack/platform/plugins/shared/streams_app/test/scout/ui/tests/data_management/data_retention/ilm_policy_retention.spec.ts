@@ -11,10 +11,12 @@ import { omit } from 'lodash';
 import { test } from '../../../fixtures';
 import {
   closeToastsIfPresent,
-  openRetentionModal,
+  openLifecycleMethodFlyout,
+  RETENTION_TEST_IDS,
   saveRetentionChanges,
+  selectIlmPolicy,
   toggleInheritSwitch,
-} from '../../../fixtures/retention_helpers';
+} from '../../../fixtures/data_lifecycle_helpers';
 
 test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic }, () => {
   test.beforeAll(async ({ apiServices }) => {
@@ -58,22 +60,16 @@ test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic
     await apiServices.streams.clearStreamChildren('logs.otel');
   });
 
-  test('should show ILM policy button', async ({ page }) => {
-    await openRetentionModal(page);
+  test('should show ILM method card', async ({ page }) => {
+    await openLifecycleMethodFlyout(page);
     await toggleInheritSwitch(page, false);
-    await expect(page.getByRole('button', { name: 'ILM policy' })).toBeVisible();
+    await expect(page.getByTestId(RETENTION_TEST_IDS.methodCardIlm)).toBeVisible();
   });
 
   test('should select and save ILM policy', async ({ page }) => {
-    await openRetentionModal(page);
+    await openLifecycleMethodFlyout(page);
     await toggleInheritSwitch(page, false);
-
-    // Click ILM policy button
-    await page.getByRole('button', { name: 'ILM policy' }).click();
-
-    // Wait for the listbox to appear and select the first available policy
-    await page.getByRole('listbox', { name: 'Filter options' }).waitFor();
-    await page.getByRole('option', { name: /.alerts-ilm-policy/ }).click();
+    await selectIlmPolicy(page, '.alerts-ilm-policy');
 
     // Save changes
     await saveRetentionChanges(page);
@@ -85,13 +81,9 @@ test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic
   });
 
   test('should display selected ILM policy name', async ({ page }) => {
-    await openRetentionModal(page);
+    await openLifecycleMethodFlyout(page);
     await toggleInheritSwitch(page, false);
-
-    // Click ILM policy button and select policy
-    await page.getByRole('button', { name: 'ILM policy' }).click();
-    await page.getByRole('listbox', { name: 'Filter options' }).waitFor();
-    await page.getByRole('option', { name: /.alerts-ilm-policy/ }).click();
+    await selectIlmPolicy(page, '.alerts-ilm-policy');
 
     // Save changes
     await saveRetentionChanges(page);
@@ -103,13 +95,9 @@ test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic
   });
 
   test('should persist ILM policy selection across page reload', async ({ page, pageObjects }) => {
-    await openRetentionModal(page);
+    await openLifecycleMethodFlyout(page);
     await toggleInheritSwitch(page, false);
-
-    // Select ILM policy
-    await page.getByRole('button', { name: 'ILM policy' }).click();
-    await page.getByRole('listbox', { name: 'Filter options' }).waitFor();
-    await page.getByRole('option', { name: /.alerts-ilm-policy/ }).click();
+    await selectIlmPolicy(page, '.alerts-ilm-policy');
     await saveRetentionChanges(page);
 
     // Reload page
@@ -126,13 +114,9 @@ test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic
 
   test('should open ILM lifecycle phase popup and display phase details', async ({ page }) => {
     // First set an ILM policy
-    await openRetentionModal(page);
+    await openLifecycleMethodFlyout(page);
     await toggleInheritSwitch(page, false);
-
-    // Click ILM policy button and select a policy
-    await page.getByRole('button', { name: 'ILM policy' }).click();
-    await page.getByRole('listbox', { name: 'Filter options' }).waitFor();
-    await page.getByRole('option', { name: /.alerts-ilm-policy/ }).click();
+    await selectIlmPolicy(page, '.alerts-ilm-policy');
     await saveRetentionChanges(page);
 
     // Click on the hot phase button using test ID
@@ -252,15 +236,9 @@ test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic
 
         await pageObjects.streams.gotoDataRetentionTab(TSDB_STREAM);
 
-        await openRetentionModal(page);
+        await openLifecycleMethodFlyout(page);
         await toggleInheritSwitch(page, false);
-
-        // Click ILM policy button and select the downsampling policy
-        await page.getByRole('button', { name: 'ILM policy' }).click();
-        const ilmListbox = page.getByRole('listbox', { name: 'Filter options' });
-        await ilmListbox.waitFor();
-        await page.getByPlaceholder('Filter options').fill(policyName);
-        await page.getByTestId(`ilmPolicy-${policyName}`).click();
+        await selectIlmPolicy(page, policyName);
         await saveRetentionChanges(page);
 
         // Verify downsampling is rendered for the policy
@@ -326,15 +304,9 @@ test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic
 
         await pageObjects.streams.gotoDataRetentionTab(TSDB_STREAM);
 
-        await openRetentionModal(page);
+        await openLifecycleMethodFlyout(page);
         await toggleInheritSwitch(page, false);
-
-        // Click ILM policy button and select the downsampling policy
-        await page.getByRole('button', { name: 'ILM policy' }).click();
-        const ilmListbox = page.getByRole('listbox', { name: 'Filter options' });
-        await ilmListbox.waitFor();
-        await page.getByPlaceholder('Filter options').fill(policyName);
-        await page.getByTestId(`ilmPolicy-${policyName}`).click();
+        await selectIlmPolicy(page, policyName);
         await saveRetentionChanges(page);
 
         // Verify downsampling is rendered for the policy
@@ -403,15 +375,9 @@ test.describe('Stream data retention - ILM policy', { tag: tags.stateful.classic
 
         await pageObjects.streams.gotoDataRetentionTab(TSDB_STREAM);
 
-        await openRetentionModal(page);
+        await openLifecycleMethodFlyout(page);
         await toggleInheritSwitch(page, false);
-
-        // Click ILM policy button and select the policy
-        await page.getByRole('button', { name: 'ILM policy' }).click();
-        const ilmListbox = page.getByRole('listbox', { name: 'Filter options' });
-        await ilmListbox.waitFor();
-        await page.getByPlaceholder('Filter options').fill(policyName);
-        await page.getByTestId(`ilmPolicy-${policyName}`).click();
+        await selectIlmPolicy(page, policyName);
         await saveRetentionChanges(page);
 
         // Verify there is no downsampling step before editing (empty state is always rendered for TSDB)

@@ -71,8 +71,13 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       it('delete action is disabled on the list page', async function () {
         await PageObjects.settings.navigateToDataViews();
-        const isEnabled = await testSubjects.isEnabled('action-delete');
-        expect(isEnabled).to.be(false);
+        // Row icon actions expose disabled state with `aria-disabled="true"`
+        // (because `hasAriaDisabled` keeps the button focusable for its tooltip)
+        // instead of the native `disabled` attribute that `testSubjects.isEnabled` checks.
+        const ariaDisabled = await (
+          await testSubjects.find('action-delete')
+        ).getAttribute('aria-disabled');
+        expect(ariaDisabled).to.be('true');
       });
     });
   });

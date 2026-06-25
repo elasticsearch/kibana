@@ -108,12 +108,19 @@ export default function ({ getService }: FtrProviderContext) {
         // Make sure that the session time has somewhat elapsed to ensure
         // there is a noticable difference after extending the session
         await setTimeoutAsync(200);
-        const { body } = await getSessionInfo();
+        await getSessionInfo();
         await extendSession();
+        const afterExtend = Date.now();
         const { body: body2 } = await getSessionInfo();
+        const getOverhead = Date.now() - afterExtend;
 
-        // Check that the extended session has more time left than before
-        expect(body2.expiresInMs).not.to.be.lessThan(body.expiresInMs);
+        // POST resets the idle timer to now + idleTimeout (10s in this config).
+        // After the follow-up GET, expiresInMs should be close to the full
+        // idleTimeout, minus only that GET's round-trip overhead. This avoids
+        // racing the two GETs' variable round-trips against each other.
+        const idleTimeoutMs = 10_000;
+        expect(body2.expiresInMs).to.be.greaterThan(idleTimeoutMs - getOverhead - 100);
+        expect(body2.expiresInMs).to.be.lessThan(idleTimeoutMs + 100);
 
         // Check that session extension didn't alter `createdAt`.
         expect(await getSessionsCreatedAt()).to.eql(sessionsCreatedAtBeforeExtension);

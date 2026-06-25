@@ -1,10 +1,10 @@
 {
-  "sha1": "12824f59aacbbac911a687ba031a32f6b55e90db",
+  "sha1": "3acb7eb7d4304cf61de2071170bdf0d2c210c9da",
   "tests": [
     {
       "id": "f4c048e25988cb5-605d7a7bf19c60f",
       "title": "Hosts Page - Flyout Overview Tab - KPI charts and collapsible sections",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -13,14 +13,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 63,
+        "line": 89,
         "column": 9
       }
     },
     {
       "id": "f4c048e25988cb5-35a9aa41665f195",
       "title": "Hosts Page - Flyout Overview Tab - Services section",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -29,14 +29,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 103,
+        "line": 129,
         "column": 9
       }
     },
     {
       "id": "f4c048e25988cb5-d9d5a1fb8867828",
       "title": "Hosts Page - Flyout Metadata Tab",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -45,14 +45,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 117,
+        "line": 143,
         "column": 9
       }
     },
     {
       "id": "f4c048e25988cb5-45117973f50ff3b",
       "title": "Hosts Page - Flyout Metrics Tab",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -61,14 +61,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 131,
+        "line": 157,
         "column": 9
       }
     },
     {
       "id": "f4c048e25988cb5-f6e05596318ee58",
       "title": "Hosts Page - Flyout Processes Tab",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -77,14 +77,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 146,
+        "line": 172,
         "column": 9
       }
     },
     {
       "id": "f4c048e25988cb5-da68e3d67e89a90",
       "title": "Hosts Page - Flyout Logs Tab",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -93,14 +93,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 161,
+        "line": 187,
         "column": 9
       }
     },
     {
       "id": "f4c048e25988cb5-9ceded1164e0270",
       "title": "Hosts Page - Flyout Open as page and return",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -109,14 +109,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 174,
+        "line": 200,
         "column": 9
       }
     },
     {
       "id": "f4c048e25988cb5-58869cff261d35c",
       "title": "Hosts Page - Flyout Dashboards Tab",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -125,14 +125,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_flyout.spec.ts",
-        "line": 201,
+        "line": 227,
         "column": 9
       }
     },
     {
       "id": "429b26b1a93be7d-b4cd1ee38b3f8ad",
       "title": "Hosts Page - Empty State should show onboarding page when no data is present",
-      "expectedStatus": "skipped",
+      "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -141,7 +141,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/infra/test/scout/ui/tests/hosts/hosts_page_empty_state.spec.ts",
-        "line": 23,
+        "line": 22,
         "column": 9
       }
     },

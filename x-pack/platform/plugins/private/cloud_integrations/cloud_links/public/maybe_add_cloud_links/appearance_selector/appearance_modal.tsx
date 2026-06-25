@@ -194,7 +194,8 @@ export const AppearanceModal: FC<Props> = ({ closeModal, uiSettingsClient, isSer
     onChange,
   } = useAppearance({
     uiSettingsClient,
-    defaultColorMode: isServerless ? 'system' : 'space_default',
+    // Default new users (no persisted preference) to "System" so the UI follows their OS appearance.
+    defaultColorMode: 'system',
     defaultContrastMode: 'standard',
   });
 

@@ -143,7 +143,7 @@ const setEndpointExceptionWildcardCondition = () => {
     .first()
     .should('be.visible')
     .type(`{selectall}${ENDPOINT_FILE_PATH_FIELD}`);
-  cy.get(`.euiComboBoxOption[title="${ENDPOINT_FILE_PATH_FIELD}"]`).click();
+  cy.get(`[data-test-subj="filterFieldOption-${ENDPOINT_FILE_PATH_FIELD}"]`).click();
 
   cy.get(EXCEPTION_ITEM_CONTAINER).find(OPERATOR_INPUT).first().scrollIntoView();
   cy.get(EXCEPTION_ITEM_CONTAINER)

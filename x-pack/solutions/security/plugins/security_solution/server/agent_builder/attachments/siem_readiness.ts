@@ -314,10 +314,18 @@ The attachment contains:
 
 Each actionable finding includes:
 - category, severity (CRITICAL | WARNING | INFORMATIONAL), message, resource
+- type (continuity only): pipeline_failure | silence | volume_drop_warning | volume_drop_critical
 - affectedRules: detection rules impacted by this finding
 - affectedTactics: MITRE ATT&CK tactics with rule counts (total vs affected)
 - affectedPlatform: primary platform impacted (e.g., AWS, Endpoint, Azure)
 - recommendedActions: links to relevant Kibana pages and case creation
+
+Continuity pipeline items include silence and volume health fields:
+- silenceMs: milliseconds since the last event (null if stream never received events)
+- isSilent: true when the silence gap exceeds the category-specific threshold
+- lastFullDayDocs: document count for yesterday (the most recent complete day; the in-progress current day is excluded) (null if stream < 7 days old)
+- baseline7dAvg: average daily doc count over the prior full days (null if stream < 7 days old)
+- volumeDropPct: percentage drop vs baseline clamped to [0, ∞); null when baseline unavailable
 - blastRadiusStatus (optional): reliability of the blast radius fields
   - 'unavailable': a required lookup failed; affectedRules/Tactics/Platform are omitted and MUST be shown as "unavailable (lookup failed)" — never as "none"
   - 'partial': at least one rule's index resolution failed; the fields shown may be undercounted — append "(may be incomplete)" when presenting them

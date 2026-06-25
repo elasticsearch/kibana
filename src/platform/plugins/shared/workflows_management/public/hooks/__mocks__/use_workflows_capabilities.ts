@@ -12,10 +12,12 @@ import type { WorkflowsManagementCapabilities } from '@kbn/workflows-ui';
 export const mockWorkflowsManagementCapabilities: WorkflowsManagementCapabilities = {
   canCreateWorkflow: true,
   canReadWorkflow: true,
+  canReadManagedWorkflow: true,
   canUpdateWorkflow: true,
   canDeleteWorkflow: true,
   canExecuteWorkflow: true,
   canReadWorkflowExecution: true,
+  canReadManagedWorkflowExecution: true,
   canCancelWorkflowExecution: true,
 };
 

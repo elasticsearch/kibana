@@ -12,7 +12,11 @@ import { schema } from '@kbn/config-schema';
 import type { RouteDependencies } from '../types';
 import { API_VERSION, AVAILABILITY, OAS_TAG } from '../utils/route_constants';
 import { handleRouteError } from '../utils/route_error_handlers';
-import { WORKFLOW_READ_SECURITY } from '../utils/route_security';
+import {
+  assertCanReadManagedWorkflow,
+  hasWorkflowReadPrivilege,
+  WORKFLOW_READ_WITH_MANAGED_SECURITY,
+} from '../utils/route_security';
 import { withAvailabilityCheck } from '../utils/with_availability_check';
 
 export function registerMgetWorkflowsRoute(deps: RouteDependencies) {
@@ -21,7 +25,7 @@ export function registerMgetWorkflowsRoute(deps: RouteDependencies) {
     .post({
       path: '/api/workflows/mget',
       access: 'public',
-      security: WORKFLOW_READ_SECURITY,
+      security: WORKFLOW_READ_WITH_MANAGED_SECURITY,
       summary: 'Get workflows by IDs',
       description:
         'Retrieve multiple workflows by their IDs in a single request. Optionally use the `source` parameter to return only specific fields from each workflow document.',
@@ -63,8 +67,15 @@ export function registerMgetWorkflowsRoute(deps: RouteDependencies) {
       },
       withAvailabilityCheck(async (context, request, response) => {
         try {
+          if (!hasWorkflowReadPrivilege(request)) {
+            return response.forbidden();
+          }
           const spaceId = spaces.getSpaceId(request);
           const { ids, source } = request.body;
+          const workflowsForAuthorization = await api.getWorkflowsByIds(ids, spaceId);
+          workflowsForAuthorization.forEach((workflow) =>
+            assertCanReadManagedWorkflow(request, workflow)
+          );
           const workflows = await api.getWorkflowsSourceByIds(ids, spaceId, source);
           audit.logWorkflowMget(request, {
             requestedCount: ids.length,

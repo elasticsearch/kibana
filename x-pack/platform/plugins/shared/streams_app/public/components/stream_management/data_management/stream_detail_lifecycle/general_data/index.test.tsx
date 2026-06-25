@@ -40,18 +40,40 @@ jest.mock('../../../../../hooks/use_kibana', () => ({
         streams: {
           streamsRepositoryClient: { fetch: jest.fn() },
         },
+        share: {
+          url: {
+            locators: {
+              get: jest.fn(() => ({
+                getUrl: jest.fn(async () => '/mock-index-template-url'),
+              })),
+            },
+          },
+        },
       },
     },
     services: { telemetryClient: { trackRetentionChanged: jest.fn() } },
   }),
 }));
 
+jest.mock('../../../../../hooks/use_streams_app_router', () => ({
+  useStreamsAppRouter: () => ({ link: jest.fn(() => '/mock-router-link') }),
+}));
+
 jest.mock('../../../../../hooks/use_timefilter', () => ({
-  useTimefilter: () => ({ timeState: {} }),
+  useTimefilter: () => ({
+    timeState: {},
+    timeState$: { subscribe: () => ({ unsubscribe: () => {} }) },
+  }),
 }));
 
 jest.mock('@kbn/react-hooks', () => ({
   useAbortController: () => ({ signal: undefined }),
+  useAbortableAsync: () => ({
+    value: undefined,
+    loading: false,
+    error: undefined,
+    refresh: () => {},
+  }),
 }));
 
 jest.mock('../common/section_panel', () => ({
@@ -86,10 +108,6 @@ jest.mock('./cards/ingestion_card', () => ({
 
 jest.mock('./ingestion_rate', () => ({
   IngestionRate: () => <div data-test-subj="ingestionRate" />,
-}));
-
-jest.mock('./modal', () => ({
-  EditLifecycleModal: () => <div data-test-subj="editLifecycleModal" />,
 }));
 
 jest.mock('./lifecycle_summary', () => ({

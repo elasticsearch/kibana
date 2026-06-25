@@ -144,7 +144,7 @@ describe('helpers', function () {
         '299 Elasticsearch-8.10.0-SNAPSHOT-adb9fce96079b421c2575f0d2d445f492eb5f075 "Line 1:52: evaluation of [date_parse(geo.dest)] failed, treating result as null. Only first 20 failures recorded."';
       expect(parseWarning(warning)).toEqual([
         {
-          endColumn: 138,
+          endColumn: 71,
           endLineNumber: 1,
           message:
             'evaluation of [date_parse(geo.dest)] failed, treating result as null. Only first 20 failures recorded.',
@@ -161,7 +161,7 @@ describe('helpers', function () {
         '299 Elasticsearch-8.10.0-SNAPSHOT-adb9fce96079b421c2575f0d2d445f492eb5f075 "Line 1:52: evaluation of [date_parse(geo.dest)] failed, treating result as null. Only first 20 failures recorded.", 299 Elasticsearch-8.10.0-SNAPSHOT-adb9fce96079b421c2575f0d2d445f492eb5f075 "Line 1:84: evaluation of [date_parse(geo.src)] failed, treating result as null. Only first 20 failures recorded."';
       expect(parseWarning(warning)).toEqual([
         {
-          endColumn: 138,
+          endColumn: 71,
           endLineNumber: 1,
           message:
             'evaluation of [date_parse(geo.dest)] failed, treating result as null. Only first 20 failures recorded.',
@@ -171,7 +171,7 @@ describe('helpers', function () {
           code: 'warningFromES',
         },
         {
-          endColumn: 169,
+          endColumn: 102,
           endLineNumber: 1,
           message:
             'evaluation of [date_parse(geo.src)] failed, treating result as null. Only first 20 failures recorded.',
@@ -188,7 +188,7 @@ describe('helpers', function () {
         '299 Elasticsearch-8.10.0-SNAPSHOT-adb9fce96079b421c2575f0d2d445f492eb5f075 "Line 1:52: evaluation of [date_parse(geo.dest)] failed, treating result as null. Only first 20 failures recorded.", 299 Elasticsearch-8.10.0-SNAPSHOT-adb9fce96079b421c2575f0d2d445f492eb5f075 "Line 1:84: java.lang.IllegalArgumentException: evaluation of [date_parse(geo.src)] failed, treating result as null. Only first 20 failures recorded."';
       expect(parseWarning(warning)).toEqual([
         {
-          endColumn: 138,
+          endColumn: 71,
           endLineNumber: 1,
           message:
             'evaluation of [date_parse(geo.dest)] failed, treating result as null. Only first 20 failures recorded.',
@@ -198,7 +198,7 @@ describe('helpers', function () {
           code: 'warningFromES',
         },
         {
-          endColumn: 169,
+          endColumn: 102,
           endLineNumber: 1,
           message:
             'evaluation of [date_parse(geo.src)] failed, treating result as null. Only first 20 failures recorded.',
@@ -271,12 +271,28 @@ describe('helpers', function () {
           code: 'warningFromES',
         },
         {
-          endColumn: 138,
+          endColumn: 71,
           endLineNumber: 1,
           message:
             'evaluation of [date_parse(geo.dest)] failed, treating result as null. Only first 20 failures recorded.',
           severity: 4,
           startColumn: 52,
+          startLineNumber: 1,
+          code: 'warningFromES',
+        },
+      ]);
+    });
+
+    it('should preserve the full message when it contains extra colons after the exception class', function () {
+      const warning =
+        '299 Elasticsearch-9.1.0 "Line 1:10: java.lang.IllegalArgumentException: reason: detail with colon"';
+      expect(parseWarning(warning)).toEqual([
+        {
+          endColumn: 19,
+          endLineNumber: 1,
+          message: 'reason: detail with colon',
+          severity: 4,
+          startColumn: 10,
           startLineNumber: 1,
           code: 'warningFromES',
         },
@@ -296,7 +312,7 @@ describe('helpers', function () {
           code: 'warningFromES',
         },
         {
-          endColumn: 40,
+          endColumn: 30,
           endLineNumber: 1,
           message: 'evaluation of [TO_LOWER(["FOO", "BAR"])] failed',
           severity: 4,

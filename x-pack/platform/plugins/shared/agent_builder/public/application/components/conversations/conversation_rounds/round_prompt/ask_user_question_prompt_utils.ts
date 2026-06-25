@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { useCallback, useRef } from 'react';
 import type { UseEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
@@ -13,6 +14,14 @@ import type {
   AskUserQuestionPromptResponse,
   AskUserQuestionItem,
 } from '@kbn/agent-builder-common/agents';
+import {
+  AGENT_BUILDER_EVENT_TYPES,
+  type ReportHitlPromptShownParams,
+  type ReportHitlQuestionAnsweredParams,
+} from '@kbn/agent-builder-common/telemetry';
+import { useConversationId } from '../../../../context/conversation/use_conversation_id';
+import { useKibana } from '../../../../hooks/use_kibana';
+import { useAgentId } from '../../../../hooks/use_conversation';
 export { promptContainerStyles as containerStyles } from './prompt_container.styles';
 
 /** In-progress (mutable) answer for a single question, before it is mapped to the wire shape. */
@@ -111,3 +120,50 @@ export const isDraftAnswerable = (draft: AnswerDraft): boolean => {
 /** Custom option is selected but its text field is empty — must block submit. */
 export const isCustomTextMissing = (draft: AnswerDraft): boolean =>
   !!draft.customSelected && (draft.custom?.trim().length ?? 0) === 0;
+
+export const useAskUserQuestionTelemetry = ({
+  promptId,
+  questions,
+}: {
+  promptId: string;
+  questions: AskUserQuestionItem[];
+}) => {
+  const {
+    services: { analytics },
+  } = useKibana();
+  const agentId = useAgentId();
+  const conversationId = useConversationId();
+  const hasReportedShownRef = useRef(false);
+
+  const reportPromptShown = useCallback(() => {
+    if (hasReportedShownRef.current) return;
+    hasReportedShownRef.current = true;
+    analytics.reportEvent<ReportHitlPromptShownParams>(AGENT_BUILDER_EVENT_TYPES.HitlPromptShown, {
+      prompt_id: promptId,
+      total_questions: questions.length,
+      conversation_id: conversationId,
+      agent_id: agentId,
+    });
+  }, [analytics, agentId, conversationId, promptId, questions.length]);
+
+  const reportQuestionAnswered = useCallback(
+    (index: number, draft: AnswerDraft, outcome: ReportHitlQuestionAnsweredParams['outcome']) => {
+      analytics.reportEvent<ReportHitlQuestionAnsweredParams>(
+        AGENT_BUILDER_EVENT_TYPES.HitlQuestionAnswered,
+        {
+          prompt_id: promptId,
+          conversation_id: conversationId,
+          agent_id: agentId,
+          question_index: index,
+          is_multi_select: questions[index].multi_select,
+          outcome,
+          used_custom_text: !!(draft.customSelected && draft.custom?.trim()),
+          selected_option_count: draft.choice?.length ?? 0,
+        }
+      );
+    },
+    [analytics, agentId, conversationId, promptId, questions]
+  );
+
+  return { reportPromptShown, reportQuestionAnswered };
+};

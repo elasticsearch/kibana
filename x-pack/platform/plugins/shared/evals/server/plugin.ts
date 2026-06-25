@@ -142,6 +142,26 @@ export class EvalsPlugin
     );
     this.evaluationScoreService = new EvaluationScoreService(this.logger, coreStart.dataStreams);
 
+    // Fire-and-forget backfill of the denormalized `examples_count` for datasets
+    // created before the field existed. Idempotent and a no-op once complete (and
+    // on fresh/empty deployments), so it is safe to run on every start. Only runs
+    // when the plugin is enabled, since we early-return above otherwise.
+    this.datasetService
+      .getClient()
+      .backfillDatasetCounts()
+      .then(({ updated }) => {
+        if (updated > 0) {
+          this.logger.info(`Backfilled examples_count for ${updated} evaluation dataset(s)`);
+        }
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `Failed to backfill evaluation dataset example counts: ${
+            error instanceof Error ? error.message : error
+          }`
+        );
+      });
+
     return {
       datasetService: this.datasetService,
       evaluationScoreService: this.evaluationScoreService,

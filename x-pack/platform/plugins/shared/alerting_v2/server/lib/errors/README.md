@@ -61,6 +61,8 @@ backwards compatible. Renaming or removing a code is a breaking change.
 | `IMMUTABLE_FIELDS_CHANGED`    | 400    | PUT (upsert) request changes a field flagged as immutable            | `{ fields }`                               |
 | `INVALID_FILTER_FIELD`        | 400    | The `filter` references a field that is not in the allow-list        | `{ field, allowed_fields }`                |
 | `UNSUPPORTED_FILTER_FUNCTION` | 400    | The `filter` uses a KQL function we do not translate yet             | `{ function }`                             |
+| `SCHEDULE_INTERVAL_TOO_SHORT` | 400    | `schedule.every` is below `xpack.alerting_v2.rules.minimumScheduleInterval` | `{ interval, minimumScheduleInterval }`    |
+| `MAX_SCHEDULES_PER_MINUTE_EXCEEDED` | 400 | Scheduling the rule would exceed `xpack.alerting_v2.rules.maxScheduledPerMinute` | `{ interval, maxScheduledPerMinute }` |
 
 ### Action policies (`server/lib/action_policy_client/`)
 

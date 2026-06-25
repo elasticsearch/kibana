@@ -1,0 +1,74 @@
+{
+  "10.2.0": [
+    {
+      "integration_id": "apache",
+      "data_stream_id": "apache-access",
+      "created_by": "elastic",
+      "title": "Apache Access Logs",
+      "description": "Data stream for Apache access logs",
+      "input_types": ["filestream"],
+      "job_info": {
+        "job_id": "job-001",
+        "job_type": "create",
+        "status": "completed"
+      },
+      "metadata": {
+        "sample_count": 10,
+        "created_at": "2025-01-01T00:00:00.000Z",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "integration_id": "nginx",
+      "data_stream_id": "nginx-error",
+      "created_by": "admin",
+      "title": "Nginx Error Logs",
+      "description": "Data stream for Nginx error logs",
+      "input_types": ["tcp", "udp"],
+      "job_info": {
+        "job_id": "job-002",
+        "job_type": "create",
+        "status": "processing"
+      },
+      "metadata": {
+        "created_at": "2025-02-01T00:00:00.000Z"
+      }
+    }
+  ],
+  "10.3.0": [
+    {
+      "integration_id": "apache",
+      "data_stream_id": "apache-access",
+      "created_by": "elastic",
+      "title": "Apache Access Logs",
+      "description": "Data stream for Apache access logs",
+      "input_types": ["filestream"],
+      "job_info": {
+        "job_id": "job-001",
+        "job_type": "create",
+        "status": "completed"
+      },
+      "metadata": {
+        "sample_count": 10,
+        "created_at": "2025-01-01T00:00:00.000Z",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "integration_id": "nginx",
+      "data_stream_id": "nginx-error",
+      "created_by": "admin",
+      "title": "Nginx Error Logs",
+      "description": "Data stream for Nginx error logs",
+      "input_types": ["tcp", "udp"],
+      "job_info": {
+        "job_id": "job-002",
+        "job_type": "create",
+        "status": "processing"
+      },
+      "metadata": {
+        "created_at": "2025-02-01T00:00:00.000Z"
+      }
+    }
+  ]
+}

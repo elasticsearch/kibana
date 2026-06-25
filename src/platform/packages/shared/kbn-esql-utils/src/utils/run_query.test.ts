@@ -63,9 +63,9 @@ describe('run query helpers', () => {
       expect(params[1]).toHaveProperty('_tend');
     });
 
-    it('should return the variables if given', () => {
+    it('should return only the variables used in the query', () => {
       const time = { from: 'Jul 5, 2024 @ 08:03:56.849', to: 'Jul 5, 2024 @ 10:03:56.849' };
-      const query = 'FROM foo | KEEP ??field | WHERE agent.name = ?agent_name';
+      const query = 'FROM foo | KEEP ??field | WHERE agent.name == ?agent_name';
       const variables = [
         {
           key: 'field',
@@ -94,21 +94,15 @@ describe('run query helpers', () => {
           field: 'clientip',
         },
         {
-          interval: '5 minutes',
-        },
-        {
           agent_name: 'go',
-        },
-        {
-          function: 'count',
         },
       ]);
     });
 
-    it('should return the variables and named params if given', () => {
+    it('should return only the variables used in the query, plus time params', () => {
       const time = { from: 'Jul 5, 2024 @ 08:03:56.849', to: 'Jul 5, 2024 @ 10:03:56.849' };
       const query =
-        'FROM foo | KEEP ??field | WHERE agent.name = ?agent_name AND time < ?_tend amd time > ?_tstart';
+        'FROM foo | KEEP ??field | WHERE agent.name == ?agent_name AND time < ?_tend AND time > ?_tstart';
       const variables = [
         {
           key: 'field',
@@ -132,21 +126,14 @@ describe('run query helpers', () => {
         },
       ];
       const params = getNamedParams(query, time, variables);
-      expect(params).toHaveLength(6);
+      expect(params).toHaveLength(4);
       expect(params[0]).toHaveProperty('_tstart');
       expect(params[1]).toHaveProperty('_tend');
       expect(params[2]).toStrictEqual({
         field: 'clientip',
       });
       expect(params[3]).toStrictEqual({
-        interval: '5 minutes',
-      });
-      expect(params[4]).toStrictEqual({
         agent_name: 'go',
-      });
-
-      expect(params[5]).toStrictEqual({
-        function: 'count',
       });
     });
   });

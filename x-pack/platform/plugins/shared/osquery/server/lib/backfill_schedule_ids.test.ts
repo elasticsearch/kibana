@@ -412,5 +412,91 @@ describe('backfillScheduleIds', () => {
       expect(packBlock.default_rrule_schedule).toBeUndefined();
       expect(packBlock.default_native_schedule).toBeUndefined();
     });
+
+    test('flag off + legacy interval pack — wire is the legacy per-query shape plus default_space_id', async () => {
+      // Locks the refactor contract from the new convertSOQueriesToPackConfig
+      // signature: on the backfill path (which only ever runs flag-off in
+      // practice) the emitted wire must stay equivalent to the pre-feature
+      // output — per-query `interval` preserved, no pack-level schedule
+      // defaults — with `default_space_id` as the single additive pack-level
+      // field.
+      const scopedClient = createMockScopedClient();
+      const packagePolicyUpdate = jest.fn().mockResolvedValue({});
+      const packagePolicyList = jest.fn().mockResolvedValue({
+        items: [
+          {
+            id: 'pp-1',
+            policy_ids: ['policy-1'],
+            package: { name: 'osquery_manager', version: '1.0.0' },
+            inputs: [
+              {
+                type: 'osquery',
+                streams: [],
+                config: {
+                  osquery: {
+                    value: {
+                      packs: {
+                        'default--legacy-pack': { shard: 100, pack_id: 'pack-legacy', queries: {} },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      });
+
+      const { core } = createMockCoreStart(
+        {
+          saved_objects: [
+            {
+              id: 'pack-legacy',
+              namespaces: ['default'],
+              references: [{ id: 'policy-1', name: 'policy-1', type: 'ingest-agent-policies' }],
+              attributes: {
+                name: 'legacy-pack',
+                enabled: true,
+                // No schedule_type — legacy interval pack.
+                queries: [
+                  // schedule_id missing — triggers the backfill branch.
+                  { id: 'q1', query: 'SELECT 1', interval: 60, name: 'q1' },
+                ],
+              },
+            },
+          ],
+          total: 1,
+        },
+        scopedClient
+      );
+
+      const osqueryContext = createMockOsqueryContext({
+        list: packagePolicyList,
+        update: packagePolicyUpdate,
+      });
+      const logger = createMockLogger();
+
+      const result = await backfillScheduleIds({
+        coreStart: core,
+        osqueryContext,
+        logger: logger as unknown as Parameters<typeof backfillScheduleIds>[0]['logger'],
+        // isRruleFeatureEnabled omitted (defaults to false).
+      });
+
+      expect(result).toEqual({ hadFailures: false });
+      expect(packagePolicyUpdate).toHaveBeenCalledTimes(1);
+
+      const updatedPolicy = packagePolicyUpdate.mock.calls[0][3];
+      const packBlock = updatedPolicy.inputs[0].config.osquery.value.packs['default--legacy-pack'];
+      expect(packBlock).toBeDefined();
+
+      // Legacy per-query shape preserved: query carries its own `interval`.
+      expect(packBlock.queries.q1.interval).toBe(60);
+      // No pack-level schedule defaults are emitted.
+      expect(packBlock.default_native_schedule).toBeUndefined();
+      expect(packBlock.default_rrule_schedule).toBeUndefined();
+      // `default_space_id` is the single additive pack-level field.
+      expect(packBlock.default_space_id).toBe('default');
+    });
   });
 });

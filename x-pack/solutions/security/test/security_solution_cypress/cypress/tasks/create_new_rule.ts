@@ -724,14 +724,14 @@ export const fillIndicatorMatchRow = ({
     .eq(0)
     .type(indexField);
   if (computedValueRows === 'indexField' || computedValueRows === 'both') {
-    cy.get(`.euiComboBoxOption[title="${indexField}"]`).then(([e]) => e.click());
+    cy.get(`[data-test-subj="filterFieldOption-${indexField}"]`).click();
   }
   cy.get(THREAT_MAPPING_COMBO_BOX_INPUT)
     .eq(computedRowNumber * 2 - 1)
     .type(indicatorIndexField);
 
   if (computedValueRows === 'indicatorField' || computedValueRows === 'both') {
-    cy.get(`.euiComboBoxOption[title="${indicatorIndexField}"]`).then(([e]) => e.click());
+    cy.get(`[data-test-subj="filterFieldOption-${indicatorIndexField}"]`).click();
   }
 
   if (doesNotMatch) {

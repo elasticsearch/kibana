@@ -274,7 +274,7 @@ describe('policy table', () => {
     const policyRow = screen.getByTestId(`policyTableRow-${testPolicy.name}`);
     const deleteButton = within(policyRow).getByTestId('deletePolicy');
 
-    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toHaveAttribute('aria-disabled', 'true');
   });
 
   test('delete policy button is enabled when there are no linked indices', () => {

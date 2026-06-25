@@ -75,6 +75,7 @@ export const serializeRRule = (fields: RRuleFields): string => {
   }
 
   const parts: string[] = [`FREQ=${freqLabel}`];
+  const emittedKeys = new Set<string>(['FREQ']);
 
   if (interval !== undefined && interval !== 1) {
     if (!isPositiveInteger(interval)) {
@@ -82,22 +83,30 @@ export const serializeRRule = (fields: RRuleFields): string => {
     }
 
     parts.push(`INTERVAL=${interval}`);
+    emittedKeys.add('INTERVAL');
   }
 
   if (bymonth && bymonth.length > 0) {
     parts.push(`BYMONTH=${bymonth.join(',')}`);
+    emittedKeys.add('BYMONTH');
   }
 
   if (bymonthday && bymonthday.length > 0) {
     parts.push(`BYMONTHDAY=${bymonthday.join(',')}`);
+    emittedKeys.add('BYMONTHDAY');
   }
 
   if (byweekday && byweekday.length > 0) {
     parts.push(`BYDAY=${byweekday.map((day) => WEEKDAY_TO_STRING[day]).join(',')}`);
+    emittedKeys.add('BYDAY');
   }
 
   if (_unknown) {
     for (const [key, value] of Object.entries(_unknown)) {
+      if (emittedKeys.has(key.toUpperCase())) {
+        continue;
+      }
+
       // Reject delimiter characters in unknown values: an unescaped `;`, `=`,
       // or newline would corrupt the next parse and could let a malicious or
       // malformed future-Kibana write smuggle synthetic parts past validation.

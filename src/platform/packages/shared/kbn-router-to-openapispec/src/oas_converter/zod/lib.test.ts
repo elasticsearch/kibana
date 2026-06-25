@@ -525,7 +525,7 @@ describe('zod', () => {
         id: 'TagWithAvailability',
         openapi: {
           availability: {
-            stability: 'beta',
+            stability: 'tech_preview',
             since: '9.4.0',
           },
         },
@@ -535,7 +535,7 @@ describe('zod', () => {
 
       expect(result.shared.TagWithAvailability).toMatchObject({
         type: 'object',
-        'x-state': 'Beta; added in 9.4.0',
+        'x-state': 'Technical Preview; added in 9.4.0',
       });
 
       const outputStr = JSON.stringify(result);

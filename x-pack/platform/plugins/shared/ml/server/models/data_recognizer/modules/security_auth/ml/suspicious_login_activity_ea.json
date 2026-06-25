@@ -5,7 +5,7 @@
     "authentication"
   ],
   "analysis_config": {
-    "bucket_span": "15m",
+    "bucket_span": "5m",
     "detectors": [
       {
         "detector_description": "Detects high number of authentication attempts for a host.",

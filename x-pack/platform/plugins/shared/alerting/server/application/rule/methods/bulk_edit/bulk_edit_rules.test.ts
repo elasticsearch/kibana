@@ -3502,7 +3502,7 @@ describe('bulkEdit()', () => {
       );
     });
 
-    test('captures the full post-edit attributes and references of each rule', async () => {
+    test('captures the full post-edit attributes of each rule', async () => {
       const changeTrackingService = createChangeTrackingService();
       const trackingClient = new RulesClient({ ...rulesClientParams, changeTrackingService });
       setRuleType();
@@ -3516,17 +3516,62 @@ describe('bulkEdit()', () => {
 
       expect(changeTrackingService.logBulk).toHaveBeenCalledWith(
         [
-          {
-            // setGlobalDate pins Date.now() to mockedDateString.
-            timestamp: '2019-02-12T21:01:22.479Z',
+          expect.objectContaining({
+            snapshot: expect.objectContaining({
+              id: updated.id,
+              name: updated.attributes.name,
+              tags: updated.attributes.tags,
+              alertTypeId: updated.attributes.alertTypeId,
+              createdAt: updated.attributes.createdAt,
+              updatedAt: updated.attributes.updatedAt,
+            }),
+          }),
+        ],
+        expect.any(Object)
+      );
+    });
+
+    test('captures the context of each rule', async () => {
+      const changeTrackingService = createChangeTrackingService();
+      const trackingClient = new RulesClient({ ...rulesClientParams, changeTrackingService });
+      setRuleType();
+      const updated = updatedRuleSO('1');
+      unsecuredSavedObjectsClient.bulkCreate.mockResolvedValue({ saved_objects: [updated] });
+
+      await trackingClient.bulkEdit({
+        filter: '',
+        operations: [{ field: 'tags', operation: 'add', value: ['test-1'] }],
+      });
+
+      expect(changeTrackingService.logBulk).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
             objectId: '1',
             objectType: RULE_SAVED_OBJECT_TYPE,
             module: 'stack',
-            snapshot: {
-              attributes: updated.attributes,
-              references: updated.references,
-            },
-          },
+          }),
+        ],
+        expect.any(Object)
+      );
+    });
+
+    test('captures rule.revision in object.sequence ', async () => {
+      const changeTrackingService = createChangeTrackingService();
+      const trackingClient = new RulesClient({ ...rulesClientParams, changeTrackingService });
+      setRuleType();
+      const updated = updatedRuleSO('1');
+      unsecuredSavedObjectsClient.bulkCreate.mockResolvedValue({ saved_objects: [updated] });
+
+      await trackingClient.bulkEdit({
+        filter: '',
+        operations: [{ field: 'tags', operation: 'add', value: ['test-1'] }],
+      });
+
+      expect(changeTrackingService.logBulk).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            sequence: 1,
+          }),
         ],
         expect.any(Object)
       );

@@ -271,6 +271,7 @@ export async function getInstalledPackages(options: GetInstalledPackagesOptions)
       version,
       status: installStatus,
       dataStreams,
+      rolledBack: integrationSavedObject.attributes.rolled_back,
     };
   });
 

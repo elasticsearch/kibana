@@ -230,7 +230,7 @@ describe('Case View Page activity tab', () => {
     });
 
     const caseViewActivity = await screen.findByTestId('case-view-activity');
-    expect(await within(caseViewActivity).findAllByTestId('user-actions-list')).toHaveLength(2);
+    expect(await within(caseViewActivity).findAllByTestId('user-actions-list')).toHaveLength(1);
     expect(
       await within(caseViewActivity).findByTestId('case-view-status-action-button')
     ).toBeInTheDocument();
@@ -540,7 +540,7 @@ describe('Case View Page activity tab', () => {
 
         renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
 
-        const userActions = within((await screen.findAllByTestId('user-actions-list'))[1]);
+        const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
 
         expect(await userActions.findByText('cases_no_connectors')).toBeInTheDocument();
         expect(await userActions.findByText('Valid Chimpanzee')).toBeInTheDocument();
@@ -565,7 +565,7 @@ describe('Case View Page activity tab', () => {
 
         renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
 
-        const userActions = within((await screen.findAllByTestId('user-actions-list'))[1]);
+        const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
 
         expect(await userActions.findByText('Fuzzy Marten')).toBeInTheDocument();
         expect(await userActions.findByText('Unknown')).toBeInTheDocument();
@@ -640,7 +640,7 @@ describe('Case View Page activity tab', () => {
 
         renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
 
-        const userActions = within((await screen.findAllByTestId('user-actions-list'))[1]);
+        const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
 
         expect(await userActions.findByText('Participant 1')).toBeInTheDocument();
         expect(await userActions.findByText('participant_2@elastic.co')).toBeInTheDocument();

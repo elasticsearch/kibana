@@ -1,0 +1,43 @@
+{
+  "description": "Security: Network - Looks for unusual DNS activity that could indicate command-and-control or data exfiltration activity.",
+  "groups": ["security", "network", "dns"],
+  "analysis_config": {
+    "bucket_span": "15m",
+    "detectors": [
+      {
+        "detector_description": "Detects high info content of DNS questions over a population of TLDs.",
+        "function": "high_info_content",
+        "field_name": "dns.question.name",
+        "over_field_name": "dns_question_etld",
+        "custom_rules": [
+          {
+            "actions": ["skip_result"],
+            "conditions": [
+              {
+                "applies_to": "actual",
+                "operator": "lt",
+                "value": 350
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "influencers": ["destination.ip", "host.name", "host.id", "dns_question_etld"]
+  },
+  "allow_lazy_open": true,
+  "analysis_limits": {
+    "model_memory_limit": "256mb"
+  },
+  "data_description": {
+    "time_field": "@timestamp"
+  },
+  "custom_settings": {
+    "created_by": "ml-module-security-network",
+    "security_app_display_name": "DNS Tunneling",
+    "managed": true,
+    "job_revision": 4,
+    "threat_tactics": ["TA0011", "TA0010"],
+    "threat_techniques": ["T1071", "T1071.004", "T1572", "T1041"]
+  }
+}

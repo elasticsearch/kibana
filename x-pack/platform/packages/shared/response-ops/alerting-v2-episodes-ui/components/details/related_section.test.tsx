@@ -18,6 +18,7 @@ import {
   createTestQueryClient,
 } from '../../hooks/test_utils';
 import { AlertEpisodesRelatedSection } from './related_section';
+import { RuleStateStatus } from '../../types/rule_state';
 
 jest.mock('../../utils/run_esql_async_search');
 
@@ -76,8 +77,36 @@ describe('AlertEpisodesRelatedSection', () => {
       expect.objectContaining({
         currentEpisodeId: 'ep-1',
         groupHash: 'gh-1',
-        rule: mockRule,
+        ruleState: {
+          status: RuleStateStatus.loaded,
+          ruleId: 'rule-1',
+          rule: mockRule,
+        },
         getEpisodeDetailsHref: expect.any(Function),
+      }),
+      expect.anything()
+    );
+  });
+
+  it('renders related episodes when the rule was deleted', async () => {
+    runEsqlAsyncSearchMock.mockResolvedValue(mockEpisodeEventsResponse);
+    mockHttp.get.mockRejectedValueOnce({
+      response: { status: 404 },
+      body: { code: 'RULE_NOT_FOUND', error: 'Not Found', message: 'Rule not found' },
+    });
+
+    render(
+      <I18nProvider>
+        <AlertEpisodesRelatedSection episodeId="ep-1" services={mockServices} />
+      </I18nProvider>,
+      { wrapper }
+    );
+
+    await waitFor(() => expect(screen.getByTestId('alertEpisodesRelatedStub')).toBeInTheDocument());
+
+    expect(AlertEpisodesRelated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ruleState: { status: RuleStateStatus.not_found, ruleId: 'rule-1' },
       }),
       expect.anything()
     );
@@ -96,9 +125,8 @@ describe('AlertEpisodesRelatedSection', () => {
     expect(screen.getByTestId('alertingV2EpisodesRelatedSectionLoading')).toBeInTheDocument();
   });
 
-  it('renders the error state when events or rule fail to load', async () => {
-    runEsqlAsyncSearchMock.mockResolvedValue(mockEpisodeEventsResponse);
-    mockHttp.get.mockRejectedValueOnce(new Error('boom'));
+  it('renders the error state when the episode fails to load', async () => {
+    runEsqlAsyncSearchMock.mockRejectedValueOnce(new Error('boom'));
 
     render(
       <I18nProvider>

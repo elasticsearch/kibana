@@ -7,6 +7,7 @@
 
 import type { ElasticsearchClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
+import { toDataStreamName } from './utils';
 
 interface TermsBucket {
   key: string;
@@ -35,19 +36,6 @@ interface IndexPlatformRow {
   eventModule: string | null;
   observerVendor: string | null;
 }
-
-/**
- * Converts a backing index name to its parent data stream name.
- * Backing indices follow the pattern: .ds-{data_stream_name}-YYYY.MM.DD-NNNNNN
- *
- * @example
- * ".ds-logs-aws.cloudtrail-default-2026.01.01-000001" → "logs-aws.cloudtrail-default"
- * "logs-aws.cloudtrail-default" → "logs-aws.cloudtrail-default" (pass-through for regular indices)
- */
-const toDataStreamName = (index: string): string => {
-  const match = index.match(/^\.ds-(.+)-\d{4}\.\d{2}\.\d{2}-\d+$/);
-  return match?.[1] ?? index;
-};
 
 /**
  * Classifies an index into a human-readable platform label using ECS field values.

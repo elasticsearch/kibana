@@ -8,8 +8,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
-import type { RuleResponse } from '@kbn/alerting-v2-schemas';
 import type { AlertEpisode } from '../../../queries/episodes_query';
+import type { RuleResponse } from '@kbn/alerting-v2-schemas';
+import { RuleStateStatus, type LoadedRuleState } from '../../../types/rule_state';
 import { RelatedEpisodesRuleSubsection } from './rule_subsection';
 import { useFetchSameRuleEpisodesQuery } from '../../../hooks/use_fetch_same_rule_episodes_query';
 
@@ -39,7 +40,15 @@ jest.mock('./related_list', () => ({
 
 const mockUseFetch = jest.mocked(useFetchSameRuleEpisodesQuery);
 
-const mockRule = { id: 'rule-1', metadata: { name: 'Test Rule' } } as RuleResponse;
+const loadedRuleState: LoadedRuleState = {
+  status: RuleStateStatus.loaded,
+  ruleId: 'rule-1',
+  rule: { id: 'rule-1', metadata: { name: 'Test Rule' } } as RuleResponse,
+};
+
+const mockRuleProps = {
+  ruleState: loadedRuleState,
+};
 const mockGetEpisodeDetailsHref = (id: string) => `/base/${id}`;
 
 describe('RelatedEpisodesRuleSubsection', () => {
@@ -62,7 +71,7 @@ describe('RelatedEpisodesRuleSubsection', () => {
         <RelatedEpisodesRuleSubsection
           currentEpisodeId="ep-1"
           currentGroupHash="gh-1"
-          rule={mockRule}
+          {...mockRuleProps}
           getEpisodeDetailsHref={mockGetEpisodeDetailsHref}
         />
       </I18nProvider>
@@ -81,7 +90,7 @@ describe('RelatedEpisodesRuleSubsection', () => {
         <RelatedEpisodesRuleSubsection
           currentEpisodeId="ep-1"
           currentGroupHash={undefined}
-          rule={mockRule}
+          {...mockRuleProps}
           getEpisodeDetailsHref={mockGetEpisodeDetailsHref}
         />
       </I18nProvider>
@@ -98,7 +107,7 @@ describe('RelatedEpisodesRuleSubsection', () => {
         <RelatedEpisodesRuleSubsection
           currentEpisodeId="ep-1"
           currentGroupHash={undefined}
-          rule={mockRule}
+          {...mockRuleProps}
           getEpisodeDetailsHref={mockGetEpisodeDetailsHref}
         />
       </I18nProvider>

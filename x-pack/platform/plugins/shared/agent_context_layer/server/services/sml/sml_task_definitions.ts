@@ -95,7 +95,7 @@ export const registerSmlCrawlerTaskDefinition = ({
               return { state: {} };
             }
 
-            logger.info(`SML crawler task starting for type '${attachmentType}'`);
+            logger.debug(`SML crawler task starting for type '${attachmentType}'`);
 
             const definition = smlService.getTypeDefinition(attachmentType);
             if (!definition) {
@@ -118,7 +118,7 @@ export const registerSmlCrawlerTaskDefinition = ({
                 savedObjectsClient: soRepository,
                 abortSignal: abortController.signal,
               });
-              logger.info(`SML crawler task completed for type '${attachmentType}'`);
+              logger.debug(`SML crawler task completed for type '${attachmentType}'`);
             } catch (error) {
               logger.error(
                 `SML crawler task failed for type '${attachmentType}': ${(error as Error).message}`

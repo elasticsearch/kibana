@@ -197,6 +197,7 @@ components:
         example_count:
           type: integer
           minimum: 0
+          default: 0
           description: Number of unique examples evaluated in this dataset
         stats:
           type: object

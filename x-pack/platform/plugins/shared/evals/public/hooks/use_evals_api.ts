@@ -26,6 +26,7 @@ import {
   EVALS_DATASET_EXAMPLE_URL,
   API_VERSIONS,
   type GetEvaluationDatasetsResponse,
+  type GetEvaluationDatasetsRequestQuery,
   type GetEvaluationDatasetResponse,
   type CreateEvaluationDatasetRequestBodyInput,
   type CreateEvaluationDatasetResponse,
@@ -73,9 +74,15 @@ export interface ExperimentsListFilters {
   perPage?: number;
 }
 
+type DatasetSortField = NonNullable<GetEvaluationDatasetsRequestQuery['sort_field']>;
+type DatasetSortOrder = NonNullable<GetEvaluationDatasetsRequestQuery['sort_order']>;
+
 interface DatasetsListFilters {
   page?: number;
   perPage?: number;
+  search?: string;
+  sortField?: DatasetSortField;
+  sortOrder?: DatasetSortOrder;
 }
 
 interface DatasetWithId {
@@ -116,9 +123,12 @@ export const useDatasets = (filters: DatasetsListFilters = {}) => {
   return useQuery({
     queryKey: queryKeys.datasets.list(filters),
     queryFn: async (): Promise<GetEvaluationDatasetsResponse> => {
-      const query: Record<string, number> = {};
+      const query: Record<string, string | number> = {};
       if (filters.page) query.page = filters.page;
       if (filters.perPage) query.per_page = filters.perPage;
+      if (filters.search) query.search = filters.search;
+      if (filters.sortField) query.sort_field = filters.sortField;
+      if (filters.sortOrder) query.sort_order = filters.sortOrder;
 
       return services.http!.get<GetEvaluationDatasetsResponse>(EVALS_DATASETS_URL, {
         query,

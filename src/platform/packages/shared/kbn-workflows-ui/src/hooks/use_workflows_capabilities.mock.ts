@@ -12,9 +12,11 @@ import type { WorkflowsManagementCapabilities } from './use_workflows_capabiliti
 export const createMockWorkflowsCapabilities = (): WorkflowsManagementCapabilities => ({
   canCreateWorkflow: true,
   canReadWorkflow: true,
+  canReadManagedWorkflow: true,
   canUpdateWorkflow: true,
   canDeleteWorkflow: true,
   canExecuteWorkflow: true,
   canReadWorkflowExecution: true,
+  canReadManagedWorkflowExecution: true,
   canCancelWorkflowExecution: true,
 });

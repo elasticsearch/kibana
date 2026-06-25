@@ -120,7 +120,7 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
         });
 
         let advancedSetting = await pageObjects.settings.getAdvancedSettings('theme:darkMode');
-        expect(advancedSetting).to.be('disabled');
+        expect(advancedSetting).to.be('system');
 
         await pageObjects.settings.setAdvancedSettingsSelect('theme:darkMode', 'enabled');
         advancedSetting = await pageObjects.settings.getAdvancedSettings('theme:darkMode');

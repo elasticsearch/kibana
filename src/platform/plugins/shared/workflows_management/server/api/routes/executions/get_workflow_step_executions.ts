@@ -13,7 +13,11 @@ import type { SearchStepExecutionsParams } from '../../workflows_management_api'
 import type { RouteDependencies } from '../types';
 import { API_VERSION, AVAILABILITY, MAX_PAGE_SIZE, OAS_TAG } from '../utils/route_constants';
 import { handleRouteError } from '../utils/route_error_handlers';
-import { WORKFLOW_EXECUTION_READ_SECURITY } from '../utils/route_security';
+import {
+  assertCanReadManagedWorkflowExecution,
+  hasWorkflowExecutionReadPrivilege,
+  WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
+} from '../utils/route_security';
 import { workflowIdParamSchema } from '../utils/schemas';
 import { withAvailabilityCheck } from '../utils/with_availability_check';
 
@@ -22,7 +26,7 @@ export function registerGetWorkflowStepExecutionsRoute({ router, api, spaces }: 
     .get({
       path: '/api/workflows/workflow/{workflowId}/executions/steps',
       access: 'public',
-      security: WORKFLOW_EXECUTION_READ_SECURITY,
+      security: WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
       summary: 'Get workflow step executions',
       description:
         'Retrieve a paginated list of step-level execution records for a specific workflow. Optionally filter by step ID and include input or output data.',
@@ -81,9 +85,14 @@ export function registerGetWorkflowStepExecutionsRoute({ router, api, spaces }: 
       },
       withAvailabilityCheck(async (context, request, response) => {
         try {
+          if (!hasWorkflowExecutionReadPrivilege(request)) {
+            return response.forbidden();
+          }
           const spaceId = spaces.getSpaceId(request);
           const { workflowId } = request.params;
           const query = request.query;
+          const workflow = await api.getWorkflow(workflowId, spaceId);
+          assertCanReadManagedWorkflowExecution(request, workflow);
 
           const params: SearchStepExecutionsParams = {
             workflowId,

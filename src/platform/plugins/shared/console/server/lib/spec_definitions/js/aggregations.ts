@@ -25,7 +25,7 @@ const significantTermsArgs = {
     __one_of: ['map', 'global_ordinals', 'global_ordinals_hash'],
   },
   background_filter: {
-    __scope_link: 'GLOBAL.filter',
+    __scope_link: 'GLOBAL.query',
   },
   mutual_information: {
     include_negatives: { __one_of: [true, false] },
@@ -91,11 +91,11 @@ const rules = {
     t_test: {
       a: {
         field: '{field}',
-        filter: { __scope_link: 'GLOBAL.filter' },
+        filter: { __scope_link: 'GLOBAL.query' },
       },
       b: {
         field: '{field}',
-        filter: { __scope_link: 'GLOBAL.filter' },
+        filter: { __scope_link: 'GLOBAL.query' },
       },
       type: { __one_of: ['paired', 'homoscedastic', 'heteroscedastic'] },
       __template: {
@@ -136,7 +136,7 @@ const rules = {
       },
     },
     global: {},
-    filter: {},
+    filter: { __scope_link: 'GLOBAL.query' },
     filters: {
       __template: {
         filters: {
@@ -144,7 +144,7 @@ const rules = {
         },
       },
       filters: {
-        '*': { __scope_link: 'GLOBAL.filter' },
+        '*': { __scope_link: 'GLOBAL.query' },
       },
       other_bucket: { __one_of: [true, false] },
       other_bucket_key: '',

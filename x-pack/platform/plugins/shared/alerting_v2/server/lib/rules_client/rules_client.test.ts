@@ -9,8 +9,10 @@ import { BULK_FILTER_MAX_RULES } from '@kbn/alerting-v2-schemas';
 import type { KibanaRequest } from '@kbn/core-http-server';
 import { httpServerMock } from '@kbn/core-http-server-mocks';
 import { SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-server';
+import type { PluginInitializerContext } from '@kbn/core/server';
 import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 
+import type { PluginConfig } from '../../config';
 import type { RuleSavedObjectAttributes } from '../../saved_objects';
 import { RULE_SAVED_OBJECT_TYPE } from '../../saved_objects';
 import { createRulesSavedObjectService } from '../services/rules_saved_object_service/rules_saved_object_service.mock';
@@ -97,8 +99,30 @@ describe('RulesClient', () => {
     jest.useRealTimers();
   });
 
-  function createClient() {
-    return new RulesClient(request, rulesSavedObjectService, taskManager, userService, 'space-1');
+  function createClient(rulesConfigOverrides?: Partial<PluginConfig['rules']>) {
+    const config = {
+      enabled: true,
+      invalidateApiKeysTask: { interval: '5m', removalDelay: '1h' },
+      rules: {
+        minimumScheduleInterval: '1m',
+        maxScheduledPerMinute: 400,
+        ...rulesConfigOverrides,
+      },
+    } as PluginConfig;
+
+    const pluginConfigAccessor = {
+      get: () => config,
+    } as unknown as PluginInitializerContext<PluginConfig>['config'];
+
+    return new RulesClient(
+      request,
+      rulesSavedObjectService,
+      taskManager,
+      userService,
+      'space-1',
+      pluginConfigAccessor,
+      rulesSavedObjectService
+    );
   }
 
   describe('createRule', () => {
@@ -2381,6 +2405,145 @@ describe('RulesClient', () => {
             field: 'nonsense_field',
           }),
         },
+      });
+    });
+  });
+
+  describe('schedule guardrails', () => {
+    describe('minimumScheduleInterval', () => {
+      it('rejects creating a rule whose interval is below the configured minimum', async () => {
+        const client = createClient({ minimumScheduleInterval: '1m' });
+
+        await expect(
+          client.createRule({
+            data: { ...baseCreateData, schedule: { every: '30s', lookback: '1m' } },
+          })
+        ).rejects.toMatchObject({
+          output: { statusCode: 400 },
+          data: {
+            code: 'SCHEDULE_INTERVAL_TOO_SHORT',
+            details: { interval: '30s', minimumScheduleInterval: '1m' },
+          },
+        });
+
+        expect(mockSavedObjectsClient.create).not.toHaveBeenCalled();
+      });
+
+      it('allows creating a rule whose interval equals the configured minimum', async () => {
+        const client = createClient({ minimumScheduleInterval: '1m' });
+
+        await expect(client.createRule({ data: baseCreateData })).resolves.toBeDefined();
+        expect(mockSavedObjectsClient.create).toHaveBeenCalled();
+      });
+
+      it('rejects updating a rule to an interval below the configured minimum', async () => {
+        const client = createClient({ minimumScheduleInterval: '5m' });
+
+        mockSavedObjectsClient.get.mockResolvedValueOnce({
+          attributes: baseSoAttrs,
+          version: 'WzEsMV0=',
+          id: 'rule-id-1',
+          type: RULE_SAVED_OBJECT_TYPE,
+          references: [],
+        });
+
+        await expect(
+          client.updateRule({ id: 'rule-id-1', data: { schedule: { every: '1m' } } })
+        ).rejects.toMatchObject({
+          output: { statusCode: 400 },
+          data: { code: 'SCHEDULE_INTERVAL_TOO_SHORT' },
+        });
+
+        expect(mockSavedObjectsClient.update).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('maxScheduledPerMinute', () => {
+      it('rejects creating a rule when the limit is already reached', async () => {
+        const client = createClient({ maxScheduledPerMinute: 1 });
+        jest.spyOn(rulesSavedObjectService, 'getTotalScheduledPerMinute').mockResolvedValueOnce(1);
+
+        await expect(client.createRule({ data: baseCreateData })).rejects.toMatchObject({
+          output: { statusCode: 400 },
+          data: {
+            code: 'MAX_SCHEDULES_PER_MINUTE_EXCEEDED',
+            details: { interval: '1m', maxScheduledPerMinute: 1 },
+          },
+        });
+
+        expect(mockSavedObjectsClient.create).not.toHaveBeenCalled();
+      });
+
+      it('allows creating a rule when there is remaining capacity', async () => {
+        const client = createClient({ maxScheduledPerMinute: 400 });
+        jest.spyOn(rulesSavedObjectService, 'getTotalScheduledPerMinute').mockResolvedValueOnce(10);
+
+        await expect(client.createRule({ data: baseCreateData })).resolves.toBeDefined();
+        expect(mockSavedObjectsClient.create).toHaveBeenCalled();
+      });
+
+      it('adds the previous schedule back when updating an already-enabled rule', async () => {
+        const client = createClient({ maxScheduledPerMinute: 1 });
+        // The single available slot is consumed by this rule's existing 1m schedule.
+        jest.spyOn(rulesSavedObjectService, 'getTotalScheduledPerMinute').mockResolvedValueOnce(1);
+
+        mockSavedObjectsClient.get.mockResolvedValueOnce({
+          attributes: baseSoAttrs,
+          version: 'WzEsMV0=',
+          id: 'rule-id-1',
+          type: RULE_SAVED_OBJECT_TYPE,
+          references: [],
+        });
+
+        // Re-saving with the same 1m schedule must not be rejected.
+        await expect(
+          client.updateRule({ id: 'rule-id-1', data: { schedule: { every: '1m' } } })
+        ).resolves.toBeDefined();
+        expect(mockSavedObjectsClient.update).toHaveBeenCalled();
+      });
+
+      it('allows reducing the schedule frequency of an enabled rule without scanning, even past the limit', async () => {
+        const client = createClient({ maxScheduledPerMinute: 1 });
+        const getTotalSpy = jest
+          .spyOn(rulesSavedObjectService, 'getTotalScheduledPerMinute')
+          .mockResolvedValue(1000);
+
+        // Existing enabled rule runs every 1m; moving to a less frequent 5m adds no load.
+        mockSavedObjectsClient.get.mockResolvedValueOnce({
+          attributes: baseSoAttrs,
+          version: 'WzEsMV0=',
+          id: 'rule-id-1',
+          type: RULE_SAVED_OBJECT_TYPE,
+          references: [],
+        });
+
+        await expect(
+          client.updateRule({ id: 'rule-id-1', data: { schedule: { every: '5m' } } })
+        ).resolves.toBeDefined();
+
+        // The cluster-wide scan is skipped because the schedule adds no load.
+        expect(getTotalSpy).not.toHaveBeenCalled();
+        expect(mockSavedObjectsClient.update).toHaveBeenCalled();
+      });
+
+      it('rejects enabling a disabled rule when the limit is already reached', async () => {
+        const client = createClient({ maxScheduledPerMinute: 1 });
+        jest.spyOn(rulesSavedObjectService, 'getTotalScheduledPerMinute').mockResolvedValueOnce(1);
+
+        mockSavedObjectsClient.get.mockResolvedValueOnce({
+          attributes: { ...baseSoAttrs, enabled: false },
+          version: 'WzEsMV0=',
+          id: 'rule-id-1',
+          type: RULE_SAVED_OBJECT_TYPE,
+          references: [],
+        });
+
+        await expect(client.enableRule({ id: 'rule-id-1' })).rejects.toMatchObject({
+          output: { statusCode: 400 },
+          data: { code: 'MAX_SCHEDULES_PER_MINUTE_EXCEEDED' },
+        });
+
+        expect(mockSavedObjectsClient.update).not.toHaveBeenCalled();
       });
     });
   });

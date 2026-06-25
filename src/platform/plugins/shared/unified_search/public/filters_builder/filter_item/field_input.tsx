@@ -60,6 +60,7 @@ export function FieldInput({ field, dataView, onHandleField }: FieldInputProps) 
         name: dataViewField.name,
         value: dataViewField.type as KBN_FIELD_TYPES,
         prepend: <FieldIcon type={dataViewField.type} fill="none" className="eui-alignMiddle" />,
+        'data-test-subj': `filterFieldOption-${dataViewField.name}`,
       };
     },
     [suggestionsAbstraction]

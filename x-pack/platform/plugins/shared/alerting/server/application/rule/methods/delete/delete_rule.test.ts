@@ -108,6 +108,8 @@ describe('delete()', () => {
         bar: true,
       },
       scheduledTaskId: 'task-123',
+      createdAt: '2019-02-12T21:01:22.479Z',
+      updatedAt: '2019-02-12T21:01:22.479Z',
       actions: [
         {
           group: 'default',
@@ -510,10 +512,15 @@ describe('delete()', () => {
             objectId: '1',
             objectType: RULE_SAVED_OBJECT_TYPE,
             module: 'stack',
-            snapshot: {
-              attributes: existingDecryptedAlert.attributes,
-              references: existingDecryptedAlert.references,
-            },
+            snapshot: expect.objectContaining({
+              id: '1',
+              name: fakeRuleName,
+              alertTypeId: 'myType',
+              consumer: 'myApp',
+              params: { bar: true },
+              createdAt: '2019-02-12T21:01:22.479Z',
+              updatedAt: '2019-02-12T21:01:22.479Z',
+            }),
           },
         ],
         expect.any(Object)

@@ -115,21 +115,26 @@ export class DatePicker {
     const getTestSubjLocator = (selector: string) =>
       this.getTestSubjLocator(selector, containerLocator);
 
+    /**
+     * Clears the input, types the value and submits with `Enter`.
+     * Same approach as the `time_picker.ts` for FTR.
+     */
+    const commitTypedDate = async (value: string) => {
+      const input = this.page.testSubj.locator('superDatePickerAbsoluteDateInput');
+      await input.clear();
+      await input.pressSequentially(value);
+      await input.press('Enter');
+    };
+
     // we start with end date
     await getTestSubjLocator('superDatePickerendDatePopoverButton').click();
     await this.openAbsoluteTab();
-    const inputFrom = this.page.testSubj.locator('superDatePickerAbsoluteDateInput');
-    await inputFrom.clear();
-    await inputFrom.fill(to);
-    await this.page.testSubj.locator('parseAbsoluteDateFormat').click();
+    await commitTypedDate(to);
     await this.page.keyboard.press('Escape');
     // and later change start date
     await getTestSubjLocator('superDatePickerstartDatePopoverButton').click();
     await this.openAbsoluteTab();
-    const inputTo = this.page.testSubj.locator('superDatePickerAbsoluteDateInput');
-    await inputTo.clear();
-    await inputTo.fill(from);
-    await this.page.testSubj.locator('parseAbsoluteDateFormat').click();
+    await commitTypedDate(from);
     await this.page.keyboard.press('Escape');
 
     if (validateDates) {

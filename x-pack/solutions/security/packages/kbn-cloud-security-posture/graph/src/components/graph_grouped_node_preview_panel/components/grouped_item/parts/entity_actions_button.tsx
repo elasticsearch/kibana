@@ -8,9 +8,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   EuiButtonIcon,
-  EuiHorizontalRule,
-  EuiListGroup,
   EuiPopover,
+  EuiListGroup,
+  EuiHorizontalRule,
   EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -49,6 +49,12 @@ export interface EntityActionsButtonProps {
    * Unique identifier for the graph instance, used to scope filter state.
    */
   scopeId: string;
+  /**
+   * Whether this entity is the initial/origin entity of the graph investigation.
+   * When true, "hide entity relationships" is disabled because the origin entity's
+   * relationships are always shown and cannot be hidden from the grouped panel.
+   */
+  isInitialEntity?: boolean;
 }
 
 /**
@@ -57,7 +63,11 @@ export interface EntityActionsButtonProps {
  * Uses FilterStore (scoped by scopeId) for filter state management.
  * Uses useExpandableFlyoutApi to open entity details preview panel.
  */
-export const EntityActionsButton = ({ item, scopeId }: EntityActionsButtonProps) => {
+export const EntityActionsButton = ({
+  item,
+  scopeId,
+  isInitialEntity = false,
+}: EntityActionsButtonProps) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const closePopover = useCallback(() => setIsPopoverOpen(false), []);
   const togglePopover = useCallback(() => setIsPopoverOpen((prev) => !prev), []);
@@ -152,8 +162,13 @@ export const EntityActionsButton = ({ item, scopeId }: EntityActionsButtonProps)
     },
     showEntityDetailsDisabled: !item.entity.availableInEntityStore,
     isEntityRelationshipsExpanded: isEntityRelationshipExpandedForScope(scopeId, item.id),
-    toggleEntityRelationships: (action) => emitEntityRelationshipToggle(scopeId, item.id, action),
-    showEntityRelationshipsDisabled: !item.entity.availableInEntityStore,
+    toggleEntityRelationships: (action) => {
+      emitEntityRelationshipToggle(scopeId, item.id, action);
+      // Pin the entity when showing relationships so it appears as a solo node
+      // rather than merging back into its type-group. Unpin when hiding.
+      emitPinnedEuidToggle(scopeId, item.id, action);
+    },
+    showEntityRelationshipsDisabled: !item.entity.availableInEntityStore || isInitialEntity,
   });
 
   return (

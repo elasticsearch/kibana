@@ -10,7 +10,7 @@ import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { BuiltinToolDefinition, StaticToolRegistration } from '@kbn/agent-builder-server';
 import type { Logger } from '@kbn/core/server';
 import { i18n } from '@kbn/i18n';
-import { sigEventImpactSchema, sigEventStatusSchema } from '@kbn/streams-schema';
+import { sigEventStatusSchema } from '@kbn/streams-schema';
 import { z } from '@kbn/zod/v4';
 import dedent from 'dedent';
 import type { EbtTelemetryClient } from '../../../lib/telemetry/ebt';
@@ -33,7 +33,6 @@ const createEventSchema = z.object({
   root_cause: z.string().max(4000),
   stream_names: z.array(z.string().max(255)).min(1).max(100),
   criticality: z.number().min(0).max(100),
-  impact: sigEventImpactSchema,
   confidence: z.number().min(0).max(1),
   recommendations: z.array(z.string().max(1000)).min(1).max(50),
 });

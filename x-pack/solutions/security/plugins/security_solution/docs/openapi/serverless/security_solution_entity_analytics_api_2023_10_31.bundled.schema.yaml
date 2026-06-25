@@ -13,7 +13,13 @@ servers:
 paths:
   /api/asset_criticality:
     delete:
-      description: Delete the asset criticality record for a specific entity.
+      deprecated: true
+      description: >
+        **Deprecated in 9.4.0.** Use the Entity Store APIs to unassign asset
+        criticality for a specific entity.
+
+
+        Delete the asset criticality record for a specific entity.
       operationId: DeleteAssetCriticalityRecord
       parameters:
         - description: The ID value of the asset.
@@ -61,7 +67,9 @@ paths:
       tags:
         - Security Entity Analytics API
     get:
-      description: Get the asset criticality record for a specific entity.
+      deprecated: true
+      description: '**Deprecated in 9.4.0.** Get the asset criticality record for a
+        specific entity.'
       operationId: GetAssetCriticalityRecord
       parameters:
         - description: The ID value of the asset.
@@ -93,7 +101,12 @@ paths:
       tags:
         - Security Entity Analytics API
     post:
+      deprecated: true
       description: >
+        **Deprecated in 9.4.0.** Use the Entity Store APIs to assign asset
+        criticality to an entity.
+
+
         Create or update an asset criticality record for a specific entity.
 
 
@@ -133,7 +146,12 @@ paths:
         - Security Entity Analytics API
   /api/asset_criticality/bulk:
     post:
+      deprecated: true
       description: >
+        **Deprecated in 9.4.0.** Use the Entity Store APIs to bulk assign asset
+        criticality.
+
+
         Bulk upsert up to 1000 asset criticality records.
 
 
@@ -203,7 +221,9 @@ paths:
         - Security Entity Analytics API
   /api/asset_criticality/list:
     get:
-      description: List asset criticality records, paging, sorting and filtering as needed.
+      deprecated: true
+      description: '**Deprecated in 9.4.0.** List asset criticality records, paging,
+        sorting and filtering as needed.'
       operationId: FindAssetCriticalityRecords
       parameters:
         - description: The field to sort by.

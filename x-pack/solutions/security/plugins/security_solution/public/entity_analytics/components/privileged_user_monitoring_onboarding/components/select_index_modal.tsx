@@ -80,6 +80,7 @@ export const IndexSelectorModal = ({
     () =>
       indices?.map((index) => ({
         label: index,
+        'data-test-subj': `privMonIndexOption-${index}`,
       })) ?? [],
     [indices]
   );

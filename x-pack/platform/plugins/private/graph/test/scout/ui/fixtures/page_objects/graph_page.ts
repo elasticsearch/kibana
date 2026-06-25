@@ -133,8 +133,7 @@ export class GraphPage {
     await this.fieldSearchInput.waitFor({ state: 'visible' });
     for (const field of fields) {
       await this.fieldSearchInput.fill(field);
-      // Match the EuiSelectable item by `title` to wait for the filtered list.
-      const option = this.page.locator(`.euiSelectableListItem[title="${field}"]`);
+      const option = this.page.testSubj.locator(`graph-field-option-${field}`);
       await option.waitFor({ state: 'visible' });
       await option.click();
     }

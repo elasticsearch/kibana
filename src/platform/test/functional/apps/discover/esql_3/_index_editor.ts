@@ -14,6 +14,7 @@ import type { FtrProviderContext } from '../ftr_provider_context';
 const INDEX_NAME_MANUAL = 'test-lookup-index-manual';
 const INDEX_NAME_FILE = 'test-lookup-index-file';
 const INDEX_NAME_EDITION = 'test-lookup-index-edition';
+const INDEX_NAME_CLOSED = 'test-lookup-index-closed';
 const INITIAL_COLUMN_PLACEHOLDERS = 4;
 // Leading control columns rendered before the data columns: the unsaved-row color indicator,
 // the selection column, and the add-row column.
@@ -412,10 +413,46 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       });
     });
 
+    it('shows a warning tooltip for a closed lookup index instead of "Create lookup index"', async function () {
+      // Create a lookup index and close it
+      await es.indices.create({
+        index: INDEX_NAME_CLOSED,
+        settings: { mode: 'lookup' },
+      });
+      await es.indices.close({ index: INDEX_NAME_CLOSED });
+
+      await common.navigateToApp('discover');
+      await discover.waitUntilSearchingHasFinished();
+      await discover.selectTextBaseLang();
+      await discover.waitUntilSearchingHasFinished();
+
+      // Type the closed index into a lookup join query
+      await esql.typeEsqlEditorQuery(
+        `from logstash-* | LOOKUP JOIN ${INDEX_NAME_CLOSED} ON customer_id`
+      );
+
+      // Hover the badge and read the tooltip text — it must contain the closed warning
+      const hoverText = await esql.getEsqlBadgeHoverText('lookupIndexClosedBadge');
+      expect(hoverText).to.contain('closed');
+      expect(hoverText).not.to.contain('Create lookup index');
+      expect(hoverText).not.to.contain('Edit lookup index');
+    });
+
     async function cleanLookupJoinIndexes() {
-      for (const name of [INDEX_NAME_EDITION, INDEX_NAME_MANUAL, INDEX_NAME_FILE]) {
+      for (const name of [
+        INDEX_NAME_EDITION,
+        INDEX_NAME_MANUAL,
+        INDEX_NAME_FILE,
+        INDEX_NAME_CLOSED,
+      ]) {
         const indexExists = await es.indices.exists({ index: name });
         if (indexExists) {
+          // Open the index before deletion (closed indices cannot be deleted directly)
+          try {
+            await es.indices.open({ index: name });
+          } catch {
+            // ignore if already open
+          }
           await es.indices.delete({ index: name });
         }
       }

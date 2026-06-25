@@ -10,10 +10,15 @@
 import { schema } from '@kbn/config-schema';
 import { IndexPatternsFetcher } from '@kbn/data-views-plugin/server';
 import { WORKFLOWS_EXECUTIONS_INDEX } from '../../../../common';
+import { buildUnmanagedWorkflowExecutionsFilter } from '../../lib/build_workflow_executions_search_query';
 import type { RouteDependencies } from '../types';
 import { INTERNAL_API_VERSION, MAX_EXECUTION_FIELD_NAME_LENGTH } from '../utils/route_constants';
 import { handleRouteError } from '../utils/route_error_handlers';
-import { WORKFLOW_EXECUTION_READ_SECURITY } from '../utils/route_security';
+import {
+  canReadManagedWorkflowExecutions,
+  hasWorkflowExecutionReadPrivilege,
+  WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
+} from '../utils/route_security';
 import { withAvailabilityCheck } from '../utils/with_availability_check';
 
 const fieldNameSchema = schema.string({ maxLength: MAX_EXECUTION_FIELD_NAME_LENGTH });
@@ -33,7 +38,7 @@ export function registerExecutionFieldsRoute({ router }: RouteDependencies) {
     .get({
       path: '/internal/workflows/executions/fields',
       access: 'internal',
-      security: WORKFLOW_EXECUTION_READ_SECURITY,
+      security: WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
     })
     .addVersion(
       {
@@ -73,6 +78,9 @@ export function registerExecutionFieldsRoute({ router }: RouteDependencies) {
       },
       withAvailabilityCheck(async (context, request, response) => {
         try {
+          if (!hasWorkflowExecutionReadPrivilege(request)) {
+            return response.forbidden();
+          }
           const core = await context.core;
           const esClient = core.elasticsearch.client.asInternalUser;
           const indexPatternsFetcher = new IndexPatternsFetcher(esClient, {
@@ -87,6 +95,9 @@ export function registerExecutionFieldsRoute({ router }: RouteDependencies) {
               allow_no_indices: request.query.allow_no_index || false,
               includeUnmapped: request.query.include_unmapped,
             },
+            ...(canReadManagedWorkflowExecutions(request)
+              ? {}
+              : { indexFilter: buildUnmanagedWorkflowExecutionsFilter() }),
             fieldTypes: parseFields(request.query.field_types),
             allowHidden: request.query.allow_hidden,
             ...(parseFields(request.query.fields).length > 0

@@ -130,7 +130,7 @@ export class WorkflowSearchService {
   async getWorkflows(
     params: GetWorkflowsParams,
     spaceId: string,
-    options?: { includeExecutionHistory?: boolean }
+    options?: { includeExecutionHistory?: boolean; includeManagedExecutionHistory?: boolean }
   ): Promise<WorkflowListDto> {
     const {
       size = 100,
@@ -195,7 +195,9 @@ export class WorkflowSearchService {
       .filter((workflow): workflow is NonNullable<typeof workflow> => workflow !== null);
 
     if (options?.includeExecutionHistory && workflows.length > 0) {
-      const workflowIds = workflows.map((w) => w.id);
+      const workflowIds = workflows
+        .filter((workflow) => workflow.managed !== true || options.includeManagedExecutionHistory)
+        .map((workflow) => workflow.id);
       const executionHistory = await this.getRecentExecutionsForWorkflows(workflowIds, spaceId);
       workflows.forEach((workflow) => {
         workflow.history = executionHistory[workflow.id] || [];
@@ -215,7 +217,7 @@ export class WorkflowSearchService {
 
   async getWorkflowStats(
     spaceId: string,
-    options?: { includeExecutionStats?: boolean }
+    options?: { includeExecutionStats?: boolean; includeManagedExecutionStats?: boolean }
   ): Promise<WorkflowStatsDto> {
     const statsFilter = buildWorkflowFilters({
       space: { id: spaceId, includeGlobal: true },
@@ -247,7 +249,9 @@ export class WorkflowSearchService {
     };
 
     if (options?.includeExecutionStats) {
-      workflowsStats.executions = await this.getExecutionHistoryStats(spaceId);
+      workflowsStats.executions = await this.getExecutionHistoryStats(spaceId, {
+        includeManagedExecutions: options.includeManagedExecutionStats === true,
+      });
     }
 
     return workflowsStats;
@@ -312,7 +316,10 @@ export class WorkflowSearchService {
     }
   }
 
-  private async getExecutionHistoryStats(spaceId: string) {
+  private async getExecutionHistoryStats(
+    spaceId: string,
+    options?: { includeManagedExecutions?: boolean }
+  ) {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -326,6 +333,9 @@ export class WorkflowSearchService {
               { range: { createdAt: { gte: thirtyDaysAgo.toISOString() } } },
               { term: { spaceId } },
             ],
+            ...(options?.includeManagedExecutions
+              ? {}
+              : { must_not: [{ term: { managed: true } }] }),
           },
         },
         aggs: {

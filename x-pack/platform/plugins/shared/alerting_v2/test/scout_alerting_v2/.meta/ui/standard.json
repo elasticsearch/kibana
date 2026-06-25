@@ -1,5 +1,5 @@
 {
-  "sha1": "cddcc14c7e0ed497fa510fccd524f8c2440df095",
+  "sha1": "be1a49062fa72ee9380ec9ad2f9ea6c40f384027",
   "tests": [
     {
       "id": "a3a9f820a79c452-b8b452a1ef0f11e",
@@ -121,13 +121,13 @@
     {
       "id": "9034fd33949a2e3-4b8fd1fab72dd63",
       "title": "Discover Alerts menu with alerting v2 should show Alerts menu with the v2 ES|QL rule row and hide v1 entries",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/discover_alerts_menu.spec.ts",
-        "line": 41,
+        "line": 42,
         "column": 9
       }
     },

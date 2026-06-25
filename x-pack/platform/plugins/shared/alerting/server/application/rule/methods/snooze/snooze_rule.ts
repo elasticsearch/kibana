@@ -22,7 +22,7 @@ import {
   getSnoozeAttributes,
   verifySnoozeAttributeScheduleLimit,
 } from '../../../../rules_client/common';
-import { updateRuleSo } from '../../../../data/rule';
+import { updateRuleSo, getDecryptedRuleSo } from '../../../../data/rule';
 import { updateMetaAttributes } from '../../../../rules_client/lib/update_meta_attributes';
 import type { RuleParams } from '../../types';
 import { transformRuleDomainToRule, transformRuleAttributesToRuleDomain } from '../../transforms';
@@ -115,6 +115,22 @@ async function snoozeWithOCC<Params extends RuleParams = never>(
     }),
   });
 
+  let decryptedApiKey: string | null | undefined;
+  let decryptedUiamApiKey: string | null | undefined;
+  try {
+    const decryptedRule = await getDecryptedRuleSo({
+      encryptedSavedObjectsClient: context.encryptedSavedObjectsClient,
+      id,
+      savedObjectsGetOptions: { namespace: context.namespace },
+    });
+    decryptedApiKey = decryptedRule.attributes.apiKey;
+    decryptedUiamApiKey = decryptedRule.attributes.uiamApiKey ?? null;
+  } catch (e) {
+    context.logger.debug(
+      `snoozeRule(): could not load decrypted API key for rule "${id}": ${e.message}`
+    );
+  }
+
   await logRuleChanges({
     ruleSOs: [
       {
@@ -123,6 +139,10 @@ async function snoozeWithOCC<Params extends RuleParams = never>(
         references: updatedRuleRaw.references ?? [],
       },
     ],
+    encryptedFieldsMap:
+      decryptedApiKey !== undefined
+        ? new Map([[id, { apiKey: decryptedApiKey, uiamApiKey: decryptedUiamApiKey ?? null }]])
+        : undefined,
     rulesClientContext: context,
     changesContext: {
       action: RuleChangeTrackingAction.ruleSnooze,

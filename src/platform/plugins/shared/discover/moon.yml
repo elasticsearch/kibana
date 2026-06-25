@@ -140,7 +140,7 @@ dependsOn:
   - '@kbn/agent-builder-common'
   - '@kbn/agent-builder-browser'
   - '@kbn/alerting-v2-plugin'
-  - '@kbn/alerting-v2-constants'
+  - '@kbn/alerting-v2-utils'
   - '@kbn/cps-utils'
   - '@kbn/aiops-log-rate-analysis'
   - '@kbn/presentation-util-plugin'

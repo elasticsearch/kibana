@@ -156,7 +156,14 @@ const getColumnConfigs = ({
         }),
         order: 60,
         render: (index: Index) => {
-          return <DocCountCell indexName={index.name} docCountApi={docCountApiInstance} />;
+          return (
+            <DocCountCell
+              indexName={index.name}
+              docCountApi={docCountApiInstance}
+              metadataCount={index.documents}
+              status={index.status}
+            />
+          );
         },
         readOnly: true,
         minWidth: '8em',

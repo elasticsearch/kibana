@@ -46,7 +46,8 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
   const sampleData = getService('sampleData');
   const rules = getService('rules');
 
-  describe('Embeddable alerts panel', function () {
+  // Failing: See https://github.com/elastic/kibana/issues/258426
+  describe.skip('Embeddable alerts panel', function () {
     this.tags('skipFIPS');
 
     before(async () => {

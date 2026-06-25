@@ -77,7 +77,17 @@ const PRIVILEGE_SCOPE: Record<string, PrivilegeScope> = {
     writes: [],
     delegates: ['actionsClient'],
   },
+  [WorkflowsManagementApiActions.readManaged]: {
+    reads: [WORKFLOWS_INDEX],
+    writes: [],
+    delegates: ['actionsClient'],
+  },
   [WorkflowsManagementApiActions.readExecution]: {
+    reads: [WORKFLOWS_EXECUTIONS_INDEX, WORKFLOWS_STEP_EXECUTIONS_INDEX],
+    writes: [],
+    delegates: ['eventLoggerService'],
+  },
+  [WorkflowsManagementApiActions.readManagedExecution]: {
     reads: [WORKFLOWS_EXECUTIONS_INDEX, WORKFLOWS_STEP_EXECUTIONS_INDEX],
     writes: [],
     delegates: ['eventLoggerService'],
@@ -134,6 +144,9 @@ const INTERNAL_READ_EXCEPTIONS: Record<string, string[]> = {
   'POST:/api/workflows': [WORKFLOWS_INDEX],
   // Existence check before cancelAllActiveWorkflowExecutions (see WorkflowsManagementApi.cancelAllActiveWorkflowExecutions)
   'POST:/api/workflows/workflow/{workflowId}/executions/cancel': [WORKFLOWS_INDEX],
+  // Managed-execution authorization checks read the parent workflow metadata but do not return it.
+  'GET:/api/workflows/workflow/{workflowId}/executions': [WORKFLOWS_INDEX],
+  'GET:/api/workflows/workflow/{workflowId}/executions/steps': [WORKFLOWS_INDEX],
 };
 
 /**

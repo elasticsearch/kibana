@@ -265,7 +265,6 @@ describe(
         cy.getBySel('globalLoadingIndicator').should('not.exist');
         cy.getBySel(LIVE_QUERY_EDITOR).should('exist');
         cy.getBySel(SAVED_QUERY_DROPDOWN_SELECT).type(`${savedQueryName}{downArrow}{enter}`);
-        cy.getBySel('osquery-interval-field').click().clear().type('5');
         cy.getBySel(FLYOUT_SAVED_QUERY_SAVE_BUTTON).click();
 
         cy.get(TABLE_ROWS).contains(savedQueryName);

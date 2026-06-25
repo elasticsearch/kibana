@@ -39,6 +39,8 @@ export function registerPostIndexDocCountRoute({
         // use ES since index list is too long for query dsl
         const result = await client.esql.query({
           query: `FROM ${indexNames.join(',')} METADATA _index | STATS count() BY _index`,
+          // return partial results instead of failing the whole request when some shards are unavailable
+          allow_partial_results: true,
         });
 
         const indexNameIndex = result.columns.findIndex((col) => col.name === '_index');

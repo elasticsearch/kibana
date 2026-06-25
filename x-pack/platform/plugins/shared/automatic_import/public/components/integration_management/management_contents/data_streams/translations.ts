@@ -382,6 +382,39 @@ export const STATUS_LABELS = Object.freeze({
   }),
 });
 
+export const PHASE_LABELS = Object.freeze({
+  analyzing_logs: i18n.translate('xpack.automaticImport.dataStreams.phase.analyzingLogs', {
+    defaultMessage: 'Analyzing logs',
+  }),
+  mapping_to_ecs: i18n.translate('xpack.automaticImport.dataStreams.phase.mappingToEcs', {
+    defaultMessage: 'Mapping to ECS',
+  }),
+  building_pipeline: i18n.translate('xpack.automaticImport.dataStreams.phase.buildingPipeline', {
+    defaultMessage: 'Building ingest pipeline',
+  }),
+  fixing_pipeline: i18n.translate('xpack.automaticImport.dataStreams.phase.fixingPipeline', {
+    defaultMessage: 'Fixing ingest pipeline',
+  }),
+  mapping_event_fields: i18n.translate(
+    'xpack.automaticImport.dataStreams.phase.mappingEventFields',
+    {
+      defaultMessage: 'Mapping event fields',
+    }
+  ),
+  mapping_related_fields: i18n.translate(
+    'xpack.automaticImport.dataStreams.phase.mappingRelatedFields',
+    {
+      defaultMessage: 'Mapping related fields',
+    }
+  ),
+  reviewing: i18n.translate('xpack.automaticImport.dataStreams.phase.reviewing', {
+    defaultMessage: 'Reviewing',
+  }),
+  finalizing: i18n.translate('xpack.automaticImport.dataStreams.phase.finalizing', {
+    defaultMessage: 'Finalizing',
+  }),
+});
+
 // Aria Labels
 export const ARIA_LABELS = Object.freeze({
   uploadLogFile: i18n.translate('xpack.automaticImport.dataStreams.ariaLabels.uploadLogFile', {

@@ -20,6 +20,8 @@ export const docCountErrorLabel = i18n.translate(
   { defaultMessage: 'Unable to retrieve' }
 );
 
+export { docCountApproximateTooltip, docCountClosedIndexTooltip } from '../../translations';
+
 export const storageCardTitle = i18n.translate(
   'xpack.idxMgmt.indexDetails.overviewTab.storage.cardTitle',
   { defaultMessage: 'Storage' }

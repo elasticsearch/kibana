@@ -25,7 +25,11 @@ import type { SearchWorkflowExecutionsParams } from '../../workflows_management_
 import type { RouteDependencies } from '../types';
 import { API_VERSION, AVAILABILITY, MAX_PAGE_SIZE, OAS_TAG } from '../utils/route_constants';
 import { handleRouteError } from '../utils/route_error_handlers';
-import { WORKFLOW_EXECUTION_READ_SECURITY } from '../utils/route_security';
+import {
+  assertCanReadManagedWorkflowExecution,
+  hasWorkflowExecutionReadPrivilege,
+  WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
+} from '../utils/route_security';
 import { workflowIdParamSchema } from '../utils/schemas';
 import { withAvailabilityCheck } from '../utils/with_availability_check';
 
@@ -40,7 +44,7 @@ export function registerGetWorkflowExecutionsRoute({ router, api, spaces }: Rout
     .get({
       path: '/api/workflows/workflow/{workflowId}/executions',
       access: 'public',
-      security: WORKFLOW_EXECUTION_READ_SECURITY,
+      security: WORKFLOW_EXECUTION_READ_WITH_MANAGED_SECURITY,
       summary: 'Get workflow executions',
       description: 'Retrieve a paginated list of executions for a specific workflow.',
       options: {
@@ -172,8 +176,13 @@ export function registerGetWorkflowExecutionsRoute({ router, api, spaces }: Rout
       },
       withAvailabilityCheck(async (context, request, response) => {
         try {
+          if (!hasWorkflowExecutionReadPrivilege(request)) {
+            return response.forbidden();
+          }
           const spaceId = spaces.getSpaceId(request);
           const { workflowId } = request.params;
+          const workflow = await api.getWorkflow(workflowId, spaceId);
+          assertCanReadManagedWorkflowExecution(request, workflow);
           const executedBy = request.query.executedBy;
           const params: SearchWorkflowExecutionsParams = {
             workflowId,

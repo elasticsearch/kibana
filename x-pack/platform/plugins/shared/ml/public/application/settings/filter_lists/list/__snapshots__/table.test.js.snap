@@ -11,35 +11,40 @@ exports[`Filter Lists Table renders with filter lists and selection supplied 1`]
       <div
         class="euiFlexItem euiSearchBar__searchHolder emotion-euiFlexItem-grow-1-euiSearchBar__searchHolder"
       >
-        <div
-          class="euiFormControlLayout emotion-euiFormControlLayout-fullWidth"
+        <span
+          class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+          id="generated-id-wrapper"
         >
           <div
-            class="euiFormControlLayout__childrenWrapper emotion-euiFormControlLayout__childrenWrapper"
-            style="--euiFormControlLeftIconsCount: 1;"
+            class="euiFormControlLayout emotion-euiFormControlLayout-fullWidth"
           >
             <div
-              class="euiFormControlLayoutIcons emotion-euiFormControlLayoutIcons-absolute-left"
+              class="euiFormControlLayout__childrenWrapper emotion-euiFormControlLayout__childrenWrapper"
+              style="--euiFormControlLeftIconsCount: 1;"
             >
-              <span
-                class="euiFormControlLayoutCustomIcon emotion-euiFormControlLayoutCustomIcon"
+              <div
+                class="euiFormControlLayoutIcons emotion-euiFormControlLayoutIcons-absolute-left"
               >
                 <span
-                  aria-hidden="true"
-                  class="euiFormControlLayoutCustomIcon__icon"
-                  data-euiicon-type="magnify"
-                />
-              </span>
+                  class="euiFormControlLayoutCustomIcon emotion-euiFormControlLayoutCustomIcon"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="euiFormControlLayoutCustomIcon__icon"
+                    data-euiicon-type="magnify"
+                  />
+                </span>
+              </div>
+              <input
+                aria-label="This is a search bar. As you type, the results lower in the page will automatically filter."
+                class="euiFieldSearch emotion-euiFieldSearch-fullWidth"
+                placeholder="Search..."
+                type="search"
+                value=""
+              />
             </div>
-            <input
-              aria-label="This is a search bar. As you type, the results lower in the page will automatically filter."
-              class="euiFieldSearch emotion-euiFieldSearch-fullWidth"
-              placeholder="Search..."
-              type="search"
-              value=""
-            />
           </div>
-        </div>
+        </span>
       </div>
       <div
         class="euiFlexItem euiSearchBar__filtersHolder emotion-euiFlexItem-growZero-euiSearchBar__filtersHolder"
@@ -112,31 +117,35 @@ exports[`Filter Lists Table renders with filter lists and selection supplied 1`]
                 <div
                   class="euiTableCellContent"
                 >
-                  <div
-                    class="euiCheckbox emotion-euiCheckbox"
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+                    id="generated-id_euiToolTipAnchor"
                   >
                     <div
-                      class="euiCheckbox__square emotion-euiCheckbox__square"
+                      class="euiCheckbox emotion-euiCheckbox"
                     >
-                      <span
-                        class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                      <div
+                        class="euiCheckbox__square emotion-euiCheckbox__square"
                       >
                         <span
-                          class="emotion-euiCheckbox__icon-check"
-                          data-euiicon-type="empty"
-                          role="presentation"
+                          class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                        >
+                          <span
+                            class="emotion-euiCheckbox__icon-check"
+                            data-euiicon-type="empty"
+                            role="presentation"
+                          />
+                        </span>
+                        <input
+                          aria-label="Select all rows"
+                          class="euiCheckbox__input emotion-euiCheckbox__input"
+                          data-test-subj="checkboxSelectAll"
+                          id="_selection_column-checkbox_generated-id"
+                          type="checkbox"
                         />
-                      </span>
-                      <input
-                        aria-label="Select all rows"
-                        class="euiCheckbox__input emotion-euiCheckbox__input"
-                        data-test-subj="checkboxSelectAll"
-                        id="_selection_column-checkbox_generated-id"
-                        title="Select all rows"
-                        type="checkbox"
-                      />
+                      </div>
                     </div>
-                  </div>
+                  </span>
                 </div>
               </th>
               <th
@@ -289,32 +298,36 @@ exports[`Filter Lists Table renders with filter lists and selection supplied 1`]
                 <div
                   class="euiTableCellContent"
                 >
-                  <div
-                    class="euiCheckbox emotion-euiCheckbox"
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+                    id="generated-id_euiToolTipAnchor"
                   >
                     <div
-                      class="euiCheckbox__square emotion-euiCheckbox__square"
+                      class="euiCheckbox emotion-euiCheckbox"
                     >
-                      <span
-                        class="euiCheckboxControl emotion-euiCheckboxControl-disabled-unselected"
+                      <div
+                        class="euiCheckbox__square emotion-euiCheckbox__square"
                       >
                         <span
-                          class="emotion-euiCheckbox__icon-check"
-                          data-euiicon-type="empty"
-                          role="presentation"
+                          class="euiCheckboxControl emotion-euiCheckboxControl-disabled-unselected"
+                        >
+                          <span
+                            class="emotion-euiCheckbox__icon-check"
+                            data-euiicon-type="empty"
+                            role="presentation"
+                          />
+                        </span>
+                        <input
+                          aria-label="Select row 1"
+                          class="euiCheckbox__input emotion-euiCheckbox__input"
+                          data-test-subj="checkboxSelectRow-safe_domains"
+                          disabled=""
+                          id="__table_generated-id_selection_column_safe_domains-checkbox"
+                          type="checkbox"
                         />
-                      </span>
-                      <input
-                        aria-label="Select row 1"
-                        class="euiCheckbox__input emotion-euiCheckbox__input"
-                        data-test-subj="checkboxSelectRow-safe_domains"
-                        disabled=""
-                        id="__table_generated-id_selection_column_safe_domains-checkbox"
-                        title="Select row 1"
-                        type="checkbox"
-                      />
+                      </div>
                     </div>
-                  </div>
+                  </span>
                 </div>
               </td>
               <td
@@ -386,31 +399,35 @@ exports[`Filter Lists Table renders with filter lists and selection supplied 1`]
                 <div
                   class="euiTableCellContent"
                 >
-                  <div
-                    class="euiCheckbox emotion-euiCheckbox"
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+                    id="generated-id_euiToolTipAnchor"
                   >
                     <div
-                      class="euiCheckbox__square emotion-euiCheckbox__square"
+                      class="euiCheckbox emotion-euiCheckbox"
                     >
-                      <span
-                        class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                      <div
+                        class="euiCheckbox__square emotion-euiCheckbox__square"
                       >
                         <span
-                          class="emotion-euiCheckbox__icon-check"
-                          data-euiicon-type="empty"
-                          role="presentation"
+                          class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                        >
+                          <span
+                            class="emotion-euiCheckbox__icon-check"
+                            data-euiicon-type="empty"
+                            role="presentation"
+                          />
+                        </span>
+                        <input
+                          aria-label="Select row 2"
+                          class="euiCheckbox__input emotion-euiCheckbox__input"
+                          data-test-subj="checkboxSelectRow-us_east_instances"
+                          id="__table_generated-id_selection_column_us_east_instances-checkbox"
+                          type="checkbox"
                         />
-                      </span>
-                      <input
-                        aria-label="Select row 2"
-                        class="euiCheckbox__input emotion-euiCheckbox__input"
-                        data-test-subj="checkboxSelectRow-us_east_instances"
-                        id="__table_generated-id_selection_column_us_east_instances-checkbox"
-                        title="Select row 2"
-                        type="checkbox"
-                      />
+                      </div>
                     </div>
-                  </div>
+                  </span>
                 </div>
               </td>
               <td
@@ -601,35 +618,40 @@ exports[`Filter Lists Table renders with filter lists supplied 1`] = `
       <div
         class="euiFlexItem euiSearchBar__searchHolder emotion-euiFlexItem-grow-1-euiSearchBar__searchHolder"
       >
-        <div
-          class="euiFormControlLayout emotion-euiFormControlLayout-fullWidth"
+        <span
+          class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+          id="generated-id-wrapper"
         >
           <div
-            class="euiFormControlLayout__childrenWrapper emotion-euiFormControlLayout__childrenWrapper"
-            style="--euiFormControlLeftIconsCount: 1;"
+            class="euiFormControlLayout emotion-euiFormControlLayout-fullWidth"
           >
             <div
-              class="euiFormControlLayoutIcons emotion-euiFormControlLayoutIcons-absolute-left"
+              class="euiFormControlLayout__childrenWrapper emotion-euiFormControlLayout__childrenWrapper"
+              style="--euiFormControlLeftIconsCount: 1;"
             >
-              <span
-                class="euiFormControlLayoutCustomIcon emotion-euiFormControlLayoutCustomIcon"
+              <div
+                class="euiFormControlLayoutIcons emotion-euiFormControlLayoutIcons-absolute-left"
               >
                 <span
-                  aria-hidden="true"
-                  class="euiFormControlLayoutCustomIcon__icon"
-                  data-euiicon-type="magnify"
-                />
-              </span>
+                  class="euiFormControlLayoutCustomIcon emotion-euiFormControlLayoutCustomIcon"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="euiFormControlLayoutCustomIcon__icon"
+                    data-euiicon-type="magnify"
+                  />
+                </span>
+              </div>
+              <input
+                aria-label="This is a search bar. As you type, the results lower in the page will automatically filter."
+                class="euiFieldSearch emotion-euiFieldSearch-fullWidth"
+                placeholder="Search..."
+                type="search"
+                value=""
+              />
             </div>
-            <input
-              aria-label="This is a search bar. As you type, the results lower in the page will automatically filter."
-              class="euiFieldSearch emotion-euiFieldSearch-fullWidth"
-              placeholder="Search..."
-              type="search"
-              value=""
-            />
           </div>
-        </div>
+        </span>
       </div>
       <div
         class="euiFlexItem euiSearchBar__filtersHolder emotion-euiFlexItem-growZero-euiSearchBar__filtersHolder"
@@ -703,31 +725,35 @@ exports[`Filter Lists Table renders with filter lists supplied 1`] = `
                 <div
                   class="euiTableCellContent"
                 >
-                  <div
-                    class="euiCheckbox emotion-euiCheckbox"
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+                    id="generated-id_euiToolTipAnchor"
                   >
                     <div
-                      class="euiCheckbox__square emotion-euiCheckbox__square"
+                      class="euiCheckbox emotion-euiCheckbox"
                     >
-                      <span
-                        class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                      <div
+                        class="euiCheckbox__square emotion-euiCheckbox__square"
                       >
                         <span
-                          class="emotion-euiCheckbox__icon-check"
-                          data-euiicon-type="empty"
-                          role="presentation"
+                          class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                        >
+                          <span
+                            class="emotion-euiCheckbox__icon-check"
+                            data-euiicon-type="empty"
+                            role="presentation"
+                          />
+                        </span>
+                        <input
+                          aria-label="Select all rows"
+                          class="euiCheckbox__input emotion-euiCheckbox__input"
+                          data-test-subj="checkboxSelectAll"
+                          id="_selection_column-checkbox_generated-id"
+                          type="checkbox"
                         />
-                      </span>
-                      <input
-                        aria-label="Select all rows"
-                        class="euiCheckbox__input emotion-euiCheckbox__input"
-                        data-test-subj="checkboxSelectAll"
-                        id="_selection_column-checkbox_generated-id"
-                        title="Select all rows"
-                        type="checkbox"
-                      />
+                      </div>
                     </div>
-                  </div>
+                  </span>
                 </div>
               </th>
               <th
@@ -880,32 +906,36 @@ exports[`Filter Lists Table renders with filter lists supplied 1`] = `
                 <div
                   class="euiTableCellContent"
                 >
-                  <div
-                    class="euiCheckbox emotion-euiCheckbox"
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+                    id="generated-id_euiToolTipAnchor"
                   >
                     <div
-                      class="euiCheckbox__square emotion-euiCheckbox__square"
+                      class="euiCheckbox emotion-euiCheckbox"
                     >
-                      <span
-                        class="euiCheckboxControl emotion-euiCheckboxControl-disabled-unselected"
+                      <div
+                        class="euiCheckbox__square emotion-euiCheckbox__square"
                       >
                         <span
-                          class="emotion-euiCheckbox__icon-check"
-                          data-euiicon-type="empty"
-                          role="presentation"
+                          class="euiCheckboxControl emotion-euiCheckboxControl-disabled-unselected"
+                        >
+                          <span
+                            class="emotion-euiCheckbox__icon-check"
+                            data-euiicon-type="empty"
+                            role="presentation"
+                          />
+                        </span>
+                        <input
+                          aria-label="Select row 1"
+                          class="euiCheckbox__input emotion-euiCheckbox__input"
+                          data-test-subj="checkboxSelectRow-safe_domains"
+                          disabled=""
+                          id="__table_generated-id_selection_column_safe_domains-checkbox"
+                          type="checkbox"
                         />
-                      </span>
-                      <input
-                        aria-label="Select row 1"
-                        class="euiCheckbox__input emotion-euiCheckbox__input"
-                        data-test-subj="checkboxSelectRow-safe_domains"
-                        disabled=""
-                        id="__table_generated-id_selection_column_safe_domains-checkbox"
-                        title="Select row 1"
-                        type="checkbox"
-                      />
+                      </div>
                     </div>
-                  </div>
+                  </span>
                 </div>
               </td>
               <td
@@ -977,31 +1007,35 @@ exports[`Filter Lists Table renders with filter lists supplied 1`] = `
                 <div
                   class="euiTableCellContent"
                 >
-                  <div
-                    class="euiCheckbox emotion-euiCheckbox"
+                  <span
+                    class="euiToolTipAnchor emotion-euiToolTipAnchor-block"
+                    id="generated-id_euiToolTipAnchor"
                   >
                     <div
-                      class="euiCheckbox__square emotion-euiCheckbox__square"
+                      class="euiCheckbox emotion-euiCheckbox"
                     >
-                      <span
-                        class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                      <div
+                        class="euiCheckbox__square emotion-euiCheckbox__square"
                       >
                         <span
-                          class="emotion-euiCheckbox__icon-check"
-                          data-euiicon-type="empty"
-                          role="presentation"
+                          class="euiCheckboxControl emotion-euiCheckboxControl-unselected"
+                        >
+                          <span
+                            class="emotion-euiCheckbox__icon-check"
+                            data-euiicon-type="empty"
+                            role="presentation"
+                          />
+                        </span>
+                        <input
+                          aria-label="Select row 2"
+                          class="euiCheckbox__input emotion-euiCheckbox__input"
+                          data-test-subj="checkboxSelectRow-us_east_instances"
+                          id="__table_generated-id_selection_column_us_east_instances-checkbox"
+                          type="checkbox"
                         />
-                      </span>
-                      <input
-                        aria-label="Select row 2"
-                        class="euiCheckbox__input emotion-euiCheckbox__input"
-                        data-test-subj="checkboxSelectRow-us_east_instances"
-                        id="__table_generated-id_selection_column_us_east_instances-checkbox"
-                        title="Select row 2"
-                        type="checkbox"
-                      />
+                      </div>
                     </div>
-                  </div>
+                  </span>
                 </div>
               </td>
               <td

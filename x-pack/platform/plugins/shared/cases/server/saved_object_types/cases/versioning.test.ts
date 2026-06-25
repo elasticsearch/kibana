@@ -18,7 +18,7 @@ import { modelVersion9 } from './model_versions';
 
 const mockLogger = loggerMock.create();
 const mockCoreSetup = coreMock.createSetup();
-const caseSavedObjectType = createCaseSavedObjectType(mockCoreSetup, mockLogger);
+const caseSavedObjectType = createCaseSavedObjectType(mockCoreSetup, mockLogger, {} as never);
 
 describe('caseSavedObjectType model version transformations', () => {
   let migrator: ModelVersionTestMigrator;

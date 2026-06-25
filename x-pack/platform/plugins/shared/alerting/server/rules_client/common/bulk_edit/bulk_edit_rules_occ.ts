@@ -204,6 +204,12 @@ async function saveBulkUpdatedRules({
 
     await logRuleChanges({
       ruleSOs: result.saved_objects,
+      encryptedFieldsMap: new Map(
+        [...apiKeysMap.entries()].map(([ruleId, { newApiKey, newUiamApiKey }]) => [
+          ruleId,
+          { apiKey: newApiKey ?? null, uiamApiKey: newUiamApiKey ?? null },
+        ])
+      ),
       rulesClientContext: context,
       changesContext: {
         action: changeTracking?.action ?? RuleChangeTrackingAction.ruleUpdate,
