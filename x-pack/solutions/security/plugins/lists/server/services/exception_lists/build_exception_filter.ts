@@ -227,7 +227,18 @@ export const createOrClauses = async <
 };
 
 const isListTypeProcessable = (type: Type): boolean =>
-  type === 'keyword' || type === 'ip' || type === 'ip_range';
+  type === 'keyword' ||
+  type === 'ip' ||
+  type === 'ip_range' ||
+  type === 'byte' ||
+  type === 'integer_range' ||
+  type === 'float_range' ||
+  type === 'long_range' ||
+  type === 'double_range' ||
+  type === 'date_range' ||
+  type === 'geo_point' ||
+  type === 'geo_shape' ||
+  type === 'shape';
 
 export const filterOutUnprocessableValueLists = async <
   T extends ExceptionListItemSchema | CreateExceptionListItemSchema
@@ -511,6 +522,32 @@ export const buildIpRangeClauses = (
     };
   });
 
+const buildSmallListBoolFilter = (
+  clauses: estypes.QueryDslQueryContainer[],
+  operator: string
+): BooleanFilter => ({
+  bool: {
+    [operator === 'excluded' ? 'must_not' : 'should']: clauses,
+    minimum_should_match: 1,
+  },
+});
+
+const parseNumericRangeClause = (value: string, field: string): estypes.QueryDslQueryContainer => {
+  // Numeric range list values use dash-separated notation: "{gte}-{lte}".
+  // The regex handles negative numbers (e.g. "-50--20").
+  const match = value.match(/^(-?[\d.eE+]+)-(-?[\d.eE+]+)$/);
+  const [gte, lte] = match ? [match[1], match[2]] : value.split('-');
+  return { range: { [field]: { gte, lte } } };
+};
+
+const parseDateRangeClause = (value: string, field: string): estypes.QueryDslQueryContainer => {
+  // Date range list values use comma-separated ISO notation: "{gte},{lte}".
+  const commaIdx = value.indexOf(',');
+  const gte = value.slice(0, commaIdx);
+  const lte = value.slice(commaIdx + 1);
+  return { range: { [field]: { gte, lte } } };
+};
+
 export const buildListClause = async (
   entry: EntryList,
   listClient: ListClient
@@ -537,12 +574,19 @@ export const buildListClause = async (
     if (dashNotationRange.length > MAXIMUM_SMALL_IP_RANGE_VALUE_LIST_DASH_SIZE) {
       return undefined;
     }
+    if (slashNotationRange.length > MAXIMUM_SMALL_IP_RANGE_VALUE_LIST_DASH_SIZE) {
+      return undefined;
+    }
     const rangeClauses = buildIpRangeClauses(dashNotationRange, field);
     if (slashNotationRange.length > 0) {
-      rangeClauses.push({
-        terms: {
-          [field]: slashNotationRange,
-        },
+      // `terms` queries against an `ip` field do not support CIDR notation,
+      // but `term` queries do. Emit one `term` clause per CIDR value.
+      slashNotationRange.forEach((cidr) => {
+        rangeClauses.push({
+          term: {
+            [field]: cidr,
+          },
+        });
       });
     }
     return {
@@ -551,6 +595,64 @@ export const buildListClause = async (
         minimum_should_match: 1,
       },
     };
+  }
+
+  if (['integer_range', 'float_range', 'long_range', 'double_range'].includes(type)) {
+    if (listValues.length > MAXIMUM_SMALL_IP_RANGE_VALUE_LIST_DASH_SIZE) {
+      return undefined;
+    }
+    return buildSmallListBoolFilter(
+      listValues.map((v) => parseNumericRangeClause(v, field)),
+      operator
+    );
+  }
+
+  if (type === 'date_range') {
+    if (listValues.length > MAXIMUM_SMALL_IP_RANGE_VALUE_LIST_DASH_SIZE) {
+      return undefined;
+    }
+    return buildSmallListBoolFilter(
+      listValues.map((v) => parseDateRangeClause(v, field)),
+      operator
+    );
+  }
+
+  if (type === 'geo_point') {
+    if (listValues.length > MAXIMUM_SMALL_IP_RANGE_VALUE_LIST_DASH_SIZE) {
+      return undefined;
+    }
+    // geo_point list values are stored as "lat,lon" strings. ES does not support
+    // terms queries on geo_point fields; emit a geo_distance clause per point.
+    return buildSmallListBoolFilter(
+      listValues.map((value) => ({ geo_distance: { distance: '1m', [field]: value } })),
+      operator
+    );
+  }
+
+  if (type === 'geo_shape') {
+    if (listValues.length > MAXIMUM_SMALL_IP_RANGE_VALUE_LIST_DASH_SIZE) {
+      return undefined;
+    }
+    // geo_shape list values are stored as WKT strings.
+    return buildSmallListBoolFilter(
+      listValues.map((value) => ({
+        geo_shape: { [field]: { relation: 'intersects' as const, shape: value } },
+      })),
+      operator
+    );
+  }
+
+  if (type === 'shape') {
+    if (listValues.length > MAXIMUM_SMALL_IP_RANGE_VALUE_LIST_DASH_SIZE) {
+      return undefined;
+    }
+    // Cartesian shape list values are stored as WKT strings.
+    return buildSmallListBoolFilter(
+      listValues.map((value) => ({
+        shape: { [field]: { relation: 'intersects' as const, shape: value } },
+      })),
+      operator
+    );
   }
 
   return {

@@ -6,7 +6,10 @@
  */
 import { EuiBasicTable } from '@elastic/eui';
 import React from 'react';
-import type { ListItemSchema } from '@kbn/securitysolution-io-ts-list-types';
+import {
+  isValueListItemValueSortable,
+  type ListItemSchema,
+} from '@kbn/securitysolution-io-ts-list-types';
 import { InlineEditListItemValue } from './inline_edit_list_item_value';
 import { DeleteListItem } from './delete_list_item';
 import { FormattedDate } from '../../common/components/formatted_date';
@@ -39,7 +42,7 @@ export const ListItemTable = ({
       name: COLUMN_VALUE,
       render: (value, item) =>
         canWriteIndex ? <InlineEditListItemValue listItem={item} key={value} /> : value,
-      sortable: list.type !== 'text' && list.type !== 'ip_range',
+      sortable: isValueListItemValueSortable(list.type),
       truncateText: true,
     },
     {

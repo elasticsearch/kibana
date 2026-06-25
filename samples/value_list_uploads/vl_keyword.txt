@@ -1,0 +1,10 @@
+malware.exe
+suspicious-host-01
+bad-domain.example
+C2-beacon
+temp-worker-7
+IOC-REF-1001
+IOC-REF-1002
+IOC-REF-1003
+trusted-internal
+staging-only

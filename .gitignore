@@ -203,6 +203,8 @@ src/platform/plugins/shared/console/packaging/react/translations
 # Batched commits marker, e.g.: from quick checks
 .collect_commits_marker
 
+# Local superset worktree configuration
+.superset/
 # Agent skill working output (team-auto-tests-stats markdown only — never commit)
 .cursor/tmp/
 .agents/tmp/

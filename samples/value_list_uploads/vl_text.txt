@@ -1,0 +1,10 @@
+suspicious login pattern
+multiple failed attempts
+unusual outbound volume
+privilege escalation chain
+credential stuffing campaign
+living off the land technique
+long lived session anomaly
+rare user agent string combo
+unexpected geographic hop
+service account misuse

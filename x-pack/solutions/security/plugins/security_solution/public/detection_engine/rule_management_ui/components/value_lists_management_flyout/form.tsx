@@ -22,30 +22,22 @@ import type {
   EuiFilePickerProps,
 } from '@elastic/eui/src/components/form/file_picker/file_picker';
 
-import type { ListSchema, Type } from '@kbn/securitysolution-io-ts-list-types';
+import {
+  VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL,
+  type ListSchema,
+  type Type,
+} from '@kbn/securitysolution-io-ts-list-types';
 import { useImportList } from '@kbn/securitysolution-list-hooks';
 
 import * as i18n from './translations';
 import { useKibana } from '../../../../common/lib/kibana';
 
-export const listFormOptions: EuiSelectOption[] = [
-  {
-    value: 'keyword',
-    text: i18n.KEYWORDS_RADIO,
-  },
-  {
-    value: 'ip',
-    text: i18n.IP_RADIO,
-  },
-  {
-    value: 'ip_range',
-    text: i18n.IP_RANGE_RADIO,
-  },
-  {
-    value: 'text',
-    text: i18n.TEXT_RADIO,
-  },
-];
+export const listFormOptions: EuiSelectOption[] = VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL.map(
+  (listType) => ({
+    value: listType,
+    text: i18n.getListTypeSelectOptionText(listType),
+  })
+);
 
 const defaultListType: Type = 'keyword';
 const validFileTypes = ['text/csv', 'text/plain'];

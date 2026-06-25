@@ -63,7 +63,7 @@ describe('value lists management modal', { tags: ['@ess', '@serverless'] }, () =
         .find(VALUE_LISTS_ROW)
         .should(($row) => {
           expect($row.text()).to.contain(KNOWN_VALUE_LIST_FILES.TEXT);
-          expect($row.text()).to.contain('Keywords');
+          expect($row.text()).to.contain('Keyword');
         });
     });
 
@@ -89,7 +89,7 @@ describe('value lists management modal', { tags: ['@ess', '@serverless'] }, () =
         .find(VALUE_LISTS_ROW)
         .should(($row) => {
           expect($row.text()).to.contain(KNOWN_VALUE_LIST_FILES.IPs);
-          expect($row.text()).to.contain('IP addresses');
+          expect($row.text()).to.contain('IP');
         });
     });
 
@@ -102,7 +102,7 @@ describe('value lists management modal', { tags: ['@ess', '@serverless'] }, () =
         .find(VALUE_LISTS_ROW)
         .should(($row) => {
           expect($row.text()).to.contain(KNOWN_VALUE_LIST_FILES.CIDRs);
-          expect($row.text()).to.contain('IP ranges');
+          expect($row.text()).to.contain('IP range');
         });
     });
   });

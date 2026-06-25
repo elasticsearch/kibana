@@ -8,7 +8,12 @@
 import { pipe } from 'fp-ts/pipeable';
 import { left } from 'fp-ts/Either';
 import type { Type } from '.';
-import { type } from '.';
+import {
+  isValueListItemValueSortable,
+  type,
+  VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL,
+  VALUE_LIST_ELASTICSEARCH_TYPES_ORDERED,
+} from '.';
 import { exactCheck, foldLeftRight, getPaths } from '@kbn/securitysolution-io-ts-utils';
 
 describe('type', () => {
@@ -26,9 +31,55 @@ describe('type', () => {
     const decoded = type.decode(payload);
     const checked = exactCheck(payload, decoded);
     const message = pipe(checked, foldLeftRight);
-    expect(getPaths(left(message.errors))).toEqual([
-      'Invalid value "madeup" supplied to ""binary" | "boolean" | "byte" | "date" | "date_nanos" | "date_range" | "double" | "double_range" | "float" | "float_range" | "geo_point" | "geo_shape" | "half_float" | "integer" | "integer_range" | "ip" | "ip_range" | "keyword" | "long" | "long_range" | "shape" | "short" | "text""',
-    ]);
+    const [errorPath] = getPaths(left(message.errors));
+    expect(errorPath).toMatch(/^Invalid value "madeup" supplied to "/);
+    expect(errorPath).toContain('"binary"');
+    expect(errorPath).toContain('"text"');
     expect(message.schema).toEqual({});
+  });
+});
+
+describe('isValueListItemValueSortable', () => {
+  const unsortableTypes: Type[] = [
+    'text',
+    'binary',
+    'ip_range',
+    'integer_range',
+    'float_range',
+    'long_range',
+    'double_range',
+    'date_range',
+  ];
+
+  test.each(unsortableTypes)('returns false for %s', (listType) => {
+    expect(isValueListItemValueSortable(listType)).toBe(false);
+  });
+
+  test.each(['keyword', 'ip', 'long', 'boolean'] as const)(
+    'returns true for scalar type %s',
+    (listType) => {
+      expect(isValueListItemValueSortable(listType)).toBe(true);
+    }
+  );
+});
+
+describe('VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL', () => {
+  test('includes every type exactly once, sorted lexically with numeric segments', () => {
+    expect(VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL).toHaveLength(
+      VALUE_LIST_ELASTICSEARCH_TYPES_ORDERED.length
+    );
+    const sorted = [...VALUE_LIST_ELASTICSEARCH_TYPES_ORDERED].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
+    expect(VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL).toEqual(sorted);
+  });
+
+  test('binary precedes boolean and date_nanos precedes date_range', () => {
+    expect(VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL.indexOf('binary')).toBeLessThan(
+      VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL.indexOf('boolean')
+    );
+    expect(VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL.indexOf('date_nanos')).toBeLessThan(
+      VALUE_LIST_ELASTICSEARCH_TYPES_ALPHABETICAL.indexOf('date_range')
+    );
   });
 });
