@@ -89,7 +89,7 @@ const baseError = {
     grouping_key: 'test-group-id',
     exception: [{ message: 'Test error message', type: 'Error' }],
   },
-  agent: { name: 'nodejs' },
+  agent: { name: 'nodejs', version: '1.2.3' },
 };
 
 describe('ErrorSampleDetails', () => {
@@ -161,5 +161,29 @@ describe('ErrorSampleDetails', () => {
 
     expect(screen.queryByTestId('loading-content')).not.toBeInTheDocument();
     expect(screen.getByText('Error sample')).toBeInTheDocument();
+  });
+
+  it('renders issue context for the selected error sample', () => {
+    render(
+      <ErrorSampleDetails
+        onSampleClick={jest.fn()}
+        errorSampleIds={['error-id-1']}
+        errorSamplesFetchStatus={FETCH_STATUS.SUCCESS}
+        errorData={{ error: baseError as any, transaction: undefined }}
+        errorFetchStatus={FETCH_STATUS.SUCCESS}
+        occurrencesCount={3}
+      />,
+      { wrapper: Wrapper }
+    );
+
+    expect(screen.getByText('Issue context')).toBeInTheDocument();
+    expect(screen.getByText('Group ID')).toBeInTheDocument();
+    expect(screen.getByText('test-group-id')).toBeInTheDocument();
+    expect(screen.getByText('Occurrences')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('Type')).toBeInTheDocument();
+    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('SDK')).toBeInTheDocument();
+    expect(screen.getByText('nodejs 1.2.3')).toBeInTheDocument();
   });
 });
