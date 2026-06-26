@@ -88,11 +88,10 @@ spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.c
     await lens.waitForVisualization('partitionVisChart');
     expect(await lens.getLayerCount()).toBe(1);
 
+    await expect(lens.getDimensionTriggerLocator()).toHaveCount(2);
+
     const sliceByText = await lens.getDimensionTriggerText('lnsPie_sliceByDimensionPanel', 0);
     const sizeByText = await lens.getDimensionTriggerText('lnsPie_sizeByDimensionPanel', 0);
-
-    const dimensions = await lens.getDimensionTriggers();
-    expect(dimensions).toHaveLength(2);
     expect(sliceByText).toBe('machine.os.raw: Descending');
     expect(sizeByText).toBe('Sum of machine.ram');
   });
@@ -104,11 +103,10 @@ spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.c
     await convertToLensByTitle({ dashboard }, 'Pie - Basic count');
     await lens.waitForVisualization('partitionVisChart');
 
+    await expect(lens.getDimensionTriggerLocator()).toHaveCount(2);
+
     const sliceByText = await lens.getDimensionTriggerText('lnsPie_sliceByDimensionPanel', 0);
     const sizeByText = await lens.getDimensionTriggerText('lnsPie_sizeByDimensionPanel', 0);
-
-    const dimensions = await lens.getDimensionTriggers();
-    expect(dimensions).toHaveLength(2);
     expect(sliceByText).toBe('machine.os.raw: Descending');
     expect(sizeByText).toBe('Count');
 

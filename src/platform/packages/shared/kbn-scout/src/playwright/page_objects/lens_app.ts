@@ -406,9 +406,14 @@ export class LensApp {
     return tabs === 0 ? 1 : tabs;
   }
 
+  /** Locator for all dimension-trigger buttons in the Lens config panel. */
+  getDimensionTriggerLocator() {
+    return this.page.testSubj.locator('lns-dimensionTrigger');
+  }
+
   /** Returns all dimension-trigger button locators currently rendered in the editor. */
   getDimensionTriggers() {
-    return this.page.testSubj.locator('lns-dimensionTrigger').all();
+    return this.getDimensionTriggerLocator().all();
   }
 
   /** Returns visible labels for all dimension triggers inside a dimension panel. */
@@ -457,15 +462,14 @@ export class LensApp {
    * default (un-hovered) state before asserting colors.
    */
   async hoverOverDimensionButton(index = 0) {
-    const triggers = await this.getDimensionTriggers();
-    if (triggers[index]) {
-      await triggers[index].hover();
+    const triggers = await this.getDimensionTriggerLocator().all();
+    const trigger = triggers[index];
+    if (!trigger) {
+      throw new Error(`Dimension trigger not found at index ${index}`);
     }
+    await trigger.hover();
     // Move the pointer off the metric tiles so hover styles do not affect color assertions.
-    const layerPanels = await this.page.locator('[data-test-subj^="lns-layerPanel-"]').all();
-    if (layerPanels[0]) {
-      await layerPanels[0].hover();
-    }
+    await this.page.testSubj.locator('lns-layerPanel-0').hover();
   }
 
   /** Reads the current state of every metric tile inside `[data-test-subj="mtrVis"]`. */
