@@ -245,8 +245,34 @@ spaceTest.describe('Lens open in Lens — agg-based XY', { tag: tags.stateful.cl
       .toStrictEqual(expectedLegend);
   });
 
-  // TODO: Migrate stateful FTR `should convert correctly percentiles with decimals` from
-  // `agg_based_2/xy.ts` (Percentiles on `memory` with rank 99.99). Serverless FTR and `xy.json`
-  // have no dashboard panel for this scenario; add a kbn archive panel, a convert test, and
-  // `getWorkspaceErrorCount()` on LensApp.
+  spaceTest('should convert correctly percentiles with decimals', async ({ pageObjects }) => {
+    const { dashboard, lens } = pageObjects;
+
+    await convertToLensByTitle({ dashboard }, 'XY - Percentiles with decimals');
+    await lens.waitForVisualization('xyVisChart');
+    expect(await lens.getLayerCount()).toBe(1);
+
+    expect(await lens.getChartSwitchType()).toBe('Line');
+    expect(await lens.getDimensionTriggerText('lnsXY_yDimensionPanel', 0)).toBe(
+      '1st percentile of memory'
+    );
+    expect(await lens.getDimensionTriggerText('lnsXY_yDimensionPanel', 1)).toBe(
+      '5th percentile of memory'
+    );
+    expect(await lens.getDimensionTriggerText('lnsXY_yDimensionPanel', 2)).toBe(
+      '25th percentile of memory'
+    );
+    expect(await lens.getDimensionTriggerText('lnsXY_yDimensionPanel', 3)).toBe(
+      '50th percentile of memory'
+    );
+    expect(await lens.getDimensionTriggerText('lnsXY_yDimensionPanel', 4)).toBe(
+      '75th percentile of memory'
+    );
+    expect(await lens.getDimensionTriggerText('lnsXY_yDimensionPanel', 5)).toBe(
+      '95th percentile of memory'
+    );
+    expect(await lens.getDimensionTriggerText('lnsXY_yDimensionPanel', 6)).toBe(
+      '99.99th percentile of memory'
+    );
+  });
 });
