@@ -121,7 +121,11 @@ export class CasesUiPlugin
 
     registerAnalytics({ analyticsService: core.analytics });
 
-    registerCasesSteps(plugins.workflowsExtensions);
+    registerCasesSteps(
+      plugins.workflowsExtensions,
+      this.unifiedAttachmentTypeRegistry,
+      config.attachments?.enabled === true
+    );
     registerCasesWorkflowTriggers(plugins.workflowsExtensions);
 
     return {

@@ -12,4 +12,7 @@ import { LENS_ATTACHMENT_TYPE } from '../../../common/constants/attachments';
 export const lensAttachmentType: UnifiedAttachmentTypeSetup = {
   id: LENS_ATTACHMENT_TYPE,
   schema: LensAttachmentPayloadSchema,
+  // `data.state` is the embeddable input bag, produced by the "Add to case"
+  // flow and not authorable in YAML, so lens is excluded from workflow steps.
+  workflowSchema: false,
 };

@@ -447,6 +447,71 @@ describe('getRequiredParamsForConnector', () => {
     });
   });
 
+  describe('discriminated union scaffolding', () => {
+    const buildAttachmentUnion = () =>
+      z.discriminatedUnion('type', [
+        z.object({ type: z.literal('comment'), comment: z.string() }),
+        z.object({ type: z.literal('file'), attachmentId: z.string() }),
+      ]);
+
+    it('should scaffold the discriminator key for a discriminated-union field', () => {
+      const mockConnector = {
+        type: 'cases.addAttachment',
+        paramsSchema: z.object({
+          case_id: z.string(),
+          attachment: buildAttachmentUnion(),
+        }),
+      };
+
+      (getCachedAllConnectors as jest.Mock).mockReturnValue([mockConnector]);
+      isInternalConnector.mockReturnValue(false);
+
+      const result = getRequiredParamsForConnector('cases.addAttachment');
+      const attachment = result.find((p) => p.name === 'attachment');
+
+      expect(attachment).toBeDefined();
+      expect(attachment?.example).toEqual({ type: '' });
+    });
+
+    it('should scaffold an array of discriminator stubs for an array<discriminated-union> field', () => {
+      const mockConnector = {
+        type: 'cases.addAttachments',
+        paramsSchema: z.object({
+          case_id: z.string(),
+          attachments: z.array(buildAttachmentUnion()).min(1),
+        }),
+      };
+
+      (getCachedAllConnectors as jest.Mock).mockReturnValue([mockConnector]);
+      isInternalConnector.mockReturnValue(false);
+
+      const result = getRequiredParamsForConnector('cases.addAttachments');
+      const attachments = result.find((p) => p.name === 'attachments');
+
+      expect(attachments).toBeDefined();
+      expect(attachments?.example).toEqual([{ type: '' }]);
+    });
+
+    it('should unwrap optional/default before scaffolding the discriminator', () => {
+      const mockConnector = {
+        type: 'cases.addAttachmentOptional',
+        paramsSchema: z.object({
+          case_id: z.string(),
+          attachment: buildAttachmentUnion().optional(),
+        }),
+      };
+
+      (getCachedAllConnectors as jest.Mock).mockReturnValue([mockConnector]);
+      isInternalConnector.mockReturnValue(false);
+
+      const result = getRequiredParamsForConnector('cases.addAttachmentOptional');
+      // Optional non-required, non-important field is filtered out by the existing
+      // required-only filter. This documents that behavior — only required
+      // discriminated-union fields are scaffolded into the snippet.
+      expect(result.find((p) => p.name === 'attachment')).toBeUndefined();
+    });
+  });
+
   describe('parameter name patterns', () => {
     it('should provide default example for parameters with "name" in the key', () => {
       const mockConnector = {

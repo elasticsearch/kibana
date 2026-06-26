@@ -227,7 +227,12 @@ export class CasePlugin
       isCasesAttachmentsEnabled: this.caseConfig.attachments?.enabled === true,
     });
 
-    registerCaseWorkflowSteps(plugins.workflowsExtensions, getCasesClient);
+    registerCaseWorkflowSteps(
+      plugins.workflowsExtensions,
+      getCasesClient,
+      this.unifiedAttachmentTypeRegistry,
+      this.caseConfig.attachments?.enabled === true
+    );
     registerCaseWorkflowTriggers(plugins.workflowsExtensions);
 
     return {

@@ -15,7 +15,10 @@ import { getCachedAllConnectors } from './connectors_cache';
 
 export interface RequiredParamForConnector {
   name: string;
-  example?: string;
+  // Example may be a primitive (string/number) or a structured object/array — e.g. body
+  // example objects from `extractBodyExample` and discriminated-union scaffolds
+  // like `{ type: '' }`. The downstream YAML stringifier renders either shape.
+  example?: unknown;
   defaultValue?: string;
 }
 
@@ -119,10 +122,10 @@ export function getRequiredParamsForConnector(
  */
 function extractRequiredParamsFromSchema(
   schema: z.ZodType
-): Array<{ name: string; example?: string; defaultValue?: string; required: boolean }> {
+): Array<{ name: string; example?: unknown; defaultValue?: string; required: boolean }> {
   const params: Array<{
     name: string;
-    example?: string;
+    example?: unknown;
     defaultValue?: string;
     required: boolean;
   }> = [];
@@ -144,7 +147,7 @@ function extractRequiredParamsFromSchema(
 
       // Extract description for examples
       let description = '';
-      let example = '';
+      let example: unknown = '';
 
       if ('description' in zodField && typeof zodField.description === 'string') {
         description = zodField.description;
@@ -173,6 +176,16 @@ function extractRequiredParamsFromSchema(
         }
       }
 
+      // Discriminated unions: scaffold the discriminator field so authors can
+      // immediately narrow to a specific member (e.g. `attachment: { type: '' }`).
+      // Plain object/array examples win over a generic discriminator stub.
+      if (!example) {
+        const discriminatorStub = extractDiscriminatorStub(zodField);
+        if (discriminatorStub) {
+          example = discriminatorStub;
+        }
+      }
+
       // Only include required parameters or very common ones
       if (isRequired || ['index', 'id', 'body'].includes(key)) {
         params.push({
@@ -185,6 +198,62 @@ function extractRequiredParamsFromSchema(
   }
 
   return params;
+}
+
+/**
+ * Returns a placeholder shape that surfaces the discriminator key for a
+ * `ZodDiscriminatedUnion` field, or an array containing one such shape for
+ * `ZodArray<ZodDiscriminatedUnion>`. Unwraps `ZodOptional`/`ZodDefault` first.
+ *
+ * Examples:
+ *   z.discriminatedUnion('type', [...])              -> { type: '' }
+ *   z.array(z.discriminatedUnion('type', [...]))     -> [{ type: '' }]
+ *
+ * Returns `undefined` for any other shape so callers can fall back.
+ */
+function extractDiscriminatorStub(fieldSchema: z.ZodType): unknown {
+  let inner: z.ZodType = fieldSchema;
+  if (inner instanceof z.ZodOptional || inner instanceof z.ZodDefault) {
+    inner = inner.unwrap() as z.ZodType;
+  }
+
+  if (inner instanceof z.ZodDiscriminatedUnion) {
+    const key = getDiscriminatorKey(inner);
+    return key ? { [key]: '' } : undefined;
+  }
+
+  if (inner instanceof z.ZodArray) {
+    let element = inner.element as z.ZodType;
+    if (element instanceof z.ZodOptional || element instanceof z.ZodDefault) {
+      element = element.unwrap() as z.ZodType;
+    }
+    if (element instanceof z.ZodDiscriminatedUnion) {
+      const key = getDiscriminatorKey(element);
+      return key ? [{ [key]: '' }] : undefined;
+    }
+  }
+
+  return undefined;
+}
+
+function getDiscriminatorKey(union: z.ZodDiscriminatedUnion): string | undefined {
+  // Zod v4 exposes the discriminator on `def.discriminator`. Fall back to scanning
+  // the first member's shape for a literal field if the API ever changes.
+  const fromDef = (union as unknown as { def?: { discriminator?: unknown } }).def?.discriminator;
+  if (typeof fromDef === 'string') {
+    return fromDef;
+  }
+
+  const options = (union as unknown as { def?: { options?: z.ZodType[] } }).def?.options;
+  const first = options?.[0];
+  if (first instanceof z.ZodObject) {
+    for (const [key, value] of Object.entries(first.shape)) {
+      if (value instanceof z.ZodLiteral) {
+        return key;
+      }
+    }
+  }
+  return undefined;
 }
 
 /**

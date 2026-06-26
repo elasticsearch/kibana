@@ -130,6 +130,11 @@ export interface AttachmentType<Props> {
 interface UnifiedAttachmentSchema {
   /** Full-payload zod schema. Preferred over `schemaValidator`. */
   schema?: z.ZodType;
+  /**
+   * Schema exposed to workflow authors. When unset, workflow steps fall back to
+   * `schema` if it is a Zod object; when `false`, the type is excluded.
+   */
+  workflowSchema?: z.ZodObject | false;
 }
 
 export type ExternalReferenceAttachmentType = AttachmentType<ExternalReferenceAttachmentViewProps>;
