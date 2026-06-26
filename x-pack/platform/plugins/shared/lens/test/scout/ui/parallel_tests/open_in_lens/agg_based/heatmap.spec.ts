@@ -9,7 +9,6 @@ import { spaceTest, tags } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 import {
   testData,
-  canConvertToLensByTitle,
   convertToLensByTitle,
   enableElasticChartDebug,
   getChartDebugData,
@@ -41,18 +40,6 @@ spaceTest.describe('Lens open in Lens — agg-based Heatmap', { tag: tags.statef
   spaceTest.afterAll(async ({ scoutSpace }) => {
     await scoutSpace.uiSettings.unset('defaultIndex', 'dateFormat:tz', 'timepicker:timeDefaults');
     await scoutSpace.savedObjects.cleanStandardList();
-  });
-
-  spaceTest('should check Convert to Lens action availability', async ({ pageObjects }) => {
-    const { dashboard } = pageObjects;
-
-    await spaceTest.step('shows action when only Y-axis is specified', async () => {
-      expect(await canConvertToLensByTitle({ dashboard }, 'Heatmap - With Y-Axis only')).toBe(true);
-    });
-
-    await spaceTest.step('shows action when X-axis is specified', async () => {
-      expect(await canConvertToLensByTitle({ dashboard }, 'Heatmap - With X-Axis only')).toBe(true);
-    });
   });
 
   spaceTest('should convert to Lens', async ({ page, pageObjects }) => {

@@ -40,16 +40,9 @@ spaceTest.describe('Lens open in Lens — agg-based Table', { tag: tags.stateful
     await scoutSpace.savedObjects.cleanStandardList();
   });
 
-  spaceTest('should check Convert to Lens action availability', async ({ pageObjects }) => {
+  spaceTest('should not allow converting of unsupported aggregations', async ({ pageObjects }) => {
     const { dashboard } = pageObjects;
-
-    await spaceTest.step('unsupported aggregation has no Convert to Lens action', async () => {
-      expect(await canConvertToLensByTitle({ dashboard }, 'Table - Unsupported Agg')).toBe(false);
-    });
-
-    await spaceTest.step('supported aggregation has Convert to Lens action', async () => {
-      expect(await canConvertToLensByTitle({ dashboard }, 'Table - Agg with params')).toBe(true);
-    });
+    expect(await canConvertToLensByTitle({ dashboard }, 'Table - Unsupported Agg')).toBe(false);
   });
 
   spaceTest('should convert aggregation with params', async ({ pageObjects }) => {

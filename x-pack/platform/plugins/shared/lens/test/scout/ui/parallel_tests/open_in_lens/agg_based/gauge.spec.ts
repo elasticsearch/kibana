@@ -44,18 +44,21 @@ spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.stateful
     await scoutSpace.savedObjects.cleanStandardList();
   });
 
-  spaceTest('should check Convert to Lens action availability', async ({ pageObjects }) => {
-    const { dashboard } = pageObjects;
+  spaceTest('should convert to Lens', async ({ page, pageObjects }) => {
+    const { dashboard, lens } = pageObjects;
 
-    await spaceTest.step('unsupported field type has no Convert to Lens action', async () => {
-      expect(await canConvertToLensByTitle({ dashboard }, 'Gauge - Unsupported field type')).toBe(
-        false
-      );
-    });
+    await convertToLensByTitle({ dashboard }, 'Gauge - Basic');
+    await lens.waitForVisualization('gaugeChart');
+    expect(await lens.getLayerCount()).toBe(1);
 
-    await spaceTest.step('basic gauge has Convert to Lens action', async () => {
-      expect(await canConvertToLensByTitle({ dashboard }, 'Gauge - Basic')).toBe(true);
-    });
+    const dimensions = await lens.getDimensionTriggers();
+    expect(dimensions).toHaveLength(3);
+    await expect(dimensions[0]).toHaveText('Count');
+
+    const { bullet } = await getChartDebugData(page, 'gaugeChart');
+    const debugData = bullet?.rows[0][0];
+    expect(debugData?.title).toBe('Count');
+    expect(Math.round(debugData?.value ?? 0)).toBe(14005);
   });
 
   spaceTest('should convert aggregation with params', async ({ page, pageObjects }) => {
@@ -78,6 +81,16 @@ spaceTest.describe('Lens open in Lens — agg-based Gauge', { tag: tags.stateful
     expect(Math.round(debugData?.value ?? 0)).toBe(13104036081);
     expect(debugData?.domain).toStrictEqual([0, 100]);
   });
+
+  spaceTest(
+    'should not convert aggregation with not supported field type',
+    async ({ pageObjects }) => {
+      const { dashboard } = pageObjects;
+      expect(await canConvertToLensByTitle({ dashboard }, 'Gauge - Unsupported field type')).toBe(
+        false
+      );
+    }
+  );
 
   spaceTest('should convert color ranges', async ({ page, pageObjects }) => {
     const { dashboard, lens } = pageObjects;

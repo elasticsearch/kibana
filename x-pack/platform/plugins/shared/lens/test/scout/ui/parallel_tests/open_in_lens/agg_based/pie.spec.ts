@@ -65,7 +65,6 @@ spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.c
     await scoutSpace.savedObjects.cleanStandardList();
   });
 
-  // Negative/availability checks grouped — these don't navigate away from the dashboard.
   spaceTest('should check Convert to Lens action availability', async ({ pageObjects }) => {
     const { dashboard } = pageObjects;
 

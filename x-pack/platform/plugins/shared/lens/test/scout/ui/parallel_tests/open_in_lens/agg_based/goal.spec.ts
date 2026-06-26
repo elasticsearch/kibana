@@ -7,12 +7,7 @@
 
 import { spaceTest, tags } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
-import {
-  testData,
-  canConvertToLensByTitle,
-  convertToLensByTitle,
-  getImportedDashboardId,
-} from '../../../fixtures';
+import { testData, convertToLensByTitle, getImportedDashboardId } from '../../../fixtures';
 
 spaceTest.describe('Lens open in Lens — agg-based Goal', { tag: tags.stateful.classic }, () => {
   let goalDashboardId: string;
@@ -38,11 +33,6 @@ spaceTest.describe('Lens open in Lens — agg-based Goal', { tag: tags.stateful.
   spaceTest.afterAll(async ({ scoutSpace }) => {
     await scoutSpace.uiSettings.unset('defaultIndex', 'dateFormat:tz', 'timepicker:timeDefaults');
     await scoutSpace.savedObjects.cleanStandardList();
-  });
-
-  spaceTest('should show the "Convert to Lens" menu item', async ({ pageObjects }) => {
-    const { dashboard } = pageObjects;
-    expect(await canConvertToLensByTitle({ dashboard }, 'Goal - Basic')).toBe(true);
   });
 
   spaceTest('should convert to Lens', async ({ pageObjects }) => {

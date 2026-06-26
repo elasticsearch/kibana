@@ -244,4 +244,9 @@ spaceTest.describe('Lens open in Lens — agg-based XY', { tag: tags.stateful.cl
       )
       .toStrictEqual(expectedLegend);
   });
+
+  // TODO: Migrate stateful FTR `should convert correctly percentiles with decimals` from
+  // `agg_based_2/xy.ts` (Percentiles on `memory` with rank 99.99). Serverless FTR and `xy.json`
+  // have no dashboard panel for this scenario; add a kbn archive panel, a convert test, and
+  // `getWorkspaceErrorCount()` on LensApp.
 });
