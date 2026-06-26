@@ -22,10 +22,10 @@ import {
   EuiTitle,
 } from '@elastic/eui';
 import type { EuiFilePickerClass } from '@elastic/eui/src/components/form/file_picker/file_picker';
-import { useAppToasts } from '../../../../../../common/hooks/use_app_toasts';
 import type { MigrationStepProps } from '../../../../../common/types';
 import type { RuleMigrationTaskStats } from '../../../../../../../common/siem_migrations/model/rule_migration.gen';
 import type { QRadarMitreMappingsData } from '../../../../../../../common/siem_migrations/model/vendor/rules/qradar.gen';
+import { FILE_UPLOAD_ERROR } from '../../../../../common/translations/file_upload_error';
 import { useParseFileInput } from '../../../../../common/hooks/use_parse_file_input';
 import { getEuiStepStatus } from '../../../../../common/utils/get_eui_step_status';
 import { useEnhanceRules } from '../../../../service/hooks/use_enhance_rules';
@@ -85,19 +85,15 @@ const EnhancementsDataInputContent = React.memo<EnhancementsDataInputContentProp
     const filePickerRef = React.useRef<EuiFilePickerClass>(null);
 
     const { enhanceRules, isLoading } = useEnhanceRules();
-    const { addError } = useAppToasts();
 
-    const onFileParsed = useCallback(
-      (content: string) => {
-        try {
-          const parsed: QRadarMitreMappingsData = JSON.parse(content);
-          setParsedData(parsed);
-        } catch (err) {
-          addError(err, { title: i18n.INVALID_JSON_ERROR });
-        }
-      },
-      [addError]
-    );
+    const onFileParsed = useCallback((content: string) => {
+      try {
+        const parsed: QRadarMitreMappingsData = JSON.parse(content);
+        setParsedData(parsed);
+      } catch (err) {
+        throw new Error(FILE_UPLOAD_ERROR.INVALID_JSON);
+      }
+    }, []);
 
     const { parseFile, isParsing, error: parseError } = useParseFileInput(onFileParsed);
 
@@ -186,7 +182,12 @@ const EnhancementsDataInputContent = React.memo<EnhancementsDataInputContentProp
               </EuiFormRow>
             </EuiFlexItem>
             <EuiFlexItem grow={3}>
-              <EuiFormRow label={i18n.FILE_LABEL} isInvalid={!!parseError} fullWidth>
+              <EuiFormRow
+                label={i18n.FILE_LABEL}
+                isInvalid={!!parseError}
+                error={parseError}
+                fullWidth
+              >
                 <EuiFilePicker
                   id="enhancementFilePicker"
                   ref={filePickerRef as React.Ref<Omit<EuiFilePickerProps, 'stylesMemoizer'>>}

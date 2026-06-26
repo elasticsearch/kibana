@@ -13,11 +13,15 @@ import type {
 } from '@elastic/eui/src/components/form/file_picker/file_picker';
 import { i18n } from '@kbn/i18n';
 import { UploadFileButton } from '../../../../../../../common/components';
+import { FILE_UPLOAD_ERROR } from '../../../../../../../common/translations/file_upload_error';
 import type { CreateMigration } from '../../../../../../service/hooks/use_create_migration';
 import * as i18nTranslations from './translations';
 import { useParseFileInput } from '../../../../../../../common/hooks/use_parse_file_input';
 import { MigrationSource } from '../../../../../../../common/types';
-import type { SentinelArmResource } from '../../../../../../../../../common/siem_migrations/model/vendor/rules/sentinel.gen';
+import {
+  CreateSentinelRulesBody,
+  type SentinelArmResource,
+} from '../../../../../../../../../common/siem_migrations/model/vendor/rules/sentinel.gen';
 
 const SENTINEL_UPLOAD_DESCRIPTION = i18n.translate(
   'xpack.securitySolution.siemMigrations.rules.dataInputFlyout.rules.rulesFileUpload.sentinel.description',
@@ -76,8 +80,17 @@ export const SentinelRulesJsonFileUpload = React.memo<SentinelRulesJsonFileUploa
     }, [createMigration, migrationName, resourcesToUpload]);
 
     const onJsonFileParsed = useCallback((content: string) => {
-      const parsed = JSON.parse(content);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        throw new Error(FILE_UPLOAD_ERROR.INVALID_JSON);
+      }
       const resources = extractResources(parsed);
+      const result = CreateSentinelRulesBody.safeParse({ resources });
+      if (!result.success) {
+        throw new Error(FILE_UPLOAD_ERROR.INVALID_SENTINEL_RESOURCES);
+      }
       setResourcesToUpload(resources);
     }, []);
 

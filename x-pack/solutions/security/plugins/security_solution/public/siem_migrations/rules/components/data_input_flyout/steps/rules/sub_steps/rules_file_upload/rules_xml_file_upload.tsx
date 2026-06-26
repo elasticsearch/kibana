@@ -12,6 +12,7 @@ import type {
   EuiFilePickerProps,
 } from '@elastic/eui/src/components/form/file_picker/file_picker';
 import { UploadFileButton } from '../../../../../../../common/components';
+import { FILE_UPLOAD_ERROR } from '../../../../../../../common/translations/file_upload_error';
 import type { CreateMigration } from '../../../../../../service/hooks/use_create_migration';
 import * as i18n from './translations';
 import { RULES_DATA_INPUT_CHECK_RESOURCES_QRADAR_DESCRIPTION } from '../check_resources/translations';
@@ -44,6 +45,11 @@ export const RulesXMLFileUpload = React.memo<RulesXMLFileUploadProps>(
     }, [createMigration, migrationName, rulesToUpload]);
 
     const onXMLFileParsed = useCallback((content: string) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'application/xml');
+      if (doc.getElementsByTagName('parsererror').length > 0) {
+        throw new Error(FILE_UPLOAD_ERROR.INVALID_XML);
+      }
       setRulesToUpload(content);
     }, []);
 

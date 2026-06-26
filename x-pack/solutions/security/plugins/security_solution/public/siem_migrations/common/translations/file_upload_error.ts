@@ -40,4 +40,16 @@ export const FILE_UPLOAD_ERROR = {
     'xpack.securitySolution.siemMigrations.common.dataInputFlyout.fileUploadError.notObject',
     { defaultMessage: 'The file contains non-object entries' }
   ),
+  INVALID_XML: i18n.translate(
+    'xpack.securitySolution.siemMigrations.common.dataInputFlyout.fileUploadError.invalidXml',
+    { defaultMessage: 'The file does not contain valid XML' }
+  ),
+  INVALID_JSON: i18n.translate(
+    'xpack.securitySolution.siemMigrations.common.dataInputFlyout.fileUploadError.invalidJson',
+    { defaultMessage: 'The file does not contain valid JSON' }
+  ),
+  INVALID_SENTINEL_RESOURCES: i18n.translate(
+    'xpack.securitySolution.siemMigrations.common.dataInputFlyout.fileUploadError.invalidSentinelResources',
+    { defaultMessage: 'The file does not contain valid Sentinel rule resources' }
+  ),
 };
