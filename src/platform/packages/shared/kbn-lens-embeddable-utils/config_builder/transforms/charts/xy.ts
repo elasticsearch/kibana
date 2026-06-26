@@ -8,6 +8,7 @@
  */
 
 import type { TypedLensSerializedState, XYPersistedState } from '@kbn/lens-common';
+import { LENS_ITEM_LATEST_VERSION } from '@kbn/lens-common/content_management/constants';
 import type { SavedObjectReference } from '@kbn/core/server';
 import type { XYConfig } from '../../schema';
 import {
@@ -67,6 +68,7 @@ export function fromAPItoLensState(config: XYConfig): XYLensWithoutQueryAndFilte
 
   return {
     visualizationType: 'lnsXY',
+    version: LENS_ITEM_LATEST_VERSION,
     ...getSharedChartAPIToLensState(config),
     state: {
       datasourceStates: layers,

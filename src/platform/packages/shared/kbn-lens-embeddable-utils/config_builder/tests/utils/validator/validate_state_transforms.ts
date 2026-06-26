@@ -24,6 +24,7 @@ const strictChartTypes = new Set([
   'tag_cloud',
   'region_map',
   'metric',
+  'xy',
 ]);
 
 /**
