@@ -6,8 +6,8 @@
  */
 
 import type { FC } from 'react';
-import React, { useState, useCallback } from 'react';
-import { FormattedMessage } from '@kbn/i18n-react';
+import React, { useCallback, useState } from 'react';
+import { i18n } from '@kbn/i18n';
 import { usePageUrlState, type ListingPageUrlState } from '@kbn/ml-url-state';
 import { ML_PAGES } from '@kbn/ml-common-types/locator_ml_pages';
 import { DataFrameAnalyticsList } from './components/analytics_list';
@@ -19,12 +19,11 @@ import { DataFrameAnalyticsListColumn } from './components/analytics_list/common
 import { HelpMenu } from '../../../components/help_menu';
 import { useMlKibana, useMlManagementLocator } from '../../../contexts/kibana';
 import { useRefreshAnalyticsList } from '../../common';
-import { MlPageHeader } from '../../../components/page_header';
-import { CreateAnalyticsButton } from './components/create_analytics_button/create_analytics_button';
+import { MlAppHeader } from '../../../components/ml_app_header';
 import { usePermissionCheck } from '../../../capabilities/check_capabilities';
 import { ExportJobsFlyout, ImportJobsFlyout } from '../../../components/import_export_jobs';
-import { SynchronizeSavedObjectsButton } from '../../../jobs/jobs_list/components/top_level_actions/synchronize_saved_objects_button';
-import { PageTitle } from '../../../components/page_title';
+import { JobSpacesSyncFlyout } from '../../../components/job_spaces_sync';
+import { useDataFrameAnalyticsJobsMenu } from './hooks/use_data_frame_analytics_jobs_menu';
 
 interface PageUrlState {
   pageKey: typeof ML_PAGES.DATA_FRAME_ANALYTICS_JOBS_MANAGE_FOR_URL;
@@ -40,6 +39,9 @@ export const getDefaultDFAListState = (): ListingPageUrlState => ({
 
 export const Page: FC = () => {
   const [blockRefresh, setBlockRefresh] = useState(false);
+  const [showSyncFlyout, setShowSyncFlyout] = useState(false);
+  const [showExportFlyout, setShowExportFlyout] = useState(false);
+  const [showImportFlyout, setShowImportFlyout] = useState(false);
 
   const [dfaPageState, setDfaPageState] = usePageUrlState<PageUrlState>(
     ML_PAGES.DATA_FRAME_ANALYTICS_JOBS_MANAGE_FOR_URL,
@@ -64,42 +66,27 @@ export const Page: FC = () => {
   }, [mlManagementLocator]);
 
   const canCreateAnalytics = usePermissionCheck('canCreateDataFrameAnalytics');
+
+  const onCloseSyncFlyout = useCallback(() => {
+    refresh();
+    setShowSyncFlyout(false);
+  }, [refresh]);
+
+  const menu = useDataFrameAnalyticsJobsMenu({
+    navigateToSourceSelection,
+    onOpenSyncFlyout: () => setShowSyncFlyout(true),
+    onOpenExportFlyout: () => setShowExportFlyout(true),
+    onOpenImportFlyout: () => setShowImportFlyout(true),
+  });
+
   return (
     <>
-      <MlPageHeader
-        wrapHeader
-        rightSideItems={[
-          <SynchronizeSavedObjectsButton
-            key="synchronize-saved-objects-button"
-            refreshJobs={refresh}
-          />,
-          <ExportJobsFlyout
-            key="export-jobs-flyout"
-            isDisabled={!canCreateAnalytics}
-            currentTab={'data-frame-analytics'}
-          />,
-          <ImportJobsFlyout
-            key="import-jobs-flyout"
-            isDisabled={!canCreateAnalytics}
-            onImportComplete={refresh}
-          />,
-          <CreateAnalyticsButton
-            key="create-analytics-button"
-            size="m"
-            navigateToSourceSelection={navigateToSourceSelection}
-            isDisabled={!canCreateAnalytics}
-          />,
-        ]}
-      >
-        <PageTitle
-          title={
-            <FormattedMessage
-              id="xpack.ml.dataframe.analyticsList.title"
-              defaultMessage="Data Frame Analytics Jobs"
-            />
-          }
-        />
-      </MlPageHeader>
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.dataframe.analyticsList.title', {
+          defaultMessage: 'Data Frame Analytics Jobs',
+        })}
+        menu={menu}
+      />
 
       <NodeAvailableWarning />
 
@@ -110,6 +97,19 @@ export const Page: FC = () => {
         blockRefresh={blockRefresh}
         pageState={dfaPageState}
         updatePageState={setDfaPageState}
+      />
+      {showSyncFlyout ? <JobSpacesSyncFlyout onClose={onCloseSyncFlyout} /> : null}
+      <ExportJobsFlyout
+        isDisabled={!canCreateAnalytics}
+        currentTab="data-frame-analytics"
+        isOpen={showExportFlyout}
+        onClose={() => setShowExportFlyout(false)}
+      />
+      <ImportJobsFlyout
+        isDisabled={!canCreateAnalytics}
+        onImportComplete={refresh}
+        isOpen={showImportFlyout}
+        onClose={() => setShowImportFlyout(false)}
       />
       <HelpMenu docLink={helpLink} />
     </>

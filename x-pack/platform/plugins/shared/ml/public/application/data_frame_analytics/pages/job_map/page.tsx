@@ -10,6 +10,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { EuiEmptyPrompt } from '@elastic/eui';
 
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 import { useUrlState } from '@kbn/ml-url-state';
 import { NodeAvailableWarning } from '../../../components/node_available_warning';
 import { SavedObjectsWarning } from '../../../components/saved_objects_warning';
@@ -18,11 +19,10 @@ import { JobMap } from '.';
 import { HelpMenu } from '../../../components/help_menu';
 import { useMlKibana, useMlApi } from '../../../contexts/kibana';
 import { useRefreshAnalyticsList } from '../../common';
-import { MlPageHeader } from '../../../components/page_header';
 import type { AnalyticsSelectorIds } from '../components/analytics_selector';
 import { AnalyticsIdSelector, AnalyticsIdSelectorControls } from '../components/analytics_selector';
 import { AnalyticsEmptyPrompt } from '../analytics_management/components/empty_prompt';
-import { PageTitle } from '../../../components/page_title';
+import { MlAppHeader } from '../../../components/ml_app_header';
 import { JobInfoFlyoutsProvider } from '../../../jobs/components/job_details_flyout/job_details_flyout_context';
 import { AnalyticsDetailFlyout } from '../analytics_exploration/components/analytics_detail_flyout';
 
@@ -116,17 +116,11 @@ export const Page: FC = () => {
           setIsIdSelectorFlyoutVisible={setIsIdSelectorFlyoutVisible}
         />
       ) : null}
-      <MlPageHeader>
-        <PageTitle
-          title={
-            <FormattedMessage
-              data-test-subj="mlPageDataFrameAnalyticsMapTitle"
-              id="xpack.ml.dataframe.analyticsMap.title"
-              defaultMessage="Analytics map"
-            />
-          }
-        />
-      </MlPageHeader>
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.dataframe.analyticsMap.title', {
+          defaultMessage: 'Analytics map',
+        })}
+      />
 
       <NodeAvailableWarning />
 

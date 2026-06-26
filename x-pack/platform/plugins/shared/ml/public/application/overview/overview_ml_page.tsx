@@ -32,7 +32,7 @@ import { UpgradeWarning } from '../components/upgrade';
 import { HelpMenu } from '../components/help_menu';
 import { useMlKibana, useNavigateToPath } from '../contexts/kibana';
 import { useCreateAndNavigateToManagementMlLink } from '../contexts/kibana/use_create_url';
-import { MlPageHeader } from '../components/page_header';
+import { MlAppHeader } from '../components/ml_app_header';
 import { AnomalyDetectionOverviewCard } from './components/anomaly_detection_overview';
 import { DataFrameAnalyticsOverviewCard } from './components/data_frame_analytics_overview';
 import { useEnabledFeatures } from '../contexts/ml';
@@ -133,27 +133,20 @@ export const OverviewPage: FC = () => {
 
   return (
     <>
-      <MlPageHeader restrictWidth={1200}>
-        <EuiFlexGroup direction="column" gutterSize="s">
-          <EuiFlexItem grow={false}>
-            <EuiTitle size="l">
-              <h1>
-                <FormattedMessage
-                  id="xpack.ml.overview.welcomeBanner.header.title"
-                  defaultMessage="Machine Learning"
-                />
-              </h1>
-            </EuiTitle>
-            <EuiSpacer size="s" />
-            <EuiText color="subdued">
-              {i18n.translate('xpack.ml.overview.welcomeBanner.header.titleDescription', {
-                defaultMessage:
-                  'Analyze your data and generate models for its patterns of behavior.',
-              })}
-            </EuiText>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </MlPageHeader>
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.overview.welcomeBanner.header.title', {
+          defaultMessage: 'Machine Learning',
+        })}
+        showDatePicker
+        metadata={[
+          {
+            type: 'text',
+            label: i18n.translate('xpack.ml.overview.welcomeBanner.header.titleDescription', {
+              defaultMessage: 'Analyze your data and generate models for its patterns of behavior.',
+            }),
+          },
+        ]}
+      />
       <EuiPageBody restrictWidth={1200}>
         <UpgradeWarning />
         <EuiSpacer size="s" />

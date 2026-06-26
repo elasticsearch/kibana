@@ -21,8 +21,7 @@ import {
   getMlManagementBreadcrumb,
   getStackManagementBreadcrumb,
 } from '../../breadcrumbs';
-import { MlPageHeader } from '../../../components/page_header';
-import { PageTitle } from '../../../components/page_title';
+import { MlAppHeader } from '../../../components/ml_app_header';
 
 const SuppliedConfigurations = dynamic(async () => ({
   default: (await import('../../../supplied_configurations/supplied_configurations'))
@@ -50,25 +49,18 @@ const PageWrapper: FC = () => {
 
   return (
     <PageLoader context={context}>
-      <MlPageHeader>
-        <PageTitle
-          title={
-            <span data-test-subj="mlPageSuppliedConfigurations">
-              <FormattedMessage
-                id="xpack.ml.suppliedConfigurations.preconfigurecJobsHeader"
-                defaultMessage="Supplied configurations"
-              />
-            </span>
-          }
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.suppliedConfigurations.preconfigurecJobsHeader', {
+          defaultMessage: 'Supplied configurations',
+        })}
+      />
+      <EuiSpacer size="s" />
+      <EuiText size="s" data-test-subj="mlPageSuppliedConfigurations">
+        <FormattedMessage
+          id="xpack.ml.suppliedConfigurations.preconfigurecJobsHeaderDescription"
+          defaultMessage="This page lists pre-defined anomaly detection job configurations with related Kibana assets."
         />
-        <EuiSpacer size="s" />
-        <EuiText size="s">
-          <FormattedMessage
-            id="xpack.ml.suppliedConfigurations.preconfigurecJobsHeaderDescription"
-            defaultMessage="This page lists pre-defined anomaly detection job configurations with related Kibana assets."
-          />
-        </EuiText>
-      </MlPageHeader>
+      </EuiText>
       <SuppliedConfigurations />
     </PageLoader>
   );

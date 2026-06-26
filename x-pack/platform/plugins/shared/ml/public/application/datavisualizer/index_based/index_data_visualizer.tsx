@@ -27,11 +27,10 @@ import { HelpMenu } from '../../components/help_menu';
 import { isFullLicense } from '../../license';
 import { mlNodesAvailable, getMlNodeCount } from '../../ml_nodes_check/check_ml_nodes';
 import { checkPermission } from '../../capabilities/check_capabilities';
-import { MlPageHeader } from '../../components/page_header';
+import { MlAppHeader } from '../../components/ml_app_header';
 import { useEnabledFeatures } from '../../contexts/ml';
 import { useDataSource } from '../../contexts/ml/data_source_context';
 import { useMlManagementLocator } from '../../contexts/kibana/use_create_url';
-import { PageTitle } from '../../components/page_title';
 
 export const IndexDataVisualizerPage: FC<{ esql: boolean }> = ({ esql = false }) => {
   useTimefilter({ timeRangeSelector: false, autoRefreshSelector: false });
@@ -212,23 +211,17 @@ export const IndexDataVisualizerPage: FC<{ esql: boolean }> = ({ esql = false })
     <Fragment>
       {IndexDataVisualizer !== null ? (
         <>
-          <MlPageHeader>
-            <PageTitle
-              title={
-                esql ? (
-                  <FormattedMessage
-                    id="xpack.ml.dataVisualizer.esql.pageHeader"
-                    defaultMessage="Index data visualizer (ES|QL)"
-                  />
-                ) : (
-                  <FormattedMessage
-                    id="xpack.ml.dataVisualizer.index.pageHeader"
-                    defaultMessage="Index data visualizer"
-                  />
-                )
-              }
-            />
-          </MlPageHeader>
+          <MlAppHeader
+            title={
+              esql
+                ? i18n.translate('xpack.ml.dataVisualizer.esql.pageHeader', {
+                    defaultMessage: 'Index data visualizer (ES|QL)',
+                  })
+                : i18n.translate('xpack.ml.dataVisualizer.index.pageHeader', {
+                    defaultMessage: 'Index data visualizer',
+                  })
+            }
+          />
           {!dataView && !esql ? (
             <>
               {dataSourcePicker}

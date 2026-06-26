@@ -8,7 +8,7 @@
 import type { FC } from 'react';
 import React, { useMemo, useEffect, useState } from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { EuiSpacer, EuiTab, EuiTabs, EuiNotificationBadge } from '@elastic/eui';
+import { EuiSpacer } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { TimefilterContract } from '@kbn/data-plugin/public';
 import { mlTimefilterRefresh$ } from '@kbn/ml-date-picker';
@@ -31,8 +31,7 @@ import { HelpMenu } from '../components/help_menu';
 import { useMlKibana } from '../contexts/kibana';
 import { useMlNotifications } from '../contexts/ml/ml_notifications_context';
 import { NodesList } from '../memory_usage/nodes_overview';
-import { MlPageHeader } from '../components/page_header';
-import { PageTitle } from '../components/page_title';
+import { MlAppHeader } from '../components/ml_app_header';
 import { getMlNodesCount } from '../ml_nodes_check/check_ml_nodes';
 import { MemoryPage } from '../memory_usage/memory_tree_map/memory_page';
 import { NotificationsList } from '../notifications/components/notifications_list';
@@ -227,16 +226,7 @@ export const OverviewPage: FC<{ timefilter: TimefilterContract }> = ({ timefilte
             defaultMessage="Notifications"
           />
         ),
-        append: errorsAndWarningCount ? (
-          <EuiNotificationBadge
-            aria-label={i18n.translate('xpack.ml.overview.notificationsIndicator.unreadErrors', {
-              defaultMessage: 'Unread errors or warnings indicator.',
-            })}
-            data-test-subj={'mlNotificationErrorsIndicator'}
-          >
-            {errorsAndWarningCount}
-          </EuiNotificationBadge>
-        ) : undefined,
+        append: errorsAndWarningCount ? true : undefined,
         content: <NotificationsList />,
       },
     ],
@@ -252,29 +242,29 @@ export const OverviewPage: FC<{ timefilter: TimefilterContract }> = ({ timefilte
     ]
   );
 
-  const renderTabs = () => {
-    return tabs.map((tab) => (
-      <EuiTab
-        key={tab.id}
-        onClick={() => setSelectedTabId(tab.id)}
-        isSelected={tab.id === selectedTabId}
-        data-test-subj={`mlManagementOverviewPageTabs ${tab.id}`}
-        append={tab.append}
-      >
-        {tab.name}
-      </EuiTab>
-    ));
-  };
-
   return (
     <div data-test-subj="mlStackManagementOverviewPage">
-      <MlPageHeader>
-        <PageTitle
-          title={i18n.translate('xpack.ml.management.machineLearningOverview.overviewLabel', {
-            defaultMessage: 'Machine Learning Overview',
-          })}
-        />
-      </MlPageHeader>
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.management.machineLearningOverview.overviewLabel', {
+          defaultMessage: 'Machine Learning Overview',
+        })}
+        showDatePicker
+        tabs={tabs.map((tab) => ({
+          id: tab.id,
+          label:
+            tab.id === TAB_IDS.OVERVIEW
+              ? i18n.translate('xpack.ml.overview.overviewTabLabel', {
+                  defaultMessage: 'Overview',
+                })
+              : i18n.translate('xpack.ml.overview.notificationsTabLabel', {
+                  defaultMessage: 'Notifications',
+                }),
+          isSelected: tab.id === selectedTabId,
+          onClick: () => setSelectedTabId(tab.id),
+          badge: tab.append ? errorsAndWarningCount : undefined,
+          'data-test-subj': `mlManagementOverviewPageTabs ${tab.id}`,
+        }))}
+      />
       <NodeAvailableWarning />
       <JobsAwaitingNodeWarning jobCount={adLazyJobCount + dfaLazyJobCount} />
       <SavedObjectsWarning
@@ -288,7 +278,6 @@ export const OverviewPage: FC<{ timefilter: TimefilterContract }> = ({ timefilte
         }}
       />
       <UpgradeWarning />
-      <EuiTabs>{renderTabs()}</EuiTabs>
       <EuiSpacer />
       {tabs.find((tab) => tab.id === selectedTabId)?.content}
       <HelpMenu docLink={helpLink} />

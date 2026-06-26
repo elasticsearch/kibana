@@ -9,14 +9,13 @@ import type { FC } from 'react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { EuiPageBody, EuiPageSection } from '@elastic/eui';
 import { parse } from 'query-string';
-import { FormattedMessage } from '@kbn/i18n-react';
 import { type DataViewEditorService as DataViewEditorServiceSpec } from '@kbn/data-view-editor-plugin/public';
 import { INDEX_PATTERN_TYPE } from '@kbn/data-views-plugin/public';
+import { i18n } from '@kbn/i18n';
 import { DataDriftIndexPatternsEditor } from './data_drift_index_patterns_editor';
 
-import { MlPageHeader } from '../../components/page_header';
+import { MlAppHeader } from '../../components/ml_app_header';
 import { useMlKibana } from '../../contexts/kibana';
-import { PageTitle } from '../../components/page_title';
 
 export const DataDriftIndexPatternsPicker: FC = () => {
   const { reference, comparison } = parse(location.search, {
@@ -98,16 +97,11 @@ export const DataDriftIndexPatternsPicker: FC = () => {
   return (
     <div data-test-subj="mlPageSourceSelection">
       <EuiPageBody restrictWidth={1200}>
-        <MlPageHeader>
-          <PageTitle
-            title={
-              <FormattedMessage
-                id="xpack.ml.dataDrift.createDataDriftDataViewTitle"
-                defaultMessage="Create data view and analyze data drift"
-              />
-            }
-          />
-        </MlPageHeader>
+        <MlAppHeader
+          title={i18n.translate('xpack.ml.dataDrift.createDataDriftDataViewTitle', {
+            defaultMessage: 'Create data view and analyze data drift',
+          })}
+        />
         <EuiPageSection>
           {dataViewEditorServices ? (
             <DataDriftIndexPatternsEditor

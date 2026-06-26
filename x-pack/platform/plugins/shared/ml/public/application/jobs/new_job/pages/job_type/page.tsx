@@ -21,7 +21,6 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { ES_FIELD_TYPES } from '@kbn/field-types';
 import { ML_APP_LOCATOR } from '@kbn/ml-common-types/locator_app_locator';
 import { ML_PAGES } from '@kbn/ml-common-types/locator_ml_pages';
-import { PageTitle } from '../../../../components/page_title';
 import {
   useMlKibana,
   useMlManagementLocator,
@@ -33,7 +32,7 @@ import { DataRecognizer } from '../../../../components/data_recognizer';
 import { addItemToRecentlyAccessed } from '../../../../util/recently_accessed';
 import { LinkCard } from '../../../../components/link_card';
 import { useCreateAndNavigateToMlLink } from '../../../../contexts/kibana/use_create_url';
-import { MlPageHeader } from '../../../../components/page_header';
+import { MlAppHeader } from '../../../../components/ml_app_header';
 import { CPSUnsupportedWarning } from '../../../../components/cps_unsupported_warning';
 
 export const Page: FC = () => {
@@ -281,17 +280,12 @@ export const Page: FC = () => {
 
   return (
     <div data-test-subj="mlPageJobTypeSelection">
-      <MlPageHeader>
-        <PageTitle
-          title={
-            <FormattedMessage
-              id="xpack.ml.newJob.wizard.jobType.createJobFromTitle"
-              defaultMessage="Create a job from the {pageTitleLabel}"
-              values={{ pageTitleLabel }}
-            />
-          }
-        />
-      </MlPageHeader>
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.newJob.wizard.jobType.createJobFromTitle', {
+          defaultMessage: 'Create a job from the {pageTitleLabel}',
+          values: { pageTitleLabel },
+        })}
+      />
       <EuiSpacer size="l" />
 
       <CPSUnsupportedWarning />

@@ -28,8 +28,7 @@ import { FormattedMessage } from '@kbn/i18n-react';
 
 import { EditDescriptionPopover } from '../components/edit_description_popover';
 import { FilterListUsagePopover } from '../components/filter_list_usage_popover';
-import { MlPageHeader } from '../../../components/page_header';
-import { PageTitle } from '../../../components/page_title';
+import { MlAppHeader } from '../../../components/ml_app_header';
 
 export const EditFilterListHeader = ({
   canCreateFilter,
@@ -43,20 +42,14 @@ export const EditFilterListHeader = ({
   usedBy,
 }) => {
   const title =
-    filterId !== undefined ? (
-      <FormattedMessage
-        id="xpack.ml.settings.filterLists.editFilterHeader.filterListTitle"
-        defaultMessage="Filter list {filterId}"
-        values={{
-          filterId,
-        }}
-      />
-    ) : (
-      <FormattedMessage
-        id="xpack.ml.settings.filterLists.editFilterHeader.createFilterListTitle"
-        defaultMessage="Create new filter list"
-      />
-    );
+    filterId !== undefined
+      ? i18n.translate('xpack.ml.settings.filterLists.editFilterHeader.filterListTitle', {
+          defaultMessage: 'Filter list {filterId}',
+          values: { filterId },
+        })
+      : i18n.translate('xpack.ml.settings.filterLists.editFilterHeader.createFilterListTitle', {
+          defaultMessage: 'Create new filter list',
+        });
 
   let idField;
   let descriptionField;
@@ -158,9 +151,7 @@ export const EditFilterListHeader = ({
 
   return (
     <React.Fragment>
-      <MlPageHeader>
-        <PageTitle title={title} />
-      </MlPageHeader>
+      <MlAppHeader title={title} />
 
       <EuiFlexGroup justifyContent="spaceBetween" alignItems="baseline">
         <EuiFlexItem grow={false}>

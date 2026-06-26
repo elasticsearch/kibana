@@ -21,8 +21,7 @@ import { useRefresh } from '../../use_refresh';
 import { Explorer } from '../../../explorer';
 import { useJobSelection } from '../../../components/job_selector/use_job_selection';
 import { useTableSeverity } from '../../../components/controls/select_severity';
-import { MlPageHeader } from '../../../components/page_header';
-import { PageTitle } from '../../../components/page_title';
+import { MlAppHeader } from '../../../components/ml_app_header';
 import { AnomalyDetectionEmptyState } from '../../../jobs/jobs_list/components/anomaly_detection_empty_state';
 import { useAnomalyExplorerContext } from '../../../explorer/anomaly_explorer_context';
 import { getInfluencers } from '../../../explorer/explorer_utils';
@@ -116,13 +115,12 @@ export const ExplorerUrlStateManager: FC<ExplorerUrlStateManagerProps> = ({
 
   return (
     <div className="ml-explorer">
-      <MlPageHeader wrapHeader={true}>
-        <PageTitle
-          title={i18n.translate('xpack.ml.explorer.pageTitle', {
-            defaultMessage: 'Anomaly Explorer',
-          })}
-        />
-      </MlPageHeader>
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.explorer.pageTitle', {
+          defaultMessage: 'Anomaly Explorer',
+        })}
+        showDatePicker
+      />
       <CasesContext owner={[]} permissions={casesPermissions!}>
         {jobsWithTimeRange.length === 0 ? (
           <AnomalyDetectionEmptyState showDocsLink iconSize="m" />

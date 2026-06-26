@@ -16,8 +16,6 @@ import {
   EuiFlexItem,
   EuiHorizontalRule,
   EuiIconTip,
-  EuiPageHeader,
-  EuiPageHeaderSection,
   EuiSpacer,
   EuiTitle,
   EuiSkeletonText,
@@ -109,25 +107,21 @@ const ExplorerPage: FC<PropsWithChildren<ExplorerPageProps>> = ({
   updateLanguage,
 }) => (
   <>
-    <EuiPageHeader>
-      <EuiPageHeaderSection css={{ width: '100%' }}>
-        <JobSelector {...jobSelectorProps} />
+    <JobSelector {...jobSelectorProps} />
 
-        {dataViews && dataViews.length > 0 && updateLanguage ? (
-          <>
-            <ExplorerQueryBar
-              filterActive={!!filterActive}
-              indexPattern={dataViews[0]}
-              dataViews={dataViews}
-              queryString={queryString}
-              updateLanguage={updateLanguage}
-            />
-            <EuiSpacer size="m" />
-            <EuiHorizontalRule margin="none" />
-          </>
-        ) : null}
-      </EuiPageHeaderSection>
-    </EuiPageHeader>
+    {dataViews && dataViews.length > 0 && updateLanguage ? (
+      <>
+        <ExplorerQueryBar
+          filterActive={!!filterActive}
+          indexPattern={dataViews[0]}
+          dataViews={dataViews}
+          queryString={queryString}
+          updateLanguage={updateLanguage}
+        />
+        <EuiSpacer size="m" />
+        <EuiHorizontalRule margin="none" />
+      </>
+    ) : null}
     {children}
   </>
 );

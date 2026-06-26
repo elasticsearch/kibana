@@ -14,8 +14,7 @@ import { JobSelector } from '../components/job_selector';
 
 import { HelpMenu } from '../components/help_menu';
 import { useMlKibana } from '../contexts/kibana';
-import { MlPageHeader } from '../components/page_header';
-import { PageTitle } from '../components/page_title';
+import { MlAppHeader } from '../components/ml_app_header';
 import { useAnnotationStyles, useTimeseriesExplorerStyles } from './styles';
 
 interface TimeSeriesExplorerPageProps {
@@ -57,13 +56,12 @@ export const TimeSeriesExplorerPage: FC<PropsWithChildren<TimeSeriesExplorerPage
         ref={resizeRef}
         data-test-subj="mlPageSingleMetricViewer"
       >
-        <MlPageHeader wrapHeader={true}>
-          <PageTitle
-            title={i18n.translate('xpack.ml.timeSeriesExplorer.pageTitle', {
-              defaultMessage: 'Single Metric Viewer',
-            })}
-          />
-        </MlPageHeader>
+        <MlAppHeader
+          title={i18n.translate('xpack.ml.timeSeriesExplorer.pageTitle', {
+            defaultMessage: 'Single Metric Viewer',
+          })}
+          showDatePicker
+        />
 
         {noSingleMetricJobsFound ? null : (
           <JobSelector

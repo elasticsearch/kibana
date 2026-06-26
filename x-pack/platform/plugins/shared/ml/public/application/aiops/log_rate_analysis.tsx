@@ -9,20 +9,19 @@ import type { FC } from 'react';
 import React from 'react';
 import { pick } from 'lodash';
 
-import { FormattedMessage } from '@kbn/i18n-react';
 import { LogRateAnalysis } from '@kbn/aiops-plugin/public';
 import { AIOPS_EMBEDDABLE_ORIGIN } from '@kbn/aiops-common/constants';
 
 import { MlDataSourcePicker } from '@kbn/aiops-components';
 import { DataViewPicker } from '@kbn/unified-search-plugin/public';
 import { SavedObjectFinder } from '@kbn/saved-objects-finder-plugin/public';
+import { i18n } from '@kbn/i18n';
 import { NoDataViewPrompt } from './no_data_view_prompt';
 import { useDataSource } from '../contexts/ml/data_source_context';
 import { useMlKibana } from '../contexts/kibana';
 import { HelpMenu } from '../components/help_menu';
 import { useEnabledFeatures } from '../contexts/ml';
-import { MlPageHeader } from '../components/page_header';
-import { PageTitle } from '../components/page_title';
+import { MlAppHeader } from '../components/ml_app_header';
 
 export const LogRateAnalysisPage: FC = () => {
   const { services } = useMlKibana();
@@ -30,15 +29,13 @@ export const LogRateAnalysisPage: FC = () => {
 
   const { selectedDataView: dataView, selectedSavedSearch: savedSearch } = useDataSource();
 
-  const pageTitle = (
-    <FormattedMessage id="xpack.ml.logRateAnalysis.pageHeader" defaultMessage="Log rate analysis" />
-  );
+  const pageTitle = i18n.translate('xpack.ml.logRateAnalysis.pageHeader', {
+    defaultMessage: 'Log rate analysis',
+  });
 
   return (
     <>
-      <MlPageHeader>
-        <PageTitle title={pageTitle} />
-      </MlPageHeader>
+      <MlAppHeader title={pageTitle} />
       {!dataView ? (
         <>
           <MlDataSourcePicker

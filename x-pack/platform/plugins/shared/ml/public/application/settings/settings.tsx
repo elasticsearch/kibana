@@ -8,12 +8,11 @@
 import type { FC } from 'react';
 import React, { Fragment } from 'react';
 import { EuiSpacer } from '@elastic/eui';
-import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 import { AnomalyDetectionSettings } from './anomaly_detection_settings';
 import { HelpMenu } from '../components/help_menu';
 import { useMlKibana } from '../contexts/kibana';
-import { MlPageHeader } from '../components/page_header';
-import { PageTitle } from '../components/page_title';
+import { MlAppHeader } from '../components/ml_app_header';
 
 export const Settings: FC = () => {
   const {
@@ -24,16 +23,11 @@ export const Settings: FC = () => {
     <Fragment>
       <EuiSpacer size="m" />
       <div data-test-subj="mlPageSettings">
-        <MlPageHeader>
-          <PageTitle
-            title={
-              <FormattedMessage
-                id="xpack.ml.anomalyDetectionSettings.title"
-                defaultMessage="Anomaly Detection Settings"
-              />
-            }
-          />
-        </MlPageHeader>
+        <MlAppHeader
+          title={i18n.translate('xpack.ml.anomalyDetectionSettings.title', {
+            defaultMessage: 'Anomaly Detection Settings',
+          })}
+        />
         <AnomalyDetectionSettings />
       </div>
       <HelpMenu docLink={helpLink} />

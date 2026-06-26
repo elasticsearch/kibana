@@ -16,18 +16,34 @@ import type { ExportJobsFlyoutContentProps } from './export_jobs_flyout_content'
 
 export interface Props extends Pick<ExportJobsFlyoutContentProps, 'currentTab'> {
   isDisabled: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const ExportJobsFlyoutContent = dynamic(async () => ({
   default: (await import('./export_jobs_flyout_content')).ExportJobsFlyoutContent,
 }));
 
-export const ExportJobsFlyout: FC<Props> = ({ isDisabled, ...rest }) => {
-  const [showFlyout, setShowFlyout] = useState(false);
+export const ExportJobsFlyout: FC<Props> = ({ isDisabled, isOpen, onClose, ...rest }) => {
+  const [internalShowFlyout, setInternalShowFlyout] = useState(false);
   const { isADEnabled, isDFAEnabled } = useEnabledFeatures();
+  const isControlled = isOpen !== undefined;
+  const showFlyout = isControlled ? isOpen : internalShowFlyout;
 
   function toggleFlyout() {
-    setShowFlyout(!showFlyout);
+    if (isControlled) {
+      onClose?.();
+      return;
+    }
+    setInternalShowFlyout(!internalShowFlyout);
+  }
+
+  function closeFlyout() {
+    if (isControlled) {
+      onClose?.();
+      return;
+    }
+    setInternalShowFlyout(false);
   }
 
   if (isADEnabled === false && isDFAEnabled === false) {
@@ -36,11 +52,11 @@ export const ExportJobsFlyout: FC<Props> = ({ isDisabled, ...rest }) => {
 
   return (
     <>
-      <FlyoutButton onClick={toggleFlyout} isDisabled={isDisabled} />
+      {!isControlled ? <FlyoutButton onClick={toggleFlyout} isDisabled={isDisabled} /> : null}
 
       {showFlyout === true && isDisabled === false && (
         <ExportJobsFlyoutContent
-          onClose={() => setShowFlyout(false)}
+          onClose={closeFlyout}
           {...{ isADEnabled, isDFAEnabled, ...rest }}
         />
       )}

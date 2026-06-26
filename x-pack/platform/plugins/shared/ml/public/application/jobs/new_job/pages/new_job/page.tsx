@@ -13,7 +13,6 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { getTimeFilterRange, useTimefilter } from '@kbn/ml-date-picker';
 import { EVENT_RATE_FIELD_ID } from '@kbn/ml-anomaly-utils';
 import { useTimeBuckets } from '@kbn/ml-time-buckets';
-import { PageTitle } from '../../../../components/page_title';
 import { jobCloningService } from '../../../../services/job_cloning_service';
 import { Wizard } from './wizard';
 import { WIZARD_STEPS } from '../components/step_types';
@@ -40,7 +39,7 @@ import type { ExistingJobsAndGroups } from '../../../../services/job_service';
 import { useNewJobCapsService } from '../../../../services/new_job_capabilities/new_job_capabilities_service';
 import { getNewJobDefaults } from '../../../../services/ml_server_info';
 import { useToastNotificationService } from '../../../../services/toast_notification_service';
-import { MlPageHeader } from '../../../../components/page_header';
+import { MlAppHeader } from '../../../../components/ml_app_header';
 
 const PAGE_WIDTH = 1200; // document.querySelector('.single-metric-job-container').width();
 const BAR_TARGET = PAGE_WIDTH > 2000 ? 1000 : PAGE_WIDTH / 2;
@@ -214,16 +213,13 @@ export const Page: FC<PageProps> = ({ existingJobsAndGroups, jobType }) => {
 
   return (
     <Fragment>
-      <MlPageHeader>
-        <PageTitle
-          title={
-            <div data-test-subj={`mlPageJobWizardHeader-${jobCreator.type}`}>
-              <FormattedMessage id="xpack.ml.newJob.page.createJob" defaultMessage="Create job" />:{' '}
-              {jobCreatorTitle}
-            </div>
-          }
+      <div data-test-subj={`mlPageJobWizardHeader-${jobCreator.type}`}>
+        <MlAppHeader
+          title={`${i18n.translate('xpack.ml.newJob.page.createJob', {
+            defaultMessage: 'Create job',
+          })}: ${jobCreatorTitle}`}
         />
-      </MlPageHeader>
+      </div>
 
       <div style={{ backgroundColor: 'inherit' }} data-test-subj={`mlPageJobWizard ${jobType}`}>
         <EuiText size={'s'}>

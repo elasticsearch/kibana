@@ -5,4 +5,6 @@
  * 2.0.
  */
 
-export { HeaderMenuPortal } from './header_menu_portal';
+export { MlAppHeader } from './ml_app_header';
+export type { MlAppHeaderProps } from './ml_app_header';
+export { MlDatePickerBar } from './ml_date_picker_bar';

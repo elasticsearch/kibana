@@ -19,7 +19,6 @@ import { StorageContextProvider } from '@kbn/ml-local-storage';
 import useLifecycles from 'react-use/lib/useLifecycles';
 import useObservable from 'react-use/lib/useObservable';
 import type { ManagementAppMountParams } from '@kbn/management-plugin/public';
-import { isPopulatedObject } from '@kbn/ml-is-populated-object';
 import { ML_STORAGE_KEYS } from '@kbn/ml-common-types/storage';
 import type { ExperimentalFeatures, MlFeatures, NLPSettings } from '../../common/constants/app';
 import type { MlSetupDependencies, MlStartDependencies } from '../plugin';
@@ -69,9 +68,6 @@ export const App: FC<AppProps> = ({
 }) => {
   const pageDeps: PageDependencies = {
     history: appMountParams.history,
-    setHeaderActionMenu: isPopulatedObject(appMountParams, ['setHeaderActionMenu'])
-      ? appMountParams.setHeaderActionMenu
-      : undefined,
     setBreadcrumbs: coreStart.chrome!.setBreadcrumbs,
   };
 
@@ -135,7 +131,7 @@ export const App: FC<AppProps> = ({
 
   if (!licenseReady || !mlCapabilities) return null;
 
-  const startServices = pick(coreStart, 'analytics', 'i18n', 'theme', 'userProfile');
+  const startServices = pick(coreStart, 'analytics', 'i18n', 'theme', 'userProfile', 'chrome');
   const datePickerDeps: DatePickerDependencies = {
     ...pick(services, [
       'data',

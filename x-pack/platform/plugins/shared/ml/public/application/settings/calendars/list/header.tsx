@@ -10,22 +10,15 @@
  */
 
 import type { FC } from 'react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 
-import {
-  EuiSpacer,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiLink,
-  EuiText,
-  EuiTextColor,
-  EuiButtonEmpty,
-} from '@elastic/eui';
+import { EuiSpacer, EuiFlexGroup, EuiFlexItem, EuiLink, EuiText, EuiTextColor } from '@elastic/eui';
 
-import { MlPageHeader } from '../../../components/page_header';
+import type { AppHeaderMenu } from '@kbn/app-header';
+import { MlAppHeader } from '../../../components/ml_app_header';
 import { useMlKibana } from '../../../contexts/kibana/kibana_context';
-import { PageTitle } from '../../../components/page_title';
 
 interface Props {
   isDst: boolean;
@@ -40,25 +33,39 @@ export const CalendarsListHeader: FC<Props> = ({ totalCount, refreshCalendars, i
     },
   } = useMlKibana();
   const docsUrl = links.ml.calendars;
+
+  const menu = useMemo<AppHeaderMenu>(
+    () => ({
+      items: [
+        {
+          id: 'refreshCalendars',
+          order: 100,
+          label: i18n.translate('xpack.ml.settings.calendars.listHeader.refreshButtonLabel', {
+            defaultMessage: 'Refresh',
+          }),
+          iconType: 'refresh' as const,
+          run: refreshCalendars,
+          testId: 'mlCalendarListRefreshButton',
+        },
+      ],
+    }),
+    [refreshCalendars]
+  );
+
   return (
     <>
-      <MlPageHeader>
-        <PageTitle
-          title={
-            isDst ? (
-              <FormattedMessage
-                id="xpack.ml.settings.calendars.listHeader.calendarsTitle"
-                defaultMessage="Daylight savings time calendars"
-              />
-            ) : (
-              <FormattedMessage
-                id="xpack.ml.settings.calendars.listHeader.calendarsTitle"
-                defaultMessage="Calendars"
-              />
-            )
-          }
-        />
-      </MlPageHeader>
+      <MlAppHeader
+        title={
+          isDst
+            ? i18n.translate('xpack.ml.settings.calendars.listHeader.calendarsTitle', {
+                defaultMessage: 'Daylight savings time calendars',
+              })
+            : i18n.translate('xpack.ml.settings.calendars.listHeader.calendarsTitle', {
+                defaultMessage: 'Calendars',
+              })
+        }
+        menu={menu}
+      />
       <EuiFlexGroup justifyContent="spaceBetween" alignItems="baseline">
         <EuiFlexItem grow={false}>
           <EuiFlexGroup alignItems="baseline" gutterSize="m" responsive={false}>
@@ -74,23 +81,6 @@ export const CalendarsListHeader: FC<Props> = ({ totalCount, refreshCalendars, i
                   />
                 </p>
               </EuiTextColor>
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiFlexGroup alignItems="baseline" gutterSize="m" responsive={false}>
-            <EuiFlexItem grow={false}>
-              <EuiButtonEmpty
-                size="s"
-                iconType="refresh"
-                onClick={refreshCalendars}
-                data-test-subj="mlCalendarListRefreshButton"
-              >
-                <FormattedMessage
-                  id="xpack.ml.settings.calendars.listHeader.refreshButtonLabel"
-                  defaultMessage="Refresh"
-                />
-              </EuiButtonEmpty>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>

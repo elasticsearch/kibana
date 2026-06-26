@@ -5,4 +5,8 @@
  * 2.0.
  */
 
-export { MlPageHeader, MlPageHeaderRenderer } from './page_header';
+export { MlAppHeader, MlDatePickerBar } from '../ml_app_header';
+export type { MlAppHeaderProps } from '../ml_app_header';
+
+// Deprecated alias kept for incremental migration — use MlAppHeader instead.
+export { MlAppHeader as MlPageHeader } from '../ml_app_header';

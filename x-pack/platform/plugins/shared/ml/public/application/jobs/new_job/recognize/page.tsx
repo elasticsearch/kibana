@@ -45,8 +45,7 @@ import type { JobSettingsFormValues } from './components/job_settings_form';
 import { JobSettingsForm } from './components/job_settings_form';
 import type { TimeRange } from '../common/components';
 import { JobsAwaitingNodeWarning } from '../../../components/jobs_awaiting_node_warning';
-import { MlPageHeader } from '../../../components/page_header';
-import { PageTitle } from '../../../components/page_title';
+import { MlAppHeader } from '../../../components/ml_app_header';
 
 export interface ModuleJobUI extends ModuleJob {
   datafeedResult?: DatafeedResponse;
@@ -288,17 +287,12 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
 
   return (
     <>
-      <MlPageHeader>
-        <PageTitle
-          title={
-            <FormattedMessage
-              id="xpack.ml.newJob.recognize.newJobFromTitle"
-              defaultMessage="New job from {pageTitle}"
-              values={{ pageTitle }}
-            />
-          }
-        />
-      </MlPageHeader>
+      <MlAppHeader
+        title={i18n.translate('xpack.ml.newJob.recognize.newJobFromTitle', {
+          defaultMessage: 'New job from {pageTitle}',
+          values: { pageTitle },
+        })}
+      />
 
       {displayQueryWarning && (
         <>
