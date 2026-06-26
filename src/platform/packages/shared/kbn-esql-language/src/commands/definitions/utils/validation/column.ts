@@ -7,11 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ESQLColumn, ESQLIdentifier } from '@elastic/esql/types';
+import type { ESQLColumn, ESQLIdentifier, ESQLSingleAstItem } from '@elastic/esql/types';
 import { isParametrized } from '@elastic/esql';
 import { UnmappedFieldsStrategy, type ICommandContext } from '../../../registry/types';
-import { errors } from '../errors';
+import { errors, getMessageFromId } from '../errors';
 import { getColumnExists, getColumnName } from '../columns';
+import { getExpressionType } from '../expressions';
 import type { ESQLMessage } from '../../types';
 
 interface ColumnValidationOptions {
@@ -105,3 +106,44 @@ export class ColumnValidator {
     return this.commandName === 'keep' || this.commandName === 'drop';
   }
 }
+
+export const validatePrefixAssignmentExpression = ({
+  expression,
+  commandName,
+  acceptedTypes,
+  typeLabel,
+  context,
+}: {
+  expression: ESQLSingleAstItem | undefined;
+  commandName: string;
+  acceptedTypes: readonly string[];
+  typeLabel: string;
+  context?: ICommandContext;
+}): ESQLMessage[] => {
+  if (!expression || expression.incomplete) {
+    return [];
+  }
+
+  const expressionType = getExpressionType(
+    expression,
+    context?.columns,
+    context?.unmappedFieldsStrategy
+  );
+
+  if (!acceptedTypes.includes(expressionType)) {
+    return [
+      getMessageFromId({
+        messageId: 'unsupportedColumnTypeForCommand',
+        values: {
+          command: commandName.toUpperCase(),
+          type: typeLabel,
+          column: expression.text,
+          givenType: expressionType,
+        },
+        locations: expression.location,
+      }),
+    ];
+  }
+
+  return [];
+};

@@ -2310,10 +2310,10 @@
   resolved "https://registry.yarnpkg.com/@elastic/eslint-plugin-eui/-/eslint-plugin-eui-2.13.0.tgz#b9c079532257b7d4c46e3004ecb7b1f78f00a6b9"
   integrity sha512-Itl7zn88GEYRAqfmuRzViNy03nVHkIVLAvtjIC0b3lhjBnJgUbEG8ImfdYUExMiGraFE+2/k6v/Z8LbWXxO+JA==
 
-"@elastic/esql@4.4.0":
-  version "4.4.0"
-  resolved "https://registry.yarnpkg.com/@elastic/esql/-/esql-4.4.0.tgz#0ca6c2b3d38482012a3b95adb6b2caafd62a7b4c"
-  integrity sha512-8mbrT9as13DNJ4wFnBW9dD1F1c2qxusmMfbPWRzexMwS/8/H35YPWrryCHBU0ESyTC2ak5yqbc/733jPbpC7Cw==
+"@elastic/esql@4.5.0":
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/@elastic/esql/-/esql-4.5.0.tgz#28889eea665767e313de3e524ccac23771209894"
+  integrity sha512-19X2t9TGDRi+4siH8h++bv/E04/qMyfnE1OQw8PtcRGykRSahuL+ndm1E5vVzVn39P4Sk1J/4yIrBYwCt8uUvw==
   dependencies:
     antlr4 "4.13.2"
     tree-dump "1.1.0"
@@ -2406,10 +2406,10 @@
   resolved "https://registry.yarnpkg.com/@elastic/micro-jq/-/micro-jq-1.9.0.tgz#a0adec77326c8e4aa948000c9c883afea1708e35"
   integrity sha512-r5Lfs8Y1bcVfzPGze2H1LohgpP5NyneIxFmcJ2V00/CCSUtG3o+bw9IS3xaZ3dC1ewgXa3YRweEPYG8fG2LiBg==
 
-"@elastic/monaco-esql@3.4.0":
-  version "3.4.0"
-  resolved "https://registry.yarnpkg.com/@elastic/monaco-esql/-/monaco-esql-3.4.0.tgz#8dd058f333ab92847c91101f90b114e0c2e691c9"
-  integrity sha512-jJaGDdOVru4aVG4NydXdHaNOyU73eeCBaaSm34CQJO7Ae2GeXJuQTu2DcKFAEWRCprn6eLPOS+UcUqGzunC/gg==
+"@elastic/monaco-esql@3.5.0":
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/@elastic/monaco-esql/-/monaco-esql-3.5.0.tgz#fb291596f96968c8144393da7bf8870567170e38"
+  integrity sha512-+itmhlzswEGSveIjhlDpm01NiiavuDaI7HjiyA1hG2JE3Ovs7gsMRRQsXH3yprAlWGFBlofrL0kNb8mWZrKqkw==
 
 "@elastic/node-crypto@1.2.3", "@elastic/node-crypto@^1.2.3":
   version "1.2.3"

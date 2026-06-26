@@ -8,7 +8,8 @@
  */
 
 import type { ESQLAstUserAgentCommand, ESQLList } from '@elastic/esql/types';
-import { isAssignment, isMap, isList, isStringLiteral } from '@elastic/esql';
+import { isAssignment, isMap, isList } from '@elastic/esql';
+import { getMapEntryByKey } from '../../definitions/utils/maps';
 
 export enum UserAgentPosition {
   AFTER_USER_AGENT_KEYWORD = 'after_user_agent_keyword',
@@ -26,9 +27,7 @@ export function getPropertiesList(command: ESQLAstUserAgentCommand): ESQLList | 
   const { namedParameters } = command;
   if (!isMap(namedParameters)) return undefined;
 
-  const propertiesEntry = namedParameters.entries.find(
-    (entry) => isStringLiteral(entry.key) && entry.key.valueUnquoted === 'properties'
-  );
+  const propertiesEntry = getMapEntryByKey(namedParameters, 'properties');
   if (!propertiesEntry) return undefined;
 
   return isList(propertiesEntry.value) ? propertiesEntry.value : undefined;
@@ -52,9 +51,7 @@ export function getPosition(
     if (!isWithinMap) return UserAgentPosition.AFTER_COMMAND;
 
     // Check if cursor is inside the `properties` entry value (handles empty [] too)
-    const propertiesEntry = map.entries.find(
-      (entry) => isStringLiteral(entry.key) && entry.key.valueUnquoted === 'properties'
-    );
+    const propertiesEntry = getMapEntryByKey(map, 'properties');
     if (
       propertiesEntry &&
       cursorPosition >= propertiesEntry.value.location.min &&

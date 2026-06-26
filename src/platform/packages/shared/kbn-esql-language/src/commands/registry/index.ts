@@ -19,6 +19,7 @@ import { completionCommand } from './completion';
 import { dissectCommand } from './dissect';
 import { uriPartsCommand } from './uri_parts';
 import { userAgentCommand } from './user_agent';
+import { ipLocationCommand } from './ip_location';
 import { registeredDomainCommand } from './registered_domain';
 import { enrichCommand } from './enrich';
 import { evalCommand } from './eval';
@@ -56,6 +57,7 @@ const baseCommands = [
   dissectCommand,
   uriPartsCommand,
   userAgentCommand,
+  ipLocationCommand,
   registeredDomainCommand,
   enrichCommand,
   evalCommand,

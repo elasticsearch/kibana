@@ -7,6 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { ESQLMap, ESQLMapEntry } from '@elastic/esql/types';
+import { isStringLiteral } from '@elastic/esql';
 import { castEsToKbnFieldTypeName, KBN_FIELD_TYPES } from '@kbn/field-types';
 import { DOUBLE_QUOTED_STRING_REGEX } from './autocomplete/map_expression';
 import { type MapValueType } from '../../registry/complete_items';
@@ -88,3 +90,6 @@ export function parseMapParams(mapParamsStr: string): ParsedMapParameter {
 
   return result;
 }
+
+export const getMapEntryByKey = (map: ESQLMap, key: string): ESQLMapEntry | undefined =>
+  map.entries.find((entry) => isStringLiteral(entry.key) && entry.key.valueUnquoted === key);
