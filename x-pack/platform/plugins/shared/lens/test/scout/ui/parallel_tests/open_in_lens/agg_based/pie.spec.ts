@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import type { DebugState } from '@elastic/charts';
+import { MISSING_TOKEN } from '@kbn/field-formats-common';
 import { spaceTest, tags } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 import {
@@ -14,8 +16,27 @@ import {
   enableElasticChartDebug,
   getChartDebugData,
   getImportedDashboardId,
-  getPieChartLabels,
 } from '../../../fixtures';
+
+function getPieChartLabels(debugState: DebugState): string[] {
+  const slices = debugState?.partition?.[0]?.partitions ?? [];
+
+  return slices.map((slice) => formatPieSliceLabel(slice.name));
+}
+
+function formatPieSliceLabel(name: string | number): string {
+  if (name === MISSING_TOKEN) {
+    return 'Missing';
+  }
+  if (name === '__other__') {
+    return 'Other';
+  }
+  if (typeof name === 'number') {
+    return name.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  return name;
+}
 
 spaceTest.describe('Lens open in Lens — agg-based Pie', { tag: tags.stateful.classic }, () => {
   let pieDashboardId: string;

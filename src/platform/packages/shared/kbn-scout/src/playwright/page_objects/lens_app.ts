@@ -274,10 +274,7 @@ export class LensApp {
     await this.closeDimensionEditorButton.waitFor({ state: 'visible' });
   }
 
-  /**
-   * Opens a dimension editor flyout from a dimension trigger inside a layer panel.
-   * Matches the FTR `lens.openDimensionEditor(dimension, layerIndex, dimensionIndex)` API.
-   */
+  /** Opens a dimension editor flyout from a dimension trigger inside a layer panel. */
   async openDimensionEditor(dimension: string, layerIndex = 0, dimensionIndex = 0) {
     const editors = await this.page.testSubj
       .locator(`lns-layerPanel-${layerIndex} > ${dimension}`)
@@ -369,9 +366,6 @@ export class LensApp {
    * Waits for the Lens visualization workspace to finish rendering.
    * Polls `data-rendering-count` on the visualization container until it
    * stabilises across two consecutive reads (500 ms apart).
-   *
-   * Scopes to `lnsWorkspace` so Open in Lens flows on multi-panel dashboards
-   * do not match chart test subjects on other embeddables.
    */
   async waitForVisualization(chartSubj = 'lnsVisualizationContainer') {
     const workspace = this.page.testSubj.locator('lnsWorkspace');
@@ -474,10 +468,7 @@ export class LensApp {
     }
   }
 
-  /**
-   * Reads the current state of every metric tile inside `[data-test-subj="mtrVis"]`.
-   * The returned shape matches the FTR `lens.getMetricVisualizationData()` output.
-   */
+  /** Reads the current state of every metric tile inside `[data-test-subj="mtrVis"]`. */
   async getMetricVisualizationData() {
     const tiles = await this.page.locator('[data-test-subj="mtrVis"] .echChart li').all();
     const showingBar = (await this.page.locator('.echSingleMetricProgress').count()) > 0;
