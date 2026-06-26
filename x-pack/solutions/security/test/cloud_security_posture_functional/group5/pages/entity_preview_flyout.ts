@@ -8,10 +8,11 @@
 import { getEntitiesLatestIndexName } from '@kbn/cloud-security-posture-common/utils/helpers';
 import {
   waitForPluginInitialized,
-  cleanupEntityStore,
   waitForEntityDataIndexed,
   dataViewRouteHelpersFactory,
-  initEntityEnginesWithRetry,
+  installEntityStoreV2,
+  uninstallEntityStoreV2,
+  waitForEntityStoreV2Running,
 } from '../../../cloud_security_posture_api/utils';
 import type { SecurityTelemetryFtrProviderContext } from '../../config.base';
 
@@ -39,7 +40,7 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
     this.tags(['cloud_security_posture_graph_viz']);
 
     before(async () => {
-      await cleanupEntityStore({ supertest, logger });
+      await uninstallEntityStoreV2({ supertest, logger });
 
       try {
         await es.indices.delete({
@@ -57,13 +58,10 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
       const dataView = dataViewRouteHelpersFactory(supertest);
       await dataView.create('security-solution');
 
-      // Initialize entity engine for 'generic' type ONCE - this is reused by both v1 and v2 tests
-      await initEntityEnginesWithRetry({
-        supertest,
-        retry,
-        logger,
-        entityTypes: ['generic'],
-      });
+      // Install Entity Store V2 (covers the generic engine the asset inventory tests need).
+      // v2 install always installs all entity types; per-type selection is no longer available.
+      await installEntityStoreV2({ supertest, logger });
+      await waitForEntityStoreV2Running({ supertest, retry, logger });
 
       // Load security alerts with modified mappings (includes actor and target)
       await esArchiver.load(
@@ -80,7 +78,7 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
 
     after(async () => {
       // Clean up entity store resources
-      await cleanupEntityStore({ supertest, logger });
+      await uninstallEntityStoreV2({ supertest, logger });
 
       // Disable asset inventory setting
       await kibanaServer.uiSettings.update({ 'securitySolution:enableAssetInventory': false });
@@ -100,7 +98,7 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
 
     describe('via LOOKUP JOIN (v2)', () => {
       before(async () => {
-        // Delete v2 manually since its not being deleted by the cleanupEntityStore function
+        // Delete v2 manually since it's not being deleted by the v2 install/uninstall cycle
         try {
           await es.indices.delete({
             index: getEntitiesLatestIndexName(),

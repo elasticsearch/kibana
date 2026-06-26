@@ -5,18 +5,7 @@
  * 2.0.
  */
 
-import { z } from '@kbn/zod/v4';
-import type { HostEntity } from '../../api/entity_analytics/entity_store/entities/common.gen';
-import { UpsertEntitiesBulkRequestBody } from '../../api/entity_analytics/entity_store/entities/upsert_entities_bulk.gen';
-import {
-  preprocessUpsertEntitiesBulkRequestBody,
-  sanitizeEntityRecordForUpsert,
-} from './sanitize_entity_record_for_upsert';
-
-const bulkBodySchema = z.preprocess(
-  preprocessUpsertEntitiesBulkRequestBody,
-  UpsertEntitiesBulkRequestBody
-);
+import { sanitizeEntityRecordForUpsert } from './sanitize_entity_record_for_upsert';
 
 describe('sanitize_entity_record_for_upsert', () => {
   it('coerces host.risk.inputs object to array and notes string to array', () => {
@@ -92,26 +81,5 @@ describe('sanitize_entity_record_for_upsert', () => {
         }
       ).entity?.relationships
     ).toEqual({ communicates_with: ['host:a'] });
-  });
-
-  it('accepts bulk body with doc instead of record after preprocess + Zod', () => {
-    const raw = {
-      entities: [
-        {
-          type: 'host',
-          doc: {
-            entity: { id: 'host:x', type: 'host' },
-            host: { name: 'host-a' },
-          },
-        },
-      ],
-    };
-
-    const parsed = bulkBodySchema.safeParse(raw);
-    expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      const record = parsed.data.entities[0].record as HostEntity;
-      expect(record.host?.name).toBe('host-a');
-    }
   });
 });

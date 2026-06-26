@@ -57,12 +57,6 @@ jest.mock('../../data_view_manager/hooks/use_data_view', () => ({
   })),
 }));
 
-jest.mock('../components/home/combined_risk_donut_chart', () => ({
-  CombinedRiskDonutChart: () => (
-    <div data-test-subj="combined-risk-donut-chart">{'Donut Chart'}</div>
-  ),
-}));
-
 jest.mock('../components/home/anomalies_panel', () => ({
   EntityAnalyticsRecentAnomalies: () => (
     <div data-test-subj="recent-anomalies-panel">{'Recent anomalies'}</div>

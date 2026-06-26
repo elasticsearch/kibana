@@ -10,7 +10,7 @@ import type { SpacesPluginStart } from '@kbn/spaces-plugin/public';
 import type { HttpFetchOptionsWithPath, HttpSetup, IUiSettingsClient } from '@kbn/core/public';
 import { useEffect } from 'react';
 import { EntityStoreStatus } from '../../common';
-import { ENTITY_STORE_ROUTES, FF_ENABLE_ENTITY_STORE_V2 } from '../../common';
+import { ENTITY_STORE_ROUTES } from '../../common';
 import type { StatusRequestQuery } from '../../server/routes/apis/status';
 
 export interface Services {
@@ -20,9 +20,8 @@ export interface Services {
   spaces: SpacesPluginStart;
 }
 
-interface EntityStoreV1StatusResponse {
-  status: EntityStoreStatus;
-}
+const LEGACY_ENTITY_ENGINE_SO_TYPE = 'entity-engine-status';
+const SAVED_OBJECTS_FIND_PATH = '/api/saved_objects/_find';
 
 const statusRequestQuery = {
   include_components: false,
@@ -31,10 +30,6 @@ const statusRequestQuery = {
 const getStatusRequest: HttpFetchOptionsWithPath = {
   path: ENTITY_STORE_ROUTES.public.STATUS,
   query: statusRequestQuery,
-};
-
-const getStatusV1Request: HttpFetchOptionsWithPath = {
-  path: '/api/entity_store/status',
 };
 
 const installAllEntitiesRequest: HttpFetchOptionsWithPath = {
@@ -48,6 +43,17 @@ const initEntityMaintainersRequest: HttpFetchOptionsWithPath = {
   query: { apiVersion: '2' },
 };
 
+// Detects whether the legacy v1 Entity Store was installed in this space by
+// looking up the legacy `entity-engine-status` saved object. Used to decide
+// whether to auto-install v2 in non-default spaces (only for users who had v1).
+export const isEntityStoreV1Installed = async (http: HttpSetup): Promise<boolean> => {
+  const response = await http.fetch<{ total: number }>(SAVED_OBJECTS_FIND_PATH, {
+    method: 'GET',
+    query: { type: LEGACY_ENTITY_ENGINE_SO_TYPE, per_page: 0 },
+  });
+  return response.total > 0;
+};
+
 /**
  * Hook to install Entity Store V2. Should be called from the root Security Solution app component.
  * @param services - Kibana services required to install Entity Store V2
@@ -56,26 +62,25 @@ export const useInstallEntityStoreV2 = (services: Services) => {
   useEffect(() => {
     async function install() {
       try {
-        const isEntityStoreV2Enabled = services.uiSettings.get(FF_ENABLE_ENTITY_STORE_V2);
-        if (!isEntityStoreV2Enabled) return;
-
         const space = await services.spaces.getActiveSpace();
         const statusResponse = await services.http.get<{ status: EntityStoreStatus }>(
           getStatusRequest
         );
         const isEntityStoreV2Installed = isEntityStoreInstalled(statusResponse.status);
-        // In non-default spaces, only auto-install v2 where v1 existed. If v2 is already there,
-        // skip the v1 check and still run (e.g. init entity maintainers for this space).
-        if (space.id !== 'default' && !isEntityStoreV2Installed) {
-          if (!(await isEntityStoreV1Installed(services.http))) {
-            return;
-          }
-        }
+
         // Entity store already installed → init entity maintainers only.
         if (isEntityStoreV2Installed) {
           await services.http.post(initEntityMaintainersRequest);
           return;
         }
+
+        // In non-default spaces auto-install only happens for users migrating
+        // from v1; everyone else has to opt in manually.
+        if (space.id !== 'default') {
+          const hadV1 = await isEntityStoreV1Installed(services.http);
+          if (!hadV1) return;
+        }
+
         // Entity store not installed → install entity store (init entity maintainers is already done by the install API).
         await services.http.post(installAllEntitiesRequest);
       } catch (e) {
@@ -89,9 +94,3 @@ export const useInstallEntityStoreV2 = (services: Services) => {
 
 const isEntityStoreInstalled = (status: EntityStoreStatus): boolean =>
   status !== EntityStoreStatus.enum.not_installed;
-
-export const isEntityStoreV1Installed = async (http: HttpSetup): Promise<boolean> => {
-  const response = await http.get<EntityStoreV1StatusResponse>(getStatusV1Request);
-
-  return isEntityStoreInstalled(response.status);
-};

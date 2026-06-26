@@ -195,7 +195,7 @@ const ObservedDataSectionContent = memo(
     const observedUserWithAnomalies = useMemo(
       () => ({
         ...observedUser,
-        entityId: observedUser.entityRecord?.entity.id,
+        entityId: observedUser.entityRecord?.entity?.id,
         anomalies: {
           isLoading: isLoadingAnomaliesData,
           anomalies: anomaliesData,

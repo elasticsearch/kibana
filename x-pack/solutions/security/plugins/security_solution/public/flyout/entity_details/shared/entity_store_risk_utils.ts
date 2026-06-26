@@ -32,7 +32,7 @@ function getRiskFromRecord(record: EntityStoreRecord): {
     };
   }
   if ('host' in record && record.host) {
-    const hostRisk = record.host.risk ?? record.host.entity?.risk;
+    const hostRisk = record.host.risk;
     if (hostRisk) {
       return {
         calculated_level: hostRisk.calculated_level,
@@ -42,19 +42,7 @@ function getRiskFromRecord(record: EntityStoreRecord): {
     }
   }
   if ('user' in record && record.user) {
-    const userRisk =
-      record.user.risk ??
-      (
-        record.user as {
-          entity?: {
-            risk?: {
-              calculated_level?: string;
-              calculated_score?: number;
-              calculated_score_norm?: number;
-            };
-          };
-        }
-      ).entity?.risk;
+    const userRisk = record.user.risk;
     if (userRisk) {
       return {
         calculated_level: userRisk.calculated_level,
@@ -64,7 +52,7 @@ function getRiskFromRecord(record: EntityStoreRecord): {
     }
   }
   if ('service' in record && record.service) {
-    const serviceRisk = record.service.risk ?? record.service.entity?.risk;
+    const serviceRisk = record.service.risk;
     if (serviceRisk) {
       return {
         calculated_level: serviceRisk.calculated_level,
@@ -140,7 +128,7 @@ function buildMinimalRiskStats(
 }
 
 /**
- * Build RiskScoreState for the flyout from an entity store record (when FF_ENABLE_ENTITY_STORE_V2).
+ * Build RiskScoreState for the flyout from an entity store record.
  * When inspect is provided (e.g. from entity store API response), the Risk Summary inspect button will be enabled.
  */
 export function buildRiskScoreStateFromEntityRecord<T extends EntityType>(

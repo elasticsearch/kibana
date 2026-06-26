@@ -9,13 +9,13 @@ import React, { memo, useCallback, useMemo } from 'react';
 import type { FlyoutPanelProps } from '@kbn/expandable-flyout';
 import { useHasMisconfigurations } from '@kbn/cloud-security-posture/src/hooks/use_has_misconfigurations';
 import { TableId } from '@kbn/securitysolution-data-table';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { EuiSpacer } from '@elastic/eui';
 import { useAssetCriticalityPrivileges } from '../../../entity_analytics/components/asset_criticality/use_asset_criticality';
 import { useUpdateAssetCriticality } from '../../../entity_analytics/api/hooks/use_update_asset_criticality';
 import { buildEuidCspPreviewOptions } from '../../../cloud_security_posture/utils/build_euid_csp_preview_options';
 import { buildUserNamesFilter, type RiskSeverity } from '../../../../common/search_strategy';
-import { useUiSetting, useKibana } from '../../../common/lib/kibana';
+import { useKibana } from '../../../common/lib/kibana';
 import { useNonClosedAlerts } from '../../../cloud_security_posture/hooks/use_non_closed_alerts';
 import { useRefetchQueryById } from '../../../entity_analytics/api/hooks/use_refetch_query_by_id';
 import type { Refetch } from '../../../common/types';
@@ -92,7 +92,6 @@ export const UserPanel = memo(function UserPanel({
   const { uiSettings } = useKibana().services;
   const euidApi = useEntityStoreEuidApi();
   const assetInventoryEnabled = uiSettings.get(ENABLE_ASSET_INVENTORY_SETTING, true);
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
 
   const safeContextID = contextID ?? scopeId ?? 'user-panel';
 
@@ -107,37 +106,25 @@ export const UserPanel = memo(function UserPanel({
     entityId: entityIdProp,
     identityFields: userStoreIdentityFields,
     entityType: 'user',
-    skip: !entityStoreV2Enabled || isInitializing,
+    skip: isInitializing,
   });
 
   const documentEntityIdentifiers = useMemo<IdentityFields>(() => {
     const legacyFields =
       userName != null && userName !== '' ? { 'user.name': userName } : ({} as IdentityFields);
-    if (entityStoreV2Enabled) {
-      const fromStore =
-        euidApi?.euid?.getEntityIdentifiersFromDocument(
-          'user',
-          entityFromStoreResult.entityRecord
-        ) ?? {};
-      return mergeLegacyIdentityWhenStoreEntityMissing(fromStore, legacyFields);
-    }
-    return legacyFields;
-  }, [entityStoreV2Enabled, euidApi?.euid, entityFromStoreResult.entityRecord, userName]);
+    const fromStore =
+      euidApi?.euid?.getEntityIdentifiersFromDocument('user', entityFromStoreResult.entityRecord) ??
+      {};
+    return mergeLegacyIdentityWhenStoreEntityMissing(fromStore, legacyFields);
+  }, [euidApi?.euid, entityFromStoreResult.entityRecord, userName]);
 
   const userNameFilterQuery = useMemo(
     () => (userName ? buildUserNamesFilter([userName]) : undefined),
     [userName]
   );
-  const observedUser = useObservedUser(
-    userName,
-    scopeId,
-    entityStoreV2Enabled ? entityFromStoreResult : undefined
-  );
+  const observedUser = useObservedUser(userName, scopeId, entityFromStoreResult);
 
-  const panelDisplayEntityId = useMemo(
-    () => (entityStoreV2Enabled ? observedUser.entityRecord?.entity?.id : entityIdProp),
-    [entityIdProp, entityStoreV2Enabled, observedUser.entityRecord?.entity?.id]
-  );
+  const panelDisplayEntityId = observedUser.entityRecord?.entity?.id;
 
   const assetCriticalityPrivileges = useAssetCriticalityPrivileges(entityIdProp ?? userName);
 
@@ -146,7 +133,7 @@ export const UserPanel = memo(function UserPanel({
     filterQuery: userNameFilterQuery,
     onlyLatest: false,
     pagination: FIRST_RECORD_PAGINATION,
-    skip: entityStoreV2Enabled && !!observedUser?.entityRecord,
+    skip: !!observedUser?.entityRecord,
   });
 
   const { inspect, refetch, loading } = riskScoreState;
@@ -173,7 +160,6 @@ export const UserPanel = memo(function UserPanel({
 
   const { hasMisconfigurationFindings } = useHasMisconfigurations(
     buildEuidCspPreviewOptions('user', entityFromStoreResult.entityRecord, euidApi, {
-      entityStoreV2Enabled,
       legacyIdentityFields:
         userName != null && userName !== '' ? { 'user.name': userName } : undefined,
     })
@@ -182,13 +168,13 @@ export const UserPanel = memo(function UserPanel({
   const { hasNonClosedAlerts } = useNonClosedAlerts({
     identityFields: documentEntityIdentifiers,
     entityType: EntityType.user,
-    entityRecord: entityStoreV2Enabled ? entityFromStoreResult.entityRecord : undefined,
+    entityRecord: entityFromStoreResult.entityRecord,
     to,
     from,
     queryId: `${DETECTION_RESPONSE_ALERTS_BY_STATUS_ID}USER_NAME_RIGHT`,
   });
 
-  const useEntityStoreInspectForRisk = entityStoreV2Enabled && observedUser.entityRecord != null;
+  const useEntityStoreInspectForRisk = observedUser.entityRecord != null;
 
   useQueryInspector({
     deleteQuery,
@@ -199,14 +185,11 @@ export const UserPanel = memo(function UserPanel({
     setQuery,
   });
 
-  const isRiskScoreExist =
-    entityStoreV2Enabled && observedUser.entityRecord
-      ? !!getRiskFromEntityRecord(observedUser.entityRecord)
-      : !!userRiskData?.user?.risk;
+  const isRiskScoreExist = observedUser.entityRecord
+    ? !!getRiskFromEntityRecord(observedUser.entityRecord)
+    : !!userRiskData?.user?.risk;
 
-  const entityStoreEntityId = entityStoreV2Enabled
-    ? observedUser.entityRecord?.entity?.id
-    : undefined;
+  const entityStoreEntityId = observedUser.entityRecord?.entity?.id;
 
   const openDetailsPanel = useNavigateToUserDetails({
     userName,
@@ -221,15 +204,14 @@ export const UserPanel = memo(function UserPanel({
     entityStoreEntityId,
   });
 
-  const riskScoreStateFromStore =
-    entityStoreV2Enabled && observedUser.entityRecord
-      ? buildRiskScoreStateFromEntityRecord(EntityType.user, observedUser.entityRecord, {
-          refetch: observedUser.refetchEntityStore ?? (() => {}),
-          isLoading: observedUser.isLoading,
-          error: null,
-          inspect: entityFromStoreResult?.inspect,
-        })
-      : null;
+  const riskScoreStateFromStore = observedUser.entityRecord
+    ? buildRiskScoreStateFromEntityRecord(EntityType.user, observedUser.entityRecord, {
+        refetch: observedUser.refetchEntityStore ?? (() => {}),
+        isLoading: observedUser.isLoading,
+        error: null,
+        inspect: entityFromStoreResult?.inspect,
+      })
+    : null;
 
   const effectiveRiskScoreState = riskScoreStateFromStore ?? riskScoreState;
 
@@ -252,16 +234,13 @@ export const UserPanel = memo(function UserPanel({
     [openDetailsPanel, defaultTab]
   );
 
-  const entityFromStore: EntityStoreRecord | undefined = entityStoreV2Enabled
-    ? observedUser.entityRecord ?? undefined
-    : undefined;
+  const entityFromStore: EntityStoreRecord | undefined = observedUser.entityRecord ?? undefined;
 
   const entityStoreLookupRequested =
     Boolean(entityIdProp) ||
     Boolean(userStoreIdentityFields && Object.keys(userStoreIdentityFields).length > 0);
 
   const noEntityInStore =
-    entityStoreV2Enabled &&
     entityStoreLookupRequested &&
     !entityFromStoreResult.isLoading &&
     !entityFromStoreResult.entityRecord;
@@ -333,7 +312,7 @@ export const UserPanel = memo(function UserPanel({
             openDetailsPanel={openDetailsPanel}
             isPreviewMode={isPreviewMode}
             identityFields={documentEntityIdentifiers}
-            entityRecord={entityStoreV2Enabled ? observedUser.entityRecord ?? undefined : undefined}
+            entityRecord={observedUser.entityRecord ?? undefined}
             skipRiskAndCriticality={noEntityInStore}
             entityStoreEntityId={entityStoreEntityId}
           />

@@ -25,15 +25,12 @@ import {
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
-import { MISCONFIGURATION_INSIGHT_USER_DETAILS } from '@kbn/cloud-security-posture-common/utils/ui_metrics';
 import { useHasMisconfigurations } from '@kbn/cloud-security-posture/src/hooks/use_has_misconfigurations';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
-import { buildEuidCspPreviewOptions } from '../../../../cloud_security_posture/utils/build_euid_csp_preview_options';
-import { useNonClosedAlerts } from '../../../../cloud_security_posture/hooks/use_non_closed_alerts';
+import { MISCONFIGURATION_INSIGHT_USER_DETAILS } from '@kbn/cloud-security-posture-common/utils/ui_metrics';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { ExpandablePanel } from '../../../../flyout_v2/shared/components/expandable_panel';
 import type { RelatedHost } from '../../../../../common/search_strategy/security_solution/related_entities/related_hosts';
-import type { RiskSeverity } from '../../../../../common/search_strategy';
-import { buildUserNamesFilter } from '../../../../../common/search_strategy';
+import { buildUserNamesFilter, type RiskSeverity } from '../../../../../common/search_strategy';
 import { UserOverview } from '../../../../overview/components/user_overview';
 import { AnomalyTableProvider } from '../../../../common/components/ml/anomaly/anomaly_table_provider';
 import { InspectButton, InspectButtonContainer } from '../../../../common/components/inspect';
@@ -63,7 +60,7 @@ import {
   HOST_IP_FIELD_NAME,
   HOST_NAME_FIELD_NAME,
 } from '../../../../timelines/components/timeline/body/renderers/constants';
-import { useKibana, useUiSetting } from '../../../../common/lib/kibana';
+import { useKibana } from '../../../../common/lib/kibana';
 import { ENTITY_RISK_LEVEL } from '../../../../entity_analytics/components/risk_score/translations';
 import { useHasSecurityCapability } from '../../../../helper_hooks';
 import { UserPreviewPanelKey } from '../../../entity_details/user_right';
@@ -73,8 +70,10 @@ import type { NarrowDateRange } from '../../../../common/components/ml/types';
 import { MisconfigurationsInsight } from '../../../../flyout_v2/document/main/components/misconfiguration_insight';
 import { AlertCountInsight } from '../../../../flyout_v2/document/main/components/alert_count_insight';
 import { DocumentEventTypes } from '../../../../common/lib/telemetry';
-import { useNavigateToUserDetails } from '../../../entity_details/user_right/hooks/use_navigate_to_user_details';
+import { buildEuidCspPreviewOptions } from '../../../../cloud_security_posture/utils/build_euid_csp_preview_options';
+import { useNonClosedAlerts } from '../../../../cloud_security_posture/hooks/use_non_closed_alerts';
 import { useRiskScore } from '../../../../entity_analytics/api/hooks/use_risk_score';
+import { useNavigateToUserDetails } from '../../../entity_details/user_right/hooks/use_navigate_to_user_details';
 import { useSelectedPatterns } from '../../../../data_view_manager/hooks/use_selected_patterns';
 import { useSecurityDefaultPatterns } from '../../../../data_view_manager/hooks/use_security_default_patterns';
 import { useEntityFromStore } from '../../../entity_details/shared/hooks/use_entity_from_store';
@@ -87,7 +86,7 @@ import {
   CspInsightLeftPanelSubTab,
   EntityDetailsLeftPanelTab,
 } from '../../../entity_details/shared/components/left_panel/left_panel_header';
-import { type IdentityFields, mergeLegacyIdentityWhenStoreEntityMissing } from '../../shared/utils';
+import { mergeLegacyIdentityWhenStoreEntityMissing, type IdentityFields } from '../../shared/utils';
 
 const USER_DETAILS_ID = 'entities-users-details';
 const RELATED_HOSTS_ID = 'entities-users-related-hosts';
@@ -141,6 +140,7 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
   const { to, from, deleteQuery, setQuery, isInitializing } = useGlobalTime();
   const selectedPatterns = useSelectedPatterns();
   const { indexPatterns: securityDefaultPatterns } = useSecurityDefaultPatterns();
+
   const dispatch = useDispatch();
   const { telemetry } = useKibana().services;
   // create a unique, but stable (across re-renders) query id
@@ -152,14 +152,6 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
   const isEntityAnalyticsAuthorized = isPlatinumOrTrialLicense && hasEntityAnalyticsCapability;
 
   const { openPreviewPanel } = useExpandableFlyoutApi();
-
-  const timerange = useMemo(
-    () => ({
-      from,
-      to,
-    }),
-    [from, to]
-  );
 
   const narrowDateRange = useCallback<NarrowDateRange>(
     (score, interval) => {
@@ -175,7 +167,30 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
     [dispatch]
   );
 
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
+  const timerange = useMemo(
+    () => ({
+      from,
+      to,
+    }),
+    [from, to]
+  );
+
+  const filterQuery = useMemo(
+    () => (userName ? buildUserNamesFilter([userName]) : undefined),
+    [userName]
+  );
+
+  const riskScoreStateFromApi = useRiskScore({
+    filterQuery,
+    riskEntity: EntityType.user,
+    timerange,
+    skip: userName == null,
+  });
+  const userRiskData =
+    riskScoreStateFromApi.data && riskScoreStateFromApi.data.length > 0
+      ? riskScoreStateFromApi.data[0]
+      : undefined;
+
   const euidApi = useEntityStoreEuidApi();
 
   const openUserPreview = useCallback(() => {
@@ -197,26 +212,10 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
   const entityFromStoreResult = useEntityFromStore({
     entityId,
     entityType: 'user',
-    skip: !entityStoreV2Enabled || isInitializing,
+    skip: isInitializing,
   });
-  const observedUser = useObservedUser(
-    userName,
-    scopeId,
-    entityStoreV2Enabled ? entityFromStoreResult : undefined
-  );
+  const observedUser = useObservedUser(userName, scopeId, entityFromStoreResult);
 
-  const filterQuery = useMemo(
-    () => (userName ? buildUserNamesFilter([userName]) : undefined),
-    [userName]
-  );
-
-  const { data: userRisk } = useRiskScore({
-    filterQuery,
-    riskEntity: EntityType.user,
-    timerange,
-    skip: entityStoreV2Enabled,
-  });
-  const userRiskData = userRisk && userRisk.length > 0 ? userRisk[0] : undefined;
   // Always show observed user fields from the same indices useObservedUser queries (security
   // defaults). A duplicate useObservedUserDetails against sourcerer patterns (e.g. alerts-only)
   // returns sparse objects that are still truthy, which hid real data behind "—" rows.
@@ -225,7 +224,7 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
 
   const userRiskScoreStateFromEntityStore = useMemo(
     () =>
-      entityStoreV2Enabled && observedUser.entityRecord
+      observedUser.entityRecord
         ? buildRiskScoreStateFromEntityRecord(EntityType.user, observedUser.entityRecord, {
             refetch: observedUser.refetchEntityStore ?? (() => {}),
             isLoading: observedUser.isLoading,
@@ -234,7 +233,6 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
           })
         : undefined,
     [
-      entityStoreV2Enabled,
       observedUser.entityRecord,
       observedUser.refetchEntityStore,
       observedUser.isLoading,
@@ -242,10 +240,13 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
     ]
   );
 
-  const isRiskScoreExist =
-    entityStoreV2Enabled && observedUser.entityRecord
-      ? !!getRiskFromEntityRecord(observedUser.entityRecord)?.calculated_level
-      : !!userRiskData?.user?.risk;
+  const effectiveRiskScoreState =
+    userRiskScoreStateFromEntityStore ??
+    (riskScoreStateFromApi.data?.length ? riskScoreStateFromApi : undefined);
+
+  const isRiskScoreExist = observedUser.entityRecord
+    ? !!getRiskFromEntityRecord(observedUser.entityRecord)?.calculated_level
+    : !!userRiskData?.user?.risk;
 
   const identityFields = useMemo(
     () =>
@@ -259,16 +260,12 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
   const userIdentityFields = useMemo(() => {
     const legacyFields =
       userName != null && userName !== '' ? { 'user.name': userName } : ({} as IdentityFields);
-    if (!entityStoreV2Enabled) {
-      return legacyFields;
-    }
     return mergeLegacyIdentityWhenStoreEntityMissing(identityFields ?? {}, legacyFields);
-  }, [entityStoreV2Enabled, userName, identityFields]);
+  }, [userName, identityFields]);
 
   const userCspIdentityDoc = observedUser.details;
   const { hasMisconfigurationFindings } = useHasMisconfigurations(
     buildEuidCspPreviewOptions('user', userCspIdentityDoc, euidApi, {
-      entityStoreV2Enabled,
       legacyIdentityFields: userIdentityFields,
     })
   );
@@ -284,12 +281,12 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
   const openDetailsPanel = useNavigateToUserDetails({
     userName,
     identityFields: userIdentityFields ?? {},
-    entityId: entityFromStoreResult?.entityRecord?.entity.id,
+    entityId: entityFromStoreResult?.entityRecord?.entity?.id,
     scopeId,
     isRiskScoreExist,
     hasMisconfigurationFindings,
     hasNonClosedAlerts,
-    isPreviewMode: true, // setting to true to always open a new user flyout
+    isPreviewMode: true,
     contextID: USER_DETAILS_INSIGHTS_ID,
   });
 
@@ -460,28 +457,16 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
             endDate={to}
             narrowDateRange={narrowDateRange}
             setQuery={setQuery}
-            refetch={
-              entityStoreV2Enabled
-                ? observedUser.refetchEntityStore ?? (() => {})
-                : observedUser.refetchObservedDetails ?? (() => {})
-            }
-            inspect={
-              entityStoreV2Enabled
-                ? entityFromStoreResult?.inspect
-                : observedUser.observedDetailsInspect
-            }
+            refetch={observedUser.refetchEntityStore ?? (() => {})}
+            inspect={entityFromStoreResult?.inspect}
             userName={userName}
             indexPatterns={securityDefaultPatterns}
             jobNameById={jobNameById}
             scopeId={scopeId}
             isFlyoutOpen={true}
-            riskScoreState={userRiskScoreStateFromEntityStore}
-            firstSeenFromEntityStore={
-              entityStoreV2Enabled ? observedUser.firstSeen?.date ?? undefined : undefined
-            }
-            lastSeenFromEntityStore={
-              entityStoreV2Enabled ? observedUser.lastSeen?.date ?? undefined : undefined
-            }
+            riskScoreState={effectiveRiskScoreState}
+            firstSeenFromEntityStore={observedUser.firstSeen?.date ?? undefined}
+            lastSeenFromEntityStore={observedUser.lastSeen?.date ?? undefined}
           />
         )}
       </AnomalyTableProvider>

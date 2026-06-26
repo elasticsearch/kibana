@@ -8,7 +8,7 @@
 import React from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiTitle } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { useDocumentDetailsContext } from '../../shared/context';
 import type { IdentityFields } from '../../shared/utils';
 import {
@@ -19,7 +19,6 @@ import {
 import { UserDetails } from './user_details';
 import { HostDetails } from './host_details';
 import { ENTITIES_DETAILS_TEST_ID } from './test_ids';
-import { useUiSetting } from '../../../../common/lib/kibana';
 import { useEntityFromStore } from '../../../entity_details/shared/hooks/use_entity_from_store';
 import type { GetFieldsData } from '../../shared/hooks/use_get_fields_data';
 
@@ -34,11 +33,10 @@ const resolveUserDisplayForEntities = (
 const resolveHostDisplayForEntities = (
   identityFields: IdentityFields | undefined,
   getFieldsData: GetFieldsData,
-  entityStoreV2Enabled: boolean,
   hostNameFromStore: string | undefined
 ): string | undefined => {
   const fromDocument = resolveHostNameForEntityInsightsWithFallback(identityFields, getFieldsData);
-  return entityStoreV2Enabled ? fromDocument ?? hostNameFromStore : fromDocument;
+  return fromDocument ?? hostNameFromStore;
 };
 
 /**
@@ -58,8 +56,6 @@ export const EntitiesDetails: React.FC = () => {
     dataAsNestedObject
   ) as IdentityFields;
 
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
-
   /**
    * User EUID extraction applies postAggFilter (e.g. non-IDP path needs host.id), so many ECS docs
    * with user.name + host.name still get no identifiers while host extraction succeeds. Resolve the
@@ -76,9 +72,7 @@ export const EntitiesDetails: React.FC = () => {
     entityId: userEntityId,
     identityFields: userEntityIdentifiers ?? legacyUserIdentityForStore,
     entityType: 'user',
-    skip:
-      !entityStoreV2Enabled ||
-      (userEntityIdentifiers == null && legacyUserIdentityForStore == null),
+    skip: userEntityIdentifiers == null && legacyUserIdentityForStore == null,
   });
 
   const hostEntityId = euidApi?.euid.getEuidFromObject('host', dataAsNestedObject);
@@ -86,7 +80,7 @@ export const EntitiesDetails: React.FC = () => {
     entityId: hostEntityId,
     identityFields: hostEntityIdentifiers ?? undefined,
     entityType: 'host',
-    skip: !hostEntityIdentifiers || !entityStoreV2Enabled,
+    skip: !hostEntityIdentifiers,
   });
 
   const hostRecord = hostEntityFromStore.entityRecord;
@@ -96,7 +90,6 @@ export const EntitiesDetails: React.FC = () => {
   const resolvedHostName = resolveHostDisplayForEntities(
     hostEntityIdentifiers,
     getFieldsData,
-    entityStoreV2Enabled,
     hostNameFromStore
   );
 
@@ -148,7 +141,7 @@ export const EntitiesDetails: React.FC = () => {
                 entityId={hostEntityFromStore?.entityRecord?.entity?.id}
                 timestamp={timestamp}
                 scopeId={scopeId}
-                hostEntityFromStoreResult={entityStoreV2Enabled ? hostEntityFromStore : undefined}
+                hostEntityFromStoreResult={hostEntityFromStore}
               />
             </EuiFlexItem>
           )}

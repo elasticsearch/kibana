@@ -85,6 +85,10 @@ jest.mock('../../../../helper_hooks', () => ({
   useHasSecurityCapability: () => mockUseHasSecurityCapability(),
 }));
 
+jest.mock('../../../../common/hooks/use_space_id', () => ({
+  useSpaceId: () => 'default',
+}));
+
 jest.mock('../../../../common/components/ml/anomaly/anomaly_table_provider', () => ({
   AnomalyTableProvider: ({
     children,
@@ -242,9 +246,10 @@ describe('<HostDetails />', () => {
     it('should render the related user table with correct dates and indices', () => {
       const { getByTestId } = renderHostDetails(mockContextValue);
       expect(mockUseHostsRelatedUsers).toBeCalledWith({
+        entityId: undefined,
         from: timestamp,
         hostName: defaultProps.hostName,
-        indexNames: ['index'],
+        indexNames: ['entities-latest-default'],
         skip: false,
       });
       expect(getByTestId(HOST_DETAILS_RELATED_USERS_TABLE_TEST_ID)).toBeInTheDocument();

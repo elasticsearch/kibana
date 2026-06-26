@@ -24,14 +24,13 @@ import {
   uiMetricService,
 } from '@kbn/cloud-security-posture-common/utils/ui_metrics';
 import { METRIC_TYPE } from '@kbn/analytics';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import {
   buildEuidCspPreviewOptions,
   inferEntityTypeFromIdentityFields,
 } from '../../../../cloud_security_posture/utils/build_euid_csp_preview_options';
 import { InsightDistributionBar } from './insight_distribution_bar';
 import { FormattedCount } from '../../../../common/components/formatted_number';
-import { useUiSetting } from '../../../../common/lib/kibana';
 
 interface VulnerabilitiesInsightProps {
   /**
@@ -70,15 +69,13 @@ export const VulnerabilitiesInsight: React.FC<VulnerabilitiesInsightProps> = ({
   const { euiTheme } = useEuiTheme();
   const { getSeverityStatusColor } = useGetSeverityStatusColor();
   const euidApi = useEntityStoreEuidApi();
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
   const entityType = inferEntityTypeFromIdentityFields(identityFields);
   const cspPreviewOptions = useMemo(
     () =>
       buildEuidCspPreviewOptions(entityType, identityFields, euidApi, {
-        entityStoreV2Enabled,
         legacyIdentityFields: identityFields,
       }),
-    [euidApi, entityStoreV2Enabled, entityType, identityFields]
+    [euidApi, entityType, identityFields]
   );
   const { data } = useVulnerabilitiesPreview(cspPreviewOptions);
 

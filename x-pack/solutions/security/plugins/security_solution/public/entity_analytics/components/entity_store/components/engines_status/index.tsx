@@ -96,7 +96,7 @@ export const EngineStatus = () => {
             <Fragment key={type}>
               <EngineStatusHeader
                 entityType={type}
-                actionButton={<EngineStatusHeaderAction engine={engine} type={type} />}
+                actionButton={<EngineStatusHeaderAction engine={engine} />}
               />
               <EntityStoreErrorCallout engine={engine} size="s" />
               <EuiSpacer size="s" />

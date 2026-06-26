@@ -8,10 +8,8 @@ export { dataViewRouteHelpersFactory } from './data_view';
 export { EsIndexDataProvider } from './es_index_data_provider';
 export { waitForPluginInitialized, result, loadAlertArchive } from './helpers';
 export {
-  cleanupEntityStore,
   waitForEntityDataIndexed,
   installCloudAssetInventoryPackage,
-  initEntityEnginesWithRetry,
   installEntityStoreV2,
   uninstallEntityStoreV2,
   waitForEntityStoreV2Running,

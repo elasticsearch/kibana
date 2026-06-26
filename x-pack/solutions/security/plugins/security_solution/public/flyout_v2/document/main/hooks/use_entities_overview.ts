@@ -8,8 +8,7 @@
 import { useMemo } from 'react';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import { getFieldValue } from '@kbn/discover-utils';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
-import { useUiSetting } from '@kbn/kibana-react-plugin/public';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import {
   useEntityFromStore,
   type EntityStoreRecord,
@@ -64,27 +63,22 @@ const getLegacyIdentityFields = (
 const getEntityOverviewData = ({
   documentName,
   entityRecord,
-  entityStoreV2Enabled,
   identityFields,
 }: {
   documentName: string | undefined;
   entityRecord: EntityStoreRecord | null;
-  entityStoreV2Enabled: boolean;
   identityFields: Record<string, string> | undefined;
 }): EntityOverviewData | undefined => {
   const resolvedName = documentName || entityRecord?.entity?.name || '';
-  const showOverview = entityStoreV2Enabled
-    ? hasEntityName(resolvedName)
-    : hasEntityName(documentName);
 
-  if (!showOverview) {
+  if (!hasEntityName(resolvedName)) {
     return undefined;
   }
 
   return {
     name: resolvedName,
     identityFields,
-    entityRecord: entityStoreV2Enabled ? entityRecord : undefined,
+    entityRecord,
   };
 };
 
@@ -99,7 +93,6 @@ export const useEntitiesOverview = ({
   const { flattened } = hit;
 
   const euidApi = useEntityStoreEuidApi();
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
 
   const hostEntityIdentifiers = useMemo(
     () => euidApi?.euid.getEntityIdentifiersFromDocument('host', flattened),
@@ -128,25 +121,23 @@ export const useEntitiesOverview = ({
     entityId: userEntityId,
     identityFields: userIdentityFields,
     entityType: 'user',
-    skip: !entityStoreV2Enabled || userIdentityFields == null,
+    skip: userIdentityFields == null,
   });
   const { entityRecord: hostEntityRecord } = useEntityFromStore({
     entityId: hostEntityId,
     identityFields: hostIdentityFields,
     entityType: 'host',
-    skip: !entityStoreV2Enabled || hostIdentityFields == null,
+    skip: hostIdentityFields == null,
   });
 
   const user = getEntityOverviewData({
     documentName: userName,
     entityRecord: userEntityRecord,
-    entityStoreV2Enabled,
     identityFields: userEntityIdentifiers,
   });
   const host = getEntityOverviewData({
     documentName: hostName,
     entityRecord: hostEntityRecord,
-    entityStoreV2Enabled,
     identityFields: hostEntityIdentifiers,
   });
 

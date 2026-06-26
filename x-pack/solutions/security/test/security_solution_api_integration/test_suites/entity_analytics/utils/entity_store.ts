@@ -5,12 +5,11 @@
  * 2.0.
  */
 
-import type { EntityType } from '@kbn/security-solution-plugin/common/api/entity_analytics/entity_store/common.gen';
+import type { EntityType } from '@kbn/entity-store/common';
 import type { Client } from '@elastic/elasticsearch';
 import type { ToolingLog } from '@kbn/tooling-log';
 import { waitFor } from '@kbn/detections-response-ftr-services';
 import expect from '@kbn/expect';
-import type { InitEntityStoreRequestBodyInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/entity_store/enable.gen';
 import { ENTITY_LATEST, ENTITY_STORE_ROUTES, getEntitiesAlias } from '@kbn/entity-store/common';
 import type { FtrProviderContext } from '../../../ftr_provider_context';
 import { elasticAssetCheckerFactory } from './elastic_asset_checker';
@@ -21,7 +20,6 @@ export const EntityStoreUtils = (
   getService: FtrProviderContext['getService'],
   namespace: string = 'default'
 ) => {
-  const entityAnalyticsApi = getService('entityAnalyticsApi');
   const es = getService('es');
   const log = getService('log');
   const retry = getService('retry');
@@ -76,25 +74,6 @@ export const EntityStoreUtils = (
       log.debug(`Entity store not installed, skipping uninstall during cleanup: ${e.message}`);
     }
 
-    const { body } = await entityAnalyticsApi.listEntityEngines(namespace).expect(200);
-
-    // @ts-expect-error body is any
-    const engineTypes = body.engines.map((engine) => engine.type);
-
-    log.info(`Cleaning engines: ${engineTypes.join(', ')}`);
-    try {
-      await Promise.all(
-        engineTypes.map((entityType: 'user' | 'host') =>
-          entityAnalyticsApi.deleteEntityEngine(
-            { params: { entityType }, query: { data: true } },
-            namespace
-          )
-        )
-      );
-    } catch (e) {
-      log.warning(`Error deleting engines: ${e.message}`);
-    }
-
     // Disable V2 to leave a clean slate for the next test.
     await supertest
       .post(settingsUrl)
@@ -108,13 +87,16 @@ export const EntityStoreUtils = (
     log.info(
       `Initializing engine for entity type ${entityType} in namespace ${namespace || 'default'}`
     );
-    const res = await entityAnalyticsApi.initEntityEngine(
-      {
-        params: { entityType },
-        body: {},
-      },
-      namespace
-    );
+    let installUrl = '/api/security/entity_store/install';
+    if (namespace !== 'default') {
+      installUrl = `/s/${namespace}${installUrl}`;
+    }
+    const res = await supertest
+      .post(installUrl)
+      .set('kbn-xsrf', 'true')
+      .set('x-elastic-internal-origin', 'Kibana')
+      .set('elastic-api-version', '2023-10-31')
+      .send({ entityTypes: [entityType] });
 
     if (res.status !== 200) {
       log.error(`Failed to initialize engine for entity type ${entityType}`);
@@ -131,7 +113,16 @@ export const EntityStoreUtils = (
       `Engines to start for entity types: ${entityTypes.join(', ')}`,
       60_000,
       async () => {
-        const { body } = await entityAnalyticsApi.listEntityEngines(namespace).expect(200);
+        let statusUrl = '/api/security/entity_store/status';
+        if (namespace !== 'default') {
+          statusUrl = `/s/${namespace}${statusUrl}`;
+        }
+        const { body } = await supertest
+          .get(statusUrl)
+          .set('kbn-xsrf', 'true')
+          .set('x-elastic-internal-origin', 'Kibana')
+          .set('elastic-api-version', '2023-10-31')
+          .expect(200);
         if (body.engines.every((engine: any) => engine.status === 'started')) {
           return true;
         }
@@ -148,9 +139,19 @@ export const EntityStoreUtils = (
       `Engine for entity type ${entityType} to be in status ${status}`,
       60_000,
       async () => {
-        const { body } = await entityAnalyticsApi
-          .getEntityEngine({ params: { entityType } }, namespace)
+        let statusUrl = '/api/security/entity_store/status';
+        if (namespace !== 'default') {
+          statusUrl = `/s/${namespace}${statusUrl}`;
+        }
+        const { body: statusBody } = await supertest
+          .get(statusUrl)
+          .set('kbn-xsrf', 'true')
+          .set('x-elastic-internal-origin', 'Kibana')
+          .set('elastic-api-version', '2023-10-31')
           .expect(200);
+        const body = statusBody.engines.find((e: { type: string }) => e.type === entityType) ?? {
+          status: 'not_found',
+        };
         log.debug(`Engine status for ${entityType}: ${body.status}`);
 
         if (status !== 'error' && body.status === 'error') {
@@ -163,8 +164,17 @@ export const EntityStoreUtils = (
     );
   };
 
-  const enableEntityStore = async (body: InitEntityStoreRequestBodyInput = {}) => {
-    const res = await entityAnalyticsApi.initEntityStore({ body }, namespace);
+  const enableEntityStore = async (body: Record<string, unknown> = {}) => {
+    let installUrl = '/api/security/entity_store/install';
+    if (namespace !== 'default') {
+      installUrl = `/s/${namespace}${installUrl}`;
+    }
+    const res = await supertest
+      .post(installUrl)
+      .set('kbn-xsrf', 'true')
+      .set('x-elastic-internal-origin', 'Kibana')
+      .set('elastic-api-version', '2023-10-31')
+      .send(body);
     if (res.status !== 200) {
       log.error(`Failed to enable entity store`);
       log.error(JSON.stringify(res.body));
@@ -334,8 +344,15 @@ export const EntityStoreUtils = (
       `Engines to start for entity types: ${entityTypes.join(', ')}`,
       60_000,
       async () => {
-        const { body: enginesBody } = await entityAnalyticsApi
-          .listEntityEngines(namespace)
+        let statusUrl = '/api/security/entity_store/status';
+        if (namespace !== 'default') {
+          statusUrl = `/s/${namespace}${statusUrl}`;
+        }
+        const { body: enginesBody } = await supertest
+          .get(statusUrl)
+          .set('kbn-xsrf', 'true')
+          .set('x-elastic-internal-origin', 'Kibana')
+          .set('elastic-api-version', '2023-10-31')
           .expect(200);
         if (enginesBody.engines.every((engine: any) => engine.status === 'started')) {
           return true;

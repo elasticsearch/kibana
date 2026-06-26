@@ -8,8 +8,7 @@ import type { FC } from 'react';
 import React, { useCallback, useMemo } from 'react';
 import { EuiLink } from '@elastic/eui';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
-import { useKibana, useUiSetting } from '../../../common/lib/kibana';
+import { useKibana } from '../../../common/lib/kibana';
 import { FLYOUT_LINK_TEST_ID } from './test_ids';
 import { DocumentEventTypes } from '../../../common/lib/telemetry';
 import { PreviewLink } from './preview_link';
@@ -80,8 +79,6 @@ export const FlyoutLink: FC<FlyoutLinkProps> = ({
   const { telemetry } = useKibana().services;
   const whichFlyout = useWhichFlyout();
   const renderPreview = isFlyoutOpen || whichFlyout !== null;
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
-
   const resolutionIdentifiers: IdentityFields = useMemo(
     () => identityFields ?? { [field]: value },
     [identityFields, field, value]
@@ -99,7 +96,7 @@ export const FlyoutLink: FC<FlyoutLinkProps> = ({
     entityId: docEntityId,
     identityFields: resolutionIdentifiers,
     entityType,
-    skip: !entityStoreV2Enabled || !isHostOrUser || Object.keys(resolutionIdentifiers).length === 0,
+    skip: !isHostOrUser || Object.keys(resolutionIdentifiers).length === 0,
   });
 
   const resolvedEntityId = entityRecord?.entity?.id;

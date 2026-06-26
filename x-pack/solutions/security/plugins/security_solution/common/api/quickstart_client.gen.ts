@@ -258,60 +258,6 @@ import type {
   EntityDetailsHighlightsRequestBodyInput,
   EntityDetailsHighlightsResponse,
 } from './entity_analytics/entity_details/highlights.gen';
-import type {
-  InitEntityStoreRequestBodyInput,
-  InitEntityStoreResponse,
-} from './entity_analytics/entity_store/enable.gen';
-import type { ApplyEntityEngineDataviewIndicesResponse } from './entity_analytics/entity_store/engine/apply_dataview_indices.gen';
-import type {
-  DeleteEntityEngineRequestQueryInput,
-  DeleteEntityEngineRequestParamsInput,
-  DeleteEntityEngineResponse,
-  DeleteEntityEnginesRequestQueryInput,
-  DeleteEntityEnginesResponse,
-} from './entity_analytics/entity_store/engine/delete.gen';
-import type { EntityStoreGetPrivilegesResponse } from './entity_analytics/entity_store/engine/get_privileges.gen';
-import type {
-  GetEntityEngineRequestParamsInput,
-  GetEntityEngineResponse,
-} from './entity_analytics/entity_store/engine/get.gen';
-import type {
-  InitEntityEngineRequestParamsInput,
-  InitEntityEngineRequestBodyInput,
-  InitEntityEngineResponse,
-} from './entity_analytics/entity_store/engine/init.gen';
-import type { ListEntityEnginesResponse } from './entity_analytics/entity_store/engine/list.gen';
-import type {
-  StartEntityEngineRequestParamsInput,
-  StartEntityEngineResponse,
-} from './entity_analytics/entity_store/engine/start.gen';
-import type {
-  StopEntityEngineRequestParamsInput,
-  StopEntityEngineResponse,
-} from './entity_analytics/entity_store/engine/stop.gen';
-import type {
-  DeleteSingleEntityRequestParamsInput,
-  DeleteSingleEntityRequestBodyInput,
-  DeleteSingleEntityResponse,
-} from './entity_analytics/entity_store/entities/delete_entity.gen';
-import type {
-  ListEntitiesRequestQueryInput,
-  ListEntitiesResponse,
-} from './entity_analytics/entity_store/entities/list_entities.gen';
-import type {
-  UpsertEntitiesBulkRequestQueryInput,
-  UpsertEntitiesBulkRequestBodyInput,
-} from './entity_analytics/entity_store/entities/upsert_entities_bulk.gen';
-import type {
-  UpsertEntityRequestQueryInput,
-  UpsertEntityRequestParamsInput,
-  UpsertEntityRequestBodyInput,
-  UpsertEntityResponse,
-} from './entity_analytics/entity_store/entities/upsert_entity.gen';
-import type {
-  GetEntityStoreStatusRequestQueryInput,
-  GetEntityStoreStatusResponse,
-} from './entity_analytics/entity_store/status.gen';
 import type { RunEntityAnalyticsMigrationsResponse } from './entity_analytics/migrations/run_migrations_route.gen';
 import type {
   CreatePrivilegesImportIndexRequestBodyInput,
@@ -634,21 +580,6 @@ to the relevant index, causing it to be deleted after 30 days, and removes other
         },
         method: 'DELETE',
         body: props.body,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * Synchronize data view index patterns to all running entity engines so that newly added indices are picked up by the transforms.
-   */
-  async applyEntityEngineDataviewIndices() {
-    this.log.info(`${new Date().toISOString()} Calling API ApplyEntityEngineDataviewIndices`);
-    return this.kbnClient
-      .request<ApplyEntityEngineDataviewIndicesResponse>({
-        path: '/api/entity_store/engines/apply_dataview_indices',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'POST',
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -1194,34 +1125,6 @@ Delete the asset criticality record for a specific entity.
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
-  async deleteEntityEngine(props: DeleteEntityEngineProps) {
-    this.log.info(`${new Date().toISOString()} Calling API DeleteEntityEngine`);
-    return this.kbnClient
-      .request<DeleteEntityEngineResponse>({
-        path: replaceParams('/api/entity_store/engines/{entityType}', props.params),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'DELETE',
-
-        query: props.query,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  async deleteEntityEngines(props: DeleteEntityEnginesProps) {
-    this.log.info(`${new Date().toISOString()} Calling API DeleteEntityEngines`);
-    return this.kbnClient
-      .request<DeleteEntityEnginesResponse>({
-        path: '/api/entity_store/engines',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'DELETE',
-
-        query: props.query,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
   async deleteEntitySource(props: DeleteEntitySourceProps) {
     this.log.info(`${new Date().toISOString()} Calling API DeleteEntitySource`);
     return this.kbnClient
@@ -1324,24 +1227,6 @@ The difference between the `id` and `rule_id` is that the `id` is a unique rule 
           [ELASTIC_HTTP_VERSION_HEADER]: '1',
         },
         method: 'DELETE',
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-    * Delete a single entity in Entity Store.
-The entity will be immediately deleted from the latest index.  It will remain available in historical snapshots if it has been snapshotted.  The delete operation does not prevent the entity from being recreated if it is observed again in the future. 
-
-    */
-  async deleteSingleEntity(props: DeleteSingleEntityProps) {
-    this.log.info(`${new Date().toISOString()} Calling API DeleteSingleEntity`);
-    return this.kbnClient
-      .request<DeleteSingleEntityResponse>({
-        path: replaceParams('/api/entity_store/entities/{entityType}', props.params),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'DELETE',
-        body: props.body,
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -1671,21 +1556,6 @@ The entity will be immediately deleted from the latest index.  It will remain av
         },
         method: 'POST',
         body: props.body,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * Check whether the current user has the required Elasticsearch and Kibana privileges to use the Entity Store.
-   */
-  async entityStoreGetPrivileges() {
-    this.log.info(`${new Date().toISOString()} Calling API EntityStoreGetPrivileges`);
-    return this.kbnClient
-      .request<EntityStoreGetPrivilegesResponse>({
-        path: '/internal/entity_store/privileges',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '1',
-        },
-        method: 'GET',
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -2061,21 +1931,6 @@ finishes and then call this operation once.
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
-  /**
-   * Get the engine descriptor for a specific entity type, including its configuration and current status.
-   */
-  async getEntityEngine(props: GetEntityEngineProps) {
-    this.log.info(`${new Date().toISOString()} Calling API GetEntityEngine`);
-    return this.kbnClient
-      .request<GetEntityEngineResponse>({
-        path: replaceParams('/api/entity_store/engines/{entityType}', props.params),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'GET',
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
   async getEntitySource(props: GetEntitySourceProps) {
     this.log.info(`${new Date().toISOString()} Calling API GetEntitySource`);
     return this.kbnClient
@@ -2085,23 +1940,6 @@ finishes and then call this operation once.
           [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
         },
         method: 'GET',
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * Get the overall Entity Store status and per-engine statuses, optionally including component-level health details.
-   */
-  async getEntityStoreStatus(props: GetEntityStoreStatusProps) {
-    this.log.info(`${new Date().toISOString()} Calling API GetEntityStoreStatus`);
-    return this.kbnClient
-      .request<GetEntityStoreStatusResponse>({
-        path: '/api/entity_store/status',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'GET',
-
-        query: props.query,
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -2496,38 +2334,6 @@ Requires the **Timeline and Notes** read privilege (`notes_read`).
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
-  /**
-   * Initialize a single entity engine for the specified entity type.
-   */
-  async initEntityEngine(props: InitEntityEngineProps) {
-    this.log.info(`${new Date().toISOString()} Calling API InitEntityEngine`);
-    return this.kbnClient
-      .request<InitEntityEngineResponse>({
-        path: replaceParams('/api/entity_store/engines/{entityType}/init', props.params),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'POST',
-        body: props.body,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * Initialize the entire Entity Store, creating engines for all or specified entity types.
-   */
-  async initEntityStore(props: InitEntityStoreProps) {
-    this.log.info(`${new Date().toISOString()} Calling API InitEntityStore`);
-    return this.kbnClient
-      .request<InitEntityStoreResponse>({
-        path: '/api/entity_store/enable',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'POST',
-        body: props.body,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
   async initializeSecuritySolution(props: InitializeSecuritySolutionProps) {
     this.log.info(`${new Date().toISOString()} Calling API InitializeSecuritySolution`);
     return this.kbnClient
@@ -2683,38 +2489,6 @@ Each row will match up to 10,000 entities.
         },
         method: 'POST',
         body: props.attachment,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * List entities records, paging, sorting and filtering as needed.
-   */
-  async listEntities(props: ListEntitiesProps) {
-    this.log.info(`${new Date().toISOString()} Calling API ListEntities`);
-    return this.kbnClient
-      .request<ListEntitiesResponse>({
-        path: '/api/entity_store/entities/list',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'GET',
-
-        query: props.query,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * Get a list of all installed entity engines and their current status.
-   */
-  async listEntityEngines() {
-    this.log.info(`${new Date().toISOString()} Calling API ListEntityEngines`);
-    return this.kbnClient
-      .request<ListEntityEnginesResponse>({
-        path: '/api/entity_store/engines',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'GET',
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -3510,21 +3284,6 @@ matching documents, and inspect execution logs. Pair `invocationCount` and `time
       .catch(catchAxiosErrorFormatAndThrow);
   }
   /**
-   * Start a previously stopped entity engine, resuming transform processing for the given entity type.
-   */
-  async startEntityEngine(props: StartEntityEngineProps) {
-    this.log.info(`${new Date().toISOString()} Calling API StartEntityEngine`);
-    return this.kbnClient
-      .request<StartEntityEngineResponse>({
-        path: replaceParams('/api/entity_store/engines/{entityType}/start', props.params),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'POST',
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
    * Starts a SIEM rules migration using the migration id provided
    */
   async startRuleMigration(props: StartRuleMigrationProps) {
@@ -3553,21 +3312,6 @@ matching documents, and inspect execution logs. Pair `invocationCount` and `time
         ),
         headers: {
           [ELASTIC_HTTP_VERSION_HEADER]: '1',
-        },
-        method: 'POST',
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * Stop a running entity engine, pausing transform processing for the given entity type.
-   */
-  async stopEntityEngine(props: StopEntityEngineProps) {
-    this.log.info(`${new Date().toISOString()} Calling API StopEntityEngine`);
-    return this.kbnClient
-      .request<StopEntityEngineResponse>({
-        path: replaceParams('/api/entity_store/engines/{entityType}/stop', props.params),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
         },
         method: 'POST',
       })
@@ -3871,47 +3615,6 @@ Each row will match up to 10,000 entities.
       .catch(catchAxiosErrorFormatAndThrow);
   }
   /**
-    * Update or create many entities in Entity Store.
-If the specified entity already exists, it is updated with the provided values.  If the entity does not exist, a new one is created.
-The creation is asynchronous. The time for a document to be present in the  final index depends on the entity store transform and usually takes more than 1 minute.
-
-    */
-  async upsertEntitiesBulk(props: UpsertEntitiesBulkProps) {
-    this.log.info(`${new Date().toISOString()} Calling API UpsertEntitiesBulk`);
-    return this.kbnClient
-      .request({
-        path: '/api/entity_store/entities/bulk',
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'PUT',
-        body: props.body,
-        query: props.query,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-    * Update or create an entity in Entity Store.
-If the specified entity already exists, it is updated with the provided values.  If the entity does not exist, a new one is created. By default, only the following fields can be updated: * `entity.attributes.*` * `entity.lifecycle.*` * `entity.behavior.*` To update other fields, set the `force` query parameter to `true`. > info > Some fields always retain the first observed value. Updates to these fields will not appear in the final index.
-> Due to technical limitations, not all updates are guaranteed to appear in the final list of observed values.
-> Due to technical limitations, create is an async operation. The time for a document to be present in the  > final index depends on the entity store transform and usually takes more than 1 minute.
-
-    */
-  async upsertEntity(props: UpsertEntityProps) {
-    this.log.info(`${new Date().toISOString()} Calling API UpsertEntity`);
-    return this.kbnClient
-      .request<UpsertEntityResponse>({
-        path: replaceParams('/api/entity_store/entities/{entityType}', props.params),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'PUT',
-        body: props.body,
-        query: props.query,
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
    * Creates or updates resources for an existing SIEM rules migration
    */
   async upsertRuleMigrationResources(props: UpsertRuleMigrationResourcesProps) {
@@ -4014,13 +3717,6 @@ export interface DeleteAssetCriticalityRecordProps {
 export interface DeleteDashboardMigrationProps {
   params: DeleteDashboardMigrationRequestParamsInput;
 }
-export interface DeleteEntityEngineProps {
-  query: DeleteEntityEngineRequestQueryInput;
-  params: DeleteEntityEngineRequestParamsInput;
-}
-export interface DeleteEntityEnginesProps {
-  query: DeleteEntityEnginesRequestQueryInput;
-}
 export interface DeleteEntitySourceProps {
   params: DeleteEntitySourceRequestParamsInput;
 }
@@ -4038,10 +3734,6 @@ export interface DeleteRuleProps {
 }
 export interface DeleteRuleMigrationProps {
   params: DeleteRuleMigrationRequestParamsInput;
-}
-export interface DeleteSingleEntityProps {
-  params: DeleteSingleEntityRequestParamsInput;
-  body: DeleteSingleEntityRequestBodyInput;
 }
 export interface DeleteTimelinesProps {
   body: DeleteTimelinesRequestBodyInput;
@@ -4152,14 +3844,8 @@ export interface GetEndpointSuggestionsProps {
   params: GetEndpointSuggestionsRequestParamsInput;
   body: GetEndpointSuggestionsRequestBodyInput;
 }
-export interface GetEntityEngineProps {
-  params: GetEntityEngineRequestParamsInput;
-}
 export interface GetEntitySourceProps {
   params: GetEntitySourceRequestParamsInput;
-}
-export interface GetEntityStoreStatusProps {
-  query: GetEntityStoreStatusRequestQueryInput;
 }
 export interface GetNotesProps {
   query: GetNotesRequestQueryInput;
@@ -4215,13 +3901,6 @@ export interface ImportRulesProps {
 export interface ImportTimelinesProps {
   body: ImportTimelinesRequestBodyInput;
 }
-export interface InitEntityEngineProps {
-  params: InitEntityEngineRequestParamsInput;
-  body: InitEntityEngineRequestBodyInput;
-}
-export interface InitEntityStoreProps {
-  body: InitEntityStoreRequestBodyInput;
-}
 export interface InitializeSecuritySolutionProps {
   body: InitializeSecuritySolutionRequestBodyInput;
 }
@@ -4238,9 +3917,6 @@ export interface InstallPrepackedTimelinesProps {
 }
 export interface InternalUploadAssetCriticalityV2CsvProps {
   attachment: FormData;
-}
-export interface ListEntitiesProps {
-  query: ListEntitiesRequestQueryInput;
 }
 export interface ListEntitySourcesProps {
   query: ListEntitySourcesRequestQueryInput;
@@ -4351,18 +4027,12 @@ export interface StartDashboardsMigrationProps {
   params: StartDashboardsMigrationRequestParamsInput;
   body: StartDashboardsMigrationRequestBodyInput;
 }
-export interface StartEntityEngineProps {
-  params: StartEntityEngineRequestParamsInput;
-}
 export interface StartRuleMigrationProps {
   params: StartRuleMigrationRequestParamsInput;
   body: StartRuleMigrationRequestBodyInput;
 }
 export interface StopDashboardsMigrationProps {
   params: StopDashboardsMigrationRequestParamsInput;
-}
-export interface StopEntityEngineProps {
-  params: StopEntityEngineRequestParamsInput;
 }
 export interface StopRuleMigrationProps {
   params: StopRuleMigrationRequestParamsInput;
@@ -4425,15 +4095,6 @@ export interface UploadWatchlistCsvProps {
 export interface UpsertDashboardMigrationResourcesProps {
   params: UpsertDashboardMigrationResourcesRequestParamsInput;
   body: UpsertDashboardMigrationResourcesRequestBodyInput;
-}
-export interface UpsertEntitiesBulkProps {
-  query: UpsertEntitiesBulkRequestQueryInput;
-  body: UpsertEntitiesBulkRequestBodyInput;
-}
-export interface UpsertEntityProps {
-  query: UpsertEntityRequestQueryInput;
-  params: UpsertEntityRequestParamsInput;
-  body: UpsertEntityRequestBodyInput;
 }
 export interface UpsertRuleMigrationResourcesProps {
   params: UpsertRuleMigrationResourcesRequestParamsInput;

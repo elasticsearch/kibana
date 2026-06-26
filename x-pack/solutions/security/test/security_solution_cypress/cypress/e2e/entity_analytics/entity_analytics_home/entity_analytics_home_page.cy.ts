@@ -14,7 +14,6 @@ import {
   ANOMALIES_PLACEHOLDER_PANEL,
   ENTITIES_TABLE_GRID,
   TIMELINE_ACTION,
-  ENTITY_STORE_DISABLED_EMPTY_PROMPT,
 } from '../../../screens/entity_analytics/entity_analytics_home';
 import { interceptEntityStoreStatus } from '../../../tasks/entity_analytics/entity_analytics_home';
 
@@ -97,36 +96,6 @@ describe(
 
       cy.get(TIMELINE_ACTION).first().should('be.visible');
       cy.get(TIMELINE_ACTION).first().click();
-    });
-  }
-);
-
-describe(
-  'Entity Analytics page - Disabled state',
-  {
-    tags: ['@ess'],
-    env: {
-      ftrConfig: {
-        kbnServerArgs: [
-          `--xpack.securitySolution.enableExperimental=${JSON.stringify([
-            'entityAnalyticsNewHomePageEnabled',
-          ])}`,
-          '--uiSettings.overrides.securitySolution:entityStoreEnableV2=true',
-        ],
-      },
-    },
-  },
-  () => {
-    beforeEach(() => {
-      interceptEntityStoreStatus('not_installed');
-      login();
-      visit(ENTITY_ANALYTICS_HOME_PAGE_URL);
-      cy.wait('@entityStoreStatus', { timeout: 20000 });
-      cy.contains('h1', 'Entity analytics').should('exist');
-    });
-
-    it('displays the entity store disabled prompt', () => {
-      cy.get(ENTITY_STORE_DISABLED_EMPTY_PROMPT).should('exist');
     });
   }
 );

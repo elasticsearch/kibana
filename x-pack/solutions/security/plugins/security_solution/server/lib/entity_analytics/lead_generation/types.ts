@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Entity } from '../../../../common/api/entity_analytics/entity_store/entities/common.gen';
+import type { Entity } from '@kbn/entity-store/common';
 
 /**
  * Entity representation flowing through the lead generation pipeline.

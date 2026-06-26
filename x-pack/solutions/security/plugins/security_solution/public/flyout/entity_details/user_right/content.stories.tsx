@@ -81,7 +81,7 @@ export const WithGraphVisualization = {
       recalculatingScore={false}
       isPreviewMode={false}
       entityRecord={mockEntityRecord}
-      entityStoreEntityId={mockEntityRecord.entity.id}
+      entityStoreEntityId={mockEntityRecord.entity?.id}
     />
   ),
 

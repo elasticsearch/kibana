@@ -35,7 +35,6 @@ export const ASSET_CRITICALITY_TAB_TEST_ID = 'assetCriticalityTab';
 export const ENGINE_STATUS_TAB_TEST_ID = 'engineStatusTab';
 export const WATCHLISTS_TAB_TEST_ID = 'watchlistsTab';
 export const ENGINE_STATUS_PANEL_TEST_ID = 'engine-status-panel';
-export const ENTITY_STORE_FEATURE_FLAG_CALLOUT_TEST_ID = 'entity-store-feature-flag-callout';
 
 // RiskScoreTab - Form inputs
 export const RISK_SCORE_RETAIN_CHECKBOX_TEST_ID = 'riskScoreRetainCheckbox';

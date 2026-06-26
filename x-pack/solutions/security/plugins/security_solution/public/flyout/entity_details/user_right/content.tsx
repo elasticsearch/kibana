@@ -74,7 +74,7 @@ export const UserPanelContent = ({
     <>
       {!skipRiskAndCriticality && (
         <EntityHighlightsAccordion
-          entityIdentifier={entityRecord ? entityRecord.entity.id : userName}
+          entityIdentifier={entityRecord?.entity?.id ?? userName}
           entityType={EntityType.user}
         />
       )}
@@ -89,7 +89,7 @@ export const UserPanelContent = ({
               openDetailsPanel={openDetailsPanel}
               isPreviewMode={isPreviewMode}
               entityType={EntityType.user}
-              entityId={entityRecord?.entity.id}
+              entityId={entityRecord?.entity?.id}
               prefetchedResolutionRisk={prefetchedResolutionRisk}
             />
             <EuiHorizontalRule />

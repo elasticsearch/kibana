@@ -7,7 +7,7 @@
 
 import type { Logger } from '@kbn/core/server';
 import type { EntityStoreCRUDClient } from '@kbn/entity-store/server';
-import type { Entity } from '../../../../common/api/entity_analytics/entity_store/entities/common.gen';
+import type { Entity } from '@kbn/entity-store/common';
 import type { LeadEntity } from './types';
 
 const MAX_CANDIDATE_ENTITIES = 500;

@@ -5,56 +5,18 @@
  * 2.0.
  */
 
-import {
-  FILE_PICKER,
-  INVALID_LINES_MESSAGE,
-  PAGE_TITLE,
-  RESULT_STEP,
-  VALID_LINES_MESSAGE,
-} from '../../screens/asset_criticality';
-import { clickAssignButton, uploadAssetCriticalityFile } from '../../tasks/asset_criticality';
+import { PAGE_TITLE } from '../../screens/asset_criticality';
 import { login } from '../../tasks/login';
 import { visit } from '../../tasks/navigation';
 import { ENTITY_ANALYTICS_ASSET_CRITICALITY_URL } from '../../urls/navigation';
 
-describe(
-  'Asset Criticality Upload page',
-  {
-    tags: ['@ess'],
-    env: {
-      ftrConfig: {
-        kbnServerArgs: [
-          `--xpack.securitySolution.enableExperimental=${JSON.stringify([
-            'disable:entityAnalyticsEntityStoreV2',
-          ])}`,
-          '--uiSettings.overrides.securitySolution:entityStoreEnableV2=false',
-        ],
-      },
-    },
-  },
-  () => {
-    beforeEach(() => {
-      login();
-      visit(ENTITY_ANALYTICS_ASSET_CRITICALITY_URL);
-    });
+describe('Asset Criticality Upload page', { tags: ['@ess'] }, () => {
+  beforeEach(() => {
+    login();
+    visit(ENTITY_ANALYTICS_ASSET_CRITICALITY_URL);
+  });
 
-    it('renders page as expected', () => {
-      cy.get(PAGE_TITLE).should('include.text', 'Entity analytics');
-    });
-
-    it('uploads a file', () => {
-      uploadAssetCriticalityFile();
-
-      cy.get(FILE_PICKER).should('not.visible');
-      cy.get(VALID_LINES_MESSAGE).should(
-        'have.text',
-        '4 asset criticality levels will be assigned'
-      );
-      cy.get(INVALID_LINES_MESSAGE).should('have.text', "1 line is invalid and won't be assigned");
-
-      clickAssignButton();
-
-      cy.get(RESULT_STEP).should('be.visible');
-    });
-  }
-);
+  it('renders page as expected', () => {
+    cy.get(PAGE_TITLE).should('include.text', 'Entity analytics');
+  });
+});

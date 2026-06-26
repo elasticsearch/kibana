@@ -7,7 +7,7 @@
 import React from 'react';
 import { EuiCallOut } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { EngineDescriptor } from '../../../../../common/api/entity_analytics/entity_store';
+import type { EngineDescriptor } from '@kbn/entity-store/common';
 
 export const EntityStoreErrorCallout: React.FC<{ engine?: EngineDescriptor; size?: 's' | 'm' }> = ({
   engine,

@@ -91,7 +91,6 @@ const legacyFieldAndValue = (
 };
 
 export interface BuildEuidCspPreviewOptionsContext {
-  entityStoreV2Enabled: boolean;
   /**
    * ECS-style identity used when the primary document is missing or insufficient
    * (e.g. `host.name` / `user.name` from the panel when the entity store record is absent).
@@ -100,19 +99,19 @@ export interface BuildEuidCspPreviewOptionsContext {
 }
 
 /**
- * Builds {@link UseCspOptions} for CSP preview hooks from entity-store EUID filters when
- * Entity Store v2 is enabled and the document yields an EUID filter; otherwise falls back to
- * term filters on `user.name` / `host.name` (and `service.name` for service entities).
+ * Builds {@link UseCspOptions} for CSP preview hooks from entity-store EUID filters when the
+ * document yields an EUID filter; otherwise falls back to term filters on `user.name` /
+ * `host.name` (and `service.name` for service entities).
  */
 export const buildEuidCspPreviewOptions = (
   entityType: EntityType,
   identityDocument: unknown,
   euidApi: EntityStoreEuidApi | null,
-  context: BuildEuidCspPreviewOptionsContext
+  context: BuildEuidCspPreviewOptionsContext = {}
 ): UseCspOptions => {
-  const { entityStoreV2Enabled, legacyIdentityFields } = context;
+  const { legacyIdentityFields } = context;
 
-  if (entityStoreV2Enabled && euidApi?.euid) {
+  if (euidApi?.euid) {
     const euidEntityFilter = euidApi.euid.dsl.getEuidFilterBasedOnDocument(
       entityType,
       identityDocument

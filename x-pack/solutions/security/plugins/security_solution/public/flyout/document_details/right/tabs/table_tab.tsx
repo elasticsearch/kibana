@@ -17,7 +17,7 @@ import type { FieldSpec } from '@kbn/data-plugin/common';
 import { getCategory } from '@kbn/response-ops-alerts-fields-browser/helpers';
 import type { DataTableRecord, EsHitRecord } from '@kbn/discover-utils';
 import { buildDataTableRecord } from '@kbn/discover-utils';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { TABLE_TAB_CONTENT_TEST_ID, TABLE_TAB_SEARCH_INPUT_TEST_ID } from './test_ids';
 import { getAllFieldsByName } from '../../../../common/containers/source';
 import { useDeepEqualSelector } from '../../../../common/hooks/use_selector';
@@ -29,7 +29,7 @@ import { useBasicDataFromDetailsData } from '../../shared/hooks/use_basic_data_f
 import { getTableItems } from '../utils/table_tab_utils';
 import { TableTabSettingButton } from '../components/table_tab_setting_button';
 import { useEntityFromStore } from '../../../entity_details/shared/hooks/use_entity_from_store';
-import { useKibana, useUiSetting } from '../../../../common/lib/kibana';
+import { useKibana } from '../../../../common/lib/kibana';
 import { FLYOUT_STORAGE_KEYS } from '../../shared/constants/local_storage';
 import { getTableTabColumns } from '../utils/table_tab_columns';
 import { useHighlightedFields } from '../../../../flyout_v2/document/main/hooks/use_highlighted_fields';
@@ -132,7 +132,6 @@ export const TableTab = memo(() => {
     [searchHit]
   );
 
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
   const euidApi = useEntityStoreEuidApi();
   const hostDocumentIdentityFields = useMemo(
     () => euidApi?.euid.getEntityIdentifiersFromDocument('host', hit.flattened) ?? null,
@@ -155,31 +154,24 @@ export const TableTab = memo(() => {
     entityId: hostEuidFromDocument,
     identityFields: hostDocumentIdentityFields ?? undefined,
     entityType: 'host',
-    skip: !entityStoreV2Enabled || !isHostEntity,
+    skip: !isHostEntity,
   });
   const userEntityFromStore = useEntityFromStore({
     entityId: userEuidFromDocument,
     identityFields: userDocumentIdentityFields ?? undefined,
     entityType: 'user',
-    skip: !entityStoreV2Enabled || isHostEntity,
+    skip: isHostEntity,
   });
   const entityId = useMemo(() => {
-    if (entityStoreV2Enabled) {
-      if (isHostEntity) {
-        return (
-          hostEntityFromStore.entityRecord?.entity?.id ?? hostDocumentIdentityFields?.['entity.id']
-        );
-      }
+    if (isHostEntity) {
       return (
-        userEntityFromStore.entityRecord?.entity?.id ?? userDocumentIdentityFields?.['entity.id']
+        hostEntityFromStore.entityRecord?.entity?.id ?? hostDocumentIdentityFields?.['entity.id']
       );
     }
-    if (isHostEntity) {
-      return hostDocumentIdentityFields?.['entity.id'];
-    }
-    return userDocumentIdentityFields?.['entity.id'];
+    return (
+      userEntityFromStore.entityRecord?.entity?.id ?? userDocumentIdentityFields?.['entity.id']
+    );
   }, [
-    entityStoreV2Enabled,
     isHostEntity,
     hostDocumentIdentityFields,
     userDocumentIdentityFields,

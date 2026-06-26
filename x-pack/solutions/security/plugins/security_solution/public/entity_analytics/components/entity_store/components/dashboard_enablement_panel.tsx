@@ -92,7 +92,7 @@ export const EnablementPanel: React.FC<EnableEntityStorePanelProps> = ({
   );
 
   const enableUninstalledEntityStore = () => {
-    storeEnablement.mutate({ entityTypes: uninstalledTypes });
+    storeEnablement.mutate();
   };
 
   const hasToggleErrors = toggleErrors.riskEngine.length > 0 || toggleErrors.entityStore.length > 0;

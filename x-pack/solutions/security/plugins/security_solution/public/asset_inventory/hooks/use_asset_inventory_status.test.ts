@@ -55,18 +55,10 @@ jest.mock('./use_asset_inventory_routes', () => ({
 }));
 
 const SECURITY_SOLUTION_ENABLE_ASSET_INVENTORY_SETTING = 'securitySolution:enableAssetInventory';
-const FF_ENABLE_ENTITY_STORE_V2 = 'securitySolution:entityStoreEnableV2';
 
-const setUiSettings = ({
-  assetInventory,
-  entityStoreV2,
-}: {
-  assetInventory: boolean;
-  entityStoreV2: boolean;
-}) => {
+const setUiSettings = ({ assetInventory }: { assetInventory: boolean }) => {
   mockUseUiSetting.mockImplementation((key: string) => {
     if (key === SECURITY_SOLUTION_ENABLE_ASSET_INVENTORY_SETTING) return assetInventory;
-    if (key === FF_ENABLE_ENTITY_STORE_V2) return entityStoreV2;
     return false;
   });
 };
@@ -102,7 +94,7 @@ const renderStatusHook = () =>
 describe('useAssetInventoryStatus', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setUiSettings({ assetInventory: true, entityStoreV2: true });
+    setUiSettings({ assetInventory: true });
     mockIsExperimentalFeatureEnabled.mockReturnValue(true);
     setHasDocs(false);
     setPrivileges({ has_all_required: true });
@@ -111,22 +103,12 @@ describe('useAssetInventoryStatus', () => {
   });
 
   it('returns inactive_feature when the asset-inventory ui setting is disabled', async () => {
-    setUiSettings({ assetInventory: false, entityStoreV2: true });
+    setUiSettings({ assetInventory: false });
 
     const { result } = renderStatusHook();
 
     await waitFor(() => {
       expect(result.current.data).toEqual({ status: 'inactive_feature' });
-    });
-  });
-
-  it('returns entity_store_v2_disabled when the entity-store v2 UI setting is disabled', async () => {
-    setUiSettings({ assetInventory: true, entityStoreV2: false });
-
-    const { result } = renderStatusHook();
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual({ status: 'entity_store_v2_disabled' });
     });
   });
 

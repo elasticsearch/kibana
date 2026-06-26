@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
-
 import type { EntityRiskScore } from '../../../../common/search_strategy';
 import { EntityType } from '../../../../common/entity_analytics/types';
 import type { ESQuery } from '../../../../common/typed_json';
-import { useUiSetting } from '../../../common/lib/kibana';
 import { useEntityStoreRiskScoreKpi } from '../../api/hooks/use_entity_store_risk_score_kpi';
 import { useEntityStoreRiskScore } from '../../api/hooks/use_entity_store_risk_score';
 import { useRiskScoreKpi } from '../../api/hooks/use_risk_score_kpi';
@@ -27,28 +24,29 @@ export const useEntityAnalyticsRiskScorePanelData = <T extends EntityType>({
   filterQuery?: ESQuery | string;
   timerange: { from: string; to: string };
 }) => {
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
+  // Entity store v2 only carries risk for host/user; service/generic risk
+  // continues to flow through the legacy risk-score search strategy.
   const isHostOrUserRiskEntity = riskEntity === EntityType.host || riskEntity === EntityType.user;
 
   const legacyKpi = useRiskScoreKpi({
     filterQuery,
-    skip: !toggleStatus || (entityStoreV2Enabled && isHostOrUserRiskEntity),
+    skip: !toggleStatus || isHostOrUserRiskEntity,
     timerange,
     riskEntity,
   });
 
   const entityStoreKpi = useEntityStoreRiskScoreKpi({
     filterQuery,
-    skip: !toggleStatus || !entityStoreV2Enabled || !isHostOrUserRiskEntity,
+    skip: !toggleStatus || !isHostOrUserRiskEntity,
     timerange,
     riskEntity,
   });
 
-  const kpi = entityStoreV2Enabled && isHostOrUserRiskEntity ? entityStoreKpi : legacyKpi;
+  const kpi = isHostOrUserRiskEntity ? entityStoreKpi : legacyKpi;
 
   const legacyRiskScore = useRiskScore({
     filterQuery,
-    skip: !toggleStatus || (entityStoreV2Enabled && isHostOrUserRiskEntity),
+    skip: !toggleStatus || isHostOrUserRiskEntity,
     pagination: {
       cursorStart: 0,
       querySize: 5,
@@ -60,7 +58,7 @@ export const useEntityAnalyticsRiskScorePanelData = <T extends EntityType>({
 
   const entityStoreRiskScore = useEntityStoreRiskScore({
     filterQuery,
-    skip: !toggleStatus || !entityStoreV2Enabled || !isHostOrUserRiskEntity,
+    skip: !toggleStatus || !isHostOrUserRiskEntity,
     pagination: {
       cursorStart: 0,
       querySize: 5,
@@ -69,8 +67,7 @@ export const useEntityAnalyticsRiskScorePanelData = <T extends EntityType>({
     riskEntity: riskEntity as EntityType.host,
   });
 
-  const riskScore =
-    entityStoreV2Enabled && isHostOrUserRiskEntity ? entityStoreRiskScore : legacyRiskScore;
+  const riskScore = isHostOrUserRiskEntity ? entityStoreRiskScore : legacyRiskScore;
 
   return {
     severityCount: kpi.severityCount,

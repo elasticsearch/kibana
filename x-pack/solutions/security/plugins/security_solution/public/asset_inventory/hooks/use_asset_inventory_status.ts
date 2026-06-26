@@ -9,11 +9,10 @@ import { useMemo } from 'react';
 import { useQuery } from '@kbn/react-query';
 import { lastValueFrom } from 'rxjs';
 import { SECURITY_SOLUTION_ENABLE_ASSET_INVENTORY_SETTING } from '@kbn/management-settings-ids';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/common';
 import type { IKibanaSearchRequest, IKibanaSearchResponse } from '@kbn/search-types';
 import type { estypes } from '@elastic/elasticsearch';
+import type { GetEntityStoreStatusResponse } from '@kbn/entity-store/common';
 import type { EntityAnalyticsPrivileges } from '../../../common/api/entity_analytics';
-import type { GetEntityStoreStatusResponse } from '../../../common/api/entity_analytics/entity_store/status.gen';
 import { useKibana, useUiSetting } from '../../common/lib/kibana';
 import { useIsExperimentalFeatureEnabled } from '../../common/hooks/use_experimental_features';
 import { useEntityStoreStatus } from '../../entity_analytics/components/entity_store/hooks/use_entity_store';
@@ -84,11 +83,10 @@ export const useAssetInventoryStatus = () => {
   const isAssetInventoryEnabled = useUiSetting<boolean>(
     SECURITY_SOLUTION_ENABLE_ASSET_INVENTORY_SETTING
   );
-  const isEntityStoreV2UiSettingEnabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
   const isEntityStoreV2ExperimentalEnabled = useIsExperimentalFeatureEnabled(
     'entityAnalyticsEntityStoreV2'
   );
-  const v2FlagsEnabled = isEntityStoreV2UiSettingEnabled && isEntityStoreV2ExperimentalEnabled;
+  const v2FlagsEnabled = isEntityStoreV2ExperimentalEnabled;
   const featureGatesPassed = isAssetInventoryEnabled && v2FlagsEnabled;
 
   const hasDocsQuery = useQuery<boolean>({

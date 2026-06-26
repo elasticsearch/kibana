@@ -20,7 +20,9 @@ paths:
               type: object
               properties:
                 entityType:
-                  $ref: '../entity_store/common.schema.yaml#/components/schemas/EntityType'
+                  type: string
+                  enum: [user, host, service, generic]
+                  description: The type of entity.
                 entityIdentifier:
                   type: string
                   description: The identifier of the entity.

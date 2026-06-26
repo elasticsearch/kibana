@@ -8,7 +8,6 @@
 import type { UseMutationResult, UseQueryResult } from '@kbn/react-query';
 import { useMutation, useQuery, useQueryClient } from '@kbn/react-query';
 import type { SecurityAppError } from '@kbn/securitysolution-t-grid';
-import { useUiSetting$ } from '@kbn/kibana-react-plugin/public';
 import type { EntityType } from '../../../../common/entity_analytics/types';
 import { EntityTypeToIdentifierField } from '../../../../common/entity_analytics/types';
 import type {
@@ -37,17 +36,13 @@ const nonAuthorizedResponse: Promise<EntityAnalyticsPrivileges> = Promise.resolv
 export const useAssetCriticalityPrivileges = (
   queryKey: string
 ): UseQueryResult<EntityAnalyticsPrivileges, SecurityAppError> => {
-  const [entityStoreV2Enabled] = useUiSetting$<boolean>('securitySolution:entityStoreEnableV2');
-  const { fetchEntityStoreV2Privileges, fetchAssetCriticalityPrivileges } =
-    useEntityAnalyticsRoutes();
+  const { fetchEntityStoreV2Privileges } = useEntityAnalyticsRoutes();
   const hasEntityAnalyticsCapability = useHasSecurityCapability('entity-analytics');
 
   return useQuery({
     queryKey: [ASSET_CRITICALITY_KEY, PRIVILEGES_KEY, queryKey, hasEntityAnalyticsCapability],
     queryFn: hasEntityAnalyticsCapability
-      ? entityStoreV2Enabled
-        ? fetchEntityStoreV2Privileges
-        : fetchAssetCriticalityPrivileges
+      ? fetchEntityStoreV2Privileges
       : () => nonAuthorizedResponse,
   });
 };

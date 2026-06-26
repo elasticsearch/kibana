@@ -32,7 +32,7 @@ describe('helpers', () => {
         entity: {
           id: 'test_user',
           name: 'test_user',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'AWS IAM User',
           EngineMetadata: {
             Type: 'user',
@@ -52,7 +52,7 @@ describe('helpers', () => {
         entity: {
           id: 'test_user',
           name: 'test_user',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'user',
         },
       };
@@ -69,7 +69,7 @@ describe('helpers', () => {
         entity: {
           id: 'test_host',
           name: 'test_host',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'EC2 Instance',
           EngineMetadata: {
             Type: 'host',
@@ -89,7 +89,7 @@ describe('helpers', () => {
         entity: {
           id: 'test_host',
           name: 'test_host',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'host',
         },
       };
@@ -106,7 +106,7 @@ describe('helpers', () => {
         entity: {
           id: 'test_service',
           name: 'test_service',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'SaaS',
           EngineMetadata: {
             Type: 'service',
@@ -126,7 +126,7 @@ describe('helpers', () => {
         entity: {
           id: 'test_service',
           name: 'test_service',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'service',
         },
       };
@@ -140,7 +140,7 @@ describe('helpers', () => {
         entity: {
           id: 'arn',
           name: 'test_generic',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'PostgreSQL Database',
           EngineMetadata: {
             Type: 'generic',
@@ -157,7 +157,7 @@ describe('helpers', () => {
         entity: {
           id: 'arn',
           name: 'test_generic',
-          source: 'logs-test',
+          source: ['logs-test'],
           type: 'generic',
         },
       };
@@ -185,12 +185,12 @@ describe('helpers', () => {
         '@timestamp': '2021-08-02T14:00:00.000Z',
         entity: {
           name: 'unknown_entity',
-          source: 'logs-test',
+          source: ['logs-test'],
         },
       } as unknown as Entity;
 
       expect(() => getEntityType(unknownEntity)).toThrow(
-        'Unexpected entity: {"@timestamp":"2021-08-02T14:00:00.000Z","entity":{"name":"unknown_entity","source":"logs-test"}}'
+        'Unexpected entity: {"@timestamp":"2021-08-02T14:00:00.000Z","entity":{"name":"unknown_entity","source":["logs-test"]}}'
       );
     });
   });
@@ -230,7 +230,7 @@ describe('helpers', () => {
 
       const out = sanitizeEntityRecordForUpsert(recordWithUntypedId);
 
-      expect(out.entity.EngineMetadata).toBeUndefined();
+      expect(out.entity!.EngineMetadata).toBeUndefined();
     });
 
     it('strips ECS event fields; keeps only event.ingested for user upsert', () => {

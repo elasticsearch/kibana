@@ -189,7 +189,7 @@ const ObservedDataSectionContent = memo(
     const observedHostWithAnomalies = useMemo(
       (): ObservedEntityData<HostItem> => ({
         ...observedHost,
-        entityId: observedHost.entityRecord?.entity.id,
+        entityId: observedHost.entityRecord?.entity?.id,
         anomalies: {
           isLoading: isLoadingAnomaliesData,
           anomalies: anomaliesData,

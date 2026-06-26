@@ -9,8 +9,7 @@ import React, { useCallback, useMemo } from 'react';
 import { EuiLink } from '@elastic/eui';
 import { ALERT_RULE_NAME } from '@kbn/rule-data-utils';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
-import { useKibana, useUiSetting } from '../../../common/lib/kibana';
+import { useKibana } from '../../../common/lib/kibana';
 import { FLYOUT_PREVIEW_LINK_TEST_ID } from './test_ids';
 import { DocumentEventTypes } from '../../../common/lib/telemetry';
 import { getPreviewPanelParams } from '../utils/link_utils';
@@ -81,8 +80,6 @@ export const PreviewLink: FC<PreviewLinkProps> = ({
   const { telemetry } = useKibana().services;
   const canReadRules = useUserPrivileges().rulesPrivileges.rules.read;
   const shouldShowLink = field === ALERT_RULE_NAME ? canReadRules : true;
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
-
   const resolutionIdentifiers: IdentityFields = useMemo(
     () => identityFields ?? { [field]: value },
     [identityFields, field, value]
@@ -100,7 +97,7 @@ export const PreviewLink: FC<PreviewLinkProps> = ({
     entityId: docEntityId,
     identityFields: resolutionIdentifiers,
     entityType,
-    skip: !entityStoreV2Enabled || !isHostOrUser || Object.keys(resolutionIdentifiers).length === 0,
+    skip: !isHostOrUser || Object.keys(resolutionIdentifiers).length === 0,
   });
 
   const resolvedEntityId = entityRecord?.entity?.id;

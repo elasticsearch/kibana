@@ -12,7 +12,7 @@ import { useGlobalTime } from '../../../common/containers/use_global_time';
 import { useQueryToggle } from '../../../common/containers/query_toggle';
 import { useEntitiesListQuery } from './hooks/use_entities_list_query';
 import { useErrorToast } from '../../../common/hooks/use_error_toast';
-import type { ListEntitiesResponse } from '../../../../common/api/entity_analytics/entity_store/entities/list_entities.gen';
+import type { ListEntitiesResponse } from '@kbn/entity-store/common';
 import { useGlobalFilterQuery } from '../../../common/hooks/use_global_filter_query';
 import { TestProviders } from '../../../common/mock';
 import { times } from 'lodash/fp';
@@ -36,7 +36,7 @@ const responseData: ListEntitiesResponse = {
       entity: {
         id: `Entity Name ${index}`,
         name: `Entity Name ${index}`,
-        source: 'test-index',
+        source: ['test-index'],
         type: 'user',
       },
     }),

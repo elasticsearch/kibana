@@ -200,7 +200,11 @@ describe('<UserDetails />', () => {
   describe('Host overview', () => {
     it('should render the HostOverview with correct dates and indices', () => {
       const { getByTestId } = renderUserDetails(mockContextValue);
-      expect(mockUseObservedUser).toHaveBeenCalledWith('test user', 'scopeId', undefined);
+      expect(mockUseObservedUser).toHaveBeenCalledWith(
+        'test user',
+        'scopeId',
+        expect.objectContaining({ entityRecord: null })
+      );
       expect(getByTestId(USER_DETAILS_INFO_TEST_ID)).toBeInTheDocument();
     });
 

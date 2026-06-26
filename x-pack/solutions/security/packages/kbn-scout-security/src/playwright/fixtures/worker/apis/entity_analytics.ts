@@ -13,9 +13,8 @@ import type {
   StoreStatus,
 } from '../../../constants/entity_analytics';
 
-const ENTITY_STORE_ENGINES_URL = '/api/entity_store/engines';
-const ENTITY_STORE_STATUS_URL = '/api/entity_store/status';
-const ENTITY_STORE_V2_STATUS_URL = '/api/security/entity_store/status';
+const ENTITY_STORE_UNINSTALL_URL = '/api/security/entity_store/uninstall';
+const ENTITY_STORE_STATUS_URL = '/api/security/entity_store/status';
 const SAVED_OBJECTS_FIND_URL = '/api/saved_objects/_find';
 const RISK_ENGINE_CONFIGURATION_TYPE = 'risk-engine-configuration';
 const RISK_ENGINE_STATUS_URL = '/internal/risk_score/engine/status';
@@ -67,13 +66,25 @@ export const getEntityAnalyticsApiService = ({
         log,
         'security.entityAnalytics.deleteEntityStoreEngines',
         async () => {
+          // The v2 status/uninstall routes return 403 when the entity store v2
+          // feature flag is disabled. In that case there is nothing to clean
+          // up, so short-circuit instead of polling forever.
+          try {
+            await service.getEntityStoreStatus();
+          } catch (error) {
+            log.debug(
+              `Skipping entity store cleanup; status route unavailable: ${(error as Error).message}`
+            );
+            return;
+          }
           await kbnClient.request({
-            method: 'DELETE',
-            path: `${basePath}${ENTITY_STORE_ENGINES_URL}`,
-            query: {
-              delete_data: 'true',
+            method: 'POST',
+            path: `${basePath}${ENTITY_STORE_UNINSTALL_URL}`,
+            headers: {
+              'elastic-api-version': API_VERSIONS.public.v1,
             },
-            ignoreErrors: [404, 500],
+            body: {},
+            ignoreErrors: [403, 404, 500],
           });
           // Wait for cleanup to complete - ensure server state is fully cleaned up
           await service.waitForEntityStoreCleanup();
@@ -172,7 +183,7 @@ export const getEntityAnalyticsApiService = ({
         async () => {
           const response = await kbnClient.request<GetEntityStoreStatusResponse>({
             method: 'GET',
-            path: `${basePath}${ENTITY_STORE_V2_STATUS_URL}`,
+            path: `${basePath}${ENTITY_STORE_STATUS_URL}`,
             headers: {
               'elastic-api-version': API_VERSIONS.public.v1,
             },

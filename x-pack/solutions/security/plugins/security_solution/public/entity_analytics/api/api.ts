@@ -11,7 +11,6 @@ import {
   API_VERSIONS as ENTITY_STORE_API_VERSIONS,
   type EntityMaintainerResponseItem,
   ENTITY_STORE_ROUTES,
-  FF_ENABLE_ENTITY_STORE_V2,
   type GetEntityMaintainersResponse,
 } from '@kbn/entity-store/common';
 import { compact } from 'lodash';
@@ -31,7 +30,7 @@ import type {
   InitMonitoringEngineResponse,
   InitRiskEngineResponse,
   InternalUploadAssetCriticalityV2CsvResponse,
-  ListEntitiesRequestQuery,
+  EntityType,
   ListEntitiesResponse,
   ListEntitySourcesResponse,
   PrivMonHealthResponse,
@@ -135,14 +134,11 @@ const getMaintainerRouteWithId = (route: string, id: string): string =>
   route.replace('{id}', encodeURIComponent(id));
 
 export const useEntityAnalyticsRoutes = () => {
-  const { http, uiSettings } = useKibana().services;
-  const isEntityStoreV2UiSettingEnabled =
-    uiSettings?.get<boolean>(FF_ENABLE_ENTITY_STORE_V2) ?? false;
+  const { http } = useKibana().services;
   const isEntityAnalyticsEntityStoreV2Enabled = useIsExperimentalFeatureEnabled(
     'entityAnalyticsEntityStoreV2'
   );
-  const isMaintainerRiskScoreV2Enabled =
-    isEntityStoreV2UiSettingEnabled && isEntityAnalyticsEntityStoreV2Enabled;
+  const isMaintainerRiskScoreV2Enabled = isEntityAnalyticsEntityStoreV2Enabled;
 
   return useMemo(() => {
     const fetchEntityMaintainers = (ids?: string[]) =>
@@ -565,7 +561,7 @@ export const useEntityAnalyticsRoutes = () => {
       const body = new FormData();
       body.append('file', file);
 
-      if (isEntityAnalyticsEntityStoreV2Enabled && isEntityStoreV2UiSettingEnabled) {
+      if (isEntityAnalyticsEntityStoreV2Enabled) {
         const response = await http.fetch<InternalUploadAssetCriticalityV2CsvResponse>(
           ASSET_CRITICALITY_CSV_UPLOAD_V2_URL,
           {
@@ -968,14 +964,19 @@ export const useEntityAnalyticsRoutes = () => {
       disableLeadGeneration,
       fetchLeadGenerationPrivileges,
     };
-  }, [
-    http,
-    isEntityStoreV2UiSettingEnabled,
-    isEntityAnalyticsEntityStoreV2Enabled,
-    isMaintainerRiskScoreV2Enabled,
-  ]);
+  }, [http, isEntityAnalyticsEntityStoreV2Enabled, isMaintainerRiskScoreV2Enabled]);
 };
 
 export type AssetCriticality = SnakeToCamelCase<AssetCriticalityRecord>;
 
-export type FetchEntitiesListParams = SnakeToCamelCase<ListEntitiesRequestQuery>;
+// CamelCased mirror of `ListEntitiesRequestQuery` for ergonomic UI usage.
+// Hand-written instead of derived via `SnakeToCamelCase` because that utility
+// requires a type literal, while lint requires the source to be an interface.
+export interface FetchEntitiesListParams {
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  perPage?: number;
+  filterQuery?: string;
+  entityTypes: EntityType[];
+}

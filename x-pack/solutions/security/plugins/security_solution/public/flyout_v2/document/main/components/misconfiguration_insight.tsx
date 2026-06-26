@@ -22,7 +22,7 @@ import {
   uiMetricService,
 } from '@kbn/cloud-security-posture-common/utils/ui_metrics';
 import { METRIC_TYPE } from '@kbn/analytics';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import {
   buildEuidCspPreviewOptions,
   inferEntityTypeFromIdentityFields,
@@ -30,7 +30,6 @@ import {
 import { InsightDistributionBar } from './insight_distribution_bar';
 import { useGetFindingsStats } from '../../../../cloud_security_posture/components/misconfiguration/misconfiguration_preview';
 import { FormattedCount } from '../../../../common/components/formatted_number';
-import { useUiSetting } from '../../../../common/lib/kibana';
 
 interface MisconfigurationsInsightProps {
   /**
@@ -68,15 +67,13 @@ export const MisconfigurationsInsight: React.FC<MisconfigurationsInsightProps> =
   const renderingId = useGeneratedHtmlId();
   const { euiTheme } = useEuiTheme();
   const euidApi = useEntityStoreEuidApi();
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
   const entityType = inferEntityTypeFromIdentityFields(identityFields);
   const cspPreviewOptions = useMemo(
     () =>
       buildEuidCspPreviewOptions(entityType, identityFields, euidApi, {
-        entityStoreV2Enabled,
         legacyIdentityFields: identityFields,
       }),
-    [euidApi, entityStoreV2Enabled, entityType, identityFields]
+    [euidApi, entityType, identityFields]
   );
   const { data } = useMisconfigurationPreview(cspPreviewOptions);
 

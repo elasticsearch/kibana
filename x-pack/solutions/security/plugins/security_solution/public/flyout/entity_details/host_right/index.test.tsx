@@ -65,6 +65,24 @@ describe('HostPanel', () => {
   });
 
   it('renders', () => {
+    mockedUseObservedHost.mockReturnValue({
+      ...mockObservedHostData,
+      entityRecord: {
+        '@timestamp': '2024-01-15T10:00:00.000Z',
+        entity: {
+          id: 'host-entity-id',
+          name: 'test',
+          type: 'host',
+          risk: {
+            calculated_level: 'High',
+            calculated_score: 80,
+            calculated_score_norm: 80,
+          },
+        },
+        host: { name: 'test' },
+      },
+    });
+
     const { getByTestId, queryByTestId } = render(
       <TestProviders>
         <HostPanel {...mockProps} />

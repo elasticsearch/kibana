@@ -10,7 +10,6 @@ import styled from '@emotion/styled';
 import { useDispatch } from 'react-redux';
 import { capitalize, sumBy } from 'lodash/fp';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
 import { SEVERITY_COLOR } from '../../../overview/components/detection_response/utils';
 import { LinkAnchor, useGetSecuritySolutionLinkProps } from '../../../common/components/links';
 import {
@@ -35,9 +34,7 @@ import { ENTITY_ANALYTICS_ANOMALIES_PANEL } from '../entity_analytics_anomalies'
 import { isJobStarted } from '../../../../common/machine_learning/helpers';
 import { FormattedCount } from '../../../common/components/formatted_number';
 import { useGlobalFilterQuery } from '../../../common/hooks/use_global_filter_query';
-import { useRiskScoreKpi } from '../../api/hooks/use_risk_score_kpi';
 import { useEntityStoreRiskScoreKpi } from '../../api/hooks/use_entity_store_risk_score_kpi';
-import { useUiSetting } from '../../../common/lib/kibana';
 import type { SeverityCount } from '../severity/types';
 
 const StyledEuiTitle = styled(EuiTitle)`
@@ -51,7 +48,6 @@ const USER_RISK_QUERY_ID = 'userRiskScoreKpiQuery';
 export const EntityAnalyticsHeader = () => {
   const { from, to } = useGlobalTime();
   const { filterQuery } = useGlobalFilterQuery();
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
   const timerange = useMemo(
     () => ({
       from,
@@ -60,47 +56,29 @@ export const EntityAnalyticsHeader = () => {
     [from, to]
   );
 
-  const legacyHostKpi = useRiskScoreKpi({
-    timerange,
-    riskEntity: EntityType.host,
-    filterQuery,
-    skip: entityStoreV2Enabled,
-  });
-
-  const legacyUserKpi = useRiskScoreKpi({
-    filterQuery,
-    timerange,
-    riskEntity: EntityType.user,
-    skip: entityStoreV2Enabled,
-  });
-
-  const entityStoreHostKpi = useEntityStoreRiskScoreKpi({
-    timerange,
-    riskEntity: EntityType.host,
-    filterQuery,
-    skip: !entityStoreV2Enabled,
-  });
-
-  const entityStoreUserKpi = useEntityStoreRiskScoreKpi({
-    filterQuery,
-    timerange,
-    riskEntity: EntityType.user,
-    skip: !entityStoreV2Enabled,
-  });
-
   const {
     severityCount: hostsSeverityCount,
     loading: hostRiskLoading,
     inspect: inspectHostRiskScore,
     refetch: refetchHostRiskScore,
-  } = entityStoreV2Enabled ? entityStoreHostKpi : legacyHostKpi;
+  } = useEntityStoreRiskScoreKpi({
+    timerange,
+    riskEntity: EntityType.host,
+    filterQuery,
+    skip: false,
+  });
 
   const {
     severityCount: usersSeverityCount,
     loading: userRiskLoading,
     refetch: refetchUserRiskScore,
     inspect: inspectUserRiskScore,
-  } = entityStoreV2Enabled ? entityStoreUserKpi : legacyUserKpi;
+  } = useEntityStoreRiskScoreKpi({
+    filterQuery,
+    timerange,
+    riskEntity: EntityType.user,
+    skip: false,
+  });
 
   const { data } = useAggregatedAnomaliesByJob({ skip: false, from, to });
 

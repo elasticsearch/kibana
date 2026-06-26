@@ -7,6 +7,7 @@
 
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import { getHistorySnapshotIndexPattern } from '@kbn/entity-store/server';
+import type { EntityType as EntityTypeOpenAPI } from '@kbn/entity-store/common';
 import type { LeadEntity, Observation, ObservationModule, ObservationSeverity } from '../types';
 import {
   errorMessage,
@@ -15,7 +16,6 @@ import {
   matchesPrivilegedWatchlist,
   entityTypeLabel,
 } from './utils';
-import type { EntityType as EntityTypeOpenAPI } from '../../../../../common/api/entity_analytics/entity_store/common.gen';
 
 const MODULE_ID = 'temporal_state_analysis';
 const MODULE_NAME = 'Temporal State Analysis';

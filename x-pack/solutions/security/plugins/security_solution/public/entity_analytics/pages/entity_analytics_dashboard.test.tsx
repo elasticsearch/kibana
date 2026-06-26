@@ -13,14 +13,10 @@ import { EntityAnalyticsPage } from './entity_analytics_dashboard';
 import { TestProviders } from '../../common/mock';
 
 import { useIsExperimentalFeatureEnabled } from '../../common/hooks/use_experimental_features';
-import { useEntityAnalyticsTypes } from '../hooks/use_enabled_entity_types';
 import { useDataView } from '../../data_view_manager/hooks/use_data_view';
 
 jest.mock('../../common/hooks/use_experimental_features', () => ({
-  useIsExperimentalFeatureEnabled: jest.fn((flag: string) => {
-    if (flag === 'entityStoreDisabled') return false;
-    return false;
-  }),
+  useIsExperimentalFeatureEnabled: jest.fn(() => false),
 }));
 
 jest.mock('../../data_view_manager/hooks/use_data_view_spec', () => ({
@@ -37,12 +33,6 @@ jest.mock('../hooks/use_enabled_entity_types', () => ({
 
 jest.mock('../components/entity_store/components/dashboard_entity_store_panels', () => ({
   EntityStoreDashboardPanels: () => <div data-test-subj="entityStoreDashboardPanels" />,
-}));
-
-jest.mock('../components/entity_analytics_risk_score', () => ({
-  EntityAnalyticsRiskScores: ({ riskEntity }: { riskEntity: string }) => (
-    <div data-test-subj={`entityAnalyticsRiskScores-${riskEntity}`} />
-  ),
 }));
 
 jest.mock('../components/entity_analytics_header', () => ({
@@ -69,13 +59,11 @@ describe('EntityAnalyticsPage', () => {
       dataView: { matchedIndices: ['index-2'] },
       status: 'ready',
     });
-    (useIsExperimentalFeatureEnabled as jest.Mock).mockImplementation((flag: string) => {
-      if (flag === 'entityStoreDisabled') return false;
-      return false;
-    });
+
+    (useIsExperimentalFeatureEnabled as jest.Mock).mockImplementation(() => false);
   });
 
-  it('renders the main sections when indices exist and entityStore is enabled', () => {
+  it('renders the main sections when indices exist', () => {
     render(
       <MemoryRouter>
         <EntityAnalyticsPage />
@@ -129,24 +117,6 @@ describe('EntityAnalyticsPage', () => {
     expect(screen.getByTestId('entityAnalyticsLoader')).toBeInTheDocument();
   });
 
-  it('renders risk score panels when entityStore feature flag is disabled', () => {
-    (useIsExperimentalFeatureEnabled as jest.Mock).mockImplementation((flag: string) => {
-      if (flag === 'entityStoreDisabled') return true;
-      return false;
-    });
-
-    render(
-      <MemoryRouter>
-        <EntityAnalyticsPage />
-      </MemoryRouter>,
-      { wrapper: TestProviders }
-    );
-
-    expect(screen.getByTestId('entityAnalyticsRiskScores-host')).toBeInTheDocument();
-    expect(screen.getByTestId('entityAnalyticsRiskScores-user')).toBeInTheDocument();
-    expect(screen.queryByTestId('entityStoreDashboardPanels')).not.toBeInTheDocument();
-  });
-
   it('renders EmptyPrompt when indices do not exist', () => {
     (useDataView as jest.Mock).mockReturnValue({
       dataView: { matchedIndices: [] },
@@ -184,24 +154,5 @@ describe('EntityAnalyticsPage', () => {
       expect(screen.queryByTestId('emptyPrompt')).not.toBeInTheDocument();
       expect(screen.getByTestId('entityAnalyticsPage')).toBeInTheDocument();
     });
-  });
-
-  it('renders only enabled entity types in risk score panels', () => {
-    (useIsExperimentalFeatureEnabled as jest.Mock).mockImplementation((flag: string) => {
-      if (flag === 'entityStoreDisabled') return true;
-      return false;
-    });
-
-    (useEntityAnalyticsTypes as jest.Mock).mockReturnValue(['host']);
-
-    render(
-      <MemoryRouter>
-        <EntityAnalyticsPage />
-      </MemoryRouter>,
-      { wrapper: TestProviders }
-    );
-
-    expect(screen.getByTestId('entityAnalyticsRiskScores-host')).toBeInTheDocument();
-    expect(screen.queryByTestId('entityAnalyticsRiskScores-user')).not.toBeInTheDocument();
   });
 });

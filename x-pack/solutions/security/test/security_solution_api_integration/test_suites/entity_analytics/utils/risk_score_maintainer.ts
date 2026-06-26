@@ -8,7 +8,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Client } from '@elastic/elasticsearch';
 import type { ToolingLog } from '@kbn/tooling-log';
-import type { EntityType } from '@kbn/security-solution-plugin/common/api/entity_analytics/entity_store/common.gen';
+import type { EntityType } from '@kbn/entity-store/common';
 import type { CriticalityLevel } from '@kbn/security-solution-plugin/common/entity_analytics/asset_criticality/types';
 import type { EntityRiskScoreRecord } from '@kbn/security-solution-plugin/common/api/entity_analytics/common';
 import { buildDocument, readRiskScores, normalizeScores } from './risk_engine';

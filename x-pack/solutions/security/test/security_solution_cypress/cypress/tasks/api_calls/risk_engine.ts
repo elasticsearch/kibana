@@ -44,14 +44,3 @@ export const interceptRiskInitError = () => {
     statusCode: 500,
   });
 };
-
-export const deleteEntityStoreEngines = () => {
-  // Delete all entity store engines using the bulk delete endpoint
-  // This endpoint deletes all engines when no entityTypes are specified
-  cy.request({
-    method: 'DELETE',
-    url: '/api/entity_store/engines?data=true',
-    failOnStatusCode: false,
-    headers: { 'kbn-xsrf': 'cypress-creds', 'x-elastic-internal-origin': 'security-solution' },
-  });
-};

@@ -11,11 +11,9 @@ import { useVulnerabilitiesPreview } from '@kbn/cloud-security-posture/src/hooks
 import { TestProviders } from '../../../../common/mock';
 import { HOST_PREVIEW_BANNER, HostEntityOverview } from './host_entity_overview';
 import { HostPreviewPanelKey } from '../../../../flyout/entity_details/host_right';
-import { useHostDetails } from '../../../../explore/hosts/containers/hosts/details';
-import { useFirstLastSeen } from '../../../../common/containers/use_first_last_seen';
+import type { HostEntity } from '../../../../../common/api/entity_analytics';
 import {
   ENTITIES_HOST_OVERVIEW_ALERT_COUNT_TEST_ID,
-  ENTITIES_HOST_OVERVIEW_LAST_SEEN_TEST_ID,
   ENTITIES_HOST_OVERVIEW_LINK_TEST_ID,
   ENTITIES_HOST_OVERVIEW_LOADING_TEST_ID,
   ENTITIES_HOST_OVERVIEW_MISCONFIGURATIONS_TEST_ID,
@@ -35,11 +33,9 @@ import { useAlertsByStatus } from '../../../../overview/components/detection_res
 const hostName = 'host';
 const identityFields = { 'host.name': hostName };
 const osFamily = 'Windows';
-const lastSeen = '2022-04-08T18:35:45.064Z';
-const lastSeenText = 'Apr 8, 2022 @ 18:35:45.064';
 const from = '2022-04-05T12:00:00.000Z';
 const to = '2022-04-08T12:00:00.;000Z';
-const hostData = { host: { os: { family: [osFamily] } } };
+const hostEntityRecord = { host: { os: { family: [osFamily] } } } as unknown as HostEntity;
 const riskLevel = [{ host: { risk: { calculated_level: 'Medium' } } }];
 
 const panelContextValue = {
@@ -93,22 +89,19 @@ jest.mock('../../../../common/containers/use_global_time', () => {
   };
 });
 
-const mockUseHostDetails = useHostDetails as jest.Mock;
-jest.mock('../../../../explore/hosts/containers/hosts/details');
-
 const mockUseRiskScore = useRiskScore as jest.Mock;
 jest.mock('../../../../entity_analytics/api/hooks/use_risk_score');
 
-const mockUseFirstLastSeen = useFirstLastSeen as jest.Mock;
-jest.mock('../../../../common/containers/use_first_last_seen');
-
-const renderHostEntityContent = () =>
+const renderHostEntityContent = (
+  extraProps: Partial<React.ComponentProps<typeof HostEntityOverview>> = {}
+) =>
   render(
     <TestProviders>
       <HostEntityOverview
         hostName={hostName}
         identityFields={identityFields}
         scopeId={panelContextValue.scopeId}
+        {...extraProps}
       />
     </TestProviders>
   );
@@ -123,18 +116,16 @@ describe('<HostEntityContent />', () => {
 
   describe('license is valid', () => {
     it('should render os family and host risk level', () => {
-      mockUseHostDetails.mockReturnValue([false, { hostDetails: hostData }]);
-      mockUseRiskScore.mockReturnValue({ data: riskLevel, isAuthorized: true });
+      mockUseRiskScore.mockReturnValue({ data: riskLevel });
 
-      const { getByTestId } = renderHostEntityContent();
+      const { getByTestId } = renderHostEntityContent({ entityRecord: hostEntityRecord });
 
       expect(getByTestId(ENTITIES_HOST_OVERVIEW_OS_FAMILY_TEST_ID)).toHaveTextContent(osFamily);
       expect(getByTestId(ENTITIES_HOST_OVERVIEW_RISK_LEVEL_TEST_ID)).toBeInTheDocument();
     });
 
     it('should render correctly if returned data is null', () => {
-      mockUseHostDetails.mockReturnValue([false, { hostDetails: null }]);
-      mockUseRiskScore.mockReturnValue({ data: null, isAuthorized: true });
+      mockUseRiskScore.mockReturnValue({ data: null });
 
       const { getByTestId } = renderHostEntityContent();
 
@@ -143,25 +134,8 @@ describe('<HostEntityContent />', () => {
     });
   });
 
-  it('should render loading if loading for host details is true', () => {
-    mockUseHostDetails.mockReturnValue([true, { hostDetails: null }]);
-    mockUseRiskScore.mockReturnValue({ data: null, isAuthorized: true });
-
-    const { getByTestId } = render(
-      <TestProviders>
-        <HostEntityOverview
-          hostName={hostName}
-          identityFields={identityFields}
-          scopeId={panelContextValue.scopeId}
-        />
-      </TestProviders>
-    );
-    expect(getByTestId(ENTITIES_HOST_OVERVIEW_LOADING_TEST_ID)).toBeInTheDocument();
-  });
-
   it('should render loading if loading for risk score is true', () => {
-    mockUseHostDetails.mockReturnValue([false, { hostDetails: null }]);
-    mockUseRiskScore.mockReturnValue({ data: null, isAuthorized: true, loading: true });
+    mockUseRiskScore.mockReturnValue({ data: null, loading: true });
 
     const { getByTestId } = render(
       <TestProviders>
@@ -175,33 +149,9 @@ describe('<HostEntityContent />', () => {
     expect(getByTestId(ENTITIES_HOST_OVERVIEW_LOADING_TEST_ID)).toBeInTheDocument();
   });
 
-  describe('license is not valid', () => {
-    it('should render os family and last seen', () => {
-      mockUseHostDetails.mockReturnValue([false, { hostDetails: hostData }]);
-      mockUseRiskScore.mockReturnValue({ data: riskLevel, isAuthorized: false });
-      mockUseFirstLastSeen.mockReturnValue([false, { lastSeen }]);
-
-      const { getByTestId, queryByTestId } = renderHostEntityContent();
-
-      expect(getByTestId(ENTITIES_HOST_OVERVIEW_OS_FAMILY_TEST_ID)).toHaveTextContent(osFamily);
-      expect(getByTestId(ENTITIES_HOST_OVERVIEW_LAST_SEEN_TEST_ID)).toHaveTextContent(lastSeenText);
-      expect(queryByTestId(ENTITIES_HOST_OVERVIEW_RISK_LEVEL_TEST_ID)).not.toBeInTheDocument();
-    });
-
-    it('should render correctly if returned data is null', () => {
-      mockUseHostDetails.mockReturnValue([false, { hostDetails: null }]);
-      mockUseRiskScore.mockReturnValue({ data: null, isAuthorized: false });
-      mockUseFirstLastSeen.mockReturnValue([false, { lastSeen: null }]);
-
-      const { getByTestId } = renderHostEntityContent();
-
-      expect(getByTestId(ENTITIES_HOST_OVERVIEW_OS_FAMILY_TEST_ID)).toHaveTextContent('—');
-      expect(getByTestId(ENTITIES_HOST_OVERVIEW_LAST_SEEN_TEST_ID)).toHaveTextContent('—');
-    });
-
+  describe('entity links', () => {
     it('renders the host name as plain text by default (Flyout v2 / Discover)', () => {
-      mockUseHostDetails.mockReturnValue([false, { hostDetails: hostData }]);
-      mockUseRiskScore.mockReturnValue({ data: riskLevel, isAuthorized: true });
+      mockUseRiskScore.mockReturnValue({ data: riskLevel });
 
       const { getByTestId } = renderHostEntityContent();
 
@@ -213,8 +163,7 @@ describe('<HostEntityContent />', () => {
     });
 
     it('opens host preview when clicking on title with enableEntityLinks', () => {
-      mockUseHostDetails.mockReturnValue([false, { hostDetails: hostData }]);
-      mockUseRiskScore.mockReturnValue({ data: riskLevel, isAuthorized: true });
+      mockUseRiskScore.mockReturnValue({ data: riskLevel });
 
       const { getByTestId } = render(
         <TestProviders>
@@ -243,8 +192,7 @@ describe('<HostEntityContent />', () => {
 
   describe('distribution bar insights', () => {
     beforeEach(() => {
-      mockUseHostDetails.mockReturnValue([false, { hostDetails: hostData }]);
-      mockUseRiskScore.mockReturnValue({ data: riskLevel, isAuthorized: true });
+      mockUseRiskScore.mockReturnValue({ data: riskLevel });
     });
 
     it('should not render if no data is available', () => {

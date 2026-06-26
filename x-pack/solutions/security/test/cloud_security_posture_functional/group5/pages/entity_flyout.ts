@@ -12,7 +12,6 @@ import {
   installEntityStoreV2,
   uninstallEntityStoreV2,
   waitForEntityStoreV2Running,
-  initEntityEnginesWithRetry,
 } from '../../../cloud_security_posture_api/utils';
 import { testSubjectIds } from '../../constants/test_subject_ids';
 import type { SecurityTelemetryFtrProviderContext } from '../../config.base';
@@ -53,12 +52,6 @@ export default function ({ getPageObjects, getService }: SecurityTelemetryFtrPro
 
       // Install Entity Store V2 and initialize engines so the entities table is visible
       await installEntityStoreV2({ supertest, logger });
-      await initEntityEnginesWithRetry({
-        supertest,
-        retry,
-        logger,
-        entityTypes: ['host', 'user', 'service'],
-      });
       await waitForEntityStoreV2Running({ supertest, retry, logger });
     });
 

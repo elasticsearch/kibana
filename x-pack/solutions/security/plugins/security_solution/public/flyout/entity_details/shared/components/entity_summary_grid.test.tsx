@@ -25,7 +25,7 @@ const entityWithSource: Entity = {
   ...mockEntityRecord,
   entity: {
     ...mockEntityRecord.entity,
-    source: 'logs-endpoint',
+    source: ['logs-endpoint'],
   },
 } as Entity;
 

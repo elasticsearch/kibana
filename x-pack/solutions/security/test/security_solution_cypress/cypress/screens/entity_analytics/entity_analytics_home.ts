@@ -12,8 +12,6 @@ export const ANOMALIES_PLACEHOLDER_PANEL = '[data-test-subj="recent-anomalies-pa
 
 export const ENTITIES_TABLE_GRID = '[data-test-subj="entity-analytics-test-subj-grid-wrapper"]';
 export const ENTITIES_TABLE_EMPTY = '[data-test-subj="entity-analytics-empty-state"]';
-export const ENTITY_STORE_DISABLED_EMPTY_PROMPT =
-  '[data-test-subj="entityStoreDisabledEmptyPrompt"]';
 
 export const DATAGRID_HEADER = '[data-test-subj="dataGridHeader"]';
 export const DATAGRID_COLUMN_SELECTOR = '[data-test-subj="dataGridColumnSelectorButton"]';

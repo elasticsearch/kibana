@@ -7,9 +7,7 @@
 
 import React, { memo, useMemo } from 'react';
 import type { EcsSecurityExtension as Ecs } from '@kbn/securitysolution-ecs';
-import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
-
-import { useUiSetting } from '../../../../common/lib/kibana';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { useEntityFromStore } from '../../../entity_details/shared/hooks/use_entity_from_store';
 import { HostDetails } from '../../../document_details/left/components/host_details';
 import { UserDetails } from '../../../document_details/left/components/user_details';
@@ -31,11 +29,10 @@ const resolveUserDisplayForEntities = (
 const resolveHostDisplayForEntities = (
   identityFields: IdentityFields | undefined,
   getFieldsData: GetFieldsData,
-  entityStoreV2Enabled: boolean,
   hostNameFromStore: string | undefined
 ): string | undefined => {
   const fromDocument = resolveHostNameForEntityInsightsWithFallback(identityFields, getFieldsData);
-  return entityStoreV2Enabled ? fromDocument ?? hostNameFromStore : fromDocument;
+  return fromDocument ?? hostNameFromStore;
 };
 
 export interface AttackInsightsRowBaseProps extends AttackEntityListEntry {
@@ -50,7 +47,6 @@ export interface AttackInsightsRowBaseProps extends AttackEntityListEntry {
 export const AttackHostInsightsRow: React.FC<AttackInsightsRowBaseProps> = memo(
   ({ identityFields, sampleSource, timestamp, scopeId }) => {
     const euidApi = useEntityStoreEuidApi();
-    const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2, false);
 
     const getFieldsData = useMemo(
       () => createGetFieldsDataFromAlertSource(sampleSource),
@@ -64,7 +60,7 @@ export const AttackHostInsightsRow: React.FC<AttackInsightsRowBaseProps> = memo(
       entityId: hostEntityId,
       identityFields: identityFields ?? undefined,
       entityType: 'host',
-      skip: !identityFields || !entityStoreV2Enabled,
+      skip: !identityFields,
     });
 
     const hostRecord = hostEntityFromStore.entityRecord;
@@ -74,7 +70,6 @@ export const AttackHostInsightsRow: React.FC<AttackInsightsRowBaseProps> = memo(
     const resolvedHostName = resolveHostDisplayForEntities(
       identityFields,
       getFieldsData,
-      entityStoreV2Enabled,
       hostNameFromStore
     );
 
@@ -92,7 +87,7 @@ export const AttackHostInsightsRow: React.FC<AttackInsightsRowBaseProps> = memo(
         scopeId={scopeId}
         expandedOnFirstRender={false}
         isAttackDetails={true}
-        hostEntityFromStoreResult={entityStoreV2Enabled ? hostEntityFromStore : undefined}
+        hostEntityFromStoreResult={hostEntityFromStore}
       />
     );
   }
@@ -106,7 +101,6 @@ AttackHostInsightsRow.displayName = 'AttackHostInsightsRow';
 export const AttackUserInsightsRow: React.FC<AttackInsightsRowBaseProps> = memo(
   ({ identityFields, sampleSource, timestamp, scopeId }) => {
     const euidApi = useEntityStoreEuidApi();
-    const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2, false);
 
     const getFieldsData = useMemo(
       () => createGetFieldsDataFromAlertSource(sampleSource),
@@ -126,7 +120,7 @@ export const AttackUserInsightsRow: React.FC<AttackInsightsRowBaseProps> = memo(
       entityId: userEntityId,
       identityFields: identityFields ?? legacyUserIdentityForStore,
       entityType: 'user',
-      skip: !entityStoreV2Enabled || (identityFields == null && legacyUserIdentityForStore == null),
+      skip: identityFields == null && legacyUserIdentityForStore == null,
     });
 
     const userDisplayName = userEntityFromStore.entityRecord?.entity?.name ?? resolvedUserName;

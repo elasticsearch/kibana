@@ -71,7 +71,7 @@ export const HostPanelContent = ({
     <>
       {!skipRiskAndCriticality && (
         <EntityHighlightsAccordion
-          entityIdentifier={entityRecord ? entityRecord.entity.id : hostName}
+          entityIdentifier={entityRecord?.entity?.id ?? hostName}
           entityType={EntityType.host}
         />
       )}
@@ -86,7 +86,7 @@ export const HostPanelContent = ({
               queryId={HOST_PANEL_RISK_SCORE_QUERY_ID}
               openDetailsPanel={openDetailsPanel}
               isPreviewMode={isPreviewMode}
-              entityId={entityRecord?.entity.id}
+              entityId={entityRecord?.entity?.id}
               prefetchedResolutionRisk={prefetchedResolutionRisk}
             />
             <EuiHorizontalRule />

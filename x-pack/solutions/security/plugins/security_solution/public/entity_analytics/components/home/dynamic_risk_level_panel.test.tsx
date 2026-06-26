@@ -9,14 +9,12 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { DynamicRiskLevelPanel } from './dynamic_risk_level_panel';
 import { TestProviders } from '../../../common/mock';
-import { useCombinedRiskScoreKpi } from './use_combined_risk_score_kpi';
 import { useRiskLevelsEsqlQuery } from '../watchlists/components/hooks/use_risk_levels_esql_query';
 import { useKibana } from '../../../common/lib/kibana';
 import { RiskSeverity } from '../../../../common/search_strategy';
 import { ENTITY_RISK_LEVEL_FIELD } from './risk_level_breakdown_table';
 import { RiskScoreDonutChart } from '../risk_score_donut_chart';
 
-jest.mock('./use_combined_risk_score_kpi');
 jest.mock('../watchlists/components/hooks/use_risk_levels_esql_query');
 jest.mock('../../../common/lib/kibana');
 jest.mock('../../../common/hooks/use_space_id', () => ({
@@ -27,7 +25,6 @@ jest.mock('../risk_score_donut_chart', () => ({
   RiskScoreDonutChart: jest.fn(() => <div data-test-subj="mock-risk-score-donut-chart" />),
 }));
 
-const mockUseCombinedRiskScoreKpi = useCombinedRiskScoreKpi as jest.Mock;
 const mockUseRiskLevelsEsqlQuery = useRiskLevelsEsqlQuery as jest.Mock;
 const mockUseKibana = useKibana as jest.Mock;
 const mockRiskScoreDonutChart = RiskScoreDonutChart as unknown as jest.Mock;
@@ -55,19 +52,6 @@ const buildKibanaServices = (addFilters: jest.Mock, isV2Enabled: boolean) => ({
 describe('DynamicRiskLevelPanel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockUseCombinedRiskScoreKpi.mockReturnValue({
-      severityCount: {
-        [RiskSeverity.Unknown]: 1,
-        [RiskSeverity.Low]: 2,
-        [RiskSeverity.Moderate]: 3,
-        [RiskSeverity.High]: 4,
-        [RiskSeverity.Critical]: 5,
-      },
-      loading: false,
-      refetch: jest.fn(),
-      inspect: { dsl: ['mock-dsl'], response: ['mock-response'] },
-    });
 
     mockUseRiskLevelsEsqlQuery.mockReturnValue({
       records: [],

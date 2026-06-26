@@ -9,7 +9,7 @@ import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import { useCallback, useMemo } from 'react';
 import { useHasVulnerabilities } from '@kbn/cloud-security-posture/src/hooks/use_has_vulnerabilities';
 import { useHasMisconfigurations } from '@kbn/cloud-security-posture/src/hooks/use_has_misconfigurations';
-import { useEntityStoreEuidApi, FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
+import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { buildEuidCspPreviewOptions } from '../utils/build_euid_csp_preview_options';
 import { UserDetailsPanelKey } from '../../flyout/entity_details/user_details_left';
 import { HostDetailsPanelKey } from '../../flyout/entity_details/host_details_left';
@@ -17,10 +17,7 @@ import { EntityDetailsLeftPanelTab } from '../../flyout/entity_details/shared/co
 import { useGlobalTime } from '../../common/containers/use_global_time';
 import { DETECTION_RESPONSE_ALERTS_BY_STATUS_ID } from '../../overview/components/detection_response/alerts_by_status/types';
 import { useNonClosedAlerts } from './use_non_closed_alerts';
-import { useHasRiskScore } from './use_risk_score_data';
 import type { IdentityFields } from '../../flyout/document_details/shared/utils';
-import type { CloudPostureEntityIdentifier } from '../components/entity_insight';
-import { useUiSetting } from '../../common/lib/kibana';
 import { useEntityFromStore } from '../../flyout/entity_details/shared/hooks/use_entity_from_store';
 import { getRiskFromEntityRecord } from '../../flyout/entity_details/shared/entity_store_risk_utils';
 
@@ -55,11 +52,10 @@ export const useNavigateEntityInsight = ({
     return identityFields[primaryField] || Object.values(identityFields)[0] || '';
   }, [identityFields, primaryField]);
 
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
   const entityType = primaryField === 'host.name' ? 'host' : 'user';
 
   const { hasVulnerabilitiesFindings } = useHasVulnerabilities(
-    buildEuidCspPreviewOptions(entityType, identityFields, euidApi, { entityStoreV2Enabled })
+    buildEuidCspPreviewOptions(entityType, identityFields, euidApi)
   );
 
   const entityFromStore = useEntityFromStore({
@@ -67,23 +63,16 @@ export const useNavigateEntityInsight = ({
       entityType === 'host' ? identityFields['host.entity.id'] : identityFields['user.entity.id'],
     identityFields,
     entityType,
-    skip: !entityStoreV2Enabled,
+    skip: false,
   });
 
-  const hasRiskScoreFromStore = useMemo(() => {
+  const hasRiskScore = useMemo(() => {
     const record = entityFromStore.entityRecord;
     return record ? !!getRiskFromEntityRecord(record)?.calculated_level : false;
   }, [entityFromStore.entityRecord]);
 
-  const { hasRiskScore: hasRiskScoreFromSearch } = useHasRiskScore({
-    field: primaryField as CloudPostureEntityIdentifier,
-    value,
-    skip: entityStoreV2Enabled,
-  });
-
-  const hasRiskScore = entityStoreV2Enabled ? hasRiskScoreFromStore : hasRiskScoreFromSearch;
   const { hasMisconfigurationFindings } = useHasMisconfigurations(
-    buildEuidCspPreviewOptions(entityType, identityFields, euidApi, { entityStoreV2Enabled })
+    buildEuidCspPreviewOptions(entityType, identityFields, euidApi)
   );
   const { openLeftPanel } = useExpandableFlyoutApi();
 

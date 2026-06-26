@@ -29,7 +29,8 @@ import {
   loadAlertArchive,
   dataViewRouteHelpersFactory,
   installCloudAssetInventoryPackage,
-  initEntityEnginesWithRetry,
+  installEntityStoreV2,
+  waitForEntityStoreV2Running,
   waitForEntityDataIndexed,
 } from '../utils';
 import { CspSecurityCommonProvider } from './helper/user_roles_utilites';
@@ -2609,7 +2610,7 @@ export default function (providerContext: FtrProviderContext) {
         };
 
         before(async () => {
-          // delete v2 index manually since its not being deleted by the cleanupEntityStore function
+          // delete v2 index manually since it's not being deleted by the v2 install/uninstall cycle
           try {
             await es.indices.delete({
               index: getEntitiesLatestIndexName(entitiesSpaceId),
@@ -2638,12 +2639,14 @@ export default function (providerContext: FtrProviderContext) {
           entitiesSpaceDataView = dataViewRouteHelpersFactory(supertest, entitiesSpaceId);
           await entitiesSpaceDataView.create('security-solution');
 
-          // Initialize entity engine for 'generic' type in entities-space
-          await initEntityEnginesWithRetry({
+          // Install Entity Store V2 in entities-space (covers the generic engine
+          // the asset inventory tests need). v2 install always installs all
+          // entity types; per-type selection is no longer available.
+          await installEntityStoreV2({ supertest, logger, spaceId: entitiesSpaceId });
+          await waitForEntityStoreV2Running({
             supertest,
             retry,
             logger,
-            entityTypes: ['generic'],
             spaceId: entitiesSpaceId,
           });
 

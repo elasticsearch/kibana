@@ -5,10 +5,6 @@
  * 2.0.
  */
 
-import {
-  EntityRiskLevels,
-  EntityRiskScoreRecord,
-} from '../../api/entity_analytics/common/common.gen';
 import type {
   Entity,
   EntityField,
@@ -16,7 +12,11 @@ import type {
   HostEntity,
   ServiceEntity,
   UserEntity,
-} from '../../api/entity_analytics/entity_store/entities/common.gen';
+} from '@kbn/entity-store/common';
+import {
+  EntityRiskLevels,
+  EntityRiskScoreRecord,
+} from '../../api/entity_analytics/common/common.gen';
 import { EntityType } from '../types';
 
 const ALLOWED_ENTITY_ATTRIBUTE_KEYS = ['privileged', 'asset', 'managed', 'mfa_enabled'] as const;
@@ -152,7 +152,7 @@ function sanitizeEntityFieldFromUnknown(field: unknown): EntityField | undefined
     ...(typeof f.name === 'string' && { name: f.name }),
     ...(typeof f.type === 'string' && { type: f.type }),
     ...(typeof f.sub_type === 'string' && { sub_type: f.sub_type }),
-    ...(typeof f.source === 'string' && { source: f.source }),
+    ...(toArray(f.source) && { source: toArray(f.source) }),
     ...(attributes !== undefined && { attributes }),
     ...(behaviors !== undefined && { behaviors }),
     ...(lifecycle !== undefined && { lifecycle }),
@@ -192,12 +192,6 @@ function sanitizeHostForUpsert(host: Record<string, unknown>): HostEntity['host'
       out.risk = normalizedRisk;
     }
   }
-  if (host.entity != null && typeof host.entity === 'object') {
-    const nested = sanitizeEntityFieldFromUnknown(host.entity);
-    if (nested) {
-      out.entity = nested;
-    }
-  }
   return out;
 }
 
@@ -232,12 +226,6 @@ function sanitizeServiceForUpsert(
     const normalizedRisk = sanitizeHostUserServiceRisk(service.risk);
     if (normalizedRisk) {
       out.risk = normalizedRisk;
-    }
-  }
-  if (service.entity != null && typeof service.entity === 'object') {
-    const nested = sanitizeEntityFieldFromUnknown(service.entity);
-    if (nested) {
-      out.entity = nested;
     }
   }
   return out;

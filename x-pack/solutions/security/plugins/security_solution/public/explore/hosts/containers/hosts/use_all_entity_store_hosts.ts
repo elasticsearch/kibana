@@ -10,10 +10,9 @@ import { noop } from 'lodash/fp';
 import { useQuery } from '@kbn/react-query';
 import type { IHttpFetchError } from '@kbn/core/public';
 
+import type { HostEntity, ListEntitiesResponse } from '@kbn/entity-store/common';
 import type { InspectResponse } from '../../../../types';
 import { HostsFields } from '../../../../../common/api/search_strategy/hosts/model/sort';
-import type { HostEntity } from '../../../../../common/api/entity_analytics/entity_store/entities/common.gen';
-import type { ListEntitiesResponse } from '../../../../../common/api/entity_analytics/entity_store/entities/list_entities.gen';
 import type { HostItem } from '../../../../../common/search_strategy/security_solution/hosts/common';
 import type { HostsEdges } from '../../../../../common/search_strategy/security_solution/hosts/all';
 import type { RiskSeverity } from '../../../../../common/search_strategy/security_solution/risk_score/all';
@@ -49,7 +48,7 @@ const mapHostEntityRecordToHostsEdge = (record: HostEntity): HostsEdges | null =
     return null;
   }
 
-  const lastSeenIso = record.entity.lifecycle?.last_seen;
+  const lastSeenIso = record.entity?.lifecycle?.last_seen;
   const riskLevel = record.host?.risk?.calculated_level as RiskSeverity | undefined;
 
   const node: HostItem = {
@@ -63,12 +62,12 @@ const mapHostEntityRecordToHostsEdge = (record: HostEntity): HostsEdges | null =
     lastSeen: lastSeenIso != null ? [lastSeenIso] : undefined,
     risk: riskLevel,
     criticality: record.asset?.criticality,
-    entityId: record.entity.id,
+    entityId: record.entity?.id,
   };
 
   return {
     node,
-    cursor: { value: record.entity.id ?? hostName, tiebreaker: null },
+    cursor: { value: record.entity?.id ?? hostName, tiebreaker: null },
   };
 };
 

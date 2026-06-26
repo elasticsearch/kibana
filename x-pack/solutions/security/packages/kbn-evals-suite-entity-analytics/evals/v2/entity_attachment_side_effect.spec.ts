@@ -103,11 +103,16 @@ evaluate.describe(
       log.info('[attachment-evals] beforeAll: setup complete');
     });
 
-    evaluate.afterAll(async ({ log, quickApiClient }) => {
+    evaluate.afterAll(async ({ log, kbnClient }) => {
       try {
-        await quickApiClient.deleteEntityEngines({ query: { delete_data: true } });
+        await kbnClient.request({
+          method: 'POST',
+          path: '/api/security/entity_store/uninstall',
+          headers: { 'elastic-api-version': '2023-10-31' },
+          body: {},
+        });
       } catch (err) {
-        log.warning(`deleteEntityEngines failed during teardown: ${(err as Error).message}`);
+        log.warning(`uninstall entity store failed during teardown: ${(err as Error).message}`);
       }
     });
 
