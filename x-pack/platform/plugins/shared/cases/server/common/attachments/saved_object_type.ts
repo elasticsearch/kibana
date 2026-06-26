@@ -8,21 +8,20 @@
 import type { SavedObjectsClientContract } from '@kbn/core/server';
 import { CASE_ATTACHMENT_SAVED_OBJECT, CASE_COMMENT_SAVED_OBJECT } from '../../../common/constants';
 import type { ConfigType } from '../../config';
-import type { AttachmentPersistedAttributes } from '../types/attachments_v1';
-import type { UnifiedAttachmentAttributes } from '../types/attachments_v2';
+import { isSOError } from '../error';
+
+export type ResolvedAttachmentSavedObjectType =
+  | typeof CASE_ATTACHMENT_SAVED_OBJECT
+  | typeof CASE_COMMENT_SAVED_OBJECT
+  | null;
 
 /**
- * Determines which saved object type should be used for a given attachment type
- * based on the feature flag and migration status.
- *
- * @param config - The cases plugin configuration
- * @param attachmentType - Optional attachment type. If not provided, returns the default SO type.
- * @returns The saved object type to use ('cases-attachments' or 'cases-comments')
+ * Returns the saved object type new attachments should be written to, gated by
+ * the `cases.attachments.enabled` config flag.
  */
 export function getAttachmentSavedObjectType(
   config: ConfigType
 ): typeof CASE_ATTACHMENT_SAVED_OBJECT | typeof CASE_COMMENT_SAVED_OBJECT {
-  // If feature flag is disabled, always use old SO type
   if (config.attachments?.enabled) {
     return CASE_ATTACHMENT_SAVED_OBJECT;
   }
@@ -30,32 +29,47 @@ export function getAttachmentSavedObjectType(
 }
 
 /**
- * Resolves which saved object type contains the attachment by id.
- * Tries the new SO type first, then falls back to the old SO type.
+ * Resolves which saved object type contains each attachment id, using a single
+ * `bulkGet` round trip (2 entries per id). Results are returned in input order;
+ * an id present in neither SO type resolves to `null`. Callers with a single
+ * id can pass `[id]` and read `result[0]`.
  *
- * @param client - The saved objects client
- * @param savedObjectId - Saved object id of the cases attachment to resolve
- * @returns The saved object type where the attachment exists, or null if not found
+ * Throws if the saved objects client returns a response whose length does not
+ * match the request (i.e. the SO client contract of returning one entry per
+ * request in input order is violated).
  */
-export async function resolveAttachmentSavedObjectType(
+export async function resolveAttachmentSavedObjectTypes(
   client: SavedObjectsClientContract,
-  savedObjectId: string
-): Promise<typeof CASE_ATTACHMENT_SAVED_OBJECT | typeof CASE_COMMENT_SAVED_OBJECT | null> {
-  try {
-    await client.get<UnifiedAttachmentAttributes>(CASE_ATTACHMENT_SAVED_OBJECT, savedObjectId);
-    return CASE_ATTACHMENT_SAVED_OBJECT;
-  } catch (error) {
-    const isNotFound =
-      (error as { statusCode?: number })?.statusCode === 404 ||
-      (error as { output?: { statusCode?: number } })?.output?.statusCode === 404;
-    if (isNotFound) {
-      try {
-        await client.get<AttachmentPersistedAttributes>(CASE_COMMENT_SAVED_OBJECT, savedObjectId);
-        return CASE_COMMENT_SAVED_OBJECT;
-      } catch {
-        return null;
-      }
-    }
-    throw error;
+  savedObjectIds: string[]
+): Promise<ResolvedAttachmentSavedObjectType[]> {
+  if (savedObjectIds.length === 0) {
+    return [];
   }
+
+  const response = await client.bulkGet<unknown>(
+    savedObjectIds.flatMap((id) => [
+      { id, type: CASE_ATTACHMENT_SAVED_OBJECT },
+      { id, type: CASE_COMMENT_SAVED_OBJECT },
+    ])
+  );
+
+  const expected = savedObjectIds.length * 2;
+  if (response.saved_objects.length !== expected) {
+    throw new Error(
+      `resolveAttachmentSavedObjectTypes: SO bulkGet contract violation. Expected ${expected} entries ` +
+        `(2 per id for ${savedObjectIds.length} ids), received ${response.saved_objects.length}.`
+    );
+  }
+
+  return savedObjectIds.map((_, idx) => {
+    const unified = response.saved_objects[idx * 2];
+    const legacy = response.saved_objects[idx * 2 + 1];
+    if (!isSOError(unified)) {
+      return CASE_ATTACHMENT_SAVED_OBJECT;
+    }
+    if (!isSOError(legacy)) {
+      return CASE_COMMENT_SAVED_OBJECT;
+    }
+    return null;
+  });
 }

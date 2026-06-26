@@ -72,7 +72,6 @@ export const getAllDocumentsAttachedToCase = async (
     authorization,
     services: { attachmentService },
     logger,
-    config,
   } = clientArgs;
 
   try {
@@ -83,9 +82,7 @@ export const getAllDocumentsAttachedToCase = async (
     });
 
     const { filter: authorizationFilter, ensureSavedObjectsAreAuthorized } =
-      await getAttachmentAuthorizationFilter(authorization, Operations.getAlertsAttachedToCase, {
-        isCasesAttachmentsEnabled: config.attachments?.enabled === true,
-      });
+      await getAttachmentAuthorizationFilter(authorization, Operations.getAlertsAttachedToCase);
 
     const filterArray = authorizationFilter ? [authorizationFilter] : [];
     if (filter) filterArray.push(filter);
@@ -127,16 +124,13 @@ export async function find(
     services: { attachmentService },
     logger,
     authorization,
-    config,
   } = clientArgs;
 
   try {
     const queryParams = decodeWithExcessOrThrow(FindAttachmentsQueryParamsRt)(findQueryParams);
 
     const { filter: authorizationFilter, ensureSavedObjectsAreAuthorized } =
-      await getAttachmentAuthorizationFilter(authorization, Operations.findComments, {
-        isCasesAttachmentsEnabled: config.attachments?.enabled === true,
-      });
+      await getAttachmentAuthorizationFilter(authorization, Operations.findComments);
 
     // TODO https://github.com/elastic/security-team/issues/17089
     // include `cases-attachments.attributes.type === 'comment'`
@@ -228,14 +222,12 @@ export async function getAll(
     services: { caseService },
     logger,
     authorization,
-    config,
   } = clientArgs;
 
   try {
     const { filter, ensureSavedObjectsAreAuthorized } = await getAttachmentAuthorizationFilter(
       authorization,
-      Operations.getAllComments,
-      { isCasesAttachmentsEnabled: config.attachments?.enabled === true }
+      Operations.getAllComments
     );
 
     const comments = await caseService.getAllCaseComments({

@@ -33,8 +33,9 @@ export { getCommentContentFromUnifiedPayload, commentAttachmentTransformer } fro
 export { actionsAttachmentTransformer } from './actions';
 export {
   getAttachmentSavedObjectType,
-  resolveAttachmentSavedObjectType,
+  resolveAttachmentSavedObjectTypes,
 } from './saved_object_type';
+export type { ResolvedAttachmentSavedObjectType } from './saved_object_type';
 // Re-exported so existing server call sites keep their `from '.'` import path.
 export { getAttachmentTypeFromAttributes } from '../../../common/utils/attachments';
 

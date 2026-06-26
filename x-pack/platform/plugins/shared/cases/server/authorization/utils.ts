@@ -71,19 +71,14 @@ export const includeFieldsRequiredForAuthentication = (fields?: string[]): strin
 
 /**
  * Returns an authorization filter that covers both the legacy `cases-comments`
- * and the unified `cases-attachments` saved object types based on feature flag
+ * and the unified `cases-attachments` saved object types.
  */
 export const getAttachmentAuthorizationFilter = async (
   authorization: Pick<Authorization, 'getAuthorizationFilter'>,
-  operation: OperationDetails,
-  { isCasesAttachmentsEnabled }: { isCasesAttachmentsEnabled: boolean }
+  operation: OperationDetails
 ): Promise<AuthFilterHelpers> => {
   const { filter, authorizedOwners, ensureSavedObjectsAreAuthorized } =
     await authorization.getAuthorizationFilter(operation);
-
-  if (!isCasesAttachmentsEnabled) {
-    return { filter, authorizedOwners, ensureSavedObjectsAreAuthorized };
-  }
 
   const unifiedFilter = authorizedOwners?.length
     ? getOwnersFilter(CASE_ATTACHMENT_SAVED_OBJECT, authorizedOwners)

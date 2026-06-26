@@ -237,29 +237,26 @@ export class CasesService {
     try {
       this.log.debug(`Attempting to GET all cases for alert id ${alertId}`);
 
-      const legacyResponse = await this.findCaseIdsForAlertByType({
-        alertId,
-        soType: CASE_COMMENT_SAVED_OBJECT,
-        alertIdField: 'alertId',
-        filter,
-      });
-
-      if (!this.attachmentService.isUnifiedAttachmentsEnabled) {
-        return legacyResponse;
-      }
-
-      const unifiedResponse = await this.findCaseIdsForAlertByType({
-        alertId,
-        soType: CASE_ATTACHMENT_SAVED_OBJECT,
-        alertIdField: 'attachmentId',
-        extraFilter: buildFilter({
-          filters: UNIFIED_ALERT_TYPES_ARRAY,
-          field: 'type',
-          operator: 'or',
-          type: CASE_ATTACHMENT_SAVED_OBJECT,
+      const [legacyResponse, unifiedResponse] = await Promise.all([
+        this.findCaseIdsForAlertByType({
+          alertId,
+          soType: CASE_COMMENT_SAVED_OBJECT,
+          alertIdField: 'alertId',
+          filter,
         }),
-        filter: unifiedFilter,
-      });
+        this.findCaseIdsForAlertByType({
+          alertId,
+          soType: CASE_ATTACHMENT_SAVED_OBJECT,
+          alertIdField: 'attachmentId',
+          extraFilter: buildFilter({
+            filters: UNIFIED_ALERT_TYPES_ARRAY,
+            field: 'type',
+            operator: 'or',
+            type: CASE_ATTACHMENT_SAVED_OBJECT,
+          }),
+          filter: unifiedFilter,
+        }),
+      ]);
 
       return mergeCaseIdsByAlertIdResponses(legacyResponse, unifiedResponse);
     } catch (error) {

@@ -76,20 +76,18 @@ const changeAlertsStatusToClose = async (
     AttachmentType.alert
   );
 
-  const alertFilter = isCasesAttachmentsEnabled
-    ? combineFilters(
-        [
-          legacyAlertFilter,
-          buildFilter({
-            filters: UNIFIED_ALERT_TYPES_ARRAY,
-            field: 'type',
-            operator: 'or',
-            type: CASE_ATTACHMENT_SAVED_OBJECT,
-          }),
-        ],
-        NodeBuilderOperators.or
-      )
-    : legacyAlertFilter;
+  const alertFilter = combineFilters(
+    [
+      legacyAlertFilter,
+      buildFilter({
+        filters: UNIFIED_ALERT_TYPES_ARRAY,
+        field: 'type',
+        operator: 'or',
+        type: CASE_ATTACHMENT_SAVED_OBJECT,
+      }),
+    ],
+    NodeBuilderOperators.or
+  );
 
   const alertAttachments = await caseService.getAllCaseComments({
     id: [caseId],

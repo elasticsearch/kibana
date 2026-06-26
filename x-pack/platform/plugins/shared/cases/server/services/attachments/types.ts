@@ -74,8 +74,7 @@ export interface EventIdsAggsResult {
       key: string;
     }>;
   };
-  /** Present only when `cases-attachments` is included in the find `type` list (attachments feature enabled). */
-  unifiedEventIds?: {
+  unifiedEventIds: {
     buckets: Array<{
       key: string;
     }>;

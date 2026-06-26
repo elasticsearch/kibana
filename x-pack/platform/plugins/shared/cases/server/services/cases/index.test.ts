@@ -2342,6 +2342,12 @@ describe('CasesService', () => {
           total: 1,
           per_page: 1,
           page: 1,
+          aggregations: {
+            references: {
+              doc_count: 0,
+              caseIds: { buckets: [] },
+            },
+          },
         });
       });
 
@@ -2375,25 +2381,7 @@ describe('CasesService', () => {
           },
         });
 
-        it('does not query cases-attachments when the unified attachments flag is off', async () => {
-          jest
-            .spyOn(attachmentService, 'isUnifiedAttachmentsEnabled', 'get')
-            .mockReturnValue(false);
-
-          unsecuredSavedObjectsClient.find.mockResolvedValueOnce(buildAggsResponse(['legacy-1']));
-
-          const res = await service.getCaseIdsByAlertId({ alertId: '1' });
-
-          expect(unsecuredSavedObjectsClient.find).toHaveBeenCalledTimes(1);
-          expect(unsecuredSavedObjectsClient.find).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'cases-comments' })
-          );
-          expect(CasesService.getCaseIDsFromAlertAggs(res)).toEqual(['legacy-1']);
-        });
-
-        it('runs an additional cases-attachments find when the flag is on and merges deduped case ids', async () => {
-          jest.spyOn(attachmentService, 'isUnifiedAttachmentsEnabled', 'get').mockReturnValue(true);
-
+        it('always issues both cases-comments and cases-attachments finds and merges deduped case ids', async () => {
           unsecuredSavedObjectsClient.find
             .mockResolvedValueOnce(buildAggsResponse(['shared-case', 'legacy-only']))
             .mockResolvedValueOnce(buildAggsResponse(['shared-case', 'unified-only']));
@@ -2404,12 +2392,10 @@ describe('CasesService', () => {
           });
 
           expect(unsecuredSavedObjectsClient.find).toHaveBeenCalledTimes(2);
-          expect(unsecuredSavedObjectsClient.find).toHaveBeenNthCalledWith(
-            1,
+          expect(unsecuredSavedObjectsClient.find).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'cases-comments' })
           );
-          expect(unsecuredSavedObjectsClient.find).toHaveBeenNthCalledWith(
-            2,
+          expect(unsecuredSavedObjectsClient.find).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'cases-attachments' })
           );
 
