@@ -6,7 +6,12 @@
  */
 
 import { z } from '@kbn/zod/v4';
-import type { EngineDescriptor, LogExtractionConfig, HistorySnapshotState } from './saved_objects';
+import type {
+  EngineDescriptor,
+  LogExtractionConfig,
+  HistorySnapshotState,
+  EntityStorePreferences,
+} from './saved_objects';
 import type { EntityStoreStatus } from '../../common';
 import type { ENTITY_STORE_STATUS } from './constants';
 
@@ -46,12 +51,14 @@ export interface GetStatusSuccessResult {
   engines: Array<EngineDescriptor | (EngineDescriptor & { components: EngineComponentStatus[] })>;
   historySnapshot: HistorySnapshotState;
   logsExtractionConfig: LogExtractionConfig;
+  preferences: Pick<EntityStorePreferences, 'autoInstall'>;
 }
 
 export interface GetStatusNotInstalledResult {
   status: typeof ENTITY_STORE_STATUS.NOT_INSTALLED;
   // Should be empty array, but we keep it for simplicity
   engines: GetStatusSuccessResult['engines'][number][];
+  preferences: Pick<EntityStorePreferences, 'autoInstall'>;
 }
 
 export type GetStatusResult = GetStatusSuccessResult | GetStatusNotInstalledResult;

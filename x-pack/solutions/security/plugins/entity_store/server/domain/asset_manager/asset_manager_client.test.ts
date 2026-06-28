@@ -10,6 +10,7 @@ import type {
   KibanaRequest,
   SavedObjectsClientContract,
 } from '@kbn/core/server';
+import { SavedObjectsErrorHelpers } from '@kbn/core/server';
 import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
 import { loggerMock } from '@kbn/logging-mocks';
 import type { SecurityPluginStart } from '@kbn/security-plugin/server';
@@ -89,6 +90,10 @@ describe('AssetManagerClient', () => {
     find: jest.Mock;
     delete: jest.Mock;
   };
+  let mockPreferencesClient: {
+    get: jest.Mock;
+    set: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -124,6 +129,11 @@ describe('AssetManagerClient', () => {
       delete: jest.fn().mockResolvedValue(undefined),
     };
 
+    mockPreferencesClient = {
+      get: jest.fn().mockResolvedValue(true),
+      set: jest.fn().mockResolvedValue(undefined),
+    };
+
     client = new AssetManagerClient({
       logger: loggerMock.create(),
       esClient: {} as jest.Mocked<ElasticsearchClient>,
@@ -132,6 +142,8 @@ describe('AssetManagerClient', () => {
         mockEngineDescriptorClient as unknown as import('../saved_objects').EngineDescriptorClient,
       globalStateClient:
         mockGlobalStateClient as unknown as import('../saved_objects').EntityStoreGlobalStateClient,
+      preferencesClient:
+        mockPreferencesClient as unknown as import('../saved_objects').EntityStorePreferencesClient,
       remoteLogExtractionStateClient: {
         delete: jest.fn().mockResolvedValue(undefined),
       } as unknown as import('../saved_objects/remote_log_extraction_state').RemoteLogExtractionStateClient,
@@ -183,6 +195,8 @@ describe('AssetManagerClient', () => {
           mockEngineDescriptorClient as unknown as import('../saved_objects').EngineDescriptorClient,
         globalStateClient:
           mockGlobalStateClient as unknown as import('../saved_objects').EntityStoreGlobalStateClient,
+        preferencesClient:
+          mockPreferencesClient as unknown as import('../saved_objects').EntityStorePreferencesClient,
         remoteLogExtractionStateClient: {
           delete: jest.fn().mockResolvedValue(undefined),
         } as unknown as import('../saved_objects/remote_log_extraction_state').RemoteLogExtractionStateClient,
@@ -331,6 +345,31 @@ describe('AssetManagerClient', () => {
           }),
         })
       );
+    });
+  });
+
+  describe('autoInstall preference', () => {
+    it('includes the autoInstall preference in the status result', async () => {
+      mockEngineDescriptorClient.getAll.mockResolvedValue([{ type: 'host', status: 'started' }]);
+      mockPreferencesClient.get.mockResolvedValue(false);
+
+      const result = await client.getStatus();
+
+      expect(mockPreferencesClient.get).toHaveBeenCalledWith('autoInstall');
+      expect(result.preferences.autoInstall).toBe(false);
+    });
+
+    it('returns the autoInstall preference even when the store is not installed', async () => {
+      // Global state missing → getStatus resolves to not_installed.
+      mockGlobalStateClient.findOrThrow.mockRejectedValue(
+        SavedObjectsErrorHelpers.createGenericNotFoundError('global state')
+      );
+      mockPreferencesClient.get.mockResolvedValue(false);
+
+      const result = await client.getStatus();
+
+      expect(result.status).toBe('not_installed');
+      expect(result.preferences.autoInstall).toBe(false);
     });
   });
 });

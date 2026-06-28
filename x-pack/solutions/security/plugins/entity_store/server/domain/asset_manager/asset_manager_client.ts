@@ -28,6 +28,7 @@ import {
   type EngineDescriptor,
   type EngineDescriptorClient,
   type EntityStoreGlobalStateClient,
+  type EntityStorePreferencesClient,
   HistorySnapshotState,
   LogExtractionConfig,
 } from '../saved_objects';
@@ -75,6 +76,7 @@ interface AssetManagerDependencies {
   taskManager: TaskManagerStartContract;
   engineDescriptorClient: EngineDescriptorClient;
   globalStateClient: EntityStoreGlobalStateClient;
+  preferencesClient: EntityStorePreferencesClient;
   remoteLogExtractionStateClient: RemoteLogExtractionStateClient;
   namespace: string;
   isServerless: boolean;
@@ -90,6 +92,7 @@ export class AssetManagerClient {
   private readonly taskManager: TaskManagerStartContract;
   private readonly engineDescriptorClient: EngineDescriptorClient;
   private readonly globalStateClient: EntityStoreGlobalStateClient;
+  private readonly preferencesClient: EntityStorePreferencesClient;
   private readonly remoteLogExtractionStateClient: RemoteLogExtractionStateClient;
   private readonly namespace: string;
   private readonly isServerless: boolean;
@@ -104,6 +107,7 @@ export class AssetManagerClient {
     this.taskManager = deps.taskManager;
     this.engineDescriptorClient = deps.engineDescriptorClient;
     this.globalStateClient = deps.globalStateClient;
+    this.preferencesClient = deps.preferencesClient;
     this.remoteLogExtractionStateClient = deps.remoteLogExtractionStateClient;
     this.namespace = deps.namespace;
     this.isServerless = deps.isServerless;
@@ -278,6 +282,9 @@ export class AssetManagerClient {
   }
 
   public async getStatus(withComponents: boolean = false): Promise<GetStatusResult> {
+    // Declared before the try so the catch's not_installed branch can return it too.
+    const preferences = { autoInstall: await this.preferencesClient.get('autoInstall') };
+
     try {
       const [engines, { historySnapshot, logsExtraction: logsExtractionConfig }] =
         await Promise.all([
@@ -296,13 +303,14 @@ export class AssetManagerClient {
           engines: enginesWithComponents,
           historySnapshot,
           logsExtractionConfig,
+          preferences,
         };
       }
 
-      return { status, engines, historySnapshot, logsExtractionConfig };
+      return { status, engines, historySnapshot, logsExtractionConfig, preferences };
     } catch (error) {
       if (SavedObjectsErrorHelpers.isNotFoundError(error)) {
-        return { status: ENTITY_STORE_STATUS.NOT_INSTALLED, engines: [] };
+        return { status: ENTITY_STORE_STATUS.NOT_INSTALLED, engines: [], preferences };
       }
 
       this.logger.error('Error getting status', { error });

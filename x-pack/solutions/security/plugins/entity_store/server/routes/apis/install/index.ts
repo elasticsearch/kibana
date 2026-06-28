@@ -52,6 +52,7 @@ export function registerInstall(router: EntityStorePluginRouter) {
           logger,
           assetManagerClient: assetManager,
           entityMaintainersClient,
+          preferencesClient,
         } = entityStoreCtx;
         const { entityTypes, logExtraction, historySnapshot } = req.body;
         logger.debug('Install api called');
@@ -63,6 +64,11 @@ export function registerInstall(router: EntityStorePluginRouter) {
           logExtraction?.additionalIndexPatterns
         );
         if (forbidden) return forbidden;
+
+        // Record the user's intent to have the store enabled so the auto-install hook keeps it
+        // installed on subsequent navigations.
+        await preferencesClient.set('autoInstall', true);
+
         const { engines } = await assetManager.getStatus();
         const installedTypes = new Set(engines.map((e) => e.type));
         const toInstall = entityTypes.filter((type) => !installedTypes.has(type));
