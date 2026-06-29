@@ -41,6 +41,9 @@ export function registerAnomalySwimLaneCasesAttachment(
         }),
       }),
       schema: AnomalySwimLaneAttachmentPayloadSchema,
+      // `data.state` is the ML embeddable input bag produced by the anomaly
+      // explorer's "Add to case" flow — not authorable in YAML.
+      workflowSchema: false,
     })
   );
 }

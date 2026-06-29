@@ -57,6 +57,7 @@ describe('getVisualizationAttachmentType', () => {
       getAttachmentViewObject: expect.any(Function),
       getAttachmentRemovalObject: expect.any(Function),
       schema: expect.any(Object),
+      workflowSchema: false,
     });
   });
 

@@ -43,14 +43,13 @@ export const buildAddAttachmentsStepCommonDefinition = (
       - type: comment
         data:
           content: "Investigating this incident."
-      - type: file
-        attachmentId: "file-so-id"
+      - type: stack.alert
+        attachmentId: "alert-uuid-1"
         metadata:
-          soType: file
-          files:
-            - name: evidence.png
-              mimeType: image/png
-              extension: png
+          index: ".alerts-stack.alerts-default"
+          rule:
+            id: "rule-uuid-1"
+            name: "High CPU"
 \`\`\``,
     ],
   },

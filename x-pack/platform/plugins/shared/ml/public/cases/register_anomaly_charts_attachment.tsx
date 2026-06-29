@@ -54,6 +54,9 @@ export function registerAnomalyChartsCasesAttachment(
         }),
       }),
       schema: AnomalyChartsAttachmentPayloadSchema,
+      // `data.state` is the ML embeddable input bag produced by the anomaly
+      // charts "Add to case" flow — not authorable in YAML.
+      workflowSchema: false,
     })
   );
 }

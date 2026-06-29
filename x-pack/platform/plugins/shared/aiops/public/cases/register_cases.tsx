@@ -66,6 +66,9 @@ export function registerCases(
         ),
       }),
       schema: ChangePointChartAttachmentPayloadSchema,
+      // `data.state` is the AIOps embeddable input bag produced by the change
+      // point detection "Add to case" flow — not authorable in YAML.
+      workflowSchema: false,
     })
   );
 
@@ -103,6 +106,9 @@ export function registerCases(
         ),
       }),
       schema: PatternAnalysisAttachmentPayloadSchema,
+      // `data.state` is the AIOps embeddable input bag produced by the log
+      // pattern analysis "Add to case" flow — not authorable in YAML.
+      workflowSchema: false,
     })
   );
 
@@ -146,6 +152,9 @@ export function registerCases(
         ),
       }),
       schema: LogRateAnalysisAttachmentPayloadSchema,
+      // `data.state` is the AIOps embeddable input bag produced by the log
+      // rate analysis "Add to case" flow — not authorable in YAML.
+      workflowSchema: false,
     })
   );
 }

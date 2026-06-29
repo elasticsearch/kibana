@@ -57,22 +57,6 @@ export const buildAddAttachmentStepCommonDefinition = (
       data:
         content: "Investigating this incident now."
 \`\`\``,
-      `## Attach an existing file by id
-\`\`\`yaml
-- name: add_file
-  type: ${AddAttachmentStepTypeId}
-  with:
-    case_id: "abc-123-def-456"
-    attachment:
-      type: file
-      attachmentId: "file-so-id"
-      metadata:
-        soType: file
-        files:
-          - name: evidence.png
-            mimeType: image/png
-            extension: png
-\`\`\``,
     ],
   },
   inputSchema: buildAddAttachmentInputSchema(members),

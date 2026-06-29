@@ -56,6 +56,9 @@ export function registerSingleMetricViewerCasesAttachment(
         }),
       }),
       schema: SingleMetricViewerAttachmentPayloadSchema,
+      // `data.state` is the ML embeddable input bag produced by the single
+      // metric viewer "Add to case" flow — not authorable in YAML.
+      workflowSchema: false,
     })
   );
 }
