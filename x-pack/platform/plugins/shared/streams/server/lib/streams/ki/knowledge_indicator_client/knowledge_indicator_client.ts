@@ -9,9 +9,9 @@ import type { ComposerSortShorthand } from '@elastic/esql';
 import type { Feature, KnowledgeIndicator, QueryLink, StreamQuery } from '@kbn/streams-schema';
 import type { Streams } from '@kbn/streams-schema';
 import {
-  DEFAULT_SIG_EVENTS_TUNING_CONFIG,
-  type SigEventsTuningConfig,
-} from '../../../../../common/sig_events_tuning_config';
+  DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG,
+  type SignificantEventsTuningConfig,
+} from '../../../../../common/significant_events_tuning_config';
 import type { SearchMode } from '../../../../../common/queries';
 import type { KnowledgeIndicatorType } from '../fields';
 import {
@@ -45,9 +45,9 @@ export class KnowledgeIndicatorClient {
     deps: KnowledgeIndicatorClientDeps,
     isSignificantEventsEnabled = false,
     config: Pick<
-      SigEventsTuningConfig,
+      SignificantEventsTuningConfig,
       'semantic_min_score' | 'rrf_rank_constant' | 'feature_ttl_days'
-    > = DEFAULT_SIG_EVENTS_TUNING_CONFIG
+    > = DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG
   ) {
     const revisionReader = new RevisionReader(deps.esClient, deps.logger);
     this.ttlDays = config.feature_ttl_days;

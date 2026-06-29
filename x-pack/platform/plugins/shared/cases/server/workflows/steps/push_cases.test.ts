@@ -89,6 +89,17 @@ describe('pushCasesStepDefinition', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it('skips push and returns the case as-is when a .none connector is configured', async () => {
+    const caseWithoutNoneConnector = { ...createCaseResponseFixture };
+    const get = jest.fn().mockResolvedValue(caseWithoutNoneConnector);
+    const push = jest.fn();
+    const definition = pushCasesStepDefinition(makeCasesClient({ get, push }));
+
+    await definition.handler(createContext({ case_ids: ['case-1'] }));
+
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it('returns null in the output for a failed case push and logs the error', async () => {
     const push = jest.fn().mockRejectedValue(new Error('push failed'));
     const context = createContext({ case_ids: ['case-1'] });

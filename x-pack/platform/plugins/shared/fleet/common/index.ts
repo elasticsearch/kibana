@@ -233,6 +233,7 @@ export type {
   RegistryImage,
   RegistryDataStream,
   RegistryDataStreamPrivileges,
+  RegistryProviderPermissions,
   RegistryStream,
   RegistryInputGroup,
   BundledPackage,

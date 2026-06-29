@@ -4,6 +4,7 @@ exports[`getSchemaForAuthType() correctly returns schema for auth type definitio
 Object {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "authMode": "shared",
   "label": "API key header authentication",
   "properties": Object {
     "authType": Object {
@@ -30,6 +31,7 @@ exports[`getSchemaForAuthType() correctly returns schema for auth type definitio
 Object {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "authMode": "shared",
   "label": "API key header authentication",
   "properties": Object {
     "authType": Object {
@@ -55,6 +57,7 @@ exports[`getSchemaForAuthType() correctly returns schema for auth type definitio
 Object {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "authMode": "shared",
   "label": "Basic authentication",
   "properties": Object {
     "authType": Object {
@@ -86,6 +89,7 @@ exports[`getSchemaForAuthType() ignores defaults for key that is not in auth typ
 Object {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "authMode": "shared",
   "label": "API key header authentication",
   "properties": Object {
     "Api-Key": Object {

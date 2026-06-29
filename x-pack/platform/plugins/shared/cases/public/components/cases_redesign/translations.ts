@@ -33,13 +33,28 @@ export const SHOW_METRICS = i18n.translate('xpack.cases.casesRedesign.details.sh
   defaultMessage: 'Show metrics',
 });
 
-export const EDIT_CASE_NAME = i18n.translate('xpack.cases.casesRedesign.details.editCaseName', {
-  defaultMessage: 'Edit case name',
-});
+export const REPORTED_BY = (name: string) =>
+  i18n.translate('xpack.cases.casesRedesign.details.reportedBy', {
+    defaultMessage: 'Reported by: {name}',
+    values: { name },
+  });
 
-export const NEW_CASE_NAME_LABEL = i18n.translate(
-  'xpack.cases.casesRedesign.details.newCaseNameLabel',
+export const CREATED_ON = (date: string) =>
+  i18n.translate('xpack.cases.casesRedesign.details.createdOn', {
+    defaultMessage: 'on: {date}',
+    values: { date },
+  });
+
+export const UNKNOWN_REPORTER = i18n.translate(
+  'xpack.cases.casesRedesign.details.unknownReporter',
   {
-    defaultMessage: 'Case name',
+    defaultMessage: 'Unknown',
+  }
+);
+
+export const EDIT_CASE_NAME_ARIA = i18n.translate(
+  'xpack.cases.casesRedesign.details.editCaseNameAria',
+  {
+    defaultMessage: 'Edit case name',
   }
 );

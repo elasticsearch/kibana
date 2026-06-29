@@ -197,9 +197,9 @@ describe('StepAboutRuleComponent', () => {
   });
 
   it('is invalid if description is not present', async () => {
-    render(<TestComp />, { wrapper: TestProviders });
+    const { user } = setup(<TestComp />);
 
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleName')).getByRole('textbox'),
       'Test name text'
     );
@@ -212,12 +212,11 @@ describe('StepAboutRuleComponent', () => {
   });
 
   it('is invalid if threat match rule and threat_indicator_path is not present', async () => {
-    render(
-      <TestComp defineStepDefaultOverride={{ ruleType: 'threat_match' } as DefineStepRule} />,
-      { wrapper: TestProviders }
+    const { user } = setup(
+      <TestComp defineStepDefaultOverride={{ ruleType: 'threat_match' } as DefineStepRule} />
     );
 
-    await userEvent.clear(
+    await user.clear(
       within(screen.getByTestId('ruleThreatMatchIndicatorPath')).getByRole('textbox')
     );
 
@@ -229,13 +228,13 @@ describe('StepAboutRuleComponent', () => {
   });
 
   it('is valid if is not a threat match rule and threat_indicator_path is not present', async () => {
-    render(<TestComp />, { wrapper: TestProviders });
+    const { user } = setup(<TestComp />);
 
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleDescription')).getByRole('textbox'),
       'Test description text'
     );
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleName')).getByRole('textbox'),
       'Test name text'
     );
@@ -250,9 +249,9 @@ describe('StepAboutRuleComponent', () => {
   });
 
   it('is invalid if no "name" is present', async () => {
-    render(<TestComp />, { wrapper: TestProviders });
+    const { user } = setup(<TestComp />);
 
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleDescription')).getByRole('textbox'),
       'Test description text'
     );
@@ -267,13 +266,13 @@ describe('StepAboutRuleComponent', () => {
   it('is valid if both "name" and "description" are present', async () => {
     const handleSubmit = jest.fn();
 
-    render(<TestComp onSubmit={handleSubmit} />, { wrapper: TestProviders });
+    const { user } = setup(<TestComp onSubmit={handleSubmit} />);
 
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleDescription')).getByRole('textbox'),
       'Test description text'
     );
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleName')).getByRole('textbox'),
       'Test name text'
     );
@@ -296,22 +295,22 @@ describe('StepAboutRuleComponent', () => {
   it('it allows user to set the risk score as a number (and not a string)', async () => {
     const handleSubmit = jest.fn();
 
-    render(<TestComp onSubmit={handleSubmit} />, { wrapper: TestProviders });
+    const { user } = setup(<TestComp onSubmit={handleSubmit} />);
 
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleName')).getByRole('textbox'),
       'Test name text'
     );
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleDescription')).getByRole('textbox'),
       'Test description text'
     );
-    await userEvent.clear(
+    await user.clear(
       within(screen.getByTestId('detectionEngineStepAboutRuleRiskScore-defaultRisk')).getByRole(
         'spinbutton'
       )
     );
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleRiskScore-defaultRisk')).getByRole(
         'spinbutton'
       ),
@@ -335,13 +334,13 @@ describe('StepAboutRuleComponent', () => {
   it('does not modify the provided risk score until the user changes the severity', async () => {
     const handleSubmit = jest.fn();
 
-    render(<TestComp onSubmit={handleSubmit} />, { wrapper: TestProviders });
+    const { user } = setup(<TestComp onSubmit={handleSubmit} />);
 
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleName')).getByRole('textbox'),
       'Test name text'
     );
-    await userEvent.type(
+    await user.type(
       within(screen.getByTestId('detectionEngineStepAboutRuleDescription')).getByRole('textbox'),
       'Test description text'
     );
@@ -357,10 +356,10 @@ describe('StepAboutRuleComponent', () => {
 
     handleSubmit.mockClear();
 
-    await userEvent.click(
+    await user.click(
       within(screen.getByTestId('detectionEngineStepAboutRuleSeverity')).getByTestId('select')
     );
-    await userEvent.click(screen.getByRole('option', { name: /medium/i }));
+    await user.click(screen.getByRole('option', { name: /medium/i }));
 
     await submitForm();
 
@@ -408,6 +407,13 @@ describe('StepAboutRuleComponent', () => {
     expect(useFetchIndex).toHaveBeenLastCalledWith(stepDefineStepMLRule.index);
   });
 });
+
+function setup(ui: React.ReactElement) {
+  return {
+    user: userEvent.setup({ delay: null, pointerEventsCheck: 0 }),
+    ...render(ui, { wrapper: TestProviders }),
+  };
+}
 
 function submitForm(): Promise<void> {
   return act(async () => {

@@ -53,7 +53,9 @@ export const resumeWorkflowExecutionTool = ({
     schema: resumeWorkflowExecutionSchema,
     handler: async ({ executionId, input }, { spaceId, request }) => {
       try {
-        await workflowApi.resumeWorkflowExecution(executionId, spaceId, input, request);
+        await workflowApi.resumeWorkflowExecution(executionId, spaceId, input, request, {
+          channel: 'agent_builder',
+        });
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         return {

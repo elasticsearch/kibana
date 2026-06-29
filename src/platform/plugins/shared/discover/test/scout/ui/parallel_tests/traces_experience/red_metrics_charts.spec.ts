@@ -106,7 +106,7 @@ spaceTest.describe(
         await pageObjects.discover.goto({ queryMode: 'classic' });
 
         await spaceTest.step('verify data table is loaded', async () => {
-          await pageObjects.discover.waitForDocTableRendered();
+          await pageObjects.dataGrid.waitForDocTableRendered();
           await expect(page.testSubj.locator('discoverDocTable')).toBeVisible();
         });
 

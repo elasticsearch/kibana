@@ -9,7 +9,7 @@
  * Canonical workflow execution status shared across all workflow types.
  * `BeingCanceled` is a client-only optimistic state; the server never returns it.
  */
-export enum SigEventsWorkflowStatus {
+export enum SignificantEventsWorkflowStatus {
   NotStarted = 'not_started',
   InProgress = 'in_progress',
   /** Client-only optimistic state; the server never returns this value. */
@@ -31,14 +31,16 @@ export enum SigEventsWorkflowStatus {
  * but having it in the shared type is harmless since the server simply never
  * constructs that variant.
  */
-export type SigEventsWorkflowStatusResult<T extends object = {}> =
-  | { status: SigEventsWorkflowStatus.NotStarted; executionId: null }
+export type SignificantEventsWorkflowStatusResult<T extends object = {}> =
+  | { status: SignificantEventsWorkflowStatus.NotStarted; executionId: null }
   | {
-      status: SigEventsWorkflowStatus.InProgress | SigEventsWorkflowStatus.BeingCanceled;
+      status:
+        | SignificantEventsWorkflowStatus.InProgress
+        | SignificantEventsWorkflowStatus.BeingCanceled;
       executionId?: string;
     }
   | ({ executionId: string } & (
-      | { status: SigEventsWorkflowStatus.Canceled }
-      | { status: SigEventsWorkflowStatus.Failed; error: string }
-      | ({ status: SigEventsWorkflowStatus.Completed } & T)
+      | { status: SignificantEventsWorkflowStatus.Canceled }
+      | { status: SignificantEventsWorkflowStatus.Failed; error: string }
+      | ({ status: SignificantEventsWorkflowStatus.Completed } & T)
     ));

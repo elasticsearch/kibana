@@ -95,7 +95,7 @@ export const loginAndGoToDiscover = async ({
   await browserAuth.loginAsViewer();
   await pageObjects.discover.goto({ queryMode: 'classic' });
   await pageObjects.discover.waitUntilSearchingHasFinished();
-  await pageObjects.discover.waitForDocTableRendered();
+  await pageObjects.dataGrid.waitForDocTableRendered();
 };
 
 /**
@@ -105,7 +105,7 @@ export const loginAndGoToDiscover = async ({
 export const navigateToFirstDocContext = async (
   pageObjects: PageObjects & { contextPage: ContextPage }
 ) => {
-  await pageObjects.discover.openDocumentDetails({ rowIndex: 0 });
+  await pageObjects.dataGrid.openDocumentDetails({ rowIndex: 0 });
   await pageObjects.contextPage.clickRowAction(1);
   await pageObjects.contextPage.waitUntilContextLoadingHasFinished();
 };

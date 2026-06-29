@@ -7,12 +7,16 @@
 
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 import { AttachmentType } from '@kbn/agent-builder-common/attachments';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
+import {
+  AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+  CONTEXT_ENGINE_ENABLED_SETTING_ID,
+} from '@kbn/management-settings-ids';
 import { createConnectorLifecycleHandler } from './connector_lifecycle_handler';
 
-const createMockUiSettingsClient = (experimentalFeaturesEnabled = true) => ({
+const createMockUiSettingsClient = (contextEngineEnabled = true, experimentalEnabled = true) => ({
   get: jest.fn().mockImplementation(async (key: string) => {
-    if (key === AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID) return experimentalFeaturesEnabled;
+    if (key === CONTEXT_ENGINE_ENABLED_SETTING_ID) return contextEngineEnabled;
+    if (key === AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID) return experimentalEnabled;
     return undefined;
   }),
 });
@@ -75,8 +79,21 @@ describe('createConnectorLifecycleHandler', () => {
       expect(agentContextLayer.indexAttachment).not.toHaveBeenCalled();
     });
 
-    it('skips when experimental features are disabled', async () => {
+    it('skips when the Context Engine is disabled', async () => {
       const uiSettingsClient = createMockUiSettingsClient(false);
+      const agentContextLayer = createMockAgentContextLayer();
+      const handler = createConnectorLifecycleHandler({
+        logger,
+        getStartServices: createMockGetStartServices(uiSettingsClient, agentContextLayer),
+      });
+
+      await handler.onPostCreate(createBaseParams() as any);
+
+      expect(agentContextLayer.indexAttachment).not.toHaveBeenCalled();
+    });
+
+    it('skips when Agent Builder experimental features are disabled', async () => {
+      const uiSettingsClient = createMockUiSettingsClient(true, false);
       const agentContextLayer = createMockAgentContextLayer();
       const handler = createConnectorLifecycleHandler({
         logger,

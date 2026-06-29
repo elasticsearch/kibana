@@ -41,7 +41,7 @@ const addFilterForFieldValueFromSidebar = async ({
   await page.locator('[data-popover-open="true"]').waitFor({ state: 'visible' });
   await expect(page.locator('[data-test-subj*="-statsLoading"]')).toBeHidden();
   await page.testSubj.click(`plus-${field}-${value}`);
-  await dataGrid.waitUntilSearchingHasFinished();
+  await dataGrid.waitForLoad();
 };
 
 const firstRowTimestampCell = (page: ScoutPage) =>
@@ -75,7 +75,7 @@ spaceTest.describe('Discover data grid - context view', { tag: '@local-stateful-
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsViewer();
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 
@@ -101,7 +101,7 @@ spaceTest.describe('Discover data grid - context view', { tag: '@local-stateful-
           value: filter.value,
         });
       }
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await pageObjects.dataGrid.waitForDocTableRendered();
 
       const firstTimestamp = normalizeTimestamp(await firstRowTimestampCell(page).innerText());

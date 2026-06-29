@@ -10,6 +10,7 @@ import pRetry from 'p-retry';
 import type { KibanaRequest } from '@kbn/core/server';
 import { createServerStepDefinition } from '@kbn/workflows-extensions/server';
 import { pushCasesStepCommonDefinition } from '../../../common/workflows/steps/push_cases';
+import { ConnectorTypes } from '../../../common/bundled-types.gen';
 import type { CasesClient } from '../../client';
 import { getCasesClientFromStepsContext, safeParseCaseForWorkflowOutput } from './utils';
 
@@ -19,7 +20,7 @@ const pushSingleCase = async (
   logger: { warn(message: string): void }
 ) => {
   const theCase = await client.cases.get({ id: caseId, includeComments: false });
-  if (!theCase.connector) {
+  if (!theCase.connector || theCase.connector.type === ConnectorTypes.enum['.none']) {
     return theCase;
   }
   return pRetry(

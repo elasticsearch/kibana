@@ -7,7 +7,7 @@
 
 import { isBoom } from '@hapi/boom';
 import type { RulesClient } from '@kbn/alerting-plugin/server';
-import type { EsqlRuleParams } from '../../../../sig_events/rules/esql/types';
+import type { EsqlRuleParams } from '../../../../significant_events/rules/esql/types';
 import {
   STREAMS_RULE_CONSUMER,
   STREAMS_ESQL_RULE_TYPE_ID,

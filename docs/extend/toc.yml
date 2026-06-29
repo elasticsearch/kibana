@@ -182,6 +182,5 @@ toc:
               - file: api-auth.md
           - file: migrate-tests.md
       - file: ftr.md
-      - file: writing-stable-functional-tests.md
   - file: plugin-list.md
   - file: dependencies-versions.md

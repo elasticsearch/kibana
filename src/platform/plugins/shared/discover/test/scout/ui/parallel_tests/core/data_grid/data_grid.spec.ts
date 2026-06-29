@@ -67,7 +67,7 @@ spaceTest.describe('Discover data grid', { tag: '@local-stateful-classic' }, () 
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsViewer();
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 

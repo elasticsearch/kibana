@@ -6,11 +6,11 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { SigEvent, SigEventStatus } from '@kbn/streams-schema';
-import type { EventClient } from '../../../lib/sig_events/events';
+import type { SignificantEvent, SignificantEventStatus } from '@kbn/streams-schema';
+import type { EventClient } from '../../../lib/significant_events/events';
 
 export interface EventCreateInput {
-  status?: SigEventStatus;
+  status?: SignificantEventStatus;
   title: string;
   summary: string;
   root_cause: string;
@@ -30,7 +30,7 @@ export async function createEventToolHandler({
   const now = new Date().toISOString();
   const eventId = uuidv4();
 
-  const event: SigEvent = {
+  const event: SignificantEvent = {
     '@timestamp': now,
     created_at: now,
     event_id: eventId,

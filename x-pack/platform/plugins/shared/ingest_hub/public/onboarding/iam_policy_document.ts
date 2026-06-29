@@ -5,58 +5,11 @@
  * 2.0.
  */
 
-export interface IamPolicyDocument {
-  Version: string;
-  Statement: Array<{
-    Sid: string;
-    Effect: 'Allow';
-    Resource: string;
-    Action: string[];
-  }>;
-}
-
-/** Sid used when the policy aggregates permissions across all selected integrations. */
-export const ALL_INTEGRATIONS_SID = 'ElasticAWSIntegration';
-
-/**
- * Derives an IAM statement Sid from an integration name.
- * Sids must be alphanumeric, so the name is stripped of non-alphanumeric characters
- * and prefixed with "Elastic" (e.g. "AWS GuardDuty" -> "ElasticAWSGuardDuty").
- * Falls back to the aggregated Sid when no name is provided.
- */
-export function getIntegrationSid(integrationName?: string): string {
-  if (!integrationName) {
-    return ALL_INTEGRATIONS_SID;
-  }
-
-  const sanitized = integrationName.replace(/[^a-zA-Z0-9]/g, '');
-  return sanitized ? `Elastic${sanitized}` : ALL_INTEGRATIONS_SID;
-}
-
-/**
- * Builds a minimal IAM policy document for display or attachment to an IAM user.
- * Resource is scoped to "*" in V1 — ARNs are not known at the Connect step.
- */
-export function buildIamPolicyDocument(
-  actions: string[],
-  sid: string = ALL_INTEGRATIONS_SID
-): IamPolicyDocument {
-  return {
-    Version: '2012-10-17',
-    Statement: [
-      {
-        Sid: sid,
-        Effect: 'Allow',
-        Resource: '*',
-        Action: Array.from(new Set(actions)).sort(),
-      },
-    ],
-  };
-}
-
-export function formatIamPolicyDocument(
-  actions: string[],
-  sid: string = ALL_INTEGRATIONS_SID
-): string {
-  return JSON.stringify(buildIamPolicyDocument(actions, sid), null, 2);
-}
+// Re-export from common so the server and browser share a single implementation.
+export type { IamPolicyDocument } from '../../common/iam_policy_document';
+export {
+  ALL_INTEGRATIONS_SID,
+  getIntegrationSid,
+  buildIamPolicyDocument,
+  formatIamPolicyDocument,
+} from '../../common/iam_policy_document';

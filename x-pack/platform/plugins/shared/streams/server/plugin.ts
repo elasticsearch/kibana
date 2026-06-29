@@ -40,14 +40,14 @@ import {
 } from '../common/constants';
 import { registerFeatureFlags } from './feature_flags';
 import { ContentService } from './lib/content/content_service';
-import { registerRules } from './lib/sig_events/rules/register_rules';
-import { getSigEventsTuningConfig } from './lib/sig_events/helpers/get_sig_events_tuning_config';
+import { registerRules } from './lib/significant_events/rules/register_rules';
+import { getSignificantEventsTuningConfig } from './lib/significant_events/helpers/get_significant_events_tuning_config';
 import { AttachmentService } from './lib/streams/attachments/attachment_service';
 import {
   isSignificantEventsAlertingV2Active,
   logAlertingV2PluginUnavailable,
   readSignificantEventsAlertingV2UiEnabled,
-} from './lib/sig_events/significant_events_alerting_v2';
+} from './lib/significant_events/significant_events_alerting_v2';
 import { StreamsService } from './lib/streams/service';
 import { EbtTelemetryService, StatsTelemetryService } from './lib/telemetry';
 import { streamsRouteRepository } from './routes';
@@ -67,7 +67,7 @@ import {
   createSignificantEventsClients,
   createSignificantEventsServices,
   initializeSignificantEventsTemplates,
-} from './lib/sig_events/significant_events_clients';
+} from './lib/significant_events/significant_events_clients';
 import { baseFields } from './lib/streams/component_templates/logs_layer';
 import { ecsBaseFields } from './lib/streams/component_templates/logs_ecs_layer';
 import { createMemoryToolsOptions, registerStreamsAgentBuilder } from './agent_builder/register';
@@ -202,7 +202,7 @@ export class StreamsPlugin
           rulesClient: await pluginsStart.alerting.getRulesClientWithRequest(request),
         }),
         contentService.getClient(),
-        getSigEventsTuningConfig(globalUiSettingsClient, this.logger),
+        getSignificantEventsTuningConfig(globalUiSettingsClient, this.logger),
       ]);
 
       const space = pluginsStart.spaces?.spacesService.getSpaceId(request) ?? DEFAULT_SPACE_ID;

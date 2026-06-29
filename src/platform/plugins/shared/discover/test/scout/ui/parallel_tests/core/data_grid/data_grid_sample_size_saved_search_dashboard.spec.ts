@@ -56,7 +56,7 @@ spaceTest.describe(
 
       await spaceTest.step('save a search with a custom sample size', async () => {
         await discover.goto({ queryMode: 'classic' });
-        await dataGrid.waitUntilSearchingHasFinished();
+        await dataGrid.waitForLoad();
         await dataGrid.waitForDocTableRendered();
         await dataGrid.openGridDisplaySettings();
         expect(await dataGrid.getCurrentSampleSize()).toBe(testData.DEFAULT_SAMPLE_SIZE);
@@ -74,7 +74,7 @@ spaceTest.describe(
 
       await spaceTest.step('new Discover sessions use the default sample size', async () => {
         await discover.clickNewSearch();
-        await dataGrid.waitUntilSearchingHasFinished();
+        await dataGrid.waitForLoad();
         await dataGrid.waitForDocTableRendered();
         await dataGrid.openGridDisplaySettings();
 
@@ -84,7 +84,7 @@ spaceTest.describe(
 
       await spaceTest.step('loading the saved search restores the custom sample size', async () => {
         await discover.loadSavedSearch(savedSearchName);
-        await dataGrid.waitUntilSearchingHasFinished();
+        await dataGrid.waitForLoad();
         await dataGrid.waitForDocTableRendered();
         await dataGrid.openGridDisplaySettings();
 
@@ -99,7 +99,7 @@ spaceTest.describe(
         'loading an archived saved search uses the default sample size',
         async () => {
           await discover.loadSavedSearch(testData.SAVED_SEARCH_TITLE);
-          await dataGrid.waitUntilSearchingHasFinished();
+          await dataGrid.waitForLoad();
           await dataGrid.waitForDocTableRendered();
           await dataGrid.openGridDisplaySettings();
 
@@ -114,7 +114,7 @@ spaceTest.describe(
 
       await dashboard.openNewDashboard();
       await dashboard.addSavedSearch(testData.SAVED_SEARCH_TITLE);
-      await dataGrid.waitUntilSearchingHasFinished();
+      await dataGrid.waitForLoad();
       await dataGrid.waitForDocTableRendered();
 
       await dataGrid.openGridDisplaySettings();
@@ -131,7 +131,7 @@ spaceTest.describe(
 
         await spaceTest.step('save a search with a custom sample size', async () => {
           await discover.goto({ queryMode: 'classic' });
-          await dataGrid.waitUntilSearchingHasFinished();
+          await dataGrid.waitForLoad();
           await dataGrid.waitForDocTableRendered();
           await dataGrid.openGridDisplaySettings();
           await dataGrid.setSampleSize(CUSTOM_SAMPLE_SIZE_FOR_SAVED_SEARCH);
@@ -141,7 +141,7 @@ spaceTest.describe(
         await spaceTest.step('override the sample size on a Dashboard panel', async () => {
           await dashboard.openNewDashboard();
           await dashboard.addSavedSearch(savedSearchName);
-          await dataGrid.waitUntilSearchingHasFinished();
+          await dataGrid.waitForLoad();
           await dataGrid.waitForDocTableRendered();
 
           await dataGrid.openGridDisplaySettings();
@@ -164,7 +164,7 @@ spaceTest.describe(
             await dashboard.saveDashboard(dashboardName);
             await page.reload();
             await dashboard.waitForRenderComplete();
-            await dataGrid.waitUntilSearchingHasFinished();
+            await dataGrid.waitForLoad();
             await dataGrid.waitForDocTableRendered();
 
             await dataGrid.openGridDisplaySettings();

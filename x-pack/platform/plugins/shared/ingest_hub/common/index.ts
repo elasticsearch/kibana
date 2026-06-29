@@ -11,3 +11,17 @@ export {
   AWS_ONBOARDING_TITLE,
   AWS_ONBOARDING_DESCRIPTION,
 } from './constants';
+
+export type { IamPolicyDocument } from './iam_policy_document';
+export {
+  ALL_INTEGRATIONS_SID,
+  getIntegrationSid,
+  buildIamPolicyDocument,
+  formatIamPolicyDocument,
+} from './iam_policy_document';
+
+export type { ProviderPermissions } from './aws_provider_permissions';
+export { AWS_SERVICE_PROVIDER_PERMISSIONS } from './aws_provider_permissions';
+
+export type { GetIamPermissionsResponse, ServiceIamPermissions } from './iam_permissions_api';
+export { IAM_PERMISSIONS_API_PATH } from './iam_permissions_api';

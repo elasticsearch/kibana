@@ -11,7 +11,10 @@ import {
   ATTACHMENT_REF_ACTOR,
   type VersionedAttachment,
 } from '@kbn/agent-builder-common/attachments';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
+import {
+  AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+  CONTEXT_ENGINE_ENABLED_SETTING_ID,
+} from '@kbn/management-settings-ids';
 import type { RouteDependencies } from '../types';
 import { getHandlerWrapper } from '../wrap_handler';
 import { internalApiPath } from '../../../common/constants';
@@ -162,7 +165,12 @@ export function registerInternalSmlRoutes({
         return response.ok({ body });
       },
       {
-        featureFlag: AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+        // SML lives inside Agent Builder, so the route requires both the Agent
+        // Builder experimental flag and the dedicated Context Engine flag.
+        featureFlag: [
+          AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+          CONTEXT_ENGINE_ENABLED_SETTING_ID,
+        ],
       }
     )
   );

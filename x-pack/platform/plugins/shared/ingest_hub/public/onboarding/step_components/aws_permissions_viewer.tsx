@@ -11,6 +11,8 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiIcon,
+  EuiListGroup,
+  EuiListGroupItem,
   EuiPanel,
   EuiSelect,
   EuiSpacer,
@@ -20,30 +22,38 @@ import {
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 
-import { formatIamPolicyDocument, getIntegrationSid } from '../iam_policy_document';
-import type { AwsServicePermissions } from '../service_permissions';
+import type { IamPolicyDocument } from '../../../common/iam_policy_document';
+import type { ServiceIamPermissions } from '../../../common/iam_permissions_api';
 
 export const AWS_PERMISSIONS_VIEWER_TEST_SUBJ = 'awsPermissionsViewer';
 export const ALL_SERVICES_OPTION_VALUE = '__all__';
 
-export interface AwsPermissionsViewerProps {
-  services: AwsServicePermissions[];
+export interface AwsPermissionsViewerService {
+  id: string;
+  name: string;
 }
 
-function getServiceLabel(service: AwsServicePermissions, hasDuplicateNames: boolean): string {
+export interface AwsPermissionsViewerProps {
+  /** Per-service permissions (policy + managed ARNs) keyed by service id, from the endpoint. */
+  byService: Record<string, ServiceIamPermissions>;
+  /** Deduped union of all services' inline policy actions, from the endpoint. */
+  merged: IamPolicyDocument;
+  /** Deduped union of all services' managed policy ARNs, from the endpoint. */
+  mergedManagedPolicyArns: string[];
+  /** Display info for the dropdown (id + name). */
+  services: AwsPermissionsViewerService[];
+}
+
+function getServiceLabel(service: AwsPermissionsViewerService, hasDuplicateNames: boolean): string {
   return hasDuplicateNames ? `${service.name} (${service.id})` : service.name;
 }
 
-function getDisplayedActions(services: AwsServicePermissions[], selectedOption: string): string[] {
-  if (selectedOption === ALL_SERVICES_OPTION_VALUE) {
-    return [...new Set(services.flatMap(({ actions }) => actions))].sort();
-  }
-
-  const service = services.find(({ id }) => id === selectedOption);
-  return service ? [...service.actions].sort() : [];
-}
-
-export const AwsPermissionsViewer: React.FC<AwsPermissionsViewerProps> = ({ services }) => {
+export const AwsPermissionsViewer: React.FC<AwsPermissionsViewerProps> = ({
+  byService,
+  merged,
+  mergedManagedPolicyArns,
+  services,
+}) => {
   const [selectedOption, setSelectedOption] = useState(ALL_SERVICES_OPTION_VALUE);
 
   const duplicateNames = useMemo(() => {
@@ -64,37 +74,40 @@ export const AwsPermissionsViewer: React.FC<AwsPermissionsViewerProps> = ({ serv
 
     return [
       { value: ALL_SERVICES_OPTION_VALUE, text: allIntegrationsLabel },
-      ...services.map((service) => ({
-        value: service.id,
-        text: getServiceLabel(service, duplicateNames.has(service.name)),
-      })),
+      ...services
+        .filter(({ id }) => id in byService)
+        .map((service) => ({
+          value: service.id,
+          text: getServiceLabel(service, duplicateNames.has(service.name)),
+        })),
     ];
-  }, [services, duplicateNames]);
+  }, [services, byService, duplicateNames]);
 
-  const displayedActions = useMemo(
-    () => getDisplayedActions(services, selectedOption),
-    [services, selectedOption]
-  );
-
-  const policyDocument = useMemo(() => {
-    const selectedService =
-      selectedOption === ALL_SERVICES_OPTION_VALUE
-        ? undefined
-        : services.find(({ id }) => id === selectedOption);
-
-    return formatIamPolicyDocument(displayedActions, getIntegrationSid(selectedService?.name));
-  }, [services, selectedOption, displayedActions]);
-
+  // Fall back to "all" if the selected service is no longer in the list.
   useEffect(() => {
-    if (
-      selectedOption !== ALL_SERVICES_OPTION_VALUE &&
-      !services.some(({ id }) => id === selectedOption)
-    ) {
+    if (selectedOption !== ALL_SERVICES_OPTION_VALUE && !(selectedOption in byService)) {
       setSelectedOption(ALL_SERVICES_OPTION_VALUE);
     }
-  }, [services, selectedOption]);
+  }, [byService, selectedOption]);
 
-  if (services.length === 0) {
+  const { policyDocument, visibleManagedPolicyArns } = useMemo(() => {
+    if (selectedOption === ALL_SERVICES_OPTION_VALUE) {
+      return {
+        policyDocument: JSON.stringify(merged, null, 2),
+        visibleManagedPolicyArns: mergedManagedPolicyArns,
+      };
+    }
+    const svc = byService[selectedOption];
+    return {
+      policyDocument: svc ? JSON.stringify(svc.policy, null, 2) : JSON.stringify(merged, null, 2),
+      visibleManagedPolicyArns: svc ? svc.managedPolicyArns : mergedManagedPolicyArns,
+    };
+  }, [selectedOption, merged, mergedManagedPolicyArns, byService]);
+
+  // Render only when at least one service has inline actions or managed policy ARNs.
+  const hasPermissions =
+    merged.Statement.flatMap((s) => s.Action).length > 0 || mergedManagedPolicyArns.length > 0;
+  if (!hasPermissions) {
     return null;
   }
 
@@ -165,6 +178,29 @@ export const AwsPermissionsViewer: React.FC<AwsPermissionsViewerProps> = ({ serv
           >
             {policyDocument}
           </EuiCodeBlock>
+          {visibleManagedPolicyArns.length > 0 && (
+            <>
+              <EuiSpacer size="m" />
+              <EuiText size="s" color="subdued">
+                <p>
+                  <FormattedMessage
+                    id="xpack.ingestHub.awsPermissionsViewer.managedPoliciesIntro"
+                    defaultMessage="Also attach these AWS managed policies via {command}:"
+                    values={{ command: <code>aws iam attach-user-policy</code> }}
+                  />
+                </p>
+              </EuiText>
+              <EuiSpacer size="xs" />
+              <EuiListGroup
+                bordered
+                data-test-subj={`${AWS_PERMISSIONS_VIEWER_TEST_SUBJ}-managedPoliciesList`}
+              >
+                {visibleManagedPolicyArns.map((arn) => (
+                  <EuiListGroupItem key={arn} label={arn} />
+                ))}
+              </EuiListGroup>
+            </>
+          )}
         </EuiPanel>
       </EuiPanel>
       <EuiSpacer size="l" />

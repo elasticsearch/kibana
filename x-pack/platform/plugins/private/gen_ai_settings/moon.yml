@@ -53,6 +53,7 @@ dependsOn:
   - '@kbn/agent-builder-browser'
   - '@kbn/zod'
   - '@kbn/core-http-browser'
+  - '@kbn/agent-builder-plugin'
 tags:
   - plugin
   - prod

@@ -87,12 +87,12 @@ test.describe(
     });
 
     test('"Open in Discover" opens Discover with trace filter and results', async ({
-      pageObjects: { transactionDetailsPage, discover },
+      pageObjects: { transactionDetailsPage, dataGrid, discover },
     }) => {
       await openFlyoutActionsMenu(transactionDetailsPage);
       await transactionDetailsPage.traceWaterfallFlyout.openInDiscoverLink.click();
 
-      await discover.waitForDocTableRendered();
+      await dataGrid.waitForDocTableRendered();
 
       const query = await discover.getEsqlQueryValue();
       expect(query).toContain('trace.id');

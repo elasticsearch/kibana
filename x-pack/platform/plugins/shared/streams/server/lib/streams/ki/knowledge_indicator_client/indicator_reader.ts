@@ -29,7 +29,7 @@ import {
 import { fromStoredFeature, fromStoredQuery } from './serializers';
 import { StatusError } from '../../errors/status_error';
 import type { RevisionReader } from './revision_reader';
-import type { LatestSourceWhereCondition } from '../../../sig_events/latest_source_query';
+import type { LatestSourceWhereCondition } from '../../../significant_events/latest_source_query';
 import type { RuleUnbackedFilter } from './types';
 
 function ruleUnbackedPostGroupingWhere(

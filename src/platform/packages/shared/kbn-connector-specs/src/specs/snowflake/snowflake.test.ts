@@ -8,6 +8,7 @@
  */
 
 import type { ActionContext } from '../../connector_spec';
+import { generateSecretsSchemaFromSpec } from '../../lib/generate_secrets_schema_from_spec';
 import { Snowflake } from './snowflake';
 
 const ACCOUNT_URL = 'https://myorg-myaccount.snowflakecomputing.com';
@@ -60,6 +61,15 @@ describe('Snowflake', () => {
         (t) => typeof t === 'object' && t.type === 'oauth_authorization_code'
       );
       expect(oauthType).toBeDefined();
+    });
+
+    it('existing connectors with bearer auth still pass schema validation', () => {
+      const schema = generateSecretsSchemaFromSpec(Snowflake.auth, {
+        isEarsEnabled: true,
+        isEarsExperimentalEnabled: true,
+      });
+      const result = schema.safeParse({ authType: 'bearer', token: 'some-legacy-token' });
+      expect(result.success).toBe(true);
     });
 
     it('sets required headers', () => {

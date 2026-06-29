@@ -1,0 +1,61 @@
+openapi: 3.0.0
+info:
+  title: List Inbox Actions History Facets API endpoint
+  version: '1'
+paths:
+  /internal/inbox/actions/history/facets:
+    get:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: ListInboxActionsHistoryFacets
+      description: |
+        Distinct-value buckets used to populate the inbox-history filter
+        dropdowns (Channel, Responder). The buckets are computed against
+        the entire space-scoped processed history; user-supplied filters
+        from the list endpoint are intentionally NOT applied so the
+        dropdown options stay stable as the user toggles other filters.
+      summary: List inbox actions history facets
+      tags:
+        - Inbox API
+      parameters:
+        - name: source_app
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Restrict facets to the originating app id (parity with the list endpoint).
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channel:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InboxActionFacetBucket'
+                  respondedBy:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InboxActionFacetBucket'
+                required:
+                  - channel
+                  - respondedBy
+components:
+  schemas:
+    InboxActionFacetBucket:
+      type: object
+      properties:
+        value:
+          type: string
+          maxLength: 256
+          description: The distinct field value (e.g. a channel slug or username).
+        count:
+          type: integer
+          description: Document count for this bucket within the space's processed history.
+      required:
+        - value
+        - count

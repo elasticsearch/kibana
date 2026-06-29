@@ -8,6 +8,7 @@
 import type { EuiIconType } from '@elastic/eui/src/components/icon/icon';
 import { useMemo } from 'react';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
+import { IS_MANAGED_OTLP_SERVICE_PRW_ENDPOINT_ENABLED } from '../../../common/feature_flags';
 import { FETCH_STATUS, isPending, useFetcher } from '../../hooks/use_fetcher';
 import { useManagedOtlpServiceAvailability } from '../shared/use_managed_otlp_service_availability';
 import type { SupportedLogo } from '../shared/logo_icon';
@@ -28,12 +29,17 @@ export function useApiEndpoints(): {
   isLoading: boolean;
   isError: boolean;
 } {
-  const isManagedOtlpServiceAvailable = useManagedOtlpServiceAvailability();
   const {
     services: {
       context: { isServerless },
+      featureFlags,
     },
   } = useKibana<ObservabilityOnboardingAppServices>();
+  const isManagedOtlpServiceAvailable = useManagedOtlpServiceAvailability();
+  const managedOtlpPrwEndpointEnabled = featureFlags.getBooleanValue(
+    IS_MANAGED_OTLP_SERVICE_PRW_ENDPOINT_ENABLED,
+    false
+  );
 
   const { data, status } = useFetcher(
     (callApi) => callApi('GET /internal/observability_onboarding/api_endpoints'),
@@ -47,6 +53,7 @@ export function useApiEndpoints(): {
       managedOtlpServiceUrl: data?.managedOtlpServiceUrl || undefined,
       isManagedOtlpServiceAvailable,
       isServerless,
+      managedOtlpPrwEndpointEnabled,
     };
 
     return API_ENDPOINTS.map((definition) => ({
@@ -61,6 +68,7 @@ export function useApiEndpoints(): {
     data?.managedOtlpServiceUrl,
     isManagedOtlpServiceAvailable,
     isServerless,
+    managedOtlpPrwEndpointEnabled,
   ]);
 
   return { endpoints, isLoading: isPending(status), isError: status === FETCH_STATUS.FAILURE };

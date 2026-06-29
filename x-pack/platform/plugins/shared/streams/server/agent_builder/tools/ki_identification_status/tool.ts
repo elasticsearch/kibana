@@ -14,8 +14,8 @@ import type { StreamsKIsOnboardingClient } from '../../../lib/workflows/onboardi
 import { classifyError } from '../../utils/error_utils';
 import { getKiIdentificationStatusToolHandler } from './handler';
 
-export const STREAMS_KI_IDENTIFICATION_STATUS_TOOL_ID =
-  'platform.streams.sig_events.ki_identification_status';
+export const SIGNIFICANT_EVENTS_KI_IDENTIFICATION_STATUS_TOOL_ID =
+  'platform.sig_events.ki_identification_status';
 
 const onboardingStatusSchema = z.object({
   stream_name: z.string().describe('Target stream name, e.g. "logs.ecs.nginx".'),
@@ -26,7 +26,7 @@ export const createKiIdentificationStatusTool = ({
 }: {
   streamsKIsOnboardingClient: StreamsKIsOnboardingClient;
 }): BuiltinSkillBoundedTool<typeof onboardingStatusSchema> => ({
-  id: STREAMS_KI_IDENTIFICATION_STATUS_TOOL_ID,
+  id: SIGNIFICANT_EVENTS_KI_IDENTIFICATION_STATUS_TOOL_ID,
   type: ToolType.builtin,
   description: dedent`
     Get current status for a stream KI identification background task.

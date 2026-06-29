@@ -22,7 +22,7 @@ import {
 import { v4 as uuid } from 'uuid';
 import { getDeleteTaskRunResult } from '@kbn/task-manager-plugin/server/task';
 import type { Logger, LogMeta } from '@kbn/logging';
-import { STREAMS_SIG_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID } from '@kbn/streams-schema';
+import { STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID } from '@kbn/streams-schema';
 import { parseError } from '../../../streams/errors/parse_error';
 import { formatInferenceProviderError } from '../../../../routes/utils/create_connector_sse_error';
 import { resolveConnectorForFeature } from '../../../../routes/utils/resolve_connector_for_feature';
@@ -36,7 +36,7 @@ import {
   deriveTotalTokensUsed,
   identifyInferredFeatures,
   identifyComputedFeatures,
-} from '../../../sig_events/features';
+} from '../../../significant_events/features';
 import { isSignificantEventsSemanticCodeSearchGroundingEnabled } from '../../../semantic_code_search_grounding/is_significant_events_semantic_code_search_grounding_enabled';
 
 export interface FeaturesIdentificationTaskParams {
@@ -104,7 +104,7 @@ async function runFeaturesIdentification(
       ? Promise.resolve(connectorIdOverride)
       : resolveConnectorForFeature({
           searchInferenceEndpoints: taskContext.server.searchInferenceEndpoints,
-          featureId: STREAMS_SIG_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
+          featureId: STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
           featureName: 'knowledge indicator extraction',
           request: fakeRequest,
         }),

@@ -86,7 +86,7 @@ spaceTest.describe('Discover data grid row navigation', { tag: '@local-stateful-
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsPrivilegedUser();
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 

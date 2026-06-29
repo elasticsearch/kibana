@@ -144,7 +144,7 @@ export {
   esqlQuerySchema,
   type QueryFeature,
   queryFeatureSchema,
-  type StreamQuery,
+  type StreamQuery as StreamQuery,
   type QueryLink,
   type QueryType,
   QUERY_TYPE_MATCH,
@@ -281,17 +281,17 @@ export type { IdentifyFeaturesResult, IterationResult } from './src/api/features
 export { tokenCountSchema, iterationResultSchema } from './src/api/features';
 
 export {
-  SIG_EVENT_STATUS_OPTIONS,
+  SIGNIFICANT_EVENT_STATUS_OPTIONS,
   detectionSchema,
   type Detection,
   discoverySchema,
   type Discovery,
-  sigEventSchema,
-  sigEventStatusSchema,
-  type SigEvent,
+  significantEventSchema,
+  significantEventStatusSchema,
+  type SignificantEvent,
   type KnowledgeIndicator,
-  type SigEventStatus,
-} from './src/sig_events';
+  type SignificantEventStatus,
+} from './src/significant_events';
 export type {
   StreamsKIsOnboardingResult,
   StreamsKIsOnboardingFeaturesResult,
@@ -302,8 +302,8 @@ export {
   StreamsKIsOnboardingStep,
   STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES,
 } from './src/onboarding';
-export type { SigEventsWorkflowStatusResult } from './src/workflows';
-export { SigEventsWorkflowStatus } from './src/workflows';
+export type { SignificantEventsWorkflowStatusResult } from './src/workflows';
+export { SignificantEventsWorkflowStatus } from './src/workflows';
 
 export { streamsOasDefinitions } from './src/oas_definitions';
 export type { StreamsOasDefinitions } from './src/oas_definitions';
@@ -316,10 +316,10 @@ export { DEFAULT_INDEX_PATTERNS } from './src/helpers/default_index_patterns';
 
 export {
   STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID,
-  STREAMS_SIG_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
-  STREAMS_SIG_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
-  STREAMS_SIG_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID,
-  STREAMS_SIG_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID,
+  STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID as STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
+  STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
+  STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID as STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID,
+  STREAMS_SIGNIFICANT_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID as STREAMS_SIGNIFICANT_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID,
   STREAMS_INFERENCE_PARENT_FEATURE_ID,
   STREAMS_PARTITIONING_SUGGESTIONS_INFERENCE_FEATURE_ID,
   STREAMS_PROCESSING_SUGGESTIONS_INFERENCE_FEATURE_ID,

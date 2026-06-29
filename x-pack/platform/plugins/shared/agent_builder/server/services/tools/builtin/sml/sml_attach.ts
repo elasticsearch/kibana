@@ -11,7 +11,10 @@ import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import { ATTACHMENT_REF_ACTOR } from '@kbn/agent-builder-common/attachments';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { getToolResultId, createErrorResult } from '@kbn/agent-builder-server';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
+import {
+  AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+  CONTEXT_ENGINE_ENABLED_SETTING_ID,
+} from '@kbn/management-settings-ids';
 import type { SmlToolsOptions } from './types';
 
 const smlAttachSchema = z.object({
@@ -44,13 +47,19 @@ export const createSmlAttachTool = ({
   tags: ['sml', 'attachment'],
   availability: {
     cacheMode: 'global',
+    // SML lives inside Agent Builder, so it requires the Agent Builder experimental
+    // flag in addition to the dedicated Context Engine flag. Both must be enabled.
     handler: async ({ uiSettings }) => {
-      const enabled = await uiSettings.get<boolean>(AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID);
-      return enabled
+      const [experimentalEnabled, contextEngineEnabled] = await Promise.all([
+        uiSettings.get<boolean>(AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID),
+        uiSettings.get<boolean>(CONTEXT_ENGINE_ENABLED_SETTING_ID),
+      ]);
+      return experimentalEnabled && contextEngineEnabled
         ? { status: 'available' }
         : {
             status: 'unavailable',
-            reason: 'SML features require experimental features to be enabled',
+            reason:
+              'SML features require Agent Builder experimental features and the Context Engine to be enabled',
           };
     },
   },

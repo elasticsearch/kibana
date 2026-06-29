@@ -4,6 +4,12 @@ enabled: true
 triggers:
   - type: manual
 steps:
+  # Soft-interface reasoning (summary-only — the minimal shape).
+  - name: summarize_cluster
+    type: data.set
+    with:
+      reasoning:
+        summary: "12 low-severity alerts cluster around a single misconfigured backup job; recommend medium severity, no escalation."
   - name: ask_triage_decision
     type: waitForInput
     with:

@@ -7,7 +7,7 @@
 
 import { useMemo } from 'react';
 import { DEFAULT_INDEX_PATTERNS } from '@kbn/streams-schema';
-import { OBSERVABILITY_STREAMS_SIG_EVENTS_INDEX_PATTERNS } from '@kbn/management-settings-ids';
+import { OBSERVABILITY_STREAMS_SIGNIFICANT_EVENTS_INDEX_PATTERNS } from '@kbn/management-settings-ids';
 import { useKibana } from './use_kibana';
 
 /**
@@ -17,7 +17,7 @@ export function useIndexPatternsConfig() {
   const { core } = useKibana();
 
   const rawValue = core.settings.client.get<string>(
-    OBSERVABILITY_STREAMS_SIG_EVENTS_INDEX_PATTERNS,
+    OBSERVABILITY_STREAMS_SIGNIFICANT_EVENTS_INDEX_PATTERNS,
     DEFAULT_INDEX_PATTERNS
   );
 

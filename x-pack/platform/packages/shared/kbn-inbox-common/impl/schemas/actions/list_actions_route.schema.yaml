@@ -28,6 +28,7 @@ paths:
           required: false
           schema:
             type: string
+            maxLength: 256
           description: Filter actions by the originating app id
         - name: page
           in: query
@@ -35,6 +36,7 @@ paths:
           schema:
             type: integer
             minimum: 1
+            maximum: 100
             default: 1
         - name: per_page
           in: query
@@ -122,8 +124,10 @@ components:
           description: ISO 8601 timestamp of the resolution
         channel:
           type: string
+          maxLength: 64
+          pattern: "^[a-z0-9][a-z0-9_-]*$"
           nullable: true
-          description: Surface the response was submitted through (inbox, kibana_execution_view, agent_builder, slack, api)
+          description: Surface the response was submitted through (inbox, kibana_execution_view, agent_builder, slack, or another slug-shaped client id)
         response_mode:
           type: string
           enum:
@@ -132,6 +136,32 @@ components:
             - timed_out
           nullable: true
           description: Distinguishes a human response from a timeout-default resolution
+        response_input:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Payload submitted by the responder (echoed back so audit-log surfaces can render what was submitted). Null while the action is still pending.
+        reasoning:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: |
+            Soft-interface context resolved server-side from the `output` of the
+            step that ran immediately before the `waitForInput` (i.e. the work the
+            agent did before pausing). Free-form; the UI renders a loose shape
+            (`{ summary?, details?, sections?: [{ title, body }] }`) when present
+            and tolerates extra keys. Not searchable; null when no preceding
+            step output is available.
+        source_deleted:
+          type: boolean
+          nullable: true
+          description: |
+            True when the originating entity (e.g. the workflow that produced
+            this action) has since been deleted. Only set on history/audit rows
+            — the audit trail intentionally retains processed actions for
+            deleted sources, and the UI flags them so it's clear the source is
+            gone. Pending actions for deleted sources are filtered out (they
+            can no longer be acted on) so this is never `true` there.
       required:
         - id
         - title

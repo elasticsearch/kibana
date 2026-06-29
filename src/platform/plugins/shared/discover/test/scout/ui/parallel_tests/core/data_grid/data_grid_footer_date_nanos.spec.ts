@@ -62,7 +62,7 @@ spaceTest.describe(
     spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
       await browserAuth.loginAsViewer();
       await pageObjects.discover.goto({ queryMode: 'classic' });
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await pageObjects.dataGrid.waitForDocTableRendered();
     });
 
@@ -82,7 +82,7 @@ spaceTest.describe(
 
       await pageObjects.dataGrid.expandMetaFieldsSection();
       await pageObjects.dataGrid.addFieldFromSidebar('_id');
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
 
       await expect
         .poll(() => getRowsText(page))
@@ -108,7 +108,7 @@ spaceTest.describe(
       await expect(page.testSubj.locator('pagination-button-2')).toBeHidden();
 
       await loadMore.click();
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await expect(footer).toBeHidden();
 
       await page.testSubj.click('pagination-button-3');
@@ -122,7 +122,7 @@ spaceTest.describe(
         ]);
 
       await loadMore.click();
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await expect(footer).toBeHidden();
 
       // Final page holds the last remaining document and shows no footer.

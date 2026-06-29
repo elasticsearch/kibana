@@ -35,7 +35,7 @@ spaceTest.describe('Discover data grid - doc viewer', { tag: tags.stateful.all }
     // Privileged user is needed to save the search used by the embeddable test.
     await browserAuth.loginAsPrivilegedUser();
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 
@@ -76,7 +76,7 @@ spaceTest.describe('Discover data grid - doc viewer', { tag: tags.stateful.all }
 
       await pageObjects.dashboard.openNewDashboard();
       await pageObjects.dashboard.addSavedSearch('expand-cell-search');
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await pageObjects.dataGrid.waitForDocTableRendered();
 
       await expect(pageObjects.dataGrid.getCell(0, '@timestamp')).toContainText(

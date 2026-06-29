@@ -77,12 +77,7 @@ describe('connector spec serialization integration tests', () => {
       const specNames = Object.keys(connectorsSpecs);
       expect(specNames.length).toBeGreaterThan(0);
 
-      const skipUntilZodJsonSchemaSupportsTransforms = new Set(['SharepointServer', 'Snowflake']);
-
       for (const specName of specNames) {
-        if (skipUntilZodJsonSchemaSupportsTransforms.has(specName)) {
-          continue;
-        }
         const spec = connectorsSpecs[specName as keyof typeof connectorsSpecs];
         const serialized = serializeConnectorSpec(spec);
 

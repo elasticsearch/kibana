@@ -4,6 +4,18 @@ enabled: true
 triggers:
   - type: manual
 steps:
+  # Soft-interface reasoning surfaced by the inbox from the step that ran
+  # immediately before the `waitForInput` (see 01_string_input.yml).
+  - name: analyze
+    type: data.set
+    with:
+      reasoning:
+        summary: "Incident spans 3 hosts with confirmed data staging; leaning toward a high severity pending analyst confirmation."
+        sections:
+          - title: "DIAGNOSIS"
+            body: "Beaconing plus 7z archive creation on 3 endpoints within 10m. Matches the exfil-prep pattern from the last IR."
+          - title: "IMPACT"
+            body: "One affected host can reach the finance share, so the blast radius is material if lateral movement continues."
   - name: ask_severity_score
     type: waitForInput
     with:

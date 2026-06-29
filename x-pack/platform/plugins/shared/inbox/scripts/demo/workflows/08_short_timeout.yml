@@ -1,0 +1,37 @@
+# Inbox demo workflow — short workflow-level timeout that surfaces an
+# abnormally-settled history row.
+#
+# `settings.timeout: 30s` lets the workflow's timeout monitor cancel
+# the run if the operator doesn't respond within the window. The
+# history mapper translates the resulting `ExecutionStatus.CANCELLED`
+# / `FAILED` step into `response_mode: 'timed_out'`, which renders the
+# orange "Timed out" badge in the audit feed. Useful for verifying
+# that abnormal settles are visually distinguishable from successful
+# approvals/rejections.
+#
+# Tip: the seeder's `--respond` flag intentionally skips this row so
+# the timeout has a chance to fire. Wait ~45s after running the
+# seeder before checking the history feed.
+name: inbox-demo-short-timeout
+enabled: true
+settings:
+  timeout: 30s
+triggers:
+  - type: manual
+steps:
+  - name: ask_approval
+    type: waitForInput
+    with:
+      message: "Approve before the 30s workflow timeout fires?"
+      schema:
+        type: object
+        properties:
+          approved:
+            type: boolean
+            title: Approve in time
+        required:
+          - approved
+  - name: log_approval
+    type: console
+    with:
+      message: "Approved? {{ steps.ask_approval.output.approved }}"

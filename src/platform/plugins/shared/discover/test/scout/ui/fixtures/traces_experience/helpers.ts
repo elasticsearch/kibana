@@ -26,14 +26,14 @@ async function waitForTracesProfileApplied(
   // while the remaining columns are still being applied, which briefly resets
   // data-render-complete and can cause the stability window to never be reached.
   for (const column of profileSpecificColumns) {
-    await expect(pageObjects.discover.getColumnHeader(column)).toBeVisible({
+    await expect(pageObjects.dataGrid.getColumnHeader(column)).toBeVisible({
       timeout: 30_000,
     });
   }
 
   // Ensure the in-flight search / column swap finished
   await pageObjects.discover.waitUntilSearchingHasFinished();
-  await pageObjects.discover.waitForDocTableRendered();
+  await pageObjects.dataGrid.waitForDocTableRendered();
 }
 
 export async function expectTracesExperienceEnabled(
@@ -43,7 +43,7 @@ export async function expectTracesExperienceEnabled(
   await waitForTracesProfileApplied(pageObjects);
 
   for (const column of pageObjects.tracesExperience.grid.expectedColumns) {
-    await expect(pageObjects.discover.getColumnHeader(column)).toBeVisible();
+    await expect(pageObjects.dataGrid.getColumnHeader(column)).toBeVisible();
   }
 
   if (shouldCheckForREDMetricsCharts) {

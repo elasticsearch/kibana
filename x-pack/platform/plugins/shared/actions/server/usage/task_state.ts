@@ -58,6 +58,7 @@ export const stateSchemaByVersion = {
       runs: state.runs || 0,
       count_total: state.count_total || 0,
       count_by_type: state.count_by_type || {},
+      count_gen_ai_provider_types: state.count_gen_ai_provider_types || {},
       count_active_total: state.count_active_total || 0,
       count_active_by_type: state.count_active_by_type || {},
       count_active_alert_history_connectors: state.count_active_alert_history_connectors || 0,

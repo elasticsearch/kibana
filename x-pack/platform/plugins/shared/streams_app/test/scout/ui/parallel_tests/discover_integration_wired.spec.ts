@@ -50,14 +50,14 @@ test.describe(
       // Select the data view for our test stream
       await pageObjects.discover.selectDataView('logs.otel.child');
       await pageObjects.discover.waitUntilSearchingHasFinished();
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
       // Refresh and wait for the row — stream routing may take time
       await page.testSubj.click('querySubmitButton');
       await pageObjects.discover.waitUntilSearchingHasFinished();
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
-      await pageObjects.discover.openDocumentDetails({ rowIndex: 0 });
+      await pageObjects.dataGrid.openDocumentDetails({ rowIndex: 0 });
 
       // Verify the doc viewer flyout is open
       await expect(page.getByTestId('kbnDocViewer')).toBeVisible();
@@ -101,7 +101,7 @@ test.describe(
       // Switch to ES|QL mode by clicking the button and waiting for doc table to load
       await pageObjects.discover.selectTextBaseLang();
 
-      await pageObjects.discover.openDocumentDetails({ rowIndex: 0 });
+      await pageObjects.dataGrid.openDocumentDetails({ rowIndex: 0 });
 
       // Verify the doc viewer flyout is open
       await expect(page.getByTestId('kbnDocViewer')).toBeVisible();

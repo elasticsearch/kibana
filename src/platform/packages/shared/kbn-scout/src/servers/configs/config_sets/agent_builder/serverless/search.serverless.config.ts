@@ -18,8 +18,9 @@ const AGENT_BUILDER_GITHUB_MOCK_PORT = 18387;
 
 /**
  * Serverless Elasticsearch project defaults with Agent Builder test settings:
- * experimental Agent Builder UI flags, `githubBaseUrl` for plugin installation tests,
- * AI agents feature flag, and AI Assistant chat experience set to agent mode.
+ * experimental Agent Builder UI flags, the Context Engine flag, `githubBaseUrl`
+ * for plugin installation tests, AI agents feature flag, and AI Assistant chat
+ * experience set to agent mode.
  */
 export const servers: ScoutServerConfig = {
   ...defaultConfig,
@@ -31,6 +32,7 @@ export const servers: ScoutServerConfig = {
         { name: 'plugins.agentBuilder', level: 'debug', appenders: ['console'] },
       ])}`,
       '--uiSettings.overrides.agentBuilder:experimentalFeatures=true',
+      '--uiSettings.overrides.contextEngine:enabled=true',
       '--feature_flags.overrides.aiAssistant.aiAgents.enabled=true',
       '--uiSettings.overrides.aiAssistant:preferredChatExperience=agent',
       `--xpack.agentBuilder.githubBaseUrl=http://localhost:${AGENT_BUILDER_GITHUB_MOCK_PORT}`,

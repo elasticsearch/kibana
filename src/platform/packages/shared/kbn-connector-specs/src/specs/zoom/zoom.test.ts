@@ -7,7 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ActionContext } from '../../connector_spec';
+import type { ActionContext, AuthTypeDef } from '../../connector_spec';
+import { generateSecretsSchemaFromSpec } from '../../lib/generate_secrets_schema_from_spec';
 import { Zoom } from './zoom';
 
 interface ZoomPaginatedResponse<T = unknown> {
@@ -39,11 +40,21 @@ describe('Zoom', () => {
   });
 
   describe('auth', () => {
-    it('supports bearer auth', () => {
-      const types = (Zoom.auth?.types as Array<string | { type: string }>).map((t) =>
-        typeof t === 'string' ? t : t.type
+    it('bearer auth is hidden (not shown in picker) but retained for existing connectors', () => {
+      const bearerDef = Zoom.auth?.types.find(
+        (t): t is AuthTypeDef => typeof t === 'object' && t.type === 'bearer'
       );
-      expect(types).toContain('bearer');
+      expect(bearerDef).toBeDefined();
+      expect(bearerDef?.isLegacy).toBe(true);
+    });
+
+    it('existing connectors with bearer auth still pass schema validation', () => {
+      const schema = generateSecretsSchemaFromSpec(Zoom.auth, {
+        isEarsEnabled: true,
+        isEarsExperimentalEnabled: true,
+      });
+      const result = schema.safeParse({ authType: 'bearer', token: 'some-legacy-token' });
+      expect(result.success).toBe(true);
     });
 
     it('supports oauth_authorization_code with correct Zoom defaults', () => {

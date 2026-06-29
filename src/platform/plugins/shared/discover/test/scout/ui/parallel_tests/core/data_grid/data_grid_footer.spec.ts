@@ -37,7 +37,7 @@ spaceTest.describe('Discover data grid footer', { tag: '@local-stateful-classic'
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsViewer();
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 
@@ -68,7 +68,7 @@ spaceTest.describe('Discover data grid footer', { tag: '@local-stateful-classic'
 
       // Loading more grows the sample and hides the footer again.
       await loadMore.click();
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await expect(footer).toBeHidden();
 
       await page.testSubj.click('pagination-button-9');
@@ -76,7 +76,7 @@ spaceTest.describe('Discover data grid footer', { tag: '@local-stateful-classic'
       await expectFooterText(page, '1,000');
 
       await loadMore.click();
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await expect(footer).toBeHidden();
 
       await page.testSubj.click('pagination-button-14');

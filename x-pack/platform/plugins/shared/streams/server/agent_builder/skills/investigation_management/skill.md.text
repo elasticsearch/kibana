@@ -52,11 +52,11 @@ execute_workflow({
 
 ### Investigating a Significant Event
 
-When the user wants to investigate a Significant Event (SigEvent), gather the event's metadata first, then trigger the investigation with that context.
+When the user wants to investigate a Significant Event, gather the event's metadata first, then trigger the investigation with that context.
 
 **1. Source the event.**
-- **If a SigEvent is already attached to the conversation**, read its fields directly from the attachment — it renders as text with `Event ID`, `Discovery slug`, `Status`, `Impact`, `Criticality`, `Confidence`, `Streams`, `Summary`, `Root cause`, and `Recommendations`. Use those values directly; do not re-fetch.
-- **If no SigEvent is attached**, load the `significant-events-management` skill (via the `load_skill` tool) and use its `event_search` tool to find the relevant event, then attach it and render the attachment inline per that skill's rules. Read its metadata from the attachment.
+- **If a SignificantEvent is already attached to the conversation**, read its fields directly from the attachment — it renders as text with `Event ID`, `Discovery slug`, `Status`, `Impact`, `Criticality`, `Confidence`, `Streams`, `Summary`, `Root cause`, and `Recommendations`. Use those values directly; do not re-fetch.
+- **If no SignificantEvent is attached**, load the `significant-events-management` skill (via the `load_skill` tool) and use its `event_search` tool to find the relevant event, then attach it and render the attachment inline per that skill's rules. Read its metadata from the attachment.
 
 **2. Build the workflow inputs from the event:**
 - `message`: `"{title}\n\n{summary}\n\nProbable cause: {root_cause}"`

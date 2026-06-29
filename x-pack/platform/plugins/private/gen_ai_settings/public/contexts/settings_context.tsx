@@ -25,6 +25,13 @@ import {
   AGENT_BUILDER_PRE_PROMPT_WORKFLOW_IDS,
   AI_ASSISTANT_PREFERRED_AI_ASSISTANT_TYPE,
   AI_CHAT_EXPERIENCE_TYPE,
+  AGENT_BUILDER_TRACING_ENABLED_SETTING_ID,
+  AGENT_BUILDER_TRACING_USER_PROMPTS_SETTING_ID,
+  AGENT_BUILDER_TRACING_LLM_RESPONSES_SETTING_ID,
+  AGENT_BUILDER_TRACING_TOOL_DETAILS_SETTING_ID,
+  AGENT_BUILDER_TRACING_SYSTEM_PROMPT_SETTING_ID,
+  AGENT_BUILDER_TRACING_REAL_NAMES_SETTING_ID,
+  AGENT_BUILDER_TRACING_REAL_IDS_SETTING_ID,
 } from '@kbn/management-settings-ids';
 import { i18n } from '@kbn/i18n';
 import { useKibana } from '../hooks/use_kibana';
@@ -54,6 +61,13 @@ const SETTING_KEYS = [
   AGENT_BUILDER_PRE_PROMPT_WORKFLOW_IDS,
   AI_ASSISTANT_PREFERRED_AI_ASSISTANT_TYPE,
   AI_CHAT_EXPERIENCE_TYPE,
+  AGENT_BUILDER_TRACING_ENABLED_SETTING_ID,
+  AGENT_BUILDER_TRACING_USER_PROMPTS_SETTING_ID,
+  AGENT_BUILDER_TRACING_LLM_RESPONSES_SETTING_ID,
+  AGENT_BUILDER_TRACING_TOOL_DETAILS_SETTING_ID,
+  AGENT_BUILDER_TRACING_SYSTEM_PROMPT_SETTING_ID,
+  AGENT_BUILDER_TRACING_REAL_NAMES_SETTING_ID,
+  AGENT_BUILDER_TRACING_REAL_IDS_SETTING_ID,
 ];
 
 export const SettingsContextProvider = ({ children }: { children: React.ReactNode }) => {
@@ -207,8 +221,10 @@ const useSettings = ({ settingsKeys }: { settingsKeys: string[] }) => {
 
   const handleFieldChange: OnFieldChangeFn = (id, change) => {
     if (!change) {
-      const { [id]: unsavedChange, ...rest } = unsavedChanges;
-      setUnsavedChanges(rest);
+      setUnsavedChanges((changes) => {
+        const { [id]: unsavedChange, ...rest } = changes;
+        return rest;
+      });
       return;
     }
     setUnsavedChanges((changes) => ({ ...changes, [id]: change }));

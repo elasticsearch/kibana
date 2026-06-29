@@ -64,6 +64,14 @@ describe('CaseDetailsAppHeader', () => {
     expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(basicCase.title);
   });
 
+  it('renders metadata with reporter name', async () => {
+    renderWithTestingProviders(<CaseDetailsAppHeader {...defaultProps} />);
+
+    const metadata = await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.metadata);
+    expect(metadata.textContent).toContain('Reported by');
+    expect(metadata.textContent).toContain(basicCase.createdBy.fullName!);
+  });
+
   it('renders badges in the header', async () => {
     renderWithTestingProviders(<CaseDetailsAppHeader {...defaultProps} />);
 

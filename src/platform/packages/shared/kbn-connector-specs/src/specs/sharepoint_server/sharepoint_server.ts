@@ -24,6 +24,7 @@
 import { i18n } from '@kbn/i18n';
 import { z, lazySchema } from '@kbn/zod/v4';
 import type { ConnectorSpec } from '../../connector_spec';
+import { normalizeUrl } from '../../connector_utils';
 import {
   CallRestApiInputSchema,
   DownloadFileInputSchema,
@@ -52,21 +53,16 @@ export const SharepointServer: ConnectorSpec = {
   },
 
   auth: {
-    types: ['basic'],
+    types: [{ type: 'basic', defaults: {} }],
   },
 
   schema: lazySchema(() =>
     z.object({
-      siteUrl: z
-        .string()
-        .url()
-        .transform((val) => val.replace(/\/+$/, ''))
-        .describe('SharePoint Server site URL')
-        .meta({
-          label: 'Site URL',
-          widget: 'text',
-          placeholder: 'https://sharepoint.company.com/sites/mysite',
-        }),
+      siteUrl: z.string().url().max(2048).describe('SharePoint Server site URL').meta({
+        label: 'Site URL',
+        widget: 'text',
+        placeholder: 'https://sharepoint.company.com/sites/mysite',
+      }),
     })
   ),
 
@@ -80,7 +76,7 @@ export const SharepointServer: ConnectorSpec = {
       handler: async (ctx) => {
         const { siteUrl } = ctx.config as { siteUrl: string };
         ctx.log.debug('SharePoint Server getting web info');
-        const response = await ctx.client.get(`${siteUrl}/_api/web`, {
+        const response = await ctx.client.get(`${normalizeUrl(siteUrl)}/_api/web`, {
           headers: ODATA_HEADERS,
         });
         return response.data;
@@ -96,7 +92,7 @@ export const SharepointServer: ConnectorSpec = {
       handler: async (ctx) => {
         const { siteUrl } = ctx.config as { siteUrl: string };
         ctx.log.debug('SharePoint Server getting lists');
-        const response = await ctx.client.get(`${siteUrl}/_api/web/lists`, {
+        const response = await ctx.client.get(`${normalizeUrl(siteUrl)}/_api/web/lists`, {
           headers: ODATA_HEADERS,
           params: {
             $select:
@@ -120,7 +116,7 @@ export const SharepointServer: ConnectorSpec = {
         ctx.log.debug(`SharePoint Server getting items of list "${listTitle}"`);
         const escapedListTitle = listTitle.replace(/'/g, "''");
         const response = await ctx.client.get(
-          `${siteUrl}/_api/web/lists/GetByTitle('${escapedListTitle}')/items`,
+          `${normalizeUrl(siteUrl)}/_api/web/lists/GetByTitle('${escapedListTitle}')/items`,
           {
             headers: ODATA_HEADERS,
           }
@@ -142,11 +138,15 @@ export const SharepointServer: ConnectorSpec = {
         const escapedPath = path.replace(/'/g, "''");
         const [filesResponse, foldersResponse] = await Promise.all([
           ctx.client.get(
-            `${siteUrl}/_api/web/GetFolderByServerRelativeUrl('${escapedPath}')/Files`,
+            `${normalizeUrl(
+              siteUrl
+            )}/_api/web/GetFolderByServerRelativeUrl('${escapedPath}')/Files`,
             { headers: ODATA_HEADERS }
           ),
           ctx.client.get(
-            `${siteUrl}/_api/web/GetFolderByServerRelativeUrl('${escapedPath}')/Folders`,
+            `${normalizeUrl(
+              siteUrl
+            )}/_api/web/GetFolderByServerRelativeUrl('${escapedPath}')/Folders`,
             { headers: ODATA_HEADERS }
           ),
         ]);
@@ -169,7 +169,7 @@ export const SharepointServer: ConnectorSpec = {
         ctx.log.debug(`SharePoint Server downloading file at "${path}"`);
         const escapedPath = path.replace(/'/g, "''");
         const response = await ctx.client.get(
-          `${siteUrl}/_api/web/GetFileByServerRelativeUrl('${escapedPath}')/$value`,
+          `${normalizeUrl(siteUrl)}/_api/web/GetFileByServerRelativeUrl('${escapedPath}')/$value`,
           { responseType: 'arraybuffer' }
         );
         const buffer = Buffer.from(response.data);
@@ -192,7 +192,7 @@ export const SharepointServer: ConnectorSpec = {
         const { siteUrl } = ctx.config as { siteUrl: string };
         ctx.log.debug(`SharePoint Server getting site page contents for page ID ${pageId}`);
         const response = await ctx.client.get(
-          `${siteUrl}/_api/web/lists/GetByTitle('Site Pages')/items(${pageId})`,
+          `${normalizeUrl(siteUrl)}/_api/web/lists/GetByTitle('Site Pages')/items(${pageId})`,
           {
             headers: ODATA_HEADERS,
             params: {
@@ -214,7 +214,7 @@ export const SharepointServer: ConnectorSpec = {
         const { query, from, size } = input as { query: string; from?: number; size?: number };
         const { siteUrl } = ctx.config as { siteUrl: string };
         ctx.log.debug(`SharePoint Server search: "${query}"`);
-        const response = await ctx.client.get(`${siteUrl}/_api/search/query`, {
+        const response = await ctx.client.get(`${normalizeUrl(siteUrl)}/_api/search/query`, {
           headers: ODATA_HEADERS,
           params: {
             querytext: `'${query.replace(/'/g, "''")}'`,
@@ -239,7 +239,7 @@ export const SharepointServer: ConnectorSpec = {
           body?: unknown;
         };
         const { siteUrl } = ctx.config as { siteUrl: string };
-        const url = `${siteUrl}/${path}`;
+        const url = `${normalizeUrl(siteUrl)}/${path}`;
         ctx.log.debug(`SharePoint Server callRestApi ${method} ${url}`);
         const response = await ctx.client.request({
           method,
@@ -301,7 +301,7 @@ export const SharepointServer: ConnectorSpec = {
       ctx.log.debug('SharePoint Server test handler');
       try {
         const { siteUrl } = ctx.config as { siteUrl: string };
-        const response = await ctx.client.get(`${siteUrl}/_api/web/title`, {
+        const response = await ctx.client.get(`${normalizeUrl(siteUrl)}/_api/web/title`, {
           headers: ODATA_HEADERS,
         });
         const title = response.data?.value ?? 'Unknown';

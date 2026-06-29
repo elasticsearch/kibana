@@ -31,8 +31,8 @@ import { getDeleteTaskRunResult } from '@kbn/task-manager-plugin/server/task';
 import type { LogMeta } from '@kbn/logging';
 import type { StreamsTaskType, TaskContext } from '.';
 import { parseError } from '../../streams/errors/parse_error';
-import { shouldIdentifyFeatures } from '../../sig_events/features/should_identify_features';
-import { persistQueries } from '../../sig_events/persist_queries';
+import { shouldIdentifyFeatures } from '../../significant_events/features/should_identify_features';
+import { persistQueries } from '../../significant_events/persist_queries';
 import { cancellableTask } from '../cancellable_task';
 import type { TaskClient } from '../task_client';
 import type { TaskParams } from '../types';
@@ -41,11 +41,11 @@ import {
   FEATURES_IDENTIFICATION_TASK_TYPE,
   getFeaturesIdentificationTaskId,
 } from './features_identification';
-import type { SignificantEventsQueriesGenerationTaskParams } from '../../sig_events/tasks/significant_events_queries_generation';
+import type { SignificantEventsQueriesGenerationTaskParams } from '../../significant_events/tasks/significant_events_queries_generation';
 import {
   getSignificantEventsQueriesGenerationTaskId,
   SIGNIFICANT_EVENTS_QUERIES_GENERATION_TASK_TYPE,
-} from '../../sig_events/tasks/significant_events_queries_generation';
+} from '../../significant_events/tasks/significant_events_queries_generation';
 
 export interface OnboardingTaskParams {
   streamName: string;

@@ -101,6 +101,13 @@ Then the note appears in the Notes panel with the user's name and the current ti
 And the note persists after the user refreshes the page
 ```
 
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
+
 ---
 
 #### Scenario: User cannot submit an empty note
@@ -116,6 +123,13 @@ Then the submit action is unavailable
 And no note is created
 ```
 
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
+
 ---
 
 #### Scenario: Note text at the maximum character limit is accepted
@@ -129,6 +143,13 @@ Given the user has the alert detail flyout open
 When the user enters a note of exactly 10 000 characters and submits
 Then the note is saved and displayed in full in the Notes panel
 ```
+
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
 
 </details>
 
@@ -150,6 +171,13 @@ When User B opens the alert detail flyout
 Then User B sees User A's note with the correct author name and timestamp
 ```
 
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
+
 ---
 
 #### Scenario: User can delete their own note but not another user's note
@@ -166,6 +194,13 @@ And selecting delete removes their note from the panel
 And the other user's note remains unchanged
 ```
 
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
+
 ---
 
 #### Scenario: Notes panel shows an empty state when no notes exist
@@ -180,6 +215,13 @@ When the user opens the alert detail flyout
 Then the Notes panel shows an empty state message
 And no note rows are rendered
 ```
+
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
 
 </details>
 

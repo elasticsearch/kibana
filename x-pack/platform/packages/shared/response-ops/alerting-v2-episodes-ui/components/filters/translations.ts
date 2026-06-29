@@ -146,3 +146,32 @@ export const STATUS_FILTER_NO_MATCH = i18n.translate(
     defaultMessage: 'No matching statuses',
   }
 );
+
+/** --- Severity filter --- */
+export const SEVERITY_FILTER_ARIA_LABEL = i18n.translate(
+  'xpack.alertingV2EpisodesUi.severityFilter.ariaLabel',
+  {
+    defaultMessage: 'Severity filter',
+  }
+);
+
+export const SEVERITY_FILTER_LABEL = i18n.translate(
+  'xpack.alertingV2EpisodesUi.severityFilter.label',
+  {
+    defaultMessage: 'Severity',
+  }
+);
+
+export const SEVERITY_FILTER_NONE_LABEL = i18n.translate(
+  'xpack.alertingV2EpisodesUi.severityFilter.noneLabel',
+  {
+    defaultMessage: 'No severity',
+  }
+);
+
+export const SEVERITY_FILTER_NO_MATCH = i18n.translate(
+  'xpack.alertingV2EpisodesUi.severityFilter.noMatch',
+  {
+    defaultMessage: 'No matching severities',
+  }
+);

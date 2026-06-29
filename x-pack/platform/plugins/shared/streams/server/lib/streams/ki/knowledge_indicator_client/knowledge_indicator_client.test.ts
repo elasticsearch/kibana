@@ -15,8 +15,8 @@ import { computeFeatureUuid } from '@kbn/streams-schema';
 import { type StoredFeatureKnowledgeIndicator, type StoredTombstone } from '../data_stream';
 import { KI_TYPE_FEATURE, KI_TYPE_QUERY } from '../fields';
 
-jest.mock('../../../sig_events/latest_source_query', () => {
-  const actual = jest.requireActual('../../../sig_events/latest_source_query');
+jest.mock('../../../significant_events/latest_source_query', () => {
+  const actual = jest.requireActual('../../../significant_events/latest_source_query');
   return {
     ...actual,
     executeAndDecodeSource: jest.fn(),
@@ -33,7 +33,7 @@ jest.mock('./bulk_with_inference_fallback', () => {
   };
 });
 
-import { executeAndDecodeSource } from '../../../sig_events/latest_source_query';
+import { executeAndDecodeSource } from '../../../significant_events/latest_source_query';
 
 const STREAM = 'logs-app';
 

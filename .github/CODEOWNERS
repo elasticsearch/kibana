@@ -1174,7 +1174,7 @@ x-pack/platform/plugins/shared/agent_builder @elastic/workchat-eng
 x-pack/platform/plugins/shared/agent_builder_dashboards @elastic/kibana-presentation
 x-pack/platform/plugins/shared/agent_builder_platform @elastic/workchat-eng
 x-pack/platform/plugins/shared/agent_builder_workflows @elastic/workchat-eng @elastic/workflows-eng
-x-pack/platform/plugins/shared/agent_context_layer @elastic/workchat-eng
+x-pack/platform/plugins/shared/agent_context_layer @elastic/context-eng
 x-pack/platform/plugins/shared/ai_infra/llm_tasks @elastic/appex-ai-infra
 x-pack/platform/plugins/shared/ai_infra/product_doc_base @elastic/appex-ai-infra
 x-pack/platform/plugins/shared/aiops @elastic/ml-ui
@@ -1878,7 +1878,7 @@ x-pack/platform/packages/shared/kbn-streams-schema/src/api/significant_events @e
 x-pack/platform/packages/shared/kbn-streams-schema/src/feature.ts @elastic/obs-sig-events-team
 x-pack/platform/packages/shared/kbn-streams-schema/src/inference_feature_ids.ts @elastic/obs-sig-events-team
 x-pack/platform/packages/shared/kbn-streams-schema/src/queries @elastic/obs-sig-events-team
-x-pack/platform/packages/shared/kbn-streams-schema/src/sig_events @elastic/obs-sig-events-team
+x-pack/platform/packages/shared/kbn-streams-schema/src/significant_events @elastic/obs-sig-events-team
 x-pack/platform/packages/shared/kbn-streams-schema/src/insights @elastic/obs-sig-events-team
 x-pack/platform/packages/shared/kbn-streams-schema/src/onboarding @elastic/obs-sig-events-team
 x-pack/platform/packages/shared/kbn-streams-schema/src/feature_accumulator.ts @elastic/obs-sig-events-team
@@ -1889,12 +1889,12 @@ x-pack/platform/packages/shared/kbn-streams-ai/src/significant_events @elastic/o
 x-pack/platform/packages/shared/kbn-streams-ai/src/features @elastic/obs-sig-events-team
 x-pack/platform/packages/shared/kbn-streams-ai/src/knowledge_indicators @elastic/obs-sig-events-team
 # app
-x-pack/platform/plugins/shared/streams_app/public/components/sig_events @elastic/obs-sig-events-team
-x-pack/platform/plugins/shared/streams_app/public/hooks/sig_events @elastic/obs-sig-events-team
+x-pack/platform/plugins/shared/streams_app/public/components/significant_events @elastic/obs-sig-events-team
+x-pack/platform/plugins/shared/streams_app/public/hooks/significant_events @elastic/obs-sig-events-team
 x-pack/platform/plugins/shared/streams_app/public/hooks/use_onboarding_api.ts @elastic/obs-sig-events-team
 x-pack/platform/plugins/shared/streams_app/public/hooks/use_index_patterns_config.ts @elastic/obs-sig-events-team
 # server
-x-pack/platform/plugins/shared/streams/server/lib/sig_events @elastic/obs-sig-events-team
+x-pack/platform/plugins/shared/streams/server/lib/significant_events @elastic/obs-sig-events-team
 x-pack/platform/plugins/shared/streams/server/lib/streams/assets/query @elastic/obs-sig-events-team
 x-pack/platform/plugins/shared/streams/server/lib/streams/feature @elastic/obs-sig-events-team
 x-pack/platform/plugins/shared/streams/server/lib/streams/ki @elastic/obs-sig-events-team
@@ -1916,11 +1916,11 @@ x-pack/platform/plugins/shared/streams/server/agent_builder/tools/ki_identificat
 x-pack/platform/plugins/shared/streams/server/agent_builder/tools/ki_identification_cancel @elastic/obs-sig-events-team
 x-pack/platform/plugins/shared/streams/server/agent_builder/tools/ki_identification_status @elastic/obs-sig-events-team
 x-pack/platform/plugins/shared/streams/server/agent_builder/tools/memory @elastic/obs-sig-events-team
-x-pack/platform/plugins/shared/streams/server/routes/sig_events @elastic/obs-sig-events-team
-x-pack/platform/plugins/shared/streams/server/routes/internal/sig_events @elastic/obs-sig-events-team
-x-pack/platform/plugins/shared/streams/test/scout/api/tests/sig_events @elastic/obs-sig-events-team
+x-pack/platform/plugins/shared/streams/server/routes/significant_events @elastic/obs-sig-events-team
+x-pack/platform/plugins/shared/streams/server/routes/internal/significant_events @elastic/obs-sig-events-team
+x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events @elastic/obs-sig-events-team
 # common
-x-pack/platform/plugins/shared/streams/common/sig_events_tuning_config.ts @elastic/obs-sig-events-team
+x-pack/platform/plugins/shared/streams/common/significant_events_tuning_config.ts @elastic/obs-sig-events-team
 
 # Infra Monitoring tests
 /x-pack/solutions/observability/test/functional/apps/infra @elastic/obs-presentation-team

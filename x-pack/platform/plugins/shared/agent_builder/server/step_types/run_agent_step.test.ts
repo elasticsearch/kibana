@@ -418,13 +418,13 @@ describe('ai.agent workflow step (Agent Builder)', () => {
     it('ConfigSchema accepts plugin-id with aggregate-by, and plugin-id alone', () => {
       expect(
         ConfigSchema.safeParse({
-          'plugin-id': 'streams_sig_events_discovery',
+          'plugin-id': 'streams_significant_events_discovery',
           'aggregate-by': 'streams_significant_events',
         }).success
       ).toBe(true);
-      expect(ConfigSchema.safeParse({ 'plugin-id': 'streams_sig_events_discovery' }).success).toBe(
-        true
-      );
+      expect(
+        ConfigSchema.safeParse({ 'plugin-id': 'streams_significant_events_discovery' }).success
+      ).toBe(true);
     });
 
     it('forwards plugin-id and aggregate-by as telemetryMetadata to executeAgent', async () => {
@@ -436,7 +436,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
         createContext({
           input: { message: 'hello' },
           config: {
-            'plugin-id': 'streams_sig_events_discovery',
+            'plugin-id': 'streams_significant_events_discovery',
             'aggregate-by': 'streams_significant_events',
           },
         })
@@ -446,7 +446,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
         expect.objectContaining({
           params: expect.objectContaining({
             telemetryMetadata: {
-              pluginId: 'streams_sig_events_discovery',
+              pluginId: 'streams_significant_events_discovery',
               aggregateBy: 'streams_significant_events',
             },
           }),

@@ -18,6 +18,7 @@ project:
   sourceRoot: x-pack/platform/packages/shared/kbn-inbox-common
 dependsOn:
   - '@kbn/zod'
+  - '@kbn/zod-helpers'
 tags:
   - shared-common
   - package

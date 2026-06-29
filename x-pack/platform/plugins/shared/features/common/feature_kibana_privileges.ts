@@ -155,6 +155,13 @@ export interface FeatureKibanaPrivileges {
        * muteAlert/unmuteAlert operations internally and is therefore also covered.
        */
       mute_alerts?: AlertingKibanaPrivilege;
+      /**
+       * List of rule types and consumers for which users should have read-only access to per-alert
+       * mute/snooze state (the `findMutedAlerts` operation) when granted this privilege, without the
+       * ability to mute or unmute. This allows reading muted alert instances without requiring full
+       * rule `read`. The broader `mute_alerts` privilege also grants this operation.
+       */
+      read_muted_alerts?: AlertingKibanaPrivilege;
     };
     alert?: {
       /**

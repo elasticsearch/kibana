@@ -30,6 +30,7 @@ describe('resolveApiKeyFactory', () => {
       const factory = resolveApiKeyFactory(ApiEndpointId.OpenTelemetry, {
         isManagedOtlpServiceAvailable: true,
         isServerless: false,
+        managedOtlpPrwEndpointEnabled: false,
       });
 
       await factory(esClient, 'name');
@@ -42,6 +43,7 @@ describe('resolveApiKeyFactory', () => {
       const factory = resolveApiKeyFactory(ApiEndpointId.OpenTelemetry, {
         isManagedOtlpServiceAvailable: false,
         isServerless: false,
+        managedOtlpPrwEndpointEnabled: false,
       });
 
       await factory(esClient, 'name');
@@ -56,6 +58,7 @@ describe('resolveApiKeyFactory', () => {
       const factory = resolveApiKeyFactory(ApiEndpointId.Prometheus, {
         isManagedOtlpServiceAvailable: true,
         isServerless: true,
+        managedOtlpPrwEndpointEnabled: false,
       });
 
       await factory(esClient, 'name');
@@ -68,6 +71,7 @@ describe('resolveApiKeyFactory', () => {
       const factory = resolveApiKeyFactory(ApiEndpointId.Prometheus, {
         isManagedOtlpServiceAvailable: false,
         isServerless: false,
+        managedOtlpPrwEndpointEnabled: false,
       });
 
       await factory(esClient, 'name');
@@ -76,16 +80,30 @@ describe('resolveApiKeyFactory', () => {
       expect(createManagedOtlpServiceApiKey).not.toHaveBeenCalled();
     });
 
-    it('creates an Elasticsearch-native Prometheus key on non-Serverless even when the managed service is available', async () => {
+    it('creates an Elasticsearch-native Prometheus key on non-Serverless when the managed OTLP PRW endpoint is disabled', async () => {
       const factory = resolveApiKeyFactory(ApiEndpointId.Prometheus, {
         isManagedOtlpServiceAvailable: true,
         isServerless: false,
+        managedOtlpPrwEndpointEnabled: false,
       });
 
       await factory(esClient, 'name');
 
       expect(createPrometheusApiKey).toHaveBeenCalledWith(esClient, 'name');
       expect(createManagedOtlpServiceApiKey).not.toHaveBeenCalled();
+    });
+
+    it('creates a managed OTLP service key on non-Serverless when the managed OTLP PRW endpoint is enabled', async () => {
+      const factory = resolveApiKeyFactory(ApiEndpointId.Prometheus, {
+        isManagedOtlpServiceAvailable: true,
+        isServerless: false,
+        managedOtlpPrwEndpointEnabled: true,
+      });
+
+      await factory(esClient, 'name');
+
+      expect(createManagedOtlpServiceApiKey).toHaveBeenCalledWith(esClient, 'name');
+      expect(createPrometheusApiKey).not.toHaveBeenCalled();
     });
   });
 
@@ -94,6 +112,7 @@ describe('resolveApiKeyFactory', () => {
       const factory = resolveApiKeyFactory(ApiEndpointId.Elasticsearch, {
         isManagedOtlpServiceAvailable: false,
         isServerless: false,
+        managedOtlpPrwEndpointEnabled: false,
       });
 
       await factory(esClient, 'name');

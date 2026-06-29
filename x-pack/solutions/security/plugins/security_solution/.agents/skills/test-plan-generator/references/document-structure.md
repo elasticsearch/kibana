@@ -67,7 +67,7 @@ This file defines the required sections of a test plan, their order, and the con
 
 ## Test Scenarios
 
-[Organised by feature area. Each area is wrapped in a collapsible block so the comment remains readable regardless of plan size. Write scenarios in priority order within each area: P0 first, then P1, then P2. See `references/output-formats.md` for the required scenario format and automation coverage rules.]
+[Organised by feature area. Each area is wrapped in a collapsible block so the comment remains readable regardless of plan size. Write scenarios in priority order within each area: P0 first, then P1, then P2. Every scenario must end with the canonical `Execution:` block (Pass / Fail / Blocked task-list checkboxes) so devs can record execution status directly in the published comment. See `references/output-formats.md` for the required scenario format, automation coverage rules, and the execution block format and rules. The execution block participates in the preserve-on-match strategy in `references/mode-update.md` when an existing test plan is updated.]
 
 <details>
 <summary><strong>[Feature area name]</strong> — N scenarios (P0: n, P1: n, P2: n)</summary>

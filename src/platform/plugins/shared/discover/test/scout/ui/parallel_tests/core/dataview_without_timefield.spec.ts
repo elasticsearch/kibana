@@ -63,7 +63,7 @@ spaceTest.describe('Data view without timefield', { tag: tags.stateful.classic }
     async ({ pageObjects }) => {
       // Switch to data view with timefield
       await pageObjects.discover.selectDataView('with-timefield');
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
       // Verify timepicker exists
       const timePickerExists = await pageObjects.datePicker.timePickerExists();
@@ -75,7 +75,7 @@ spaceTest.describe('Data view without timefield', { tag: tags.stateful.classic }
     'should switch between with and without timefield using the browser back button',
     async ({ page, pageObjects }) => {
       await pageObjects.discover.selectDataView('without-timefield');
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
       // Wait for timepicker to disappear
       await expect(async () => {
@@ -84,7 +84,7 @@ spaceTest.describe('Data view without timefield', { tag: tags.stateful.classic }
       }).toPass();
 
       await pageObjects.discover.selectDataView('with-timefield');
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
       // Wait for timepicker to appear
       await expect(async () => {
@@ -94,7 +94,7 @@ spaceTest.describe('Data view without timefield', { tag: tags.stateful.classic }
 
       // Navigate back using browser back button
       await page.goBack();
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
       await expect(page.testSubj.locator('discover-dataView-switch-link')).toHaveText(
         'without-timefield'

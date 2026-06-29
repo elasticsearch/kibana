@@ -312,7 +312,7 @@ export const AWS_SECRET_ACCESS_KEY_REQUIRED_MESSAGE = i18n.translate(
 );
 
 export const EARS_LABEL = i18n.translate('connectorSpecs.ears.label', {
-  defaultMessage: 'OAuth 2.0 via Elastic-owned apps',
+  defaultMessage: 'Quick Connect OAuth 2.0',
 });
 
 export const GCP_SERVICE_ACCOUNT_LABEL = i18n.translate('connectorSpecs.gcpServiceAccount.label', {

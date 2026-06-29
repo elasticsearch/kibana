@@ -84,7 +84,7 @@ describe('syncAgentBuilderOverviewDashboard', () => {
     return { coreStart, soClient, spaceRepo, importerMock };
   }
 
-  it('installs the dashboard when send_to_self is enabled', async () => {
+  it('installs the dashboard when tracing is enabled', async () => {
     const { coreStart, importerMock } = buildCoreStart();
 
     await syncAgentBuilderOverviewDashboard(coreStart as any, true, logger);
@@ -98,7 +98,7 @@ describe('syncAgentBuilderOverviewDashboard', () => {
     );
   });
 
-  it('removes the dashboard when send_to_self is disabled', async () => {
+  it('removes the dashboard when tracing is disabled', async () => {
     const { coreStart, soClient, importerMock } = buildCoreStart();
 
     await syncAgentBuilderOverviewDashboard(coreStart as any, false, logger);

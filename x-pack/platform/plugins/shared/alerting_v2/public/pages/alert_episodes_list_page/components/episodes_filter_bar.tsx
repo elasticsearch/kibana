@@ -23,6 +23,7 @@ import {
 import type { EpisodesFilterState } from '@kbn/alerting-v2-episodes-ui/queries/episodes_query';
 import type { TimeRange } from '@kbn/es-query';
 import { AlertEpisodesStatusFilter } from '@kbn/alerting-v2-episodes-ui/components/filters/status_filter';
+import { AlertEpisodesSeverityFilter } from '@kbn/alerting-v2-episodes-ui/components/filters/severity_filter';
 import { AlertEpisodesRuleFilter } from '@kbn/alerting-v2-episodes-ui/components/filters/rule_filter';
 import { AlertEpisodesTagFilter } from '@kbn/alerting-v2-episodes-ui/components/filters/tag_filter';
 import { AlertEpisodesAssigneeFilter } from '@kbn/alerting-v2-episodes-ui/components/filters/assignee_filter';
@@ -81,6 +82,13 @@ export const EpisodesFilterBar = ({
     [onFilterChange]
   );
 
+  const onSeveritiesChange = useCallback(
+    (severity: string[] | undefined) => {
+      onFilterChange((prev) => ({ ...prev, severity }));
+    },
+    [onFilterChange]
+  );
+
   const onRuleChange = useCallback(
     (ruleId: string | undefined) => {
       onFilterChange((prev) => ({ ...prev, ruleId }));
@@ -132,6 +140,12 @@ export const EpisodesFilterBar = ({
                 selectedStatus={filterState.status}
                 onStatusChange={onStatusChange}
                 data-test-subj="episodesFilterBar-status"
+              />
+
+              <AlertEpisodesSeverityFilter
+                selectedSeverities={filterState.severity}
+                onSeveritiesChange={onSeveritiesChange}
+                data-test-subj="episodesFilterBar-severity"
               />
 
               <AlertEpisodesRuleFilter

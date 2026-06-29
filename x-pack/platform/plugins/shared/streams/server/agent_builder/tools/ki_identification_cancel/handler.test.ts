@@ -6,7 +6,7 @@
  */
 
 import { httpServerMock } from '@kbn/core/server/mocks';
-import { SigEventsWorkflowStatus } from '@kbn/streams-schema';
+import { SignificantEventsWorkflowStatus } from '@kbn/streams-schema';
 import { ExecutionStatus } from '@kbn/workflows';
 import { StreamsKIsOnboardingClient } from '../../../lib/workflows/onboarding_workflow_client';
 import { cancelKiIdentificationToolHandler } from './handler';
@@ -40,7 +40,7 @@ describe('cancelKiIdentificationToolHandler', () => {
     expect(result).toEqual({
       stream_name: 'logs.nginx',
       execution_id: 'exec-1',
-      status: SigEventsWorkflowStatus.Canceled,
+      status: SignificantEventsWorkflowStatus.Canceled,
     });
   });
 
@@ -66,7 +66,7 @@ describe('cancelKiIdentificationToolHandler', () => {
     expect(result).toEqual({
       stream_name: 'logs.nginx',
       execution_id: null,
-      status: SigEventsWorkflowStatus.Canceled,
+      status: SignificantEventsWorkflowStatus.Canceled,
     });
   });
 });

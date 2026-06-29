@@ -290,8 +290,8 @@ test.describe('Discover ES|QL', { tag: tags.stateful.classic }, () => {
       // Expanding a row proves the embedded saved-search grid is fully
       // interactive end-to-end: rows are rendered, the expand action
       // surfaces, and the document-viewer flyout opens for the row.
-      await pageObjects.discover.openAndWaitForDocViewerFlyout({ rowIndex: 0 });
-      await pageObjects.discover.closeDocViewerFlyout();
+      await pageObjects.dataGrid.openAndWaitForDocViewerFlyout({ rowIndex: 0 });
+      await pageObjects.dataGrid.closeDocViewerFlyout();
     });
   });
 

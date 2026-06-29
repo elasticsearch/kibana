@@ -1023,3 +1023,67 @@ describe('parseAndVerifyReadme', () => {
     ).toEqual('/package/input-only/0.1.0/docs/README.md');
   });
 });
+
+describe('provider_permissions passthrough (package-spec 3.7.0+)', () => {
+  const AWS_PERMS = [{ provider: 'aws', permissions: ['s3:GetObject'], roles: ['SecurityAudit'] }];
+
+  describe('parseAndVerifyPolicyTemplates', () => {
+    it('preserves provider_permissions on a policy template', () => {
+      const result = parseAndVerifyPolicyTemplates({
+        policy_templates: [
+          {
+            name: 'cloudtrail',
+            title: 'CloudTrail',
+            description: 'CloudTrail logs',
+            inputs: [],
+            provider_permissions: AWS_PERMS,
+          },
+        ],
+      } as any);
+
+      expect(result[0]).toMatchObject({ provider_permissions: AWS_PERMS });
+    });
+
+    it('does not include provider_permissions when not declared', () => {
+      const result = parseAndVerifyPolicyTemplates({
+        policy_templates: [
+          {
+            name: 'cloudtrail',
+            title: 'CloudTrail',
+            description: 'CloudTrail logs',
+            inputs: [],
+          },
+        ],
+      } as any);
+
+      expect(result[0]).not.toHaveProperty('provider_permissions');
+    });
+  });
+
+  describe('parseAndVerifyInputs', () => {
+    it('preserves provider_permissions on an input', () => {
+      const result = parseAndVerifyInputs(
+        [
+          {
+            type: 'aws-s3',
+            title: 'S3',
+            description: 'S3 input',
+            provider_permissions: AWS_PERMS,
+          },
+        ],
+        'manifest.yml'
+      );
+
+      expect(result[0]).toMatchObject({ provider_permissions: AWS_PERMS });
+    });
+
+    it('does not include provider_permissions when not declared on an input', () => {
+      const result = parseAndVerifyInputs(
+        [{ type: 'aws-s3', title: 'S3', description: 'S3 input' }],
+        'manifest.yml'
+      );
+
+      expect(result[0]).not.toHaveProperty('provider_permissions');
+    });
+  });
+});

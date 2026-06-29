@@ -16,8 +16,8 @@ import type { StreamsKIsOnboardingClient } from '../../../lib/workflows/onboardi
 import { classifyError } from '../../utils/error_utils';
 import { startKiIdentificationToolHandler } from './handler';
 
-export const STREAMS_KI_IDENTIFICATION_START_TOOL_ID =
-  'platform.streams.sig_events.ki_identification_start';
+export const SIGNIFICANT_EVENTS_KNOWLEDGE_INDICATOR_IDENTIFICATION_START_TOOL_ID =
+  'platform.sig_events.ki_identification_start';
 
 const onboardingStartSchema = z.object({
   stream_name: z.string().describe('Target stream name, e.g. "logs.ecs.nginx".'),
@@ -44,7 +44,7 @@ export const createKiIdentificationStartTool = ({
   telemetry: EbtTelemetryClient;
   streamsKIsOnboardingClient: StreamsKIsOnboardingClient;
 }): BuiltinSkillBoundedTool<typeof onboardingStartSchema> => ({
-  id: STREAMS_KI_IDENTIFICATION_START_TOOL_ID,
+  id: SIGNIFICANT_EVENTS_KNOWLEDGE_INDICATOR_IDENTIFICATION_START_TOOL_ID,
   type: ToolType.builtin,
   description: dedent`
     Start stream Knowledge Indicator (KI) identification as a background task.

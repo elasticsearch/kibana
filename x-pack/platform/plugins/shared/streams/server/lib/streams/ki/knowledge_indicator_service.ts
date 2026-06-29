@@ -26,9 +26,9 @@ import {
   type KnowledgeIndicatorDataStreamClient,
 } from './knowledge_indicator_client';
 import {
-  DEFAULT_SIG_EVENTS_TUNING_CONFIG,
-  type SigEventsTuningConfig,
-} from '../../../../common/sig_events_tuning_config';
+  DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG,
+  type SignificantEventsTuningConfig,
+} from '../../../../common/significant_events_tuning_config';
 import { V1RulesAdapter } from './knowledge_indicator_client/rules/v1_rules_adapter';
 import {
   V2RulesAdapter,
@@ -39,7 +39,7 @@ import {
   isSignificantEventsAlertingV2Active,
   logAlertingV2PluginUnavailable,
   readSignificantEventsAlertingV2UiEnabled,
-} from '../../sig_events/significant_events_alerting_v2';
+} from '../../significant_events/significant_events_alerting_v2';
 
 export class KnowledgeIndicatorService {
   constructor(
@@ -52,14 +52,14 @@ export class KnowledgeIndicatorService {
     soClient,
     alertingRulesClient,
     alertingV2RulesClient,
-    config = DEFAULT_SIG_EVENTS_TUNING_CONFIG,
+    config = DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG,
   }: {
     esClient: ElasticsearchClient;
     soClient: SavedObjectsClientContract;
     alertingRulesClient: RulesClient;
     alertingV2RulesClient?: RulesClientApi;
     config?: Pick<
-      SigEventsTuningConfig,
+      SignificantEventsTuningConfig,
       'semantic_min_score' | 'rrf_rank_constant' | 'feature_ttl_days'
     >;
   }): Promise<KnowledgeIndicatorClient> {

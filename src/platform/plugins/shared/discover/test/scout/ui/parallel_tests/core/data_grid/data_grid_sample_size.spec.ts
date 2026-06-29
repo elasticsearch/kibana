@@ -33,7 +33,7 @@ spaceTest.describe('Discover data grid sample size', { tag: '@local-stateful-cla
       'discover:sampleRowsPerPage': testData.DEFAULT_ROWS_PER_PAGE,
     });
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 
@@ -80,7 +80,7 @@ spaceTest.describe('Discover data grid sample size', { tag: '@local-stateful-cla
     expect(await dataGrid.getCurrentSampleSize()).toBe(CUSTOM_SAMPLE_SIZE);
 
     await page.reload();
-    await dataGrid.waitUntilSearchingHasFinished();
+    await dataGrid.waitForLoad();
     await dataGrid.waitForDocTableRendered();
     await dataGrid.openGridDisplaySettings();
 

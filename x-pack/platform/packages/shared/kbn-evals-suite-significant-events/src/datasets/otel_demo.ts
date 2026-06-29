@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { DEFAULT_SIG_EVENTS_TUNING_CONFIG } from '@kbn/streams-plugin/common/sig_events_tuning_config';
+import { DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG } from '@kbn/streams-plugin/common/significant_events_tuning_config';
 import { GCS_BUCKET, OTEL_DEMO_GCS_BASE_PATH_PREFIX, OTEL_DEMO_NAMESPACE } from '../constants';
 import type { DatasetConfig } from './types';
 
@@ -572,13 +572,13 @@ export const otelDemoDataset: DatasetConfig = {
     {
       input: {
         scenario_id: 'healthy-baseline',
-        iterations: DEFAULT_SIG_EVENTS_TUNING_CONFIG.max_iterations,
+        iterations: DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG.max_iterations,
       },
     },
     {
       input: {
         scenario_id: 'payment-unreachable',
-        iterations: DEFAULT_SIG_EVENTS_TUNING_CONFIG.max_iterations,
+        iterations: DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG.max_iterations,
       },
     },
   ],

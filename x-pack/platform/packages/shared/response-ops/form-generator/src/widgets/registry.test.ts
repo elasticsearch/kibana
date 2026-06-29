@@ -78,6 +78,14 @@ describe('Widget Registry', () => {
 
       expect(component).toBe(HiddenWidget);
     });
+
+    it('should prioritize hidden: true over an explicit widget value', () => {
+      const schema = z.url();
+      addMeta(schema, { widget: WidgetType.Text, hidden: true });
+      const component = getWidgetComponent(schema);
+
+      expect(component).toBe(HiddenWidget);
+    });
   });
 
   describe('getDefaultWidgetForSchema - unknown schema types', () => {

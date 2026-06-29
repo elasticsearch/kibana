@@ -1,4 +1,4 @@
-version: "1"
+version: '1'
 name: Investigation
 description: >
   Root cause analysis for an observability issue. One agent investigates using
@@ -6,9 +6,9 @@ description: >
   produces a structured root cause conclusion.
 enabled: true
 settings:
-  timeout: "60m"
+  timeout: '60m'
   concurrency:
-    key: "streams-investigation-{{ inputs.concurrency_key | default: workflow.executionId }}"
+    key: 'streams-investigation-{{ inputs.concurrency_key | default: workflow.executionId }}'
     strategy: cancel-in-progress
     max: 1
 tags:
@@ -25,7 +25,7 @@ triggers:
           description: Description of the issue or event to investigate.
         connector_id:
           type: string
-          default: ".anthropic-claude-4.6-sonnet-chat_completion"
+          default: '.anthropic-claude-4.6-sonnet-chat_completion'
           description: Connector ID for the investigation agent.
         stream_names:
           type: array
@@ -44,15 +44,14 @@ triggers:
       additionalProperties: false
 
 steps:
-
   - name: investigate
     type: ai.agent
     agent-id: platform.streams.investigation
     connector-id: '{{ inputs.connector_id }}'
     # Keep plugin-id/aggregate-by in sync with @kbn/streams-schema inference_feature_ids.ts
-    # (STREAMS_SIG_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID / STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
-    plugin-id: "streams_sig_events_investigation"
-    aggregate-by: "streams_significant_events"
+    # (STREAMS_SIGNIFICANT_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID / STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
+    plugin-id: 'streams_significant_events_investigation'
+    aggregate-by: 'streams_significant_events'
     create-conversation: true
     with:
       timeout: 1800s

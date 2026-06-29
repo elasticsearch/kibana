@@ -7,7 +7,7 @@
 
 import type { CoreSetup, CoreStart, Plugin, PluginInitializerContext } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
+import { CONTEXT_ENGINE_ENABLED_SETTING_ID } from '@kbn/management-settings-ids';
 import type {
   AgentContextLayerPluginSetup,
   AgentContextLayerPluginStart,
@@ -15,6 +15,7 @@ import type {
   AgentContextLayerStartDependencies,
 } from './types';
 import { registerFeatures } from './features';
+import { registerUISettings } from './ui_settings';
 import { registerSearchRoute } from './routes/search';
 import { registerGetRoute } from './routes/get';
 import { registerListRoute } from './routes/list';
@@ -58,6 +59,7 @@ export class AgentContextLayerPlugin
     setupDeps: AgentContextLayerSetupDependencies
   ): AgentContextLayerPluginSetup {
     registerFeatures({ features: setupDeps.features });
+    registerUISettings({ uiSettings: coreSetup.uiSettings });
 
     const smlSetup = this.smlServiceInstance.setup({ logger: this.logger.get('sml') });
 
@@ -124,13 +126,13 @@ export class AgentContextLayerPlugin
         isFeatureEnabled: async (request) => {
           // Mirrors `withSmlFeatureFlag` (HTTP routes) and the per-run
           // check inside the SML crawler task. Request-scoped so per-space
-          // overrides of the experimental setting are honored.
+          // overrides of the Context Engine setting are honored.
           if (!this.coreStart) {
             throw new Error('Agent Context Layer feature-flag check called before plugin start');
           }
           const soClient = this.coreStart.savedObjects.getScopedClient(request);
           const uiSettingsClient = this.coreStart.uiSettings.asScopedToClient(soClient);
-          return uiSettingsClient.get<boolean>(AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID);
+          return uiSettingsClient.get<boolean>(CONTEXT_ENGINE_ENABLED_SETTING_ID);
         },
       });
     }

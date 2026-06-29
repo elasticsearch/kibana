@@ -36,7 +36,7 @@ const MAX_DOCS_TO_SAMPLE = 100_000;
 // bounded long tail from one ES|QL categorization query avoids reimplementing
 // the DSL helper's second rare-pattern aggregation, while still giving
 // selectLogPatternsForLlm enough sorted rows to take the head and tail.
-const SIG_EVENTS_CATEGORIZE_LIMIT = 1000;
+const SIGNIFICANT_EVENTS_PASS1_LIMIT = 1000;
 
 interface FieldPatternResultBase {
   field: string;
@@ -473,7 +473,7 @@ export async function getSigEventsLogPatternsEsql({
         kql,
         field,
         samplingProbability,
-        limit: SIG_EVENTS_CATEGORIZE_LIMIT,
+        limit: SIGNIFICANT_EVENTS_PASS1_LIMIT,
       });
 
       return rows.map((row) => ({

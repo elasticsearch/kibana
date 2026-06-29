@@ -346,39 +346,14 @@ export class DiscoverApp {
     await canvas.click();
   }
 
-  async waitUntilSearchingHasFinished() {
-    await this.dataGrid.waitUntilSearchingHasFinished();
-  }
-
   // Waits for a Discover tab to finish loading.
   async waitUntilTabIsLoaded() {
     await this.waitForDiscoverPage();
     await this.waitUntilSearchingHasFinished();
   }
 
-  // Waits for the document table to be fully rendered and stable
-  async waitForDocTableRendered() {
-    await this.dataGrid.waitForDocTableRendered();
-  }
-
-  async openDocumentDetails({ rowIndex }: { rowIndex: number }) {
-    await this.dataGrid.openDocumentDetails({ rowIndex });
-  }
-
-  async waitForDocViewerFlyoutOpen() {
-    await this.dataGrid.waitForDocViewerFlyoutOpen();
-  }
-
-  async openAndWaitForDocViewerFlyout({ rowIndex }: { rowIndex: number }) {
-    await this.dataGrid.openAndWaitForDocViewerFlyout({ rowIndex });
-  }
-
-  /**
-   * Close the Discover document-viewer flyout and wait for it to disappear.
-   */
-  async closeDocViewerFlyout() {
-    await this.page.testSubj.click('euiFlyoutCloseButton');
-    await this.page.testSubj.waitForSelector('kbnDocViewer', { state: 'hidden' });
+  async waitUntilSearchingHasFinished() {
+    await this.dataGrid.waitForLoad();
   }
 
   async getDocTableIndex(index: number): Promise<string> {
@@ -468,10 +443,6 @@ export class DiscoverApp {
     return this.page.testSubj.locator('split-button-notification-indicator');
   }
 
-  getColumnHeader(name: string): Locator {
-    return this.dataGrid.getColumnHeader(name);
-  }
-
   public readonly controls = {
     getControlFrame: (controlId: string): Locator =>
       this.page.locator(`[data-test-subj='control-frame']:has([data-control-id='${controlId}'])`),
@@ -480,7 +451,7 @@ export class DiscoverApp {
   };
 
   async clickFieldSort(field: string, sortOption: string) {
-    const header = this.getColumnHeader(field);
+    const header = this.dataGrid.getColumnHeader(field);
     await header.click();
     await this.page.testSubj.waitForSelector(`dataGridHeaderCellActionGroup-${field}`, {
       state: 'visible',
@@ -614,8 +585,7 @@ export class DiscoverApp {
   }
 
   async moveColumn(fieldName: string, direction: 'left' | 'right') {
-    await this.page.testSubj.hover(`dataGridHeaderCell-${fieldName}`);
-    await this.page.testSubj.click(`dataGridHeaderCellActionButton-${fieldName}`);
+    await this.dataGrid.openColumnMenuByField(fieldName);
     await this.page.getByText(`Move ${direction}`).click();
   }
 

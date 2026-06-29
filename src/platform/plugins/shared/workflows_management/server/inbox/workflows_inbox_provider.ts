@@ -10,27 +10,26 @@
 import type { Logger } from '@kbn/core/server';
 import {
   createInboxActionConflictError,
+  createInvalidInboxActionSourceIdError,
   type InboxActionProvider,
+  type InboxActionProviderFacetsResult,
   type InboxActionProviderListParams,
+  type InboxActionProviderListProcessedParams,
   type InboxActionProviderListResult,
   type InboxRequestContext,
 } from '@kbn/inbox-plugin/server';
 import { ExecutionStatus } from '@kbn/workflows';
-import { buildWorkflowSourceId, parseWorkflowSourceId, toInboxAction } from './to_inbox_action';
+import { WorkflowExecutionInvalidStatusError } from '@kbn/workflows/common/errors';
+import {
+  buildWorkflowSourceId,
+  parseWorkflowSourceId,
+  toInboxAction,
+  toInboxHistoryAction,
+} from './to_inbox_action';
 import type { WorkflowManagementAuditLog } from '../api/routes/utils/workflow_audit_logging';
 import type { WorkflowsManagementApi } from '../api/workflows_management_api';
 
 export const WORKFLOWS_INBOX_SOURCE_APP = 'workflows' as const;
-
-export class InvalidWorkflowSourceIdError extends Error {
-  constructor(public readonly sourceId: string) {
-    super(
-      `Workflows inbox provider received an unparseable source_id "${sourceId}". ` +
-        `Expected format: workflowId:workflowRunId:stepExecutionId.`
-    );
-    this.name = 'InvalidWorkflowSourceIdError';
-  }
-}
 
 export interface CreateWorkflowsInboxProviderArgs {
   api: WorkflowsManagementApi;
@@ -38,9 +37,8 @@ export interface CreateWorkflowsInboxProviderArgs {
   /** Same instance as HTTP routes — inbox resume must emit identical security audit events. */
   audit: WorkflowManagementAuditLog;
   /**
-   * Upper bound on rows the registry hands us per `list()`. Phase 1 leans on
-   * the registry's own pagination; we ask the service for a generous slice
-   * and let the registry merge-sort + paginate downstream.
+   * Fallback slice size for direct provider calls. The Inbox registry passes
+   * an explicit `perPage` sized to the requested merged page.
    */
   pageSize?: number;
 }
@@ -64,18 +62,58 @@ export const createWorkflowsInboxProvider = ({
     sourceApp: WORKFLOWS_INBOX_SOURCE_APP,
 
     async list(
-      _params: InboxActionProviderListParams,
+      params: InboxActionProviderListParams,
       ctx: InboxRequestContext
     ): Promise<InboxActionProviderListResult> {
-      const { results, total } = await api.listWaitingForInputSteps(ctx.spaceId, {
-        page: 1,
-        perPage: pageSize,
-      });
+      const { results, total, reasoningByStepId } = await api.listWaitingForInputSteps(
+        ctx.spaceId,
+        {
+          page: params.page ?? 1,
+          perPage: params.perPage ?? pageSize,
+          includeReasoning: true,
+        }
+      );
 
       return {
-        actions: results.map(toInboxAction),
+        actions: results.map((step) => toInboxAction(step, reasoningByStepId.get(step.id))),
         total,
       };
+    },
+
+    async listProcessed(
+      params: InboxActionProviderListProcessedParams,
+      ctx: InboxRequestContext
+    ): Promise<InboxActionProviderListResult> {
+      const { results, total, reasoningByStepId, deletedWorkflowIds } =
+        await api.listProcessedWaitForInputSteps(ctx.spaceId, {
+          page: params.page ?? 1,
+          perPage: params.perPage ?? pageSize,
+          // Push the filter dimensions the workflows step-exec index can
+          // answer with native predicates straight down to the query service.
+          q: params.q,
+          channel: params.channel,
+          workflowId: params.workflowId,
+          respondedBy: params.respondedBy,
+          sortOrder: params.sortOrder,
+        });
+
+      return {
+        actions: results.map((step) =>
+          toInboxHistoryAction(step, reasoningByStepId.get(step.id), {
+            workflowDeleted: step.workflowId ? deletedWorkflowIds.has(step.workflowId) : false,
+          })
+        ),
+        total,
+      };
+    },
+
+    async listProcessedFacets(ctx: InboxRequestContext): Promise<InboxActionProviderFacetsResult> {
+      // The query service computes facets against the same baseline scope as
+      // the listing (space + waitForInput + terminated-or-audit-stamped) but
+      // skips user-supplied filter clauses on purpose. See
+      // `listProcessedWaitForInputFacets` for the stability rationale.
+      const { channel, respondedBy } = await api.listProcessedWaitForInputFacets(ctx.spaceId);
+      return { channel, respondedBy };
     },
 
     async respond(
@@ -85,24 +123,15 @@ export const createWorkflowsInboxProvider = ({
     ): Promise<void> {
       const parsed = parseWorkflowSourceId(sourceId);
       if (!parsed) {
-        throw new InvalidWorkflowSourceIdError(sourceId);
+        throw createInvalidInboxActionSourceIdError(
+          WORKFLOWS_INBOX_SOURCE_APP,
+          sourceId,
+          'workflowId:workflowRunId:stepExecutionId'
+        );
       }
 
-      // The engine's `resumeWorkflowExecution` only validates the
-      // execution-level status, not which step is currently waiting. That
-      // is unsafe in two ways:
-      //   1. A response composed against a stale inbox listing can land
-      //      after the originally-targeted step has been advanced and a
-      //      *later* `waitForInput` is now blocking — the engine would
-      //      silently apply the input to that unrelated later step.
-      //   2. Two near-simultaneous responses to the same step both pass
-      //      the workflow-level check; one input gets dropped on the
-      //      floor with no error surfaced to either client.
-      // We mitigate (1) here by re-reading the targeted step doc and
-      // refusing to forward unless it is still the one waiting. (2)
-      // requires server-side optimistic concurrency on the workflows
-      // execution doc — tracked as a follow-up against the workflows
-      // team since it lives outside our ownership boundary.
+      // Re-read the targeted step so stale inbox responses cannot resume a
+      // later waitForInput step from the same execution.
       const stepExecution = await api.getStepExecution(
         { executionId: parsed.executionId, id: parsed.stepExecutionId },
         ctx.spaceId
@@ -124,12 +153,7 @@ export const createWorkflowsInboxProvider = ({
         );
       }
 
-      // Defence-in-depth: a race between the workflow-level timeout monitor
-      // and the waitForInput step can leave a doc with
-      // `status: waiting_for_input` AND `finishedAt`/`error` set. The status
-      // check above then passes, but the step is actually terminal. Translate
-      // this to a clean 409 here so responders see a meaningful message
-      // instead of a 500 from the engine's freshness check.
+      // A timeout can leave a stale waiting_for_input status on a settled doc.
       if (stepExecution.finishedAt || stepExecution.error) {
         throw createInboxActionConflictError(
           WORKFLOWS_INBOX_SOURCE_APP,
@@ -140,6 +164,7 @@ export const createWorkflowsInboxProvider = ({
         );
       }
 
+      const channel = ctx.channel ?? 'inbox';
       logger.debug(
         `Workflows inbox provider resuming execution ${parsed.executionId} (workflow ${parsed.workflowId})`
       );
@@ -148,13 +173,21 @@ export const createWorkflowsInboxProvider = ({
           parsed.executionId,
           ctx.spaceId,
           input,
-          ctx.request
+          ctx.request,
+          { channel, stepExecutionId: parsed.stepExecutionId }
         );
         audit.logExecutionResumed(ctx.request, {
           executionId: parsed.executionId,
           resumedBy,
         });
       } catch (error) {
+        if (error instanceof WorkflowExecutionInvalidStatusError) {
+          throw createInboxActionConflictError(
+            WORKFLOWS_INBOX_SOURCE_APP,
+            sourceId,
+            `step execution ${parsed.stepExecutionId} was already claimed or no longer accepts input`
+          );
+        }
         audit.logExecutionResumed(ctx.request, {
           executionId: parsed.executionId,
           error,

@@ -9,7 +9,7 @@ import { deriveQueryType, type StreamQuery, type Streams } from '@kbn/streams-sc
 import type { Logger } from '@kbn/core/server';
 import { v4 as uuidv4 } from 'uuid';
 import type { KnowledgeIndicatorClient } from '../../../lib/streams/ki';
-import { validateEsqlQueryForStreamOrThrow } from '../../../lib/sig_events/validate_esql_query';
+import { validateEsqlQueryForStreamOrThrow } from '../../../lib/significant_events/validate_esql_query';
 
 export interface QueryInput {
   id?: string;

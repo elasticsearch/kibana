@@ -5,4 +5,7 @@
  * 2.0.
  */
 
-export { syncAgentBuilderOverviewDashboard } from './install_dashboard';
+export {
+  syncAgentBuilderOverviewDashboard,
+  syncAgentBuilderOverviewDashboardForSpace,
+} from './install_dashboard';

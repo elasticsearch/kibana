@@ -93,7 +93,7 @@ pageLoadAssetSize:
   inference: 10368
   inferenceWorkflows: 25000
   infra: 56302
-  ingestHub: 14788
+  ingestHub: 12730
   ingestPipelines: 17866
   inputControlVis: 7638
   inspectComponent: 4590

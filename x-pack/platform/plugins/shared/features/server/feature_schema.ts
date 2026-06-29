@@ -78,6 +78,7 @@ const alertingRuleSchemaSpec = {
   manual_run: schema.maybe(alertingSchema),
   manage_rule_settings: schema.maybe(alertingSchema),
   mute_alerts: schema.maybe(alertingSchema),
+  read_muted_alerts: schema.maybe(alertingSchema),
   read: schema.maybe(alertingSchema),
 };
 

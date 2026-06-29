@@ -50,12 +50,12 @@ export const platformCoreTools = {
  * - {action} the action to perform on the entity
  */
 export const platformStreamsSigEventsTools = {
-  searchKnowledgeIndicators: `${internalNamespaces.platformStreams}.sig_events.ki_search`,
-  createFeatureKnowledgeIndicator: `${internalNamespaces.platformStreams}.sig_events.ki_feature_create`,
-  createQueryKnowledgeIndicator: `${internalNamespaces.platformStreams}.sig_events.ki_query_create`,
-  searchEvent: `${internalNamespaces.platformStreams}.sig_events.event_search`,
-  createEvent: `${internalNamespaces.platformStreams}.sig_events.event_create`,
-  updateEventStatus: `${internalNamespaces.platformStreams}.sig_events.event_status_update`,
+  searchKnowledgeIndicators: `${internalNamespaces.platformSignificantEvents}.ki_search`,
+  createFeatureKnowledgeIndicator: `${internalNamespaces.platformSignificantEvents}.ki_feature_create`,
+  createQueryKnowledgeIndicator: `${internalNamespaces.platformSignificantEvents}.ki_query_create`,
+  searchEvent: `${internalNamespaces.platformSignificantEvents}.event_search`,
+  createEvent: `${internalNamespaces.platformSignificantEvents}.event_create`,
+  updateEventStatus: `${internalNamespaces.platformSignificantEvents}.event_status_update`,
 } as const;
 
 export const attachmentTools = {

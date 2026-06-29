@@ -29,7 +29,7 @@ spaceTest.describe(
     spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
       await browserAuth.loginAsPrivilegedUser();
       await pageObjects.discover.goto({ queryMode: 'classic' });
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await pageObjects.dataGrid.waitForDocTableRendered();
     });
 
@@ -53,12 +53,12 @@ spaceTest.describe(
           operator: 'is',
           value: 'jpg',
         });
-        await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+        await pageObjects.dataGrid.waitForLoad();
         await pageObjects.discover.saveSearch(searchName);
 
         await pageObjects.dashboard.openNewDashboard();
         await pageObjects.dashboard.addSavedSearch(searchName);
-        await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+        await pageObjects.dataGrid.waitForLoad();
         await pageObjects.dataGrid.waitForDocTableRendered();
         await pageObjects.dashboard.saveDashboard(dashboardName);
 

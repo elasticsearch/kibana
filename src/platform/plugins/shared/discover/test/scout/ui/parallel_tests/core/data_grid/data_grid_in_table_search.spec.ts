@@ -28,7 +28,7 @@ spaceTest.describe('Discover data grid in-table search', { tag: '@local-stateful
     await page.setViewportSize({ width: 1200, height: 2000 });
     await browserAuth.loginAsViewer();
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 
@@ -63,7 +63,7 @@ spaceTest.describe('Discover data grid in-table search', { tag: '@local-stateful
     const { dataGrid, discover } = pageObjects;
     await dataGrid.changeRowsPerPageTo(10);
     await dataGrid.addFieldFromSidebar('extension');
-    await dataGrid.waitUntilSearchingHasFinished();
+    await dataGrid.waitForLoad();
     await discover.writeAndSubmitKqlQuery('response : 404 and @tags.raw : "info" and bytes < 1000');
 
     await dataGrid.runInTableSearch('php');

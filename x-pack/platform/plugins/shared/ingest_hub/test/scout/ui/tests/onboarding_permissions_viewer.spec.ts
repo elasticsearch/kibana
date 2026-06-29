@@ -110,7 +110,7 @@ test.describe(
       await page.testSubj.locator(`${VIEWER}-serviceSelector`).selectOption('ec2_metrics');
 
       const actionsList = page.testSubj.locator(`${VIEWER}-actionsList`);
-      await expect(actionsList).toContainText('"Sid": "ElasticAWSEC2"');
+      await expect(actionsList).toContainText('"Sid": "ElasticEc2Metrics"');
       await expect(actionsList).toContainText('ec2:DescribeInstances');
       await expect(actionsList).not.toContainText('inspector2:ListFindings');
     });

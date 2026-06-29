@@ -96,10 +96,13 @@ describe('useRespondToInboxAction', () => {
     expect(String(result.current.error)).toMatch(/network down/);
   });
 
-  it('invalidates the inbox actions list on success so responded items drop off the UI', async () => {
-    // Regression: the respond mutation must invalidate the list query,
-    // otherwise the responded action keeps rendering until the user
-    // manually refreshes.
+  it('invalidates both the actions and history caches on settle so the server-driven move reconciles', async () => {
+    // The respond route synchronously stamps `respondedBy/At/channel`
+    // on the workflow step doc with `refresh: 'wait_for'`, then
+    // schedules the resume via Task Manager. Invalidating both
+    // namespaces here lets the next render pull the post-stamp truth
+    // (pending row gone, history row added with `response_mode:
+    // 'responded'`) — no client-side optimistic shuffling needed.
     const queryClient = createClient();
     const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
 
@@ -115,15 +118,14 @@ describe('useRespondToInboxAction', () => {
       });
     });
 
-    expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.actions.all,
-    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.actions.all });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.history.all });
   });
 
-  it('does not invalidate the inbox actions list when the respond call fails', async () => {
-    // If the server rejects the respond the action is still pending, so the
-    // cache must stay put — otherwise we'd refetch and mask a real failure
-    // with an optimistic removal.
+  it('still invalidates both caches when the mutation fails so a half-applied state cannot persist', async () => {
+    // If the audit-stamp landed but the Task Manager schedule failed
+    // (or vice versa), the next refetch pulls the authoritative state
+    // from the step doc — better than holding a stale local cache.
     httpPost.mockRejectedValueOnce(new Error('boom'));
     const queryClient = createClient();
     const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
@@ -144,6 +146,7 @@ describe('useRespondToInboxAction', () => {
       }
     });
 
-    expect(invalidateSpy).not.toHaveBeenCalled();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.actions.all });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.history.all });
   });
 });

@@ -14,9 +14,38 @@ export interface InboxActionsListFilters {
   perPage?: number;
 }
 
+export interface InboxActionsHistoryFilters {
+  sourceApp?: string;
+  page?: number;
+  perPage?: number;
+  /** Free-text search across responder / workflow id / step id. */
+  q?: string;
+  channel?: string[];
+  workflowId?: string[];
+  respondedBy?: string[];
+  /** Sort direction on responded-at / finished-at. Defaults to `'desc'`. */
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * Filter options for the history facets endpoint. Currently only scoped by
+ * `sourceApp` so the dropdown choices stay stable across the user toggling
+ * other list filters — see the route's `listFacets` baseline for the
+ * rationale.
+ */
+export interface InboxActionsHistoryFacetsFilters {
+  sourceApp?: string;
+}
+
 export const queryKeys = {
   actions: {
     all: ['inbox', 'actions'] as const,
     list: (filters?: InboxActionsListFilters) => ['inbox', 'actions', 'list', filters] as const,
+  },
+  history: {
+    all: ['inbox', 'history'] as const,
+    list: (filters?: InboxActionsHistoryFilters) => ['inbox', 'history', 'list', filters] as const,
+    facets: (filters?: InboxActionsHistoryFacetsFilters) =>
+      ['inbox', 'history', 'facets', filters] as const,
   },
 };

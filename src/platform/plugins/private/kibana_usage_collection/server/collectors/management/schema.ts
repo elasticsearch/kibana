@@ -543,11 +543,57 @@ export const stackManagementSchema: MakeSchemaFrom<UsageStats> = {
     type: 'boolean',
     _meta: { description: 'Non-default value of setting.' },
   },
+  'contextEngine:enabled': {
+    type: 'boolean',
+    _meta: { description: 'Whether the Context Engine is enabled.' },
+  },
   'agentBuilder:uiamOAuthClientManagement': {
     type: 'boolean',
     _meta: {
       description:
         'Whether UIAM OAuth client management endpoints and the Agent Builder MCP Clients UI are enabled.',
+    },
+  },
+  'agentBuilder:tracing:enabled': {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether Agent Builder tracing is enabled.',
+    },
+  },
+  'agentBuilder:tracing:includeLlmResponses': {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether to include LLM response content in traces.',
+    },
+  },
+  'agentBuilder:tracing:includeRealIds': {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether to include real conversation and workflow IDs in traces.',
+    },
+  },
+  'agentBuilder:tracing:includeRealNames': {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether to include real agent and tool names in traces.',
+    },
+  },
+  'agentBuilder:tracing:includeSystemPrompt': {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether to include system prompts in traces.',
+    },
+  },
+  'agentBuilder:tracing:includeToolDetails': {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether to include tool call arguments and results in traces.',
+    },
+  },
+  'agentBuilder:tracing:includeUserPrompts': {
+    type: 'boolean',
+    _meta: {
+      description: 'Whether to include user prompts in traces.',
     },
   },
   'workflows:experimentalFeatures': {

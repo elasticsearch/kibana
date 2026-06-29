@@ -23,7 +23,6 @@ export const configSchema = schema.object({
     numWords: schema.number({ defaultValue: 750, min: 1, max: 5000 }),
   }),
   tracing: schema.object({
-    send_to_self: schema.boolean({ defaultValue: false }),
     exporters: schema.arrayOf(
       schema.object({
         url: schema.uri({ scheme: ['http', 'https'] }),

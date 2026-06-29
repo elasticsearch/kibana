@@ -7,7 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ActionContext } from '../../connector_spec';
+import type { ActionContext, AuthTypeDef } from '../../connector_spec';
+import { generateSecretsSchemaFromSpec } from '../../lib/generate_secrets_schema_from_spec';
 import { MicrosoftTeams } from './microsoft_teams';
 
 interface GraphCollectionResponse<T = unknown> {
@@ -66,14 +67,49 @@ describe('MicrosoftTeams', () => {
   });
 
   describe('auth', () => {
-    it('should support bearer, oauth_authorization_code, oauth_client_credentials, and ears', () => {
+    it('should support ears, oauth_authorization_code, oauth_client_credentials, and oauth_client_credentials_private_key_jwt as visible options', () => {
       const { auth } = MicrosoftTeams;
       expect(auth).toBeDefined();
-      expect(auth?.types).toHaveLength(4);
-      expect(auth?.types[0]).toEqual(expect.objectContaining({ type: 'bearer' }));
-      expect(auth?.types[1]).toEqual(expect.objectContaining({ type: 'oauth_authorization_code' }));
-      expect(auth?.types[2]).toEqual(expect.objectContaining({ type: 'oauth_client_credentials' }));
-      expect(auth?.types[3]).toEqual(expect.objectContaining({ type: 'ears' }));
+      const visibleTypes = auth?.types.filter(
+        (t) => typeof t === 'string' || !(t as AuthTypeDef).isLegacy
+      );
+      expect(visibleTypes).toHaveLength(4);
+      expect(visibleTypes?.[0]).toEqual(
+        expect.objectContaining({ type: 'ears', isRecommended: true })
+      );
+      expect(visibleTypes?.[1]).toEqual(
+        expect.objectContaining({ type: 'oauth_authorization_code' })
+      );
+      expect(visibleTypes?.[2]).toEqual(
+        expect.objectContaining({ type: 'oauth_client_credentials' })
+      );
+      expect(visibleTypes?.[3]).toEqual(
+        expect.objectContaining({ type: 'oauth_client_credentials_private_key_jwt' })
+      );
+    });
+
+    it('marks only ears (Quick Connect) as recommended', () => {
+      const recommended = (MicrosoftTeams.auth?.types as Array<string | AuthTypeDef>)
+        .filter((t): t is AuthTypeDef => typeof t === 'object' && Boolean(t.isRecommended))
+        .map((t) => t.type);
+      expect(recommended).toEqual(['ears']);
+    });
+
+    it('bearer auth is hidden (not shown in picker) but retained for existing connectors', () => {
+      const bearerDef = MicrosoftTeams.auth?.types.find(
+        (t): t is AuthTypeDef => typeof t === 'object' && t.type === 'bearer'
+      );
+      expect(bearerDef).toBeDefined();
+      expect(bearerDef?.isLegacy).toBe(true);
+    });
+
+    it('existing connectors with bearer auth still pass schema validation', () => {
+      const schema = generateSecretsSchemaFromSpec(MicrosoftTeams.auth, {
+        isEarsEnabled: true,
+        isEarsExperimentalEnabled: true,
+      });
+      const result = schema.safeParse({ authType: 'bearer', token: 'some-legacy-token' });
+      expect(result.success).toBe(true);
     });
 
     it('should have correct oauth_authorization_code defaults', () => {
@@ -119,6 +155,23 @@ describe('MicrosoftTeams', () => {
       expect(scope).toContain('Chat.Read');
       expect(scope).toContain('ChannelMessage.Read.All');
       expect(scope).toContain('offline_access');
+    });
+
+    it('app-only (client credentials) auth types default the Graph .default scope', () => {
+      // The scope field is hidden for these app-only types, so it must be defaulted —
+      // Microsoft's client-credentials grant rejects an empty scope (AADSTS900144).
+      const appOnlyTypes = (MicrosoftTeams.auth?.types as Array<string | AuthTypeDef>).filter(
+        (t): t is AuthTypeDef =>
+          typeof t === 'object' &&
+          (t.type === 'oauth_client_credentials' ||
+            t.type === 'oauth_client_credentials_private_key_jwt')
+      );
+      expect(appOnlyTypes).toHaveLength(2);
+      appOnlyTypes.forEach((t) => {
+        expect((t.defaults as { scope?: string }).scope).toBe(
+          'https://graph.microsoft.com/.default'
+        );
+      });
     });
   });
 

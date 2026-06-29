@@ -73,7 +73,7 @@ spaceTest.describe(
           });
 
           await spaceTest.step('open Overview tab', async () => {
-            await pageObjects.tracesExperience.openOverviewTab(pageObjects.discover);
+            await pageObjects.tracesExperience.openOverviewTab();
           });
 
           await spaceTest.step('verify About section is visible', async () => {
@@ -115,7 +115,7 @@ spaceTest.describe(
           );
 
           await spaceTest.step('open Overview tab', async () => {
-            await pageObjects.tracesExperience.openOverviewTab(pageObjects.discover);
+            await pageObjects.tracesExperience.openOverviewTab();
           });
 
           await spaceTest.step('verify Errors section is visible', async () => {
@@ -143,7 +143,7 @@ spaceTest.describe(
         });
 
         await spaceTest.step('open Overview tab', async () => {
-          await pageObjects.tracesExperience.openOverviewTab(pageObjects.discover);
+          await pageObjects.tracesExperience.openOverviewTab();
         });
 
         await spaceTest.step('expand the Logs section', async () => {

@@ -8,7 +8,7 @@
  */
 
 import type { estypes } from '@elastic/elasticsearch';
-import { ExecutionType } from '@kbn/workflows';
+import { ExecutionType, TerminalExecutionStatuses } from '@kbn/workflows';
 import type {
   EsWorkflowStepExecution,
   WorkflowExecutionDto,
@@ -53,12 +53,71 @@ import type {
 
 const DEFAULT_PAGE_SIZE = 100;
 
+/** Max completed steps fetched per page when resolving predecessor `output.reasoning`. */
+const PREDECESSOR_REASONING_MAX_HITS = 1000;
+
+const SETTLED_STEP_STATUSES: readonly string[] = TerminalExecutionStatuses;
+
+const PROCESSED_WAIT_FOR_INPUT_SHOULD: estypes.QueryDslQueryContainer[] = [
+  { exists: { field: 'finishedAt' } },
+  { exists: { field: 'hitl.respondedAt' } },
+];
+
 /**
  * Extends EsWorkflowStepExecution with the legacy `endedAt` field
  * that may exist on older documents written before the rename to `finishedAt`.
  */
 interface StepExecutionWithLegacyFields extends EsWorkflowStepExecution {
   endedAt?: string;
+}
+
+/**
+ * Filters applied to processed wait-for-input step executions. Multi-value
+ * fields are OR'd within a field and AND'd across fields; `q` is a
+ * case-insensitive prefix search over responder, workflow id, and step id.
+ */
+export interface ProcessedWaitForInputFilters {
+  q?: string;
+  channel?: string[];
+  workflowId?: string[];
+  respondedBy?: string[];
+  sortOrder?: 'asc' | 'desc';
+}
+
+interface WaitForInputListOptions {
+  page?: number;
+  perPage?: number;
+  includeReasoning?: boolean;
+}
+
+/**
+ * Result of the cross-workflow `waitForInput` listings. `reasoningByStepId`
+ * contains any `output.reasoning` object found on the step that immediately
+ * preceded each wait step.
+ *
+ * `deletedWorkflowIds` lists the parent workflow ids in `results` that no
+ * longer resolve to an alive workflow (soft-deleted, or hard-deleted and
+ * thus absent). The pending listing filters these out entirely, so the set
+ * is only ever populated by the processed/audit listing — which retains the
+ * rows so the audit trail survives workflow deletion. Empty when the
+ * alive-workflow lookup failed and deletion cannot be attributed reliably.
+ */
+export interface WaitForInputListResult {
+  results: EsWorkflowStepExecution[];
+  total: number;
+  reasoningByStepId: Map<string, Record<string, unknown>>;
+  deletedWorkflowIds: Set<string>;
+}
+
+/** Facet buckets for processed wait-for-input step executions. */
+export interface ProcessedWaitForInputFacets {
+  channel: Array<{ value: string; count: number }>;
+  respondedBy: Array<{ value: string; count: number }>;
+}
+
+interface ProcessedWaitForInputFacetAggs {
+  channel: estypes.AggregationsStringTermsAggregate;
+  respondedBy: estypes.AggregationsStringTermsAggregate;
 }
 
 export class WorkflowExecutionQueryService {
@@ -282,41 +341,17 @@ export class WorkflowExecutionQueryService {
   }
 
   /**
-   * Cross-workflow fan-out: returns every step execution currently blocked on
-   * `waitForInput` in the given space. Used by the Inbox plugin to surface
-   * pending HITL items across all workflows a user has access to.
+   * Lists active `waitForInput` step executions for a space.
    *
-   * Intentionally minimal — the Inbox registry owns higher-level concerns
-   * like status filtering and paginated merge-sort across providers.
-   *
-   * NOTE: only `spaceId` and `status` are filtered here because those are the
-   * only keyword-indexed fields on `.workflows-step-executions`. An earlier
-   * draft also added `term: { stepType: 'waitForInput' }`, which silently
-   * matched zero docs and made the Inbox UI appear empty even when workflows
-   * were paused on `waitForInput`. The status filter is sufficient because
-   * `waiting_for_input` is only ever produced by the `waitForInput` step type.
-   *
-   * Defence-in-depth `must_not` on `finishedAt`: if a race between the
-   * workflow-level timeout monitor and the waitForInput step leaves a doc with
-   * `status: waiting_for_input` AND `finishedAt` set (the step is actually
-   * settled), we must not resurface it in the Inbox — responding to it is a
-   * no-op because the execution doc is terminal. The underlying race is fixed
-   * in `WaitForInputStepImpl`, but this keeps the Inbox honest even for
-   * pre-existing zombie docs or any future regression.
-   *
-   * Orphan filtering: `.workflows-step-executions` is NOT transactionally
-   * cleaned up when a workflow is soft-deleted (see `workflow_deletion.ts`
-   * — only hard-deletes call `deleteByQuery`). Without a join the Inbox
-   * would surface ghost actions for workflows the user has already removed
-   * from `/app/workflows`. We do this as a list-time filter rather than a
-   * delete-time cancel so soft-deletes stay reversible (step executions
-   * resurface if the workflow is restored) and so pre-existing orphans get
-   * cleaned up retroactively.
+   * Pending rows exclude settled steps and rows that have already been claimed
+   * by a response audit stamp. Soft-deleted parent workflows are filtered out
+   * at read time because step executions are retained unless the workflow is
+   * hard-deleted.
    */
   async listWaitingForInputSteps(
     spaceId: string,
-    { page = 1, perPage = 100 }: { page?: number; perPage?: number } = {}
-  ): Promise<{ results: EsWorkflowStepExecution[]; total: number }> {
+    { page = 1, perPage = 100, includeReasoning = false }: WaitForInputListOptions = {}
+  ): Promise<WaitForInputListResult> {
     const from = Math.max(0, (page - 1) * perPage);
     let response: estypes.SearchResponse<EsWorkflowStepExecution>;
     try {
@@ -325,7 +360,12 @@ export class WorkflowExecutionQueryService {
         query: {
           bool: {
             must: [{ term: { spaceId } }, { term: { status: 'waiting_for_input' } }],
-            must_not: [{ exists: { field: 'finishedAt' } }],
+            // `hitl.respondedAt` marks a claimed response that Task Manager
+            // may not have resumed yet; it belongs to the processed listing.
+            must_not: [
+              { exists: { field: 'finishedAt' } },
+              { exists: { field: 'hitl.respondedAt' } },
+            ],
           },
         },
         sort: [{ startedAt: { order: 'desc' } }],
@@ -335,7 +375,12 @@ export class WorkflowExecutionQueryService {
       });
     } catch (error) {
       if (isIndexNotFoundError(error)) {
-        return { results: [], total: 0 };
+        return {
+          results: [],
+          total: 0,
+          reasoningByStepId: new Map(),
+          deletedWorkflowIds: new Set(),
+        };
       }
       this.deps.logger.error(`Failed to list waiting-for-input step executions: ${error}`);
       throw error;
@@ -351,7 +396,12 @@ export class WorkflowExecutionQueryService {
       .filter((src): src is EsWorkflowStepExecution => Boolean(src));
 
     if (allResults.length === 0) {
-      return { results: allResults, total };
+      return {
+        results: allResults,
+        total,
+        reasoningByStepId: new Map(),
+        deletedWorkflowIds: new Set(),
+      };
     }
 
     const distinctWorkflowIds = Array.from(
@@ -362,12 +412,23 @@ export class WorkflowExecutionQueryService {
       )
     );
 
-    const aliveIds = await this.getAliveWorkflowIds(distinctWorkflowIds, spaceId);
+    // Resolve workflow deletion and optional predecessor reasoning in parallel.
+    const [aliveIds, reasoningByStepId] = await Promise.all([
+      this.getAliveWorkflowIds(distinctWorkflowIds, spaceId),
+      includeReasoning
+        ? this.resolvePredecessorReasoning(allResults, spaceId)
+        : Promise.resolve(new Map<string, Record<string, unknown>>()),
+    ]);
 
     if (aliveIds === null) {
       // Lookup itself failed (already logged). Fall back to unfiltered
-      // results so a transient ES error doesn't black-hole the Inbox.
-      return { results: allResults, total };
+      // results so a transient ES error does not hide active steps.
+      return {
+        results: allResults,
+        total,
+        reasoningByStepId,
+        deletedWorkflowIds: new Set(),
+      };
     }
 
     const results = allResults.filter((r) => r.workflowId && aliveIds.has(r.workflowId));
@@ -377,7 +438,265 @@ export class WorkflowExecutionQueryService {
     // slightly optimistic, but it is monotonically corrected as the user
     // pages through. A precise cardinality would require a second
     // aggregation per call, which isn't worth it for a transient state.
-    return { results, total: Math.max(0, total - dropped) };
+    return {
+      results,
+      total: Math.max(0, total - dropped),
+      reasoningByStepId,
+      // Pending drops orphans outright, so no surviving row is from a deleted parent.
+      deletedWorkflowIds: new Set(),
+    };
+  }
+
+  /**
+   * Lists processed `waitForInput` step executions for a space.
+   *
+   * A row is processed once it has either terminated or received a response
+   * audit stamp. Unlike the pending listing, deleted parent workflows are
+   * retained and reported via `deletedWorkflowIds`.
+   */
+  async listProcessedWaitForInputSteps(
+    spaceId: string,
+    {
+      page = 1,
+      perPage = 25,
+      includeReasoning = false,
+      q,
+      channel,
+      workflowId,
+      respondedBy,
+      sortOrder = 'desc',
+    }: WaitForInputListOptions & ProcessedWaitForInputFilters = {}
+  ): Promise<WaitForInputListResult> {
+    const from = Math.max(0, (page - 1) * perPage);
+    const filterMust = buildHistoryFilterClauses({ channel, workflowId, respondedBy, q });
+    let response: estypes.SearchResponse<EsWorkflowStepExecution>;
+    try {
+      response = await this.deps.esClient.search<EsWorkflowStepExecution>({
+        index: WORKFLOWS_STEP_EXECUTIONS_INDEX,
+        query: {
+          bool: {
+            must: [{ term: { spaceId } }, { term: { stepType: 'waitForInput' } }, ...filterMust],
+            should: PROCESSED_WAIT_FOR_INPUT_SHOULD,
+            minimum_should_match: 1,
+          },
+        },
+        // Keep claimed-but-not-yet-resumed rows in the same relative position
+        // after the engine later writes `finishedAt`.
+        sort: [
+          { 'hitl.respondedAt': { order: sortOrder, missing: '_last' } },
+          { finishedAt: { order: sortOrder, missing: '_last' } },
+        ],
+        from,
+        size: perPage,
+        track_total_hits: true,
+      });
+    } catch (error) {
+      if (isIndexNotFoundError(error)) {
+        return {
+          results: [],
+          total: 0,
+          reasoningByStepId: new Map(),
+          deletedWorkflowIds: new Set(),
+        };
+      }
+      this.deps.logger.error(`Failed to list processed wait-for-input step executions: ${error}`);
+      throw error;
+    }
+
+    const total =
+      typeof response.hits.total === 'number'
+        ? response.hits.total
+        : response.hits.total?.value ?? 0;
+
+    const allResults = response.hits.hits
+      .map((hit) => hit._source)
+      .filter((src): src is EsWorkflowStepExecution => Boolean(src));
+
+    if (allResults.length === 0) {
+      return {
+        results: allResults,
+        total,
+        reasoningByStepId: new Map(),
+        deletedWorkflowIds: new Set(),
+      };
+    }
+
+    const distinctWorkflowIds = Array.from(
+      new Set(
+        allResults
+          .map((r) => r.workflowId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      )
+    );
+
+    // Resolve workflow deletion and optional predecessor reasoning in parallel.
+    const [aliveIds, reasoningByStepId] = await Promise.all([
+      this.getAliveWorkflowIds(distinctWorkflowIds, spaceId),
+      includeReasoning
+        ? this.resolvePredecessorReasoning(allResults, spaceId)
+        : Promise.resolve(new Map<string, Record<string, unknown>>()),
+    ]);
+
+    if (aliveIds === null) {
+      return {
+        results: allResults,
+        total,
+        reasoningByStepId,
+        deletedWorkflowIds: new Set(),
+      };
+    }
+
+    // Processed rows are retained when their parent workflow is deleted; the
+    // caller can decide how to display the deleted source.
+    const deletedWorkflowIds = new Set(distinctWorkflowIds.filter((id) => !aliveIds.has(id)));
+    return {
+      results: allResults,
+      total,
+      reasoningByStepId,
+      deletedWorkflowIds,
+    };
+  }
+
+  /**
+   * Returns facet buckets for processed `waitForInput` rows.
+   *
+   * Facets use the same baseline as `listProcessedWaitForInputSteps`, without
+   * caller-supplied filters and without parent-workflow deletion filtering.
+   */
+  async listProcessedWaitForInputFacets(
+    spaceId: string,
+    { maxBuckets = 50 }: { maxBuckets?: number } = {}
+  ): Promise<ProcessedWaitForInputFacets> {
+    let response: estypes.SearchResponse<EsWorkflowStepExecution, ProcessedWaitForInputFacetAggs>;
+    try {
+      response = await this.deps.esClient.search<
+        EsWorkflowStepExecution,
+        ProcessedWaitForInputFacetAggs
+      >({
+        index: WORKFLOWS_STEP_EXECUTIONS_INDEX,
+        // `size: 0` — we only want the aggs, not the matching docs.
+        size: 0,
+        query: {
+          bool: {
+            must: [{ term: { spaceId } }, { term: { stepType: 'waitForInput' } }],
+            should: PROCESSED_WAIT_FOR_INPUT_SHOULD,
+            minimum_should_match: 1,
+          },
+        },
+        aggs: {
+          channel: { terms: { field: 'hitl.channel', size: maxBuckets } },
+          respondedBy: { terms: { field: 'hitl.respondedBy', size: maxBuckets } },
+        },
+        track_total_hits: false,
+      });
+    } catch (error) {
+      if (isIndexNotFoundError(error)) {
+        return { channel: [], respondedBy: [] };
+      }
+      this.deps.logger.error(`Failed to compute processed wait-for-input facets: ${error}`);
+      throw error;
+    }
+
+    return {
+      channel: bucketsToFacet(response.aggregations?.channel?.buckets),
+      respondedBy: bucketsToFacet(response.aggregations?.respondedBy?.buckets),
+    };
+  }
+
+  /**
+   * Best-effort lookup of `output.reasoning` from the completed step that
+   * finished immediately before each wait step started.
+   */
+  private async resolvePredecessorReasoning(
+    steps: EsWorkflowStepExecution[],
+    spaceId: string
+  ): Promise<Map<string, Record<string, unknown>>> {
+    const reasoningByStepId = new Map<string, Record<string, unknown>>();
+
+    const runIds = Array.from(
+      new Set(
+        steps
+          .map((step) => step.workflowRunId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      )
+    );
+    const waitStarts = steps
+      .map((step) => step.startedAt)
+      .filter(
+        (startedAt): startedAt is string => typeof startedAt === 'string' && startedAt.length > 0
+      );
+    if (runIds.length === 0 || waitStarts.length === 0) {
+      return reasoningByStepId;
+    }
+    const maxWaitStart = waitStarts.reduce((latest, current) =>
+      current > latest ? current : latest
+    );
+
+    let response: estypes.SearchResponse<EsWorkflowStepExecution>;
+    try {
+      response = await this.deps.esClient.search<EsWorkflowStepExecution>({
+        index: WORKFLOWS_STEP_EXECUTIONS_INDEX,
+        query: {
+          bool: {
+            must: [
+              { term: { spaceId } },
+              { terms: { workflowRunId: runIds } },
+              { term: { status: 'completed' } },
+              { range: { finishedAt: { lte: maxWaitStart } } },
+            ],
+          },
+        },
+        // Most-recent-first within each run so the first candidate at or
+        // before a wait step's start is its immediate predecessor.
+        sort: [
+          { workflowRunId: { order: 'asc' } },
+          { finishedAt: { order: 'desc', missing: '_last' } },
+        ],
+        // Fetch only the reasoning sub-object, not the full (potentially
+        // large) step `output` blob — most predecessors carry no reasoning.
+        _source: { includes: ['workflowRunId', 'finishedAt', 'output.reasoning'] },
+        size: PREDECESSOR_REASONING_MAX_HITS,
+        track_total_hits: false,
+      });
+    } catch (error) {
+      if (isIndexNotFoundError(error)) {
+        return reasoningByStepId;
+      }
+      // Reasoning is optional context; do not fail the listing if lookup fails.
+      this.deps.logger.warn(`Failed to resolve predecessor reasoning: ${error}`);
+      return reasoningByStepId;
+    }
+
+    const hits = response?.hits?.hits ?? [];
+    const completedByRun = new Map<string, Array<{ finishedAt?: string; output?: unknown }>>();
+    for (const hit of hits) {
+      const source = hit._source;
+      if (source?.workflowRunId) {
+        const forRun = completedByRun.get(source.workflowRunId) ?? [];
+        forRun.push({ finishedAt: source.finishedAt, output: source.output });
+        completedByRun.set(source.workflowRunId, forRun);
+      }
+    }
+
+    for (const step of steps) {
+      const { id, workflowRunId, startedAt } = step;
+      const candidates =
+        id && workflowRunId && startedAt ? completedByRun.get(workflowRunId) : undefined;
+      if (candidates && id && startedAt) {
+        // Candidates are finishedAt-desc within a run; the first that finished
+        // at or before the wait step started is its immediate predecessor.
+        const predecessor = candidates.find(
+          (candidate) =>
+            typeof candidate.finishedAt === 'string' && candidate.finishedAt <= startedAt
+        );
+        const reasoning = extractReasoning(predecessor?.output);
+        if (reasoning) {
+          reasoningByStepId.set(id, reasoning);
+        }
+      }
+    }
+
+    return reasoningByStepId;
   }
 
   /**
@@ -415,7 +734,44 @@ export class WorkflowExecutionQueryService {
         return new Set();
       }
       this.deps.logger.warn(
-        `Failed to validate parent workflows for inbox listing; returning unfiltered results: ${error}`
+        `Failed to validate parent workflows for wait-for-input listing; returning unfiltered results: ${error}`
+      );
+      return null;
+    }
+  }
+
+  /** Returns the claimable `waitForInput` step currently blocking the run. */
+  async getWaitingStepExecutionId(executionId: string, spaceId: string): Promise<string | null> {
+    try {
+      const response = await this.deps.esClient.search<EsWorkflowStepExecution>({
+        index: WORKFLOWS_STEP_EXECUTIONS_INDEX,
+        query: {
+          bool: {
+            must: [
+              { term: { workflowRunId: executionId } },
+              { term: { spaceId } },
+              { term: { stepType: 'waitForInput' } },
+              { term: { status: 'waiting_for_input' } },
+            ],
+            must_not: [
+              { exists: { field: 'finishedAt' } },
+              { exists: { field: 'hitl.respondedAt' } },
+            ],
+          },
+        },
+        _source: ['id'],
+        sort: [{ startedAt: { order: 'desc' } }],
+        size: 1,
+        track_total_hits: false,
+      });
+      const hit = response.hits.hits[0];
+      return hit?._source?.id ?? hit?._id ?? null;
+    } catch (error) {
+      if (isIndexNotFoundError(error)) {
+        return null;
+      }
+      this.deps.logger.warn(
+        `Failed to resolve the waiting step execution for ${executionId}: ${error}`
       );
       return null;
     }
@@ -443,4 +799,130 @@ export class WorkflowExecutionQueryService {
 
     return response.hits.hits[0]._source ?? null;
   }
+
+  /**
+   * Claims a `waitForInput` step by writing HITL audit metadata before resume.
+   *
+   * Returns `true` when this caller won the claim, or `false` when the doc is
+   * missing, belongs to another space, has already settled (terminal status
+   * or `finishedAt` set), or was already claimed. Unexpected ES failures are
+   * rethrown.
+   */
+  async markStepAsResponded(
+    stepExecutionId: string,
+    audit: { respondedBy: string; respondedAt: string; channel: string },
+    spaceId: string
+  ): Promise<boolean> {
+    try {
+      const response = await this.deps.esClient.update({
+        index: WORKFLOWS_STEP_EXECUTIONS_INDEX,
+        id: stepExecutionId,
+        // `respondedAt` is the first-writer-wins guard. Retrying conflicts
+        // lets simultaneous updates re-run the script against the winner's
+        // write and return `noop` instead of leaking a version conflict.
+        retry_on_conflict: 3,
+        script: {
+          source:
+            'if (ctx._source.spaceId != params.spaceId) { ctx.op = "noop"; return; }' +
+            'if (ctx._source.finishedAt != null) { ctx.op = "noop"; return; }' +
+            'if (ctx._source.status != null && params.settledStatuses.contains(ctx._source.status)) { ctx.op = "noop"; return; }' +
+            'if (ctx._source.hitl != null && ctx._source.hitl.respondedAt != null) { ctx.op = "noop"; return; }' +
+            'if (ctx._source.hitl == null) { ctx._source.hitl = [:]; }' +
+            'ctx._source.hitl.respondedBy = params.respondedBy;' +
+            'ctx._source.hitl.respondedAt = params.respondedAt;' +
+            'ctx._source.hitl.channel = params.channel;',
+          lang: 'painless',
+          params: {
+            spaceId,
+            respondedBy: audit.respondedBy,
+            respondedAt: audit.respondedAt,
+            channel: audit.channel,
+            settledStatuses: SETTLED_STEP_STATUSES,
+          },
+        },
+        refresh: 'wait_for',
+      });
+      return response.result !== 'noop';
+    } catch (error) {
+      if (
+        error?.statusCode === 404 ||
+        error?.meta?.body?.result === 'not_found' ||
+        error?.body?.result === 'not_found'
+      ) {
+        // Treat concurrent deletion or termination as a lost claim.
+        return false;
+      }
+      this.deps.logger.error(
+        `Failed to mark step execution ${stepExecutionId} as responded: ${error}`
+      );
+      throw error;
+    }
+  }
+}
+
+/**
+ * Builds additional `must` clauses for processed wait-for-input filters.
+ */
+function buildHistoryFilterClauses({
+  channel,
+  workflowId,
+  respondedBy,
+  q,
+}: ProcessedWaitForInputFilters): estypes.QueryDslQueryContainer[] {
+  const filterMust: estypes.QueryDslQueryContainer[] = [];
+  if (channel && channel.length > 0) {
+    filterMust.push({ terms: { 'hitl.channel': channel } });
+  }
+  if (workflowId && workflowId.length > 0) {
+    filterMust.push({ terms: { workflowId } });
+  }
+  if (respondedBy && respondedBy.length > 0) {
+    filterMust.push({ terms: { 'hitl.respondedBy': respondedBy } });
+  }
+  if (q && q.length > 0) {
+    // Avoid leading-wildcard scans on keyword fields.
+    filterMust.push({
+      bool: {
+        should: ['hitl.respondedBy', 'workflowId', 'stepId'].map((field) => ({
+          prefix: {
+            [field]: {
+              value: q,
+              case_insensitive: true,
+            },
+          },
+        })),
+        minimum_should_match: 1,
+      },
+    });
+  }
+  return filterMust;
+}
+
+/**
+ * Pull a plain-object `reasoning` value out of a step output, when present.
+ */
+function extractReasoning(output: unknown): Record<string, unknown> | undefined {
+  if (!output || typeof output !== 'object' || Array.isArray(output)) {
+    return undefined;
+  }
+  const reasoning = (output as Record<string, unknown>).reasoning;
+  if (!reasoning || typeof reasoning !== 'object' || Array.isArray(reasoning)) {
+    return undefined;
+  }
+  return reasoning as Record<string, unknown>;
+}
+
+/** Convert ES `terms` agg buckets into `{ value, count }` entries. */
+function bucketsToFacet(
+  buckets: estypes.AggregationsStringTermsAggregate['buckets'] | undefined
+): Array<{ value: string; count: number }> {
+  if (!buckets || !Array.isArray(buckets)) {
+    return [];
+  }
+  return buckets
+    .map((bucket) => ({
+      value: typeof bucket.key === 'string' ? bucket.key : String(bucket.key ?? ''),
+      count: bucket.doc_count,
+    }))
+    .filter((entry) => entry.value.length > 0);
 }

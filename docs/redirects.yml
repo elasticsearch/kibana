@@ -18,6 +18,7 @@ redirects:
   'extend/enhanced-embeddables-plugin.md': 'extend/plugin-list.md'
   'extend/scout/training.md': 'extend/testing/scout.md'
   'extend/scout/migrate-tests.md': 'extend/testing/migrate-tests.md'
+  'extend/testing/writing-stable-functional-tests.md': 'extend/testing/ftr.md'
   'reference/osquery-exported-fields.md': 'integration-docs://reference/osquery-intro.md'
   'reference/osquery-manager-prebuilt-packs.md': 'docs-content://solutions/security/investigate/osquery.md'
   'reference/connectors-kibana/pagerduty-data-source.md': 'reference/connectors-kibana/pagerduty-mcp-action-type.md'

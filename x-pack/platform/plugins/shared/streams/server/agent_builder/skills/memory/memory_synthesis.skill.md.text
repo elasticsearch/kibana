@@ -4,7 +4,7 @@ Significant events knowledge is **cross-stream by default**: organize around **s
 
 ## Your task
 
-Use `platform_streams_sig_events_ki_search` to fetch **knowledge indicators** (KIs) — observed facts about streams and services extracted from logs and telemetry — and synthesize them into focused wiki pages. Pages have **names** (unique ids, e.g. "nginx-error-patterns"), **titles**, **content** (Markdown), and **categories** (e.g. "services", "operations", "streams/logs-nginx").
+Use `platform_sig_events_ki_search` to fetch **knowledge indicators** (KIs) — observed facts about streams and services extracted from logs and telemetry — and synthesize them into focused wiki pages. Pages have **names** (unique ids, e.g. "nginx-error-patterns"), **titles**, **content** (Markdown), and **categories** (e.g. "services", "operations", "streams/logs-nginx").
 
 ## What to store
 
@@ -23,7 +23,7 @@ Memory is not a mirror of data that lives elsewhere. Store only what is hard to 
 
 ## Workflow
 
-1. `platform_streams_sig_events_ki_search` (no filters) to fetch all KIs
+1. `platform_sig_events_ki_search` (no filters) to fetch all KIs
 2. `platform_streams_memory_list` to see existing pages
 3. `platform_streams_memory_read` / `platform_streams_memory_search` to read relevant pages
 4. `platform_streams_memory_write` to create pages or rewrite existing ones (dropping stale content)

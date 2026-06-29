@@ -28,7 +28,7 @@ spaceTest.describe('Discover data grid row height', { tag: '@local-stateful-clas
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsViewer();
     await pageObjects.discover.goto({ queryMode: 'classic' });
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
   });
 
@@ -77,7 +77,7 @@ spaceTest.describe('Discover data grid row height', { tag: '@local-stateful-clas
       expect(await dataGrid.getCurrentRowHeight()).toBe('Auto');
 
       await page.reload();
-      await dataGrid.waitUntilSearchingHasFinished();
+      await dataGrid.waitForLoad();
       await dataGrid.waitForDocTableRendered();
       await dataGrid.openGridDisplaySettings();
 
@@ -124,7 +124,7 @@ spaceTest.describe('Discover data grid row height', { tag: '@local-stateful-clas
       expect(await dataGrid.getCurrentRowHeight('header')).toBe('Auto');
 
       await page.reload();
-      await dataGrid.waitUntilSearchingHasFinished();
+      await dataGrid.waitForLoad();
       await dataGrid.waitForDocTableRendered();
       await dataGrid.openGridDisplaySettings();
 

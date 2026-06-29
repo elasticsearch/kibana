@@ -1,0 +1,109 @@
+openapi: 3.0.0
+info:
+  title: List Inbox Actions History API endpoint
+  version: '1'
+paths:
+  /internal/inbox/actions/history:
+    get:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: ListInboxActionsHistory
+      description: List processed inbox actions (audit log of human responses)
+      summary: List inbox actions history
+      tags:
+        - Inbox API
+      parameters:
+        - name: source_app
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Filter actions by the originating app id
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Free-text search applied to responder, workflow id and step id (case-insensitive prefix). Empty string is treated as omitted.
+        - name: channel
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              minLength: 1
+              maxLength: 64
+              pattern: "^[a-z0-9][a-z0-9_-]*$"
+          style: form
+          explode: true
+          description: Restrict to responses submitted via these channel slugs (e.g. `inbox`, `slack`, `example-mcp-app-security`). Multiple values are OR'd. The route enforces a soft cap on the total number of values to keep ES `terms` clauses bounded.
+        - name: workflow_id
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+          style: form
+          explode: true
+          description: Restrict to responses against these workflow ids. Multiple values are OR'd. The route enforces a soft cap on the total number of values to keep ES `terms` clauses bounded.
+        - name: responded_by
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+          style: form
+          explode: true
+          description: Restrict to responses submitted by these usernames. Multiple values are OR'd. The route enforces a soft cap on the total number of values to keep ES `terms` clauses bounded.
+        - name: sort_order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+          description: Sort direction on the responded-at / finished-at timestamp.
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actions:
+                    type: array
+                    items:
+                      $ref: './list_actions_route.schema.yaml#/components/schemas/InboxAction'
+                  total:
+                    type: integer
+                required:
+                  - actions
+                  - total

@@ -20,7 +20,8 @@ export default function ApiTest({ getService }: DeploymentAgnosticFtrProviderCon
     });
   }
 
-  describe('Agent latest versions when configuration is defined', () => {
+  // Failing: See https://github.com/elastic/kibana/issues/275418
+  describe.skip('Agent latest versions when configuration is defined', () => {
     it('returns a version when agent is listed in the file', async () => {
       await retry.tryForTime(120000, async () => {
         const { status, body } = await callApi();

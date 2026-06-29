@@ -20,7 +20,7 @@ import {
   withSort,
   withWhere,
   type LatestSourceWhereCondition,
-} from '../../../sig_events/latest_source_query';
+} from '../../../significant_events/latest_source_query';
 import { ID, KI_TYPE_FEATURE, STREAM_NAME, TYPE } from '../fields';
 
 const REVISION_SIZE_LIMIT = 10_000;
