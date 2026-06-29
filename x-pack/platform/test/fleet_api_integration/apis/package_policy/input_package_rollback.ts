@@ -100,8 +100,7 @@ export default function (providerContext: FtrProviderContext) {
       .send({ agentPolicyId });
   };
 
-  // Failing: See https://github.com/elastic/kibana/issues/246424
-  describe.skip('input package policy rollback', function () {
+  describe('input package policy rollback', function () {
     skipIfNoDockerRegistry(providerContext);
 
     let agentPolicyId: string;

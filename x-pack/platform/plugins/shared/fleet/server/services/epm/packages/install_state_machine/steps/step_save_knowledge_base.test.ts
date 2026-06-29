@@ -391,7 +391,7 @@ describe('stepSaveKnowledgeBase', () => {
       });
     });
 
-    it('should skip saveKnowledgeBaseContentToIndex when knowledge base already indexed for same version', async () => {
+    it('should skip saveKnowledgeBaseContentToIndex but still ensure es references when knowledge base already indexed for same version', async () => {
       (getPackageKnowledgeBase as jest.Mock).mockResolvedValueOnce({
         package: { name: 'test-package' },
         items: [{ fileName: 'guide.md', content: '# Guide', version: '1.0.0' }],
@@ -410,6 +410,14 @@ describe('stepSaveKnowledgeBase', () => {
       await stepSaveKnowledgeBase(context);
 
       expect(saveKnowledgeBaseContentToIndex).not.toHaveBeenCalled();
+      // The es asset references must still be ensured so installed_es stays consistent even when
+      // the indexed content survived a saved-object reset (e.g. an install rollback).
+      const { optimisticallyAddEsAssetReferences } = jest.requireMock('../../es_assets_reference');
+      expect(optimisticallyAddEsAssetReferences).toHaveBeenCalledWith(
+        savedObjectsClient,
+        'test-package',
+        [{ id: 'test-package-guide.md', type: 'knowledge_base' }]
+      );
     });
 
     it('should re-index when knowledge base exists but is at an older version', async () => {
