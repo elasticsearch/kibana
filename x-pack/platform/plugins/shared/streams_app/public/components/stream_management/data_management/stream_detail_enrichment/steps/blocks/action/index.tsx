@@ -5,28 +5,29 @@
  * 2.0.
  */
 
+import { EuiPanel, useEuiTheme } from '@elastic/eui';
+import { css } from '@emotion/react';
+import { i18n } from '@kbn/i18n';
 import { useSelector } from '@xstate/react';
 import React, { useEffect, useRef } from 'react';
-import { EuiPanel, useEuiTheme } from '@elastic/eui';
 import { useFirstMountState } from 'react-use/lib/useFirstMountState';
-import { css } from '@emotion/react';
+import type { ProcessorMetrics } from '../../../state_management/simulation_state_machine';
+import { isRootStep, isStepUnderEdit } from '../../../state_management/steps_state_machine';
 import {
   useSimulatorSelector,
   useStreamEnrichmentSelector,
 } from '../../../state_management/stream_enrichment_state_machine';
-import { isRootStep, isStepUnderEdit } from '../../../state_management/steps_state_machine';
+import { selectStreamType } from '../../../state_management/stream_enrichment_state_machine/selectors';
+import { getStepPanelColour } from '../../../utils';
 import type { StepConfigurationProps } from '../../steps_list';
-import type { ProcessorMetrics } from '../../../state_management/simulation_state_machine';
 import { ActionBlockEditor } from './editor';
 import { ActionBlockListItem } from './list_item';
-import { getStepPanelColour } from '../../../utils';
-import { selectStreamType } from '../../../state_management/stream_enrichment_state_machine/selectors';
 
 export type ActionBlockProps = StepConfigurationProps & {
   processorMetrics?: ProcessorMetrics;
 };
 export function ActionBlock(props: StepConfigurationProps) {
-  const { stepRef, level } = props;
+  const { stepRef, level, readOnly } = props;
   const { euiTheme } = useEuiTheme();
   const isUnderEdit = useSelector(stepRef, (snapshot) => isStepUnderEdit(snapshot));
   const isRootStepValue = useSelector(stepRef, (snapshot) => isRootStep(snapshot));
@@ -41,6 +42,9 @@ export function ActionBlock(props: StepConfigurationProps) {
 
   const isFirstMount = useFirstMountState();
   const freshBlockRef = useRef<HTMLDivElement>(null);
+  const isClickable = !isUnderEdit && !readOnly;
+
+  const handleEdit = () => stepRef.send({ type: 'step.edit' });
 
   useEffect(() => {
     if (isFirstMount && isUnderEdit && freshBlockRef.current) {
@@ -71,6 +75,17 @@ export function ActionBlock(props: StepConfigurationProps) {
               padding: ${euiTheme.size.m};
             `
       }
+      aria-label={
+        isClickable
+          ? i18n.translate(
+              'xpack.streams.streamDetailView.managementTab.enrichment.processor.editProcessorAriaLabel',
+              {
+                defaultMessage: 'Edit processor',
+              }
+            )
+          : undefined
+      }
+      onClick={isClickable ? handleEdit : undefined}
     >
       {isUnderEdit ? (
         <ActionBlockEditor {...props} ref={freshBlockRef} processorMetrics={processorMetrics} />

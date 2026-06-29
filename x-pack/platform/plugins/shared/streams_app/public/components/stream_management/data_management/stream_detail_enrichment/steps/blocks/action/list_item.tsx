@@ -39,6 +39,8 @@ import { ProcessorStatusIndicator } from './processor_status_indicator';
 import { getStepDescription } from './utils';
 import { DragHandle } from '../../draggable_step_wrapper';
 
+const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+
 export const ActionBlockListItem = (props: ActionBlockProps) => {
   const { euiTheme } = useEuiTheme();
   const { stepRef, level, processorMetrics, readOnly = false } = props;
@@ -76,10 +78,6 @@ export const ActionBlockListItem = (props: ActionBlockProps) => {
 
   const stepDescription = getStepDescription(step);
   const actionDisplayName = step.action.toUpperCase();
-
-  const handleTitleClick = () => {
-    stepRef.send({ type: 'step.edit' });
-  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -120,11 +118,11 @@ export const ActionBlockListItem = (props: ActionBlockProps) => {
         <EuiFlexItem>
           <EuiFlexGroup gutterSize="xs" alignItems="center">
             {!readOnly && (
-              <EuiFlexItem grow={false}>
+              <EuiFlexItem grow={false} onClick={stopPropagation}>
                 <DragHandle />
               </EuiFlexItem>
             )}
-            <EuiFlexItem grow={false}>
+            <EuiFlexItem grow={false} onClick={stopPropagation}>
               <ProcessorStatusIndicator
                 stepRef={stepRef}
                 stepsProcessingSummaryMap={props.stepsProcessingSummaryMap}
@@ -151,58 +149,22 @@ export const ActionBlockListItem = (props: ActionBlockProps) => {
                     max-width: 100%;
                   `}
                 >
-                  <EuiToolTip
-                    position="top"
-                    content={
-                      <>
-                        <p>
-                          <strong>{actionDisplayName}</strong>
-                        </p>
-                        <p>
-                          {i18n.translate(
-                            'xpack.streams.actionBlockListItem.tooltip.editProcessorLabel',
-                            {
-                              defaultMessage: 'Edit {stepAction} processor',
-                              values: {
-                                stepAction: step.action,
-                              },
-                            }
-                          )}
-                        </p>
-                      </>
-                    }
+                  <EuiText
+                    size="s"
+                    component="span"
+                    style={{ fontWeight: euiTheme.font.weight.bold }}
+                    css={css`
+                      display: block;
+                      ${euiTextTruncate()}
+                    `}
                   >
-                    <EuiButtonEmpty
-                      onClick={handleTitleClick}
-                      color="text"
-                      aria-label={i18n.translate(
-                        'xpack.streams.actionBlockListItem.euiButtonEmpty.editProcessorLabel',
-                        { defaultMessage: 'Edit processor' }
-                      )}
-                      size="xs"
-                      data-test-subj="streamsAppProcessorTitleEditButton"
-                      css={css`
-                        max-width: 100%;
-                      `}
-                    >
-                      <EuiText
-                        size="s"
-                        component="span"
-                        style={{ fontWeight: euiTheme.font.weight.bold }}
-                        css={css`
-                          display: block;
-                          ${euiTextTruncate()}
-                        `}
-                      >
-                        {actionDisplayName}
-                      </EuiText>
-                    </EuiButtonEmpty>
-                  </EuiToolTip>
+                    {actionDisplayName}
+                  </EuiText>
                 </EuiFlexItem>
               </EuiFlexGroup>
             </EuiFlexItem>
             {(processorMetrics || hasValidationErrors || isUnsaved || !readOnly) && (
-              <EuiFlexItem grow={false}>
+              <EuiFlexItem grow={false} onClick={stopPropagation}>
                 <EuiFlexGroup alignItems="center" gutterSize="xs">
                   {processorMetrics && (
                     <EuiFlexItem>
@@ -264,6 +226,7 @@ export const ActionBlockListItem = (props: ActionBlockProps) => {
             css={css`
               padding: ${euiTheme.size.xs} ${euiTheme.size.s};
             `}
+            onClick={stopPropagation}
           >
             {step.action === 'drop_document' ? (
               <ConditionDisplay
