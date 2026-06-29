@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { COMPUTED_FEATURE_TYPES } from '@kbn/streams-schema';
 import type { KnowledgeIndicatorClient } from '../../streams/ki';
 import { shouldIdentifyFeatures } from './should_identify_features';
 
@@ -17,7 +18,7 @@ describe('shouldIdentifyFeatures', () => {
   const streamName = 'test-stream';
   const thresholdHours = 12;
 
-  it('returns shouldIdentify: true when no inferred features exist', async () => {
+  it('returns shouldIdentify: true when no computed features exist', async () => {
     const kiClient = createMockKiClient(null);
 
     const result = await shouldIdentifyFeatures({
@@ -29,7 +30,7 @@ describe('shouldIdentifyFeatures', () => {
     expect(result).toEqual({ shouldIdentify: true });
   });
 
-  it('passes INFERRED_FEATURE_TYPES as types filter', async () => {
+  it('passes COMPUTED_FEATURE_TYPES as types filter', async () => {
     const kiClient = createMockKiClient(null);
 
     await shouldIdentifyFeatures({
@@ -40,11 +41,11 @@ describe('shouldIdentifyFeatures', () => {
 
     expect(kiClient.getLatestRevisionTimestamp).toHaveBeenCalledWith(
       streamName,
-      expect.objectContaining({ types: expect.any(Array) })
+      expect.objectContaining({ types: [...COMPUTED_FEATURE_TYPES] })
     );
   });
 
-  it('returns shouldIdentify: false when newest inferred feature is within threshold', async () => {
+  it('returns shouldIdentify: false when newest computed feature is within threshold', async () => {
     const recentDate = new Date(Date.now() - 1 * 3_600_000).toISOString();
     const kiClient = createMockKiClient({ '@timestamp': recentDate });
 
@@ -57,7 +58,7 @@ describe('shouldIdentifyFeatures', () => {
     expect(result).toEqual({ shouldIdentify: false });
   });
 
-  it('returns shouldIdentify: true when newest inferred feature exceeds threshold', async () => {
+  it('returns shouldIdentify: true when newest computed feature exceeds threshold', async () => {
     const oldDate = new Date(Date.now() - 24 * 3_600_000).toISOString();
     const kiClient = createMockKiClient({ '@timestamp': oldDate });
 

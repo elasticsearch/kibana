@@ -8,12 +8,24 @@
 import type { Logger } from '@kbn/core/server';
 import { isComputedFeature } from '@kbn/streams-schema';
 import { isConditionComplete } from '@kbn/streamlang';
-import type { StoredFeatureKnowledgeIndicator, StoredKnowledgeIndicator } from '../data_stream';
-import { combineWhere, inPredicate, IS_NOT_DELETED } from '../esql_helpers';
+import {
+  isStoredFeatureKnowledgeIndicator,
+  isStoredQueryKnowledgeIndicator,
+  type StoredFeatureKnowledgeIndicator,
+  type StoredKnowledgeIndicator,
+} from '../data_stream';
+import {
+  combineWhere,
+  inPredicate,
+  IS_DURABLE_OR_EXCLUDED,
+  IS_NOT_DELETED,
+  olderThan,
+} from '../esql_helpers';
 import { ID, STREAM_NAME } from '../fields';
 import {
   computeExpiresAt,
   fromStoredFeature,
+  fromStoredQuery,
   toStoredFeature,
   toStoredQuery,
   toTombstone,
@@ -273,6 +285,49 @@ export class IndicatorWriter {
       docs.push(toTombstone(stream, { id: op.delete.id, type: op.delete.type }));
     }
     return docs;
+  }
+
+  async keepAlivePersistent(
+    stream: string,
+    { lastRefreshedBefore }: { lastRefreshedBefore: string }
+  ): Promise<{ refreshed: number }> {
+    const where = inPredicate(STREAM_NAME, [stream]);
+    const postGroupingWhere = combineWhere(
+      IS_NOT_DELETED,
+      IS_DURABLE_OR_EXCLUDED,
+      olderThan(lastRefreshedBefore)
+    );
+    const latest = await this.revisionReader.fetchLatestRevisions(where, postGroupingWhere);
+    if (latest.length === 0) {
+      return { refreshed: 0 };
+    }
+
+    await bulkCreateWithInferenceFallback(this.logger, ({ includeEmbedding }) => {
+      const docs: StoredKnowledgeIndicator[] = [];
+      for (const doc of latest) {
+        if (isStoredFeatureKnowledgeIndicator(doc)) {
+          docs.push(
+            toStoredFeature(stream, fromStoredFeature(doc), includeEmbedding, doc.expires_at)
+          );
+        } else if (isStoredQueryKnowledgeIndicator(doc)) {
+          const link = fromStoredQuery(doc);
+          docs.push(
+            toStoredQuery(
+              stream,
+              { ...link.query, rule_backed: link.rule_backed, rule_id: link.rule_id },
+              includeEmbedding,
+              doc.expires_at
+            )
+          );
+        }
+      }
+      return this.dataStreamClient.create({
+        refresh: 'wait_for',
+        documents: docs as Array<StoredKnowledgeIndicator & Record<string, unknown>>,
+      });
+    });
+
+    return { refreshed: latest.length };
   }
 
   async deleteIndicators(stream: string): Promise<void> {

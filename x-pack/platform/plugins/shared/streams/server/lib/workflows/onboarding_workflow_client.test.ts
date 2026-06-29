@@ -211,6 +211,7 @@ describe('StreamsKIsOnboardingClient', () => {
           connectorUsed: '',
           tokensUsed: {},
         },
+        keepAlive: { refreshed: 0 },
       });
     });
 
@@ -239,6 +240,7 @@ describe('StreamsKIsOnboardingClient', () => {
           connectorUsed: '',
           tokensUsed: { prompt: 0, completion: 0, total: 0 },
         },
+        keepAlive: { refreshed: 0 },
       });
     });
 

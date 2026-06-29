@@ -7,6 +7,7 @@
 
 import { esql, BasicPrettyPrinter } from '@elastic/esql';
 import type { LatestSourceWhereCondition } from '../../sig_events/latest_source_query';
+import { TIMESTAMP } from './fields';
 export const andWhere = (
   current: LatestSourceWhereCondition | undefined,
   next: LatestSourceWhereCondition
@@ -40,3 +41,8 @@ export const IS_NOT_DELETED: LatestSourceWhereCondition = esql.exp`deleted IS NU
 export const IS_NOT_EXCLUDED: LatestSourceWhereCondition = esql.exp`excluded IS NULL OR excluded == false`;
 
 export const IS_NOT_EXPIRED: LatestSourceWhereCondition = esql.exp`expires_at IS NULL OR expires_at >= NOW()`;
+
+export const IS_DURABLE_OR_EXCLUDED: LatestSourceWhereCondition = esql.exp`(expires_at IS NULL) OR (excluded == true)`;
+
+export const olderThan = (ts: string): LatestSourceWhereCondition =>
+  esql.exp`${esql.col(TIMESTAMP)} < TO_DATETIME(${esql.str(ts)})`;

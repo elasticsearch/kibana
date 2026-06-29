@@ -60,7 +60,7 @@ export const STREAMS_KI_QUERIES_GENERATION_WORKFLOW = {
 export const STREAMS_KI_ONBOARDING_WORKFLOW = {
   id: STREAMS_KI_ONBOARDING_WORKFLOW_ID,
   pluginId: 'streams',
-  version: 2,
+  version: 3,
   billable: false,
   yaml: ONBOARDING_YAML,
   management: STREAMS_KI_WORKFLOW_MANAGEMENT,

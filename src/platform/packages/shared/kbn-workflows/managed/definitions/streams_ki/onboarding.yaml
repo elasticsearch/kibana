@@ -94,6 +94,7 @@ steps:
       queriesTokensUsed: {}
       featuresConnectorUsed: ""
       queriesConnectorUsed: ""
+      cycleStartedAt: '{{ "now" | date: "%Y-%m-%dT%H:%M:%S.000Z" }}'
 
   # -----------------------------------------------------------------------
   # Step 1: Recency check — auto-skip features if recently identified.
@@ -175,7 +176,22 @@ steps:
           queriesConnectorUsed: "${{ steps.generate_queries.output.connectorId }}"
 
   # -----------------------------------------------------------------------
-  # Step 4: Output summary
+  # Step 4: Keep-alive — re-stamp persistent KIs (durable ones, plus excluded
+  #         features whose exclusion must be remembered) not refreshed this
+  #         cycle so DSL retention does not physically delete them.
+  # -----------------------------------------------------------------------
+  - name: keep_alive_persistent
+    type: kibana.request
+    with:
+      method: POST
+      path: "/internal/streams/{{ inputs.streamName }}/knowledge_indicators/_keep_alive"
+      headers:
+        x-elastic-internal-origin: "kibana"
+      body:
+        lastRefreshedBefore: "${{ variables.cycleStartedAt }}"
+
+  # -----------------------------------------------------------------------
+  # Step 5: Output summary
   # -----------------------------------------------------------------------
   - name: output_result
     type: workflow.output
@@ -189,3 +205,4 @@ steps:
       queriesConnectorUsed: "${{ variables.queriesConnectorUsed }}"
       persistedQueries: "${{ variables.persistedQueries }}"
       queriesTokensUsed: "${{ variables.queriesTokensUsed }}"
+      keepAliveRefreshed: "${{ steps.keep_alive_persistent.output.refreshed }}"

@@ -13,8 +13,7 @@ import type { ChatCompletionTokenCount } from '@kbn/inference-common';
 import {
   SigEventsWorkflowStatus,
   type SigEventsWorkflowStatusResult,
-  type StreamsKIsOnboardingFeaturesResult,
-  type StreamsKIsOnboardingQueriesResult,
+  type StreamsKIsOnboardingResult,
   type StreamsKIsOnboardingStatusResult,
   type BaseFeature,
   type GeneratedSignificantEventQuery,
@@ -97,16 +96,15 @@ interface OnboardingWorkflowOutputContext {
   queriesConnectorUsed: string;
   persistedQueries: GeneratedSignificantEventQuery[];
   queriesTokensUsed: ChatCompletionTokenCount;
+  keepAliveRefreshed: number;
 }
 
 /**
  * Nested domain representation of a completed onboarding run, grouped by step.
  * Used to extract summary counts for the status response.
  */
-export interface StreamsKIsOnboardingOutput {
+export interface StreamsKIsOnboardingOutput extends StreamsKIsOnboardingResult {
   streamName: string;
-  features: StreamsKIsOnboardingFeaturesResult;
-  queries: StreamsKIsOnboardingQueriesResult;
 }
 
 /** Flattens nested onboarding inputs into the workflow engine's scalar payload. */
@@ -160,6 +158,9 @@ const parseWorkflowOutput = (
     persisted: Array.isArray(output.persistedQueries) ? output.persistedQueries : [],
     connectorUsed: output.queriesConnectorUsed ?? '',
     tokensUsed: output.queriesTokensUsed ?? EMPTY_TOKEN_COUNT,
+  },
+  keepAlive: {
+    refreshed: output.keepAliveRefreshed ?? 0,
   },
 });
 
@@ -270,8 +271,8 @@ export class StreamsKIsOnboardingClient {
     const ctx = (fullExecution?.context ?? {}) as {
       output?: Partial<OnboardingWorkflowOutputContext>;
     };
-    const { features, queries } = parseWorkflowOutput(ctx.output ?? {});
-    return { ...result, features, queries };
+    const { features, queries, keepAlive } = parseWorkflowOutput(ctx.output ?? {});
+    return { ...result, features, queries, keepAlive };
   }
 
   /**

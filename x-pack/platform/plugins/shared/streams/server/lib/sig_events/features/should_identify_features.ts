@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { INFERRED_FEATURE_TYPES } from '@kbn/streams-schema';
+import { COMPUTED_FEATURE_TYPES } from '@kbn/streams-schema';
 import type { KnowledgeIndicatorClient } from '../../streams/ki';
 
 export interface ShouldIdentifyFeaturesResult {
@@ -22,7 +22,7 @@ export async function shouldIdentifyFeatures({
   thresholdHours: number;
 }): Promise<ShouldIdentifyFeaturesResult> {
   const result = await kiClient.getLatestRevisionTimestamp(streamName, {
-    types: [...INFERRED_FEATURE_TYPES],
+    types: [...COMPUTED_FEATURE_TYPES],
   });
 
   if (!result) {

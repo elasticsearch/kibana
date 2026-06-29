@@ -26,9 +26,14 @@ export interface StreamsKIsOnboardingQueriesResult {
   tokensUsed: ChatCompletionTokenCount;
 }
 
+export interface StreamsKIsOnboardingKeepAliveResult {
+  refreshed: number;
+}
+
 export interface StreamsKIsOnboardingResult {
   features: StreamsKIsOnboardingFeaturesResult;
   queries: StreamsKIsOnboardingQueriesResult;
+  keepAlive: StreamsKIsOnboardingKeepAliveResult;
 }
 
 export type StreamsKIsOnboardingStatusResult =
