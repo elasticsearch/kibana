@@ -122,8 +122,24 @@ The correct replacement would be:
   \`\`\`
 </lookup_guidelines>
 
+<splunk_dashboard_filter_guidelines>
+- Splunk dashboard filters appear in form "$..$" in SPL Query.
+- Currently we do not support those and thus whole condition containing these filters must be stripped out from the final inline query.
+- For example  below spl query
+    \`\`\`spl
+    index=foo | where baz="$var$" OR "$var$"="*" | where condition1="$bar$" OR "$bar$"="*" | stats count by date
+    \`\`\`
+
+  After removing the conditions with dashboard filters, the correct replacement would be:
+    \`\`\`spl
+    index=foo | stats count by date
+    \`\`\`
+
+</splunk_dashboard_filter_guidelines>
+
 <general_guidelines>
 - The original and modified queries must be equivalent, except for the "missing placeholders".
+- You must follow the guidelines for replacing macro_guidelines, lookup_guidelines and splunk_dashboard_filter_guidelines carefully, as explained in the previous sections.
 - You must respond with the modified query inside a \`\`\`spl code block, followed by a summary of the replacement steps made in markdown format, starting with "## Inlining Summary".
 </general_guidelines>
 
