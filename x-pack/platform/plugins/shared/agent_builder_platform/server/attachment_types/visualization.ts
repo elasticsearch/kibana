@@ -68,6 +68,7 @@ export const createVisualizationAttachmentType = (): AttachmentTypeDefinition<
         const lensApiConfig = toLensApiConfig(lensAttributes);
 
         return {
+          renderer: 'lens',
           query: origin,
           visualization: lensApiConfig as unknown as Record<string, unknown>,
           chart_type: extractChartType(lensAttributes),
@@ -79,21 +80,26 @@ export const createVisualizationAttachmentType = (): AttachmentTypeDefinition<
     },
 
     format: (attachment) => ({
-      getRepresentation: () => ({
-        type: 'text',
-        value: [
-          'Visualization attachment',
-          `Query: ${attachment.data.query}`,
-          `Chart type: ${attachment.data.chart_type}`,
-          `ES|QL: ${attachment.data.esql}`,
-        ].join('\n'),
-      }),
+      getRepresentation: () => {
+        const { data } = attachment;
+        const kindLine =
+          data.renderer === 'vega' ? 'Renderer: Vega' : `Chart type: ${data.chart_type}`;
+        return {
+          type: 'text',
+          value: [
+            'Visualization attachment',
+            `Query: ${data.query}`,
+            kindLine,
+            `ES|QL: ${data.esql}`,
+          ].join('\n'),
+        };
+      },
     }),
 
     isReadonly: false,
 
     getAgentDescription: () => {
-      return 'A visualization attachment contains a Lens visualization configuration. Time range can be controled by configuring a time_range property directly on the attachment.data with from and to fields. Rendering it inline displays the visualization as a dynamic, interactive chart component in the conversation UI. Visualization attachments can also be added to dashboard compositions through dashboard panel-ingestion operations.';
+      return 'A visualization attachment contains either a Lens visualization configuration or a Vega-Lite specification (indicated by the renderer property). Time range can be controled by configuring a time_range property directly on the attachment.data with from and to fields. Rendering it inline displays the visualization as a dynamic, interactive chart component in the conversation UI. Visualization attachments can also be added to dashboard compositions through dashboard panel-ingestion operations.';
     },
 
     getTools: () => [],

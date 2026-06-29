@@ -13,6 +13,7 @@
     "@kbn/lens-embeddable-utils",
     "@kbn/agent-builder-genai-utils",
     "@kbn/agent-builder-tools-base",
+    "@kbn/agent-builder-vega",
     "@kbn/agent-builder-common",
     "@kbn/zod",
     "@kbn/agent-builder-plugin",

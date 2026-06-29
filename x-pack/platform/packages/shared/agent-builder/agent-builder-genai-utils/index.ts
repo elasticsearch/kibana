@@ -16,6 +16,7 @@ export {
   getFieldsFromFieldCaps,
   getIndexFields,
   validateEsqlQuery,
+  buildTimeRangeParams,
   type IndexFieldsResult,
   type IndexFieldType,
   type MappingField,

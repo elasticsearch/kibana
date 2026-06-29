@@ -17,6 +17,15 @@ const LazyVisualizeLens = React.lazy(() =>
   import('../tools/esql/visualize_lens').then((m) => ({ default: m.VisualizeLens }))
 );
 
+const LazyVisualizeVega = React.lazy(() =>
+  import('../tools/esql/visualize_vega').then((m) => ({ default: m.VisualizeVega }))
+);
+
+const defaultVisualizationLabel = i18n.translate(
+  'xpack.agentBuilder.attachments.visualization.label',
+  { defaultMessage: 'Visualization' }
+);
+
 /**
  * Factory function that creates the visualization attachment UI definition.
  * Reuses the existing VisualizeLens component used for visualization tool results.
@@ -28,25 +37,43 @@ export const createVisualizationAttachmentDefinition = ({
 }): AttachmentUIDefinition<VisualizationAttachment> => {
   return {
     getLabel: (attachment: VisualizationAttachment): string => {
-      const { title } = attachment.data.visualization;
-      return typeof title === 'string'
-        ? title
-        : i18n.translate('xpack.agentBuilder.attachments.visualization.label', {
-            defaultMessage: 'Visualization',
-          });
+      const { data } = attachment;
+      if (data.renderer === 'vega') {
+        return defaultVisualizationLabel;
+      }
+      const { title } = data.visualization;
+      return typeof title === 'string' ? title : defaultVisualizationLabel;
     },
     getIcon: () => 'lensApp',
-    getMaxWidth: (attachment) =>
-      getVisualizationDimensionsFromLensConfig(
-        attachment.data.visualization as Record<string, unknown>
-      ).width,
+    getMaxWidth: (attachment) => {
+      const { data } = attachment;
+      if (data.renderer === 'vega') {
+        return undefined;
+      }
+      return getVisualizationDimensionsFromLensConfig(data.visualization as Record<string, unknown>)
+        .width;
+    },
     renderInlineContent: ({ attachment, screenContext }, callbacks) => {
-      const timeRange = attachment.data.time_range ?? screenContext?.time_range;
+      const { data } = attachment;
+
+      const timeRange = data.time_range ?? screenContext?.time_range;
+
+      if (data.renderer === 'vega') {
+        return (
+          <Suspense fallback={<EuiLoadingSpinner />}>
+            <LazyVisualizeVega
+              spec={data.spec}
+              timeRange={timeRange}
+              registerActionButtons={callbacks?.registerActionButtons}
+            />
+          </Suspense>
+        );
+      }
 
       return (
         <Suspense fallback={<EuiLoadingSpinner />}>
           <LazyVisualizeLens
-            lensConfig={attachment.data.visualization}
+            lensConfig={data.visualization}
             dataViews={startDependencies.dataViews}
             lens={startDependencies.lens}
             uiActions={startDependencies.uiActions}

@@ -20,6 +20,7 @@ import {
 import type { AgentBuilderStartDependencies } from '../../../../../../types';
 import { VisualizeESQL } from '../../../../tools/esql/visualize_esql';
 import { VisualizeLens } from '../../../../tools/esql/visualize_lens';
+import { VisualizeVega } from '../../../../tools/esql/visualize_vega';
 import { createTagParser, findToolResult } from './utils';
 
 export const visualizationTagParser = createTagParser({
@@ -82,9 +83,15 @@ export function createVisualizationRenderer({
       return <EuiText>Unable to find visualization for {ToolResultAttribute}.</EuiText>;
     }
 
-    // Handle visualization result (pre-built Lens config)
+    // Handle visualization result (pre-built Lens config or Vega spec)
     if (toolResult.type === 'visualization') {
-      const { visualization, time_range: visTimeRange } = toolResult.data;
+      const { data } = toolResult;
+
+      if (data.renderer === 'vega') {
+        return <VisualizeVega spec={data.spec} timeRange={data.time_range} />;
+      }
+
+      const { visualization, time_range: visTimeRange } = data;
       return (
         <VisualizeLens
           lensConfig={visualization}

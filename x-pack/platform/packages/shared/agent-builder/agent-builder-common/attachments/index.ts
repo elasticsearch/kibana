@@ -28,6 +28,8 @@ export {
   esqlAttachmentDataSchema,
   screenContextAttachmentDataSchema,
   visualizationAttachmentDataSchema,
+  lensVisualizationAttachmentDataSchema,
+  vegaVisualizationAttachmentDataSchema,
   connectorAttachmentDataSchema,
   CONNECTOR_TAG_PREFIX,
   type TextAttachmentData,
@@ -36,6 +38,8 @@ export {
   screenContextTimeRangeSchema,
   type EsqlAttachmentData,
   type VisualizationAttachmentData,
+  type LensVisualizationAttachmentData,
+  type VegaVisualizationAttachmentData,
   type ConnectorAttachmentData,
 } from './attachment_types';
 

@@ -78,7 +78,7 @@ export function BaseVisualization({
   const canWriteDashboards = application?.capabilities.dashboard_v2?.showWriteControls === true;
 
   const { searchBarProps, effectiveTimeRange, onBrushEnd } = useVisPreviewUnifiedSearch({
-    lensTimeRange: lensInput?.timeRange,
+    timeRange: lensInput?.timeRange,
   });
 
   const lensInputWithTimeRange = useMemo(

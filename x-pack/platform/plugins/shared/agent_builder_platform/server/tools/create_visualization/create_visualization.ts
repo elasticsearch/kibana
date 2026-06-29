@@ -14,21 +14,28 @@ import {
   type VisualizationAttachmentData,
 } from '@kbn/agent-builder-common/attachments';
 import { ToolResultType, SupportedChartType } from '@kbn/agent-builder-common/tools/tool_result';
-import { buildVisualizationConfig, type VisualizationConfig } from '@kbn/agent-builder-tools-base';
+import {
+  buildVisualizationConfig,
+  decideVisualizationApproach,
+  type VisualizationConfig,
+  type VisualizationRenderer,
+} from '@kbn/agent-builder-tools-base';
+import { buildVegaConfig } from '@kbn/agent-builder-vega';
 
 /** Attachment type for visualization configurations */
 const VISUALIZATION_ATTACHMENT_TYPE = 'visualization';
 
-const getExistingVisualizationConfig = (data: unknown): VisualizationConfig | null => {
-  if (!data || typeof data !== 'object') {
+/**
+ * Pull the prior Lens config out of an existing attachment, when it is a Lens
+ * visualization. Returns null for Vega attachments or unparseable data.
+ */
+const getExistingLensConfig = (
+  data: VisualizationAttachmentData | undefined
+): VisualizationConfig | null => {
+  if (!data || data.renderer === 'vega') {
     return null;
   }
-
-  const candidate =
-    'visualization' in data
-      ? (data as VisualizationAttachmentData).visualization
-      : (data as VisualizationConfig);
-
+  const candidate = data.visualization;
   return candidate && typeof candidate === 'object' ? (candidate as VisualizationConfig) : null;
 };
 
@@ -50,7 +57,7 @@ const createVisualizationSchema = z.object({
     .nativeEnum(SupportedChartType)
     .optional()
     .describe(
-      '(optional) The type of chart to create as indicated by the user. If not provided, the LLM will suggest the best chart type.'
+      '(optional) Force a specific Lens chart type, e.g. when the user explicitly asks for one. Providing this always renders a Lens chart of that type. Omit it to let the tool choose the best Lens chart type or fall back to a custom Vega-Lite visualization when no Lens type fits.'
     ),
   esql: z
     .string()
@@ -66,15 +73,19 @@ export const createVisualizationTool = (): BuiltinToolDefinition<
   return {
     id: platformCoreTools.createVisualization,
     type: ToolType.builtin,
-    description: `Create or update a visualization configuration based on a natural language description.
+    description: `Create or update a visualization from a natural language description. Supports BOTH standard Lens charts AND custom Vega-Lite visualizations, so prefer this tool over telling the user a chart cannot be built — you do not author Vega specs by hand or ask the user to paste anything.
+
+The tool automatically chooses how to render the request:
+- A standard Lens chart (${Object.values(SupportedChartType).join(
+      ', '
+    )}) whenever one of those types fits.
+- A custom Vega-Lite specification when no Lens chart type can express the request, e.g. small multiples / faceting, layered or combination charts (bars plus an overlaid line), scatter / bubble plots with an encoded size dimension, or custom tooltips/encodings.
 
 This tool will:
-1. If attachment_id is provided, read the existing visualization configuration from that attachment
-2. Determine the best chart type if not specified (from: ${Object.values(SupportedChartType).join(
-      ', '
-    )})
+1. If attachment_id is provided, read the existing visualization from that attachment (edits keep the same renderer)
+2. Decide whether to render with Lens or Vega, and pick the best Lens chart type when applicable
 3. Generate an ES|QL query if not provided
-4. Generate a valid visualization configuration
+4. Generate and validate the visualization (Lens config or Vega-Lite spec)
 5. Store the result as an attachment (creating new or updating existing) for future modifications`,
     schema: createVisualizationSchema,
     tags: [],
@@ -83,50 +94,105 @@ This tool will:
       { esClient, modelProvider, logger, events, attachments }
     ) => {
       try {
-        // Step 1: Read existing configuration from attachment if provided
-        let existingConfig: string | undefined;
-        let parsedExistingConfig: VisualizationConfig | null = null;
-
+        // Step 1: Read any existing attachment so edits reuse its renderer + config.
+        let existingData: VisualizationAttachmentData | undefined;
         if (attachmentId) {
           const existingAttachmentRecord = attachments.getAttachmentRecord(attachmentId);
           if (existingAttachmentRecord) {
             const latestVersion = getLatestVersion(existingAttachmentRecord);
             if (latestVersion?.data) {
-              parsedExistingConfig = getExistingVisualizationConfig(latestVersion.data);
-              existingConfig = parsedExistingConfig
-                ? JSON.stringify(parsedExistingConfig)
-                : undefined;
-              logger.debug(`Loaded existing visualization config from attachment ${attachmentId}`);
+              existingData = latestVersion.data as VisualizationAttachmentData;
+              logger.debug(`Loaded existing visualization from attachment ${attachmentId}`);
             }
           } else {
             logger.warn(`Attachment ${attachmentId} not found, creating new visualization`);
           }
         }
 
-        // Step 2: Generate visualization configuration with shared chart-type + graph flow
-        const { selectedChartType, validatedConfig, esqlQuery, timeRange } =
-          await buildVisualizationConfig({
+        // Step 2: Decide the renderer. Keep an edited attachment on its current
+        // renderer; an explicit chartType always means Lens; otherwise let the
+        // model pick between Lens and Vega.
+        let renderer: VisualizationRenderer;
+        let decidedChartType: SupportedChartType | undefined;
+        if (existingData) {
+          renderer = existingData.renderer === 'vega' ? 'vega' : 'lens';
+        } else if (chartType) {
+          renderer = 'lens';
+        } else {
+          const approach = await decideVisualizationApproach(modelProvider, nlQuery);
+          renderer = approach.renderer;
+          if (approach.renderer === 'lens') {
+            decidedChartType = approach.chartType;
+          }
+        }
+
+        // Step 3: Generate the spec/config for the chosen renderer.
+        let payload:
+          | { renderer: 'vega'; spec: string; esql: string }
+          | {
+              renderer: 'lens';
+              visualization: Record<string, unknown>;
+              chart_type: SupportedChartType;
+              esql: string;
+              time_range?: { from: string; to: string };
+            };
+
+        if (renderer === 'vega') {
+          const existingSpec = existingData?.renderer === 'vega' ? existingData.spec : undefined;
+          const { spec, esqlQuery } = await buildVegaConfig({
             nlQuery,
             index,
-            chartType,
             esql,
-            existingConfig,
-            parsedExistingConfig,
+            existingSpec,
             modelProvider,
             logger,
             events,
             esClient,
           });
+          payload = { renderer: 'vega', spec, esql: esqlQuery };
+        } else {
+          const parsedExistingConfig = getExistingLensConfig(existingData);
+          const existingConfig = parsedExistingConfig
+            ? JSON.stringify(parsedExistingConfig)
+            : undefined;
+          const { selectedChartType, validatedConfig, esqlQuery, timeRange } =
+            await buildVisualizationConfig({
+              nlQuery,
+              index,
+              chartType: chartType ?? decidedChartType,
+              esql,
+              existingConfig,
+              parsedExistingConfig,
+              modelProvider,
+              logger,
+              events,
+              esClient,
+            });
+          payload = {
+            renderer: 'lens',
+            visualization: validatedConfig,
+            chart_type: selectedChartType,
+            esql: esqlQuery,
+            ...(timeRange && { time_range: timeRange }),
+          };
+        }
 
-        const visualizationData = {
-          query: nlQuery,
-          visualization: validatedConfig,
-          chart_type: selectedChartType,
-          esql: esqlQuery,
-          ...(timeRange && { time_range: timeRange }),
-        };
+        const visualizationData: VisualizationAttachmentData =
+          payload.renderer === 'vega'
+            ? { renderer: 'vega', query: nlQuery, spec: payload.spec, esql: payload.esql }
+            : {
+                renderer: 'lens',
+                query: nlQuery,
+                visualization: payload.visualization,
+                chart_type: payload.chart_type,
+                esql: payload.esql,
+                ...(payload.time_range && { time_range: payload.time_range }),
+              };
 
         // Step 4: Try to store as attachment (optional - may fail if visualization type not registered)
+        const description = `Visualization: ${nlQuery.slice(0, 50)}${
+          nlQuery.length > 50 ? '...' : ''
+        }`;
         let resultAttachmentId: string | undefined;
         let version: number | undefined;
         let isUpdate = false;
@@ -135,9 +201,7 @@ This tool will:
           if (attachmentId && attachments.getAttachmentRecord(attachmentId)) {
             const updated = await attachments.update(attachmentId, {
               data: visualizationData,
-              description: `Visualization: ${nlQuery.slice(0, 50)}${
-                nlQuery.length > 50 ? '...' : ''
-              }`,
+              description,
             });
             resultAttachmentId = attachmentId;
             version = updated?.current_version ?? 1;
@@ -147,9 +211,7 @@ This tool will:
             const newAttachment = await attachments.add({
               type: VISUALIZATION_ATTACHMENT_TYPE,
               data: visualizationData,
-              description: `Visualization: ${nlQuery.slice(0, 50)}${
-                nlQuery.length > 50 ? '...' : ''
-              }`,
+              description,
             });
             resultAttachmentId = newAttachment.id;
             version = newAttachment.current_version;
@@ -164,20 +226,35 @@ This tool will:
           );
         }
 
+        const resultMeta = {
+          ...(resultAttachmentId && { attachment_id: resultAttachmentId }),
+          ...(version !== undefined && { version }),
+          ...(isUpdate && { is_update: isUpdate }),
+        };
+
         return {
           results: [
             {
               type: ToolResultType.visualization,
               tool_result_id: getToolResultId(),
-              data: {
-                query: nlQuery,
-                visualization: validatedConfig,
-                chart_type: selectedChartType,
-                esql: esqlQuery,
-                ...(resultAttachmentId && { attachment_id: resultAttachmentId }),
-                ...(version !== undefined && { version }),
-                ...(isUpdate && { is_update: isUpdate }),
-              },
+              data:
+                payload.renderer === 'vega'
+                  ? {
+                      renderer: 'vega' as const,
+                      query: nlQuery,
+                      esql: payload.esql,
+                      spec: payload.spec,
+                      ...resultMeta,
+                    }
+                  : {
+                      renderer: 'lens' as const,
+                      query: nlQuery,
+                      esql: payload.esql,
+                      visualization: payload.visualization,
+                      chart_type: payload.chart_type,
+                      ...(payload.time_range && { time_range: payload.time_range }),
+                      ...resultMeta,
+                    },
             },
           ],
         };

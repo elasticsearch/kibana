@@ -28,23 +28,24 @@ interface UseVisPreviewUnifiedSearchResult {
 }
 
 /**
- * Local time-range state for inline Lens + unified SearchBar preview, driven by
- * `lensInput.timeRange` and `StatefulSearchBarProps` `dateRangeFrom` / `dateRangeTo`.
+ * Local time-range state for an inline visualization (Lens or Vega) + unified
+ * SearchBar preview, driven by the visualization's initial `timeRange` and
+ * `StatefulSearchBarProps` `dateRangeFrom` / `dateRangeTo`.
  */
 export const useVisPreviewUnifiedSearch = ({
-  lensTimeRange,
+  timeRange,
 }: {
-  lensTimeRange: TimeRange | undefined;
+  timeRange: TimeRange | undefined;
 }): UseVisPreviewUnifiedSearchResult => {
-  const boundsFromLens = useMemo(() => getInitialTimeRange(lensTimeRange), [lensTimeRange]);
+  const initialBounds = useMemo(() => getInitialTimeRange(timeRange), [timeRange]);
 
-  const [committedTimeRange, setCommittedTimeRange] = useState<TimeRange>(() => boundsFromLens);
+  const [committedTimeRange, setCommittedTimeRange] = useState<TimeRange>(() => initialBounds);
 
   useEffect(() => {
     setCommittedTimeRange((current) =>
-      areTimeRangesEqual(current, boundsFromLens) ? current : boundsFromLens
+      areTimeRangesEqual(current, initialBounds) ? current : initialBounds
     );
-  }, [boundsFromLens]);
+  }, [initialBounds]);
 
   const onQuerySubmit = useCallback<NonNullable<StatefulSearchBarProps<Query>['onQuerySubmit']>>(
     ({ dateRange }) => {
