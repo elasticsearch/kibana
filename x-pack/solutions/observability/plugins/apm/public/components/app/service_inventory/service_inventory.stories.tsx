@@ -11,7 +11,16 @@ import { ServiceInventory } from '.';
 import { AnomalyDetectionSetupState } from '../../../../common/anomaly_detection/get_anomaly_detection_setup_state';
 import { AnomalyDetectionJobsContext } from '../../../context/anomaly_detection_jobs/anomaly_detection_jobs_context';
 import { FETCH_STATUS } from '../../../hooks/use_fetcher';
-import { mockApmApiCallResponse } from '../../../services/rest/storybook_mock_http';
+import {
+  opbeansScenario,
+  SCENARIO_START,
+  SCENARIO_END,
+  toServiceInventoryResponse,
+  toDetailedStatisticsResponse,
+  TIME_RANGE_METADATA_DEFAULTS,
+  APM_STORY_A11Y,
+  makeApmContextParams,
+} from '../../../test_helpers/synthtrace_stories';
 
 const anomalyDetectionJobsContextValue = {
   anomalyDetectionJobsData: { jobs: [], hasLegacyJobs: false },
@@ -23,118 +32,85 @@ const anomalyDetectionJobsContextValue = {
 const stories: Meta<{}> = {
   title: 'app/ServiceInventory',
   component: ServiceInventory,
+  tags: ['autodocs'],
   parameters: {
-    routePath: '/services?rangeFrom=now-15m&rangeTo=now&comparisonEnabled=true&offset=1d',
-  },
-  decorators: [
-    (StoryComponent) => {
-      mockApmApiCallResponse('GET /internal/apm/services', () => ({
-        items: [
-          {
-            serviceName: 'opbeans-java',
-            transactionType: 'request',
-            agentName: 'java' as const,
-            throughput: 312.5,
-            latency: 48250,
-            transactionErrorRate: 0.035,
-            environments: ['production'],
-          },
-          {
-            serviceName: 'opbeans-node',
-            transactionType: 'request',
-            agentName: 'nodejs' as const,
-            throughput: 186.2,
-            latency: 12800,
-            transactionErrorRate: 0.012,
-            environments: ['production'],
-          },
-          {
-            serviceName: 'opbeans-python',
-            transactionType: 'request',
-            agentName: 'python' as const,
-            throughput: 97.8,
-            latency: 32100,
-            transactionErrorRate: 0.058,
-            environments: ['staging'],
-          },
-          {
-            serviceName: 'opbeans-ruby',
-            transactionType: 'request',
-            agentName: 'ruby' as const,
-            throughput: 44.1,
-            latency: 65400,
-            transactionErrorRate: 0.021,
-            environments: ['production', 'staging'],
-          },
-          {
-            serviceName: 'opbeans-go',
-            transactionType: 'request',
-            agentName: 'go' as const,
-            throughput: 520.0,
-            latency: 5200,
-            transactionErrorRate: 0.002,
-            environments: ['production'],
-          },
-        ],
-        maxCountExceeded: false,
-        serviceOverflowCount: 0,
-      }));
-
-      const now = Date.now();
-      const serviceNames = [
-        'opbeans-java',
-        'opbeans-node',
-        'opbeans-python',
-        'opbeans-ruby',
-        'opbeans-go',
-      ];
-
-      const makeSparkline = (baseValue: number) =>
-        Array.from({ length: 15 }, (_, i) => ({
-          x: now - (15 - i) * 60000,
-          y: baseValue * (0.8 + Math.random() * 0.4),
-        }));
-
-      const currentPeriod: Record<string, any> = {};
-      const previousPeriod: Record<string, any> = {};
-      const baseLatencies = [48250, 12800, 32100, 65400, 5200];
-      const baseThroughputs = [312.5, 186.2, 97.8, 44.1, 520.0];
-      const baseErrorRates = [0.035, 0.012, 0.058, 0.021, 0.002];
-
-      serviceNames.forEach((name, i) => {
-        currentPeriod[name] = {
-          serviceName: name,
-          latency: makeSparkline(baseLatencies[i]),
-          throughput: makeSparkline(baseThroughputs[i]),
-          transactionErrorRate: makeSparkline(baseErrorRates[i]),
-        };
-        previousPeriod[name] = {
-          serviceName: name,
-          latency: makeSparkline(baseLatencies[i] * 1.1),
-          throughput: makeSparkline(baseThroughputs[i] * 0.9),
-          transactionErrorRate: makeSparkline(baseErrorRates[i] * 1.2),
-        };
-      });
-
-      mockApmApiCallResponse('POST /internal/apm/services/detailed_statistics', () => ({
-        currentPeriod,
-        previousPeriod,
-      }));
-
-      mockApmApiCallResponse('GET /internal/apm/fallback_to_transactions', () => ({
-        fallbackToTransactions: false,
-      }));
-
-      return (
-        <AnomalyDetectionJobsContext.Provider value={anomalyDetectionJobsContextValue}>
-          <StoryComponent />
-        </AnomalyDetectionJobsContext.Provider>
-      );
+    docs: {
+      description: {
+        component:
+          'Service inventory table listing all APM-instrumented services with latency, ' +
+          'throughput, and error-rate metrics. The `SynthtraceGenerated` story derives its ' +
+          'data from the shared `opbeansScenario()` — no Elasticsearch required.',
+      },
     },
-  ],
+    a11y: APM_STORY_A11Y,
+  },
 };
 export default stories;
 
-export const Example: StoryFn<{}> = () => {
+export const EmptyState: StoryFn<{}> = () => {
   return <ServiceInventory />;
 };
+
+EmptyState.parameters = {
+  routePath: '/services?rangeFrom=now-15m&rangeTo=now&comparisonEnabled=true&offset=1d',
+  ...makeApmContextParams((endpoint) => {
+    if (endpoint === '/internal/apm/time_range_metadata') return TIME_RANGE_METADATA_DEFAULTS;
+    if (endpoint === '/internal/apm/services') return { items: [] };
+    if (endpoint === '/internal/apm/sorted_and_filtered_services') return { services: [] };
+    return {};
+  }),
+};
+
+EmptyState.decorators = [
+  (StoryComponent) => (
+    <AnomalyDetectionJobsContext.Provider value={anomalyDetectionJobsContextValue}>
+      <StoryComponent />
+    </AnomalyDetectionJobsContext.Provider>
+  ),
+];
+
+// Synthtrace-derived metrics augmented with alert/SLO/anomaly data for all columns.
+const _docs = opbeansScenario();
+const { items: _baseItems, ...rest } = toServiceInventoryResponse(_docs);
+
+const _ENRICHMENTS: Record<string, object> = {
+  'opbeans-node': { alertsCount: 3, sloStatus: 'violated', sloCount: 1, anomalyScore: 82 },
+  'opbeans-java': { alertsCount: 1, sloStatus: 'degrading', sloCount: 2, anomalyScore: 55 },
+  'opbeans-go': { sloStatus: 'healthy', sloCount: 3, anomalyScore: 27 },
+  'opbeans-python': { sloStatus: 'noData', sloCount: 1, anomalyScore: 5 },
+};
+
+const _enrichedInventory = {
+  ...rest,
+  items: _baseItems.map((item) => ({ ...item, ...(_ENRICHMENTS[item.serviceName] ?? {}) })),
+};
+
+export const WithData: StoryFn<{}> = () => {
+  return <ServiceInventory />;
+};
+
+WithData.storyName = 'With Data (Alerts + SLOs + Anomalies)';
+
+WithData.parameters = {
+  routePath: `/services?rangeFrom=${SCENARIO_START.toISOString()}&rangeTo=${SCENARIO_END.toISOString()}`,
+  ...makeApmContextParams(
+    (endpoint) => {
+      if (endpoint === '/internal/apm/time_range_metadata') return TIME_RANGE_METADATA_DEFAULTS;
+      if (endpoint === '/internal/apm/services') return _enrichedInventory;
+      return {};
+    },
+    (endpoint) => {
+      if (endpoint === '/internal/apm/services/detailed_statistics')
+        return toDetailedStatisticsResponse(_docs);
+      return { currentPeriod: {}, previousPeriod: {} };
+    }
+  ),
+};
+
+WithData.decorators = [
+  (StoryComponent) => (
+    <AnomalyDetectionJobsContext.Provider value={anomalyDetectionJobsContextValue}>
+      <StoryComponent />
+    </AnomalyDetectionJobsContext.Provider>
+  ),
+];

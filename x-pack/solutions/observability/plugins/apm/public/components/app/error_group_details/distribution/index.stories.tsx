@@ -5,8 +5,10 @@
  * 2.0.
  */
 
+import type { ComponentType } from 'react';
 import React from 'react';
 import { ErrorDistribution } from '.';
+import { ChartPointerEventContextProvider } from '../../../../context/chart_pointer_event/chart_pointer_event_context';
 import { FETCH_STATUS } from '../../../../hooks/use_fetcher';
 
 export default {
@@ -16,6 +18,13 @@ export default {
     routePath:
       '/services/{serviceName}/errors/{groupId}?kuery=&rangeFrom=now-15m&rangeTo=now&environment=ENVIRONMENT_ALL&serviceGroup=&comparisonEnabled=true&transactionType=request&offset=1d',
   },
+  decorators: [
+    (Story: ComponentType) => (
+      <ChartPointerEventContextProvider>
+        <Story />
+      </ChartPointerEventContextProvider>
+    ),
+  ],
 };
 
 export function Example() {

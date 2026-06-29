@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import '@elastic/charts/dist/theme_only_light.css';
 import { EuiThemeProviderDecorator } from '@kbn/kibana-react-plugin/common';
 
 export const decorators = [EuiThemeProviderDecorator];

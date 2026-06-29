@@ -26,17 +26,18 @@ type MockApmApiCall = <TEndpoint extends APIEndpoint>(
   fn: (params: APIClientRequestParamsOf<TEndpoint>) => APIReturnType<TEndpoint>
 ) => void;
 
+// Module-level cache so MockApmPluginStorybook can reach it for HTTP-level routing.
+const _mockCache: Record<string, Function> = {};
+
 const getSpy = once(() => {
   const spy = getCallApmApiSpy();
 
-  const cache: Record<string, Function> = {};
-
   const response: MockApmApiCall = (endpoint, fn) => {
-    cache[endpoint] = fn;
+    _mockCache[endpoint] = fn;
   };
 
   spy.mockImplementation((endpoint, params) => {
-    const fn = cache[endpoint];
+    const fn = _mockCache[endpoint];
 
     if (fn) {
       return Promise.resolve(fn(params));
@@ -52,4 +53,14 @@ const getSpy = once(() => {
 
 export const mockApmApiCallResponse: MockApmApiCall = (...args) => {
   getSpy().response(...args);
+};
+
+/**
+ * Returns the current mock-response cache so that HTTP-level mocks (e.g.
+ * MockApmPluginStorybook) can route `core.http.get(pathname, …)` calls to the
+ * same registered responses without relying on webpack live-binding spies.
+ */
+export const getMockApiCache = (): Readonly<Record<string, Function>> => {
+  getSpy(); // ensure the cache object exists and the spy is wired up
+  return _mockCache;
 };

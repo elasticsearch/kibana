@@ -10,6 +10,9 @@ import React from 'react';
 import { ErrorGroupList } from '.';
 import { FETCH_STATUS } from '../../../../hooks/use_fetcher';
 import { mockApmApiCallResponse } from '../../../../services/rest/storybook_mock_http';
+import { APMServiceContext } from '../../../../context/apm_service/apm_service_context';
+import type { APMServiceContextValue } from '../../../../context/apm_service/apm_service_context';
+import { makeApmContextParams } from '../../../../test_helpers/synthtrace_stories';
 
 type Args = ComponentProps<typeof ErrorGroupList>;
 
@@ -70,16 +73,30 @@ const stories: Meta<Args> = {
   title: 'app/ErrorGroupOverview/ErrorGroupList',
   component: ErrorGroupList,
   parameters: {
-    routePath:
-      '/services/testService/errors?environment=ENVIRONMENT_ALL&kuery=&rangeFrom=now-15m&rangeTo=now',
-    serviceContextValue: {
-      serviceName: 'testService',
-      fallbackToTransactions: false,
-      transactionTypeStatus: FETCH_STATUS.SUCCESS,
-      transactionTypes: ['request'],
-      serviceAgentStatus: FETCH_STATUS.SUCCESS,
-    },
+    routePath: '/services/{serviceName}/errors?rangeFrom=now-15m&rangeTo=now',
+    ...makeApmContextParams((endpoint) => {
+      if (endpoint === '/internal/apm/services/opbeans-node/errors/groups/main_statistics')
+        return { errorGroups, maxCountExceeded: false };
+      return { errorGroups: [], maxCountExceeded: false };
+    }),
   },
+  decorators: [
+    (StoryComponent, { args }) => {
+      const serviceCtxValue = {
+        serviceName: args.serviceName,
+        fallbackToTransactions: false,
+        transactionTypeStatus: FETCH_STATUS.SUCCESS,
+        transactionTypes: ['request'],
+        serviceAgentStatus: FETCH_STATUS.SUCCESS,
+      } as unknown as APMServiceContextValue;
+
+      return (
+        <APMServiceContext.Provider value={serviceCtxValue}>
+          <StoryComponent />
+        </APMServiceContext.Provider>
+      );
+    },
+  ],
 };
 export default stories;
 
@@ -89,25 +106,17 @@ export const Example: StoryObj<Args> = {
   },
 
   args: {
-    serviceName: 'testService',
+    serviceName: 'opbeans-node',
     initialPageSize: 5,
   },
 
   decorators: [
     (StoryComponent) => {
-      mockApmApiCallResponse(
-        'GET /internal/apm/services/{serviceName}/errors/groups/main_statistics',
-        () => ({
-          errorGroups,
-          maxCountExceeded: false,
-        })
-      );
-
-      const now = Date.now();
+      const BASE_TS = 1634833121434;
       const makeTimeseries = (baseValue: number) =>
         Array.from({ length: 20 }, (_, i) => ({
-          x: now - (20 - i) * 60000,
-          y: baseValue * (0.8 + Math.random() * 0.4),
+          x: BASE_TS - (20 - i) * 60000,
+          y: baseValue * (0.8 + 0.4 * Math.sin(i / 3)),
         }));
 
       const currentPeriod: Record<string, any> = {};
@@ -134,20 +143,12 @@ export const EmptyState: StoryObj<Args> = {
   },
 
   args: {
-    serviceName: 'testService',
+    serviceName: 'no-errors-service',
     initialPageSize: 5,
   },
 
   decorators: [
     (StoryComponent) => {
-      mockApmApiCallResponse(
-        'GET /internal/apm/services/{serviceName}/errors/groups/main_statistics',
-        () => ({
-          errorGroups: [],
-          maxCountExceeded: false,
-        })
-      );
-
       mockApmApiCallResponse(
         'POST /internal/apm/services/{serviceName}/errors/groups/detailed_statistics',
         () => ({
