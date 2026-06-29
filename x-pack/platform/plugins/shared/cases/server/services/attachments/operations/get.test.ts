@@ -64,7 +64,7 @@ describe('AttachmentService getter', () => {
         await expect(attachmentGetter.bulkGet(['1'], mode)).resolves.not.toThrow();
       });
 
-      it('preserves a single not-found error per id when no SO type hits', async () => {
+      it('surfaces the legacy not-found error per id when FF is off and no SO type hits', async () => {
         const unifiedNotFoundForId1 = {
           ...createErrorSO(CASE_ATTACHMENT_SAVED_OBJECT),
           id: '1',
@@ -90,8 +90,33 @@ describe('AttachmentService getter', () => {
         const res = await attachmentGetter.bulkGet(['1', 'missing-id'], mode);
 
         // The success at id 1 is kept; the duplicate not-founds at `missing-id`
-        // collapse to a single error response.
-        expect(res.saved_objects).toEqual([createUserAttachment(), unifiedNotFoundForMissing]);
+        // collapse to a single error. FF is off, so the surfaced error comes
+        // from the legacy (`cases-comments`) bucket to match where new writes go.
+        expect(res.saved_objects).toEqual([createUserAttachment(), legacyNotFoundForMissing]);
+      });
+
+      it('surfaces the unified not-found error per id when FF is on and no SO type hits', async () => {
+        const attachmentGetterWithFlagOn = createAttachmentGetter(true);
+        const legacyNotFoundForMissing = {
+          ...createErrorSO(CASE_COMMENT_SAVED_OBJECT),
+          id: 'missing-id',
+        };
+        const unifiedNotFoundForMissing = {
+          ...createErrorSO(CASE_ATTACHMENT_SAVED_OBJECT),
+          id: 'missing-id',
+        };
+        unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
+          saved_objects: [
+            unifiedNotFoundForMissing,
+            legacyNotFoundForMissing,
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
+        });
+
+        const res = await attachmentGetterWithFlagOn.bulkGet(['missing-id'], mode);
+
+        // FF is on → surfaced error comes from the unified (`cases-attachments`)
+        // bucket since that's where new writes go.
+        expect(res.saved_objects).toEqual([unifiedNotFoundForMissing]);
       });
 
       it('Filters successful result over error', async () => {

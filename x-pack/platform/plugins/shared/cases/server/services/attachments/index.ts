@@ -788,13 +788,30 @@ export class AttachmentService {
             `bulkUpdate SO client contract violation: expected ${bucketRequests.length} ${label} rows, received ${bucketRes.saved_objects.length}.`
           );
         }
+        // Validate each returned row matches the requested `{id, type}` rather
+        // than relying purely on index ordering.
         bucketRes.saved_objects.forEach((so, k) => {
-          mergedSavedObjects[bucketRequests[k].index] = so;
+          const req = bucketRequests[k];
+          if (so.id !== req.payload.id || so.type !== req.payload.type) {
+            throw new Error(
+              `bulkUpdate SO client contract violation: expected ${label} row {id:${req.payload.id},type:${req.payload.type}}, received {id:${so.id},type:${so.type}}.`
+            );
+          }
+          mergedSavedObjects[req.index] = so;
         });
       };
 
       assignBucketResults('unified', unifiedRequests, unifiedRes);
       assignBucketResults('legacy', legacyRequests, legacyRes);
+
+      // Every comment must end up assigned to exactly one bucket. A hole
+      // indicates a routing/bookkeeping bug.
+      const missingIndex = mergedSavedObjects.findIndex((so) => so == null);
+      if (missingIndex !== -1) {
+        throw new Error(
+          `bulkUpdate internal invariant violated: unassigned slot at index ${missingIndex} for id="${comments[missingIndex].savedObjectId}".`
+        );
+      }
 
       return this.transformAndDecodeBulkUpdateResponse(
         { saved_objects: mergedSavedObjects },

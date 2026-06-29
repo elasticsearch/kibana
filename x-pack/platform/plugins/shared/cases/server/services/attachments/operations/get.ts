@@ -13,6 +13,7 @@ import {
   toUnifiedAttachmentType,
   UNIFIED_ALERT_TYPES_ARRAY,
 } from '../../../../common/utils/attachments';
+import { getAttachmentSavedObjectType } from '../../../common/attachments';
 import { isSOError } from '../../../common/error';
 import { decodeOrThrow } from '../../../common/runtime_types';
 import type {
@@ -100,13 +101,15 @@ export class AttachmentGetter {
   ): Array<MixSavedObjectResponse> {
     // We query 2 SO types per id (paired in bulkGet input order): one may hit,
     // one may 404. For ids missing from both types both entries are errors; we
-    // surface a single "not found" so the caller can return it.
+    // surface a single "not found" from the FF-derived default write target so
+    // the error message stays consistent with where new writes go.
     if (savedObjects.length % 2 !== 0) {
       throw new Error(
         `Expected bulkGet response to contain pairs of saved objects, received ${savedObjects.length} entries`
       );
     }
 
+    const defaultSavedObjectType = getAttachmentSavedObjectType(this.context.config);
     const result: Array<MixSavedObjectResponse> = [];
     for (let i = 0; i < savedObjects.length; i += 2) {
       const pair = [savedObjects[i], savedObjects[i + 1]] as const;
@@ -116,7 +119,15 @@ export class AttachmentGetter {
         );
       }
       const hit = pair.find((so) => !isSOError(so));
-      result.push(hit ?? pair[0]);
+      if (hit) {
+        result.push(hit);
+      } else {
+        // Both buckets are errors. Surface the one matching the FF-derived
+        // default write target so callers see a consistent "not found"
+        // (cases-comments when FF off, cases-attachments when FF on).
+        const [unifiedSO, legacySO] = pair;
+        result.push(defaultSavedObjectType === CASE_ATTACHMENT_SAVED_OBJECT ? unifiedSO : legacySO);
+      }
     }
     return result;
   }

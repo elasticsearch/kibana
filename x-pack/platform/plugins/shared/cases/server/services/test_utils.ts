@@ -278,13 +278,16 @@ export const mockPointInTimeFinder =
     });
   };
 
-export const createErrorSO = <T = unknown>(type: string): SOWithErrors<T> => ({
+export const createErrorSO = <T = unknown>(
+  type: string,
+  { statusCode = 404 }: { statusCode?: number } = {}
+): SOWithErrors<T> => ({
   id: '1',
   type,
   error: {
-    error: 'error',
-    message: 'message',
-    statusCode: 500,
+    error: statusCode === 404 ? 'Not Found' : 'error',
+    message: statusCode === 404 ? 'Saved object not found' : 'message',
+    statusCode,
   },
   references: [],
 });

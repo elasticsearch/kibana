@@ -275,9 +275,9 @@ describe('CasesService', () => {
               },
               Object {
                 "error": Object {
-                  "error": "error",
-                  "message": "message",
-                  "statusCode": 500,
+                  "error": "Not Found",
+                  "message": "Saved object not found",
+                  "statusCode": 404,
                 },
                 "id": "1",
                 "references": Array [],

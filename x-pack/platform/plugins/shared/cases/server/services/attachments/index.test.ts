@@ -798,16 +798,36 @@ describe('AttachmentService', () => {
       type: 'cases-comments',
     };
 
+    beforeEach(() => {
+      // `bulkUpdate` resolves the SO type via `resolveAttachmentSavedObjectTypes`
+      // (a single `bulkGet`). Route every id to the legacy bucket so the
+      // existing bulkUpdate tests exercise the legacy update path. Tests that
+      // need different routing override this.
+      unsecuredSavedObjectsClient.bulkGet.mockImplementation((objects) => {
+        const requests = objects as Array<{ id: string; type: string }>;
+        const savedObjects = requests.map(({ id, type }) =>
+          type === CASE_COMMENT_SAVED_OBJECT
+            ? { ...createUserAttachment(), id, type }
+            : { ...createErrorSO(type), id }
+        );
+        return Promise.resolve({
+          saved_objects: savedObjects as unknown as SavedObjectsBulkResponse['saved_objects'],
+        });
+      });
+    });
+
     it('should inject the references to the attributes correctly (persistable state)', async () => {
       unsecuredSavedObjectsClient.bulkUpdate.mockResolvedValue({
         saved_objects: [
-          soClientRes,
+          { ...soClientRes, id: '1' },
           {
             ...soClientRes,
+            id: '2',
             attributes: externalReferenceAttachmentSOAttributesWithoutRefs,
           },
           {
             ...soClientRes,
+            id: '3',
             attributes: externalReferenceAttachmentESAttributes,
           },
         ],
@@ -835,9 +855,9 @@ describe('AttachmentService', () => {
 
       expect(res).toEqual({
         saved_objects: [
-          { ...soClientRes, attributes: persistableStateAttachmentAttributes },
-          { ...soClientRes, attributes: externalReferenceAttachmentSOAttributes },
-          { ...soClientRes, attributes: externalReferenceAttachmentESAttributes },
+          { ...soClientRes, id: '1', attributes: persistableStateAttachmentAttributes },
+          { ...soClientRes, id: '2', attributes: externalReferenceAttachmentSOAttributes },
+          { ...soClientRes, id: '3', attributes: externalReferenceAttachmentESAttributes },
         ],
       });
     });

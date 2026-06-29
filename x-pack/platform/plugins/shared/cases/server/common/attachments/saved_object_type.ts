@@ -5,10 +5,12 @@
  * 2.0.
  */
 
-import type { SavedObjectsClientContract } from '@kbn/core/server';
+import type { SavedObject, SavedObjectsClientContract } from '@kbn/core/server';
+import type { SavedObjectError } from '@kbn/core-saved-objects-common';
 import { CASE_ATTACHMENT_SAVED_OBJECT, CASE_COMMENT_SAVED_OBJECT } from '../../../common/constants';
 import type { ConfigType } from '../../config';
-import { isSOError } from '../error';
+import { createCaseErrorFromSOError, isSOError } from '../error';
+import type { SOWithErrors } from '../types';
 
 export type ResolvedAttachmentSavedObjectType =
   | typeof CASE_ATTACHMENT_SAVED_OBJECT
@@ -34,9 +36,10 @@ export function getAttachmentSavedObjectType(
  * an id present in neither SO type resolves to `null`. Callers with a single
  * id can pass `[id]` and read `result[0]`.
  *
- * Throws if the saved objects client returns a response whose length does not
- * match the request (i.e. the SO client contract of returning one entry per
- * request in input order is violated).
+ * Errors are handled as follows:
+ *  - `404` on a bucket is treated as "missing" and falls back to the other bucket.
+ *  - Any non-`404` error is re-thrown so callers don't silently mis-route updates.
+ *  - Throws if the SO bulkGet response is missing the unified or legacy entry for an id.
  */
 export async function resolveAttachmentSavedObjectTypes(
   client: SavedObjectsClientContract,
@@ -53,17 +56,44 @@ export async function resolveAttachmentSavedObjectTypes(
     ])
   );
 
-  const expected = savedObjectIds.length * 2;
-  if (response.saved_objects.length !== expected) {
-    throw new Error(
-      `resolveAttachmentSavedObjectTypes: SO bulkGet contract violation. Expected ${expected} entries ` +
-        `(2 per id for ${savedObjectIds.length} ids), received ${response.saved_objects.length}.`
-    );
+  // Index responses by `${type}:${id}` so resolution doesn't rely on the SO
+  // client preserving request order.
+  const keyFor = (type: string, id: string) => `${type}:${id}`;
+  const byKey = new Map<string, SavedObject<unknown> | SOWithErrors<unknown>>();
+  for (const so of response.saved_objects) {
+    byKey.set(keyFor(so.type, so.id), so);
   }
 
-  return savedObjectIds.map((_, idx) => {
-    const unified = response.saved_objects[idx * 2];
-    const legacy = response.saved_objects[idx * 2 + 1];
+  // `bulkGet` always returns `SavedObjectError` (not `DecoratedError`) on its
+  // error entries, so `.statusCode` is the right field to inspect.
+  const statusCodeOf = (so: SOWithErrors<unknown>): number =>
+    (so.error as SavedObjectError).statusCode;
+
+  return savedObjectIds.map((id) => {
+    const unified = byKey.get(keyFor(CASE_ATTACHMENT_SAVED_OBJECT, id));
+    const legacy = byKey.get(keyFor(CASE_COMMENT_SAVED_OBJECT, id));
+    if (!unified || !legacy) {
+      throw new Error(
+        `resolveAttachmentSavedObjectTypes: SO bulkGet response missing entry for id="${id}" ` +
+          `(unified=${unified != null}, legacy=${legacy != null}).`
+      );
+    }
+
+    // Re-throw non-404 errors so transient SO client failures don't get silently
+    // treated as "missing" and route writes to the wrong bucket.
+    if (isSOError(unified) && statusCodeOf(unified) !== 404) {
+      throw createCaseErrorFromSOError(
+        unified.error,
+        `Failed to resolve attachment SO type for ${CASE_ATTACHMENT_SAVED_OBJECT}/${id}`
+      );
+    }
+    if (isSOError(legacy) && statusCodeOf(legacy) !== 404) {
+      throw createCaseErrorFromSOError(
+        legacy.error,
+        `Failed to resolve attachment SO type for ${CASE_COMMENT_SAVED_OBJECT}/${id}`
+      );
+    }
+
     if (!isSOError(unified)) {
       return CASE_ATTACHMENT_SAVED_OBJECT;
     }
