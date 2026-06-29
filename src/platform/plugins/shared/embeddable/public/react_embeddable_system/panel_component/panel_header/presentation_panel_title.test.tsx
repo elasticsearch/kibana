@@ -9,11 +9,21 @@
 
 import React from 'react';
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { EuiThemeProvider } from '@elastic/eui';
 import { BehaviorSubject } from 'rxjs';
 import { PresentationPanelTitle } from './presentation_panel_title';
 import type { DefaultPresentationPanelApi } from '../types';
+import { isApiCompatibleWithCustomizePanelAction } from '../../../ui_actions/customize_panel_action';
+import { openCustomizePanelFlyout } from '../../../ui_actions/customize_panel_action/open_customize_panel';
+
+jest.mock('../../../ui_actions/customize_panel_action', () => ({
+  isApiCompatibleWithCustomizePanelAction: jest.fn(() => false),
+}));
+
+jest.mock('../../../ui_actions/customize_panel_action/open_customize_panel', () => ({
+  openCustomizePanelFlyout: jest.fn(),
+}));
 
 describe('PresentationPanelTitle', () => {
   const mockApi: DefaultPresentationPanelApi = {
@@ -62,6 +72,43 @@ describe('PresentationPanelTitle', () => {
       renderWithTheme(<PresentationPanelTitle {...defaultProps} panelTitle="" />);
 
       expect(screen.queryByTestId('embeddablePanelTitleTooltipAnchor')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('keyboard accessibility in edit mode', () => {
+    beforeEach(() => {
+      (isApiCompatibleWithCustomizePanelAction as jest.Mock).mockReturnValue(true);
+      (openCustomizePanelFlyout as jest.Mock).mockClear();
+    });
+
+    afterEach(() => {
+      (isApiCompatibleWithCustomizePanelAction as jest.Mock).mockReturnValue(false);
+    });
+
+    it('opens the customize panel flyout when Enter is pressed on the editable title', () => {
+      renderWithTheme(
+        <PresentationPanelTitle {...defaultProps} panelTitle="CPU Usage" viewMode="edit" />
+      );
+
+      const titleLink = screen.getByTestId('embeddablePanelTitle');
+      fireEvent.keyDown(titleLink, { key: 'Enter', code: 'Enter' });
+
+      expect(openCustomizePanelFlyout).toHaveBeenCalledWith({
+        api: mockApi,
+        focusOnTitle: true,
+      });
+    });
+
+    it('does not open the flyout for non-Enter key presses on the editable title', () => {
+      renderWithTheme(
+        <PresentationPanelTitle {...defaultProps} panelTitle="CPU Usage" viewMode="edit" />
+      );
+
+      const titleLink = screen.getByTestId('embeddablePanelTitle');
+      fireEvent.keyDown(titleLink, { key: 'Space', code: 'Space' });
+      fireEvent.keyDown(titleLink, { key: 'Tab', code: 'Tab' });
+
+      expect(openCustomizePanelFlyout).not.toHaveBeenCalled();
     });
   });
 });
