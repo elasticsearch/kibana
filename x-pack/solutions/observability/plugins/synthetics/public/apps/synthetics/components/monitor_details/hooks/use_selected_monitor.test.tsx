@@ -7,7 +7,7 @@
 
 import { renderHook } from '@testing-library/react';
 import { useSelectedMonitor } from './use_selected_monitor';
-import { useRemoteMonitor } from './use_remote_monitor';
+import { useExternalMonitor } from './use_external_monitor';
 import { useGetUrlParams } from '../../../hooks';
 import { MonitorTypeEnum } from '../../../../../../common/runtime_types';
 
@@ -41,8 +41,8 @@ jest.mock('../../../hooks', () => ({
   useGetUrlParams: jest.fn(),
 }));
 
-jest.mock('./use_remote_monitor', () => ({
-  useRemoteMonitor: jest.fn(),
+jest.mock('./use_external_monitor', () => ({
+  useExternalMonitor: jest.fn(),
 }));
 
 import { useSelector } from 'react-redux';
@@ -55,13 +55,13 @@ import {
 } from '../../../state';
 
 const mockUseSelector = useSelector as unknown as jest.Mock;
-const mockUseRemoteMonitor = useRemoteMonitor as jest.MockedFunction<typeof useRemoteMonitor>;
+const mockUseExternalMonitor = useExternalMonitor as jest.MockedFunction<typeof useExternalMonitor>;
 const mockUseGetUrlParams = useGetUrlParams as jest.MockedFunction<typeof useGetUrlParams>;
 
 interface SetupOptions {
   remoteName?: string;
-  remoteMonitor?: ReturnType<typeof useRemoteMonitor>['data'];
-  remoteLoading?: boolean;
+  externalMonitor?: ReturnType<typeof useExternalMonitor>['data'];
+  externalLoading?: boolean;
   localMonitor?: { config_id: string; name: string } | null;
   localLoading?: boolean;
   monitorListLoading?: boolean;
@@ -70,8 +70,8 @@ interface SetupOptions {
 
 const setupMocks = ({
   remoteName,
-  remoteMonitor = undefined,
-  remoteLoading = false,
+  externalMonitor = undefined,
+  externalLoading = false,
   localMonitor = { config_id: 'config-1', name: 'Local monitor' },
   localLoading = false,
   monitorListLoading = false,
@@ -82,9 +82,9 @@ const setupMocks = ({
     remoteName,
   } as ReturnType<typeof useGetUrlParams>);
 
-  mockUseRemoteMonitor.mockReturnValue({
-    data: remoteMonitor,
-    loading: remoteLoading,
+  mockUseExternalMonitor.mockReturnValue({
+    data: externalMonitor,
+    loading: externalLoading,
     error: undefined,
   });
 
@@ -115,15 +115,16 @@ describe('useSelectedMonitor', () => {
   });
 
   describe('local path (no remoteName in URL)', () => {
-    it('returns the local saved monitor and does not call useRemoteMonitor with a remoteName', () => {
+    it('returns the local saved monitor and does not probe external pings', () => {
       setupMocks({});
 
       const { result } = renderHook(() => useSelectedMonitor());
 
       expect(result.current.monitor).toEqual({ config_id: 'config-1', name: 'Local monitor' });
-      expect(mockUseRemoteMonitor).toHaveBeenCalledWith({
+      expect(mockUseExternalMonitor).toHaveBeenCalledWith({
         configId: 'config-1',
         remoteName: undefined,
+        origin: undefined,
       });
     });
 
@@ -148,20 +149,21 @@ describe('useSelectedMonitor', () => {
       remote: { remoteName: 'cluster-a' },
     };
 
-    it('returns the remote monitor from useRemoteMonitor instead of the local SO', () => {
-      setupMocks({ remoteName: 'cluster-a', remoteMonitor });
+    it('returns the remote monitor from useExternalMonitor instead of the local SO', () => {
+      setupMocks({ remoteName: 'cluster-a', externalMonitor: remoteMonitor });
 
       const { result } = renderHook(() => useSelectedMonitor());
 
       expect(result.current.monitor).toBe(remoteMonitor);
-      expect(mockUseRemoteMonitor).toHaveBeenCalledWith({
+      expect(mockUseExternalMonitor).toHaveBeenCalledWith({
         configId: 'config-1',
         remoteName: 'cluster-a',
+        origin: undefined,
       });
     });
 
     it('does not dispatch a local SO fetch when the URL has a remoteName', () => {
-      setupMocks({ remoteName: 'cluster-a', remoteMonitor: undefined, localMonitor: null });
+      setupMocks({ remoteName: 'cluster-a', externalMonitor: undefined, localMonitor: null });
 
       renderHook(() => useSelectedMonitor());
 
@@ -169,8 +171,8 @@ describe('useSelectedMonitor', () => {
       expect(mockDispatch).not.toHaveBeenCalled();
     });
 
-    it('returns loading=true while useRemoteMonitor is loading', () => {
-      setupMocks({ remoteName: 'cluster-a', remoteLoading: true });
+    it('returns loading=true while useExternalMonitor is loading', () => {
+      setupMocks({ remoteName: 'cluster-a', externalLoading: true });
 
       const { result } = renderHook(() => useSelectedMonitor());
 
@@ -182,7 +184,7 @@ describe('useSelectedMonitor', () => {
         body: { statusCode: 404 },
         getPayload: () => ({ monitorId: 'config-1' }),
       };
-      setupMocks({ remoteName: 'cluster-a', remoteMonitor: undefined, localError });
+      setupMocks({ remoteName: 'cluster-a', externalMonitor: undefined, localError });
 
       const { result } = renderHook(() => useSelectedMonitor());
 
@@ -191,11 +193,76 @@ describe('useSelectedMonitor', () => {
 
     it('reports null error for remote (local HTTP-fetch error shape is suppressed)', () => {
       const localError = { body: { statusCode: 500 } };
-      setupMocks({ remoteName: 'cluster-a', remoteMonitor: undefined, localError });
+      setupMocks({ remoteName: 'cluster-a', externalMonitor: undefined, localError });
 
       const { result } = renderHook(() => useSelectedMonitor());
 
       expect(result.current.error).toBeNull();
+    });
+  });
+
+  describe('heartbeat fallback (no saved object, local pings)', () => {
+    const heartbeatMonitor = {
+      config_id: 'config-1',
+      id: 'config-1',
+      name: 'Autodiscovered monitor',
+      type: MonitorTypeEnum.HTTP,
+      tags: [],
+      locations: [],
+      origin: 'heartbeat' as const,
+    };
+
+    const notFound = {
+      body: { statusCode: 404 },
+      getPayload: { monitorId: 'config-1' },
+    };
+
+    it('probes local pings with origin=heartbeat once the local SO 404s', () => {
+      setupMocks({ localMonitor: null, localError: notFound });
+
+      renderHook(() => useSelectedMonitor());
+
+      expect(mockUseExternalMonitor).toHaveBeenCalledWith({
+        configId: 'config-1',
+        remoteName: undefined,
+        origin: 'heartbeat',
+      });
+    });
+
+    it('returns the synthesized heartbeat monitor instead of reporting it missing', () => {
+      setupMocks({ localMonitor: null, localError: notFound, externalMonitor: heartbeatMonitor });
+
+      const { result } = renderHook(() => useSelectedMonitor());
+
+      expect(result.current.monitor).toBe(heartbeatMonitor);
+      expect(result.current.isMonitorMissing).toBe(false);
+      expect(result.current.error).toBeNull();
+    });
+
+    it('holds off on isMonitorMissing while the heartbeat probe is loading', () => {
+      setupMocks({
+        localMonitor: null,
+        localError: notFound,
+        externalMonitor: undefined,
+        externalLoading: true,
+      });
+
+      const { result } = renderHook(() => useSelectedMonitor());
+
+      expect(result.current.isMonitorMissing).toBe(false);
+    });
+
+    it('reports isMonitorMissing only after the heartbeat probe finds no pings', () => {
+      setupMocks({
+        localMonitor: null,
+        localError: notFound,
+        externalMonitor: undefined,
+        externalLoading: false,
+      });
+
+      const { result } = renderHook(() => useSelectedMonitor());
+
+      expect(result.current.isMonitorMissing).toBe(true);
     });
   });
 });

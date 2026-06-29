@@ -9,8 +9,12 @@ import React from 'react';
 import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { MonitorSelector } from './monitor_selector/monitor_selector';
 import { useSelectedMonitor } from './hooks/use_selected_monitor';
-import { isRemoteSyntheticsMonitor } from '../../../../../common/runtime_types';
+import {
+  isHeartbeatSyntheticsMonitor,
+  isRemoteSyntheticsMonitor,
+} from '../../../../../common/runtime_types';
 import { SyntheticsRemoteBadge } from '../common/components/synthetics_remote_badge';
+import { SyntheticsHeartbeatBadge } from '../common/components/synthetics_heartbeat_badge';
 
 export const MonitorDetailsPageTitle = () => {
   const { monitor } = useSelectedMonitor();
@@ -23,6 +27,11 @@ export const MonitorDetailsPageTitle = () => {
       {isRemoteSyntheticsMonitor(monitor) && (
         <EuiFlexItem grow={false}>
           <SyntheticsRemoteBadge remote={monitor.remote} />
+        </EuiFlexItem>
+      )}
+      {isHeartbeatSyntheticsMonitor(monitor) && (
+        <EuiFlexItem grow={false}>
+          <SyntheticsHeartbeatBadge origin={monitor.origin} />
         </EuiFlexItem>
       )}
       <EuiFlexItem>

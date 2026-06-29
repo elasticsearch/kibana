@@ -439,4 +439,77 @@ describe('ActionsPopover', () => {
       );
     });
   });
+
+  describe('heartbeat (Elastic Agent / autodiscovery) monitor', () => {
+    let heartbeatMonitor: OverviewStatusMetaData;
+
+    beforeEach(() => {
+      heartbeatMonitor = {
+        ...testMonitor,
+        origin: 'heartbeat',
+      };
+    });
+
+    // Heartbeat monitors have no saved object anywhere, so every mutating
+    // action is read-only — unlike remote monitors there is no origin cluster
+    // to deep-link to either.
+    it('disables Edit and Clone with no href', () => {
+      jest
+        .spyOn(editMonitorLocatorModule, 'useEditMonitorLocator')
+        .mockReturnValue('/a/test/edit/url');
+
+      const { getByTestId } = render(
+        <ActionsPopover
+          isPopoverOpen={true}
+          position="relative"
+          setIsPopoverOpen={jest.fn()}
+          monitor={heartbeatMonitor}
+          locationId={heartbeatMonitor.locations[0].id}
+        />
+      );
+
+      expect(getByTestId('editMonitorLink')).toBeDisabled();
+      expect(getByTestId('editMonitorLink')).not.toHaveAttribute('href');
+      expect(getByTestId('cloneMonitorLink')).toBeDisabled();
+      expect(getByTestId('cloneMonitorLink')).not.toHaveAttribute('href');
+    });
+
+    it('disables Run test manually, Create SLO, Enable/Disable and Add to dashboard', () => {
+      const { getByTestId } = render(
+        <ActionsPopover
+          isPopoverOpen={true}
+          position="relative"
+          setIsPopoverOpen={jest.fn()}
+          monitor={heartbeatMonitor}
+          locationId={heartbeatMonitor.locations[0].id}
+        />
+      );
+
+      expect(getByTestId('syntheticsActionsPopoverRunTestManually')).toBeDisabled();
+      expect(getByTestId('createSLOBtn')).toBeDisabled();
+      expect(getByTestId('syntheticsActionsPopoverEnableMonitor')).toBeDisabled();
+      expect(getByTestId('syntheticsActionsPopoverAddToDashboard')).toBeDisabled();
+    });
+
+    it('keeps Go to monitor enabled for read-only navigation', () => {
+      jest
+        .spyOn(monitorDetailLocatorModule, 'useMonitorDetailLocator')
+        .mockReturnValue('/a/test/detail/url');
+
+      const { getByTestId } = render(
+        <ActionsPopover
+          isPopoverOpen={true}
+          position="relative"
+          setIsPopoverOpen={jest.fn()}
+          monitor={heartbeatMonitor}
+          locationId={heartbeatMonitor.locations[0].id}
+        />
+      );
+
+      expect(getByTestId('actionsPopoverGoToMonitor')).toHaveAttribute(
+        'href',
+        '/a/test/detail/url'
+      );
+    });
+  });
 });

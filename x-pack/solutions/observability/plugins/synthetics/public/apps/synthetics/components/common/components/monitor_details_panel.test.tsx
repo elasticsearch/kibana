@@ -7,9 +7,11 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { MonitorDetailsPanel } from './monitor_details_panel';
+import { MonitorDetailsPanel, getScheduleFromTimespan } from './monitor_details_panel';
 import type {
   EncryptedSyntheticsSavedMonitor,
+  HeartbeatSyntheticsMonitor,
+  Ping,
   RemoteSyntheticsMonitor,
 } from '../../../../../../common/runtime_types';
 import { MonitorTypeEnum } from '../../../../../../common/runtime_types';
@@ -69,6 +71,23 @@ const remoteMonitor: RemoteSyntheticsMonitor = {
   remote: { remoteName: 'cluster-a' },
 };
 
+const heartbeatMonitor: HeartbeatSyntheticsMonitor = {
+  config_id: 'config-1',
+  id: 'config-1',
+  name: 'Heartbeat monitor',
+  type: MonitorTypeEnum.HTTP,
+  tags: ['env:prod'],
+  locations: [{ id: 'us-east', label: 'US East' }],
+  origin: 'heartbeat',
+};
+
+const pingWithTimespan = {
+  '@timestamp': '2026-01-01T00:00:00Z',
+  monitor: {
+    timespan: { gte: '2026-01-01T00:00:00Z', lt: '2026-01-01T00:01:00Z' },
+  },
+} as unknown as Ping;
+
 describe('MonitorDetailsPanel', () => {
   it('renders SO-only sections (Enabled, Last modified, Frequency) for a local monitor', () => {
     render(<MonitorDetailsPanel monitor={localMonitor} loading={false} configId="config-1" />);
@@ -92,5 +111,54 @@ describe('MonitorDetailsPanel', () => {
     expect(screen.getByText('config-1')).toBeInTheDocument();
     expect(screen.getByTestId('locationsStatusStub')).toBeInTheDocument();
     expect(screen.getByTestId('tagsListStub')).toHaveTextContent('env:prod');
+  });
+
+  it('renders without crashing and hides SO-only sections for a heartbeat monitor', () => {
+    render(<MonitorDetailsPanel monitor={heartbeatMonitor} loading={false} configId="config-1" />);
+
+    expect(screen.queryByTestId('monitorEnabledStub')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Last modified/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('tagsListStub')).toHaveTextContent('env:prod');
+  });
+
+  it('derives the frequency from the latest ping timespan for a heartbeat monitor', () => {
+    render(
+      <MonitorDetailsPanel
+        monitor={heartbeatMonitor}
+        latestPing={pingWithTimespan}
+        loading={false}
+        configId="config-1"
+      />
+    );
+
+    expect(screen.getByText(/Frequency/i)).toBeInTheDocument();
+    expect(screen.getByText(/Every 1 minute/i)).toBeInTheDocument();
+  });
+});
+
+describe('getScheduleFromTimespan', () => {
+  it('returns undefined when timespan is missing or malformed', () => {
+    expect(getScheduleFromTimespan(undefined)).toBeUndefined();
+    expect(
+      getScheduleFromTimespan({ gte: '2026-01-01T00:00:00Z', lt: '2026-01-01T00:00:00Z' })
+    ).toBeUndefined();
+    expect(
+      getScheduleFromTimespan({ gte: '2026-01-01T00:01:00Z', lt: '2026-01-01T00:00:00Z' })
+    ).toBeUndefined();
+  });
+
+  it('derives whole-unit schedules from the span', () => {
+    expect(
+      getScheduleFromTimespan({ gte: '2026-01-01T00:00:00Z', lt: '2026-01-01T00:00:30Z' })
+    ).toEqual({ number: '30', unit: 's' });
+    expect(
+      getScheduleFromTimespan({ gte: '2026-01-01T00:00:00Z', lt: '2026-01-01T00:03:00Z' })
+    ).toEqual({ number: '3', unit: 'm' });
+    expect(
+      getScheduleFromTimespan({ gte: '2026-01-01T00:00:00Z', lt: '2026-01-01T01:00:00Z' })
+    ).toEqual({ number: '1', unit: 'h' });
+    expect(
+      getScheduleFromTimespan({ gte: '2026-01-01T00:00:00Z', lt: '2026-01-02T00:00:00Z' })
+    ).toEqual({ number: '1', unit: 'd' });
   });
 });

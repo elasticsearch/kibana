@@ -7,7 +7,7 @@
 
 import { renderHook } from '@testing-library/react';
 import * as observabilitySharedPublic from '@kbn/observability-shared-plugin/public';
-import { useRemoteMonitor } from './use_remote_monitor';
+import { useExternalMonitor } from './use_external_monitor';
 import { SYNTHETICS_INDEX_PATTERN } from '../../../../../../common/constants';
 import { ConfigKey } from '../../../../../../common/runtime_types';
 
@@ -21,12 +21,12 @@ jest.mock('../../../contexts', () => ({
 
 const useEsSearchMock = observabilitySharedPublic.useEsSearch as jest.Mock;
 
-describe('useRemoteMonitor', () => {
+describe('useExternalMonitor', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('query construction', () => {
-    it('uses an empty index when no remoteName is provided so useEsSearch short-circuits', () => {
-      renderHook(() => useRemoteMonitor({ configId: 'config-1', remoteName: undefined }));
+    it('uses an empty index when neither remoteName nor origin is provided so useEsSearch short-circuits', () => {
+      renderHook(() => useExternalMonitor({ configId: 'config-1' }));
 
       expect(useEsSearchMock).toHaveBeenCalledWith(
         expect.objectContaining({ index: '' }),
@@ -36,7 +36,7 @@ describe('useRemoteMonitor', () => {
     });
 
     it('uses a CCS index pattern when remoteName is provided', () => {
-      renderHook(() => useRemoteMonitor({ configId: 'config-1', remoteName: 'remote-a' }));
+      renderHook(() => useExternalMonitor({ configId: 'config-1', remoteName: 'remote-a' }));
 
       expect(useEsSearchMock).toHaveBeenCalledWith(
         expect.objectContaining({ index: `remote-a:${SYNTHETICS_INDEX_PATTERN}` }),
@@ -45,8 +45,18 @@ describe('useRemoteMonitor', () => {
       );
     });
 
+    it('uses the local index pattern when origin is heartbeat (no remoteName)', () => {
+      renderHook(() => useExternalMonitor({ configId: 'config-1', origin: 'heartbeat' }));
+
+      expect(useEsSearchMock).toHaveBeenCalledWith(
+        expect.objectContaining({ index: SYNTHETICS_INDEX_PATTERN }),
+        expect.arrayContaining(['config-1', undefined, 'heartbeat']),
+        expect.any(Object)
+      );
+    });
+
     it('filters by config_id, sorts by @timestamp desc, and aggregates locations by observer.name', () => {
-      renderHook(() => useRemoteMonitor({ configId: 'config-xyz', remoteName: 'remote-a' }));
+      renderHook(() => useExternalMonitor({ configId: 'config-xyz', remoteName: 'remote-a' }));
 
       const params = useEsSearchMock.mock.calls[0][0];
       expect(params.query.bool.filter).toEqual([{ term: { config_id: 'config-xyz' } }]);
@@ -59,19 +69,24 @@ describe('useRemoteMonitor', () => {
         size: 1,
       });
     });
+
+    it('filters heartbeat monitors by monitor.id (their pings carry no config_id)', () => {
+      renderHook(() => useExternalMonitor({ configId: 'k8s-monitor', origin: 'heartbeat' }));
+
+      const params = useEsSearchMock.mock.calls[0][0];
+      expect(params.query.bool.filter).toEqual([{ term: { 'monitor.id': 'k8s-monitor' } }]);
+    });
   });
 
   describe('result synthesis', () => {
-    it('returns undefined data when no remoteName is provided (hook short-circuits)', () => {
-      const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-1', remoteName: undefined })
-      );
+    it('returns undefined data when neither remoteName nor origin is provided (hook short-circuits)', () => {
+      const { result } = renderHook(() => useExternalMonitor({ configId: 'config-1' }));
 
       expect(result.current.data).toBeUndefined();
       expect(result.current.loading).toBe(false);
     });
 
-    it('returns undefined data when the remote query returns no hits (monitor dormant or missing)', () => {
+    it('returns undefined data when the query returns no hits (monitor dormant or missing)', () => {
       useEsSearchMock.mockReturnValue({
         data: { hits: { hits: [] }, aggregations: undefined },
         loading: false,
@@ -79,14 +94,14 @@ describe('useRemoteMonitor', () => {
       });
 
       const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-1', remoteName: 'remote-a' })
+        useExternalMonitor({ configId: 'config-1', remoteName: 'remote-a' })
       );
 
       expect(result.current.data).toBeUndefined();
       expect(result.current.error).toBeUndefined();
     });
 
-    it('synthesizes a RemoteSyntheticsMonitor from the latest ping and locations aggregation', () => {
+    it('synthesizes a remote monitor from the latest ping and locations aggregation', () => {
       useEsSearchMock.mockReturnValue({
         data: {
           hits: {
@@ -122,7 +137,7 @@ describe('useRemoteMonitor', () => {
       });
 
       const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-abc', remoteName: 'remote-a' })
+        useExternalMonitor({ configId: 'config-abc', remoteName: 'remote-a' })
       );
 
       expect(result.current.data).toEqual({
@@ -139,6 +154,46 @@ describe('useRemoteMonitor', () => {
       });
     });
 
+    it('synthesizes a heartbeat monitor (origin discriminant, no remote field) from local pings', () => {
+      useEsSearchMock.mockReturnValue({
+        data: {
+          hits: {
+            hits: [
+              {
+                _source: {
+                  monitor: { id: 'k8s-monitor', name: 'Autodiscovered HTTP', type: 'http' },
+                  tags: ['k8s'],
+                },
+              },
+            ],
+          },
+          aggregations: {
+            locations: {
+              buckets: [{ key: 'agent-1', doc_count: 3, label: { buckets: [] } }],
+            },
+          },
+        },
+        loading: false,
+        error: undefined,
+      });
+
+      const { result } = renderHook(() =>
+        useExternalMonitor({ configId: 'k8s-monitor', origin: 'heartbeat' })
+      );
+
+      expect(result.current.data).toEqual({
+        [ConfigKey.CONFIG_ID]: 'k8s-monitor',
+        [ConfigKey.MONITOR_QUERY_ID]: 'k8s-monitor',
+        [ConfigKey.NAME]: 'Autodiscovered HTTP',
+        [ConfigKey.MONITOR_TYPE]: 'http',
+        [ConfigKey.TAGS]: ['k8s'],
+        [ConfigKey.LOCATIONS]: [{ id: 'agent-1', label: 'agent-1' }],
+        origin: 'heartbeat',
+      });
+      // heartbeat monitors never carry a `remote` field
+      expect(result.current.data).not.toHaveProperty('remote');
+    });
+
     it('falls back to configId for MONITOR_QUERY_ID when the ping omits monitor.id', () => {
       useEsSearchMock.mockReturnValue({
         data: {
@@ -152,7 +207,7 @@ describe('useRemoteMonitor', () => {
       });
 
       const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-fallback', remoteName: 'remote-a' })
+        useExternalMonitor({ configId: 'config-fallback', remoteName: 'remote-a' })
       );
 
       expect(result.current.data?.[ConfigKey.MONITOR_QUERY_ID]).toBe('config-fallback');
@@ -171,10 +226,39 @@ describe('useRemoteMonitor', () => {
       });
 
       const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-1', remoteName: 'remote-a' })
+        useExternalMonitor({ configId: 'config-1', remoteName: 'remote-a' })
       );
 
-      expect(result.current.data?.remote).toEqual({ remoteName: 'remote-a' });
+      expect(result.current.data).toMatchObject({ remote: { remoteName: 'remote-a' } });
+    });
+
+    it('reports loading while enabled until a result arrives (covers the enable transition)', () => {
+      // `useFetcher` reports loading:false for the render where the query just
+      // became enabled; the hook must still signal loading so the detail page
+      // does not flash "monitor not found" before the probe runs.
+      useEsSearchMock.mockReturnValue({ data: undefined, loading: false, error: undefined });
+
+      const { result } = renderHook(() =>
+        useExternalMonitor({ configId: 'k8s-monitor', origin: 'heartbeat' })
+      );
+
+      expect(result.current.loading).toBe(true);
+      expect(result.current.data).toBeUndefined();
+    });
+
+    it('stops loading once the query returns a (possibly empty) response', () => {
+      useEsSearchMock.mockReturnValue({
+        data: { hits: { hits: [] } },
+        loading: false,
+        error: undefined,
+      });
+
+      const { result } = renderHook(() =>
+        useExternalMonitor({ configId: 'k8s-monitor', origin: 'heartbeat' })
+      );
+
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toBeUndefined();
     });
 
     it('propagates loading state from useEsSearch', () => {
@@ -185,7 +269,7 @@ describe('useRemoteMonitor', () => {
       });
 
       const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-1', remoteName: 'remote-a' })
+        useExternalMonitor({ configId: 'config-1', remoteName: 'remote-a' })
       );
 
       expect(result.current.loading).toBe(true);
@@ -201,7 +285,7 @@ describe('useRemoteMonitor', () => {
       });
 
       const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-1', remoteName: 'remote-a' })
+        useExternalMonitor({ configId: 'config-1', remoteName: 'remote-a' })
       );
 
       expect(result.current.error).toBe(boom);
@@ -225,7 +309,7 @@ describe('useRemoteMonitor', () => {
       });
 
       const { result } = renderHook(() =>
-        useRemoteMonitor({ configId: 'config-1', remoteName: 'remote-a' })
+        useExternalMonitor({ configId: 'config-1', remoteName: 'remote-a' })
       );
 
       expect(result.current.data?.[ConfigKey.LOCATIONS]).toEqual([

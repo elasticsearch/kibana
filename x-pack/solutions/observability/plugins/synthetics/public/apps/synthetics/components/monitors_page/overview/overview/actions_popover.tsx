@@ -162,6 +162,16 @@ export function ActionsPopover({
   const dispatch = useDispatch();
   const locationName = useLocationName(monitor);
   const isRemote = Boolean(monitor.remote);
+  // Heartbeat / Elastic Agent monitors have no Synthetics saved object; remote
+  // (CCS) monitors are managed on their origin cluster. Both are read-only in
+  // this app, so the mutating actions below are disabled for them.
+  const isHeartbeat = monitor.origin === 'heartbeat';
+  const isReadOnly = isRemote || isHeartbeat;
+  const readOnlyActionTooltip = isHeartbeat
+    ? NOT_AVAILABLE_FOR_HEARTBEAT
+    : isRemote
+    ? NOT_AVAILABLE_FOR_REMOTE_MONITORS
+    : undefined;
   const { space } = useKibanaSpace();
 
   // Precedence mirrors the flyout: prop → overview metadata → lazy CCS fetch.
@@ -292,7 +302,7 @@ export function ActionsPopover({
     },
     quickInspectPopoverItem,
     {
-      name: isRemote ? (
+      name: isReadOnly ? (
         runTestManually
       ) : testInProgress ? (
         <EuiToolTip content={TEST_SCHEDULED_LABEL}>
@@ -307,9 +317,9 @@ export function ActionsPopover({
         </NoPermissionsTooltip>
       ),
       icon: 'flask',
-      disabled: isRemote || testInProgress || !canUsePublicLocations || !isServiceAllowed,
-      toolTipContent: isRemote ? NOT_AVAILABLE_FOR_REMOTE_MONITORS : undefined,
-      onClick: isRemote
+      disabled: isReadOnly || testInProgress || !canUsePublicLocations || !isServiceAllowed,
+      toolTipContent: readOnlyActionTooltip,
+      onClick: isReadOnly
         ? undefined
         : () => {
             dispatch(
@@ -321,7 +331,7 @@ export function ActionsPopover({
       'data-test-subj': 'syntheticsActionsPopoverRunTestManually',
     },
     {
-      name: isRemote ? (
+      name: isReadOnly ? (
         actionsMenuEditMonitorName
       ) : (
         <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
@@ -329,14 +339,22 @@ export function ActionsPopover({
         </NoPermissionsTooltip>
       ),
       icon: 'pencil',
-      disabled: isRemote ? !remoteEditUrl : !canEditSynthetics || !isServiceAllowed,
-      href: isRemote ? remoteEditUrl : editUrl,
+      // Heartbeat monitors have no saved object to edit anywhere; remote
+      // monitors deep-link to the origin cluster's edit page.
+      disabled: isHeartbeat
+        ? true
+        : isRemote
+        ? !remoteEditUrl
+        : !canEditSynthetics || !isServiceAllowed,
+      href: isHeartbeat ? undefined : isRemote ? remoteEditUrl : editUrl,
       target: isRemote ? '_blank' : undefined,
-      toolTipContent: getRemoteActionTooltip(isRemote, remoteEditUrl, canEditSynthetics),
+      toolTipContent: isHeartbeat
+        ? NOT_AVAILABLE_FOR_HEARTBEAT
+        : getRemoteActionTooltip(isRemote, remoteEditUrl, canEditSynthetics),
       'data-test-subj': 'editMonitorLink',
     },
     {
-      name: isRemote ? (
+      name: isReadOnly ? (
         actionsMenuCloneMonitorName
       ) : (
         <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
@@ -344,16 +362,24 @@ export function ActionsPopover({
         </NoPermissionsTooltip>
       ),
       icon: 'copy',
-      disabled: isRemote ? !remoteCloneUrl : !canEditSynthetics || !isServiceAllowed,
-      href: isRemote
+      disabled: isHeartbeat
+        ? true
+        : isRemote
+        ? !remoteCloneUrl
+        : !canEditSynthetics || !isServiceAllowed,
+      href: isHeartbeat
+        ? undefined
+        : isRemote
         ? remoteCloneUrl
         : http?.basePath.prepend(`synthetics/add-monitor?cloneId=${monitor.configId}`),
       target: isRemote ? '_blank' : undefined,
-      toolTipContent: getRemoteActionTooltip(isRemote, remoteCloneUrl, canEditSynthetics),
+      toolTipContent: isHeartbeat
+        ? NOT_AVAILABLE_FOR_HEARTBEAT
+        : getRemoteActionTooltip(isRemote, remoteCloneUrl, canEditSynthetics),
       'data-test-subj': 'cloneMonitorLink',
     },
     {
-      name: isRemote ? (
+      name: isReadOnly ? (
         CREATE_SLO
       ) : (
         <NoPermissionsTooltip canEditSynthetics={canEditSynthetics}>
@@ -361,9 +387,9 @@ export function ActionsPopover({
         </NoPermissionsTooltip>
       ),
       icon: 'chartGauge',
-      disabled: isRemote || !canEditSynthetics || !isServiceAllowed,
-      toolTipContent: isRemote ? NOT_AVAILABLE_FOR_REMOTE_MONITORS : undefined,
-      onClick: isRemote
+      disabled: isReadOnly || !canEditSynthetics || !isServiceAllowed,
+      toolTipContent: readOnlyActionTooltip,
+      onClick: isReadOnly
         ? undefined
         : () => {
             setIsPopoverOpen(false);
@@ -372,7 +398,7 @@ export function ActionsPopover({
       'data-test-subj': 'createSLOBtn',
     },
     {
-      name: isRemote ? (
+      name: isReadOnly ? (
         enableLabel
       ) : (
         <NoPermissionsTooltip
@@ -383,9 +409,9 @@ export function ActionsPopover({
         </NoPermissionsTooltip>
       ),
       icon: 'contrast',
-      disabled: isRemote || !canEditSynthetics || !canUsePublicLocations,
-      toolTipContent: isRemote ? NOT_AVAILABLE_FOR_REMOTE_MONITORS : undefined,
-      onClick: isRemote
+      disabled: isReadOnly || !canEditSynthetics || !canUsePublicLocations,
+      toolTipContent: readOnlyActionTooltip,
+      onClick: isReadOnly
         ? undefined
         : () => {
             if (status !== FETCH_STATUS.LOADING) {
@@ -395,7 +421,7 @@ export function ActionsPopover({
       'data-test-subj': 'syntheticsActionsPopoverEnableMonitor',
     },
     {
-      name: isRemote ? (
+      name: isReadOnly ? (
         monitor.isStatusAlertEnabled ? (
           disableAlertLabel
         ) : (
@@ -409,8 +435,8 @@ export function ActionsPopover({
           {monitor.isStatusAlertEnabled ? disableAlertLabel : enableMonitorAlertLabel}
         </NoPermissionsTooltip>
       ),
-      disabled: isRemote || !canEditSynthetics || !canUsePublicLocations || !isServiceAllowed,
-      toolTipContent: isRemote ? NOT_AVAILABLE_FOR_REMOTE_MONITORS : undefined,
+      disabled: isReadOnly || !canEditSynthetics || !canUsePublicLocations || !isServiceAllowed,
+      toolTipContent: readOnlyActionTooltip,
       icon: alertLoading ? (
         <EuiLoadingSpinner size="s" />
       ) : monitor.isStatusAlertEnabled ? (
@@ -418,7 +444,7 @@ export function ActionsPopover({
       ) : (
         'bell'
       ),
-      onClick: isRemote
+      onClick: isReadOnly
         ? undefined
         : () => {
             if (!alertLoading) {
@@ -439,9 +465,9 @@ export function ActionsPopover({
     {
       name: addMonitorToDashboardLabel,
       icon: 'dashboardApp',
-      disabled: isRemote,
-      toolTipContent: isRemote ? NOT_AVAILABLE_FOR_REMOTE_MONITORS : undefined,
-      onClick: isRemote
+      disabled: isReadOnly,
+      toolTipContent: readOnlyActionTooltip,
+      onClick: isReadOnly
         ? undefined
         : () => {
             setIsPopoverOpen(false);
@@ -620,6 +646,14 @@ const NOT_AVAILABLE_FOR_REMOTE_MONITORS = i18n.translate(
   'xpack.synthetics.overview.actions.notAvailableForRemote',
   {
     defaultMessage: 'This action is not available for remote monitors',
+  }
+);
+
+const NOT_AVAILABLE_FOR_HEARTBEAT = i18n.translate(
+  'xpack.synthetics.overview.actions.notAvailableForHeartbeat',
+  {
+    defaultMessage:
+      'This monitor is run by Heartbeat / Elastic Agent and is read-only in Synthetics.',
   }
 );
 

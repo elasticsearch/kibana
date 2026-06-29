@@ -9,7 +9,11 @@ import type { EncryptedSyntheticsMonitorAttributes } from '../../../common/runti
 import { getUptimeESMockClient } from '../../queries/test_helpers';
 
 import * as allLocationsFn from '../../synthetics_service/get_all_locations';
-import { OverviewStatusService, SUMMARIES_PAGE_SIZE } from './overview_status_service';
+import {
+  HEARTBEAT_MONITORS_OVERVIEW_LIMIT,
+  OverviewStatusService,
+  SUMMARIES_PAGE_SIZE,
+} from './overview_status_service';
 import times from 'lodash/times';
 import { flatten } from 'lodash';
 import moment from 'moment';
@@ -1562,23 +1566,21 @@ describe('current status route', () => {
       expect(result.up).toBe(1);
     });
 
-    it('does not surface a cross-space local monitor through the remote-only branch', async () => {
-      // Defence-in-depth: the ES query already filters on `meta.space_id` for
-      // both local and remote pings, so
-      // a doc from another local space would normally be dropped at filter
-      // time. Even if a stray cross-space doc reaches the reconciliation
-      // step (e.g. in this test where we mock the ES response directly), the
-      // JS-side guard in the remote-only branch must still drop it because
-      // its `_index` has no cluster alias prefix.
+    it('does not place a local no-saved-object ping into the remote branch', async () => {
+      // A local ping (no cluster-alias prefix on `_index`) with no saved object
+      // must never be decorated with `remote` info — it is not a CCS monitor.
+      // It is instead surfaced through the Heartbeat branch (covered in the
+      // "Heartbeat / Elastic Agent managed monitors" suite). Cross-space safety
+      // is enforced at query time via the `meta.space_id` filter applied to all
+      // pings, not by dropping local no-SO pings here.
       const { esClient, syntheticsEsClient } = getUptimeESMockClient();
 
       esClient.search.mockResponseOnce(
         getEsResponse({
           buckets: [
-            // Cross-space LOCAL monitor: not in `testMonitors`, local _index.
             {
               key: {
-                monitorId: 'cross-space-local',
+                monitorId: 'local-no-so',
                 locationId: japanLoc.id,
               },
               status: {
@@ -1587,9 +1589,9 @@ describe('current status route', () => {
                   {
                     metrics: {
                       'monitor.status': 'down',
-                      'monitor.name': 'Other-Space Monitor',
+                      'monitor.name': 'Local No SO Monitor',
                       'monitor.type': 'http',
-                      config_id: 'cross-space-local',
+                      config_id: 'local-no-so',
                     },
                     sort: ['2022-09-15T16:20:00.000Z'],
                   },
@@ -1618,11 +1620,10 @@ describe('current status route', () => {
 
       const result = await overviewStatusService.getOverviewStatus();
 
-      expect(result.downConfigs['cross-space-local']).toBeUndefined();
-      expect(result.upConfigs['cross-space-local']).toBeUndefined();
-      expect(result.pendingConfigs['cross-space-local']).toBeUndefined();
-      expect(result.down).toBe(0);
-      expect(result.up).toBe(0);
+      const entry = result.downConfigs['heartbeat-local-no-so-asia_japan'];
+      expect(entry).toBeDefined();
+      expect(entry.remote).toBeUndefined();
+      expect(entry.origin).toBe('heartbeat');
     });
 
     it('applies the same meta.space_id filter to local and remote pings when CCS is enabled', async () => {
@@ -2514,6 +2515,164 @@ describe('current status route', () => {
 
       expect(result).toEqual({ priorRuns: [] });
       expect(esClient.search).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Heartbeat / Elastic Agent managed monitors', () => {
+    const heartbeatBucket = (overrides: { monitorId: string; status: string; metrics?: any }) => ({
+      key: { monitorId: overrides.monitorId, locationId: japanLoc.id },
+      status: {
+        key: japanLoc.id,
+        top: [
+          {
+            metrics: {
+              'monitor.status': overrides.status,
+              'monitor.name': 'k8s autodiscovered monitor',
+              'monitor.type': 'http',
+              'monitor.interval': 600,
+              config_id: overrides.monitorId,
+              tags: ['kube-system'],
+              ...overrides.metrics,
+            },
+            sort: ['2025-05-28T10:00:00.000Z'],
+          },
+        ],
+      },
+      location_name: { buckets: [{ key: 'My K8s Cluster', doc_count: 1 }] },
+    });
+
+    it('surfaces a local monitor with no saved object as origin: heartbeat', async () => {
+      const { esClient, syntheticsEsClient } = getUptimeESMockClient();
+      esClient.search.mockResponseOnce(
+        getEsResponse({
+          buckets: [heartbeatBucket({ monitorId: 'hb-1', status: 'up' })],
+        })
+      );
+
+      const routeContext: any = {
+        request: { query: {} },
+        syntheticsEsClient,
+        server: {
+          isElasticsearchServerless: false,
+          config: { experimental: { ccs: { enabled: false } } },
+        },
+      };
+      const service = new OverviewStatusService(routeContext);
+      service.getMonitorConfigs = jest.fn().mockResolvedValue([] as any);
+
+      const result = await service.getOverviewStatus();
+
+      const entry = result.upConfigs['heartbeat-hb-1-asia_japan'];
+      expect(entry).toBeDefined();
+      expect(entry.origin).toBe('heartbeat');
+      expect(entry.remote).toBeUndefined();
+      expect(entry.isEnabled).toBe(true);
+      expect(entry.isStatusAlertEnabled).toBe(false);
+      expect(entry.name).toBe('k8s autodiscovered monitor');
+      expect(entry.type).toBe('http');
+      // monitor.interval is treated as seconds and rendered in minutes,
+      // mirroring the remote-only monitor path.
+      expect(entry.schedule).toBe('10');
+      expect(entry.tags).toEqual(['kube-system']);
+      expect(entry.locations).toEqual([{ id: japanLoc.id, label: 'My K8s Cluster', status: 'up' }]);
+      expect(result.up).toBe(1);
+    });
+
+    it('falls back to monitor.id and location id when ping metadata is missing', async () => {
+      const { esClient, syntheticsEsClient } = getUptimeESMockClient();
+      esClient.search.mockResponseOnce(
+        getEsResponse({
+          buckets: [
+            {
+              key: { monitorId: 'hb-bare', locationId: japanLoc.id },
+              status: {
+                key: japanLoc.id,
+                top: [
+                  { metrics: { 'monitor.status': 'down' }, sort: ['2025-05-28T10:00:00.000Z'] },
+                ],
+              },
+            },
+          ],
+        })
+      );
+
+      const routeContext: any = {
+        request: { query: {} },
+        syntheticsEsClient,
+        server: {
+          isElasticsearchServerless: false,
+          config: { experimental: { ccs: { enabled: false } } },
+        },
+      };
+      const service = new OverviewStatusService(routeContext);
+      service.getMonitorConfigs = jest.fn().mockResolvedValue([] as any);
+
+      const result = await service.getOverviewStatus();
+
+      const entry = result.downConfigs['heartbeat-hb-bare-asia_japan'];
+      expect(entry).toBeDefined();
+      expect(entry.origin).toBe('heartbeat');
+      expect(entry.name).toBe('hb-bare');
+      expect(entry.type).toBe('unknown');
+      expect(entry.schedule).toBe('');
+      expect(entry.tags).toEqual([]);
+      expect(entry.locations[0].label).toBe(japanLoc.id);
+    });
+
+    it('does not surface monitors that already have a saved object', async () => {
+      const { esClient, syntheticsEsClient } = getUptimeESMockClient();
+      esClient.search.mockResponseOnce(
+        getEsResponse({
+          buckets: [heartbeatBucket({ monitorId: 'id1', status: 'up' })],
+        })
+      );
+
+      const routeContext: any = {
+        request: { query: {} },
+        syntheticsEsClient,
+        server: {
+          isElasticsearchServerless: false,
+          config: { experimental: { ccs: { enabled: false } } },
+        },
+      };
+      const service = new OverviewStatusService(routeContext);
+      // id1 is a real saved-object monitor.
+      service.getMonitorConfigs = jest.fn().mockResolvedValue(testMonitors as any);
+
+      const result = await service.getOverviewStatus();
+
+      expect(result.upConfigs['heartbeat-id1-asia_japan']).toBeUndefined();
+      // id1 is surfaced via its saved object instead.
+      expect(result.upConfigs.id1).toBeDefined();
+      expect(result.upConfigs.id1.origin).toBeUndefined();
+    });
+
+    it('caps the number of distinct heartbeat monitors surfaced', async () => {
+      const { esClient, syntheticsEsClient } = getUptimeESMockClient();
+      const overLimit = HEARTBEAT_MONITORS_OVERVIEW_LIMIT + 50;
+      esClient.search.mockResponseOnce(
+        getEsResponse({
+          buckets: times(overLimit).map((i) =>
+            heartbeatBucket({ monitorId: `hb-${i}`, status: 'up' })
+          ),
+        })
+      );
+
+      const routeContext: any = {
+        request: { query: {} },
+        syntheticsEsClient,
+        server: {
+          isElasticsearchServerless: false,
+          config: { experimental: { ccs: { enabled: false } } },
+        },
+      };
+      const service = new OverviewStatusService(routeContext);
+      service.getMonitorConfigs = jest.fn().mockResolvedValue([] as any);
+
+      const result = await service.getOverviewStatus();
+
+      const heartbeatKeys = Object.keys(result.upConfigs).filter((k) => k.startsWith('heartbeat-'));
+      expect(heartbeatKeys).toHaveLength(HEARTBEAT_MONITORS_OVERVIEW_LIMIT);
     });
   });
 });

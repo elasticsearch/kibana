@@ -34,7 +34,7 @@ useFetcherMock.mockReturnValue({
 
 // `jest.mock('@kbn/observability-shared-plugin/public')` auto-mocks every export
 // with `() => undefined`. The flyout renders `MonitorStatusPanel`, which now
-// reaches `useRemoteMonitor` via `useSelectedMonitor`; that hook destructures
+// reaches `useExternalMonitor` via `useSelectedMonitor`; that hook destructures
 // `useEsSearch(...)`, so the mock must return a non-undefined result.
 const useEsSearchMock = useEsSearch as jest.Mock;
 
@@ -481,6 +481,99 @@ describe('Monitor Detail Flyout', () => {
 
       const viewRemoteButton = getByTestId('syntheticsMonitorDetailFlyoutViewRemoteButton');
       expect(viewRemoteButton.getAttribute('href')).toContain('https://ping-kibana.example.com');
+    });
+  });
+
+  describe('heartbeat monitor flyout', () => {
+    const heartbeatState = {
+      monitorDetails: {
+        syntheticsMonitor: null,
+        syntheticsMonitorLoading: false,
+        // A leftover 404 from a previous local SO fetch must not surface for
+        // read-only heartbeat monitors.
+        syntheticsMonitorError: {
+          body: {
+            statusCode: 404,
+            error: 'Not Found',
+            message: 'Monitor id hb-config-id not found!',
+          },
+        },
+      },
+      overviewStatus: {
+        status: {
+          upConfigs: {},
+          downConfigs: {},
+          pendingConfigs: {},
+          // Heartbeat / autodiscovered monitors commonly land in the stale
+          // bucket; the flyout must still resolve them from there.
+          staleConfigs: {
+            'heartbeat-hb-config-id-us-east': {
+              monitorQueryId: 'hb-config-id',
+              configId: 'hb-config-id',
+              name: 'Autodiscovered monitor',
+              type: 'http',
+              schedule: '1',
+              tags: [],
+              isEnabled: true,
+              isStatusAlertEnabled: false,
+              overallStatus: 'stale',
+              origin: 'heartbeat' as const,
+              locations: [{ id: 'us-east', label: 'US East', status: 'up' }],
+            },
+          },
+          disabledConfigs: {},
+        },
+      },
+    };
+
+    it('resolves a stale heartbeat monitor and renders it read-only (no Edit, no 404 callout)', () => {
+      jest
+        .spyOn(monitorDetailLocator, 'useMonitorDetailLocator')
+        .mockReturnValue('/app/synthetics/monitor/hb-config-id?locationId=us-east');
+
+      const { getByText, queryByText } = render(
+        <MonitorDetailFlyout
+          configId="hb-config-id"
+          id="hb-config-id"
+          location="US East"
+          locationId="us-east"
+          onClose={jest.fn()}
+          onEnabledChange={jest.fn()}
+          onLocationChange={jest.fn()}
+        />,
+        { state: heartbeatState }
+      );
+
+      // The read-only detail link is offered, but editing is not.
+      expect(getByText('Go to monitor')).toBeInTheDocument();
+      expect(queryByText('Edit monitor')).not.toBeInTheDocument();
+      // Remote-only affordances must not appear for heartbeat monitors.
+      expect(queryByText('View on remote cluster')).not.toBeInTheDocument();
+      // The stale 404 must be suppressed since this monitor is read-only.
+      expect(queryByText('not found', { exact: false })).toBeNull();
+    });
+
+    it('does not dispatch the local saved-object fetch for heartbeat monitors', () => {
+      const mockDispatch = jest.fn();
+      jest.spyOn(reduxHooks, 'useDispatch').mockReturnValue(mockDispatch);
+
+      render(
+        <MonitorDetailFlyout
+          configId="hb-config-id"
+          id="hb-config-id"
+          location="US East"
+          locationId="us-east"
+          onClose={jest.fn()}
+          onEnabledChange={jest.fn()}
+          onLocationChange={jest.fn()}
+        />,
+        { state: heartbeatState }
+      );
+
+      const getMonitorCalls = mockDispatch.mock.calls.filter(
+        ([action]) => action?.type === getMonitorAction.get.type
+      );
+      expect(getMonitorCalls).toHaveLength(0);
     });
   });
 

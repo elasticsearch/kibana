@@ -10,7 +10,11 @@ import { EuiButton, EuiCallOut, EuiLink, EuiSpacer } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { useKibanaSpace } from '../../../../hooks/use_kibana_space';
-import { ConfigKey, isRemoteSyntheticsMonitor } from '../../../../../common/runtime_types';
+import {
+  ConfigKey,
+  isHeartbeatSyntheticsMonitor,
+  isRemoteSyntheticsMonitor,
+} from '../../../../../common/runtime_types';
 import { createRemoteMonitorDetailUrl } from '../../utils/remote/remote_monitor_urls';
 import { useSelectedMonitor } from './hooks/use_selected_monitor';
 import { useSelectedLocation } from './hooks/use_selected_location';
@@ -18,20 +22,40 @@ import { useMonitorLatestPing } from './hooks/use_monitor_latest_ping';
 
 /**
  * Callout rendered at the top of the monitor detail body when the selected
- * monitor lives on a remote cluster (CCS). Mirrors SLO's `SloRemoteCallout`:
- * surfaces the remote cluster name + Kibana URL and a primary button that
- * deep-links to the same monitor on the origin cluster's Kibana.
+ * monitor is read-only — i.e. it has no local Synthetics saved object. Two
+ * variants share this surface:
+ *   - remote (CCS): mirrors SLO's `SloRemoteCallout` — surfaces the remote
+ *     cluster name + Kibana URL and a button that deep-links to the same monitor
+ *     on the origin cluster's Kibana.
+ *   - heartbeat: run by Heartbeat / Elastic Agent (e.g. Kubernetes
+ *     autodiscovery). There is nowhere to deep-link to, so it only explains why
+ *     the monitor is read-only here.
  *
- * Renders nothing for local monitors, so non-remote pages are visually
+ * Renders nothing for local saved-object monitors, so those pages are visually
  * unchanged.
- *
+ */
+export const MonitorReadOnlyCallout = () => {
+  const { monitor } = useSelectedMonitor();
+
+  if (isRemoteSyntheticsMonitor(monitor)) {
+    return <RemoteCallout />;
+  }
+
+  if (isHeartbeatSyntheticsMonitor(monitor)) {
+    return <HeartbeatCallout />;
+  }
+
+  return null;
+};
+
+/**
  * The overview-status metadata only carries `remote.kibanaUrl` when the remote
  * heartbeat docs surface it via the `top_metrics` aggregation, which silently
- * drops `text`-mapped fields. We fall back to the `kibanaUrl` read straight
- * from the latest ping `_source` so the link is still available when the
- * synthesized {@link RemoteSyntheticsMonitor} lacks one.
+ * drops `text`-mapped fields. We fall back to the `kibanaUrl` read straight from
+ * the latest ping `_source` so the link is still available when the synthesized
+ * `RemoteSyntheticsMonitor` lacks one.
  */
-export const MonitorRemoteCallout = () => {
+const RemoteCallout = () => {
   const { monitor } = useSelectedMonitor();
   const location = useSelectedLocation();
   const { space } = useKibanaSpace();
@@ -113,6 +137,24 @@ export const MonitorRemoteCallout = () => {
   );
 };
 
+const HeartbeatCallout = () => (
+  <>
+    <EuiCallOut
+      data-test-subj="syntheticsMonitorHeartbeatCallout"
+      title={HEARTBEAT_MONITOR_TITLE}
+      iconType="agentApp"
+    >
+      <p>
+        <FormattedMessage
+          id="xpack.synthetics.monitorDetails.heartbeatCallout.description"
+          defaultMessage="This monitor is run by Heartbeat / Elastic Agent (e.g. Kubernetes autodiscovery). It has no Synthetics configuration, so it is read-only here — manage it where the Heartbeat / Agent policy is configured."
+        />
+      </p>
+    </EuiCallOut>
+    <EuiSpacer size="m" />
+  </>
+);
+
 const REMOTE_MONITOR_TITLE = i18n.translate('xpack.synthetics.monitorDetails.remoteCallout.title', {
   defaultMessage: 'Remote monitor',
 });
@@ -121,5 +163,12 @@ const VIEW_ON_REMOTE_CLUSTER_LABEL = i18n.translate(
   'xpack.synthetics.monitorDetails.remoteCallout.viewOnRemoteCluster',
   {
     defaultMessage: 'View on remote cluster',
+  }
+);
+
+const HEARTBEAT_MONITOR_TITLE = i18n.translate(
+  'xpack.synthetics.monitorDetails.heartbeatCallout.title',
+  {
+    defaultMessage: 'Heartbeat monitor (read-only)',
   }
 );

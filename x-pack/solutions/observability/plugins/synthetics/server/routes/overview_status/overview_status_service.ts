@@ -87,6 +87,14 @@ const LIVE_WINDOW_TOLERANCE_MINUTES = 5;
 // history.
 const STALE_BEFORE_WINDOW_LOOKBACK_DAYS = 30;
 
+/**
+ * Upper bound on the number of distinct Heartbeat / Elastic Agent managed
+ * monitors (no saved object) surfaced read-only in the overview. Kubernetes/
+ * Docker autodiscovery can churn through many short-lived pod-level monitors,
+ * so we cap how many we synthesize from ping data to protect the overview.
+ */
+export const HEARTBEAT_MONITORS_OVERVIEW_LIMIT = 500;
+
 export class OverviewStatusService {
   filterData: {
     locationIds?: string[] | string;
@@ -488,23 +496,21 @@ export class OverviewStatusService {
       const topMetricsFields = [
         { field: 'monitor.status' },
         { field: 'url.full.keyword' },
-        // When CCS is enabled, retrieve additional fields to detect remote monitors,
-        // build deep links, and construct metadata for remote-only monitors
-        // (which have no local saved object).
+        // These ping fields are used to construct metadata for monitors that
+        // have no local saved object — both remote (CCS) monitors and local
+        // Heartbeat / Elastic Agent managed monitors. Heartbeat detection is
+        // always-on, so they are always retrieved.
         // Note: _index is NOT included here because top_metrics does not support
         // metadata fields. We use a separate terms sub-aggregation for _index instead.
         // observer.geo.name is also excluded because it is a wildcard type field
         // which top_metrics cannot collect. We use a separate terms sub-agg instead.
-        ...(ccsEnabled
-          ? [
-              { field: 'kibanaUrl' },
-              { field: 'monitor.name' },
-              { field: 'monitor.type' },
-              { field: 'monitor.interval' },
-              { field: 'config_id' },
-              { field: 'tags' },
-            ]
-          : []),
+        { field: 'monitor.name' },
+        { field: 'monitor.type' },
+        { field: 'monitor.interval' },
+        { field: 'config_id' },
+        { field: 'tags' },
+        // kibanaUrl is only meaningful for remote deep-links, so it stays gated.
+        ...(ccsEnabled ? [{ field: 'kibanaUrl' }] : []),
       ];
 
       // The `timespan` filter is a "currently fresh" constraint anchored to
@@ -573,24 +579,27 @@ export class OverviewStatusService {
                       },
                     },
                   },
+                  // observer.geo.name is a wildcard field which top_metrics
+                  // cannot collect, so we use a terms sub-agg to resolve the
+                  // human-readable location label. Needed for both remote and
+                  // local Heartbeat monitors, so it always runs.
+                  location_name: {
+                    terms: {
+                      field: 'observer.geo.name',
+                      size: 1,
+                    },
+                  },
                   // _index is a metadata field not supported by top_metrics,
                   // so we use a separate terms agg to determine the source index.
                   // For a given monitor+location bucket the latest ping typically
-                  // comes from a single index, so size:1 is sufficient.
-                  // observer.geo.name is a wildcard field which top_metrics
-                  // cannot collect, so we use a terms sub-agg to resolve
-                  // the human-readable location label for remote monitors.
+                  // comes from a single index, so size:1 is sufficient. Only
+                  // needed to detect remote (CCS) monitors via their cluster
+                  // alias prefix, so it stays gated on CCS.
                   ...(ccsEnabled
                     ? {
                         index_name: {
                           terms: {
                             field: '_index',
-                            size: 1,
-                          },
-                        },
-                        location_name: {
-                          terms: {
-                            field: 'observer.geo.name',
                             size: 1,
                           },
                         },
@@ -686,14 +695,14 @@ export class OverviewStatusService {
           // _index and observer.geo.name come from terms sub-aggs, not top_metrics
           const indexNameAgg = ccsEnabled ? (rest as any).index_name : undefined;
           const indexName = indexNameAgg?.buckets?.[0]?.key;
-          const locationNameAgg = ccsEnabled ? (rest as any).location_name : undefined;
+          const locationNameAgg = (rest as any).location_name;
           const locationLabel = locationNameAgg?.buckets?.[0]?.key;
           const kibanaUrl = ccsEnabled ? metrics?.kibanaUrl : undefined;
-          const monitorName = ccsEnabled ? metrics?.['monitor.name'] : undefined;
-          const monitorType = ccsEnabled ? metrics?.['monitor.type'] : undefined;
-          const monitorInterval = ccsEnabled ? metrics?.['monitor.interval'] : undefined;
-          const configId = ccsEnabled ? metrics?.config_id : undefined;
-          const tags = ccsEnabled ? metrics?.tags : undefined;
+          const monitorName = metrics?.['monitor.name'];
+          const monitorType = metrics?.['monitor.type'];
+          const monitorInterval = metrics?.['monitor.interval'];
+          const configId = metrics?.config_id;
+          const tags = metrics?.tags;
 
           monitorByIds.get(monitorId)?.push({
             status,
@@ -912,88 +921,114 @@ export class OverviewStatusService {
       }
     }
 
-    // Process remote-only monitors: pings from CCS indices that have no local saved object.
-    // These monitors exist only on remote clusters and are discovered purely from ping data.
-    if (isCCSEnabled(this.routeContext.server)) {
-      statusData.forEach((locationStatuses, monitorId) => {
-        if (processedMonitorIds.has(monitorId)) {
-          return; // Already processed via local saved object
+    // Process monitors that have no local saved object, discovered purely from
+    // ping data. Two flavors share the exact same shape (pings exist, no SO):
+    //   - remote (CCS) monitors: pings from a remote cluster, identified by a
+    //     `<alias>:` prefix on `_index`. Gated on CCS being enabled.
+    //   - local Heartbeat / Elastic Agent monitors: local pings whose
+    //     `monitor.id` has no matching saved object (most notably Kubernetes/
+    //     Docker autodiscovery). Surfaced read-only via `origin: 'heartbeat'`,
+    //     capped to protect the overview against autodiscovery churn.
+    const ccsEnabled = isCCSEnabled(this.routeContext.server);
+    const heartbeatMonitorIds = new Set<string>();
+
+    const placeExternalConfig = (key: string, meta: OverviewStatusMetaData, status: string) => {
+      if (status === MONITOR_STATUS_ENUM.DOWN) {
+        down += 1;
+        downConfigs[key] = meta;
+      } else if (status === MONITOR_STATUS_ENUM.UP) {
+        up += 1;
+        upConfigs[key] = meta;
+      } else if (status === MONITOR_STATUS_ENUM.STALE) {
+        staleConfigs[key] = { ...meta, overallStatus: MONITOR_STATUS_ENUM.STALE };
+      } else {
+        pendingConfigs[key] = { ...meta, overallStatus: MONITOR_STATUS_ENUM.PENDING };
+      }
+    };
+
+    statusData.forEach((locationStatuses, monitorId) => {
+      if (processedMonitorIds.has(monitorId)) {
+        return; // Already processed via local saved object
+      }
+
+      locationStatuses.forEach((locData) => {
+        if (!isEmpty(queryLocIds) && !queryLocIds?.includes(locData.locationId)) {
+          return;
         }
 
-        locationStatuses.forEach((locData) => {
-          const remote = locData.index
+        const remote =
+          ccsEnabled && locData.index
             ? getRemoteMonitorInfo(locData.index, locData.kibanaUrl)
             : undefined;
 
-          // Only include if this is actually a remote ping
-          if (!remote) {
-            return;
-          }
+        const configId = locData.configId || monitorId;
+        const scheduleMinutes = locData.monitorIntervalSeconds
+          ? locData.monitorIntervalSeconds / 60
+          : 0;
+        const status =
+          applyFreshnessGuard && this.isStaleRun(locData.timestamp, scheduleMinutes)
+            ? MONITOR_STATUS_ENUM.STALE
+            : locData.status;
+        // Mirror local-monitor handling: only attach `error` / `downSince`
+        // for currently-down locations to avoid surfacing stale failure
+        // text from a previous run.
+        const isDown = status === MONITOR_STATUS_ENUM.DOWN;
+        // Keep the stale last-known status when demoted to `stale` so the
+        // "show last run" toggle can render it without a refetch.
+        const isStale = status === MONITOR_STATUS_ENUM.STALE;
+        const location = {
+          id: locData.locationId,
+          label: locData.locationLabel || locData.locationId,
+          status,
+          ...(isDown && locData.error ? { error: locData.error } : {}),
+          ...(isDown && locData.downSince ? { downSince: locData.downSince } : {}),
+          ...(isStale && locData.status ? { lastStatus: locData.status } : {}),
+        };
+        const baseMeta = {
+          monitorQueryId: monitorId,
+          configId,
+          name: locData.monitorName || monitorId,
+          type: locData.monitorType || 'unknown',
+          schedule: locData.monitorIntervalSeconds
+            ? String(Math.round(locData.monitorIntervalSeconds / 60))
+            : '',
+          tags: locData.tags ?? [],
+          isEnabled: true,
+          isStatusAlertEnabled: false,
+          timestamp: locData.timestamp,
+          urls: locData.monitorUrl,
+          locations: [location],
+          overallStatus: status,
+        };
 
-          if (!isEmpty(queryLocIds) && !queryLocIds?.includes(locData.locationId)) {
-            return;
-          }
-
-          const configId = locData.configId || monitorId;
-          const scheduleMinutes = locData.monitorIntervalSeconds
-            ? locData.monitorIntervalSeconds / 60
-            : 0;
-          const status =
-            applyFreshnessGuard && this.isStaleRun(locData.timestamp, scheduleMinutes)
-              ? MONITOR_STATUS_ENUM.STALE
-              : locData.status;
-          // Mirror local-monitor handling: only attach `error` / `downSince`
-          // for currently-down locations to avoid surfacing stale failure
-          // text from a previous run.
-          const isDown = status === MONITOR_STATUS_ENUM.DOWN;
-          // Keep the stale last-known status when demoted to `stale` so the
-          // "show last run" toggle can render it without a refetch.
-          const isStale = status === MONITOR_STATUS_ENUM.STALE;
-          const location = {
-            id: locData.locationId,
-            label: locData.locationLabel || locData.locationId,
-            status,
-            ...(isDown && locData.error ? { error: locData.error } : {}),
-            ...(isDown && locData.downSince ? { downSince: locData.downSince } : {}),
-            ...(isStale && locData.status ? { lastStatus: locData.status } : {}),
-          };
-          const meta: OverviewStatusMetaData = {
-            monitorQueryId: monitorId,
-            configId,
-            name: locData.monitorName || monitorId,
-            type: locData.monitorType || 'unknown',
-            schedule: locData.monitorIntervalSeconds
-              ? String(Math.round(locData.monitorIntervalSeconds / 60))
-              : '',
-            tags: locData.tags ?? [],
-            isEnabled: true,
-            isStatusAlertEnabled: false,
-            timestamp: locData.timestamp,
-            urls: locData.monitorUrl,
-            remote,
-            locations: [location],
-            overallStatus: status,
-          };
-
+        if (remote) {
           // Include the remote cluster name in the bucket key so that two
           // remote clusters that host the same monitor configId in the same
           // locationId (e.g. an imported project monitor synced to both)
-          // don't collide and silently overwrite each other
-          const monLocId = `${remote.remoteName}-${configId}-${locData.locationId}`;
-          if (status === MONITOR_STATUS_ENUM.DOWN) {
-            down += 1;
-            downConfigs[monLocId] = meta;
-          } else if (status === MONITOR_STATUS_ENUM.UP) {
-            up += 1;
-            upConfigs[monLocId] = meta;
-          } else if (status === MONITOR_STATUS_ENUM.STALE) {
-            staleConfigs[monLocId] = { ...meta, overallStatus: MONITOR_STATUS_ENUM.STALE };
-          } else {
-            pendingConfigs[monLocId] = { ...meta, overallStatus: MONITOR_STATUS_ENUM.PENDING };
+          // don't collide and silently overwrite each other.
+          placeExternalConfig(
+            `${remote.remoteName}-${configId}-${locData.locationId}`,
+            { ...baseMeta, remote },
+            status
+          );
+          return;
+        }
+
+        // Local Heartbeat / Elastic Agent managed monitor (no saved object).
+        // Cap the number of distinct monitors we synthesize from ping data.
+        if (!heartbeatMonitorIds.has(monitorId)) {
+          if (heartbeatMonitorIds.size >= HEARTBEAT_MONITORS_OVERVIEW_LIMIT) {
+            return;
           }
-        });
+          heartbeatMonitorIds.add(monitorId);
+        }
+        placeExternalConfig(
+          `heartbeat-${configId}-${locData.locationId}`,
+          { ...baseMeta, origin: 'heartbeat' as const },
+          status
+        );
       });
-    }
+    });
 
     return {
       up,

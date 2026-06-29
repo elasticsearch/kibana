@@ -10,7 +10,8 @@ import { remoteMonitorInfoSchema } from './remote';
 import { ConfigKey } from './monitor_management/config_key';
 import { MonitorTypeCodec } from './monitor_management/monitor_configs';
 import { MonitorServiceLocationCodec } from './monitor_management/locations';
-import type { EncryptedSyntheticsSavedMonitor } from './monitor_management/monitor_types';
+// Type-only import; the runtime value edge is external_monitor -> remote_monitor.
+import type { SelectedSyntheticsMonitor } from './external_monitor';
 
 /**
  * Read-only projection of a Synthetics monitor that lives on a remote cluster
@@ -30,7 +31,7 @@ import type { EncryptedSyntheticsSavedMonitor } from './monitor_management/monit
  * {@link isRemoteSyntheticsMonitor} type guard to narrow.
  *
  * @see useSelectedMonitor — the public consumer
- * @see useRemoteMonitor — the hook that synthesizes values of this type from pings
+ * @see useExternalMonitor — the hook that synthesizes values of this type from pings
  */
 export const RemoteSyntheticsMonitorCodec = t.type({
   [ConfigKey.CONFIG_ID]: t.string,
@@ -43,13 +44,6 @@ export const RemoteSyntheticsMonitorCodec = t.type({
 });
 
 export type RemoteSyntheticsMonitor = t.TypeOf<typeof RemoteSyntheticsMonitorCodec>;
-
-/**
- * Union of the two shapes a "selected monitor" can take in the detail page:
- * a local saved object or a remote-derived projection. Consumers narrow via
- * {@link isRemoteSyntheticsMonitor}.
- */
-export type SelectedSyntheticsMonitor = EncryptedSyntheticsSavedMonitor | RemoteSyntheticsMonitor;
 
 /**
  * Type guard distinguishing remote monitors from local saved objects.

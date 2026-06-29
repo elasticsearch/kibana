@@ -177,4 +177,47 @@ describe('Actions Component', () => {
       });
     });
   });
+
+  describe('heartbeat (Elastic Agent) monitor', () => {
+    beforeEach(() => {
+      // No remoteName in the URL — heartbeat is detected from the resolved
+      // monitor shape (origin === 'heartbeat'), not a URL param.
+      (useSelectedMonitor as jest.Mock).mockReturnValue({
+        monitor: {
+          config_id: 'test-monitor-id',
+          name: 'Autodiscovered monitor',
+          origin: 'heartbeat',
+        },
+        loading: false,
+        error: null,
+        isMonitorMissing: false,
+      });
+    });
+
+    it('disables Edit monitor', () => {
+      render(<Actions />);
+
+      fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+      const editItem = screen.getByTestId('syntheticsEditMonitorContextItem');
+      expect(editItem).toBeDisabled();
+      expect(editItem).not.toHaveAttribute('href');
+    });
+
+    it('disables Run test manually', () => {
+      render(<Actions />);
+
+      fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+      expect(screen.getByTestId('syntheticsRunTestManuallyButton')).toBeDisabled();
+    });
+
+    it('keeps Refresh enabled', () => {
+      render(<Actions />);
+
+      fireEvent.click(screen.getByTestId('monitorDetailsHeaderControlActionsButton'));
+
+      expect(screen.getByTestId('syntheticsRefreshContextItem')).not.toBeDisabled();
+    });
+  });
 });

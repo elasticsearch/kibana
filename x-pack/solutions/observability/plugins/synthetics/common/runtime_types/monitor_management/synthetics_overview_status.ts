@@ -10,6 +10,7 @@ import { ObserverCodec } from '../ping/observer';
 import { ErrorStateCodec } from '../ping/error_state';
 import { AgentType, MonitorType, PingErrorType, UrlType } from '..';
 import { remoteMonitorInfoSchema } from '../remote';
+import { MonitorOriginCodec } from '../heartbeat_monitor';
 
 export const OverviewPingCodec = t.intersection([
   t.interface({
@@ -82,6 +83,11 @@ export const OverviewStatusMetaDataCodec = t.intersection([
     urls: t.string,
     maintenanceWindows: t.array(t.string),
     remote: remoteMonitorInfoSchema,
+    // Provenance for monitors that have no Synthetics saved object and are
+    // therefore read-only in the app. `heartbeat` marks a monitor discovered
+    // purely from local ping data (Heartbeat / Elastic Agent autodiscovery),
+    // mirroring how `remote` marks a CCS-only monitor.
+    origin: MonitorOriginCodec,
   }),
 ]);
 

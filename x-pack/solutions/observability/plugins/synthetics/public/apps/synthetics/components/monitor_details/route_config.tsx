@@ -13,6 +13,8 @@ import type { EuiPageHeaderProps } from '@elastic/eui';
 import { EuiIcon, EuiToolTip } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { useGetUrlParams } from '../../hooks';
+import { isHeartbeatSyntheticsMonitor } from '../../../../../common/runtime_types';
+import { useSelectedMonitor } from './hooks/use_selected_monitor';
 import { MonitorDetailsAlerts } from './monitor_alerts/monitor_detail_alerts';
 import { MonitorAlertsIcon } from './monitor_alerts/alerts_icon';
 import { MonitorNotFoundPage } from './monitor_not_found_page';
@@ -119,6 +121,7 @@ const getMonitorSummaryHeader = (
   // Not a component, but it doesn't matter. Hooks are just functions
   const match = useRouteMatch<{ monitorId: string }>(MONITOR_ROUTE); // eslint-disable-line react-hooks/rules-of-hooks
   const { remoteName } = useGetUrlParams(); // eslint-disable-line react-hooks/rules-of-hooks
+  const { monitor } = useSelectedMonitor(); // eslint-disable-line react-hooks/rules-of-hooks
 
   if (!match) {
     return {};
@@ -126,7 +129,9 @@ const getMonitorSummaryHeader = (
 
   const search = history.location.search;
   const monitorId = match.params.monitorId;
-  const isRemote = Boolean(remoteName);
+  // Both remote (CCS) and Heartbeat/Agent monitors are read-only and have no
+  // local alert config, so the Alerts tab is disabled for either.
+  const isReadOnly = Boolean(remoteName) || isHeartbeatSyntheticsMonitor(monitor);
 
   const rightSideItems = [
     <Actions />,
@@ -166,10 +171,10 @@ const getMonitorSummaryHeader = (
         'data-test-subj': 'syntheticsMonitorErrorsTab',
       },
       {
-        label: isRemote ? (
+        label: isReadOnly ? (
           <EuiToolTip
             content={i18n.translate('xpack.synthetics.monitorAlertsTab.disabledTooltip', {
-              defaultMessage: 'Alerts are not available for remote monitors',
+              defaultMessage: 'Alerts are not available for read-only monitors',
             })}
             position="right"
           >
@@ -178,10 +183,10 @@ const getMonitorSummaryHeader = (
         ) : (
           ALERTS_LABEL
         ),
-        prepend: isRemote ? undefined : <MonitorAlertsIcon />,
-        disabled: isRemote,
+        prepend: isReadOnly ? undefined : <MonitorAlertsIcon />,
+        disabled: isReadOnly,
         isSelected: selectedTab === 'alerts',
-        href: isRemote
+        href: isReadOnly
           ? undefined
           : `${syntheticsPath}${MONITOR_ALERTS_ROUTE.replace(':monitorId', monitorId)}${search}`,
         'data-test-subj': 'syntheticsMonitorAlertsTab',

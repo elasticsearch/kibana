@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import moment from 'moment';
 
 import { ConfigKey } from '../../../../../../common/constants/monitor_management';
-import { isRemoteSyntheticsMonitor, SourceType } from '../../../../../../common/runtime_types';
+import { isExternalSyntheticsMonitor, SourceType } from '../../../../../../common/runtime_types';
 import { useRefreshedRange } from '../../../hooks';
 import { useSelectedMonitor } from './use_selected_monitor';
 
@@ -19,10 +19,10 @@ export const useMonitorRangeFrom = () => {
   const { from, to } = useRefreshedRange(30, 'days');
 
   return useMemo(() => {
-    // Remote monitors are derived from pings — they have no `created_at` and no
-    // project-monitor distinction available via the SO. Always use the default
-    // 30-day lookback for them.
-    if (monitor && !isRemoteSyntheticsMonitor(monitor) && monitor.created_at) {
+    // Read-only (remote / heartbeat) monitors are derived from pings — they have
+    // no `created_at` and no project-monitor distinction available via the SO.
+    // Always use the default 30-day lookback for them.
+    if (monitor && !isExternalSyntheticsMonitor(monitor) && monitor.created_at) {
       const monitorCreatedDaysAgo = moment().diff(monitor.created_at, 'days');
       const isProjectMonitor = monitor[ConfigKey.MONITOR_SOURCE_TYPE] === SourceType.PROJECT;
 

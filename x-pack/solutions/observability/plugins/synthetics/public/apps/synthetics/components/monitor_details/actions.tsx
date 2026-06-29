@@ -11,11 +11,17 @@ import { RunTestManuallyContextItem } from './run_test_manually';
 import { EditMonitorContextItem } from './monitor_summary/edit_monitor_link';
 import { RefreshContextItem } from '../common/components/refresh_button';
 import { useGetUrlParams } from '../../hooks';
+import { isHeartbeatSyntheticsMonitor } from '../../../../../common/runtime_types';
+import { useSelectedMonitor } from './hooks/use_selected_monitor';
 
 export function Actions() {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { remoteName } = useGetUrlParams();
   const isRemote = Boolean(remoteName);
+  const { monitor } = useSelectedMonitor();
+  // Heartbeat/Agent monitors have no saved object and no `remoteName` URL param,
+  // so they can only be detected from the resolved monitor shape.
+  const isHeartbeat = isHeartbeatSyntheticsMonitor(monitor);
   const handleActionsClick = () => setIsPopoverOpen((value) => !value);
   const closePopover = () => setIsPopoverOpen(false);
   return (
@@ -44,9 +50,13 @@ export function Actions() {
     >
       <EuiContextMenuPanel
         items={[
-          <EditMonitorContextItem key="edit-monitor" isRemote={isRemote} />,
+          <EditMonitorContextItem key="edit-monitor" isRemote={isRemote} isHeartbeat={isHeartbeat} />,
           <RefreshContextItem key="refresh-monitor" />,
-          <RunTestManuallyContextItem key="run-test-manually" isRemote={isRemote} />,
+          <RunTestManuallyContextItem
+            key="run-test-manually"
+            isRemote={isRemote}
+            isHeartbeat={isHeartbeat}
+          />,
         ]}
       />
     </EuiPopover>

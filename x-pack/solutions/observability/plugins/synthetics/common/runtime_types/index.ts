@@ -19,3 +19,5 @@ export * from './ccs_settings';
 export * from './multi_space_settings';
 export * from './remote';
 export * from './remote_monitor';
+export * from './heartbeat_monitor';
+export * from './external_monitor';

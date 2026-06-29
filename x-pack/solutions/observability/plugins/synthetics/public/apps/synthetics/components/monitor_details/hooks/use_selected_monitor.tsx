@@ -18,7 +18,7 @@ import {
   selectSyntheticsMonitorError,
 } from '../../../state';
 import { useGetUrlParams } from '../../../hooks';
-import { useRemoteMonitor } from './use_remote_monitor';
+import { useExternalMonitor } from './use_external_monitor';
 
 interface UseSelectedMonitorOptions {
   refetchMonitorEnabled?: boolean;
@@ -38,8 +38,11 @@ export const useSelectedMonitor = ({
   const { space } = useKibanaSpace();
   const { spaceId, remoteName } = useGetUrlParams();
 
-  // Remote monitors have no local saved object — the local fetch would 404.
-  // We compose `useRemoteMonitor` to synthesize identity from remote pings via CCS.
+  // Remote (CCS) monitors have no local saved object — the local fetch would 404.
+  // Heartbeat/Agent monitors also have no saved object, but there is no URL
+  // discriminant for them, so we detect them by probing local pings ONLY after
+  // the local SO fetch 404s (see `localSoMissing` below). Both flavors are
+  // synthesized into read-only projections by `useExternalMonitor`.
   const isRemote = Boolean(remoteName);
 
   const monitorsList = useSelector(selectEncryptedSyntheticsSavedMonitors);
@@ -55,13 +58,24 @@ export const useSelectedMonitor = ({
     useSelector(selectorMonitorDetailsState);
   const dispatch = useDispatch();
 
-  // Remote error is not propagated through this hook's `error` field for PR 2;
-  // the local-monitor `error` is an HTTP-fetch error with `body.statusCode`,
-  // whereas the remote error is a plain ES `Error`. Surface remote errors at
-  // the data-fetching layer (later PRs) when those hooks gain CCS awareness.
-  const { data: remoteMonitor, loading: remoteMonitorLoading } = useRemoteMonitor({
+  // A local 404 means there is no saved object for this id — it may instead be a
+  // Heartbeat/Agent monitor whose data lives in local `synthetics-*`. This is
+  // also what lets cert links / deep links to such monitors resolve without
+  // carrying any extra URL param.
+  const localSoMissing =
+    !isRemote &&
+    error?.body?.statusCode === 404 &&
+    (error.getPayload as { monitorId: string })?.monitorId === monitorId;
+
+  // External error is not propagated through this hook's `error` field; the
+  // local-monitor `error` is an HTTP-fetch error with `body.statusCode`, whereas
+  // the external (ES) error is a plain `Error`. `useExternalMonitor` queries the
+  // remote cluster when `remoteName` is set, otherwise probes local pings for a
+  // heartbeat projection — but only once the local SO is known to be missing.
+  const { data: externalMonitor, loading: externalMonitorLoading } = useExternalMonitor({
     configId: monitorId,
     remoteName,
+    origin: localSoMissing ? 'heartbeat' : undefined,
   });
 
   const isMonitorFromListValid =
@@ -76,13 +90,13 @@ export const useSelectedMonitor = ({
     : null;
 
   const availableMonitor: SelectedSyntheticsMonitor | null = isRemote
-    ? remoteMonitor ?? null
-    : availableLocalMonitor;
+    ? externalMonitor ?? null
+    : availableLocalMonitor ?? externalMonitor ?? null;
 
-  const isMonitorMissing =
-    !isRemote &&
-    error?.body?.statusCode === 404 &&
-    (error.getPayload as { monitorId: string })?.monitorId === monitorId;
+  // Only declare the monitor truly missing once the heartbeat probe has had its
+  // say: while it is loading we hold off (avoids a flash redirect to "not
+  // found"), and if it resolves a projection the monitor is not missing.
+  const isMonitorMissing = localSoMissing && !externalMonitor && !externalMonitorLoading;
 
   useEffect(() => {
     if (
@@ -90,7 +104,7 @@ export const useSelectedMonitor = ({
       !isRemote &&
       !availableMonitor &&
       !syntheticsMonitorLoading &&
-      !isMonitorMissing
+      !localSoMissing
     ) {
       dispatch(
         getMonitorAction.get({
@@ -105,16 +119,18 @@ export const useSelectedMonitor = ({
     isRemote,
     availableMonitor,
     syntheticsMonitorLoading,
-    isMonitorMissing,
+    localSoMissing,
     spaceId,
     space?.id,
   ]);
 
   useEffect(() => {
-    // Only perform periodic refresh if the last dispatch was earlier enough
+    // Only perform periodic refresh if the last dispatch was earlier enough.
+    // Skip once the SO is known missing — re-fetching only 404s again.
     if (
       monitorId &&
       !isRemote &&
+      !localSoMissing &&
       !syntheticsMonitorLoading &&
       !monitorListLoading &&
       syntheticsMonitorDispatchedAt > 0 &&
@@ -134,6 +150,7 @@ export const useSelectedMonitor = ({
     refreshInterval,
     monitorId,
     isRemote,
+    localSoMissing,
     monitorListLoading,
     syntheticsMonitorLoading,
     syntheticsMonitorDispatchedAt,
@@ -144,8 +161,12 @@ export const useSelectedMonitor = ({
 
   return {
     monitor: availableMonitor,
-    loading: isRemote ? remoteMonitorLoading : syntheticsMonitorLoading || monitorListLoading,
-    error: isRemote ? null : error,
+    loading: isRemote
+      ? externalMonitorLoading
+      : syntheticsMonitorLoading || monitorListLoading || externalMonitorLoading,
+    // Suppress the local 404 once we treat it as a heartbeat candidate; real
+    // (non-404) errors still surface.
+    error: isRemote || localSoMissing ? null : error,
     isMonitorMissing,
   };
 };

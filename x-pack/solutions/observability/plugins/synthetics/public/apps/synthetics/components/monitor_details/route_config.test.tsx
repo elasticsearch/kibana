@@ -19,6 +19,11 @@ jest.mock('../../hooks', () => ({
   useGetUrlParams: () => mockUrlParams(),
 }));
 
+const mockSelectedMonitor = jest.fn();
+jest.mock('./hooks/use_selected_monitor', () => ({
+  useSelectedMonitor: () => mockSelectedMonitor(),
+}));
+
 jest.mock('./monitor_alerts/alerts_icon', () => ({
   MonitorAlertsIcon: () => <span data-test-subj="mock-alerts-icon" />,
 }));
@@ -35,6 +40,7 @@ const makeHistory = () =>
 describe('getMonitorDetailsRoute - Alerts tab', () => {
   beforeEach(() => {
     mockUrlParams.mockReturnValue({});
+    mockSelectedMonitor.mockReturnValue({ monitor: null });
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -59,6 +65,17 @@ describe('getMonitorDetailsRoute - Alerts tab', () => {
 
   it('disables the Alerts tab, drops the badge, and shows a tooltip for remote monitors', () => {
     mockUrlParams.mockReturnValue({ remoteName: 'remote-a' });
+
+    const alertsTab = getAlertsTab();
+
+    expect(alertsTab.disabled).toBe(true);
+    expect(alertsTab.href).toBeUndefined();
+    expect(alertsTab.prepend).toBeUndefined();
+    expect(alertsTab.label).not.toBe('Alerts');
+  });
+
+  it('disables the Alerts tab for heartbeat monitors (no remoteName, detected from monitor shape)', () => {
+    mockSelectedMonitor.mockReturnValue({ monitor: { origin: 'heartbeat' } });
 
     const alertsTab = getAlertsTab();
 

@@ -48,12 +48,32 @@ export const EditMonitorLink = () => {
   );
 };
 
-export const EditMonitorContextItem = ({ isRemote = false }: { isRemote?: boolean }) => {
+export const EditMonitorContextItem = ({
+  isRemote = false,
+  isHeartbeat = false,
+}: {
+  isRemote?: boolean;
+  isHeartbeat?: boolean;
+}) => {
   const { basePath } = useSyntheticsSettingsContext();
   const { monitorId } = useParams<{ monitorId: string }>();
   const { remoteName, spaceId } = useGetUrlParams();
   const canEditSynthetics = useCanEditSynthetics();
   const { monitor } = useSelectedMonitor();
+
+  // Heartbeat / Elastic Agent monitors have no saved object to edit.
+  if (isHeartbeat) {
+    return (
+      <EuiContextMenuItem
+        icon="pencil"
+        data-test-subj="syntheticsEditMonitorContextItem"
+        disabled
+        toolTipContent={NOT_AVAILABLE_FOR_HEARTBEAT}
+      >
+        {EDIT_MONITOR}
+      </EuiContextMenuItem>
+    );
+  }
 
   if (isRemote) {
     const remoteKibanaUrl = isRemoteSyntheticsMonitor(monitor)
@@ -127,5 +147,13 @@ const PERMISSIONS_ON_ORIGIN_CLUSTER = i18n.translate(
   'xpack.synthetics.monitorDetails.actions.permissionsOnOriginCluster',
   {
     defaultMessage: 'Permissions are enforced on the origin cluster.',
+  }
+);
+
+const NOT_AVAILABLE_FOR_HEARTBEAT = i18n.translate(
+  'xpack.synthetics.monitorDetails.actions.notAvailableForHeartbeat',
+  {
+    defaultMessage:
+      'This monitor is run by Heartbeat / Elastic Agent and is read-only in Synthetics.',
   }
 );

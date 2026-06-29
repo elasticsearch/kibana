@@ -258,12 +258,22 @@ export function MonitorDetailFlyout(props: Props) {
       ...(overviewStatus.upConfigs ?? {}),
       ...(overviewStatus.downConfigs ?? {}),
       ...(overviewStatus.pendingConfigs ?? {}),
+      // Include stale monitors: the grid lists them (the store's `allConfigs`
+      // includes `staleConfigs`), so the flyout must resolve them too —
+      // otherwise stale heartbeat / autodiscovered monitors are not found here
+      // and fall back to the local saved-object fetch, which 404s for these
+      // read-only monitors.
+      ...(overviewStatus.staleConfigs ?? {}),
       ...(overviewStatus.disabledConfigs ?? {}),
     });
     return allConfigs.find((ov) => ov.configId === configId);
   }, [overviewStatus, configId]);
 
   const isRemote = Boolean(monitor?.remote);
+  // Heartbeat / Elastic Agent monitors have no Synthetics saved object, so they
+  // are read-only in this app just like remote (CCS) monitors.
+  const isHeartbeat = monitor?.origin === 'heartbeat';
+  const isReadOnly = isRemote || isHeartbeat;
 
   const setLocation = useCallback(
     (locId: string, locLabel: string) =>
@@ -327,10 +337,11 @@ export function MonitorDetailFlyout(props: Props) {
 
   const upsertSuccess = upsertStatus?.status === 'success';
 
-  // Skip fetching the local saved object for remote monitors — they have no
-  // local SO and the request would 404.
+  // Skip fetching the local saved object for read-only monitors (remote CCS and
+  // local Heartbeat / Elastic Agent) — they have no local SO and the request
+  // would 404.
   useEffect(() => {
-    if (isRemote) return;
+    if (isReadOnly) return;
     // `useKibanaSpace` resolves asynchronously, so `space` is undefined on
     // the first render. `getMonitorSpaceToAppend` short-circuits to `{}` in
     // that case, which means an early dispatch would fetch the SO from the
@@ -345,14 +356,14 @@ export function MonitorDetailFlyout(props: Props) {
         ...(crossSpaceId ? { spaceId: crossSpaceId } : {}),
       })
     );
-  }, [configId, crossSpaceId, dispatch, isRemote, space, upsertSuccess]);
+  }, [configId, crossSpaceId, dispatch, isReadOnly, space, upsertSuccess]);
 
   const [isActionsPopoverOpen, setIsActionsPopoverOpen] = useState(false);
 
   const getColor = useMonitorHealthColor();
 
   useMonitorAttachmentConfigWithMonitor(
-    !isRemote && monitorObject
+    !isReadOnly && monitorObject
       ? {
           ...monitorObject,
           [ConfigKey.CONFIG_ID]: monitorObject[ConfigKey.CONFIG_ID] ?? configId,
@@ -390,9 +401,10 @@ export function MonitorDetailFlyout(props: Props) {
         heartbeat-based `monitor` metadata renders the flyout fine. Don't
         alarm the user with a "fetch failed" callout if we already have the
         overview metadata to render — only surface real errors when there's
-        nothing else to show.
+        nothing else to show. Read-only monitors (remote / heartbeat) never
+        fetch the SO, so they never produce this error.
       */}
-      {error && !isLoading && !isRemote && !monitor && <ErrorCallout {...error} />}
+      {error && !isLoading && !isReadOnly && !monitor && <ErrorCallout {...error} />}
       <EuiFlyoutHeader hasBorder>
         <EuiPanel hasBorder={false} hasShadow={false} paddingSize="l">
           <EuiFlexGroup responsive={false} gutterSize="s" alignItems="center">
@@ -587,6 +599,20 @@ export function MonitorDetailFlyout(props: Props) {
                     </EuiButton>
                   </EuiFlexItem>
                 </EuiFlexGroup>
+              ) : isHeartbeat ? (
+                // Heartbeat / Elastic Agent monitors are read-only here: no
+                // local saved object to edit, so only offer the (read-only)
+                // detail page.
+                <EuiButton
+                  data-test-subj="syntheticsMonitorDetailFlyoutButton"
+                  isDisabled={!detailLink}
+                  href={detailLink}
+                  iconType="sortRight"
+                  iconSide="right"
+                  fill
+                >
+                  {GO_TO_MONITOR_LINK_TEXT}
+                </EuiButton>
               ) : (
                 <EuiFlexGroup gutterSize="s">
                   <EuiFlexItem grow={false}>

@@ -9,21 +9,21 @@ import React from 'react';
 import { MwsCalloutContent } from './mws_callout_content';
 import { MwsPendingSyncCallout } from './mws_pending_sync_callout';
 import { useHasPendingMwChanges } from './use_has_pending_mw_changes';
-import { ConfigKey, isRemoteSyntheticsMonitor } from '../../../../../../common/runtime_types';
+import { ConfigKey, isExternalSyntheticsMonitor } from '../../../../../../common/runtime_types';
 import { useSelectedMonitor } from '../../monitor_details/hooks/use_selected_monitor';
 
 export const MonitorMWsCallout = () => {
   const { monitor } = useSelectedMonitor();
 
-  // Maintenance window assignments live on the local saved object. Remote
-  // monitors expose no MW data, so skip the callout entirely for them.
+  // Maintenance window assignments live on the local saved object. Read-only
+  // (remote / heartbeat) monitors expose no MW data, so skip the callout for them.
   const monitorMWIds =
-    monitor && !isRemoteSyntheticsMonitor(monitor)
+    monitor && !isExternalSyntheticsMonitor(monitor)
       ? monitor[ConfigKey.MAINTENANCE_WINDOWS] ?? []
       : [];
   const { activeMWs, hasPendingChanges, syncInterval } = useHasPendingMwChanges(monitorMWIds);
 
-  if (!monitor || isRemoteSyntheticsMonitor(monitor)) {
+  if (!monitor || isExternalSyntheticsMonitor(monitor)) {
     return null;
   }
 

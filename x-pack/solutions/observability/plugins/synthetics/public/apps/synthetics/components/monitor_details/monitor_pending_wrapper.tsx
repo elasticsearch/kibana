@@ -15,7 +15,7 @@ import { PageLoader } from '../common/components/page_loader';
 import { resetMonitorLastRunAction } from '../../state';
 import { useMonitorLatestPing } from './hooks/use_monitor_latest_ping';
 import { useSyntheticsRefreshContext } from '../../contexts';
-import { MonitorRemoteCallout } from './monitor_remote_callout';
+import { MonitorReadOnlyCallout } from './monitor_read_only_callout';
 
 export const MonitorPendingWrapper: FC<PropsWithChildren<unknown>> = ({ children }) => {
   const dispatch = useDispatch();
@@ -63,7 +63,7 @@ export const MonitorPendingWrapper: FC<PropsWithChildren<unknown>> = ({ children
 
   return (
     <>
-      <MonitorRemoteCallout />
+      <MonitorReadOnlyCallout />
       {!loaded ? (
         <PageLoader
           icon={<EuiLoadingSpinner size="xxl" />}
