@@ -8,7 +8,8 @@
 import { schema } from '@kbn/config-schema';
 import type { CoreSetup, Logger } from '@kbn/core/server';
 import {
-  MAX_FILE_SIZE_BYTES,
+  INITIALIZE_IMPORT_SIZE_BYTES,
+  MAX_FILE_UPLOAD_SIZE_BYTES,
   MAX_TIKA_FILE_SIZE_BYTES,
 } from '@kbn/file-upload-common/src/constants';
 import { omit } from 'lodash';
@@ -103,7 +104,7 @@ export function fileUploadRoutes(coreSetup: CoreSetup<StartDeps, unknown>, logge
       options: {
         body: {
           accepts: ['text/*', 'application/json'],
-          maxBytes: MAX_FILE_SIZE_BYTES,
+          maxBytes: MAX_FILE_UPLOAD_SIZE_BYTES,
         },
       },
     })
@@ -151,7 +152,7 @@ export function fileUploadRoutes(coreSetup: CoreSetup<StartDeps, unknown>, logge
       options: {
         body: {
           accepts: ['application/json'],
-          maxBytes: MAX_FILE_SIZE_BYTES,
+          maxBytes: INITIALIZE_IMPORT_SIZE_BYTES,
         },
       },
       security: {
@@ -210,7 +211,7 @@ export function fileUploadRoutes(coreSetup: CoreSetup<StartDeps, unknown>, logge
       options: {
         body: {
           accepts: ['application/json'],
-          maxBytes: MAX_FILE_SIZE_BYTES,
+          maxBytes: MAX_FILE_UPLOAD_SIZE_BYTES,
         },
       },
       security: {
