@@ -10,7 +10,16 @@ import type { ESQLAstCommand, ESQLAstItem } from '@elastic/esql/types';
 import type { DissectProcessor } from '../../../../types/processors';
 import { parseMultiDissectPatterns } from '../../../../types/utils/dissect_patterns';
 import { conditionToESQLAst } from '../condition_to_esql';
-import { buildIgnoreMissingFilter, castFieldsToString, buildWhereCondition } from './common';
+import {
+  buildIgnoreMissingFilter,
+  castFieldsToString,
+  buildWhereCondition,
+  buildTempFields,
+  buildRestoreFieldsEval,
+  buildDropColumns,
+} from './common';
+
+const SAVE_TEMP_PREFIX = '__streamlang_dissect_temp_';
 
 /**
  * Converts a Streamlang DissectProcessor into a list of ES|QL AST commands.
@@ -22,6 +31,11 @@ import { buildIgnoreMissingFilter, castFieldsToString, buildWhereCondition } fro
  *      * Apply DISSECT to temporary field
  *      * Drop temporary field
  *    Condition: (exists(from) if ignore_missing) AND (where condition, if provided)
+ *
+ * Value preservation:
+ *  - DISSECT is destructive: it overwrites target fields with NULL on failed/skipped parsing.
+ *  - To preserve pre-existing values, target fields are saved into temp columns before DISSECT,
+ *    then merged back with COALESCE so NULL results fall back to the prior value.
  *
  * Type handling:
  *  - Pre-dissect: cast all prospective DISSECT output fields to avoid ES|QL's type conflict errors.
@@ -50,9 +64,12 @@ import { buildIgnoreMissingFilter, castFieldsToString, buildWhereCondition } fro
  *      // | WHERE NOT(message IS NULL)  // Only if ignore_missing = false
  *      | EVAL `log.level` = TO_STRING(`log.level`)
  *      | EVAL `client.ip` = TO_STRING(`client.ip`)
+ *      | EVAL `__streamlang_dissect_temp_log.level` = `log.level`, `__streamlang_dissect_temp_client.ip` = `client.ip`
  *      | EVAL __temp_dissect_where_message__ = CASE(NOT(message IS NULL) AND NOT(`flags.process` IS NULL), message, "")
  *      | DISSECT __temp_dissect_where_message__ "[%{log.level}] %{client.ip}"
  *      | DROP __temp_dissect_where_message__
+ *      | EVAL `log.level` = COALESCE(`log.level`, `__streamlang_dissect_temp_log.level`), `client.ip` = COALESCE(`client.ip`, `__streamlang_dissect_temp_client.ip`)
+ *      | DROP `__streamlang_dissect_temp_log.level`, `__streamlang_dissect_temp_client.ip`
  *    ```
  */
 export function convertDissectProcessorToESQL(processor: DissectProcessor): ESQLAstCommand[] {
@@ -74,47 +91,61 @@ export function convertDissectProcessorToESQL(processor: DissectProcessor): ESQL
     commands.push(missingFieldFilter);
   }
 
-  // Check if conditional execution is needed for 'where' clauses, return simple command otherwise
+  // Extract target field names from the pattern for value preservation
+  const { allFields } = parseMultiDissectPatterns([pattern]);
+  const fieldNames = allFields.map((f) => f.name);
+
+  // Pre-cast target fields to string before saving,
+  // so the saved temp columns have matching types for COALESCE
+  if (fieldNames.length > 0) {
+    commands.push(...castFieldsToString(fieldNames));
+  }
+
+  // Save existing target field values before DISSECT can overwrite them
+  if (fieldNames.length > 0) {
+    commands.push(buildTempFields(fieldNames, SAVE_TEMP_PREFIX));
+  }
+
   const needConditional = ignore_missing || Boolean(where);
   if (!needConditional) {
     commands.push(dissectCommand);
-    return commands;
+  } else {
+    // Build condition for when DISSECT should execute
+    const dissectCondition = buildWhereCondition(from, ignore_missing, where, conditionToESQLAst);
+
+    // Create temporary field name for conditional processing
+    // Using CASE, set temporary field to source field if condition passes, empty string otherwise
+    const tempFieldName = `__temp_dissect_where_${from}__`;
+    const tempColumn = Builder.expression.column(tempFieldName);
+
+    commands.push(
+      Builder.command({
+        name: 'eval',
+        args: [
+          Builder.expression.func.binary('=', [
+            tempColumn,
+            Builder.expression.func.call('CASE', [
+              dissectCondition,
+              fromColumn,
+              Builder.expression.literal.string(''), // Empty string avoids ES|QL NULL errors that would break the pipeline
+            ]),
+          ]),
+        ],
+      })
+    );
+
+    // Apply DISSECT to the temporary field
+    commands.push(buildDissectCommand(pattern, tempColumn, append_separator));
+
+    // Clean up conditional temporary field
+    commands.push(Builder.command({ name: 'drop', args: [tempColumn] }));
   }
 
-  // Pre-cast all dissect output fields to string for consistency
-  const { allFields } = parseMultiDissectPatterns([pattern]);
-  const fieldNames = allFields.map((f) => f.name);
-  commands.push(...castFieldsToString(fieldNames));
-
-  // Build condition for when DISSECT should execute
-  const dissectCondition = buildWhereCondition(from, ignore_missing, where, conditionToESQLAst);
-
-  // Create temporary field name for conditional processing
-  // Using CASE, set temporary field to source field if condition passes, empty string otherwise
-  const tempFieldName = `__temp_dissect_where_${from}__`;
-  const tempColumn = Builder.expression.column(tempFieldName);
-
-  commands.push(
-    Builder.command({
-      name: 'eval',
-      args: [
-        Builder.expression.func.binary('=', [
-          tempColumn,
-          Builder.expression.func.call('CASE', [
-            dissectCondition,
-            fromColumn,
-            Builder.expression.literal.string(''), // Empty string avoids ES|QL NULL errors that would break the pipeline
-          ]),
-        ]),
-      ],
-    })
-  );
-
-  // Apply DISSECT to the temporary field
-  commands.push(buildDissectCommand(pattern, tempColumn, append_separator));
-
-  // Clean up temporary field
-  commands.push(Builder.command({ name: 'drop', args: [tempColumn] }));
+  // Restore original values where DISSECT produced NULL
+  if (fieldNames.length > 0) {
+    commands.push(buildRestoreFieldsEval(fieldNames, SAVE_TEMP_PREFIX));
+    commands.push(buildDropColumns(fieldNames.map((f) => `${SAVE_TEMP_PREFIX}${f}`)));
+  }
 
   return commands;
 }

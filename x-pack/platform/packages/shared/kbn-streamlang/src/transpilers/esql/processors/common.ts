@@ -189,6 +189,49 @@ export function buildConditionalEval(
 }
 
 /**
+ * Creates a single EVAL command that saves existing field values into temporary columns
+ * before a destructive command (like GROK or DISSECT) can overwrite them with NULL.
+ *
+ * @param fields - Full field names to save (e.g. ['client.ip', 'size'])
+ * @param tempPrefix - Prefix for temporary column names (e.g. '__streamlang_grok_save_')
+ * @returns EVAL command: `EVAL <tempPrefix><f> = <f>, ...`
+ */
+export function buildTempFields(fields: string[], tempPrefix: string): ESQLAstCommand {
+  return Builder.command({
+    name: 'eval',
+    args: fields.map((field) =>
+      Builder.expression.func.binary('=', [
+        Builder.expression.column(`${tempPrefix}${field}`),
+        Builder.expression.column(field),
+      ])
+    ),
+  });
+}
+
+/**
+ * Creates a single EVAL command with COALESCE assignments that restores original field values
+ * when a destructive command (like GROK or DISSECT) produced NULL.
+ *
+ * @param fields - Full field names to merge (e.g. ['client.ip', 'size'])
+ * @param tempPrefix - Prefix used for the temporary columns created by buildSaveFieldsEval
+ * @returns EVAL command: `EVAL <field> = COALESCE(<field>, <tempPrefix><field>), ...`
+ */
+export function buildRestoreFieldsEval(fields: string[], tempPrefix: string): ESQLAstCommand {
+  return Builder.command({
+    name: 'eval',
+    args: fields.map((field) =>
+      Builder.expression.func.binary('=', [
+        Builder.expression.column(field),
+        Builder.expression.func.call('COALESCE', [
+          Builder.expression.column(field),
+          Builder.expression.column(`${tempPrefix}${field}`),
+        ]),
+      ])
+    ),
+  });
+}
+
+/**
  * Creates a single EVAL command with COALESCE assignments that merge temp-prefixed columns into target-prefixed columns.
  *
  * @param fields - Field names to merge (without prefix)

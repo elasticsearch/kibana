@@ -10,8 +10,17 @@ import type { ESQLAstCommand, ESQLAstItem } from '@elastic/esql/types';
 import type { GrokProcessor } from '../../../../types/processors';
 import { parseMultiGrokPatterns } from '../../../../types/utils/grok_patterns';
 import { conditionToESQLAst } from '../condition_to_esql';
-import { buildIgnoreMissingFilter, castFieldsToGrokTypes, buildWhereCondition } from './common';
+import {
+  buildIgnoreMissingFilter,
+  castFieldsToGrokTypes,
+  buildWhereCondition,
+  buildDropColumns,
+  buildTempFields,
+  buildRestoreFieldsEval,
+} from './common';
 import { unwrapPatternDefinitions } from '../../../../types/utils/grok_pattern_definitions';
+
+const SAVE_TEMP_PREFIX = '__streamlang_grok_temp_';
 
 /**
  * Converts a Streamlang GrokProcessor into a list of ES|QL AST commands.
@@ -23,6 +32,11 @@ import { unwrapPatternDefinitions } from '../../../../types/utils/grok_pattern_d
  *      * Apply GROK to temporary field
  *      * Drop temporary field
  *    Condition: (exists(from) if ignore_missing) AND (where condition, if provided)
+ *
+ * Value preservation:
+ *  - GROK is destructive: it overwrites target fields with NULL on failed/skipped parsing.
+ *  - To preserve pre-existing values, target fields are saved into temp columns before GROK,
+ *    then merged back with COALESCE so NULL results fall back to the prior value.
  *
  * Type handling:
  *  - Pre-grok: cast all GROKed target fields to their suffixed (or default) types with
@@ -49,9 +63,12 @@ import { unwrapPatternDefinitions } from '../../../../types/utils/grok_pattern_d
  *    | EVAL `client.ip` = TO_STRING(`client.ip`)
  *    | EVAL `size` = TO_INTEGER(`size`)
  *    | EVAL `burn_rate` = TO_DOUBLE(`burn_rate`)
+ *    | EVAL `__streamlang_grok_temp_client.ip` = `client.ip`, `__streamlang_grok_temp_size` = `size`, `__streamlang_grok_temp_burn_rate` = `burn_rate`
  *    | EVAL __temp_grok_where_message__ = CASE(NOT(message IS NULL) AND NOT(`flags.process` IS NULL), message, "")
  *    | GROK __temp_grok_where_message__ "%{IP:client.ip} %{NUMBER:size:int} %{NUMBER:burn_rate:float}"
  *    | DROP __temp_grok_where_message__
+ *    | EVAL `client.ip` = COALESCE(`client.ip`, `__streamlang_grok_temp_client.ip`), `size` = COALESCE(`size`, `__streamlang_grok_temp_size`), `burn_rate` = COALESCE(`burn_rate`, `__streamlang_grok_temp_burn_rate`)
+ *    | DROP `__streamlang_grok_temp_client.ip`, `__streamlang_grok_temp_size`, `__streamlang_grok_temp_burn_rate`
  *    ```
  */
 export function convertGrokProcessorToESQL(processor: GrokProcessor): ESQLAstCommand[] {
@@ -72,49 +89,61 @@ export function convertGrokProcessorToESQL(processor: GrokProcessor): ESQLAstCom
     commands.push(missingFieldFilter);
   }
 
-  // Check if conditional execution is needed for 'where' clauses, return simple command otherwise
-  const needConditional = ignore_missing || Boolean(where);
-  if (!needConditional) {
-    commands.push(grokCommand);
-    return commands;
-  }
-
-  // Pre-cast existing target fields to their configured GROK types to avoid ES|QL type conflict errors
+  // Extract target field names from the pattern for value preservation
   const { allFields } = parseMultiGrokPatterns([primaryPattern]);
+  const fieldNames = allFields.map((f) => f.name);
+
+  // Pre-cast target fields to their configured GROK types before saving,
+  // so the saved temp columns have matching types for COALESCE
   if (allFields.length > 0) {
     commands.push(...castFieldsToGrokTypes(allFields));
   }
 
-  // Build condition for when GROK should execute
-  const grokCondition = buildWhereCondition(from, ignore_missing, where, conditionToESQLAst);
+  // Save existing target field values before GROK can overwrite them
+  if (fieldNames.length > 0) {
+    commands.push(buildTempFields(fieldNames, SAVE_TEMP_PREFIX));
+  }
 
-  // Create temporary field name for conditional processing
-  // Using CASE, set temporary field to source field if condition passes, empty string otherwise
-  const tempFieldName = `__temp_grok_where_${from}__`;
-  const tempColumn = Builder.expression.column(tempFieldName);
+  const needConditional = ignore_missing || Boolean(where);
+  if (!needConditional) {
+    commands.push(grokCommand);
+  } else {
+    // Build condition for when GROK should execute
+    const grokCondition = buildWhereCondition(from, ignore_missing, where, conditionToESQLAst);
 
-  //
-  commands.push(
-    Builder.command({
-      name: 'eval',
-      args: [
-        Builder.expression.func.binary('=', [
-          tempColumn,
-          Builder.expression.func.call('CASE', [
-            grokCondition,
-            fromColumn,
-            Builder.expression.literal.string(''), // Empty string avoids ES|QL NULL errors that would break the pipeline
+    // Create temporary field name for conditional processing
+    // Using CASE, set temporary field to source field if condition passes, empty string otherwise
+    const tempFieldName = `__temp_grok_where_${from}__`;
+    const tempColumn = Builder.expression.column(tempFieldName);
+
+    commands.push(
+      Builder.command({
+        name: 'eval',
+        args: [
+          Builder.expression.func.binary('=', [
+            tempColumn,
+            Builder.expression.func.call('CASE', [
+              grokCondition,
+              fromColumn,
+              Builder.expression.literal.string(''), // Empty string avoids ES|QL NULL errors that would break the pipeline
+            ]),
           ]),
-        ]),
-      ],
-    })
-  );
+        ],
+      })
+    );
 
-  // Apply GROK to the temporary field
-  commands.push(buildGrokCommand(tempColumn, primaryPattern));
+    // Apply GROK to the temporary field
+    commands.push(buildGrokCommand(tempColumn, primaryPattern));
 
-  // Clean up temporary field
-  commands.push(Builder.command({ name: 'drop', args: [tempColumn] }));
+    // Clean up conditional temporary field
+    commands.push(Builder.command({ name: 'drop', args: [tempColumn] }));
+  }
+
+  // Restore original values where GROK produced NULL
+  if (fieldNames.length > 0) {
+    commands.push(buildRestoreFieldsEval(fieldNames, SAVE_TEMP_PREFIX));
+    commands.push(buildDropColumns(fieldNames.map((f) => `${SAVE_TEMP_PREFIX}${f}`)));
+  }
 
   return commands;
 }

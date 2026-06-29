@@ -651,5 +651,45 @@ apiTest.describe(
         );
       }
     );
+
+    apiTest(
+      'should preserve pre-existing values when ignore_missing is true and grok fails',
+      { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
+      async ({ testBed, esql }) => {
+        const streamlangDSL: StreamlangDSL = {
+          steps: [
+            {
+              action: 'grok',
+              from: 'message',
+              patterns: ['%{IP:client.ip}'],
+              ignore_missing: true,
+              ignore_failure: true,
+            } as GrokProcessor,
+          ],
+        };
+
+        const { processors } = await transpileIngestPipeline(streamlangDSL);
+        const { query } = await transpileEsql(streamlangDSL);
+
+        const docs = [
+          { expect: '192.168.1.1', log: { level: 'info' }, client: { ip: '192.168.1.1' } }, // should preserve pre-existing value
+          { expect: '127.0.0.1', client: { ip: '192.168.1.1' }, message: 'User IP: 127.0.0.1' }, // should grok and overwrite pre-existing value
+          { expect: '192.168.1.1', client: { ip: '192.168.1.1' }, message: 'User IP: N/A' }, // should preserve pre-existing value
+        ];
+
+        await testBed.ingest('ingest-grok-preserve', docs, processors);
+        const ingestResult = await testBed.getFlattenedDocsOrdered('ingest-grok-preserve');
+
+        await testBed.ingest('esql-grok-preserve', docs);
+        const esqlResult = await esql.queryOnIndex('esql-grok-preserve', query);
+
+        ingestResult.forEach((doc) => {
+          expect(doc['client.ip']).toBe(doc.expect);
+        });
+        esqlResult.documentsWithoutKeywordsOrdered.forEach((doc) => {
+          expect(doc['client.ip']).toBe(doc.expect);
+        });
+      }
+    );
   }
 );

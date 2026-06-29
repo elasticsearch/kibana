@@ -132,46 +132,6 @@ apiTest.describe('Streamlang to ES|QL - Grok Processor', () => {
   );
 
   apiTest(
-    'should ignore missing field when ignore_missing is true',
-    { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
-    async ({ testBed, esql }) => {
-      const indexName = 'stream-e2e-test-grok-ignore-missing';
-      const streamlangDSL: StreamlangDSL = {
-        steps: [
-          {
-            action: 'grok',
-            from: 'message',
-            patterns: ['User IP: %{IP:client.ip}'],
-            ignore_missing: true,
-          } as GrokProcessor,
-        ],
-      };
-      const { query } = await transpile(streamlangDSL);
-      const docs = [
-        { expect: null, log: { level: 'info' }, client: { ip: '192.168.1.1' } }, // Should not grok, but nullifies the field
-        { expect: '127.0.0.1', client: { ip: '192.168.1.1' }, message: 'User IP: 127.0.0.1' }, // Should grok
-        { expect: null, client: { ip: '192.168.1.1' }, message: 'User IP: N/A' }, // Should grok
-      ];
-      await testBed.ingest(indexName, docs);
-      const esqlResult = await esql.queryOnIndex(indexName, query);
-
-      // Group documents by their expectation
-      const nullDocs = esqlResult.documents.filter((doc) => doc.expect === null);
-      const ipDocs = esqlResult.documents.filter((doc) => doc.expect === '127.0.0.1');
-
-      // Test all null docs have null client.ip
-      nullDocs.forEach((doc) => {
-        expect(doc['client.ip']).toBeNull();
-      });
-
-      // Test all IP docs have correct client.ip
-      ipDocs.forEach((doc) => {
-        expect(doc['client.ip']).toBe('127.0.0.1');
-      });
-    }
-  );
-
-  apiTest(
     'should filter out if field is missing and ignore_missing is false',
     { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
     async ({ testBed, esql }) => {
@@ -304,8 +264,8 @@ apiTest.describe('Streamlang to ES|QL - Grok Processor', () => {
 
       // Test skipped document
       expectDefined(skipNumericDoc);
-      expect(skipNumericDoc['http.response.body.bytes']).toBeNull(); // Not groked but nullifies the matching field
-      expect(skipNumericDoc['status.keyword']).toBeNull(); // Not groked but nullifies the matching field
+      expect(skipNumericDoc['http.response.body.bytes']).toBe('1024'); // Not groked, pre-existing value is preserved
+      expect(skipNumericDoc['status.keyword']).toBe('preexisting'); // Not groked, pre-existing value is preserved
     }
   );
 
@@ -364,8 +324,8 @@ apiTest.describe('Streamlang to ES|QL - Grok Processor', () => {
 
       // Test document with no message
       expectDefined(noMessageDoc);
-      expect(noMessageDoc['user.name']).toBeNull();
-      expect(noMessageDoc['client.ip']).toBeNull();
+      expect(noMessageDoc['user.name']).toBe('legacy'); // grok failed but pre-existing value is preserved
+      expect(noMessageDoc['client.ip']).toBeNull(); // grok failed, field did not exist before grok
 
       // Test document with no where condition
       expectDefined(noWhereDoc);
@@ -374,8 +334,8 @@ apiTest.describe('Streamlang to ES|QL - Grok Processor', () => {
 
       // Test document with neither condition
       expectDefined(noneDoc);
-      expect(noneDoc['user.name']).toBeNull();
-      expect(noneDoc['client.ip']).toBeNull();
+      expect(noneDoc['user.name']).toBe('offline'); // grok did not run, pre-existing value is preserved
+      expect(noneDoc['client.ip']).toBeNull(); // grok did not run, field did not exist before grok
     }
   );
 
@@ -477,27 +437,27 @@ apiTest.describe('Streamlang to ES|QL - Grok Processor', () => {
 
       // Test skipped document (where fails)
       expectDefined(skipWhereDoc);
-      expect(skipWhereDoc['client.ip']).toBeNull();
-      expect(skipWhereDoc['user.name']).toBeNull();
-      expect(skipWhereDoc['http.response.body.bytes']).toBeNull();
-      expect(skipWhereDoc['http.response.status']).toBeNull();
-      expect(skipWhereDoc['event.duration']).toBeNull();
+      expect(skipWhereDoc['client.ip']).toBe('1.1.1.1');
+      expect(skipWhereDoc['user.name']).toBe('bob');
+      expect(skipWhereDoc['http.response.body.bytes']).toBe(123);
+      expect(skipWhereDoc['http.response.status']).toBe('UNCHANGED');
+      expect(skipWhereDoc['event.duration']).toBeCloseTo(7); // mapped type is long
 
       // Test skipped document (missing message)
       expectDefined(skipMissingDoc);
-      expect(skipMissingDoc['client.ip']).toBeNull();
-      expect(skipMissingDoc['user.name']).toBeNull();
-      expect(skipMissingDoc['http.response.body.bytes']).toBeNull();
-      expect(skipMissingDoc['http.response.status']).toBeNull();
-      expect(skipMissingDoc['event.duration']).toBeNull();
+      expect(skipMissingDoc['client.ip']).toBe('2.2.2.2');
+      expect(skipMissingDoc['user.name']).toBe('carol');
+      expect(skipMissingDoc['http.response.body.bytes']).toBe(456);
+      expect(skipMissingDoc['http.response.status']).toBe('LEGACY');
+      expect(skipMissingDoc['event.duration']).toBeCloseTo(3); // mapped type is long
 
       // Test skipped document (both skip conditions)
       expectDefined(skipBothDoc);
-      expect(skipBothDoc['client.ip']).toBeNull();
-      expect(skipBothDoc['user.name']).toBeNull();
-      expect(skipBothDoc['http.response.body.bytes']).toBeNull();
-      expect(skipBothDoc['http.response.status']).toBeNull();
-      expect(skipBothDoc['event.duration']).toBeNull();
+      expect(skipBothDoc['client.ip']).toBe('999999');
+      expect(skipBothDoc['user.name']).toBe('dave');
+      expect(skipBothDoc['http.response.body.bytes']).toBe(789);
+      expect(skipBothDoc['http.response.status']).toBe('NOOP');
+      expect(skipBothDoc['event.duration']).toBeCloseTo(6); // mapped type is long
     }
   );
 
@@ -536,7 +496,7 @@ apiTest.describe('Streamlang to ES|QL - Grok Processor', () => {
 
       // Test skipped document
       expectDefined(skippedDoc);
-      expect(skippedDoc.size).toBeNull();
+      expect(skippedDoc.size).toBe(88); // mapped type is long
     }
   );
 
