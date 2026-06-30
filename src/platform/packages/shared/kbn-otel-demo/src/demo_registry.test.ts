@@ -12,12 +12,15 @@ import {
   DEMO_CONFIGS,
   DEMO_MANIFESTS,
   DEMO_SCENARIOS,
+  DEMO_CODE_SCENARIOS,
   DEMO_SERVICE_DEFAULTS,
   getDemoConfig,
   getDemoManifests,
   getDemoScenarios,
+  getDemoCodeScenarios,
   getDemoServiceDefaults,
   getScenarioById,
+  getCodeScenarioById,
   getScenariosByCategory,
   listAvailableDemos,
   listScenarioIds,
@@ -57,6 +60,12 @@ describe('demo_registry', () => {
       for (const demoType of ALL_DEMO_TYPES) {
         expect(typeof DEMO_SERVICE_DEFAULTS[demoType]).toBe('object');
       }
+    });
+
+    it('should register code scenarios only for demos that support them', () => {
+      expect(DEMO_CODE_SCENARIOS['otel-demo']).toBeDefined();
+      expect(getDemoCodeScenarios('otel-demo')).toHaveLength(5);
+      expect(getDemoCodeScenarios('bank-of-anthos')).toEqual([]);
     });
   });
 
@@ -128,6 +137,19 @@ describe('demo_registry', () => {
 
     it('should return undefined for non-existent scenario', () => {
       const scenario = getScenarioById('bank-of-anthos', 'non-existent-scenario');
+      expect(scenario).toBeUndefined();
+    });
+  });
+
+  describe('getCodeScenarioById', () => {
+    it('should find an OTel code scenario by id', () => {
+      const scenario = getCodeScenarioById('otel-demo', 'shipping-timeout-regression');
+      expect(scenario).toBeDefined();
+      expect(scenario?.affectedServices).toEqual(['shipping']);
+    });
+
+    it('should return undefined for demos without code scenarios', () => {
+      const scenario = getCodeScenarioById('bank-of-anthos', 'shipping-timeout-regression');
       expect(scenario).toBeUndefined();
     });
   });
@@ -260,6 +282,27 @@ describe('demo_registry', () => {
     });
   });
 
+  describe('CodeScenario validation', () => {
+    it('should have valid OTel code scenario structure', () => {
+      const config = DEMO_CONFIGS['otel-demo'];
+      const scenarios = getDemoCodeScenarios('otel-demo');
+      const ids = scenarios.map((scenario) => scenario.id);
+
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const scenario of scenarios) {
+        expect(typeof scenario.id).toBe('string');
+        expect(typeof scenario.name).toBe('string');
+        expect(typeof scenario.description).toBe('string');
+        expect(['dramatic', 'subtle']).toContain(scenario.category);
+        expect(scenario.bugPatch.patch).toContain('diff --git');
+        expect(scenario.affectedServices.length).toBeGreaterThan(0);
+        for (const service of scenario.affectedServices) {
+          expect(config.serviceSourcePaths?.[service]).toBeDefined();
+        }
+      }
+    });
+  });
+
   describe('Manifest generation', () => {
     const mockOptions = {
       version: 'v1.0.0',
@@ -284,6 +327,42 @@ describe('demo_registry', () => {
         expect(yaml).toContain('path: privatekey');
         expect(yaml).toContain('path: publickey');
         expect(yaml).toContain('mountPath: /tmp/.ssh');
+      });
+    });
+
+    describe('otel-demo image overrides', () => {
+      it('should use local image overrides with imagePullPolicy Never', () => {
+        const config = DEMO_CONFIGS['otel-demo'];
+        const manifestGenerator = DEMO_MANIFESTS['otel-demo'];
+        const yaml = manifestGenerator.generate({
+          ...mockOptions,
+          config,
+          imageOverrides: {
+            shipping: 'otel-demo-scenario/shipping:latest',
+          },
+        });
+
+        expect(yaml).toContain('image: otel-demo-scenario/shipping:latest');
+        expect(yaml).toContain('imagePullPolicy: Never');
+      });
+
+      it('should apply resource overrides for code scenario services', () => {
+        const config = DEMO_CONFIGS['otel-demo'];
+        const manifestGenerator = DEMO_MANIFESTS['otel-demo'];
+        const yaml = manifestGenerator.generate({
+          ...mockOptions,
+          config,
+          resourceOverrides: {
+            'product-catalog': {
+              requests: { memory: '64Mi' },
+              limits: { memory: '128Mi' },
+            },
+          },
+        });
+
+        expect(yaml).toContain('resources:');
+        expect(yaml).toContain('memory: 64Mi');
+        expect(yaml).toContain('memory: 128Mi');
       });
     });
 

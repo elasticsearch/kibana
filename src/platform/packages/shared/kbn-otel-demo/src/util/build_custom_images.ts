@@ -126,9 +126,45 @@ async function buildImageWithMinikube(
   }
 
   log.info(`  Building ${chalk.cyan(imageName)}...`);
-  await execa.command(`minikube image build -t ${imageName} -f ${dockerfilePath} ${context}`, {
-    stdio: 'pipe',
-  });
+  const { stdout, stderr } = await execa.command(
+    `minikube image build -t ${imageName} -f ${dockerfilePath} ${context}`,
+    {
+      stdio: 'pipe',
+    }
+  );
+  const buildOutput = `${stdout}\n${stderr}`;
+  if (
+    buildOutput.includes('ERROR: failed to build') ||
+    buildOutput.includes('failed to solve') ||
+    buildOutput.includes('did not complete successfully')
+  ) {
+    throw new Error(`Failed to build ${imageName}:\n${buildOutput}`);
+  }
+
+  if (!(await imageExistsInMinikube(imageName))) {
+    throw new Error(`Image ${imageName} was not found in minikube after build:\n${buildOutput}`);
+  }
+}
+
+export async function buildImagesFromRepo(
+  log: ToolingLog,
+  repoDir: string,
+  images: ImageBuildConfig['images'],
+  forceRebuild = false
+): Promise<void> {
+  log.info('Building images with minikube...');
+  for (const image of images) {
+    const imageName = image.name;
+    const context = Path.join(repoDir, image.context);
+
+    if (!forceRebuild && (await imageExistsInMinikube(imageName))) {
+      log.info(`  ${chalk.green('✔')} ${imageName} already exists, skipping`);
+      continue;
+    }
+
+    await buildImageWithMinikube(log, imageName, context, image.dockerfile);
+    log.info(`  ${chalk.green('✔')} ${imageName} built successfully`);
+  }
 }
 
 export async function buildCustomImages(
@@ -150,19 +186,7 @@ export async function buildCustomImages(
     });
   }
 
-  log.info('Building images with minikube...');
-  for (const image of config.images) {
-    const imageName = image.name;
-    const context = Path.join(repoDir, image.context);
-
-    if (!forceRebuild && (await imageExistsInMinikube(imageName))) {
-      log.info(`  ${chalk.green('✔')} ${imageName} already exists, skipping`);
-      continue;
-    }
-
-    await buildImageWithMinikube(log, imageName, context, image.dockerfile);
-    log.info(`  ${chalk.green('✔')} ${imageName} built successfully`);
-  }
+  await buildImagesFromRepo(log, repoDir, config.images, forceRebuild);
 }
 
 export function getRepoDir(demoId: string): string {

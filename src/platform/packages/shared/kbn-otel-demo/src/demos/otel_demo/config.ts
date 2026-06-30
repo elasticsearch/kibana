@@ -23,6 +23,21 @@ export const otelDemoConfig: DemoConfig = {
     'OpenTelemetry instrumentation showcase - 11 microservices in Go, C#, Java, Python, JavaScript, Rust, PHP',
   defaultVersion: '1.12.0',
   availableVersions: ['1.12.0', '1.11.1', '1.11.0', '1.10.0'],
+  serviceSourcePaths: {
+    accounting: { context: '.', dockerfile: 'src/accountingservice/Dockerfile' },
+    ad: { context: '.', dockerfile: 'src/adservice/Dockerfile' },
+    cart: { context: '.', dockerfile: 'src/cartservice/src/Dockerfile' },
+    checkout: { context: '.', dockerfile: 'src/checkoutservice/Dockerfile' },
+    currency: { context: '.', dockerfile: 'src/currencyservice/Dockerfile' },
+    email: { context: '.', dockerfile: 'src/emailservice/Dockerfile' },
+    frontend: { context: '.', dockerfile: 'src/frontend/Dockerfile' },
+    'load-generator': { context: '.', dockerfile: 'src/loadgenerator/Dockerfile' },
+    payment: { context: '.', dockerfile: 'src/paymentservice/Dockerfile' },
+    'product-catalog': { context: '.', dockerfile: 'src/productcatalogservice/Dockerfile' },
+    quote: { context: '.', dockerfile: 'src/quoteservice/Dockerfile' },
+    recommendation: { context: '.', dockerfile: 'src/recommendationservice/Dockerfile' },
+    shipping: { context: '.', dockerfile: 'src/shippingservice/Dockerfile' },
+  },
 
   frontendService: {
     name: 'frontend',

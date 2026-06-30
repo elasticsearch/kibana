@@ -39,6 +39,8 @@ const investigationAgent = {
           platformStreamsSigEventsTools.searchKnowledgeIndicators,
           platformCoreTools.executeEsql,
           platformCoreTools.generateEsql,
+          platformCoreTools.executeWorkflow,
+          platformCoreTools.getWorkflowExecutionStatus,
           OBSERVABILITY_GET_LOGS_TOOL_ID,
           OBSERVABILITY_GET_INDEX_INFO_TOOL_ID,
           OBSERVABILITY_GET_SERVICE_TOPOLOGY_TOOL_ID,

@@ -16,6 +16,8 @@ import {
   getDemoConfig,
   getDemoScenarios,
   getScenarioById,
+  getDemoCodeScenarios,
+  getCodeScenarioById,
 } from '../src/demo_registry';
 
 run(
@@ -34,6 +36,7 @@ run(
 
     const demoConfig = getDemoConfig(demoType);
     const demoScenarios = getDemoScenarios(demoType);
+    const demoCodeScenarios = getDemoCodeScenarios(demoType);
 
     // Handle --list-demos
     if (flags['list-demos']) {
@@ -69,6 +72,33 @@ run(
       return Promise.resolve();
     }
 
+    // Handle --list-code-scenarios
+    if (flags['list-code-scenarios']) {
+      if (demoCodeScenarios.length === 0) {
+        log.info(`No code scenarios are available for ${demoConfig.displayName}.`);
+        return Promise.resolve();
+      }
+
+      log.info(`Code scenarios for ${demoConfig.displayName}:`);
+      log.info('');
+      log.info('DRAMATIC (service-breaking):');
+      demoCodeScenarios
+        .filter((s) => s.category === 'dramatic')
+        .forEach((s) => {
+          log.info(`  ${s.id.padEnd(35)} - ${s.name}`);
+          log.info(`    ${chalk.dim(s.description)}`);
+        });
+      log.info('');
+      log.info('SUBTLE (degraded performance/observability):');
+      demoCodeScenarios
+        .filter((s) => s.category === 'subtle')
+        .forEach((s) => {
+          log.info(`  ${s.id.padEnd(35)} - ${s.name}`);
+          log.info(`    ${chalk.dim(s.description)}`);
+        });
+      return Promise.resolve();
+    }
+
     const controller = new AbortController();
 
     addCleanupTask(() => {
@@ -83,6 +113,7 @@ run(
     const reset = Boolean(flags.reset);
     const forceRebuildImages = Boolean(flags['rebuild-images']);
     const useVanillaCollector = Boolean(flags.vanilla);
+    const codeScenarioId = flags['code-scenario'] ? String(flags['code-scenario']) : undefined;
 
     // Parse scenario flags
     const scenarioIds: string[] = [];
@@ -99,12 +130,21 @@ run(
       }
     }
 
+    if (codeScenarioId && !getCodeScenarioById(demoType, codeScenarioId)) {
+      throw new Error(
+        `Unknown code scenario: ${codeScenarioId}. Use --list-code-scenarios to see available code scenarios for ${demoType}.`
+      );
+    }
+
     // Handle --patch or --reset (apply/remove scenarios on running cluster)
     if (patch || reset) {
       return patchScenarios({
         log,
         demoType,
         scenarioIds: reset ? [] : scenarioIds,
+        codeScenarioId: reset ? undefined : codeScenarioId,
+        configPath,
+        version,
         reset,
       }).catch((error) => {
         throw new Error('Failed to patch scenarios', { cause: error });
@@ -120,6 +160,7 @@ run(
       version,
       teardown,
       scenarioIds,
+      codeScenarioId,
       forceRebuildImages,
       useVanillaCollector,
     }).catch((error) => {
@@ -143,11 +184,12 @@ run(
       failure scenario injection for testing observability.
     `,
     flags: {
-      string: ['config', 'logs-index', 'scenario', 'demo', 'version'],
+      string: ['config', 'logs-index', 'scenario', 'demo', 'version', 'code-scenario'],
       boolean: [
         'teardown',
         'list-demos',
         'list-scenarios',
+        'list-code-scenarios',
         'patch',
         'reset',
         'rebuild-images',
@@ -172,7 +214,10 @@ run(
         --logs-index       Index name for logs (defaults to "logs.otel")
         --list-demos       List all available demo environments
         --list-scenarios   List failure scenarios for selected demo
+        --list-code-scenarios
+                           List code scenarios for selected demo
         --scenario, -s     Apply a failure scenario (can be repeated)
+        --code-scenario    Apply a code scenario (otel-demo only)
         --patch, -p        Patch scenarios onto running cluster (works with --scenario)
         --reset, -r        Reset all scenarios to defaults
         --teardown         Stop and remove demo deployment

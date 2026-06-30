@@ -283,6 +283,11 @@ function createDeployment(opts: {
   namespace: string;
   demoId: string;
   image: string;
+  imagePullPolicy?: string;
+  resources?: {
+    requests?: { memory?: string; cpu?: string };
+    limits?: { memory?: string; cpu?: string };
+  };
   ports?: number[];
   env?: Record<string, string>;
   args?: string[];
@@ -325,6 +330,8 @@ function createDeployment(opts: {
             {
               name: opts.name,
               image: opts.image,
+              ...(opts.imagePullPolicy && { imagePullPolicy: opts.imagePullPolicy }),
+              ...(opts.resources && { resources: opts.resources }),
               ...(opts.args && { args: opts.args }),
               ...(opts.ports && { ports: opts.ports.map((p) => ({ containerPort: p })) }),
               ...(envList.length > 0 && { env: envList }),
@@ -367,6 +374,8 @@ export const otelDemoManifests: DemoManifestGenerator = {
     const namespace = options.config.namespace;
     const demoId = options.config.id;
     const envOverrides = options.envOverrides || {};
+    const imageOverrides = options.imageOverrides || {};
+    const resourceOverrides = options.resourceOverrides || {};
 
     // Add common manifests (namespace, collector, etc.)
     manifests.push(...createCommonManifests(options));
@@ -429,12 +438,16 @@ export const otelDemoManifests: DemoManifestGenerator = {
       const serviceEnvOverrides = envOverrides[svc.name] || {};
       finalEnv = { ...finalEnv, ...serviceEnvOverrides };
 
+      const imageOverride = imageOverrides[svc.name];
+
       manifests.push(
         createDeployment({
           name: svc.name,
           namespace,
           demoId,
-          image: svc.image,
+          image: imageOverride || svc.image,
+          ...(imageOverride ? { imagePullPolicy: 'Never' } : {}),
+          resources: resourceOverrides[svc.name] || svc.resources,
           ports: svc.port ? [svc.port] : [],
           env: finalEnv,
         })

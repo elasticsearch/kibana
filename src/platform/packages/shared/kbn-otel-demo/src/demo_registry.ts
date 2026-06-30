@@ -7,7 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { DemoType, DemoConfig, DemoManifestGenerator, FailureScenario } from './types';
+import type {
+  CodeScenario,
+  DemoType,
+  DemoConfig,
+  DemoManifestGenerator,
+  FailureScenario,
+} from './types';
 import {
   otelDemoConfig,
   SERVICE_DEFAULTS as OTEL_SERVICE_DEFAULTS,
@@ -44,6 +50,7 @@ import {
 } from './demos/rust_k8s_demo/config';
 import { rustK8sDemoManifests } from './demos/rust_k8s_demo/manifests';
 import { RUST_K8S_DEMO_SCENARIOS } from './demos/rust_k8s_demo/scenarios';
+import { CODE_SCENARIOS } from './code_scenarios';
 
 /**
  * Registry of all available demo configurations
@@ -79,6 +86,10 @@ export const DEMO_SCENARIOS: Record<DemoType, FailureScenario[]> = {
   'quarkus-super-heroes': QUARKUS_SUPER_HEROES_SCENARIOS,
   'aws-retail-store': AWS_RETAIL_STORE_SCENARIOS,
   'rust-k8s-demo': RUST_K8S_DEMO_SCENARIOS,
+};
+
+export const DEMO_CODE_SCENARIOS: Partial<Record<DemoType, CodeScenario[]>> = {
+  'otel-demo': CODE_SCENARIOS,
 };
 
 /**
@@ -135,6 +146,15 @@ export function getDemoServiceDefaults(type: DemoType): Record<string, Record<st
 export function getScenarioById(type: DemoType, id: string): FailureScenario | undefined {
   const scenarios = getDemoScenarios(type);
   return scenarios.find((s) => s.id === id);
+}
+
+export function getDemoCodeScenarios(type: DemoType): CodeScenario[] {
+  return DEMO_CODE_SCENARIOS[type] || [];
+}
+
+export function getCodeScenarioById(type: DemoType, id: string): CodeScenario | undefined {
+  const scenarios = getDemoCodeScenarios(type);
+  return scenarios.find((scenario) => scenario.id === id);
 }
 
 /**

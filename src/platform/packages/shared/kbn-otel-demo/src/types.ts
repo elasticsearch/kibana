@@ -51,6 +51,11 @@ export interface ServiceConfig {
   }>;
 }
 
+export interface ServiceSourcePath {
+  context: string;
+  dockerfile?: string;
+}
+
 /**
  * Configuration for a demo environment
  */
@@ -91,6 +96,8 @@ export interface DemoConfig {
     }>;
     preBuildCommand?: string;
   };
+  /** Source checkout build paths keyed by service name */
+  serviceSourcePaths?: Record<string, ServiceSourcePath>;
 }
 
 /**
@@ -116,6 +123,28 @@ export interface FailureScenario {
   recovery: FailureScenarioStep[];
 }
 
+export interface PatchEntry {
+  /** Path relative to the OTel demo repo root */
+  file: string;
+  /** Unified diff string in git format */
+  patch: string;
+  /** Plausible commit message for this patch */
+  commitMessage: string;
+}
+
+export interface CodeScenario {
+  id: string;
+  name: string;
+  description: string;
+  category: 'dramatic' | 'subtle';
+  /** The actual bug patch, inserted at a random position in history */
+  bugPatch: PatchEntry;
+  /** Service names to rebuild and redeploy */
+  affectedServices: string[];
+  /** Optional per-service resource overrides needed to make the runtime symptom visible */
+  resourceOverrides?: Record<string, ServiceConfig['resources']>;
+}
+
 /**
  * Options for generating Kubernetes manifests
  */
@@ -129,6 +158,10 @@ export interface ManifestOptions {
   collectorConfigYaml: string;
   /** Per-service environment variable overrides from failure scenarios */
   envOverrides?: Record<string, Record<string, string>>;
+  /** Per-service image overrides from code scenarios */
+  imageOverrides?: Record<string, string>;
+  /** Per-service resource overrides from code scenarios */
+  resourceOverrides?: Record<string, ServiceConfig['resources']>;
   /** Host aliases to inject into the collector pod for DNS resolution from inside pods */
   hostAliases?: Array<{ ip: string; hostnames: string[] }>;
   /** OTel Collector container image — always set by ensure_otel_demo (EDOT by default, vanilla with --vanilla) */
