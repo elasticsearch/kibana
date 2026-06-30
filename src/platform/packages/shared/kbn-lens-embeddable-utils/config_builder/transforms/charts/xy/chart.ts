@@ -14,7 +14,7 @@ import type { XYConfig, XYConfigNoESQL, XYConfigESQL, XYLayer } from '../../../s
 import type { DataSourceStateLayer } from '../../utils';
 import { convertLegendToAPIFormat, convertLegendToStateFormat } from './legend';
 import { buildXYLayer } from './state_layers';
-import { getIdForLayer, isAPIesqlXYLayer, isLensStateDataLayer } from './helpers';
+import { isAPIesqlXYLayer, isLensStateDataLayer } from './helpers';
 import { nonNullable, isFormBasedLayer, isTextBasedLayer } from '../../utils';
 import { getReversibleMappings, getScaleTypeFromColumnType } from '../utils';
 import {
@@ -168,23 +168,12 @@ function getLayerPresence(dataLayers: XYDataLayerConfig[]): LayerPresence {
   };
 }
 
-type LayerToDataView = Record<string, string>;
-
 export function buildVisualizationState(
   config: XYConfig,
-  usedDataViews: LayerToDataView,
   annotationGroupReferences: SavedObjectReference[]
 ): XYPersistedState {
   const layers = config.layers
-    .map((layer, index) =>
-      buildXYLayer(
-        config,
-        layer,
-        index,
-        usedDataViews[getIdForLayer(layer, index)],
-        annotationGroupReferences
-      )
-    )
+    .map((layer, index) => buildXYLayer(config, layer, index, annotationGroupReferences))
     .filter(nonNullable);
   return {
     preferredSeriesType: layers.filter(isLensStateDataLayer)[0]?.seriesType ?? 'bar_stacked',

@@ -64,7 +64,16 @@ export const getTransformOut = (
       return injectedState as LensByValueTransformOutResult;
     }
 
-    const chartType = builder.getType(migratedAttributes);
+    // Use the reference-injected attributes (not `migratedAttributes`) so the
+    // resolved/remapped panel references win over the chart's embedded ones.
+    // When a dashboard is copied to another space, SO import remaps the panel
+    // `index-pattern` references; `toAPIFormat` reads data view ids from the
+    // attributes' references, so it must see the remapped ids. Otherwise the
+    // panel keeps the original (wrong-space) data view id and fails to render.
+    // See https://github.com/elastic/kibana/issues/268821.
+    const injectedAttributes = injectedState.attributes ?? migratedAttributes;
+
+    const chartType = builder.getType(injectedAttributes);
     // should be filtered out my unmapped panel check
     if (!builder.isSupported(chartType)) {
       throw new Error(`Lens "${chartType}" chart type is not supported`);
@@ -75,8 +84,8 @@ export const getTransformOut = (
       description: __, // ignore attributes description
       ...apiConfig
     } = builder.toAPIFormat({
-      ...migratedAttributes,
-      visualizationType: migratedAttributes.visualizationType ?? LENS_UNKNOWN_VIS,
+      ...injectedAttributes,
+      visualizationType: injectedAttributes.visualizationType ?? LENS_UNKNOWN_VIS,
     });
 
     return {

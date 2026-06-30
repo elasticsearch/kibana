@@ -957,7 +957,13 @@ const annotationManualRange = schema.object(
 const annotationLayerByValueSchema = schema.object(
   {
     ...ignoringGlobalFiltersSchemaRaw,
-    ...dataSourceSchema,
+    // A by-value annotation layer does not require its own data source: manual
+    // point-in-time/range annotations carry no field references and the Lens XY
+    // renderer resolves the data view by falling back to the chart's data layers.
+    // When omitted, the data view is re-derived from the sibling data layers when
+    // converting back to Lens state. See
+    // x-pack/.../lens/public/visualizations/xy/persistence.ts.
+    data_source: schema.maybe(dataSourceSchema.data_source),
     type: schema.literal('annotations'),
     events: schema.arrayOf(
       schema.oneOf([annotationQuery, annotationManualEvent, annotationManualRange]),

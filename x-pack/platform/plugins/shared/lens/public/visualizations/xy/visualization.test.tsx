@@ -3414,6 +3414,29 @@ describe('xy_visualization', () => {
             })
           );
         });
+        it('should return a data view not found error instead of throwing when the annotation data view is missing', () => {
+          // Regression test for https://github.com/elastic/kibana/issues/268821:
+          // when the annotation layer references an index-pattern that does not
+          // exist in the current space, getUserMessages must not throw.
+          const xyState = createStateWithAnnotationProps({});
+          const annotationLayer = xyState.layers.find(
+            (layer) => layer.layerType === layerTypes.ANNOTATIONS
+          )!;
+          // Point the annotation layer at a data view that is not loaded.
+          (annotationLayer as { indexPatternId: string }).indexPatternId = 'missing-data-view';
+
+          let errors: ReturnType<typeof getErrorMessages>;
+          expect(() => {
+            errors = getErrorMessages(xyVisualization, xyState, getFrameMock());
+          }).not.toThrow();
+          expect(errors!).toHaveLength(1);
+          expect(errors![0]).toEqual(
+            expect.objectContaining({
+              shortMessage: 'Data view missing-data-view not found',
+            })
+          );
+        });
+
         it('should return error if current annotation contains non existent field as textField', () => {
           const xyState = createStateWithAnnotationProps({
             textField: 'non-existent',

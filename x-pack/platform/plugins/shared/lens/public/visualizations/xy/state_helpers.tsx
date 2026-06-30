@@ -37,6 +37,7 @@ import {
   isByReferenceAnnotationsLayer,
 } from './visualization_helpers';
 import {
+  ANNOTATION_DATAVIEW_NOT_FOUND,
   ANNOTATION_INVALID_FILTER_QUERY,
   ANNOTATION_MISSING_TIME_FIELD,
   ANNOTATION_MISSING_TOOLTIP_FIELD,
@@ -257,6 +258,23 @@ export function getAnnotationLayerErrors(
   const layerDataView = dataViews.indexPatterns[layer.indexPatternId];
 
   const invalidMessages: UserMessage[] = [];
+
+  // The annotation layer's data view can be missing (e.g. the referenced
+  // index-pattern saved object does not exist in the current space). Surface a
+  // clean error instead of dereferencing an undefined data view below.
+  if (!layerDataView) {
+    return [
+      createAnnotationErrorMessage(
+        ANNOTATION_DATAVIEW_NOT_FOUND,
+        i18n.translate('xpack.lens.xyChart.annotationError.dataViewNotFound', {
+          defaultMessage: 'Data view {dataView} not found',
+          values: { dataView: layer.indexPatternId },
+        }),
+        annotation.id,
+        annotation.label
+      ),
+    ];
+  }
 
   if (annotation.timeField == null || annotation.timeField === '') {
     invalidMessages.push(

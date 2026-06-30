@@ -34,4 +34,33 @@ describe('getTransformOut', () => {
       expect(result.title).toEqual(title);
     }
   );
+
+  // Regression test for https://github.com/elastic/kibana/issues/268821
+  // When a dashboard is copied to another space, SO import remaps the panel's
+  // index-pattern references to the new space's data view ids. The apiFormat
+  // output must reflect the remapped ids (taken from `panelReferences`), not the
+  // chart's original embedded references; otherwise the copied panel points at
+  // the wrong-space data view and fails to render.
+  it('uses remapped panel references for the apiFormat data view id', () => {
+    const builder = new LensConfigBuilder(undefined, true);
+    const transformOut = getTransformOut(builder, transformDrilldownsOut, true);
+
+    const originalReference = simpleMetricAttributes.references[0];
+    const remappedDataViewId = 'remapped-data-view-id';
+
+    const storedState: LensByValueSerializedState = {
+      title: 'Metric',
+      attributes: {
+        ...simpleMetricAttributes,
+      },
+      references: [],
+    };
+
+    const result = transformOut(storedState, [
+      // Same reference name, remapped id (as produced by copy-to-space).
+      { ...originalReference, id: remappedDataViewId },
+    ]) as { data_source?: { type: string; ref_id?: string } };
+
+    expect(result.data_source).toEqual(expect.objectContaining({ ref_id: remappedDataViewId }));
+  });
 });

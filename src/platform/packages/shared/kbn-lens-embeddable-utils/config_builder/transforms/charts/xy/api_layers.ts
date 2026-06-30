@@ -478,18 +478,31 @@ export function buildAPIAnnotationsLayer(
       ? layer.indexPatternId
       : findAnnotationDataView(layer.layerId, references);
 
-  if (!indexPatternId) {
-    // shouldn't happen unless data is corrupt
-    throw new Error('XY visualization: cannot find data view ID for annotation layer.');
-  }
-
   // eslint-disable-next-line @typescript-eslint/naming-convention
   const ignore_global_filters =
     layer.ignoreGlobalFilters ?? LENS_IGNORE_GLOBAL_FILTERS_DEFAULT_VALUE;
   const adHocDataView = adHocDataViews[layer.layerId];
   const referencedDataView = findAnnotationDataView(layer.layerId, references);
-  const dataSource = (
-    isDataViewSpec(adHocDataView) && adHocDataView?.id === indexPatternId
+
+  // Only query annotations actually query an index, so the data view is only
+  // meaningful for them. Manual point/range annotations are positioned purely by
+  // timestamp and don't need a data view: we omit `data_source` for those layers
+  // so the API output isn't polluted with an unused data view, and the data view
+  // is re-derived from the chart's data layers when converting back to state.
+  const hasQueryAnnotation = layer.annotations.some(isQueryAnnotationConfig);
+
+  if (hasQueryAnnotation && !indexPatternId) {
+    // A query annotation without a resolvable data view cannot be represented.
+    throw new Error('XY visualization: cannot find data view ID for annotation layer.');
+  }
+
+  const dataSource: Extract<
+    DataSourceType,
+    { type: typeof AS_CODE_DATA_VIEW_REFERENCE_TYPE | typeof AS_CODE_DATA_VIEW_SPEC_TYPE }
+  > | null =
+    !hasQueryAnnotation || !indexPatternId
+      ? null
+      : isDataViewSpec(adHocDataView) && adHocDataView?.id === indexPatternId
       ? {
           type: AS_CODE_DATA_VIEW_SPEC_TYPE,
           index_pattern: indexPatternId,
@@ -498,14 +511,10 @@ export function buildAPIAnnotationsLayer(
       : {
           type: AS_CODE_DATA_VIEW_REFERENCE_TYPE,
           ref_id: referencedDataView ?? indexPatternId,
-        }
-  ) satisfies Extract<
-    DataSourceType,
-    { type: typeof AS_CODE_DATA_VIEW_REFERENCE_TYPE | typeof AS_CODE_DATA_VIEW_SPEC_TYPE }
-  >;
+        };
   return {
     type: 'annotations',
-    data_source: dataSource,
+    ...(dataSource ? { data_source: dataSource } : {}),
     ignore_global_filters,
     events: layer.annotations.map((annotation) => {
       if (isQueryAnnotationConfig(annotation)) {

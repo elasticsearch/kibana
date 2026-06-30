@@ -9,9 +9,9 @@
 
 import type {
   SeriesType,
-  XYAnnotationLayerConfig,
   XYDataLayerConfig,
   XYPersistedByReferenceAnnotationLayerConfig,
+  XYPersistedByValueAnnotationLayerConfig,
   XYPersistedLayerConfig,
   XYReferenceLineLayerConfig,
   YConfig,
@@ -115,13 +115,17 @@ function buildDataLayer(config: XYConfig, layer: DataLayerType, i: number): XYDa
 
 function buildByValueAnnotationLayer(
   layer: AnnotationLayerByValueType,
-  i: number,
-  dataViewId: string
-): XYAnnotationLayerConfig {
+  i: number
+): XYPersistedByValueAnnotationLayerConfig {
+  // Emit a persisted by-value annotation layer (no `indexPatternId` by design). The Lens
+  // XY runtime injects the data view at load time from the
+  // `xy-visualization-layer-<layerId>` reference, falling back to the first
+  // index-pattern reference when the layer has no dedicated data view.
+  // See x-pack/.../lens/public/visualizations/xy/persistence.ts.
   return {
     layerType: 'annotations',
+    persistanceType: 'byValue',
     layerId: getIdForLayer(layer, i),
-    indexPatternId: dataViewId,
     ignoreGlobalFilters: layer.ignore_global_filters,
     annotations: layer.events.map((annotation, index) => {
       if (annotation.type === 'range') {
@@ -222,7 +226,6 @@ export function buildXYLayer(
   config: XYConfig,
   layer: unknown,
   i: number,
-  dataViewId: string,
   annotationGroupReferences: SavedObjectReference[]
 ): XYPersistedLayerConfig | undefined {
   if (!isAPIXYLayer(layer)) {
@@ -251,7 +254,7 @@ export function buildXYLayer(
     }
 
     // by-value annotation layer
-    return buildByValueAnnotationLayer(layer, i, dataViewId);
+    return buildByValueAnnotationLayer(layer, i);
   }
   if (isAPIReferenceLineLayer(layer)) {
     return buildReferenceLineLayer(layer, i);

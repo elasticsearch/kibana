@@ -63,7 +63,11 @@ export function isAPIXYLayer(layer: unknown): layer is XYLayer {
 }
 
 export function isAPIesqlXYLayer(layer: XYLayer): layer is LayerTypeESQL {
-  return 'data_source' in layer && isEsqlTableTypeDataSource(layer.data_source);
+  return (
+    'data_source' in layer &&
+    layer.data_source != null &&
+    isEsqlTableTypeDataSource(layer.data_source)
+  );
 }
 
 export function isLensStateDataLayer(
