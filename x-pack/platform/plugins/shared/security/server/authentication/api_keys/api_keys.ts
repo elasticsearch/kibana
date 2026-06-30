@@ -173,7 +173,13 @@ export class APIKeys implements NativeAPIKeysType {
         result = await scopedClusterClient.asCurrentUser.transport.request<CreateAPIKeyResult>({
           method: 'POST',
           path: '/_security/cross_cluster/api_key',
-          body: { name, expiration, metadata, access: createParams.access },
+          body: {
+            name,
+            expiration,
+            metadata,
+            access: createParams.access,
+            certificate_identity: createParams.certificate_identity,
+          },
         });
       } else {
         result = await scopedClusterClient.asCurrentUser.security.createApiKey({
@@ -216,7 +222,7 @@ export class APIKeys implements NativeAPIKeysType {
       return null;
     }
 
-    const { type, id, metadata } = updateParams;
+    const { type, id, expiration, metadata } = updateParams;
     const scopedClusterClient = this.clusterClient.asScoped(request);
 
     this.logger.debug('Trying to edit an API key');
@@ -227,11 +233,17 @@ export class APIKeys implements NativeAPIKeysType {
         result = await scopedClusterClient.asCurrentUser.transport.request<UpdateAPIKeyResult>({
           method: 'PUT',
           path: `/_security/cross_cluster/api_key/${id}`,
-          body: { metadata, access: updateParams.access },
+          body: {
+            expiration,
+            metadata,
+            access: updateParams.access,
+            certificate_identity: updateParams.certificate_identity,
+          },
         });
       } else {
         result = await scopedClusterClient.asCurrentUser.security.updateApiKey({
           id,
+          expiration,
           metadata,
           role_descriptors:
             'role_descriptors' in updateParams

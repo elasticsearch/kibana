@@ -9,7 +9,7 @@ import type { estypes } from '@elastic/elasticsearch';
 import type { Criteria, EuiSearchBarOnChangeArgs, Query } from '@elastic/eui';
 import { EuiButton, EuiCallOut, EuiSearchBar, EuiSpacer } from '@elastic/eui';
 import type { FunctionComponent } from 'react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import useAsyncFn from 'react-use/lib/useAsyncFn';
 
@@ -29,7 +29,7 @@ import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 import { Route } from '@kbn/shared-ux-router';
 
 import { ApiKeysEmptyPrompt } from './api_keys_empty_prompt';
-import { ApiKeysTable } from './api_keys_table';
+import { ApiKeysTable, categorizeAggregations } from './api_keys_table';
 import type { QueryFilters } from './api_keys_table';
 import { InvalidateProvider } from './invalidate_provider';
 import { Breadcrumb } from '../../../components/breadcrumb';
@@ -200,6 +200,33 @@ export const APIKeysGridPage: FunctionComponent = () => {
     queryApiKeysAndAggregations(DEFAULT_TABLE_STATE);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The table defaults to the personal (`rest`) view. If the user has no personal keys but does have
+  // keys of other types (e.g. only cross-cluster keys), the default view would be empty. In that
+  // case, switch once to the first available type so the user's keys are visible on load.
+  const hasAutoSelectedTypeRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoSelectedTypeRef.current || !state.value) {
+      return;
+    }
+
+    const [result] = state.value;
+    const queryFailed = 'queryError' in result && result.queryError;
+    const loadedApiKeys = 'apiKeys' in result ? result.apiKeys : undefined;
+
+    if (queryFailed || tableState.filters.type !== 'rest' || loadedApiKeys?.length) {
+      return;
+    }
+
+    const { typeFilters } = categorizeAggregations(result.aggregations);
+    if (typeFilters.length === 0 || typeFilters.includes('rest')) {
+      return;
+    }
+
+    hasAutoSelectedTypeRef.current = true;
+    const nextType = typeFilters.includes('cross_cluster') ? 'cross_cluster' : typeFilters[0];
+    onFilterChange({ type: nextType });
+  }, [state.value]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!state.value) {
     if (state.loading) {
       return (
@@ -270,10 +297,19 @@ export const APIKeysGridPage: FunctionComponent = () => {
           href="/create"
         >
           <ApiKeyFlyout
-            onSuccess={(createApiKeyResponse) => {
+            onSuccess={(createApiKeyResponse, type) => {
               history.push({ pathname: '/' });
               setCreatedApiKey(createApiKeyResponse);
-              queryApiKeysAndAggregations(tableState);
+              // Switch the table to the view matching the created key's type (and reset pagination)
+              // so the newly created key is immediately visible, regardless of the active filter.
+              const nextState = {
+                ...tableState,
+                filters: { ...tableState.filters, type: type as QueryFilters['type'] },
+                searchAfter: undefined,
+              };
+              setTableState(nextState);
+              setSearchAfterHistory([]);
+              queryApiKeysAndAggregations(nextState);
             }}
             onCancel={() => history.push({ pathname: '/' })}
             canManageCrossClusterApiKeys={canManageCrossClusterApiKeys}
@@ -296,7 +332,9 @@ export const APIKeysGridPage: FunctionComponent = () => {
             });
 
             setOpenedApiKey(undefined);
-            queryApiKeysAndAggregations(DEFAULT_TABLE_STATE);
+            // Re-query using the current table state so the user's active filter (e.g.
+            // cross-cluster) is preserved after an update, instead of resetting to the default view.
+            queryApiKeysAndAggregations(tableState);
           }}
           onCancel={() => setOpenedApiKey(undefined)}
           apiKey={openedApiKey}

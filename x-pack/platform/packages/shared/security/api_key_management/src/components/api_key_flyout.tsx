@@ -9,8 +9,10 @@ import type { ExclusiveUnion } from '@elastic/eui';
 import {
   EuiButton,
   EuiButtonEmpty,
+  EuiButtonIcon,
   EuiCallOut,
   EuiCheckableCard,
+  EuiCopy,
   EuiFieldNumber,
   EuiFlexGroup,
   EuiFlexItem,
@@ -88,9 +90,11 @@ export interface ApiKeyFormValues {
   customExpiration: boolean;
   customPrivileges: boolean;
   includeMetadata: boolean;
+  includeCertificateIdentity: boolean;
   access: string;
   role_descriptors: string;
   metadata: string;
+  certificateIdentity: string;
 }
 
 interface CommonApiKeyFlyoutProps {
@@ -108,11 +112,11 @@ interface CommonApiKeyFlyoutProps {
 }
 
 interface CreateApiKeyFlyoutProps extends CommonApiKeyFlyoutProps {
-  onSuccess?: (createApiKeyResponse: CreateAPIKeyResult) => void;
+  onSuccess?: (createApiKeyResponse: CreateAPIKeyResult, type?: ApiKeyFormValues['type']) => void;
 }
 
 interface UpdateApiKeyFlyoutProps extends CommonApiKeyFlyoutProps {
-  onSuccess?: (updateApiKeyResponse: UpdateAPIKeyResult) => void;
+  onSuccess?: (updateApiKeyResponse: UpdateAPIKeyResult, type?: ApiKeyFormValues['type']) => void;
   apiKey: CategorizedApiKey;
 }
 
@@ -123,7 +127,9 @@ const defaultInitialValues: ApiKeyFormValues = {
   type: 'rest',
   expiration: '',
   includeMetadata: false,
+  includeCertificateIdentity: false,
   metadata: '{}',
+  certificateIdentity: '',
   customExpiration: false,
   customPrivileges: false,
   access: JSON.stringify(
@@ -172,6 +178,61 @@ const httpErrorText = i18n.translate('xpack.security.httpError', {
   defaultMessage: 'Could not initialize http client.',
 });
 
+/**
+ * Renders a cross-cluster API key certificate identity in the details overview with the ability to
+ * reveal/hide the value and copy it to the clipboard.
+ */
+const CertificateIdentityValue: FunctionComponent<{ value: string }> = ({ value }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <EuiFlexGroup justifyContent="flexEnd" alignItems="center" gutterSize="xs" responsive={false}>
+      <EuiFlexItem grow={false}>
+        <EuiText
+          size="xs"
+          data-test-subj="apiKeyCertificateIdentityValue"
+          style={{ wordBreak: 'break-all' }}
+        >
+          {isVisible ? value : '•'.repeat(Math.min(value.length, 24))}
+        </EuiText>
+      </EuiFlexItem>
+      <EuiFlexItem grow={false}>
+        <EuiButtonIcon
+          iconType={isVisible ? 'eyeClosed' : 'eye'}
+          data-test-subj="apiKeyCertificateIdentityToggle"
+          aria-label={
+            isVisible
+              ? i18n.translate(
+                  'xpack.security.accountManagement.apiKeyFlyout.certificateIdentityHideLabel',
+                  { defaultMessage: 'Hide certificate identity' }
+                )
+              : i18n.translate(
+                  'xpack.security.accountManagement.apiKeyFlyout.certificateIdentityShowLabel',
+                  { defaultMessage: 'Show certificate identity' }
+                )
+          }
+          onClick={() => setIsVisible((visible) => !visible)}
+        />
+      </EuiFlexItem>
+      <EuiFlexItem grow={false}>
+        <EuiCopy textToCopy={value}>
+          {(copy) => (
+            <EuiButtonIcon
+              iconType="copyClipboard"
+              data-test-subj="apiKeyCertificateIdentityCopy"
+              aria-label={i18n.translate(
+                'xpack.security.accountManagement.apiKeyFlyout.certificateIdentityCopyLabel',
+                { defaultMessage: 'Copy certificate identity' }
+              )}
+              onClick={copy}
+            />
+          )}
+        </EuiCopy>
+      </EuiFlexItem>
+    </EuiFlexGroup>
+  );
+};
+
 export const ApiKeyFlyout: FunctionComponent<ApiKeyFlyoutProps> = ({
   onSuccess,
   onCancel,
@@ -205,16 +266,16 @@ export const ApiKeyFlyout: FunctionComponent<ApiKeyFlyoutProps> = ({
         try {
           if (apiKey) {
             const updateApiKeyResponse = await new APIKeysAPIClient(http).updateApiKey(
-              mapUpdateApiKeyValues(apiKey.type, apiKey.id, values)
+              mapUpdateApiKeyValues(apiKey.type, apiKey.id, values, formik.initialValues)
             );
 
-            onSuccess?.(updateApiKeyResponse);
+            onSuccess?.(updateApiKeyResponse, apiKey.type);
           } else {
             const createApiKeyResponse = await new APIKeysAPIClient(http).createApiKey(
               mapCreateApiKeyValues(values)
             );
 
-            onSuccess?.(createApiKeyResponse);
+            onSuccess?.(createApiKeyResponse, values.type);
           }
           setResponseError(undefined);
         } catch (error) {
@@ -481,6 +542,26 @@ export const ApiKeyFlyout: FunctionComponent<ApiKeyFlyoutProps> = ({
                         <ApiKeyStatus expiration={apiKey.expiration} />
                       </EuiFlexItem>
                     </EuiFlexGroup>
+                    {apiKey.type === 'cross_cluster' && apiKey.certificate_identity ? (
+                      <>
+                        <EuiHorizontalRule margin="s" />
+                        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween">
+                          <EuiFlexItem grow={false}>
+                            <EuiText size="xs">
+                              <strong>
+                                <FormattedMessage
+                                  id="xpack.security.accountManagement.apiKeyFlyout.certificateIdentityOverviewLabel"
+                                  defaultMessage="Identity verification"
+                                />
+                              </strong>
+                            </EuiText>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <CertificateIdentityValue value={apiKey.certificate_identity} />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                      </>
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -592,92 +673,6 @@ export const ApiKeyFlyout: FunctionComponent<ApiKeyFlyoutProps> = ({
                 )}
               </EuiPanel>
               <EuiSpacer />
-              {!apiKey && (
-                <>
-                  <EuiPanel hasBorder>
-                    <div style={{ paddingRight: euiTheme.size.s }}>
-                      <EuiSwitch
-                        data-test-subj="apiKeyCustomExpirationSwitch"
-                        label={
-                          <EuiTitle size="xs">
-                            <h4>
-                              <FormattedMessage
-                                id="xpack.security.accountManagement.apiKeyFlyout.applyExpirationDateLabel"
-                                defaultMessage="Apply expiration date"
-                              />
-                            </h4>
-                          </EuiTitle>
-                        }
-                        checked={Boolean(formik.values.customExpiration)}
-                        disabled={readOnly || !!apiKey}
-                        onChange={(e) => formik.setFieldValue('customExpiration', e.target.checked)}
-                      />
-                      <EuiSpacer size="xs" />
-                      <EuiText color="subdued" size="xs">
-                        <p>
-                          <FormattedMessage
-                            id="xpack.security.accountManagement.apiKeyFlyout.expiresFieldHelpText"
-                            defaultMessage="Setting an expiration date is a security best practice. Defaults to no expiration."
-                          />
-                        </p>
-                      </EuiText>
-                    </div>
-                    {formik.values.customExpiration && (
-                      <>
-                        <EuiSpacer />
-                        <EuiFormRow
-                          fullWidth
-                          helpText={
-                            <FormattedMessage
-                              id="xpack.security.accountManagement.apiKeyFlyout.expirationHelpText"
-                              defaultMessage="This API Key will expire on {expirationDate}"
-                              values={{
-                                expirationDate: (
-                                  <strong>
-                                    <FormattedDate
-                                      year="numeric"
-                                      month="long"
-                                      day="numeric"
-                                      value={expirationDate!}
-                                    />
-                                  </strong>
-                                ),
-                              }}
-                            />
-                          }
-                        >
-                          <FormField
-                            as={EuiFieldNumber}
-                            name="expiration"
-                            min={0}
-                            append={i18n.translate(
-                              'xpack.security.accountManagement.apiKeyFlyout.expirationUnit',
-                              {
-                                defaultMessage: 'days',
-                              }
-                            )}
-                            validate={{
-                              min: {
-                                value: 1,
-                                message: i18n.translate(
-                                  'xpack.security.management.apiKeys.apiKeyFlyout.expirationRequired',
-                                  {
-                                    defaultMessage:
-                                      'Enter a valid duration or disable this option.',
-                                  }
-                                ),
-                              },
-                            }}
-                            disabled={readOnly || !!apiKey}
-                            data-test-subj="apiKeyCustomExpirationInput"
-                          />
-                        </EuiFormRow>
-                      </>
-                    )}
-                  </EuiPanel>
-                  <EuiSpacer size="l" />
-                </>
-              )}
               {formik.values.type === 'cross_cluster' ? (
                 <EuiPanel hasBorder>
                   <div style={{ paddingRight: euiTheme.size.s }}>
@@ -897,6 +892,96 @@ export const ApiKeyFlyout: FunctionComponent<ApiKeyFlyoutProps> = ({
                 </EuiPanel>
               )}
               <EuiSpacer size="l" />
+              <EuiTitle size="xs">
+                <h3>
+                  <FormattedMessage
+                    id="xpack.security.accountManagement.apiKeyFlyout.optionalSettings.title"
+                    defaultMessage="Optional settings"
+                  />
+                </h3>
+              </EuiTitle>
+              <EuiSpacer size="s" />
+              <EuiPanel hasBorder>
+                <div style={{ paddingRight: euiTheme.size.s }}>
+                  <EuiSwitch
+                    data-test-subj="apiKeyCustomExpirationSwitch"
+                    label={
+                      <EuiTitle size="xs">
+                        <h4>
+                          <FormattedMessage
+                            id="xpack.security.accountManagement.apiKeyFlyout.applyExpirationDateLabel"
+                            defaultMessage="Add expiration date"
+                          />
+                        </h4>
+                      </EuiTitle>
+                    }
+                    checked={Boolean(formik.values.customExpiration)}
+                    disabled={readOnly || (apiKey && !canEdit) || (!!apiKey && !!apiKey.expiration)}
+                    onChange={(e) => formik.setFieldValue('customExpiration', e.target.checked)}
+                  />
+                  <EuiSpacer size="xs" />
+                  <EuiText color="subdued" size="xs">
+                    <p>
+                      <FormattedMessage
+                        id="xpack.security.accountManagement.apiKeyFlyout.expiresFieldHelpText"
+                        defaultMessage="Setting an expiration date is a security best practice. Defaults to no expiration."
+                      />
+                    </p>
+                  </EuiText>
+                </div>
+                {formik.values.customExpiration && (
+                  <>
+                    <EuiSpacer />
+                    <EuiFormRow
+                      fullWidth
+                      helpText={
+                        <FormattedMessage
+                          id="xpack.security.accountManagement.apiKeyFlyout.expirationHelpText"
+                          defaultMessage="This API Key will expire on {expirationDate}"
+                          values={{
+                            expirationDate: (
+                              <strong>
+                                <FormattedDate
+                                  year="numeric"
+                                  month="long"
+                                  day="numeric"
+                                  value={expirationDate!}
+                                />
+                              </strong>
+                            ),
+                          }}
+                        />
+                      }
+                    >
+                      <FormField
+                        as={EuiFieldNumber}
+                        name="expiration"
+                        min={0}
+                        append={i18n.translate(
+                          'xpack.security.accountManagement.apiKeyFlyout.expirationUnit',
+                          {
+                            defaultMessage: 'days',
+                          }
+                        )}
+                        validate={{
+                          min: {
+                            value: 1,
+                            message: i18n.translate(
+                              'xpack.security.management.apiKeys.apiKeyFlyout.expirationRequired',
+                              {
+                                defaultMessage: 'Enter a valid duration or disable this option.',
+                              }
+                            ),
+                          },
+                        }}
+                        disabled={readOnly || (apiKey && !canEdit)}
+                        data-test-subj="apiKeyCustomExpirationInput"
+                      />
+                    </EuiFormRow>
+                  </>
+                )}
+              </EuiPanel>
+              <EuiSpacer size="l" />
               <EuiPanel hasBorder>
                 <div style={{ paddingRight: euiTheme.size.s }}>
                   <EuiSwitch
@@ -980,6 +1065,93 @@ export const ApiKeyFlyout: FunctionComponent<ApiKeyFlyoutProps> = ({
                   </>
                 )}
               </EuiPanel>
+              {formik.values.type === 'cross_cluster' && (
+                <>
+                  <EuiSpacer size="l" />
+                  <EuiPanel hasBorder>
+                    <div style={{ paddingRight: euiTheme.size.s }}>
+                      <EuiSwitch
+                        data-test-subj="apiKeyCertificateIdentitySwitch"
+                        label={
+                          <EuiTitle size="xs">
+                            <h4>
+                              <FormattedMessage
+                                id="xpack.security.accountManagement.apiKeyFlyout.strongIdentityVerification.title"
+                                defaultMessage="Add strong identity verification"
+                              />
+                            </h4>
+                          </EuiTitle>
+                        }
+                        checked={formik.values.includeCertificateIdentity}
+                        disabled={readOnly || (apiKey && !canEdit)}
+                        onChange={(e) =>
+                          formik.setFieldValue('includeCertificateIdentity', e.target.checked)
+                        }
+                      />
+                      <EuiSpacer size="xs" />
+                      <EuiText color="subdued" size="xs">
+                        <p>
+                          <FormattedMessage
+                            id="xpack.security.accountManagement.apiKeyFlyout.strongIdentityVerification.description"
+                            defaultMessage="This field is used to restrict API key to connections authenticated by a specific TLS certificate."
+                          />
+                        </p>
+                      </EuiText>
+                    </div>
+                    {formik.values.includeCertificateIdentity && (
+                      <>
+                        <EuiSpacer />
+                        <FormRow
+                          label={
+                            <FormattedMessage
+                              id="xpack.security.accountManagement.apiKeyFlyout.certificateIdentityLabel"
+                              defaultMessage="Certificate identity string"
+                            />
+                          }
+                          helpText={
+                            <FormattedMessage
+                              id="xpack.security.accountManagement.apiKeyFlyout.certificateIdentityHelpText"
+                              defaultMessage="The value should match the certificate's distinguished name (DN) pattern. {learnMore}"
+                              values={{
+                                learnMore: (
+                                  <EuiLink
+                                    href={docLinks!.links.apis.createCrossClusterApiKey}
+                                    target="_blank"
+                                    external
+                                  >
+                                    <FormattedMessage
+                                      id="xpack.security.accountManagement.apiKeyFlyout.certificateIdentityLearnMoreLink"
+                                      defaultMessage="Learn more"
+                                    />
+                                  </EuiLink>
+                                ),
+                              }}
+                            />
+                          }
+                          fullWidth
+                        >
+                          <FormField
+                            name="certificateIdentity"
+                            data-test-subj="apiKeyCertificateIdentityInput"
+                            placeholder="CN=host,OU=engineering,DC=example,DC=com"
+                            disabled={readOnly || (apiKey && !canEdit)}
+                            validate={{
+                              required: i18n.translate(
+                                'xpack.security.management.apiKeys.apiKeyFlyout.certificateIdentityRequired',
+                                {
+                                  defaultMessage:
+                                    'Enter a certificate identity or disable this option.',
+                                }
+                              ),
+                            }}
+                            fullWidth
+                          />
+                        </FormRow>
+                      </>
+                    )}
+                  </EuiPanel>
+                </>
+              )}
             </EuiSkeletonText>
           </EuiFlyoutBody>
           <EuiFlyoutFooter>
@@ -1030,6 +1202,9 @@ export function mapCreateApiKeyValues(values: ApiKeyFormValues): CreateAPIKeyPar
       expiration,
       metadata,
       access: JSON.parse(values.access),
+      certificate_identity: values.includeCertificateIdentity
+        ? values.certificateIdentity
+        : undefined,
     };
   }
 
@@ -1044,24 +1219,64 @@ export function mapCreateApiKeyValues(values: ApiKeyFormValues): CreateAPIKeyPar
 export function mapUpdateApiKeyValues(
   type: CategorizedApiKey['type'],
   id: string,
-  values: ApiKeyFormValues
+  values: ApiKeyFormValues,
+  initialValues: ApiKeyFormValues
 ): UpdateAPIKeyParams {
+  const expiration = getUpdatedExpiration(values, initialValues);
   const metadata = values.includeMetadata ? JSON.parse(values.metadata) : '{}';
 
   if (type === 'cross_cluster') {
     return {
       type,
       id,
+      expiration,
       metadata,
       access: JSON.parse(values.access),
+      certificate_identity: getUpdatedCertificateIdentity(values, initialValues),
     };
   }
 
   return {
     id,
+    expiration,
     metadata,
     role_descriptors: values.customPrivileges ? JSON.parse(values.role_descriptors) : '{}',
   };
+}
+
+/**
+ * Determines the `expiration` value to send when updating an API key. Elasticsearch only accepts a
+ * relative duration (e.g. `30d`) and interprets an omitted value as "leave unchanged"; it has no way
+ * to clear an existing expiration on update. To avoid silently pushing the deadline forward (or
+ * reactivating an already-expired key) every time the form is saved, we only send a value when the
+ * user actually changed the expiration settings.
+ */
+function getUpdatedExpiration(
+  values: ApiKeyFormValues,
+  initialValues: ApiKeyFormValues
+): string | undefined {
+  const hasChanged =
+    values.customExpiration !== initialValues.customExpiration ||
+    values.expiration !== initialValues.expiration;
+
+  return hasChanged && values.customExpiration ? `${values.expiration}d` : undefined;
+}
+
+/**
+ * Determines the `certificate_identity` value to send when updating a cross-cluster API key.
+ * Elasticsearch clears an existing value when `null` is sent explicitly and leaves it unchanged when
+ * the field is omitted. We only send `null` when the key previously had a certificate identity that
+ * the user has now disabled, so updates to keys that never had one don't carry a redundant `null`.
+ */
+function getUpdatedCertificateIdentity(
+  values: ApiKeyFormValues,
+  initialValues: ApiKeyFormValues
+): string | null | undefined {
+  if (values.includeCertificateIdentity) {
+    return values.certificateIdentity;
+  }
+
+  return initialValues.includeCertificateIdentity ? null : undefined;
 }
 
 /**
@@ -1071,12 +1286,14 @@ function mapApiKeyFormValues(apiKey: CategorizedApiKey): ApiKeyFormValues {
   const includeMetadata = Object.keys(apiKey.metadata).length > 0;
   const customPrivileges =
     apiKey.type !== 'cross_cluster' ? Object.keys(apiKey.role_descriptors).length > 0 : false;
+  const certificateIdentity =
+    apiKey.type === 'cross_cluster' ? apiKey.certificate_identity ?? '' : '';
 
   return {
     name: apiKey.name,
     type: apiKey.type,
     customExpiration: !!apiKey.expiration,
-    expiration: !!apiKey.expiration ? apiKey.expiration.toString() : '',
+    expiration: getRemainingExpirationDays(apiKey.expiration),
     includeMetadata,
     metadata: includeMetadata ? JSON.stringify(apiKey.metadata, null, 2) : '{}',
     customPrivileges,
@@ -1084,5 +1301,21 @@ function mapApiKeyFormValues(apiKey: CategorizedApiKey): ApiKeyFormValues {
       ? JSON.stringify(apiKey.type !== 'cross_cluster' && apiKey.role_descriptors, null, 2)
       : '{}',
     access: apiKey.type === 'cross_cluster' ? JSON.stringify(apiKey.access, null, 2) : '{}',
+    includeCertificateIdentity: !!certificateIdentity,
+    certificateIdentity,
   };
+}
+
+/**
+ * Converts an absolute API key expiration timestamp (epoch ms) into the number of remaining whole
+ * days from now, so it can be edited in the expiration field (which is expressed in days). Returns an
+ * empty string when the key has no expiration.
+ */
+function getRemainingExpirationDays(expiration?: number): string {
+  if (!expiration) {
+    return '';
+  }
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  const remainingDays = Math.ceil((Number(expiration) - Date.now()) / millisecondsPerDay);
+  return String(Math.max(1, remainingDays));
 }

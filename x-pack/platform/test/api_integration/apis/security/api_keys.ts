@@ -139,6 +139,39 @@ export default function ({ getService }: FtrProviderContext) {
             })
             .expect(400);
         });
+
+        it(`should allow a cross cluster API Key to be created with a certificate identity`, async () => {
+          const certificateIdentity = 'CN=host,OU=engineering,DC=example,DC=com';
+          const createResult = await supertest
+            .post('/internal/security/api_key')
+            .set('kbn-xsrf', 'xxx')
+            .send({
+              type: 'cross_cluster',
+              name: 'test_cc_api_key_with_certificate_identity',
+              metadata: {},
+              certificate_identity: certificateIdentity,
+              access: {
+                search: [
+                  {
+                    names: ['logs*'],
+                  },
+                ],
+              },
+            })
+            .expect(200);
+
+          const queryResult = await supertest
+            .post('/internal/security/api_key/_query')
+            .send({})
+            .set('kbn-xsrf', 'xxx')
+            .expect(200);
+
+          const createdKey = queryResult.body.apiKeys.find(
+            (apiKey: { id: string }) => apiKey.id === createResult.body.id
+          );
+          expect(createdKey).to.not.be(undefined);
+          expect(createdKey.certificate_identity).to.eql(certificateIdentity);
+        });
       }
     });
 
