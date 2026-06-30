@@ -26,7 +26,7 @@ const _allowedExperimentalValues = {
   enableSloTemplates: true,
   newBrowseIntegrationUx: true, // When enabled integrations, browse integrations page will use the new UX.
   enableVersionSpecificPolicies: true, // When enabled, version specific policies will be created when packages use agent version conditions
-  enableVarGroups: false, // When enabled, var_groups from the package spec drive conditional variable visibility and input filtering.
+  enableVarGroups: true, // When enabled, var_groups from the package spec drive conditional variable visibility and input filtering.
   enableIntegrationInactivityAlerting: true, // When enabled, an inactivity monitoring alerting rule template is created on fresh integration package install.
   enableSimplifiedAgentlessUX: true, // When enabled, the agentless deployment mode will be simplified for single input/datastreams integrations.
   enableOpAMP: true, // When enabled, OpAMP features will be available in the API and UI.
