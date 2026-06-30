@@ -193,7 +193,14 @@ export const useFetchRuleEvents = ({
     for (const row of startsQuery.data ?? []) {
       const startMs = Date.parse(row.episode_start);
       if (Number.isFinite(startMs)) {
-        map.set(makeEpisodeStartKey(row['episode.id'], row['episode.status']), startMs);
+        map.set(
+          makeEpisodeStartKey(
+            row['episode.id'],
+            row['episode.status'],
+            row['episode.status_started_at'] ?? undefined
+          ),
+          startMs
+        );
       }
     }
     return map;

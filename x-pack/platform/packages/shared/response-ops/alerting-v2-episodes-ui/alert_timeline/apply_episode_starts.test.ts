@@ -84,4 +84,37 @@ describe('applyEpisodeStarts', () => {
     expect(pending.seg_start).toBe(iso('2026-04-02T00:00:00Z'));
     expect(active.seg_start).toBe(iso('2026-04-03T00:00:00Z'));
   });
+
+  it('resolves flapping runs of the same status independently via status_started_at', () => {
+    const firstActiveStartedAt = iso('2026-04-05T00:00:00Z');
+    const secondActiveStartedAt = iso('2026-04-05T05:00:00Z');
+    const rows = [
+      phase({
+        'episode.status': ALERT_EPISODE_STATUS.ACTIVE,
+        'episode.status_started_at': firstActiveStartedAt,
+        seg_start: firstActiveStartedAt,
+      }),
+      phase({
+        'episode.status': ALERT_EPISODE_STATUS.ACTIVE,
+        'episode.status_started_at': secondActiveStartedAt,
+        seg_start: secondActiveStartedAt,
+      }),
+    ];
+    const starts = new Map([
+      [
+        makeEpisodeStartKey('ep-1', ALERT_EPISODE_STATUS.ACTIVE, firstActiveStartedAt),
+        // First active run truly started before the window.
+        Date.parse('2026-04-01T00:00:00Z'),
+      ],
+      [
+        makeEpisodeStartKey('ep-1', ALERT_EPISODE_STATUS.ACTIVE, secondActiveStartedAt),
+        Date.parse(secondActiveStartedAt),
+      ],
+    ]);
+
+    const [firstActive, secondActive] = applyEpisodeStarts(rows, starts);
+    // Only the first run is pulled earlier; the second run keeps its own start.
+    expect(firstActive.seg_start).toBe(iso('2026-04-01T00:00:00Z'));
+    expect(secondActive.seg_start).toBe(secondActiveStartedAt);
+  });
 });

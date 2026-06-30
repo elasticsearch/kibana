@@ -28,17 +28,19 @@ describe('buildEpisodeStartsQuery', () => {
     expect(queryString).not.toContain('@timestamp <=');
   });
 
-  it('aggregates the earliest timestamp per episode status phase', () => {
+  it('aggregates the earliest timestamp per contiguous status run', () => {
     expect(queryString).toContain('episode_start = MIN(@timestamp)');
-    expect(queryString).toContain('BY episode.id, episode.status');
+    expect(queryString).toContain('BY episode.id, episode.status, episode.status_started_at');
   });
 
   it('applies an explicit ceiling sized to phases × episodes', () => {
-    // 2 episodes × 4 statuses.
-    expect(queryString).toContain('LIMIT 8');
+    // 2 episodes × 32 runs budget.
+    expect(queryString).toContain('LIMIT 64');
   });
 
   it('keeps the start columns', () => {
-    expect(queryString).toContain('KEEP `episode.id`, `episode.status`, episode_start');
+    expect(queryString).toContain(
+      'KEEP `episode.id`, `episode.status`, `episode.status_started_at`, episode_start'
+    );
   });
 });

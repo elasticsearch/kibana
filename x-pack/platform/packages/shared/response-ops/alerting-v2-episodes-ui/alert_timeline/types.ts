@@ -71,17 +71,26 @@ export interface AlertTimelineData {
 /**
  * One status phase of an episode (a pre-aggregated span) — the row shape accepted
  * by deriveAlertTimelineData. Each row is `MIN`/`MAX` of `@timestamp` for a
- * contiguous run of one `episode.status`, so an episode is described by ≤4 rows
- * instead of thousands of raw heartbeat events.
+ * *contiguous* run of one `episode.status`, keyed by the run's
+ * `episode.status_started_at` so that a flapping series
+ * (active -> recovering -> active) yields a separate row per run instead of
+ * collapsing into one span.
  */
 export interface AlertTimelinePhaseRow {
   'episode.id': string;
   'episode.status': AlertEpisodeStatus;
   group_hash: string;
-  /** ISO timestamp — MIN(@timestamp) for this (episode, status) phase. */
+  /** ISO timestamp — MIN(@timestamp) for this contiguous (episode, status) phase. */
   seg_start: string;
-  /** ISO timestamp — MAX(@timestamp) for this (episode, status) phase. */
+  /** ISO timestamp — MAX(@timestamp) for this contiguous (episode, status) phase. */
   seg_end: string;
+  /**
+   * ISO timestamp identifying the contiguous run this phase belongs to (the
+   * Director stamps every event in a run with the same `episode.status_started_at`).
+   * Used to key the true-start overlay per phase so flapping runs don't collide.
+   * Optional for back-compat with events written before this field existed.
+   */
+  'episode.status_started_at'?: string;
 }
 
 /** Grouping values keyed by group hash. */

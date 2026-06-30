@@ -24,6 +24,7 @@ export const buildLatestAlertEvent = ({
   eventStatus,
   statusCount,
   previousTimestamp,
+  statusStartedAt,
   episodeId = DEFAULT_EPISODE_ID,
   groupHash = DEFAULT_GROUP_HASH,
 }: {
@@ -31,6 +32,7 @@ export const buildLatestAlertEvent = ({
   eventStatus: AlertEventStatus;
   statusCount?: number | null;
   previousTimestamp?: string | null;
+  statusStartedAt?: string | null;
   episodeId?: string;
   groupHash?: string;
 }): LatestAlertEventState => ({
@@ -38,6 +40,7 @@ export const buildLatestAlertEvent = ({
   last_episode_id: episodeId,
   last_episode_status: episodeStatus,
   last_episode_status_count: statusCount ?? null,
+  last_episode_status_started_at: statusStartedAt ?? previousTimestamp ?? DEFAULT_TIMESTAMP,
   last_episode_timestamp: previousTimestamp ?? DEFAULT_TIMESTAMP,
   group_hash: groupHash,
 });

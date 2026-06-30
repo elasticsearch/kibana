@@ -13,7 +13,10 @@ import { LoggerServiceToken } from '../services/logger_service/logger_service';
 import type { QueryServiceContract } from '../services/query_service/query_service';
 import { QueryServiceInternalToken } from '../services/query_service/tokens';
 import { getLatestAlertEventStateQuery, type LatestAlertEventState } from './queries';
-import type { AlertEpisodeStatus } from '../../resources/datastreams/alert_events';
+import type {
+  AlertEpisodeStatus,
+  AlertEpisodeTransition,
+} from '../../resources/datastreams/alert_events';
 import {
   alertEpisodeStatus,
   alertEventType,
@@ -129,13 +132,26 @@ export class DirectorService {
       nextStatus: result.status,
     });
 
-    if (currentStatus !== result.status) {
+    const statusChanged = currentStatus !== result.status;
+
+    if (statusChanged) {
       this.logger.debug({
         message: `State Transition [${currentAlertEvent.group_hash}]: ${
           currentStatus ?? 'unknown'
         } -> ${result.status} (Episode: ${episodeId})`,
       });
     }
+
+    // The current status span starts now if the status changed (or there is no
+    // prior span to carry); otherwise we preserve the original span start so the
+    // eventual transition reports the full status duration.
+    const statusStartedAt = statusChanged
+      ? currentAlertEvent['@timestamp']
+      : previousAlertEvent?.last_episode_status_started_at ?? currentAlertEvent['@timestamp'];
+
+    const transition = statusChanged
+      ? this.buildTransition({ currentAlertEvent, previousAlertEvent, nextStatus: result.status })
+      : undefined;
 
     return {
       ...currentAlertEvent,
@@ -144,7 +160,53 @@ export class DirectorService {
         id: episodeId,
         status: result.status,
         ...(result.statusCount != null ? { status_count: result.statusCount } : {}),
+        status_started_at: statusStartedAt,
       },
+      ...(transition != null ? { transition } : {}),
+    };
+  }
+
+  private buildTransition({
+    currentAlertEvent,
+    previousAlertEvent,
+    nextStatus,
+  }: {
+    currentAlertEvent: AlertEvent;
+    previousAlertEvent?: LatestAlertEventState;
+    nextStatus: AlertEpisodeStatus;
+  }): AlertEpisodeTransition {
+    const previousStatus = previousAlertEvent?.last_episode_status ?? undefined;
+
+    // No prior state span to close (lifecycle start): record the transition but
+    // omit the `ends_*` snapshot, mirroring the synthetics `state.ends` semantics.
+    if (
+      previousAlertEvent == null ||
+      previousStatus == null ||
+      previousAlertEvent.last_episode_id == null
+    ) {
+      return { to: nextStatus };
+    }
+
+    const startedAt =
+      previousAlertEvent.last_episode_status_started_at ??
+      previousAlertEvent.last_episode_timestamp ??
+      currentAlertEvent['@timestamp'];
+
+    const durationMs = Math.max(
+      0,
+      Date.parse(currentAlertEvent['@timestamp']) - Date.parse(startedAt)
+    );
+
+    return {
+      from: previousStatus,
+      to: nextStatus,
+      ends_episode_id: previousAlertEvent.last_episode_id,
+      ends_status: previousStatus,
+      ends_started_at: startedAt,
+      ends_duration_ms: durationMs,
+      ...(previousAlertEvent.last_episode_status_count != null
+        ? { ends_status_count: previousAlertEvent.last_episode_status_count }
+        : {}),
     };
   }
 

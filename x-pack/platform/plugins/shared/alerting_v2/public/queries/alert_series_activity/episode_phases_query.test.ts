@@ -29,20 +29,22 @@ describe('buildEpisodePhasesQuery', () => {
     expect(queryString).toContain('ep-2');
   });
 
-  it('aggregates start/end per episode status phase', () => {
+  it('aggregates start/end per contiguous status run (keyed by status_started_at)', () => {
     expect(queryString).toContain('seg_start = MIN(@timestamp)');
     expect(queryString).toContain('seg_end = MAX(@timestamp)');
-    expect(queryString).toContain('BY episode.id, episode.status, group_hash');
+    expect(queryString).toContain(
+      'BY episode.id, episode.status, episode.status_started_at, group_hash'
+    );
   });
 
   it('applies an explicit ceiling sized to phases × episodes', () => {
-    // 2 episodes × 4 statuses.
-    expect(queryString).toContain('LIMIT 8');
+    // 2 episodes × 32 runs budget.
+    expect(queryString).toContain('LIMIT 64');
   });
 
   it('keeps the phase columns', () => {
     expect(queryString).toContain(
-      'KEEP `episode.id`, `episode.status`, group_hash, seg_start, seg_end'
+      'KEEP `episode.id`, `episode.status`, `episode.status_started_at`, group_hash, seg_start, seg_end'
     );
   });
 });

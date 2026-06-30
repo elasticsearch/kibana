@@ -33,10 +33,12 @@ DirectorService
   2. select strategy for the rule
   3. compute next episode state
   4. resolve episode id
+  5. resolve episode.status_started_at (carry forward or reset)
+  6. record top-level transition when the status changed
         |
         v
 Enriched alert events
-  (same events + episode.id/status/status_count)
+  (same events + episode.id/status/status_count/status_started_at[, + transition])
 ```
 
 ## How it works
@@ -99,6 +101,21 @@ The director writes one of these episode statuses:
 | `recovering` | The series stopped breaching but has not fully closed yet. |
 
 `episode.status_count` tracks consecutive evaluations in the current status when a strategy needs count-based thresholds.
+
+### Status span tracking and transitions
+
+The next-state computation also stamps each enriched event with span/transition metadata so that consumers do not have to re-derive transitions from the raw event stream (which is lossy under flapping):
+
+- `episode.status_started_at` — when the current contiguous status span began. It is **carried forward** unchanged while the status is stable and **reset** to the current event timestamp when the status changes. Every event in one contiguous run therefore shares the same `status_started_at`, which makes it a reliable discriminator for "this run" vs "the next run of the same status".
+- `transition` — a **top-level** field written **only** on the event where `episode.status` changes. It mirrors the synthetics `state.ends` pattern (flattened, because the strict mapping type only allows one level of object nesting):
+
+  | Field | Meaning |
+  | --- | --- |
+  | `from` | The previous episode status. Absent at lifecycle start (no prior state). |
+  | `to` | The new episode status (equals `episode.status`). |
+  | `ends_episode_id`, `ends_status`, `ends_started_at`, `ends_duration_ms`, `ends_status_count` | A snapshot of the span this transition closed. Absent at lifecycle start. |
+
+Because a transition is recorded explicitly, "did a transition occur?" is a direct query (`transition.to IS NOT NULL`), and the closed span's duration is available without scanning the whole history. Flapping (`active -> recovering -> active`) produces one transition event per change, each closing the correct span.
 
 ## Current strategies
 

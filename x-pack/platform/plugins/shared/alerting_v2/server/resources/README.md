@@ -89,6 +89,9 @@ This stream is the durable history of rule evaluation.
 | `episode.id` | `keyword` | Episode id for alert-type events. |
 | `episode.status` | `keyword` | `inactive`, `pending`, `active`, or `recovering`. |
 | `episode.status_count` | `long` | Consecutive count within the current episode status. |
+| `episode.status_started_at` | `date` | When the current contiguous status span began. Carried forward across executions while the status is stable; reset on a status change. Acts as the contiguous-run discriminator so flapping (`active -> recovering -> active`) is not collapsed by min/max aggregations. |
+| `transition` | `object` | Present only on the event where `episode.status` changes. `transition.from` is the previous status (absent on lifecycle start) and `transition.to` is the new status. |
+| `transition.ends_*` | mixed | Flattened, synthetics-style snapshot of the status span this event closed: `ends_episode_id` (`keyword`), `ends_status` (`keyword`), `ends_started_at` (`date`), `ends_duration_ms` (`long`), and optional `ends_status_count` (`long`). Absent on lifecycle start. Flattened because the strict mapping type only allows one level of object nesting. |
 | `severity` | `keyword` | Optional. Best-effort severity extracted from the ES\|QL `severity` column on breached events. One of `info`, `low`, `medium`, `high`, `critical`. |
 
 Writers:

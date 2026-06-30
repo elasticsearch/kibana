@@ -368,21 +368,28 @@ describe('deriveAlertTimelineData', () => {
     ]);
   });
 
-  describe('flapping (accepted limitation)', () => {
-    it('merges non-contiguous same-status runs into one span', () => {
-      // active → recovering → active again. The aggregation merges the two active
-      // runs into one [start, end]; the re-breach after recovering is smoothed over.
+  describe('flapping', () => {
+    it('renders each contiguous run of a flapping episode as its own segment', () => {
+      // active → recovering → active again. The phases query keys runs by
+      // `episode.status_started_at`, so the two active runs arrive as separate
+      // rows and the re-breach after recovering is preserved (no merging).
       const phases: AlertTimelinePhaseRow[] = [
         phase({
           episodeId: 'ep-1',
           status: ALERT_EPISODE_STATUS.ACTIVE,
           startMs: T0,
-          endMs: T0 + 5 * HOUR_MS,
+          endMs: T0 + 2 * HOUR_MS,
         }),
         phase({
           episodeId: 'ep-1',
           status: ALERT_EPISODE_STATUS.RECOVERING,
           startMs: T0 + 2 * HOUR_MS,
+          endMs: T0 + 4 * HOUR_MS,
+        }),
+        phase({
+          episodeId: 'ep-1',
+          status: ALERT_EPISODE_STATUS.ACTIVE,
+          startMs: T0 + 4 * HOUR_MS,
         }),
       ];
 
@@ -401,9 +408,21 @@ describe('deriveAlertTimelineData', () => {
           episodeId: 'ep-1',
           status: ALERT_EPISODE_STATUS.RECOVERING,
           x0Ms: T0 + 2 * HOUR_MS,
-          x1Ms: NOW,
+          x1Ms: T0 + 4 * HOUR_MS,
           trueStartMs: T0 + 2 * HOUR_MS,
         },
+        {
+          episodeId: 'ep-1',
+          status: ALERT_EPISODE_STATUS.ACTIVE,
+          x0Ms: T0 + 4 * HOUR_MS,
+          x1Ms: NOW,
+          trueStartMs: T0 + 4 * HOUR_MS,
+        },
+      ]);
+      expect(row.transitions.map((t) => t.status)).toEqual([
+        ALERT_EPISODE_STATUS.ACTIVE,
+        ALERT_EPISODE_STATUS.RECOVERING,
+        ALERT_EPISODE_STATUS.ACTIVE,
       ]);
       expect(row.hasOpenEpisode).toBe(true);
     });

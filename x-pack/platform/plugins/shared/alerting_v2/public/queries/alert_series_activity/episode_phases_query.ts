@@ -10,19 +10,25 @@ import { ALERT_EVENTS_DATA_STREAM } from '@kbn/alerting-v2-episodes-ui/constants
 
 /**
  * Collapses each episode's per-execution events into status *phases*: one
- * `[seg_start, seg_end]` row per contiguous `episode.status` run (≤4 per episode).
+ * `[seg_start, seg_end]` row per contiguous `episode.status` run.
  * Scoped by the selected `episode.id`s and bounded to the display window — this
  * query supplies the segment *geometry* drawn in view. The bar's true start is
  * resolved separately by the untimed `buildEpisodeStartsQuery` (window-independent)
  * and overlaid via `applyEpisodeStarts`. Result shape is the package's
  * `AlertTimelinePhaseRow`.
  *
- * Caveat — flapping: `BY episode.id, episode.status` merges non-contiguous runs of
- * the same status (active → recovering → active collapses to one active span).
+ * Flapping: grouping additionally `BY episode.status_started_at` (the Director
+ * stamps every event in a contiguous run with the same value) keeps non-contiguous
+ * runs of the same status separate — active → recovering → active yields three
+ * rows instead of collapsing the two active runs into one span.
  */
 
-/** The four `episode.status` values — upper bound on phase rows per episode. */
-const MAX_PHASES_PER_EPISODE = 4;
+/**
+ * Upper bound on phase rows per episode. A flapping episode can re-enter `active`
+ * and `recovering` many times, so we budget several runs per status rather than
+ * the four distinct statuses.
+ */
+const MAX_PHASES_PER_EPISODE = 32;
 
 export interface BuildEpisodePhasesQueryOptions {
   ruleId: string;
@@ -49,9 +55,16 @@ export const buildEpisodePhasesQuery = ({
     esql.from(ALERT_EVENTS_DATA_STREAM).where`type == "alert"`.where`rule.id == ${ruleId}`
       .where`@timestamp >= ${fromIso}::DATETIME AND @timestamp <= ${toIso}::DATETIME`
       .where`episode.id IN (${episodeLiterals})`
-      .pipe`STATS seg_start = MIN(@timestamp), seg_end = MAX(@timestamp) BY episode.id, episode.status, group_hash`
-      // Explicit ceiling (≤4 phases × episodes) so the implicit result cap can't clip a phase.
+      .pipe`STATS seg_start = MIN(@timestamp), seg_end = MAX(@timestamp) BY episode.id, episode.status, episode.status_started_at, group_hash`
+      // Explicit ceiling (phases × episodes) so the implicit result cap can't clip a phase.
       .limit(Math.max(episodeIds.length * MAX_PHASES_PER_EPISODE, 1))
-      .keep('episode.id', 'episode.status', 'group_hash', 'seg_start', 'seg_end')
+      .keep(
+        'episode.id',
+        'episode.status',
+        'episode.status_started_at',
+        'group_hash',
+        'seg_start',
+        'seg_end'
+      )
   );
 };
