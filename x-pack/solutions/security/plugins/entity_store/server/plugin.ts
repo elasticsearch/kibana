@@ -18,6 +18,7 @@ import type {
 import { createRequestHandlerContext } from './request_context_factory';
 import { PLUGIN_ID } from '../common';
 import { registerTasks } from './tasks/register_tasks';
+import { registerTriggers } from './workflow/triggers';
 import { registerUiSettings } from './infra/feature_flags/register';
 import {
   EngineDescriptorType,
@@ -73,6 +74,7 @@ export class EntityStorePlugin
     );
 
     registerTasks(plugins.taskManager, this.logger, core, this.isServerless);
+    registerTriggers(plugins.workflowsExtensions);
     this.logger.debug('Registering routes');
     registerRoutes(router);
 

@@ -6,7 +6,9 @@
  */
 
 import type { DeveloperExamplesSetup } from '@kbn/developer-examples-plugin/public';
+import type { WorkflowsExtensionsPublicPluginSetup } from '@kbn/workflows-extensions/public';
 
 export interface AppPluginSetupDependencies {
   developerExamples: DeveloperExamplesSetup;
+  workflowsExtensions: WorkflowsExtensionsPublicPluginSetup;
 }
