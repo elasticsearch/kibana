@@ -107,6 +107,7 @@ export class Server {
   private readonly docLinks: DocLinksService;
   private readonly customBranding: CustomBrandingService;
   private readonly userSettingsService: UserSettingsService;
+  private userSettingsServiceSetup?: ReturnType<UserSettingsService['setup']>;
   private readonly security: SecurityService;
   private readonly userProfile: UserProfileService;
   private readonly injection: CoreInjectionService;
@@ -429,7 +430,8 @@ export class Server {
     });
 
     const customBrandingSetup = this.customBranding.setup();
-    const userSettingsServiceSetup = this.userSettingsService.setup();
+    const userSettingsServiceSetup = (this.userSettingsServiceSetup =
+      this.userSettingsService.setup());
     const featureFlagsSetup = this.featureFlags.setup({
       http: httpSetup,
     });
@@ -624,6 +626,12 @@ export class Server {
       userStorage: userStorageStart,
     });
 
+    if (!this.userSettingsServiceSetup) {
+      // #setup always runs before #start, so this should be unreachable.
+      throw new Error('UserSettingsService#setup must run before Server#start');
+    }
+    const i18nServiceStart = this.i18n.start({ userSettings: this.userSettingsServiceSetup });
+
     this.coreStart = {
       analytics: analyticsStart,
       capabilities: capabilitiesStart,
@@ -633,6 +641,7 @@ export class Server {
       executionContext: executionContextStart,
       featureFlags: featureFlagsStart,
       http: httpStart,
+      i18n: i18nServiceStart,
       metrics: metricsStart,
       savedObjects: savedObjectsStart,
       uiSettings: uiSettingsStart,

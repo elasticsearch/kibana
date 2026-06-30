@@ -16,6 +16,7 @@ import type { InternalElasticsearchServiceStart } from '@kbn/core-elasticsearch-
 import type { InternalExecutionContextStart } from '@kbn/core-execution-context-server-internal';
 import type { FeatureFlagsStart } from '@kbn/core-feature-flags-server';
 import type { InternalHttpServiceStart } from '@kbn/core-http-server-internal';
+import type { I18nServiceStart } from '@kbn/core-i18n-server';
 import type { InternalMetricsServiceStart } from '@kbn/core-metrics-server-internal';
 import type { InternalSavedObjectsServiceStart } from '@kbn/core-saved-objects-server-internal';
 import type { InternalUiSettingsServiceStart } from '@kbn/core-ui-settings-server-internal';
@@ -38,6 +39,7 @@ export interface InternalCoreStart {
   featureFlags: FeatureFlagsStart;
   docLinks: DocLinksServiceStart;
   http: InternalHttpServiceStart;
+  i18n: I18nServiceStart;
   metrics: InternalMetricsServiceStart;
   savedObjects: InternalSavedObjectsServiceStart;
   uiSettings: InternalUiSettingsServiceStart;

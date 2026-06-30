@@ -14,6 +14,7 @@ import { docLinksServiceMock } from '@kbn/core-doc-links-server-mocks';
 import { elasticsearchServiceMock } from '@kbn/core-elasticsearch-server-mocks';
 import { executionContextServiceMock } from '@kbn/core-execution-context-server-mocks';
 import { httpServiceMock } from '@kbn/core-http-server-mocks';
+import { i18nServiceMock } from '@kbn/core-i18n-server-mocks';
 import { metricsServiceMock } from '@kbn/core-metrics-server-mocks';
 import { savedObjectsServiceMock } from '@kbn/core-saved-objects-server-mocks';
 import { uiSettingsServiceMock } from '@kbn/core-ui-settings-server-mocks';
@@ -37,6 +38,7 @@ export function createInternalCoreStartMock() {
     elasticsearch: elasticsearchServiceMock.createInternalStart(),
     featureFlags: coreFeatureFlagsMock.createStart(),
     http: httpServiceMock.createInternalStartContract(),
+    i18n: i18nServiceMock.createStartContract(),
     metrics: metricsServiceMock.createInternalStartContract(),
     savedObjects: savedObjectsServiceMock.createInternalStartContract(),
     uiSettings: uiSettingsServiceMock.createStartContract(),

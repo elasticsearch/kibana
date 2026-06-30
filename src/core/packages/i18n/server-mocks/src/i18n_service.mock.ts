@@ -9,7 +9,7 @@
 
 import type { PublicMethodsOf } from '@kbn/utility-types';
 import type { I18nService, InternalI18nServicePreboot } from '@kbn/core-i18n-server-internal';
-import type { I18nServiceSetup } from '@kbn/core-i18n-server';
+import type { I18nServiceSetup, I18nServiceStart, RequestI18nClient } from '@kbn/core-i18n-server';
 import { lazyObject } from '@kbn/lazy-object';
 
 const MOCK_TRANSLATION_HASHES: Record<string, string> = { en: 'MOCK_HASH' };
@@ -29,6 +29,33 @@ const createSetupContractMock = () => {
   });
 
   return { ...base, allowLocaleCookie: true } as jest.Mocked<I18nServiceSetup>;
+};
+
+const createRequestClientMock = (): jest.Mocked<RequestI18nClient> => {
+  const mock: jest.Mocked<RequestI18nClient> = {
+    getLocale: jest.fn(),
+    translate: jest.fn(),
+    formatList: jest.fn(),
+  };
+
+  mock.getLocale.mockResolvedValue('en');
+  // Fall back to the provided defaultMessage, like the real client.
+  mock.translate.mockImplementation(async (_id, args) =>
+    typeof args.defaultMessage === 'string' ? args.defaultMessage : ''
+  );
+  mock.formatList.mockResolvedValue('');
+
+  return mock;
+};
+
+const createStartContractMock = (): jest.Mocked<I18nServiceStart> => {
+  const mock: jest.Mocked<I18nServiceStart> = {
+    asScopedToRequest: jest.fn(),
+  };
+
+  mock.asScopedToRequest.mockImplementation(() => createRequestClientMock());
+
+  return mock;
 };
 
 const createInternalPrebootMock = () => {
@@ -53,6 +80,7 @@ const createMock = () => {
   const mock: jest.Mocked<I18nServiceContract> = lazyObject({
     preboot: jest.fn(),
     setup: jest.fn().mockResolvedValue(createSetupContractMock()),
+    start: jest.fn().mockReturnValue(createStartContractMock()),
   });
 
   return mock;
@@ -61,5 +89,7 @@ const createMock = () => {
 export const i18nServiceMock = {
   create: createMock,
   createSetupContract: createSetupContractMock,
+  createStartContract: createStartContractMock,
+  createRequestClient: createRequestClientMock,
   createInternalPrebootContract: createInternalPrebootMock,
 };

@@ -18,6 +18,7 @@ project:
   sourceRoot: src/core/packages/i18n/server
 dependsOn:
   - '@kbn/i18n'
+  - '@kbn/core-http-server'
 tags:
   - shared-server
   - package

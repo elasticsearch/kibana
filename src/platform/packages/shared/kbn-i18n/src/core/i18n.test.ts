@@ -11,6 +11,7 @@ import type * as i18nModule from './i18n';
 import type { Translation, TranslationInput } from '../translation';
 import type { Formats } from './formats';
 import { defaultEnFormats } from './formats';
+import { createScopedTranslator } from './scoped_translator';
 
 const createExpectedTranslations = (
   locale: string,
@@ -756,5 +757,75 @@ describe('i18n.initDefault', () => {
       i18n.initDefault();
     }).not.toThrow();
     expect(i18n.getIsInitialized()).toBe(true);
+  });
+});
+
+// Scoped translators own their own `intl` instance, so they translate
+// successful messages without depending on the singleton's init lifecycle or
+// the error-throwing behavior gated by the skipped block above.
+describe('createScopedTranslator', () => {
+  afterEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+  });
+
+  test('translates a message using the provided locale messages', () => {
+    const translator = createScopedTranslator({
+      locale: 'fr',
+      messages: { 'a.b.c': 'Bonjour {name}' },
+    });
+
+    expect(
+      translator.translate('a.b.c', {
+        defaultMessage: 'Hello {name}',
+        values: { name: 'Marie' },
+      })
+    ).toBe('Bonjour Marie');
+  });
+
+  test('falls back to the defaultMessage when the id is missing', () => {
+    const translator = createScopedTranslator({ locale: 'fr', messages: {} });
+
+    expect(translator.translate('missing.id', { defaultMessage: 'Hello' })).toBe('Hello');
+  });
+
+  test('reports the normalized locale', () => {
+    const translator = createScopedTranslator({ locale: 'fr-FR', messages: {} });
+
+    expect(translator.getLocale()).toBe('fr-fr');
+  });
+
+  test('throws if the locale is empty', () => {
+    expect(() =>
+      createScopedTranslator({ locale: '', messages: {} })
+    ).toThrowErrorMatchingInlineSnapshot(
+      `"[I18n] A \`locale\` must be a non-empty string to add messages."`
+    );
+  });
+
+  test('keeps messages isolated between two translators', () => {
+    const fr = createScopedTranslator({ locale: 'fr', messages: { greeting: 'Bonjour' } });
+    const ja = createScopedTranslator({ locale: 'ja', messages: { greeting: 'こんにちは' } });
+
+    expect(fr.translate('greeting', { defaultMessage: 'Hello' })).toBe('Bonjour');
+    expect(ja.translate('greeting', { defaultMessage: 'Hello' })).toBe('こんにちは');
+    // Interleave calls to confirm neither instance bleeds into the other.
+    expect(fr.translate('greeting', { defaultMessage: 'Hello' })).toBe('Bonjour');
+    expect(ja.translate('greeting', { defaultMessage: 'Hello' })).toBe('こんにちは');
+  });
+
+  test('formats a list using the translator locale', () => {
+    const translator = createScopedTranslator({ locale: 'en', messages: {} });
+
+    expect(translator.formatList('conjunction', ['a', 'b', 'c'])).toBe('a, b, and c');
+  });
+
+  test('does not affect the i18n singleton', () => {
+    const i18n = jest.requireActual('./i18n') as typeof i18nModule;
+
+    createScopedTranslator({ locale: 'fr', messages: { greeting: 'Bonjour' } });
+
+    expect(i18n.getLocale()).toBe('en');
+    expect(i18n.getTranslation().messages).toEqual({});
   });
 });

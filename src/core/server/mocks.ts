@@ -22,6 +22,7 @@ import { uiSettingsServiceMock } from '@kbn/core-ui-settings-server-mocks';
 import { coreLifecycleMock, coreInternalLifecycleMock } from '@kbn/core-lifecycle-server-mocks';
 import { securityServiceMock } from '@kbn/core-security-server-mocks';
 import { userProfileServiceMock } from '@kbn/core-user-profile-server-mocks';
+import { i18nServiceMock } from '@kbn/core-i18n-server-mocks';
 import type { SharedGlobalConfig, PluginInitializerContext } from '@kbn/core-plugins-server';
 import { coreFeatureFlagsMock } from '@kbn/core-feature-flags-server-mocks';
 
@@ -142,6 +143,7 @@ function createCoreRequestHandlerContextMock() {
     },
     security: securityServiceMock.createRequestHandlerContext(),
     userProfile: userProfileServiceMock.createRequestHandlerContext(),
+    i18n: i18nServiceMock.createRequestClient(),
   };
 }
 

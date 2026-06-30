@@ -21,6 +21,7 @@ import type { UiPlugins } from '@kbn/core-plugins-base-server-internal';
 import type { CustomBranding } from '@kbn/core-custom-branding-common';
 import type { UserStorageServiceStart } from '@kbn/core-user-storage-server';
 import { SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-server';
+import { resolveLocale, buildKbnLocaleCookie } from '@kbn/core-i18n-server-internal';
 import {
   type DarkModeValue,
   type ThemeName,
@@ -48,7 +49,6 @@ import {
   getScriptPaths,
   getBrowserLoggingConfig,
 } from './render_utils';
-import { resolveLocale } from './resolve_locale';
 import { filterUiPlugins } from './filter_ui_plugins';
 import { getApmConfig } from './get_apm_config';
 import type { InternalRenderingRequestHandlerContext } from './internal_types';
@@ -291,14 +291,13 @@ export class RenderingService {
     const translationHashes = i18n.getTranslationHashes();
     const availableLocales = i18n.getAvailableLocales();
     const isServerless = this.coreContext.env.packageInfo.buildFlavor === 'serverless';
-    const { locale: effectiveLocale, setCookieHeader } = resolveLocale({
+    const { locale: effectiveLocale } = resolveLocale({
       request,
       userSettingLocale,
       configLocale,
       configuredLocales: availableLocales.map((entry) => entry.id),
       translationHashes,
       isServerless,
-      serverBasePath,
       allowLocaleCookie: i18n.allowLocaleCookie,
     });
     // When the effective locale is English, the browser's pre-allocated `intl`
@@ -415,7 +414,7 @@ export class RenderingService {
     };
 
     const cookieHeaders: Record<string, string> = i18n.allowLocaleCookie
-      ? { 'set-cookie': setCookieHeader }
+      ? { 'set-cookie': buildKbnLocaleCookie({ locale: effectiveLocale, request, serverBasePath }) }
       : {};
 
     return {

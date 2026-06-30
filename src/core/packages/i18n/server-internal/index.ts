@@ -9,6 +9,8 @@
 
 export type { I18nConfigType, InternalI18nServicePreboot } from './src';
 export { config, I18nService } from './src';
+export { resolveLocale, buildKbnLocaleCookie } from './src';
+export type { ResolveLocaleArgs, ResolveLocaleResult, BuildKbnLocaleCookieArgs } from './src';
 export {
   discoverAllTranslationPaths,
   getKibanaTranslationFiles,

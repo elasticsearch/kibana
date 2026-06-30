@@ -18,6 +18,7 @@
     "@kbn/core-i18n-server",
     "@kbn/core-http-server",
     "@kbn/core-http-server-internal",
+    "@kbn/core-user-settings-server-internal",
     "@kbn/repo-info",
     "@kbn/config-mocks",
     "@kbn/core-base-server-mocks",

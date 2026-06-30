@@ -152,8 +152,12 @@ export function defineUpdateUserProfileDataRoute({
       if (requestedLocale) {
         const allowedLocales = i18nService.getLocales();
         if (!allowedLocales.includes(requestedLocale)) {
+          const { i18n: i18nClient } = await context.core;
           return response.customError({
-            body: `Locale "${requestedLocale}" is not enabled for this deployment`,
+            body: await i18nClient.translate('xpack.security.userProfile.localeNotEnabled', {
+              defaultMessage: 'Locale "{locale}" is not enabled for this deployment',
+              values: { locale: requestedLocale },
+            }),
             statusCode: 400,
           });
         }

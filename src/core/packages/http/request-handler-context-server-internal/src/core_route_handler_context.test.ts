@@ -234,6 +234,46 @@ describe('#security', () => {
   });
 });
 
+describe('#i18n', () => {
+  test('delegates to the client returned by coreStart.i18n.asScopedToRequest', async () => {
+    const request = httpServerMock.createKibanaRequest();
+    const coreStart = createCoreRouteHandlerContextParamsMock();
+    const context = new CoreRouteHandlerContext(coreStart, request);
+
+    await context.i18n.getLocale();
+    const client = coreStart.i18n.asScopedToRequest.mock.results[0].value;
+
+    expect(coreStart.i18n.asScopedToRequest).toHaveBeenCalledWith(request);
+    expect(client.getLocale).toHaveBeenCalledTimes(1);
+  });
+
+  test('lazily created', () => {
+    const request = httpServerMock.createKibanaRequest();
+    const coreStart = createCoreRouteHandlerContextParamsMock();
+    const context = new CoreRouteHandlerContext(coreStart, request);
+
+    expect(coreStart.i18n.asScopedToRequest).not.toHaveBeenCalled();
+    const i18n = context.i18n;
+    expect(i18n).toBeDefined();
+    // The scoped client is only built when a method is first invoked.
+    expect(coreStart.i18n.asScopedToRequest).not.toHaveBeenCalled();
+    context.i18n.getLocale();
+    expect(coreStart.i18n.asScopedToRequest).toHaveBeenCalledTimes(1);
+  });
+
+  test('only creates one scoped client across calls', async () => {
+    const request = httpServerMock.createKibanaRequest();
+    const coreStart = createCoreRouteHandlerContextParamsMock();
+    const context = new CoreRouteHandlerContext(coreStart, request);
+
+    await context.i18n.getLocale();
+    await context.i18n.translate('id', { defaultMessage: 'Hello' });
+    await context.i18n.formatList('conjunction', ['a', 'b']);
+
+    expect(coreStart.i18n.asScopedToRequest).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('#userProfile', () => {
   describe('getCurrent', () => {
     test('calls coreStart.userProfile.getCurrent with the correct parameters', () => {

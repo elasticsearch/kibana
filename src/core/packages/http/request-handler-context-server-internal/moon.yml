@@ -17,8 +17,11 @@ project:
   owner: '@elastic/kibana-core'
   sourceRoot: src/core/packages/http/request-handler-context-server-internal
 dependsOn:
+  - '@kbn/i18n'
   - '@kbn/core-http-server'
   - '@kbn/core-http-request-handler-context-server'
+  - '@kbn/core-i18n-server'
+  - '@kbn/core-i18n-server-mocks'
   - '@kbn/core-elasticsearch-server-internal'
   - '@kbn/core-saved-objects-server-internal'
   - '@kbn/core-deprecations-server-internal'

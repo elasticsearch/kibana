@@ -25,6 +25,7 @@ dependsOn:
   - '@kbn/core-security-server'
   - '@kbn/core-user-profile-server'
   - '@kbn/core-feature-flags-server'
+  - '@kbn/core-i18n-server'
 tags:
   - shared-server
   - package

@@ -21,4 +21,6 @@ export {
   getIsInitialized,
 } from './i18n';
 export type { TranslateArguments } from './i18n';
+export { createScopedTranslator } from './scoped_translator';
+export type { ScopedTranslator } from './scoped_translator';
 export { handleIntlError } from './error_handler';

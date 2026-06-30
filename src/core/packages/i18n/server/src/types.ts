@@ -7,7 +7,47 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { AvailableLocale } from '@kbn/i18n';
+import type { AvailableLocale, TranslateArguments } from '@kbn/i18n';
+import type { KibanaRequest } from '@kbn/core-http-server';
+
+/**
+ * A request-scoped i18n client that translates strings into the locale Kibana
+ * resolved for the current request (profile → cookie → Accept-Language on
+ * serverless → `i18n.defaultLocale`).
+ *
+ * The methods are asynchronous because resolving the locale for the request may
+ * require an awaited user-profile lookup on the first call. The resolved locale
+ * is memoised on the client, so subsequent calls do no additional I/O.
+ *
+ * @public
+ */
+export interface RequestI18nClient {
+  /** Returns the locale resolved for the current request. */
+  getLocale(): Promise<string>;
+  /** Translates a message by id into the request's resolved locale. */
+  translate(id: string, args: TranslateArguments): Promise<string>;
+  /** Formats a list of values using the request's resolved locale. */
+  formatList(type: 'conjunction' | 'disjunction' | 'unit', value: string[]): Promise<string>;
+}
+
+/**
+ * @public
+ */
+export interface I18nServiceStart {
+  /**
+   * Returns a {@link RequestI18nClient} scoped to the given request's resolved
+   * locale.
+   */
+  asScopedToRequest(request: KibanaRequest): RequestI18nClient;
+}
+
+/**
+ * Core's `i18n` request handler context. Exposed as `context.core.i18n`, it
+ * translates strings into the locale resolved for the current request.
+ *
+ * @public
+ */
+export type I18nRequestHandlerContext = RequestI18nClient;
 
 /**
  * @public

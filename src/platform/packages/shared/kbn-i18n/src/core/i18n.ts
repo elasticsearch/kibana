@@ -7,15 +7,22 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { createIntl, createIntlCache } from '@formatjs/intl';
-import type { MessageDescriptor, Formatters, IntlConfig, IntlShape } from '@formatjs/intl';
-import { handleIntlError } from './error_handler';
+import { createIntl } from '@formatjs/intl';
+import type { IntlShape } from '@formatjs/intl';
 
 import type { Translation, TranslationInput } from '../translation';
 import { defaultEnFormats } from './formats';
-import type { FormatXMLElementFn, PrimitiveType } from './types';
+import {
+  EN_LOCALE,
+  createTranslationIntl,
+  formatList as formatListWithIntl,
+  formatMessage as formatMessageWithIntl,
+} from './formatter';
+import type { TranslateArguments } from './formatter';
 
-export const EN_LOCALE = 'en';
+export { EN_LOCALE } from './formatter';
+export type { TranslateArguments } from './formatter';
+
 const defaultLocale = EN_LOCALE;
 
 /**
@@ -26,6 +33,9 @@ const defaultLocale = EN_LOCALE;
  * This pattern has several limitations and can cause unexpected bugs. The main limitation
  * is that we cannot server multiple locales on the server side based on the user requested
  * locale.
+ *
+ * For request-scoped, per-locale translation that avoids this shared mutable
+ * state, use `createScopedTranslator` instead.
  */
 let intl: IntlShape<string>;
 let isInitialized = false;
@@ -48,36 +58,12 @@ intl = createIntl({
 export const getIsInitialized = () => {
   return isInitialized;
 };
-/**
- * Normalizes locale to make it consistent with IntlMessageFormat locales
- * @param locale
- */
-function normalizeLocale(locale: string) {
-  return locale.toLowerCase();
-}
 
 /**
  * Provides a way to register translations with the engine
  */
 export function activateTranslation(newTranslation: TranslationInput) {
-  if (!newTranslation.locale || typeof newTranslation.locale !== 'string') {
-    throw new Error('[I18n] A `locale` must be a non-empty string to add messages.');
-  }
-  const config: IntlConfig<string> = {
-    locale: normalizeLocale(newTranslation.locale),
-    messages: newTranslation.messages,
-    defaultFormats: defaultEnFormats,
-    defaultLocale,
-    onError: handleIntlError,
-  };
-
-  // formatJS differentiates between `formats: undefined` and unset `formats`.
-  if (newTranslation.formats) {
-    config.formats = newTranslation.formats;
-  }
-
-  const cache = createIntlCache();
-  intl = createIntl(config, cache);
+  intl = createTranslationIntl(newTranslation);
 }
 
 /**
@@ -101,37 +87,6 @@ export function getLocale() {
   return intl.locale;
 }
 
-type MessageFormatters = Pick<
-  Formatters,
-  'getNumberFormat' | 'getDateTimeFormat' | 'getPluralRules'
->;
-
-export interface TranslateArguments {
-  /**
-   * Will be used unless translation was successful
-   */
-  defaultMessage: MessageDescriptor['defaultMessage'];
-  /**
-   * Message description, used by translators and other devs to understand the message context.
-   */
-  description?: MessageDescriptor['description'];
-  /**
-   * values to pass into translation
-   */
-  values?: Record<string, PrimitiveType | FormatXMLElementFn<string, string>>;
-  /**
-   * Whether to treat HTML/XML tags as string literal
-   * instead of parsing them as tag token.
-   * When this is false we only allow simple tags without
-   * any attributes
-   */
-  ignoreTag?: boolean;
-  /**
-   * Custom formatters to override the default intl formatters
-   */
-  formatters?: MessageFormatters;
-}
-
 /**
  * Translate message by id
  * @param id - translation id to be translated
@@ -142,32 +97,8 @@ export interface TranslateArguments {
  * @param [options.ignoreTag] - Whether to treat HTML/XML tags as string literal instead of parsing them as tag token. When this is false we only allow simple tags without any attributes
  * @param [options.formatters] - Custom formatters to override the default intl formatters
  */
-export function translate(
-  id: string,
-  { values = {}, description, defaultMessage, ignoreTag, formatters }: TranslateArguments
-): string {
-  if (!id || typeof id !== 'string') {
-    throw new Error('[I18n] An `id` must be a non-empty string to translate a message.');
-  }
-
-  try {
-    if (!defaultMessage) {
-      throw new Error('Missing `defaultMessage`.');
-    }
-
-    return intl.formatMessage(
-      {
-        id,
-        defaultMessage,
-        description,
-      },
-      values,
-      // @ts-expect-error - There’s a small mismatch between @formatjs type and Intl API that only applies to the date function, we’re ignoring that
-      { ignoreTag, shouldParseSkeletons: true, formatters }
-    );
-  } catch (e) {
-    throw new Error(`[I18n] Error formatting the default message for: "${id}".\n${e}`);
-  }
+export function translate(id: string, args: TranslateArguments): string {
+  return formatMessageWithIntl(intl, id, args);
 }
 
 /**
@@ -177,11 +108,7 @@ export function translate(
  * @returns The formatted list string.
  */
 export function formatList(type: 'conjunction' | 'disjunction' | 'unit', value: string[]): string {
-  try {
-    return intl.formatList(value, { type });
-  } catch (e) {
-    throw new Error(`[I18n] Error formatting list ${JSON.stringify(value)}: ${e}`);
-  }
+  return formatListWithIntl(intl, type, value);
 }
 
 /**

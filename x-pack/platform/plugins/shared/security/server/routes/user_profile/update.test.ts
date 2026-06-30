@@ -21,7 +21,7 @@ import { sessionMock } from '../../session_management/session.mock';
 import type { SecurityRequestHandlerContext, SecurityRouter } from '../../types';
 import type { UserProfileServiceStartInternal } from '../../user_profile';
 import { userProfileServiceMock } from '../../user_profile/user_profile_service.mock';
-import { routeDefinitionParamsMock } from '../index.mock';
+import { routeDefinitionParamsMock, securityRequestHandlerContextMock } from '../index.mock';
 
 function getMockContext() {
   return {
@@ -443,6 +443,34 @@ describe('Update profile routes', () => {
       ).resolves.toEqual(expect.objectContaining({ status: 200, payload: undefined }));
 
       expect(userProfileService.update).toBeCalledTimes(1);
+    });
+
+    it('rejects a locale that is not enabled with a request-scoped translated error.', async () => {
+      session.get.mockResolvedValue({
+        error: null,
+        value: sessionMock.createValue({ userProfileId: 'u_some_id' }),
+      });
+      authc.getCurrentUser.mockReturnValue(mockAuthenticatedUser());
+
+      const context = securityRequestHandlerContextMock.create();
+      const { i18n: i18nClient } = await context.core;
+
+      await expect(
+        routeHandler(
+          context,
+          httpServerMock.createKibanaRequest({ body: { userSettings: { locale: 'fr-FR' } } }),
+          kibanaResponseFactory
+        )
+      ).resolves.toEqual(expect.objectContaining({ status: 400 }));
+
+      expect(i18nClient.translate).toHaveBeenCalledWith(
+        'xpack.security.userProfile.localeNotEnabled',
+        {
+          defaultMessage: 'Locale "{locale}" is not enabled for this deployment',
+          values: { locale: 'fr-FR' },
+        }
+      );
+      expect(userProfileService.update).not.toHaveBeenCalled();
     });
   });
 });

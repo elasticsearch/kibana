@@ -35,6 +35,8 @@ import {
 } from '@kbn/core-user-profile-server-internal';
 import { CoreFeatureFlagsRouteHandlerContext } from '@kbn/core-feature-flags-server-internal';
 import type { FeatureFlagsStart } from '@kbn/core-feature-flags-server';
+import type { I18nServiceStart } from '@kbn/core-i18n-server';
+import { CoreI18nRouteHandlerContext } from './core_i18n_route_handler_context';
 
 /**
  * Subset of `InternalCoreStart` used by {@link CoreRouteHandlerContext}
@@ -48,6 +50,7 @@ export interface CoreRouteHandlerContextParams {
   deprecations: InternalDeprecationsServiceStart;
   security: InternalSecurityServiceStart;
   userProfile: InternalUserProfileServiceStart;
+  i18n: I18nServiceStart;
 }
 
 /**
@@ -63,6 +66,7 @@ export class CoreRouteHandlerContext implements CoreRequestHandlerContext {
   #deprecations?: CoreDeprecationsRouteHandlerContext;
   #security?: CoreSecurityRouteHandlerContext;
   #userProfile?: CoreUserProfileRouteHandlerContext;
+  #i18n?: CoreI18nRouteHandlerContext;
 
   constructor(
     private readonly coreStart: CoreRouteHandlerContextParams,
@@ -133,5 +137,12 @@ export class CoreRouteHandlerContext implements CoreRequestHandlerContext {
       );
     }
     return this.#userProfile;
+  }
+
+  public get i18n() {
+    if (!this.#i18n) {
+      this.#i18n = new CoreI18nRouteHandlerContext(this.coreStart.i18n, this.request);
+    }
+    return this.#i18n;
   }
 }

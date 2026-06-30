@@ -35,11 +35,9 @@ export interface ResolveLocaleArgs {
    * deterministic for existing users.
    */
   isServerless: boolean;
-  /** Server-wide base path for the cookie's Path attribute. */
-  serverBasePath: string;
   /**
-   * When false, the `KBN_LOCALE` cookie is neither read from the request nor
-   * written to the response. Controlled by `i18n.allowLocaleCookie`.
+   * When false, the `KBN_LOCALE` cookie is not consulted during resolution.
+   * Controlled by `i18n.allowLocaleCookie`.
    */
   allowLocaleCookie: boolean;
 }
@@ -47,19 +45,17 @@ export interface ResolveLocaleArgs {
 export interface ResolveLocaleResult {
   /** Locale id Kibana should render the response in. */
   locale: string;
-  /**
-   * Ready-to-use Set-Cookie header value (e.g. `KBN_LOCALE=fr-FR; Path=/; ...`).
-   * Always present — the cookie is rewritten on every render.
-   */
-  setCookieHeader: string;
 }
 
 /**
- * Resolves the effective locale for a render using the following priority chain:
+ * Resolves the effective locale for a request using the following priority chain:
  *   1. User profile setting (when value is in `translationHashes`)
  *   2. KBN_LOCALE cookie (only when `allowLocaleCookie` is `true` and value is in `translationHashes`)
  *   3. Accept-Language header (serverless only; strict match against `configuredLocales`)
  *   4. `configLocale`
+ *
+ * Pure resolution only — writing the `KBN_LOCALE` cookie is handled separately
+ * by {@link buildKbnLocaleCookie}.
  */
 export const resolveLocale = (args: ResolveLocaleArgs): ResolveLocaleResult => {
   const {
@@ -69,18 +65,17 @@ export const resolveLocale = (args: ResolveLocaleArgs): ResolveLocaleResult => {
     configuredLocales,
     translationHashes,
     isServerless,
-    serverBasePath,
     allowLocaleCookie,
   } = args;
 
   if (userSettingLocale && translationHashes[userSettingLocale]) {
-    return finalize(userSettingLocale, request, serverBasePath);
+    return { locale: userSettingLocale };
   }
 
   if (allowLocaleCookie) {
     const cookieLocale = readCookie(getHeader(request, 'cookie'), KBN_LOCALE_COOKIE_NAME);
     if (cookieLocale && translationHashes[cookieLocale]) {
-      return finalize(cookieLocale, request, serverBasePath);
+      return { locale: cookieLocale };
     }
   }
 
@@ -92,11 +87,42 @@ export const resolveLocale = (args: ResolveLocaleArgs): ResolveLocaleResult => {
     // Match the profile/cookie paths above: only return a header-derived
     // locale if we can actually serve translations for it.
     if (headerLocale && translationHashes[headerLocale]) {
-      return finalize(headerLocale, request, serverBasePath);
+      return { locale: headerLocale };
     }
   }
 
-  return finalize(configLocale, request, serverBasePath);
+  return { locale: configLocale };
+};
+
+export interface BuildKbnLocaleCookieArgs {
+  /** The resolved locale to persist in the cookie. */
+  locale: string;
+  request: KibanaRequest;
+  /** Server-wide base path for the cookie's Path attribute. */
+  serverBasePath: string;
+}
+
+/**
+ * Builds the `Set-Cookie` header value (e.g. `KBN_LOCALE=fr-FR; Path=/; ...`)
+ * that persists the resolved locale in the browser. Only called by rendering,
+ * which rewrites the cookie on every render so it tracks the resolved locale.
+ */
+export const buildKbnLocaleCookie = ({
+  locale,
+  request,
+  serverBasePath,
+}: BuildKbnLocaleCookieArgs): string => {
+  const isHttps = request.url.protocol === 'https:';
+  const path = serverBasePath || '/';
+  const parts = [
+    `${KBN_LOCALE_COOKIE_NAME}=${encodeURIComponent(locale)}`,
+    `Path=${path}`,
+    `Max-Age=${COOKIE_MAX_AGE_SECONDS}`,
+    'SameSite=Lax',
+    'HttpOnly',
+  ];
+  if (isHttps) parts.push('Secure');
+  return parts.join('; ');
 };
 
 const getHeader = (request: KibanaRequest, name: string): string => {
@@ -172,25 +198,4 @@ export const pickFromAcceptLanguage = (
     if (match) return match;
   }
   return undefined;
-};
-
-const finalize = (
-  locale: string,
-  request: KibanaRequest,
-  serverBasePath: string
-): ResolveLocaleResult => {
-  const isHttps = request.url.protocol === 'https:';
-  const path = serverBasePath || '/';
-  const parts = [
-    `${KBN_LOCALE_COOKIE_NAME}=${encodeURIComponent(locale)}`,
-    `Path=${path}`,
-    `Max-Age=${COOKIE_MAX_AGE_SECONDS}`,
-    'SameSite=Lax',
-    'HttpOnly',
-  ];
-  if (isHttps) parts.push('Secure');
-  return {
-    locale,
-    setCookieHeader: parts.join('; '),
-  };
 };

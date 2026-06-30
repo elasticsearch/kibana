@@ -18,7 +18,8 @@
     "@kbn/core-ui-settings-server",
     "@kbn/core-security-server",
     "@kbn/core-user-profile-server",
-    "@kbn/core-feature-flags-server"
+    "@kbn/core-feature-flags-server",
+    "@kbn/core-i18n-server"
   ],
   "exclude": [
     "target/**/*",

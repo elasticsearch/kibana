@@ -51,7 +51,8 @@ const i18nLoader = {
 
 export type { Translation, TranslationInput } from './src/translation';
 export type { Formats, TranslateArguments } from './src/core';
-export { EN_LOCALE } from './src/core';
+export { EN_LOCALE, createScopedTranslator } from './src/core';
+export type { ScopedTranslator } from './src/core';
 export {
   SUPPORTED_LOCALE_IDS,
   getLocaleLabel,

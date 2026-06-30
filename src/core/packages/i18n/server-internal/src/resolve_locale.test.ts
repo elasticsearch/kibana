@@ -10,6 +10,7 @@
 import type { KibanaRequest } from '@kbn/core-http-server';
 import {
   KBN_LOCALE_COOKIE_NAME,
+  buildKbnLocaleCookie,
   pickFromAcceptLanguage,
   readCookie,
   resolveLocale,
@@ -41,7 +42,6 @@ const baseArgs = (overrides: Partial<ResolveLocaleArgs> = {}): ResolveLocaleArgs
   configuredLocales: ['en', 'fr-FR', 'ja-JP'],
   translationHashes: { en: 'h1', 'fr-FR': 'h2', 'ja-JP': 'h3' },
   isServerless: false,
-  serverBasePath: '',
   allowLocaleCookie: true,
   ...overrides,
 });
@@ -183,46 +183,64 @@ describe('resolveLocale', () => {
       expect(result.locale).toBe('en');
     });
   });
+});
 
-  describe('Set-Cookie header', () => {
-    it('always emits a Set-Cookie value matching the resolved locale', () => {
-      const result = resolveLocale(baseArgs());
-      expect(result.setCookieHeader).toContain(`${KBN_LOCALE_COOKIE_NAME}=en`);
+describe('buildKbnLocaleCookie', () => {
+  it('emits a Set-Cookie value matching the provided locale', () => {
+    const cookie = buildKbnLocaleCookie({
+      locale: 'en',
+      request: buildRequest(),
+      serverBasePath: '',
     });
+    expect(cookie).toContain(`${KBN_LOCALE_COOKIE_NAME}=en`);
+  });
 
-    it('includes Path, Max-Age, SameSite=Lax, and HttpOnly', () => {
-      const result = resolveLocale(baseArgs({ serverBasePath: '/abc' }));
-      expect(result.setCookieHeader).toContain('Path=/abc');
-      expect(result.setCookieHeader).toContain('Max-Age=31536000');
-      expect(result.setCookieHeader).toContain('SameSite=Lax');
-      expect(result.setCookieHeader).toContain('HttpOnly');
+  it('includes Path, Max-Age, SameSite=Lax, and HttpOnly', () => {
+    const cookie = buildKbnLocaleCookie({
+      locale: 'en',
+      request: buildRequest(),
+      serverBasePath: '/abc',
     });
+    expect(cookie).toContain('Path=/abc');
+    expect(cookie).toContain('Max-Age=31536000');
+    expect(cookie).toContain('SameSite=Lax');
+    expect(cookie).toContain('HttpOnly');
+  });
 
-    it('uses Path=/ when serverBasePath is empty', () => {
-      const result = resolveLocale(baseArgs({ serverBasePath: '' }));
-      expect(result.setCookieHeader).toContain('Path=/');
+  it('uses Path=/ when serverBasePath is empty', () => {
+    const cookie = buildKbnLocaleCookie({
+      locale: 'en',
+      request: buildRequest(),
+      serverBasePath: '',
     });
+    expect(cookie).toContain('Path=/');
+  });
 
-    it('adds Secure on HTTPS', () => {
-      const result = resolveLocale(baseArgs({ request: buildRequest({ protocol: 'https:' }) }));
-      expect(result.setCookieHeader).toContain('; Secure');
+  it('adds Secure on HTTPS', () => {
+    const cookie = buildKbnLocaleCookie({
+      locale: 'en',
+      request: buildRequest({ protocol: 'https:' }),
+      serverBasePath: '',
     });
+    expect(cookie).toContain('; Secure');
+  });
 
-    it('omits Secure on HTTP', () => {
-      const result = resolveLocale(baseArgs({ request: buildRequest({ protocol: 'http:' }) }));
-      expect(result.setCookieHeader).not.toContain('Secure');
+  it('omits Secure on HTTP', () => {
+    const cookie = buildKbnLocaleCookie({
+      locale: 'en',
+      request: buildRequest({ protocol: 'http:' }),
+      serverBasePath: '',
     });
+    expect(cookie).not.toContain('Secure');
+  });
 
-    it('URL-encodes non-ASCII locale ids defensively', () => {
-      const result = resolveLocale(
-        baseArgs({
-          configLocale: 'a-Ω',
-          translationHashes: { 'a-Ω': 'h' },
-          configuredLocales: ['a-Ω'],
-        })
-      );
-      expect(result.setCookieHeader).toContain(`${KBN_LOCALE_COOKIE_NAME}=a-%CE%A9`);
+  it('URL-encodes non-ASCII locale ids defensively', () => {
+    const cookie = buildKbnLocaleCookie({
+      locale: 'a-Ω',
+      request: buildRequest(),
+      serverBasePath: '',
     });
+    expect(cookie).toContain(`${KBN_LOCALE_COOKIE_NAME}=a-%CE%A9`);
   });
 });
 
