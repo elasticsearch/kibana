@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { claudeModelSupportsTemperature } from '@kbn/connector-schemas/bedrock';
 import {
   formatBedrockBody,
   ensureMessageFormat,
@@ -23,6 +24,63 @@ describe('formatBedrockBody', () => {
       messages: [{ role: 'user', content: 'Hello' }],
       max_tokens: expect.any(Number),
     });
+  });
+
+  it('includes temperature when provided', () => {
+    const result = formatBedrockBody({
+      messages: [{ role: 'user', content: 'Hello' }],
+      temperature: 0.5,
+    });
+    expect(result).toMatchObject({ temperature: 0.5 });
+  });
+
+  it('omits temperature when not provided', () => {
+    const result = formatBedrockBody({ messages: [{ role: 'user', content: 'Hello' }] });
+    expect(result).not.toHaveProperty('temperature');
+  });
+});
+
+describe('claudeModelSupportsTemperature', () => {
+  it('returns true when no model ID is provided', () => {
+    expect(claudeModelSupportsTemperature(undefined)).toBe(true);
+    expect(claudeModelSupportsTemperature('')).toBe(true);
+  });
+
+  it('returns true for Claude 4.x models that support temperature (< 4.7)', () => {
+    [
+      'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+      'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+      'anthropic.claude-sonnet-4-6-20251101-v1:0',
+      'us.anthropic.claude-opus-4-6-20251101-v1:0',
+    ].forEach((model) => {
+      expect(claudeModelSupportsTemperature(model)).toBe(true);
+    });
+  });
+
+  it('returns false for Claude 4.7+ models where temperature is deprecated', () => {
+    [
+      'us.anthropic.claude-sonnet-4-7-20251101-v1:0',
+      'us.anthropic.claude-opus-4-8-20251101-v1:0',
+      'anthropic.claude-haiku-4-7-20251101-v1:0',
+      'us.anthropic.claude-opus-5-0-20260101-v1:0',
+    ].forEach((model) => {
+      expect(claudeModelSupportsTemperature(model)).toBe(false);
+    });
+  });
+
+  it('returns true for Claude 3.x models (different ID format, regex does not match)', () => {
+    [
+      'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+      'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+      'anthropic.claude-3-opus-20240229-v1:0',
+    ].forEach((model) => {
+      expect(claudeModelSupportsTemperature(model)).toBe(true);
+    });
+  });
+
+  it('returns true for unrecognized or custom model IDs', () => {
+    expect(claudeModelSupportsTemperature('custom-model-123')).toBe(true);
+    expect(claudeModelSupportsTemperature('my-inference-profile')).toBe(true);
   });
 });
 

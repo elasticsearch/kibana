@@ -187,6 +187,50 @@ describe('inferenceEndpointAdapter', () => {
       );
     });
 
+    it('omits temperature for Claude 4.7+ models where it is deprecated', () => {
+      executorMock.invoke.mockResolvedValue(
+        observableIntoEventSourceStream(of(createOpenAIChunk({ delta: { content: '' } })), logger)
+      );
+
+      inferenceEndpointAdapter
+        .chatComplete({
+          ...defaultArgs,
+          messages: [{ role: MessageRole.User, content: 'question' }],
+          modelName: 'us.anthropic.claude-opus-4-8-20251101-v1:0',
+          temperature: 0.4,
+        })
+        .subscribe(noop);
+
+      expect(executorMock.invoke).toHaveBeenCalledTimes(1);
+      expect(executorMock.invoke).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.not.objectContaining({ temperature: expect.anything() }),
+        })
+      );
+    });
+
+    it('includes temperature for Claude 4.6 and earlier models', () => {
+      executorMock.invoke.mockResolvedValue(
+        observableIntoEventSourceStream(of(createOpenAIChunk({ delta: { content: '' } })), logger)
+      );
+
+      inferenceEndpointAdapter
+        .chatComplete({
+          ...defaultArgs,
+          messages: [{ role: MessageRole.User, content: 'question' }],
+          modelName: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+          temperature: 0.4,
+        })
+        .subscribe(noop);
+
+      expect(executorMock.invoke).toHaveBeenCalledTimes(1);
+      expect(executorMock.invoke).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({ temperature: 0.4 }),
+        })
+      );
+    });
+
     it('propagates the abort signal', () => {
       executorMock.invoke.mockResolvedValue(
         observableIntoEventSourceStream(of(createOpenAIChunk({ delta: { content: '' } })), logger)

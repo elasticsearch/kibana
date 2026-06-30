@@ -16,6 +16,7 @@ import type {
   ChatCompletionChunkEvent,
   ChatCompletionTokenCountEvent,
 } from '@kbn/inference-common';
+import { claudeModelSupportsTemperature } from '@kbn/connector-schemas/bedrock';
 import { eventSourceStreamIntoObservable } from '../../../util/event_source_stream_into_observable';
 import {
   processOpenAIStream,
@@ -111,6 +112,9 @@ const createEndpointRequest = ({
   temperature?: number;
   modelName?: string;
 }): OpenAIRequest => {
+  const supportsTemperature = claudeModelSupportsTemperature(modelName);
+  const temperatureSpread = supportsTemperature && temperature >= 0 ? { temperature } : {};
+
   if (simulatedFunctionCalling) {
     const wrapped = wrapWithSimulatedFunctionCalling({
       system,
@@ -119,7 +123,7 @@ const createEndpointRequest = ({
       tools,
     });
     return {
-      ...(temperature >= 0 ? { temperature } : {}),
+      ...temperatureSpread,
       model: modelName,
       messages: messagesToOpenAI({ system: wrapped.system, messages: wrapped.messages }),
     };
@@ -129,7 +133,7 @@ const createEndpointRequest = ({
   const hasTools = Array.isArray(openAiTools) && openAiTools.length > 0;
 
   return {
-    ...(temperature >= 0 ? { temperature } : {}),
+    ...temperatureSpread,
     model: modelName,
     messages: messagesToOpenAI({ system, messages }),
     ...(hasTools

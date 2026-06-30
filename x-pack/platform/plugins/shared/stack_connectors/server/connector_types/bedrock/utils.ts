@@ -12,7 +12,7 @@ import type { BedrockMessage, BedrockToolChoice } from '@kbn/connector-schemas/b
 export const formatBedrockBody = ({
   messages,
   stopSequences,
-  temperature = 0,
+  temperature,
   system,
   maxTokens = DEFAULT_TOKEN_LIMIT,
   tools,
@@ -31,7 +31,7 @@ export const formatBedrockBody = ({
   ...ensureMessageFormat(messages, system),
   max_tokens: maxTokens,
   stop_sequences: stopSequences,
-  temperature,
+  ...(temperature !== undefined ? { temperature } : {}),
   tools,
   tool_choice: toolChoice,
 });

@@ -47,6 +47,7 @@ dependsOn:
   - '@kbn/anonymization-common'
   - '@kbn/utility-types'
   - '@kbn/management-settings-ids'
+  - '@kbn/connector-schemas'
 tags:
   - plugin
   - prod

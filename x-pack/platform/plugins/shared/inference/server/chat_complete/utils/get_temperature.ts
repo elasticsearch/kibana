@@ -5,7 +5,8 @@
  * 2.0.
  */
 import type { InferenceConnector } from '@kbn/inference-common';
-import { InferenceConnectorType } from '@kbn/inference-common';
+import { InferenceConnectorType, InferenceEndpointProvider } from '@kbn/inference-common';
+import { claudeModelSupportsTemperature } from '@kbn/connector-schemas/bedrock';
 
 const OPENAI_MODELS_WITHOUT_TEMPERATURE = ['o1', 'o3', 'gpt-5'];
 
@@ -13,8 +14,20 @@ export const getTemperatureIfValid = (
   temperature?: number,
   { connector, modelName }: { connector?: InferenceConnector; modelName?: string } = {}
 ) => {
-  // Escape hatch: if user sets temperature in the connector config, use it by default (including 0).
-  // This should take priority over any automatic model-based exclusions.
+  const model =
+    modelName ?? connector?.config?.providerConfig?.model_id ?? connector?.config?.defaultModel;
+
+  const isBedrockBacked =
+    connector?.type === InferenceConnectorType.Bedrock ||
+    (connector?.type === InferenceConnectorType.Inference &&
+      connector?.config?.provider === InferenceEndpointProvider.AmazonBedrock);
+
+  // Claude 4.7+ deprecated temperature — reject it regardless of source (connector config or caller).
+  if (isBedrockBacked && model && !claudeModelSupportsTemperature(model)) {
+    return {};
+  }
+
+  // Escape hatch: if user sets temperature in the connector config, use it (including 0).
   const connectorTemperature = connector?.config?.temperature;
   if (
     typeof connectorTemperature === 'number' &&
@@ -23,9 +36,6 @@ export const getTemperatureIfValid = (
   ) {
     return { temperature: connectorTemperature };
   }
-
-  const model =
-    modelName ?? connector?.config?.providerConfig?.model_id ?? connector?.config?.defaultModel;
 
   if (
     (connector?.type === InferenceConnectorType.OpenAI ||

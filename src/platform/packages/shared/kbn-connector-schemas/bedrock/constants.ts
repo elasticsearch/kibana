@@ -19,6 +19,21 @@ export const DEFAULT_URL = `https://bedrock-runtime.us-east-1.amazonaws.com` as 
 export const DEFAULT_TIMEOUT_MS = 200000;
 export const DEFAULT_TOKEN_LIMIT = 8191;
 
+/**
+ * Claude 4.7+ models deprecated the temperature parameter.
+ *
+ * Claude 4.x model IDs follow the pattern claude-{variant}-{major}-{minor}-{date},
+ * while Claude 3.x IDs follow claude-{major}-{minor}-{variant}-{date}.
+ */
+export const claudeModelSupportsTemperature = (modelId?: string): boolean => {
+  if (!modelId) return true;
+  const match = modelId.toLowerCase().match(/claude-[a-z][\w]*-(\d+)-(\d+)/);
+  if (!match || match.length < 3) return true;
+  const major = parseInt(match[1], 10);
+  const minor = parseInt(match[2], 10);
+  return !(major > 4 || (major === 4 && minor >= 7));
+};
+
 export enum SUB_ACTION {
   RUN = 'run',
   INVOKE_AI = 'invokeAI',

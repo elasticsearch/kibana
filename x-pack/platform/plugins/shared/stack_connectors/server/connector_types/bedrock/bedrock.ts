@@ -35,6 +35,7 @@ import {
   ConverseStreamActionParamsSchema,
   DashboardActionParamsSchema,
   ConverseResponseSchema,
+  claudeModelSupportsTemperature,
 } from '@kbn/connector-schemas/bedrock';
 import type {
   Config,
@@ -386,10 +387,21 @@ The Kibana Connector in use may need to be reconfigured with an updated Amazon B
     }: InvokeAIRawActionParams,
     connectorUsageCollector: ConnectorUsageCollector
   ): Promise<IncomingMessage> {
+    const actualModel = model ?? this.model;
+    const effectiveTemperature = claudeModelSupportsTemperature(actualModel)
+      ? temperature ?? 0
+      : undefined;
     const res = (await this.streamApi(
       {
         body: JSON.stringify(
-          formatBedrockBody({ messages, stopSequences, system, temperature, tools, toolChoice })
+          formatBedrockBody({
+            messages,
+            stopSequences,
+            system,
+            temperature: effectiveTemperature,
+            tools,
+            toolChoice,
+          })
         ),
         model,
         signal,
@@ -423,6 +435,10 @@ The Kibana Connector in use may need to be reconfigured with an updated Amazon B
     }: InvokeAIActionParams,
     connectorUsageCollector: ConnectorUsageCollector
   ): Promise<InvokeAIActionResponse> {
+    const actualModel = model ?? this.model;
+    const effectiveTemperature = claudeModelSupportsTemperature(actualModel)
+      ? temperature ?? 0
+      : undefined;
     const res = (await this.runApi(
       {
         body: JSON.stringify(
@@ -430,7 +446,7 @@ The Kibana Connector in use may need to be reconfigured with an updated Amazon B
             messages,
             stopSequences,
             system,
-            temperature,
+            temperature: effectiveTemperature,
             maxTokens,
             tools,
             toolChoice,
@@ -461,13 +477,17 @@ The Kibana Connector in use may need to be reconfigured with an updated Amazon B
     }: InvokeAIRawActionParams,
     connectorUsageCollector: ConnectorUsageCollector
   ): Promise<InvokeAIRawActionResponse> {
+    const actualModel = model ?? this.model;
+    const effectiveTemperature = claudeModelSupportsTemperature(actualModel)
+      ? temperature
+      : undefined;
     const res = await this.runApi(
       {
         body: JSON.stringify({
           messages,
           stop_sequences: stopSequences,
           system,
-          temperature,
+          ...(effectiveTemperature !== undefined ? { temperature: effectiveTemperature } : {}),
           max_tokens: maxTokens,
           tools,
           tool_choice: toolChoice,
@@ -553,7 +573,7 @@ The Kibana Connector in use may need to be reconfigured with an updated Amazon B
     const request: ConverseRequest = {
       messages,
       inferenceConfig: {
-        temperature,
+        ...(claudeModelSupportsTemperature(modelId) ? { temperature } : {}),
         stopSequences,
         maxTokens,
       },
@@ -608,7 +628,7 @@ The Kibana Connector in use may need to be reconfigured with an updated Amazon B
     const request: ConverseStreamRequest = {
       messages,
       inferenceConfig: {
-        temperature,
+        ...(claudeModelSupportsTemperature(modelId) ? { temperature } : {}),
         stopSequences,
         maxTokens,
       },
