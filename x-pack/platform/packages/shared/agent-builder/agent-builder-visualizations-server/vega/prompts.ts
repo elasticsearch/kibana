@@ -38,14 +38,9 @@ export const createAuthorVegaSpecPrompt = ({
   return [
     [
       'system',
-      `You are a Vega visualization expert. By default, author a single valid Vega-Lite (v6) specification for the user's request.
+      `You are a Vega-Lite visualization expert. Author a single valid Vega-Lite (v6) specification for the user's request.
 
-Use Vega-Lite when a standard chart cannot express the request, for example repeated charts, layered or combination charts (e.g. bars with an overlaid line), or scatter/bubble plots with an encoded size. Escalate to raw Vega (v5) for charts Vega-Lite cannot express well in Kibana: Sankey / flow diagrams, and responsive small multiples / faceting / trellis (Vega-Lite's facet/repeat sizes each sub-view in fixed pixels and does NOT reflow to fill the panel).
-
-RAW VEGA RULES (only when raw Vega v5 is required):
-- Declare a base data set named exactly "source" whose "url" is the inline ES|QL source { "%type%": "esql", "query": <the exact query below> }. Derived data sets must reference it via "source": "source".
-- For layouts derived from the "width"/"height" signals (e.g. a manual small-multiples grid), set a top-level "autosize": { "type": "pad", "contains": "padding" }; the default "fit" collapses such layouts.
-- Use "scales" whose ranges are "width"/"height" so the chart fills its container, a "marks" array for the visuals, and "signals" only if needed.
+Author Vega-Lite ONLY — never raw Vega (v5). Use Vega-Lite for charts a standard Lens chart cannot express, for example faceted charts / small multiples, layered or combination charts (e.g. bars with an overlaid line), or scatter/bubble plots with an encoded size. If the request needs a diagram Vega-Lite cannot express (e.g. Sankey / flow, network, chord), build the closest chart Vega-Lite supports (such as a sorted bar chart of the top combinations) rather than attempting an unsupported diagram.
 ${
   existingSpec
     ? `Existing specification to modify (keep what still applies, change only what the request asks for):

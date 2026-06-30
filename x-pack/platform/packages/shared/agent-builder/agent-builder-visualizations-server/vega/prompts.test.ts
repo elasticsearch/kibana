@@ -23,8 +23,10 @@ describe('createAuthorVegaSpecPrompt', () => {
     expect(text).toContain('FROM logs-* | STATS count = COUNT(*) BY status');
   });
 
-  it('includes the raw-Vega escalation rules', () => {
-    expect(systemText('any chart')).toContain('RAW VEGA RULES');
+  it('instructs Vega-Lite only (never raw Vega)', () => {
+    const text = systemText('any chart');
+    expect(text).toContain('Vega-Lite ONLY');
+    expect(text).toContain('never raw Vega');
   });
 
   it('always includes the dotted-field escaping guidance', () => {
