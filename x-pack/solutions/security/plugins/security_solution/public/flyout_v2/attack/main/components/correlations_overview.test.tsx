@@ -8,7 +8,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { EuiProvider } from '@elastic/eui';
-import type { AttackDiscoveryAlert } from '@kbn/elastic-assistant-common';
 import { CorrelationsOverview } from './correlations_overview';
 import { INSIGHTS_CORRELATIONS_TEST_ID } from '../constants/test_ids';
 
@@ -47,44 +46,41 @@ jest.mock('./section_panel', () => ({
   ),
 }));
 
-const buildAttack = (alertIds: string[]): AttackDiscoveryAlert =>
-  ({ alertIds } as unknown as AttackDiscoveryAlert);
-
 const renderWithEui = (ui: React.ReactElement) => render(<EuiProvider>{ui}</EuiProvider>);
 
 describe('CorrelationsOverview (v2)', () => {
   it('renders the section with the correlations test id', () => {
-    renderWithEui(<CorrelationsOverview attack={buildAttack(['alert-1', 'alert-2'])} />);
+    renderWithEui(<CorrelationsOverview alertIds={['alert-1', 'alert-2']} />);
 
     expect(screen.getByTestId(INSIGHTS_CORRELATIONS_TEST_ID)).toBeInTheDocument();
   });
 
   it('renders the Related alerts label', () => {
-    renderWithEui(<CorrelationsOverview attack={buildAttack(['alert-1'])} />);
+    renderWithEui(<CorrelationsOverview alertIds={['alert-1']} />);
 
     expect(screen.getByText('Related alerts')).toBeInTheDocument();
   });
 
   it('renders the related alerts count in a badge', () => {
-    renderWithEui(<CorrelationsOverview attack={buildAttack(['alert-1', 'alert-2'])} />);
+    renderWithEui(<CorrelationsOverview alertIds={['alert-1', 'alert-2']} />);
 
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
   it('renders count of zero when alertIds is empty', () => {
-    renderWithEui(<CorrelationsOverview attack={buildAttack([])} />);
+    renderWithEui(<CorrelationsOverview alertIds={[]} />);
 
     expect(screen.getByText('0')).toBeInTheDocument();
   });
 
   it('renders count matching the length of alertIds', () => {
-    renderWithEui(<CorrelationsOverview attack={buildAttack(['id-1', 'id-2', 'id-3'])} />);
+    renderWithEui(<CorrelationsOverview alertIds={['id-1', 'id-2', 'id-3']} />);
 
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
   it('renders the title as plain text (no link) because left panel is not yet available', () => {
-    renderWithEui(<CorrelationsOverview attack={buildAttack(['alert-1'])} />);
+    renderWithEui(<CorrelationsOverview alertIds={['alert-1']} />);
 
     expect(screen.getByTestId(`${INSIGHTS_CORRELATIONS_TEST_ID}TitleText`)).toBeInTheDocument();
     expect(

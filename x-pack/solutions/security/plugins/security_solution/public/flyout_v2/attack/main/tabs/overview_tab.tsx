@@ -30,7 +30,7 @@ export const OverviewTab = memo(({ hit }: OverviewTabProps) => (
     <EuiHorizontalRule margin="m" />
     <VisualizationsSection hit={hit} />
     <EuiHorizontalRule margin="m" />
-    <InsightsSection attack={attack} />
+    <InsightsSection hit={hit} />
   </div>
 ));
 

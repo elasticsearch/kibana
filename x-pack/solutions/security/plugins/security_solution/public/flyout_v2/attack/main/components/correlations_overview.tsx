@@ -9,21 +9,20 @@ import React, { memo } from 'react';
 import { css } from '@emotion/react';
 import { EuiBadge, EuiFlexGroup, EuiFlexItem, EuiText, useEuiTheme } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { AttackDiscoveryAlert } from '@kbn/elastic-assistant-common';
 import { SectionPanel } from './section_panel';
 import { INSIGHTS_CORRELATIONS_TEST_ID } from '../constants/test_ids';
 
 export interface CorrelationsOverviewProps {
-  attack: AttackDiscoveryAlert;
+  alertIds: string[];
 }
 
 /**
  * Prop-driven Correlation section for the attack flyout v2.
  * Renders related alerts count. 'See all' is a no-op until v2 left panel is available.
  */
-export const CorrelationsOverview: React.FC<CorrelationsOverviewProps> = memo(({ attack }) => {
+export const CorrelationsOverview: React.FC<CorrelationsOverviewProps> = memo(({ alertIds }) => {
   const { euiTheme } = useEuiTheme();
-  const relatedAlertsCount = attack.alertIds.length;
+  const relatedAlertsCount = alertIds.length;
 
   // TODO: open left panel when v2 left panel is available
   const link = undefined;

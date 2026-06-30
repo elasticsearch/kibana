@@ -16,22 +16,21 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { AttackDiscoveryAlert } from '@kbn/elastic-assistant-common';
 import { SectionPanel } from './section_panel';
 import { useAttackEntitiesCounts } from '../hooks/use_attack_entities_counts';
 import { INSIGHTS_ENTITIES_TEST_ID } from '../constants/test_ids';
 
 export interface EntitiesOverviewProps {
-  attack: AttackDiscoveryAlert;
+  alertIds: string[];
 }
 
 /**
  * Prop-driven Entities section for the attack flyout v2.
  * Renders related users and related hosts counts. 'See all' is a no-op until v2 left panel is available.
  */
-export const EntitiesOverview: React.FC<EntitiesOverviewProps> = memo(({ attack }) => {
+export const EntitiesOverview: React.FC<EntitiesOverviewProps> = memo(({ alertIds }) => {
   const { euiTheme } = useEuiTheme();
-  const { relatedUsers, relatedHosts, loading } = useAttackEntitiesCounts(attack.alertIds);
+  const { relatedUsers, relatedHosts, loading } = useAttackEntitiesCounts(alertIds);
 
   // TODO: open left panel when v2 left panel is available
   const link = undefined;

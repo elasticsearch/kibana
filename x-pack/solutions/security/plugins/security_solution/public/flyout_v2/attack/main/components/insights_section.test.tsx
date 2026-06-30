@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import type { AttackDiscoveryAlert } from '@kbn/elastic-assistant-common';
+import type { DataTableRecord } from '@kbn/discover-utils';
 import { InsightsSection } from './insights_section';
 import { INSIGHTS_SECTION_TEST_ID } from '../constants/test_ids';
 import { useExpandSection } from '../../../shared/hooks/use_expand_section';
@@ -47,7 +47,14 @@ jest.mock('./correlations_overview', () => ({
 
 const mockedUseExpandSection = jest.mocked(useExpandSection);
 
-const buildAttack = (): AttackDiscoveryAlert => ({ alertIds: ['a', 'b'] } as AttackDiscoveryAlert);
+const buildHit = (alertIds: string[]): DataTableRecord =>
+  ({
+    id: 'test-id',
+    raw: { _id: 'test-id' },
+    flattened: {
+      'kibana.alert.attack_discovery.alert_ids': alertIds,
+    },
+  } as unknown as DataTableRecord);
 
 describe('InsightsSection (v2)', () => {
   beforeEach(() => {
@@ -56,31 +63,31 @@ describe('InsightsSection (v2)', () => {
   });
 
   it('renders the insights section with the correct test id', () => {
-    render(<InsightsSection attack={buildAttack()} />);
+    render(<InsightsSection hit={buildHit(['a', 'b'])} />);
 
     expect(screen.getByTestId(INSIGHTS_SECTION_TEST_ID)).toBeInTheDocument();
   });
 
   it('renders the section title', () => {
-    render(<InsightsSection attack={buildAttack()} />);
+    render(<InsightsSection hit={buildHit(['a', 'b'])} />);
 
     expect(screen.getByText('Insights')).toBeInTheDocument();
   });
 
   it('renders EntitiesOverview', () => {
-    render(<InsightsSection attack={buildAttack()} />);
+    render(<InsightsSection hit={buildHit(['a', 'b'])} />);
 
     expect(screen.getByTestId('entities-overview')).toBeInTheDocument();
   });
 
   it('renders CorrelationsOverview', () => {
-    render(<InsightsSection attack={buildAttack()} />);
+    render(<InsightsSection hit={buildHit(['a', 'b'])} />);
 
     expect(screen.getByTestId('correlations-overview')).toBeInTheDocument();
   });
 
   it('calls useExpandSection with default collapsed', () => {
-    render(<InsightsSection attack={buildAttack()} />);
+    render(<InsightsSection hit={buildHit(['a', 'b'])} />);
 
     expect(mockedUseExpandSection).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'insights', defaultValue: false })
