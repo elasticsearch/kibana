@@ -31,11 +31,7 @@ jest.mock('./section_panel', () => ({
   }) => (
     <div data-test-subj={dataTestSubj}>
       {link ? (
-        <button
-          data-test-subj={`${dataTestSubj}TitleLink`}
-          onClick={link.callback}
-          type="button"
-        >
+        <button data-test-subj={`${dataTestSubj}TitleLink`} onClick={link.callback} type="button">
           {title}
         </button>
       ) : (

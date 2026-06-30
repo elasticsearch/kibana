@@ -15,14 +15,11 @@ jest.mock('../context', () => ({
   useAttackDetailsContext: jest.fn(),
 }));
 
-jest.mock(
-  '../../../flyout_v2/attack/main/components/correlations_overview',
-  () => ({
-    CorrelationsOverview: ({ attack }: { attack: AttackDiscoveryAlert }) => (
-      <div data-test-subj="v2-correlations-overview" data-count={attack.alertIds.length} />
-    ),
-  })
-);
+jest.mock('../../../flyout_v2/attack/main/components/correlations_overview', () => ({
+  CorrelationsOverview: ({ attack }: { attack: AttackDiscoveryAlert }) => (
+    <div data-test-subj="v2-correlations-overview" data-count={attack.alertIds.length} />
+  ),
+}));
 
 const buildAttack = (alertIds: string[]): AttackDiscoveryAlert =>
   ({ alertIds } as unknown as AttackDiscoveryAlert);

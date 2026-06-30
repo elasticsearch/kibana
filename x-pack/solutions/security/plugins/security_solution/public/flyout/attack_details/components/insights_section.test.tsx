@@ -14,7 +14,10 @@ import { InsightsSection } from './insights_section';
 
 jest.mock('../../../flyout_v2/attack/main/components/insights_section', () => ({
   InsightsSection: ({ attack }: { attack: AttackDiscoveryAlert }) => (
-    <div data-test-subj="v2-insights-section" data-attack-id={(attack as unknown as { id: string }).id} />
+    <div
+      data-test-subj="v2-insights-section"
+      data-attack-id={(attack as unknown as { id: string }).id}
+    />
   ),
 }));
 

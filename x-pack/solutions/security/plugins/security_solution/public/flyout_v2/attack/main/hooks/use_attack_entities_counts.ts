@@ -26,9 +26,7 @@ export interface UseAttackEntitiesCountsResult {
  * Hook that returns distinct user and host counts across all alerts that belong to the current attack.
  * Queries the detection alerts index filtered by the attack's alert IDs and uses cardinality aggregations.
  */
-export const useAttackEntitiesCounts = (
-  alertIds: string[]
-): UseAttackEntitiesCountsResult => {
+export const useAttackEntitiesCounts = (alertIds: string[]): UseAttackEntitiesCountsResult => {
   const query = useMemo(
     () => ({
       query: {

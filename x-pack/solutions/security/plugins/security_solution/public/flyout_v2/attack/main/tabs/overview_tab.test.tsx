@@ -78,16 +78,12 @@ describe('<OverviewTab />', () => {
   });
 
   it('renders InsightsSection', () => {
-    render(
-      <OverviewTab hit={buildHit()} attack={mockAttack} onAttackUpdated={jest.fn()} />
-    );
+    render(<OverviewTab hit={buildHit()} attack={mockAttack} onAttackUpdated={jest.fn()} />);
     expect(screen.getByTestId('mock-insights-section')).toBeInTheDocument();
   });
 
   it('renders all three sections: summary, visualizations, and insights', () => {
-    render(
-      <OverviewTab hit={buildHit()} attack={mockAttack} onAttackUpdated={jest.fn()} />
-    );
+    render(<OverviewTab hit={buildHit()} attack={mockAttack} onAttackUpdated={jest.fn()} />);
     expect(screen.getByTestId('mock-ai-summary-section')).toBeInTheDocument();
     expect(screen.getByTestId('mock-visualizations-section')).toBeInTheDocument();
     expect(screen.getByTestId('mock-insights-section')).toBeInTheDocument();
