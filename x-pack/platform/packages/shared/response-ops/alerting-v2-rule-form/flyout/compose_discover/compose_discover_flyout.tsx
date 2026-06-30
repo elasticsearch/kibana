@@ -146,8 +146,16 @@ export interface ComposeDiscoverFlyoutProps {
     payload: ReturnType<typeof composeFormToCreateRequest>,
     notifications?: RuleNotificationsValue
   ) => void;
-  /** Called with id + update payload when the user submits in edit mode. */
-  onUpdateRule?: (id: string, payload: ReturnType<typeof composeFormToUpdateRequest>) => void;
+  /**
+   * Called with id + update payload when the user submits in edit mode. When the user
+   * configures simple actions, `notifications` carries the captured action draft list so
+   * the caller can create linked action policies; otherwise it is `undefined`.
+   */
+  onUpdateRule?: (
+    id: string,
+    payload: ReturnType<typeof composeFormToUpdateRequest>,
+    notifications?: RuleNotificationsValue
+  ) => void;
   /** True while a create/update mutation is in flight. */
   isSaving?: boolean;
   builderType?: string;
@@ -751,7 +759,7 @@ export function ComposeDiscoverFlyout({
     if (isCreate) {
       onCreateRule(composeFormToCreateRequest(values, builderType), values.notifications);
     } else if (ruleId && onUpdateRule) {
-      onUpdateRule(ruleId, composeFormToUpdateRequest(values, builderType));
+      onUpdateRule(ruleId, composeFormToUpdateRequest(values, builderType), values.notifications);
     }
   });
 

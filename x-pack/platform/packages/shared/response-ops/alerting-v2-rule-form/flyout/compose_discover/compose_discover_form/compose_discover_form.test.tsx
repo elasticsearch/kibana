@@ -338,6 +338,36 @@ describe('step validation', () => {
     });
   });
 
+  describe('notifications.render', () => {
+    const renderNotificationsStep = (ruleId?: string) =>
+      render(
+        <ComposeDiscoverForm
+          state={createState({ step: 3 })}
+          dispatch={jest.fn()}
+          services={{ ...createMockServices(), dashboard: mockDashboard }}
+          onRecoveryTypeChange={jest.fn()}
+          onKindChange={jest.fn()}
+          isEditing={ruleId !== undefined}
+          ruleId={ruleId}
+        />,
+        { wrapper: createComposeFormWrapper() }
+      );
+
+    it('renders the simple action policy section in create mode', async () => {
+      renderNotificationsStep();
+      await waitFor(() => {
+        expect(screen.getByText('Simple action policy')).toBeInTheDocument();
+      });
+    });
+
+    it('renders the simple action policy section in edit mode', async () => {
+      renderNotificationsStep('rule-1');
+      await waitFor(() => {
+        expect(screen.getByText('Simple action policy')).toBeInTheDocument();
+      });
+    });
+  });
+
   it('includes the correct steps based on isAlert', () => {
     expect(getSteps(false).steps.map((step) => step.id)).toEqual(['alertCondition', 'details']);
     expect(getSteps(true).steps.map((step) => step.id)).toEqual([
