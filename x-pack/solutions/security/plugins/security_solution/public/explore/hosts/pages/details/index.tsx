@@ -80,7 +80,7 @@ import {
   useEntityFromStore,
   type EntityStoreRecord,
 } from '../../../../flyout/entity_details/shared/hooks/use_entity_from_store';
-import { ObservedDataSection as HostObservedDataSection } from '../../../../flyout_v2/entity/host/main/components/observed_data_section';
+import { ObservedDataSection as HostObservedDataSection } from '../../../../flyout_v2/entity/shared/components/observed_data_section';
 import { HOST_PANEL_OBSERVED_HOST_QUERY_ID } from '../../../../flyout/entity_details/host_right';
 import { useObservedHost } from '../../../../flyout_v2/entity/host/main/hooks/use_observed_host';
 import { buildRiskScoreStateFromEntityRecord } from '../../../../flyout/entity_details/shared/entity_store_risk_utils';
@@ -406,8 +406,9 @@ const HostDetailsComponent: React.FC<HostDetailsProps> = ({
                   />
                   <EuiSpacer size="m" />
                   <HostObservedDataSection
+                    entityType={EntityType.host}
                     identityFields={resolvedIdentityFields}
-                    observedHost={observedHost}
+                    observedData={observedHost}
                     contextID={PageScope.explore}
                     scopeId={PageScope.explore}
                     queryId={HOST_PANEL_OBSERVED_HOST_QUERY_ID}

@@ -36,10 +36,10 @@ import {
   useDefaultDocumentFlyoutProperties,
 } from '../../../shared/hooks/use_default_flyout_properties';
 import { documentFlyoutHistoryKey } from '../../../shared/constants/flyout_history';
-import { RiskInputs } from '../tools/risk_inputs';
-import { MisconfigurationInsights } from '../tools/misconfiguration_insights';
+import { RiskInputs } from '../../shared/tools/risk_inputs';
+import { MisconfigurationInsights } from '../../shared/tools/misconfiguration_insights';
 import { VulnerabilityInsights } from '../tools/vulnerability_insights';
-import { AlertsInsights } from '../tools/alerts_insights';
+import { AlertsInsights } from '../../shared/tools/alerts_insights';
 import { Header } from './header';
 import { Content } from './content';
 import { Footer } from './footer';
@@ -300,9 +300,10 @@ export const Host: FC<HostProps> = memo(function Host({
         case EntityDetailsLeftPanelTab.RISK_INPUTS:
           return wrap(
             <RiskInputs
+              entityType={EntityType.host}
               entityName={hostName}
               entityId={entityStoreEntityId}
-              onShowHost={onShowHost}
+              onOpenEntity={onShowHost}
             />
           );
         case EntityDetailsLeftPanelTab.CSP_INSIGHTS:
@@ -318,17 +319,19 @@ export const Host: FC<HostProps> = memo(function Host({
             case CspInsightLeftPanelSubTab.ALERTS:
               return wrap(
                 <AlertsInsights
+                  entityType={EntityType.host}
                   value={hostName}
                   entityId={panelDisplayEntityId}
-                  onShowHost={onShowHost}
+                  onOpenEntity={onShowHost}
                 />
               );
             case CspInsightLeftPanelSubTab.MISCONFIGURATIONS:
               return wrap(
                 <MisconfigurationInsights
+                  entityType={EntityType.host}
                   value={hostName}
                   entityId={panelDisplayEntityId}
-                  onShowHost={onShowHost}
+                  onOpenEntity={onShowHost}
                 />
               );
           }
@@ -396,6 +399,7 @@ export const Host: FC<HostProps> = memo(function Host({
             // TODO: remove this prop (and `enableGraphAndResolutionNavigation` in content.tsx) once
             // `openDetailsPanel` handles the GRAPH_VIEW and RESOLUTION_GROUP tabs in this flyout.
             enableGraphAndResolutionNavigation={false}
+            hideHeaderIcons
           />
         )}
       </EuiFlyoutBody>

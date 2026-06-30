@@ -22,7 +22,7 @@ import type {
   EntityFromStoreResult,
   EntityStoreRecord,
 } from '../../../../../flyout/entity_details/shared/hooks/use_entity_from_store';
-import type { ObservedEntityData } from '../../../../../flyout/entity_details/shared/components/observed_entity/types';
+import type { ObservedEntityData } from '../../../shared/components/observed_entity/types';
 import { isActiveTimeline } from '../../../../../helpers';
 import { useSecurityDefaultPatterns } from '../../../../../data_view_manager/hooks/use_security_default_patterns';
 

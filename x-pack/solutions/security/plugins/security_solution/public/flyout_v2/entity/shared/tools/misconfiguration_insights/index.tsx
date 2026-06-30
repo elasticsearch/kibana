@@ -26,24 +26,32 @@ import { MisconfigurationFindingsDetailsTable } from '../../../../../cloud_secur
 import { MISCONFIGURATION_INSIGHTS_TOOL_TEST_ID } from './test_ids';
 
 const TITLE = i18n.translate(
-  'xpack.securitySolution.flyout.entityDetails.host.misconfigurationInsights.title',
+  'xpack.securitySolution.flyout.entityDetails.misconfigurationInsights.title',
   { defaultMessage: 'Misconfigurations' }
 );
 
+const ICON_TYPE = { [EntityType.host]: 'storage', [EntityType.user]: 'user' } as const;
+const FIELD = {
+  [EntityType.host]: EntityIdentifierFields.hostName,
+  [EntityType.user]: EntityIdentifierFields.userName,
+} as const;
+
 export interface MisconfigurationInsightsProps {
-  /** The host name used to query misconfigurations (`host.name` field value). */
+  /** Whether this tool is scoped to a host or user entity. Controls the icon, query field, and entity type passed to the table. */
+  entityType: EntityType.host | EntityType.user;
+  /** Field value used to query misconfigurations — `host.name` for hosts, `user.name` for users. */
   value: string;
   /** Canonical Entity Store v2 id (`entity.id`) when already resolved. */
   entityId?: string;
-  /** Opens the originating host flyout as a child. */
-  onShowHost: () => void;
+  /** Opens the originating entity flyout as a child. */
+  onOpenEntity?: () => void;
 }
 
 /**
- * Tool flyout displaying CSP misconfiguration findings for a host entity.
+ * Tool flyout displaying CSP misconfiguration findings for an entity.
  */
 export const MisconfigurationInsights = memo(
-  ({ value, entityId, onShowHost }: MisconfigurationInsightsProps) => {
+  ({ entityType, value, entityId, onOpenEntity }: MisconfigurationInsightsProps) => {
     const { services } = useKibana();
     const { overlays } = services;
     const store = useStore();
@@ -72,17 +80,17 @@ export const MisconfigurationInsights = memo(
         <EuiFlyoutHeader hasBorder>
           <ToolsFlyoutHeader
             title={TITLE}
-            onTitleClick={onShowHost}
+            onTitleClick={onOpenEntity}
             label={value}
-            iconType="storage"
+            iconType={ICON_TYPE[entityType]}
           />
         </EuiFlyoutHeader>
         <div className="eui-yScroll" data-test-subj={MISCONFIGURATION_INSIGHTS_TOOL_TEST_ID}>
           <MisconfigurationFindingsDetailsTable
-            field={EntityIdentifierFields.hostName}
+            field={FIELD[entityType]}
             value={value}
             entityId={entityId}
-            entityType={EntityType.host}
+            entityType={entityType}
             onShowFinding={onShowFinding}
           />
         </div>

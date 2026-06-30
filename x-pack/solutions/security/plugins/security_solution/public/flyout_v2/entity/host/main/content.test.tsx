@@ -49,7 +49,7 @@ jest.mock(
 jest.mock('../../../../cloud_security_posture/components/entity_insight', () => ({
   EntityInsight: () => null,
 }));
-jest.mock('./components/observed_data_section', () => ({
+jest.mock('../../shared/components/observed_data_section', () => ({
   ObservedDataSection: () => null,
 }));
 

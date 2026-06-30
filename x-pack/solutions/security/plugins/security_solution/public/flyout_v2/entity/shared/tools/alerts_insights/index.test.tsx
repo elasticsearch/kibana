@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
+import { EntityType } from '../../../../../../common/entity_analytics/types';
 import { AlertsInsights } from '.';
 import { ALERTS_INSIGHTS_TOOL_TEST_ID } from './test_ids';
 
@@ -104,13 +105,13 @@ jest.mock('../../../../../common/lib/kibana', () => ({
   }),
 }));
 
-describe('<AlertsInsights />', () => {
+describe('<AlertsInsights /> host', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders the header with the title, host label and entity icon', () => {
-    const { getByTestId } = render(<AlertsInsights value="my-host" onShowHost={jest.fn()} />);
+  it('renders the header with the title, host label and storage icon', () => {
+    const { getByTestId } = render(<AlertsInsights entityType={EntityType.host} value="my-host" />);
     const header = getByTestId('mockToolsFlyoutHeader');
     expect(header).toHaveAttribute('data-title', 'Alerts');
     expect(header).toHaveAttribute('data-label', 'my-host');
@@ -118,7 +119,7 @@ describe('<AlertsInsights />', () => {
   });
 
   it('renders the table inside a scrollable flyout body', () => {
-    const { getByTestId } = render(<AlertsInsights value="my-host" onShowHost={jest.fn()} />);
+    const { getByTestId } = render(<AlertsInsights entityType={EntityType.host} value="my-host" />);
     const body = getByTestId(ALERTS_INSIGHTS_TOOL_TEST_ID);
     expect(body).toBeInTheDocument();
     expect(body).toContainElement(getByTestId('mockAlertsDetailsTable'));
@@ -126,7 +127,7 @@ describe('<AlertsInsights />', () => {
 
   it('forwards the host name and entity id to the alerts table', () => {
     const { getByTestId } = render(
-      <AlertsInsights value="my-host" entityId="euid-123" onShowHost={jest.fn()} />
+      <AlertsInsights entityType={EntityType.host} value="my-host" entityId="euid-123" />
     );
     const table = getByTestId('mockAlertsDetailsTable');
     expect(table).toHaveAttribute('data-field', 'host.name');
@@ -135,20 +136,46 @@ describe('<AlertsInsights />', () => {
     expect(table).toHaveAttribute('data-entity-type', 'host');
   });
 
-  it('forwards onShowHost to the header click handler', () => {
-    const onShowHost = jest.fn();
-    const { getByTestId } = render(<AlertsInsights value="my-host" onShowHost={onShowHost} />);
+  it('forwards onOpenEntity to the header click handler', () => {
+    const onOpenEntity = jest.fn();
+    const { getByTestId } = render(
+      <AlertsInsights entityType={EntityType.host} value="my-host" onOpenEntity={onOpenEntity} />
+    );
     getByTestId('mockToolsFlyoutHeader').click();
-    expect(onShowHost).toHaveBeenCalledTimes(1);
+    expect(onOpenEntity).toHaveBeenCalledTimes(1);
   });
 
   it('opens a child system flyout when an alert row is expanded', () => {
-    const { getByTestId } = render(<AlertsInsights value="my-host" onShowHost={jest.fn()} />);
+    const { getByTestId } = render(<AlertsInsights entityType={EntityType.host} value="my-host" />);
     getByTestId('mockAlertsDetailsTable').click();
     expect(mockOpenSystemFlyout).toHaveBeenCalledTimes(1);
     expect(mockOpenSystemFlyout).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ session: 'inherit' })
     );
+  });
+});
+
+describe('<AlertsInsights /> user', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders the header with the user label and user icon', () => {
+    const { getByTestId } = render(<AlertsInsights entityType={EntityType.user} value="my-user" />);
+    const header = getByTestId('mockToolsFlyoutHeader');
+    expect(header).toHaveAttribute('data-label', 'my-user');
+    expect(header).toHaveAttribute('data-icon-type', 'user');
+  });
+
+  it('forwards the user name and entity type to the alerts table', () => {
+    const { getByTestId } = render(
+      <AlertsInsights entityType={EntityType.user} value="my-user" entityId="euid-456" />
+    );
+    const table = getByTestId('mockAlertsDetailsTable');
+    expect(table).toHaveAttribute('data-field', 'user.name');
+    expect(table).toHaveAttribute('data-value', 'my-user');
+    expect(table).toHaveAttribute('data-entity-id', 'euid-456');
+    expect(table).toHaveAttribute('data-entity-type', 'user');
   });
 });

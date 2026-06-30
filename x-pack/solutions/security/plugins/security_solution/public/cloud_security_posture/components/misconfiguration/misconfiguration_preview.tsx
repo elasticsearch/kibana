@@ -107,11 +107,13 @@ export const MisconfigurationsPreview = ({
   openDetailsPanel,
   passedFindings,
   failedFindings,
+  hideHeaderIcons,
 }: {
   isPreviewMode: boolean;
   passedFindings: number;
   failedFindings: number;
   openDetailsPanel: (path: EntityDetailsPath) => void;
+  hideHeaderIcons?: boolean;
 }) => {
   const findingsStats = useGetFindingsStats(passedFindings, failedFindings);
 
@@ -144,7 +146,7 @@ export const MisconfigurationsPreview = ({
   return (
     <ExpandablePanel
       header={{
-        iconType: !isPreviewMode ? 'chevronLimitLeft' : '',
+        iconType: !isPreviewMode && !hideHeaderIcons ? 'chevronLimitLeft' : '',
         title: (
           <EuiTitle
             css={css`

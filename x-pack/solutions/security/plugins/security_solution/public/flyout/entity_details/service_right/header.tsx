@@ -16,7 +16,7 @@ import type { ServiceItem } from '../../../../common/search_strategy/security_so
 import { PreferenceFormattedDate } from '../../../common/components/formatted_date';
 import { FlyoutHeader } from '../../shared/components/flyout_header';
 import { FlyoutTitle } from '../../../flyout_v2/shared/components/flyout_title';
-import type { ObservedEntityData } from '../shared/components/observed_entity/types';
+import type { ObservedEntityData } from '../../../flyout_v2/entity/shared/components/observed_entity/types';
 import { EntitySourceBadge } from '../shared/components/entity_source_badge';
 import { RiskLevelBadge } from '../shared/components/risk_level_badge';
 

@@ -74,6 +74,8 @@ export interface RiskSummaryProps<T extends EntityType> {
   entityId?: string;
   /** Optional prefetched resolution-group risk; used when the internal risk-index lookup returns no doc. */
   prefetchedResolutionRisk?: EntityRiskScore<T>;
+  /** When true, hides the chevron icon in the section headers. Used by the v2 flyout. */
+  hideHeaderIcon?: boolean;
 }
 
 const FlyoutRiskSummaryComponent = <T extends EntityType>({
@@ -86,6 +88,7 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
   openDetailsPanel,
   isPreviewMode,
   prefetchedResolutionRisk,
+  hideHeaderIcon,
 }: RiskSummaryProps<T>) => {
   const { telemetry } = useKibana().services;
   const { data } = riskScoreData;
@@ -311,7 +314,7 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
             />
           ),
           link: riskScoreData.loading ? undefined : entityTabLink,
-          iconType: !isPreviewMode ? 'chevronLimitLeft' : undefined,
+          iconType: !isPreviewMode && !hideHeaderIcon ? 'chevronLimitLeft' : undefined,
         }}
         expand={{
           expandable: false,
@@ -417,8 +420,8 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
                   defaultMessage="Resolution group risk contributions"
                 />
               ),
-              link: entityResolutionRiskScore?.loading ?? false ? undefined : resolutionTabLink,
-              iconType: !isPreviewMode ? 'chevronLimitLeft' : undefined,
+              link: entityResolutionRiskScore?.loading ? undefined : resolutionTabLink,
+              iconType: !isPreviewMode && !hideHeaderIcon ? 'chevronLimitLeft' : undefined,
             }}
             expand={{
               expandable: false,

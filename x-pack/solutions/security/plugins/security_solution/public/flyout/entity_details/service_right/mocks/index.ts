@@ -6,7 +6,7 @@
  */
 
 import type { ServiceItem } from '../../../../../common/search_strategy';
-import type { ObservedEntityData } from '../../shared/components/observed_entity/types';
+import type { ObservedEntityData } from '../../../../flyout_v2/entity/shared/components/observed_entity/types';
 
 const observedServiceDetails: ServiceItem = {
   service: {

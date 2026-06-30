@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
+import { EntityType } from '../../../../../../common/entity_analytics/types';
 import { MisconfigurationInsights } from '.';
 import { MISCONFIGURATION_INSIGHTS_TOOL_TEST_ID } from './test_ids';
 
@@ -100,14 +101,14 @@ jest.mock('../../../../../common/lib/kibana', () => ({
   }),
 }));
 
-describe('<MisconfigurationInsights />', () => {
+describe('<MisconfigurationInsights /> host', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders the header with the title, host label and entity icon', () => {
+  it('renders the header with the title, host label and storage icon', () => {
     const { getByTestId } = render(
-      <MisconfigurationInsights value="my-host" onShowHost={jest.fn()} />
+      <MisconfigurationInsights entityType={EntityType.host} value="my-host" />
     );
     const header = getByTestId('mockToolsFlyoutHeader');
     expect(header).toHaveAttribute('data-title', 'Misconfigurations');
@@ -117,7 +118,7 @@ describe('<MisconfigurationInsights />', () => {
 
   it('renders the table inside a scrollable flyout body', () => {
     const { getByTestId } = render(
-      <MisconfigurationInsights value="my-host" onShowHost={jest.fn()} />
+      <MisconfigurationInsights entityType={EntityType.host} value="my-host" />
     );
     const body = getByTestId(MISCONFIGURATION_INSIGHTS_TOOL_TEST_ID);
     expect(body).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe('<MisconfigurationInsights />', () => {
 
   it('forwards the host name and entity id to the findings table', () => {
     const { getByTestId } = render(
-      <MisconfigurationInsights value="my-host" entityId="euid-123" onShowHost={jest.fn()} />
+      <MisconfigurationInsights entityType={EntityType.host} value="my-host" entityId="euid-123" />
     );
     const table = getByTestId('mockMisconfigurationFindingsDetailsTable');
     expect(table).toHaveAttribute('data-field', 'host.name');
@@ -135,18 +136,22 @@ describe('<MisconfigurationInsights />', () => {
     expect(table).toHaveAttribute('data-entity-type', 'host');
   });
 
-  it('forwards onShowHost to the header click handler', () => {
-    const onShowHost = jest.fn();
+  it('forwards onOpenEntity to the header click handler', () => {
+    const onOpenEntity = jest.fn();
     const { getByTestId } = render(
-      <MisconfigurationInsights value="my-host" onShowHost={onShowHost} />
+      <MisconfigurationInsights
+        entityType={EntityType.host}
+        value="my-host"
+        onOpenEntity={onOpenEntity}
+      />
     );
     getByTestId('mockToolsFlyoutHeader').click();
-    expect(onShowHost).toHaveBeenCalledTimes(1);
+    expect(onOpenEntity).toHaveBeenCalledTimes(1);
   });
 
   it('opens a child system flyout when a finding row is expanded', () => {
     const { getByTestId } = render(
-      <MisconfigurationInsights value="my-host" onShowHost={jest.fn()} />
+      <MisconfigurationInsights entityType={EntityType.host} value="my-host" />
     );
     getByTestId('mockMisconfigurationFindingsDetailsTable').click();
     expect(mockOpenSystemFlyout).toHaveBeenCalledTimes(1);
@@ -154,5 +159,31 @@ describe('<MisconfigurationInsights />', () => {
       expect.anything(),
       expect.objectContaining({ session: 'inherit', title: 'my-host' })
     );
+  });
+});
+
+describe('<MisconfigurationInsights /> user', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders the header with the user label and user icon', () => {
+    const { getByTestId } = render(
+      <MisconfigurationInsights entityType={EntityType.user} value="my-user" />
+    );
+    const header = getByTestId('mockToolsFlyoutHeader');
+    expect(header).toHaveAttribute('data-label', 'my-user');
+    expect(header).toHaveAttribute('data-icon-type', 'user');
+  });
+
+  it('forwards the user name and entity type to the findings table', () => {
+    const { getByTestId } = render(
+      <MisconfigurationInsights entityType={EntityType.user} value="my-user" entityId="euid-456" />
+    );
+    const table = getByTestId('mockMisconfigurationFindingsDetailsTable');
+    expect(table).toHaveAttribute('data-field', 'user.name');
+    expect(table).toHaveAttribute('data-value', 'my-user');
+    expect(table).toHaveAttribute('data-entity-id', 'euid-456');
+    expect(table).toHaveAttribute('data-entity-type', 'user');
   });
 });

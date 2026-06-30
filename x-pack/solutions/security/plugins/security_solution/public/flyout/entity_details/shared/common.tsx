@@ -7,7 +7,7 @@
 import React from 'react';
 
 import { i18n } from '@kbn/i18n';
-import type { ObservedEntityData } from './components/observed_entity/types';
+import type { ObservedEntityData } from '../../../flyout_v2/entity/shared/components/observed_entity/types';
 import type { MlCapabilitiesProvider } from '../../../common/components/ml/permissions/ml_capabilities_provider';
 import { hasMlUserPermissions } from '../../../../common/machine_learning/has_ml_user_permissions';
 import { getEmptyTagValue } from '../../../common/components/empty_value';

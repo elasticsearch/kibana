@@ -18,7 +18,7 @@ import type {
 } from '../../../../common/search_strategy';
 import { HostPolicyResponseActionStatus, RiskSeverity } from '../../../../common/search_strategy';
 import { RiskCategories } from '../../../../common/entity_analytics/risk_engine';
-import type { ObservedEntityData } from '../shared/components/observed_entity/types';
+import type { ObservedEntityData } from '../../../flyout_v2/entity/shared/components/observed_entity/types';
 import type { HostEntity } from '../../../../common/api/entity_analytics';
 
 const userRiskScore: UserRiskScore = {

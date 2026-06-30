@@ -9,7 +9,7 @@ import React from 'react';
 import { EuiHorizontalRule } from '@elastic/eui';
 import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 import type { Entity } from '../../../../../common/api/entity_analytics';
-import { ObservedDataSection } from './components/observed_data_section';
+import { ObservedDataSection } from '../../shared/components/observed_data_section';
 import { useAnomalyOverview } from '../../../../entity_analytics/api/hooks/use_anomaly_overview';
 import { useAnomalyPrivileges } from '../../../../entity_analytics/api/hooks/use_anomaly_privileges';
 import { useHasEntityResolutionLicense } from '../../../../common/hooks/use_has_entity_resolution_license';
@@ -23,7 +23,7 @@ import { EntityIdentifierFields, EntityType } from '../../../../../common/entity
 import { HOST_PANEL_OBSERVED_HOST_QUERY_ID, HOST_PANEL_RISK_SCORE_QUERY_ID } from './constants';
 import type { EntityDetailsPath } from '../../../../flyout/entity_details/shared/components/left_panel/left_panel_header';
 import type { IdentityFields } from '../../../../flyout/document_details/shared/utils';
-import type { ObservedEntityData } from '../../../../flyout/entity_details/shared/components/observed_entity/types';
+import type { ObservedEntityData } from '../../shared/components/observed_entity/types';
 import type { EntityRiskScore, HostItem } from '../../../../../common/search_strategy';
 import { VisualizationsSection } from '../../../../flyout/entity_details/shared/components/right/visualizations_section';
 import { ResolutionSection } from '../../../../entity_analytics/components/entity_resolution/resolution_section';
@@ -67,6 +67,8 @@ export interface ContentProps {
    * it sets this to `false` to hide the (otherwise no-op) Show-graph icon and Resolution-group link.
    */
   enableGraphAndResolutionNavigation?: boolean;
+  /** When true, hides the chevron icons in the risk summary and alerts section headers. Used by the v2 flyout. */
+  hideHeaderIcons?: boolean;
 }
 
 /**
@@ -88,6 +90,7 @@ export const Content = ({
   entityStoreEntityId,
   prefetchedResolutionRisk,
   enableGraphAndResolutionNavigation = true,
+  hideHeaderIcons = false,
 }: ContentProps) => {
   const hasEntityResolutionLicense = useHasEntityResolutionLicense();
   const isAnomalyDetailsEnabled = useIsExperimentalFeatureEnabled('entityAnalyticsAnomalyDetails');
@@ -127,6 +130,7 @@ export const Content = ({
               isPreviewMode={isPreviewMode}
               entityId={entityRecord?.entity.id}
               prefetchedResolutionRisk={prefetchedResolutionRisk}
+              hideHeaderIcon={hideHeaderIcons}
             />
             <EuiHorizontalRule />
           </>
@@ -175,9 +179,11 @@ export const Content = ({
         isPreviewMode={isPreviewMode}
         openDetailsPanel={openDetailsPanel}
         entityType={EntityType.host}
+        hideHeaderIcons={hideHeaderIcons}
       />
       <ObservedDataSection
-        observedHost={observedHost}
+        entityType={EntityType.host}
+        observedData={observedHost}
         contextID={contextID}
         identityFields={identityFields}
         entityRecord={entityRecord}

@@ -7,4 +7,4 @@
 
 import { PREFIX } from '../../../../../flyout/shared/test_ids';
 
-export const RISK_INPUTS_TOOL_TEST_ID = `${PREFIX}HostRiskInputsTool` as const;
+export const RISK_INPUTS_TOOL_TEST_ID = `${PREFIX}RiskInputsTool` as const;

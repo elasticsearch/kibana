@@ -9,7 +9,7 @@ import React from 'react';
 import { EuiHealth } from '@elastic/eui';
 
 import type { EntityTableRows } from '../../../../../flyout/entity_details/shared/components/entity_table/types';
-import type { ObservedEntityData } from '../../../../../flyout/entity_details/shared/components/observed_entity/types';
+import type { ObservedEntityData } from '../../../shared/components/observed_entity/types';
 import { AgentStatus } from '../../../../../common/components/endpoint/agents/agent_status';
 import { getEmptyTagValue } from '../../../../../common/components/empty_value';
 import type { HostItem } from '../../../../../../common/search_strategy';

@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { useDeepEqualSelector } from '../../../../common/hooks/use_selector';
 import { inputsSelectors } from '../../../../common/store';
 import { useQueryInspector } from '../../../../common/components/page/manage_query';
-import type { ObservedEntityData } from '../../shared/components/observed_entity/types';
+import type { ObservedEntityData } from '../../../../flyout_v2/entity/shared/components/observed_entity/types';
 import type { ServiceItem } from '../../../../../common/search_strategy';
 import { Direction, NOT_EVENT_KIND_ASSET_FILTER } from '../../../../../common/search_strategy';
 import { useGlobalTime } from '../../../../common/containers/use_global_time';
