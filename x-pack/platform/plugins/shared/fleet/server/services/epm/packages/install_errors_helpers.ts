@@ -33,24 +33,27 @@ export function addErrorToLatestFailedAttempts({
   createdAt,
   targetVersion,
   latestAttempts = [],
+  missingAssets,
 }: {
   createdAt: string;
   targetVersion: string;
   error: Error;
   latestAttempts?: InstallFailedAttempt[];
+  missingAssets?: Array<{ id: string; type: string }>;
 }): InstallFailedAttempt[] {
-  return [
-    {
-      created_at: createdAt,
-      target_version: targetVersion,
-      error: {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      },
+  const attempt: InstallFailedAttempt = {
+    created_at: createdAt,
+    target_version: targetVersion,
+    error: {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
     },
-    ...latestAttempts,
-  ].slice(0, MAX_ATTEMPTS_TO_KEEP);
+  };
+  if (missingAssets && missingAssets.length > 0) {
+    attempt.missing_assets = missingAssets;
+  }
+  return [attempt, ...latestAttempts].slice(0, MAX_ATTEMPTS_TO_KEEP);
 }
 
 export const createOrUpdateFailedInstallStatus = async ({

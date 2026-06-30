@@ -60,6 +60,7 @@ import {
   FleetUnauthorizedError,
   FleetTooManyRequestsError,
   PackageInvalidDeploymentMode,
+  PackageAssetsVerificationError,
 } from '../../../errors';
 import {
   PACKAGES_SAVED_OBJECT_TYPE,
@@ -308,6 +309,7 @@ export async function handleInstallPackageFailure({
     targetVersion: pkgVersion,
     createdAt: new Date().toISOString(),
     latestAttempts: installedPkg?.attributes.latest_install_failed_attempts,
+    missingAssets: error instanceof PackageAssetsVerificationError ? error.meta : undefined,
   });
   // if there is an unknown server error, check the installType and do the following actions
   try {

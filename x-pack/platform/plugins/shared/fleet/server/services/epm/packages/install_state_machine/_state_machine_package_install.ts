@@ -57,6 +57,7 @@ import {
   cleanupKnowledgeBaseStep,
   stepInstallKibanaAssetsWithStreaming,
   stepInstallPrecheck,
+  stepVerifyAssets,
 } from './steps';
 import type { StateMachineDefinition, StateMachineStates } from './state_machine';
 import { handleState } from './state_machine';
@@ -179,6 +180,11 @@ export const regularStatesDefinition: StateMachineStates<StateNames> = {
   },
   create_alerting_assets: {
     onTransition: stepCreateAlertingAssets,
+    nextState: INSTALL_STATES.VERIFY_ASSETS,
+    onPostTransition: updateLatestExecutedState,
+  },
+  verify_assets: {
+    onTransition: stepVerifyAssets,
     nextState: INSTALL_STATES.UPDATE_SO,
     onPostTransition: updateLatestExecutedState,
   },
@@ -209,9 +215,14 @@ export const streamingStatesDefinition: StateMachineStates<string> = {
   save_knowledge_base: {
     onPreTransition: cleanupKnowledgeBaseStep,
     onTransition: stepSaveKnowledgeBase,
-    nextState: INSTALL_STATES.UPDATE_SO,
+    nextState: INSTALL_STATES.VERIFY_ASSETS,
     onPostTransition: updateLatestExecutedState,
     isAsync: true, // Knowledge base indexing runs in background
+  },
+  verify_assets: {
+    onTransition: stepVerifyAssets,
+    nextState: INSTALL_STATES.UPDATE_SO,
+    onPostTransition: updateLatestExecutedState,
   },
   update_so: {
     onPreTransition: cleanUpUnusedKibanaAssetsStep,

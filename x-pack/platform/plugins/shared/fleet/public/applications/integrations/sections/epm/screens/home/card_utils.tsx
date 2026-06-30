@@ -303,6 +303,17 @@ function formatAttempt(attempt: InstallFailedAttempt): React.ReactNode {
       <p>
         {attempt.error?.name || ''} : {attempt.error?.message || ''}
       </p>
+      {attempt.missing_assets && attempt.missing_assets.length > 0 && (
+        <p>
+          <FormattedMessage
+            id="xpack.fleet.packageCard.missingAssetsDescription"
+            defaultMessage="Missing assets: {assets}"
+            values={{
+              assets: attempt.missing_assets.map((a) => `${a.type}/${a.id}`).join(', '),
+            }}
+          />
+        </p>
+      )}
     </>
   );
 }

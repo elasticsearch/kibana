@@ -16,12 +16,15 @@ import { PACKAGES_SAVED_OBJECT_TYPE } from '../../../constants';
 import { auditLoggingService } from '../../audit_logging';
 
 /**
- * Utility function for updating the installed_es field of a package
+ * Utility function for updating the installed_es field of a package.
+ * Uses optimistic concurrency control: re-reads the SO on every retry attempt so that
+ * concurrent writers (e.g. the parallel Kibana-assets update) cannot have their additions
+ * silently overwritten.
  */
 export const updateEsAssetReferences = async (
   savedObjectsClient: SavedObjectsClientContract,
   pkgName: string,
-  currentAssets: EsAssetReference[],
+  _currentAssets: EsAssetReference[],
   {
     assetsToAdd = [],
     assetsToRemove = [],
@@ -37,53 +40,60 @@ export const updateEsAssetReferences = async (
     refresh?: 'wait_for' | false;
   }
 ): Promise<EsAssetReference[]> => {
-  const withAssetsRemoved = currentAssets.filter(({ type, id }) => {
-    if (
-      assetsToRemove.some(
-        ({ type: removeType, id: removeId }) => removeType === type && removeId === id
-      )
-    ) {
-      return false;
-    }
-    return true;
-  });
+  const doUpdate = async () => {
+    // Re-read on every attempt so a conflict retry picks up concurrent changes instead of
+    // overwriting them with a stale payload.
+    const so = await savedObjectsClient.get<Installation>(PACKAGES_SAVED_OBJECT_TYPE, pkgName);
+    auditLoggingService.writeCustomSoAuditLog({
+      action: 'get',
+      id: pkgName,
+      name: pkgName,
+      savedObjectType: PACKAGES_SAVED_OBJECT_TYPE,
+    });
 
-  const deduplicatedAssets = uniqBy(
-    [...withAssetsRemoved, ...assetsToAdd],
-    ({ type, id }) => `${type}-${id}`
-  );
+    const freshAssets = so.attributes.installed_es ?? [];
 
-  auditLoggingService.writeCustomSoAuditLog({
-    action: 'update',
-    id: pkgName,
-    name: pkgName,
-    savedObjectType: PACKAGES_SAVED_OBJECT_TYPE,
-  });
-
-  const {
-    attributes: { installed_es: updatedAssets },
-  } =
-    // Because Kibana assets are installed in parallel with ES assets with refresh: false, we almost always run into an
-    // issue that causes a conflict error due to this issue: https://github.com/elastic/kibana/issues/126240. This is safe
-    // to retry constantly until it succeeds to optimize this critical user journey path as much as possible.
-    await pRetry(
-      () =>
-        savedObjectsClient.update<Installation>(
-          PACKAGES_SAVED_OBJECT_TYPE,
-          pkgName,
-          {
-            installed_es: deduplicatedAssets,
-          },
-          {
-            refresh,
-          }
-        ),
-      // Use a lower number of retries for ES assets since they're installed in serial and can only conflict with
-      // the single Kibana update call.
-      { retries: 5 }
+    const withAssetsRemoved = freshAssets.filter(
+      ({ type, id }) =>
+        !assetsToRemove.some(
+          ({ type: removeType, id: removeId }) => removeType === type && removeId === id
+        )
     );
 
-  return updatedAssets ?? [];
+    const deduplicatedAssets = uniqBy(
+      [...withAssetsRemoved, ...assetsToAdd],
+      ({ type, id }) => `${type}-${id}`
+    );
+
+    auditLoggingService.writeCustomSoAuditLog({
+      action: 'update',
+      id: pkgName,
+      name: pkgName,
+      savedObjectType: PACKAGES_SAVED_OBJECT_TYPE,
+    });
+
+    const {
+      attributes: { installed_es: updatedAssets },
+    } = await savedObjectsClient.update<Installation>(
+      PACKAGES_SAVED_OBJECT_TYPE,
+      pkgName,
+      { installed_es: deduplicatedAssets },
+      { version: so.version, refresh }
+    );
+
+    return updatedAssets ?? [];
+  };
+
+  const onlyRetryConflictErrors = (err: Error) => {
+    if (!SavedObjectsErrorHelpers.isConflictError(err)) {
+      throw err;
+    }
+  };
+
+  // Because Kibana assets are installed in parallel with ES assets, we almost always encounter
+  // a conflict error due to https://github.com/elastic/kibana/issues/126240. Re-reading on each
+  // retry (above) ensures concurrent adds are not lost.
+  return pRetry(doUpdate, { retries: 5, onFailedAttempt: onlyRetryConflictErrors });
 };
 /**
  * Utility function for adding assets the installed_es field of a package

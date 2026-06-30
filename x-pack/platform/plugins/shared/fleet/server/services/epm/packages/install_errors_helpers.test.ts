@@ -84,6 +84,42 @@ describe('Install error helpers', () => {
         '0.2.2',
       ]);
     });
+
+    it('should attach missing_assets when provided', () => {
+      const missingAssets = [
+        { id: 'my-pipeline', type: 'ingest_pipeline' },
+        { id: 'my-template', type: 'index_template' },
+      ];
+      const attempts = addErrorToLatestFailedAttempts({
+        targetVersion: '1.0.0',
+        createdAt: new Date().toISOString(),
+        error: new Error('verification failed'),
+        missingAssets,
+      });
+
+      expect(attempts[0].missing_assets).toEqual(missingAssets);
+    });
+
+    it('should not set missing_assets when the list is empty', () => {
+      const attempts = addErrorToLatestFailedAttempts({
+        targetVersion: '1.0.0',
+        createdAt: new Date().toISOString(),
+        error: new Error('some error'),
+        missingAssets: [],
+      });
+
+      expect(attempts[0].missing_assets).toBeUndefined();
+    });
+
+    it('should not set missing_assets when not provided', () => {
+      const attempts = addErrorToLatestFailedAttempts({
+        targetVersion: '1.0.0',
+        createdAt: new Date().toISOString(),
+        error: new Error('some error'),
+      });
+
+      expect(attempts[0].missing_assets).toBeUndefined();
+    });
   });
 
   describe('createOrUpdateFailedInstallStatus', () => {
