@@ -88,7 +88,11 @@ export function createVisualizationRenderer({
       const { data } = toolResult;
 
       if (data.renderer === 'vega') {
-        return <VisualizeVega spec={data.spec} timeRange={data.time_range} />;
+        const spec = data.visualization.spec;
+        if (typeof spec !== 'string') {
+          return <EuiText>Unable to render Vega visualization for {ToolResultAttribute}.</EuiText>;
+        }
+        return <VisualizeVega spec={spec} timeRange={data.time_range} />;
       }
 
       const { visualization, time_range: visTimeRange } = data;

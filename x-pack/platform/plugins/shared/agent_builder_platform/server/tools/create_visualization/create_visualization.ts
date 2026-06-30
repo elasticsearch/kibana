@@ -39,6 +39,14 @@ const getExistingLensConfig = (
   return candidate && typeof candidate === 'object' ? (candidate as VisualizationConfig) : null;
 };
 
+const getExistingVegaSpec = (data: VisualizationAttachmentData | undefined): string | undefined => {
+  if (!data || data.renderer !== 'vega') {
+    return undefined;
+  }
+  const candidate = data.visualization?.spec;
+  return typeof candidate === 'string' ? candidate : undefined;
+};
+
 const createVisualizationSchema = z.object({
   query: z.string().describe('A natural language query describing the desired visualization.'),
   index: z
@@ -128,7 +136,7 @@ This tool will:
 
         // Step 3: Generate the spec/config for the chosen renderer.
         let payload:
-          | { renderer: 'vega'; spec: string; esql: string }
+          | { renderer: 'vega'; visualization: { spec: string }; esql: string }
           | {
               renderer: 'lens';
               visualization: Record<string, unknown>;
@@ -138,7 +146,7 @@ This tool will:
             };
 
         if (renderer === 'vega') {
-          const existingSpec = existingData?.renderer === 'vega' ? existingData.spec : undefined;
+          const existingSpec = getExistingVegaSpec(existingData);
           const { spec, esqlQuery } = await buildVegaConfig({
             nlQuery,
             index,
@@ -149,7 +157,7 @@ This tool will:
             events,
             esClient,
           });
-          payload = { renderer: 'vega', spec, esql: esqlQuery };
+          payload = { renderer: 'vega', visualization: { spec }, esql: esqlQuery };
         } else {
           const parsedExistingConfig = getExistingLensConfig(existingData);
           const existingConfig = parsedExistingConfig
@@ -179,7 +187,12 @@ This tool will:
 
         const visualizationData: VisualizationAttachmentData =
           payload.renderer === 'vega'
-            ? { renderer: 'vega', query: nlQuery, spec: payload.spec, esql: payload.esql }
+            ? {
+                renderer: 'vega',
+                query: nlQuery,
+                visualization: payload.visualization,
+                esql: payload.esql,
+              }
             : {
                 renderer: 'lens',
                 query: nlQuery,
@@ -243,7 +256,7 @@ This tool will:
                       renderer: 'vega' as const,
                       query: nlQuery,
                       esql: payload.esql,
-                      spec: payload.spec,
+                      visualization: payload.visualization,
                       ...resultMeta,
                     }
                   : {

@@ -112,7 +112,7 @@ export const lensVisualizationAttachmentDataSchema = z.object({
   renderer: z.literal('lens').optional(),
   query: z.string(),
   visualization: z.record(z.string(), z.unknown()),
-  chart_type: z.string(),
+  chart_type: z.string().optional(),
   esql: z.string(),
   time_range: visualizationTimeRangeSchema.optional(),
 });
@@ -120,59 +120,56 @@ export const lensVisualizationAttachmentDataSchema = z.object({
 export const vegaVisualizationAttachmentDataSchema = z.object({
   renderer: z.literal('vega'),
   query: z.string(),
-  /** Serialized, render-ready Vega-Lite specification. */
-  spec: z.string(),
+  visualization: z.object({
+    /** Serialized, render-ready Vega or Vega-Lite specification. */
+    spec: z.string(),
+  }),
+  chart_type: z.string().optional(),
   esql: z.string(),
   time_range: visualizationTimeRangeSchema.optional(),
 });
 
-export const visualizationAttachmentDataSchema = z.union([
-  vegaVisualizationAttachmentDataSchema,
-  lensVisualizationAttachmentDataSchema,
-]);
-
-/**
- * Data for a Lens-rendered visualization attachment.
- * Same shape for both by-value and resolved by-ref attachments.
- */
-export interface LensVisualizationAttachmentData {
-  /** Renderer discriminator. Omitted for legacy attachments, which are Lens. */
-  renderer?: 'lens';
-  /** The display query */
-  query: string;
-  /** Lens API configuration */
-  visualization: Record<string, unknown>;
-  /** Chart type identifier */
-  chart_type: string;
-  /** The ES|QL query */
-  esql: string;
-  /** Optional time range for the visualization (e.g., { from: 'now-24h', to: 'now' }) */
-  time_range?: { from: string; to: string };
-}
-
-/**
- * Data for a Vega-rendered visualization attachment, used when a request cannot
- * be expressed by a standard Lens chart.
- */
-export interface VegaVisualizationAttachmentData {
-  /** Renderer discriminator. */
-  renderer: 'vega';
-  /** The display query */
-  query: string;
-  /** Serialized, render-ready Vega-Lite specification */
-  spec: string;
-  /** The ES|QL query bound into the spec's data source */
-  esql: string;
-  /** Optional time range for the visualization (e.g., { from: 'now-24h', to: 'now' }) */
-  time_range?: { from: string; to: string };
-}
+export const visualizationAttachmentDataSchema = z
+  .object({
+    // Optional for backwards compatibility: attachments created before the Vega
+    // renderer existed have no `renderer` field and are implicitly Lens.
+    renderer: z.enum(['lens', 'vega']).optional(),
+    query: z.string(),
+    visualization: z.record(z.string(), z.unknown()),
+    chart_type: z.string().optional(),
+    esql: z.string(),
+    time_range: visualizationTimeRangeSchema.optional(),
+  })
+  .check((ctx) => {
+    if (ctx.value.renderer === 'vega') {
+      const spec = (ctx.value.visualization as { spec?: unknown }).spec;
+      if (typeof spec !== 'string' || spec.length === 0) {
+        ctx.issues.push({
+          code: 'custom',
+          message: 'Vega visualizations must provide visualization.spec',
+          input: ctx.value,
+        });
+      }
+    }
+  });
 
 /**
  * Data for a visualization attachment, discriminated by `renderer`.
  */
-export type VisualizationAttachmentData =
-  | LensVisualizationAttachmentData
-  | VegaVisualizationAttachmentData;
+export interface VisualizationAttachmentData {
+  /** Renderer discriminator. Omitted defaults to Lens for legacy attachments. */
+  renderer?: 'lens' | 'vega';
+  /** The display query */
+  query: string;
+  /** Visualization configuration payload. For Vega, includes a serialized spec. */
+  visualization: Record<string, unknown> & { spec?: string };
+  /** Optional chart type identifier (primarily used by Lens). */
+  chart_type?: string;
+  /** The ES|QL query backing the visualization. */
+  esql: string;
+  /** Optional time range for the visualization (e.g., { from: 'now-24h', to: 'now' }) */
+  time_range?: { from: string; to: string };
+}
 
 /**
  * Tag prefix used to associate tools with their parent connector instance.

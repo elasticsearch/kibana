@@ -136,22 +136,15 @@ interface VisualizationResultDataBase {
   version?: number;
   /** Whether an existing attachment was updated rather than created */
   is_update?: boolean;
+  /** Renderer discriminator. Omitted defaults to Lens for legacy entries. */
+  renderer?: 'lens' | 'vega';
+  /** Shared visualization payload. Vega stores spec at visualization.spec. */
+  visualization: Record<string, unknown> & { spec?: string };
+  /** Optional chart type identifier (primarily Lens). */
+  chart_type?: SupportedChartType;
 }
 
-export interface LensVisualizationResultData extends VisualizationResultDataBase {
-  /** Renderer discriminator. Omitted defaults to Lens. */
-  renderer?: 'lens';
-  visualization: Record<string, unknown>;
-  chart_type: SupportedChartType;
-}
-
-export interface VegaVisualizationResultData extends VisualizationResultDataBase {
-  renderer: 'vega';
-  /** Serialized, render-ready Vega-Lite specification */
-  spec: string;
-}
-
-export type VisualizationResultData = LensVisualizationResultData | VegaVisualizationResultData;
+export type VisualizationResultData = VisualizationResultDataBase;
 
 export type VisualizationResult = ToolResultMixin<ToolResultType.visualization>;
 

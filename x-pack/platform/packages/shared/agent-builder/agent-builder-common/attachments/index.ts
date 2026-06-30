@@ -38,8 +38,6 @@ export {
   screenContextTimeRangeSchema,
   type EsqlAttachmentData,
   type VisualizationAttachmentData,
-  type LensVisualizationAttachmentData,
-  type VegaVisualizationAttachmentData,
   type ConnectorAttachmentData,
 } from './attachment_types';
 

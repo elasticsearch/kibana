@@ -59,10 +59,14 @@ export const createVisualizationAttachmentDefinition = ({
       const timeRange = data.time_range ?? screenContext?.time_range;
 
       if (data.renderer === 'vega') {
+        const spec = data.visualization.spec;
+        if (typeof spec !== 'string') {
+          return null;
+        }
         return (
           <Suspense fallback={<EuiLoadingSpinner />}>
             <LazyVisualizeVega
-              spec={data.spec}
+              spec={spec}
               timeRange={timeRange}
               registerActionButtons={callbacks?.registerActionButtons}
             />

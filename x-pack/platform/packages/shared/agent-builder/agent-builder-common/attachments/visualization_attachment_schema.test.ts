@@ -35,7 +35,7 @@ describe('visualizationAttachmentDataSchema', () => {
     const result = visualizationAttachmentDataSchema.safeParse({
       renderer: 'vega',
       query: 'faceted bars by host',
-      spec: '{"$schema":"https://vega.github.io/schema/vega-lite/v6.json"}',
+      visualization: { spec: '{"$schema":"https://vega.github.io/schema/vega-lite/v6.json"}' },
       esql: 'FROM logs | STATS count() BY host',
     });
 
@@ -46,6 +46,7 @@ describe('visualizationAttachmentDataSchema', () => {
     const result = visualizationAttachmentDataSchema.safeParse({
       renderer: 'vega',
       query: 'faceted bars by host',
+      visualization: {},
       esql: 'FROM logs | STATS count() BY host',
     });
 
