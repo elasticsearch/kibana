@@ -5,8 +5,40 @@
  * 2.0.
  */
 
+import React from 'react';
+import { renderHook, waitFor } from '@testing-library/react';
+import { of } from 'rxjs';
+import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import { EntityType } from '../../../../../../common/entity_analytics/types';
-import { parseTargetMetadataHits } from './use_fetch_grouped_data';
+import {
+  getGroupedEntitiesQuery,
+  parseTargetMetadataHits,
+  useFetchTargetMetadata,
+  type EntitiesGroupingQuery,
+} from './use_fetch_grouped_data';
+import { useKibana } from '../../../../../common/lib/kibana';
+import { DataViewContext, type DataViewContextValue } from '..';
+
+jest.mock('../../../../../common/lib/kibana');
+
+const mockSearch = jest.fn();
+
+const createWrapper = (
+  indexPattern = 'entities-latest-default'
+): React.FC<{ children: React.ReactNode }> => {
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const dataView = {
+      getIndexPattern: () => indexPattern,
+    } as unknown as DataViewContextValue['dataView'];
+    return React.createElement(
+      QueryClientProvider,
+      { client },
+      React.createElement(DataViewContext.Provider, { value: { dataView } }, children)
+    );
+  };
+  return Wrapper;
+};
 
 describe('parseTargetMetadataHits', () => {
   it('extracts name, type, and riskScore from well-formed hits', () => {
@@ -195,5 +227,50 @@ describe('parseTargetMetadataHits', () => {
     const result = parseTargetMetadataHits([]);
 
     expect(result.size).toBe(0);
+  });
+});
+
+describe('getGroupedEntitiesQuery', () => {
+  const minimalQuery = { size: 0 } as EntitiesGroupingQuery;
+
+  it('pins the grouped query to the origin entity store via project_routing', () => {
+    const result = getGroupedEntitiesQuery(minimalQuery, 'entities-latest-default');
+
+    expect(result).toHaveProperty('project_routing', '_alias:_origin');
+  });
+
+  it('targets the provided index pattern', () => {
+    const result = getGroupedEntitiesQuery(minimalQuery, 'entities-latest-default');
+
+    expect(result.index).toBe('entities-latest-default');
+  });
+});
+
+describe('useFetchTargetMetadata', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSearch.mockReturnValue(of({ rawResponse: { hits: { hits: [] } } }));
+    (useKibana as jest.Mock).mockReturnValue({
+      services: {
+        data: { search: { search: mockSearch } },
+        notifications: { toasts: { addError: jest.fn() } },
+      },
+    });
+  });
+
+  it('pins the target-metadata query to the origin entity store', async () => {
+    renderHook(() => useFetchTargetMetadata(['host:cps-host-id-001']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(mockSearch).toHaveBeenCalled());
+
+    expect(mockSearch.mock.calls[0][0].params).toHaveProperty('project_routing', '_alias:_origin');
+  });
+
+  it('does not fire when entityIds is empty', () => {
+    renderHook(() => useFetchTargetMetadata([]), { wrapper: createWrapper() });
+
+    expect(mockSearch).not.toHaveBeenCalled();
   });
 });

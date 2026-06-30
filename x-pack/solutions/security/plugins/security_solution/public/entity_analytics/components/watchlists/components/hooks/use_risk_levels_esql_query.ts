@@ -5,7 +5,8 @@
  * 2.0.
  */
 import { useMemo } from 'react';
-import { getESQLResults, prettifyQuery } from '@kbn/esql-utils';
+import { lastValueFrom } from 'rxjs';
+import { prettifyQuery } from '@kbn/esql-utils';
 import { useQuery } from '@kbn/react-query';
 import { i18n } from '@kbn/i18n';
 import type { SecurityAppError } from '@kbn/securitysolution-t-grid';
@@ -71,13 +72,42 @@ export const useRiskLevelsEsqlQuery = ({
     SecurityAppError
   >(
     queryKey,
-    async ({ signal }) =>
-      getESQLResults({
-        esqlQuery: query,
-        search: data.search.search,
-        signal,
-        filter: filterQuery,
-      }),
+    async ({ signal }) => {
+      // We call `data.search.search` directly rather than `getESQLResults` so we can pass
+      // `projectRouting` as a search option. In CPS environments the search interceptor would
+      // otherwise inject the space default (`_alias:*`), fanning this entity-store query out to
+      // every linked project and inflating the risk-level counts. Passing `_alias:_origin` here
+      // makes it the resolved project routing, which is written to the request body before the
+      // CPS request handler runs and is then preserved.
+      const searchResult = await lastValueFrom(
+        data.search.search(
+          {
+            params: {
+              query,
+              ...(filterQuery ? { filter: filterQuery } : {}),
+            },
+          },
+          {
+            abortSignal: signal,
+            strategy: 'esql_async',
+            projectRouting: '_alias:_origin',
+          }
+        )
+      );
+
+      const rawResponse = searchResult.rawResponse as unknown as ESQLSearchResponse;
+      // Mirror getESQLResults' normalization: collapse all-empty rows to an empty array.
+      const normalizedValues =
+        rawResponse.values &&
+        rawResponse.values.every((row) => Array.isArray(row) && row.length === 0)
+          ? []
+          : rawResponse.values;
+
+      return {
+        response: { ...rawResponse, values: normalizedValues },
+        params: searchResult.requestParams as unknown as ESQLSearchParams,
+      };
+    },
     {
       keepPreviousData: true,
       enabled: isEnabled,

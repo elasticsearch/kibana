@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { buildInspectData } from './use_fetch_grid_data';
+import { buildInspectData, getEntitiesQuery } from './use_fetch_grid_data';
 
 describe('buildInspectData', () => {
   const queryParams = {
@@ -44,5 +44,32 @@ describe('buildInspectData', () => {
     const inspect = buildInspectData(queryParams, rawResponse);
 
     expect(inspect.dsl[0]).toBe(JSON.stringify(queryParams));
+  });
+});
+
+describe('getEntitiesQuery', () => {
+  const options = {
+    query: undefined,
+    sort: [['entity.name', 'asc']] as Array<[string, string]>,
+    enabled: true,
+    pageSize: 25,
+  };
+
+  it('throws when no index pattern is provided', () => {
+    expect(() => getEntitiesQuery(options, undefined, undefined)).toThrow(
+      'Index pattern is required'
+    );
+  });
+
+  it('pins the query to the origin entity store via project_routing', () => {
+    const params = getEntitiesQuery(options, undefined, 'entities-latest-default');
+
+    expect(params).toHaveProperty('project_routing', '_alias:_origin');
+  });
+
+  it('targets the provided index pattern', () => {
+    const params = getEntitiesQuery(options, undefined, 'entities-latest-default');
+
+    expect(params.index).toEqual(['entities-latest-default']);
   });
 });

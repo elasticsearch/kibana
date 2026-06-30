@@ -82,6 +82,7 @@ export const getGroupedEntitiesQuery = (query: EntitiesGroupingQuery, indexPatte
   return {
     ...query,
     index: indexPattern,
+    project_routing: '_alias:_origin',
     ignore_unavailable: true,
     size: 0,
   };
@@ -150,6 +151,7 @@ export const useFetchTargetMetadata = (entityIds: string[]): TargetMetadataMap =
         searchService.search<{}, IKibanaSearchResponse<SearchResponse>>({
           params: {
             index: indexPattern,
+            project_routing: '_alias:_origin',
             ignore_unavailable: true,
             size: entityIds.length,
             _source: [

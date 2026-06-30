@@ -37,7 +37,7 @@ const ENTITY_TABLE_RUNTIME_MAPPING_FIELDS: string[] = [
   ENTITY_FIELDS.ENTITY_NAME,
 ];
 
-const getEntitiesQuery = (
+export const getEntitiesQuery = (
   { query, sort }: UseEntitiesOptions,
   pageParam: unknown,
   indexPattern?: string
@@ -48,6 +48,7 @@ const getEntitiesQuery = (
 
   return {
     index: [indexPattern],
+    project_routing: '_alias:_origin',
     sort: getMultiFieldsSort(sort),
     runtime_mappings: getRuntimeMappingsFromSort(ENTITY_TABLE_RUNTIME_MAPPING_FIELDS, sort),
     size: MAX_ENTITIES_TO_LOAD,

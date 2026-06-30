@@ -6,6 +6,7 @@
  */
 
 import { renderHook } from '@testing-library/react';
+import { of } from 'rxjs';
 import { useQuery } from '@kbn/react-query';
 import { useRiskLevelsEsqlQuery } from './use_risk_levels_esql_query';
 import { useKibana } from '../../../../../common/lib/kibana';
@@ -15,13 +16,6 @@ import { useRiskEngineStatus } from '../../../../api/hooks/use_risk_engine_statu
 
 jest.mock('@kbn/esql-utils', () => ({
   prettifyQuery: jest.fn((query) => query),
-  getESQLResults: jest.fn(async () => ({
-    response: {
-      columns: [{ name: 'count' }, { name: 'level' }],
-      values: [],
-    },
-    params: {},
-  })),
 }));
 
 jest.mock('@kbn/react-query', () => ({
@@ -57,15 +51,26 @@ describe('useRiskLevelsEsqlQuery', () => {
 
   const mockRefetchEngineStatus = jest.fn();
   const mockRefetchQuery = jest.fn();
+  const mockSearch = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockSearch.mockReturnValue(
+      of({
+        rawResponse: {
+          columns: [{ name: 'count' }, { name: 'level' }],
+          values: [[5, 'Critical']],
+        },
+        requestParams: {},
+      })
+    );
 
     mockUseKibana.mockReturnValue({
       services: {
         data: {
           search: {
-            search: jest.fn(),
+            search: mockSearch,
           },
         },
       },
@@ -160,11 +165,10 @@ describe('useRiskLevelsEsqlQuery', () => {
     renderHook(() => useRiskLevelsEsqlQuery({ spaceId: 'default' }));
 
     const queryFn = mockUseQuery.mock.calls[0][1];
-    const getEsqlResults = jest.requireMock('@kbn/esql-utils').getESQLResults;
 
     await queryFn({ signal: undefined });
 
-    expect(getEsqlResults).toHaveBeenCalledWith(
+    expect(mockSearch.mock.calls[0][0].params).toEqual(
       expect.objectContaining({ filter: 'mock-filter-with-time' })
     );
   });
@@ -173,12 +177,23 @@ describe('useRiskLevelsEsqlQuery', () => {
     renderHook(() => useRiskLevelsEsqlQuery({ spaceId: 'default', applyGlobalTimeFilter: false }));
 
     const queryFn = mockUseQuery.mock.calls[0][1];
-    const getEsqlResults = jest.requireMock('@kbn/esql-utils').getESQLResults;
 
     await queryFn({ signal: undefined });
 
-    expect(getEsqlResults).toHaveBeenCalledWith(
+    expect(mockSearch.mock.calls[0][0].params).toEqual(
       expect.objectContaining({ filter: 'mock-filter-no-time' })
+    );
+  });
+
+  it('pins the entity-store query to the origin project via projectRouting for CPS', async () => {
+    renderHook(() => useRiskLevelsEsqlQuery({ spaceId: 'default' }));
+
+    const queryFn = mockUseQuery.mock.calls[0][1];
+
+    await queryFn({ signal: undefined });
+
+    expect(mockSearch.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ projectRouting: '_alias:_origin' })
     );
   });
 });
