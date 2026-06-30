@@ -37,5 +37,6 @@
     "@kbn/alerting-v2-utils",
     "@kbn/scout-oblt",
     "@kbn/workflows-management-plugin",
+    "@kbn/dashboard-plugin",
   ]
 }

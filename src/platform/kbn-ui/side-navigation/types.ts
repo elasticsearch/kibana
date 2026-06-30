@@ -42,24 +42,42 @@ export interface SecondaryMenuItem {
   isExternal?: boolean;
 }
 
-/**
- * A section grouping within a secondary menu.
- * Sections help organize related secondary menu items with optional headers.
- */
-export interface SecondaryMenuSection {
+export type SecondaryMenuSection = {
   /**
    * The unique identifier of the secondary menu section.
    */
   id: string;
   /**
-   * The items contained in the secondary menu section.
-   */
-  items: SecondaryMenuItem[];
-  /**
    * (optional) The label to display for the secondary menu section.
    */
   label?: string;
-}
+  /**
+   * When true, the section is only shown in the hover popover and never in the side panel.
+   */
+  popoverOnly?: boolean;
+} & (
+  | {
+      /**
+       * Static secondary menu items. Mutually exclusive with an extension slot.
+       */
+      items?: SecondaryMenuItem[];
+      slotId?: never;
+      extensionId?: never;
+    }
+  | {
+      /**
+       * Per-placement slot id (owned by the solution tree). The framework resolves the powering
+       * `data$` from the active solution's slot data-source map using this id.
+       * Mutually exclusive with `items`.
+       */
+      slotId?: string;
+      /**
+       * Id of the plugin-published extension definition that fills this slot (template + config).
+       */
+      extensionId?: string;
+      items?: never;
+    }
+);
 
 /**
  * A primary navigation menu item that appears in the main navigation sidebar.
@@ -90,6 +108,11 @@ export interface MenuItem {
    * (optional) The type of badge shown next to the item (e.g. `beta`, `techPreview`, `new`).
    */
   badgeType?: BadgeType;
+  /**
+   * (optional) When true, sections are only shown in the hover popover and never
+   * in the persistent expanded side panel.
+   */
+  popoverOnly?: boolean;
   /**
    * (optional) The secondary menu sections belonging to the menu item.
    */
@@ -151,4 +174,18 @@ export interface SideNavLogo {
    * (optional) `data-test-subj` attribute for testing and tracking purposes.
    */
   'data-test-subj'?: string;
+}
+
+/**
+ * Context passed to extension templates when rendering a secondary menu slot.
+ */
+export interface NavExtensionRenderContext {
+  /** The unique identifier of the primary menu item. */
+  primaryItemId: string;
+  /** The unique identifier of the secondary menu section. */
+  sectionId: string;
+  /** The surface on which the extension is rendering. */
+  surface: 'popover' | 'sidePanel' | 'overflow';
+  /** Id of the active item in the slot. */
+  activeItemId?: string;
 }

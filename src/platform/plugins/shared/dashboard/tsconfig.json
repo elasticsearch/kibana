@@ -126,7 +126,9 @@
     "@kbn/as-code-shared-telemetry",
     "@kbn/core-user-activity-server",
     "@kbn/core-test-helpers-test-utils",
-    "@kbn/app-header"
+    "@kbn/app-header",
+    "@kbn/core-chrome-browser",
+    "@kbn/shared-ux-navigation-extension-templates"
   ],
   "exclude": [
     "target/**/*"

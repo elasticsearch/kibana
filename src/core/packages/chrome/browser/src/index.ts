@@ -51,6 +51,13 @@ export type { ChromeBadge, ChromeBreadcrumbsBadge, ChromeUserBanner, ChromeStyle
 
 export type {
   ChromeProjectNavigationNode,
+  ChromeRootNavigationNode,
+  ChromeStandardNavigationNode,
+  ChromeExtensionPointNavigationNode,
+  ExtensionPointNodeDefinition,
+  PanelOpenerChildDefinition,
+  StandardNodeDefinition,
+  RootNodeDefinition,
   AppDeepLinkId,
   AppId,
   SolutionId,
@@ -68,9 +75,16 @@ export type {
   SolutionNavigationDefinitions,
   NavigationCustomization,
   NavigationCustomizationMove,
+  SlotDataSources,
+  NavExtensionSlotData,
   EuiSideNavItemTypeEnhanced,
   RenderAs,
 } from './project_navigation';
+
+export {
+  type NavTreeExtensionSlotDataSources,
+  defineNavTreeExtensionSlotDataSources,
+} from './nav_extensions';
 
 export type {
   SidebarApp,
@@ -81,3 +95,12 @@ export type {
 } from './sidebar';
 
 export type { GlobalSearchConfig } from './chrome_next/global_search';
+
+export type {
+  NavExtensionRegistry,
+  NavExtensionEntry,
+  NavExtensionId,
+  NavExtensionData,
+  NavExtensionRuntimeDefinition,
+  NavExtensionDefinitionMap,
+} from './nav_extensions';

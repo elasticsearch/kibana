@@ -8,6 +8,7 @@
  */
 
 export { Navigation, type NavigationProps } from './src/components/navigation';
+export { SecondaryMenu } from './src/components/secondary_menu';
 export { useNavigation } from './src/hooks/use_navigation';
 export { COLLAPSED_WIDTH, EXPANDED_WIDTH } from './src/hooks/use_layout_width';
 export type {
@@ -17,4 +18,5 @@ export type {
   SecondaryMenuItem,
   SecondaryMenuSection,
   SideNavLogo,
+  NavExtensionRenderContext,
 } from './types';

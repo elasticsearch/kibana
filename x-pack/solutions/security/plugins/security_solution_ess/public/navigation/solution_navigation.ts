@@ -8,6 +8,8 @@
 import { map, combineLatest } from 'rxjs';
 import { AI_CHAT_EXPERIENCE_TYPE } from '@kbn/management-settings-ids';
 import type { AIChatExperience } from '@kbn/ai-assistant-common';
+import { createRecentItemsData$ } from '@kbn/dashboard-plugin/public';
+import { RECENT_DASHBOARDS_SLOT_ID } from '@kbn/security-solution-navigation/navigation_tree';
 
 import { type Services } from '../common/services';
 import { SOLUTION_NAME } from './translations';
@@ -37,5 +39,11 @@ export const registerSolutionNavigation = async (services: Services) => {
     title: SOLUTION_NAME,
     icon: 'logoSecurity',
     navigationTree$,
+    slotDataSources: {
+      [RECENT_DASHBOARDS_SLOT_ID]: createRecentItemsData$(
+        services.chrome.recentlyAccessed,
+        services.http.basePath
+      ),
+    },
   });
 };

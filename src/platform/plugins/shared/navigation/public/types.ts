@@ -10,7 +10,13 @@
 import type { AggregateQuery, Query } from '@kbn/es-query';
 import type { Observable } from 'rxjs';
 import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
-import type { SolutionNavigationDefinition } from '@kbn/core-chrome-browser';
+import type {
+  NavigationTreeDefinition,
+  SolutionNavigationDefinition,
+  NavExtensionId,
+  NavTreeExtensionSlotDataSources,
+} from '@kbn/core-chrome-browser';
+import type { NavExtensionDefinition } from '@kbn/shared-ux-navigation-extension-templates';
 import type { CloudSetup, CloudStart } from '@kbn/cloud-plugin/public';
 import type { SpacesPluginSetup, SpacesPluginStart } from '@kbn/spaces-plugin/public';
 import type { SecurityPluginStart } from '@kbn/security-plugin/public';
@@ -26,10 +32,29 @@ export interface NavigationPublicSetup {
    * @deprecated Use AppMenu from "@kbn/core-chrome-app-menu" instead
    */
   registerMenuItem: TopNavMenuExtensionsRegistrySetup['register'];
+  /**
+   * Publish a navigation extension definition (template id + declarative config).
+   * The `Id` must be a key registered in `NavExtensionRegistry` via declaration merging.
+   */
+  registerNavigationExtension: <Id extends NavExtensionId>(
+    definition: NavExtensionDefinition<Id>
+  ) => void;
 }
 
-export type SolutionNavigation = SolutionNavigationDefinition;
-export type AddSolutionNavigationArg = SolutionNavigation;
+export interface SolutionNavigation<T extends NavigationTreeDefinition>
+  extends Omit<SolutionNavigationDefinition, 'navigationTree$'> {
+  navigationTree$: Observable<T>;
+  /**
+   * Observable data sources powering the tree's extension slots, keyed by `slotId`.
+   * Typed from the tree so every placed slot must supply a `data$` emitting exactly
+   * the row type the referenced extension declared in `NavExtensionRegistry`.
+   */
+  slotDataSources?: NavTreeExtensionSlotDataSources<T>;
+}
+
+export type AddSolutionNavigationArg<
+  T extends NavigationTreeDefinition = NavigationTreeDefinition
+> = SolutionNavigation<T>;
 
 export interface NavigationPublicStart {
   ui: {
@@ -50,7 +75,9 @@ export interface NavigationPublicStart {
     ) => ReturnType<typeof createTopNav>;
   };
   /** Add a solution navigation to the header nav switcher. */
-  addSolutionNavigation: (solutionNavigationAgg: AddSolutionNavigationArg) => void;
+  addSolutionNavigation: <T extends NavigationTreeDefinition>(
+    solutionNavigationAgg: AddSolutionNavigationArg<T>
+  ) => void;
   /** Flag to indicate if the solution navigation is enabled.*/
   isSolutionNavEnabled$: Observable<boolean>;
 }

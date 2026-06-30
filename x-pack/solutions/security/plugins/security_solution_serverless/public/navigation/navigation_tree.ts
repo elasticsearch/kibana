@@ -14,7 +14,10 @@ import {
   SecurityPageName,
 } from '@kbn/security-solution-navigation';
 import { i18nStrings, securityLink } from '@kbn/security-solution-navigation/links';
-import { defaultNavigationTree } from '@kbn/security-solution-navigation/navigation_tree';
+import {
+  defaultNavigationTree,
+  RECENT_DASHBOARDS_SLOT_ID,
+} from '@kbn/security-solution-navigation/navigation_tree';
 import { AGENT_BUILDER_NAV_AT_TOP_FLAG } from '@kbn/navigation-plugin/public';
 
 import { type Services } from '../common/services';
@@ -25,10 +28,12 @@ const SOLUTION_NAME = i18n.translate(
   { defaultMessage: 'Security' }
 );
 
+export { RECENT_DASHBOARDS_SLOT_ID };
+
 export const createNavigationTree = async (
   services: Services,
   chatExperience: AIChatExperience = AIChatExperience.Classic
-): Promise<NavigationTreeDefinition> => {
+) => {
   const showAgentBuilder = chatExperience === AIChatExperience.Agent;
   const agentBuilderNavAtTop = services.featureFlags.getBooleanValue(
     AGENT_BUILDER_NAV_AT_TOP_FLAG,
@@ -156,5 +161,5 @@ export const createNavigationTree = async (
       },
       createManagementFooterItemsTree(services, chatExperience),
     ],
-  };
+  } as const satisfies NavigationTreeDefinition;
 };

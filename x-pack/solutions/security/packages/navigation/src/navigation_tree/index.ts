@@ -6,6 +6,7 @@
  */
 
 import { createDashboardsNavigationTree } from './dashboards_navigation_tree';
+export { RECENT_DASHBOARDS_SLOT_ID } from './dashboards_navigation_tree';
 import { createRulesNavigationTree } from './rules_navigation_tree';
 import { createCasesNavigationTree } from './cases_navigation_tree';
 import { createInvestigationsNavigationTree } from './investigations_navigation_tree';

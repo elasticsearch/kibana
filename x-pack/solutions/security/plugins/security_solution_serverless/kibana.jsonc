@@ -21,7 +21,8 @@
       "fleet",
       "actions",
       "discover",
-      "navigation"
+      "navigation",
+      "dashboard"
     ],
     "optionalPlugins": ["securitySolutionEss", "automaticImport", "usageApi", "workflowsManagement"]
   }

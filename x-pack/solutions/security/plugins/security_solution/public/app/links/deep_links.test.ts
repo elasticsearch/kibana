@@ -270,4 +270,28 @@ describe('solutionFormatter', () => {
     const result = solutionFormatter(tree, normalizedLinks);
     expect(result).toEqual([]); // nothing matched
   });
+
+  it('should skip extension nodes', () => {
+    const tree = {
+      body: [
+        {
+          renderAs: 'panelOpener',
+          children: [
+            {
+              slotId: 'extension-slot',
+              // extension value here must be recentlyAccessedDashboards,
+              // as it's the only configured extension at this point in time
+              extensionId: 'recentlyAccessedDashboards',
+              renderAs: 'extension',
+            },
+          ],
+        },
+      ],
+    } satisfies NavigationTreeDefinition;
+
+    const normalizedLinks: NormalizedLinks = {};
+
+    const result = solutionFormatter(tree, normalizedLinks);
+    expect(result).toEqual([]);
+  });
 });

@@ -22,7 +22,8 @@ const mockCollapsedMenuGap = 4;
 const mockMenuItemHeight = 32;
 
 // Security mock reusable IDs - Machine Learning > Anomaly explorer (item that's in "More" menu)
-const mlAnomalyExplorerItemId = securityMock.navItems.primaryItems[11].sections?.[1].items[0].id;
+const mlAnomalyExplorerItemId =
+  securityMock.navItems.primaryItems[11].sections?.[1]?.items?.[0]?.id;
 
 // Test ID helpers
 const logoId = `kbnChromeNav-logo`;

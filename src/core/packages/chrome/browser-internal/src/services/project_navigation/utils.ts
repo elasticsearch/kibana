@@ -8,21 +8,42 @@
  */
 
 import type {
+  AppDeepLinkId,
+  ChromeExtensionPointNavigationNode,
   ChromeNavLink,
   ChromeProjectNavigationNode,
-  NavigationTreeDefinition,
-  NodeDefinition,
-  NavigationTreeDefinitionUI,
-  AppDeepLinkId,
-  SideNavNodeStatus,
+  ChromeRootNavigationNode,
+  ChromeStandardNavigationNode,
   CloudLinkId,
   CloudLinks,
+  ExtensionPointNodeDefinition,
+  NavigationTreeDefinition,
+  NavigationTreeDefinitionUI,
+  PanelOpenerChildDefinition,
+  StandardNodeDefinition,
+  RootNodeDefinition,
+  SideNavNodeStatus,
   SolutionId,
 } from '@kbn/core-chrome-browser/src';
 import type { Location } from 'history';
 import type { SideNavigationSection } from '@kbn/core-chrome-browser/src/project_navigation';
 
 const wrapIdx = (index: number): string => `[${index}]`;
+
+type ParseableNodeDefinition<
+  LinkId extends AppDeepLinkId = AppDeepLinkId,
+  Id extends string = string,
+  ChildrenId extends string = Id
+> =
+  | RootNodeDefinition<LinkId, Id, ChildrenId>
+  | PanelOpenerChildDefinition<LinkId, ChildrenId>
+  | StandardNodeDefinition<LinkId, ChildrenId, ChildrenId>;
+
+function isExtensionPointNodeDefinition(
+  node: ParseableNodeDefinition
+): node is ExtensionPointNodeDefinition {
+  return node.renderAs === 'extension';
+}
 
 /**
  * Flatten the navigation tree into a record of path => node
@@ -156,7 +177,7 @@ function isAbsoluteLink(link: string) {
 }
 
 function getNavigationNodeId(
-  { id: _id, link }: Pick<NodeDefinition, 'id' | 'link'>,
+  { id: _id, link }: { id?: string; link?: string },
   idGenerator = generateUniqueNodeId
 ): string {
   const id = _id ?? link;
@@ -217,7 +238,13 @@ function validateNodeProps<
   LinkId extends AppDeepLinkId = AppDeepLinkId,
   Id extends string = string,
   ChildrenId extends string = Id
->({ id, link, href, cloudLink, renderAs }: NodeDefinition<LinkId, Id, ChildrenId>) {
+>(node: ParseableNodeDefinition<LinkId, Id, ChildrenId>) {
+  if (isExtensionPointNodeDefinition(node)) {
+    return;
+  }
+
+  const { id, link, href, cloudLink } = node;
+
   if (link && cloudLink) {
     throw new Error(
       `[Chrome navigation] Error in node [${id}]. Only one of "link" or "cloudLink" can be provided.`
@@ -235,7 +262,7 @@ const initNavNode = <
   Id extends string = string,
   ChildrenId extends string = Id
 >(
-  node: NodeDefinition<LinkId, Id, ChildrenId>,
+  node: ParseableNodeDefinition<LinkId, Id, ChildrenId>,
   {
     cloudLinks,
     deepLinks,
@@ -248,6 +275,27 @@ const initNavNode = <
     index?: number;
   }
 ): ChromeProjectNavigationNode | null => {
+  if (isExtensionPointNodeDefinition(node)) {
+    const { children, ...navNodeFromProps } = node;
+    const id = getNavigationNodeId(node, () => `node-${index}`) as Id;
+    const title = getTitleForNode(node, { cloudLinks });
+    const path = parentNodePath ? `${parentNodePath}.${id}` : id;
+    const sideNavStatus = node.sideNavStatus ?? 'visible';
+
+    const navNode: ChromeExtensionPointNavigationNode = {
+      ...navNodeFromProps,
+      id,
+      path,
+      title,
+      renderAs: 'extension',
+      slotId: node.slotId,
+      extensionId: node.extensionId,
+      sideNavStatus,
+    };
+
+    return navNode;
+  }
+
   validateNodeProps(node);
 
   const { cloudLink, link, children, ...navNodeFromProps } = node;
@@ -346,7 +394,7 @@ export const parseNavigationTree = (
   const navigationTreeUI: NavigationTreeDefinitionUI = { id, body: [] };
 
   const initNodeAndChildren = (
-    node: NodeDefinition,
+    node: ParseableNodeDefinition,
     { index = 0, parentPath = [] }: { index?: number; parentPath?: string[] } = {}
   ): ChromeProjectNavigationNode | null => {
     const navNode = initNavNode(node, {
@@ -356,8 +404,8 @@ export const parseNavigationTree = (
       index,
     });
 
-    if (navNode && node.children) {
-      navNode.children = node.children
+    if (navNode && node.children && navNode.renderAs !== 'extension') {
+      (navNode as ChromeStandardNavigationNode).children = node.children
         .map((child, i) =>
           initNodeAndChildren(child, {
             index: i,
@@ -382,12 +430,12 @@ export const parseNavigationTree = (
       if (!navigationTreeUI[section]) {
         navigationTreeUI[section] = [];
       }
-      navigationTreeUI[section]!.push(navNode);
+      navigationTreeUI[section]!.push(navNode as ChromeRootNavigationNode);
     }
   };
 
   const parseNodesArray = (
-    nodes?: NodeDefinition[],
+    nodes?: RootNodeDefinition[],
     section: SideNavigationSection = 'body',
     startIndex = 0
   ): void => {

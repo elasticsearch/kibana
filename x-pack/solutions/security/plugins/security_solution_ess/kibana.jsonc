@@ -11,20 +11,16 @@
     "id": "securitySolutionEss",
     "browser": true,
     "server": true,
-    "configPath": [
-      "xpack",
-      "securitySolutionEss"
-    ],
+    "configPath": ["xpack", "securitySolutionEss"],
     "requiredPlugins": [
       "securitySolution",
       "management",
       "navigation",
       "licensing",
-      "cloud"
+      "cloud",
+      "dashboard"
     ],
     "optionalPlugins": [],
-    "requiredBundles": [
-      "kibanaReact"
-    ]
+    "requiredBundles": ["kibanaReact"]
   }
 }

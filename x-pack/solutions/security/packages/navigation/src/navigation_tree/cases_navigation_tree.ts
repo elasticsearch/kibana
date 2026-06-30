@@ -5,12 +5,12 @@
  * 2.0.
  */
 
-import type { NodeDefinition } from '@kbn/core-chrome-browser';
+import type { StandardNodeDefinition } from '@kbn/core-chrome-browser';
 import { SecurityPageName } from '../constants';
 import { securityLink } from '../links';
 
-export const createCasesNavigationTree = (): NodeDefinition => {
-  const children: NodeDefinition[] = [
+export const createCasesNavigationTree = (): StandardNodeDefinition => {
+  const children: StandardNodeDefinition[] = [
     {
       id: `${SecurityPageName.case}-all`,
       link: securityLink(SecurityPageName.case),

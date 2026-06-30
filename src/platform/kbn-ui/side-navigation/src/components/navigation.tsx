@@ -25,11 +25,17 @@ import { SideNav } from './side_nav';
 import { SideNavCollapseButton } from './collapse_button';
 import { focusMainContent } from '../utils/focus_main_content';
 import { getHasSubmenu } from '../utils/get_has_submenu';
+import { sectionHasContent, sectionHasSidePanelContent } from '../utils/section_has_content';
+import {
+  renderNestedSecondaryMenuSection,
+  renderSecondaryMenuSection,
+} from './secondary_menu/secondary_menu_section_content';
 import { useLayoutWidth } from '../hooks/use_layout_width';
 import { useNavigation } from '../hooks/use_navigation';
 import { useNewItems } from '../hooks/use_new_items';
 import { useResponsiveMenu } from '../hooks/use_responsive_menu';
 import { getHighContrastSeparator } from '../hooks/use_high_contrast_mode_styles';
+import type { NavExtensionRenderContext } from '../../types';
 
 const navigationWrapperStyles = css`
   display: flex;
@@ -85,6 +91,15 @@ export interface NavigationProps {
    * (optional) data-test-subj attribute for testing purposes.
    */
   'data-test-subj'?: string;
+  /**
+   * (optional) Renders an extension slot. The framework resolves the extension
+   * definition (by `extensionId`) and its data source (by `slotId`).
+   */
+  renderExtensionPoint?: (
+    slotId: string,
+    extensionId: string,
+    context: NavExtensionRenderContext
+  ) => ReactNode;
 }
 
 export const Navigation = ({
@@ -98,6 +113,7 @@ export const Navigation = ({
   setWidth,
   showTopSeparator = false,
   sidePanelFooter,
+  renderExtensionPoint,
   ...rest
 }: NavigationProps) => {
   const forcedCollapsed = useIsWithinBreakpoints(['xs', 's']);
@@ -179,7 +195,11 @@ export const Navigation = ({
                   <SideNav.Popover
                     key={item.id}
                     hasContent={getHasSubmenu(item)}
-                    isSidePanelOpen={!isCollapsed && item.id === openerNode?.id}
+                    isSidePanelOpen={
+                      !isCollapsed &&
+                      item.id === openerNode?.id &&
+                      !!item.sections?.some(sectionHasSidePanelContent)
+                    }
                     isAnyPopoverLocked={isAnyPopoverLocked}
                     label={item.label}
                     trigger={
@@ -206,40 +226,28 @@ export const Navigation = ({
                         isNew={getIsNewSecondary(item.id)}
                       >
                         {sections?.map((section, sectionIndex) => {
-                          const firstNonEmptySectionIndex = item.sections?.findIndex(
-                            (s) => s.items.length > 0
-                          );
+                          const firstNonEmptySectionIndex =
+                            item.sections?.findIndex(sectionHasContent);
 
-                          return (
-                            <SideNav.SecondaryMenu.Section key={section.id} label={section.label}>
-                              {section.items.map((subItem, subItemIndex) => {
-                                const isFirstSubItem =
-                                  sectionIndex === firstNonEmptySectionIndex && subItemIndex === 0;
-                                const subItemAriaDescribedBy = isFirstSubItem
-                                  ? ids?.popoverNavigationInstructionsId
-                                  : undefined;
-                                return (
-                                  <SideNav.SecondaryMenu.Item
-                                    aria-describedby={subItemAriaDescribedBy}
-                                    key={subItem.id}
-                                    isHighlighted={subItem.id === visuallyActiveSubpageId}
-                                    isCurrent={actualActiveItemId === subItem.id}
-                                    isNew={getIsNewSecondary(subItem.id)}
-                                    onClick={() => {
-                                      onItemClick?.(subItem);
-                                      if (subItem.href) {
-                                        closePopover();
-                                      }
-                                    }}
-                                    testSubjPrefix={popoverItemPrefix}
-                                    {...subItem}
-                                  >
-                                    {subItem.label}
-                                  </SideNav.SecondaryMenu.Item>
-                                );
-                              })}
-                            </SideNav.SecondaryMenu.Section>
-                          );
+                          return renderSecondaryMenuSection({
+                            section,
+                            sectionIndex,
+                            primaryItem: item,
+                            surface: 'popover',
+                            activeItemId: actualActiveItemId,
+                            visuallyActiveSubpageId,
+                            firstNonEmptySectionIndex,
+                            popoverNavigationInstructionsId: ids?.popoverNavigationInstructionsId,
+                            getIsNewSecondary,
+                            onItemClick,
+                            onSecondaryItemClick: (subItem) => {
+                              if (subItem.href) {
+                                closePopover();
+                              }
+                            },
+                            renderExtensionPoint,
+                            testSubjPrefix: popoverItemPrefix,
+                          });
                         })}
                       </SideNav.SecondaryMenu>
                     )}
@@ -355,29 +363,21 @@ export const Navigation = ({
                                 title={item.label}
                                 aria-describedby={panelNavigationInstructionsId}
                               />
-                              {item.sections?.map((section) => (
-                                <SideNav.NestedSecondaryMenu.Section
-                                  key={section.id}
-                                  label={section.label}
-                                >
-                                  {section.items.map((subItem) => (
-                                    <SideNav.NestedSecondaryMenu.Item
-                                      key={subItem.id}
-                                      isHighlighted={subItem.id === visuallyActiveSubpageId}
-                                      isCurrent={actualActiveItemId === subItem.id}
-                                      isNew={getIsNewSecondary(subItem.id)}
-                                      onClick={() => {
-                                        onItemClick?.(subItem);
-                                        closePopover();
-                                        focusMainContent();
-                                      }}
-                                      {...subItem}
-                                    >
-                                      {subItem.label}
-                                    </SideNav.NestedSecondaryMenu.Item>
-                                  ))}
-                                </SideNav.NestedSecondaryMenu.Section>
-                              ))}
+                              {item.sections?.map((section) =>
+                                renderNestedSecondaryMenuSection({
+                                  section,
+                                  primaryItem: item,
+                                  activeItemId: actualActiveItemId,
+                                  visuallyActiveSubpageId,
+                                  getIsNewSecondary,
+                                  onItemClick,
+                                  onSecondaryItemClick: () => {
+                                    closePopover();
+                                    focusMainContent();
+                                  },
+                                  renderExtensionPoint,
+                                })
+                              )}
                             </>
                           )}
                         </SideNav.NestedSecondaryMenu.Panel>
@@ -402,7 +402,11 @@ export const Navigation = ({
                   <SideNav.Popover
                     key={item.id}
                     hasContent={getHasSubmenu(item)}
-                    isSidePanelOpen={!isCollapsed && item.id === openerNode?.id}
+                    isSidePanelOpen={
+                      !isCollapsed &&
+                      item.id === openerNode?.id &&
+                      !!item.sections?.some(sectionHasSidePanelContent)
+                    }
                     isAnyPopoverLocked={isAnyPopoverLocked}
                     label={item.label}
                     persistent={false}
@@ -425,40 +429,28 @@ export const Navigation = ({
                         isNew={getIsNewSecondary(item.id)}
                       >
                         {sections?.map((section, sectionIndex) => {
-                          const firstNonEmptySectionIndex = item.sections?.findIndex(
-                            (s) => s.items.length > 0
-                          );
-                          return (
-                            <SideNav.SecondaryMenu.Section key={section.id} label={section.label}>
-                              {section.items.map((subItem, subItemIndex) => {
-                                const isFirstSubItem =
-                                  sectionIndex === firstNonEmptySectionIndex && subItemIndex === 0;
-                                const subItemAriaDescribedBy = isFirstSubItem
-                                  ? ids?.popoverNavigationInstructionsId
-                                  : undefined;
+                          const firstNonEmptySectionIndex =
+                            item.sections?.findIndex(sectionHasContent);
 
-                                return (
-                                  <SideNav.SecondaryMenu.Item
-                                    aria-describedby={subItemAriaDescribedBy}
-                                    key={subItem.id}
-                                    isHighlighted={subItem.id === visuallyActiveSubpageId}
-                                    isCurrent={actualActiveItemId === subItem.id}
-                                    isNew={getIsNewSecondary(subItem.id)}
-                                    onClick={() => {
-                                      onItemClick?.(subItem);
-                                      if (subItem.href) {
-                                        closePopover();
-                                      }
-                                    }}
-                                    {...subItem}
-                                    testSubjPrefix={popoverFooterItemPrefix}
-                                  >
-                                    {subItem.label}
-                                  </SideNav.SecondaryMenu.Item>
-                                );
-                              })}
-                            </SideNav.SecondaryMenu.Section>
-                          );
+                          return renderSecondaryMenuSection({
+                            section,
+                            sectionIndex,
+                            primaryItem: item,
+                            surface: 'popover',
+                            activeItemId: actualActiveItemId,
+                            visuallyActiveSubpageId,
+                            firstNonEmptySectionIndex,
+                            popoverNavigationInstructionsId: ids?.popoverNavigationInstructionsId,
+                            getIsNewSecondary,
+                            onItemClick,
+                            onSecondaryItemClick: (subItem) => {
+                              if (subItem.href) {
+                                closePopover();
+                              }
+                            },
+                            renderExtensionPoint,
+                            testSubjPrefix: popoverFooterItemPrefix,
+                          });
                         })}
                       </SideNav.SecondaryMenu>
                     )}
@@ -473,9 +465,8 @@ export const Navigation = ({
       {isSidePanelOpen && openerNode && (
         <SideNav.SidePanel footer={sidePanelFooter} openerNode={openerNode}>
           {({ secondaryNavigationInstructionsId }) => {
-            const firstNonEmptySectionIndex = openerNode.sections?.findIndex(
-              (s) => s.items.length > 0
-            );
+            const sidePanelSections = openerNode.sections?.filter(sectionHasSidePanelContent);
+            const firstNonEmptySectionIndex = sidePanelSections?.findIndex(sectionHasContent);
 
             return (
               <SideNav.SecondaryMenu
@@ -484,32 +475,22 @@ export const Navigation = ({
                 title={openerNode.label}
                 isNew={getIsNewSecondary(openerNode.id)}
               >
-                {openerNode.sections?.map((section, sectionIndex) => (
-                  <SideNav.SecondaryMenu.Section key={section.id} label={section.label}>
-                    {section.items.map((subItem, subItemIndex) => {
-                      const isFirstItem =
-                        sectionIndex === firstNonEmptySectionIndex && subItemIndex === 0;
-                      const ariaDescribedBy = isFirstItem
-                        ? secondaryNavigationInstructionsId
-                        : undefined;
-
-                      return (
-                        <SideNav.SecondaryMenu.Item
-                          aria-describedby={ariaDescribedBy}
-                          key={subItem.id}
-                          isCurrent={actualActiveItemId === subItem.id}
-                          isHighlighted={subItem.id === visuallyActiveSubpageId}
-                          isNew={getIsNewSecondary(subItem.id)}
-                          onClick={() => onItemClick?.(subItem)}
-                          testSubjPrefix={sidePanelItemPrefix}
-                          {...subItem}
-                        >
-                          {subItem.label}
-                        </SideNav.SecondaryMenu.Item>
-                      );
-                    })}
-                  </SideNav.SecondaryMenu.Section>
-                ))}
+                {sidePanelSections?.map((section, sectionIndex) =>
+                  renderSecondaryMenuSection({
+                    section,
+                    sectionIndex,
+                    primaryItem: openerNode,
+                    surface: 'sidePanel',
+                    activeItemId: actualActiveItemId,
+                    visuallyActiveSubpageId,
+                    firstNonEmptySectionIndex,
+                    secondaryNavigationInstructionsId,
+                    getIsNewSecondary,
+                    onItemClick,
+                    renderExtensionPoint,
+                    testSubjPrefix: sidePanelItemPrefix,
+                  })
+                )}
               </SideNav.SecondaryMenu>
             );
           }}

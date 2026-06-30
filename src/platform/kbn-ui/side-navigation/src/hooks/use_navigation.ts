@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 
 import type { MenuItem, NavigationStructure } from '../../types';
 import { getActiveItems } from '../utils/get_initial_active_items';
+import { sectionHasSidePanelContent } from '../utils/section_has_content';
 
 interface NavigationState {
   actualActiveItemId: string | undefined;
@@ -51,7 +52,7 @@ export const useNavigation = (
   const visuallyActivePageId = isLogoActive ? logoId : primaryItem?.id;
   const visuallyActiveSubpageId = secondaryItem?.id;
   const openerNode = primaryItem;
-  const isSidePanelOpen = !isCollapsed && !!openerNode?.sections;
+  const isSidePanelOpen = !isCollapsed && !!openerNode?.sections?.some(sectionHasSidePanelContent);
 
   const state: NavigationState = {
     actualActiveItemId,

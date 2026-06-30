@@ -9,6 +9,7 @@ Array [
     "iconType": "launch",
     "id": "launchpad",
     "label": "Launchpad",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "node-0",
@@ -63,7 +64,7 @@ Array [
     "iconType": "editorCodeBlock",
     "id": "dev_tools",
     "label": "Developer Tools",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -72,6 +73,7 @@ Array [
     "iconType": "database",
     "id": "data_management",
     "label": "Data management",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "node-0",
@@ -182,6 +184,7 @@ Array [
     "iconType": "gear",
     "id": "stack_management",
     "label": "Stack Management",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "stack_management_home",
@@ -531,7 +534,7 @@ Array [
     "iconType": "discoverApp",
     "id": "discover",
     "label": "Discover",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -540,7 +543,7 @@ Array [
     "iconType": "dashboardApp",
     "id": "dashboards",
     "label": "Dashboards",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -549,6 +552,7 @@ Array [
     "iconType": "securitySignal",
     "id": "securityGroup:rules",
     "label": "Rules",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "node-0",
@@ -603,7 +607,7 @@ Array [
     "iconType": "warning",
     "id": "alerts",
     "label": "Alerts",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -612,7 +616,7 @@ Array [
     "iconType": "bolt",
     "id": "attack_discovery",
     "label": "Attack discovery",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -626,7 +630,7 @@ Array [
     },
     "id": "cloud_security_posture-findings",
     "label": "Findings",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -640,7 +644,7 @@ Array [
     },
     "id": "cases",
     "label": "Cases",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -654,6 +658,7 @@ Array [
     },
     "id": "securityGroup:entityAnalytics",
     "label": "Entity analytics",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "securityGroup:entityAnalytics-section",
@@ -685,6 +690,7 @@ Array [
     "iconType": "globe",
     "id": "securityGroup:explore",
     "label": "Explore",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "securityGroup:explore-section",
@@ -724,6 +730,7 @@ Array [
     "iconType": "inspect",
     "id": "securityGroup:investigations",
     "label": "Investigations",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "securityGroup:investigations-section",
@@ -768,7 +775,7 @@ Array [
     },
     "id": "threat_intelligence",
     "label": "Intelligence",
-    "sections": undefined,
+    "popoverOnly": false,
   },
   Object {
     "badgeType": undefined,
@@ -782,6 +789,7 @@ Array [
     },
     "id": "securityGroup:assets",
     "label": "Assets",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "fleet",
@@ -916,6 +924,7 @@ Array [
     "iconType": "machineLearningApp",
     "id": "securityGroup:machineLearning",
     "label": "Machine Learning",
+    "popoverOnly": false,
     "sections": Array [
       Object {
         "id": "node-0",

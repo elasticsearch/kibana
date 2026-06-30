@@ -18,6 +18,8 @@ import type {
   NavigationTreeDefinition,
   CloudLinks,
   SolutionId,
+  SlotDataSources,
+  NavExtensionDefinitionMap,
 } from '@kbn/core-chrome-browser';
 import {
   BehaviorSubject,
@@ -76,6 +78,8 @@ export class ProjectNavigationService {
       id: SolutionId;
       navTreeDefinition$: Observable<NavigationTreeDefinition>;
     } | null>(null);
+    const slotDataSourcesBySolutionId = new Map<SolutionId, SlotDataSources>();
+    const extensionRegistry$ = new BehaviorSubject<NavExtensionDefinitionMap>({});
     const kibanaName$ = new BehaviorSubject<string | undefined>(undefined);
     const cloudLinks$ = new BehaviorSubject<CloudLinks>({});
     const projectBreadcrumbs$ = new BehaviorSubject<{
@@ -194,6 +198,18 @@ export class ProjectNavigationService {
           navTreeDefinition$: navTreeDefinition$ as Observable<NavigationTreeDefinition>,
         });
       },
+      setSlotDataSources: (id: SolutionId, slotDataSources: SlotDataSources) => {
+        slotDataSourcesBySolutionId.set(id, slotDataSources);
+      },
+      getActiveSlotDataSources$: () => {
+        return activeSolutionNavId$.pipe(
+          map((id) => (id ? slotDataSourcesBySolutionId.get(id) : undefined))
+        );
+      },
+      setExtensionRegistry: (registry: NavExtensionDefinitionMap) => {
+        extensionRegistry$.next(registry);
+      },
+      getExtensionRegistry$: () => extensionRegistry$.asObservable(),
       getNavigation$: () => navigation$,
       setProjectBreadcrumbs: (
         breadcrumbs: ChromeBreadcrumb | ChromeBreadcrumb[],

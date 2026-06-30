@@ -25,7 +25,7 @@ const ARTIFACT_TAB_PATHS = [
   `${SECURITY_MANAGEMENT_PATH}/endpoint_exceptions`,
 ] as const;
 
-export const createAssetsNavigationTree = (_core: CoreStart): NodeDefinition => {
+export const createAssetsNavigationTree = (_core: CoreStart) => {
   return {
     id: SecurityGroupName.assets,
     icon: 'display',
@@ -89,5 +89,5 @@ export const createAssetsNavigationTree = (_core: CoreStart): NodeDefinition => 
         ],
       },
     ],
-  };
+  } as const satisfies NodeDefinition;
 };

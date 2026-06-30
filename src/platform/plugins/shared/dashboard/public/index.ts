@@ -27,6 +27,10 @@ export type { DashboardListingTab } from './dashboard_listing/types';
 export { DashboardListingTable } from './dashboard_listing';
 export { DashboardTopNav } from './dashboard_top_nav';
 export type { RedirectToProps } from './dashboard_app/types';
+export {
+  RECENTLY_ACCESSED_DASHBOARDS_EXTENSION_ID,
+  createRecentItemsData$,
+} from './dashboard_nav_extensions/extensions';
 
 export type { FindDashboardsByIdResponse } from './dashboard_client';
 

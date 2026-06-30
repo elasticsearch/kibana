@@ -16,7 +16,8 @@
     "@kbn/i18n",
     "@kbn/core",
     "@kbn/deeplinks-security",
-    "@kbn/core-chrome-browser"
+    "@kbn/core-chrome-browser",
+    "@kbn/dashboard-plugin"
   ],
   "exclude": ["target/**/*"]
 }

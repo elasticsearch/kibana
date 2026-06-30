@@ -50,10 +50,28 @@ export interface SecondaryMenuItem {
 export interface SecondaryMenuSection {
   /** Unique identifier for this section. */
   id: string;
-  /** Array of menu items in this section. */
-  items: SecondaryMenuItem[];
+  /** Static menu items in this section. */
+  items?: SecondaryMenuItem[];
   /** Optional section header label (omit for unlabeled sections). */
   label?: string;
+  /** Per-placement slot id (owned by the solution tree) used to resolve the data source. */
+  slotId?: string;
+  /** Id of the plugin-published extension definition that fills this slot. */
+  extensionId?: string;
+  /** When true, the section is only shown in the hover popover. */
+  popoverOnly?: boolean;
+}
+
+/**
+ * Context passed to extension templates when rendering a secondary menu slot.
+ */
+export interface SecondaryNavExtensionPointContext {
+  slotId: string;
+  extensionId: string;
+  primaryItemId: string;
+  sectionId: string;
+  surface: 'popover' | 'sidePanel' | 'overflow';
+  activeItemId?: string;
 }
 
 /**
@@ -72,6 +90,8 @@ export interface MenuItem {
   'data-test-subj'?: string;
   /** Optional badge to display next to the label. */
   badgeType?: BadgeType;
+  /** When true, sections are only shown in the hover popover. */
+  popoverOnly?: boolean;
   /** Optional array of secondary menu sections for nested navigation. */
   sections?: SecondaryMenuSection[];
 }
@@ -128,6 +148,12 @@ export interface NavigationProps {
   sidePanelFooter?: ReactNode;
   /** Optional `data-test-subj` attribute for testing purposes. */
   'data-test-subj'?: string;
+  /** Renders an extension slot by slot id, extension id, and surface context. */
+  renderExtensionPoint?: (
+    slotId: string,
+    extensionId: string,
+    context: SecondaryNavExtensionPointContext
+  ) => ReactNode;
 }
 
 /** Alias for the external package. */
