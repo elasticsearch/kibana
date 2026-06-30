@@ -40,6 +40,8 @@ import { useKibana } from '../../../../../hooks/use_kibana';
 import { useModelSettingsUrl } from '../../../../../hooks/use_model_settings_url';
 import { useStreamsPrivileges } from '../../../../../hooks/use_streams_privileges';
 import { getFormattedError } from '../../../../../util/errors';
+import { useDiscoverySettings } from '../../context';
+import { AppsPanel } from '../apps';
 import { useContinuousExtractionSettings } from './use_continuous_extraction_settings';
 import {
   SignificantEventsTuningConfigEditor,
@@ -49,6 +51,7 @@ import {
 export function SettingsTab() {
   const { core } = useKibana();
   const modelSettingsUrl = useModelSettingsUrl();
+  const { isAppsEnabled } = useDiscoverySettings();
 
   // Saving these settings hits two routes with different privileges: the streams
   // settings route (requires the streams `manage` privilege) and core's UI
@@ -498,6 +501,13 @@ export function SettingsTab() {
           />
         </EuiPanel>
       </EuiPanel>
+
+      {isAppsEnabled && (
+        <>
+          <EuiSpacer />
+          <AppsPanel />
+        </>
+      )}
 
       {hasChanges && (
         <EuiBottomBar data-test-subj="streams-significant-events-settings-bottom-bar">

@@ -7,15 +7,20 @@
 
 import React, { createContext, useContext, useMemo } from 'react';
 import useObservable from 'react-use/lib/useObservable';
-import { STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG } from '@kbn/streams-plugin/common';
+import {
+  STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG,
+  STREAMS_SIGNIFICANT_EVENTS_APPS_ENABLED_FLAG,
+} from '@kbn/streams-plugin/common';
 import { useKibana } from '../../../hooks/use_kibana';
 
 interface DiscoverySettingsContextValue {
   isMemoryEnabled: boolean;
+  isAppsEnabled: boolean;
 }
 
 const DiscoverySettingsContext = createContext<DiscoverySettingsContextValue>({
   isMemoryEnabled: false,
+  isAppsEnabled: false,
 });
 
 export const useDiscoverySettings = () => useContext(DiscoverySettingsContext);
@@ -32,7 +37,15 @@ export const DiscoverySettingsProvider: React.FC<{ children: React.ReactNode }> 
     false
   );
 
-  const value = useMemo(() => ({ isMemoryEnabled }), [isMemoryEnabled]);
+  const isAppsEnabled = useObservable(
+    featureFlags.getBooleanValue$(STREAMS_SIGNIFICANT_EVENTS_APPS_ENABLED_FLAG, false),
+    false
+  );
+
+  const value = useMemo(
+    () => ({ isMemoryEnabled, isAppsEnabled }),
+    [isMemoryEnabled, isAppsEnabled]
+  );
 
   return (
     <DiscoverySettingsContext.Provider value={value}>{children}</DiscoverySettingsContext.Provider>

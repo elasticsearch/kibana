@@ -24,3 +24,9 @@ export const STREAMS_SIGNIFICANT_EVENTS_SEMANTIC_CODE_SEARCH_GROUNDING_ENABLED_F
  * Enables the Streams root cause investigation workflow and agent.
  */
 export const STREAMS_INVESTIGATION_ENABLED_FLAG = 'streams.investigationEnabled';
+
+/**
+ * Enables the Apps panel in significant events settings, where third-party integrations
+ * (e.g. Slack, GitHub, Confluence) can be connected.
+ */
+export const STREAMS_SIGNIFICANT_EVENTS_APPS_ENABLED_FLAG = 'streams.significantEventsAppsEnabled';
