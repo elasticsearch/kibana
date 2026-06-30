@@ -26,10 +26,6 @@ test.describe(
       });
     });
 
-    test.beforeEach(async ({ pageObjects }) => {
-      await pageObjects.discover.setQueryMode('classic');
-    });
-
     test.afterAll(async ({ apiServices, logsSynthtraceEsClient }) => {
       await apiServices.streams.deleteStream(CLASSIC_STREAM_NAME);
       await logsSynthtraceEsClient.clean();

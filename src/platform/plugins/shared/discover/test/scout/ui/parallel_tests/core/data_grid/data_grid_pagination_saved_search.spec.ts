@@ -31,10 +31,9 @@ spaceTest.describe(
       await scoutSpace.uiSettings.set({ 'discover:rowHeightOption': 0 });
     });
 
-    spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
+    spaceTest.beforeEach(async ({ browserAuth }) => {
       // Saving searches and creating dashboard panels require write access.
       await browserAuth.loginAsPrivilegedUser();
-      await pageObjects.discover.setQueryMode('classic');
     });
 
     spaceTest.afterAll(async ({ scoutSpace }) => {
