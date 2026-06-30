@@ -57,8 +57,9 @@ export function initPostSpacesApi(deps: ExternalRouteDeps) {
         try {
           const createdSpace = await spacesClient.create(space);
 
+          const [coreStart] = await getStartServices();
+
           if (!isServerless && packageInfo) {
-            const [coreStart] = await getStartServices();
             await seedAgentChatExperienceForSolutionSpace({
               coreStart,
               log,
@@ -66,6 +67,28 @@ export function initPostSpacesApi(deps: ExternalRouteDeps) {
               solution: createdSpace.solution,
               packageInfo,
             });
+          }
+
+          try {
+            const { agentBuilderPlatform } = await coreStart.plugins.onStart<{
+              agentBuilderPlatform: {
+                tracingFeatures: {
+                  sync: (options: { enabled: boolean; spaceId?: string }) => Promise<void>;
+                };
+              };
+            }>('agentBuilderPlatform');
+
+            if (agentBuilderPlatform.found) {
+              await agentBuilderPlatform.contract.tracingFeatures.sync({
+                enabled: true,
+                spaceId: createdSpace.id,
+              });
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            log.warn(
+              `Failed to sync Agent Builder tracing features for space "${createdSpace.id}": ${errorMessage}`
+            );
           }
 
           return response.ok({ body: createdSpace });

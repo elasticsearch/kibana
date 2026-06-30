@@ -31,7 +31,8 @@
       "kibanaReact"
     ],
     "runtimePluginDependencies": [
-      "security"
+      "security",
+      "agentBuilderPlatform"
     ],
     "extraPublicDirs": [
       "common"
