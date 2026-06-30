@@ -7,25 +7,38 @@
 
 import { platformCoreTools } from '@kbn/agent-builder-common';
 import { defineSkillType } from '@kbn/agent-builder-server/skills/type_definition';
-import { SECURITY_CREATE_DETECTION_RULE_TOOL_ID, SECURITY_LABS_SEARCH_TOOL_ID } from '../../tools';
+import {
+  SECURITY_CREATE_DETECTION_RULE_TOOL_ID,
+  SECURITY_LABS_SEARCH_TOOL_ID,
+  SECURITY_RUN_RULE_PREVIEW_TOOL_ID,
+} from '../../tools';
 
-export const getDetectionRuleEditSkill = () =>
+export const getDetectionRuleEditSkill = ({
+  rulePreviewEnabled,
+}: {
+  rulePreviewEnabled: boolean;
+}) =>
   defineSkillType({
     id: 'detection-rule-edit',
     name: 'detection-rule-edit',
     basePath: 'skills/security/rules',
     description:
       'Guide to creating and editing security detection rules via the rule attachment. Use when a user asks to create, edit, modify, or update a detection rule or its fields (tags, severity, MITRE ATT&CK, schedule, query, etc.).',
-    content: SKILL_CONTENT,
+    content: buildSkillContent({ rulePreviewEnabled }),
     getRegistryTools: () => [
       SECURITY_CREATE_DETECTION_RULE_TOOL_ID,
       SECURITY_LABS_SEARCH_TOOL_ID,
       platformCoreTools.generateEsql,
       platformCoreTools.productDocumentation,
+      ...(rulePreviewEnabled ? [SECURITY_RUN_RULE_PREVIEW_TOOL_ID] : []),
     ],
   });
 
-const SKILL_CONTENT = `# Detection Rule Creation and Editing
+const buildSkillContent = ({
+  rulePreviewEnabled,
+}: {
+  rulePreviewEnabled: boolean;
+}) => `# Detection Rule Creation and Editing
 
 ## When to Use This Skill
 
@@ -82,11 +95,29 @@ Follow these steps exactly. Every step is MANDATORY:
 attachment_update({ attachment_id: "ATTACHMENT_ID", data: { text: "<full stringified rule JSON>" } })
 \`\`\`
 - Render the latest version of the attachment inline.
+${
+  rulePreviewEnabled
+    ? `
+### Step 4: Preview the Rule
 
+After creating a new rule or modifying its query or schedule, run \`security.run_rule_preview\` to validate it fires as expected before saving.
+
+- Pass the current rule object from the attachment as the \`rule\` argument.
+- Defaults to the last hour (\`timeframeStart: "now-1h"\`). Override with a wider range (e.g. \`"now-24h"\`) if no alerts appear and the rule logic looks correct.
+- The tool stores results as a rule preview attachment. Render it inline after the call so the user can inspect the alerts.
+- If the preview returns zero alerts, check the query against the available indices with \`generate_esql\` before concluding the rule is correct.
+`
+    : ''
+}
 
 Checklist before finishing the answer:
 - [ ] Did I call the tool read attachment first?
-- [ ] Did I render inline the latest version of the attachment? ← YOU MUST DO THIS, always render the latest version of the attachment inline.
+- [ ] Did I render inline the latest version of the attachment? ← YOU MUST DO THIS, always render the latest version of the attachment inline.${
+  rulePreviewEnabled
+    ? `
+- [ ] Did I run \`security.run_rule_preview\` after creating or modifying the rule query or schedule?`
+    : ''
+}
 
 ---
 
