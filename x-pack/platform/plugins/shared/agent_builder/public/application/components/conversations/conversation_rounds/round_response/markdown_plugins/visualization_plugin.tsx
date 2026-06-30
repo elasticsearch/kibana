@@ -97,12 +97,12 @@ export function createVisualizationRenderer({
     }
 
     // Handle visualization result. The chat markdown surface renders Lens only;
-    // Vega specs are rendered elsewhere (the visualization attachment) so this
-    // route stays free of the `embeddable` / `presentationUtil` dependencies.
+    // Vega specs are rendered only in the visualization attachment.
     if (toolResult.type === 'visualization') {
       const { data } = toolResult;
 
       if (data.renderer === 'vega') {
+        // this should never happen
         return <EuiText>Vega visualizations are not supported inline here.</EuiText>;
       }
 
