@@ -22,7 +22,8 @@ export const getPendingActionsSummary = async (
   endpointService: EndpointAppContextService,
   spaceId: string,
   /** The Fleet Agent IDs to be checked */
-  agentIDs: string[]
+  agentIDs: string[],
+  ccsEnabled: boolean = false
 ): Promise<EndpointPendingActions[]> => {
   const { data: unExpiredActionList } = await getActionList({
     spaceId,
@@ -30,6 +31,7 @@ export const getPendingActionsSummary = async (
     unExpiredOnly: true,
     elasticAgentIds: agentIDs,
     pageSize: ACTIONS_SEARCH_PAGE_SIZE,
+    ccsEnabled,
   });
 
   // Store a map of `agent_id => array of actions`
@@ -84,7 +86,7 @@ export const getPendingActionsSummary = async (
         // If the metadata documents for all agents has not yet been retrieved, do it now
         if (!endpointMetadataLastUpdated) {
           endpointMetadataLastUpdated = (
-            await metadataService.findHostMetadataForFleetAgents(agentIDs)
+            await metadataService.findHostMetadataForFleetAgents(agentIDs, ccsEnabled)
           ).reduce((acc, endpointMetadata) => {
             acc[endpointMetadata.elastic.agent.id] = new Date(endpointMetadata.event.created);
             return acc;

@@ -16,6 +16,7 @@ import type {
 import { ACTIONS_SEARCH_PAGE_SIZE } from '../constants';
 import { catchAndWrapError } from '../../../utils';
 import { ENDPOINT_ACTION_RESPONSES_INDEX_PATTERN } from '../../../../../common/endpoint/constants';
+import { prefixIndexPatternsWithCcs } from '../../../utils/ccs_utils';
 
 /** @internal */
 const buildSearchQuery = (
@@ -41,6 +42,7 @@ interface FetchActionResponsesOptions {
   actionIds?: string[];
   /** List of specific agent ids to filter for */
   agentIds?: string[];
+  ccsEnabled?: boolean;
 }
 
 export interface FetchActionResponsesResult<
@@ -83,13 +85,17 @@ export const fetchEndpointActionResponses = async <
   esClient,
   actionIds,
   agentIds,
+  ccsEnabled,
 }: FetchActionResponsesOptions): Promise<
   Array<LogsEndpointActionResponse<TOutputContent, TResponseMeta>>
 > => {
   const searchResponse = await esClient
     .search<LogsEndpointActionResponse<TOutputContent, TResponseMeta>>(
       {
-        index: ENDPOINT_ACTION_RESPONSES_INDEX_PATTERN,
+        index: prefixIndexPatternsWithCcs(
+          ENDPOINT_ACTION_RESPONSES_INDEX_PATTERN,
+          ccsEnabled ?? false
+        ),
         size: ACTIONS_SEARCH_PAGE_SIZE,
         query: buildSearchQuery(actionIds, agentIds),
       },
@@ -113,11 +119,12 @@ export const fetchFleetActionResponses = async ({
   esClient,
   actionIds,
   agentIds,
+  ccsEnabled,
 }: FetchActionResponsesOptions): Promise<EndpointActionResponse[]> => {
   const searchResponse = await esClient
     .search<EndpointActionResponse>(
       {
-        index: AGENT_ACTIONS_RESULTS_INDEX,
+        index: prefixIndexPatternsWithCcs(AGENT_ACTIONS_RESULTS_INDEX, ccsEnabled ?? false),
         size: ACTIONS_SEARCH_PAGE_SIZE,
         query: buildSearchQuery(actionIds, agentIds),
       },

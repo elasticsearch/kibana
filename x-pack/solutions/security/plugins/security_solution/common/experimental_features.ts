@@ -69,6 +69,13 @@ export const allowedExperimentalValues = Object.freeze({
   responseActionsEndpointCancel: false,
 
   /**
+   * Enables CCS prefixing of endpoint indices so a Defend agent shipping to a remote ES output
+   * (Fleet remote output) is visible from the managing cluster's Kibana. Off by default while
+   * we test impact on other features.
+   */
+  defendRemoteOutputCcs: false,
+
+  /**
    * Enables the Assistant Model Evaluation advanced setting and API endpoint, introduced in `8.11.0`.
    */
   assistantModelEvaluation: false,

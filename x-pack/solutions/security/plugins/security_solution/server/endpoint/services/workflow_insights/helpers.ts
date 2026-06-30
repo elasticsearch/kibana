@@ -140,9 +140,10 @@ export function buildEsQueryParams(searchParams: SearchParams): QueryDslQueryCon
 
 export async function groupEndpointIdsByOS(
   endpointIds: string[],
-  endpointMetadataService: EndpointMetadataService
+  endpointMetadataService: EndpointMetadataService,
+  ccsEnabled: boolean
 ): Promise<Record<SupportedHostOsType, string[]>> {
-  const metadata = await endpointMetadataService.getMetadataForEndpoints(endpointIds);
+  const metadata = await endpointMetadataService.getMetadataForEndpoints(endpointIds, ccsEnabled);
   return metadata.reduce<Record<string, string[]>>((acc, m) => {
     const os = m.host.os.name.toLowerCase() as SupportedHostOsType;
     if (!acc[os]) {
@@ -224,17 +225,22 @@ export const checkIfRemediationExists = async ({
   insight,
   exceptionListsClient,
   endpointMetadataClient,
+  ccsEnabled = false,
 }: {
   insight: SecurityWorkflowInsight;
   exceptionListsClient: ExceptionListClient;
   endpointMetadataClient: EndpointMetadataService;
+  ccsEnabled?: boolean;
 }): Promise<boolean> => {
   if (insight.type !== WorkflowInsightType.enum.incompatible_antivirus) {
     return false;
   }
 
   // One endpoint only for incompatible antivirus insights
-  const hostMetadata = await endpointMetadataClient.getHostMetadata(insight.target.ids[0]);
+  const hostMetadata = await endpointMetadataClient.getHostMetadata(
+    insight.target.ids[0],
+    ccsEnabled
+  );
 
   const filter = generateTrustedAppsFilter(insight, hostMetadata.Endpoint.policy.applied.id);
 

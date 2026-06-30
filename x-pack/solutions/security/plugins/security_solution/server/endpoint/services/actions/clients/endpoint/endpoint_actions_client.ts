@@ -18,6 +18,7 @@ import type { CancelActionRequestBody } from '../../../../../../common/api/endpo
 import { CustomHttpRequestError } from '../../../../../utils/custom_http_request_error';
 import { getActionRequestExpiration } from '../../utils';
 import { ResponseActionsClientError } from '../errors';
+import { hasConnectedRemoteClusters } from '../../../../utils/ccs_utils';
 import { stringify } from '../../../../utils/stringify';
 import type { HapiReadableStream } from '../../../../../types';
 import type {
@@ -113,9 +114,13 @@ export class EndpointActionsClient extends ResponseActionsClientImpl {
     hosts: HostMetadata[];
   }> {
     const uniqueIds = [...new Set(ids)];
+    const ccsEnabled = await hasConnectedRemoteClusters(
+      this.options.esClient,
+      this.options.endpointService.experimentalFeatures.defendRemoteOutputCcs
+    );
     const foundEndpointHosts = await this.options.endpointService
       .getEndpointMetadataService(this.options.spaceId)
-      .getMetadataForEndpoints(uniqueIds);
+      .getMetadataForEndpoints(uniqueIds, ccsEnabled);
     const validIds = foundEndpointHosts.map((endpoint: HostMetadata) => endpoint.elastic.agent.id);
     const invalidIds = ids.filter((id) => !validIds.includes(id));
 
@@ -134,11 +139,16 @@ export class EndpointActionsClient extends ResponseActionsClientImpl {
   protected async validateRequest(
     actionRequest: ResponseActionsClientWriteActionRequestToEndpointIndexOptions<any, any, any>
   ): Promise<ResponseActionsClientValidateRequestResponse> {
+    const ccsEnabled = await hasConnectedRemoteClusters(
+      this.options.esClient,
+      this.options.endpointService.experimentalFeatures.defendRemoteOutputCcs
+    );
+
     // Memory Dump: ensure that agents/Endpoint support this command
     if (actionRequest.command === 'memory-dump') {
       const endpointMetadata = await this.options.endpointService
         .getEndpointMetadataService(this.options.spaceId)
-        .findHostMetadataForFleetAgents(actionRequest.endpoint_ids);
+        .findHostMetadataForFleetAgents(actionRequest.endpoint_ids, ccsEnabled);
 
       const memDumpType = actionRequest.parameters.type;
       const unsupportedAgents: string[] = [];
@@ -190,7 +200,8 @@ export class EndpointActionsClient extends ResponseActionsClientImpl {
         const actionToCancel = await getActionDetailsById(
           this.options.endpointService,
           this.options.spaceId,
-          actionRequest.parameters.id
+          actionRequest.parameters.id,
+          { ccsEnabled }
         );
 
         if (actionToCancel.agentType !== 'endpoint') {
@@ -227,7 +238,7 @@ export class EndpointActionsClient extends ResponseActionsClientImpl {
         // Ensure this endpoint supports `cancel`
         const endpointDetails = await this.options.endpointService
           .getEndpointMetadataService(this.options.spaceId)
-          .getMetadataForEndpoints(actionRequest.endpoint_ids);
+          .getMetadataForEndpoints(actionRequest.endpoint_ids, ccsEnabled);
 
         for (const endpointMeta of endpointDetails) {
           if (!endpointMeta.Endpoint.capabilities?.includes('cancel')) {

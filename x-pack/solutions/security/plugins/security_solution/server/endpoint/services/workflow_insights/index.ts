@@ -40,6 +40,7 @@ import {
 } from './helpers';
 import { DATA_STREAM_NAME } from './constants';
 import { buildWorkflowInsights } from './builders';
+import { hasConnectedRemoteClusters } from '../../utils/ccs_utils';
 
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_SUPPRESS_SIZE = 1000;
@@ -140,10 +141,16 @@ class SecurityWorkflowInsightsService {
 
     const insightToCreate = cloneDeep(insight);
 
+    const ccsEnabled = await hasConnectedRemoteClusters(
+      this.esClient,
+      this.endpointContext.experimentalFeatures.defendRemoteOutputCcs
+    );
+
     const remediationExists = await checkIfRemediationExists({
       insight: insightToCreate,
       exceptionListsClient: this.endpointContext.getExceptionListsClient(),
       endpointMetadataClient: this.endpointContext.getEndpointMetadataService(spaceId),
+      ccsEnabled,
     });
 
     if (remediationExists) {
@@ -313,10 +320,16 @@ class SecurityWorkflowInsightsService {
       return [];
     }
 
+    const ccsEnabled = await hasConnectedRemoteClusters(
+      this.esClient,
+      this.endpointContext.experimentalFeatures.defendRemoteOutputCcs
+    );
+
     const workflowInsights = await buildWorkflowInsights({
       defendInsights,
       endpointMetadataService: this.endpointContext.getEndpointMetadataService(spaceId),
       esClient: this.esClient,
+      ccsEnabled,
       options: {
         insightType,
         endpointIds,

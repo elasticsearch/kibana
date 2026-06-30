@@ -249,13 +249,25 @@ describe('helpers', () => {
 
       endpointMetadataService.getMetadataForEndpoints.mockResolvedValue(metadata);
 
-      const result = await groupEndpointIdsByOS(endpointIds, endpointMetadataService);
+      const result = await groupEndpointIdsByOS(endpointIds, endpointMetadataService, false);
 
       expect(result).toEqual({
         windows: ['agent1'],
         linux: ['agent2'],
         macos: ['agent3'],
       });
+    });
+
+    it('should pass ccsEnabled to getMetadataForEndpoints', async () => {
+      const endpointIds = ['endpoint1'];
+      endpointMetadataService.getMetadataForEndpoints.mockResolvedValue([]);
+
+      await groupEndpointIdsByOS(endpointIds, endpointMetadataService, true);
+
+      expect(endpointMetadataService.getMetadataForEndpoints).toHaveBeenCalledWith(
+        endpointIds,
+        true
+      );
     });
   });
 
@@ -393,6 +405,31 @@ describe('helpers', () => {
       expect(endpointMetadataClientMock.getHostMetadata).not.toHaveBeenCalled();
     });
 
+    it('should pass ccsEnabled through to getHostMetadata', async () => {
+      const endpointMetadataClientMock = {
+        getHostMetadata: jest
+          .fn()
+          .mockResolvedValue({ Endpoint: { policy: { applied: { id: 'abc123' } } } }),
+      };
+
+      const insight = getDefaultInsight({
+        type: WorkflowInsightType.enum.incompatible_antivirus,
+        remediation: { exception_list_items: [] },
+        target: { type: WorkflowInsightTargetType.enum.endpoint, ids: ['host-id'] },
+      } as Partial<SecurityWorkflowInsight>);
+
+      await checkIfRemediationExists({
+        insight,
+        exceptionListsClient: {
+          findExceptionListItem: jest.fn().mockResolvedValue({ total: 0 }),
+        } as unknown as ExceptionListClient,
+        endpointMetadataClient: endpointMetadataClientMock as unknown as EndpointMetadataService,
+        ccsEnabled: true,
+      });
+
+      expect(endpointMetadataClientMock.getHostMetadata).toHaveBeenCalledWith('host-id', true);
+    });
+
     it('should call exceptionListsClient with the correct filter when valid entries exist', async () => {
       const findExceptionListItemMock = jest.fn().mockResolvedValue({ total: 1 });
       const endpointMetadataClientMock = {
@@ -429,7 +466,7 @@ describe('helpers', () => {
       });
 
       // Ensure the metadata was fetched using the host id
-      expect(endpointMetadataClientMock.getHostMetadata).toHaveBeenCalledWith('host-id');
+      expect(endpointMetadataClientMock.getHostMetadata).toHaveBeenCalledWith('host-id', false);
 
       // Expected filter now includes the policy clause since valid entries exist.
       expect(findExceptionListItemMock).toHaveBeenCalledWith({

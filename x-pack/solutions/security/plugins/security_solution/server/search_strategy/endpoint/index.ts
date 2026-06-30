@@ -5,8 +5,9 @@
  * 2.0.
  */
 
-import { map, mergeMap, from } from 'rxjs';
+import { map, mergeMap, from, forkJoin } from 'rxjs';
 import type { ISearchStrategy, PluginStart } from '@kbn/data-plugin/server';
+import type { CoreStart } from '@kbn/core/server';
 import { shimHitsTotal } from '@kbn/data-plugin/server';
 import type {
   EndpointStrategyParseResponseType,
@@ -18,10 +19,12 @@ import type { EndpointFactory } from './factory/types';
 
 import type { EndpointAppContext } from '../../endpoint/types';
 import { endpointFactory } from './factory';
+import { hasConnectedRemoteClusters } from '../../endpoint/utils/ccs_utils';
 
 export const endpointSearchStrategyProvider = <T extends EndpointFactoryQueryTypes>(
   data: PluginStart,
-  endpointContext: EndpointAppContext
+  endpointContext: EndpointAppContext,
+  esClient: CoreStart['elasticsearch']['client']
 ): ISearchStrategy<EndpointStrategyRequestType<T>, EndpointStrategyResponseType<T>> => {
   const es = data.search.searchAsInternalUser as unknown as ISearchStrategy<
     EndpointStrategyRequestType<T>,
@@ -33,12 +36,19 @@ export const endpointSearchStrategyProvider = <T extends EndpointFactoryQueryTyp
       if (request.factoryQueryType == null) {
         throw new Error('factoryQueryType is required');
       }
-      return from(endpointContext.service.getEndpointAuthz(deps.request)).pipe(
-        mergeMap((authz) => {
+      return forkJoin({
+        authz: from(endpointContext.service.getEndpointAuthz(deps.request)),
+        ccsEnabled: hasConnectedRemoteClusters(
+          esClient.asInternalUser,
+          endpointContext.service.experimentalFeatures.defendRemoteOutputCcs
+        ),
+      }).pipe(
+        mergeMap(({ authz, ccsEnabled }) => {
           const queryFactory: EndpointFactory<T> = endpointFactory[request.factoryQueryType];
           const strictRequest = {
             factoryQueryType: request.factoryQueryType,
             sort: request.sort,
+            ccsEnabled,
             ...('alertIds' in request ? { alertIds: request.alertIds } : {}),
             ...('agentId' in request ? { agentId: request.agentId } : {}),
             ...('expiration' in request ? { expiration: request.expiration } : {}),

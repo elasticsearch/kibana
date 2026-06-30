@@ -68,7 +68,7 @@ describe('Policy Response Services', () => {
     });
 
     it('should search using the agent id provided on input', async () => {
-      await getPolicyResponseByAgentId('1-2-3', esClientMock, fleetServicesMock);
+      await getPolicyResponseByAgentId('1-2-3', esClientMock, fleetServicesMock, false);
 
       expect(esClientMock.search).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -85,8 +85,18 @@ describe('Policy Response Services', () => {
       );
     });
 
+    it('should search using the CCS-prefixed policy index when ccs is enabled', async () => {
+      await getPolicyResponseByAgentId('1-2-3', esClientMock, fleetServicesMock, true);
+
+      expect(esClientMock.search).toHaveBeenCalledWith(
+        expect.objectContaining({
+          index: `${policyIndexPattern},*:${policyIndexPattern}`,
+        })
+      );
+    });
+
     it('should validate that agent id is in current space', async () => {
-      await getPolicyResponseByAgentId('1-2-3', esClientMock, fleetServicesMock);
+      await getPolicyResponseByAgentId('1-2-3', esClientMock, fleetServicesMock, false);
 
       expect(fleetServicesMock.ensureInCurrentSpace).toHaveBeenCalledWith({ agentIds: ['1-2-3'] });
     });

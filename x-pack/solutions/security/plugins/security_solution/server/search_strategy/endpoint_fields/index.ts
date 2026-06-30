@@ -8,6 +8,7 @@
 import { from } from 'rxjs';
 import type { DataViewsServerPluginStart } from '@kbn/data-views-plugin/server';
 import type { ISearchStrategy, SearchStrategyDependencies } from '@kbn/data-plugin/server';
+import type { CoreStart } from '@kbn/core/server';
 
 import { requestIndexFieldSearch } from '@kbn/timelines-plugin/server/search_strategy/index_fields';
 
@@ -21,6 +22,10 @@ import type { EndpointAppContextService } from '../../endpoint/endpoint_app_cont
 import { EndpointAuthorizationError } from '../../endpoint/errors';
 import { parseRequest } from './parse_request';
 import { buildIndexNameWithNamespace } from '../../../common/endpoint/utils/index_name_utilities';
+import {
+  hasConnectedRemoteClusters,
+  prefixIndexPatternsWithCcs,
+} from '../../endpoint/utils/ccs_utils';
 
 /**
  * EndpointFieldProvider mimics indexField provider from timeline plugin: x-pack/solutions/security/plugins/timelines/server/search_strategy/index_fields/index.ts
@@ -29,7 +34,8 @@ import { buildIndexNameWithNamespace } from '../../../common/endpoint/utils/inde
  */
 export const endpointFieldsProvider = (
   context: EndpointAppContextService,
-  indexPatterns: DataViewsServerPluginStart
+  indexPatterns: DataViewsServerPluginStart,
+  esClient: CoreStart['elasticsearch']['client']
 ): ISearchStrategy<IndexFieldsStrategyRequest<'indices'>, IndexFieldsStrategyResponse> => {
   // require the fields once we actually need them, rather than ahead of time, and pass
   // them to createFieldItem to reduce the amount of work done as much as possible
@@ -39,7 +45,9 @@ export const endpointFieldsProvider = (
 
   return {
     search: (request, _, deps) =>
-      from(requestEndpointFieldsSearch(context, request, deps, beatFields, indexPatterns)),
+      from(
+        requestEndpointFieldsSearch(context, request, deps, beatFields, indexPatterns, esClient)
+      ),
   };
 };
 
@@ -48,9 +56,14 @@ export const requestEndpointFieldsSearch = async (
   request: IndexFieldsStrategyRequest<'indices'>,
   deps: SearchStrategyDependencies,
   beatFields: BeatFields,
-  indexPatterns: DataViewsServerPluginStart
+  indexPatterns: DataViewsServerPluginStart,
+  esClient: CoreStart['elasticsearch']['client']
 ): Promise<IndexFieldsStrategyResponse> => {
   const isTAAdvancedModeFeatureFlagEnabled = context.experimentalFeatures.trustedAppsAdvancedMode;
+  const ccsEnabled = await hasConnectedRemoteClusters(
+    esClient.asInternalUser,
+    context.experimentalFeatures.defendRemoteOutputCcs
+  );
   let parsedRequest = parseRequest(request);
 
   if (
@@ -91,6 +104,18 @@ export const requestEndpointFieldsSearch = async (
   ) {
     throw new EndpointAuthorizationError();
   }
+
+  const ccsIndexPattern = prefixIndexPatternsWithCcs(parsedRequest.indices[0], ccsEnabled);
+
+  parsedRequest = {
+    ...parsedRequest,
+    // CCS prefixing yields `local,*:local`. The downstream existence check
+    // (`findExistingIndices`) runs `field_caps` with `allow_no_indices: false`, which
+    // errors on the local entry when all endpoint data lives on the remote cluster
+    // (remote-output topology). Passing each pattern separately lets the remote (`*:`)
+    // entry resolve on its own instead of the empty local entry failing the whole call.
+    indices: ccsEnabled ? ccsIndexPattern.split(',') : [ccsIndexPattern],
+  };
 
   return requestIndexFieldSearch(parsedRequest, deps, beatFields, indexPatterns, true);
 };

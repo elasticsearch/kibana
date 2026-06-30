@@ -14,6 +14,7 @@ import { catchAndWrapError } from '../../utils';
 import type { EndpointAppContext } from '../../types';
 import { INITIAL_POLICY_ID } from '.';
 import type { GetHostPolicyResponse, HostPolicyResponse } from '../../../../common/endpoint/types';
+import { prefixIndexPatternsWithCcs } from '../../utils/ccs_utils';
 
 export const getESQueryPolicyResponseByAgentID = (
   agentID: string,
@@ -49,9 +50,13 @@ export const getESQueryPolicyResponseByAgentID = (
 export async function getPolicyResponseByAgentId(
   agentID: string,
   esClient: ElasticsearchClient,
-  fleetServices: EndpointFleetServicesInterface
+  fleetServices: EndpointFleetServicesInterface,
+  ccsEnabled: boolean
 ): Promise<GetHostPolicyResponse | undefined> {
-  const query = getESQueryPolicyResponseByAgentID(agentID, policyIndexPattern);
+  const query = getESQueryPolicyResponseByAgentID(
+    agentID,
+    prefixIndexPatternsWithCcs(policyIndexPattern, ccsEnabled)
+  );
   const response = await esClient.search<HostPolicyResponse>(query).catch(catchAndWrapError);
 
   if (response.hits.hits.length > 0 && response.hits.hits[0]._source != null) {

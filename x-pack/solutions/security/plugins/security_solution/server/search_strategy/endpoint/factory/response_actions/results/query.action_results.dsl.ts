@@ -8,15 +8,17 @@
 import type { ISearchRequestParams } from '@kbn/search-types';
 import type { ActionResponsesRequestOptions } from '../../../../../../common/search_strategy/endpoint/response_actions';
 import { ENDPOINT_ACTION_RESPONSES_INDEX } from '../../../../../../common/endpoint/constants';
+import { prefixIndexPatternsWithCcs } from '../../../../../endpoint/utils/ccs_utils';
 
 export const buildActionResultsQuery = ({
   actionId,
   sort,
+  ccsEnabled,
 }: ActionResponsesRequestOptions): ISearchRequestParams => {
   const fields = [{ field: '*' }, { field: 'EndpointActions.*', include_unmapped: true }];
   const dslQuery = {
     allow_no_indices: true,
-    index: [ENDPOINT_ACTION_RESPONSES_INDEX],
+    index: prefixIndexPatternsWithCcs(ENDPOINT_ACTION_RESPONSES_INDEX, ccsEnabled ?? false),
     fields,
     _source: false,
     size: 1,

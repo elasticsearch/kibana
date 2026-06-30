@@ -24,6 +24,7 @@ import {
   WorkflowInsightSourceType,
   WorkflowInsightTargetType,
 } from '../../../../../common/endpoint/types/workflow_insights';
+import { prefixIndexPatternsWithCcs } from '../../../utils/ccs_utils';
 import type { FileEventDoc } from '../helpers';
 import { getValidCodeSignature, groupEndpointIdsByOS } from '../helpers';
 
@@ -31,10 +32,14 @@ export async function buildIncompatibleAntivirusWorkflowInsights(
   params: BuildWorkflowInsightParams
 ): Promise<SecurityWorkflowInsight[]> {
   const currentTime = moment();
-  const { defendInsights, options, endpointMetadataService, esClient } = params;
+  const { defendInsights, options, endpointMetadataService, esClient, ccsEnabled } = params;
   const { insightType, endpointIds, connectorId, model } = options;
 
-  const osEndpointIdsMap = await groupEndpointIdsByOS(endpointIds, endpointMetadataService);
+  const osEndpointIdsMap = await groupEndpointIdsByOS(
+    endpointIds,
+    endpointMetadataService,
+    ccsEnabled
+  );
 
   const insightsPromises = defendInsights.map(
     async (defendInsight: DefendInsight): Promise<SecurityWorkflowInsight[]> => {
@@ -43,7 +48,7 @@ export async function buildIncompatibleAntivirusWorkflowInsights(
 
       const codeSignaturesHits = (
         await esClient.search<FileEventDoc>({
-          index: FILE_EVENTS_INDEX_PATTERN,
+          index: prefixIndexPatternsWithCcs(FILE_EVENTS_INDEX_PATTERN, ccsEnabled),
           size: eventIds.length,
           query: {
             bool: {

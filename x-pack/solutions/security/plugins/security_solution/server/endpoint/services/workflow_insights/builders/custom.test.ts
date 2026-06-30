@@ -60,6 +60,7 @@ describe('buildCustomWorkflowInsights', () => {
         },
       }),
     } as unknown as ElasticsearchClient,
+    ccsEnabled: false,
   });
 
   const buildExpectedInsight = (

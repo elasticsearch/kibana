@@ -17,7 +17,9 @@ import {
   WorkflowInsightTargetType,
   WorkflowInsightActionType,
 } from '../../../../../common/endpoint/types/workflow_insights';
+import { FILE_EVENTS_INDEX_PATTERN } from '../../../../../common/endpoint/constants';
 import { createMockEndpointAppContext } from '../../../mocks';
+import { prefixIndexPatternsWithCcs } from '../../../utils/ccs_utils';
 import { groupEndpointIdsByOS } from '../helpers';
 import { buildIncompatibleAntivirusWorkflowInsights } from './incompatible_antivirus';
 
@@ -59,6 +61,7 @@ describe('buildIncompatibleAntivirusWorkflowInsights', () => {
         },
       }),
     } as unknown as ElasticsearchClient,
+    ccsEnabled: false,
     options: {
       insightType: 'incompatible_antivirus',
       endpointIds: ['endpoint-1'],
@@ -137,7 +140,8 @@ describe('buildIncompatibleAntivirusWorkflowInsights', () => {
     expect(result).toEqual([buildExpectedInsight('windows')]);
     expect(groupEndpointIdsByOS).toHaveBeenCalledWith(
       ['endpoint-1'],
-      params.endpointMetadataService
+      params.endpointMetadataService,
+      false
     );
   });
 
@@ -176,7 +180,8 @@ describe('buildIncompatibleAntivirusWorkflowInsights', () => {
     ]);
     expect(groupEndpointIdsByOS).toHaveBeenCalledWith(
       ['endpoint-1'],
-      params.endpointMetadataService
+      params.endpointMetadataService,
+      false
     );
   });
 
@@ -213,7 +218,8 @@ describe('buildIncompatibleAntivirusWorkflowInsights', () => {
     ]);
     expect(groupEndpointIdsByOS).toHaveBeenCalledWith(
       ['endpoint-1'],
-      params.endpointMetadataService
+      params.endpointMetadataService,
+      false
     );
   });
 
@@ -309,7 +315,8 @@ describe('buildIncompatibleAntivirusWorkflowInsights', () => {
     expect(result).toEqual([buildExpectedInsight('macos', 'process.code_signature', 'test.com')]);
     expect(groupEndpointIdsByOS).toHaveBeenCalledWith(
       ['endpoint-1'],
-      params.endpointMetadataService
+      params.endpointMetadataService,
+      false
     );
   });
 
@@ -334,5 +341,28 @@ describe('buildIncompatibleAntivirusWorkflowInsights', () => {
 
     const result = await buildIncompatibleAntivirusWorkflowInsights(params);
     expect(result).toEqual([buildExpectedInsight('macos')]);
+  });
+
+  it('should prefix file events index pattern when ccsEnabled is true', async () => {
+    (groupEndpointIdsByOS as jest.Mock).mockResolvedValue({
+      windows: ['endpoint-1'],
+    });
+
+    const params = generateParams();
+    params.ccsEnabled = true;
+    const searchMock = jest.fn().mockResolvedValue({
+      hits: {
+        hits: [],
+      },
+    });
+    params.esClient.search = searchMock;
+
+    await buildIncompatibleAntivirusWorkflowInsights(params);
+
+    expect(searchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        index: prefixIndexPatternsWithCcs(FILE_EVENTS_INDEX_PATTERN, true),
+      })
+    );
   });
 });

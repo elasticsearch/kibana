@@ -30,12 +30,14 @@ export const getActionDetailsById = async <T extends ActionDetails = ActionDetai
   actionId: string,
   {
     bypassSpaceValidation = false,
+    ccsEnabled = false,
   }: Partial<{
     /**
      * if `true`, then no space validations will be done on the action retrieved. Default is `false`.
      * USE IT CAREFULLY!
      */
     bypassSpaceValidation: boolean;
+    ccsEnabled: boolean;
   }> = {}
 ): Promise<T> => {
   let normalizedActionRequest: ReturnType<typeof mapToNormalizedActionRequest> | undefined;
@@ -51,6 +53,7 @@ export const getActionDetailsById = async <T extends ActionDetails = ActionDetai
       fetchActionResponses({
         esClient: endpointService.getInternalEsClient(),
         actionIds: [actionId],
+        ccsEnabled,
       }),
     ]);
 

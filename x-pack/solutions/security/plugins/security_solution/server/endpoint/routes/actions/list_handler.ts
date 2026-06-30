@@ -24,6 +24,7 @@ import type {
   ResponseActionStatus,
 } from '../../../../common/endpoint/service/response_actions/constants';
 import { doesLogsEndpointActionsIndexExist } from '../../utils';
+import { hasConnectedRemoteClusters } from '../../utils/ccs_utils';
 
 const formatRequestParams = <
   T extends string | ResponseActionsApiCommandNames | ResponseActionAgentType
@@ -65,6 +66,10 @@ export const actionListHandler = (
     const activeSpaceId = (await context.securitySolution).getSpaceId();
 
     try {
+      const ccsEnabled = await hasConnectedRemoteClusters(
+        esClient,
+        endpointContext.service.experimentalFeatures.defendRemoteOutputCcs
+      );
       const indexExists = await doesLogsEndpointActionsIndexExist({
         esClient,
         logger,
@@ -91,6 +96,7 @@ export const actionListHandler = (
 
         spaceId: activeSpaceId,
         endpointService: endpointContext.service,
+        ccsEnabled,
       };
       // wrapper method to branch logic for
       // normal paged search via page, size

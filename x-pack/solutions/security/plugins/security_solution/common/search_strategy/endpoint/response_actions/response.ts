@@ -20,6 +20,7 @@ export interface ActionResponsesRequestOptions extends RequestBasicOptions {
     field: string;
   };
   agents: number;
+  ccsEnabled?: boolean;
 }
 
 export interface ActionResponsesRequestStrategyResponse

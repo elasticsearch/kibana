@@ -20,6 +20,7 @@ export interface BuildWorkflowInsightParams {
   defendInsights: DefendInsight[];
   endpointMetadataService: EndpointMetadataService;
   esClient: ElasticsearchClient;
+  ccsEnabled: boolean;
   options: {
     insightType: WorkflowInsightType;
     endpointIds: string[];

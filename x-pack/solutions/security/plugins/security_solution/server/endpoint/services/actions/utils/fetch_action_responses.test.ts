@@ -130,6 +130,23 @@ describe('fetchActionResponses()', () => {
     );
   });
 
+  it('should query CCS-prefixed response indexes when ccsEnabled is true', async () => {
+    await fetchActionResponses({ esClient: esClientMock, ccsEnabled: true });
+
+    expect(esClientMock.search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        index: `${AGENT_ACTIONS_RESULTS_INDEX},*:${AGENT_ACTIONS_RESULTS_INDEX}`,
+      }),
+      { ignore: [404] }
+    );
+    expect(esClientMock.search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        index: `${ENDPOINT_ACTION_RESPONSES_INDEX_PATTERN},*:${ENDPOINT_ACTION_RESPONSES_INDEX_PATTERN}`,
+      }),
+      { ignore: [404] }
+    );
+  });
+
   it('should filter by agentIds', async () => {
     await fetchActionResponses({ esClient: esClientMock, agentIds: ['a', 'b', 'c'] });
     const expectedQuery = {
