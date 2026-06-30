@@ -19,6 +19,16 @@ import { isNonEmptyString } from '@kbn/zod-helpers/v4';
 
 import { AlertStatusExceptClosed, Reason } from '../../../model/alert.gen';
 
+/**
+ * Elasticsearch runtime field type.
+ */
+export const RuntimeFieldType = lazySchema(() =>
+  z.enum(['keyword', 'long', 'double', 'date', 'ip', 'boolean', 'geo_point'])
+);
+export type RuntimeFieldType = z.infer<typeof RuntimeFieldType>;
+export type RuntimeFieldTypeEnum = typeof RuntimeFieldType.enum;
+export const RuntimeFieldTypeEnum = RuntimeFieldType.enum;
+
 export const SetAlertsStatusByIdsBase = lazySchema(() =>
   z.object({
     /**
@@ -52,6 +62,10 @@ export const SetAlertsStatusByQueryBase = lazySchema(() =>
     query: z.object({}).catchall(z.unknown()),
     status: AlertStatusExceptClosed,
     conflicts: z.enum(['abort', 'proceed']).optional().default('abort'),
+    /**
+     * Optional map of field name to runtime field type. For each entry, the server defines a runtime field of the given type that reads its value from `_source[fieldName]` and attaches it to the underlying `_update_by_query` as `runtime_mappings`. Allows the `query` to reference non-ECS fields stored on the alert `_source` but not in the alerts index mapping — for example, runtime fields the rule's source index defined at the time the alerts were created.
+     */
+    runtime_fields: z.object({}).catchall(RuntimeFieldType).optional(),
   })
 );
 export type SetAlertsStatusByQueryBase = z.infer<typeof SetAlertsStatusByQueryBase>;
@@ -62,6 +76,10 @@ export const CloseAlertsByQuery = lazySchema(() =>
     status: z.literal('closed'),
     conflicts: z.enum(['abort', 'proceed']).optional().default('abort'),
     reason: Reason.optional(),
+    /**
+     * Optional map of field name to runtime field type. For each entry, the server defines a runtime field of the given type that reads its value from `_source[fieldName]` and attaches it to the underlying `_update_by_query` as `runtime_mappings`. Allows the `query` to reference non-ECS fields stored on the alert `_source` but not in the alerts index mapping — for example, runtime fields the rule's source index defined at the time the alerts were created.
+     */
+    runtime_fields: z.object({}).catchall(RuntimeFieldType).optional(),
   })
 );
 export type CloseAlertsByQuery = z.infer<typeof CloseAlertsByQuery>;

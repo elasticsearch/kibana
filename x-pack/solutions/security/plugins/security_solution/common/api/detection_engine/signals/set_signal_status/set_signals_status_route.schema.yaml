@@ -141,6 +141,18 @@ paths:
 
 components:
   schemas:
+    RuntimeFieldType:
+      type: string
+      enum:
+        - keyword
+        - long
+        - double
+        - date
+        - ip
+        - boolean
+        - geo_point
+      description: >-
+        Elasticsearch runtime field type.
     SetAlertsStatusByIdsBase:
       type: object
       properties:
@@ -197,6 +209,19 @@ components:
             - abort
             - proceed
           default: abort
+        runtime_fields:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RuntimeFieldType'
+          description: >-
+            Optional map of field name to runtime field type. For each
+            entry, the server defines a runtime field of the given type
+            that reads its value from `_source[fieldName]` and attaches it
+            to the underlying `_update_by_query` as `runtime_mappings`.
+            Allows the `query` to reference non-ECS fields stored on the
+            alert `_source` but not in the alerts index mapping — for
+            example, runtime fields the rule's source index defined at the
+            time the alerts were created.
       required: [query, status]
 
     CloseAlertsByQuery:
@@ -216,6 +241,19 @@ components:
           default: abort
         reason:
           $ref: '../../../model/alert.schema.yaml#/components/schemas/Reason'
+        runtime_fields:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RuntimeFieldType'
+          description: >-
+            Optional map of field name to runtime field type. For each
+            entry, the server defines a runtime field of the given type
+            that reads its value from `_source[fieldName]` and attaches it
+            to the underlying `_update_by_query` as `runtime_mappings`.
+            Allows the `query` to reference non-ECS fields stored on the
+            alert `_source` but not in the alerts index mapping — for
+            example, runtime fields the rule's source index defined at the
+            time the alerts were created.
       required: [query, status]
 
     SetAlertsStatusByQuery:

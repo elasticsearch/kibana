@@ -62,6 +62,7 @@ import { useCloseAlertsFromExceptions } from '../../logic/use_close_alerts';
 import { useFindExceptionListReferences } from '../../logic/use_find_references';
 import { enrichExceptionItemsForUpdate } from '../flyout_components/utils';
 import { ExceptionItemComments } from '../item_comments';
+import type { RuntimeFieldType } from '../../../../../common/api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
 import { createExceptionItemsReducer } from './reducer';
 import { useEditExceptionItems } from './use_edit_exception';
 
@@ -118,6 +119,9 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
   const [isClosingAlerts, closeAlerts] = useCloseAlertsFromExceptions();
   const { read: canReadExceptions } = useUserPrivileges().rulesPrivileges.exceptions;
   const { hasAlertsUpdate } = useAlertsPrivileges();
+  const [runtimeFieldsForBulkClose, setRuntimeFieldsForBulkClose] = useState<
+    Record<string, RuntimeFieldType>
+  >({});
 
   const [
     {
@@ -334,7 +338,13 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
           listType === ExceptionListTypeEnum.RULE_DEFAULT ? ruleDefaultRule : referencedRules;
 
         if (closeAlerts != null && !isEmpty(ruleIdsForBulkClose) && bulkCloseAlerts) {
-          await closeAlerts(ruleIdsForBulkClose, items, undefined, bulkCloseIndex);
+          await closeAlerts(
+            ruleIdsForBulkClose,
+            items,
+            undefined,
+            bulkCloseIndex,
+            runtimeFieldsForBulkClose
+          );
         }
 
         onConfirm(true);
@@ -357,6 +367,7 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
     bulkCloseAlerts,
     onConfirm,
     bulkCloseIndex,
+    runtimeFieldsForBulkClose,
     onCancel,
     expireTime,
   ]);
@@ -510,9 +521,11 @@ const EditExceptionFlyoutComponent: React.FC<EditExceptionFlyoutProps> = ({
               shouldBulkCloseAlert={bulkCloseAlerts}
               disableBulkClose={disableBulkClose}
               exceptionListItems={exceptionItems}
+              sourceIndexPatterns={indexPatterns}
               onDisableBulkClose={setDisableBulkCloseAlerts}
               onUpdateBulkCloseIndex={setBulkCloseIndex}
               onBulkCloseCheckboxChange={setBulkCloseAlerts}
+              onRuntimeFieldsChange={setRuntimeFieldsForBulkClose}
             />
           </>
         )}

@@ -19,6 +19,7 @@ project:
 dependsOn:
   - '@kbn/scout'
   - '@kbn/es'
+  - '@kbn/test-subj-selector'
 tags:
   - test-helper
   - package

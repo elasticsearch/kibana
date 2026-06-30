@@ -5470,6 +5470,17 @@ components:
           type: object
         reason:
           $ref: '#/components/schemas/Reason'
+        runtime_fields:
+          additionalProperties:
+            $ref: '#/components/schemas/RuntimeFieldType'
+          description: Optional map of field name to runtime field type. For each entry,
+            the server defines a runtime field of the given type that reads its
+            value from `_source[fieldName]` and attaches it to the underlying
+            `_update_by_query` as `runtime_mappings`. Allows the `query` to
+            reference non-ECS fields stored on the alert `_source` but not in
+            the alerts index mapping — for example, runtime fields the rule's
+            source index defined at the time the alerts were created.
+          type: object
         status:
           enum:
             - closed
@@ -9419,6 +9430,17 @@ components:
               $ref: '#/components/schemas/RunScriptOsConfigValues'
       required:
         - command
+    RuntimeFieldType:
+      description: Elasticsearch runtime field type.
+      enum:
+        - keyword
+        - long
+        - double
+        - date
+        - ip
+        - boolean
+        - geo_point
+      type: string
     SavedObjectResolveAliasPurpose:
       enum:
         - savedObjectConversion
@@ -10012,6 +10034,17 @@ components:
           type: string
         query:
           additionalProperties: true
+          type: object
+        runtime_fields:
+          additionalProperties:
+            $ref: '#/components/schemas/RuntimeFieldType'
+          description: Optional map of field name to runtime field type. For each entry,
+            the server defines a runtime field of the given type that reads its
+            value from `_source[fieldName]` and attaches it to the underlying
+            `_update_by_query` as `runtime_mappings`. Allows the `query` to
+            reference non-ECS fields stored on the alert `_source` but not in
+            the alerts index mapping — for example, runtime fields the rule's
+            source index defined at the time the alerts were created.
           type: object
         status:
           $ref: '#/components/schemas/AlertStatusExceptClosed'

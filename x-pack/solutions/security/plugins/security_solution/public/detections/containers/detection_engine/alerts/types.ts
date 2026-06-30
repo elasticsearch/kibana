@@ -7,6 +7,7 @@
 
 import type { AlertClosingReason } from '../../../../../common/types';
 import type { Status } from '../../../../../common/api/detection_engine';
+import type { RuntimeFieldType } from '../../../../../common/api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
 
 export interface BasicSignals {
   signal: AbortSignal;
@@ -44,6 +45,15 @@ export interface UpdateAlertStatusByQueryProps {
   status: Status;
   signal?: AbortSignal;
   reason?: AlertClosingReason;
+  /**
+   * Optional map of field name to ES runtime field type. Server synthesizes
+   * a `_source`-reading runtime field per entry and attaches it to the
+   * underlying `_update_by_query` so the close filter can reference fields
+   * that aren't natively mapped on the alerts index (e.g. runtime fields
+   * defined on the rule's source index — workaround for
+   * elastic/security-ml#677).
+   */
+  runtimeFields?: Record<string, RuntimeFieldType>;
 }
 
 export interface UpdateAlertStatusByIdsProps {

@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`buildSourceReadingRuntimeField produces a stable script for a scalar runtime field type 1`] = `
+Object {
+  "script": Object {
+    "params": Object {
+      "fieldName": "source.ip_ecs",
+    },
+    "source": "
+      def v = params._source[params.fieldName];
+      if (v == null) {
+        def cur = params._source;
+        for (def part : params.fieldName.splitOnToken('.')) {
+          if (!(cur instanceof Map)) { cur = null; break; }
+          cur = cur.get(part);
+        }
+        v = cur;
+      }
+      if (v != null) {
+        if (v instanceof List) {
+          for (def item : v) { if (item != null) emit(item); }
+        } else {
+          emit(v);
+        }
+      }
+    ",
+  },
+  "type": "ip",
+}
+`;

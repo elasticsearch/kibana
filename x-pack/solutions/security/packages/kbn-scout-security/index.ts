@@ -11,6 +11,9 @@ export { test, spaceTest } from './src/playwright';
 // Security-specific test constants
 export { CUSTOM_QUERY_RULE } from './src/playwright/constants/detection_rules';
 
+// Security-specific test enums
+export { AddExceptionButtonType } from './src/playwright/fixtures/test/page_objects';
+
 // re-exported test framework from @kbn/scout
 export { lighthouseTest, apiTest, globalSetupHook, globalTeardownHook, tags } from '@kbn/scout';
 

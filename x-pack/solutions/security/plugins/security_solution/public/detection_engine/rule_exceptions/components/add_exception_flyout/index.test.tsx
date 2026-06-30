@@ -346,49 +346,54 @@ describe('When the add exception modal is opened', () => {
     describe('bulk closeable alert data is passed in', () => {
       let wrapper: ReactWrapper;
       beforeEach(async () => {
-        mockUseFetchIndex.mockImplementation(() => [
-          false,
-          {
-            indexPatterns: createStubIndexPattern({
-              spec: {
-                id: '1234',
-                title: 'filebeat-*',
-                fields: {
-                  'event.code': {
-                    name: 'event.code',
-                    type: 'string',
-                    aggregatable: true,
-                    searchable: true,
-                  },
-                  'file.path.caseless': {
-                    name: 'file.path.caseless',
-                    type: 'string',
-                    aggregatable: true,
-                    searchable: true,
-                  },
-                  subject_name: {
-                    name: 'subject_name',
-                    type: 'string',
-                    aggregatable: true,
-                    searchable: true,
-                  },
-                  trusted: {
-                    name: 'trusted',
-                    type: 'string',
-                    aggregatable: true,
-                    searchable: true,
-                  },
-                  'file.hash.sha256': {
-                    name: 'file.hash.sha256',
-                    type: 'string',
-                    aggregatable: true,
-                    searchable: true,
-                  },
-                },
+        const stubFields = createStubIndexPattern({
+          spec: {
+            id: '1234',
+            title: 'filebeat-*',
+            fields: {
+              'event.code': {
+                name: 'event.code',
+                type: 'string',
+                aggregatable: true,
+                searchable: true,
               },
-            }),
+              'file.path.caseless': {
+                name: 'file.path.caseless',
+                type: 'string',
+                aggregatable: true,
+                searchable: true,
+              },
+              subject_name: {
+                name: 'subject_name',
+                type: 'string',
+                aggregatable: true,
+                searchable: true,
+              },
+              trusted: {
+                name: 'trusted',
+                type: 'string',
+                aggregatable: true,
+                searchable: true,
+              },
+              'file.hash.sha256': {
+                name: 'file.hash.sha256',
+                type: 'string',
+                aggregatable: true,
+                searchable: true,
+              },
+            },
           },
-        ]);
+        });
+        mockUseFetchIndex.mockImplementation(() => [false, { indexPatterns: stubFields }]);
+        // After elastic/kibana#253666 the bulk-close gate sources its fields
+        // from `useFetchIndexPatterns` (the same data view backing the
+        // exception field picker) instead of the alerts wildcard. Surface the
+        // same set of fields here so the gate can recognise `file.hash.sha256`.
+        mockFetchIndexPatterns.mockImplementation(() => ({
+          isLoading: false,
+          indexPatterns: stubFields,
+          getExtendedFields: () => Promise.resolve([]),
+        }));
         wrapper = mount(
           <TestProviders>
             <AddExceptionFlyout
