@@ -13,12 +13,15 @@ import type { FieldFormatsStart } from '@kbn/field-formats-plugin/public';
 import { FormattedMessage } from '@kbn/i18n-react';
 import deepEqual from 'fast-deep-equal';
 import { memoize } from 'lodash';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { BehaviorSubject } from 'rxjs';
+import type { Filter, Query, TimeRange } from '@kbn/es-query';
 import type { AnomalySwimLaneEmbeddableState } from '@kbn/ml-server-schemas/embeddables/anomaly_swimlane';
 import { ANOMALY_SWIMLANE_EMBEDDABLE_TYPE } from '@kbn/ml-common-types/embeddables/anomaly_swimlane';
 import { transformOut } from '../../common/embeddables/anomaly_swimlane/transform_out';
 import type { AnomalySwimLaneAttachmentData } from '../../common/util/cases_utils';
 import type { AnomalySwimLaneEmbeddableApi } from '../embeddables/anomaly_swimlane/types';
+import type { AnomalySwimLaneAttachmentState } from '../embeddables';
 
 type AnomalySwimLaneViewProps = UnifiedValueAttachmentViewProps<AnomalySwimLaneAttachmentData>;
 
@@ -36,6 +39,27 @@ export const initComponent = memoize((fieldFormats: FieldFormatsStart) => {
 
       const embeddableState = transformOut(
         attachmentState as unknown as AnomalySwimLaneEmbeddableState
+      );
+
+      // transformOut drops query/filters, so read them from the raw state.
+      const { query, filters } = attachmentState as Partial<
+        Pick<AnomalySwimLaneAttachmentState, 'query' | 'filters'>
+      >;
+
+      const parentApi = useMemo(
+        () => ({
+          getSerializedStateForChild: () => embeddableState,
+          query$: new BehaviorSubject<Query | undefined>(query),
+          filters$: new BehaviorSubject<Filter[] | undefined>(filters ?? []),
+          timeRange$: new BehaviorSubject<TimeRange | undefined>(embeddableState.time_range),
+          executionContext: {
+            type: 'cases',
+            description: caseData.title,
+            id: caseData.id,
+          },
+        }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        []
       );
 
       const listItems = [
@@ -76,6 +100,19 @@ export const initComponent = memoize((fieldFormats: FieldFormatsStart) => {
               },
             ]
           : []),
+        ...(typeof query?.query === 'string' && query.query !== ''
+          ? [
+              {
+                title: (
+                  <FormattedMessage
+                    id="xpack.ml.cases.anomalySwimLane.description.queryLabel"
+                    defaultMessage="Query"
+                  />
+                ),
+                description: query.query,
+              },
+            ]
+          : []),
       ];
 
       return (
@@ -84,14 +121,7 @@ export const initComponent = memoize((fieldFormats: FieldFormatsStart) => {
           <EmbeddableRenderer<AnomalySwimLaneEmbeddableState, AnomalySwimLaneEmbeddableApi>
             maybeId={attachmentId}
             type={ANOMALY_SWIMLANE_EMBEDDABLE_TYPE}
-            getParentApi={() => ({
-              getSerializedStateForChild: () => embeddableState,
-              executionContext: {
-                type: 'cases',
-                description: caseData.title,
-                id: caseData.id,
-              },
-            })}
+            getParentApi={() => parentApi}
           />
         </>
       );

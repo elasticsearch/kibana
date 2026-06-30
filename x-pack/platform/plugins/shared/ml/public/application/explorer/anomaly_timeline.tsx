@@ -32,6 +32,8 @@ import useDebounce from 'react-use/lib/useDebounce';
 import { formatHumanReadableDateTime } from '@kbn/ml-date-utils';
 import { isDefined } from '@kbn/ml-is-defined';
 import { useTimeRangeUpdates } from '@kbn/ml-date-picker';
+import { SEARCH_QUERY_LANGUAGE } from '@kbn/ml-query-utils';
+import type { Query } from '@kbn/es-query';
 import type { SaveModalDashboardProps } from '@kbn/presentation-util-plugin/public';
 import { SavedObjectSaveModalDashboard } from '@kbn/presentation-util-plugin/public';
 import { useTimeBuckets } from '@kbn/ml-time-buckets';
@@ -109,7 +111,7 @@ export const AnomalyTimeline: FC = () => {
     annotationsStateService.overallAnnotations
   );
 
-  const { filterActive } = useObservable(
+  const { filterActive, queryString } = useObservable(
     anomalyExplorerCommonStateService.filterSettings$,
     anomalyExplorerCommonStateService.filterSettings
   );
@@ -216,9 +218,18 @@ export const AnomalyTimeline: FC = () => {
         // For cases attachment, pass just the job IDs to maintain stale data
         job_ids: selectedJobs?.map((v) => v.id) ?? [],
         time_range: globalTimeRange,
+        // Only the viewBy swim lane applies the query; the overall lane ignores it in the data fetcher.
+        ...(swimLaneType === SWIMLANE_TYPE.VIEW_BY && isDefined(queryString) && queryString !== ''
+          ? {
+              query: {
+                query: queryString,
+                language: SEARCH_QUERY_LANGUAGE.KUERY,
+              } as Query,
+            }
+          : {}),
       });
     },
-    [openCasesModalCallback, selectedJobs, globalTimeRange, viewBySwimlaneFieldName]
+    [openCasesModalCallback, selectedJobs, globalTimeRange, viewBySwimlaneFieldName, queryString]
   );
 
   const annotations = useMemo(() => overallAnnotations.annotationsData, [overallAnnotations]);

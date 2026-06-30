@@ -14,6 +14,7 @@ import type {
   SeverityThreshold,
 } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
 import type { SingleMetricViewerEmbeddableState } from '@kbn/ml-server-schemas/embeddables/single_metric_viewer';
+import type { AnomalySwimLaneEmbeddableState } from '@kbn/ml-server-schemas/embeddables/anomaly_swimlane';
 import type { AnomalySingleMetricViewerEmbeddableType } from '@kbn/ml-common-types/embeddables/single_metric_viewer';
 import type {
   EmbeddableApiContext,
@@ -119,6 +120,13 @@ export interface AnomalyChartsFieldSelectionApi {
  * so attachments can render with their original context.
  */
 export type AnomalyChartsAttachmentState = AnomalyChartsEmbeddableState & {
+  id?: string;
+  query?: Query;
+  filters?: Filter[];
+};
+
+/** Cases store query/filters next to the embeddable state; the embeddable schema itself doesn't persist them. */
+export type AnomalySwimLaneAttachmentState = AnomalySwimLaneEmbeddableState & {
   id?: string;
   query?: Query;
   filters?: Filter[];
