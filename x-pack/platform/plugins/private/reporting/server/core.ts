@@ -478,10 +478,10 @@ export class ReportingCore {
       const spaceId = spacesService?.getSpaceId(request);
 
       if (spaceId !== DEFAULT_SPACE_ID) {
-        logger.debug(`Request uses Space ID: ${spaceId}`);
+        logger.trace(`Request uses Space ID: ${spaceId}`);
         return spaceId;
       } else {
-        logger.debug(`Request uses default Space`);
+        logger.trace(`Request uses default Space`);
       }
     }
   }

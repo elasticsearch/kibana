@@ -12,6 +12,7 @@ import type { Logger } from '@kbn/core/server';
 import { lastValueFrom } from 'rxjs';
 import { ES_SEARCH_STRATEGY, type ISearchSource } from '@kbn/data-plugin/common';
 import { INTERNAL_ENHANCED_ES_SEARCH_STRATEGY } from '@kbn/data-plugin/server';
+import { createEsError } from '@kbn/search-errors';
 import { SearchCursor, type SearchCursorClients, type SearchCursorSettings } from './search_cursor';
 import { i18nTexts } from './i18n_texts';
 
@@ -66,11 +67,16 @@ export class SearchCursorPit extends SearchCursor {
       );
       pitId = response.id;
     } catch (err) {
-      this.logger.error(err);
+      throw new Error(
+        `Error opening PIT for index pattern [${this.indexPatternTitle}]: ${err.message}`,
+        { cause: err }
+      );
     }
 
     if (!pitId) {
-      throw new Error(`Could not receive a PIT ID!`);
+      throw new Error(
+        `Unable to get PIT for index pattern: ${this.indexPatternTitle}, no errors were thrown`
+      );
     }
 
     this.logger.debug(`Opened PIT ID: ${this.formatCursorId(pitId)}`);
