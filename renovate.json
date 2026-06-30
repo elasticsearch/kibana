@@ -911,8 +911,8 @@
       "enabled": true
     },
     {
-      "groupName": "micromatch/minimatch",
-      "matchDepNames": ["micromatch", "minimatch", "@types/micromatch"],
+      "groupName": "minimatch",
+      "matchDepNames": ["minimatch"],
       "reviewers": ["team:kibana-operations"],
       "matchBaseBranches": ["main"],
       "addLabels": ["Team:Operations"],

@@ -9,7 +9,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import mm from 'micromatch';
+import picomatch from 'picomatch';
 import { REPO_ROOT } from '@kbn/repo-info';
 import {
   TESTABLE_COMPONENT_SCOUT_ROOT_PATH_GLOB,
@@ -51,11 +51,11 @@ describe('Scout path globs', () => {
     ];
 
     it.each(shouldMatch)('matches: %s', (testPath) => {
-      expect(mm.isMatch(testPath, TESTABLE_COMPONENT_SCOUT_ROOT_PATH_GLOB)).toBe(true);
+      expect(picomatch.isMatch(testPath, TESTABLE_COMPONENT_SCOUT_ROOT_PATH_GLOB)).toBe(true);
     });
 
     it.each(shouldNotMatch)('does not match: %s', (testPath) => {
-      expect(mm.isMatch(testPath, TESTABLE_COMPONENT_SCOUT_ROOT_PATH_GLOB)).toBe(false);
+      expect(picomatch.isMatch(testPath, TESTABLE_COMPONENT_SCOUT_ROOT_PATH_GLOB)).toBe(false);
     });
   });
 
@@ -82,11 +82,11 @@ describe('Scout path globs', () => {
     ];
 
     it.each(shouldMatch)('matches: %s', (testPath) => {
-      expect(mm.isMatch(testPath, SCOUT_CONFIG_PATH_GLOB)).toBe(true);
+      expect(picomatch.isMatch(testPath, SCOUT_CONFIG_PATH_GLOB)).toBe(true);
     });
 
     it.each(shouldNotMatch)('does not match: %s', (testPath) => {
-      expect(mm.isMatch(testPath, SCOUT_CONFIG_PATH_GLOB)).toBe(false);
+      expect(picomatch.isMatch(testPath, SCOUT_CONFIG_PATH_GLOB)).toBe(false);
     });
   });
 
@@ -105,11 +105,11 @@ describe('Scout path globs', () => {
     ];
 
     it.each(shouldMatch)('matches: %s', (testPath) => {
-      expect(mm.isMatch(testPath, SCOUT_CONFIG_MANIFEST_PATH_GLOB)).toBe(true);
+      expect(picomatch.isMatch(testPath, SCOUT_CONFIG_MANIFEST_PATH_GLOB)).toBe(true);
     });
 
     it.each(shouldNotMatch)('does not match: %s', (testPath) => {
-      expect(mm.isMatch(testPath, SCOUT_CONFIG_MANIFEST_PATH_GLOB)).toBe(false);
+      expect(picomatch.isMatch(testPath, SCOUT_CONFIG_MANIFEST_PATH_GLOB)).toBe(false);
     });
   });
 });
