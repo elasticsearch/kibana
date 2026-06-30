@@ -10,6 +10,7 @@ import type { ExpressionsSetup } from '@kbn/expressions-plugin/public';
 import { getDatatable } from '../common/expressions/defs/datatable/datatable';
 import { datatableColumn } from '../common/expressions/impl/datatable/datatable_column';
 import { mapToColumns } from '../common/expressions/defs/map_to_columns/map_to_columns';
+import { getDropPartialBucketsTextBased } from '../common/expressions/defs/drop_partial_buckets';
 import { formatColumn } from '../common/expressions/defs/format_column';
 import { counterRate } from '../common/expressions/defs/counter_rate';
 import { getTimeScale } from '../common/expressions/defs/time_scale/time_scale';
@@ -40,5 +41,6 @@ export const setupExpressions = (
     datatableColumn,
     getDatatable(formatFactory),
     getTimeScale(getDatatableUtilities, getTimeZone, getForceNow),
+    getDropPartialBucketsTextBased(getDatatableUtilities, getTimeZone),
   ].forEach((expressionFn) => expressions.registerFunction(expressionFn));
 };

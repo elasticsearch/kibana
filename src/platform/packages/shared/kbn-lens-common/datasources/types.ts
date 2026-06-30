@@ -125,6 +125,7 @@ export interface TextBasedLayerColumn {
   customLabel?: boolean;
   params?: {
     format?: ValueFormatConfig;
+    dropPartials?: boolean;
   };
   meta?: DatatableColumn['meta'];
   inMetricDimension?: boolean;

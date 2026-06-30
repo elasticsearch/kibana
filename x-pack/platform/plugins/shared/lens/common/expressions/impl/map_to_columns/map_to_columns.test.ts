@@ -381,5 +381,40 @@ describe('map_to_columns', () => {
         { a: 7, field: '9' },
       ]);
     });
+
+    it('injects the dropPartials flag into the bucket column source params', async () => {
+      const input: Datatable = {
+        type: 'datatable',
+        columns: [
+          {
+            id: 'a',
+            name: 'A',
+            meta: {
+              type: 'date',
+              sourceParams: {
+                params: { used_interval: '1s', used_time_zone: 'UTC' },
+              },
+            },
+          },
+        ],
+        rows: [{ a: 0 }],
+      };
+
+      const idMap = {
+        a: [{ id: 'a', label: 'A', dropPartials: true }],
+      };
+
+      const result = await mapToColumns.fn(
+        input,
+        { idMap: JSON.stringify(idMap), isTextBased: true },
+        createMockExecutionContext()
+      );
+
+      expect(result.columns[0].meta.sourceParams?.params).toStrictEqual({
+        used_interval: '1s',
+        used_time_zone: 'UTC',
+        drop_partials: true,
+      });
+    });
   });
 });

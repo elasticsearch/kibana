@@ -63,7 +63,7 @@ export const mapToOriginalColumnsTextBased: MapToColumnsExpressionFunction['fn']
       }
       if (column.variable) {
         const originalColumn = idMapColEntries
-          .map(([_id, columns]) => columns.find((c) => c.variable === column.variable))
+          .map(([_id, cols]) => cols.find((c) => c.variable === column.variable))
           .filter(isOriginalColumn);
 
         if (!originalColumn) {
@@ -72,6 +72,14 @@ export const mapToOriginalColumnsTextBased: MapToColumnsExpressionFunction['fn']
 
         return originalColumn.map((c) => ({ ...column, id: c.id }));
       }
+
+      const params =
+        column.meta?.sourceParams?.params &&
+        typeof column.meta.sourceParams.params === 'object' &&
+        !Array.isArray(column.meta.sourceParams.params)
+          ? column.meta.sourceParams.params
+          : undefined;
+
       return idMap[column.id].map((originalColumn) => ({
         ...column,
         id: originalColumn.id,
@@ -87,11 +95,11 @@ export const mapToOriginalColumnsTextBased: MapToColumnsExpressionFunction['fn']
               ? { operationType: originalColumn.operationType }
               : {}),
             ...('interval' in originalColumn ? { interval: originalColumn.interval } : {}),
-            ...('params' in originalColumn
+            ...('dropPartials' in originalColumn
               ? {
                   params: {
-                    ...(originalColumn.params as object),
-                    used_interval: `${originalColumn.interval}ms`,
+                    ...(params ?? {}),
+                    drop_partials: Boolean(originalColumn.dropPartials),
                   },
                 }
               : {}),

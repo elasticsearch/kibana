@@ -19,7 +19,6 @@ export type EsqlConversionFailureReason =
   | 'runtime_field_not_supported'
   | 'reduced_time_range_not_supported'
   | 'function_not_supported'
-  | 'drop_partials_not_supported'
   | 'include_empty_rows_not_supported'
   | 'terms_not_supported'
   | 'saved_to_library_not_supported'
@@ -70,13 +69,6 @@ export const esqlConversionFailureReasonMessages: Record<EsqlConversionFailureRe
     defaultMessage:
       'Cannot convert to ES|QL: Support for one or more functions used will be coming in an upcoming update.',
   }),
-  drop_partials_not_supported: i18n.translate(
-    'xpack.lens.config.cannotConvertToEsqlDropPartialsTooltip',
-    {
-      defaultMessage:
-        'Cannot convert to ES|QL: "Drop partial buckets" will be supported in an upcoming update.',
-    }
-  ),
   include_empty_rows_not_supported: i18n.translate(
     'xpack.lens.config.cannotConvertToEsqlIncludeEmptyRowsTooltip',
     {

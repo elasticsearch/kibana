@@ -110,14 +110,24 @@ interface SourceParamsESQL extends Record<string, unknown> {
   sourceField: string;
   operationType: string;
   interval?: number;
+  dropPartials?: boolean;
+  appliedTimeRange?: {
+    from?: string;
+    to?: string;
+  };
 }
 
 export function isSourceParamsESQL(obj: Record<string, unknown>): obj is SourceParamsESQL {
-  return (
+  return Boolean(
     obj &&
-    typeof obj.indexPattern === 'string' &&
-    typeof obj.sourceField === 'string' &&
-    (typeof obj.interval === 'number' || !obj.interval)
+      typeof obj.indexPattern === 'string' &&
+      typeof obj.sourceField === 'string' &&
+      (typeof obj.interval === 'number' || !obj.interval) &&
+      (typeof obj.dropPartials === 'boolean' || !obj.dropPartials) &&
+      (!obj.appliedTimeRange ||
+        (typeof obj.appliedTimeRange === 'object' &&
+          obj.appliedTimeRange !== null &&
+          ('from' in obj.appliedTimeRange || 'to' in obj.appliedTimeRange)))
   );
 }
 

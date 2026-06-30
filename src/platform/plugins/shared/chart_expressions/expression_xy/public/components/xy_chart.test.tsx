@@ -238,7 +238,7 @@ describe('XYChart component', () => {
                   source: 'esaggs',
                   sourceParams: {
                     type: 'date_histogram',
-                    params: {},
+                    params: { used_interval: '1d' },
                     appliedTimeRange: {
                       from: '2019-01-02T05:00:00.000Z',
                       to: '2019-01-03T05:00:00.000Z',
@@ -452,7 +452,7 @@ describe('XYChart component', () => {
                   source: 'esaggs',
                   sourceParams: {
                     type: 'date_histogram',
-                    params: {},
+                    params: { used_interval: '1d' },
                     appliedTimeRange: {
                       from: '2021-04-22T12:00:00.000Z',
                       to: '2021-04-24T12:00:00.000Z',

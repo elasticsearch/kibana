@@ -288,7 +288,7 @@ export function inferTimeField(datatableUtilities: DatatableUtilitiesService, ev
         .map(({ table, column }) => {
           const tableColumn = table.columns[column];
           const hasTimeRange = Boolean(
-            tableColumn && datatableUtilities.getDateHistogramMeta(tableColumn)?.timeRange
+            tableColumn && datatableUtilities.getColumnTimeRange(tableColumn)
           );
           if (hasTimeRange) {
             return tableColumn.meta.field;

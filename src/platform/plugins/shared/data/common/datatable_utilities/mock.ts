@@ -14,6 +14,7 @@ export function createDatatableUtilitiesMock(): jest.Mocked<DatatableUtilitiesSe
     clearField: jest.fn(),
     clearFieldFormat: jest.fn(),
     getAggConfig: jest.fn(),
+    getColumnTimeRange: jest.fn(DatatableUtilitiesService.prototype.getColumnTimeRange),
     getDataView: jest.fn(),
     getDateHistogramMeta: jest.fn(DatatableUtilitiesService.prototype.getDateHistogramMeta),
     getField: jest.fn(),

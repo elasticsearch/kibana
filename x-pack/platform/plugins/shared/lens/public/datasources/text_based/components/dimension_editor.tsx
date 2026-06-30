@@ -7,8 +7,8 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { i18n } from '@kbn/i18n';
-import { EuiFormRow, useEuiTheme, EuiText } from '@elastic/eui';
-import type { ExpressionsStart } from '@kbn/expressions-plugin/public';
+import { EuiFormRow, EuiSpacer, useEuiTheme, EuiText, EuiSwitch } from '@elastic/eui';
+import { isSourceParamsESQL, type ExpressionsStart } from '@kbn/expressions-plugin/public';
 import { NameInput } from '@kbn/visualization-ui-components';
 import { css } from '@emotion/react';
 import type {
@@ -17,11 +17,17 @@ import type {
   DatasourceDimensionEditorProps,
   DataType,
 } from '@kbn/lens-common';
-import { mergeLayer, updateColumnFormat, updateColumnLabel } from '../utils';
+import {
+  mergeLayer,
+  updateColumnDropPartials,
+  updateColumnFormat,
+  updateColumnLabel,
+  isNotNumeric,
+  isNumeric,
+} from '../utils';
 import type { FormatSelectorProps } from '../../form_based/dimension_panel/format_selector';
 import { FormatSelector } from '../../form_based/dimension_panel/format_selector';
 import { FieldSelect, type FieldOptionCompatible } from './field_select';
-import { isNotNumeric, isNumeric } from '../utils';
 import { fetchFieldsFromESQLExpression } from './fetch_fields_from_esql_expression';
 
 export type TextBasedDimensionEditorProps =
@@ -118,86 +124,130 @@ export function TextBasedDimensionEditor(props: TextBasedDimensionEditorProps) {
     [columnId, layerId, state.layers, updateLayer]
   );
 
+  const onDropPartialsChange = useCallback(
+    (value: boolean) => {
+      updateLayer(
+        updateColumnDropPartials({
+          layer: state.layers[layerId],
+          columnId,
+          value,
+        })
+      );
+    },
+    [columnId, layerId, state.layers, updateLayer]
+  );
+
   const activeTable = props.activeData?.[layerId];
   const activeColumnMeta = activeTable?.columns.find((col) => col.id === columnId)?.meta;
   const isNumericColumn =
     activeColumnMeta != null
       ? activeColumnMeta?.type === 'number'
       : selectedField?.meta?.type === 'number';
+  const sourceParams = activeColumnMeta?.sourceParams;
+
+  // Check if the column is a date histogram column, is there a better way to do this?
+  const isDateHistogramColumn =
+    sourceParams &&
+    isSourceParamsESQL(sourceParams) &&
+    typeof sourceParams.params === 'object' &&
+    sourceParams.params !== null &&
+    'used_interval' in sourceParams.params &&
+    typeof sourceParams.params.used_interval === 'string';
 
   return (
     <>
-      <EuiFormRow
-        data-test-subj="text-based-languages-field-selection-row"
-        label={i18n.translate('xpack.lens.textBasedLanguages.chooseField', {
-          defaultMessage: 'Field',
-        })}
-        fullWidth
-        className="lnsIndexPatternDimensionEditor--padded"
-      >
-        <FieldSelect
-          data-test-subj="text-based-dimension-field"
-          existingFields={allColumns ?? []}
-          selectedField={selectedField}
-          onChoose={(choice) => {
-            const column = allColumns?.find((f) => f.name === choice.field);
-            const newColumn = {
-              columnId: props.columnId,
-              fieldName: choice.field,
-              meta: column?.meta,
-              variable: column?.variable,
-              label: choice.field,
-              ...(props.isMetricDimension && { inMetricDimension: true }),
-            };
-            return props.setState(
-              !selectedField
-                ? {
-                    ...props.state,
-                    layers: {
-                      ...props.state.layers,
-                      [props.layerId]: {
-                        ...props.state.layers[props.layerId],
-                        columns: [...props.state.layers[props.layerId].columns, newColumn],
+      <div className="lnsIndexPatternDimensionEditor--padded">
+        <EuiFormRow
+          data-test-subj="text-based-languages-field-selection-row"
+          label={i18n.translate('xpack.lens.textBasedLanguages.chooseField', {
+            defaultMessage: 'Field',
+          })}
+          fullWidth
+        >
+          <FieldSelect
+            data-test-subj="text-based-dimension-field"
+            existingFields={allColumns ?? []}
+            selectedField={selectedField}
+            onChoose={(choice) => {
+              const column = allColumns?.find((f) => f.name === choice.field);
+              const newColumn = {
+                columnId: props.columnId,
+                fieldName: choice.field,
+                meta: column?.meta,
+                variable: column?.variable,
+                label: choice.field,
+                ...(props.isMetricDimension && { inMetricDimension: true }),
+              };
+              return props.setState(
+                !selectedField
+                  ? {
+                      ...props.state,
+                      layers: {
+                        ...props.state.layers,
+                        [props.layerId]: {
+                          ...props.state.layers[props.layerId],
+                          columns: [...props.state.layers[props.layerId].columns, newColumn],
+                        },
                       },
-                    },
-                  }
-                : {
-                    ...props.state,
-                    layers: {
-                      ...props.state.layers,
-                      [props.layerId]: {
-                        ...props.state.layers[props.layerId],
-                        columns: props.state.layers[props.layerId].columns.map((col) => {
-                          if (col.columnId !== props.columnId) {
-                            return col;
-                          }
+                    }
+                  : {
+                      ...props.state,
+                      layers: {
+                        ...props.state.layers,
+                        [props.layerId]: {
+                          ...props.state.layers[props.layerId],
+                          columns: props.state.layers[props.layerId].columns.map((col) => {
+                            if (col.columnId !== props.columnId) {
+                              return col;
+                            }
 
-                          const isNewColumnNumeric = column?.meta?.type === 'number';
-                          const shouldKeepCustomLabel = Boolean(col.customLabel);
+                            const isNewColumnNumeric = column?.meta?.type === 'number';
+                            const shouldKeepCustomLabel = Boolean(col.customLabel);
 
-                          return {
-                            ...col,
-                            fieldName: choice.field,
-                            meta: column?.meta,
-                            variable: column?.variable,
-                            // If the new column is not numeric, remove the format selector params
-                            ...(!isNewColumnNumeric && col.params ? { params: undefined } : {}),
-                            // If the previous column has a custom label, keep it
-                            ...(shouldKeepCustomLabel
-                              ? {}
-                              : {
-                                  label: choice.field,
-                                  customLabel: false,
-                                }),
-                          };
-                        }),
+                            return {
+                              ...col,
+                              fieldName: choice.field,
+                              meta: column?.meta,
+                              variable: column?.variable,
+                              // If the new column is not numeric, remove the format selector params
+                              ...(!isNewColumnNumeric && col.params ? { params: undefined } : {}),
+                              // If the previous column has a custom label, keep it
+                              ...(shouldKeepCustomLabel
+                                ? {}
+                                : {
+                                    label: choice.field,
+                                    customLabel: false,
+                                  }),
+                            };
+                          }),
+                        },
                       },
-                    },
-                  }
-            );
-          }}
-        />
-      </EuiFormRow>
+                    }
+              );
+            }}
+          />
+        </EuiFormRow>
+        {selectedField && isDateHistogramColumn && (
+          <>
+            <EuiSpacer size="s" />
+            <EuiFormRow display="rowCompressed" hasChildLabel={false}>
+              <EuiSwitch
+                label={
+                  <EuiText size="xs">
+                    {i18n.translate('xpack.lens.indexPattern.dateHistogram.dropPartialBuckets', {
+                      defaultMessage: 'Drop partial intervals',
+                    })}
+                  </EuiText>
+                }
+                data-test-subj="lensDropPartialIntervals"
+                checked={Boolean(selectedField.params?.dropPartials)}
+                onChange={(e) => onDropPartialsChange(e.target.checked)}
+                compressed
+              />
+            </EuiFormRow>
+          </>
+        )}
+      </div>
       {props.dataSectionExtra}
       {!isFullscreen && selectedField && (
         <div className="lnsIndexPatternDimensionEditor--padded lnsIndexPatternDimensionEditor--collapseNext">

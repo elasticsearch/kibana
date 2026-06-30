@@ -149,6 +149,9 @@ function buildTextBasedState(
             column.params = { format: format as ValueFormatConfig };
           }
         }
+        if (sourceColumn.dropPartials) {
+          column.params = { ...column.params, dropPartials: true };
+        }
 
         return column;
       }

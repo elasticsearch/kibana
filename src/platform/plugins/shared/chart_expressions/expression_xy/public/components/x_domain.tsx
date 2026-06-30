@@ -14,6 +14,7 @@ import type { Unit } from '@kbn/datemath';
 import dateMath from '@kbn/datemath';
 import { Endzones, getAdjustedInterval } from '@kbn/charts-plugin/public';
 import type { DatatableUtilitiesService } from '@kbn/data-plugin/common';
+import { splitStringInterval } from '@kbn/data-plugin/common';
 import { getAccessorByDimension, getColumnByAccessor } from '@kbn/chart-expressions-common';
 import type { AxisExtentConfigResult, CommonXYDataLayerConfig } from '../../common';
 
@@ -23,22 +24,78 @@ export interface XDomain {
   minInterval?: number;
 }
 
-export const getAppliedTimeRange = (
+const getDateHistogramMeta = (
   datatableUtilitites: DatatableUtilitiesService,
   layers: CommonXYDataLayerConfig[]
 ) => {
   return layers
     .map(({ xAccessor, table }) => {
       const xColumn = xAccessor ? getColumnByAccessor(xAccessor, table.columns) : null;
-      const timeRange = xColumn && datatableUtilitites.getDateHistogramMeta(xColumn)?.timeRange;
-      if (timeRange) {
-        return {
-          timeRange,
-          field: xColumn?.meta.field,
-        };
-      }
+      const meta = xColumn && datatableUtilitites.getDateHistogramMeta(xColumn);
+      return meta ? { meta, field: xColumn?.meta.field } : undefined;
     })
     .find(Boolean);
+};
+
+const getBucketBounds = (
+  from: number,
+  to: number,
+  anchor: number,
+  step: number,
+  unit: Unit,
+  timeZone: string,
+  dropPartials: boolean
+) => {
+  if (!step || step <= 0) {
+    return undefined;
+  }
+
+  const anchorTime = moment.tz(anchor, timeZone);
+
+  const stepsBefore = Math.ceil(anchorTime.diff(moment.tz(from, timeZone), unit, true) / step);
+  const start = anchorTime.clone().subtract(stepsBefore * step, unit);
+
+  const stepsAfter = Math.ceil(moment.tz(to, timeZone).diff(anchorTime, unit, true) / step);
+  const end = anchorTime.clone().add(stepsAfter * step, unit);
+
+  const count = Math.round(end.diff(start, unit, true) / step) + 1;
+  const buckets = Array.from({ length: count }, (_, i) => start.clone().add(i * step, unit));
+
+  const valid = buckets.filter((bucket) => {
+    const bucketStart = bucket.valueOf();
+    const bucketEnd = bucket.clone().add(step, unit).valueOf();
+    if (dropPartials) {
+      return bucketStart > from && bucketEnd <= to;
+    }
+    return bucketEnd > from && bucketStart < to;
+  });
+
+  if (valid.length === 0) return undefined;
+
+  const adjustedInterval = getAdjustedInterval(
+    valid.map((bucket) => bucket.valueOf()),
+    step,
+    unit,
+    timeZone
+  );
+
+  return {
+    min: valid[0].valueOf(),
+    max: valid[valid.length - 1].valueOf(),
+    minInterval: adjustedInterval,
+  };
+};
+
+const getXValues = (layers: CommonXYDataLayerConfig[]) => {
+  return uniq(
+    layers
+      .flatMap<number>(({ table, xAccessor }) => {
+        const accessor = xAccessor ? getAccessorByDimension(xAccessor, table.columns) : undefined;
+        return table.rows.map((row) => accessor && row[accessor] && row[accessor].valueOf());
+      })
+      .filter((v) => !isUndefined(v))
+      .sort((a, b) => a - b)
+  );
 };
 
 export const getXDomain = (
@@ -51,71 +108,99 @@ export const getXDomain = (
   timeZone: string,
   xExtent?: AxisExtentConfigResult
 ) => {
-  const appliedTimeRange = getAppliedTimeRange(datatableUtilitites, layers)?.timeRange;
-  const from = appliedTimeRange?.from;
-  const to = appliedTimeRange?.to;
-  const baseDomain = isTimeViz
-    ? {
-        min: from ? moment(from).valueOf() : NaN,
-        max: to ? moment(to).valueOf() : NaN,
-        minInterval,
-      }
-    : isHistogram
-    ? { minInterval, min: NaN, max: NaN }
-    : undefined;
+  if (!isTimeViz) {
+    const baseDomain = isHistogram ? { minInterval, min: NaN, max: NaN } : undefined;
 
-  if ((isHistogram || isTimeViz) && isFullyQualified(baseDomain)) {
-    if (xExtent && !isTimeViz) {
+    if (isFullyQualified(baseDomain)) {
+      if (xExtent) {
+        return {
+          baseDomain,
+          extendedDomain: {
+            min: xExtent.lowerBound ?? NaN,
+            max: xExtent.upperBound ?? NaN,
+            minInterval: baseDomain.minInterval,
+          },
+        };
+      }
+
+      const xValues = getXValues(layers);
+      const domainMin = Math.min(xValues[0], baseDomain.min);
+      const domainMax = Math.max(xValues[xValues.length - 1], baseDomain.max);
       return {
+        baseDomain,
         extendedDomain: {
-          min: xExtent.lowerBound ?? NaN,
-          max: xExtent.upperBound ?? NaN,
+          min: domainMin,
+          max: domainMax,
           minInterval: baseDomain.minInterval,
         },
+      };
+    } else {
+      return {
         baseDomain,
+        extendedDomain: baseDomain,
       };
     }
-    const xValues = uniq(
-      layers
-        .flatMap<number>(({ table, xAccessor }) => {
-          const accessor =
-            xAccessor !== undefined ? getAccessorByDimension(xAccessor, table.columns) : undefined;
-          return table.rows.map((row) => accessor && row[accessor] && row[accessor].valueOf());
-        })
-        .filter((v) => !isUndefined(v))
-        .sort()
-    );
-    const [firstXValue] = xValues;
-    const lastXValue = xValues[xValues.length - 1];
+  }
 
-    const domainMin = Math.min(firstXValue, baseDomain.min);
-    const domainMaxValue = Math.max(baseDomain.max - baseDomain.minInterval, lastXValue);
-    const domainMax = hasBars ? domainMaxValue : domainMaxValue + baseDomain.minInterval;
+  const dateHistogram = getDateHistogramMeta(datatableUtilitites, layers);
 
-    const duration = moment.duration(baseDomain.minInterval);
-    const selectedUnit = find(dateMath.units, (u) => {
-      const value = duration.as(u);
-      return Number.isInteger(value);
-    }) as Unit;
+  const from = dateHistogram?.meta?.timeRange?.from;
+  const to = dateHistogram?.meta?.timeRange?.to;
+  const dropPartials = dateHistogram?.meta?.dropPartials;
 
+  const baseDomain = {
+    min: from ? moment(from).valueOf() : NaN,
+    max: to ? moment(to).valueOf() : NaN,
+    minInterval,
+  };
+
+  if (!isFullyQualified(baseDomain)) {
     return {
-      extendedDomain: {
-        min: domainMin,
-        max: domainMax,
-        minInterval: getAdjustedInterval(
-          xValues,
-          duration.as(selectedUnit),
-          selectedUnit,
-          timeZone
-        ),
-      },
+      extendedDomain: baseDomain,
       baseDomain,
     };
   }
 
+  const xValues = getXValues(layers);
+
+  const duration = moment.duration(baseDomain.minInterval);
+  const parsedInterval = dateHistogram?.meta?.interval
+    ? splitStringInterval(dateHistogram.meta.interval)
+    : null;
+  const unit =
+    parsedInterval?.unit ?? (find(dateMath.units, (u) => Number.isInteger(duration.as(u))) as Unit);
+  const step = parsedInterval?.value ?? duration.as(unit);
+
+  // we construct the bucket list based on applied time range, min interval and one anchor point.
+  // this is needed as we might not have all the data points in the time range (ES|QL).
+  const buckets = getBucketBounds(
+    baseDomain.min,
+    baseDomain.max,
+    xValues[0] ?? baseDomain.min,
+    step,
+    unit,
+    timeZone,
+    !!dropPartials
+  );
+
+  const domainMin = dropPartials
+    ? buckets?.min ?? baseDomain.min
+    : Math.min(isUndefined(xValues[0]) ? Infinity : xValues[0], buckets?.min ?? baseDomain.min);
+  const domainMaxValue = dropPartials
+    ? buckets?.max ?? baseDomain.max - baseDomain.minInterval
+    : Math.max(
+        isUndefined(xValues[xValues.length - 1]) ? -Infinity : xValues[xValues.length - 1],
+        buckets?.max ?? baseDomain.max - baseDomain.minInterval
+      );
+  const domainMax = hasBars ? domainMaxValue : domainMaxValue + baseDomain.minInterval;
+
   return {
+    extendedDomain: {
+      min: domainMin,
+      max: domainMax,
+      minInterval: buckets?.minInterval ?? baseDomain.minInterval,
+    },
     baseDomain,
-    extendedDomain: baseDomain,
   };
 };
 

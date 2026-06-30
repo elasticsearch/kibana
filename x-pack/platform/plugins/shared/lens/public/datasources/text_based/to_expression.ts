@@ -23,22 +23,19 @@ function getExpressionForLayer(
 
   let idMapper: Record<string, OriginalColumn[]> = {};
   layer.columns.forEach((col) => {
+    const entry = {
+      id: col.columnId,
+      label: col.customLabel ? col.label : col.fieldName,
+      variable: col?.variable,
+      dropPartials: col.params?.dropPartials,
+    } as OriginalColumn;
+
     if (idMapper[col.fieldName]) {
-      idMapper[col.fieldName].push({
-        id: col.columnId,
-        label: col.customLabel ? col.label : col.fieldName,
-        variable: col?.variable,
-      } as OriginalColumn);
+      idMapper[col.fieldName].push(entry);
     } else {
       idMapper = {
         ...idMapper,
-        [col.fieldName]: [
-          {
-            id: col.columnId,
-            label: col.customLabel ? col.label : col.fieldName,
-            variable: col?.variable,
-          } as OriginalColumn,
-        ],
+        [col.fieldName]: [entry],
       };
     }
   });
@@ -105,6 +102,11 @@ function getExpressionForLayer(
         isTextBased: [true],
       },
     });
+    textBasedQueryToAst.chain.push({
+      type: 'function',
+      function: 'lens_drop_partial_buckets_textbased',
+      arguments: {},
+    });
     textBasedQueryToAst.chain.push(...formatterOverrides);
     return textBasedQueryToAst;
   } else {
@@ -125,6 +127,11 @@ function getExpressionForLayer(
             idMap: [JSON.stringify(idMapper)],
             isTextBased: [true],
           },
+        },
+        {
+          type: 'function',
+          function: 'lens_drop_partial_buckets_textbased',
+          arguments: {},
         },
         ...formatterOverrides,
       ],

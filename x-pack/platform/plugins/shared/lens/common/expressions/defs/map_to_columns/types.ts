@@ -16,6 +16,7 @@ export type OriginalColumn = {
   format?: SerializedFieldFormat;
   dataType?: DataType;
   customLabel?: boolean;
+  dropPartials?: boolean;
 } & (
   | { operationType: 'date_histogram'; sourceField: string; interval: number }
   | { operationType: string; sourceField?: string; interval: never }

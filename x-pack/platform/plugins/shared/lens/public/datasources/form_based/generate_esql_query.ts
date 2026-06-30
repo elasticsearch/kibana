@@ -354,15 +354,6 @@ export function generateEsqlQuery(
 
     if (isColumnOfType<DateHistogramIndexPatternColumn>('date_histogram', col)) {
       const column = col;
-      if (
-        column.params?.dropPartials &&
-        // set to false when detached from time picker
-        (indexPattern.timeFieldName === indexPattern.getFieldByName(column.sourceField)?.name ||
-          !column.params?.ignoreTimeRange)
-      ) {
-        return getEsqlQueryFailedResult('drop_partials_not_supported');
-      }
-
       if (column.params?.includeEmptyRows) {
         return getEsqlQueryFailedResult('include_empty_rows_not_supported');
       }

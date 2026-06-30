@@ -17,6 +17,7 @@ import type {
   IEsqlSearchResult,
 } from '@kbn/search-types';
 import type { KibanaContext } from '..';
+import type { ESQLColumn } from '@kbn/es-types';
 
 interface MockTypedSearchService {
   esql: jest.Mock<Promise<IEsqlSearchResult>, [IEsqlSearchParams, IEsqlSearchOptions?]>;
@@ -40,7 +41,7 @@ const createExecutionContext = (): ExecutionContext =>
   } as unknown as ExecutionContext);
 
 const getMockSearchService = (
-  columns: Array<{ name: string; type: string }>,
+  columns: ESQLColumn[],
   values: unknown[][] = [['v1']]
 ): MockTypedSearchService => {
   const mockTyped = {
@@ -178,5 +179,63 @@ describe('getEsqlFn', () => {
     expect(
       result?.columns?.find((col) => col.name === 'cnt')?.meta?.sourceParams?.sourceField
     ).toBe('cnt');
+  });
+
+  describe('resolves meta.sourceParams.params for bucket metadata', () => {
+    it('maps bucket _meta to used_interval using the datemath unit suffix', async () => {
+      const mockSearchService = getMockSearchService([
+        { name: '@timestamp', type: 'date', _meta: { bucket: { interval: 30, unit: 'second' } } },
+      ]);
+
+      const result = await createEsqlFn(mockSearchService).fn(
+        null,
+        { query: 'FROM index | STATS COUNT(*) BY BUCKET(@timestamp, 30 seconds)' },
+        createExecutionContext()
+      );
+
+      const params = result?.columns?.[0]?.meta?.sourceParams?.params;
+      expect(params).toBeDefined();
+      expect(params).toHaveProperty('used_interval', '30s');
+      expect(params).toHaveProperty('used_time_zone', 'UTC');
+    });
+
+    it('falls back to the raw interval when the unit is not a known datemath unit', async () => {
+      const mockSearchService = getMockSearchService([
+        { name: '@timestamp', type: 'date', _meta: { bucket: { interval: 3, unit: 'quarter' } } },
+      ]);
+
+      const result = await createEsqlFn(mockSearchService).fn(
+        null,
+        { query: 'FROM index' },
+        createExecutionContext()
+      );
+
+      const params = result?.columns?.[0]?.meta?.sourceParams?.params;
+      expect(params).toBeDefined();
+      expect(params).toHaveProperty('used_interval', 3);
+    });
+
+    describe('resolves meta.sourceParams.appliedTimeRange for date columns when an input time range is provided', () => {
+      it('sets appliedTimeRange for date columns when an input time range is provided', async () => {
+        const mockSearchService = getMockSearchService([{ name: '@timestamp', type: 'date' }]);
+
+        const input: KibanaContext = {
+          type: 'kibana_context',
+          timeRange: { from: '2026-01-01T00:00:00.000Z', to: '2026-01-02T00:00:00.000Z' },
+        };
+
+        const result = await createEsqlFn(mockSearchService).fn(
+          input,
+          { query: 'FROM index' },
+          createExecutionContext()
+        );
+
+        const sourceParams = result?.columns?.[0]?.meta?.sourceParams;
+        expect(sourceParams).toHaveProperty('appliedTimeRange', {
+          from: '2026-01-01T00:00:00.000Z',
+          to: '2026-01-02T00:00:00.000Z',
+        });
+      });
+    });
   });
 });
