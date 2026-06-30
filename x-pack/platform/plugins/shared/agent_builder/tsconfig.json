@@ -57,7 +57,6 @@
     "@kbn/esql-language",
     "@kbn/esql-utils",
     "@kbn/esql",
-    "@kbn/field-types",
     "@kbn/monaco",
     "@kbn/safer-lodash-set",
     "@kbn/core-http-server-mocks",
@@ -70,7 +69,6 @@
     "@kbn/management-settings-ids",
     "@kbn/visualization-utils",
     "@kbn/data-views-plugin",
-    "@kbn/expressions-plugin",
     "@kbn/lens-plugin",
     "@kbn/license-management-plugin",
     "@kbn/scout",
@@ -87,7 +85,6 @@
     "@kbn/spaces-plugin",
     "@kbn/licensing-types",
     "@kbn/licensing-plugin",
-    "@kbn/lens-embeddable-utils",
     "@kbn/elastic-assistant",
     "@kbn/inference-connectors",
     "@kbn/react-query",
@@ -117,7 +114,6 @@
     "@kbn/task-manager-plugin",
     "@kbn/evals-plugin",
     "@kbn/usage-api-plugin",
-    "@kbn/es-query",
     "@kbn/core-saved-objects-api-server",
     "@kbn/security-plugin-types-server",
     "@kbn/agent-context-layer-plugin",
@@ -142,6 +138,5 @@
     "@kbn/user-profile-components",
     "@kbn/telemetry",
     "@kbn/embeddable-plugin",
-    "@kbn/presentation-util-plugin",
   ]
 }
