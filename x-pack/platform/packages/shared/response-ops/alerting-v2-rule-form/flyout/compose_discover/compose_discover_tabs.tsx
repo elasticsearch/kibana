@@ -12,8 +12,8 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { CodeEditor, ESQL_LANG_ID, type monaco } from '@kbn/code-editor';
 import type { RuleQuery } from '../../form/types';
 import type { QueryTab } from './types';
+import { useEsqlCompletion } from './use_esql_completion';
 
-type IStandaloneCodeEditor = monaco.editor.IStandaloneCodeEditor;
 type LineNumbersType = monaco.editor.LineNumbersType;
 
 interface ComposeDiscoverTabsProps {
@@ -26,8 +26,6 @@ interface ComposeDiscoverTabsProps {
   activeTab: QueryTab;
   onTabChange: (tab: QueryTab) => void;
   tabs: QueryTab[];
-  onAlertEditorMount?: (editor: IStandaloneCodeEditor) => void;
-  onRecoveryEditorMount?: (editor: IStandaloneCodeEditor) => void;
   /**
    * When true, only the editor content is rendered — the tab bar is omitted.
    * Used when the parent renders tabs in the flyout header instead.
@@ -81,7 +79,13 @@ interface BlockEditorProps {
   onChange: (val: string) => void;
   /** Line number offset — makes the block editor's line numbers continue from the base. */
   lineNumberOffset: number;
-  onEditorMount?: (editor: IStandaloneCodeEditor) => void;
+  /**
+   * Base query whose output columns provide the autocomplete context for this block
+   * (e.g. the alert / recovery fragment). Empty for the base editor, whose own text is
+   * the full query.
+   */
+  completionBaseQuery?: string;
+  dataTestSubj?: string;
   readOnly?: boolean;
 }
 
@@ -89,9 +93,12 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
   value,
   onChange,
   lineNumberOffset,
-  onEditorMount,
+  completionBaseQuery = '',
+  dataTestSubj,
   readOnly = false,
 }) => {
+  const { onEditorMount } = useEsqlCompletion({ baseQuery: completionBaseQuery });
+
   const options = useMemo(() => {
     const lineNumbers: LineNumbersType | undefined =
       lineNumberOffset > 0 ? (n: number) => String(n + lineNumberOffset) : undefined;
@@ -113,7 +120,8 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
       onChange={onChange}
       height={200}
       options={options}
-      editorDidMount={onEditorMount}
+      editorDidMount={readOnly ? undefined : onEditorMount}
+      dataTestSubj={dataTestSubj}
     />
   );
 };
@@ -241,8 +249,6 @@ export const ComposeDiscoverTabs: React.FC<ComposeDiscoverTabsProps> = ({
   activeTab,
   onTabChange,
   tabs,
-  onAlertEditorMount,
-  onRecoveryEditorMount,
   hideTabBar = false,
   readOnly = false,
 }) => {
@@ -266,6 +272,7 @@ export const ComposeDiscoverTabs: React.FC<ComposeDiscoverTabsProps> = ({
             value={baseQuery}
             onChange={onBaseQueryChange}
             lineNumberOffset={0}
+            dataTestSubj="composeDiscoverBaseQueryEditor"
             readOnly={readOnly}
           />
         );
@@ -277,7 +284,8 @@ export const ComposeDiscoverTabs: React.FC<ComposeDiscoverTabsProps> = ({
               value={alertBlock}
               onChange={onAlertBlockChange}
               lineNumberOffset={baseLineCount}
-              onEditorMount={onAlertEditorMount}
+              completionBaseQuery={baseQuery}
+              dataTestSubj="composeDiscoverAlertQueryEditor"
               readOnly={readOnly}
             />
           </>
@@ -290,7 +298,8 @@ export const ComposeDiscoverTabs: React.FC<ComposeDiscoverTabsProps> = ({
               value={recoveryBlock}
               onChange={onRecoveryBlockChange}
               lineNumberOffset={baseLineCount}
-              onEditorMount={onRecoveryEditorMount}
+              completionBaseQuery={baseQuery}
+              dataTestSubj="composeDiscoverRecoveryQueryEditor"
               readOnly={readOnly}
             />
           </>

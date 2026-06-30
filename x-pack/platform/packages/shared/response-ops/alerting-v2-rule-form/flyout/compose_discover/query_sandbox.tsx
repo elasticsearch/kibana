@@ -26,7 +26,7 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { CodeEditor, ESQL_LANG_ID, type monaco } from '@kbn/code-editor';
+import { CodeEditor, ESQL_LANG_ID } from '@kbn/code-editor';
 import { useRuleFormServices } from '../../form/contexts/rule_form_context';
 import { useQueryExecution } from './use_query_execution';
 import { ComposeDiscoverChart } from './compose_discover_chart';
@@ -39,6 +39,7 @@ import {
 import type { QueryTab } from './types';
 import { CpsPicker } from './cps_picker';
 import { useResolveTimeField } from './use_resolve_time_field';
+import { useEsqlCompletion } from './use_esql_completion';
 
 /**
  * Self-contained ES|QL sandbox that handles data fetching and renders the full
@@ -91,8 +92,6 @@ export interface QuerySandboxProps {
     onBaseQueryChange: (v: string) => void;
     onAlertBlockChange: (v: string) => void;
     onRecoveryBlockChange: (v: string) => void;
-    onAlertEditorMount?: (editor: monaco.editor.IStandaloneCodeEditor) => void;
-    onRecoveryEditorMount?: (editor: monaco.editor.IStandaloneCodeEditor) => void;
     readOnly?: boolean;
   };
 }
@@ -122,6 +121,10 @@ export const QuerySandbox: React.FC<QuerySandboxProps> = ({
   const isReadOnly = !onQueryChange;
   const hasTabs = Boolean(tabProps?.tabs?.length);
   const skipTimeFieldResolution = timeFieldOptionsProp !== undefined;
+
+  // ES|QL autocomplete for the single (non-split) editor. The split editors register
+  // their own model contexts inside `ComposeDiscoverTabs`.
+  const { onEditorMount: onSingleEditorMount } = useEsqlCompletion({ baseQuery: '' });
 
   const splitTabs = useMemo(() => {
     if (!tabProps?.tabs?.length) return [];
@@ -342,8 +345,6 @@ export const QuerySandbox: React.FC<QuerySandboxProps> = ({
             activeTab={tabProps.activeTab}
             onTabChange={tabProps.onTabChange}
             tabs={tabProps.tabs}
-            onAlertEditorMount={tabProps.onAlertEditorMount}
-            onRecoveryEditorMount={tabProps.onRecoveryEditorMount}
             readOnly={tabProps.readOnly}
             hideTabBar
           />
@@ -353,6 +354,7 @@ export const QuerySandbox: React.FC<QuerySandboxProps> = ({
             value={query}
             onChange={(v) => onQueryChange?.(v)}
             height="100%"
+            editorDidMount={isReadOnly ? undefined : onSingleEditorMount}
             options={{
               minimap: { enabled: false },
               automaticLayout: true,

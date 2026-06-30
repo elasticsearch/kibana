@@ -113,6 +113,39 @@ export class ComposeDiscoverPage {
     await this.editRuleButton(ruleId).click();
   }
 
+  /** Container for the editable alert-condition block editor inside the sandbox. */
+  public get alertQueryEditor(): Locator {
+    return this.page.testSubj.locator('composeDiscoverAlertQueryEditor');
+  }
+
+  /** Opens the sandbox from the alert-condition summary (edit / "Open query editor"). */
+  async openSandboxEditor() {
+    await this.alertSummaryEditorButton.click();
+  }
+
+  async switchSandboxTab(tab: 'base' | 'alert' | 'recovery') {
+    await this.page.testSubj.locator(`querySandboxTab-${tab}`).click();
+  }
+
+  /**
+   * Sets the alert block editor content to `fragment` and programmatically triggers
+   * Monaco autocomplete on that editor. The editor is located by its `data-test-subj`
+   * (not by model index) so it stays correct regardless of how many Monaco models exist.
+   */
+  async setAlertQueryAndTriggerSuggest(fragment: string) {
+    // No DOM click is needed: the value is set directly on the Monaco model and the
+    // editor is focused via the Monaco API before triggering suggest. Clicking the
+    // textarea is both unnecessary and flaky (Monaco's `.view-line` intercepts pointer
+    // events), so it is intentionally omitted.
+    await this.codeEditor.setValueByContainer('composeDiscoverAlertQueryEditor', fragment);
+    await this.codeEditor.triggerSuggestByContainer('composeDiscoverAlertQueryEditor');
+  }
+
+  /** Visible labels in the Monaco autocomplete suggestion popover. */
+  async getVisibleSuggestionLabels(): Promise<string[]> {
+    return this.codeEditor.getSuggestionLabels();
+  }
+
   /**
    * Types an ES|QL query into the sandbox's single unified code editor (Monaco
    * index 0). In the create flow the editor holds the whole pipeline (base +

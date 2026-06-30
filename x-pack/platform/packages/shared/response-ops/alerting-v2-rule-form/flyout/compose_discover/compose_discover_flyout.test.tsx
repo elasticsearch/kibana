@@ -106,14 +106,6 @@ jest.mock('./query_sandbox_flyout', () => ({
   },
 }));
 
-jest.mock('./use_esql_providers', () => ({
-  useEsqlAutocomplete: jest.fn(),
-}));
-
-jest.mock('./use_split_query_completion', () => ({
-  useSplitQueryCompletion: () => ({ onEditorMount: jest.fn() }),
-}));
-
 jest.mock('./use_resolve_time_field', () => ({
   useResolveTimeField: () => ({
     timeFieldOptions: [{ value: '@timestamp', text: '@timestamp' }],

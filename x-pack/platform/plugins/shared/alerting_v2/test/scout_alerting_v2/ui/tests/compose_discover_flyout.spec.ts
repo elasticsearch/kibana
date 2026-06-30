@@ -398,5 +398,59 @@ test.describe(
         await expect(page.testSubj.locator('ruleNameInput')).toBeHidden();
       });
     });
+
+    test('alert tab autocomplete: suggestions are not duplicated and base columns are available', async ({
+      pageObjects,
+      apiServices,
+    }) => {
+      let ruleId: string;
+
+      await test.step('seed a composed alert rule via API', async () => {
+        const rule = await apiServices.alertingV2.rules.create(
+          buildCreateRuleData({
+            // Omit recovery_strategy so the rule is GUI-representable. The builder
+            // default ('no_breach') is non-representable, which forces the edit
+            // flyout into YAML mode where the form-mode editor button is absent.
+            recovery_strategy: undefined,
+            // `doc_count` is a derived STATS column only available via the base query,
+            // so suggesting it in the alert tab proves the autocomplete joins the base
+            // query with the appended breach segment.
+            query: {
+              format: 'composed',
+              base: `FROM ${TEST_INDEX} | STATS doc_count = COUNT(*)`,
+              breach: { segment: 'WHERE doc_count > 0' },
+            },
+            metadata: { name: 'scout-compose-discover-suggest' },
+          })
+        );
+        ruleId = rule.id;
+      });
+
+      await test.step('open the edit flyout for the seeded rule', async () => {
+        await pageObjects.rulesList.goto();
+        await expect(pageObjects.rulesList.rulesListTable).toBeVisible({ timeout: 60_000 });
+        await pageObjects.composeDiscover.openEditFlyout(ruleId!);
+        await expect(pageObjects.composeDiscover.flyout).toBeVisible();
+      });
+
+      await test.step('open the sandbox and switch to the alert tab', async () => {
+        await pageObjects.composeDiscover.openSandboxEditor();
+        await pageObjects.composeDiscover.switchSandboxTab('alert');
+        await expect(pageObjects.composeDiscover.alertQueryEditor).toBeVisible();
+      });
+
+      await test.step('base-query columns are suggested exactly once (join works)', async () => {
+        await pageObjects.composeDiscover.setAlertQueryAndTriggerSuggest('| WHERE doc_');
+        const labels = await pageObjects.composeDiscover.getVisibleSuggestionLabels();
+        expect(labels.filter((label) => label === 'doc_count')).toHaveLength(1);
+      });
+
+      await test.step('no suggestion is duplicated at a command boundary', async () => {
+        await pageObjects.composeDiscover.setAlertQueryAndTriggerSuggest('| ');
+        const labels = await pageObjects.composeDiscover.getVisibleSuggestionLabels();
+        expect(labels.length).toBeGreaterThan(0);
+        expect(new Set(labels).size).toBe(labels.length);
+      });
+    });
   }
 );

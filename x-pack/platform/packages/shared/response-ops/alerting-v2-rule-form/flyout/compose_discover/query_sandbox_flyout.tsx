@@ -17,7 +17,6 @@ import {
   EuiFlexItem,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { monaco } from '@kbn/code-editor';
 import type { RuleQuery } from '../../form/types';
 import { getBreachQuery } from '../../form/utils/query_helpers';
 import type { QueryTab } from './types';
@@ -79,8 +78,6 @@ export interface QuerySandboxFlyoutProps {
    */
   helpText?: React.ReactNode;
   title?: string;
-  onAlertEditorMount?: (editor: monaco.editor.IStandaloneCodeEditor) => void;
-  onRecoveryEditorMount?: (editor: monaco.editor.IStandaloneCodeEditor) => void;
 }
 
 const QUERY_SANDBOX_TITLE_ID = 'composeDiscoverChildTitle';
@@ -100,8 +97,6 @@ export const QuerySandboxFlyout: React.FC<QuerySandboxFlyoutProps> = ({
   onApply,
   onClose,
   helpText,
-  onAlertEditorMount,
-  onRecoveryEditorMount,
   title = i18n.translate('xpack.alertingV2.composeDiscover.querySandbox.defaultTitle', {
     defaultMessage: 'Query sandbox',
   }),
@@ -175,20 +170,9 @@ export const QuerySandboxFlyout: React.FC<QuerySandboxFlyoutProps> = ({
       onBaseQueryChange: (v: string) => updateQuery({ base: v }),
       onAlertBlockChange: (v: string) => updateQuery({ breach: v }),
       onRecoveryBlockChange: (v: string) => updateQuery({ recover: v }),
-      onAlertEditorMount,
-      onRecoveryEditorMount,
       readOnly: isReadOnly,
     };
-  }, [
-    tabs,
-    activeTab,
-    onTabChange,
-    queryFields,
-    updateQuery,
-    onAlertEditorMount,
-    onRecoveryEditorMount,
-    isReadOnly,
-  ]);
+  }, [tabs, activeTab, onTabChange, queryFields, updateQuery, isReadOnly]);
 
   return (
     <EuiFlyout

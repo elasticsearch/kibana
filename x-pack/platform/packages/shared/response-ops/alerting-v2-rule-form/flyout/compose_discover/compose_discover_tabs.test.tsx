@@ -41,6 +41,15 @@ jest.mock('@kbn/code-editor', () => {
   };
 });
 
+const mockOnEditorMount = jest.fn();
+const mockUseEsqlCompletion = jest.fn((_args: { baseQuery: string }) => ({
+  onEditorMount: mockOnEditorMount,
+}));
+
+jest.mock('./use_esql_completion', () => ({
+  useEsqlCompletion: (args: { baseQuery: string }) => mockUseEsqlCompletion(args),
+}));
+
 describe('ComposeDiscoverTabs', () => {
   const baseQuery = 'FROM logs-*\n| STATS count = COUNT(*) BY host.name';
   const alertBlock = '| WHERE count > 100';
@@ -59,36 +68,17 @@ describe('ComposeDiscoverTabs', () => {
     jest.clearAllMocks();
   });
 
-  it('mounts the recovery query editor with the recovery completion handler', async () => {
-    const onAlertEditorMount = jest.fn();
-    const onRecoveryEditorMount = jest.fn();
-
-    render(
-      <ComposeDiscoverTabs
-        {...defaultProps}
-        activeTab="recovery"
-        tabs={['recovery']}
-        onAlertEditorMount={onAlertEditorMount}
-        onRecoveryEditorMount={onRecoveryEditorMount}
-      />
-    );
+  it('registers ES|QL completion for the recovery block editor with the base query as context', async () => {
+    render(<ComposeDiscoverTabs {...defaultProps} activeTab="recovery" tabs={['recovery']} />);
 
     await waitFor(() => {
-      expect(onRecoveryEditorMount).toHaveBeenCalledTimes(1);
+      expect(mockOnEditorMount).toHaveBeenCalledTimes(1);
     });
-    expect(onAlertEditorMount).not.toHaveBeenCalled();
+    expect(mockUseEsqlCompletion).toHaveBeenCalledWith({ baseQuery });
   });
 
   it('uses the ES|QL language for base and split block editors', () => {
-    render(
-      <ComposeDiscoverTabs
-        {...defaultProps}
-        activeTab="alert"
-        tabs={['base', 'alert']}
-        onAlertEditorMount={jest.fn()}
-        onRecoveryEditorMount={jest.fn()}
-      />
-    );
+    render(<ComposeDiscoverTabs {...defaultProps} activeTab="alert" tabs={['base', 'alert']} />);
 
     expect(screen.getAllByTestId('codeEditorMock')).toHaveLength(2);
     expect(screen.getAllByTestId('codeEditorMock')).toEqual(

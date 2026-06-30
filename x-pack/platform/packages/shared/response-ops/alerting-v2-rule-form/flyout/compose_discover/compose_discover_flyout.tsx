@@ -51,14 +51,12 @@ import { RULE_BUILDER_REGISTRY, BuilderStateProvider, type BuilderState } from '
 import type { ComposeDiscoverMode, QueryTab, RecoveryType } from './types';
 import { isBuilderConditionStepId } from './types';
 import { getSandboxTabs, useComposeDiscoverState } from './use_compose_discover_state';
-import { useEsqlAutocomplete } from './use_esql_providers';
 import {
   guessRecoveryBlock,
   discoverQueryToComposed,
   resolveUnifiedAlertApplyQuery,
   splitResultToRuleQuery,
 } from './use_heuristic_split';
-import { useSplitQueryCompletion } from './use_split_query_completion';
 import { getTimeFieldResolutionQuery } from './get_time_field_resolution_query';
 import { ComposeDiscoverTimeFieldContextProvider } from './compose_discover_time_field_context';
 import { useResolveTimeField } from './use_resolve_time_field';
@@ -253,9 +251,6 @@ export function ComposeDiscoverFlyout({
     isQueryPrePopulated: isDiscoverQueryComplete,
     forceYamlMode,
   });
-
-  // Registered once here so providers persist across Sandbox open/close cycles.
-  useEsqlAutocomplete(baseServices);
 
   const [builderState, setBuilderState] = useState<BuilderState>(() => {
     if (!builderType) return undefined;
@@ -470,21 +465,6 @@ export function ComposeDiscoverFlyout({
     },
     [methods]
   );
-
-  /*
-   * Split-query completion for alert and recovery block editors. Registered at
-   * the flyout level so providers survive Sandbox (child) open/close cycles and
-   * are immune to React Strict Mode double-mount disposal.
-   */
-  const sandboxBase = sandboxQuery.format === 'composed' ? sandboxQuery.base : '';
-  const { onEditorMount: onAlertEditorMount } = useSplitQueryCompletion({
-    baseQuery: sandboxBase,
-    search: services.data.search.search,
-  });
-  const { onEditorMount: onRecoveryEditorMount } = useSplitQueryCompletion({
-    baseQuery: sandboxBase,
-    search: services.data.search.search,
-  });
 
   const isAlertRef = useRef(isAlert);
   isAlertRef.current = isAlert;
@@ -1060,8 +1040,6 @@ export function ComposeDiscoverFlyout({
                 onDateRangeChange={setDateRange}
                 activeTab={uiState.activeTab}
                 onTabChange={handleSandboxTabChange}
-                onAlertEditorMount={onAlertEditorMount}
-                onRecoveryEditorMount={onRecoveryEditorMount}
                 onClose={() => {
                   syncSandbox();
                   dispatch({ type: 'CLOSE_CHILD' });

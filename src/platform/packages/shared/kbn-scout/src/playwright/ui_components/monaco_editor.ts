@@ -25,7 +25,8 @@ interface MonacoModel {
 
 /** Minimal description of a Monaco editor instance used inside `page.evaluate` callbacks. */
 interface MonacoEditorInstance {
-  getModel(): { uri: { toString(): string } } | null;
+  getModel(): MonacoModel | null;
+  getDomNode(): HTMLElement | null;
   setPosition(pos: unknown): void;
   focus(): void;
   trigger(source: string, handlerId: string, payload: unknown): void;
@@ -128,6 +129,78 @@ export class KibanaCodeEditorWrapper {
   }
 
   /**
+   * Sets the value of the Monaco editor whose DOM node lives inside the container
+   * identified by `data-test-subj`. Use this instead of {@link setCodeEditorValue}
+   * when several Monaco editors are mounted on screen and addressing one by model
+   * index is ambiguous (e.g. split base/alert ES|QL editors).
+   *
+   * @param containerTestSubjId - `data-test-subj` of the element that wraps the editor.
+   * @param value - New value to set in the editor.
+   */
+  async setValueByContainer(containerTestSubjId: string, value: string): Promise<void> {
+    await this.page.evaluate(
+      ({ testSubjId, codeEditorValue }) => {
+        const monacoEnv = (window as any).MonacoEnvironment;
+        if (!monacoEnv?.monaco?.editor) {
+          throw new Error('MonacoEnvironment.monaco.editor is not available');
+        }
+        const container = document.querySelector(`[data-test-subj="${testSubjId}"]`);
+        if (!container) {
+          throw new Error(`Editor container "${testSubjId}" not found`);
+        }
+        const editors = monacoEnv.monaco.editor.getEditors() as MonacoEditorInstance[];
+        const editor = editors.find((e) => {
+          const node = e.getDomNode();
+          return node != null && container.contains(node);
+        });
+        if (!editor) {
+          throw new Error(`No Monaco editor instance found inside "${testSubjId}"`);
+        }
+        const model = editor.getModel();
+        if (!model) {
+          throw new Error(`Editor inside "${testSubjId}" has no model`);
+        }
+        model.setValue(codeEditorValue);
+      },
+      { testSubjId: containerTestSubjId, codeEditorValue: value }
+    );
+  }
+
+  /**
+   * Positions the cursor at the end of the editor whose DOM node lives inside the
+   * container identified by `data-test-subj`, then triggers Monaco autocomplete.
+   * The container variant of {@link triggerSuggest} for screens with multiple editors.
+   *
+   * @param containerTestSubjId - `data-test-subj` of the element that wraps the editor.
+   */
+  async triggerSuggestByContainer(containerTestSubjId: string): Promise<void> {
+    await this.page.evaluate((testSubjId) => {
+      const monacoEnv = (window as any).MonacoEnvironment;
+      if (!monacoEnv?.monaco?.editor) {
+        throw new Error('MonacoEnvironment.monaco.editor is not available');
+      }
+      const container = document.querySelector(`[data-test-subj="${testSubjId}"]`);
+      if (!container) {
+        throw new Error(`Editor container "${testSubjId}" not found`);
+      }
+      const editors = monacoEnv.monaco.editor.getEditors() as MonacoEditorInstance[];
+      const editor = editors.find((e) => {
+        const node = e.getDomNode();
+        return node != null && container.contains(node);
+      });
+      if (!editor) {
+        throw new Error(`No Monaco editor instance found inside "${testSubjId}"`);
+      }
+      const model = editor.getModel();
+      if (model) {
+        editor.setPosition(model.getPositionAt(model.getValue().length));
+      }
+      editor.focus();
+      editor.trigger('scout-test', 'editor.action.triggerSuggest', {});
+    }, containerTestSubjId);
+  }
+
+  /**
    * Returns a locator for the current Monaco error markers inside the given
    * editor container.
    *
@@ -147,6 +220,20 @@ export class KibanaCodeEditorWrapper {
     return this.page.locator(
       '[data-test-subj="kbnCodeEditorEditorOverflowWidgetsContainer"] .suggest-widget'
     );
+  }
+
+  /**
+   * Waits for the Monaco autocomplete popover to render at least one row, then
+   * returns the visible suggestion labels. Centralizes Monaco's internal DOM shape
+   * (`.monaco-list-row`, `.label-name`) so individual suites don't duplicate it.
+   */
+  async getSuggestionLabels(): Promise<string[]> {
+    const widget = this.getCodeEditorSuggestWidget();
+    await widget.waitFor({ state: 'visible' });
+    // Auto-retrying readiness wait: the popover is visible before its rows render,
+    // so wait until at least one suggestion row exists before reading labels.
+    await expect(widget.locator('.monaco-list-row')).not.toHaveCount(0);
+    return widget.locator('.monaco-list-row .label-name').allInnerTexts();
   }
 
   /**
