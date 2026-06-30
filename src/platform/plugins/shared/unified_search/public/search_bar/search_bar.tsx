@@ -26,6 +26,7 @@ import {
   isOfQueryType,
   isOfAggregateQueryType,
 } from '@kbn/es-query';
+import type { AsCodeFilter } from '@kbn/as-code-filters-schema';
 import type { KibanaReactContextValue } from '@kbn/kibana-react-plugin/public';
 import { withKibana } from '@kbn/kibana-react-plugin/public';
 import type {
@@ -84,8 +85,24 @@ export interface SearchBarOwnProps<QT extends AggregateQuery | Query = Query> {
    * the `unifiedSearch.newDateRangePickerEnabled` feature flag is also enabled.
    */
   enableDateRangePicker?: boolean;
+  /**
+   * Enables wrapper-boundary conversion between `AsCodeFilter[]` and internal `Filter[]`.
+   *
+   * When enabled:
+   * - `filters` may be provided as `AsCodeFilter[]`
+   * - `onFiltersUpdated` returns `AsCodeFilter[]`
+   * - `useDefaultBehaviors={true}` is not supported by StatefulSearchBar
+   * - StatefulSearchBar requires an explicit `onFiltersUpdated`
+   *
+   * SearchBarUI and child components continue operating on `Filter[]` only.
+   */
+  asCodeFilterMode?: boolean;
   filters?: Filter[];
   additionalQueryBarMenuItems?: AdditionalQueryBarMenuItems;
+  /**
+   * Intentionally remains `Filter[]` even when `asCodeFilterMode` is enabled.
+   * Consumers that need suggestion-context filters in as-code mode must convert them first.
+   */
   filtersForSuggestions?: Filter[];
   hiddenFilterPanelOptions?: QueryBarMenuProps['hiddenPanelOptions'];
   prependFilterBar?: React.ReactNode;
@@ -179,6 +196,27 @@ export interface SearchBarOwnProps<QT extends AggregateQuery | Query = Query> {
    */
   enableResourceBrowser?: boolean;
 }
+
+interface SearchBarWrapperCommonProps<QT extends Query | AggregateQuery = Query>
+  extends Omit<SearchBarOwnProps<QT>, 'filters' | 'asCodeFilterMode'>,
+    Pick<SearchBarInjectedDeps, 'bubbleSubmitEvent'> {
+  timeHistory?: TimeHistoryContract;
+}
+
+export type SearchBarFilterProps =
+  | {
+      asCodeFilterMode: true;
+      filters?: Filter[] | AsCodeFilter[];
+      onFiltersUpdated?: (filters: AsCodeFilter[]) => void;
+    }
+  | {
+      asCodeFilterMode?: false;
+      filters?: Filter[];
+      onFiltersUpdated?: (filters: Filter[]) => void;
+    };
+
+export type SearchBarWrapperProps<QT extends Query | AggregateQuery = Query> =
+  SearchBarWrapperCommonProps<QT> & SearchBarFilterProps;
 
 export type SearchBarProps<QT extends Query | AggregateQuery = Query> = SearchBarOwnProps<QT> &
   SearchBarInjectedDeps;
@@ -562,7 +600,9 @@ export class SearchBarUI<QT extends (Query | AggregateQuery) | Query = Query> ex
             link: (chunks: React.ReactNode) => (
               <EuiLink
                 data-test-subj="backgroundSearchToastLink"
-                onClick={() => {
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
                   this.services.notifications.toasts.remove(toast);
                   this.services.data.search.showSearchSessionsFlyout({
                     appId: this.services.appName,

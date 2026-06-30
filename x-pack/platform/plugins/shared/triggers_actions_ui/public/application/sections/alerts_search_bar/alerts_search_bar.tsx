@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import type { Query, TimeRange } from '@kbn/es-query';
+import type { Filter, Query, TimeRange } from '@kbn/es-query';
 import { compareFilters } from '@kbn/es-query';
 import type { SuggestionsAbstraction } from '@kbn/kql/public/components/typeahead/suggestions_component';
 import { isSiemRuleType } from '@kbn/rule-data-utils';
@@ -176,7 +176,7 @@ export function AlertsSearchBar({
       displayStyle="inPage"
       showFilterBar={showFilterBar}
       onQuerySubmit={onSearchQuerySubmit}
-      onFiltersUpdated={(newFilters) => {
+      onFiltersUpdated={(newFilters: Filter[]) => {
         const mappedFilters = structuredClone(newFilters);
         dataService.query.filterManager.setFilters(mappedFilters);
         onFiltersUpdated?.(mappedFilters);

@@ -8,7 +8,10 @@ import React from 'react';
 import type { StatefulSearchBarProps } from '@kbn/unified-search-plugin/public';
 import { useKibana } from '../../hooks/use_kibana';
 
-export type UncontrolledStreamsAppSearchBarProps = Omit<StatefulSearchBarProps, 'appName'>;
+export type UncontrolledStreamsAppSearchBarProps = Omit<
+  StatefulSearchBarProps & { asCodeFilterMode?: false },
+  'appName'
+>;
 
 export function UncontrolledStreamsAppSearchBar(props: UncontrolledStreamsAppSearchBarProps) {
   const { unifiedSearch } = useKibana().dependencies.start;

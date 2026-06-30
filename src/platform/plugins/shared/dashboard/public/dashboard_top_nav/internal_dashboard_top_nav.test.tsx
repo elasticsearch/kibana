@@ -24,6 +24,7 @@ import {
   unifiedSearchService,
 } from '../services/kibana_services';
 import { InternalDashboardTopNav } from './internal_dashboard_top_nav';
+import { DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG } from '../dashboard_constants';
 import { DashboardInternalContext } from '../dashboard_api/use_dashboard_internal_api';
 
 describe('Internal dashboard top nav', () => {
@@ -31,6 +32,11 @@ describe('Internal dashboard top nav', () => {
     setMockedPresentationUtilServices();
     dataService.query.filterManager.getFilters = jest.fn().mockReturnValue([]);
     shareService!.availableIntegrations = jest.fn().mockReturnValue([]);
+    coreServices.featureFlags.getBooleanValue = jest
+      .fn()
+      .mockImplementation((flag, defaultValue) =>
+        flag === DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG ? false : defaultValue
+      );
     jest.clearAllMocks();
   });
 
@@ -71,6 +77,30 @@ describe('Internal dashboard top nav', () => {
           badgeText: 'Managed',
         }),
       ])
+    );
+  });
+
+  it('passes asCodeFilterMode when dashboard feature flag is enabled', async () => {
+    (coreServices.featureFlags.getBooleanValue as jest.Mock).mockImplementation(
+      (flag, defaultValue) => flag === DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG || defaultValue
+    );
+    const { api, internalApi } = buildMockDashboardApi();
+
+    renderWithI18n(
+      <DashboardContext.Provider value={api}>
+        <DashboardInternalContext.Provider value={internalApi}>
+          <InternalDashboardTopNav redirectTo={jest.fn()} />
+        </DashboardInternalContext.Provider>
+      </DashboardContext.Provider>
+    );
+
+    expect(unifiedSearchService.ui.SearchBar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        asCodeFilterMode: true,
+        useDefaultBehaviors: false,
+        onFiltersUpdated: expect.any(Function),
+      }),
+      {}
     );
   });
 

@@ -17,8 +17,9 @@ import { useCallback } from 'react';
 import type { DashboardState } from '../../../common/types';
 import { DASHBOARD_APP_ID } from '../../../common/page_bundle_constants';
 import type { DashboardCreationOptions } from '../..';
-import { screenshotModeService } from '../../services/kibana_services';
+import { coreServices, screenshotModeService } from '../../services/kibana_services';
 import { DASHBOARD_STATE_STORAGE_KEY, createDashboardEditUrl } from '../../utils/urls';
+import { DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG } from '../../dashboard_constants';
 import type { DashboardEmbedSettings } from '../types';
 import {
   createSessionRestorationDataProvider,
@@ -98,6 +99,11 @@ export const useCreationOptions = ({
       };
     };
 
+    const useAsCodeFilters = coreServices.featureFlags.getBooleanValue(
+      DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG,
+      false
+    );
+
     return Promise.resolve<DashboardCreationOptions>({
       getIncomingEmbeddables: () => incomingEmbeddables,
 
@@ -109,6 +115,7 @@ export const useCreationOptions = ({
       useControlsIntegration: false,
       unifiedSearchSettings: {
         kbnUrlStateStorage,
+        useAsCodeFilters,
       },
       useSearchSessionsIntegration: true,
       searchSessionSettings: {

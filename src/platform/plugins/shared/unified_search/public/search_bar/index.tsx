@@ -9,8 +9,10 @@
 
 import React from 'react';
 import { useEuiTheme } from '@elastic/eui';
-import type { AggregateQuery, Query } from '@kbn/es-query';
-import type { SearchBarProps } from './search_bar';
+import type { AggregateQuery, Filter, Query } from '@kbn/es-query';
+import { getCoreStart } from '../services';
+import { useAsCodeFilterConversion } from '../hooks/use_as_code_filter_conversion';
+import type { SearchBarProps, SearchBarWrapperProps } from './search_bar';
 
 type FallbackProps = Pick<SearchBarProps<AggregateQuery>, 'displayStyle'>;
 
@@ -34,17 +36,36 @@ const LazySearchBar = React.lazy(async () => {
   return { default: SearchBar };
 });
 const WrappedSearchBar = <QT extends AggregateQuery | Query = Query>(
-  props: Omit<SearchBarProps<QT>, 'intl' | 'kibana'>
+  props: Omit<SearchBarWrapperProps<QT>, 'intl' | 'kibana'>
 ) => {
-  const typeCastedProps = props as SearchBarProps<AggregateQuery>;
-  const { displayStyle } = typeCastedProps;
+  const typeCastedProps = props as SearchBarWrapperProps<AggregateQuery>;
+  const { displayStyle, asCodeFilterMode, filters, onFiltersUpdated, ...restProps } =
+    typeCastedProps;
+  const coreStart = getCoreStart();
+  const convertedProps = useAsCodeFilterConversion({
+    asCodeFilterMode,
+    filters,
+    onFiltersUpdated: onFiltersUpdated as ((filters: Filter[]) => void) | undefined,
+    toasts: coreStart.notifications.toasts,
+  });
+
   return (
     <React.Suspense fallback={<Fallback {...{ displayStyle }} />}>
-      <LazySearchBar {...typeCastedProps} />
+      <LazySearchBar
+        {...restProps}
+        displayStyle={displayStyle}
+        filters={convertedProps.filters}
+        onFiltersUpdated={convertedProps.onFiltersUpdated}
+      />
     </React.Suspense>
   );
 };
 
 export const SearchBar = WrappedSearchBar;
 export type { StatefulSearchBarProps } from './create_search_bar';
-export type { SearchBarProps, SearchBarOwnProps } from './search_bar';
+export type {
+  SearchBarFilterProps,
+  SearchBarProps,
+  SearchBarOwnProps,
+  SearchBarWrapperProps,
+} from './search_bar';

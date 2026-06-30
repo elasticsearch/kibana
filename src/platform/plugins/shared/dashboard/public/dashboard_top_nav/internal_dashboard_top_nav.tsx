@@ -24,7 +24,7 @@ import {
 import { css } from '@emotion/react';
 import type { MountPoint } from '@kbn/core/public';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
-import type { Query } from '@kbn/es-query';
+import type { Query, TimeRange } from '@kbn/es-query';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { getManagedContentBadge } from '@kbn/managed-content-badge';
 import type { TopNavMenuBadgeProps, TopNavMenuProps } from '@kbn/navigation-plugin/public';
@@ -58,6 +58,7 @@ import { getDashboardCapabilities } from '../utils/get_dashboard_capabilities';
 import { getFullEditPath } from '../utils/urls';
 import { DashboardFavoriteButton } from './dashboard_favorite_button';
 import { DashboardControlsRenderer } from '../dashboard_controls_renderer';
+import { DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG } from '../dashboard_constants';
 
 export interface InternalDashboardTopNavProps {
   customLeadingBreadCrumbs?: EuiBreadcrumb[];
@@ -88,6 +89,10 @@ export function InternalDashboardTopNav({
 
   const dashboardApi = useDashboardApi();
   const dashboardInternalApi = useDashboardInternalApi();
+  const isAsCodeFiltersEnabled = coreServices.featureFlags.getBooleanValue(
+    DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG,
+    false
+  );
 
   const [
     allDataViews,
@@ -340,7 +345,9 @@ export function InternalDashboardTopNav({
                   Duplicate: (
                     <EuiLink
                       id="dashboardManagedContentPopoverButton"
-                      onClick={() => {
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
                         dashboardApi.runInteractiveSave().then((result) => maybeRedirect(result));
                       }}
                       aria-label={dashboardManagedBadge.getDuplicateButtonAriaLabel()}
@@ -397,15 +404,18 @@ export function InternalDashboardTopNav({
       {viewMode !== 'print' && visibilityProps.showSearchBar && (
         <unifiedSearchService.ui.SearchBar
           {...visibilityProps}
+          {...(isAsCodeFiltersEnabled
+            ? { asCodeFilterMode: true as const, onFiltersUpdated: dashboardApi.setAsCodeFilters }
+            : { asCodeFilterMode: false as const })}
           query={query as Query | undefined}
           screenTitle={title}
-          useDefaultBehaviors={true}
+          useDefaultBehaviors={!isAsCodeFiltersEnabled}
           savedQueryId={savedQueryId}
           indexPatterns={allDataViews ?? []}
           allowSavingQueries
           enableDateRangePicker
           appName={DASHBOARD_APP_ID}
-          onQuerySubmit={(_payload, isUpdate) => {
+          onQuerySubmit={(_payload: { dateRange: TimeRange; query?: Query }, isUpdate?: boolean) => {
             if (isUpdate === false) {
               dashboardApi.forceRefresh();
             }

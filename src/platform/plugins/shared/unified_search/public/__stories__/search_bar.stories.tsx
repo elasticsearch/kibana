@@ -15,7 +15,7 @@ import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import type { DataView, DataViewsContract } from '@kbn/data-views-plugin/public';
 import { buildExistsFilter } from '@kbn/es-query';
 import { EuiButton, EuiComboBox } from '@elastic/eui';
-import type { SearchBarProps } from '../search_bar';
+import type { SearchBarWrapperProps } from '../search_bar';
 import { SearchBar } from '../search_bar';
 import { setIndexPatterns } from '../services';
 
@@ -185,7 +185,7 @@ setIndexPatterns({
 } as unknown as DataViewsContract);
 
 function wrapSearchBarInContext(
-  testProps: Partial<SearchBarProps<Query>>,
+  testProps: Partial<SearchBarWrapperProps<Query>>,
   capabilities: typeof defaultCapabilities = defaultCapabilities
 ) {
   const defaultOptions = {
@@ -204,7 +204,7 @@ function wrapSearchBarInContext(
     filters: [],
     onClearSavedQuery: action('onClearSavedQuery'),
     onFiltersUpdated: action('onFiltersUpdated'),
-  } as unknown as SearchBarProps<Query>;
+  } as unknown as SearchBarWrapperProps<Query>;
 
   const kbnServices = {
     ...services,
@@ -227,7 +227,7 @@ export default {
 };
 
 export const Default = {
-  render: () => wrapSearchBarInContext({ showQueryInput: true } as SearchBarProps),
+  render: () => wrapSearchBarInContext({ showQueryInput: true } as SearchBarWrapperProps),
   name: 'default',
 };
 
@@ -356,7 +356,7 @@ export const WithAdditionalFiltersUsedForSuggestions = {
           id: undefined,
         } as unknown as DataViewBase),
       ],
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with additional filters used for suggestions',
 };
@@ -390,7 +390,7 @@ export const WithOnlyTheFilterBarOn = {
           },
         },
       ],
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with only the filter bar on',
 };
@@ -402,7 +402,7 @@ export const WithOnlyTheQueryBarOn = {
       showFilterBar: false,
       showQueryInput: true,
       query: { query: 'Test: miaou', language: 'kuery' },
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with only the query bar on',
 };
@@ -415,7 +415,7 @@ export const WithQueryMenuOff = {
       showQueryInput: true,
       showQueryMenu: false,
       query: { query: 'Test: miaou', language: 'kuery' },
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with query menu off',
 };
@@ -449,7 +449,7 @@ export const WithOnlyTheFilterBarAndTheDatePickerOn = {
           },
         },
       ],
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with only the filter bar and the date picker on',
 };
@@ -514,7 +514,7 @@ export const WithLoadedSavedQueryWithoutChanges = {
           },
         },
       ],
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with loaded saved query without changes',
 };
@@ -556,7 +556,7 @@ export const WithLoadedSavedQueryWithChanges = {
           ],
         },
       },
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with loaded saved query with changes',
 };
@@ -661,7 +661,7 @@ export const WithFilterBarOnButPinningOptionIsHiddenFromMenus = {
           },
         },
       ],
-    } as unknown as SearchBarProps),
+    } as unknown as SearchBarWrapperProps),
 
   name: 'with filter bar on but pinning option is hidden from menus',
 };
@@ -680,7 +680,7 @@ export const WithDataviewPickerWithEsQl = {
         onAddField: action('onAddField'),
         onDataViewCreated: action('onDataViewCreated'),
       },
-    } as SearchBarProps),
+    } as SearchBarWrapperProps),
 
   name: 'with dataviewPicker with ES|QL',
 };
@@ -700,7 +700,7 @@ export const WithDataviewPickerWithEsQlAndEsQlQuery = {
         onDataViewCreated: action('onDataViewCreated'),
       },
       query: { esql: 'from dataview | project field1, field2' },
-    } as unknown as SearchBarProps<Query>),
+    } as unknown as SearchBarWrapperProps<Query>),
 
   name: 'with dataviewPicker with ES|QL and ES|QL query',
 };
@@ -722,7 +722,7 @@ export const WithDataviewPickerWithEsQlAndLargeEsQlQuery = {
       query: {
         esql: 'from dataview | project field1, field2, field 3, field 4, field 5 | where field5 > 5 | stats var = avg(field3)',
       },
-    } as unknown as SearchBarProps<Query>),
+    } as unknown as SearchBarWrapperProps<Query>),
 
   name: 'with dataviewPicker with ES|QL and large ES|QL query',
 };
@@ -747,7 +747,7 @@ export const WithDataviewPickerWithEsQlAndErrorsInEsQlQuery = {
         ),
       ],
       query: { esql: 'from dataview | project field10' },
-    } as unknown as SearchBarProps<Query>),
+    } as unknown as SearchBarWrapperProps<Query>),
 
   name: 'with dataviewPicker with ES|QL and errors in ES|QL query',
 };

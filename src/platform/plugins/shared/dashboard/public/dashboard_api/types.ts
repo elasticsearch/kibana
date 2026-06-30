@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { AsCodeFilter } from '@kbn/as-code-filters-schema';
 import type { SearchSessionInfoProvider } from '@kbn/data-plugin/public';
 import type { DefaultEmbeddableApi, EmbeddablePackageState } from '@kbn/embeddable-plugin/public';
 import type { Filter, ProjectRouting, Query, TimeRange } from '@kbn/es-query';
@@ -115,7 +116,10 @@ export interface DashboardCreationOptions {
   /** Whether to enable unified search integration. */
   useUnifiedSearchIntegration?: boolean;
   /** Settings for unified search integration. */
-  unifiedSearchSettings?: { kbnUrlStateStorage: IKbnUrlStateStorage };
+  unifiedSearchSettings?: {
+    kbnUrlStateStorage: IKbnUrlStateStorage;
+    useAsCodeFilters?: boolean;
+  };
 
   /** Whether to render the control group above the dashboard viewport. */
   useControlsIntegration?: boolean;
@@ -211,6 +215,7 @@ export type DashboardApi = CanExpandPanels &
     scrollToTop: () => void;
     scrollToBottom: () => void;
     scrollToBottom$: Subject<void>;
+    setAsCodeFilters: (filters?: AsCodeFilter[] | undefined) => void;
     setFilters: (filters?: Filter[] | undefined) => void;
     setFullScreenMode: (fullScreenMode: boolean) => void;
     setHighlightPanelId: (id: string | undefined) => void;

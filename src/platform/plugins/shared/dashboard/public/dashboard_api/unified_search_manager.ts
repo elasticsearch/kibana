@@ -102,6 +102,7 @@ export function initializeUnifiedSearchManager(
     }
   }
 
+  const useAsCodeFilters = creationOptions?.unifiedSearchSettings?.useAsCodeFilters ?? false;
   const asCodeFilters$ = new BehaviorSubject<AsCodeFilter[] | undefined>(initialState.filters);
   const timeslice$ = new BehaviorSubject<[number, number] | undefined>(undefined);
   const unifiedSearchFilters$ = new BehaviorSubject<Filter[] | undefined>(
@@ -112,7 +113,19 @@ export function initializeUnifiedSearchManager(
   function setUnifiedSearchFilters(unifiedSearchFilters: Filter[] | undefined) {
     if (!fastIsEqual(unifiedSearchFilters, unifiedSearchFilters$.value)) {
       unifiedSearchFilters$.next(cleanFiltersForSerialize(unifiedSearchFilters));
-      asCodeFilters$.next(fromStoredFilters(unifiedSearchFilters, logger));
+      if (!useAsCodeFilters) {
+        asCodeFilters$.next(fromStoredFilters(unifiedSearchFilters, logger));
+      }
+    }
+  }
+
+  function setAsCodeFilters(filters: AsCodeFilter[] | undefined) {
+    if (!fastIsEqual(filters, asCodeFilters$.value)) {
+      const pinnedFilters = (unifiedSearchFilters$.value ?? []).filter(isFilterPinned);
+      const storedFilters = toStoredFilters(filters, logger) ?? [];
+
+      asCodeFilters$.next(filters);
+      unifiedSearchFilters$.next(cleanFiltersForSerialize([...pinnedFilters, ...storedFilters]));
     }
   }
 
@@ -309,6 +322,7 @@ export function initializeUnifiedSearchManager(
       },
       query$,
       refreshInterval$,
+      setAsCodeFilters,
       setFilters: setUnifiedSearchFilters,
       setQuery,
       setTimeRange: setAndSyncTimeRange,
@@ -339,10 +353,10 @@ export function initializeUnifiedSearchManager(
         );
       },
       reset: (lastSavedState: DashboardState) => {
-        setUnifiedSearchFilters([
-          ...(unifiedSearchFilters$.value ?? []).filter(isFilterPinned),
-          ...(toStoredFilters(lastSavedState.filters, logger) ?? []),
-        ]);
+        const pinnedFilters = (unifiedSearchFilters$.value ?? []).filter(isFilterPinned);
+        const lastSavedFilters = toStoredFilters(lastSavedState.filters, logger) ?? [];
+
+        setUnifiedSearchFilters([...pinnedFilters, ...lastSavedFilters]);
         const storedQuery = lastSavedState.query ? toStoredQuery(lastSavedState.query) : undefined;
         setQuery(storedQuery);
         if (lastSavedState.time_range) {

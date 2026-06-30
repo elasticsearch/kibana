@@ -46,6 +46,9 @@
     "@kbn/kql",
     "@kbn/date-range-picker",
     "@kbn/scout",
+    "@kbn/as-code-filters-schema",
+    "@kbn/as-code-filters-transforms",
+    "@kbn/logging",
   ],
   "exclude": ["target/**/*"]
 }

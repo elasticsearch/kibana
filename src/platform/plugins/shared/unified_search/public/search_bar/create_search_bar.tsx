@@ -19,12 +19,13 @@ import type { Filter, TimeRange } from '@kbn/es-query';
 import type { UsageCollectionSetup } from '@kbn/usage-collection-plugin/public';
 import type { CPSPluginStart } from '@kbn/cps/public';
 import { SearchBar } from '.';
-import type { SearchBarOwnProps } from '.';
+import type { SearchBarFilterProps, SearchBarOwnProps } from '.';
 import { useFilterManager } from './lib/use_filter_manager';
 import { useTimefilter } from './lib/use_timefilter';
 import { useSavedQuery } from './lib/use_saved_query';
 import { useQueryStringManager } from './lib/use_query_string_manager';
 import { canShowSavedQuery } from './lib/can_show_saved_query';
+import { useAsCodeFilterConversion } from '../hooks/use_as_code_filter_conversion';
 
 export interface StatefulSearchBarDeps {
   core: CoreStart;
@@ -36,9 +37,9 @@ export interface StatefulSearchBarDeps {
   cps: CPSPluginStart;
 }
 
-export type StatefulSearchBarProps<QT extends Query | AggregateQuery = Query> = Omit<
+type StatefulSearchBarCommonProps<QT extends Query | AggregateQuery = Query> = Omit<
   SearchBarOwnProps<QT>,
-  'showSaveQuery'
+  'showSaveQuery' | 'asCodeFilterMode'
 > & {
   appName: string;
   useDefaultBehaviors?: boolean;
@@ -51,8 +52,10 @@ export type StatefulSearchBarProps<QT extends Query | AggregateQuery = Query> = 
    */
   allowSavingQueries?: boolean;
   onSavedQueryIdChange?: (savedQueryId?: string) => void;
-  onFiltersUpdated?: (filters: Filter[]) => void;
 };
+
+export type StatefulSearchBarProps<QT extends Query | AggregateQuery = Query> =
+  StatefulSearchBarCommonProps<QT> & SearchBarFilterProps;
 
 // Respond to user changing the filters
 const defaultFiltersUpdated = (
@@ -172,8 +175,25 @@ export function createSearchBar({
   // App name should come from the core application service.
   // Until it's available, we'll ask the user to provide it for the pre-wired component.
   return <QT extends AggregateQuery | Query = Query>(props: StatefulSearchBarProps<QT>) => {
-    const { useDefaultBehaviors, allowSavingQueries, disableSubscribingToGlobalDataServices } =
-      props;
+    const {
+      useDefaultBehaviors,
+      allowSavingQueries,
+      disableSubscribingToGlobalDataServices,
+      asCodeFilterMode,
+    } = props;
+
+    if (asCodeFilterMode && useDefaultBehaviors) {
+      throw new Error(
+        'StatefulSearchBar does not support asCodeFilterMode with useDefaultBehaviors=true. Provide explicit filter handlers instead.'
+      );
+    }
+
+    if (asCodeFilterMode && !props.onFiltersUpdated) {
+      throw new Error(
+        'StatefulSearchBar requires onFiltersUpdated when asCodeFilterMode is enabled.'
+      );
+    }
+
     // Handle queries
     const onQuerySubmitRef = useRef(props.onQuerySubmit);
 
@@ -184,7 +204,7 @@ export function createSearchBar({
     // i.e. filters being added from a visualization directly to filterManager.
     const { filters } = useFilterManager({
       disabled: disableSubscribingToGlobalDataServices,
-      filters: props.filters,
+      filters: asCodeFilterMode ? undefined : (props.filters as Filter[] | undefined),
       filterManager: data.query.filterManager,
     });
     const { query } = useQueryStringManager({
@@ -192,6 +212,15 @@ export function createSearchBar({
       query: props.query,
       queryStringManager: data.query.queryString,
     }) as { query: QT };
+    const convertedFilters = useAsCodeFilterConversion({
+      asCodeFilterMode,
+      filters: asCodeFilterMode ? props.filters : filters,
+      onFiltersUpdated: defaultFiltersUpdated(
+        data.query,
+        props.onFiltersUpdated as ((filters: Filter[]) => void) | undefined
+      ),
+      toasts: core.notifications.toasts,
+    });
     const { timeRange, refreshInterval, minRefreshInterval } = useTimefilter({
       disabled: disableSubscribingToGlobalDataServices,
       dateRangeFrom: props.dateRangeFrom,
@@ -252,6 +281,7 @@ export function createSearchBar({
             showQueryMenu={props.showQueryMenu}
             showQueryInput={props.showQueryInput}
             showSaveQuery={showSaveQuery}
+            asCodeFilterMode={asCodeFilterMode}
             showSubmitButton={props.showSubmitButton}
             submitButtonStyle={props.submitButtonStyle}
             isDisabled={props.isDisabled}
@@ -266,11 +296,11 @@ export function createSearchBar({
             isRefreshPaused={refreshInterval.pause}
             isLoading={props.isLoading}
             onCancel={props.onCancel}
-            filters={filters}
+            filters={convertedFilters.filters}
             query={query}
             draft={props.draft}
             onDraftChange={props.onDraftChange}
-            onFiltersUpdated={defaultFiltersUpdated(data.query, props.onFiltersUpdated)}
+            onFiltersUpdated={convertedFilters.onFiltersUpdated}
             onRefreshChange={
               !props.isAutoRefreshDisabled
                 ? defaultOnRefreshChange(data.query, props.onRefreshChange)

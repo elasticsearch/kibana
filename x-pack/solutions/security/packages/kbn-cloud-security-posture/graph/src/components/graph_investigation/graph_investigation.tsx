@@ -577,7 +577,7 @@ export const GraphInvestigation = memo<GraphInvestigationProps>(
                   indexPatterns={[dataView]}
                   filters={searchFilters}
                   submitButtonStyle={'iconOnly'}
-                  onFiltersUpdated={(newFilters) => {
+                  onFiltersUpdated={(newFilters: Filter[]) => {
                     setSearchFilters(newFilters);
                   }}
                   onQuerySubmit={(payload, isUpdate) => {

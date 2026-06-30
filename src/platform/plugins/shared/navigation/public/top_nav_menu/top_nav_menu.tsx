@@ -24,10 +24,12 @@ import { type TopNavMenuBadgeProps, TopNavMenuBadges } from './top_nav_menu_badg
 /**
  * @deprecated Use AppMenu from "@kbn/core-chrome-app-menu" instead
  */
-export type TopNavMenuProps<QT extends Query | AggregateQuery = Query> = Omit<
-  StatefulSearchBarProps<QT>,
+type TopNavSearchBarProps<QT extends Query | AggregateQuery = Query> = Omit<
+  Extract<StatefulSearchBarProps<QT>, { asCodeFilterMode?: false }>,
   'kibana' | 'intl' | 'timeHistory'
-> & {
+>;
+
+export type TopNavMenuProps<QT extends Query | AggregateQuery = Query> = TopNavSearchBarProps<QT> & {
   config?: TopNavMenuData[];
   /**
    * @deprecated Use coreStart.chrome.setBreadcrumbsBadges API instead

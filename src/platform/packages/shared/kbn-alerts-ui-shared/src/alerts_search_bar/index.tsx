@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import type { Query, TimeRange } from '@kbn/es-query';
+import type { Filter, Query, TimeRange } from '@kbn/es-query';
 import type { SuggestionsAbstraction } from '@kbn/kql/public/components/typeahead/suggestions_component';
 import { isSiemRuleType } from '@kbn/rule-data-utils';
 import { NO_INDEX_PATTERNS } from './constants';
@@ -122,7 +122,7 @@ export const AlertsSearchBar = ({
     displayStyle: 'inPage',
     showFilterBar,
     onQuerySubmit: onSearchQuerySubmit,
-    onFiltersUpdated: (newFilters) => {
+    onFiltersUpdated: (newFilters: Filter[]) => {
       dataService.query.filterManager.setFilters(newFilters);
       onFiltersUpdated?.(newFilters);
     },

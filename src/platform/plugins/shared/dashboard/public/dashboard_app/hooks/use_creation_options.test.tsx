@@ -13,7 +13,8 @@ import { renderHook } from '@testing-library/react';
 import { createMemoryHistory } from 'history';
 import { BehaviorSubject } from 'rxjs';
 
-import { screenshotModeService } from '../../services/kibana_services';
+import { screenshotModeService, coreServices } from '../../services/kibana_services';
+import { DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG } from '../../dashboard_constants';
 import { useCreationOptions } from './use_creation_options';
 import { extractDashboardState, loadAndRemoveDashboardState } from '../url';
 import {
@@ -52,6 +53,11 @@ describe('useCreationOptions', () => {
     (getSessionURLObservable as jest.Mock).mockReturnValue(
       new BehaviorSubject<string | undefined>(undefined)
     );
+    coreServices.featureFlags.getBooleanValue = jest
+      .fn()
+      .mockImplementation((flag, defaultValue) =>
+        flag === DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG ? false : defaultValue
+      );
   });
 
   it('clears history.state after merging locator dashboard payload', async () => {
@@ -96,6 +102,31 @@ describe('useCreationOptions', () => {
       })
     );
     expect(history.location.state).toBeUndefined();
+  });
+
+  it('adds dashboard as-code feature flag setting into unifiedSearchSettings', async () => {
+    coreServices.featureFlags.getBooleanValue = jest
+      .fn()
+      .mockImplementation((flag, defaultValue) =>
+        flag === DASHBOARD_AS_CODE_FILTERS_FEATURE_FLAG ? true : defaultValue
+      );
+    const history = createMemoryHistory();
+
+    const { result } = renderHook(() =>
+      useCreationOptions({
+        history,
+        getScopedHistory: () => history as unknown as ScopedHistory,
+        kbnUrlStateStorage: mockKbnUrlStateStorage,
+        validateOutcome,
+        incomingEmbeddables: undefined,
+      })
+    );
+
+    const creationOptions = await result.current();
+    expect(creationOptions.unifiedSearchSettings).toEqual({
+      kbnUrlStateStorage: mockKbnUrlStateStorage,
+      useAsCodeFilters: true,
+    });
   });
 
   it('does not clear history.state when there is no locator dashboard payload', async () => {

@@ -19,7 +19,8 @@ import { BehaviorSubject } from 'rxjs';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { indexPatternEditorPluginMock as dataViewEditorPluginMock } from '@kbn/data-view-editor-plugin/public/mocks';
 import { I18nProvider } from '@kbn/i18n-react';
-import { stubIndexPattern } from '@kbn/data-plugin/public/stubs';
+import { phraseFilter, stubIndexPattern } from '@kbn/data-plugin/public/stubs';
+import { FilterStateStore } from '@kbn/es-query';
 import { coreMock } from '@kbn/core/public/mocks';
 import { dataPluginMock } from '@kbn/data-plugin/public/mocks';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -30,6 +31,7 @@ import { createMockStorage, createMockTimeHistory } from './mocks';
 import { SearchSessionState } from '@kbn/data-plugin/public';
 import { getSessionServiceMock } from '@kbn/data-plugin/public/search/session/mocks';
 import { kqlPluginMock } from '@kbn/kql/public/mocks';
+import { setCoreStart } from '../services';
 
 const startMock = coreMock.createStart();
 startMock.chrome.getActiveSolutionNavId$.mockReturnValue(new BehaviorSubject('oblt'));
@@ -141,9 +143,20 @@ function wrapSearchBarInContext(
   );
 }
 
+const addStatusFilter = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByTestId('addFilter'));
+  await user.click(await screen.findByTestId('filterFieldSuggestion-status'));
+  await user.click(await screen.findByTestId('filterOperatorList-is'));
+  await user.click(await screen.findByTestId('comboBoxInput'));
+  await user.keyboard('active');
+  await user.keyboard('{Enter}');
+  await user.click(screen.getByTestId('saveFilter'));
+};
+
 describe('SearchBar', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setCoreStart(startMock);
   });
 
   it('Should render query bar when no options provided (in reality - timepicker)', async () => {
@@ -246,6 +259,127 @@ describe('SearchBar', () => {
       expect(screen.getByTestId('globalQueryBar')).toBeInTheDocument();
       expect(screen.queryByTestId('unifiedFilterBar')).not.toBeInTheDocument();
       expect(screen.getByTestId('kbnQueryBar')).toBeInTheDocument();
+    });
+  });
+
+  it('supports AsCodeFilter input in wrapper mode', async () => {
+    render(
+      wrapSearchBarInContext({
+        indexPatterns: [stubIndexPattern],
+        showDatePicker: false,
+        showQueryInput: true,
+        showFilterBar: true,
+        asCodeFilterMode: true,
+        onFiltersUpdated: noop,
+        filters: [
+          {
+            condition: {
+              field: 'status',
+              operator: 'is',
+              value: 'active',
+            },
+          },
+        ],
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('filter-items-group')).toBeInTheDocument();
+    });
+  });
+
+  it('returns AsCodeFilter[] from onFiltersUpdated when mode is active', async () => {
+    const onFiltersUpdated = jest.fn();
+    const user = userEvent.setup();
+
+    render(
+      wrapSearchBarInContext({
+        indexPatterns: [stubIndexPattern],
+        showDatePicker: false,
+        showQueryInput: true,
+        showFilterBar: true,
+        asCodeFilterMode: true,
+        onFiltersUpdated,
+        filters: [],
+      })
+    );
+
+    await addStatusFilter(user);
+
+    await waitFor(() => {
+      expect(onFiltersUpdated).toHaveBeenCalledWith([
+        {
+          condition: {
+            field: 'status',
+            operator: 'is',
+            value: 'active',
+          },
+        },
+      ]);
+    });
+  });
+
+  it('keeps legacy Filter[] mode unchanged', async () => {
+    const onFiltersUpdated = jest.fn();
+    const user = userEvent.setup();
+
+    render(
+      wrapSearchBarInContext({
+        indexPatterns: [stubIndexPattern],
+        showDatePicker: false,
+        showQueryInput: true,
+        showFilterBar: true,
+        onFiltersUpdated,
+        filters: [],
+      })
+    );
+
+    await addStatusFilter(user);
+
+    await waitFor(() => {
+      expect(onFiltersUpdated).toHaveBeenCalled();
+      expect((onFiltersUpdated.mock.calls.at(-1) ?? [])[0]).toEqual([
+        expect.objectContaining({ meta: expect.objectContaining({ type: 'phrase' }) }),
+      ]);
+    });
+  });
+
+  it('renders pinned filters and excludes them from AsCodeFilter emissions', async () => {
+    const onFiltersUpdated = jest.fn();
+    const user = userEvent.setup();
+    const pinnedFilter = {
+      ...phraseFilter,
+      $state: { store: FilterStateStore.GLOBAL_STATE },
+    };
+
+    render(
+      wrapSearchBarInContext({
+        indexPatterns: [stubIndexPattern],
+        showDatePicker: false,
+        showQueryInput: true,
+        showFilterBar: true,
+        asCodeFilterMode: true,
+        onFiltersUpdated,
+        filters: [pinnedFilter],
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('filter-items-group')).toBeInTheDocument();
+    });
+
+    await addStatusFilter(user);
+
+    await waitFor(() => {
+      expect(onFiltersUpdated).toHaveBeenCalledWith([
+        {
+          condition: {
+            field: 'status',
+            operator: 'is',
+            value: 'active',
+          },
+        },
+      ]);
     });
   });
 

@@ -8,7 +8,7 @@
 import React from 'react';
 import { EuiSpacer } from '@elastic/eui';
 import useAsync from 'react-use/lib/useAsync';
-import type { Query, TimeRange } from '@kbn/es-query';
+import type { Filter, Query, TimeRange } from '@kbn/es-query';
 import { useKibana } from '../../../../../hooks/use_kibana';
 import { useStreamEnrichmentSelector } from '../state_management/stream_enrichment_state_machine';
 import type { DataSourceActorRef } from '../state_management/data_source_state_machine';
@@ -83,7 +83,7 @@ export const KqlSamplesDataSourceCard = ({ dataSourceRef }: KqlSamplesDataSource
             filters={dataSource.filters}
             indexPatterns={[streamDataView]}
             isDisabled={isDisabled}
-            onFiltersUpdated={(filters) => handleChange({ filters })}
+            onFiltersUpdated={(filters: Filter[]) => handleChange({ filters })}
             onQuerySubmit={handleQueryChange}
             query={dataSource.query}
             showFilterBar
