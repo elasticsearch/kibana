@@ -15,6 +15,15 @@ import { AttacksPageContent, SECURITY_SOLUTION_PAGE_WRAPPER_TEST_ID } from './co
 import { TABLE_SECTION_TEST_ID } from './table/table_section';
 import { FILTER_BY_ASSIGNEES_BUTTON } from '../../../common/components/filter_by_assignees_popover/test_ids';
 
+jest.mock('@kbn/inference-connectors', () => ({
+  useLoadConnectors: jest.fn().mockReturnValue({ data: undefined }),
+}));
+
+jest.mock('../../../attack_discovery/pages/use_find_attack_discoveries', () => ({
+  ...jest.requireActual('../../../attack_discovery/pages/use_find_attack_discoveries'),
+  useFindAttackDiscoveries: jest.fn().mockReturnValue({ data: undefined }),
+}));
+
 const dataView: DataView = createStubDataView({ spec: {} });
 
 describe('AttacksPageContent', () => {
