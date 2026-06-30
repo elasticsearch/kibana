@@ -17,7 +17,6 @@ import { CLOUD_SERVERLESS, IS_SERVERLESS } from '../env_var_names_constants';
 import { suppressGlobalAnnouncements } from '../tasks/api_calls/suppress_global_announcements';
 
 before(() => {
-  cy.task('esArchiverLoad', { archiveName: 'auditbeat_single' });
   suppressGlobalAnnouncements();
 });
 
