@@ -23,3 +23,24 @@ export const getUser = ({ security }: GetUserOptions): string => {
     return 'elastic';
   }
 };
+
+export const getUserDisplayName = ({ security }: GetUserOptions): string => {
+  if (security != null) {
+    const authenticatedUser = security.authc.getCurrentUser();
+    if (authenticatedUser != null) {
+      if (authenticatedUser.full_name != null && authenticatedUser.full_name.length > 0) {
+        return authenticatedUser.full_name;
+      }
+
+      if (authenticatedUser.email != null && authenticatedUser.email.length > 0) {
+        return authenticatedUser.email;
+      }
+
+      return authenticatedUser.username;
+    } else {
+      return 'elastic';
+    }
+  } else {
+    return 'elastic';
+  }
+};

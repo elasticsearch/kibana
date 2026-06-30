@@ -65,6 +65,7 @@ export const updateExceptionListItem = async ({
   itemId,
   meta,
   user,
+  userDisplayName = user,
   tags,
   type,
 }: UpdateExceptionListItemOptions): Promise<ExceptionListItemSchema | null> => {
@@ -81,7 +82,7 @@ export const updateExceptionListItem = async ({
     const transformedComments = transformUpdateCommentsToComments({
       comments,
       existingComments: exceptionListItem.comments,
-      user,
+      user: userDisplayName,
     });
     const savedObject = await savedObjectsClient.update<ExceptionListSoSchema>(
       savedObjectType,
