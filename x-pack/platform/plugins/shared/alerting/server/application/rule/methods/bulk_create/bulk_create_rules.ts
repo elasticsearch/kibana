@@ -412,7 +412,6 @@ async function runBatch<Params extends RuleParams>({
   }
 
   // Phase B3 per-row outcomes.
-  const createTime = Date.now();
   const batchSuccessfulIds: string[] = [];
   const taskIdsToCleanUp: string[] = [];
   const successfulSavedObjects: Array<SavedObject<RawRule>> = [];
@@ -470,7 +469,6 @@ async function runBatch<Params extends RuleParams>({
       rulesClientContext: context,
       changesContext: {
         action: changeTracking?.action ?? RuleChangeTrackingAction.ruleCreate,
-        timestamp: createTime,
         metadata: changeTracking?.metadata,
       },
     });

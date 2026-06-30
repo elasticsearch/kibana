@@ -319,6 +319,80 @@ describe('logBulkRuleChanges', () => {
       expect(changes[0].timestamp).toBe(expected);
     });
 
+    it('uses so.updated_at when no explicit timestamp is provided', async () => {
+      const SO_UPDATED_AT = '2026-03-01T10:00:00.000Z';
+      const context = buildContext({ changeTrackingService });
+      const ruleSOs = [buildRuleSO('rule-1', '123', { updated_at: SO_UPDATED_AT })];
+
+      await logRuleChanges({
+        rulesClientContext: context,
+        ruleSOs,
+        changesContext: { action: RuleChangeTrackingAction.ruleUpdate },
+      });
+
+      const [changes] = changeTrackingService.logBulk.mock.calls[0];
+      expect(changes[0].timestamp).toBe(SO_UPDATED_AT);
+    });
+
+    it('uses each so.updated_at independently per rule when no explicit timestamp is provided', async () => {
+      const SO_UPDATED_AT_1 = '2026-03-01T10:00:00.000Z';
+      const SO_UPDATED_AT_2 = '2026-03-01T11:00:00.000Z';
+      const context = buildContext({ changeTrackingService });
+      const ruleSOs = [
+        buildRuleSO('rule-1', '123', { updated_at: SO_UPDATED_AT_1 }),
+        buildRuleSO('rule-2', '123', { updated_at: SO_UPDATED_AT_2 }),
+      ];
+
+      await logRuleChanges({
+        rulesClientContext: context,
+        ruleSOs,
+        changesContext: { action: RuleChangeTrackingAction.ruleUpdate },
+      });
+
+      const [changes] = changeTrackingService.logBulk.mock.calls[0];
+      expect(changes.map((c) => c.timestamp)).toEqual([SO_UPDATED_AT_1, SO_UPDATED_AT_2]);
+    });
+
+    it('falls back to current time when neither timestamp nor so.updated_at is available', async () => {
+      const FALLBACK_NOW = '2026-06-01T08:00:00.000Z';
+      jest.useFakeTimers({ now: new Date(FALLBACK_NOW).getTime() });
+
+      try {
+        const context = buildContext({ changeTrackingService });
+        const ruleSOWithoutUpdatedAt = buildRuleSO('rule-1');
+        delete (ruleSOWithoutUpdatedAt as Partial<SavedObject<RawRule>>).updated_at;
+
+        await logRuleChanges({
+          rulesClientContext: context,
+          ruleSOs: [ruleSOWithoutUpdatedAt as SavedObject<RawRule>],
+          changesContext: { action: RuleChangeTrackingAction.ruleUpdate },
+        });
+
+        const [changes] = changeTrackingService.logBulk.mock.calls[0];
+        expect(changes[0].timestamp).toBe(FALLBACK_NOW);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('uses explicit timestamp over so.updated_at when both are present', async () => {
+      const SO_UPDATED_AT = '2026-03-01T10:00:00.000Z';
+      const context = buildContext({ changeTrackingService });
+      const ruleSOs = [buildRuleSO('rule-1', '123', { updated_at: SO_UPDATED_AT })];
+
+      await logRuleChanges({
+        rulesClientContext: context,
+        ruleSOs,
+        changesContext: {
+          action: RuleChangeTrackingAction.ruleDelete,
+          timestamp: REFERENCE_TIMESTAMP_MS,
+        },
+      });
+
+      const [changes] = changeTrackingService.logBulk.mock.calls[0];
+      expect(changes[0].timestamp).toBe(REFERENCE_TIMESTAMP_ISO);
+    });
+
     it('uses the same timestamp for every change in a multi-rule call (single operation snapshot)', async () => {
       const context = buildContext({ changeTrackingService });
 
@@ -380,6 +454,7 @@ const buildRuleSO = (
 ): SavedObject<RawRule> => ({
   id,
   type: RULE_SAVED_OBJECT_TYPE,
+  updated_at: REFERENCE_TIMESTAMP_ISO,
   attributes: {
     alertTypeId,
     name: `rule ${id}`,

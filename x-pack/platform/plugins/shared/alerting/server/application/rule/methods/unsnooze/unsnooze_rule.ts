@@ -80,7 +80,6 @@ async function unsnoozeWithOCC(context: RulesClientContext, { id, scheduleIds }:
   const newAttrs = getUnsnoozeAttributes(attributes, scheduleIds);
   const username = await context.getUserName();
 
-  const unsnoozeRuleTimestamp = Date.now();
   const updatedRuleRaw = await updateRuleSo({
     savedObjectsClient: context.unsecuredSavedObjectsClient,
     savedObjectsUpdateOptions: { version },
@@ -123,7 +122,6 @@ async function unsnoozeWithOCC(context: RulesClientContext, { id, scheduleIds }:
     rulesClientContext: context,
     changesContext: {
       action: RuleChangeTrackingAction.ruleUnsnooze,
-      timestamp: unsnoozeRuleTimestamp,
     },
   });
 }

@@ -36,6 +36,10 @@ Each `change` has the following (see [Usage examples](#usage-examples) below):
 
 There is also an `opts` object that contains the `action` that took place, and relevant `username` and other contextual information.
 
+#### Capturing the right timestamp
+
+Pass the Saved Object's `updated_at` field (assigned by Elasticsearch at write time) rather than a clock reading taken before the write. For delete operations where no post-write SO is available, capture `Date.now()` immediately after the delete resolves. Taking the timestamp before the write means concurrent writes can land in Elasticsearch in the opposite order to what change-history records.
+
 **Query history** with `getHistory(spaceId, objectType, objectId, opts?)`:
 
 - Returns change documents for the given object `type` and `id` in the specified Kibana space, sorted by `sequence` (if available), then `@timestamp`, then `event.id` as a tie-breaker. Supports pagination and custom sort/filters via `opts`.

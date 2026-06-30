@@ -264,7 +264,6 @@ export async function createRule<Params extends RuleParams = never>(
     rulesClientContext: context,
     changesContext: {
       action: changeTracking?.action ?? RuleChangeTrackingAction.ruleCreate,
-      timestamp: createTime,
       metadata: changeTracking?.metadata,
       refresh: changeTracking?.refresh,
     },

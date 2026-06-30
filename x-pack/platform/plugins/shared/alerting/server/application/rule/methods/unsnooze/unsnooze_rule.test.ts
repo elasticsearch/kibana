@@ -224,6 +224,7 @@ describe('unsnoozeRule change tracking', () => {
     unsecuredSavedObjectsClient.update.mockResolvedValue({
       id: 'rule-1',
       type: 'alert',
+      updated_at: '2023-03-05T10:30:00.000Z',
       attributes: { snoozeSchedule: updatedRuleSO.attributes.snoozeSchedule },
       references: [],
     });
@@ -288,22 +289,15 @@ describe('unsnoozeRule change tracking', () => {
     );
   });
 
-  test('stamps the change with the time captured immediately before the SO update', async () => {
+  test('stamps the change with updated_at from the saved object', async () => {
     const changeTrackingService = createChangeTrackingService();
     const trackingClient = new RulesClient({ ...rulesClientParams, changeTrackingService });
 
-    const startTimeMs = Date.parse('2030-06-01T08:00:00.000Z');
-    const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(startTimeMs);
+    await trackingClient.unsnooze({ id: 'rule-1', scheduleIds: ['snooze-1'] });
 
-    try {
-      await trackingClient.unsnooze({ id: 'rule-1', scheduleIds: ['snooze-1'] });
-
-      expect(changeTrackingService.logBulk).toHaveBeenCalledTimes(1);
-      const [changes] = changeTrackingService.logBulk.mock.calls[0];
-      expect(changes[0].timestamp).toBe('2030-06-01T08:00:00.000Z');
-    } finally {
-      dateNowSpy.mockRestore();
-    }
+    expect(changeTrackingService.logBulk).toHaveBeenCalledTimes(1);
+    const [changes] = changeTrackingService.logBulk.mock.calls[0];
+    expect(changes[0].timestamp).toBe('2023-03-05T10:30:00.000Z');
   });
 
   test('logs the change only after the OCC retry succeeds', async () => {

@@ -373,8 +373,6 @@ async function updateRuleAttributes<Params extends RuleParams = never>({
   const { id, version } = originalRuleSavedObject;
 
   try {
-    const updateRuleTimestamp = Date.now();
-
     updatedRuleSavedObject = await createRuleSo({
       savedObjectsClient: context.unsecuredSavedObjectsClient,
       ruleAttributes: updatedRuleAttributes,
@@ -400,7 +398,6 @@ async function updateRuleAttributes<Params extends RuleParams = never>({
       rulesClientContext: context,
       changesContext: {
         action: changeTracking?.action ?? RuleChangeTrackingAction.ruleUpdate,
-        timestamp: updateRuleTimestamp,
         metadata: changeTracking?.metadata,
         refresh: changeTracking?.refresh,
       },
