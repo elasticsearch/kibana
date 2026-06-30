@@ -20,7 +20,9 @@ export const ConfigSchema = z.object({
 
 /** Reserved key that triggers array iteration in a nested field spec. */
 export const MAP_DIRECTIVE = '$map';
-const MAP_BINDING_IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/;
+export const MAP_BINDING_IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/;
+export const DEFAULT_ITEM_BINDING = 'item';
+export const DEFAULT_INDEX_BINDING = 'index';
 
 /**
  * The value of the `$map` directive inside a nested field spec.

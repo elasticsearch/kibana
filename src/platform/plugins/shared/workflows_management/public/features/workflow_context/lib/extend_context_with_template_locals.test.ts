@@ -87,6 +87,22 @@ describe('extendContextWithTemplateLocals', () => {
     const extended = extendContextWithTemplateLocals(DynamicStepContextSchema, template, 0);
     expect(extended).toBe(DynamicStepContextSchema);
   });
+
+  it('inner for-loop variable schema shadows outer when variable names collide', () => {
+    const stepContext = DynamicStepContextSchema.extend({
+      steps: z.object({
+        a: z.object({ output: z.array(z.object({ id: z.string() })) }),
+        b: z.object({ output: z.array(z.object({ name: z.string() })) }),
+      }),
+    });
+    const template =
+      '{% for item in steps.a.output %}{% for item in steps.b.output %}{{ item.name }}{% endfor %}{% endfor %}';
+    const innerBodyOffset = template.indexOf('{{ item.name }}') + 5;
+    const extended = extendContextWithTemplateLocals(stepContext, template, innerBodyOffset);
+    const itemSchema = getShape(extended).item as z.ZodType;
+    expect(itemSchema.safeParse({ name: 'Alice' }).success).toBe(true);
+    expect(itemSchema.safeParse({ id: '1' }).success).toBe(false);
+  });
 });
 
 describe('getContextSchemaWithTemplateLocals', () => {
@@ -379,6 +395,74 @@ describe('getContextSchemaWithTemplateLocals', () => {
       expect(shape).not.toHaveProperty('cap');
     });
 
+    it('extends schema with for-loop variable in block folded scalar', () => {
+      const templateLines = [
+        '{%- for yy in steps.iterate_items.items %}',
+        '- {{ yy.name }}',
+        '{%- endfor %}',
+      ];
+      const yamlSource = `value: >-\n${templateLines.map((l) => `  ${l}`).join('\n')}\n`;
+      const doc = parseDocument(yamlSource);
+      const varYamlOffset = yamlSource.indexOf('{{ yy.name }}');
+      const result = getContextSchemaWithTemplateLocals(
+        doc,
+        varYamlOffset,
+        DynamicStepContextSchema,
+        yamlSource
+      );
+      const shape = getShape(result);
+      expect(shape).toHaveProperty('yy');
+    });
+
+    it('does not expose for-loop variable in folded scalar when yaml serialization is unavailable', () => {
+      const templateLines = [
+        '{%- for yy in steps.iterate_items.items %}',
+        '- {{ yy.name }}',
+        '{%- endfor %}',
+      ];
+      const yamlSource = `value: >-\n${templateLines.map((l) => `  ${l}`).join('\n')}\n`;
+      const doc = parseDocument(yamlSource);
+      const varYamlOffset = yamlSource.indexOf('{{ yy.name }}');
+      const toStringSpy = jest.spyOn(doc, 'toString').mockReturnValue('x');
+      const result = getContextSchemaWithTemplateLocals(
+        doc,
+        varYamlOffset,
+        DynamicStepContextSchema
+      );
+      toStringSpy.mockRestore();
+      expect(getShape(result)).not.toHaveProperty('yy');
+    });
+
+    it('folded vs literal parity: literal block exposes yy with yamlSource', () => {
+      const templateLines = [
+        '{%- for yy in steps.iterate_items.items %}',
+        '- {{ yy.name }}',
+        '{%- endfor %}',
+      ];
+      const foldedYaml = `value: >-\n${templateLines.map((l) => `  ${l}`).join('\n')}\n`;
+      const literalYaml = `value: |-\n${templateLines.map((l) => `  ${l}`).join('\n')}\n`;
+      const foldedOffset = foldedYaml.indexOf('{{ yy.name }}');
+      const literalOffset = literalYaml.indexOf('{{ yy.name }}');
+      const foldedShape = getShape(
+        getContextSchemaWithTemplateLocals(
+          parseDocument(foldedYaml),
+          foldedOffset,
+          DynamicStepContextSchema,
+          foldedYaml
+        )
+      );
+      const literalShape = getShape(
+        getContextSchemaWithTemplateLocals(
+          parseDocument(literalYaml),
+          literalOffset,
+          DynamicStepContextSchema,
+          literalYaml
+        )
+      );
+      expect(foldedShape).toHaveProperty('yy');
+      expect(literalShape).toHaveProperty('yy');
+    });
+
     it('resolves block scalar offsets correctly when a preceding long quoted string would trigger line folding', () => {
       const longValue = 'A'.repeat(120);
       const yamlSource = [
@@ -474,6 +558,21 @@ describe('mapBlockScalarSourceToValueOffset', () => {
     expect(mapBlockScalarSourceToValueOffset(scalarSource, line2Offset, value.length)).toBe(
       expectedPos
     );
+  });
+
+  it('maps block folded scalars with newline-to-space folding', () => {
+    const scalarSource = '>-\n  line1\n  line2\n';
+    const value = 'line1 line2';
+    const line2Offset = scalarSource.indexOf('line2');
+    const expectedPos = value.indexOf('line2');
+    expect(
+      mapBlockScalarSourceToValueOffset(scalarSource, line2Offset, value.length, { folded: true })
+    ).toBe(expectedPos);
+  });
+
+  it('returns 0 for folded scalar offset within header line', () => {
+    const scalarSource = '>-\n  line1\n';
+    expect(mapBlockScalarSourceToValueOffset(scalarSource, 1, 6, { folded: true })).toBe(0);
   });
 
   it('handles all-blank-line content gracefully', () => {

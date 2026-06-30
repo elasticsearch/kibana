@@ -99,6 +99,51 @@ const extractForeachItemSchemaFromJson = (foreachParam: string): z.ZodType => {
 
 const ENTRIES_FILTER = 'entries';
 
+/** ZodUnknown descriptions returned by {@link getForeachItemSchema} for non-throwing cases. */
+export const FOREACH_ITEM_SCHEMA_DESC = {
+  UNRESOLVED_PATH: 'Unable to parse foreach parameter',
+  RUNTIME_JSON: 'Unable to determine foreach item type',
+} as const;
+
+export interface ForeachCollectionDiagnostic {
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+/**
+ * Maps a {@link getForeachItemSchema} result to a collection-path diagnostic when the schema is ZodUnknown.
+ */
+export function getForeachCollectionDiagnostic(
+  itemSchema: z.ZodType,
+  propertyPath: string
+): ForeachCollectionDiagnostic | null {
+  if (!(itemSchema instanceof z.ZodUnknown)) {
+    return null;
+  }
+
+  const description = itemSchema.description;
+  if (description === FOREACH_ITEM_SCHEMA_DESC.UNRESOLVED_PATH) {
+    return {
+      message: `Collection ${propertyPath} is invalid`,
+      severity: 'error',
+    };
+  }
+  if (description === FOREACH_ITEM_SCHEMA_DESC.RUNTIME_JSON) {
+    return {
+      message: description,
+      severity: 'warning',
+    };
+  }
+  if (description) {
+    return { message: description, severity: 'error' };
+  }
+
+  return {
+    message: `Unable to validate collection ${propertyPath}`,
+    severity: 'warning',
+  };
+}
+
 export function getForeachItemSchema(
   stepContextSchema: typeof DynamicStepContextSchema,
   foreachParam: string
@@ -110,7 +155,7 @@ export function getForeachItemSchema(
   // If we have a valid variable path syntax (e.g., {{some.path}})
   if (parsedPath && !parsedPath.errors && iterateOverPath) {
     // eslint-disable-next-line prefer-const -- we need this constant to have references in json schema
-    let itemSchema: z.ZodType = z.unknown().describe('Unable to parse foreach parameter');
+    let itemSchema: z.ZodType = z.unknown().describe(FOREACH_ITEM_SCHEMA_DESC.UNRESOLVED_PATH);
     const { schema: iterableSchema } = getSchemaAtPath(stepContextSchema, iterateOverPath);
     if (!iterableSchema) {
       // if we cannot resolve the path in the schema, we return an unknown schema
@@ -130,7 +175,7 @@ export function getForeachItemSchema(
       );
     } else if (iterableSchema instanceof z.ZodString) {
       // If the resolved path is a string, we return a string schema and will tell the user we will try to parse it as JSON in runtime
-      return z.unknown().describe('Unable to determine foreach item type');
+      return z.unknown().describe(FOREACH_ITEM_SCHEMA_DESC.RUNTIME_JSON);
     } else if (iterableSchema instanceof z.ZodUnion) {
       const arrayOption = iterableSchema.options.find((option) => option instanceof z.ZodArray);
       if (arrayOption && arrayOption instanceof z.ZodArray) {

@@ -8,14 +8,24 @@
  */
 
 import type { Document } from 'yaml';
+import type { monaco } from '@kbn/monaco';
+import type { WorkflowYaml } from '@kbn/workflows';
+import type { WorkflowGraph } from '@kbn/workflows/graph';
 import { validateLiquidYamlScalars } from './validate_liquid_yaml_scalars';
 import type { YamlValidationResult } from '../model/types';
 
-export function validateLiquidTemplate(
+export function validateLiquidForLoopCollections(
   yamlString: string,
-  yamlDocument: Document
+  yamlDocument: Document,
+  model: monaco.editor.ITextModel,
+  workflowGraph: WorkflowGraph,
+  workflowDefinition: WorkflowYaml
 ): YamlValidationResult[] {
-  return validateLiquidYamlScalars(yamlString, yamlDocument, null).filter(
-    (result) => result.owner === 'liquid-template-validation'
-  );
+  return validateLiquidYamlScalars(
+    yamlString,
+    yamlDocument,
+    model,
+    workflowGraph,
+    workflowDefinition
+  ).filter((result) => result.owner === 'variable-validation');
 }

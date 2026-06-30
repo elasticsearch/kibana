@@ -77,7 +77,12 @@ export function validateVariables(
 
       const variableOffset = offset ?? fallbackForOffsetValue(variableItem, yamlDocument, model);
       if (yamlDocument != null && variableOffset !== undefined) {
-        context = getContextSchemaWithTemplateLocals(yamlDocument, variableOffset, stepSchema);
+        context = getContextSchemaWithTemplateLocals(
+          yamlDocument,
+          variableOffset,
+          stepSchema,
+          model?.getValue()
+        );
       } else {
         context = stepSchema;
       }

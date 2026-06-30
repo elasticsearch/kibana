@@ -10,7 +10,12 @@
 import { DynamicStepContextSchema, ForEachContextSchema } from '@kbn/workflows';
 import { expectZodSchemaEqual } from '@kbn/workflows/common/utils/zod/test_utils/expect_zod_schema_equal';
 import { z } from '@kbn/zod/v4';
-import { getForeachStateSchema } from './get_foreach_state_schema';
+import {
+  FOREACH_ITEM_SCHEMA_DESC,
+  getForeachCollectionDiagnostic,
+  getForeachItemSchema,
+  getForeachStateSchema,
+} from './get_foreach_state_schema';
 
 describe('getForeachStateSchema', () => {
   it('should return plain foreach state if item type is not inferable', () => {
@@ -188,5 +193,40 @@ describe('getForeachStateSchema', () => {
     expect(foreachStateSchema.shape.item.description).toMatch(
       /Unable to parse foreach parameter as JSON/
     );
+  });
+});
+
+describe('getForeachCollectionDiagnostic', () => {
+  it('returns null when item schema is resolved', () => {
+    const itemSchema = z.object({ id: z.string() });
+    const stepContext = DynamicStepContextSchema.extend({
+      steps: z.object({
+        previous: z.object({ output: z.array(itemSchema) }),
+      }),
+    });
+    const resolved = getForeachItemSchema(stepContext, 'steps.previous.output');
+    expect(getForeachCollectionDiagnostic(resolved, 'steps.previous.output')).toBeNull();
+  });
+
+  it('returns error when path cannot be resolved', () => {
+    const unresolved = getForeachItemSchema(DynamicStepContextSchema, 'steps.missing.output');
+    expect(getForeachCollectionDiagnostic(unresolved, 'steps.missing.output')).toEqual({
+      message: 'Collection steps.missing.output is invalid',
+      severity: 'error',
+    });
+    expect(unresolved.description).toBe(FOREACH_ITEM_SCHEMA_DESC.UNRESOLVED_PATH);
+  });
+
+  it('returns warning for runtime JSON string collections', () => {
+    const stepContext = DynamicStepContextSchema.extend({
+      steps: z.object({
+        previous: z.object({ output: z.string() }),
+      }),
+    });
+    const runtimeJson = getForeachItemSchema(stepContext, 'steps.previous.output');
+    expect(getForeachCollectionDiagnostic(runtimeJson, 'steps.previous.output')).toEqual({
+      message: FOREACH_ITEM_SCHEMA_DESC.RUNTIME_JSON,
+      severity: 'warning',
+    });
   });
 });

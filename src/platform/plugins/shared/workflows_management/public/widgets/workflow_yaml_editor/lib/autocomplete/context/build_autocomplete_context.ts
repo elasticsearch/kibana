@@ -61,7 +61,8 @@ function resolveContextSchemaForAutocomplete(
   path: (string | number)[],
   yamlDocument: Document,
   absoluteOffset: number,
-  lineParseResult: LineParseResult | null
+  lineParseResult: LineParseResult | null,
+  yamlSource: string
 ): { contextSchema: z.ZodType; contextScopedToPath: string | null } {
   let contextSchema: z.ZodType = DynamicStepContextSchema;
   let contextScopedToPath: string | null = null;
@@ -72,7 +73,8 @@ function resolveContextSchemaForAutocomplete(
       workflowGraph,
       path,
       yamlDocument,
-      absoluteOffset
+      absoluteOffset,
+      yamlSource
     );
   }
 
@@ -148,13 +150,15 @@ export function buildAutocompleteContext({
   const lineUpToCursor = line.substring(0, position.column - 1);
   const parseResult = parseLineForCompletion(lineUpToCursor);
 
+  const yamlSource = model.getValue();
   const { contextSchema, contextScopedToPath } = resolveContextSchemaForAutocomplete(
     workflowDefinition,
     workflowGraph,
     path,
     yamlDocument,
     absoluteOffset,
-    parseResult
+    parseResult,
+    yamlSource
   );
 
   // Check if we're actually inside a liquid block

@@ -13,6 +13,9 @@ import { z } from '@kbn/zod/v4';
 import {
   forLoopScopesContainingOffset,
   getTemplateLocalContext,
+  isLiquidRangeLiteral,
+  resolveAssignChain,
+  stripAssignRhsFilters,
 } from './extract_template_local_context';
 import { getForeachItemSchema } from './get_foreach_state_schema';
 import { getScalarValueAtOffset } from '../../../../common/lib/yaml/get_scalar_value_at_offset';
@@ -42,18 +45,95 @@ function detectBlockIndent(source: string, headerEnd: number): number {
  *   `yamlDocumentOffset - scalarNode.range[0]`).
  * @param valueLength - Length of the parsed value string (used as upper clamp).
  *
- * Note: For BLOCK_FOLDED (`>`) scalars, single newlines in the source are
- * folded into spaces in the value. Because both `\n` and ` ` are single
- * characters, the offset arithmetic is correct for simple cases. However, when
- * consecutive blank lines are present the YAML folding rules collapse them
- * differently, which may cause small offset drift. A precise implementation
- * would need to replicate the full YAML fold algorithm.
  */
-export function mapBlockScalarSourceToValueOffset(
+export interface MapBlockScalarSourceToValueOffsetOptions {
+  /** When true, single newlines between content lines are folded into spaces (block folded `>` scalars). */
+  readonly folded?: boolean;
+}
+
+/**
+ * Maps a source offset within a block **folded** scalar to the corresponding offset in the
+ * processed value string (newlines between lines become spaces; blank lines become newlines).
+ */
+function mapBlockFoldedScalarSourceToValueOffset(
   scalarSource: string,
   offsetInScalar: number,
   valueLength: number
 ): number {
+  const headerEnd = scalarSource.indexOf('\n');
+  if (headerEnd === -1 || offsetInScalar <= headerEnd) {
+    return 0;
+  }
+
+  let contentStart = headerEnd + 1;
+  while (contentStart < scalarSource.length && scalarSource[contentStart] === '\n') {
+    contentStart++;
+  }
+  if (offsetInScalar <= contentStart) {
+    return 0;
+  }
+
+  const detectedIndent = detectBlockIndent(scalarSource, headerEnd);
+  let valuePos = 0;
+  let lineStart = contentStart;
+
+  while (lineStart < scalarSource.length && lineStart <= offsetInScalar) {
+    let indentOnLine = 0;
+    while (
+      indentOnLine < detectedIndent &&
+      lineStart + indentOnLine < scalarSource.length &&
+      scalarSource[lineStart + indentOnLine] === ' '
+    ) {
+      indentOnLine++;
+    }
+
+    if (offsetInScalar <= lineStart + indentOnLine) {
+      return Math.min(valuePos, valueLength);
+    }
+
+    const lineContentStart = lineStart + indentOnLine;
+    const nextNewline = scalarSource.indexOf('\n', lineStart);
+    const lineEnd = nextNewline === -1 ? scalarSource.length : nextNewline;
+    const lineContent = scalarSource.slice(lineContentStart, lineEnd);
+    const effectiveEnd = Math.min(lineEnd, offsetInScalar);
+    const charsBeforeOffset = Math.max(0, effectiveEnd - lineContentStart);
+
+    if (charsBeforeOffset > 0) {
+      valuePos += charsBeforeOffset;
+    }
+
+    if (offsetInScalar <= lineEnd) {
+      return Math.min(valuePos, valueLength);
+    }
+
+    if (nextNewline === -1) {
+      break;
+    }
+
+    if (lineContent.trim() === '') {
+      if (valuePos > 0) {
+        valuePos += 1;
+      }
+    } else {
+      valuePos += 1;
+    }
+
+    lineStart = nextNewline + 1;
+  }
+
+  return Math.min(valuePos, valueLength);
+}
+
+export function mapBlockScalarSourceToValueOffset(
+  scalarSource: string,
+  offsetInScalar: number,
+  valueLength: number,
+  options?: MapBlockScalarSourceToValueOffsetOptions
+): number {
+  if (options?.folded) {
+    return mapBlockFoldedScalarSourceToValueOffset(scalarSource, offsetInScalar, valueLength);
+  }
+
   const headerEnd = scalarSource.indexOf('\n');
   if (headerEnd === -1 || offsetInScalar <= headerEnd) return 0;
   const contentStart = headerEnd + 1;
@@ -129,22 +209,6 @@ function isExpressionString(expression: string): boolean {
 }
 
 /**
- * Matches quoted strings (to skip them) or an unquoted pipe character.
- * The first two alternatives consume entire quoted strings so the pipe
- * in the capturing group can only match outside quotes.
- */
-const QUOTED_OR_PIPE = /"[^"]*"|'[^']*'|(\|)/g;
-
-/**
- * Strips Liquid filters from a RHS expression by finding the first `|` that is
- * not inside a quoted string. For example, `"a | b" | upcase` returns `"a | b"`.
- */
-function stripFilters(rhs: string): string {
-  const firstPipe = Array.from(rhs.matchAll(QUOTED_OR_PIPE)).find((m) => m[1] !== undefined);
-  return firstPipe ? rhs.slice(0, firstPipe.index).trim() : rhs.trim();
-}
-
-/**
  * Infers a Zod schema for an assign RHS when possible. Uses path resolution,
  * number/string literals, or falls back to z.unknown().
  *
@@ -157,7 +221,7 @@ function inferSchemaFromAssignRhs(
   baseSchema: typeof DynamicStepContextSchema,
   rhs: string
 ): z.ZodType {
-  const expression = stripFilters(rhs);
+  const expression = stripAssignRhsFilters(rhs);
   if (!expression) {
     return z.unknown();
   }
@@ -207,15 +271,16 @@ export function extendContextWithTemplateLocals(
 
   const activeScopes = forLoopScopesContainingOffset(forLoopScopes, offsetInTemplate);
   for (const { variableName, collectionPath } of activeScopes) {
-    let itemSchema: z.ZodType = z.unknown();
-    if (collectionPath) {
+    let itemSchema: z.ZodType = z.any();
+    if (collectionPath && !isLiquidRangeLiteral(collectionPath)) {
       try {
-        const resolved = getForeachItemSchema(baseSchema, collectionPath);
+        const resolvedCollectionPath = resolveAssignChain(collectionPath, assignVars);
+        const resolved = getForeachItemSchema(baseSchema, resolvedCollectionPath);
         if (!(resolved instanceof z.ZodUnknown)) {
           itemSchema = resolved;
         }
       } catch {
-        // keep z.unknown() when path is invalid or schema cannot be resolved
+        // keep z.any() — collection errors are reported by validateLiquidForLoopCollections
       }
     }
     extension[variableName] = itemSchema;
@@ -272,7 +337,9 @@ function getCachedYamlString(doc: Document): string | null {
 export function getContextSchemaWithTemplateLocals(
   yamlDocument: Document,
   offset: number,
-  baseSchema: typeof DynamicStepContextSchema
+  baseSchema: typeof DynamicStepContextSchema,
+  /** Original YAML source (e.g. editor model). Prefer over re-serialized `doc.toString()` for block scalars. */
+  yamlSource?: string
 ): typeof DynamicStepContextSchema {
   const scalarNode = getScalarValueAtOffset(yamlDocument, offset);
   if (!scalarNode || typeof scalarNode.value !== 'string' || !scalarNode.range) {
@@ -285,13 +352,14 @@ export function getContextSchemaWithTemplateLocals(
 
   let offsetInTemplate: number;
   if (scalarType === 'BLOCK_LITERAL' || scalarType === 'BLOCK_FOLDED') {
-    const yamlString = getCachedYamlString(yamlDocument);
+    const yamlString = yamlSource ?? getCachedYamlString(yamlDocument);
     if (yamlString !== null) {
       const rawScalarSource = yamlString.slice(scalarStart, scalarNode.range[2]);
       offsetInTemplate = mapBlockScalarSourceToValueOffset(
         rawScalarSource,
         offset - scalarStart,
-        templateString.length
+        templateString.length,
+        { folded: scalarType === 'BLOCK_FOLDED' }
       );
     } else {
       offsetInTemplate = offset - scalarStart;
