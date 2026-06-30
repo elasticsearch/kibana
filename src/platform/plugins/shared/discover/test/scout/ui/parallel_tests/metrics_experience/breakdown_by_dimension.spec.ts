@@ -42,6 +42,7 @@ spaceTest.describe(
         await expect(metricsExperience.grid).toBeVisible();
 
         await spaceTest.step('set breakdown by dimension from field list', async () => {
+          await discover.openSidebar();
           await discover.addBreakdownFieldFromSidebar(breakdownField);
         });
 

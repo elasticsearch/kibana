@@ -43,6 +43,7 @@ const getResetByField = (fieldsToReset: DefaultProfileStateField[]) => ({
   breakdownField: fieldsToReset.includes('breakdownField'),
   hideChart: fieldsToReset.includes('hideChart'),
   hideTable: fieldsToReset.includes('hideTable'),
+  hideSidebar: fieldsToReset.includes('hideSidebar'),
 });
 
 describe('getDefaultProfileState', () => {

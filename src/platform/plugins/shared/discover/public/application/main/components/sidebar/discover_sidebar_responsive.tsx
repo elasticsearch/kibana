@@ -48,6 +48,7 @@ import { useDiscoverCustomization } from '../../../../customizations';
 import { useIsEsqlMode } from '../../hooks/use_is_esql_mode';
 import {
   internalStateActions,
+  useAppStateSelector,
   useCurrentTabAction,
   useCurrentTabSelector,
   useDataViewsForPicker,
@@ -382,6 +383,15 @@ export function DiscoverSidebarResponsive(props: DiscoverSidebarResponsiveProps)
   }, [isSidebarCollapsed, unifiedFieldListSidebarContainerApi, sidebarToggleState$]);
 
   const dispatch = useInternalStateDispatch();
+  const hideSidebar = useAppStateSelector((state) => state.hideSidebar ?? false);
+
+  useEffect(() => {
+    const visibility = unifiedFieldListSidebarContainerApi?.sidebarVisibility;
+    if (visibility && visibility.isCollapsed$.getValue() !== hideSidebar) {
+      visibility.toggle(hideSidebar, false);
+    }
+  }, [hideSidebar, unifiedFieldListSidebarContainerApi]);
+
   const fieldListUiState = useCurrentTabSelector((state) => state.uiState.fieldList);
   const setFieldListUiState = useCurrentTabAction(internalStateActions.setFieldListUiState);
   const onInitialStateChange = useCallback(

@@ -11,21 +11,19 @@ import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 import userEvent from '@testing-library/user-event';
-import { BehaviorSubject } from 'rxjs';
 import { getDiscoverInternalStateMock } from '../../__mocks__/discover_state.mock';
 import { PanelsToggle, type PanelsToggleProps } from './panels_toggle';
-import type { SidebarToggleState } from '../../application/types';
 import { DiscoverToolkitTestProvider } from '../../__mocks__/test_provider';
 import { internalStateActions } from '../../application/main/state_management/redux';
 
 describe('Panels toggle component', () => {
   const renderComponent = async ({
-    sidebarToggleState$,
     omitChartButton, // this tells us if we have a chart available or not (for example time based vs non-time based data)
     omitTableButton, // this tells us if we have a table available or not (for no data/error)
     hideChart, // this tells us if the chart is currently collapsed or not
     hideTable, // this tells us if the table is currently collapsed or not
-  }: PanelsToggleProps & { hideChart: boolean; hideTable: boolean }) => {
+    hideSidebar, // this tells us if the sidebar is currently collapsed or not
+  }: PanelsToggleProps & { hideChart: boolean; hideTable: boolean; hideSidebar: boolean }) => {
     const toolkit = getDiscoverInternalStateMock();
 
     await toolkit.initializeTabs();
@@ -34,17 +32,13 @@ describe('Panels toggle component', () => {
     toolkit.internalState.dispatch(
       internalStateActions.setAppState({
         tabId: toolkit.getCurrentTab().id,
-        appState: { hideChart, hideTable },
+        appState: { hideChart, hideTable, hideSidebar },
       })
     );
 
     renderWithKibanaRenderContext(
       <DiscoverToolkitTestProvider toolkit={toolkit}>
-        <PanelsToggle
-          sidebarToggleState$={sidebarToggleState$}
-          omitChartButton={omitChartButton}
-          omitTableButton={omitTableButton}
-        />
+        <PanelsToggle omitChartButton={omitChartButton} omitTableButton={omitTableButton} />
       </DiscoverToolkitTestProvider>
     );
 
@@ -52,16 +46,12 @@ describe('Panels toggle component', () => {
   };
 
   it('should render correctly when sidebar is visible and histogram is visible', async () => {
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: false,
-      toggle: jest.fn(),
-    });
     await renderComponent({
       hideChart: false,
       hideTable: false,
+      hideSidebar: false,
       omitChartButton: false,
       omitTableButton: false,
-      sidebarToggleState$,
     });
 
     expect(screen.getByTestId('dscHideSidebarButton')).toBeVisible();
@@ -76,16 +66,12 @@ describe('Panels toggle component', () => {
 
   it('should render correctly when sidebar is collapsed and histogram is visible', async () => {
     const user = userEvent.setup();
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: true,
-      toggle: jest.fn(),
-    });
-    await renderComponent({
+    const toolkit = await renderComponent({
       hideChart: false,
       hideTable: false,
+      hideSidebar: true,
       omitChartButton: false,
       omitTableButton: false,
-      sidebarToggleState$,
     });
 
     expect(screen.getByTestId('dscShowSidebarButton')).toBeVisible();
@@ -97,22 +83,23 @@ describe('Panels toggle component', () => {
     expect(screen.getByTestId('dscHideTableButton')).toBeVisible();
     expect(screen.queryByTestId('dscShowTableButton')).not.toBeInTheDocument();
 
+    const storageSetSpy = jest.spyOn(toolkit.services.storage, 'set');
+
     await user.click(screen.getByTestId('dscShowSidebarButton'));
 
-    expect(sidebarToggleState$.getValue().toggle).toHaveBeenCalledWith(false);
+    await waitFor(() => {
+      expect(storageSetSpy).toHaveBeenCalledWith('discover:sidebarClosed', false);
+      expect(toolkit.getCurrentTab().appState.hideSidebar).toBe(false);
+    });
   });
 
   it('should render correctly when sidebar is visible and chart/table toggles are omitted', async () => {
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: false,
-      toggle: jest.fn(),
-    });
     await renderComponent({
       hideChart: false,
       hideTable: false,
+      hideSidebar: false,
       omitChartButton: true,
       omitTableButton: true,
-      sidebarToggleState$,
     });
 
     expect(screen.getByTestId('dscHideSidebarButton')).toBeVisible();
@@ -126,16 +113,12 @@ describe('Panels toggle component', () => {
   });
 
   it('should render correctly when both sidebar and histogram are collapsed', async () => {
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: true,
-      toggle: jest.fn(),
-    });
     await renderComponent({
       hideChart: true,
       hideTable: false,
+      hideSidebar: true,
       omitChartButton: false,
       omitTableButton: false,
-      sidebarToggleState$,
     });
 
     expect(screen.queryByTestId('dscHideSidebarButton')).not.toBeInTheDocument();
@@ -149,16 +132,12 @@ describe('Panels toggle component', () => {
   });
 
   it('should render correctly when sidebar is collapsed and chart/table toggles are omitted', async () => {
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: true,
-      toggle: jest.fn(),
-    });
     await renderComponent({
       hideChart: false,
       hideTable: false,
+      hideSidebar: true,
       omitChartButton: true,
       omitTableButton: true,
-      sidebarToggleState$,
     });
 
     expect(screen.queryByTestId('dscHideSidebarButton')).not.toBeInTheDocument();
@@ -171,32 +150,24 @@ describe('Panels toggle component', () => {
   });
 
   it('should disable chart collapse when table is collapsed', async () => {
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: false,
-      toggle: jest.fn(),
-    });
     await renderComponent({
       hideChart: false,
       hideTable: true,
+      hideSidebar: false,
       omitChartButton: false,
       omitTableButton: false,
-      sidebarToggleState$,
     });
 
     expect(screen.getByTestId('dscHideHistogramButton')).toBeDisabled();
   });
 
   it('should disable table collapse when chart is collapsed', async () => {
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: false,
-      toggle: jest.fn(),
-    });
     await renderComponent({
       hideChart: true,
       hideTable: false,
+      hideSidebar: false,
       omitChartButton: false,
       omitTableButton: false,
-      sidebarToggleState$,
     });
 
     expect(screen.getByTestId('dscHideTableButton')).toBeDisabled();
@@ -204,16 +175,12 @@ describe('Panels toggle component', () => {
 
   it('should persist chart visibility when toggled', async () => {
     const user = userEvent.setup();
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: false,
-      toggle: jest.fn(),
-    });
     const toolkit = await renderComponent({
       hideChart: false,
       hideTable: false,
+      hideSidebar: false,
       omitChartButton: false,
       omitTableButton: false,
-      sidebarToggleState$,
     });
     const storageSetSpy = jest.spyOn(toolkit.services.storage, 'set');
 
@@ -227,16 +194,12 @@ describe('Panels toggle component', () => {
 
   it('should persist table visibility when toggled', async () => {
     const user = userEvent.setup();
-    const sidebarToggleState$ = new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: false,
-      toggle: jest.fn(),
-    });
     const toolkit = await renderComponent({
       hideChart: false,
       hideTable: false,
+      hideSidebar: false,
       omitChartButton: false,
       omitTableButton: false,
-      sidebarToggleState$,
     });
     const storageSetSpy = jest.spyOn(toolkit.services.storage, 'set');
 

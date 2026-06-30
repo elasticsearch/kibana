@@ -22,11 +22,11 @@ import { createDataViewDataSource } from '../../../../../common/data_sources';
 import { internalStateActions } from '../../state_management/redux';
 import { DiscoverToolkitTestProvider } from '../../../../__mocks__/test_provider';
 import { createContextAwarenessMocks } from '../../../../context_awareness/__mocks__';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 
 const setup = async ({
   dataView,
-  prevSidebarClosed,
+  hideSidebar,
   hideTable = false,
   dataMainMsg = {
     fetchStatus: FetchStatus.COMPLETE,
@@ -34,16 +34,10 @@ const setup = async ({
   },
 }: {
   dataView: DataView;
-  prevSidebarClosed?: boolean;
+  hideSidebar?: boolean;
   hideTable?: boolean;
   dataMainMsg?: DataMainMsg;
 }) => {
-  if (typeof prevSidebarClosed === 'boolean') {
-    localStorage.setItem('discover:sidebarClosed', String(prevSidebarClosed));
-  } else {
-    localStorage.removeItem('discover:sidebarClosed');
-  }
-
   const { profilesManagerMock } = createContextAwarenessMocks({ shouldRegisterProviders: false });
   const services = createDiscoverServicesMock();
 
@@ -62,6 +56,7 @@ const setup = async ({
       appState: {
         dataSource: createDataViewDataSource({ dataViewId: dataView.id! }),
         hideTable,
+        hideSidebar,
         query: { query: '', language: 'kuery' },
       },
     })
@@ -135,25 +130,27 @@ describe('Discover component', () => {
   }, 10000);
 
   describe('sidebar', () => {
-    test('should be opened if discover:sidebarClosed was not set', async () => {
+    test('should be opened if hideSidebar is not set', async () => {
       await setup({ dataView: dataViewWithTimefieldMock });
       expect(screen.queryByTestId('fieldList')).toBeInTheDocument();
     }, 10000);
 
-    test('should be opened if discover:sidebarClosed is false', async () => {
+    test('should be opened if hideSidebar is false', async () => {
       await setup({
         dataView: dataViewWithTimefieldMock,
-        prevSidebarClosed: false,
+        hideSidebar: false,
       });
       expect(screen.queryByTestId('fieldList')).toBeInTheDocument();
     }, 10000);
 
-    test('should be closed if discover:sidebarClosed is true', async () => {
+    test('should be closed if hideSidebar is true', async () => {
       await setup({
         dataView: dataViewWithTimefieldMock,
-        prevSidebarClosed: true,
+        hideSidebar: true,
       });
-      expect(screen.queryByTestId('fieldList')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByTestId('fieldList')).not.toBeInTheDocument();
+      });
     }, 10000);
   });
 

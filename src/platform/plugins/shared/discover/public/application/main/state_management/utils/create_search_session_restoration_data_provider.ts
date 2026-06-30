@@ -88,6 +88,7 @@ function createUrlGeneratorState({
       ? {
           hideChart: appState.hideChart ?? false,
           hideTable: appState.hideTable ?? false,
+          hideSidebar: appState.hideSidebar ?? false,
           sampleSize: appState.sampleSize,
         }
       : {}),

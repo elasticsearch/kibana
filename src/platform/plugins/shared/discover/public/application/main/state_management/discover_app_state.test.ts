@@ -35,6 +35,7 @@ describe('Test discover app state', () => {
       initializeTabs,
       initializeSingleTab,
       getCurrentTab,
+      addNewTab,
     } = getDiscoverInternalStateMock({
       stateStorageContainer: stateStorage,
       services,
@@ -43,7 +44,7 @@ describe('Test discover app state', () => {
 
     await initializeTabs({ persistedDiscoverSession });
 
-    return { internalState, runtimeStateManager, initializeSingleTab, getCurrentTab };
+    return { internalState, runtimeStateManager, initializeSingleTab, getCurrentTab, addNewTab };
   };
 
   const setup = async (...params: Parameters<typeof setupNoTab>) => {
@@ -143,6 +144,7 @@ describe('Test discover app state', () => {
         'breakdownField',
         'hideChart',
         'hideTable',
+        'hideSidebar',
       ]);
     });
 
@@ -158,6 +160,7 @@ describe('Test discover app state', () => {
         'breakdownField',
         'hideChart',
         'hideTable',
+        'hideSidebar',
       ]);
     });
 
@@ -173,13 +176,39 @@ describe('Test discover app state', () => {
         'rowHeight',
         'breakdownField',
         'hideTable',
+        'hideSidebar',
       ]);
     });
 
-    it('should call setProfileStateFieldsToReset correctly with persisted Discover session', async () => {
+    it('should reset only hideSidebar for persisted Discover session state not set in the URL', async () => {
       const stateStorage = createKbnUrlStateStorage();
       const stateStorageGetSpy = jest.spyOn(stateStorage, 'get');
       stateStorageGetSpy.mockReturnValue({ columns: ['test'], rowHeight: 5 });
+      const { initializeSingleTab, getCurrentTab } = await setupNoTab({
+        persistedDiscoverSession: getPersistedDiscoverSession({ services: discoverServiceMock }),
+        stateStorage,
+      });
+      expect(getCurrentTab().defaultProfileState.fieldsToReset).toEqual('none');
+      await initializeSingleTab({ tabId: getCurrentTab().id, skipWaitForDataFetching: true });
+      expect(getCurrentTab().defaultProfileState.fieldsToReset).toEqual(['hideSidebar']);
+    });
+
+    it('should reset all fields for new tabs in persisted Discover session state', async () => {
+      const { initializeSingleTab, getCurrentTab, addNewTab } = await setupNoTab({
+        persistedDiscoverSession: getPersistedDiscoverSession({ services: discoverServiceMock }),
+      });
+
+      await addNewTab({ tab: getTabStateMock({ id: 'new-tab' }) });
+
+      expect(getCurrentTab().defaultProfileState.fieldsToReset).toEqual('none');
+      await initializeSingleTab({ tabId: getCurrentTab().id, skipWaitForDataFetching: true });
+      expect(getCurrentTab().defaultProfileState.fieldsToReset).toEqual('all');
+    });
+
+    it('should not reset hideSidebar for persisted Discover session state set in the URL', async () => {
+      const stateStorage = createKbnUrlStateStorage();
+      const stateStorageGetSpy = jest.spyOn(stateStorage, 'get');
+      stateStorageGetSpy.mockReturnValue({ hideSidebar: true });
       const { initializeSingleTab, getCurrentTab } = await setupNoTab({
         persistedDiscoverSession: getPersistedDiscoverSession({ services: discoverServiceMock }),
         stateStorage,

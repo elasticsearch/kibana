@@ -94,31 +94,30 @@ export const initializeAndSync: InternalStateThunkActionCreator<[TabActionPayloa
 
     const initializeAndSyncUrlState = () => {
       const { persistedDiscoverSession } = getState();
+      const hasPersistedTab = Boolean(
+        persistedDiscoverSession?.tabs.some((tab) => tab.id === tabId)
+      );
 
       addLog('[tab_sync] initialize state and sync with URL', { persistedDiscoverSession });
 
-      // Set the profile state fields to reset only if not loading a saved search,
-      // to avoid overwriting saved search state
-      if (!persistedDiscoverSession?.id) {
-        const { breakdownField, columns, rowHeight, hideChart, hideTable } = getCurrentUrlState(
-          urlStateStorage,
-          services
-        );
+      const { breakdownField, columns, rowHeight, hideChart, hideTable, hideSidebar } =
+        getCurrentUrlState(urlStateStorage, services);
 
-        // Only set default state which is not already set in the URL
-        dispatch(
-          internalStateActions.setProfileStateFieldsToReset({
-            tabId,
-            fieldsToReset: getFieldsToReset({
-              columns: columns === undefined,
-              rowHeight: rowHeight === undefined,
-              breakdownField: breakdownField === undefined,
-              hideChart: hideChart === undefined,
-              hideTable: hideTable === undefined,
-            }),
-          })
-        );
-      }
+      // Only reset profile defaults that are not already set in the URL.
+      // Persisted tabs own their saved state, so only non-persisted fields can be reset.
+      dispatch(
+        internalStateActions.setProfileStateFieldsToReset({
+          tabId,
+          fieldsToReset: getFieldsToReset({
+            columns: columns === undefined && !hasPersistedTab,
+            rowHeight: rowHeight === undefined && !hasPersistedTab,
+            breakdownField: breakdownField === undefined && !hasPersistedTab,
+            hideChart: hideChart === undefined && !hasPersistedTab,
+            hideTable: hideTable === undefined && !hasPersistedTab,
+            hideSidebar: hideSidebar === undefined,
+          }),
+        })
+      );
 
       const { data } = services;
       const { currentDataView$ } = selectTabRuntimeState(runtimeStateManager, tabId);

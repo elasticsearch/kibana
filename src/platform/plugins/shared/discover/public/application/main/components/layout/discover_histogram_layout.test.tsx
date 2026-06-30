@@ -8,9 +8,7 @@
  */
 
 import React from 'react';
-import { BehaviorSubject } from 'rxjs';
 import { esHitsMock } from '@kbn/discover-utils/src/__mocks__';
-import type { SidebarToggleState } from '../../../types';
 import { FetchStatus } from '../../../types';
 import { buildDataTableRecord } from '@kbn/discover-utils';
 import { DiscoverHistogramLayout } from './discover_histogram_layout';
@@ -101,10 +99,6 @@ const setup = async ({
     columns: [],
     viewMode: VIEW_MODE.DOCUMENT_LEVEL,
     onAddFilter: jest.fn(),
-    sidebarToggleState$: new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: true,
-      toggle: () => {},
-    }),
   };
 
   render(

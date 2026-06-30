@@ -63,6 +63,13 @@ export const getDefaultProfileState = ({
         stateUpdate.hideTable = defaultState.hideTable;
       }
 
+      if (
+        shouldResetDefaultProfileField(defaultProfileState, 'hideSidebar') &&
+        defaultState.hideSidebar !== undefined
+      ) {
+        stateUpdate.hideSidebar = defaultState.hideSidebar;
+      }
+
       return Object.keys(stateUpdate).length ? stateUpdate : undefined;
     },
 
