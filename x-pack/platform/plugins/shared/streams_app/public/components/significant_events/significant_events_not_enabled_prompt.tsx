@@ -43,6 +43,11 @@ export function SignificantEventsNotEnabledPrompt({ reason }: { reason: NotEnabl
  * so `i18n.translate` runs at render time.
  */
 const NOT_ENABLED_BODY_MESSAGES: Record<NotEnabledReason, () => string> = {
+  feature_flag: () =>
+    i18n.translate('xpack.streams.significantEvents.notEnabledPrompt.featureFlagBody', {
+      defaultMessage:
+        'Significant events is in Technical Preview and is being rolled out gradually. It is not available in this environment yet.',
+    }),
   pricing_tier: () =>
     i18n.translate('xpack.streams.significantEvents.notEnabledPrompt.pricingTierBody', {
       defaultMessage: 'Significant events is not available on the current pricing tier.',

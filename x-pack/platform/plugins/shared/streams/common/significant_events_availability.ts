@@ -26,8 +26,12 @@ export type SignificantEventsRequiredPlugin = (typeof SIGNIFICANT_EVENTS_REQUIRE
 /**
  * Identifies the first significant events requirement that is not met. The UI
  * uses it to show a tailored message on why significant events is unavailable.
+ *
+ * `feature_flag` is the outermost gate (the significant events Technical Preview
+ * flag); it is listed first to match the evaluation order on the server.
  */
 export type SignificantEventsUnavailableReason =
+  | 'feature_flag'
   | 'pricing_tier'
   | 'license'
   | 'ui_setting'

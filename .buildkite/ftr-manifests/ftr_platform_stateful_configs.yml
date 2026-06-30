@@ -437,3 +437,4 @@ enabled:
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/stateful/platform.streams_ccr.stateful.config.ts
   - x-pack/platform/test/api_integration/apis/streams/streams_without_security.config.ts
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/stateful/platform.streams_definitions.feature_flag.stateful.config.ts
+  - x-pack/platform/test/api_integration_deployment_agnostic/configs/stateful/platform.significant_events.feature_flag.stateful.config.ts

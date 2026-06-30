@@ -16,7 +16,10 @@ import {
 } from '@kbn/management-settings-ids';
 import type { KbnClient, ScoutLogger } from '@kbn/scout/src/common';
 import { measurePerformanceAsync } from '@kbn/scout/src/common';
-import { STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG } from '../../../../common/feature_flags';
+import {
+  STREAMS_SIGNIFICANT_EVENTS_AVAILABLE_FLAG,
+  STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG,
+} from '../../../../common/feature_flags';
 import { COMMON_API_HEADERS } from '../fixtures/constants';
 
 export interface StreamsTestApiService {
@@ -61,6 +64,8 @@ export interface StreamsTestApiService {
   disableQueryStreams: () => Promise<void>;
   enableSignificantEvents: () => Promise<void>;
   disableSignificantEvents: () => Promise<void>;
+  enableSignificantEventsAvailability: () => Promise<void>;
+  disableSignificantEventsAvailability: () => Promise<void>;
   enableMemory: () => Promise<void>;
   disableMemory: () => Promise<void>;
   enableWiredStreamViews: () => Promise<void>;
@@ -316,6 +321,44 @@ export function getStreamsTestApiService({
           [OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS]: false,
         });
       });
+    },
+
+    async enableSignificantEventsAvailability() {
+      await measurePerformanceAsync(
+        log,
+        'streamsTestApi.enableSignificantEventsAvailability',
+        async () => {
+          await kbnClient.request({
+            path: '/internal/core/_settings',
+            method: 'PUT',
+            headers: COMMON_API_HEADERS,
+            body: {
+              'feature_flags.overrides': {
+                [STREAMS_SIGNIFICANT_EVENTS_AVAILABLE_FLAG]: true,
+              },
+            },
+          });
+        }
+      );
+    },
+
+    async disableSignificantEventsAvailability() {
+      await measurePerformanceAsync(
+        log,
+        'streamsTestApi.disableSignificantEventsAvailability',
+        async () => {
+          await kbnClient.request({
+            path: '/internal/core/_settings',
+            method: 'PUT',
+            headers: COMMON_API_HEADERS,
+            body: {
+              'feature_flags.overrides': {
+                [STREAMS_SIGNIFICANT_EVENTS_AVAILABLE_FLAG]: false,
+              },
+            },
+          });
+        }
+      );
     },
 
     async enableMemory() {

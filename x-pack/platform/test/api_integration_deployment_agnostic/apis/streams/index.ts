@@ -23,11 +23,10 @@ export default function ({ loadTestFile }: DeploymentAgnosticFtrProviderContext)
     loadTestFile(require.resolve('./lifecycle'));
     loadTestFile(require.resolve('./lifecycle_retention'));
     loadTestFile(require.resolve('./failure_store'));
-    loadTestFile(require.resolve('./significant_events'));
-    loadTestFile(require.resolve('./features'));
-    loadTestFile(require.resolve('./queries'));
+    // Significant events suites (significant_events, queries, features, content, snapshot_restore)
+    // are gated behind the streams.significantEventsAvailable feature flag and run from the
+    // dedicated significant_events.feature_flag configs instead of here.
     loadTestFile(require.resolve('./discover'));
-    loadTestFile(require.resolve('./content'));
     loadTestFile(require.resolve('./ingest_missing_data_stream'));
     loadTestFile(require.resolve('./migration_on_read'));
     loadTestFile(require.resolve('./metadata'));
@@ -37,7 +36,6 @@ export default function ({ loadTestFile }: DeploymentAgnosticFtrProviderContext)
     loadTestFile(require.resolve('./global_search'));
     loadTestFile(require.resolve('./settings'));
     loadTestFile(require.resolve('./doc_counts'));
-    loadTestFile(require.resolve('./snapshot_restore'));
     loadTestFile(require.resolve('./query_streams'));
     loadTestFile(require.resolve('./deferred_data_stream'));
     loadTestFile(require.resolve('./draft_streams'));

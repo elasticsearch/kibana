@@ -6,6 +6,14 @@
  */
 
 /**
+ * Outermost availability gate for the significant events Technical Preview. Evaluated before the
+ * pricing tier, license, UI setting, and required-plugin checks. Falls back to `false` so
+ * self-managed and LaunchDarkly-unreachable deployments stay off during Tech Preview; the
+ * controlled rollout is driven from the elastic/kibana-feature-flags repository.
+ */
+export const STREAMS_SIGNIFICANT_EVENTS_AVAILABLE_FLAG = 'streams.significantEventsAvailable';
+
+/**
  * Enables the Streams memory feature for accumulating knowledge from significant events discovery.
  */
 export const STREAMS_SIGNIFICANT_EVENTS_MEMORY_ENABLED_FLAG =

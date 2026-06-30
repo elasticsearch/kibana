@@ -17,6 +17,7 @@ import {
 import type { Logger } from '@kbn/logging';
 import { significantEventsDeepLinkIds, type SigEventsLinkId } from '@kbn/deeplinks-observability';
 import { OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS_DISCOVERY } from '@kbn/management-settings-ids';
+import { STREAMS_SIGNIFICANT_EVENTS_AVAILABLE_FLAG } from '@kbn/streams-plugin/common';
 import { DataStreamsStatsService } from '@kbn/dataset-quality-plugin/public';
 import { dynamic } from '@kbn/shared-ux-utility';
 import React from 'react';
@@ -166,31 +167,47 @@ export class StreamsAppPlugin
           combineLatest([
             pluginsStart.streams.navigationStatus$,
             coreStart.uiSettings.get$(OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS_DISCOVERY),
+            coreStart.featureFlags.getBooleanValue$(
+              STREAMS_SIGNIFICANT_EVENTS_AVAILABLE_FLAG,
+              false
+            ),
           ]).pipe(
-            map(([{ status }, isSignificantEventsDiscoveryEnabled]): AppUpdater => {
-              return (app) => {
-                if (status !== 'enabled') {
+            map(
+              ([
+                { status },
+                isSignificantEventsDiscoveryEnabled,
+                isSignificantEventsAvailable,
+              ]): AppUpdater => {
+                return (app) => {
+                  if (status !== 'enabled') {
+                    return {
+                      visibleIn: [],
+                      deepLinks: (app.deepLinks ?? []).map((link) => ({ ...link, visibleIn: [] })),
+                    };
+                  }
+
                   return {
-                    visibleIn: [],
-                    deepLinks: (app.deepLinks ?? []).map((link) => ({ ...link, visibleIn: [] })),
+                    visibleIn: ['classicSideNav', 'projectSideNav', 'globalSearch'],
+                    deepLinks: (app.deepLinks ?? []).map((link) => {
+                      if (significantEventsDeepLinkIds.includes(link.id as SigEventsLinkId)) {
+                        // Significant events entry points stay hidden until the rollout flag is on,
+                        // mirroring the server-side gate so the feature is fully absent from the UI
+                        // in deployments where it has not been enabled.
+                        return {
+                          ...link,
+                          visibleIn:
+                            isSignificantEventsAvailable && isSignificantEventsDiscoveryEnabled
+                              ? ['globalSearch']
+                              : [],
+                        };
+                      }
+
+                      return link;
+                    }),
                   };
-                }
-
-                return {
-                  visibleIn: ['classicSideNav', 'projectSideNav', 'globalSearch'],
-                  deepLinks: (app.deepLinks ?? []).map((link) => {
-                    if (significantEventsDeepLinkIds.includes(link.id as SigEventsLinkId)) {
-                      return {
-                        ...link,
-                        visibleIn: isSignificantEventsDiscoveryEnabled ? ['globalSearch'] : [],
-                      };
-                    }
-
-                    return link;
-                  }),
                 };
-              };
-            })
+              }
+            )
           )
         )
       ),

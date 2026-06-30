@@ -205,7 +205,10 @@ export function ClassicStreamDetailManagement({
     );
   }
 
-  if (isValidManagementSubTab(tab)) {
+  // Render a valid subtab only when its content is actually present. Significant events can be
+  // hidden via the streams.significantEventsAvailable feature flag; in that case fall through to
+  // the redirects below instead of rendering an empty body.
+  if (isValidManagementSubTab(tab) && tabs[tab]?.content) {
     return <Wrapper tabs={tabs} streamId={key} tab={tab} />;
   }
 

@@ -15,6 +15,7 @@ import {
   type SignificantEventsRequiredPlugin,
   type SignificantEventsUnavailableReason,
 } from '../../../common';
+import { isSignificantEventsAvailable } from '../../lib/feature_flags/is_significant_events_available';
 import { FeatureNotEnabledError } from '../../lib/streams/errors/feature_not_enabled_error';
 import { MissingDependencyError } from '../../lib/streams/errors/missing_dependency_error';
 import type { StreamsServer } from '../../types';
@@ -53,11 +54,16 @@ const pluginRequirements = Object.fromEntries(
  * events to work. Keying by reason makes this exhaustive: TypeScript errors if
  * any `SignificantEventsUnavailableReason` lacks a check here. The declaration
  * order is the evaluation order: it only decides which reason surfaces first
- * when several are unmet, so cheaper / more-likely-to-fail gates (pricing tier,
- * license) come before plugin presence.
+ * when several are unmet, so the Technical Preview feature flag is checked first
+ * as the outermost gate, then cheaper / more-likely-to-fail gates (pricing tier,
+ * license) before plugin presence.
  */
 const significantEventsRequirements: Record<SignificantEventsUnavailableReason, RequirementCheck> =
   {
+    feature_flag: async ({ server }) =>
+      (await isSignificantEventsAvailable(server.core.featureFlags))
+        ? undefined
+        : new FeatureNotEnabledError('Significant events is not available in this environment.'),
     pricing_tier: async ({ server }) =>
       server.core.pricing.isFeatureAvailable(STREAMS_TIERED_SIGNIFICANT_EVENT_FEATURE.id)
         ? undefined

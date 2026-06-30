@@ -17,3 +17,4 @@ enabled:
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/oblt.logs_essentials.serverless.config.ts
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/oblt.streams.serverless.config.ts
   - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/oblt.streams_definitions.feature_flag.serverless.config.ts
+  - x-pack/platform/test/api_integration_deployment_agnostic/configs/serverless/oblt.significant_events.feature_flag.serverless.config.ts
