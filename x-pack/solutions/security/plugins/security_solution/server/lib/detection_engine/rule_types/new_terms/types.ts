@@ -10,5 +10,5 @@ import type { SignalSource } from '../types';
 
 export interface EventsAndTerms {
   event: estypes.SearchHit<SignalSource>;
-  newTerms: Array<string | number | null>;
+  newTerms: Array<string | number | boolean | null>;
 }

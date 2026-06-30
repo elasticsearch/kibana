@@ -19,7 +19,7 @@ import { transformHitToAlert } from '../factories/utils/transform_hit_to_alert';
 
 export interface EventsAndTerms {
   event: estypes.SearchHit<SignalSource>;
-  newTerms: Array<string | number | null>;
+  newTerms: Array<string | number | boolean | null>;
 }
 
 export const wrapNewTermsAlerts = ({

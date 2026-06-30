@@ -5,7 +5,15 @@
  * 2.0.
  */
 
-import { parseDateString, validateHistoryWindowStart, transformBucketsToValues } from './utils';
+import type { ElasticsearchClient } from '@kbn/core/server';
+import {
+  parseDateString,
+  validateHistoryWindowStart,
+  transformBucketsToValues,
+  hasCrossClusterIndices,
+  hasDataViewRuntimeFields,
+  hasFieldsWithUnsupportedEsqlTypes,
+} from './utils';
 
 describe('new terms utils', () => {
   describe('parseDateString', () => {
@@ -111,5 +119,154 @@ describe('new terms utils', () => {
     });
 
     // TODO: write test for multiple fields?
+  });
+});
+
+describe('hasCrossClusterIndices', () => {
+  it('returns false for local-only indices', () => {
+    expect(hasCrossClusterIndices(['logs-*'])).toBe(false);
+  });
+
+  it('returns true when a cross-cluster index is present', () => {
+    expect(hasCrossClusterIndices(['remote:logs-*'])).toBe(true);
+  });
+
+  it('returns false for an empty array', () => {
+    expect(hasCrossClusterIndices([])).toBe(false);
+  });
+
+  it('returns false for undefined', () => {
+    expect(hasCrossClusterIndices(undefined)).toBe(false);
+  });
+
+  it('returns true for a colon-containing pattern mixed with local ones', () => {
+    expect(hasCrossClusterIndices(['logs-*', 'remote:logs-*'])).toBe(true);
+  });
+
+  it('returns true when the index name contains a colon anywhere', () => {
+    expect(hasCrossClusterIndices(['logs:special'])).toBe(true);
+  });
+});
+
+describe('hasFieldsWithUnsupportedEsqlTypes', () => {
+  const createEsClientMock = (fields: Record<string, unknown>) =>
+    ({
+      fieldCaps: jest.fn().mockResolvedValue({ fields }),
+    } as unknown as ElasticsearchClient);
+
+  it('returns false when all fields are keyword', async () => {
+    const esClient = createEsClientMock({
+      'user.name': { keyword: { type: 'keyword', searchable: true } },
+    });
+
+    const result = await hasFieldsWithUnsupportedEsqlTypes({
+      esClient,
+      index: ['logs-*'],
+      fields: ['user.name'],
+    });
+
+    expect(result).toBe(false);
+  });
+
+  it('returns true when a field is flattened', async () => {
+    const esClient = createEsClientMock({
+      labels: { flattened: { type: 'flattened', searchable: true } },
+    });
+
+    const result = await hasFieldsWithUnsupportedEsqlTypes({
+      esClient,
+      index: ['logs-*'],
+      fields: ['labels'],
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('returns true when a field is nested', async () => {
+    const esClient = createEsClientMock({
+      nested_field: { nested: { type: 'nested' } },
+    });
+
+    const result = await hasFieldsWithUnsupportedEsqlTypes({
+      esClient,
+      index: ['logs-*'],
+      fields: ['nested_field'],
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('returns true when the root of a dotted subfield is flattened', async () => {
+    const esClient = createEsClientMock({
+      labels: { flattened: { type: 'flattened', searchable: true } },
+    });
+
+    const result = await hasFieldsWithUnsupportedEsqlTypes({
+      esClient,
+      index: ['logs-*'],
+      fields: ['labels.env'],
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('queries all prefix paths of a dotted field', async () => {
+    const esClient = createEsClientMock({
+      'a.b.c': { keyword: { type: 'keyword' } },
+      'a.b': { keyword: { type: 'keyword' } },
+      a: { keyword: { type: 'keyword' } },
+    });
+
+    await hasFieldsWithUnsupportedEsqlTypes({
+      esClient,
+      index: ['logs-*'],
+      fields: ['a.b.c'],
+    });
+
+    const fieldCapsMock = esClient.fieldCaps as jest.Mock;
+    const calledFields = fieldCapsMock.mock.calls[0][0].fields;
+    expect(calledFields).toContain('a.b.c');
+    expect(calledFields).toContain('a.b');
+    expect(calledFields).toContain('a');
+  });
+
+  it('returns true when an intermediate prefix of a dotted subfield is flattened', async () => {
+    const esClient = createEsClientMock({
+      'a.b': { flattened: { type: 'flattened', searchable: true } },
+    });
+
+    const result = await hasFieldsWithUnsupportedEsqlTypes({
+      esClient,
+      index: ['logs-*'],
+      fields: ['a.b.c'],
+    });
+
+    expect(result).toBe(true);
+  });
+});
+
+describe('hasDataViewRuntimeFields', () => {
+  const runtimeMappings = {
+    host_name_runtime: { type: 'keyword' as const, script: { source: `emit('x')` } },
+  };
+
+  it('returns false when there are no runtime mappings', () => {
+    expect(
+      hasDataViewRuntimeFields({ fields: ['host_name_runtime'], runtimeMappings: undefined })
+    ).toBe(false);
+  });
+
+  it('returns false when no new terms field is a runtime field', () => {
+    expect(hasDataViewRuntimeFields({ fields: ['host.name'], runtimeMappings })).toBe(false);
+  });
+
+  it('returns true when a new terms field is a runtime field', () => {
+    expect(hasDataViewRuntimeFields({ fields: ['host_name_runtime'], runtimeMappings })).toBe(true);
+  });
+
+  it('returns true when any new terms field in a combination is a runtime field', () => {
+    expect(
+      hasDataViewRuntimeFields({ fields: ['host.name', 'host_name_runtime'], runtimeMappings })
+    ).toBe(true);
   });
 });

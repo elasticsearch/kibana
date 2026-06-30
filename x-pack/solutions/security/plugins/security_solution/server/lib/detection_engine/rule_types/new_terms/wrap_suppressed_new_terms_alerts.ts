@@ -23,7 +23,7 @@ import type { NewTermsRuleParams } from '../../rule_schema';
 
 export interface EventsAndTerms {
   event: estypes.SearchHit<SignalSource>;
-  newTerms: Array<string | number | null>;
+  newTerms: Array<string | number | boolean | null>;
 }
 
 export const wrapSuppressedNewTermsAlerts = ({

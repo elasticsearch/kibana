@@ -20,6 +20,11 @@ export default ({ getService }: FtrProviderContext) => {
   const supertest = getService('supertest');
   const es = getService('es');
   const log = getService('log');
+  const config = getService('config');
+  // Alert suppression requires at least a platinum license, so suppression-dependent assertions
+  // are skipped when this suite runs under a basic license (aggregation-path tier).
+  const isBasicLicense = config.get('esTestCluster.license') === 'basic';
+  const itWithSuppression = isBasicLicense ? it.skip : it;
   const { indexListOfDocuments } = dataGeneratorFactory({
     es,
     index: 'test-data-1',
@@ -213,59 +218,62 @@ export default ({ getService }: FtrProviderContext) => {
           expect(alerts_candidate_count).toBe(1);
         });
 
-        it('records alerts_candidate_count higher than the number of suppressed alerts', async () => {
-          const timestamp = new Date().toISOString();
-          const documents = [
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-0', ip: '1.2.3.4' },
-            },
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-0', ip: '1.2.3.4' },
-            },
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-1', ip: '1.2.3.4' },
-            },
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-1', ip: '1.2.3.4' },
-            },
-          ];
-
-          await indexListOfDocuments(documents);
-
-          const createdRule = await createRule(
-            supertest,
-            log,
-            getNewTermsRuleParams({
-              index: ['test-data-1'],
-              query: '*:*',
-              new_terms_fields: ['host.name'],
-              history_window_start: 'now-1h',
-              alert_suppression: {
-                group_by: ['host.ip'],
-                duration: {
-                  value: 300,
-                  unit: 'm',
-                },
-                missing_fields_strategy: 'suppress',
+        itWithSuppression(
+          'records alerts_candidate_count higher than the number of suppressed alerts',
+          async () => {
+            const timestamp = new Date().toISOString();
+            const documents = [
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-0', ip: '1.2.3.4' },
               },
-              from: 'now-35m',
-              interval: '30m',
-              enabled: true,
-            })
-          );
-          const alerts = await getOpenAlerts(supertest, log, es, createdRule);
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-0', ip: '1.2.3.4' },
+              },
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-1', ip: '1.2.3.4' },
+              },
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-1', ip: '1.2.3.4' },
+              },
+            ];
 
-          expect(alerts.hits.hits).toHaveLength(1);
+            await indexListOfDocuments(documents);
 
-          const { alerts_candidate_count } =
-            await getLatestSecurityRuleExecutionMetricsFromEventLog(es, log, createdRule.id);
+            const createdRule = await createRule(
+              supertest,
+              log,
+              getNewTermsRuleParams({
+                index: ['test-data-1'],
+                query: '*:*',
+                new_terms_fields: ['host.name'],
+                history_window_start: 'now-1h',
+                alert_suppression: {
+                  group_by: ['host.ip'],
+                  duration: {
+                    value: 300,
+                    unit: 'm',
+                  },
+                  missing_fields_strategy: 'suppress',
+                },
+                from: 'now-35m',
+                interval: '30m',
+                enabled: true,
+              })
+            );
+            const alerts = await getOpenAlerts(supertest, log, es, createdRule);
 
-          expect(alerts_candidate_count).toBe(2);
-        });
+            expect(alerts.hits.hits).toHaveLength(1);
+
+            const { alerts_candidate_count } =
+              await getLatestSecurityRuleExecutionMetricsFromEventLog(es, log, createdRule.id);
+
+            expect(alerts_candidate_count).toBe(2);
+          }
+        );
       });
 
       describe('alerts_suppressed_count', () => {
@@ -303,59 +311,62 @@ export default ({ getService }: FtrProviderContext) => {
           expect(alerts_suppressed_count).toBe(0);
         });
 
-        it('records alerts_suppressed_count when alerts are suppressed', async () => {
-          const timestamp = new Date().toISOString();
-          const documents = [
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-0', ip: '1.2.3.4' },
-            },
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-0', ip: '1.2.3.4' },
-            },
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-1', ip: '1.2.3.4' },
-            },
-            {
-              '@timestamp': timestamp,
-              host: { name: 'host-1', ip: '1.2.3.4' },
-            },
-          ];
-
-          await indexListOfDocuments(documents);
-
-          const createdRule = await createRule(
-            supertest,
-            log,
-            getNewTermsRuleParams({
-              index: ['test-data-1'],
-              query: '*:*',
-              new_terms_fields: ['host.name'],
-              history_window_start: 'now-1h',
-              alert_suppression: {
-                group_by: ['host.ip'],
-                duration: {
-                  value: 300,
-                  unit: 'm',
-                },
-                missing_fields_strategy: 'suppress',
+        itWithSuppression(
+          'records alerts_suppressed_count when alerts are suppressed',
+          async () => {
+            const timestamp = new Date().toISOString();
+            const documents = [
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-0', ip: '1.2.3.4' },
               },
-              from: 'now-35m',
-              interval: '30m',
-              enabled: true,
-            })
-          );
-          const alerts = await getOpenAlerts(supertest, log, es, createdRule);
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-0', ip: '1.2.3.4' },
+              },
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-1', ip: '1.2.3.4' },
+              },
+              {
+                '@timestamp': timestamp,
+                host: { name: 'host-1', ip: '1.2.3.4' },
+              },
+            ];
 
-          expect(alerts.hits.hits).toHaveLength(1);
+            await indexListOfDocuments(documents);
 
-          const { alerts_suppressed_count } =
-            await getLatestSecurityRuleExecutionMetricsFromEventLog(es, log, createdRule.id);
+            const createdRule = await createRule(
+              supertest,
+              log,
+              getNewTermsRuleParams({
+                index: ['test-data-1'],
+                query: '*:*',
+                new_terms_fields: ['host.name'],
+                history_window_start: 'now-1h',
+                alert_suppression: {
+                  group_by: ['host.ip'],
+                  duration: {
+                    value: 300,
+                    unit: 'm',
+                  },
+                  missing_fields_strategy: 'suppress',
+                },
+                from: 'now-35m',
+                interval: '30m',
+                enabled: true,
+              })
+            );
+            const alerts = await getOpenAlerts(supertest, log, es, createdRule);
 
-          expect(alerts_suppressed_count).toBe(1);
-        });
+            expect(alerts.hits.hits).toHaveLength(1);
+
+            const { alerts_suppressed_count } =
+              await getLatestSecurityRuleExecutionMetricsFromEventLog(es, log, createdRule.id);
+
+            expect(alerts_suppressed_count).toBe(1);
+          }
+        );
       });
     });
   });

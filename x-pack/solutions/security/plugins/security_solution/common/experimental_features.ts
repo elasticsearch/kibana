@@ -299,6 +299,14 @@ export const allowedExperimentalValues = Object.freeze({
   rulePreviewAttachmentEnabled: false,
 
   /**
+   * Enables the ES|QL + `_msearch` based New Terms rule execution implementation. When enabled,
+   * New Terms rules use the faster ES|QL approach (subject to the licensing constraints around
+   * cross-cluster search). When disabled, rules fall back to the aggregation based implementation.
+   * Enabled by default.
+   */
+  newTermsEsqlApproachEnabled: true,
+
+  /**
    * Enables the risk score history API endpoint for Entity Analytics.
    */
   riskScoreHistoryEnabled: false,

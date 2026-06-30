@@ -14,7 +14,7 @@ type Version840 = '8.4.0';
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 type NewTermsAlertFields = {
   [ALERT_NEW_TERMS]: {
-    type: Array<string | number | null>;
+    type: Array<string | number | boolean | null>;
     version: Version840;
   };
 };
