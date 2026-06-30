@@ -59,9 +59,9 @@ NODE="${DIR}/node/pointer-compression/bin/node"
 test_node
 
 BASE_NODE_OPTIONS="--no-warnings --max-http-header-size=65536"
-if [ "$KBN_DISALLOW_CODE_GEN_FROM_STRINGS" = 'true' ]; then
+# if [ "$KBN_DISALLOW_CODE_GEN_FROM_STRINGS" = 'true' ]; then
   BASE_NODE_OPTIONS="$BASE_NODE_OPTIONS --disallow-code-generation-from-strings"
-fi
+# fi
 if [ -f "${CONFIG_DIR}/node.options" ]; then
   KBN_NODE_OPTS="$(grep -v ^# < ${CONFIG_DIR}/node.options | xargs)"
 fi
