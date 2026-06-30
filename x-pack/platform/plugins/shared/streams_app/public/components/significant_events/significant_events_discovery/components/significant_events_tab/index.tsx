@@ -10,6 +10,7 @@ import { useDebouncedValue } from '@kbn/react-hooks';
 import {
   EuiBasicTable,
   EuiBadge,
+  EuiButtonIcon,
   EuiCallOut,
   EuiFilterGroup,
   EuiFlexGroup,
@@ -36,6 +37,33 @@ import { formatTimestamp } from '../../../../../util/formatters';
 import { FilterPopover } from './filter_popover';
 import { getSignificantEventStatusColor } from '../shared/status_display';
 import { SIGNIFICANT_EVENT_STATUS_LABELS } from '../shared/translations';
+import { useTriggerInvestigation } from '../../../../../hooks/significant_events/use_trigger_investigation';
+
+const RUN_ARIA_LABEL = i18n.translate(
+  'xpack.streams.sigEventsTab.runInvestigationButton.ariaLabel',
+  {
+    defaultMessage: 'Run investigation for this event',
+  }
+);
+
+const RunInvestigationCell = ({ event }: { event: SignificantEvent }) => {
+  const { triggerInvestigation, isTriggering } = useTriggerInvestigation();
+  return (
+    <EuiButtonIcon
+      iconType="inspect"
+      aria-label={RUN_ARIA_LABEL}
+      onClick={(e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!isTriggering) triggerInvestigation(event.event_id);
+      }}
+      isDisabled={isTriggering}
+      isLoading={isTriggering}
+      size="s"
+      color="primary"
+      data-test-subj="sigEventRunInvestigationIconButton"
+    />
+  );
+};
 
 const MAX_VISIBLE_STREAMS = 3;
 
@@ -125,6 +153,12 @@ const columns: Array<EuiBasicTableColumn<SignificantEvent>> = [
     }),
     width: '100px',
     render: (criticality: number | undefined) => <EuiText size="xs">{criticality ?? '-'}</EuiText>,
+  },
+  {
+    name: '',
+    width: '48px',
+    align: 'right' as const,
+    render: (item: SignificantEvent) => <RunInvestigationCell event={item} />,
   },
 ];
 

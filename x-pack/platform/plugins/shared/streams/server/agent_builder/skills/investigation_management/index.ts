@@ -7,6 +7,7 @@
 
 import { defineSkillType } from '@kbn/agent-builder-server/skills/type_definition';
 import { platformCoreTools } from '@kbn/agent-builder-common/tools';
+import { STREAMS_EVENT_INVESTIGATION_ATTACH_TOOL_ID } from '../../tools/register_tools';
 import content from './skill.md.text';
 
 export const streamsInvestigationManagementSkill = defineSkillType({
@@ -27,5 +28,8 @@ export const streamsInvestigationManagementSkill = defineSkillType({
     // on custom agents.
     platformCoreTools.generateEsql,
     platformCoreTools.executeEsql,
+    // Records the completed investigation back onto the significant event so the UI can
+    // surface investigation history and link to the full RCA result.
+    STREAMS_EVENT_INVESTIGATION_ATTACH_TOOL_ID,
   ],
 });

@@ -102,6 +102,13 @@ interface StreamsAgentToolEventStatusUpdateProps {
   error_message?: string;
 }
 
+interface StreamsAgentToolEventInvestigationAttachProps {
+  success: boolean;
+  event_id: string;
+  workflow_execution_id: string;
+  error_message?: string;
+}
+
 interface StreamsCodeAnalysisGroundingProps {
   stream_name: string;
   stream_type: string;
@@ -142,6 +149,7 @@ export {
   type StreamsAgentToolKiIdentificationStartedProps,
   type StreamsAgentToolEventCreateProps,
   type StreamsAgentToolEventStatusUpdateProps,
+  type StreamsAgentToolEventInvestigationAttachProps,
   type StreamsCodeAnalysisGroundingProps,
   type StreamsSignificantEventsDiscoveryTriggeredProps,
   type StreamsOnboardingScheduledProps,

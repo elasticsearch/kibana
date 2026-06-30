@@ -8,7 +8,7 @@ enabled: true
 settings:
   timeout: '60m'
   concurrency:
-    key: 'streams-investigation-{{ inputs.concurrency_key | default: workflow.executionId }}'
+    key: 'streams-investigation-{{ inputs.concurrency_key | default: execution.id }}'
     strategy: cancel-in-progress
     max: 1
 tags:
@@ -44,6 +44,25 @@ triggers:
       additionalProperties: false
 
 steps:
+
+  # Records a pending investigation on the Significant Event as soon as the workflow starts,
+  # so the UI can show an in-progress indicator before the agent step finishes.
+  # Only runs when a sig-event context was supplied (triage or chat-agent paths).
+  - name: attach_pending_to_significant_event
+    type: kibana.request
+    if: "${{ inputs.context.event_id != null }}"
+    with:
+      method: POST
+      path: "/internal/sig_events/events/{{ inputs.context.event_id }}/investigations"
+      headers:
+        x-elastic-internal-origin: "kibana"
+      body:
+        workflow_execution_id: "{{ execution.id }}"
+        status: "pending"
+        started_at: '{{ execution.startedAt | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
+    on-failure:
+      continue: true
+
   - name: investigate
     type: ai.agent
     agent-id: platform.streams.investigation
@@ -104,4 +123,25 @@ steps:
           - mechanism
           - alternatives_ruled_out
     on-failure:
-      continue: false
+      continue: true
+
+  # Connects this investigation back to the Significant Event that triggered it, so the
+  # UI can surface investigation history and link to the full RCA result. Only runs when
+  # a sig-event context was supplied (i.e. the investigation was triggered from triage or
+  # from the chat agent for a specific event). Other callers (free-form issues, alerts)
+  # that do not supply `inputs.context.event_id` are unaffected.
+  - name: attach_to_significant_event
+    type: kibana.request
+    if: "${{ inputs.context.event_id != null }}"
+    with:
+      method: POST
+      path: "/internal/sig_events/events/{{ inputs.context.event_id }}/investigations"
+      headers:
+        x-elastic-internal-origin: "kibana"
+      body:
+        workflow_execution_id: "{{ execution.id }}"
+        status: "{% if steps.investigate.error == null %}success{% else %}failed{% endif %}"
+        started_at: '{{ execution.startedAt | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
+        completed_at: '{{ "now" | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
+    on-failure:
+      continue: true

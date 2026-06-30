@@ -17,6 +17,7 @@ import type {
   StreamsAgentToolKiIdentificationStartedProps,
   StreamsAgentToolEventCreateProps,
   StreamsAgentToolEventStatusUpdateProps,
+  StreamsAgentToolEventInvestigationAttachProps,
   StreamsCodeAnalysisGroundingProps,
   StreamsOnboardingScheduledProps,
 } from './types';
@@ -572,6 +573,35 @@ const streamsOnboardingScheduledSchema: RootSchema<StreamsOnboardingScheduledPro
   },
 };
 
+const streamsAgentToolEventInvestigationAttachSchema: RootSchema<StreamsAgentToolEventInvestigationAttachProps> =
+  {
+    success: {
+      type: 'boolean',
+      _meta: {
+        description: 'Whether the investigation attachment succeeded',
+      },
+    },
+    event_id: {
+      type: 'keyword',
+      _meta: {
+        description: 'The identifier of the significant event the investigation was attached to',
+      },
+    },
+    workflow_execution_id: {
+      type: 'keyword',
+      _meta: {
+        description: 'The investigation workflow execution id that was attached',
+      },
+    },
+    error_message: {
+      type: 'text',
+      _meta: {
+        description: 'Error message when investigation attachment fails',
+        optional: true,
+      },
+    },
+  };
+
 export {
   streamsEndpointLatencySchema,
   streamsStateErrorSchema,
@@ -583,6 +613,7 @@ export {
   streamsAgentToolKiIdentificationStartedSchema,
   streamsAgentToolEventCreateSchema,
   streamsAgentToolEventStatusUpdateSchema,
+  streamsAgentToolEventInvestigationAttachSchema,
   streamsCodeAnalysisGroundingSchema,
   streamsSignificantEventsDiscoveryTriggeredSchema,
   streamsOnboardingScheduledSchema,

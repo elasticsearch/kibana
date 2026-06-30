@@ -78,11 +78,16 @@ export {
   type KnowledgeIndicator,
   type SignificantEvent,
   type SignificantEventStatus,
+  type SignificantEventInvestigation,
+  type SignificantEventInvestigationStatus,
   SIGNIFICANT_EVENT_STATUS_OPTIONS,
+  SIGNIFICANT_EVENT_INVESTIGATION_STATUS_OPTIONS,
   detectionSchema,
   discoverySchema,
   significantEventSchema,
   significantEventStatusSchema,
+  significantEventInvestigationSchema,
+  significantEventInvestigationStatusSchema,
 } from './src/significant_events';
 
 export type {

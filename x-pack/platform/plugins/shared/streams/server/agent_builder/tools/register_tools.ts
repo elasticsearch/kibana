@@ -33,6 +33,10 @@ import {
   createEventStatusUpdateTool,
   STREAMS_EVENT_STATUS_UPDATE_TOOL_ID,
 } from './event_status_update/tool';
+import {
+  createEventInvestigationAttachTool,
+  STREAMS_EVENT_INVESTIGATION_ATTACH_TOOL_ID,
+} from './event_investigation_attach/tool';
 import { createUpdateStreamTool } from './write/update_stream';
 import { createCreatePartitionTool } from './write/create_partition';
 import { createDeleteStreamTool } from './write/delete_stream';
@@ -57,6 +61,7 @@ export {
   STREAMS_SEARCH_EVENTS_TOOL_ID,
   STREAMS_CREATE_EVENT_TOOL_ID,
   STREAMS_EVENT_STATUS_UPDATE_TOOL_ID,
+  STREAMS_EVENT_INVESTIGATION_ATTACH_TOOL_ID,
 };
 
 export function registerAgentBuilderTools({
@@ -128,6 +133,12 @@ export function registerAgentBuilderTools({
       getScopedClients,
       server,
       logger: logger.get('event_status_update_tool'),
+      telemetry,
+    }),
+    createEventInvestigationAttachTool({
+      getScopedClients,
+      server,
+      logger: logger.get('event_investigation_attach_tool'),
       telemetry,
     }),
   ];

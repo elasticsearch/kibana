@@ -16,6 +16,7 @@ import {
   STREAMS_AGENT_TOOL_KI_IDENTIFICATION_STARTED_EVENT_TYPE,
   STREAMS_AGENT_TOOL_EVENT_CREATE_EVENT_TYPE,
   STREAMS_AGENT_TOOL_EVENT_STATUS_UPDATE_EVENT_TYPE,
+  STREAMS_AGENT_TOOL_EVENT_INVESTIGATION_ATTACH_EVENT_TYPE,
   STREAMS_CODE_ANALYSIS_GROUNDING_EVENT_TYPE,
   STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_TRIGGERED_EVENT_TYPE,
   STREAMS_ONBOARDING_SCHEDULED_EVENT_TYPE,
@@ -31,6 +32,7 @@ import {
   streamsAgentToolKiIdentificationStartedSchema,
   streamsAgentToolEventCreateSchema,
   streamsAgentToolEventStatusUpdateSchema,
+  streamsAgentToolEventInvestigationAttachSchema,
   streamsCodeAnalysisGroundingSchema,
   streamsSignificantEventsDiscoveryTriggeredSchema,
   streamsOnboardingScheduledSchema,
@@ -84,6 +86,11 @@ const streamsAgentToolEventStatusUpdateEventType = {
   schema: streamsAgentToolEventStatusUpdateSchema,
 };
 
+const streamsAgentToolEventInvestigationAttachEventType = {
+  eventType: STREAMS_AGENT_TOOL_EVENT_INVESTIGATION_ATTACH_EVENT_TYPE,
+  schema: streamsAgentToolEventInvestigationAttachSchema,
+};
+
 const streamsCodeAnalysisGroundingEventType = {
   eventType: STREAMS_CODE_ANALYSIS_GROUNDING_EVENT_TYPE,
   schema: streamsCodeAnalysisGroundingSchema,
@@ -110,6 +117,7 @@ export {
   streamsAgentToolKiIdentificationStartedEventType,
   streamsAgentToolEventCreateEventType,
   streamsAgentToolEventStatusUpdateEventType,
+  streamsAgentToolEventInvestigationAttachEventType,
   streamsCodeAnalysisGroundingEventType,
   streamsSignificantEventsDiscoveryTriggeredEventType,
   streamsOnboardingScheduledEventType,

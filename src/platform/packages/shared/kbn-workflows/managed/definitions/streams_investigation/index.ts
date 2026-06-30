@@ -15,7 +15,7 @@ export const STREAMS_INVESTIGATION_WORKFLOW_ID = 'system-streams-investigation';
 export const STREAMS_INVESTIGATION_WORKFLOW = {
   id: STREAMS_INVESTIGATION_WORKFLOW_ID,
   pluginId: 'streams',
-  version: 1,
+  version: 2,
   billable: false,
   yaml: INVESTIGATION_WORKFLOW_YAML,
   management: {
