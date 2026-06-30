@@ -161,7 +161,10 @@ describe('normalizeVegaSpec', () => {
     it('drops a conflicting legend:null when another layer enables the same shared legend', () => {
       const spec = {
         layer: [
-          { mark: 'point', encoding: { color: { field: 'ext', type: 'nominal', legend: { title: 'Extension' } } } },
+          {
+            mark: 'point',
+            encoding: { color: { field: 'ext', type: 'nominal', legend: { title: 'Extension' } } },
+          },
           { mark: 'text', encoding: { color: { field: 'ext', type: 'nominal', legend: null } } },
         ],
         resolve: { scale: { color: 'shared' } },
@@ -180,7 +183,10 @@ describe('normalizeVegaSpec', () => {
     it('keeps per-layer legend:null when the color scale is independent', () => {
       const spec = {
         layer: [
-          { mark: 'point', encoding: { color: { field: 'ext', type: 'nominal', legend: { title: 'Extension' } } } },
+          {
+            mark: 'point',
+            encoding: { color: { field: 'ext', type: 'nominal', legend: { title: 'Extension' } } },
+          },
           { mark: 'text', encoding: { color: { field: 'ext', type: 'nominal', legend: null } } },
         ],
         resolve: { scale: { color: 'independent' } },

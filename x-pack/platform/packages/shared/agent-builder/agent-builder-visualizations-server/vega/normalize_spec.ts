@@ -100,9 +100,7 @@ const disablesLegend = (legend: unknown): boolean => legend === null || legend =
  * unchanged; only the warning disappears. Returns a new object when it changes
  * anything; the input is not mutated.
  */
-const resolveSharedLegendConflicts = (
-  spec: Record<string, unknown>
-): Record<string, unknown> => {
+const resolveSharedLegendConflicts = (spec: Record<string, unknown>): Record<string, unknown> => {
   const layers = spec.layer;
   if (!Array.isArray(layers)) {
     return spec;
@@ -139,7 +137,9 @@ const resolveSharedLegendConflicts = (
     if (!encoding) {
       return layer;
     }
-    const channelsToStrip = conflicted.filter((channel) => disablesLegend(encoding[channel]?.legend));
+    const channelsToStrip = conflicted.filter((channel) =>
+      disablesLegend(encoding[channel]?.legend)
+    );
     if (channelsToStrip.length === 0) {
       return layer;
     }
