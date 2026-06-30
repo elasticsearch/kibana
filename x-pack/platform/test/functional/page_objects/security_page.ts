@@ -351,6 +351,10 @@ export class SecurityPageObject extends FtrService {
       this.log.debug(`Redirecting to ${this.deployment.getHostPort()}/logout to force the logout`);
       const url = this.deployment.getHostPort() + '/logout';
       await this.browser.get(url);
+      // A previous test might leave unsaved changes and trigger a native beforeunload dialog on navigation.
+      // Accept it immediately so subsequent WebDriver commands don't fail.
+      const navigationAlert = await this.browser.getAlert();
+      await navigationAlert?.accept();
 
       // After logging out, the user can be redirected to various locations depending on the context. By default, we
       // expect the user to be redirected to the login page. However, if the login page is not available for some reason,
