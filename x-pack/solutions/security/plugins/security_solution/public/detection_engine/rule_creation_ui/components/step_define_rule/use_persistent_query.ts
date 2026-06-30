@@ -89,7 +89,6 @@ export function usePersistentQuery({ form }: UsePersistentQueryParams): UsePersi
     if (isEsqlRule(ruleType)) {
       esqlQueryRef.current =
         currentQuery?.query?.language === ESQL_QUERY_LANGUAGE ? currentQuery : esqlQueryRef.current;
-
       return;
     }
 
@@ -107,7 +106,9 @@ export function usePersistentQuery({ form }: UsePersistentQueryParams): UsePersi
    * string kuery by default.
    */
   useEffect(() => {
-    if (ruleType === previousRuleType || !ruleType) {
+    // Guard against firing on initial mount (previousRuleType === undefined means no prior type
+    // transition has occurred; the form field already holds the correct default value).
+    if (ruleType === previousRuleType || !ruleType || !previousRuleType) {
       return;
     }
 

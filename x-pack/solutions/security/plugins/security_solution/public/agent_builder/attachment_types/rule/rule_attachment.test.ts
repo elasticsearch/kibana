@@ -8,15 +8,19 @@
 import type { ApplicationStart } from '@kbn/core-application-browser';
 import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import type { AttachmentServiceStartContract } from '@kbn/agent-builder-browser/attachments';
-import { ActionButtonType } from '@kbn/agent-builder-browser/attachments';
 import { ENABLE_ESQL } from '@kbn/esql-utils';
 import { RULES_FEATURE_LATEST } from '@kbn/security-solution-features/constants';
 import { AiRuleCreationService } from '../../../detection_engine/common/ai_rule_creation_store';
+import type { RuleResponse } from '../../../../common/api/detection_engine/model/rule_schema';
 import {
   createRuleAttachmentDefinition,
+  getRuleIdFromEditFormPath,
+  isAttachmentRuleOpenOnFormPage,
   isOnRuleFormPage,
   registerRuleAttachment,
+  shouldShowViewRuleButton,
 } from './rule_attachment';
+import { buildRuleActionButtons } from './rule_action_buttons';
 import { SecurityAgentBuilderAttachments } from '../../../../common/constants';
 
 const validRule = {
@@ -25,14 +29,6 @@ const validRule = {
   description: 'A test rule',
   severity: 'high',
   risk_score: 73,
-};
-
-const validEsqlRule = {
-  name: 'ES|QL Test Rule',
-  type: 'esql',
-  description: 'An ES|QL test rule',
-  severity: 'medium',
-  risk_score: 50,
 };
 
 const makeAttachment = (ruleJson: string, label?: string) => ({
@@ -61,14 +57,6 @@ const makeUiSettings = (esqlEnabled = true) =>
     }),
   } as unknown as IUiSettingsClient);
 
-const makeActionButtonsParams = (ruleJson: string) => ({
-  attachment: makeAttachment(ruleJson),
-  isSidebar: false,
-  isCanvas: false,
-  updateOrigin: jest.fn(),
-  openSidebarConversation: jest.fn(),
-});
-
 describe('isOnRuleFormPage', () => {
   it('returns true for rule creation path', () => {
     expect(isOnRuleFormPage('/app/security/rules/create')).toBe(true);
@@ -91,19 +79,118 @@ describe('isOnRuleFormPage', () => {
   });
 });
 
+describe('getRuleIdFromEditFormPath', () => {
+  it('extracts the rule id from an edit URL', () => {
+    expect(getRuleIdFromEditFormPath('/app/security/rules/id/my-rule-id/edit')).toBe('my-rule-id');
+  });
+
+  it('returns undefined when not on an edit URL', () => {
+    expect(getRuleIdFromEditFormPath('/app/security/rules/create')).toBeUndefined();
+  });
+});
+
+describe('shouldShowViewRuleButton', () => {
+  it('is false without an attachment rule id', () => {
+    expect(shouldShowViewRuleButton(undefined, '/app/security/rules')).toBe(false);
+  });
+
+  it('is true on the rules list', () => {
+    expect(shouldShowViewRuleButton('rule-b', '/app/security/rules')).toBe(true);
+  });
+
+  it('is true when the edit form is open for the same rule (edit form != details page)', () => {
+    expect(shouldShowViewRuleButton('rule-a', '/app/security/rules/id/rule-a/edit')).toBe(true);
+  });
+
+  it('is true when the edit form is open for a different rule', () => {
+    expect(shouldShowViewRuleButton('rule-b', '/app/security/rules/id/rule-a/edit')).toBe(true);
+  });
+
+  it('is false when on the rule details page for the same rule', () => {
+    expect(shouldShowViewRuleButton('rule-a', '/app/security/rules/id/rule-a')).toBe(false);
+  });
+
+  it('is true on the create form (attachment targets another saved rule)', () => {
+    expect(shouldShowViewRuleButton('rule-b', '/app/security/rules/create')).toBe(true);
+  });
+});
+
+describe('isAttachmentRuleOpenOnFormPage', () => {
+  it('is true only when pathname and attachment rule id match on edit', () => {
+    expect(isAttachmentRuleOpenOnFormPage('rule-a', '/app/security/rules/id/rule-a/edit')).toBe(
+      true
+    );
+    expect(isAttachmentRuleOpenOnFormPage('rule-b', '/app/security/rules/id/rule-a/edit')).toBe(
+      false
+    );
+  });
+});
+
 describe('createRuleAttachmentDefinition', () => {
   let aiRuleCreation: AiRuleCreationService;
-  const originalLocation = window.location;
 
   beforeEach(() => {
     aiRuleCreation = new AiRuleCreationService();
+    jest.spyOn(aiRuleCreation, 'requestSaveRule');
     jest.spyOn(aiRuleCreation, 'setAiCreatedRule');
-    delete (window as { location?: Location }).location;
-    (window as { location: unknown }).location = { pathname: '/' };
   });
 
-  afterAll(() => {
-    (window as { location: unknown }).location = originalLocation;
+  describe('definition shape', () => {
+    it('exposes a static getActionButtons so buttons render on every attachment version', () => {
+      const application = makeApplication(true);
+      const definition = createRuleAttachmentDefinition({
+        application,
+        aiRuleCreation,
+        uiSettings: makeUiSettings(),
+      });
+      expect(definition.getActionButtons).toEqual(expect.any(Function));
+    });
+  });
+
+  describe('getActionButtons (intent wiring)', () => {
+    const buildButtons = (
+      attachmentData: Record<string, unknown>,
+      { canEdit = true, origin }: { canEdit?: boolean; origin?: string } = {}
+    ) => {
+      const definition = createRuleAttachmentDefinition({
+        application: makeApplication(canEdit),
+        aiRuleCreation,
+        uiSettings: makeUiSettings(),
+      });
+      return definition.getActionButtons!({
+        attachment: {
+          id: 'a',
+          type: SecurityAgentBuilderAttachments.rule,
+          data: attachmentData,
+          ...(origin ? { origin } : {}),
+        },
+        isSidebar: false,
+        isCanvas: false,
+        updateOrigin: jest.fn(),
+      } as never);
+    };
+    const primaryLabel = (buttons: ReturnType<typeof buildButtons>) =>
+      buttons.find((b) => b.type === 'primary')?.label;
+
+    beforeEach(() => {
+      window.history.pushState({}, '', '/');
+    });
+
+    it('labels an unsaved attachment "Create rule" (no ruleId, no origin)', () => {
+      expect(primaryLabel(buildButtons({ text: JSON.stringify(validRule) }))).toBe('Create rule');
+    });
+
+    it('labels an attachment with `origin` set "Update rule"', () => {
+      // `origin` is the persisted, reload-safe link to the saved rule and is the source of truth
+      // for the button: once a card is linked to a saved rule it is an update target.
+      expect(
+        primaryLabel(buildButtons({ text: JSON.stringify(validRule) }, { origin: 'rule-1' }))
+      ).toBe('Update rule');
+    });
+
+    it('returns no buttons when the user cannot edit rules', () => {
+      expect(buildButtons({ text: JSON.stringify(validRule) }, { canEdit: false })).toEqual([]);
+    });
   });
 
   describe('registerRuleAttachment', () => {
@@ -165,220 +252,6 @@ describe('createRuleAttachmentDefinition', () => {
     });
   });
 
-  describe('getActionButtons', () => {
-    it('returns empty array when attachment data is not parseable JSON', () => {
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const buttons = definition.getActionButtons!(makeActionButtonsParams('not-json') as never);
-      expect(buttons).toEqual([]);
-    });
-
-    it('returns action buttons for rule without name', () => {
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify({ type: 'query' })) as never
-      );
-      expect(buttons).toHaveLength(1);
-    });
-
-    it('returns empty array when user lacks edit capabilities', () => {
-      const application = makeApplication(false);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validRule)) as never
-      );
-      expect(buttons).toEqual([]);
-    });
-
-    it('returns empty array for esql rule when enableESQL setting is disabled', () => {
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(false),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validEsqlRule)) as never
-      );
-      expect(buttons).toEqual([]);
-    });
-
-    it('returns buttons for esql rule when enableESQL setting is enabled', () => {
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(true),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validEsqlRule)) as never
-      );
-      expect(buttons).toHaveLength(1);
-    });
-
-    it('returns buttons for non-esql rule even when enableESQL setting is disabled', () => {
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(false),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validRule)) as never
-      );
-      expect(buttons).toHaveLength(1);
-    });
-
-    it('returns "Apply to creation" button when not on a rule form page', () => {
-      (window as { location: unknown }).location = { pathname: '/app/security/overview' };
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validRule)) as never
-      );
-      expect(buttons).toHaveLength(1);
-      expect(buttons[0].label).toBe('Apply to creation');
-      expect(buttons[0].type).toBe(ActionButtonType.PRIMARY);
-    });
-
-    it('returns "Update rule" button when on a rule creation page', () => {
-      (window as { location: unknown }).location = {
-        pathname: '/app/security/rules/create',
-      };
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validRule)) as never
-      );
-      expect(buttons).toHaveLength(1);
-      expect(buttons[0].label).toBe('Update rule');
-    });
-
-    it('returns "Update rule" button when on a rule edit page', () => {
-      (window as { location: unknown }).location = {
-        pathname: '/app/security/rules/abc123/edit',
-      };
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validRule)) as never
-      );
-      expect(buttons).toHaveLength(1);
-      expect(buttons[0].label).toBe('Update rule');
-    });
-
-    it('handler calls setAiCreatedRule with the parsed rule', () => {
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const buttons = definition.getActionButtons!(
-        makeActionButtonsParams(JSON.stringify(validRule)) as never
-      );
-
-      buttons[0].handler();
-
-      expect(aiRuleCreation.setAiCreatedRule).toHaveBeenCalledWith(validRule);
-    });
-
-    it('handler navigates to rule creation when not on a rule form page', () => {
-      (window as { location: unknown }).location = { pathname: '/app/security/overview' };
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const params = makeActionButtonsParams(JSON.stringify(validRule));
-      const buttons = definition.getActionButtons!(params as never);
-
-      buttons[0].handler();
-
-      expect(application.navigateToApp).toHaveBeenCalledWith('securitySolutionUI', {
-        path: '/rules/create',
-      });
-    });
-
-    it('handler opens sidebar conversation when navigating to rule creation', () => {
-      (window as { location: unknown }).location = { pathname: '/app/security/overview' };
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const params = makeActionButtonsParams(JSON.stringify(validRule));
-      const buttons = definition.getActionButtons!(params as never);
-
-      buttons[0].handler();
-
-      expect(params.openSidebarConversation).toHaveBeenCalled();
-    });
-
-    it('handler does not navigate when already on a rule form page', () => {
-      (window as { location: unknown }).location = {
-        pathname: '/app/security/rules/create',
-      };
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const params = makeActionButtonsParams(JSON.stringify(validRule));
-      const buttons = definition.getActionButtons!(params as never);
-
-      buttons[0].handler();
-
-      expect(application.navigateToApp).not.toHaveBeenCalled();
-    });
-
-    it('handler does not open sidebar conversation when already on a rule form page', () => {
-      (window as { location: unknown }).location = {
-        pathname: '/app/security/rules/create',
-      };
-      const application = makeApplication(true);
-      const definition = createRuleAttachmentDefinition({
-        application,
-        aiRuleCreation,
-        uiSettings: makeUiSettings(),
-      });
-      const params = makeActionButtonsParams(JSON.stringify(validRule));
-      const buttons = definition.getActionButtons!(params as never);
-
-      buttons[0].handler();
-
-      expect(params.openSidebarConversation).not.toHaveBeenCalled();
-    });
-  });
-
   describe('getLabel', () => {
     it('returns attachmentLabel when provided', () => {
       const application = makeApplication(true);
@@ -414,5 +287,134 @@ describe('createRuleAttachmentDefinition', () => {
       const label = definition.getLabel(makeAttachment('invalid') as never);
       expect(label).toBe('Security Rule');
     });
+  });
+});
+
+describe('buildRuleActionButtons', () => {
+  let aiRuleCreation: AiRuleCreationService;
+  let baseProps: Parameters<typeof buildRuleActionButtons>[0];
+
+  const primaryButton = (buttons: ReturnType<typeof buildRuleActionButtons>) =>
+    buttons.find((b) => b.type === 'primary');
+  const labels = (buttons: ReturnType<typeof buildRuleActionButtons>) =>
+    buttons.map((b) => b.label);
+
+  beforeEach(() => {
+    aiRuleCreation = new AiRuleCreationService();
+    jest.spyOn(aiRuleCreation, 'requestSaveRule');
+    jest.spyOn(aiRuleCreation, 'setAiCreatedRule');
+    window.history.pushState({}, '', '/');
+    baseProps = {
+      rule: { name: 'Test Rule', type: 'query' } as unknown as RuleResponse,
+      aiRuleCreation,
+      application: makeApplication(true),
+      uiSettings: makeUiSettings(),
+      intent: 'create',
+      ruleId: undefined,
+      attachmentId: 'air:testcard',
+      showViewRule: false,
+      updateOrigin: jest.fn().mockResolvedValue(undefined),
+    };
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  it('returns no buttons when the user lacks RULES_UI_EDIT_PRIVILEGE', () => {
+    expect(buildRuleActionButtons({ ...baseProps, application: makeApplication(false) })).toEqual(
+      []
+    );
+  });
+
+  it('returns no buttons for an ES|QL rule when ENABLE_ESQL is disabled', () => {
+    expect(
+      buildRuleActionButtons({
+        ...baseProps,
+        rule: { ...baseProps.rule!, type: 'esql' } as unknown as RuleResponse,
+        uiSettings: makeUiSettings(false),
+      })
+    ).toEqual([]);
+  });
+
+  it('returns a "Create rule" primary action for a create-intent attachment', () => {
+    const buttons = buildRuleActionButtons(baseProps);
+    expect(primaryButton(buttons)?.label).toBe('Create rule');
+    expect(primaryButton(buttons)?.icon).toBe('plusInCircle');
+  });
+
+  it('returns an "Update rule" primary action for an update-intent attachment', () => {
+    const buttons = buildRuleActionButtons({ ...baseProps, intent: 'update', ruleId: 'rule-123' });
+    expect(primaryButton(buttons)?.label).toBe('Update rule');
+    expect(primaryButton(buttons)?.icon).toBe('save');
+  });
+
+  it('requests a save with the ruleId injected for an update-intent attachment', () => {
+    const buttons = buildRuleActionButtons({ ...baseProps, intent: 'update', ruleId: 'rule-123' });
+    primaryButton(buttons)!.handler();
+    expect(aiRuleCreation.requestSaveRule).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'rule-123' }),
+      expect.objectContaining({ attachmentId: 'air:testcard' })
+    );
+  });
+
+  it('requests a save with the attachmentId for a create-intent attachment', () => {
+    const buttons = buildRuleActionButtons({ ...baseProps });
+    primaryButton(buttons)!.handler();
+    expect(aiRuleCreation.requestSaveRule).toHaveBeenCalledWith(
+      expect.not.objectContaining({ id: expect.anything() }),
+      expect.objectContaining({ attachmentId: 'air:testcard' })
+    );
+  });
+
+  it('"Preview before saving" calls setAiCreatedRule with the rule and attachmentId', () => {
+    const buttons = buildRuleActionButtons(baseProps);
+    buttons.find((b) => b.label === 'Preview before saving')!.handler();
+    expect(aiRuleCreation.setAiCreatedRule).toHaveBeenCalledWith(baseProps.rule, 'air:testcard');
+  });
+
+  it('guards against a double-submit while a save is already in flight', () => {
+    aiRuleCreation.requestSaveRule({ name: 'in flight' } as unknown as RuleResponse);
+    (aiRuleCreation.requestSaveRule as jest.Mock).mockClear();
+    expect(aiRuleCreation.getIsSaving()).toBe(true);
+
+    primaryButton(buildRuleActionButtons(baseProps))!.handler();
+    expect(aiRuleCreation.requestSaveRule).not.toHaveBeenCalled();
+  });
+
+  it('omits View rule from action buttons when showViewRule is false', () => {
+    expect(labels(buildRuleActionButtons({ ...baseProps, ruleId: 'rule-123' }))).not.toContain(
+      'View rule'
+    );
+  });
+
+  it('navigates to create path for create intent even when a ruleId is present', () => {
+    const application = makeApplication(true);
+    const buttons = buildRuleActionButtons({
+      ...baseProps,
+      application,
+      ruleId: 'rule-123',
+    });
+    buttons.find((b) => b.label === 'Preview before saving')!.handler();
+    expect(application.navigateToApp).toHaveBeenCalledWith('securitySolutionUI', {
+      path: expect.stringContaining('/create'),
+    });
+  });
+
+  it('omits View rule from action buttons when showViewRule is false even for update intent', () => {
+    expect(
+      labels(buildRuleActionButtons({ ...baseProps, intent: 'update', ruleId: 'rule-123' }))
+    ).not.toContain('View rule');
+  });
+
+  it('includes View rule in action buttons when showViewRule is true and ruleId is set', () => {
+    expect(
+      labels(
+        buildRuleActionButtons({
+          ...baseProps,
+          intent: 'update',
+          ruleId: 'rule-123',
+          showViewRule: true,
+        })
+      )
+    ).toContain('View rule');
   });
 });

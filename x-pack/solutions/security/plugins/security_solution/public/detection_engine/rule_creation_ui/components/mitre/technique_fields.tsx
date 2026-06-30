@@ -177,7 +177,8 @@ export const MitreAttackTechniqueFields: React.FC<AddTechniqueProps> = ({
     [field.label, techniquesOptions, updateTechnique]
   );
 
-  const techniques = values[threatIndex].technique ?? [];
+  const threatEntry = values[threatIndex];
+  const techniques = threatEntry?.technique ?? [];
 
   return (
     <TechniqueContainer>
@@ -190,7 +191,12 @@ export const MitreAttackTechniqueFields: React.FC<AddTechniqueProps> = ({
           >
             <EuiFlexGroup gutterSize="s" alignItems="center">
               <EuiFlexItem grow>
-                {getSelectTechnique(values[threatIndex].tactic.name, index, isDisabled, technique)}
+                {getSelectTechnique(
+                  threatEntry?.tactic?.name ?? 'none',
+                  index,
+                  isDisabled,
+                  technique
+                )}
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
                 <EuiToolTip content={Rulei18n.DELETE} disableScreenReaderOutput>

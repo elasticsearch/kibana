@@ -21,13 +21,23 @@ export interface UseAgentBuilderAttachmentParams {
    */
   attachmentType: string;
   /**
-   * Data for the attachment
+   * Data for the attachment. Optional when `origin` is provided.
    */
-  attachmentData: Record<string, unknown>;
+  attachmentData?: Record<string, unknown>;
+  /**
+   * Saved-object ID that links this attachment to its source. When set, the platform
+   * can call the server-side `resolve` to refresh stale data and the card intent is
+   * derived from this field rather than from the attachment data.
+   */
+  origin?: string;
   /**
    * Prompt/input text for the agent builder conversation
    */
-  attachmentPrompt: string;
+  attachmentPrompt?: string;
+  /**
+   * Short description shown alongside the attachment in the conversation.
+   */
+  attachmentDescription?: string;
 }
 
 export interface UseAgentBuilderAttachmentResult {
@@ -45,6 +55,7 @@ export const useAgentBuilderAttachment = ({
   attachmentId,
   attachmentType,
   attachmentData,
+  origin,
   attachmentPrompt,
 }: UseAgentBuilderAttachmentParams): UseAgentBuilderAttachmentResult => {
   const { agentBuilder } = useKibana().services;
@@ -66,6 +77,7 @@ export const useAgentBuilderAttachment = ({
       id: attachmentId ?? `${attachmentType}-${Date.now()}`,
       type: attachmentType,
       data: attachmentData,
+      origin,
     };
 
     agentBuilder.openChat({
@@ -75,7 +87,7 @@ export const useAgentBuilderAttachment = ({
       attachments: [attachment],
       sessionTag: 'security',
     });
-  }, [attachmentId, attachmentType, attachmentData, attachmentPrompt, agentBuilder]);
+  }, [attachmentId, attachmentType, attachmentData, origin, attachmentPrompt, agentBuilder]);
 
   return {
     openAgentBuilderFlyout,

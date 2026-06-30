@@ -124,7 +124,7 @@ const formatMitreMapping = (response: MitreMappingSelectionResponse): Array<Thre
           name: tacticData.name,
           reference: tacticData.reference,
         },
-        technique: formattedTechniques.length > 0 ? formattedTechniques : undefined,
+        technique: formattedTechniques,
       });
     }
   }

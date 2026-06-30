@@ -11,6 +11,7 @@ import { NowProvider, QueryService } from '@kbn/data-plugin/public';
 import { Storage } from '@kbn/kibana-utils-plugin/public';
 import type { Logger } from '@kbn/logging';
 import { initTelemetry, TelemetryService } from './common/lib/telemetry';
+import type { TelemetryServiceStart } from './common/lib/telemetry';
 import { KibanaServices } from './common/lib/kibana/services';
 import type { ExperimentalFeatures } from '../common/experimental_features';
 import { licenseService } from './common/hooks/use_license';
@@ -105,6 +106,10 @@ export class PluginServices {
       buildFlavor: this.packageInfo.buildFlavor,
       prebuiltRulesPackageVersion: this.prebuiltRulesPackageVersion,
     });
+  }
+
+  public startTelemetry(): TelemetryServiceStart {
+    return this.telemetry.start();
   }
 
   public stop() {

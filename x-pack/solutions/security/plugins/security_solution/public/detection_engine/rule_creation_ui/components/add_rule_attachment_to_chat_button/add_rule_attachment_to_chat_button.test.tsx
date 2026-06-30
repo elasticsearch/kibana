@@ -10,7 +10,6 @@ import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { ActionTypeRegistryContract } from '@kbn/triggers-actions-ui-plugin/public';
 import { AddRuleAttachmentToChatButton } from './add_rule_attachment_to_chat_button';
-import { RULE_EXPLORATION_ATTACHMENT_PROMPT } from '../../../../agent_builder/components/prompts';
 import type { NewAgentBuilderAttachmentProps } from '../../../../agent_builder/components/new_agent_builder_attachment';
 import type { UseAgentBuilderAttachmentParams } from '../../../../agent_builder/hooks/use_agent_builder_attachment';
 import {
@@ -31,6 +30,7 @@ const mockUseAgentBuilderAttachment = jest.fn();
 const mockFormatRule = jest.fn();
 const mockNewAgentBuilderAttachment = jest.fn();
 const mockActivateFormSync = jest.fn();
+const mockReleaseBind = jest.fn();
 
 const getCapturedAttachment = (): UseAgentBuilderAttachmentParams => {
   const [attachment] = mockUseAgentBuilderAttachment.mock.calls[0] as [
@@ -39,7 +39,7 @@ const getCapturedAttachment = (): UseAgentBuilderAttachmentParams => {
   return attachment;
 };
 
-const ruleResponseMock = { name: 'My Rule' } as RuleResponse;
+const ruleResponseMock = { id: 'rule-123', name: 'My Rule' } as RuleResponse;
 const defineStepDataMock = {} as DefineStepRule;
 const aboutStepDataMock = {} as AboutStepRule;
 const scheduleStepDataMock = {} as ScheduleStepRule;
@@ -50,7 +50,11 @@ jest.mock('../../../../common/lib/kibana');
 
 const mockKibanaServices = () => ({
   services: {
-    aiRuleCreation: { activateFormSync: mockActivateFormSync },
+    aiRuleCreation: {
+      activateFormSync: mockActivateFormSync,
+      releaseBind: mockReleaseBind,
+    },
+    agentBuilder: undefined,
   },
 });
 
@@ -82,14 +86,17 @@ describe('AddRuleAttachmentToChatButton', () => {
     (useKibana as jest.Mock).mockReturnValue(mockKibanaServices());
   });
 
-  it('captures attachment call with expected params', () => {
+  it('attaches a saved rule with data and origin so the card renders and shows Update', () => {
     render(<AddRuleAttachmentToChatButton rule={ruleResponseMock} pathway="rule_details" />);
 
     const attachment = getCapturedAttachment();
     expect(attachment.attachmentType).toBe(SecurityAgentBuilderAttachments.rule);
-    expect(attachment.attachmentData.text).toBe(JSON.stringify(ruleResponseMock));
-    expect(attachment.attachmentData.attachmentLabel).toBe('My Rule');
-    expect(attachment.attachmentPrompt).toBe(RULE_EXPLORATION_ATTACHMENT_PROMPT);
+    // origin set → card shows "Update Rule"
+    expect(attachment.origin).toBe(ruleResponseMock.id);
+    // data included → card renders immediately without waiting for server resolve
+    expect(attachment.attachmentData?.text).toBe(JSON.stringify(ruleResponseMock));
+    expect(attachment.attachmentData?.attachmentLabel).toBe('My Rule');
+    expect(attachment.attachmentDescription).toBe('My Rule');
     const newAttachmentProps = mockNewAgentBuilderAttachment.mock.calls[0][0];
     expect(newAttachmentProps.telemetry?.pathway).toBe('rule_details');
     expect(newAttachmentProps.telemetry?.attachments).toEqual(['rule']);
@@ -119,7 +126,7 @@ describe('AddRuleAttachmentToChatButton', () => {
         text: JSON.stringify({ name: 'Formatted Rule' }),
         attachmentLabel: 'Formatted Rule',
       },
-      attachmentPrompt: RULE_EXPLORATION_ATTACHMENT_PROMPT,
+      attachmentDescription: 'Formatted Rule',
     });
 
     await user.click(screen.getByTestId('newAgentBuilderAttachmentMock'));

@@ -152,7 +152,7 @@ export const MitreAttackSubtechniqueFields: React.FC<AddSubtechniqueProps> = ({
   const getSelectSubtechnique = useCallback(
     (index: number, disabled: boolean, subtechnique: ThreatSubtechnique) => {
       const options = subtechniquesOptions.filter(
-        (t) => t.techniqueId === technique[techniqueIndex].id
+        (t) => t.techniqueId === technique[techniqueIndex]?.id
       );
 
       return (

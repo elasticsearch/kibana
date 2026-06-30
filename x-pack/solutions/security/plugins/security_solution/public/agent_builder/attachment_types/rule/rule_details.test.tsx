@@ -968,13 +968,13 @@ describe('RuleInlineContent integration', () => {
     expect(screen.getByText('test-tag')).toBeInTheDocument();
   });
 
-  it('shows "New Rule" callout when attachment data is not valid JSON', () => {
+  it('renders nothing when attachment data is not valid JSON', () => {
     const aiRuleCreation = new AiRuleCreationService();
     const application = makeApplication();
     const uiSettings = makeUiSettings();
     const definition = createRuleAttachmentDefinition({ application, aiRuleCreation, uiSettings });
     const Renderer = definition.renderInlineContent!;
-    render(
+    const { container } = render(
       <Renderer
         attachment={{
           id: 'test',
@@ -985,7 +985,7 @@ describe('RuleInlineContent integration', () => {
       />
     );
 
-    expect(screen.getByText('New Rule')).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('still renders description, query, and other fields when name is missing', () => {
@@ -1003,7 +1003,7 @@ describe('RuleInlineContent integration', () => {
     expect(allText).toContain('*:*');
   });
 
-  it('shows "New Rule" callout when attachment data is a JSON array', () => {
+  it('renders nothing when attachment data is a JSON array', () => {
     const aiRuleCreation = new AiRuleCreationService();
     const application = makeApplication();
     const definition = createRuleAttachmentDefinition({
@@ -1012,7 +1012,7 @@ describe('RuleInlineContent integration', () => {
       uiSettings: makeUiSettings(),
     });
     const Renderer = definition.renderInlineContent!;
-    render(
+    const { container } = render(
       <Renderer
         attachment={{
           id: 'test',
@@ -1023,7 +1023,7 @@ describe('RuleInlineContent integration', () => {
       />
     );
 
-    expect(screen.getByText('New Rule')).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('places filters between index patterns and threshold details in DOM order', () => {
