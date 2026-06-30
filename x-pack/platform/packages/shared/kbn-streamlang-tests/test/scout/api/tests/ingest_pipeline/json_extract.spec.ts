@@ -7,7 +7,7 @@
 
 import { expect } from '@kbn/scout/api';
 import { tags } from '@kbn/scout';
-import type { JsonExtractProcessor, StreamlangDSL } from '@kbn/streamlang';
+import type { JsonExtractProcessor, MathProcessor, StreamlangDSL } from '@kbn/streamlang';
 import { transpile } from '@kbn/streamlang/src/transpilers/ingest_pipeline';
 import { streamlangApiTest as apiTest } from '../..';
 
@@ -74,6 +74,65 @@ apiTest.describe(
         const source = ingestedDocs[0] as Record<string, unknown>;
         expect(source).toStrictEqual(expect.objectContaining({ message: 'some_value' }));
         expect(source.user_id).toBeUndefined();
+      }
+    );
+
+    apiTest(
+      'should write extracted value into a pre-existing parent object so it is readable downstream',
+      async ({ testBed }) => {
+        const indexName = 'streams-e2e-test-json-extract-nested-target';
+
+        // json_extract into a nested target, then a downstream step that reads it back
+        // via the flexible accessor (mirrors the customer's json_extract -> math repro
+        // that previously threw a NullPointerException).
+        const streamlangDSL: StreamlangDSL = {
+          steps: [
+            {
+              action: 'json_extract',
+              field: 'attributes.payload',
+              extractions: [
+                {
+                  selector: 'duration',
+                  target_field: 'attributes.app.action.duration_nano',
+                  type: 'long',
+                },
+              ],
+            } as JsonExtractProcessor,
+            {
+              action: 'math',
+              expression: 'attributes.app.action.duration_nano + 0',
+              to: 'duration_readback',
+            } as MathProcessor,
+          ],
+        };
+
+        const { processors } = await transpile(streamlangDSL);
+
+        // The child-stream pipeline uses the flexible field access pattern; the bug
+        // only surfaces when reads/writes go through it. `attributes` already exists
+        // as a real object on the incoming document.
+        const docs = [
+          {
+            '@timestamp': '2026-06-29T15:30:00Z',
+            attributes: { payload: '{"duration": 68319744}' },
+          },
+        ];
+        const { errors } = await testBed.ingest(indexName, docs, processors, {
+          pipeline: { field_access_pattern: 'flexible' },
+        });
+
+        // No script_exception / NullPointerException from the downstream read.
+        expect(errors).toHaveLength(0);
+
+        const ingestedDocs = await testBed.getDocs(indexName);
+        expect(ingestedDocs).toHaveLength(1);
+        const source = ingestedDocs[0] as Record<string, unknown>;
+
+        // The downstream `$()` read resolved the extracted value (instead of null),
+        // proving it was written somewhere reachable inside `attributes`.
+        expect(source.duration_readback).toBe(68319744);
+        // ...and it was not stranded as a literal top-level dotted key.
+        expect(source['attributes.app.action.duration_nano']).toBeUndefined();
       }
     );
   }

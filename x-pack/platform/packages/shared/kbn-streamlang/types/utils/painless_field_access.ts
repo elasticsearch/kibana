@@ -29,3 +29,20 @@ export function painlessFieldAccessor(field: string, defaultValue: string = 'nul
 export function painlessFieldAssignment(field: string): string {
   return `ctx['${field}']`;
 }
+
+/**
+ * Setter for writing field values via the Painless Field API.
+ *
+ * Unlike `painlessFieldAssignment` (which mutates `ctx` with a literal dotted
+ * key), `field('a.b.c').set(value)` resolves the path with the same
+ * nested-then-flat algorithm as the `$()` reader. This keeps reads and writes
+ * symmetric under `field_access_pattern: 'flexible'`, so a value written to a
+ * nested target (e.g. `attributes.app.action.duration_nano`) lands inside the
+ * existing `attributes` object where downstream `$()` reads look for it.
+ *
+ * @example
+ * painlessFieldSetter('order.total', 'extracted_0') -> "field('order.total').set(extracted_0)"
+ */
+export function painlessFieldSetter(field: string, valueExpr: string): string {
+  return `field('${field}').set(${valueExpr})`;
+}

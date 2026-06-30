@@ -122,7 +122,7 @@ describe('processJsonExtractProcessor', () => {
       const { source } = result.script;
       // Complex types are passed through before type casting is applied
       expect(source).toContain('if (extracted_0 instanceof Map || extracted_0 instanceof List)');
-      expect(source).toContain("ctx['out'] = extracted_0;");
+      expect(source).toContain("field('out').set(extracted_0);");
     });
 
     it('should use intValue for integer type', () => {
@@ -188,8 +188,8 @@ describe('processJsonExtractProcessor', () => {
       const { source } = result.script;
       expect(source).toContain('def extracted_0');
       expect(source).toContain('def extracted_1');
-      expect(source).toContain("ctx['out_a']");
-      expect(source).toContain("ctx['out_b']");
+      expect(source).toContain("field('out_a').set(");
+      expect(source).toContain("field('out_b').set(");
     });
   });
 });

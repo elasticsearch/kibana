@@ -11,7 +11,7 @@ import type {
   JsonExtraction,
   JsonExtractType,
 } from '../../../../types/processors';
-import { painlessFieldAccessor, painlessFieldAssignment } from '../../../../types/utils';
+import { painlessFieldAccessor, painlessFieldSetter } from '../../../../types/utils';
 import { parseJsonPath, segmentsToStrings } from '../../shared/json_path_parser';
 
 /**
@@ -104,17 +104,16 @@ function generateJsonExtractScript(
     const extraction = extractions[i];
     const parts = segmentsToStrings(parseJsonPath(extraction.selector).segments);
     const traversalExpr = generateTraversalExpression('parsed', parts);
-    const targetAssignment = painlessFieldAssignment(extraction.target_field);
     const varName = `extracted_${i}`;
     const targetType = extraction.type ?? 'keyword';
 
     lines.push(`def ${varName} = ${traversalExpr};`);
     lines.push(`if (${varName} != null) {`);
     lines.push(`  if (${varName} instanceof Map || ${varName} instanceof List) {`);
-    lines.push(`    ${targetAssignment} = ${varName};`);
+    lines.push(`    ${painlessFieldSetter(extraction.target_field, varName)};`);
     lines.push(`  } else {`);
     const typeCastExpr = generateTypeCast(varName, targetType);
-    lines.push(`    ${targetAssignment} = ${typeCastExpr};`);
+    lines.push(`    ${painlessFieldSetter(extraction.target_field, typeCastExpr)};`);
     lines.push(`  }`);
     lines.push(`}`);
   }
