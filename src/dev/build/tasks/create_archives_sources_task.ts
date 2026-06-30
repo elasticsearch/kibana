@@ -10,7 +10,6 @@
 import { REPO_ROOT } from '@kbn/repo-info';
 import { removePackagesFromPackageMap } from '@kbn/repo-packages';
 import type { KibanaSolution } from '@kbn/projects-solutions-groups';
-import { KIBANA_SOLUTIONS } from '@kbn/projects-solutions-groups';
 import { resolve, join } from 'path';
 import { scanCopy, deleteAll, copyAll } from '../lib';
 import type { Task, Platform } from '../lib';
@@ -80,62 +79,14 @@ export const CreateArchivesSources: Task = {
             log
           );
 
-          // Copy solution config.yml
-          const WORKPLACE_AI_CONFIGS = ['serverless.workplaceai.yml'];
-          const ELASTICSEARCH_CONFIGS = ['serverless.es.yml'];
-          const OBSERVABILITY_CONFIGS = [
-            'serverless.oblt.yml',
-            'serverless.oblt.{logs_essentials,complete}.yml',
-          ];
-          const SECURITY_CONFIGS = [
-            'serverless.security.yml',
-            'serverless.security.{search_ai_lake,essentials,complete}.yml',
-          ];
-          const VECTORDB_CONFIGS = ['serverless.vectordb.yml'];
-          const configFiles = ['serverless.yml'];
-          const solutionId = platform.getSolutionId();
-          switch (solutionId) {
-            case 'workplaceai':
-              configFiles.push(...WORKPLACE_AI_CONFIGS);
-              break;
-            case 'search':
-              configFiles.push(...ELASTICSEARCH_CONFIGS);
-              break;
-            case 'observability':
-              configFiles.push(...OBSERVABILITY_CONFIGS);
-              break;
-            case 'security':
-              configFiles.push(...SECURITY_CONFIGS);
-              break;
-            case 'vectordb':
-              configFiles.push(...VECTORDB_CONFIGS);
-              break;
-            default:
-              // we push all of the solution config files for non-solution specific serverless builds
-              configFiles.push(
-                ...WORKPLACE_AI_CONFIGS,
-                ...ELASTICSEARCH_CONFIGS,
-                ...OBSERVABILITY_CONFIGS,
-                ...SECURITY_CONFIGS,
-                ...VECTORDB_CONFIGS
-              );
-              break;
-          }
+          // Copy all serverless config files into the generic serverless build.
           await copyAll(
             resolve(REPO_ROOT, 'config'),
             build.resolvePathForPlatform(platform, 'config'),
             {
-              select: configFiles,
+              select: ['serverless*.yml'],
             }
           );
-
-          // Remove non-target solutions
-          if (solutionId && KIBANA_SOLUTIONS.includes(solutionId)) {
-            const solutionsToRemove: KibanaSolution[] = KIBANA_SOLUTIONS.filter(
-              (s) => s !== solutionId
-            );
-            await removeSolutions(solutionsToRemove, platform);
-          }
         } else if (config.isRelease) {
           // For stateful release builds, remove the workplaceai solution.
           // Snapshot builds support all solutions to faciliate functional testing

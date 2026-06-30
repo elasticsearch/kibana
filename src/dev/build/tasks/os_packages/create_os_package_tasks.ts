@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Solution, Task } from '../../lib';
+import type { Task } from '../../lib';
 import { runFpm } from './run_fpm';
 import { runDockerGenerator } from './docker_generator';
 import { createOSPackageKibanaYML } from './create_os_package_kibana_yml';
@@ -112,20 +112,14 @@ export const CreateDockerWolfiARM64: Task = {
   },
 };
 
-export const CreateDockerServerless = function (
-  architecture: 'x64' | 'aarch64',
-  solution?: Solution
-): Task {
+export const CreateDockerServerless = function (architecture: 'x64' | 'aarch64'): Task {
   const architectureDesc = architecture === 'x64' ? X64 : ARM64;
   return {
-    description: `Creating Docker Serverless ${
-      solution ? `'${solution.artifact}' solution` : ''
-    } image ${architectureDesc}`,
+    description: `Creating Docker Serverless image ${architectureDesc}`,
 
     async run(config, log, build) {
       await runDockerGenerator(config, log, build, {
         architecture,
-        solution,
         baseImage: 'wolfi',
         context: false,
         serverless: true,

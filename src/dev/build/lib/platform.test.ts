@@ -61,30 +61,6 @@ describe('isServerless()', () => {
   });
 });
 
-describe('getSolutionId()', () => {
-  it('returns the solution id or undefined', () => {
-    expect(new Platform('linux', 'x64', 'test').getSolutionId()).toBeUndefined();
-    expect(
-      new Platform('linux', 'x64', 'test', 'serverless', {
-        id: 'search',
-        artifact: 'elasticsearch',
-      }).getSolutionId()
-    ).toBe('search');
-  });
-});
-
-describe('getSolutionArtifact()', () => {
-  it('returns the solution artifact or undefined', () => {
-    expect(new Platform('linux', 'x64', 'test').getSolutionArtifact()).toBeUndefined();
-    expect(
-      new Platform('linux', 'x64', 'test', 'serverless', {
-        id: 'search',
-        artifact: 'elasticsearch',
-      }).getSolutionArtifact()
-    ).toBe('elasticsearch');
-  });
-});
-
 describe('toString()', () => {
   it('returns the correct string', () => {
     expect(new Platform('linux', 'x64', 'test').toString()).toBe('linux-x64');
@@ -92,23 +68,5 @@ describe('toString()', () => {
     expect(new Platform('linux', 'x64', 'test', 'serverless').toString()).toBe(
       'linux-x64-serverless'
     );
-    expect(
-      new Platform('linux', 'x64', 'test', 'serverless', {
-        id: 'workplaceai',
-        artifact: 'workplaceai',
-      }).toString()
-    ).toBe('linux-x64-serverless-workplaceai');
-    expect(
-      new Platform('linux', 'x64', 'test', undefined, {
-        id: 'observability',
-        artifact: 'observability',
-      }).toString()
-    ).toBe('linux-x64-observability');
-    expect(
-      new Platform('linux', 'x64', 'test', undefined, {
-        id: 'search',
-        artifact: 'elasticsearch',
-      }).toString()
-    ).toBe('linux-x64-elasticsearch');
   });
 });
