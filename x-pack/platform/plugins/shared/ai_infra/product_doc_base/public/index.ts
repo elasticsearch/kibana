@@ -21,6 +21,7 @@ export {
   useProductDocStatus,
   useInstallProductDoc,
   useUninstallProductDoc,
+  useDefaultInferenceId,
   REACT_QUERY_KEYS,
   type UseProductDocStatusOptions,
   type UseInstallProductDocOptions,

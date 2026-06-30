@@ -7,12 +7,16 @@
 
 import { z } from '@kbn/zod/v4';
 import { platformCoreTools, ToolType } from '@kbn/agent-builder-common';
-import { defaultInferenceEndpoints } from '@kbn/inference-common';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { createErrorResult } from '@kbn/agent-builder-server';
 import { ToolResultType } from '@kbn/agent-builder-common';
 import type { CoreSetup } from '@kbn/core/server';
 import type { RetrieveDocumentationResultDoc } from '@kbn/llm-tasks-plugin/server';
+import type { LlmTasksPluginStart } from '@kbn/llm-tasks-plugin/server';
+import {
+  resolveDefaultInferenceIdFromInferenceGet,
+  resolveInstalledProductDocInferenceId,
+} from '@kbn/product-doc-common';
 import type { AgentBuilderPlatformPluginStart, PluginStartDependencies } from '../types';
 
 const productDocumentationSchema = z.object({
@@ -32,34 +36,30 @@ const productDocumentationSchema = z.object({
     .describe('Maximum number of documents to return. Defaults to 3.'),
 });
 
-// TODO make this configurable, we need a platform level setting for the embedding model
-const inferenceId = defaultInferenceEndpoints.ELSER;
-
 // Path to GenAI Settings within the management app
 const GENAI_SETTINGS_APP_PATH = '/app/management/ai/genAiSettings';
 
 export const productDocumentationTool = (
   coreSetup: CoreSetup<PluginStartDependencies, AgentBuilderPlatformPluginStart>
 ): BuiltinToolDefinition<typeof productDocumentationSchema> => {
-  // Create a closure that will resolve llmTasks when the handler is called
-  const getLlmTasks = async () => {
-    const [, plugins] = await coreSetup.getStartServices();
-    return plugins.llmTasks;
+  let startServicesPromise: ReturnType<CoreSetup['getStartServices']> | undefined;
+  const getStartServices = () => {
+    if (!startServicesPromise) {
+      startServicesPromise = coreSetup.getStartServices();
+    }
+    return startServicesPromise;
   };
 
-  // Check if product documentation is installed
-  const isProductDocAvailable = async (
-    llmTasks: NonNullable<Awaited<ReturnType<typeof getLlmTasks>>>
-  ) => {
-    try {
-      return (
-        (await llmTasks.retrieveDocumentationAvailable({
-          inferenceId,
-        })) ?? false
-      );
-    } catch {
-      return false;
-    }
+  const getLlmTasks = async (): Promise<LlmTasksPluginStart | undefined> => {
+    const [, plugins] = await getStartServices();
+    return (plugins as PluginStartDependencies).llmTasks;
+  };
+
+  const getDefaultInferenceId = async () => {
+    const [coreStart] = await getStartServices();
+    return resolveDefaultInferenceIdFromInferenceGet(() =>
+      coreStart.elasticsearch.client.asInternalUser.inference.get({})
+    );
   };
 
   const baseTool: BuiltinToolDefinition<typeof productDocumentationSchema> = {
@@ -80,10 +80,12 @@ export const productDocumentationTool = (
         };
       }
 
-      // Check if product documentation is installed
-      const isAvailable = await isProductDocAvailable(llmTasks);
-      if (!isAvailable) {
-        // Build the full settings URL using the request's base path (includes space prefix)
+      const inferenceId = await resolveInstalledProductDocInferenceId({
+        getDefaultInferenceId,
+        isDocumentationAvailable: (candidateInferenceId) =>
+          llmTasks.retrieveDocumentationAvailable({ inferenceId: candidateInferenceId }),
+      });
+      if (!inferenceId) {
         const basePath = coreSetup.http.basePath.get(request);
         const settingsUrl = `${basePath}${GENAI_SETTINGS_APP_PATH}`;
 
@@ -100,11 +102,9 @@ export const productDocumentationTool = (
       }
 
       try {
-        // Get the default model to extract the connector
         const model = await modelProvider.getDefaultModel();
         const connector = model.connector;
 
-        // Retrieve documentation
         const result = await llmTasks.retrieveDocumentation({
           searchTerm: query,
           products: product ? [product as any] : undefined,
@@ -128,7 +128,6 @@ export const productDocumentationTool = (
           };
         }
 
-        // Return documentation results
         return {
           results: result.documents.map((doc: RetrieveDocumentationResultDoc) => ({
             type: ToolResultType.other,

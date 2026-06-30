@@ -10,15 +10,45 @@ import type { ZipArchive } from '../utils/zip_archive';
 
 type ValidationResult = { valid: true } | { valid: false; error: string };
 
-export const validateArtifactArchive = (archive: ZipArchive): ValidationResult => {
-  if (!archive.hasEntry('manifest.json')) {
-    return { valid: false, error: 'Manifest file not found' };
+const MANIFEST_FILE_PATH = 'manifest.json';
+const MAPPINGS_FILE_PATH = 'mappings.json';
+
+const formatMissingFileError = ({
+  filePath,
+  archivePath,
+}: {
+  filePath: string;
+  archivePath?: string;
+}): string => {
+  const archiveSuffix = archivePath ? ` in archive [${archivePath}]` : '';
+  return `File not found at path [${filePath}]${archiveSuffix}`;
+};
+
+export const validateArtifactArchive = (
+  archive: ZipArchive,
+  { archivePath }: { archivePath?: string } = {}
+): ValidationResult => {
+  if (!archive.hasEntry(MANIFEST_FILE_PATH)) {
+    return {
+      valid: false,
+      error: `Manifest file not found: ${formatMissingFileError({
+        filePath: MANIFEST_FILE_PATH,
+        archivePath,
+      })}`,
+    };
   }
-  if (!archive.hasEntry('mappings.json')) {
-    return { valid: false, error: 'Mapping file not found' };
+  if (!archive.hasEntry(MAPPINGS_FILE_PATH)) {
+    return {
+      valid: false,
+      error: `Mapping file not found: ${formatMissingFileError({
+        filePath: MAPPINGS_FILE_PATH,
+        archivePath,
+      })}`,
+    };
   }
   if (!archive.getEntryPaths().some(isArtifactContentFilePath)) {
-    return { valid: false, error: 'No content files were found' };
+    const archiveSuffix = archivePath ? ` in archive [${archivePath}]` : '';
+    return { valid: false, error: `No content files were found${archiveSuffix}` };
   }
   return { valid: true };
 };

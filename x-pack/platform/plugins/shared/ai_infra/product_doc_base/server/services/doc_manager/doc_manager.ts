@@ -6,10 +6,11 @@
  */
 
 import type { Logger } from '@kbn/logging';
-import type { CoreAuditService } from '@kbn/core/server';
+import type { CoreAuditService, ElasticsearchClient } from '@kbn/core/server';
 import { type TaskManagerStartContract, TaskStatus } from '@kbn/task-manager-plugin/server';
 import type { LicensingPluginStart } from '@kbn/licensing-plugin/server';
 import { defaultInferenceEndpoints } from '@kbn/inference-common';
+import { ResourceTypes, resolveDefaultInferenceIdFromInferenceGet } from '@kbn/product-doc-common';
 import { isImpliedDefaultElserInferenceId } from '@kbn/product-doc-common/src/is_default_inference_endpoint';
 import type { InstallationStatus, ProductInstallState } from '../../../common/install_status';
 import type { ProductDocInstallClient } from '../doc_install_status';
@@ -52,6 +53,7 @@ export class DocumentationManager implements DocumentationManagerAPI {
   private docInstallClient: ProductDocInstallClient;
   private auditService: CoreAuditService;
   private packageInstaller?: PackageInstaller;
+  private esClient: ElasticsearchClient;
 
   constructor({
     logger,
@@ -60,6 +62,7 @@ export class DocumentationManager implements DocumentationManagerAPI {
     docInstallClient,
     auditService,
     packageInstaller,
+    esClient,
   }: {
     logger: Logger;
     taskManager: TaskManagerStartContract;
@@ -67,6 +70,7 @@ export class DocumentationManager implements DocumentationManagerAPI {
     docInstallClient: ProductDocInstallClient;
     auditService: CoreAuditService;
     packageInstaller?: PackageInstaller;
+    esClient: ElasticsearchClient;
   }) {
     this.logger = logger;
     this.taskManager = taskManager;
@@ -74,14 +78,15 @@ export class DocumentationManager implements DocumentationManagerAPI {
     this.docInstallClient = docInstallClient;
     this.auditService = auditService;
     this.packageInstaller = packageInstaller;
+    this.esClient = esClient;
   }
 
   async install(options: DocInstallOptions): Promise<void> {
     const { request, force = false, wait = false } = options;
     const inferenceId = options.inferenceId ?? defaultInferenceEndpoints.ELSER;
 
-    const { status } = await this.getStatus({ inferenceId });
-    if (!force && status === 'installed') {
+    const { status: previousStatus } = await this.getStatus({ inferenceId });
+    if (!force && previousStatus === 'installed') {
       return;
     }
 
@@ -150,6 +155,32 @@ export class DocumentationManager implements DocumentationManagerAPI {
         timeout: TEN_MIN_IN_MS,
       });
     }
+  }
+
+  async ensureDefaultProductDocumentation(): Promise<void> {
+    const inferenceId = await resolveDefaultInferenceIdFromInferenceGet(
+      () => this.esClient.inference.get({}),
+      { resourceType: ResourceTypes.productDoc }
+    );
+    const { status } = await this.getStatus({ inferenceId });
+
+    this.logger.info(
+      `Ensuring product documentation for default inference ID [${inferenceId}] (status: ${status})`
+    );
+
+    if (status === 'uninstalled') {
+      const license = await this.licensing.getLicense();
+      if (!checkLicense(license)) {
+        this.logger.debug(
+          `Skipping product documentation install for inference ID [${inferenceId}]: invalid license`
+        );
+        return;
+      }
+      await this.install({ inferenceId, wait: true });
+      return;
+    }
+
+    await this.update({ inferenceId });
   }
 
   async updateAll(options?: DocUpdateAllOptions): Promise<{ inferenceIds: string[] }> {

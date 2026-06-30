@@ -29,3 +29,10 @@ export {
   getOpenApiSpecIndexName,
 } from './src/indices';
 export type { ProductDocumentationAttributes } from './src/documents';
+export {
+  getProductDocInferenceIdCandidates,
+  productDocInferenceIdCandidates,
+  resolveDefaultInferenceId,
+  resolveDefaultInferenceIdFromInferenceGet,
+  resolveInstalledProductDocInferenceId,
+} from './src/default_inference_id';

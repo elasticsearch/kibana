@@ -22,20 +22,19 @@ import {
   EuiToolTip,
   type EuiBasicTableColumn,
 } from '@elastic/eui';
-import { agentBuilderDefaultAgentId } from '@kbn/agent-builder-common';
-import { defaultInferenceEndpoints } from '@kbn/inference-common';
 import { toMountPoint } from '@kbn/react-kibana-mount';
 import {
   useInstallProductDoc,
   useUninstallProductDoc,
+  useDefaultInferenceId,
   REACT_QUERY_KEYS,
   type ProductDocBasePluginStart,
 } from '@kbn/product-doc-base-plugin/public';
+import { ResourceTypes } from '@kbn/product-doc-common';
 import { useQueries, useQueryClient } from '@kbn/react-query';
 import { useKibana } from '../../hooks/use_kibana';
 import type { DocumentationItem, DocumentationStatus } from './types';
 import { DOCUMENTATION_ITEMS_CONFIG, type NormalizedDocStatus } from './documentation_items';
-import { enableProductDocumentationToolOnDefaultAgent } from './enable_product_documentation_tool_on_agent';
 import * as i18n from './translations';
 
 interface DocumentationSectionProps {
@@ -51,12 +50,28 @@ export const DocumentationSection: React.FC<DocumentationSectionProps> = ({ prod
 
   const queryClient = useQueryClient();
 
+  const { inferenceId: productDocInferenceId, isLoading: isProductDocInferenceIdLoading } =
+    useDefaultInferenceId(productDocBase, ResourceTypes.productDoc);
+  const { inferenceId: securityLabsInferenceId, isLoading: isSecurityLabsInferenceIdLoading } =
+    useDefaultInferenceId(productDocBase, ResourceTypes.securityLabs);
+
+  const inferenceIdByResourceType = useMemo(
+    () => ({
+      [ResourceTypes.productDoc]: productDocInferenceId,
+      [ResourceTypes.securityLabs]: securityLabsInferenceId,
+      [ResourceTypes.openapiSpec]: productDocInferenceId,
+    }),
+    [productDocInferenceId, securityLabsInferenceId]
+  );
+
+  const isInferenceIdLoading = isProductDocInferenceIdLoading || isSecurityLabsInferenceIdLoading;
+
   const docsConfig = DOCUMENTATION_ITEMS_CONFIG;
 
   const statusQueries = useQueries({
     queries: docsConfig.map((doc) => {
-      const inferenceId = defaultInferenceEndpoints.ELSER;
       const resourceType = doc.resourceType;
+      const inferenceId = inferenceIdByResourceType[resourceType];
       return {
         // IMPORTANT: use the shared product-doc-base query key so the existing install/uninstall hooks
         // invalidate these queries automatically (otherwise status only updates on full refresh).
@@ -74,7 +89,7 @@ export const DocumentationSection: React.FC<DocumentationSectionProps> = ({ prod
     }),
   });
 
-  const isLoading = statusQueries.some((q) => q.isLoading);
+  const isLoading = isInferenceIdLoading || statusQueries.some((q) => q.isLoading);
 
   const refetch = useCallback(() => {
     // Invalidate all doc status queries (for all rows) so they refresh together.
@@ -92,7 +107,7 @@ export const DocumentationSection: React.FC<DocumentationSectionProps> = ({ prod
         name: doc.name,
         status,
         resourceType: doc.resourceType,
-        inferenceId: defaultInferenceEndpoints.ELSER,
+        inferenceId: inferenceIdByResourceType[doc.resourceType],
         ...(updateAvailable ? { updateAvailable } : {}),
         isTechPreview: doc.isTechPreview,
         isStubbed: doc.isStubbed,
@@ -100,12 +115,12 @@ export const DocumentationSection: React.FC<DocumentationSectionProps> = ({ prod
         ...(data?.failureReason ? { failureReason: data.failureReason } : {}),
       };
     });
-  }, [docsConfig, statusQueries]);
+  }, [docsConfig, statusQueries, inferenceIdByResourceType]);
 
   const getErrorSuggestion = useCallback(
-    (failureReason: string, inferenceId: string): string | null => {
+    (failureReason: string, endpointId: string): string | null => {
       if (failureReason.includes('model_deployment_timeout_exception')) {
-        return i18n.getModelDeploymentTimeoutSuggestion(inferenceId);
+        return i18n.getModelDeploymentTimeoutSuggestion(endpointId);
       }
       return null;
     },
@@ -252,29 +267,11 @@ const DocumentationRowActions: React.FC<{
   onRefetch: () => void;
 }> = ({ item, productDocBase, hasManagePrivilege, onRefetch }) => {
   const { services } = useKibana();
-  const { application, http, notifications, rendering, docLinks } = services;
+  const { notifications, rendering, docLinks } = services;
 
   const installMutation = useInstallProductDoc(productDocBase, {
     onSuccess: () => {
       notifications.toasts.addSuccess({ title: i18n.getInstallSuccessTitle(item.name) });
-
-      enableProductDocumentationToolOnDefaultAgent({ http }).catch(() => {
-        const toolsUrl = application.getUrlForApp('agent_builder', {
-          path: `/agents/${encodeURIComponent(agentBuilderDefaultAgentId)}/tools`,
-        });
-        notifications.toasts.addWarning({
-          title: i18n.getInstallSuccessTitle(item.name),
-          text: toMountPoint(
-            <EuiText size="s">
-              <p>{i18n.TOOL_AUTO_ENABLE_FAILED_DESCRIPTION}</p>
-              <p>
-                <EuiLink href={toolsUrl}>{i18n.TOOL_AUTO_ENABLE_FAILED_LINK}</EuiLink>
-              </p>
-            </EuiText>,
-            rendering
-          ),
-        });
-      });
     },
     onError: (error) => {
       const message = error.body?.message ?? error.message;
@@ -309,10 +306,10 @@ const DocumentationRowActions: React.FC<{
 
   const installVars = useMemo(
     () => ({
-      inferenceId: defaultInferenceEndpoints.ELSER,
+      inferenceId: item.inferenceId,
       resourceType: item.resourceType,
     }),
-    [item.resourceType]
+    [item.inferenceId, item.resourceType]
   );
 
   const isItemInstalling = item.status === 'installing' || installMutation.isLoading;

@@ -52,6 +52,7 @@ describe('ProductDocBasePlugin', () => {
       getStatus: jest.fn().mockResolvedValue({}),
       getStatuses: jest.fn().mockResolvedValue({}),
       updateAll: jest.fn().mockResolvedValue({}),
+      ensureDefaultProductDocumentation: jest.fn().mockResolvedValue(undefined),
       installSecurityLabs: jest.fn().mockResolvedValue({}),
       uninstallSecurityLabs: jest.fn().mockResolvedValue({}),
       getSecurityLabsStatus: jest.fn().mockResolvedValue({}),
@@ -108,11 +109,10 @@ describe('ProductDocBasePlugin', () => {
       });
     });
 
-    it('schedules the update task', () => {
+    it('ensures default inference ID documentation on startup', () => {
       plugin.setup(coreMock.createSetup(), pluginSetupDeps);
       plugin.start(coreMock.createStart(), pluginStartDeps);
-      expect(DocumentationManagerMock().updateAll).toHaveBeenCalledTimes(1);
-      expect(DocumentationManagerMock().updateSecurityLabsAll).toHaveBeenCalledTimes(1);
+      expect(DocumentationManagerMock().ensureDefaultProductDocumentation).toHaveBeenCalledTimes(1);
     });
   });
 });

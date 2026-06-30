@@ -35,39 +35,41 @@ describe('validateArtifactArchive', () => {
   it('does not validate if the archive does not contain a manifest', () => {
     const archive = createMockArchive(['something.txt']);
 
-    const validation = validateArtifactArchive(archive);
+    const validation = validateArtifactArchive(archive, {
+      archivePath: '/tmp/kb-product-doc-kibana-8.18.zip',
+    });
 
-    expect(validation).toMatchInlineSnapshot(`
-      Object {
-        "error": "Manifest file not found",
-        "valid": false,
-      }
-    `);
+    expect(validation).toEqual({
+      valid: false,
+      error:
+        'Manifest file not found: File not found at path [manifest.json] in archive [/tmp/kb-product-doc-kibana-8.18.zip]',
+    });
   });
 
   it('does not validate  if the archive does not contain mappings', () => {
     const archive = createMockArchive(['manifest.json']);
 
-    const validation = validateArtifactArchive(archive);
+    const validation = validateArtifactArchive(archive, {
+      archivePath: '/tmp/kb-product-doc-kibana-8.18.zip',
+    });
 
-    expect(validation).toMatchInlineSnapshot(`
-      Object {
-        "error": "Mapping file not found",
-        "valid": false,
-      }
-    `);
+    expect(validation).toEqual({
+      valid: false,
+      error:
+        'Mapping file not found: File not found at path [mappings.json] in archive [/tmp/kb-product-doc-kibana-8.18.zip]',
+    });
   });
 
   it('does not validate  if the archive does not contain content files', () => {
     const archive = createMockArchive(['manifest.json', 'mappings.json']);
 
-    const validation = validateArtifactArchive(archive);
+    const validation = validateArtifactArchive(archive, {
+      archivePath: '/tmp/kb-product-doc-kibana-8.18.zip',
+    });
 
-    expect(validation).toMatchInlineSnapshot(`
-      Object {
-        "error": "No content files were found",
-        "valid": false,
-      }
-    `);
+    expect(validation).toEqual({
+      valid: false,
+      error: 'No content files were found in archive [/tmp/kb-product-doc-kibana-8.18.zip]',
+    });
   });
 });

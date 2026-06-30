@@ -47,6 +47,7 @@ export class ProductDocBasePlugin
           installationService.getInstallationStatus(params),
         install: (params: ProductDocInstallParams) => installationService.install(params),
         uninstall: (params: ProductDocInstallParams) => installationService.uninstall(params),
+        getDefaultInferenceId: (params) => installationService.getDefaultInferenceId(params),
       },
     };
   }

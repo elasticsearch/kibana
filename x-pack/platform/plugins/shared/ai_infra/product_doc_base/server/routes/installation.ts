@@ -9,7 +9,11 @@ import type { IRouter } from '@kbn/core/server';
 import { ApiPrivileges } from '@kbn/core-security-server';
 import { schema } from '@kbn/config-schema';
 import { defaultInferenceEndpoints } from '@kbn/inference-common';
-import { ResourceTypes, type ResourceType } from '@kbn/product-doc-common';
+import {
+  resolveDefaultInferenceIdFromInferenceGet,
+  ResourceTypes,
+  type ResourceType,
+} from '@kbn/product-doc-common';
 import type {
   InstallationStatusResponse,
   PerformInstallResponse,
@@ -17,12 +21,14 @@ import type {
   UninstallResponse,
   SecurityLabsInstallStatusResponse,
   OpenAPISpecInstallStatusResponse,
+  DefaultInferenceIdResponse,
 } from '../../common/http_api/installation';
 import {
   INSTALLATION_STATUS_API_PATH,
   INSTALL_ALL_API_PATH,
   UNINSTALL_ALL_API_PATH,
   UPDATE_ALL_API_PATH,
+  GET_DEFAULT_INFERENCE_ID_API_PATH,
 } from '../../common/http_api/installation';
 import type { InternalServices } from '../types';
 
@@ -45,6 +51,36 @@ export const registerInstallationRoutes = ({
   router: IRouter;
   getServices: () => InternalServices;
 }) => {
+  router.get(
+    {
+      path: GET_DEFAULT_INFERENCE_ID_API_PATH,
+      validate: {
+        query: schema.object({
+          resourceType: resourceTypeSchema,
+        }),
+      },
+      options: {
+        access: 'internal',
+      },
+      security: {
+        authz: {
+          requiredPrivileges: [ApiPrivileges.manage('llm_product_doc')],
+        },
+      },
+    },
+    async (ctx, req, res) => {
+      const esClient = (await ctx.core).elasticsearch.client.asCurrentUser;
+      const resourceType = req.query?.resourceType as ResourceType;
+
+      const inferenceId = await resolveDefaultInferenceIdFromInferenceGet(
+        () => esClient.inference.get({}),
+        { resourceType }
+      );
+
+      return res.ok<DefaultInferenceIdResponse>({ body: { inferenceId } });
+    }
+  );
+
   router.get(
     {
       path: INSTALLATION_STATUS_API_PATH,

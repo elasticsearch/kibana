@@ -120,8 +120,15 @@ export class PackageInstaller {
       ? inferenceEndpoints.endpoints[0]
       : undefined;
   }
+  private assertValidArtifactArchive(zipArchive: ZipArchive, archivePath: string): void {
+    const validationResult = validateArtifactArchive(zipArchive, { archivePath });
+    if (!validationResult.valid) {
+      this.log.error(`Artifact archive validation failed: ${validationResult.error}`);
+      throw new Error(`Artifact archive validation failed: ${validationResult.error}`);
+    }
+  }
+
   /**
-   * Make sure that the currently installed doc packages are up to date.
    * Will not upgrade products that are not already installed
    */
   async ensureUpToDate(params: { inferenceId: string; forceUpdate?: boolean }) {
@@ -319,7 +326,7 @@ export class PackageInstaller {
       );
 
       zipArchive = await openZipArchive(artifactFullPath);
-      validateArtifactArchive(zipArchive);
+      this.assertValidArtifactArchive(zipArchive, artifactFullPath);
 
       const [manifest, mappings] = await Promise.all([
         loadManifestFile(zipArchive),
@@ -478,7 +485,7 @@ export class PackageInstaller {
       );
 
       zipArchive = await openZipArchive(downloadedFullPath);
-      validateArtifactArchive(zipArchive);
+      this.assertValidArtifactArchive(zipArchive, downloadedFullPath);
 
       const [manifest, mappings] = await Promise.all([
         loadManifestFile(zipArchive),
@@ -692,7 +699,7 @@ export class PackageInstaller {
       );
 
       zipArchive = await openZipArchive(downloadedFullPath);
-      validateArtifactArchive(zipArchive);
+      this.assertValidArtifactArchive(zipArchive, downloadedFullPath);
 
       for (const { productName, indexName: unmodifiedIndexName } of OPEN_API_SPEC_PRODUCTS) {
         this.log.info(`Installing OpenAPI spec for ${productName}`);
@@ -930,10 +937,7 @@ export class PackageInstaller {
         this.artifactRepositoryProxyUrl
       );
       zipArchive = await openZipArchive(downloadedFullPath);
-      const validationResult = validateArtifactArchive(zipArchive);
-      if (!validationResult.valid) {
-        throw new Error(`Artifact archive validation failed: ${validationResult.error}`);
-      }
+      this.assertValidArtifactArchive(zipArchive, downloadedFullPath);
     } finally {
       zipArchive?.close();
       await Fs.unlink(precheckArtifactPath).catch(() => {});
