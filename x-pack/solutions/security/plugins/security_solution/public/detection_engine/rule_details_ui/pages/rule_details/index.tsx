@@ -425,21 +425,24 @@ export const RuleDetailsPage = connector(
       [clearEventsLoading, clearEventsDeleted, clearSelected, setFilterGroup]
     );
 
-    const isBuildingBlockTypeNotNull = rule?.building_block_type != null;
+    const isBuildingBlockRule = rule?.building_block_type != null;
     // Set showBuildingBlockAlerts if rule is a Building Block Rule otherwise we won't show alerts
     useEffect(() => {
-      setShowBuildingBlockAlerts(isBuildingBlockTypeNotNull);
-    }, [isBuildingBlockTypeNotNull, setShowBuildingBlockAlerts]);
+      setShowBuildingBlockAlerts(isBuildingBlockRule);
+    }, [isBuildingBlockRule, setShowBuildingBlockAlerts]);
 
     const ruleRuleId = rule?.rule_id ?? '';
+    // Use isBuildingBlockRule directly to ensure correct filter on first render
+    // (useEffect runs after render, so showBuildingBlockAlerts may not be updated yet)
+    const shouldShowBuildingBlockAlerts = isBuildingBlockRule || showBuildingBlockAlerts;
     const alertDefaultFilters = useMemo(
       () => [
         ...buildAlertsFilter(ruleRuleId ?? ''),
-        ...buildShowBuildingBlockFilter(showBuildingBlockAlerts),
+        ...buildShowBuildingBlockFilter(shouldShowBuildingBlockAlerts),
         ...buildAlertStatusFilter(filterGroup),
         ...buildThreatMatchFilter(showOnlyThreatIndicatorAlerts),
       ],
-      [ruleRuleId, showBuildingBlockAlerts, showOnlyThreatIndicatorAlerts, filterGroup]
+      [ruleRuleId, shouldShowBuildingBlockAlerts, showOnlyThreatIndicatorAlerts, filterGroup]
     );
 
     const alertMergedFilters = useMemo(
@@ -891,7 +894,7 @@ export const RuleDetailsPage = connector(
                           />
                           <EuiSpacer />
                         </Display>
-                        {ruleId != null && (
+                        {ruleId != null && rule != null && (
                           <GroupedAlertsTable
                             accordionButtonContent={defaultGroupTitleRenderers}
                             accordionExtraActionGroupStats={accordionExtraActionGroupStats}
