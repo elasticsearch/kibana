@@ -33264,15 +33264,15 @@ select-hose@^2.0.0:
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
   integrity sha1-Yl2GWPhlr0Psliv8N2o3NZpJlMo=
 
-selenium-webdriver@4.44.0:
-  version "4.44.0"
-  resolved "https://registry.yarnpkg.com/selenium-webdriver/-/selenium-webdriver-4.44.0.tgz#c6499102272ac132eef44b984096ace6620aa710"
-  integrity sha512-7RbYoKK0zET+KMVak11UDCtKvNulOU6gFZp8HI5GN9K8+BhqrliIJU/FP6QADrvRAXFMr3wHxfE3JHOcAxO3GQ==
+selenium-webdriver@4.45.0:
+  version "4.45.0"
+  resolved "https://registry.yarnpkg.com/selenium-webdriver/-/selenium-webdriver-4.45.0.tgz#30789762c2c38529cf4912f5d8e7ab01324a9265"
+  integrity sha512-Cb2nqvJiwXVOtRTCYHX9D1FJR5+Ls7aL3Nev0t6n4CpXsQ//YGiiUmSCbvTDDeLtbV85SZ46qmLab4SIYKXWRw==
   dependencies:
     "@bazel/runfiles" "^6.5.0"
     jszip "^3.10.1"
-    tmp "^0.2.5"
-    ws "^8.20.1"
+    tmp "^0.2.7"
+    ws "^8.21.0"
 
 self-signed-cert@^1.0.1:
   version "1.0.1"
@@ -35322,7 +35322,7 @@ tmp@^0.0.33:
   dependencies:
     os-tmpdir "~1.0.2"
 
-tmp@^0.2.4, tmp@^0.2.5, tmp@~0.2.4:
+tmp@^0.2.4, tmp@^0.2.7, tmp@~0.2.4:
   version "0.2.7"
   resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.2.7.tgz#26f4db11d1601ce8012dcb8a798ece1c06a99059"
   integrity sha512-e0votIpp4Uo2AJYSzVHV6xCcawuiez3DzqDAbrTc3YxBkplN6e+dM13ZeIcZnDg/QpSuU2zfZ3rzwY8ukEnaXw==
@@ -37509,7 +37509,7 @@ ws@^7.0.0, ws@^7.2.0, ws@^7.3.1, ws@^7.4.2:
   resolved "https://registry.yarnpkg.com/ws/-/ws-7.5.11.tgz#9460daf1812bb81a423c5b9eac746941a86310fa"
   integrity sha512-zS54Oen9bITtp7kp2XM3AydrCIq1D+HwJOuH+c+e4LfpL/lotP5osijd+UoMnxwAam1GN8R4KtLAyIrIcBNpiA==
 
-ws@^8.18.0, ws@^8.19.0, ws@^8.2.3, ws@^8.20.1, ws@^8.21.0, ws@^8.9.0, ws@~8.21.0:
+ws@^8.18.0, ws@^8.19.0, ws@^8.2.3, ws@^8.21.0, ws@^8.9.0, ws@~8.21.0:
   version "8.21.0"
   resolved "https://registry.yarnpkg.com/ws/-/ws-8.21.0.tgz#012e413fc07429945121b0c153158c4343086951"
   integrity sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==
