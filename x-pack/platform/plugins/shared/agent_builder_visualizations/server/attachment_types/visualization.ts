@@ -103,7 +103,7 @@ export const createVisualizationAttachmentType = (): AttachmentTypeDefinition<
     isReadonly: false,
 
     getAgentDescription: () => {
-      return 'A visualization attachment contains a shared visualization payload and a renderer discriminator (lens or vega). Vega specs live at visualization.spec. Time range can be controled by configuring a time_range property directly on the attachment.data with from and to fields. Rendering it inline displays the visualization as a dynamic, interactive chart component in the conversation UI. Visualization attachments can also be added to dashboard compositions through dashboard panel-ingestion operations.';
+      return 'A visualization attachment contains a shared visualization payload and a renderer discriminator (lens or vega). Vega specs live at visualization.spec. Time range can be controlled by configuring a time_range property directly on the attachment.data with from and to fields. Rendering it inline displays the visualization as a dynamic, interactive chart component in the conversation UI. Visualization attachments can also be added to dashboard compositions through dashboard panel-ingestion operations.';
     },
 
     getTools: () => [],

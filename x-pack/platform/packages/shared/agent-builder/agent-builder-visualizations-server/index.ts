@@ -5,24 +5,9 @@
  * 2.0.
  */
 
-export {
-  buildVisualizationConfig,
-  type BuildVisualizationConfigParams,
-} from './lens/build_visualization_config';
+export { buildVisualizationConfig } from './lens/build_visualization_config';
 export { getChartTypeSelectionPromptContent } from './lens/chart_type_guidance';
 export type { VisualizationConfig } from './lens/types';
-export { esqlAdditionalInstructions } from './shared/esql_instructions';
 export { decideVisualizationApproach } from './decide_visualization_approach';
-export type { VisualizationRenderer, VisualizationApproach } from './decide_visualization_approach';
-export { extractTextFromMessage } from './utils/extract_text_from_message';
-
-export {
-  buildVegaConfig,
-  createVegaGraph,
-  normalizeVegaSpec,
-  VEGA_LITE_SCHEMA,
-  escapeVegaFieldReferences,
-  createAuthorVegaSpecPrompt,
-  validateVegaSpec,
-} from './vega';
-export type { BuildVegaConfigParams, BuildVegaConfigResult, VegaValidationResult } from './vega';
+export type { VisualizationRenderer } from './decide_visualization_approach';
+export { buildVegaConfig } from './vega';

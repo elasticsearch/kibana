@@ -34,7 +34,7 @@ Do not hardcode absolute times or now()-based ranges.
 For time series charts, use auto buckets: \`BUCKET(<time field>, 75, ?_tstart, ?_tend)\` or \`TBUCKET(75, ?_tstart, ?_tend)\`, not hardcoded intervals like \`DATE_TRUNC(1 hour, <time field>)\`.
 Omit \`LIMIT\`; the bucket range already bounds the results.
 
-e.g. with for a normal index with FROM and BUCKET:
+e.g. for a normal index with FROM and BUCKET:
 
 \`\`\`esql
 FROM logs | STATS count = COUNT() BY bucket = BUCKET(timestamp, 75, ?_tstart, ?_tend)

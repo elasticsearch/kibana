@@ -8,6 +8,7 @@
     "id": "agentBuilderVisualizations",
     "server": true,
     "browser": true,
+    "configPath": ["xpack", "agentBuilderVisualizations"],
     "requiredPlugins": [
       "agentBuilder",
       "agentContextLayer",
