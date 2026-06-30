@@ -2178,6 +2178,301 @@ describe('delete()', () => {
   });
 });
 
+describe('createPreconfiguredConnector()', () => {
+  beforeEach(() => {
+    actionTypeRegistry.register(getConnectorType());
+  });
+
+  it('creates a preconfigured connector and returns it', async () => {
+    unsecuredSavedObjectsClient.get.mockRejectedValue(new Error('Not found'));
+
+    const result = await actionsClient.createPreconfiguredConnector({
+      id: 'my-preconfigured',
+      action: {
+        actionTypeId: 'my-connector-type',
+        name: 'My Preconfigured',
+        config: {},
+        secrets: {},
+      },
+    });
+
+    expect(result).toMatchObject({
+      id: 'my-preconfigured',
+      name: 'My Preconfigured',
+      actionTypeId: 'my-connector-type',
+      isPreconfigured: true,
+      isSystemAction: false,
+    });
+    const getResult = await actionsClient.get({ id: 'my-preconfigured' });
+    expect(getResult.id).toBe('my-preconfigured');
+    expect(getResult.isPreconfigured).toBe(true);
+  });
+
+  it('ensures user is authorised to create', async () => {
+    unsecuredSavedObjectsClient.get.mockRejectedValue(new Error('Not found'));
+
+    await actionsClient.createPreconfiguredConnector({
+      id: 'my-preconfigured',
+      action: {
+        actionTypeId: 'my-connector-type',
+        name: 'My Preconfigured',
+        config: {},
+        secrets: {},
+      },
+    });
+
+    expect(authorization.ensureAuthorized).toHaveBeenCalledWith({
+      operation: 'create',
+      actionTypeId: 'my-connector-type',
+    });
+  });
+
+  it('throws when id is reserved for alert history connector', async () => {
+    await expect(
+      actionsClient.createPreconfiguredConnector({
+        id: 'preconfigured-alert-history-es-index',
+        action: {
+          actionTypeId: 'my-connector-type',
+          name: 'Reserved',
+          config: {},
+          secrets: {},
+        },
+      })
+    ).rejects.toThrow(/reserved for the alert history connector/);
+  });
+
+  it('throws when a preconfigured connector with the id already exists', async () => {
+    const inMemoryConnectors = [
+      createMockInMemoryConnector({
+        id: 'existing-preconfigured',
+        actionTypeId: 'my-connector-type',
+        isPreconfigured: true,
+        name: 'Existing',
+        config: {},
+        secrets: {},
+      }),
+    ];
+    actionsClient = new ActionsClient({
+      logger,
+      actionTypeRegistry,
+      unsecuredSavedObjectsClient,
+      scopedClusterClient,
+      kibanaIndices,
+      inMemoryConnectors,
+      actionExecutor,
+      bulkExecutionEnqueuer,
+      request,
+      authorization: authorization as unknown as ActionsAuthorization,
+      auditLogger,
+      usageCounter: mockUsageCounter,
+      connectorTokenClient,
+      getEventLogClient,
+      encryptedSavedObjectsClient,
+      isESOCanEncrypt,
+      getAxiosInstanceWithAuth,
+    });
+
+    await expect(
+      actionsClient.createPreconfiguredConnector({
+        id: 'existing-preconfigured',
+        action: {
+          actionTypeId: 'my-connector-type',
+          name: 'Duplicate',
+          config: {},
+          secrets: {},
+        },
+      })
+    ).rejects.toThrow(/already exists in a preconfigured action/);
+  });
+});
+
+describe('updatePreconfiguredConnector()', () => {
+  it('updates a preconfigured connector', async () => {
+    actionTypeRegistry.register(getConnectorType());
+    const inMemoryConnectors = [
+      createMockInMemoryConnector({
+        id: 'preconfigured-to-update',
+        actionTypeId: 'my-connector-type',
+        isPreconfigured: true,
+        name: 'Original Name',
+        config: { foo: 'bar' },
+        secrets: {},
+      }),
+    ];
+    actionsClient = new ActionsClient({
+      logger,
+      actionTypeRegistry,
+      unsecuredSavedObjectsClient,
+      scopedClusterClient,
+      kibanaIndices,
+      inMemoryConnectors,
+      actionExecutor,
+      bulkExecutionEnqueuer,
+      request,
+      authorization: authorization as unknown as ActionsAuthorization,
+      auditLogger,
+      usageCounter: mockUsageCounter,
+      connectorTokenClient,
+      getEventLogClient,
+      encryptedSavedObjectsClient,
+      isESOCanEncrypt,
+      getAxiosInstanceWithAuth,
+    });
+
+    const result = await actionsClient.updatePreconfiguredConnector({
+      id: 'preconfigured-to-update',
+      action: {
+        name: 'Updated Name',
+        config: { foo: 'baz' },
+        secrets: {},
+      },
+    });
+
+    expect(result.name).toBe('Updated Name');
+    const getResult = await actionsClient.get({ id: 'preconfigured-to-update' });
+    expect(getResult.name).toBe('Updated Name');
+  });
+
+  it('throws when preconfigured connector not found', async () => {
+    actionTypeRegistry.register(getConnectorType());
+
+    await expect(
+      actionsClient.updatePreconfiguredConnector({
+        id: 'nonexistent',
+        action: { name: 'X', config: {}, secrets: {} },
+      })
+    ).rejects.toThrow(/Preconfigured connector nonexistent not found/);
+  });
+
+  it('ensures user is authorised to update', async () => {
+    const inMemoryConnectors = [
+      createMockInMemoryConnector({
+        id: 'preconfigured',
+        actionTypeId: 'my-connector-type',
+        isPreconfigured: true,
+        name: 'P',
+        config: {},
+        secrets: {},
+      }),
+    ];
+    actionsClient = new ActionsClient({
+      logger,
+      actionTypeRegistry,
+      unsecuredSavedObjectsClient,
+      scopedClusterClient,
+      kibanaIndices,
+      inMemoryConnectors,
+      actionExecutor,
+      bulkExecutionEnqueuer,
+      request,
+      authorization: authorization as unknown as ActionsAuthorization,
+      auditLogger,
+      usageCounter: mockUsageCounter,
+      connectorTokenClient,
+      getEventLogClient,
+      encryptedSavedObjectsClient,
+      isESOCanEncrypt,
+      getAxiosInstanceWithAuth,
+    });
+    actionTypeRegistry.register(getConnectorType());
+
+    await actionsClient.updatePreconfiguredConnector({
+      id: 'preconfigured',
+      action: { name: 'P2', config: {}, secrets: {} },
+    });
+
+    expect(authorization.ensureAuthorized).toHaveBeenCalledWith({ operation: 'update' });
+  });
+});
+
+describe('deletePreconfiguredConnector()', () => {
+  it('deletes a preconfigured connector', async () => {
+    const inMemoryConnectors = [
+      createMockInMemoryConnector({
+        id: 'preconfigured-to-delete',
+        actionTypeId: 'my-connector-type',
+        isPreconfigured: true,
+        name: 'To Delete',
+        config: {},
+        secrets: {},
+      }),
+    ];
+    actionsClient = new ActionsClient({
+      logger,
+      actionTypeRegistry,
+      unsecuredSavedObjectsClient,
+      scopedClusterClient,
+      kibanaIndices,
+      inMemoryConnectors,
+      actionExecutor,
+      bulkExecutionEnqueuer,
+      request,
+      authorization: authorization as unknown as ActionsAuthorization,
+      auditLogger,
+      usageCounter: mockUsageCounter,
+      connectorTokenClient,
+      getEventLogClient,
+      encryptedSavedObjectsClient,
+      isESOCanEncrypt,
+      getAxiosInstanceWithAuth,
+    });
+
+    await actionsClient.deletePreconfiguredConnector({ id: 'preconfigured-to-delete' });
+
+    await expect(actionsClient.get({ id: 'preconfigured-to-delete' })).rejects.toThrow(
+      /Connector preconfigured-to-delete not found/
+    );
+  });
+
+  it('throws when preconfigured connector not found', async () => {
+    await expect(actionsClient.deletePreconfiguredConnector({ id: 'nonexistent' })).rejects.toThrow(
+      /Preconfigured connector nonexistent not found/
+    );
+  });
+
+  it('throws when id is reserved for alert history connector', async () => {
+    await expect(
+      actionsClient.deletePreconfiguredConnector({ id: 'preconfigured-alert-history-es-index' })
+    ).rejects.toThrow(/reserved for the alert history connector/);
+  });
+
+  it('ensures user is authorised to delete', async () => {
+    const inMemoryConnectors = [
+      createMockInMemoryConnector({
+        id: 'preconfigured',
+        actionTypeId: 'my-connector-type',
+        isPreconfigured: true,
+        name: 'P',
+        config: {},
+        secrets: {},
+      }),
+    ];
+    actionsClient = new ActionsClient({
+      logger,
+      actionTypeRegistry,
+      unsecuredSavedObjectsClient,
+      scopedClusterClient,
+      kibanaIndices,
+      inMemoryConnectors,
+      actionExecutor,
+      bulkExecutionEnqueuer,
+      request,
+      authorization: authorization as unknown as ActionsAuthorization,
+      auditLogger,
+      usageCounter: mockUsageCounter,
+      connectorTokenClient,
+      getEventLogClient,
+      encryptedSavedObjectsClient,
+      isESOCanEncrypt,
+      getAxiosInstanceWithAuth,
+    });
+
+    await actionsClient.deletePreconfiguredConnector({ id: 'preconfigured' });
+
+    expect(authorization.ensureAuthorized).toHaveBeenCalledWith({ operation: 'delete' });
+  });
+});
+
 describe('update()', () => {
   function updateOperation(): ReturnType<ActionsClient['update']> {
     actionTypeRegistry.register(getConnectorType());

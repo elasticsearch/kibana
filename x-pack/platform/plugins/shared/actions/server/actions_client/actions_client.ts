@@ -41,10 +41,11 @@ import type {
   GetGlobalExecutionLogParams,
   IExecutionLogResult,
 } from '../../common';
+import { AlertHistoryEsIndexConnectorId } from '../../common';
 import type { ActionTypeRegistry } from '../action_type_registry';
 import type { AuthTypeRegistry } from '../auth_types/auth_type_registry';
 import type { ActionExecutorContract } from '../lib';
-import { parseDate } from '../lib';
+import { parseDate, validateConfig, validateSecrets, validateConnector } from '../lib';
 import type {
   ActionResult,
   RawAction,
@@ -634,6 +635,295 @@ export class ActionsClient {
     }
 
     return result;
+  }
+
+  /**
+   * Create a preconfigured connector. The connector is stored in memory only and will be
+   * available to all clients until the process restarts or it is deleted.
+   */
+  public async createPreconfiguredConnector({
+    id,
+    action: { actionTypeId, name, config, secrets },
+    options = {},
+  }: {
+    id: string;
+    action: {
+      actionTypeId: string;
+      name: string;
+      config: Record<string, unknown>;
+      secrets: Record<string, unknown>;
+    };
+    options?: { exposeConfig?: boolean };
+  }): Promise<Connector> {
+    try {
+      await this.context.authorization.ensureAuthorized({
+        operation: 'create',
+        actionTypeId,
+      });
+    } catch (error) {
+      this.context.auditLogger?.log(
+        connectorAuditEvent({
+          action: ConnectorAuditAction.CREATE,
+          savedObject: { type: 'action', id },
+          error,
+        })
+      );
+      throw error;
+    }
+
+    if (id === AlertHistoryEsIndexConnectorId) {
+      throw Boom.badRequest(
+        i18n.translate('xpack.actions.serverSideErrors.reservedPreconfiguredId', {
+          defaultMessage:
+            'Preconfigured connector id "{id}" is reserved for the alert history connector.',
+          values: { id },
+        })
+      );
+    }
+
+    if (this.context.actionTypeRegistry.isSystemActionType(actionTypeId)) {
+      throw Boom.badRequest(
+        i18n.translate('xpack.actions.serverSideErrors.systemActionCreationForbidden', {
+          defaultMessage: 'System action creation is forbidden. Action type: {actionTypeId}.',
+          values: { actionTypeId },
+        })
+      );
+    }
+
+    const existingInMemory = this.context.inMemoryConnectors.find((c) => c.id === id);
+    if (existingInMemory) {
+      throw Boom.badRequest(
+        i18n.translate('xpack.actions.serverSideErrors.predefinedIdConnectorAlreadyExists', {
+          defaultMessage: 'This {id} already exists in a preconfigured action.',
+          values: { id },
+        })
+      );
+    }
+
+    let savedObjectExists = false;
+    try {
+      await this.context.unsecuredSavedObjectsClient.get('action', id);
+      savedObjectExists = true;
+    } catch {
+      // get() throws when connector is not found - expected when creating new preconfigured
+    }
+    if (savedObjectExists) {
+      throw Boom.badRequest(
+        i18n.translate('xpack.actions.serverSideErrors.connectorIdAlreadyExists', {
+          defaultMessage: 'A connector with id "{id}" already exists.',
+          values: { id },
+        })
+      );
+    }
+
+    const actionType = this.context.actionTypeRegistry.get(actionTypeId);
+    const configurationUtilities = this.context.actionTypeRegistry.getUtils();
+    const validatedConfig = validateConfig(actionType, config, {
+      configurationUtilities,
+    }) as Record<string, unknown>;
+    const validatedSecrets = validateSecrets(actionType, secrets, {
+      configurationUtilities,
+    }) as Record<string, unknown>;
+    if (actionType.validate?.connector) {
+      validateConnector(actionType, { config: validatedConfig, secrets: validatedSecrets });
+    }
+    this.context.actionTypeRegistry.ensureActionTypeEnabled(actionTypeId);
+
+    const rawPreconfiguredConnector: InMemoryConnector = {
+      id,
+      actionTypeId,
+      name,
+      config: validatedConfig,
+      secrets: validatedSecrets,
+      isPreconfigured: true,
+      isSystemAction: false,
+      isDeprecated: isConnectorDeprecated({
+        id,
+        actionTypeId,
+        name,
+        config: validatedConfig,
+        secrets: validatedSecrets,
+        isPreconfigured: true,
+        isSystemAction: false,
+      }),
+      isConnectorTypeDeprecated: this.context.actionTypeRegistry.isDeprecated(actionTypeId),
+      ...(options.exposeConfig !== undefined && { exposeConfig: options.exposeConfig }),
+    };
+
+    this.context.inMemoryConnectors.push(rawPreconfiguredConnector);
+
+    this.context.auditLogger?.log(
+      connectorAuditEvent({
+        action: ConnectorAuditAction.CREATE,
+        savedObject: { type: 'action', id },
+        outcome: 'success',
+      })
+    );
+
+    return connectorFromInMemoryConnector({
+      inMemoryConnector: rawPreconfiguredConnector,
+      id,
+      actionTypeRegistry: this.context.actionTypeRegistry,
+    });
+  }
+
+  /**
+   * Update a preconfigured connector. Only in-memory preconfigured connectors can be updated.
+   */
+  public async updatePreconfiguredConnector({
+    id,
+    action: { name, config, secrets },
+  }: {
+    id: string;
+    action: {
+      name: string;
+      config: Record<string, unknown>;
+      secrets: Record<string, unknown>;
+    };
+  }): Promise<Connector> {
+    try {
+      await this.context.authorization.ensureAuthorized({ operation: 'update' });
+    } catch (error) {
+      this.context.auditLogger?.log(
+        connectorAuditEvent({
+          action: ConnectorAuditAction.UPDATE,
+          savedObject: { type: 'action', id },
+          error,
+        })
+      );
+      throw error;
+    }
+
+    if (id === AlertHistoryEsIndexConnectorId) {
+      throw Boom.badRequest(
+        i18n.translate('xpack.actions.serverSideErrors.reservedPreconfiguredId', {
+          defaultMessage:
+            'Preconfigured connector id "{id}" is reserved for the alert history connector.',
+          values: { id },
+        })
+      );
+    }
+
+    const index = this.context.inMemoryConnectors.findIndex(
+      (c) => c.id === id && c.isPreconfigured && !c.isSystemAction
+    );
+    if (index === -1) {
+      const foundInMemory = this.context.inMemoryConnectors.find((c) => c.id === id);
+      if (foundInMemory?.isSystemAction) {
+        throw Boom.badRequest(
+          i18n.translate('xpack.actions.serverSideErrors.systemActionUpdateForbidden', {
+            defaultMessage: 'System action {id} can not be updated.',
+            values: { id },
+          })
+        );
+      }
+      throw Boom.notFound(
+        i18n.translate('xpack.actions.serverSideErrors.preconfiguredConnectorNotFound', {
+          defaultMessage: 'Preconfigured connector {id} not found.',
+          values: { id },
+        })
+      );
+    }
+
+    const existing = this.context.inMemoryConnectors[index];
+    const actionType = this.context.actionTypeRegistry.get(existing.actionTypeId);
+    const configurationUtilities = this.context.actionTypeRegistry.getUtils();
+    const validatedConfig = validateConfig(actionType, config, {
+      configurationUtilities,
+    }) as Record<string, unknown>;
+    const validatedSecrets = validateSecrets(actionType, secrets, {
+      configurationUtilities,
+    }) as Record<string, unknown>;
+    if (actionType.validate?.connector) {
+      validateConnector(actionType, { config: validatedConfig, secrets: validatedSecrets });
+    }
+
+    existing.name = name;
+    existing.config = validatedConfig;
+    existing.secrets = validatedSecrets;
+
+    this.context.auditLogger?.log(
+      connectorAuditEvent({
+        action: ConnectorAuditAction.UPDATE,
+        savedObject: { type: 'action', id },
+        outcome: 'success',
+      })
+    );
+
+    return connectorFromInMemoryConnector({
+      inMemoryConnector: existing,
+      id,
+      actionTypeRegistry: this.context.actionTypeRegistry,
+    });
+  }
+
+  /**
+   * Delete a preconfigured connector. Only in-memory preconfigured connectors can be deleted.
+   */
+  public async deletePreconfiguredConnector({ id }: { id: string }): Promise<void> {
+    try {
+      await this.context.authorization.ensureAuthorized({ operation: 'delete' });
+    } catch (error) {
+      this.context.auditLogger?.log(
+        connectorAuditEvent({
+          action: ConnectorAuditAction.DELETE,
+          savedObject: { type: 'action', id },
+          error,
+        })
+      );
+      throw error;
+    }
+
+    if (id === AlertHistoryEsIndexConnectorId) {
+      throw Boom.badRequest(
+        i18n.translate('xpack.actions.serverSideErrors.reservedPreconfiguredId', {
+          defaultMessage:
+            'Preconfigured connector id "{id}" is reserved for the alert history connector.',
+          values: { id },
+        })
+      );
+    }
+
+    const index = this.context.inMemoryConnectors.findIndex(
+      (c) => c.id === id && c.isPreconfigured && !c.isSystemAction
+    );
+    if (index === -1) {
+      const foundInMemory = this.context.inMemoryConnectors.find((c) => c.id === id);
+      if (foundInMemory?.isSystemAction) {
+        throw Boom.badRequest(
+          i18n.translate('xpack.actions.serverSideErrors.systemActionDeletionForbidden', {
+            defaultMessage: 'System action {id} is not allowed to delete.',
+            values: { id },
+          })
+        );
+      }
+      if (foundInMemory?.isPreconfigured) {
+        // Should not happen if not found by findIndex
+        throw new PreconfiguredActionDisabledModificationError(
+          i18n.translate('xpack.actions.serverSideErrors.predefinedActionDeleteDisabled', {
+            defaultMessage: 'Preconfigured action {id} is not allowed to delete.',
+            values: { id },
+          }),
+          'delete'
+        );
+      }
+      throw Boom.notFound(
+        i18n.translate('xpack.actions.serverSideErrors.preconfiguredConnectorNotFound', {
+          defaultMessage: 'Preconfigured connector {id} not found.',
+          values: { id },
+        })
+      );
+    }
+
+    this.context.inMemoryConnectors.splice(index, 1);
+
+    this.context.auditLogger?.log(
+      connectorAuditEvent({
+        action: ConnectorAuditAction.DELETE,
+        savedObject: { type: 'action', id },
+        outcome: 'success',
+      })
+    );
   }
 
   public async execute(
