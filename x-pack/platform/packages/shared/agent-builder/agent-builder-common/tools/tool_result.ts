@@ -124,27 +124,15 @@ export enum SupportedChartType {
   Mosaic = 'mosaic',
 }
 
-interface VisualizationResultDataBase {
-  /** Natural-language query that produced the visualization */
-  query?: string;
-  /** The ES|QL query backing the visualization */
+export interface VisualizationResultData {
   esql: string;
   time_range?: TimeRange;
-  /** ID of the attachment storing this visualization, when one was created */
-  attachment_id?: string;
-  /** Attachment version, when stored */
-  version?: number;
-  /** Whether an existing attachment was updated rather than created */
-  is_update?: boolean;
-  /** Renderer discriminator. Omitted defaults to Lens for legacy entries. */
   renderer?: 'lens' | 'vega';
   /** Shared visualization payload. Vega stores spec at visualization.spec. */
   visualization: Record<string, unknown> & { spec?: string };
   /** Optional chart type identifier (primarily Lens). */
   chart_type?: SupportedChartType;
 }
-
-export type VisualizationResultData = VisualizationResultDataBase;
 
 export type VisualizationResult = ToolResultMixin<ToolResultType.visualization>;
 
