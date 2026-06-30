@@ -93,7 +93,12 @@ const TestExternalProvidersComponent: React.FC<TestExternalProvidersProps> = ({ 
     http: mockHttp,
     navigateToApp: mockNavigateToApp,
     productDocBase: {
-      installation: { getStatus: jest.fn(), install: jest.fn(), uninstall: jest.fn() },
+      installation: {
+        getStatus: jest.fn(),
+        install: jest.fn(),
+        uninstall: jest.fn(),
+        getDefaultInferenceId: jest.fn(),
+      },
     },
     currentAppId: 'securitySolutionUI',
     userProfileService: jest.fn() as unknown as UserProfileService,

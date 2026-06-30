@@ -49,6 +49,7 @@ describe('DocumentationSection', () => {
       }),
       install: jest.fn().mockResolvedValue({ installed: true }),
       uninstall: jest.fn().mockResolvedValue({ success: true }),
+      getDefaultInferenceId: jest.fn().mockResolvedValue('.elser-2-elasticsearch'),
     },
   };
 

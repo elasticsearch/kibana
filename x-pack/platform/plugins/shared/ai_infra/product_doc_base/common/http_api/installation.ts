@@ -12,6 +12,7 @@ export const INSTALLATION_STATUS_API_PATH = '/internal/product_doc_base/status';
 export const INSTALL_ALL_API_PATH = '/internal/product_doc_base/install';
 export const UNINSTALL_ALL_API_PATH = '/internal/product_doc_base/uninstall';
 export const UPDATE_ALL_API_PATH = '/internal/product_doc_base/update_all';
+export const GET_DEFAULT_INFERENCE_ID_API_PATH = '/internal/product_doc_base/default_inference_id';
 
 export interface InstallationStatusResponse {
   inferenceId: string;
@@ -34,6 +35,10 @@ export interface PerformUpdateResponse {
 
 export interface UninstallResponse {
   success: boolean;
+}
+
+export interface DefaultInferenceIdResponse {
+  inferenceId: string;
 }
 
 export interface ProductDocInstallParams {

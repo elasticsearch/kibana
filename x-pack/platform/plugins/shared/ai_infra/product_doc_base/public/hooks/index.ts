@@ -11,4 +11,5 @@ export {
   useUninstallProductDoc,
   type UseUninstallProductDocOptions,
 } from './use_uninstall_product_doc';
+export { useDefaultInferenceId } from './use_default_inference_id';
 export { REACT_QUERY_KEYS } from './constants';

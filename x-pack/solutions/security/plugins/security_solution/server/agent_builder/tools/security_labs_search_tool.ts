@@ -9,8 +9,7 @@ import { z } from '@kbn/zod/v4';
 import { ToolType, ToolResultType } from '@kbn/agent-builder-common';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { createErrorResult } from '@kbn/agent-builder-server';
-import { defaultInferenceEndpoints } from '@kbn/inference-common';
-import { ResourceTypes } from '@kbn/product-doc-common';
+import { ResourceTypes, resolveDefaultInferenceIdFromInferenceGet } from '@kbn/product-doc-common';
 import type { RetrieveDocumentationResultDoc } from '@kbn/llm-tasks-plugin/server';
 import type { SecuritySolutionPluginCoreSetupDependencies } from '../../plugin_contract';
 import { securityTool } from './constants';
@@ -59,7 +58,10 @@ export const securityLabsSearchTool = (
           };
         }
 
-        const inferenceId = defaultInferenceEndpoints.ELSER;
+        const inferenceId = await resolveDefaultInferenceIdFromInferenceGet(
+          () => coreStart.elasticsearch.client.asInternalUser.inference.get({}),
+          { resourceType: ResourceTypes.securityLabs }
+        );
         const isAvailable =
           (await llmTasks.retrieveDocumentationAvailable({
             inferenceId,

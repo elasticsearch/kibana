@@ -16,12 +16,15 @@ import {
 import type { ContentReferencesStore } from '@kbn/elastic-assistant-common';
 import type { RetrieveDocumentationResultDoc } from '@kbn/llm-tasks-plugin/server';
 import type { Require } from '@kbn/elastic-assistant-plugin/server/types';
-import { defaultInferenceEndpoints } from '@kbn/inference-common';
+import {
+  resolveDefaultInferenceIdFromInferenceGet,
+  resolveInstalledProductDocInferenceId,
+} from '@kbn/product-doc-common';
 import { APP_UI_ID } from '../../../../common';
 
 export type ProductDocumentationToolParams = Require<
   AssistantToolParams,
-  'llmTasks' | 'connectorId'
+  'llmTasks' | 'connectorId' | 'esClient'
 >;
 
 const toolDetails = {
@@ -37,16 +40,26 @@ export const PRODUCT_DOCUMENTATION_TOOL: AssistantTool = {
   ...toolDetails,
   sourceRegister: APP_UI_ID,
   isSupported: (params: AssistantToolParams): params is ProductDocumentationToolParams => {
-    return params.llmTasks != null && params.connectorId != null;
+    return params.llmTasks != null && params.connectorId != null && params.esClient != null;
   },
   async getTool(params: AssistantToolParams) {
     if (!this.isSupported(params)) return null;
 
-    const { connectorId, llmTasks, request, contentReferencesStore } =
+    const { connectorId, llmTasks, request, contentReferencesStore, esClient } =
       params as ProductDocumentationToolParams;
+
+    const getDefaultInferenceId = () =>
+      resolveDefaultInferenceIdFromInferenceGet(() => esClient.inference.get({}));
 
     return tool(
       async ({ query, product }) => {
+        const inferenceId =
+          (await resolveInstalledProductDocInferenceId({
+            getDefaultInferenceId,
+            isDocumentationAvailable: (candidateInferenceId) =>
+              llmTasks.retrieveDocumentationAvailable({ inferenceId: candidateInferenceId }),
+          })) ?? (await getDefaultInferenceId());
+
         const response = await llmTasks.retrieveDocumentation({
           searchTerm: query,
           products: product ? [product] : undefined,
@@ -54,7 +67,7 @@ export const PRODUCT_DOCUMENTATION_TOOL: AssistantTool = {
           connectorId,
           request,
           functionCalling: 'auto',
-          inferenceId: defaultInferenceEndpoints.ELSER,
+          inferenceId,
         });
 
         const enrichedDocuments = response.documents.map(enrichDocument(contentReferencesStore));
