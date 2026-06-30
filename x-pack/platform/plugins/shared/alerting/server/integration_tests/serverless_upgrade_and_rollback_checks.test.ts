@@ -71,8 +71,56 @@ const ruleTypesInSecurityProjects: string[] = [
   'siem.newTermsRule',
 ];
 
-// Failing: See https://github.com/elastic/kibana/issues/235899
-describe.skip('Serverless upgrade and rollback checks', () => {
+/**
+ * Recursively replaces lazySchema Proxy wrappers with real Zod schema instances
+ * so that z.toJSONSchema() works correctly.
+ *
+ * lazySchema() wraps schemas in a Proxy (target: empty `{}`). z.toJSONSchema()
+ * keys its internal seen-map by object identity: it stores the proxy, but the
+ * processJSONSchema closure captures the real materialized instance — so the
+ * lookup fails and throws. Converting proxies to real instances before calling
+ * z.toJSONSchema() avoids the mismatch.
+ */
+function resolveSchemaProxies(schema: z.ZodType): z.ZodType {
+  if (!schema || typeof schema !== 'object') return schema;
+
+  const zod = (
+    schema as unknown as {
+      _zod?: { def?: { type?: string }; constr?: new (def: unknown) => z.ZodType };
+    }
+  )._zod;
+  if (!zod?.def) return schema;
+
+  if (Object.getPrototypeOf(schema) === Object.prototype) {
+    return new zod.constr!(zod.def);
+  }
+
+  const def = zod.def as Record<string, unknown>;
+  switch (def.type) {
+    case 'intersection': {
+      const left = resolveSchemaProxies(def.left as z.ZodType);
+      const right = resolveSchemaProxies(def.right as z.ZodType);
+      if (left === def.left && right === def.right) return schema;
+      return new zod.constr!({ ...def, left, right });
+    }
+    case 'object': {
+      const shape = def.shape as Record<string, z.ZodType>;
+      const newShape: Record<string, z.ZodType> = {};
+      let changed = false;
+      for (const key of Object.keys(shape)) {
+        const resolved = resolveSchemaProxies(shape[key]);
+        newShape[key] = resolved;
+        if (resolved !== shape[key]) changed = true;
+      }
+      if (!changed) return schema;
+      return new zod.constr!({ ...def, shape: newShape });
+    }
+    default:
+      return schema;
+  }
+}
+
+describe('Serverless upgrade and rollback checks', () => {
   let esServer: TestElasticsearchUtils;
   let kibanaServer: TestKibanaUtils;
   let ruleTypeRegistry: RuleTypeRegistry;
@@ -113,7 +161,8 @@ describe.skip('Serverless upgrade and rollback checks', () => {
         let jsonSchema: Record<string, unknown>;
         if (schema && typeof schema === 'object' && '_zod' in schema) {
           // Zod v4 schema
-          const { $schema, ...rest } = z.toJSONSchema(schema as z.ZodType, {
+          const resolvedSchema = resolveSchemaProxies(schema as z.ZodType);
+          const { $schema, ...rest } = z.toJSONSchema(resolvedSchema, {
             unrepresentable: 'any',
             io: 'input',
             reused: 'ref',
