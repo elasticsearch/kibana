@@ -5,6 +5,10 @@
  * 2.0.
  */
 
+/**
+ * Migration recommendation: MIXED. See individual tests.
+ */
+
 import expect from '@kbn/expect';
 import { v4 as uuidv4 } from 'uuid';
 import type { FtrProviderContext } from '../../../../ftr_provider_context';
@@ -35,6 +39,9 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await searchSessions.deleteAllSearchSessions();
       });
 
+      /**
+       * Migration recommendation: MIGRATE TO SCOUT. Saving sessions is already covered, but navigating to dashboard is a good integration test.
+       */
       it('Saves a session and verifies it in the Management app', async () => {
         log.debug('loading the "Not Delayed" dashboard');
         await PageObjects.dashboard.loadSavedDashboard('Delayed 5s');
@@ -74,6 +81,9 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await PageObjects.dashboard.waitForRenderComplete();
       });
 
+      /**
+       * Migration recommendation: DELETE. Covered by component and API tests
+       */
       it('Deletes a session from management', async () => {
         await PageObjects.searchSessionsManagement.goTo();
 
@@ -89,6 +99,9 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         });
       });
 
+      /**
+       * Migration recommendation: DELETE. src/platform/plugins/shared/data/public/search/session/sessions_mgmt/index.test.ts already tests that the title is set correctly. We can trust the Kibana framework for the rest.
+       */
       it('Should be called "Background search" in the management apps sidebar', async () => {
         await PageObjects.common.navigateToApp('management');
         const searchSessionsAnchor = await testSubjects.find('search_sessions');

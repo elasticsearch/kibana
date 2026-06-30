@@ -9,6 +9,10 @@
 import type { FtrProviderContext } from '../ftr_provider_context';
 import { defineDefaultQueryModeTests } from '../query_mode/_shared_default_query_mode_tests';
 
+/**
+ * Migration recommendation: DELETE. These are mostly redundant with src/platform/test/functional/apps/discover/query_mode
+ */
+
 export default function (ctx: FtrProviderContext) {
   defineDefaultQueryModeTests(ctx, { isEsqlDefault: true });
 }

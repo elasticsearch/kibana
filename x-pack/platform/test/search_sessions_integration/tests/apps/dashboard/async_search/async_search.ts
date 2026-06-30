@@ -8,6 +8,10 @@
 import expect from '@kbn/expect';
 import type { FtrProviderContext } from '../../../../ftr_provider_context';
 
+/**
+ * Migration recommendation: MIGRATE TO SCOUT — these are good smoke tests.
+ */
+
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const es = getService('es');
   const testSubjects = getService('testSubjects');

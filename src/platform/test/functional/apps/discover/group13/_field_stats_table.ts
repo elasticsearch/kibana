@@ -9,6 +9,9 @@
 
 import type { FtrProviderContext } from '../ftr_provider_context';
 
+/**
+ * Migration recommendation: delete these tests. They test a show/hide UI behavior that is already covered in src/platform/plugins/shared/discover/public/components/view_mode_toggle/view_mode_toggle.test.tsx
+ */
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const { common, discover, timePicker, header } = getPageObjects([
     'common',

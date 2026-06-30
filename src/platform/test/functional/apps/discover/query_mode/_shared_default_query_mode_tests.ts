@@ -10,6 +10,10 @@ import expect from '@kbn/expect';
 import type { FtrProviderContext } from '../ftr_provider_context';
 
 /**
+ * Migration recommendation: MIGRATE TO SCOUT. These tests cover integration with localStorage so a browser make sense.
+ */
+
+/**
  * Shared tests for default query mode behavior, parameterized by the
  * `discover.isEsqlDefault` feature flag. Both `query_mode/` and
  * `query_mode_esql_default/` configs call this with different values;

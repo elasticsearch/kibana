@@ -8,6 +8,10 @@
 import expect from '@kbn/expect';
 import type { FtrProviderContext } from '../../../../ftr_provider_context';
 
+/**
+ * Migration recommendation: MIGRATE TO SCOUT. This tests the integration of several Kibana components for unusual user privilege situations.
+ */
+
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const security = getService('security');
   const PageObjects = getPageObjects([
