@@ -13,12 +13,6 @@ import { PagerdutyConnector } from './pagerduty';
 const mockCallTool = jest.fn();
 const mockListTools = jest.fn();
 
-jest.mock('../../lib/mcp/with_mcp_client', () => ({
-  withMcpClient: jest.fn(async (_ctx: unknown, fn: (mcp: unknown) => Promise<unknown>) => {
-    return fn({ callTool: mockCallTool, listTools: mockListTools });
-  }),
-}));
-
 const parse = <K extends keyof typeof PagerdutyConnector.actions>(
   action: K,
   raw: Record<string, unknown>
@@ -29,6 +23,7 @@ describe('PagerdutyConnector', () => {
     client: {},
     log: {},
     config: { serverUrl: 'https://mcp.pagerduty.com/mcp' },
+    getClient: () => Promise.resolve({ callTool: mockCallTool, listTools: mockListTools }),
   } as unknown as ActionContext;
 
   const mockJson = { ok: true };
@@ -260,17 +255,17 @@ describe('PagerdutyConnector', () => {
       });
     });
 
-    it('propagates errors thrown by withMcpClient', async () => {
-      const { withMcpClient } = jest.requireMock('../../lib/mcp/with_mcp_client');
-      withMcpClient.mockRejectedValueOnce(new Error('connection refused'));
+    it('propagates build errors from getClient', async () => {
+      const failCtx = {
+        ...mockContext,
+        getClient: () => Promise.reject(new Error('connection refused')),
+      } as unknown as ActionContext;
 
       if (!PagerdutyConnector.test) {
         throw new Error('test handler not defined');
       }
 
-      await expect(PagerdutyConnector.test.handler(mockContext)).rejects.toThrow(
-        'connection refused'
-      );
+      await expect(PagerdutyConnector.test.handler(failCtx)).rejects.toThrow('connection refused');
     });
   });
 });

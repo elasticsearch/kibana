@@ -45,3 +45,4 @@ export { createConnectorTypeFromSpec } from './single_file_connectors/create_con
 export { getDeleteTokenAxiosInterceptor } from './delete_token_axios_interceptor';
 export { OAuthAuthorizationService } from './oauth_authorization_service';
 export type { OAuthConfig } from './oauth_authorization_service';
+export { LeasePool } from './lease_pool';

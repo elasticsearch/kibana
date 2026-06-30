@@ -18,7 +18,7 @@
 import { i18n } from '@kbn/i18n';
 import { z, lazySchema } from '@kbn/zod/v4';
 import { UISchemas, type ConnectorSpec } from '../../connector_spec';
-import { withMcpClient, callToolContent, callToolJson } from '../../lib/mcp';
+import { callToolContent, callToolJson } from '../../lib/mcp';
 import type {
   CallToolInput,
   GetCommitInput,
@@ -382,10 +382,10 @@ export const GithubConnector: ConnectorSpec = {
         'List all tools available on the GitHub MCP server. Use this to discover available capabilities or refresh tool context for the LLM.',
       input: ListToolsInputSchema,
       handler: async (ctx) => {
-        return withMcpClient(ctx, async (mcp) => {
-          const { tools } = await mcp.listTools();
-          return tools;
-        });
+        // Pooled MCP session (see ctx.getClient / LeasePool); no per-action disconnect.
+        const mcp = await ctx.getClient('mcp');
+        const { tools } = await mcp.listTools();
+        return tools;
       },
     },
 
@@ -406,13 +406,12 @@ export const GithubConnector: ConnectorSpec = {
         'Verifies connection to the GitHub Copilot MCP server by listing available tools.',
     }),
     handler: async (ctx) => {
-      return withMcpClient(ctx, async (mcp) => {
-        const { tools } = await mcp.listTools();
-        return {
-          ok: true,
-          message: `Connected to GitHub MCP server. ${tools.length} tools available.`,
-        };
-      });
+      const mcp = await ctx.getClient('mcp');
+      const { tools } = await mcp.listTools();
+      return {
+        ok: true,
+        message: `Connected to GitHub MCP server. ${tools.length} tools available.`,
+      };
     },
   },
 

@@ -20,12 +20,14 @@ import { generateParamsSchema } from './generate_params_schema';
 import { generateSecretsSchema } from './generate_secrets_schema';
 import { generateExecutorFunction } from './generate_executor_function';
 import { generateConfigSchema } from './generate_config_schema';
+import { createConnectorNetwork } from './create_connector_network';
 
 export const createConnectorTypeFromSpec = (
   spec: ConnectorSpec,
   actions: ActionsPluginSetupContract
 ): ActionType<ActionTypeConfig, ActionTypeSecrets, ActionTypeParams, unknown> => {
   const configUtils = actions.getActionsConfigurationUtilities();
+  const network = createConnectorNetwork(configUtils);
 
   const hasActions = Boolean(spec.actions);
 
@@ -33,6 +35,9 @@ export const createConnectorTypeFromSpec = (
     ? generateExecutorFunction({
         actions: spec.actions,
         getAxiosInstanceWithAuth: actions.getAxiosInstanceWithAuth,
+        getCredential: actions.getCredential,
+        getClientLeasePool: actions.getClientLeasePool,
+        network,
       })
     : undefined;
 

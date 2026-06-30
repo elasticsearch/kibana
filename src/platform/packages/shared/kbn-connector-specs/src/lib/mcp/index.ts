@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { withMcpClient } from './with_mcp_client';
 export { createMcpClientFromAxios } from './create_mcp_client_from_axios';
 export type { CreateMcpClientFromAxiosOpts } from './create_mcp_client_from_axios';
 export { createFetchFromAxios } from './create_fetch_from_axios';

@@ -46,6 +46,7 @@ import type { ServerlessPluginSetup, ServerlessPluginStart } from '@kbn/serverle
 import type { CloudSetup } from '@kbn/cloud-plugin/server';
 import type { AxiosInstance } from 'axios';
 import type { UsageApiSetup } from '@kbn/usage-api-plugin/server';
+import type { CredentialAccessor } from '@kbn/connector-specs';
 import { type ActionsConfig, type EnabledConnectorTypes } from './config';
 import { AllowedHosts, getValidatedConfig } from './config';
 import { resolveCustomHosts } from './lib/custom_host_settings';
@@ -56,7 +57,13 @@ import { AuthTypeRegistry, registerAuthTypes } from './auth_types';
 import { createBulkExecutionEnqueuerFunction } from './create_execute_function';
 import { registerActionsUsageCollector } from './usage';
 import type { ILicenseState } from './lib';
-import { ActionExecutor, TaskRunnerFactory, LicenseState, spaceIdToNamespace } from './lib';
+import {
+  ActionExecutor,
+  TaskRunnerFactory,
+  LicenseState,
+  spaceIdToNamespace,
+  LeasePool,
+} from './lib';
 import type {
   Services,
   ActionType,
@@ -118,8 +125,8 @@ import { createSystemConnectors } from './create_system_actions';
 import { ConnectorUsageReportingTask } from './usage/connector_usage_reporting_task';
 import { ConnectorRateLimiter } from './lib/connector_rate_limiter';
 import { OAuthRateLimiter } from './lib/oauth_rate_limiter';
-import type { GetAxiosInstanceWithAuthFnOpts } from './lib/get_axios_instance';
-import { getAxiosInstanceWithAuth } from './lib/get_axios_instance';
+import type { GetAxiosInstanceWithAuthFnOpts, GetCredentialFnOpts } from './lib/get_axios_instance';
+import { getAxiosInstanceWithAuth, getCredentialWithAuth } from './lib/get_axios_instance';
 
 export interface PluginSetupContract {
   registerType<
@@ -139,6 +146,11 @@ export interface PluginSetupContract {
   ): void;
 
   getAxiosInstanceWithAuth(opts: GetAxiosInstanceWithAuthFnOpts): Promise<AxiosInstance>;
+
+  getCredential(opts: GetCredentialFnOpts): CredentialAccessor;
+
+  /** PoC: process-wide pool for reusable connector clients (MCP, future DB/gRPC). */
+  getClientLeasePool(): LeasePool<unknown>;
 
   isPreconfiguredConnector(connectorId: string): boolean;
 
@@ -272,6 +284,9 @@ export class ActionsPlugin
   private connectorUsageReportingTask: ConnectorUsageReportingTask | undefined;
   private connectorLifecycleListeners: ConnectorLifecycleListener[] = [];
   private skippedPreconfiguredConnectorIds: Set<string> = new Set();
+  // PoC: process-wide pool. Warm MCP/DB sessions must outlive a single action; the plugin
+  // instance is the owner (ActionContext dies when the action returns).
+  private clientLeasePool?: LeasePool<unknown>;
 
   constructor(initContext: PluginInitializerContext) {
     this.logger = initContext.logger.get();
@@ -482,6 +497,8 @@ export class ActionsPlugin
         actionsConfigUtils,
         plugins.cloud
       ),
+      getCredential: this.getCredentialHelper(actionsConfigUtils),
+      getClientLeasePool: () => this.clientLeasePool!,
       isPreconfiguredConnector: (connectorId: string): boolean => {
         return !!this.inMemoryConnectors.find(
           (inMemoryConnector) =>
@@ -520,6 +537,8 @@ export class ActionsPlugin
   }
 
   public start(core: CoreStart, plugins: ActionsPluginsStart): PluginStartContract {
+    this.clientLeasePool = new LeasePool<unknown>(this.logger);
+
     const {
       logger,
       licenseState,
@@ -599,6 +618,7 @@ export class ActionsPlugin
         encryptedSavedObjectsClient,
         connectorLifecycleListeners: this.connectorLifecycleListeners,
         getCurrentUserProfileId,
+        evictClientPool: (connectorId: string) => this.clientLeasePool?.evict(connectorId),
       });
     };
 
@@ -973,6 +993,7 @@ export class ActionsPlugin
       connectorLifecycleListeners,
     } = this;
     const getSkippedPreconfiguredIds = () => this.skippedPreconfiguredConnectorIds;
+    const evictClientPool = (connectorId: string) => this.clientLeasePool?.evict(connectorId);
 
     return async function actionsRouteHandlerContext(context, request) {
       const [coreStart, pluginsStart] = await core.getStartServices();
@@ -1033,6 +1054,7 @@ export class ActionsPlugin
             connectorLifecycleListeners,
             getCurrentUserProfileId: (requestWithAuth: KibanaRequest) =>
               getCurrentUserProfileIdFromRequest(requestWithAuth, pluginsStart.security, logger),
+            evictClientPool,
           });
         },
         listTypes: (featureId?: string) => {
@@ -1072,6 +1094,14 @@ export class ActionsPlugin
     };
   };
 
+  private getCredentialHelper = (actionsConfigUtils: ActionsConfigurationUtilities) => {
+    return getCredentialWithAuth({
+      authTypeRegistry: this.authTypeRegistry!,
+      configurationUtilities: actionsConfigUtils,
+      logger: this.logger,
+    });
+  };
+
   private registerDynamicConnector = (connector: InMemoryConnector): boolean => {
     if (!this.inMemoryConnectors.find((c) => c.id === connector.id)) {
       this.inMemoryConnectors.push({
@@ -1101,6 +1131,7 @@ export class ActionsPlugin
     if (this.licenseState) {
       this.licenseState.clean();
     }
+    this.clientLeasePool?.stop();
   }
 }
 

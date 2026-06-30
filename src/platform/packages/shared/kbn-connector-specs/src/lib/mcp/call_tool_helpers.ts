@@ -8,7 +8,6 @@
  */
 
 import type { ActionContext } from '../../connector_spec';
-import { withMcpClient } from './with_mcp_client';
 
 /**
  * Extracts text parts from MCP content and attempts to parse as JSON.
@@ -37,10 +36,9 @@ export const callToolContent = async (
   toolName: string,
   args?: Record<string, unknown>
 ) => {
-  return withMcpClient(ctx, async (mcp) => {
-    const result = await mcp.callTool({ name: toolName, arguments: args ?? {} });
-    return result.content;
-  });
+  const mcp = await ctx.getClient('mcp');
+  const result = await mcp.callTool({ name: toolName, arguments: args ?? {} });
+  return result.content;
 };
 
 /**
@@ -51,8 +49,7 @@ export const callToolJson = async (
   toolName: string,
   args: Record<string, unknown> = {}
 ): Promise<unknown> => {
-  return withMcpClient(ctx, async (mcp) => {
-    const result = await mcp.callTool({ name: toolName, arguments: args });
-    return parseJsonTextFromContentParts(result.content);
-  });
+  const mcp = await ctx.getClient('mcp');
+  const result = await mcp.callTool({ name: toolName, arguments: args });
+  return parseJsonTextFromContentParts(result.content);
 };

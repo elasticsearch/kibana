@@ -209,6 +209,8 @@ export async function update({ context, id, action }: ConnectorUpdateParams): Pr
     throw result;
   }
 
+  context.evictClientPool?.(id);
+
   try {
     await context.connectorTokenClient.deleteConnectorTokens({ connectorId: id, authMode });
   } catch (e) {

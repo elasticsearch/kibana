@@ -13,7 +13,7 @@ import type {
 } from 'axios';
 import axios from 'axios';
 import type { Logger } from '@kbn/core/server';
-import type { AuthMode, GetTokenOpts } from '@kbn/connector-specs';
+import type { AuthMode, AuthContext, CredentialAccessor, GetTokenOpts } from '@kbn/connector-specs';
 import type { CloudSetup } from '@kbn/cloud-plugin/server';
 import type { ActionInfo } from './action_executor';
 import type { AuthTypeRegistry } from '../auth_types';
@@ -123,6 +123,71 @@ export interface GetAxiosInstanceWithAuthFnOpts {
 export type GetAxiosInstanceWithAuthFn = (
   opts: GetAxiosInstanceWithAuthFnOpts
 ) => Promise<AxiosInstance>;
+
+export class UnsupportedAuthProducerError extends Error {
+  constructor(authTypeId: string) {
+    super(
+      `[Action][ExternalService] Auth type "${authTypeId}" does not support getAuthHeaders for native HTTP clients.`
+    );
+    this.name = 'UnsupportedAuthProducerError';
+  }
+}
+
+export interface GetCredentialFnOpts {
+  connectorId: string;
+  connectorTokenClient?: ConnectorTokenClientContract;
+  secrets: ValidatedSecrets;
+  authMode?: AuthMode;
+  profileUid?: string;
+}
+
+export type GetCredentialFn = (opts: GetCredentialFnOpts) => CredentialAccessor;
+
+export const getCredentialWithAuth = ({
+  authTypeRegistry,
+  configurationUtilities,
+  logger,
+}: GetAxiosInstanceOpts): GetCredentialFn => {
+  return ({
+    connectorId,
+    secrets,
+    connectorTokenClient,
+    authMode,
+    profileUid,
+  }: GetCredentialFnOpts): CredentialAccessor => {
+    const authTypeId = (secrets as { authType?: string }).authType || 'none';
+    const authType = authTypeRegistry.get(authTypeId);
+
+    const strategy = getAxiosAuthStrategy(authTypeId);
+    const strategyDeps = {
+      connectorId,
+      secrets,
+      connectorTokenClient,
+      logger,
+      configurationUtilities,
+      authMode,
+      profileUid,
+    };
+
+    const authCtx: AuthContext = {
+      getCustomHostSettings: (url: string) => configurationUtilities.getCustomHostSettings(url),
+      getToken: (opts: GetTokenOpts) => strategy.getToken(opts, strategyDeps),
+      logger,
+      proxySettings: configurationUtilities.getProxySettings(),
+      sslSettings: configurationUtilities.getSSLSettings(),
+    };
+
+    return {
+      getAuthHeaders: async () => {
+        if (!authType.getAuthHeaders) {
+          throw new UnsupportedAuthProducerError(authTypeId);
+        }
+        return authType.getAuthHeaders(authCtx, secrets);
+      },
+    };
+  };
+};
+
 export const getAxiosInstanceWithAuth = ({
   authTypeRegistry,
   cloud,

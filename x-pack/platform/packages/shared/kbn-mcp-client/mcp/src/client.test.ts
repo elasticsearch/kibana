@@ -7,6 +7,7 @@
 
 /* eslint-disable max-classes-per-file */
 import { McpClient } from './client';
+import { McpConnectionError } from './errors';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import {
   StreamableHTTPClientTransport,
@@ -362,6 +363,103 @@ describe('McpClient', () => {
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Error connecting to MCP server test-client, 1.0.0: [object Object]'
       );
+    });
+
+    it('throws McpConnectionError with httpStatus from StreamableHTTPError.code', async () => {
+      const client = new McpClient(mockLogger, clientDetails);
+      const error = new StreamableHTTPError(500, 'Connection failed');
+      mockClient.connect.mockRejectedValue(error);
+
+      const thrown = await client.connect().catch((e) => e);
+
+      expect(thrown).toBeInstanceOf(McpConnectionError);
+      expect((thrown as McpConnectionError).httpStatus).toBe(500);
+      expect((thrown as McpConnectionError).message).toBe(
+        'Streamable HTTP error: Connection failed'
+      );
+    });
+
+    it('throws McpConnectionError with httpStatus 401 for UnauthorizedError', async () => {
+      const client = new McpClient(mockLogger, clientDetails);
+      const error = new UnauthorizedError('Auth failed');
+      mockClient.connect.mockRejectedValue(error);
+
+      const thrown = await client.connect().catch((e) => e);
+
+      expect(thrown).toBeInstanceOf(McpConnectionError);
+      expect((thrown as McpConnectionError).httpStatus).toBe(401);
+      expect((thrown as McpConnectionError).message).toContain('Unauthorized error');
+    });
+
+    it('throws McpConnectionError with no httpStatus for generic errors', async () => {
+      const client = new McpClient(mockLogger, clientDetails);
+      const error = new Error('Generic error');
+      mockClient.connect.mockRejectedValue(error);
+
+      const thrown = await client.connect().catch((e) => e);
+
+      expect(thrown).toBeInstanceOf(McpConnectionError);
+      expect((thrown as McpConnectionError).httpStatus).toBeUndefined();
+      expect((thrown as McpConnectionError).message).toContain('Error connecting to MCP server');
+    });
+  });
+
+  describe('sessionId', () => {
+    it('returns the transport session id', () => {
+      const client = new McpClient(mockLogger, clientDetails);
+      (mockTransport as unknown as { sessionId: string }).sessionId = 'sess-abc';
+      expect(client.sessionId).toBe('sess-abc');
+    });
+
+    it('returns undefined when transport has no session id', () => {
+      const client = new McpClient(mockLogger, clientDetails);
+      expect(client.sessionId).toBeUndefined();
+    });
+  });
+
+  describe('terminate', () => {
+    it('calls terminateSession then disconnect in order', async () => {
+      const order: string[] = [];
+      (mockTransport as unknown as { terminateSession: jest.Mock }).terminateSession = jest
+        .fn()
+        .mockImplementation(async () => {
+          order.push('terminateSession');
+        });
+      mockClient.close.mockImplementation(async () => {
+        order.push('close');
+      });
+
+      const client = await createConnectedClient();
+      await client.terminate();
+
+      expect(order).toEqual(['terminateSession', 'close']);
+    });
+
+    it('calls terminateSession and disconnect once each', async () => {
+      (mockTransport as unknown as { terminateSession: jest.Mock }).terminateSession = jest
+        .fn()
+        .mockResolvedValue(undefined);
+      mockClient.close.mockResolvedValue(undefined);
+
+      const client = await createConnectedClient();
+      await client.terminate();
+
+      expect(
+        (mockTransport as unknown as { terminateSession: jest.Mock }).terminateSession
+      ).toHaveBeenCalledTimes(1);
+      expect(mockClient.close).toHaveBeenCalledTimes(1);
+    });
+
+    it('still calls disconnect when terminateSession rejects', async () => {
+      (mockTransport as unknown as { terminateSession: jest.Mock }).terminateSession = jest
+        .fn()
+        .mockRejectedValue(new Error('network error'));
+      mockClient.close.mockResolvedValue(undefined);
+
+      const client = await createConnectedClient();
+      await expect(client.terminate()).rejects.toThrow('network error');
+
+      expect(mockClient.close).toHaveBeenCalledTimes(1);
     });
   });
 

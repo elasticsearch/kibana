@@ -18,7 +18,7 @@
 import { i18n } from '@kbn/i18n';
 import { z, lazySchema } from '@kbn/zod/v4';
 import { UISchemas, type ConnectorSpec } from '../../connector_spec';
-import { withMcpClient, callToolContent, callToolJson } from '../../lib/mcp';
+import { callToolContent, callToolJson } from '../../lib/mcp';
 import type {
   CallToolInput,
   GetEscalationPolicyInput,
@@ -226,10 +226,9 @@ export const PagerdutyConnector: ConnectorSpec = {
         'List all tools available on the PagerDuty MCP server. Use this to discover available capabilities.',
       input: ListToolsInputSchema,
       handler: async (ctx) => {
-        return withMcpClient(ctx, async (mcp) => {
-          const { tools } = await mcp.listTools();
-          return tools;
-        });
+        const mcp = await ctx.getClient('mcp');
+        const { tools } = await mcp.listTools();
+        return tools;
       },
     },
 
@@ -249,13 +248,12 @@ export const PagerdutyConnector: ConnectorSpec = {
       defaultMessage: 'Verifies connection to the PagerDuty MCP server by listing available tools.',
     }),
     handler: async (ctx) => {
-      return withMcpClient(ctx, async (mcp) => {
-        const { tools } = await mcp.listTools();
-        return {
-          ok: true,
-          message: `Connected to PagerDuty MCP server. ${tools.length} tools available.`,
-        };
-      });
+      const mcp = await ctx.getClient('mcp');
+      const { tools } = await mcp.listTools();
+      return {
+        ok: true,
+        message: `Connected to PagerDuty MCP server. ${tools.length} tools available.`,
+      };
     },
   },
 

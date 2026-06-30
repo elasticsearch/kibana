@@ -13,6 +13,7 @@ import {
 } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import type { Logger } from '@kbn/core/server';
+import { McpConnectionError } from './errors';
 import type {
   ClientDetails,
   CallToolParams,
@@ -112,11 +113,16 @@ export class McpClient {
           `Error connecting to MCP server ${this.name}, ${this.version}: ${errorMessage}`
         );
         if (error instanceof StreamableHTTPError) {
-          throw new Error(errorMessage);
+          throw new McpConnectionError(errorMessage, { httpStatus: error.code, cause: error });
         } else if (error instanceof UnauthorizedError) {
-          throw new Error(`Unauthorized error: ${errorMessage}`);
+          throw new McpConnectionError(`Unauthorized error: ${errorMessage}`, {
+            httpStatus: 401,
+            cause: error,
+          });
         } else {
-          throw new Error(`Error connecting to MCP server: ${errorMessage}`);
+          throw new McpConnectionError(`Error connecting to MCP server: ${errorMessage}`, {
+            cause: error,
+          });
         }
       }
     }
@@ -127,6 +133,18 @@ export class McpClient {
       connected: this.connected,
       capabilities,
     };
+  }
+
+  public get sessionId(): string | undefined {
+    return this.transport.sessionId;
+  }
+
+  public async terminate(): Promise<void> {
+    try {
+      await this.transport.terminateSession();
+    } finally {
+      await this.disconnect();
+    }
   }
 
   /**
