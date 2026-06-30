@@ -7,7 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { getCustomColumn } from './get_custom_column';
-export { getCustomSortingOptions } from './get_custom_sorting_options';
-export { getNoItemsMessage } from './get_no_items_message';
-export type { VisualizationListItem, VisualizationStage } from './types';
+import { createPlaywrightConfig } from '@kbn/scout';
+
+export default createPlaywrightConfig({
+  testDir: './parallel_tests',
+  workers: 2,
+  runGlobalSetup: true,
+});

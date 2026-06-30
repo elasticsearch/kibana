@@ -374,9 +374,8 @@ export class VisualizePageObject extends FtrService {
   }
 
   public async openSavedVisualization(vizName: string) {
-    const dataTestSubj = `visListingTitleLink-${vizName.split(' ').join('-')}`;
     await this.retry.try(async () => {
-      await this.testSubjects.click(dataTestSubj, 20000);
+      await this.listingTable.clickItemLink('visualize', vizName);
       await this.notOnLandingPageOrFail();
     });
     await this.header.waitUntilLoadingHasFinished();
@@ -412,7 +411,9 @@ export class VisualizePageObject extends FtrService {
       await this.retry.try(async () => {
         await this.clickLandingPageBreadcrumbLink();
         const onLandingPage = await this.onLandingPage();
-        if (!onLandingPage) throw new Error('Not on the landing page.');
+        if (!onLandingPage) {
+          throw new Error('Not on the landing page.');
+        }
       });
     }
   }

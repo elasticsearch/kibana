@@ -7,7 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { getCustomColumn } from './get_custom_column';
-export { getCustomSortingOptions } from './get_custom_sorting_options';
-export { getNoItemsMessage } from './get_no_items_message';
-export type { VisualizationListItem, VisualizationStage } from './types';
+export const KBN_ARCHIVES = {
+  /**
+   * Two saved visualizations used by the existing FTR coverage. Sufficient to
+   * exercise list rendering, search, the content-editor flyout, and bulk
+   * delete without needing to drive the TSVB editor.
+   */
+  VISUALIZE: 'src/platform/test/functional/fixtures/kbn_archiver/visualize.json',
+};

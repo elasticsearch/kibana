@@ -9,7 +9,6 @@
 
 import React, { useCallback, useRef, useMemo, useEffect } from 'react';
 import { firstValueFrom } from 'rxjs';
-import { useEuiTheme } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { CoreStart } from '@kbn/core/public';
 import type { Reference } from '@kbn/content-management-utils';
@@ -33,7 +32,6 @@ import {
   getCustomColumn,
   getCustomSortingOptions,
   getNoItemsMessage,
-  getVisualizationListingTableStyles,
 } from '@kbn/visualization-listing-components';
 
 interface SavedObjectWithReferences {
@@ -61,11 +59,6 @@ export const VisualizationTableList = ({
   parentProps,
 }: VisualizationTableListProps) => {
   const { getBreadcrumbs, onFetchSuccess, setPageDataTestSubject, showCreateButton } = parentProps;
-  const euiThemeContext = useEuiTheme();
-  const tableStyles = useMemo(
-    () => getVisualizationListingTableStyles(euiThemeContext),
-    [euiThemeContext]
-  );
 
   const listingLimit = core.uiSettings.get(SAVED_OBJECTS_LIMIT_SETTING);
   const initialPageSize = core.uiSettings.get(SAVED_OBJECTS_PER_PAGE_SETTING);
@@ -241,54 +234,52 @@ export const VisualizationTableList = ({
   });
 
   return (
-    <div css={tableStyles}>
-      <TableListViewTable<VisualizeUserContent>
-        id="visualizationListing"
-        findItems={fetchItems}
-        deleteItems={visualizeCapabilities.delete ? deleteItems : undefined}
-        editItem={visualizeCapabilities.save ? editItem : undefined}
-        contentEditor={{
-          isReadonly: !visualizeCapabilities.save,
-          onSave: onContentEditorSave,
-          customValidators: contentEditorValidators,
-        }}
-        emptyPrompt={noItemsFragment}
-        createItem={showCreateButton === false ? undefined : createNewVis}
-        customTableColumn={getCustomColumn()}
-        customSortingOptions={getCustomSortingOptions()}
-        initialPageSize={initialPageSize}
-        initialFilter={''}
-        entityName={i18n.translate('visualizationListing.listing.table.entityName', {
-          defaultMessage: 'visualization',
-        })}
-        entityNamePlural={i18n.translate('visualizationListing.listing.table.entityNamePlural', {
-          defaultMessage: 'visualizations',
-        })}
-        getOnClickTitle={(item) =>
-          item.attributes.readOnly || item.error ? undefined : () => editItem(item)
-        }
-        tableCaption={visualizeLibraryTitle}
-        rowItemActions={({ managed, attributes: { readOnly } }) =>
-          !visualizeCapabilities.save || readOnly
-            ? {
-                edit: {
-                  enabled: false,
-                  reason: managed
-                    ? i18n.translate('visualizationListing.managedLegacyVisMessage', {
-                        defaultMessage:
-                          'Elastic manages this visualisation. Changing it is not possible.',
-                      })
-                    : i18n.translate('visualizationListing.readOnlyLegacyVisMessage', {
-                        defaultMessage:
-                          "These details can't be edited because this visualization is no longer supported.",
-                      }),
-                },
-              }
-            : undefined
-        }
-        onFetchSuccess={onFetchSuccess}
-        setPageDataTestSubject={setPageDataTestSubject}
-      />
-    </div>
+    <TableListViewTable<VisualizeUserContent>
+      id="visualizationListing"
+      findItems={fetchItems}
+      deleteItems={visualizeCapabilities.delete ? deleteItems : undefined}
+      editItem={visualizeCapabilities.save ? editItem : undefined}
+      contentEditor={{
+        isReadonly: !visualizeCapabilities.save,
+        onSave: onContentEditorSave,
+        customValidators: contentEditorValidators,
+      }}
+      emptyPrompt={noItemsFragment}
+      createItem={showCreateButton === false ? undefined : createNewVis}
+      customTableColumn={getCustomColumn()}
+      customSortingOptions={getCustomSortingOptions()}
+      initialPageSize={initialPageSize}
+      initialFilter={''}
+      entityName={i18n.translate('visualizationListing.listing.table.entityName', {
+        defaultMessage: 'visualization',
+      })}
+      entityNamePlural={i18n.translate('visualizationListing.listing.table.entityNamePlural', {
+        defaultMessage: 'visualizations',
+      })}
+      getOnClickTitle={(item) =>
+        item.attributes.readOnly || item.error ? undefined : () => editItem(item)
+      }
+      tableCaption={visualizeLibraryTitle}
+      rowItemActions={({ managed, attributes: { readOnly } }) =>
+        !visualizeCapabilities.save || readOnly
+          ? {
+              edit: {
+                enabled: false,
+                reason: managed
+                  ? i18n.translate('visualizationListing.managedLegacyVisMessage', {
+                      defaultMessage:
+                        'Elastic manages this visualisation. Changing it is not possible.',
+                    })
+                  : i18n.translate('visualizationListing.readOnlyLegacyVisMessage', {
+                      defaultMessage:
+                        "These details can't be edited because this visualization is no longer supported.",
+                    }),
+              },
+            }
+          : undefined
+      }
+      onFetchSuccess={onFetchSuccess}
+      setPageDataTestSubject={setPageDataTestSubject}
+    />
   );
 };

@@ -29,6 +29,8 @@ const TOOLBAR_SUBJECTS = getContentListToolbarSubjects();
 const CONTENT_LIST_TABLE = CONTENT_LIST_TEST_SUBJECTS.table;
 const CONTENT_LIST_TABLE_SKELETON = CONTENT_LIST_TEST_SUBJECTS.tableSkeleton;
 const CONTENT_LIST_ITEM_LINK = CONTENT_LIST_TEST_SUBJECTS.itemLink;
+const CONTENT_LIST_ACTION_INSPECT = CONTENT_LIST_TEST_SUBJECTS.actionInspect;
+const EUI_COLLAPSED_ACTIONS_BUTTON = 'euiCollapsedItemActionsButton';
 const CONTENT_LIST_SEARCH_BOX = TOOLBAR_SUBJECTS.searchBox;
 const CONTENT_LIST_TAGS_FILTER_BUTTON = CONTENT_LIST_TEST_SUBJECTS.tagsFilter;
 const CONTENT_LIST_SELECTION_BAR_DELETE = getContentListSelectionBarSubjects(
@@ -241,10 +243,26 @@ export class ListingTableService extends FtrService {
   }
 
   /**
-   * Open the inspect flyout
+   * Open the inspect (content-editor) flyout for the row at `index`. Resolves
+   * both the legacy `TableListView` inspect action and the Content List one,
+   * which collapses into the row's overflow popover when the row renders more
+   * than two actions.
    */
   public async inspectVisualization(index: number = 0) {
-    await this.clickActionButton('inspect-action', index);
+    if (await this.testSubjects.exists('inspect-action', { timeout: 1000 })) {
+      await this.clickActionButton('inspect-action', index);
+      return;
+    }
+    // Content List: a single (read-only) row renders the inspect action inline;
+    // otherwise it sits behind the row's overflow popover.
+    const collapseButtons = await this.testSubjects.findAll(EUI_COLLAPSED_ACTIONS_BUTTON, 1000);
+    if (collapseButtons.length > index) {
+      await collapseButtons[index].moveMouseTo();
+      await collapseButtons[index].click();
+      await this.testSubjects.click(CONTENT_LIST_ACTION_INSPECT);
+      return;
+    }
+    await this.clickActionButton(CONTENT_LIST_ACTION_INSPECT, index);
   }
 
   public async inspectorFieldsReadonly() {

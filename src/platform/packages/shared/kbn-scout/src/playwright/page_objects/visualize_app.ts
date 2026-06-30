@@ -75,7 +75,13 @@ export class VisualizeApp {
   }
 
   async openSavedVisualization(title: string) {
-    await this.page.testSubj.click(`visListingTitleLink-${title.split(' ').join('-')}`);
+    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    await this.page
+      .locator(
+        '[data-test-subj^="visListingTitleLink-"], [data-test-subj="content-list-table-item-link"]'
+      )
+      .filter({ hasText: new RegExp(`^${escaped}$`) })
+      .click();
     await this.waitForVisualizationLoaded();
   }
 

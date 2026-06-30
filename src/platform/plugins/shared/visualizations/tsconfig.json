@@ -3,7 +3,13 @@
   "compilerOptions": {
     "outDir": "target/types"
   },
-  "include": ["common/**/*", "public/**/*", "server/**/*", "../../../../../typings/**/*"],
+  "include": [
+    "common/**/*",
+    "public/**/*",
+    "server/**/*",
+    "test/scout/**/*",
+    "../../../../../typings/**/*"
+  ],
   "kbn_references": [
     "@kbn/core",
     "@kbn/charts-plugin",
@@ -38,7 +44,6 @@
     "@kbn/i18n-react",
     "@kbn/safer-lodash-set",
     "@kbn/shared-ux-page-analytics-no-data",
-    "@kbn/content-management-table-list-view",
     "@kbn/content-management-tabbed-table-list-view",
     "@kbn/test-jest-helpers",
     "@kbn/analytics",
@@ -55,7 +60,6 @@
     "@kbn/core-saved-objects-utils-server",
     "@kbn/content-management-table-list-view-table",
     "@kbn/content-management-tabbed-table-list-view",
-    "@kbn/content-management-table-list-view",
     "@kbn/serverless",
     "@kbn/no-data-page-plugin",
     "@kbn/logging",
@@ -81,7 +85,11 @@
     "@kbn/cps",
     "@kbn/kql",
     "@kbn/cps-utils",
-    "@kbn/std"
+    "@kbn/std",
+    "@kbn/content-list",
+    "@kbn/content-list-provider-client",
+    "@kbn/scout",
+    "@kbn/content-list-provider"
   ],
   "exclude": ["target/**/*"]
 }

@@ -24,7 +24,12 @@ export const journey = new Journey({
     await page.waitForTimeout(10000);
   })
   .step('Open existing Lens visualization', async ({ page, kibanaPage }) => {
-    await page.click(subj('visListingTitleLink-Lens-Stress-Test'));
+    await page
+      .locator(
+        `${subj('visListingTitleLink-Lens-Stress-Test')}, ${subj('content-list-table-item-link')}`
+      )
+      .filter({ hasText: /^Lens Stress Test$/ })
+      .click();
 
     await page.waitForSelector(subj('lnsChartSwitchPopover'));
     await kibanaPage.waitForCharts({ count: 1, timeout: 60000 });

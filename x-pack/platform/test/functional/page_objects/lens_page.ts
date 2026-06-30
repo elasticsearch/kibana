@@ -38,6 +38,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
   const dashboardAddPanel = getService('dashboardAddPanel');
   const queryBar = getService('queryBar');
   const dataViews = getService('dataViews');
+  const listingTable = getService('listingTable');
 
   const { common, header, timePicker, dashboard, timeToVisualize, unifiedSearch, share, exports } =
     getPageObjects([
@@ -147,12 +148,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
      */
     clickVisualizeListItemTitle(title: string) {
       return retry.try(async () => {
-        const link = (await testSubjects.exists(`visualizationListingListingTitleLink-${title}`))
-          ? `visualizationListingListingTitleLink-${title}`
-          : (await testSubjects.exists(`visListingTitleLink-${title}`))
-          ? `visListingTitleLink-${title}`
-          : `visualizationListingTitleLink-${title}`;
-        await testSubjects.click(link);
+        await listingTable.clickItemLink('visualize', title);
         await this.isLensPageOrFail();
       });
     },
@@ -645,7 +641,9 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
           const btn = document.querySelector(
             '[data-test-subj="lns-indexPattern-dimensionContainerClose"]'
           ) as HTMLElement;
-          if (btn) btn.click();
+          if (btn) {
+            btn.click();
+          }
         });
         await testSubjects.missingOrFail('lns-indexPattern-dimensionContainerClose');
       });
@@ -2004,7 +2002,9 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
     },
 
     async openSettingsMenu() {
-      if (await this.settingsMenuOpen()) return;
+      if (await this.settingsMenuOpen()) {
+        return;
+      }
 
       await testSubjects.click('lnsApp_settingsButton');
     },

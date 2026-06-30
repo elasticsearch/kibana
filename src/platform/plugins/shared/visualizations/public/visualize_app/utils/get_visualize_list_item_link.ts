@@ -13,19 +13,34 @@ import type { GlobalQueryStateFromUrl } from '@kbn/data-plugin/public';
 import { setStateToKbnUrl } from '@kbn/kibana-utils-plugin/public';
 import { GLOBAL_STATE_STORAGE_KEY, VISUALIZE_APP_NAME } from '@kbn/visualizations-common';
 import { getUISettings } from '../../services';
-import type { VisualizeUserContent } from '../../utils/to_table_list_view_saved_object';
+import type { VisualizeEditor } from '../components/navigate_to_visualize_editor';
+
+/**
+ * Minimum shape needed to resolve the listing-row link. Mirrors the flat
+ * `ContentListItem` fields the strategy spreads onto the table row so callers
+ * don't have to reconstruct the legacy `{ attributes: {...} }` envelope.
+ */
+export interface VisualizeListItemLinkInput {
+  editor?: VisualizeEditor;
+  error?: string;
+  readOnly?: boolean;
+}
 
 export const getVisualizeListItemLinkFn =
   (application: ApplicationStart, kbnUrlStateStorage: IKbnUrlStateStorage) =>
-  (item: VisualizeUserContent) => {
-    const {
-      editor,
-      attributes: { error, readOnly },
-    } = item;
-    if (readOnly || (editor && 'onEdit' in editor)) return;
+  ({ editor, error, readOnly }: VisualizeListItemLinkInput) => {
+    if (readOnly || (editor && 'onEdit' in editor)) {
+      return;
+    }
 
-    const { editApp, editUrl } = editor ?? {};
-    if (error || (!editApp && !editUrl)) return;
+    const fallback = { editApp: undefined, editUrl: '' };
+    const { editApp, editUrl } =
+      editor && 'editUrl' in editor
+        ? { editApp: editor.editApp, editUrl: editor.editUrl }
+        : fallback;
+    if (error || (!editApp && !editUrl)) {
+      return;
+    }
 
     // for visualizations the editApp is undefined
     let url = application.getUrlForApp(editApp ?? VISUALIZE_APP_NAME, {

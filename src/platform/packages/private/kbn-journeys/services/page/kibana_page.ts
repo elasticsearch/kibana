@@ -39,7 +39,9 @@ export class KibanaPage {
   }
 
   async waitForListViewTable() {
-    await this.page.waitForSelector(subj('table-is-ready'), { state: 'visible' });
+    await this.page.waitForSelector(`${subj('table-is-ready')}, ${subj('content-list-table')}`, {
+      state: 'visible',
+    });
   }
 
   async backToDashboardListing() {

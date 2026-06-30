@@ -13,7 +13,6 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const testSubjects = getService('testSubjects');
   const retry = getService('retry');
   const esArchiver = getService('esArchiver');
-  const find = getService('find');
   const dashboardAddPanel = getService('dashboardAddPanel');
   const dashboardPanelActions = getService('dashboardPanelActions');
   const { tagManagement, header, dashboard, visualize, lens } = getPageObjects([
@@ -99,17 +98,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await visualize.gotoVisualizationLandingPage();
       await listingTable.waitUntilTableIsLoaded();
 
-      // open the filter dropdown
-      const filterButton = await find.byCssSelector(
-        '.euiFilterGroup .euiPopover:nth-child(2) .euiFilterButton'
-      );
-      await filterButton.click();
-      await testSubjects.click(`tag-searchbar-option-${tagManagement.testSubjFriendly(lensTag)}`);
-      // click elsewhere to close the filter dropdown
-      const searchFilter = await find.byCssSelector('.euiPageTemplate .euiFieldSearch');
-      await searchFilter.click();
-      // wait until the table refreshes
-      await listingTable.waitUntilTableIsLoaded();
+      await listingTable.selectFilterTags(lensTag);
       const itemNames = await listingTable.getAllItemsNames();
       expect(itemNames).to.contain(lensTitle);
     });

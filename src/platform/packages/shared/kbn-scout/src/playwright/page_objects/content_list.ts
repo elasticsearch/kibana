@@ -142,6 +142,10 @@ export class ContentListWrapper {
     this.itemLinks = page.testSubj.locator('content-list-table-item-link');
     this.noResultsPanel = page.testSubj.locator('contentListNoResults');
     this.tableSelectAllCheckbox = page.testSubj.locator('checkboxSelectAll');
+    // ContentListToolbar passes its own `data-test-subj` prefix to the nested
+    // SelectionBar, so the rendered delete button is namespaced under the
+    // toolbar. SelectionBar's own default (`contentListSelectionBar-…`) is only
+    // reachable when the bar is mounted standalone (e.g. in unit tests).
     this.selectionBarDeleteButton = page.testSubj.locator(
       'contentListToolbar-selectionBar-deleteButton'
     );

@@ -50,7 +50,6 @@ dependsOn:
   - '@kbn/i18n-react'
   - '@kbn/safer-lodash-set'
   - '@kbn/shared-ux-page-analytics-no-data'
-  - '@kbn/content-management-table-list-view'
   - '@kbn/content-management-tabbed-table-list-view'
   - '@kbn/test-jest-helpers'
   - '@kbn/analytics'
@@ -67,7 +66,6 @@ dependsOn:
   - '@kbn/core-saved-objects-utils-server'
   - '@kbn/content-management-table-list-view-table'
   - '@kbn/content-management-tabbed-table-list-view'
-  - '@kbn/content-management-table-list-view'
   - '@kbn/serverless'
   - '@kbn/no-data-page-plugin'
   - '@kbn/logging'
@@ -94,6 +92,10 @@ dependsOn:
   - '@kbn/kql'
   - '@kbn/cps-utils'
   - '@kbn/std'
+  - '@kbn/content-list'
+  - '@kbn/content-list-provider-client'
+  - '@kbn/scout'
+  - '@kbn/content-list-provider'
 tags:
   - plugin
   - prod
@@ -105,6 +107,7 @@ fileGroups:
     - common/**/*
     - public/**/*
     - server/**/*
+    - test/scout/**/*
     - '!target/**/*'
   jest-config:
     - jest.config.js

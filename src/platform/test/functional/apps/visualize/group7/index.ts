@@ -30,7 +30,8 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
       await browser.refresh();
     });
 
-    loadTestFile(require.resolve('./_visualize_listing'));
+    // `_visualize_listing` coverage now lives in the visualizations Scout suite
+    // (`test/scout/ui/parallel_tests/visualize_listing.*.spec.ts`).
     loadTestFile(require.resolve('./_add_to_dashboard'));
   });
 }

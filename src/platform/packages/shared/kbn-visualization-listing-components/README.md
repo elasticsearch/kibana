@@ -14,18 +14,12 @@ This package provides utilities for displaying visualizations in listing/table v
 - `getCustomColumn()` - Custom column renderer for visualization type with icons and badges
 - `getCustomSortingOptions()` - Sorting options for visualization type column
 - `getNoItemsMessage()` - Empty state prompt for when no visualizations exist
-- `getVisualizationListingTableStyles()` - CSS styles for the visualization listing table
 
 ## Usage
 
 ```typescript
-import {
-  getCustomColumn,
-  getNoItemsMessage,
-  getVisualizationListingTableStyles,
-} from '@kbn/visualization-listing-components';
+import { getCustomColumn, getNoItemsMessage } from '@kbn/visualization-listing-components';
 
 const customColumn = getCustomColumn();
 const emptyPrompt = getNoItemsMessage(createNewVis);
-const styles = getVisualizationListingTableStyles(euiTheme);
 ```

@@ -7,34 +7,22 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { getVisualizeListItemLinkFn } from './get_visualize_list_item_link';
+import {
+  getVisualizeListItemLinkFn,
+  type VisualizeListItemLinkInput,
+} from './get_visualize_list_item_link';
 import type { ApplicationStart } from '@kbn/core/public';
 import { createHashHistory } from 'history';
 import { FilterStateStore } from '@kbn/es-query';
 import { createKbnUrlStateStorage } from '@kbn/kibana-utils-plugin/public';
 import { GLOBAL_STATE_STORAGE_KEY } from '@kbn/visualizations-common';
-import type { VisualizeUserContent } from '../../utils/to_table_list_view_saved_object';
 
-const mockItem: VisualizeUserContent = {
-  id: '9886b410-4c8b-11e8-b3d7-01146121b73d',
-  updatedAt: '2025-10-09T20:35:02.807Z',
-  managed: false,
-  references: [],
-  type: 'visualization',
-  icon: 'chartBarVertical',
-  savedObjectType: 'visualization',
-  typeTitle: 'Vertical bar',
-  title: '[Flights] Delay Buckets',
-  error: '',
+const mockItem: VisualizeListItemLinkInput = {
   editor: {
     editUrl: '/edit/9886b410-4c8b-11e8-b3d7-01146121b73d',
   },
-  attributes: {
-    id: '9886b410-4c8b-11e8-b3d7-01146121b73d',
-    title: '[Flights] Delay Buckets',
-    description: '',
-    readOnly: false,
-  },
+  error: '',
+  readOnly: false,
 };
 
 jest.mock('../../services', () => {
@@ -62,70 +50,35 @@ describe('listing item link is correct for each app', () => {
   const getVisualizeListItemLink = getVisualizeListItemLinkFn(application, kbnUrlStateStorage);
 
   test('returns undefined if readOnly', async () => {
-    const testItem: VisualizeUserContent = {
-      ...mockItem,
-      attributes: {
-        ...mockItem.attributes,
-        readOnly: true,
-      },
-    };
-    const url = getVisualizeListItemLink(testItem);
+    const url = getVisualizeListItemLink({ ...mockItem, readOnly: true });
     expect(url).toBe(undefined);
   });
 
   test('returns undefined if has error', async () => {
-    const testItem: VisualizeUserContent = {
-      ...mockItem,
-      attributes: {
-        ...mockItem.attributes,
-        error: 'error here',
-      },
-    };
-    const url = getVisualizeListItemLink(testItem);
+    const url = getVisualizeListItemLink({ ...mockItem, error: 'error here' });
     expect(url).toBe(undefined);
   });
 
   test('returns undefined if onEdit is in editor', async () => {
-    const testItem: VisualizeUserContent = {
-      ...mockItem,
-      editor: { onEdit: async () => {} },
-    };
-    const url = getVisualizeListItemLink(testItem);
+    const url = getVisualizeListItemLink({ ...mockItem, editor: { onEdit: async () => {} } });
     expect(url).toBe(undefined);
   });
 
   test('returns undefined if no editor', async () => {
-    const testItem: VisualizeUserContent = {
-      ...mockItem,
-      editor: undefined,
-    };
-    const url = getVisualizeListItemLink(testItem);
+    const url = getVisualizeListItemLink({ ...mockItem, editor: undefined });
     expect(url).toBe(undefined);
   });
 
   test('creates a link to classic visualization if editApp is not defined', async () => {
     const editUrl = 'edit/id';
-    const testItem: VisualizeUserContent = {
-      ...mockItem,
-      editor: {
-        editUrl,
-      },
-    };
-    const url = getVisualizeListItemLink(testItem);
+    const url = getVisualizeListItemLink({ ...mockItem, editor: { editUrl } });
     expect(url).toBe(`/app/visualize#${editUrl}?_g=(time:(from:now-7d,to:now))`);
   });
 
   test('creates a link for the app given if editApp is defined', async () => {
     const editUrl = '#/edit/id';
     const editApp = 'lens';
-    const testItem: VisualizeUserContent = {
-      ...mockItem,
-      editor: {
-        editUrl,
-        editApp,
-      },
-    };
-    const url = getVisualizeListItemLink(testItem);
+    const url = getVisualizeListItemLink({ ...mockItem, editor: { editUrl, editApp } });
     expect(url).toBe(`/app/${editApp}${editUrl}?_g=(time:(from:now-7d,to:now))`);
   });
 
@@ -142,14 +95,7 @@ describe('listing item link is correct for each app', () => {
     test('it propagates the correct time on the query', async () => {
       const editUrl = '#/edit/id';
       const editApp = 'lens';
-      const testItem: VisualizeUserContent = {
-        ...mockItem,
-        editor: {
-          editUrl,
-          editApp,
-        },
-      };
-      const url = getVisualizeListItemLink(testItem);
+      const url = getVisualizeListItemLink({ ...mockItem, editor: { editUrl, editApp } });
       expect(url).toBe(
         `/app/${editApp}${editUrl}?_g=(time:(from:'2021-01-05T11:45:53.375Z',to:'2021-01-21T11:46:00.990Z'))`
       );
@@ -166,14 +112,7 @@ describe('listing item link is correct for each app', () => {
     test('it propagates the refreshInterval on the query', async () => {
       const editUrl = '#/edit/id';
       const editApp = 'lens';
-      const testItem: VisualizeUserContent = {
-        ...mockItem,
-        editor: {
-          editUrl,
-          editApp,
-        },
-      };
-      const url = getVisualizeListItemLink(testItem);
+      const url = getVisualizeListItemLink({ ...mockItem, editor: { editUrl, editApp } });
       expect(url).toBe(`/app/${editApp}${editUrl}?_g=(refreshInterval:(pause:!f,value:300))`);
     });
   });
@@ -209,14 +148,7 @@ describe('listing item link is correct for each app', () => {
     test('propagates the filters on the query', async () => {
       const editUrl = '#/edit/id';
       const editApp = 'lens';
-      const testItem: VisualizeUserContent = {
-        ...mockItem,
-        editor: {
-          editUrl,
-          editApp,
-        },
-      };
-      const url = getVisualizeListItemLink(testItem);
+      const url = getVisualizeListItemLink({ ...mockItem, editor: { editUrl, editApp } });
       expect(url).toBe(
         `/app/${editApp}${editUrl}?_g=(filters:!((meta:(alias:!n,disabled:!f,negate:!f),query:(query:q1)),('$state':(store:globalState),meta:(alias:!n,disabled:!f,negate:!f),query:(query:q1))))`
       );

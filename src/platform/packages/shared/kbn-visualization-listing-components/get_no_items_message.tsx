@@ -11,7 +11,12 @@ import React from 'react';
 import { EuiButton, EuiEmptyPrompt } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
-export const getNoItemsMessage = (createItem: () => void) => (
+export const getNoItemsMessage = (
+  createItem: () => void,
+  // Content List keeps an always-present header `newItemButton`; callers that
+  // also render it must override this to avoid a duplicate selector.
+  createItemDataTestSubj: string = 'newItemButton'
+) => (
   <EuiEmptyPrompt
     iconType="visualizeApp"
     title={
@@ -31,7 +36,12 @@ export const getNoItemsMessage = (createItem: () => void) => (
       </p>
     }
     actions={
-      <EuiButton onClick={createItem} fill iconType="plusCircle" data-test-subj="newItemButton">
+      <EuiButton
+        onClick={createItem}
+        fill
+        iconType="plusCircle"
+        data-test-subj={createItemDataTestSubj}
+      >
         <FormattedMessage
           id="visualizations.listing.createNew.createButtonLabel"
           defaultMessage="Create new visualization"
