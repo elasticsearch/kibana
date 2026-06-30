@@ -561,6 +561,7 @@
     "@kbn/custom-branding-plugin": "link:x-pack/platform/plugins/private/custom_branding",
     "@kbn/custom-icons": "link:src/platform/packages/shared/kbn-custom-icons",
     "@kbn/custom-integrations-plugin": "link:src/platform/plugins/shared/custom_integrations",
+    "@kbn/dag-layout": "link:src/platform/packages/shared/kbn-dag-layout",
     "@kbn/dashboard-markdown": "link:src/platform/plugins/shared/dashboard_markdown",
     "@kbn/dashboard-navigation-options-common": "link:src/platform/packages/private/dashboard/dashboard-navigation-options-common",
     "@kbn/dashboard-navigation-options-components": "link:src/platform/packages/private/dashboard/dashboard-navigation-options-components",

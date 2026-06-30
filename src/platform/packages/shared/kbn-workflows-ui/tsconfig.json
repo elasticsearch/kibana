@@ -4,9 +4,10 @@
     "outDir": "target/types",
     "types": ["jest", "node", "react", "@kbn/ambient-ui-types"]
   },
-  "include": ["**/*.ts", "**/*.tsx", "index.ts"],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "index.ts"],
   "exclude": ["target/**/*"],
   "kbn_references": [
+    "@kbn/dag-layout",
     "@kbn/react-query",
     "@kbn/kibana-react-plugin",
     "@kbn/workflows",

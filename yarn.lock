@@ -6404,6 +6404,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/dag-layout@link:src/platform/packages/shared/kbn-dag-layout":
+  version "0.0.0"
+  uid ""
+
 "@kbn/dashboard-markdown@link:src/platform/plugins/shared/dashboard_markdown":
   version "0.0.0"
   uid ""

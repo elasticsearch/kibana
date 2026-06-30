@@ -29,6 +29,7 @@
     "@kbn/config-schema",
     "@kbn/workflows",
     "@kbn/human-readable-id",
+    "@kbn/dag-layout",
     "@kbn/workflows-ui",
     "@kbn/workflows-yaml",
     "@kbn/zod",

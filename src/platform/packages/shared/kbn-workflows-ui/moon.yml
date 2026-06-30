@@ -17,6 +17,7 @@ project:
   owner: '@elastic/workflows-eng'
   sourceRoot: src/platform/packages/shared/kbn-workflows-ui
 dependsOn:
+  - '@kbn/dag-layout'
   - '@kbn/react-query'
   - '@kbn/kibana-react-plugin'
   - '@kbn/workflows'
@@ -42,6 +43,7 @@ fileGroups:
   src:
     - '**/*.ts'
     - '**/*.tsx'
+    - '**/*.d.ts'
     - index.ts
     - '!target/**/*'
   jest-config:

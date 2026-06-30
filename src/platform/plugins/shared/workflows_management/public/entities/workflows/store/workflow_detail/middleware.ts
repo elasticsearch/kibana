@@ -9,22 +9,37 @@
 
 import type { AnyAction, Dispatch, Middleware, MiddlewareAPI } from '@reduxjs/toolkit';
 import { debounce } from 'lodash';
+import type { WorkflowYaml } from '@kbn/workflows';
 import { _clearComputedData, _setComputedDataInternal, setYamlString } from './slice';
 import { performComputation } from './utils/computation';
 import type { RootState } from '../types';
 
 const COMPUTATION_DEBOUNCE_MS = 500;
 
-const compute = (yamlString: string, store: MiddlewareAPI<Dispatch<AnyAction>, RootState>) => {
+const compute = (
+  yamlString: string,
+  store: MiddlewareAPI<Dispatch<AnyAction>, RootState>,
+  loadedDefinition?: WorkflowYaml
+) => {
   try {
-    const computed = performComputation(yamlString);
+    const computed = performComputation(yamlString, loadedDefinition);
     store.dispatch(_setComputedDataInternal(computed));
   } catch (e) {
     store.dispatch(_clearComputedData());
   }
 };
 
-const debouncedCompute = debounce(compute, COMPUTATION_DEBOUNCE_MS);
+// Intentionally does not accept `loadedDefinition`: once the user starts
+// editing, their in-progress YAML is the source of truth. The initial compute
+// (below, with `loadedDefinition`) is a one-time bootstrap so the graph can
+// render the server-parsed definition even when the client parser is stricter.
+// If the client parse later fails on a user edit, the stateful layer's
+// `lastValidRef` keeps the canvas showing the last successfully-parsed graph.
+const debouncedCompute = debounce(
+  (yamlString: string, store: MiddlewareAPI<Dispatch<AnyAction>, RootState>) =>
+    compute(yamlString, store),
+  COMPUTATION_DEBOUNCE_MS
+);
 
 // Side effects middleware - computes derived data when yamlString changes (debounced)
 const workflowComputationMiddleware: Middleware =
@@ -46,7 +61,10 @@ const workflowComputationMiddleware: Middleware =
 
       // Do computation immediately if not initialized yet, (computed is only undefined when never set)
       if (!computed) {
-        compute(yamlString, store);
+        // On initial load pass the server-parsed definition so the graph renders
+        // even when the client-side YAML parser can't handle the workflow's syntax.
+        const loadedDefinition = store.getState().detail.workflow?.definition ?? undefined;
+        compute(yamlString, store, loadedDefinition);
       } else {
         debouncedCompute(yamlString, store);
       }

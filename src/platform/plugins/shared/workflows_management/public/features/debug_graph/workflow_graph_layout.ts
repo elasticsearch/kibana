@@ -7,104 +7,101 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// Note: Dagre library types require dynamic handling for graph manipulation.
-// The `any` types are necessary for working with Dagre's graph structures.
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import dagre from '@dagrejs/dagre';
 import type { Node } from '@xyflow/react';
 import { Position } from '@xyflow/react';
+import { dagLayout } from '@kbn/dag-layout';
 import type { WorkflowGraph } from '@kbn/workflows/graph';
 
+const BASE_WIDTH = 100;
+const NODE_HEIGHT = 50;
+const DEPTH_WIDTH_INCREMENT = 70;
+
+interface NodeMeta {
+  node: ReturnType<WorkflowGraph['getNode']>;
+  currentDepth: number;
+  width: number;
+}
+
 /**
- * Converts a workflow graph into positioned ReactFlow nodes and edges using Dagre layout algorithm.
+ * Converts a workflow execution graph into positioned ReactFlow nodes and edges
+ * using @kbn/dag-layout. Node widths are scaled by nesting depth: outer control-flow
+ * nodes are wider than deeply-nested leaf nodes.
  *
- * @param graph - The dagre graph representation of the workflow
- * @returns Object containing positioned nodes and edges for ReactFlow
+ * Renders top-to-bottom (TB). The legacy BT orientation required reversed edges
+ * and is not supported by @kbn/dag-layout.
  */
 export function convertWorkflowGraphToReactFlow(graph: WorkflowGraph) {
   const topologySort = graph.topologicalOrder;
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setGraph({});
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-  // Set graph direction and spacing
-  dagreGraph.setGraph({
-    rankdir: 'BT', // Bottom-to-Top direction (reversed)
-    nodesep: 40,
-    ranksep: 40,
-    edgesep: 40,
-    marginx: 20,
-    marginy: 20,
-  });
-
-  const stack = [] as string[];
-  const baseWidth = 100;
+  // First pass: compute depth for each node via enter/exit scope stack.
+  const stack: string[] = [];
+  const nodeMeta = new Map<string, NodeMeta>();
   let maxDepth = 0;
 
-  topologySort
-    .map((nodeId) => graph.getNode(nodeId))
-    .forEach((node: any) => {
-      if (node.type.startsWith('exit')) {
-        stack.pop();
-      }
+  for (const nodeId of topologySort) {
+    const node = graph.getNode(nodeId);
+    if (node.type.startsWith('exit')) {
+      stack.pop();
+    }
+    const currentDepth = stack.length;
+    if (currentDepth > maxDepth) maxDepth = currentDepth;
+    nodeMeta.set(nodeId, { node, currentDepth, width: 0 });
+    if (node.type.startsWith('enter')) {
+      stack.push(node.type);
+    }
+  }
 
-      dagreGraph.setNode(node.id, {
-        node,
-        type: (node as any).type,
-        currentDepth: stack.length,
-      });
-      if (stack.length > maxDepth) {
-        maxDepth = stack.length;
-      }
-      if (node.type.startsWith('enter')) {
-        stack.push(node.type);
-      }
-    });
-  dagreGraph
-    .nodes()
-    .map((id) => ({ id, node: dagreGraph.node(id) as any }))
-    .forEach((x) =>
-      dagreGraph.setNode(x.id, {
-        ...x.node,
-        width:
-          x.node.currentDepth === maxDepth
-            ? baseWidth
-            : baseWidth + (maxDepth - x.node.currentDepth) * 70,
-        height: 50,
-      })
-    );
+  // Second pass: assign widths — outer nodes are wider, deepest nodes use BASE_WIDTH.
+  for (const meta of nodeMeta.values()) {
+    meta.width =
+      meta.currentDepth === maxDepth
+        ? BASE_WIDTH
+        : BASE_WIDTH + (maxDepth - meta.currentDepth) * DEPTH_WIDTH_INCREMENT;
+  }
 
-  graph.getEdges().forEach((edge) => {
-    // Reverse source and destination for BT layout
-    dagreGraph.setEdge(edge.w, edge.v, {
-      type: 'workflowEdge',
-    });
+  const dagNodes = Array.from(nodeMeta.entries()).map(([id, meta]) => ({
+    id,
+    width: meta.width,
+    height: NODE_HEIGHT,
+  }));
+
+  const dagEdges = graph.getEdges().map((edge) => ({
+    id: `${edge.v} -> ${edge.w}`,
+    source: edge.v,
+    target: edge.w,
+  }));
+
+  const { nodes: positionedNodes } = dagLayout(dagNodes, dagEdges, [], {
+    direction: 'TB',
+    nodeSep: 40,
+    rankSep: 40,
   });
 
-  dagre.layout(dagreGraph);
+  const positionById = new Map(positionedNodes.map((n) => [n.id, n]));
 
-  const nodes = graph.getAllNodes().map((graphNode) => {
-    const dagreNode = dagreGraph.node(graphNode.id);
+  const nodes: Node[] = graph.getAllNodes().map((graphNode) => {
+    const pos = positionById.get(graphNode.id);
+    const meta = nodeMeta.get(graphNode.id);
+    const width = meta?.width ?? BASE_WIDTH;
 
     return {
       id: graphNode.id,
       data: {
-        ...dagreNode,
-        stepType: graphNode?.type,
-        step: (graphNode as any)?.configuration,
-        label: graphNode?.id,
+        node: graphNode,
+        type: graphNode.type,
+        currentDepth: meta?.currentDepth ?? 0,
+        stepType: graphNode.type,
+        step: 'configuration' in graphNode ? graphNode.configuration : undefined,
+        label: graphNode.id,
+        width,
+        height: NODE_HEIGHT,
       },
-      // See this: https://github.com/dagrejs/dagre/issues/287
-      targetPosition: Position.Bottom, // Reversed due to BT layout
-      sourcePosition: Position.Top, // Reversed due to BT layout
-      style: {
-        width: dagreNode.width as number,
-        height: dagreNode.height as number,
-      },
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
+      style: { width, height: NODE_HEIGHT },
       type: graphNode.type,
-      position: { x: dagreNode.x - dagreNode.width / 2, y: dagreNode.y - dagreNode.height / 2 },
-    } as Node;
+      position: { x: pos?.x ?? 0, y: pos?.y ?? 0 },
+    };
   });
 
   const edges = graph.getEdges().map((e) => ({

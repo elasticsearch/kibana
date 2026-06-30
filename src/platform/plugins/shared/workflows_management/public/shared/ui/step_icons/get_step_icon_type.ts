@@ -57,6 +57,17 @@ export const getStepIconType = (nodeType: string): IconType => {
       break;
     // `workflow` (bare base type) is handled in StepIcon's BASE_TYPE_AGGREGATE_ICONS.
 
+    // trigger nodes
+    case 'manual':
+      iconType = HardcodedIcons.manual;
+      break;
+    case 'alert':
+      iconType = HardcodedIcons.alert;
+      break;
+    case 'scheduled':
+      iconType = HardcodedIcons.scheduled;
+      break;
+
     // flow control nodes
     case 'wait':
       iconType = 'clock';

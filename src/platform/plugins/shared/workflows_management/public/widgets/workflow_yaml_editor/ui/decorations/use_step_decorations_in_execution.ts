@@ -15,12 +15,14 @@ import { monaco } from '@kbn/monaco';
 import {
   selectEditorWorkflowLookup,
   selectHighlightedStepId,
+  selectIsExecutionsTab,
   selectStepExecutions,
 } from '../../../../entities/workflows/store';
 
 export const useStepDecorationsInExecution = (
   editor: monaco.editor.IStandaloneCodeEditor | null
 ) => {
+  const isExecutionsTab = useSelector(selectIsExecutionsTab);
   const stepExecutions = useSelector(selectStepExecutions);
   const workflowLookup = useSelector(selectEditorWorkflowLookup);
   const highlightedStepId = useSelector(selectHighlightedStepId);
@@ -34,7 +36,10 @@ export const useStepDecorationsInExecution = (
   useEffect(() => {
     decorationsCollection?.clear();
 
-    if (!stepExecutions?.length || !workflowLookup?.steps) {
+    // Execution decorations are only meaningful on the read-only executions tab.
+    // On the editable workflow tab the editor content diverges from the saved execution
+    // (the user may be editing), so painting step-execution colours would be misleading.
+    if (!isExecutionsTab || !stepExecutions?.length || !workflowLookup?.steps) {
       return;
     }
 
@@ -85,7 +90,7 @@ export const useStepDecorationsInExecution = (
       return [glyphDecoration, backgroundDecoration];
     });
     decorationsCollection?.set(decorations);
-  }, [stepExecutions, decorationsCollection, workflowLookup, highlightedStepId]);
+  }, [isExecutionsTab, stepExecutions, decorationsCollection, workflowLookup, highlightedStepId]);
 
   const { colors } = useEuiTheme().euiTheme;
   const styles = useMemo(

@@ -9,6 +9,7 @@
 
 import { createSlice } from '@reduxjs/toolkit';
 import type { EsWorkflow, WorkflowDetailDto, WorkflowExecutionDto } from '@kbn/workflows';
+import { WORKFLOW_GRAPH_FOCUS_TRIGGER } from '@kbn/workflows';
 import type { ActiveTab, ComputedData, LineColumnPosition, WorkflowDetailState } from './types';
 import { addLoadingStateReducers, initialLoadingState } from './utils/loading_states';
 import { findStepByLine } from './utils/step_finder';
@@ -21,7 +22,7 @@ import type { WorkflowsResponse } from '../../model/types';
  * triggers section.  Shared between the execution-detail component (producer)
  * and the YAML editor (consumer).
  */
-export const HIGHLIGHTED_STEP_TRIGGER = '__trigger';
+export const HIGHLIGHTED_STEP_TRIGGER = WORKFLOW_GRAPH_FOCUS_TRIGGER;
 
 export const initialWorkflowsState: WorkflowsResponse = {
   workflows: {},

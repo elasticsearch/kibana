@@ -17,6 +17,8 @@ import { useStepDecorationsInExecution } from './use_step_decorations_in_executi
 import { createMockStore } from '../../../../entities/workflows/store/__mocks__/store.mock';
 import {
   _setComputedDataInternal,
+  _setComputedExecution,
+  setActiveTab,
   setExecution,
   setHighlightedStepId,
   setYamlString,
@@ -137,16 +139,23 @@ const createMockEditor = () => {
 // createStepInfo imported from shared/test_utils
 
 // Helper to render hook with Redux provider
+// Defaults to 'executions' tab because execution decorations only apply in that context.
 const renderHookWithProviders = (
   editor: monaco.editor.IStandaloneCodeEditor | null,
-  initialYaml: string = 'version: "1"\nname: test'
+  initialYaml: string = 'version: "1"\nname: test',
+  initialActiveTab: 'executions' | 'workflow' = 'executions'
 ) => {
   const store = createMockStore();
 
   // Set initial YAML to trigger lookup computation
   store.dispatch(setYamlString(initialYaml));
+  store.dispatch(setActiveTab(initialActiveTab));
 
-  // Set workflowLookup in computed state using internal action
+  // Set workflowLookup in computed state using internal action.
+  // Both state.computed and state.computedExecution are populated because
+  // selectEditorComputed switches to computedExecution once an execution with
+  // YAML is loaded and isExecutionsTab is true. Pre-seeding both ensures the
+  // workflowLookup is available regardless of which path the selector takes.
   const computedData: ComputedData = {
     workflowLookup: {
       steps: {
@@ -162,6 +171,7 @@ const renderHookWithProviders = (
     },
   };
   store.dispatch(_setComputedDataInternal(computedData));
+  store.dispatch(_setComputedExecution(computedData));
 
   const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(Provider, { store }, children);
@@ -438,6 +448,60 @@ describe('useStepDecorationsInExecution', () => {
       const decorations = decorationsCollection.set.mock.calls[0][0];
 
       expect(decorations).toHaveLength(0);
+    });
+
+    it('should NOT set decorations when stepExecutions are present but editor is on the workflow (editable) tab', async () => {
+      // Regression: after a test-run the execution populates Redux, but the user is still
+      // on the editable YAML tab. Decorations must NOT paint over the editable YAML.
+      const mockEditor = createMockEditor();
+      const { store, rerender } = renderHookWithProviders(mockEditor);
+
+      act(() => {
+        store.dispatch(setActiveTab('workflow')); // editable tab — NOT executions
+        store.dispatch(
+          setExecution(
+            createExecution([
+              createStepExecution({ stepId: 'step-1', status: ExecutionStatus.COMPLETED }),
+            ])
+          )
+        );
+        rerender();
+      });
+
+      const decorationsCollection = (mockEditor.createDecorationsCollection as jest.Mock).mock
+        .results[0].value;
+
+      // Must not paint decorations on the editable YAML editor
+      await waitFor(() => {
+        expect(decorationsCollection.set).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should set decorations when on the executions (read-only) tab', async () => {
+      const mockEditor = createMockEditor();
+      const { store, rerender } = renderHookWithProviders(mockEditor);
+
+      act(() => {
+        store.dispatch(setActiveTab('executions')); // read-only executions tab
+        store.dispatch(
+          setExecution(
+            createExecution([
+              createStepExecution({ stepId: 'step-1', status: ExecutionStatus.COMPLETED }),
+            ])
+          )
+        );
+        rerender();
+      });
+
+      const decorationsCollection = (mockEditor.createDecorationsCollection as jest.Mock).mock
+        .results[0].value;
+
+      await waitFor(() => {
+        expect(decorationsCollection.set).toHaveBeenCalled();
+      });
+
+      const decorations = decorationsCollection.set.mock.calls[0][0];
+      expect(decorations.length).toBeGreaterThan(0);
     });
 
     it('should update decorations when stepExecutions changes', () => {

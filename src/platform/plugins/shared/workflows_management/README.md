@@ -57,6 +57,19 @@ POST kbn://internal/kibana/settings
 }
 ```
 
+### Workflow graph viewer
+
+The read-only graph viewer is disabled by default.
+
+Enable the Workflow Experimental flag in Advanced Settings, then enable in `kibana.yml` the following flag:
+
+```yml
+uiSettings.overrides:
+  workflows:ui:visualEditor:enabled: true
+```
+
+Restart Kibana after changing this value. In the workflow editor, open the actions menu (⌘K / Ctrl+K) and look under **Commands** for **Toggle graph editor** (or search for `graph`).
+
 ---
 
 ## Overview

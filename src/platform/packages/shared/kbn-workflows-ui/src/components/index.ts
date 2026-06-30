@@ -8,3 +8,4 @@
  */
 
 export * from './workflow_selector';
+export * from './workflow_graph';

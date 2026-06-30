@@ -52,3 +52,9 @@ export const WORKFLOW_SML_TYPE = 'workflow';
  * attachment is created or modified by an agent tool.
  */
 export const WORKFLOW_YAML_CHANGED_EVENT = 'workflow:yaml_changed';
+
+/**
+ * Sentinel `focusStepId` for {@link WorkflowGraphCanvas}: centre on the first
+ * trigger node. Matches `HIGHLIGHTED_STEP_TRIGGER` in workflows_management.
+ */
+export const WORKFLOW_GRAPH_FOCUS_TRIGGER = '__trigger';

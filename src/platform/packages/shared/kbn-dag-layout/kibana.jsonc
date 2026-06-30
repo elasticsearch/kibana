@@ -1,0 +1,7 @@
+{
+  "type": "shared-common",
+  "id": "@kbn/dag-layout",
+  "owner": ["@elastic/workflows-eng"],
+  "group": "platform",
+  "visibility": "shared"
+}

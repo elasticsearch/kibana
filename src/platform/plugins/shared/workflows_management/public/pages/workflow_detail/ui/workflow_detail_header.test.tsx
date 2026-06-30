@@ -11,11 +11,8 @@ import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
 import { useWorkflowsCapabilities, type WorkflowsManagementCapabilities } from '@kbn/workflows-ui';
 import { createMockWorkflowsCapabilities } from '@kbn/workflows-ui/mocks';
-import {
-  SkipUnsavedRunConfirmationStorageKey,
-  WorkflowDetailHeader,
-  type WorkflowDetailHeaderProps,
-} from './workflow_detail_header';
+import { SkipUnsavedRunConfirmationStorageKey } from './use_run_workflow_with_confirmation';
+import { WorkflowDetailHeader, type WorkflowDetailHeaderProps } from './workflow_detail_header';
 import { PLUGIN_ID } from '../../../../common';
 import { createMockStore } from '../../../entities/workflows/store/__mocks__/store.mock';
 import {
@@ -64,6 +61,9 @@ jest.mock('../../../entities/workflows/model/use_update_workflow', () => ({
 }));
 jest.mock('@kbn/css-utils/public/use_memo_css', () => ({
   useMemoCss: (styles: any) => mockUseMemoCss(styles),
+}));
+jest.mock('../../../hooks/use_workflows_experimental_ui_setting', () => ({
+  useWorkflowsExperimentalUiSetting: jest.fn().mockReturnValue(false),
 }));
 jest.mock('./workflow_detail_actions_menu', () => ({
   WorkflowDetailActionsMenu: () => <div data-test-subj="workflowChangeHistoryEmbed" />,
@@ -209,21 +209,6 @@ describe('WorkflowDetailHeader', () => {
     expect(getByTestId('saveWorkflowHeaderButton')).not.toBeDisabled();
   });
 
-  it('disables run workflow button when yaml has syntax errors', () => {
-    const result = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />, {
-      isValid: false,
-    });
-    expect(result.getByTestId('runWorkflowHeaderButton')).toBeDisabled();
-  });
-
-  it('enables run workflow button when yaml has validation errors', () => {
-    const result = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />, {
-      isValid: true,
-      hasYamlSchemaValidationErrors: true,
-    });
-    expect(result.getByTestId('runWorkflowHeaderButton')).toBeEnabled();
-  });
-
   it('disables enabled toggle when yaml has validation errors', () => {
     const result = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />, {
       isValid: true,
@@ -365,7 +350,6 @@ describe('WorkflowDetailHeader', () => {
     interface MatrixRow {
       roleLabel: string;
       capabilities: Partial<WorkflowsManagementCapabilities>;
-      expectRunDisabled: boolean;
       expectSaveDisabled: boolean;
       expectEnabledSwitchDisabled: boolean;
       expectExecutionsTabDisabled: boolean;
@@ -383,7 +367,6 @@ describe('WorkflowDetailHeader', () => {
           canExecuteWorkflow: false,
           canCancelWorkflowExecution: false,
         },
-        expectRunDisabled: true,
         expectSaveDisabled: true,
         expectEnabledSwitchDisabled: true,
         expectExecutionsTabDisabled: false,
@@ -399,7 +382,6 @@ describe('WorkflowDetailHeader', () => {
           canExecuteWorkflow: true,
           canCancelWorkflowExecution: false,
         },
-        expectRunDisabled: false,
         expectSaveDisabled: true,
         expectEnabledSwitchDisabled: true,
         expectExecutionsTabDisabled: false,
@@ -415,7 +397,6 @@ describe('WorkflowDetailHeader', () => {
           canExecuteWorkflow: true,
           canCancelWorkflowExecution: false,
         },
-        expectRunDisabled: false,
         expectSaveDisabled: true,
         expectEnabledSwitchDisabled: false,
         expectExecutionsTabDisabled: false,
@@ -431,7 +412,6 @@ describe('WorkflowDetailHeader', () => {
           canExecuteWorkflow: true,
           canCancelWorkflowExecution: false,
         },
-        expectRunDisabled: false,
         expectSaveDisabled: true,
         expectEnabledSwitchDisabled: false,
         expectExecutionsTabDisabled: true,
@@ -439,10 +419,9 @@ describe('WorkflowDetailHeader', () => {
     ];
 
     it.each(matrix)(
-      '$roleLabel: run disabled=$expectRunDisabled, save=$expectSaveDisabled, enabled switch=$expectEnabledSwitchDisabled, executions tab=$expectExecutionsTabDisabled',
+      '$roleLabel: save=$expectSaveDisabled, enabled switch=$expectEnabledSwitchDisabled, executions tab=$expectExecutionsTabDisabled',
       ({
         capabilities,
-        expectRunDisabled,
         expectSaveDisabled,
         expectEnabledSwitchDisabled,
         expectExecutionsTabDisabled,
@@ -453,14 +432,8 @@ describe('WorkflowDetailHeader', () => {
         });
 
         const result = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />);
-        const runBtn = result.getByTestId('runWorkflowHeaderButton');
         const saveBtn = result.getByTestId('saveWorkflowHeaderButton');
 
-        if (expectRunDisabled) {
-          expect(runBtn).toBeDisabled();
-        } else {
-          expect(runBtn).not.toBeDisabled();
-        }
         if (expectSaveDisabled) {
           expect(saveBtn).toBeDisabled();
         } else {

@@ -12,7 +12,8 @@
     "@kbn/utility-types",
     "@kbn/core",
     "@kbn/repo-info",
-    "@kbn/human-readable-id"
+    "@kbn/human-readable-id",
+    "@kbn/std"
   ],
   "exclude": ["target/**/*"]
 }

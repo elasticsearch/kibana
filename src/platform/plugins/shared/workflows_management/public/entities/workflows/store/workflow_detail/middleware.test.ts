@@ -59,7 +59,7 @@ describe('workflowComputationMiddleware', () => {
     // Computed starts as undefined, so first dispatch triggers immediate computation
     store.dispatch(setYamlString('name: test'));
 
-    expect(performComputation).toHaveBeenCalledWith('name: test');
+    expect(performComputation).toHaveBeenCalledWith('name: test', undefined);
     expect(store.getState().detail.computed).toEqual(mockComputed);
   });
 
@@ -86,7 +86,7 @@ describe('workflowComputationMiddleware', () => {
     // Advance timers past the debounce window (500ms)
     jest.advanceTimersByTime(500);
 
-    expect(performComputation).toHaveBeenCalledWith('name: test2');
+    expect(performComputation).toHaveBeenCalledWith('name: test2', undefined);
 
     jest.useRealTimers();
   });
@@ -146,7 +146,7 @@ describe('workflowComputationMiddleware', () => {
     jest.advanceTimersByTime(500);
 
     expect(performComputation).toHaveBeenCalledTimes(1);
-    expect(performComputation).toHaveBeenCalledWith('name: third');
+    expect(performComputation).toHaveBeenCalledWith('name: third', undefined);
 
     jest.useRealTimers();
   });

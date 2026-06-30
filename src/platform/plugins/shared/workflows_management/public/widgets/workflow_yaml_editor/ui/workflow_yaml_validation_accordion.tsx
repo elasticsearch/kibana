@@ -217,7 +217,7 @@ export const WorkflowYamlValidationAccordion = React.memo(function WorkflowYamlV
         </EuiFlexGroup>
       }
       arrowDisplay={allValidationErrors?.length > 0 ? 'left' : 'none'}
-      initialIsOpen={allValidationErrors?.length > 0}
+      initialIsOpen={false}
       isDisabled={allValidationErrors?.length === 0}
       css={styles.accordion}
       extraAction={extraAction}

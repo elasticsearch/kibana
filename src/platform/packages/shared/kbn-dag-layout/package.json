@@ -1,0 +1,10 @@
+{
+  "name": "@kbn/dag-layout",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Domain-free dagre layout engine for compound graphs",
+  "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "sideEffects": false
+}
