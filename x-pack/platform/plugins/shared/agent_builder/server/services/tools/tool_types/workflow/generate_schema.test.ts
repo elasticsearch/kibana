@@ -96,6 +96,42 @@ describe('generateSchema', () => {
     expect(jsonSchema.properties?.query).not.toHaveProperty('enum');
   });
 
+  it('maps legacy root-level inputs to workflow tool parameters', () => {
+    const workflow = buildWorkflow({
+      definition: {
+        name: 'Test',
+        version: '1',
+        enabled: true,
+        steps: [],
+        triggers: [{ type: 'manual' }],
+        inputs: [
+          {
+            name: 'query',
+            type: 'string' as const,
+            required: true,
+            description: 'Search query',
+          },
+          {
+            name: 'limit',
+            type: 'number' as const,
+            required: false,
+          },
+        ],
+      } as WorkflowDetailDto['definition'],
+    });
+
+    const schema = generateSchema({ workflow });
+    const jsonSchema = z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' });
+
+    expect(jsonSchema.properties?.query).toMatchObject({
+      type: 'string',
+      description: 'Search query',
+    });
+    expect(jsonSchema.properties?.limit).toMatchObject({ type: 'number' });
+    expect(jsonSchema.required).toContain('query');
+    expect(jsonSchema.required).not.toContain('limit');
+  });
+
   it('maps JSON Schema object inputs with string enum to the same enum list', () => {
     const workflow = buildWorkflow({
       definition: {
