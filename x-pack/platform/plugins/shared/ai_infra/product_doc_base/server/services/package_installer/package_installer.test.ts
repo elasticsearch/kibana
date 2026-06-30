@@ -36,6 +36,7 @@ import type { InferenceTaskType } from '@elastic/elasticsearch/lib/api/types';
 
 const artifactsFolder = '/lost';
 const artifactRepositoryUrl = 'https://repository.com';
+const artifactRepositoryProxyUrl = 'http://proxy.example.com:3128';
 const kibanaVersion = '8.16.3';
 
 const callOrder = (fn: { mock: { invocationCallOrder: number[] } }): number => {
@@ -297,6 +298,91 @@ describe('PackageInstaller', () => {
         productName: 'kibana',
         productVersion: '8.16',
       });
+    });
+
+    it('passes the artifact repository proxy URL when fetching versions', async () => {
+      const proxyPackageInstaller = new PackageInstaller({
+        artifactsFolder,
+        logger,
+        esClient,
+        productDocClient,
+        artifactRepositoryUrl,
+        artifactRepositoryProxyUrl,
+        kibanaVersion,
+      });
+
+      fetchArtifactVersionsMock.mockResolvedValue({
+        kibana: ['8.16'],
+        security: [],
+        elasticsearch: [],
+        observability: [],
+        openapi: [],
+      });
+
+      productDocClient.getInstallationStatus.mockResolvedValue({
+        kibana: { status: 'uninstalled' },
+        security: { status: 'uninstalled' },
+        elasticsearch: { status: 'uninstalled' },
+        observability: { status: 'uninstalled' },
+      } as Record<ProductName, ProductInstallState>);
+
+      productDocClient.getOpenapiSpecInstallationStatus.mockResolvedValue({
+        status: 'uninstalled',
+      });
+
+      await proxyPackageInstaller.ensureUpToDate({ inferenceId: defaultInferenceEndpoints.ELSER });
+
+      expect(fetchArtifactVersionsMock).toHaveBeenCalledWith({
+        artifactRepositoryUrl,
+        artifactRepositoryProxyUrl,
+      });
+    });
+  });
+
+  describe('artifact repository proxy', () => {
+    let proxyPackageInstaller: PackageInstaller;
+
+    beforeEach(() => {
+      proxyPackageInstaller = new PackageInstaller({
+        artifactsFolder,
+        logger,
+        esClient,
+        productDocClient,
+        artifactRepositoryUrl,
+        artifactRepositoryProxyUrl,
+        kibanaVersion,
+      });
+    });
+
+    it('passes the proxy URL to fetchArtifactVersions in installAll', async () => {
+      jest.spyOn(proxyPackageInstaller, 'installPackage').mockResolvedValue(undefined as never);
+
+      fetchArtifactVersionsMock.mockResolvedValue({
+        kibana: ['8.16'],
+      });
+
+      await proxyPackageInstaller.installAll();
+
+      expect(fetchArtifactVersionsMock).toHaveBeenCalledWith({
+        artifactRepositoryUrl,
+        artifactRepositoryProxyUrl,
+      });
+    });
+
+    it('passes the proxy URL to downloadToDisk in installPackage', async () => {
+      const zipArchive = {
+        close: jest.fn(),
+      };
+      openZipArchiveMock.mockResolvedValue(zipArchive);
+      downloadToDiskMock.mockResolvedValue(`${artifactsFolder}/artifact.zip`);
+
+      await proxyPackageInstaller.installPackage({ productName: 'kibana', productVersion: '8.16' });
+
+      expect(downloadToDiskMock).toHaveBeenCalledWith(
+        expect.stringContaining(artifactRepositoryUrl),
+        expect.any(String),
+        artifactRepositoryProxyUrl
+      );
     });
   });
 

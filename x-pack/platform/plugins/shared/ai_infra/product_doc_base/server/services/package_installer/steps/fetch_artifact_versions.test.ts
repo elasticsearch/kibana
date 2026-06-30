@@ -6,6 +6,7 @@
  */
 
 import * as fs from 'fs';
+import { ProxyAgent } from 'undici';
 import { fetchArtifactVersions } from './fetch_artifact_versions';
 import type { ProductName } from '@kbn/product-doc-common';
 import { getArtifactName, DocumentationProduct } from '@kbn/product-doc-common';
@@ -86,6 +87,17 @@ describe('fetchArtifactVersions', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(`${artifactRepositoryUrl}?max-keys=1000`, {});
+  });
+
+  it('passes a proxy dispatcher to fetch when a proxy URL is configured', async () => {
+    mockResponse(createResponse({ artifactNames: [] }));
+    const artifactRepositoryProxyUrl = 'http://proxy.example.com:3128';
+
+    await fetchArtifactVersions({ artifactRepositoryUrl, artifactRepositoryProxyUrl });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const fetchOptions = fetchMock.mock.calls[0][1] as { dispatcher?: ProxyAgent };
+    expect(fetchOptions.dispatcher).toBeInstanceOf(ProxyAgent);
   });
 
   it('parses the local file', async () => {

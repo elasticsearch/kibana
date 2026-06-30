@@ -109,6 +109,16 @@ export class PackageInstaller {
     this.isServerless = isServerless ?? false;
   }
 
+  private getArtifactRepositoryOptions(): {
+    artifactRepositoryUrl: string;
+    artifactRepositoryProxyUrl?: string;
+  } {
+    return {
+      artifactRepositoryUrl: this.artifactRepositoryUrl,
+      artifactRepositoryProxyUrl: this.artifactRepositoryProxyUrl,
+    };
+  }
+
   private async getInferenceInfo(inferenceId?: string) {
     if (!inferenceId) {
       return;
@@ -128,9 +138,7 @@ export class PackageInstaller {
     const { inferenceId, forceUpdate } = params;
     const inferenceInfo = await this.getInferenceInfo(inferenceId);
     const [repositoryVersions, installStatuses, openapiSpecInstallStatus] = await Promise.all([
-      fetchArtifactVersions({
-        artifactRepositoryUrl: this.artifactRepositoryUrl,
-      }),
+      fetchArtifactVersions(this.getArtifactRepositoryOptions()),
       this.productDocClient.getInstallationStatus({ inferenceId }),
       this.productDocClient.getOpenapiSpecInstallationStatus({ inferenceId }),
     ]);
@@ -195,10 +203,7 @@ export class PackageInstaller {
 
   async installAll(params: { inferenceId?: string } = {}) {
     const { inferenceId } = params;
-    const repositoryVersions = await fetchArtifactVersions({
-      artifactRepositoryUrl: this.artifactRepositoryUrl,
-      artifactRepositoryProxyUrl: this.artifactRepositoryProxyUrl,
-    });
+    const repositoryVersions = await fetchArtifactVersions(this.getArtifactRepositoryOptions());
     const allProducts = Object.values(DocumentationProduct) as ProductName[];
     const inferenceInfo = await this.getInferenceInfo(inferenceId);
 
@@ -447,10 +452,9 @@ export class PackageInstaller {
       // Determine version to install
       selectedVersion = version;
       if (!selectedVersion) {
-        const availableVersions = await fetchSecurityLabsVersions({
-          artifactRepositoryUrl: this.artifactRepositoryUrl,
-          artifactRepositoryProxyUrl: this.artifactRepositoryProxyUrl,
-        });
+        const availableVersions = await fetchSecurityLabsVersions(
+          this.getArtifactRepositoryOptions()
+        );
         if (availableVersions.length === 0) {
           throw new Error('No Security Labs versions available');
         }
@@ -573,9 +577,7 @@ export class PackageInstaller {
       // Compute latest version (best-effort) for UX and auto-update checks.
       let repoLatestVersion: string | undefined;
       try {
-        const versions = await fetchSecurityLabsVersions({
-          artifactRepositoryUrl: this.artifactRepositoryUrl,
-        });
+        const versions = await fetchSecurityLabsVersions(this.getArtifactRepositoryOptions());
         if (versions.length > 0) {
           repoLatestVersion = versions.slice().sort().reverse()[0];
         }
@@ -624,9 +626,7 @@ export class PackageInstaller {
       return;
     }
 
-    const availableVersions = await fetchSecurityLabsVersions({
-      artifactRepositoryUrl: this.artifactRepositoryUrl,
-    });
+    const availableVersions = await fetchSecurityLabsVersions(this.getArtifactRepositoryOptions());
     if (availableVersions.length === 0) {
       return;
     }
@@ -944,10 +944,7 @@ export class PackageInstaller {
     let lastError: Error | undefined;
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        return await fetchArtifactVersions({
-          artifactRepositoryUrl: this.artifactRepositoryUrl,
-          artifactRepositoryProxyUrl: this.artifactRepositoryProxyUrl,
-        });
+        return await fetchArtifactVersions(this.getArtifactRepositoryOptions());
       } catch (error) {
         lastError = error as Error;
         if (attempt < retries) {

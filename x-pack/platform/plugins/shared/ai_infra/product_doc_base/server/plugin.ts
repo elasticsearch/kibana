@@ -81,13 +81,14 @@ export class ProductDocBasePlugin
       log: this.logger,
     });
 
+    const productDocConfig = this.context.config.get();
     const packageInstaller = new PackageInstaller({
       esClient: core.elasticsearch.client.asInternalUser,
       productDocClient,
       kibanaVersion: this.context.env.packageInfo.version,
       artifactsFolder: 'ai-kb-artifacts',
-      artifactRepositoryUrl: this.context.config.get().artifactRepositoryUrl,
-      artifactRepositoryProxyUrl: this.context.config.get().artifactRepositoryProxyUrl,
+      artifactRepositoryUrl: productDocConfig.artifactRepositoryUrl,
+      artifactRepositoryProxyUrl: productDocConfig.artifactRepositoryProxyUrl,
       elserInferenceId: this.context.config.get().elserInferenceId,
       logger: this.logger.get('package-installer'),
       isServerless,

@@ -6,6 +6,7 @@
  */
 
 import { createReadStream } from 'fs';
+import { ProxyAgent } from 'undici';
 import { downloadToDisk } from './download';
 
 jest.mock('@kbn/fs', () => ({
@@ -43,6 +44,26 @@ describe('downloadToDisk', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('passes a proxy dispatcher to fetch when a proxy URL is configured', async () => {
+    const mockResponseBody = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('test content'));
+        controller.close();
+      },
+    });
+
+    fetchMock.mockResolvedValue({
+      body: mockResponseBody,
+    } as unknown as Response);
+
+    const artifactRepositoryProxyUrl = 'http://proxy.example.com:3128';
+    await downloadToDisk(mockFileUrl, mockFilePathAtVolume, artifactRepositoryProxyUrl);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const fetchOptions = fetchMock.mock.calls[0][1] as { dispatcher?: ProxyAgent };
+    expect(fetchOptions.dispatcher).toBeInstanceOf(ProxyAgent);
   });
 
   it('should download a file from a remote URL', async () => {
