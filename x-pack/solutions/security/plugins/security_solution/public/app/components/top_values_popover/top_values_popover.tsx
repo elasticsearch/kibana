@@ -53,6 +53,9 @@ export const TopValuesPopover = React.memo(() => {
         toggleTopN={onClose}
         dataView={dataView}
         browserFields={browserFields}
+        activeTimelineEventsTypeOverride={
+          data.fieldName === 'kibana.alert.workflow_status' ? 'alert' : undefined
+        }
       />
     </EuiWrappingPopover>
   );

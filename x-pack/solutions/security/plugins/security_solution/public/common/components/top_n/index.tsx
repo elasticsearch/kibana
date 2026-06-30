@@ -25,6 +25,7 @@ import type { TimelineModel } from '../../../timelines/store/model';
 
 import { getOptions, isDetectionsAlertsTable } from './helpers';
 import { TopN } from './top_n';
+import type { TimelineEventsType } from '../../../../common/types/timeline';
 import { TimelineId, TimelineTabs } from '../../../../common/types/timeline';
 import type { AlertsStackByField } from '../../../detections/components/alerts_kpis/common/types';
 
@@ -83,6 +84,7 @@ export interface OwnProps {
   onFilterAdded?: () => void;
   paddingSize?: 's' | 'm' | 'l' | 'none';
   globalFilters?: Filter[];
+  activeTimelineEventsTypeOverride?: TimelineEventsType;
 }
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
@@ -105,11 +107,21 @@ const StatefulTopNComponent: React.FC<Props> = ({
   paddingSize,
   scopeId,
   toggleTopN,
+  activeTimelineEventsTypeOverride,
 }) => {
   const { uiSettings } = useKibana().services;
   const { from, deleteQuery, to } = useGlobalTime();
 
-  const options = getOptions(isActiveTimeline(scopeId ?? '') ? activeTimelineEventType : undefined);
+  const isTimelineActive = isActiveTimeline(scopeId ?? '');
+
+  const timelineEventsType = useMemo(() => {
+    if (activeTimelineEventsTypeOverride) {
+      return activeTimelineEventsTypeOverride;
+    }
+    return isTimelineActive ? activeTimelineEventType : undefined;
+  }, [activeTimelineEventType, activeTimelineEventsTypeOverride, isTimelineActive]);
+
+  const options = getOptions(timelineEventsType);
   const applyGlobalQueriesAndFilters = !isActiveTimeline(scopeId ?? '');
 
   const combinedQueries = useMemo(
