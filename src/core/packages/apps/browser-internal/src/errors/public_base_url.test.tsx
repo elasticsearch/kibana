@@ -98,6 +98,12 @@ describe('publicBaseUrl warning', () => {
       expect(addWarningToastSpy).toHaveBeenCalledWith({
         title: 'Configuration recommended',
         text: expect.any(Function),
+        actionProps: {
+          primary: expect.objectContaining({
+            id: 'mute',
+            'data-test-subj': 'mutePublicBaseUrlWarningButton',
+          }),
+        },
       });
     });
 

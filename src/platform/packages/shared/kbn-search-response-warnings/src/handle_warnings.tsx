@@ -7,17 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React from 'react';
-import { EuiButtonEmpty, EuiText } from '@elastic/eui';
 import type { estypes } from '@elastic/elasticsearch';
-import type {
-  AnalyticsServiceStart,
-  NotificationsStart,
-  ThemeServiceStart,
-  UserProfileService,
-} from '@kbn/core/public';
-import { toMountPoint } from '@kbn/react-kibana-mount';
-import type { I18nStart } from '@kbn/core-i18n-browser';
+import type { NotificationsStart } from '@kbn/core/public';
 import type { Start as InspectorStart, RequestAdapter } from '@kbn/inspector-plugin/public';
 import type {
   SearchResponseIncompleteWarning,
@@ -32,12 +23,8 @@ import {
 } from './components/search_response_warnings/i18n_utils';
 
 interface Services {
-  analytics: AnalyticsServiceStart;
-  i18n: I18nStart;
   inspector: InspectorStart;
   notifications: NotificationsStart;
-  theme: ThemeServiceStart;
-  userProfile: UserProfileService;
 }
 
 /**
@@ -88,22 +75,16 @@ export function handleWarnings({
   const [incompleteWarning] = incompleteWarnings as SearchResponseIncompleteWarning[];
   services.notifications.toasts.addWarning({
     title: getWarningsTitle([incompleteWarning]),
-    text: toMountPoint(
-      <>
-        <EuiText size="s">{getWarningsDescription([incompleteWarning])}</EuiText>
-        <EuiButtonEmpty
-          color="primary"
-          flush="left"
-          onClick={() => {
-            incompleteWarning.openInInspector();
-          }}
-          data-test-subj="viewWarningBtn"
-        >
-          {viewDetailsLabel}
-        </EuiButtonEmpty>
-      </>,
-      services
-    ),
+    text: getWarningsDescription([incompleteWarning]),
+    actionProps: {
+      primary: {
+        onClick: () => {
+          incompleteWarning.openInInspector();
+        },
+        'data-test-subj': 'viewWarningBtn',
+        children: viewDetailsLabel,
+      },
+    },
   });
 }
 

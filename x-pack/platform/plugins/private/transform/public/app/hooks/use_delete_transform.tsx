@@ -5,11 +5,10 @@
  * 2.0.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useMutation } from '@kbn/react-query';
 
 import { i18n } from '@kbn/i18n';
-import { toMountPoint } from '@kbn/react-kibana-mount';
 import { extractErrorMessage } from '@kbn/ml-error-utils';
 
 import type {
@@ -21,7 +20,7 @@ import { getErrorMessage } from '../../../common/utils/errors';
 
 import { useAppDependencies, useToastNotifications } from '../app_dependencies';
 import { type TransformListRow } from '../common';
-import { ToastNotificationText } from '../components';
+import { useToastNotificationText } from '../components';
 
 import { useTransformCapabilities } from './use_transform_capabilities';
 import { useDataViewExists } from './use_data_view_exists';
@@ -87,9 +86,10 @@ export const useDeleteIndexAndTargetIndex = (items: TransformListRow[]) => {
 };
 
 export const useDeleteTransforms = () => {
-  const { http, ...startServices } = useAppDependencies();
+  const { http } = useAppDependencies();
   const refreshTransformList = useRefreshTransformList();
   const toastNotifications = useToastNotifications();
+  const getToastNotificationText = useToastNotificationText();
 
   const mutation = useMutation({
     mutationFn: (reqBody: DeleteTransformsRequestSchema) =>
@@ -102,10 +102,7 @@ export const useDeleteTransforms = () => {
         title: i18n.translate('xpack.transform.transformList.deleteTransformGenericErrorMessage', {
           defaultMessage: 'An error occurred calling the API endpoint to delete transforms.',
         }),
-        text: toMountPoint(
-          <ToastNotificationText previewTextLength={50} text={getErrorMessage(error)} />,
-          startServices
-        ),
+        ...getToastNotificationText(getErrorMessage(error), 50),
       }),
     onSuccess: (results) => {
       for (const transformId in results) {
@@ -121,10 +118,7 @@ export const useDeleteTransforms = () => {
                 defaultMessage: 'An error occurred deleting the transform {transformId}',
                 values: { transformId },
               }),
-              text: toMountPoint(
-                <ToastNotificationText previewTextLength={50} text={error} />,
-                startServices
-              ),
+              ...getToastNotificationText(error, 50),
             });
           }
 
@@ -138,10 +132,7 @@ export const useDeleteTransforms = () => {
                   values: { destinationIndex },
                 }
               ),
-              text: toMountPoint(
-                <ToastNotificationText previewTextLength={50} text={error} />,
-                startServices
-              ),
+              ...getToastNotificationText(error, 50),
             });
           }
 
@@ -155,10 +146,7 @@ export const useDeleteTransforms = () => {
                   values: { destinationIndex },
                 }
               ),
-              text: toMountPoint(
-                <ToastNotificationText previewTextLength={50} text={error} />,
-                startServices
-              ),
+              ...getToastNotificationText(error, 50),
             });
           }
         }

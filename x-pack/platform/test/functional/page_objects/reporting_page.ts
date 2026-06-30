@@ -153,7 +153,7 @@ export class ReportingPageObject extends FtrService {
   }
 
   async getQueueReportError() {
-    return await this.testSubjects.exists('errorToastMessage');
+    return await this.testSubjects.exists('errorToastBtn');
   }
 
   async getGenerateReportButton() {

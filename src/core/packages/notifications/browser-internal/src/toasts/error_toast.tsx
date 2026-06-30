@@ -98,25 +98,26 @@ export function showErrorDialog({
   );
 }
 
-export function ErrorToast({ title, error, toastMessage, openModal, rendering }: ErrorToastProps) {
-  return rendering.addContext(
-    <>
-      <p data-test-subj="errorToastMessage">{toastMessage}</p>
-      <div className="eui-textRight">
-        <EuiButton
-          size="s"
-          color="danger"
-          data-test-subj="errorToastBtn"
-          onClick={() => showErrorDialog({ title, error, openModal, rendering })}
-        >
-          <FormattedMessage
-            id="core.toasts.errorToast.seeFullError"
-            defaultMessage="See the full error"
-          />
-        </EuiButton>
-      </div>
-    </>
-  );
+export function getErrorToastActionProps({
+  title,
+  error,
+  openModal,
+  rendering,
+}: Pick<ErrorToastProps, 'title' | 'error' | 'openModal' | 'rendering'>) {
+  return {
+    primary: {
+      size: 's' as const,
+      color: 'danger' as const,
+      'data-test-subj': 'errorToastBtn',
+      children: (
+        <FormattedMessage
+          id="core.toasts.errorToast.seeFullError"
+          defaultMessage="See the full error"
+        />
+      ),
+      onClick: () => showErrorDialog({ title, error, openModal, rendering }),
+    },
+  };
 }
 
 const mount = (component: React.ReactElement) => (container: HTMLElement) => {

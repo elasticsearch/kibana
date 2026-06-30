@@ -11,7 +11,7 @@ export class CustomBrandingSettingsPage {
   constructor(private readonly page: ScoutPage) {}
 
   private async waitForSaveToast() {
-    await this.page.testSubj.locator('euiToastHeader').waitFor({ state: 'visible' });
+    await this.page.testSubj.locator('euiToastHeader__title').waitFor({ state: 'visible' });
   }
 
   async navigateToGlobalSettings() {

@@ -51,9 +51,11 @@ test.describe(
         await page.getByText('Save group').click();
 
         // Make sure the toast is visible and contains the correct text and then close it
-        await expect(page.getByTestId('euiToastHeader')).toBeVisible();
+        await expect(page.getByTestId('euiToastHeader__title')).toBeVisible();
         await expect(
-          page.getByTestId('euiToastHeader').getByText(`Created "${GO_SERVICE_GROUP_NAME}" group`)
+          page
+            .getByTestId('euiToastHeader__title')
+            .getByText(`Created "${GO_SERVICE_GROUP_NAME}" group`)
         ).toBeVisible();
         await page.getByTestId('toastCloseButton').click();
 

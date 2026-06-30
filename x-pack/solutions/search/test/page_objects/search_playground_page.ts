@@ -249,7 +249,7 @@ export function SearchPlaygroundPageProvider({ getService }: FtrProviderContext)
         await testSubjects.setValue('secrets.apiKey-input', 'apiKey');
         await testSubjects.existOrFail('create-connector-flyout-save-btn');
         await testSubjects.click('create-connector-flyout-save-btn');
-        await testSubjects.existOrFail('euiToastHeader');
+        await testSubjects.existOrFail('euiToastHeader__title');
       },
       async clickCreateIndex() {
         await testSubjects.existOrFail('createIndexButton');

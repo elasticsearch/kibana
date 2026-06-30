@@ -18,9 +18,22 @@ import type { MountPoint } from '@kbn/core-mount-utils-browser';
  *
  * @public
  */
-export type ToastInputFields = Pick<EuiToast, Exclude<keyof EuiToast, 'id' | 'text' | 'title'>> & {
+export type ToastInputFields = Pick<
+  EuiToast,
+  Exclude<keyof EuiToast, 'id' | 'text' | 'title' | 'actionProps'>
+> & {
   title?: string | MountPoint;
   text?: string | MountPoint;
+  /**
+   * Props for primary and secondary actions within the toast.
+   * `secondary` can only be set when `primary` is also provided.
+   */
+  actionProps?:
+    | { primary?: NonNullable<EuiToast['actionProps']>['primary']; secondary?: never }
+    | {
+        primary: NonNullable<NonNullable<EuiToast['actionProps']>['primary']>;
+        secondary?: NonNullable<EuiToast['actionProps']>['secondary'];
+      };
 };
 
 export type Toast = ToastInputFields & {

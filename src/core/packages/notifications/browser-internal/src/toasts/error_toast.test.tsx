@@ -7,44 +7,40 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { render, fireEvent } from '@testing-library/react';
-import React from 'react';
-import { renderWithI18n } from '@kbn/test-jest-helpers';
-
-import { ErrorToast } from './error_toast';
+import { getErrorToastActionProps } from './error_toast';
 import { renderingServiceMock } from '@kbn/core-rendering-browser-mocks';
-
-interface ErrorToastProps {
-  error?: Error;
-  title?: string;
-  toastMessage?: string;
-}
+import { FormattedMessage } from '@kbn/i18n-react';
 
 let openModal: jest.Mock;
 const mockRendering = renderingServiceMock.create();
 
 beforeEach(() => (openModal = jest.fn()));
 
-function getErrorToast(props: ErrorToastProps = {}) {
-  return (
-    <ErrorToast
-      openModal={openModal}
-      error={props.error || new Error('error message')}
-      title={props.title || 'An error occured'}
-      toastMessage={props.toastMessage || 'This is the toast message'}
-      rendering={mockRendering}
-    />
-  );
-}
+it('returns actionProps with a primary action', () => {
+  const props = getErrorToastActionProps({
+    error: new Error('error message'),
+    title: 'An error occured',
+    openModal,
+    rendering: mockRendering,
+  });
 
-it('renders matching snapshot', () => {
-  expect(render(getErrorToast()).container.innerHTML).toMatchSnapshot();
+  expect(props.primary).toMatchObject({
+    'data-test-subj': 'errorToastBtn',
+    children: expect.objectContaining({ type: FormattedMessage }),
+    onClick: expect.any(Function),
+  });
 });
 
-it('should open a modal when clicking button', () => {
-  const { getByTestId } = renderWithI18n(getErrorToast());
+it('should open a modal when onClick is called', () => {
+  const props = getErrorToastActionProps({
+    error: new Error('error message'),
+    title: 'An error occured',
+    openModal,
+    rendering: mockRendering,
+  });
+
   expect(openModal).not.toHaveBeenCalled();
-  fireEvent.click(getByTestId('errorToastBtn'));
+  props.primary.onClick();
   expect(openModal).toHaveBeenCalled();
 });
 

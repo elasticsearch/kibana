@@ -238,8 +238,13 @@ describe('handleSystemColorModeChange', () => {
           cb({ matches: true } as any); // The system changed to dark mode
           expect((await getNotifications()).toasts.addInfo).toHaveBeenCalledWith(
             expect.objectContaining({
-              text: expect.any(Function),
+              text: expect.any(String),
               title: 'System color mode updated',
+              actionProps: expect.objectContaining({
+                primary: expect.objectContaining({
+                  'data-test-subj': 'windowReloadButton',
+                }),
+              }),
             }),
             { toastLifeTimeMs: Infinity }
           );

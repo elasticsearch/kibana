@@ -58,7 +58,7 @@ export function CasesTableServiceProvider(
         timeout: config.get('timeouts.waitFor'),
       });
       await testSubjects.click('confirmModalConfirmButton');
-      await testSubjects.existOrFail('euiToastHeader', {
+      await testSubjects.existOrFail('euiToastHeader__title', {
         timeout: config.get('timeouts.waitFor'),
       });
     },

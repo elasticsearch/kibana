@@ -14,6 +14,9 @@ export { SampleDataCardKibanaProvider, SampleDataCardProvider } from './src/serv
 export type {
   Services as SampleDataCardServices,
   KibanaDependencies as SampleDataCardKibanaDependencies,
+  NotifyFn,
+  NotifyInput,
+  NotifyInputFields,
 } from './src/services';
 
 // TODO: clintandrewhall - convert to new Storybook mock when published.

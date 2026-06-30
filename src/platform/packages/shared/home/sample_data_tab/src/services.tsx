@@ -9,27 +9,15 @@
 
 import type { FC, PropsWithChildren } from 'react';
 import React, { useContext } from 'react';
-import type { EuiGlobalToastListToast as EuiToast } from '@elastic/eui';
 import type { SampleDataSet } from '@kbn/home-sample-data-types';
 import type {
   SampleDataCardServices,
   SampleDataCardKibanaDependencies,
+  NotifyFn,
 } from '@kbn/home-sample-data-card';
 import { SampleDataCardProvider, SampleDataCardKibanaProvider } from '@kbn/home-sample-data-card';
 
 import { URL_SAMPLE_DATA_API } from './constants';
-
-type UnmountCallback = () => void;
-type MountPoint<T extends HTMLElement = HTMLElement> = (element: T) => UnmountCallback;
-type ValidNotifyString = string | MountPoint<HTMLElement>;
-
-type NotifyInputFields = Pick<EuiToast, Exclude<keyof EuiToast, 'id' | 'text' | 'title'>> & {
-  title?: ValidNotifyString;
-  text?: ValidNotifyString;
-};
-
-type NotifyInput = string | NotifyInputFields;
-type NotifyFn = (notification: NotifyInput) => void;
 
 interface Services {
   fetchSampleDataSets: () => Promise<SampleDataSet[]>;

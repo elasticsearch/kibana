@@ -128,7 +128,14 @@ describe('useUpdateUserProfile() hook', () => {
     expect(notifications.toasts.addSuccess).toHaveBeenCalledWith(
       {
         title: 'Profile updated',
-        text: expect.any(Function), // React node
+        text: expect.any(String),
+        actionProps: {
+          primary: expect.objectContaining({
+            'data-test-subj': 'windowReloadButton',
+            autoFocus: true,
+            children: 'Reload page',
+          }),
+        },
       },
       {
         toastLifeTimeMs: 300000, // toast options

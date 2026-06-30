@@ -11,7 +11,11 @@ import type { FC, PropsWithChildren } from 'react';
 import React, { useContext } from 'react';
 
 import type { I18nStart } from '@kbn/core-i18n-browser';
-import type { NotificationsStart, ToastOptions } from '@kbn/core-notifications-browser';
+import type {
+  NotificationsStart,
+  ToastInputFields,
+  ToastOptions,
+} from '@kbn/core-notifications-browser';
 import type { ThemeServiceStart } from '@kbn/core-theme-browser';
 import type { UserProfileService } from '@kbn/core-user-profile-browser';
 import type { toMountPoint } from '@kbn/react-kibana-mount';
@@ -19,7 +23,7 @@ import type { toMountPoint } from '@kbn/react-kibana-mount';
 import type { UserProfileAPIClient } from './types';
 
 type NotifyFn = (
-  data: { title: string; text?: JSX.Element },
+  data: { title: string; text?: string; actionProps?: ToastInputFields['actionProps'] },
   options?: { durationMs?: number }
 ) => void;
 
@@ -72,15 +76,14 @@ export const UserProfilesKibanaProvider: FC<PropsWithChildren<UserProfilesKibana
   ...services
 }) => {
   const {
-    core: { notifications, ...startServices },
+    core: { notifications },
     security: { userProfiles: userProfileApiClient },
-    toMountPoint: toMountPointUtility,
   } = services;
 
   return (
     <UserProfilesProvider
       userProfileApiClient={userProfileApiClient}
-      notifySuccess={({ title, text }, options) => {
+      notifySuccess={({ title, text, actionProps }, options) => {
         const toastOptions: ToastOptions = {};
         if (options?.durationMs) {
           toastOptions.toastLifeTimeMs = options.durationMs;
@@ -88,7 +91,8 @@ export const UserProfilesKibanaProvider: FC<PropsWithChildren<UserProfilesKibana
         notifications.toasts.addSuccess(
           {
             title,
-            text: text ? toMountPointUtility(text, startServices) : undefined,
+            text,
+            actionProps,
           },
           toastOptions
         );

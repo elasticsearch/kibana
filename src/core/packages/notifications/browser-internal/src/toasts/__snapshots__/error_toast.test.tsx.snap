@@ -1,3 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`renders matching snapshot 1`] = `"<p data-test-subj=\\"errorToastMessage\\">This is the toast message</p><div class=\\"eui-textRight\\"><button type=\\"button\\" class=\\"euiButton css-bh2rjj-euiButtonDisplay-s-defaultMinWidth-base-danger\\" data-test-subj=\\"errorToastBtn\\"><span class=\\"css-lavozu-euiButtonDisplayContent\\">See the full error</span></button></div>"`;

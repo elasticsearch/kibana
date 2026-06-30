@@ -12,7 +12,6 @@ import { debounce, range } from 'lodash';
 import type { ConsoleParsedRequestsProvider } from '@kbn/monaco';
 import { getParsedRequestsProvider, monaco } from '@kbn/monaco';
 import { i18n } from '@kbn/i18n';
-import { toMountPoint } from '@kbn/react-kibana-mount';
 import { XJson } from '@kbn/es-ui-shared-plugin/public';
 import type { ErrorAnnotation } from '@kbn/monaco/src/languages/console/types';
 import { checkForTripleQuotesAndEsqlQuery } from '@kbn/monaco/src/languages/console/utils';
@@ -45,7 +44,6 @@ import {
 
 import type { AdjustedParsedRequest } from './types';
 import { type RequestToRestore, RestoreMethod } from '../../../types';
-import { StorageQuotaError } from '../../components/storage_quota_error';
 import type { ContextValue } from '../../contexts';
 import { containsComments, indentData } from './utils/requests_utils';
 
@@ -307,7 +305,6 @@ export class MonacoEditorActionsProvider {
         autocompleteInfo,
         esHostService,
       },
-      ...startServices
     } = context;
     const { toasts } = notifications;
     try {
@@ -429,19 +426,26 @@ export class MonacoEditorActionsProvider {
                     'Request history is full. Clear the console history or disable saving new requests.',
                 }
               ),
-              text: toMountPoint(
-                StorageQuotaError({
-                  onClearHistory: () => {
+              actionProps: {
+                secondary: {
+                  onClick: () => {
                     history.clearHistory();
                     notifications.toasts.remove(toast);
                   },
-                  onDisableSavingToHistory: () => {
+                  children: i18n.translate('console.notification.clearHistory', {
+                    defaultMessage: 'Clear history',
+                  }),
+                },
+                primary: {
+                  onClick: () => {
                     settings.setIsHistoryEnabled(false);
                     notifications.toasts.remove(toast);
                   },
-                }),
-                startServices
-              ),
+                  children: i18n.translate('console.notification.disableSavingToHistory', {
+                    defaultMessage: 'Disable saving',
+                  }),
+                },
+              },
             });
           } else {
             // Best effort, but still notify the user.

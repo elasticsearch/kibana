@@ -7,11 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React from 'react';
 import { take } from 'rxjs';
-import { EuiButton, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { toMountPoint } from '@kbn/react-kibana-mount';
 import { DASHBOARD_APP_ID } from '../../../common/page_bundle_constants';
 import { coreServices } from '../../services/kibana_services';
 import { createDashboardEditUrl } from '../../utils/urls';
@@ -42,30 +39,24 @@ export const showDashboardSavedToast = ({
         defaultMessage: `Dashboard ''{title}'' was saved`,
         values: { title: dashboardTitle },
       }),
-      text: showOpenLink
-        ? toMountPoint(
-            <EuiFlexGroup justifyContent="flexEnd">
-              <EuiFlexItem grow={false}>
-                <EuiButton
-                  size="s"
-                  color="primary"
-                  data-test-subj="dashboardSavedToastLink"
-                  onClick={() => {
-                    coreServices.notifications.toasts.remove(toast);
-                    coreServices.application.navigateToApp(DASHBOARD_APP_ID, {
-                      path: `#${createDashboardEditUrl(savedDashboardId)}`,
-                    });
-                  }}
-                >
-                  {i18n.translate('dashboard.savedToast.goToDashboardLink', {
-                    defaultMessage: 'Go to dashboard',
-                  })}
-                </EuiButton>
-              </EuiFlexItem>
-            </EuiFlexGroup>,
-            coreServices
-          )
-        : undefined,
+      ...(showOpenLink
+        ? {
+            actionProps: {
+              primary: {
+                'data-test-subj': 'dashboardSavedToastLink',
+                onClick: () => {
+                  coreServices.notifications.toasts.remove(toast);
+                  coreServices.application.navigateToApp(DASHBOARD_APP_ID, {
+                    path: `#${createDashboardEditUrl(savedDashboardId)}`,
+                  });
+                },
+                children: i18n.translate('dashboard.savedToast.goToDashboardLink', {
+                  defaultMessage: 'Go to dashboard',
+                }),
+              },
+            },
+          }
+        : {}),
       className: 'eui-textBreakWord',
       'data-test-subj': 'saveDashboardSuccess',
     });

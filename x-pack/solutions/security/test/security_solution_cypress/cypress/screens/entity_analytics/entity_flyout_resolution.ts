@@ -98,6 +98,6 @@ export const CONFIRM_MODAL_RADIO_CURRENT_AS_TARGET = '[id="current_as_target"]';
 export const CONFIRM_MODAL_RADIO_NEW_AS_TARGET = '[id="new_as_target"]';
 
 // Toast helpers
-export const TOASTER_HEADER = '[data-test-subj="euiToastHeader"]';
+export const TOASTER_HEADER = '[data-test-subj="euiToastHeader__title"]';
 export const TOASTER_BODY = '[data-test-subj="euiToastBody"]';
 export const TOAST_CLOSE_BUTTON = '[data-test-subj="toastCloseButton"]';

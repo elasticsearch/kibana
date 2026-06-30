@@ -5,9 +5,8 @@
  * 2.0.
  */
 
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import type { ToastInputFields } from '@kbn/core/public';
-import { toMountPoint } from '@kbn/react-kibana-mount';
 import type { EuiContextMenuPanelItemDescriptor } from '@elastic/eui';
 import type { UpdateSummary } from '../../../../common/types/api';
 import { useUpdateCases } from '../../../containers/use_bulk_update_case';
@@ -18,7 +17,6 @@ import { OWNER_INFO } from '../../../../common/constants';
 import { isValidOwner } from '../../../../common/utils/owner';
 
 import * as i18n from './translations';
-import { StatusToastContent } from './status_toast_content';
 import type { UseActionProps } from '../types';
 import { statuses } from '../../status';
 import { useUserPermissions } from '../../user_actions/use_user_permissions';
@@ -34,9 +32,6 @@ interface GetUpdateSuccessToastParams {
   // Dependencies for rendering re-direct button within toast
   appId?: string;
   application: ReturnType<typeof useKibana>['services']['application'];
-  i18nStart: ReturnType<typeof useKibana>['services']['i18n'];
-  theme: ReturnType<typeof useKibana>['services']['theme'];
-  userProfile: ReturnType<typeof useKibana>['services']['userProfile'];
 }
 
 const getUpdateSuccessToast = ({
@@ -45,10 +40,12 @@ const getUpdateSuccessToast = ({
   updateSummary,
   appId,
   application,
-  i18nStart,
-  theme,
-  userProfile,
-}: GetUpdateSuccessToastParams): { title: string; text?: ToastInputFields['text'] } => {
+}: GetUpdateSuccessToastParams): {
+  title: string;
+  text?: string;
+  'data-test-subj'?: string;
+  actionProps?: ToastInputFields['actionProps'];
+} => {
   const totalCases = cases.length;
   const caseTitle = totalCases === 1 ? cases[0].title : '';
 
@@ -74,7 +71,7 @@ const getUpdateSuccessToast = ({
     totalAlertsCount === 0
       ? undefined
       : i18n.CLOSED_CASES_SUMMARY(alertStatusSyncCount, totalAlertsCount);
-  const toast: { title: string; text?: ToastInputFields['text'] } = {
+  const toast: { title: string; text?: string; actionProps?: ToastInputFields['actionProps'] } = {
     title: i18n.CLOSED_CASES({ totalCases, caseTitle }),
     text: summary,
   };
@@ -102,13 +99,15 @@ const getUpdateSuccessToast = ({
 
   return {
     ...toast,
-    text: toMountPoint(
-      <StatusToastContent
-        summary={summary}
-        onSeeAlertsClick={() => application.navigateToUrl(alertsUrl)}
-      />,
-      { i18n: i18nStart, theme, userProfile }
-    ),
+    text: summary,
+    'data-test-subj': 'cases-status-toast',
+    actionProps: {
+      primary: {
+        onClick: () => application.navigateToUrl(alertsUrl),
+        'data-test-subj': 'cases-status-close-sync-see-alerts',
+        children: i18n.SEE_ALERTS,
+      },
+    },
   };
 };
 
@@ -125,7 +124,7 @@ export const useStatusAction = ({
   const { mutate: updateCases, isLoading: isUpdatingStatus } = useUpdateCases();
   const { canUpdate, canReopenCase } = useUserPermissions();
   const { appId } = useApplication();
-  const { application, i18n: i18nStart, theme, userProfile } = useKibana().services;
+  const { application } = useKibana().services;
   const handleUpdateCaseStatus = useCallback(
     (selectedCases: CasesUI, status: CaseStatuses, closeReason?: string) => {
       onAction();
@@ -146,9 +145,6 @@ export const useStatusAction = ({
               updateSummary,
               appId,
               application,
-              i18nStart,
-              theme,
-              userProfile,
             });
           },
           originalCases: selectedCases,
@@ -156,7 +152,7 @@ export const useStatusAction = ({
         { onSuccess: onActionSuccess }
       );
     },
-    [onAction, updateCases, onActionSuccess, appId, application, i18nStart, theme, userProfile]
+    [onAction, updateCases, onActionSuccess, appId, application]
   );
 
   const shouldDisableStatus = useShouldDisableStatus();

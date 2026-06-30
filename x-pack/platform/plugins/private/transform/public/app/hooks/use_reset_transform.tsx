@@ -5,11 +5,9 @@
  * 2.0.
  */
 
-import React from 'react';
 import { useMutation } from '@kbn/react-query';
 
 import { i18n } from '@kbn/i18n';
-import { toMountPoint } from '@kbn/react-kibana-mount';
 
 import type {
   ResetTransformsRequestSchema,
@@ -19,14 +17,15 @@ import { addInternalBasePath } from '../../../common/constants';
 import { getErrorMessage } from '../../../common/utils/errors';
 
 import { useAppDependencies, useToastNotifications } from '../app_dependencies';
-import { ToastNotificationText } from '../components';
+import { useToastNotificationText } from '../components';
 
 import { useRefreshTransformList } from './use_refresh_transform_list';
 
 export const useResetTransforms = () => {
-  const { http, ...startServices } = useAppDependencies();
+  const { http } = useAppDependencies();
   const refreshTransformList = useRefreshTransformList();
   const toastNotifications = useToastNotifications();
+  const getToastNotificationText = useToastNotificationText();
 
   const mutation = useMutation({
     mutationFn: (reqBody: ResetTransformsRequestSchema) =>
@@ -39,10 +38,7 @@ export const useResetTransforms = () => {
         title: i18n.translate('xpack.transform.transformList.resetTransformGenericErrorMessage', {
           defaultMessage: 'An error occurred calling the API endpoint to reset transforms.',
         }),
-        text: toMountPoint(
-          <ToastNotificationText previewTextLength={50} text={getErrorMessage(error)} />,
-          startServices
-        ),
+        ...getToastNotificationText(getErrorMessage(error), 50),
       }),
     onSuccess: (results) => {
       for (const transformId in results) {
@@ -57,10 +53,7 @@ export const useResetTransforms = () => {
                 defaultMessage: 'An error occurred resetting the transform {transformId}',
                 values: { transformId },
               }),
-              text: toMountPoint(
-                <ToastNotificationText previewTextLength={50} text={error} />,
-                startServices
-              ),
+              ...getToastNotificationText(error, 50),
             });
           }
         }

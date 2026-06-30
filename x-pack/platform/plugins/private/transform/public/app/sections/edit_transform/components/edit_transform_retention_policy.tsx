@@ -10,15 +10,14 @@ import React, { useEffect, useMemo, type FC } from 'react';
 import { EuiFormRow, EuiSelect, EuiSpacer, EuiSwitch } from '@elastic/eui';
 
 import { i18n } from '@kbn/i18n';
-import { toMountPoint } from '@kbn/react-kibana-mount';
 
 import type { PostTransformsPreviewRequestSchema } from '../../../../../server/routes/api_schemas/transforms';
 import { isLatestTransform, isPivotTransform } from '../../../../../common/types/transform';
 import { getErrorMessage } from '../../../../../common/utils/errors';
 
-import { useAppDependencies, useToastNotifications } from '../../../app_dependencies';
+import { useToastNotifications } from '../../../app_dependencies';
 import { useGetTransformsPreview } from '../../../hooks';
-import { ToastNotificationText } from '../../../components';
+import { useToastNotificationText } from '../../../components';
 
 import {
   useEditTransformFlyoutActions,
@@ -30,9 +29,8 @@ import { useRetentionPolicyField } from '../state_management/selectors/retention
 import { EditTransformFlyoutFormTextInput } from './edit_transform_flyout_form_text_input';
 
 export const EditTransformRetentionPolicy: FC = () => {
-  const startServices = useAppDependencies();
-
   const toastNotifications = useToastNotifications();
+  const getToastNotificationText = useToastNotificationText();
 
   const { config, dataViewId } = useEditTransformFlyoutContext();
   const formSections = useFormSections();
@@ -68,10 +66,7 @@ export const EditTransformRetentionPolicy: FC = () => {
         title: i18n.translate('xpack.transform.transformList.errorGettingTransformPreview', {
           defaultMessage: 'An error occurred fetching the transform preview',
         }),
-        text: toMountPoint(
-          <ToastNotificationText text={getErrorMessage(transformsPreviewError)} />,
-          startServices
-        ),
+        ...getToastNotificationText(getErrorMessage(transformsPreviewError)),
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

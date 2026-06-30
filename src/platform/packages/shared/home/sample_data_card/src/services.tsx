@@ -19,13 +19,24 @@ type UnmountCallback = () => void;
 type MountPoint<T extends HTMLElement = HTMLElement> = (element: T) => UnmountCallback;
 type ValidNotifyString = string | MountPoint<HTMLElement>;
 
-type NotifyInputFields = Pick<EuiToast, Exclude<keyof EuiToast, 'id' | 'text' | 'title'>> & {
+type EuiToastActionProps = NonNullable<EuiToast['actionProps']>;
+
+export type NotifyInputFields = Pick<
+  EuiToast,
+  Exclude<keyof EuiToast, 'id' | 'text' | 'title' | 'actionProps'>
+> & {
   title?: ValidNotifyString;
   text?: ValidNotifyString;
+  actionProps?:
+    | { primary?: EuiToastActionProps['primary']; secondary?: never }
+    | {
+        primary: NonNullable<EuiToastActionProps['primary']>;
+        secondary?: EuiToastActionProps['secondary'];
+      };
 };
 
-type NotifyInput = string | NotifyInputFields;
-type NotifyFn = (notification: NotifyInput) => void;
+export type NotifyInput = string | NotifyInputFields;
+export type NotifyFn = (notification: NotifyInput) => void;
 
 /**
  * A list of services that are consumed by this component.

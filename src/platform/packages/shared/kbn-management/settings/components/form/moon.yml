@@ -25,7 +25,6 @@ dependsOn:
   - '@kbn/react-kibana-context-root'
   - '@kbn/core-theme-browser-mocks'
   - '@kbn/core-i18n-browser'
-  - '@kbn/react-kibana-mount'
   - '@kbn/core-notifications-browser'
   - '@kbn/core-theme-browser'
   - '@kbn/core-ui-settings-browser'

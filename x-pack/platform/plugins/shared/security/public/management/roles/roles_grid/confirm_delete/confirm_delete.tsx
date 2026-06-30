@@ -8,8 +8,6 @@
 import {
   EuiButton,
   EuiButtonEmpty,
-  EuiFlexGroup,
-  EuiFlexItem,
   EuiModal,
   EuiModalBody,
   EuiModalFooter,
@@ -24,7 +22,6 @@ import type { BuildFlavor } from '@kbn/config';
 import type { NotificationsStart } from '@kbn/core/public';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { toMountPoint } from '@kbn/react-kibana-mount';
 import type { PublicMethodsOf } from '@kbn/utility-types';
 
 import type { StartServices } from '../../../..';
@@ -198,25 +195,19 @@ export class ConfirmDelete extends Component<Props, State> {
             '{numberOfCustomRoles, plural, one {# custom role} other {# custom roles}} deleted',
           values: { numberOfCustomRoles: deleteOperations.length },
         }),
-        text: toMountPoint(
-          <>
-            <p>
-              {i18n.translate('xpack.security.management.roles.deleteRolesSuccessMessage', {
-                defaultMessage: `The deleted role will still appear listed on the user profile in Organization
-                  Management and on the User Profile for those that don't have admin access.`,
-              })}
-            </p>
-
-            <EuiFlexGroup justifyContent="flexEnd" gutterSize="s">
-              <EuiFlexItem grow={false}>
-                <EuiButton size="s" href={this.props.cloudOrgUrl}>
-                  Manage Members
-                </EuiButton>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </>,
-          this.props
-        ),
+        text: i18n.translate('xpack.security.management.roles.deleteRolesSuccessMessage', {
+          defaultMessage:
+            "The deleted role will still appear listed on the user profile in Organization Management and on the User Profile for those that don't have admin access.",
+        }),
+        actionProps: {
+          primary: {
+            href: this.props.cloudOrgUrl,
+            children: i18n.translate(
+              'xpack.security.management.roles.deleteRolesManageMembersButton',
+              { defaultMessage: 'Manage Members' }
+            ),
+          },
+        },
       });
     }
 

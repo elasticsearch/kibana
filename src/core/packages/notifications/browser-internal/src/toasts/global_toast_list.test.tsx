@@ -63,17 +63,20 @@ it('subscribes to toasts$ on mount and unsubscribes on unmount', () => {
 });
 
 it('uses the latest value from toasts$ passed to <EuiGlobalToastList /> to render the right number of toasts', () => {
-  const toastObservable$ = new BehaviorSubject([{ id: '1' }, { id: '2' }]);
+  const toastObservable$ = new BehaviorSubject([
+    { id: '1', title: 'Toast 1' },
+    { id: '2', title: 'Toast 2' },
+  ]);
 
   render(<RenderToastList toasts$={toastObservable$.asObservable() as any} />);
 
-  expect(screen.getAllByLabelText('Notification')).toHaveLength(2);
+  expect(screen.getAllByTestId('euiToastHeader__title')).toHaveLength(2);
 
   act(() => {
-    toastObservable$.next([...toastObservable$.getValue(), { id: '3' }]);
+    toastObservable$.next([...toastObservable$.getValue(), { id: '3', title: 'Toast 3' }]);
   });
 
-  expect(screen.getAllByLabelText('Notification')).toHaveLength(3);
+  expect(screen.getAllByTestId('euiToastHeader__title')).toHaveLength(3);
 });
 
 describe('global_toast_list with duplicate elements', () => {
@@ -102,7 +105,7 @@ describe('global_toast_list with duplicate elements', () => {
   it('renders the toast list with a single toast when toasts matching deduplication heuristics are passed', () => {
     render(<ToastListWithDuplicates />);
 
-    const { 0: firstToast, length: toastCount } = screen.getAllByLabelText('Notification');
+    const { 0: firstToast, length: toastCount } = screen.getAllByTestId('euiToastHeader__title');
 
     expect(toastCount).toEqual(1);
 
@@ -206,7 +209,7 @@ describe('global_toast_list toast dismissal telemetry', () => {
     expect(sharedProps.dismissToast).toHaveBeenCalled();
     expect(onDimissReporterSpy).not.toBeCalled();
 
-    expect(screen.queryByLabelText('Notification')).toBeNull();
+    expect(screen.queryByTestId('euiToastHeader__title')).toBeNull();
   });
 
   it('does not invoke the reportEvent method for a recurring toast of the success type', () => {
@@ -243,7 +246,7 @@ describe('global_toast_list toast dismissal telemetry', () => {
     expect(sharedProps.dismissToast).toHaveBeenCalledTimes(REPEATED_TOAST_COUNT);
     expect(onDimissReporterSpy).not.toBeCalled();
 
-    expect(screen.queryByLabelText('Notification')).toBeNull();
+    expect(screen.queryByTestId('euiToastHeader__title')).toBeNull();
   });
 
   it('invokes the reportEvent method for a recurring toast of allowed type that is not success', () => {
@@ -284,7 +287,7 @@ describe('global_toast_list toast dismissal telemetry', () => {
       })
     );
 
-    expect(screen.queryByLabelText('Notification')).toBeNull();
+    expect(screen.queryByTestId('euiToastHeader__title')).toBeNull();
   });
 
   it('invokes the reportEvent method when the clear all button is clicked', () => {
@@ -336,6 +339,6 @@ describe('global_toast_list toast dismissal telemetry', () => {
       );
     });
 
-    expect(screen.queryByLabelText('Notification')).toBeNull();
+    expect(screen.queryByTestId('euiToastHeader__title')).toBeNull();
   });
 });

@@ -21,7 +21,6 @@
     "@kbn/core-notifications-browser",
     "@kbn/core-mount-utils-browser-internal",
     "@kbn/core-ui-settings-browser-mocks",
-    "@kbn/test-jest-helpers",
     "@kbn/core-overlays-browser-mocks",
     "@kbn/core-mount-utils-browser",
     "@kbn/core-analytics-browser",

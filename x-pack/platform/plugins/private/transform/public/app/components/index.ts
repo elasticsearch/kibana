@@ -5,4 +5,4 @@
  * 2.0.
  */
 
-export { ToastNotificationText } from './toast_notification_text';
+export { ToastNotificationText, useToastNotificationText } from './toast_notification_text';

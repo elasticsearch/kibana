@@ -53,7 +53,7 @@ export class AlertsTablePage {
     this.pageWithData = this.page.testSubj.locator(SUBJ.PAGE_WITH_DATA);
     this.noDataState = this.page.testSubj.locator(SUBJ.TABLE_EMPTY_STATE);
     this.errorPrompt = this.page.testSubj.locator(SUBJ.TABLE_ERROR_PROMPT);
-    this.errorToast = this.page.testSubj.locator('errorToastMessage');
+    this.errorToast = this.page.testSubj.locator('euiToastText');
     this.actionsMenu = this.page.testSubj.locator(SUBJ.ACTIONS_MENU);
     this.groupSelector = this.page.testSubj.locator('group-selector-dropdown');
     this.summaryWidget = this.page.testSubj.locator('alertSummaryWidgetFullSize');

@@ -60,7 +60,6 @@ import {
   RULES_TAGS_POPOVER_WRAPPER,
   SELECT_ALL_RULES_BTN,
   SELECTED_RULES_NUMBER_LABEL,
-  TOASTER_BODY,
   TOASTER_CLOSE_ICON,
   TOASTER_ERROR_BTN,
   CONFIRM_BULK_GAP_FILL_BTN,
@@ -621,7 +620,9 @@ export const clickErrorToastBtn = () => {
 };
 
 export const clickErrorToastBtnByContent = (content: string) => {
-  cy.contains(TOASTER_BODY, content).find(TOASTER_ERROR_BTN).click();
+  cy.contains('[data-test-subj="globalToastList"] .euiToast', content)
+    .find(TOASTER_ERROR_BTN)
+    .click();
 };
 
 export const closeErrorToast = () => {

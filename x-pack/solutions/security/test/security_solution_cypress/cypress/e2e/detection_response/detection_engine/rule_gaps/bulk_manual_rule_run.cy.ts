@@ -86,7 +86,7 @@ describe('Manual rule run', { tags: ['@ess', '@serverless'] }, () => {
 
     const enabledCount = 3;
     const disabledCount = 2;
-    const toasterContent = `${disabledCount} rules failed to schedule manual rule run.See the full error`;
+    const toasterContent = `${disabledCount} rules failed to schedule manual rule run.`;
 
     scheduleManualRuleRunForSelectedRules(enabledCount, disabledCount);
 

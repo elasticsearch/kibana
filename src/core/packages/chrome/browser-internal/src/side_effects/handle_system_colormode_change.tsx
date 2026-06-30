@@ -7,10 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React from 'react';
 import { i18n } from '@kbn/i18n';
-import { mountReactNode } from '@kbn/core-mount-utils-browser-internal';
-import { EuiButton, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import type { NotificationsStart } from '@kbn/core-notifications-browser';
 import type { I18nStart } from '@kbn/core-i18n-browser';
 import type { ThemeServiceStart } from '@kbn/core-theme-browser';
@@ -118,32 +115,20 @@ export function handleSystemColorModeChange({
                       defaultMessage: 'System color mode updated',
                     }
                   ),
-                  text: mountReactNode(
-                    <>
-                      <p>
-                        {i18n.translate('core.ui.chrome.appearanceChange.successNotificationText', {
-                          defaultMessage: 'Reload the page to see the changes',
-                        })}
-                      </p>
-                      <EuiFlexGroup justifyContent="flexEnd" gutterSize="s">
-                        <EuiFlexItem grow={false}>
-                          <EuiButton
-                            size="s"
-                            onClick={() => window.location.reload()}
-                            data-test-subj="windowReloadButton"
-                            autoFocus
-                          >
-                            {i18n.translate(
-                              'core.ui.chrome.appearanceChange.requiresPageReloadButtonLabel',
-                              {
-                                defaultMessage: 'Reload page',
-                              }
-                            )}
-                          </EuiButton>
-                        </EuiFlexItem>
-                      </EuiFlexGroup>
-                    </>
-                  ),
+                  text: i18n.translate('core.ui.chrome.appearanceChange.successNotificationText', {
+                    defaultMessage: 'Reload the page to see the changes',
+                  }),
+                  actionProps: {
+                    primary: {
+                      onClick: () => window.location.reload(),
+                      'data-test-subj': 'windowReloadButton',
+                      autoFocus: true,
+                      children: i18n.translate(
+                        'core.ui.chrome.appearanceChange.requiresPageReloadButtonLabel',
+                        { defaultMessage: 'Reload page' }
+                      ),
+                    },
+                  },
                 },
                 { toastLifeTimeMs: Infinity } // leave it on until discard or page reload
               );

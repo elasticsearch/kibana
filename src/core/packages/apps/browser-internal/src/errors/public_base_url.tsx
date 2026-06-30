@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import { EuiButton, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 
@@ -81,25 +80,23 @@ export const setupPublicBaseUrlConfigWarning = ({
             />
           </a>
         </p>
-
-        <EuiFlexGroup justifyContent="flexEnd" gutterSize="s">
-          <EuiFlexItem grow={false}>
-            <EuiButton
-              size="s"
-              onClick={() => {
-                notifications.toasts.remove(toast);
-                storage.setItem(MISSING_CONFIG_STORAGE_KEY, 'true');
-              }}
-              id="mute"
-            >
-              <FormattedMessage
-                id="core.ui.publicBaseUrlWarning.muteWarningButtonLabel"
-                defaultMessage="Mute warning"
-              />
-            </EuiButton>
-          </EuiFlexItem>
-        </EuiFlexGroup>
       </KibanaRenderContextProvider>
     ),
+    actionProps: {
+      primary: {
+        id: 'mute',
+        onClick: () => {
+          notifications.toasts.remove(toast);
+          storage.setItem(MISSING_CONFIG_STORAGE_KEY, 'true');
+        },
+        'data-test-subj': 'mutePublicBaseUrlWarningButton',
+        children: (
+          <FormattedMessage
+            id="core.ui.publicBaseUrlWarning.muteWarningButtonLabel"
+            defaultMessage="Mute warning"
+          />
+        ),
+      },
+    },
   });
 };

@@ -7,52 +7,30 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React from 'react';
-
 import { i18n } from '@kbn/i18n';
-import { toMountPoint } from '@kbn/react-kibana-mount';
-import { EuiButton, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import type { ToastInput } from '@kbn/core-notifications-browser';
-import type { I18nStart } from '@kbn/core-i18n-browser';
-import type { ThemeServiceStart } from '@kbn/core-theme-browser';
-import type { UserProfileService } from '@kbn/core-user-profile-browser';
 
 export const DATA_TEST_SUBJ_PAGE_RELOAD_BUTTON = 'pageReloadButton';
 
-interface StartDeps {
-  theme: ThemeServiceStart;
-  i18n: I18nStart;
-  userProfile: UserProfileService;
-}
-
 /**
  * Utility function for returning a {@link ToastInput} for displaying a prompt for reloading the page.
- * @param theme The {@link ThemeServiceStart} contract.
- * @param i18nStart The {@link I18nStart} contract.
  * @returns A toast.
  */
-export const reloadPageToast = (startDeps: StartDeps): ToastInput => {
+export const reloadPageToast = (): ToastInput => {
   return {
     title: i18n.translate('management.settings.form.requiresPageReloadToastDescription', {
       defaultMessage: 'One or more settings require you to reload the page to take effect.',
     }),
-    text: toMountPoint(
-      <EuiFlexGroup justifyContent="flexEnd" gutterSize="s">
-        <EuiFlexItem grow={false}>
-          <EuiButton
-            size="s"
-            onClick={() => window.location.reload()}
-            data-test-subj={DATA_TEST_SUBJ_PAGE_RELOAD_BUTTON}
-            autoFocus
-          >
-            {i18n.translate('management.settings.form.requiresPageReloadToastButtonLabel', {
-              defaultMessage: 'Reload page',
-            })}
-          </EuiButton>
-        </EuiFlexItem>
-      </EuiFlexGroup>,
-      startDeps
-    ),
+    actionProps: {
+      primary: {
+        children: i18n.translate('management.settings.form.requiresPageReloadToastButtonLabel', {
+          defaultMessage: 'Reload page',
+        }),
+        onClick: () => window.location.reload(),
+        'data-test-subj': DATA_TEST_SUBJ_PAGE_RELOAD_BUTTON,
+        autoFocus: true,
+      },
+    },
     color: 'success',
     toastLifeTimeMs: 15000,
   };

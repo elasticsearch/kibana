@@ -7,14 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React from 'react';
 import * as Rx from 'rxjs';
 import { omitBy, isUndefined } from 'lodash';
 
 import { apm } from '@elastic/apm-rum';
 import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import type { OverlayStart } from '@kbn/core-overlays-browser';
-import { mountReactNode } from '@kbn/core-mount-utils-browser-internal';
 import type { MountPoint } from '@kbn/core-mount-utils-browser';
 import type {
   ErrorToastOptions,
@@ -25,7 +23,7 @@ import type {
   ToastOptions,
 } from '@kbn/core-notifications-browser';
 import type { RenderingService } from '@kbn/core-rendering-browser';
-import { ErrorToast } from './error_toast';
+import { getErrorToastActionProps } from './error_toast';
 
 const normalizeToast = (toastOrTitle: ToastInput): ToastInputFields => {
   if (typeof toastOrTitle === 'string') {
@@ -147,7 +145,6 @@ export class ToastsApi implements IToasts {
   public addInfo(toastOrTitle: ToastInput, options?: ToastOptions) {
     return this.add({
       color: 'primary',
-      iconType: 'info',
       ...normalizeToast(toastOrTitle),
       ...options,
     });
@@ -163,7 +160,6 @@ export class ToastsApi implements IToasts {
   public addSuccess(toastOrTitle: ToastInput, options?: ToastOptions) {
     return this.add({
       color: 'success',
-      iconType: 'check',
       ...normalizeToast(toastOrTitle),
       ...options,
     });
@@ -179,7 +175,6 @@ export class ToastsApi implements IToasts {
   public addWarning(toastOrTitle: ToastInput, options?: ToastOptions) {
     return this.add({
       color: 'warning',
-      iconType: 'help',
       toastLifeTimeMs: this.uiSettings.get('notifications:lifetime:warning'),
       ...normalizeToast(toastOrTitle),
       ...options,
@@ -200,7 +195,6 @@ export class ToastsApi implements IToasts {
     });
     return this.add({
       color: 'danger',
-      iconType: 'error',
       toastLifeTimeMs: this.uiSettings.get('notifications:lifetime:warning'),
       ...normalizeToast(toastOrTitle),
       ...options,
@@ -228,17 +222,14 @@ export class ToastsApi implements IToasts {
     const message = options.toastMessage || error.message;
     return this.add({
       color: 'danger',
-      iconType: 'error',
       toastLifeTimeMs: this.uiSettings.get('notifications:lifetime:error'),
-      text: mountReactNode(
-        <ErrorToast
-          openModal={this.openModal.bind(this)}
-          error={error}
-          title={options.title}
-          toastMessage={message}
-          rendering={this.startDeps!.rendering}
-        />
-      ),
+      text: message,
+      actionProps: getErrorToastActionProps({
+        title: options.title,
+        error,
+        openModal: this.openModal.bind(this),
+        rendering: this.startDeps!.rendering,
+      }),
       ...options,
     });
   }

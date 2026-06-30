@@ -8,8 +8,6 @@
     "@kbn/i18n",
     "@kbn/inspector-plugin",
     "@kbn/core",
-    "@kbn/react-kibana-mount",
-    "@kbn/core-i18n-browser",
     "@kbn/es-types",
   ],
   "exclude": ["target/**/*"]

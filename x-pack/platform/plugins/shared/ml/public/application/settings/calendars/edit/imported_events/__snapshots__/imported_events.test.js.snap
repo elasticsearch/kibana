@@ -225,10 +225,9 @@ exports[`ImportedEvents Renders imported events 1`] = `
           </tbody>
         </table>
       </div>
-      <div>
-        <div
-          class="euiSpacer euiSpacer--m emotion-euiSpacer-m"
-        />
+      <div
+        class="css-1gb0nlc-root-PaginationBar"
+      >
         <div
           class="euiFlexGroup eui-xScroll emotion-euiFlexGroup-wrap-s-spaceBetween-center-row"
         >
