@@ -67,6 +67,7 @@ export const ENTITY_STORE_ROUTES = {
     ENTITY_MAINTAINERS_START: (id: string) => `${INTERNAL_BASE}/entity_maintainers/start/${id}`,
     ENTITY_MAINTAINERS_STOP: (id: string) => `${INTERNAL_BASE}/entity_maintainers/stop/${id}`,
     ENTITY_MAINTAINERS_RUN: (id: string) => `${INTERNAL_BASE}/entity_maintainers/run/${id}`,
+    DISCOVERED_SOURCES: `${INTERNAL_BASE}/discovered_sources`,
   },
 } as const;
 

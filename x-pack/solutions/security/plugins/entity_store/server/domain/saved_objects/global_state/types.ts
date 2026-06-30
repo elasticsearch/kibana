@@ -120,11 +120,38 @@ const version3: SavedObjectsFullModelVersion = {
   },
 };
 
+const logExtractionSchemaV4 = logExtractionSchemaV3.extends({
+  useDiscoveredIndexSource: schema.maybe(schema.boolean()),
+});
+
+const globalStateSchemaV4 = globalStateSchemaV3.extends({
+  logsExtraction: logExtractionSchemaV4,
+});
+
+const version4: SavedObjectsFullModelVersion = {
+  changes: [
+    {
+      type: 'data_backfill',
+      backfillFn: () => ({
+        attributes: {
+          logsExtraction: {
+            useDiscoveredIndexSource: false,
+          },
+        },
+      }),
+    },
+  ],
+  schemas: {
+    create: globalStateSchemaV4,
+    forwardCompatibility: globalStateSchemaV4.extends({}, { unknowns: 'ignore' }),
+  },
+};
+
 export const EntityStoreGlobalStateType: SavedObjectsType = {
   name: EntityStoreGlobalStateTypeName,
   hidden: false,
   namespaceType: 'multiple-isolated',
   mappings: EntityStoreGlobalStateTypeMappings,
-  modelVersions: { 1: version1, 2: version2, 3: version3 },
+  modelVersions: { 1: version1, 2: version2, 3: version3, 4: version4 },
   hiddenFromHttpApis: true,
 };
