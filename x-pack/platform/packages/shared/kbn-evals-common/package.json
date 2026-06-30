@@ -9,6 +9,6 @@
     "openapi:generate:debug": "node --inspect-brk scripts/openapi/generate"
   },
   "dependencies": {
-    "simple-statistics": "7.8.8"
+    "simple-statistics": "7.9.0"
   }
 }

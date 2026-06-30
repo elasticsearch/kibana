@@ -1554,7 +1554,7 @@
     "safe-stable-stringify": "2.5.0",
     "seedrandom": "3.0.5",
     "semver": "7.8.0",
-    "simple-statistics": "7.8.8",
+    "simple-statistics": "7.9.0",
     "snakecase-keys": "8.0.1",
     "source-map-support": "0.5.21",
     "stats-lite": "2.2.0",
@@ -1598,7 +1598,7 @@
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "12.1.0",
-    "@arizeai/phoenix-client": "4.2.0",
+    "@arizeai/phoenix-client": "6.10.1",
     "@axe-core/playwright": "4.11.0",
     "@babel/core": "7.26.8",
     "@babel/eslint-parser": "7.24.7",
