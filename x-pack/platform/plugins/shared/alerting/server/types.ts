@@ -26,6 +26,7 @@ import type {
   ISearchStartSearchSource,
 } from '@kbn/data-plugin/common';
 import type { LicenseType } from '@kbn/licensing-types';
+import type { SpaceId } from '@kbn/core-spaces-common';
 import type {
   IScopedClusterClient,
   SavedObjectAttributes,
@@ -167,7 +168,7 @@ export interface RuleExecutorOptions<
   previousStartedAt: Date | null;
   rule: SanitizedRuleConfig;
   services: RuleExecutorServices<InstanceState, InstanceContext, ActionGroupIds, AlertData>;
-  spaceId: string;
+  spaceId: SpaceId;
   startedAt: Date;
   startedAtOverridden: boolean;
   state: State;

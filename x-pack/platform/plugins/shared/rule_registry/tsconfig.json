@@ -34,7 +34,8 @@
     "@kbn/core-http-router-server-mocks",
     "@kbn/core-http-server",
     "@kbn/alerting-types",
-    "@kbn/management-settings-ids"
+    "@kbn/management-settings-ids",
+    "@kbn/core-spaces-common"
   ],
   "exclude": [
     "target/**/*",

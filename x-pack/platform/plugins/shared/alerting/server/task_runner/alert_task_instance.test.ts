@@ -66,6 +66,30 @@ describe('Alert Task Instance', () => {
     expect(alertTaskInsatnce).toEqual(taskInstance);
   });
 
+  test(`decodes a serialized spaceId param`, () => {
+    const taskInstance: ConcreteTaskInstance = {
+      id: uuidv4(),
+      attempts: 0,
+      status: TaskStatus.Running,
+      version: '123',
+      runAt: new Date(),
+      scheduledAt: new Date(),
+      startedAt: new Date(),
+      retryAt: new Date(Date.now() + 5 * 60 * 1000),
+      state: {},
+      taskType: 'alerting:test',
+      params: {
+        alertId: '1',
+        spaceId: 'my-space',
+      },
+      ownerId: null,
+    };
+
+    const alertTaskInstance = taskInstanceToAlertTaskInstance(taskInstance);
+
+    expect(alertTaskInstance.params.spaceId).toEqual('my-space');
+  });
+
   test(`validates that a TaskInstance has valid Params`, () => {
     const taskInstance: ConcreteTaskInstance = {
       id: uuidv4(),

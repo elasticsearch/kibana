@@ -22,6 +22,7 @@ import type { Logger } from '@kbn/logging';
 import type { SharePluginStart } from '@kbn/share-plugin/server';
 import { dataViewPluginMocks } from '@kbn/data-views-plugin/public/mocks';
 import { DEFAULT_FLAPPING_SETTINGS } from '@kbn/alerting-plugin/common/rules_settings';
+import { asSpaceId } from '@kbn/core-spaces-common';
 
 export const createDefaultAlertExecutorOptions = <
   Params extends RuleTypeParams = never,
@@ -74,7 +75,7 @@ export const createDefaultAlertExecutorOptions = <
     snoozeSchedule: [],
   },
   params,
-  spaceId: 'space-id',
+  spaceId: asSpaceId('space-id'),
   services: {
     alertFactory: alertsMock.createRuleExecutorServices<InstanceState, InstanceContext>()
       .alertFactory,

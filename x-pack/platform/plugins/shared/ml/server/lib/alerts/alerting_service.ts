@@ -116,7 +116,7 @@ export function buildExplorerUrl(
   jobIds: string[],
   timeRange: { from: string; to: string; mode?: string },
   type: MlAnomalyResultType,
-  spaceId: string,
+  spaceId: SpaceId,
   r?: AlertExecutionResult
 ): string {
   const isInfluencerResult = type === ML_ANOMALY_RESULT_TYPE.INFLUENCER;
@@ -185,8 +185,7 @@ export function buildExplorerUrl(
     },
   };
 
-  // spaceId comes from alerting executor contract (string) — written by validated handlers. Trusted boundary.
-  const spacePathComponent = spaceId ? getSpaceUrlPrefix(spaceId as SpaceId) : '';
+  const spacePathComponent = spaceId ? getSpaceUrlPrefix(spaceId) : '';
 
   return `${spacePathComponent}/app/ml/explorer/?_g=${encodeURIComponent(
     rison.encode(globalState)
@@ -1006,7 +1005,7 @@ export function alertingServiceProvider(
   const getFormatted = async (
     indexPattern: string,
     resultType: MlAnomalyDetectionAlertParams['resultType'],
-    spaceId: string,
+    spaceId: SpaceId,
     value: AggResultsResponse
   ): Promise<
     | { payload: AnomalyDetectionAlertPayload; context: AnomalyDetectionAlertContext; name: string }
@@ -1051,7 +1050,7 @@ export function alertingServiceProvider(
      */
     execute: async (
       params: MlAnomalyDetectionAlertParams,
-      spaceId: string,
+      spaceId: SpaceId,
       state?: AnomalyDetectionRuleState
     ): Promise<
       | {

@@ -13,6 +13,7 @@ import type { ConcreteTaskInstance } from '@kbn/task-manager-plugin/server';
 import { addSpanLabels } from '@kbn/apm-utils';
 import { nanosToMillis } from '@kbn/event-log-plugin/server';
 import { ATTACK_DISCOVERY_SCHEDULES_ALERT_TYPE_ID } from '@kbn/elastic-assistant-common';
+import { DEFAULT_SPACE_ID, type SpaceId } from '@kbn/core-spaces-common';
 import { ActionScheduler, type RunResult } from './action_scheduler';
 import type {
   RuleRunnerErrorStackTraceLog,
@@ -290,9 +291,13 @@ export class TaskRunner<
     });
 
     const {
-      params: { alertId: ruleId, spaceId },
+      params: { alertId: ruleId, spaceId: maybeSpaceId },
       state: { previousStartedAt },
     } = this.taskInstance;
+    // spaceId is optional in the persisted task params (legacy), but is always
+    // populated for tasks scheduled by the rules client. Default to the built-in
+    // space at this trusted boundary so the branded SpaceId flows downstream.
+    const spaceId: SpaceId = maybeSpaceId ?? DEFAULT_SPACE_ID;
 
     const { queryDelaySettings, flappingSettings: spaceFlappingSettings } =
       await this.context.rulesSettingsService.getSettings(fakeRequest, spaceId);

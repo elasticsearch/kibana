@@ -8,6 +8,7 @@ import { transformError } from '@kbn/securitysolution-es-utils';
 import type { Logger, StartServicesAccessor, IKibanaResponse } from '@kbn/core/server';
 import type { IRuleDataClient } from '@kbn/rule-registry-plugin/server';
 import { buildRouteValidationWithZod } from '@kbn/zod-helpers/v4';
+import { asSpaceId } from '@kbn/core-spaces-common';
 import { RULES_API_READ } from '@kbn/security-solution-features/constants';
 import { DETECTION_ENGINE_RULES_PREVIEW } from '../../../../../../common/constants';
 import { validateCreateRuleProps } from '../../../../../../common/api/detection_engine/rule_management';
@@ -89,7 +90,7 @@ export const previewRulesRoute = (
               body: request.body,
               enableLoggedRequests: request.query.enable_logged_requests,
               request,
-              spaceId: siemClient.getSpaceId(),
+              spaceId: asSpaceId(siemClient.getSpaceId()),
               actionsClient,
               license,
               savedObjectsClient: coreContext.savedObjects.client,

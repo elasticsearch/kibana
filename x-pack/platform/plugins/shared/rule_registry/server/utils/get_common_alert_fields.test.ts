@@ -19,6 +19,7 @@ import {
   ALERT_RULE_TAGS,
   TIMESTAMP,
 } from '@kbn/rule-data-utils';
+import { asSpaceId } from '@kbn/core-spaces-common';
 import { getCommonAlertFields } from './get_common_alert_fields';
 
 describe('getCommonAlertFields', () => {
@@ -39,7 +40,7 @@ describe('getCommonAlertFields', () => {
           tags: ['test-tag'],
         },
         startedAt: new Date('2023-10-01T00:00:00Z'),
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
       })
     ).toEqual({
       [ALERT_RULE_PARAMETERS]: { foo: 'bar' },
@@ -75,7 +76,7 @@ describe('getCommonAlertFields', () => {
             tags: ['test-tag'],
           },
           startedAt: new Date('2023-10-01T00:00:00Z'),
-          spaceId: 'default',
+          spaceId: asSpaceId('default'),
         },
         true
       )

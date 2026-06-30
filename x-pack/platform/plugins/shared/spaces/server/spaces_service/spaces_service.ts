@@ -6,7 +6,7 @@
  */
 
 import type { KibanaRequest } from '@kbn/core/server';
-import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
+import { DEFAULT_SPACE_ID, type SpaceId } from '@kbn/core-spaces-common';
 
 import type { Space } from '../../common';
 import { namespaceToSpaceId, spaceIdToNamespace } from '../lib/utils/namespace';
@@ -20,7 +20,7 @@ export interface SpacesServiceSetup {
    * Retrieves the space id associated with the provided request.
    * @param request the request.
    */
-  getSpaceId(request: KibanaRequest): string;
+  getSpaceId(request: KibanaRequest): SpaceId;
 
   /**
    * Converts the provided space id into the corresponding Saved Objects `namespace` id.
@@ -49,7 +49,7 @@ export interface SpacesServiceStart {
    * Retrieves the space id associated with the provided request.
    * @param request the request.
    */
-  getSpaceId(request: KibanaRequest): string;
+  getSpaceId(request: KibanaRequest): SpaceId;
 
   /**
    * Indicates if the provided request is executing within the context of the `default` space.

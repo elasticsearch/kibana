@@ -18,6 +18,7 @@ project:
   sourceRoot: x-pack/platform/packages/private/kbn-alerting-state-types
 dependsOn:
   - '@kbn/config-schema'
+  - '@kbn/core-spaces-common'
 tags:
   - shared-server
   - package

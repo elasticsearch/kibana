@@ -6,6 +6,7 @@
  */
 
 import { loggingSystemMock } from '@kbn/core/server/mocks';
+import { asSpaceId } from '@kbn/core-spaces-common';
 import type { RuleExecutorServicesMock } from '@kbn/alerting-plugin/server/mocks';
 import { alertsMock } from '@kbn/alerting-plugin/server/mocks';
 import { DEFAULT_FLAPPING_SETTINGS } from '@kbn/alerting-plugin/common';
@@ -158,7 +159,7 @@ describe('legacyRules_notification_rule_type', () => {
       services: alertServices,
       params: { ruleAlertId: '2222' },
       state: {},
-      spaceId: '',
+      spaceId: asSpaceId('default'),
       startedAt: new Date('2019-12-14T16:40:33.400Z'),
       startedAtOverridden: false,
       previousStartedAt: new Date('2019-12-13T16:40:33.400Z'),
@@ -209,7 +210,7 @@ describe('legacyRules_notification_rule_type', () => {
       });
       await rule.executor(payload);
       expect(logger.error).toHaveBeenCalledWith(
-        `Security Solution notification (Legacy) saved object for alert ${payload.params.ruleAlertId} was not found with id: \"1111\". space id: \"\" This indicates a dangling (Legacy) notification alert. You should delete this rule through \"Kibana UI -> Stack Management -> Rules and Connectors\" to remove this error message.`
+        `Security Solution notification (Legacy) saved object for alert ${payload.params.ruleAlertId} was not found with id: \"1111\". space id: \"default\" This indicates a dangling (Legacy) notification alert. You should delete this rule through \"Kibana UI -> Stack Management -> Rules and Connectors\" to remove this error message.`
       );
     });
 

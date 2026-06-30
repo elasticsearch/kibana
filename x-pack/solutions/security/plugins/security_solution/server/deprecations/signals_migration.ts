@@ -13,16 +13,16 @@ import type {
 } from '@kbn/core/server';
 
 import { i18n } from '@kbn/i18n';
-import { getSpaceUrlPrefix, type SpaceId } from '@kbn/core-spaces-common';
+import { asSpaceId, getSpaceUrlPrefix } from '@kbn/core-spaces-common';
 import { DETECTION_ENGINE_SIGNALS_MIGRATION_STATUS_URL } from '../../common/constants';
 import type { ConfigType } from '../config';
 
 import { getNonMigratedSignalsInfo } from '../lib/detection_engine/migrations/get_non_migrated_signals_info';
 
 const constructMigrationApiCall = (space: string, range: string) =>
-  // `space` is a known space id from cluster state — trusted boundary.
+  // `space` is parsed from signals index names; validate-and-brand at this boundary.
   `GET <kibana host>:<port>${getSpaceUrlPrefix(
-    space as SpaceId
+    asSpaceId(space)
   )}${DETECTION_ENGINE_SIGNALS_MIGRATION_STATUS_URL}?from=${range}`;
 
 export const getSignalsMigrationDeprecationsInfo = async (

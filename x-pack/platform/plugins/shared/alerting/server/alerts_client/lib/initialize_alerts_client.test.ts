@@ -6,6 +6,7 @@
  */
 
 import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
+import { asSpaceId } from '@kbn/core-spaces-common';
 import {
   mockTaskInstance,
   ruleType,
@@ -103,7 +104,7 @@ describe('initializeAlertsClient', () => {
         ruleId: RULE_ID,
         ruleLogPrefix: `${RULE_TYPE_ID}:${RULE_ID}: '${RULE_NAME}'`,
         ruleRunMetricsStore,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
         isServerless: false,
       },
       executionId: 'abc',
@@ -166,7 +167,7 @@ describe('initializeAlertsClient', () => {
         ruleId: RULE_ID,
         ruleLogPrefix: `${RULE_TYPE_ID}:${RULE_ID}: '${RULE_NAME}'`,
         ruleRunMetricsStore,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
         isServerless: false,
       },
       executionId: 'abc',
@@ -230,7 +231,7 @@ describe('initializeAlertsClient', () => {
         ruleId: RULE_ID,
         ruleLogPrefix: `${RULE_TYPE_ID}:${RULE_ID}: '${RULE_NAME}'`,
         ruleRunMetricsStore,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
         isServerless: false,
       },
       executionId: 'abc',
@@ -303,7 +304,7 @@ describe('initializeAlertsClient', () => {
         ruleId: RULE_ID,
         ruleLogPrefix: `${RULE_TYPE_ID}:${RULE_ID}: '${RULE_NAME}'`,
         ruleRunMetricsStore,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
         isServerless: false,
       },
       executionId: 'abc',

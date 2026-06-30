@@ -18,7 +18,7 @@ interface BuildRuleUrlOpts<Params extends RuleTypeParams> {
   kibanaBaseUrl: string | undefined;
   logger: Logger;
   rule: ActionSchedulerRule<Params>;
-  spaceId: string;
+  spaceId: SpaceId;
   start?: number;
 }
 
@@ -44,8 +44,7 @@ export const buildRuleUrl = <Params extends RuleTypeParams>(
   try {
     const basePathname = new URL(opts.kibanaBaseUrl).pathname;
     const basePathnamePrefix = basePathname !== '/' ? `${basePathname}` : '';
-    // opts.spaceId originates from task params, written by validated request handlers — trusted boundary.
-    const spaceIdSegment = getSpaceUrlPrefix(opts.spaceId as SpaceId);
+    const spaceIdSegment = getSpaceUrlPrefix(opts.spaceId);
 
     const ruleUrl = new URL(
       [basePathnamePrefix, spaceIdSegment, relativePath].join(''),

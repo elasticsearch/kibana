@@ -6,6 +6,7 @@
  */
 
 import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
+import { asSpaceId } from '@kbn/core-spaces-common';
 import { buildRuleUrl } from './build_rule_url';
 import { getRule } from '../test_fixtures';
 
@@ -23,7 +24,7 @@ describe('buildRuleUrl', () => {
         kibanaBaseUrl: undefined,
         logger,
         rule,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
       })
     ).toBeUndefined();
   });
@@ -34,7 +35,7 @@ describe('buildRuleUrl', () => {
         kibanaBaseUrl: 'http://localhost:5601',
         logger,
         rule,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
       })
     ).toEqual({
       absoluteUrl:
@@ -52,7 +53,7 @@ describe('buildRuleUrl', () => {
         kibanaBaseUrl: 'http://localhost:5601',
         logger,
         rule,
-        spaceId: 'my-special-space',
+        spaceId: asSpaceId('my-special-space'),
       })
     ).toEqual({
       absoluteUrl:
@@ -71,7 +72,7 @@ describe('buildRuleUrl', () => {
         kibanaBaseUrl: 'http://localhost:5601',
         logger,
         rule,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
       })
     ).toEqual({
       absoluteUrl: 'http://localhost:5601/app/test/my-custom-rule-page/1',
@@ -92,7 +93,7 @@ describe('buildRuleUrl', () => {
         logger,
         rule,
         start: 123456789,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
       })
     ).toEqual({
       absoluteUrl:
@@ -112,7 +113,7 @@ describe('buildRuleUrl', () => {
         logger,
         rule,
         start: 123456789,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
       })
     ).toEqual({
       absoluteUrl:
@@ -130,7 +131,7 @@ describe('buildRuleUrl', () => {
         kibanaBaseUrl: 'foo-url',
         logger,
         rule,
-        spaceId: 'default',
+        spaceId: asSpaceId('default'),
       })
     ).toBeUndefined();
 

@@ -40,6 +40,7 @@ dependsOn:
   - '@kbn/core-http-server'
   - '@kbn/alerting-types'
   - '@kbn/management-settings-ids'
+  - '@kbn/core-spaces-common'
 tags:
   - plugin
   - prod

@@ -2272,7 +2272,7 @@ describe('Task Runner', () => {
         ...mockedTaskInstance,
         params: {
           ...mockedTaskInstance.params,
-          spaceId: 'test space',
+          spaceId: 'test-space',
         },
       },
       context: taskRunnerFactoryInitializerParams,
@@ -2290,14 +2290,14 @@ describe('Task Runner', () => {
       );
       const ruleExecuteDebugLog = logger.debug.mock.calls[4][0];
       expect(ruleExecuteDebugLog as string).toMatchInlineSnapshot(
-        `"Executing Rule test space:test:1 has resulted in Error: Saved object [alert/1] not found"`
+        `"Executing Rule test-space:test:1 has resulted in Error: Saved object [alert/1] not found"`
       );
 
       expect(logger.error).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledTimes(1);
       expect(logger.warn).nthCalledWith(
         1,
-        `Unable to execute rule "1" in the "test space" space because Saved object [alert/1] not found - this rule will not be rescheduled. To restart rule execution, try disabling and re-enabling this rule.`,
+        `Unable to execute rule "1" in the "test-space" space because Saved object [alert/1] not found - this rule will not be rescheduled. To restart rule execution, try disabling and re-enabling this rule.`,
         { tags: ['1', 'test'] }
       );
       expect(mockUsageCounter.incrementCounter).not.toHaveBeenCalled();
