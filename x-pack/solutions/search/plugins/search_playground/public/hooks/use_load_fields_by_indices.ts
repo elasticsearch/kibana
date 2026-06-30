@@ -6,7 +6,7 @@
  */
 
 import { useEffect } from 'react';
-import type { UseFormReturn } from 'react-hook-form/dist/types';
+import type { UseFormReturn } from 'react-hook-form';
 import type { IndexFields } from '@kbn/search-queries';
 import {
   generateSearchQuery,

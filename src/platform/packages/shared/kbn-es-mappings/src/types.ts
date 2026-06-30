@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type api from '@elastic/elasticsearch/lib/api/types';
+import type * as api from '@elastic/elasticsearch/lib/api/types';
 import type { Required } from 'utility-types';
 import type { UnionKeys, Exact, MissingKeysError, PartialWithArrayValues } from './types_helpers';
 

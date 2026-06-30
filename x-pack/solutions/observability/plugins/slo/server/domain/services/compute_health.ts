@@ -7,7 +7,9 @@
 
 import type { IScopedClusterClient } from '@kbn/core/server';
 import { ALL_VALUE } from '@kbn/slo-schema';
-import type { TransformGetTransformStatsTransformStats } from 'elasticsearch-8.x/lib/api/types';
+import type { estypes } from 'elasticsearch-8.x';
+
+type TransformGetTransformStatsTransformStats = estypes.TransformGetTransformStatsTransformStats;
 import { keyBy, uniqBy, type Dictionary } from 'lodash';
 import pLimit from 'p-limit';
 import {

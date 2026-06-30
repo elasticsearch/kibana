@@ -189,7 +189,7 @@ describe('Streams Plugin', () => {
       mockRepositoryClient.fetch.mockResolvedValue({
         enabled: true,
         can_manage: true,
-      });
+      } as unknown as Awaited<ReturnType<typeof mockRepositoryClient.fetch>>);
 
       await getWiredStatus();
       await getWiredStatus();

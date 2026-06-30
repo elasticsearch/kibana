@@ -11,7 +11,7 @@ import * as Url from 'url';
 import * as Fs from 'fs';
 
 import { CA_CERT_PATH } from '@kbn/dev-utils';
-import type { ClientOptions } from '@elastic/elasticsearch';
+import type { ClientOptions } from '@elastic/elasticsearch/lib/client';
 import { Client as EsClient, HttpConnection } from '@elastic/elasticsearch';
 
 /** options for creating es instances used in functional testing scenarios */

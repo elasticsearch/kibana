@@ -11,7 +11,11 @@ import { evaluate } from 'langsmith/evaluation';
 import { isLangSmithEnabled } from '@kbn/langchain/server/tracers/langsmith';
 import { Client } from 'langsmith';
 import type { Logger } from '@kbn/logging';
-import type { TargetConfigT } from 'langsmith/dist/evaluation/_runner';
+// Structural copy of langsmith's internal `TargetConfigT` — not exported from the public entry.
+type TargetConfigT = Record<string, unknown> & {
+  attachments?: Record<string, unknown>;
+  callbacks?: unknown;
+};
 import type { LangSmithEvaluationOptions } from '../../../../../common/siem_migrations/model/common.gen';
 import type { SiemMigrationTaskRunner } from './siem_migrations_task_runner';
 import type { MigrationDocument, ItemDocument, SiemMigrationsClientDependencies } from '../types';

@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 import {
   SNAPSHOT_CUSTOM_AGGREGATIONS,
   type SnapshotCustomMetricInput,

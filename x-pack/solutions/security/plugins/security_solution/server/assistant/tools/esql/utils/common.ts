@@ -7,7 +7,7 @@
 
 import type { BaseMessage } from '@langchain/core/messages';
 import { AIMessage } from '@langchain/core/messages';
-import type { ToolCall } from '@langchain/core/dist/messages/tool';
+import type { ToolCall } from '@langchain/core/messages/tool';
 import type { AssistantToolParams } from '@kbn/elastic-assistant-plugin/server';
 import { toolDetails } from '../tools/inspect_index_mapping_tool/inspect_index_mapping_tool';
 

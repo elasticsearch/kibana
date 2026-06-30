@@ -59,6 +59,6 @@ export const config: PluginConfigDescriptor<ConfigSchema> = {
 };
 
 export type { ConfigType, PluginSetup, PluginStart };
-export { Plugin };
+export type { Plugin };
 export { AppClient };
 export type { SecuritySolutionApiRequestHandlerContext } from './types';

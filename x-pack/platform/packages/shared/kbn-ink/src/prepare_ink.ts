@@ -11,7 +11,7 @@ import Module from 'node:module';
 // eslint-disable-next-line no-new-func
 const dynamicImport = new Function('path', 'return import(path);');
 
-let ink: typeof import('ink/build');
+let ink: typeof import('ink');
 
 function installModuleIntercept() {
   // @ts-expect-error

@@ -240,7 +240,6 @@ for (const flattened of [true, false]) {
         [ALERT_START]: '2023-03-28T12:27:28.159Z',
         [ALERT_END]: '2023-03-30T12:27:28.159Z',
         [ALERT_TIME_RANGE]: { gte: '2023-03-28T12:27:28.159Z', lte: '2023-03-30T12:27:28.159Z' },
-        // @ts-expect-error
         [SPACE_IDS]: ['*'],
         [VERSION]: '8.9.0',
         [TAGS]: ['rule-', '-tags'],

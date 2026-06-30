@@ -8,7 +8,7 @@
  */
 
 import invariant from 'node:assert';
-import type api from '@elastic/elasticsearch/lib/api/types';
+import type * as api from '@elastic/elasticsearch/lib/api/types';
 import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
 import { prettyPrintAndSortKeys } from '@kbn/utils';
 import { errors as EsErrors } from '@elastic/elasticsearch';

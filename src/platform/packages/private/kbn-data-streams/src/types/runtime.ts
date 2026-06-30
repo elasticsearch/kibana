@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type api from '@elastic/elasticsearch/lib/api/types';
+import type * as api from '@elastic/elasticsearch/lib/api/types';
 
 export interface BaseSearchRuntimeMappings {
   [objectPath: string]: api.MappingRuntimeField;

@@ -6,7 +6,7 @@
  */
 
 import type OpenAI from 'openai';
-import type { Observable } from 'rxjs';
+import type { Observable, OperatorFunction } from 'rxjs';
 import { catchError, from, mergeMap } from 'rxjs';
 import type {
   ChatCompletionChunkEvent,
@@ -15,7 +15,10 @@ import type {
 import { createInferenceRequestAbortedError } from '@kbn/inference-common';
 import { tokenCountFromOpenAI, chunkFromCompletionResponse } from './from_openai';
 
-export function processOpenAIResponse() {
+export function processOpenAIResponse(): OperatorFunction<
+  OpenAI.ChatCompletion,
+  ChatCompletionChunkEvent | ChatCompletionTokenCountEvent
+> {
   return (source: Observable<OpenAI.ChatCompletion>) => {
     return source.pipe(
       mergeMap((response): Observable<ChatCompletionChunkEvent | ChatCompletionTokenCountEvent> => {

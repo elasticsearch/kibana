@@ -1,11 +1,15 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "moduleResolution": "node",
+    "module": "commonjs",
     "outDir": "target/types",
     "types": ["node", "jest"],
+    "baseUrl": ".",
     "paths": {
-      "#pipeline-utils": [".buildkite/pipeline-utils/index.ts"],
-      "#pipeline-utils/*": [".buildkite/pipeline-utils/*"]
+      "#pipeline-utils": ["pipeline-utils/index.ts"],
+      "#pipeline-utils/*": ["pipeline-utils/*"]
     }
   },
   "include": [
@@ -16,7 +20,5 @@
     "pull_requests.json",
     "pipeline-resource-definitions/**/*.ts"
   ],
-  "exclude": [
-    "target/**/*",
-  ]
+  "exclude": ["target/**/*"]
 }

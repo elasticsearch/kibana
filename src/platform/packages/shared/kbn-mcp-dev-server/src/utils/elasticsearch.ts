@@ -16,7 +16,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ClientOptions } from '@elastic/elasticsearch';
+import type { ClientOptions } from '@elastic/elasticsearch/lib/client';
 import { Client } from '@elastic/elasticsearch';
 
 const {

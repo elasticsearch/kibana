@@ -18,7 +18,7 @@ import type {
 } from './lib';
 import type { Test, Suite } from './fake_mocha_types';
 
-export { Lifecycle, Config };
+export type { Lifecycle, Config };
 
 export interface AsyncInstance<T> {
   /**

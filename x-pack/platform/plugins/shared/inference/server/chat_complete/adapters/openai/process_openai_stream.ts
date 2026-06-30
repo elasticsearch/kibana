@@ -6,7 +6,7 @@
  */
 
 import type OpenAI from 'openai';
-import type { Observable } from 'rxjs';
+import type { Observable, OperatorFunction } from 'rxjs';
 import { catchError, filter, from, map, mergeMap, tap } from 'rxjs';
 import type {
   ChatCompletionChunkEvent,
@@ -20,7 +20,10 @@ import { tokenCountFromOpenAI, chunkFromOpenAI } from './from_openai';
 import { convertStreamError, type ErrorLine } from './stream_errors';
 import { createTokenLimitReachedError } from '../../../../common/chat_complete/errors';
 
-export function processOpenAIStream() {
+export function processOpenAIStream(): OperatorFunction<
+  string,
+  ChatCompletionChunkEvent | ChatCompletionTokenCountEvent
+> {
   return (source: Observable<string>) => {
     return source.pipe(
       filter((line) => !!line && line !== '[DONE]'),

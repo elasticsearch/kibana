@@ -17,7 +17,7 @@ import type { Readable } from 'stream';
 import type { Logger } from '@kbn/logging';
 import type { BaseChatModelParams } from '@langchain/core/language_models/chat_models';
 import type { CallbackManagerForLLMRun } from '@langchain/core/callbacks/manager';
-import type { GeminiPartText, GeminiRequest } from '@langchain/google-common/dist/types';
+import type { GeminiPartText, GeminiRequest } from '@langchain/google-common/types';
 import type { TelemetryMetadata } from '@kbn/actions-plugin/server/lib';
 import {
   convertResponseBadFinishReasonToErrorMsg,

@@ -7,11 +7,11 @@
 
 import type { PhoenixClient } from '@arizeai/phoenix-client';
 import { createClient } from '@arizeai/phoenix-client';
-import type { DatasetInfo } from '@arizeai/phoenix-client/dist/esm/types/datasets';
+import type { DatasetInfo } from '@arizeai/phoenix-client/types/datasets';
 import type {
   ExperimentRun,
   ExperimentEvaluationRun,
-} from '@arizeai/phoenix-client/dist/esm/types/experiments';
+} from '@arizeai/phoenix-client/types/experiments';
 import type { SomeDevLog } from '@kbn/some-dev-log';
 import type { Model } from '@kbn/inference-common';
 import { withInferenceContext } from '@kbn/inference-tracing';
@@ -53,7 +53,18 @@ export class KibanaPhoenixClient implements EvalsExecutorClient {
   }
 
   private async syncDataSet(dataset: EvaluationDataset): Promise<{ datasetId: string }> {
-    const datasets = await import('@arizeai/phoenix-client/datasets');
+    // `module: preserve` + bundler resolution wrap the ESM namespace as
+    // `{ default: <namespace> }` when imported from a CJS-context package.
+    // Unwrap at runtime; cast to `any` because TS sees only the wrapped shape.
+    const datasetsImport = (await import('@arizeai/phoenix-client/datasets')) as any;
+    const datasets = (datasetsImport.default ?? datasetsImport) as {
+      createDataset: (args: {
+        client: PhoenixClient;
+        name: string;
+        description?: string;
+        examples: Array<{ input: unknown; output: unknown; metadata: unknown }>;
+      }) => Promise<{ datasetId: string }>;
+    };
 
     const getDatasetsByNameResponse = await this.phoenixClient.GET('/v1/datasets', {
       params: {
@@ -213,7 +224,10 @@ export class KibanaPhoenixClient implements EvalsExecutorClient {
         ? (await this.getDatasetByName(dataset.name)).id
         : (await this.syncDataSet(dataset)).datasetId;
 
-      const experiments = await import('@arizeai/phoenix-client/experiments');
+      const experimentsImport = (await import('@arizeai/phoenix-client/experiments')) as any;
+      const experiments = (experimentsImport.default ?? experimentsImport) as {
+        runExperiment: (args: any) => Promise<any>;
+      };
 
       const ran = await experiments.runExperiment({
         client: this.phoenixClient,

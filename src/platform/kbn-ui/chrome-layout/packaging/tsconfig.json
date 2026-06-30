@@ -4,6 +4,10 @@
     "outDir": "target/types",
     "noEmit": true,
     "jsx": "react",
+    // node resolution is deprecated in TS6; this packaging config still emits a
+    // node-resolved npm package, so silence the diagnostic locally (the root base
+    // no longer carries ignoreDeprecations).
+    "ignoreDeprecations": "6.0",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
@@ -11,10 +15,10 @@
     "declaration": false,
     "paths": {
       "@kbn/ui-chrome-layout-constants": [
-        "src/platform/kbn-ui/chrome-layout-constants/target/index.d.ts"
+        "../../chrome-layout-constants/target/index.d.ts"
       ],
       "@kbn/ui-chrome-layout-utils": [
-        "src/platform/kbn-ui/chrome-layout-utils/target/index.d.ts"
+        "../../chrome-layout-utils/target/index.d.ts"
       ]
     }
   },

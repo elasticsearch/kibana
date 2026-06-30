@@ -10,7 +10,7 @@ import { rootRequest } from './common';
 /**
  * Deletes all existing Fleet packages, package policies, agent policies, and agents.
  */
-export const cleanFleet = () => {
+export const cleanFleet = (): Cypress.Chainable => {
   // NOTE: order does matter.
   return deleteAgents()
     .then(() => {

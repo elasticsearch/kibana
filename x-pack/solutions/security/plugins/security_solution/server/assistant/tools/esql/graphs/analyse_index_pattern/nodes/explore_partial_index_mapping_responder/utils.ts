@@ -7,7 +7,7 @@
 
 import type { AIMessage, BaseMessage } from '@langchain/core/messages';
 import { ToolMessage } from '@langchain/core/messages';
-import type { ToolCall } from '@langchain/core/dist/messages/tool';
+import type { ToolCall } from '@langchain/core/messages/tool';
 import { set } from '@kbn/safer-lodash-set';
 import { toolDetails } from '../../../../tools/inspect_index_mapping_tool/inspect_index_mapping_tool';
 import { messageContainsToolCalls } from '../../../../utils/common';

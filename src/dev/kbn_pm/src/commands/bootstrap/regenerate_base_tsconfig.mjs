@@ -27,8 +27,8 @@ export async function regenerateBaseTsconfig(packages, log) {
   const updated = [
     ...lines.slice(0, start + 1),
     ...packages.flatMap((p) => [
-      `      "${p.id}": ["${p.normalizedRepoRelativeDir}"],`,
-      `      "${p.id}/*": ["${p.normalizedRepoRelativeDir}/*"],`,
+      `      "${p.id}": ["./${p.normalizedRepoRelativeDir}"],`,
+      `      "${p.id}/*": ["./${p.normalizedRepoRelativeDir}/*"],`,
     ]),
     ...lines.slice(end),
   ].join('\n');

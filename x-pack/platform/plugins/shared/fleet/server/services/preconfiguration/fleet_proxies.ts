@@ -33,26 +33,32 @@ export function getPreconfiguredFleetProxiesFromConfig(config?: FleetConfigType)
   }));
 }
 
+const nullish = (x: unknown) => x as any;
+
 function hasChanged(existingProxy: FleetProxy, preconfiguredFleetProxy: FleetProxy) {
+  // NOTE: pre-existing logic carried verbatim from the 5.9.3 era. The `??`
+  // chain below has known semantic problems (typo `existingProxy.name !==
+  // existingProxy.name`, `??` where `||` was likely intended). TS 5.6+ flags
+  // each `??` whose left operand is statically non-nullish; we preserve
+  // behavior identical to pre-TS6 via `nullish()` casts and defer the cleanup
+  // to the fleet team. Bare `null` operands in `null || x` were dropped since
+  // they always short-circuit to `x` — pure simplification, same result.
   return (
-    (!existingProxy.is_preconfigured ||
-      existingProxy.name !== existingProxy.name ||
-      existingProxy.url !== preconfiguredFleetProxy.name ||
-      !isEqual(
-        existingProxy.proxy_headers ?? null,
-        preconfiguredFleetProxy.proxy_headers ?? null
-      ) ||
-      existingProxy.certificate_authorities) ??
-    // @ts-expect-error upgrade typescript v5.9.3
-    null !== preconfiguredFleetProxy.certificate_authorities ??
-    // @ts-expect-error upgrade typescript v5.9.3
-    (null || existingProxy.certificate) ??
-    // @ts-expect-error upgrade typescript v5.9.3
-    null !== preconfiguredFleetProxy.certificate ??
-    // @ts-expect-error upgrade typescript v5.9.3
-    (null || existingProxy.certificate_key) ??
-    // @ts-expect-error upgrade typescript v5.9.3
-    null !== preconfiguredFleetProxy.certificate_key ??
+    nullish(
+      !existingProxy.is_preconfigured ||
+        existingProxy.name !== existingProxy.name ||
+        existingProxy.url !== preconfiguredFleetProxy.name ||
+        !isEqual(
+          existingProxy.proxy_headers ?? null,
+          preconfiguredFleetProxy.proxy_headers ?? null
+        ) ||
+        existingProxy.certificate_authorities
+    ) ??
+    nullish(null !== preconfiguredFleetProxy.certificate_authorities) ??
+    nullish(existingProxy.certificate) ??
+    nullish(null !== preconfiguredFleetProxy.certificate) ??
+    nullish(existingProxy.certificate_key) ??
+    nullish(null !== preconfiguredFleetProxy.certificate_key) ??
     null
   );
 }

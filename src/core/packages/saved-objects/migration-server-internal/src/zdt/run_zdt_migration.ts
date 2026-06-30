@@ -23,7 +23,7 @@ import type {
   MigrationResult,
   IDocumentMigrator,
 } from '@kbn/core-saved-objects-base-server-internal';
-import type { Histogram } from '@opentelemetry/api/build/src/metrics/Metric';
+import type { Histogram } from '@opentelemetry/api';
 import { buildMigratorConfigs } from './utils';
 import { migrateIndex } from './migrate_index';
 

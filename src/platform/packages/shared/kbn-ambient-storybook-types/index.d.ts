@@ -7,6 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+// Storybook-only webpack alias defined in `@kbn/storybook`'s webpack config
+// (points at `src/core/public/index.scss`). Side-effect-only import.
+declare module 'core_styles';
+
 // Storybook uses this module and its types are defined in the source but not in the type output
 declare module 'file-system-cache' {
   interface Options {

@@ -6,7 +6,12 @@
  */
 
 import type OpenAI from 'openai';
+import type { OperatorFunction } from 'rxjs';
 import { defer, identity } from 'rxjs';
+import type {
+  ChatCompletionChunkEvent,
+  ChatCompletionTokenCountEvent,
+} from '@kbn/inference-common';
 import { eventSourceStreamIntoObservable } from '../../../util/event_source_stream_into_observable';
 import type { InferenceConnectorAdapter } from '../../types';
 import {
@@ -98,12 +103,15 @@ export const openAIAdapter: InferenceConnectorAdapter = {
       });
     });
 
+    type ChatEvent = ChatCompletionChunkEvent | ChatCompletionTokenCountEvent;
+    const passThrough: OperatorFunction<ChatEvent, ChatEvent> = identity;
+
     if (stream) {
       return connectorResult$.pipe(
         handleConnectorStreamResponse({ processStream: eventSourceStreamIntoObservable }),
         processOpenAIStream(),
         emitTokenCountEstimateIfMissing({ request }),
-        useSimulatedFunctionCalling ? parseInlineFunctionCalls({ logger }) : identity
+        useSimulatedFunctionCalling ? parseInlineFunctionCalls({ logger }) : passThrough
       );
     } else {
       return connectorResult$.pipe(
@@ -112,7 +120,7 @@ export const openAIAdapter: InferenceConnectorAdapter = {
         }),
         processOpenAIResponse(),
         emitTokenCountEstimateIfMissing({ request }),
-        useSimulatedFunctionCalling ? parseInlineFunctionCalls({ logger }) : identity
+        useSimulatedFunctionCalling ? parseInlineFunctionCalls({ logger }) : passThrough
       );
     }
   },

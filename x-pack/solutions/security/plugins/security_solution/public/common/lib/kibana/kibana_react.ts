@@ -14,4 +14,5 @@ import {
 import type { ApmBase } from '@elastic/apm-rum';
 
 export { useKibana } from './use_kibana';
-export { ApmBase, KibanaContextProvider, useUiSetting, useUiSetting$, withKibana };
+export type { ApmBase };
+export { KibanaContextProvider, useUiSetting, useUiSetting$, withKibana };

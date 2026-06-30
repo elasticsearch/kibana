@@ -105,6 +105,10 @@ export class QueryService implements QueryServiceContract {
         )
         .toArrowReader();
 
+      if (!reader) {
+        throw new Error('toArrowReader returned undefined');
+      }
+
       yield* this.iterateReader<T>(reader, context);
 
       this.logger.debug({

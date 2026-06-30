@@ -40,18 +40,17 @@ import {
   TimelineTypeEnum,
 } from './components.gen';
 
+export type { DataProviderType, Note };
 export {
   BareNote,
   BarePinnedEvent,
   ColumnHeaderResult,
   DataProviderResult,
-  DataProviderType,
   DataProviderTypeEnum,
   FavoriteTimelineResponse,
   FilterTimelineResult,
   ImportTimelineResult,
   ImportTimelines,
-  Note,
   PinnedEvent,
   PersistTimelineResponse,
   QueryMatchResult,
