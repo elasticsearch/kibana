@@ -7,14 +7,13 @@
 
 import type { Logger } from '@kbn/core/server';
 import type { BaseParams } from '@kbn/reporting-common/types';
-import { UNVERSIONED_VERSION } from '@kbn/reporting-server';
 
-export function checkParamsVersion(jobParams: BaseParams, logger: Logger) {
+export function checkParamsVersion(jobParams: BaseParams, logger: Logger, defaultVersion: string) {
   if (jobParams.version) {
     logger.debug(`Using reporting job params v${jobParams.version}`);
     return jobParams.version;
   }
 
-  logger.warn(`No version provided in report job params. Assuming ${UNVERSIONED_VERSION}`);
-  return UNVERSIONED_VERSION;
+  logger.debug(`No version provided in report job params. Defaulting to ${defaultVersion}`);
+  return defaultVersion;
 }
