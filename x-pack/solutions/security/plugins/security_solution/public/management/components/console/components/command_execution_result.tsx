@@ -14,11 +14,16 @@ import classNames from 'classnames';
 import type { ResponseActionAgentType } from '../../../../../common/endpoint/service/response_actions/constants';
 import { useDataTestSubj } from '../hooks/state_selectors/use_data_test_subj';
 import { useTestIdGenerator } from '../../../hooks/use_test_id_generator';
+import type { ConsoleTextProps } from './console_text';
 import { ConsoleText } from './console_text';
 
 const COMMAND_EXECUTION_RESULT_SUCCESS_TITLE = i18n.translate(
   'xpack.securitySolution.commandExecutionResult.successTitle',
   { defaultMessage: 'Action completed.' }
+);
+const COMMAND_EXECUTION_RESULT_CANCELED_TITLE = i18n.translate(
+  'xpack.securitySolution.commandExecutionResult.canceledTitle',
+  { defaultMessage: 'Action canceled.' }
 );
 const COMMAND_EXECUTION_SUBMIT_RESULT_SUCCESS_TITLE = i18n.translate(
   'xpack.securitySolution.commandExecutionSubmitResult.successTitle',
@@ -42,7 +47,7 @@ export type CommandExecutionResultProps = PropsWithChildren<{
    *                The element output to DOM will be `inline-block`, allowing for messages
    *                to be displayed after the loading/busy indicator.
    */
-  showAs?: 'success' | 'failure' | 'pending';
+  showAs?: 'success' | 'failure' | 'canceled' | 'pending';
 
   /** Default title message are provided depending based on the value for `showAs` */
   title?: ReactNode;
@@ -89,13 +94,27 @@ export const CommandExecutionResult = memo<CommandExecutionResultProps>(
         return title;
       }
       if (showAs === 'success') {
+        // FIXME:PT Remove response action specific logic below. `console` is meant to be generic
         return agentType === 'crowdstrike'
           ? COMMAND_EXECUTION_SUBMIT_RESULT_SUCCESS_TITLE
           : COMMAND_EXECUTION_RESULT_SUCCESS_TITLE;
+      } else if (showAs === 'canceled') {
+        return COMMAND_EXECUTION_RESULT_CANCELED_TITLE;
       } else {
         return COMMAND_EXECUTION_RESULT_FAILURE_TITLE;
       }
     }, [agentType, showAs, title]);
+
+    const textColor: ConsoleTextProps['color'] = useMemo(() => {
+      switch (showAs) {
+        case 'success':
+          return 'success';
+        case 'failure':
+          return 'danger';
+        default:
+          return 'default';
+      }
+    }, [showAs]);
 
     return (
       <EuiPanel
@@ -112,9 +131,7 @@ export const CommandExecutionResult = memo<CommandExecutionResultProps>(
           <>
             {showTitle && (
               <>
-                <ConsoleText color={showAs === 'success' ? 'success' : 'danger'}>
-                  {titleMessage}
-                </ConsoleText>
+                <ConsoleText color={textColor}>{titleMessage}</ConsoleText>
 
                 <EuiSpacer size="s" />
               </>

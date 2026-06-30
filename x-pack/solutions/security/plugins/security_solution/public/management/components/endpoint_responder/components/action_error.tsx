@@ -17,7 +17,11 @@ export const ActionError = memo<{
   dataTestSubj?: string;
 }>(({ title, dataTestSubj, action, ResultComponent }) => {
   return (
-    <ResultComponent showAs="failure" title={title} data-test-subj={dataTestSubj}>
+    <ResultComponent
+      showAs={action.wasCanceled ? 'canceled' : 'failure'}
+      title={title}
+      data-test-subj={dataTestSubj}
+    >
       <EndpointActionFailureMessage action={action} />
     </ResultComponent>
   );
