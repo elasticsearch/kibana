@@ -20,4 +20,21 @@ describe('getRecommendedQueriesTemplates', () => {
 
     expect(emptyFrom.find((q) => q.label === 'Load unmapped fields')).toBeUndefined();
   });
+
+  describe('Detect change points', () => {
+    it('includes WHERE type IS NOT NULL when timeField is present', () => {
+      const templates = getRecommendedQueriesTemplates({
+        fromCommand: 'FROM x',
+        timeField: '@timestamp',
+      });
+      const changePointTemplate = templates.find((q) => q.label === 'Detect change points');
+      expect(changePointTemplate).toBeDefined();
+      expect(changePointTemplate?.queryString).toContain('WHERE type IS NOT NULL');
+    });
+
+    it('does not include Detect change points when timeField is absent', () => {
+      const templates = getRecommendedQueriesTemplates({ fromCommand: 'FROM x' });
+      expect(templates.find((q) => q.label === 'Detect change points')).toBeUndefined();
+    });
+  });
 });

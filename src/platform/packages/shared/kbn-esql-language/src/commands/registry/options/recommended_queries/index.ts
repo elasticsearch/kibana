@@ -146,7 +146,7 @@ export const getRecommendedQueriesTemplates = ({
                 defaultMessage: 'Change point on count aggregation',
               }
             ),
-            queryString: `${fromCommand} | WHERE ${timeField} <=?_tend and ${timeField} >?_tstart | STATS count = COUNT(*) BY buckets = ${bucketExpression}  | CHANGE_POINT count ON buckets `,
+            queryString: `${fromCommand} | WHERE ${timeField} <=?_tend and ${timeField} >?_tstart | STATS count = COUNT(*) BY buckets = ${bucketExpression} /* To use CHANGE_POINT BY, set grouping field(s) - e.g. BY host, buckets = ... */ | CHANGE_POINT count ON buckets /* Use the BY operator to group by the field - e.g. ON buckets BY host */ | WHERE type IS NOT NULL /* Filter to only include change points. */`,
           },
           {
             label: i18n.translate('kbn-esql-language.recommendedQueries.lastHour.label', {
