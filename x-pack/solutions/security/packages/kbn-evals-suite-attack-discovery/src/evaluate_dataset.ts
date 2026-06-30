@@ -13,6 +13,33 @@ import type { AttackDiscoveryDatasetExample, AttackDiscoveryTaskOutput } from '.
 import { runAttackDiscovery } from './task/run_attack_discovery';
 import { createAttackDiscoveryBasicEvaluator } from './evaluators/attack_discovery_basic_evaluator';
 import { createAttackDiscoveryRubricEvaluator } from './evaluators/attack_discovery_rubric_evaluator';
+import { createAlertIdGroundingEvaluator } from './evaluators/alert_id_grounding_evaluator';
+import { createNoFabricationEvaluator } from './evaluators/no_fabrication_evaluator';
+import { isNegativeExample } from './evaluators/is_negative_example';
+
+/**
+ * Sentinel returned by quality evaluators on negative examples. Benign-input
+ * cases have no valid attack discovery to score for shape, grounding, or
+ * rubric quality, so these evaluators return N/A (`score: null`) rather than
+ * penalising a correct empty result.
+ */
+const NEGATIVE_CASE_NA = {
+  score: null,
+  label: 'N/A',
+  explanation: 'Negative case — quality metrics not applicable.',
+} as const;
+
+/**
+ * Wraps a quality evaluator so it returns N/A on negative examples. The
+ * No-Fabrication evaluator is the symmetric counterpart that scores those cases.
+ */
+const skipNegativeCases = (
+  evaluator: Evaluator<AttackDiscoveryDatasetExample, AttackDiscoveryTaskOutput>
+): Evaluator<AttackDiscoveryDatasetExample, AttackDiscoveryTaskOutput> => ({
+  ...evaluator,
+  evaluate: async (args) =>
+    isNegativeExample(args.metadata) ? NEGATIVE_CASE_NA : evaluator.evaluate(args),
+});
 
 const resolveConcurrency = (): number | undefined => {
   const raw = process.env.ATTACK_DISCOVERY_EVAL_CONCURRENCY;
@@ -61,8 +88,14 @@ const configureExperiment = ({
       });
     },
     evaluators: [
-      createAttackDiscoveryBasicEvaluator(),
-      createAttackDiscoveryRubricEvaluator({ inferenceClient: evaluationInferenceClient, log }),
+      // Quality evaluators — gated to N/A on negative cases.
+      skipNegativeCases(createAttackDiscoveryBasicEvaluator()),
+      skipNegativeCases(
+        createAttackDiscoveryRubricEvaluator({ inferenceClient: evaluationInferenceClient, log })
+      ),
+      skipNegativeCases(createAlertIdGroundingEvaluator()),
+      // Negative-case evaluator — scores benign-input examples, N/A on positives.
+      createNoFabricationEvaluator(),
     ],
   };
 };

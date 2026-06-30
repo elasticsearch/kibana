@@ -22,6 +22,24 @@ The core task is: **generate Attack Discoveries** from alert context.
 Outputs are scored by:
 - **`AttackDiscoveryBasic`** (`CODE`): ensures the output is present and shaped correctly
 - **`AttackDiscoveryRubric`** (`LLM`): legacy rubric-based correctness judgement (Y/N mapped to score 1/0)
+- **`Alert-ID Grounding`** (`CODE`): every `alertIds[]` cited by an insight must exist in the input alert set. Catches hallucinated alert references with no LLM call (extracts the valid ID set from each alert's `_id,<id>` line). Score = grounded fraction; `scoreOnEmpty` (default `1`) when no IDs are cited.
+- **`No Fabrication`** (`CODE`): for negative cases (benign/unrelated alerts), a correct response produces **zero** insights. Scores negative examples only; returns N/A on positives.
+
+The two `CODE` evaluators above are deterministic — no judge model, no network — so they also run as plain Jest unit tests (see [Unit tests](#unit-tests)).
+
+### Negative cases (no LLM judge)
+
+Negative cases live in `src/datasets/negative_cases.ts` (checked into the repo, unlike the
+positive golden-cluster dataset). Each is a bundle of benign or mutually-unrelated alerts that
+must **not** yield an attack discovery, tagged `metadata.testType: 'negative'`. On these
+examples the quality evaluators (`AttackDiscoveryBasic`, `AttackDiscoveryRubric`,
+`Alert-ID Grounding`) are gated to N/A via `skipNegativeCases` in `src/evaluate_dataset.ts`, so a
+correct empty result is not penalised; `No Fabrication` scores them. They run from the
+`does not fabricate attacks from benign input` spec block with no golden-cluster dependency.
+
+To add a case: append a benign bundle to `negativeCases`, keeping each alert's `pageContent` in
+the `key,value` line format (including an `_id,<stable-id>` line) so the grounding extractor can
+recover the alert IDs.
 
 ---
 
@@ -197,6 +215,24 @@ nvm use && ATTACK_DISCOVERY_DATASET_JSONL_PATH=data/eval_dataset_attack_discover
   ATTACK_DISCOVERY_DATASET_LIMIT=1 ATTACK_DISCOVERY_DATASET_OFFSET=4 ATTACK_DISCOVERY_EVAL_CONCURRENCY=1 \
   node scripts/evals run --suite attack-discovery \
   --model sonnet-3-7 --judge sonnet-3-7
+```
+
+---
+
+## Development
+
+### Unit tests
+
+The deterministic `CODE` evaluators have plain Jest unit tests that need no model or cluster:
+
+```bash
+node scripts/jest x-pack/solutions/security/packages/kbn-evals-suite-attack-discovery
+```
+
+### Type check
+
+```bash
+node scripts/type_check --project x-pack/solutions/security/packages/kbn-evals-suite-attack-discovery/tsconfig.json
 ```
 
 ---
