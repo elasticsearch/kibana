@@ -5,21 +5,13 @@
  * 2.0.
  */
 
-import React, { Suspense } from 'react';
-import { EuiLoadingSpinner } from '@elastic/eui';
+import React from 'react';
 import { i18n } from '@kbn/i18n';
 import type { VisualizationAttachment } from '@kbn/agent-builder-common/attachments';
 import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
 import { getVisualizationDimensionsFromConfig } from './shared/get_visualization_dimensions';
+import { InlineVisualization } from './inline_visualization';
 import type { VisualizationServices } from './services';
-
-const LazyVisualizeLens = React.lazy(() =>
-  import('./visualize_lens').then((m) => ({ default: m.VisualizeLens }))
-);
-
-const LazyVisualizeVega = React.lazy(() =>
-  import('./visualize_vega').then((m) => ({ default: m.VisualizeVega }))
-);
 
 const defaultVisualizationLabel = i18n.translate(
   'xpack.agentBuilder.attachments.visualization.label',
@@ -49,30 +41,14 @@ export const createVisualizationAttachmentDefinition = (
     renderInlineContent: ({ attachment, screenContext }, callbacks) => {
       const { data } = attachment;
 
-      const timeRange = data.time_range ?? screenContext?.time_range;
-
-      if (data.renderer === 'vega') {
-        return (
-          <Suspense fallback={<EuiLoadingSpinner />}>
-            <LazyVisualizeVega
-              services={services}
-              visualization={data.visualization}
-              timeRange={timeRange}
-              registerActionButtons={callbacks?.registerActionButtons}
-            />
-          </Suspense>
-        );
-      }
-
       return (
-        <Suspense fallback={<EuiLoadingSpinner />}>
-          <LazyVisualizeLens
-            services={services}
-            lensConfig={data.visualization}
-            timeRange={timeRange}
-            registerActionButtons={callbacks?.registerActionButtons}
-          />
-        </Suspense>
+        <InlineVisualization
+          services={services}
+          renderer={data.renderer}
+          visualization={data.visualization}
+          timeRange={data.time_range ?? screenContext?.time_range}
+          registerActionButtons={callbacks?.registerActionButtons}
+        />
       );
     },
   };

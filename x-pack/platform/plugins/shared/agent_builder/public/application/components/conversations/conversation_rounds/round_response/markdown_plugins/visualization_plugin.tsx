@@ -19,8 +19,7 @@ import {
 } from '@kbn/agent-builder-common/tools/custom_rendering';
 import {
   VisualizeESQL,
-  VisualizeLens,
-  VisualizeVega,
+  InlineVisualization,
   type VisualizationServices,
 } from '@kbn/agent-builder-visualizations';
 
@@ -101,18 +100,13 @@ export function createVisualizationRenderer({
     // Handle visualization result (pre-built Lens config or Vega spec)
     if (toolResult.type === 'visualization') {
       const { data } = toolResult;
-
-      if (data.renderer === 'vega') {
-        const spec = data.visualization?.spec;
-        if (typeof spec !== 'string') {
-          return <EuiText>Unable to render Vega visualization for {ToolResultAttribute}.</EuiText>;
-        }
-        return <VisualizeVega services={services} spec={spec} timeRange={data.time_range} />;
-      }
-
-      const { visualization, time_range: visTimeRange } = data;
       return (
-        <VisualizeLens services={services} lensConfig={visualization} timeRange={visTimeRange} />
+        <InlineVisualization
+          services={services}
+          renderer={data.renderer}
+          visualization={data.visualization}
+          timeRange={data.time_range}
+        />
       );
     }
 
