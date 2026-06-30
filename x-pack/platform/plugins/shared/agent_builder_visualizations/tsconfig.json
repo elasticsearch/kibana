@@ -9,7 +9,7 @@
     "@kbn/agent-builder-server",
     "@kbn/agent-builder-browser",
     "@kbn/agent-builder-common",
-    "@kbn/agent-builder-tools-base",
+    "@kbn/agent-builder-visualizations-server",
     "@kbn/agent-builder-vega",
     "@kbn/agent-builder-visualizations",
     "@kbn/agent-builder-visualizations-common",

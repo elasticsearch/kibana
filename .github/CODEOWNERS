@@ -1013,6 +1013,7 @@ x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base @elastic/
 x-pack/platform/packages/shared/agent-builder/agent-builder-vega @elastic/kibana-presentation
 x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations @elastic/kibana-presentation
 x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common @elastic/kibana-presentation
+x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-server @elastic/kibana-presentation
 x-pack/platform/packages/shared/agent-builder/agent-builder-workflow-gen @elastic/workchat-eng @elastic/workflows-eng
 x-pack/platform/packages/shared/agent-builder/kbn-evals-suite-agent-builder @elastic/workchat-eng
 x-pack/platform/packages/shared/ai-assistant/ai-assistant-connector-selector-action @elastic/appex-sharedux

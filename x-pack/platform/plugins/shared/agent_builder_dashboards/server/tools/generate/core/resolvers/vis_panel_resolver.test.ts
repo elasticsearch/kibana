@@ -5,14 +5,14 @@
  * 2.0.
  */
 
-import { buildVisualizationConfig } from '@kbn/agent-builder-tools-base';
+import { buildVisualizationConfig } from '@kbn/agent-builder-visualizations-server';
 import type { ModelProvider, ToolEventEmitter } from '@kbn/agent-builder-server';
 import type { IScopedClusterClient } from '@kbn/core-elasticsearch-server';
 import type { Logger } from '@kbn/logging';
 import { LENS_EMBEDDABLE_TYPE } from '@kbn/lens-common';
 import { createVisPanelResolver } from './vis_panel_resolver';
 
-jest.mock('@kbn/agent-builder-tools-base', () => ({
+jest.mock('@kbn/agent-builder-visualizations-server', () => ({
   buildVisualizationConfig: jest.fn(),
 }));
 

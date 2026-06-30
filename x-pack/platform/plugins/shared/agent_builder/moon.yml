@@ -23,6 +23,7 @@ dependsOn:
   - '@kbn/inference-plugin'
   - '@kbn/agent-builder-server'
   - '@kbn/agent-builder-browser'
+  - '@kbn/agent-builder-visualizations'
   - '@kbn/core-http-server'
   - '@kbn/agent-builder-common'
   - '@kbn/ebt-click'
@@ -142,6 +143,9 @@ dependsOn:
   - '@kbn/react-kibana-mount'
   - '@kbn/user-profile-components'
   - '@kbn/telemetry'
+  - '@kbn/embeddable-plugin'
+  - '@kbn/visualizations-common'
+  - '@kbn/presentation-util-plugin'
 tags:
   - plugin
   - prod

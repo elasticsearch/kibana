@@ -5,7 +5,7 @@ specs for Agent Builder. This is the Vega fallback used by the `create_visualiza
 tool when a request cannot be expressed as a standard Lens chart (e.g. faceting /
 small multiples, repeated charts, layered/combination charts, scatter/bubble with size).
 
-The Lens-vs-Vega decision itself lives in `@kbn/agent-builder-tools-base`
+The Lens-vs-Vega decision itself lives in `@kbn/agent-builder-visualizations-server`
 (`decideVisualizationApproach`); this package only authors and hardens the Vega spec
 once Vega has been chosen.
 
@@ -23,6 +23,6 @@ once Vega has been chosen.
 
 ## Boundaries
 
-Depends one-directionally on `@kbn/agent-builder-tools-base` (shared LLM/ES|QL helpers)
-and `@kbn/agent-builder-genai-utils` (ES|QL generation). Nothing in `tools-base`
-depends on this package, so there is no cycle.
+Depends one-directionally on `@kbn/agent-builder-visualizations-server` (shared
+visualization helpers + the Lens-vs-Vega decision) and `@kbn/agent-builder-genai-utils`
+(ES|QL generation). Nothing in those packages depends on this one, so there is no cycle.

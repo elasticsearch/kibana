@@ -20,7 +20,7 @@ import {
   decideVisualizationApproach,
   type VisualizationConfig,
   type VisualizationRenderer,
-} from '@kbn/agent-builder-tools-base';
+} from '@kbn/agent-builder-visualizations-server';
 import { buildVegaConfig } from '@kbn/agent-builder-vega';
 
 /**

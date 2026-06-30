@@ -12,7 +12,10 @@ import type { Logger } from '@kbn/logging';
 import type { IScopedClusterClient } from '@kbn/core-elasticsearch-server';
 import { generateEsql, executeEsql } from '@kbn/agent-builder-genai-utils';
 import { buildTimeRangeParams } from '@kbn/agent-builder-genai-utils/tools/utils/esql';
-import { extractTextFromMessage, esqlAdditionalInstructions } from '@kbn/agent-builder-tools-base';
+import {
+  extractTextFromMessage,
+  esqlAdditionalInstructions,
+} from '@kbn/agent-builder-visualizations-server';
 import {
   normalizeVegaSpec,
   normalizeRawVegaSpec,

@@ -20,7 +20,7 @@ jest.mock('@kbn/agent-builder-genai-utils', () => ({
   buildTimeRangeParams: jest.fn(() => undefined),
 }));
 
-jest.mock('@kbn/agent-builder-tools-base', () => ({
+jest.mock('@kbn/agent-builder-visualizations-server', () => ({
   extractTextFromMessage: (message: unknown) => String(message),
   esqlAdditionalInstructions: 'esql-instructions',
 }));

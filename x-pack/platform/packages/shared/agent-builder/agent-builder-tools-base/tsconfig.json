@@ -14,20 +14,11 @@
     "target/**/*"
   ],
   "kbn_references": [
-    "@kbn/agent-builder-common",
-    "@kbn/agent-builder-genai-utils",
-    "@kbn/agent-builder-server",
-    "@kbn/core-elasticsearch-server",
     "@kbn/core-http-server",
     "@kbn/inference-tracing",
-    "@kbn/lens-embeddable-utils",
-    "@kbn/logging",
     "@kbn/utility-types",
     "@kbn/workflows",
     "@kbn/workflows-management-plugin",
-    "@kbn/zod",
-    "@kbn/palettes",
-    "@kbn/core-http-server-mocks",
-    "@kbn/esql-server-utils"
+    "@kbn/core-http-server-mocks"
   ]
 }

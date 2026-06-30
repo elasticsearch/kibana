@@ -4549,6 +4549,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/agent-builder-visualizations-server@link:x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-server":
+  version "0.0.0"
+  uid ""
+
 "@kbn/agent-builder-visualizations@link:x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations":
   version "0.0.0"
   uid ""

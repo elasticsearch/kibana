@@ -12,6 +12,7 @@
       "agentBuilder",
       "agentContextLayer",
       "lens",
+      "data",
       "dataViews",
       "uiActions",
       "unifiedSearch",
