@@ -7,7 +7,11 @@
 
 import React from 'react';
 import { i18n } from '@kbn/i18n';
-import type { VisualizationAttachment } from '@kbn/agent-builder-visualizations-common';
+import type {
+  VISUALIZATION_ATTACHMENT_TYPE,
+  VisualizationAttachmentData,
+} from '@kbn/agent-builder-visualizations-common';
+import type { Attachment } from '@kbn/agent-builder-common/attachments';
 import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
 import { getVisualizationDimensionsFromConfig } from './shared/get_visualization_dimensions';
 import { InlineVisualization } from './inline_visualization';
@@ -17,6 +21,11 @@ const defaultVisualizationLabel = i18n.translate(
   'xpack.agentBuilder.attachments.visualization.label',
   { defaultMessage: 'Visualization' }
 );
+
+export type VisualizationAttachment = Attachment<
+  typeof VISUALIZATION_ATTACHMENT_TYPE,
+  VisualizationAttachmentData
+>;
 
 /**
  * Factory function that creates the visualization attachment UI definition.

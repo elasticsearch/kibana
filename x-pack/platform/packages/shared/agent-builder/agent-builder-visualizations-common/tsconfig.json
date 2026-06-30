@@ -13,7 +13,5 @@
   "exclude": [
     "target/**/*"
   ],
-  "kbn_references": [
-    "@kbn/agent-builder-common"
-  ]
+  "kbn_references": []
 }

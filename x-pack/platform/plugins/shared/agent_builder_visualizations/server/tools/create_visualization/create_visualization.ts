@@ -187,29 +187,24 @@ This tool will:
         const description = `Visualization: ${nlQuery.slice(0, 50)}${
           nlQuery.length > 50 ? '...' : ''
         }`;
-        let resultAttachmentId: string | undefined;
-        let version: number | undefined;
-        let isUpdate = false;
-
         try {
           if (attachmentId && attachments.getAttachmentRecord(attachmentId)) {
             const updated = await attachments.update(attachmentId, {
               data: visualizationData,
               description,
             });
-            resultAttachmentId = attachmentId;
-            version = updated?.current_version ?? 1;
-            isUpdate = true;
-            logger.debug(`Updated visualization attachment ${attachmentId} to version ${version}`);
+            logger.debug(
+              `Updated visualization attachment ${attachmentId} to version ${
+                updated?.current_version ?? 1
+              }`
+            );
           } else {
             const newAttachment = await attachments.add({
               type: VISUALIZATION_ATTACHMENT_TYPE,
               data: visualizationData,
               description,
             });
-            resultAttachmentId = newAttachment.id;
-            version = newAttachment.current_version;
-            logger.debug(`Created new visualization attachment ${resultAttachmentId}`);
+            logger.debug(`Created new visualization attachment ${newAttachment.id}`);
           }
         } catch (attachmentError) {
           // Attachment creation is optional - continue without it
@@ -220,21 +215,12 @@ This tool will:
           );
         }
 
-        const resultMeta = {
-          ...(resultAttachmentId && { attachment_id: resultAttachmentId }),
-          ...(version !== undefined && { version }),
-          ...(isUpdate && { is_update: isUpdate }),
-        };
-
         return {
           results: [
             {
               type: ToolResultType.visualization,
               tool_result_id: getToolResultId(),
-              data: {
-                ...visualizationData,
-                ...resultMeta,
-              },
+              data: visualizationData,
             },
           ],
         };

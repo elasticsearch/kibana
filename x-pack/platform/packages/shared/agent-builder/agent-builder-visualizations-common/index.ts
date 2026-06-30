@@ -8,5 +8,3 @@
 export { VISUALIZATION_ATTACHMENT_TYPE } from './constants';
 
 export type { VisualizationAttachmentData } from './visualization_types';
-
-export type { VisualizationAttachment } from './types';

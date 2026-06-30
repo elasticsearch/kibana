@@ -16,8 +16,7 @@ project:
   channel: ''
   owner: '@elastic/kibana-presentation'
   sourceRoot: x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common
-dependsOn:
-  - '@kbn/agent-builder-common'
+dependsOn: []
 tags:
   - shared-common
   - package
