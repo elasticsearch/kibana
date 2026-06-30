@@ -6,15 +6,17 @@
  */
 
 import React from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { useExecuteBulkAction } from '../../logic/bulk_actions/use_execute_bulk_action';
+import { useKibana } from '../../../../common/lib/kibana';
 import { DeprecatedRulesModal } from './deprecated_rules_modal';
 import type { DeprecatedRuleForReview } from '../../../../../common/api/detection_engine/prebuilt_rules';
 
 jest.mock('../../../../common/components/user_privileges');
 jest.mock('../../logic/bulk_actions/use_execute_bulk_action');
+jest.mock('../../../../common/lib/kibana');
 
 const mockUseUserPrivileges = useUserPrivileges as jest.Mock;
 const mockUseExecuteBulkAction = useExecuteBulkAction as jest.Mock;
@@ -28,6 +30,7 @@ jest.mock('../../../rule_management_ui/components/rules_table/use_columns', () =
   ),
 }));
 
+const mockUseKibana = useKibana as jest.Mock;
 const mockExecuteBulkAction = jest.fn();
 const mockOnClose = jest.fn();
 
@@ -48,6 +51,10 @@ describe('DeprecatedRulesModal', () => {
     });
 
     mockUseExecuteBulkAction.mockReturnValue({ executeBulkAction: mockExecuteBulkAction });
+
+    mockUseKibana.mockReturnValue({
+      services: { telemetry: { reportEvent: jest.fn() } },
+    });
   });
 
   describe('Delete all button is disabled for read-only users', () => {
@@ -73,19 +80,16 @@ describe('DeprecatedRulesModal', () => {
 
   describe('Cancel bulk delete confirmation modal', () => {
     it('does not delete rules when the confirmation is cancelled', async () => {
+      const user = userEvent.setup();
       render(<DeprecatedRulesModal rules={MOCK_RULES} isLoading={false} onClose={mockOnClose} />);
 
       // Open the confirm modal
-      await act(async () => {
-        await userEvent.click(screen.getByTestId('deprecated-rules-modal-delete-all'));
-      });
+      await user.click(screen.getByTestId('deprecated-rules-modal-delete-all'));
 
       expect(screen.getByTestId('deprecated-rules-delete-confirm-modal')).toBeInTheDocument();
 
       // Click the cancel button inside the confirmation modal
-      await act(async () => {
-        await userEvent.click(screen.getByTestId('confirmModalCancelButton'));
-      });
+      await user.click(screen.getByTestId('confirmModalCancelButton'));
 
       // The confirm modal should be dismissed and no deletion should have been triggered
       expect(screen.queryByTestId('deprecated-rules-delete-confirm-modal')).not.toBeInTheDocument();
