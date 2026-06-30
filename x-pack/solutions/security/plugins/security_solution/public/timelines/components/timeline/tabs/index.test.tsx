@@ -111,6 +111,37 @@ describe('Timeline', () => {
     });
   });
 
+  describe('Super Timeline mode', () => {
+    let mockStore: ReturnType<typeof createMockStore>;
+    beforeEach(() => {
+      const superState = structuredClone(mockGlobalState);
+      superState.timeline.timelineById[TimelineId.test].isSuperTimeline = true;
+      mockStore = createMockStore(superState);
+    });
+
+    it('hides the ESQL tab when isSuperTimeline is true', async () => {
+      render(
+        <TestProviders store={mockStore}>
+          <TabsContent {...defaultProps} />
+        </TestProviders>
+      );
+      await waitFor(() => {
+        expect(screen.queryByTestId(`timelineTabs-${TimelineTabs.esql}`)).toBeNull();
+      });
+    });
+
+    it('hides the EQL tab when isSuperTimeline is true', async () => {
+      render(
+        <TestProviders store={mockStore}>
+          <TabsContent {...defaultProps} />
+        </TestProviders>
+      );
+      await waitFor(() => {
+        expect(screen.queryByTestId(`timelineTabs-${TimelineTabs.eql}`)).toBeNull();
+      });
+    });
+  });
+
   describe('privileges', () => {
     it('should show notes and pinned tabs for users with the required privileges', () => {
       (useUserPrivileges as jest.Mock).mockReturnValue({

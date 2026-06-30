@@ -21,7 +21,7 @@ jest.mock('../../../hooks/use_create_timeline');
 jest.mock('../../../../common/components/inspect/use_inspect');
 jest.mock('../../../../common/lib/kibana');
 
-const mockGetState = jest.fn();
+const mockGetState = jest.fn().mockReturnValue({});
 jest.mock('react-redux', () => {
   const actual = jest.requireActual('react-redux');
   return {
@@ -99,6 +99,26 @@ describe('TimelineModalHeader', () => {
     const { getByTestId } = renderTimelineModalHeader();
 
     expect(getByTestId('timeline-modal-attach-to-case-dropdown-button')).toBeInTheDocument();
+  });
+
+  describe('Super Timeline read-only mode', () => {
+    beforeEach(() => {
+      mockGetState.mockReturnValue({ isSuperTimeline: true });
+    });
+    afterEach(() => {
+      mockGetState.mockReturnValue({});
+    });
+
+    it('hides Save, Attach to Case, and Favorites buttons and shows the read-only badge', () => {
+      const { getByTestId, queryByTestId } = renderTimelineModalHeader();
+
+      expect(getByTestId('timeline-modal-super-timeline-badge')).toBeInTheDocument();
+      expect(queryByTestId('timeline-modal-save-timeline')).not.toBeInTheDocument();
+      expect(queryByTestId('timeline-favorite-empty-star')).not.toBeInTheDocument();
+      expect(
+        queryByTestId('timeline-modal-attach-to-case-dropdown-button')
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('should call showTimeline action when closing timeline', () => {

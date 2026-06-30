@@ -98,9 +98,12 @@ const ActiveTimelineTab = memo<ActiveTimelineTabProps>(
     const timelineESQLSavedSearch = useShallowEqualSelector((state) =>
       selectTimelineESQLSavedSearchId(state, timelineId)
     );
+    const isSuperTimeline = useShallowEqualSelector(
+      (state) => selectTimelineById(state, timelineId)?.isSuperTimeline ?? false
+    );
     const shouldShowESQLTab = useMemo(
-      () => isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null,
-      [isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
+      () => !isSuperTimeline && (isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null),
+      [isSuperTimeline, isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
     );
 
     return (
@@ -136,7 +139,7 @@ const ActiveTimelineTab = memo<ActiveTimelineTabProps>(
             timelineId={timelineId}
           />
         </LazyTimelineTabRenderer>
-        {timelineType === TimelineTypeEnum.default && (
+        {!isSuperTimeline && timelineType === TimelineTypeEnum.default && (
           <LazyTimelineTabRenderer
             timelineId={timelineId}
             shouldShowTab={TimelineTabs.eql === activeTimelineTab}
@@ -208,16 +211,17 @@ const TabsContentComponent: React.FC<BasicTimelineTab> = ({
 
   const activeTab = useShallowEqualSelector((state) => getActiveTab(state, timelineId));
   const showTimeline = useShallowEqualSelector((state) => getShowTimeline(state, timelineId));
+  const timeline = useSelector((state: State) => selectTimelineById(state, timelineId));
+  const isSuperTimeline = timeline?.isSuperTimeline ?? false;
+
   const shouldShowESQLTab = useMemo(
-    () => isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null,
-    [isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
+    () => !isSuperTimeline && (isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null),
+    [isSuperTimeline, isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
   );
 
   const numberOfPinnedEvents = useShallowEqualSelector((state) =>
     getNumberOfPinnedEvents(state, timelineId)
   );
-
-  const timeline = useSelector((state: State) => selectTimelineById(state, timelineId));
   const timelineSavedObjectId = useMemo(() => timeline?.savedObjectId ?? '', [timeline]);
   const isTimelineSaved: boolean = useMemo(
     () => timelineSavedObjectId.length > 0,
@@ -316,7 +320,7 @@ const TabsContentComponent: React.FC<BasicTimelineTab> = ({
               <span>{i18n.DISCOVER_ESQL_IN_TIMELINE_TAB}</span>
             </StyledEuiTab>
           )}
-          {timelineType === TimelineTypeEnum.default && (
+          {!isSuperTimeline && timelineType === TimelineTypeEnum.default && (
             <StyledEuiTab
               data-test-subj={`timelineTabs-${TimelineTabs.eql}`}
               onClick={setEqlAsActiveTab}
