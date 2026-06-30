@@ -109,7 +109,14 @@ export function registerRunWorkflowRoute(deps: RouteDependencies) {
             workflowId: request.params.id,
             error,
           });
-          return handleRouteError(response, error);
+          return handleRouteError(response, error, {
+            logger,
+            logContext: {
+              route: 'POST /api/workflows/workflow/{id}/run',
+              workflowId: request.params.id,
+              spaceId: spaces.getSpaceId(request),
+            },
+          });
         }
       })
     );

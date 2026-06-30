@@ -23,6 +23,7 @@ describe('Execution Routes', () => {
   let routeHandlers: Record<string, { handler: (...args: any[]) => Promise<any> }>;
   let mockApi: Record<string, jest.Mock>;
   let mockSpaces: { getSpaceId: jest.Mock };
+  let mockLogger: ReturnType<typeof loggingSystemMock.createLogger>;
 
   const mockContext = {
     workflows: Promise.resolve({
@@ -81,6 +82,7 @@ describe('Execution Routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     routeHandlers = {};
+    mockLogger = loggingSystemMock.createLogger();
     mockSpaces = { getSpaceId: jest.fn().mockReturnValue('default') };
     mockApi = {
       getWorkflow: jest.fn(),
@@ -141,7 +143,7 @@ describe('Execution Routes', () => {
     registerExecutionRoutes({
       router: mockRouter,
       api: mockApi as any,
-      logger: loggingSystemMock.createLogger(),
+      logger: mockLogger,
       spaces: mockSpaces as any,
       audit: createWorkflowManagementAuditLogMock(),
     } as unknown as RouteDependencies);
@@ -242,6 +244,15 @@ describe('Execution Routes', () => {
 
       const result = await h(mockContext, request as any, mockResponse as any);
 
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Workflows API request failed',
+        expect.objectContaining({
+          route: 'POST /api/workflows/workflow/{id}/run',
+          workflowId: 'wf-1',
+          spaceId: 'default',
+          errorMessage: 'engine failed',
+        })
+      );
       expect(mockResponse.customError).toHaveBeenCalled();
       expect(result).toMatchObject({ type: 'customError', body: expect.objectContaining({}) });
     });

@@ -97,7 +97,14 @@ export function registerTestWorkflowRoute(deps: RouteDependencies) {
             workflowId: request.body.workflowId,
             error,
           });
-          return handleRouteError(response, error);
+          return handleRouteError(response, error, {
+            logger,
+            logContext: {
+              route: 'POST /api/workflows/test',
+              workflowId: request.body.workflowId,
+              spaceId: spaces.getSpaceId(request),
+            },
+          });
         }
       })
     );
