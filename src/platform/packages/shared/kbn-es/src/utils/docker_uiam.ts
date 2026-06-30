@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { writeFile, mkdir } from 'fs/promises';
+import { access, chmod, mkdir, rm, writeFile } from 'fs/promises';
 import { fetch } from 'undici';
 import { join } from 'path';
 import {
@@ -48,6 +48,15 @@ const UIAM_DOCKER_PROMOTED_REPO = `${UIAM_DOCKER_REGISTRY}/kibana-ci/uiam`;
 
 export const UIAM_DEFAULT_IMAGE = `${UIAM_DOCKER_PROMOTED_REPO}:latest-verified`;
 
+// Path inside the Cosmos DB emulator container where it stores persisted data
+// (matches the image's `DATA_PATH` env var default).
+const COSMOS_DB_DATA_PATH_IN_CONTAINER = '/data';
+
+// Subdirectory of the ES `basePath` (e.g. `<REPO>/.es`) where Cosmos DB
+// emulator data is persisted across restarts. Sibling of the ES `stateless`
+// bucket so a single `--clean` clears both.
+export const UIAM_COSMOS_DB_DATA_DIR = 'cosmosdb';
+
 const MAX_HEALTHCHECK_RETRIES = 30;
 
 const ENV_DEFAULTS = {
@@ -85,8 +94,11 @@ export interface UiamContainer {
   cmdParams: string[];
 }
 
-const UIAM_BASE_CONTAINERS: UiamContainer[] = [
-  {
+function getUiamCosmosDbContainer({
+  cosmosDbDataPath,
+}: { cosmosDbDataPath?: string } = {}): UiamContainer {
+  const persistData = Boolean(cosmosDbDataPath);
+  return {
     name: 'uiam-cosmosdb',
     image: process.env.UIAM_COSMOSDB_DOCKER_IMAGE || COSMOS_DB_EMULATOR_DEFAULT_IMAGE,
     params: [
@@ -103,6 +115,12 @@ const UIAM_BASE_CONTAINERS: UiamContainer[] = [
       '--volume',
       `${SERVERLESS_UIAM_CERTIFICATE_BUNDLE_PATH}:/scripts/certs/uiam_cosmosdb.pfx:z`,
 
+      // When a host data path is provided, mount it into the emulator's data
+      // directory so Cosmos DB state survives restarts.
+      ...(persistData
+        ? ['--volume', `${cosmosDbDataPath}:${COSMOS_DB_DATA_PATH_IN_CONTAINER}:z`]
+        : []),
+
       '-p',
       `127.0.0.1:${env.UIAM_COSMOS_DB_PORT}:8081`, // Cosmos DB gateway
       '-p',
@@ -111,7 +129,7 @@ const UIAM_BASE_CONTAINERS: UiamContainer[] = [
       '--env',
       'AZURE_COSMOS_EMULATOR_PARTITION_COUNT=1',
       '--env',
-      'AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false',
+      `AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=${persistData ? 'true' : 'false'}`,
       '--env',
       'GATEWAY_PUBLIC_ENDPOINT=uiam-cosmosdb',
       '--env',
@@ -123,123 +141,124 @@ const UIAM_BASE_CONTAINERS: UiamContainer[] = [
       'curl -sk http://127.0.0.1:8080/ready | grep -q "\\"overall\\": true"',
     ],
     cmdParams: ['--protocol', 'https', '--port', '8081'],
-  },
-  {
-    name: 'uiam',
-    image: process.env.UIAM_DOCKER_IMAGE || UIAM_DEFAULT_IMAGE,
-    params: [
-      '--net',
-      'elastic',
+  };
+}
 
-      // The Quarkus base image launches the JVM with `-XX:MaxRAMPercentage=80.0`
-      // and no Xmx, so without an explicit cgroup limit the JVM reserves up to
-      // 80% of the Docker VM's memory as heap (~6.4GB on the 8GB default).
-      // Pair this with JAVA_OPTS_APPEND below to bound heap predictably.
-      '--memory',
-      '2g',
-      '--memory-swap',
-      '2g',
+const UIAM_CONTAINER: UiamContainer = {
+  name: 'uiam',
+  image: process.env.UIAM_DOCKER_IMAGE || UIAM_DEFAULT_IMAGE,
+  params: [
+    '--net',
+    'elastic',
 
-      '--volume',
-      `${SERVERLESS_UIAM_ENTRYPOINT_PATH}:/opt/jboss/container/java/run/run-java-with-custom-ca.sh:z`,
+    // The Quarkus base image launches the JVM with `-XX:MaxRAMPercentage=80.0`
+    // and no Xmx, so without an explicit cgroup limit the JVM reserves up to
+    // 80% of the Docker VM's memory as heap (~6.4GB on the 8GB default).
+    // Pair this with JAVA_OPTS_APPEND below to bound heap predictably.
+    '--memory',
+    '2g',
+    '--memory-swap',
+    '2g',
 
-      '--volume',
-      `${SERVERLESS_UIAM_CERTIFICATE_BUNDLE_PATH}:/tmp/uiam_cosmosdb.pfx:z`,
-      '--volume',
-      `${CA_CERT_PATH}:/tmp/ca.crt:z`,
-      '--volume',
-      `${KBN_KEY_PATH}:/tmp/server.key:z`,
-      '--volume',
-      `${KBN_CERT_PATH}:/tmp/server.crt:z`,
+    '--volume',
+    `${SERVERLESS_UIAM_ENTRYPOINT_PATH}:/opt/jboss/container/java/run/run-java-with-custom-ca.sh:z`,
 
-      '-p',
-      `127.0.0.1:${env.UIAM_SERVICE_PORT}:8443`, // UIAM API port
+    '--volume',
+    `${SERVERLESS_UIAM_CERTIFICATE_BUNDLE_PATH}:/tmp/uiam_cosmosdb.pfx:z`,
+    '--volume',
+    `${CA_CERT_PATH}:/tmp/ca.crt:z`,
+    '--volume',
+    `${KBN_KEY_PATH}:/tmp/server.key:z`,
+    '--volume',
+    `${KBN_CERT_PATH}:/tmp/server.crt:z`,
 
-      '--entrypoint',
-      '/opt/jboss/container/java/run/run-java-with-custom-ca.sh',
+    '-p',
+    `127.0.0.1:${env.UIAM_SERVICE_PORT}:8443`, // UIAM API port
 
-      '--env',
-      'JAVA_OPTS_APPEND=-Xms256m -Xmx1g',
+    '--entrypoint',
+    '/opt/jboss/container/java/run/run-java-with-custom-ca.sh',
 
-      '--env',
-      'uiam.apikey.convert.validation.endpoint.enabled=false',
-      '--env',
-      'quarkus.tls.https.key-store.pem.0.cert=/tmp/server.crt',
-      '--env',
-      'quarkus.tls.https.key-store.pem.0.key=/tmp/server.key',
-      '--env',
-      'quarkus.tls.https.trust-store.pem.certs=/tmp/ca.crt',
+    '--env',
+    'JAVA_OPTS_APPEND=-Xms256m -Xmx1g',
 
-      '--env',
-      'quarkus.tls.esclient.key-store.pem.0.cert=/tmp/server.crt',
-      '--env',
-      'quarkus.tls.esclient.key-store.pem.0.key=/tmp/server.key',
+    '--env',
+    'uiam.apikey.convert.validation.endpoint.enabled=false',
+    '--env',
+    'quarkus.tls.https.key-store.pem.0.cert=/tmp/server.crt',
+    '--env',
+    'quarkus.tls.https.key-store.pem.0.key=/tmp/server.key',
+    '--env',
+    'quarkus.tls.https.trust-store.pem.certs=/tmp/ca.crt',
 
-      '--env',
-      'quarkus.http.ssl.certificate.key-store-provider=JKS',
-      '--env',
-      'quarkus.http.ssl.certificate.trust-store-provider=SUN',
-      '--env',
-      `quarkus.log.category."co".level=${env.UIAM_LOGGING_LEVEL}`,
-      '--env',
-      `quarkus.log.category."io".level=${env.UIAM_LOGGING_LEVEL}`,
-      '--env',
-      `quarkus.log.category."org".level=${env.UIAM_LOGGING_LEVEL}`,
-      '--env',
-      `quarkus.log.category."co.elastic.cloud.uiam".level=${env.UIAM_APP_LOGGING_LEVEL}`,
-      '--env',
-      `quarkus.log.category."co.elastic.cloud.uiam.app.authentication.ClientCertificateExtractor".level=${env.UIAM_LOGGING_LEVEL}`,
-      '--env',
-      'quarkus.log.console.json.enabled=false',
-      '--env',
-      `quarkus.log.level=${env.UIAM_LOGGING_LEVEL}`,
-      '--env',
-      'quarkus.otel.sdk.disabled=true',
-      '--env',
-      'quarkus.profile=dev',
-      '--env',
-      'uiam.api_keys.decoder.prefixes=essu_dev',
-      '--env',
-      'uiam.api_keys.encoder.prefix=essu_dev',
-      '--env',
-      `uiam.cosmos.account.access_key=${MOCK_IDP_UIAM_COSMOS_DB_ACCESS_KEY}`,
-      '--env',
-      `uiam.cosmos.account.endpoint=${MOCK_IDP_UIAM_COSMOS_DB_INTERNAL_URL}`,
-      '--env',
-      `uiam.cosmos.container.apikey=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_API_KEYS}`,
-      '--env',
-      `uiam.cosmos.container.oauth_authorization_code=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_OAUTH_AUTHORIZATION_CODES}`,
-      '--env',
-      `uiam.cosmos.container.oauth_client=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_OAUTH_CLIENTS}`,
-      '--env',
-      `uiam.cosmos.container.oauth_app_connection=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_OAUTH_APP_CONNECTIONS}`,
-      '--env',
-      `uiam.cosmos.container.token_invalidation=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_TOKEN_INVALIDATION}`,
-      '--env',
-      `uiam.cosmos.container.users=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_USERS}`,
-      '--env',
-      `uiam.cosmos.database=${MOCK_IDP_UIAM_COSMOS_DB_NAME}`,
-      '--env',
-      'uiam.cosmos.gateway_connection_mode=true',
-      '--env',
-      `uiam.internal.shared.secrets=${MOCK_IDP_UIAM_SHARED_SECRET}`,
-      '--env',
-      `uiam.tokens.jwt.signature.secrets=${MOCK_IDP_UIAM_SIGNING_SECRET}`,
-      '--env',
-      `uiam.tokens.jwt.signing.secret=${MOCK_IDP_UIAM_SIGNING_SECRET}`,
+    '--env',
+    'quarkus.tls.esclient.key-store.pem.0.cert=/tmp/server.crt',
+    '--env',
+    'quarkus.tls.esclient.key-store.pem.0.key=/tmp/server.key',
 
-      '--env',
-      'uiam.tokens.jwt.verify.clock.skew=PT2S',
+    '--env',
+    'quarkus.http.ssl.certificate.key-store-provider=JKS',
+    '--env',
+    'quarkus.http.ssl.certificate.trust-store-provider=SUN',
+    '--env',
+    `quarkus.log.category."co".level=${env.UIAM_LOGGING_LEVEL}`,
+    '--env',
+    `quarkus.log.category."io".level=${env.UIAM_LOGGING_LEVEL}`,
+    '--env',
+    `quarkus.log.category."org".level=${env.UIAM_LOGGING_LEVEL}`,
+    '--env',
+    `quarkus.log.category."co.elastic.cloud.uiam".level=${env.UIAM_APP_LOGGING_LEVEL}`,
+    '--env',
+    `quarkus.log.category."co.elastic.cloud.uiam.app.authentication.ClientCertificateExtractor".level=${env.UIAM_LOGGING_LEVEL}`,
+    '--env',
+    'quarkus.log.console.json.enabled=false',
+    '--env',
+    `quarkus.log.level=${env.UIAM_LOGGING_LEVEL}`,
+    '--env',
+    'quarkus.otel.sdk.disabled=true',
+    '--env',
+    'quarkus.profile=dev',
+    '--env',
+    'uiam.api_keys.decoder.prefixes=essu_dev',
+    '--env',
+    'uiam.api_keys.encoder.prefix=essu_dev',
+    '--env',
+    `uiam.cosmos.account.access_key=${MOCK_IDP_UIAM_COSMOS_DB_ACCESS_KEY}`,
+    '--env',
+    `uiam.cosmos.account.endpoint=${MOCK_IDP_UIAM_COSMOS_DB_INTERNAL_URL}`,
+    '--env',
+    `uiam.cosmos.container.apikey=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_API_KEYS}`,
+    '--env',
+    `uiam.cosmos.container.oauth_authorization_code=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_OAUTH_AUTHORIZATION_CODES}`,
+    '--env',
+    `uiam.cosmos.container.oauth_client=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_OAUTH_CLIENTS}`,
+    '--env',
+    `uiam.cosmos.container.oauth_app_connection=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_OAUTH_APP_CONNECTIONS}`,
+    '--env',
+    `uiam.cosmos.container.token_invalidation=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_TOKEN_INVALIDATION}`,
+    '--env',
+    `uiam.cosmos.container.users=${MOCK_IDP_UIAM_COSMOS_DB_COLLECTION_USERS}`,
+    '--env',
+    `uiam.cosmos.database=${MOCK_IDP_UIAM_COSMOS_DB_NAME}`,
+    '--env',
+    'uiam.cosmos.gateway_connection_mode=true',
+    '--env',
+    `uiam.internal.shared.secrets=${MOCK_IDP_UIAM_SHARED_SECRET}`,
+    '--env',
+    `uiam.tokens.jwt.signature.secrets=${MOCK_IDP_UIAM_SIGNING_SECRET}`,
+    '--env',
+    `uiam.tokens.jwt.signing.secret=${MOCK_IDP_UIAM_SIGNING_SECRET}`,
 
-      '--env',
-      'uiam.tokens.refresh.grace_period=PT3S',
+    '--env',
+    'uiam.tokens.jwt.verify.clock.skew=PT2S',
 
-      '--health-cmd',
-      'timeout 1 bash -c "</dev/tcp/localhost/8080"',
-    ],
-    cmdParams: [],
-  },
-];
+    '--env',
+    'uiam.tokens.refresh.grace_period=PT3S',
+
+    '--health-cmd',
+    'timeout 1 bash -c "</dev/tcp/localhost/8080"',
+  ],
+  cmdParams: [],
+};
 
 const UIAM_OAUTH_CONTAINER: UiamContainer = {
   name: 'uiam-oauth',
@@ -366,15 +385,71 @@ const UIAM_OAUTH_CONTAINER: UiamContainer = {
 /**
  * Returns the list of UIAM containers to run.
  * When `includeOAuth` is true, includes the UIAM OAuth container.
+ * When `cosmosDbDataPath` is provided, the Cosmos DB emulator is configured to
+ * persist data to that host directory across restarts.
  */
 export function getUiamContainers({
   includeOAuth = false,
-}: { includeOAuth?: boolean } = {}): UiamContainer[] {
-  return includeOAuth ? [...UIAM_BASE_CONTAINERS, UIAM_OAUTH_CONTAINER] : [...UIAM_BASE_CONTAINERS];
+  cosmosDbDataPath,
+}: { includeOAuth?: boolean; cosmosDbDataPath?: string } = {}): UiamContainer[] {
+  const baseContainers: UiamContainer[] = [
+    getUiamCosmosDbContainer({ cosmosDbDataPath }),
+    UIAM_CONTAINER,
+  ];
+  return includeOAuth ? [...baseContainers, UIAM_OAUTH_CONTAINER] : baseContainers;
 }
 
 /** @deprecated Use {@link getUiamContainers} instead */
-export const UIAM_CONTAINERS = UIAM_BASE_CONTAINERS;
+export const UIAM_CONTAINERS = getUiamContainers();
+
+/**
+ * Sets up the host directory used to persist Cosmos DB emulator data across
+ * restarts. Mirrors {@link setupServerlessVolumes} for ES: the directory
+ * survives restarts by default, and is wiped when `clean` is true. The
+ * directory is a sibling of the ES `stateless` bucket under the same
+ * `basePath`, so a single `--clean` clears both data stores.
+ */
+export async function setupUiamCosmosDbDataDir(
+  log: ToolingLog,
+  { basePath, clean }: { basePath: string; clean?: boolean }
+): Promise<string> {
+  const cosmosDbDataPath = join(basePath, UIAM_COSMOS_DB_DATA_DIR);
+
+  log.info(chalk.bold(`Checking for local UIAM Cosmos DB data store at ${cosmosDbDataPath}`));
+  log.indent(4);
+
+  let exists = false;
+  try {
+    await access(cosmosDbDataPath);
+    exists = true;
+  } catch (e) {
+    exists = false;
+  }
+
+  if (clean && exists) {
+    log.info('Cleaning existing UIAM Cosmos DB data store.');
+    try {
+      await rm(cosmosDbDataPath, { recursive: true, force: true });
+    } catch (error) {
+      // Fall back to sudo if needed, CI user can have issues removing old state
+      await execa('sudo', ['rm', '-rf', cosmosDbDataPath]);
+    }
+  }
+
+  if (clean || !exists) {
+    await mkdir(cosmosDbDataPath, { recursive: true });
+    log.info('Created new UIAM Cosmos DB data store.');
+  } else {
+    log.info('Using existing UIAM Cosmos DB data store.');
+  }
+
+  // Permissions are set separately from mkdir due to default umask.
+  await chmod(cosmosDbDataPath, 0o777);
+  log.info('Setup UIAM Cosmos DB data store permissions (chmod 777).');
+
+  log.indent(-4);
+  return cosmosDbDataPath;
+}
 
 /**
  * Run a single UIAM-related container.

@@ -7,8 +7,17 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import mockFs from 'mock-fs';
+import Fsp from 'fs/promises';
 import { ToolingLog } from '@kbn/tooling-log';
-import { initializeUiamContainers, runUiamContainer, UIAM_CONTAINERS } from './docker_uiam';
+import {
+  getUiamContainers,
+  initializeUiamContainers,
+  runUiamContainer,
+  setupUiamCosmosDbDataDir,
+  UIAM_CONTAINERS,
+  UIAM_COSMOS_DB_DATA_DIR,
+} from './docker_uiam';
 
 jest.mock('timers/promises', () => ({
   setTimeout: jest.fn(() => Promise.resolve()),
@@ -579,5 +588,83 @@ describe('#initializeUiamContainers', () => {
     expect(mockUndiciAgent).toHaveBeenCalledWith({ connect: { rejectUnauthorized: false } });
 
     expect(mockUndiciFetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('#getUiamContainers()', () => {
+  test('disables Cosmos DB data persistence and omits the data volume by default', () => {
+    const [cosmosDbContainer] = getUiamContainers();
+
+    expect(cosmosDbContainer.params).toEqual(
+      expect.arrayContaining(['AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false'])
+    );
+    expect(cosmosDbContainer.params).not.toEqual(
+      expect.arrayContaining([expect.stringContaining(':/data:z')])
+    );
+  });
+
+  test('enables Cosmos DB data persistence and mounts the host data path when provided', () => {
+    const cosmosDbDataPath = '/host/.es/cosmosdb';
+    const [cosmosDbContainer] = getUiamContainers({ cosmosDbDataPath });
+
+    expect(cosmosDbContainer.params).toEqual(
+      expect.arrayContaining([
+        '--volume',
+        `${cosmosDbDataPath}:/data:z`,
+        '--env',
+        'AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true',
+      ])
+    );
+  });
+});
+
+describe('#setupUiamCosmosDbDataDir()', () => {
+  const baseEsPath = `${process.cwd()}/.es`;
+  const cosmosDbDataPath = `${baseEsPath}/${UIAM_COSMOS_DB_DATA_DIR}`;
+
+  beforeEach(() => {
+    jest.useRealTimers();
+  });
+
+  afterEach(() => {
+    mockFs.restore();
+  });
+
+  test('creates the Cosmos DB data dir and returns its path when missing', async () => {
+    mockFs({ [baseEsPath]: {} });
+
+    const returnedPath = await setupUiamCosmosDbDataDir(new ToolingLog(), {
+      basePath: baseEsPath,
+    });
+
+    expect(returnedPath).toBe(cosmosDbDataPath);
+    await expect(Fsp.access(cosmosDbDataPath)).resolves.not.toThrow();
+    // eslint-disable-next-line no-bitwise
+    expect((await Fsp.stat(cosmosDbDataPath)).mode & 0o777).toBe(0o777);
+  });
+
+  test('preserves an existing Cosmos DB data dir when --clean is not passed', async () => {
+    mockFs({
+      [baseEsPath]: {
+        [UIAM_COSMOS_DB_DATA_DIR]: { 'state.dat': 'persisted' },
+      },
+    });
+
+    await setupUiamCosmosDbDataDir(new ToolingLog(), { basePath: baseEsPath });
+
+    await expect(Fsp.readFile(`${cosmosDbDataPath}/state.dat`, 'utf8')).resolves.toBe('persisted');
+  });
+
+  test('wipes an existing Cosmos DB data dir when --clean is passed', async () => {
+    mockFs({
+      [baseEsPath]: {
+        [UIAM_COSMOS_DB_DATA_DIR]: { 'state.dat': 'persisted' },
+      },
+    });
+
+    await setupUiamCosmosDbDataDir(new ToolingLog(), { basePath: baseEsPath, clean: true });
+
+    await expect(Fsp.access(cosmosDbDataPath)).resolves.not.toThrow();
+    await expect(Fsp.access(`${cosmosDbDataPath}/state.dat`)).rejects.toThrow();
   });
 });

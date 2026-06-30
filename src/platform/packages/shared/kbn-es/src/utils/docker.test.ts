@@ -980,16 +980,41 @@ describe('runServerlessCluster()', () => {
     // docker logs (1)
     expect(execa.mock.calls).toHaveLength(18);
 
+    // Cosmos DB persistence is enabled by default and writes to a sibling of
+    // the ES `stateless` bucket under the same `basePath`.
+    const expectedCosmosDbDataPath = join(baseEsPath, dockerUiam.UIAM_COSMOS_DB_DATA_DIR);
+    const [expectedCosmosDbContainer, expectedUiamContainer] = dockerUiam.getUiamContainers({
+      cosmosDbDataPath: expectedCosmosDbDataPath,
+    });
+
     expect(runUiamContainerMock).toHaveBeenCalledTimes(2);
-    expect(runUiamContainerMock).toHaveBeenCalledWith(
-      expect.anything(),
-      dockerUiam.UIAM_CONTAINERS[0]
-    );
-    expect(runUiamContainerMock).toHaveBeenCalledWith(
-      expect.anything(),
-      dockerUiam.UIAM_CONTAINERS[1]
-    );
+    expect(runUiamContainerMock).toHaveBeenCalledWith(expect.anything(), expectedCosmosDbContainer);
+    expect(runUiamContainerMock).toHaveBeenCalledWith(expect.anything(), expectedUiamContainer);
+    await expect(Fsp.access(expectedCosmosDbDataPath)).resolves.not.toThrow();
     expect(initializeUiamContainersMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('should wipe the Cosmos DB data store when --clean is passed in UIAM mode', async () => {
+    const cosmosDbDataPath = `${baseEsPath}/${dockerUiam.UIAM_COSMOS_DB_DATA_DIR}`;
+    waitUntilClusterReadyMock.mockResolvedValue();
+    mockFs({
+      [baseEsPath]: {
+        [dockerUiam.UIAM_COSMOS_DB_DATA_DIR]: {
+          'stale.dat': 'stale data',
+        },
+      },
+    });
+    execa.mockImplementation(() => Promise.resolve({ stdout: '' }));
+
+    await runServerlessCluster(log, {
+      projectType,
+      basePath: baseEsPath,
+      uiam: true,
+      clean: true,
+    });
+
+    await expect(Fsp.access(cosmosDbDataPath)).resolves.not.toThrow();
+    await expect(Fsp.access(`${cosmosDbDataPath}/stale.dat`)).rejects.toThrow();
   });
 
   test(`should wait for serverless nodes to return 'green' status`, async () => {
