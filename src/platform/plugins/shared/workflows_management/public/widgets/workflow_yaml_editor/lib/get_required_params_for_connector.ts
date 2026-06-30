@@ -109,6 +109,7 @@ export function getRequiredParamsForConnector(
     ],
     wait: [{ name: 'duration', example: '5s' }],
     waitForInput: [{ name: 'message', example: 'Please approve before continuing' }],
+    waitForApproval: [{ name: 'message', example: 'Your approval is required to continue' }],
   };
 
   return basicConnectorParams[connectorType] || [];

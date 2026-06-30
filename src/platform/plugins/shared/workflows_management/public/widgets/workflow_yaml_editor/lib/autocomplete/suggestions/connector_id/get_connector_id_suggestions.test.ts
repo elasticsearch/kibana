@@ -59,6 +59,8 @@ describe('getConnectorIdSuggestions', () => {
       lineParseResult: parseLineForCompletion(line),
       range: { startLineNumber: 1, endLineNumber: 1, startColumn: 1, endColumn: line.length + 1 },
       focusedStepInfo: { stepType: 'slack' },
+      focusedYamlPair: null,
+      path: ['steps', 0, 'connector-id'],
       dynamicConnectorTypes: fakeConnectorTypes,
     } as unknown as AutocompleteContext);
 
@@ -69,5 +71,23 @@ describe('getConnectorIdSuggestions', () => {
     expect(result[1].insertText).toBe('private-slack');
     expect(result[2].label).toBe('Create a new connector');
     expect(result[2].insertText).toBe('');
+  });
+
+  it('should suggest slack connectors for waitForApproval channel connector-id', () => {
+    const line = '        connector-id: ';
+    const result = getConnectorIdSuggestions({
+      line,
+      lineParseResult: parseLineForCompletion(line),
+      range: { startLineNumber: 1, endLineNumber: 1, startColumn: 1, endColumn: line.length + 1 },
+      focusedStepInfo: { stepType: 'waitForApproval' },
+      focusedYamlPair: {
+        path: ['with', 'channels', 'slack', 'connector-id'],
+      },
+      path: ['steps', 0, 'with', 'channels', 'slack', 'connector-id'],
+      dynamicConnectorTypes: fakeConnectorTypes,
+    } as unknown as AutocompleteContext);
+
+    expect(result).toHaveLength(3);
+    expect(result[0].insertText).toBe('public-slack');
   });
 });

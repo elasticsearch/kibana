@@ -86,6 +86,57 @@ describe('handleExecutionDelay', () => {
       ).not.toHaveBeenCalled();
     });
 
+    it('should schedule approval deadline for waitForApproval without workflow-level timeout', async () => {
+      jest.useFakeTimers();
+      try {
+        jest.setSystemTime(new Date('2025-06-01T12:00:15.000Z'));
+        const params = makeParams();
+        const stepRuntime = makeStepRuntime({
+          node: {
+            type: 'waitForApproval',
+            stepType: 'waitForApproval',
+            configuration: { timeout: '30s' },
+          } as any,
+          stepExecution: {
+            status: ExecutionStatus.WAITING_FOR_INPUT,
+            startedAt: '2025-06-01T12:00:00.000Z',
+          } as any,
+        });
+
+        await handleExecutionDelay(params, stepRuntime);
+
+        expect(
+          params.workflowTaskManager.scheduleWorkflowGlobalTimeoutResumeTask
+        ).toHaveBeenCalledTimes(1);
+        const call = (
+          params.workflowTaskManager.scheduleWorkflowGlobalTimeoutResumeTask as jest.Mock
+        ).mock.calls[0][0];
+        expect(call.resumeAt.toISOString()).toBe('2025-06-01T12:00:30.000Z');
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('should not schedule approval deadline for waitForInput without workflow-level timeout', async () => {
+      const params = makeParams();
+      const stepRuntime = makeStepRuntime({
+        node: {
+          type: 'waitForInput',
+          stepType: 'waitForInput',
+        } as any,
+        stepExecution: {
+          status: ExecutionStatus.WAITING_FOR_INPUT,
+          startedAt: '2025-06-01T12:00:00.000Z',
+        } as any,
+      });
+
+      await handleExecutionDelay(params, stepRuntime);
+
+      expect(
+        params.workflowTaskManager.scheduleWorkflowGlobalTimeoutResumeTask
+      ).not.toHaveBeenCalled();
+    });
+
     it('should schedule workflow timeout resume at startedAt + timeout when workflow-level timeout exists', async () => {
       jest.useFakeTimers();
       try {

@@ -14,7 +14,7 @@ import React from 'react';
 import { i18n } from '@kbn/i18n';
 import type { WorkflowStepExecutionDto, WorkflowTokenUsage } from '@kbn/workflows';
 import type { JsonModelSchemaType } from '@kbn/workflows/spec/schema/common/json_model_schema';
-import { ResumeExecutionButton } from './resume_execution_button';
+import { type ApprovalLabels, ResumeExecutionButton } from './resume_execution_button';
 import { StepExecutionDataView } from './step_execution_data_view';
 import { formatDuration } from '../../../shared/lib/format_duration';
 import { getStatusLabel } from '../../../shared/translations/status_translations';
@@ -31,6 +31,7 @@ interface WorkflowExecutionOverviewProps {
   executionId?: string;
   resumeMessage?: string;
   resumeSchema?: JsonModelSchemaType;
+  approvalLabels?: ApprovalLabels;
   shouldAutoResume?: boolean;
   waitingStepExecutionId?: string;
 }
@@ -64,6 +65,7 @@ export const WorkflowExecutionOverview = React.memo<WorkflowExecutionOverviewPro
     executionId,
     resumeMessage,
     resumeSchema,
+    approvalLabels,
     shouldAutoResume = false,
     waitingStepExecutionId,
   }) => {
@@ -214,6 +216,7 @@ export const WorkflowExecutionOverview = React.memo<WorkflowExecutionOverviewPro
                 stepStartedAt={stepExecution.startedAt}
                 resumeMessage={resumeMessage}
                 resumeSchema={resumeSchema}
+                approvalLabels={approvalLabels}
                 autoOpen={shouldAutoResume}
                 waitingStepExecutionId={waitingStepExecutionId}
               />

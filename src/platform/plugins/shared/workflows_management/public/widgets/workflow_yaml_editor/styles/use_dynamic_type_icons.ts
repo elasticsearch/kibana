@@ -81,6 +81,10 @@ export const predefinedStepTypes = [
     displayName: 'Wait For Input',
   },
   {
+    actionTypeId: 'waitForApproval',
+    displayName: 'Wait For Approval',
+  },
+  {
     actionTypeId: 'data.set',
     displayName: 'Set Variables',
   },

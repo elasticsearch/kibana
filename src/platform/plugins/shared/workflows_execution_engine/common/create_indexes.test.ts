@@ -30,13 +30,9 @@ describe('createIndexes', () => {
     jest.clearAllMocks();
   });
 
-  it('creates both workflow indices via createOrUpdateIndex', async () => {
+  it('creates all workflow indices via createOrUpdateIndex', async () => {
     await createIndexes({ esClient, logger });
 
-    // The bootstrap path uses `createOrUpdateIndex` for both indices
-    // so additive mapping changes flow into already-deployed clusters
-    // via `putMapping`. `createIndexWithMappings` is reused internally
-    // for the cold-install branch, not invoked directly from here.
     expect(createOrUpdateIndex).toHaveBeenCalledTimes(2);
     expect(createIndexWithMappings).not.toHaveBeenCalled();
 
@@ -63,10 +59,6 @@ describe('createIndexes', () => {
     );
     expect(stepCall).toBeDefined();
     const [{ mappings }] = stepCall;
-    // The mapping object reaches `createOrUpdateIndex` by reference,
-    // making `WORKFLOWS_STEP_EXECUTIONS_INDEX_MAPPINGS` the single
-    // source of truth for the index. Detailed shape assertions live
-    // alongside that constant in `mappings.test.ts`.
     expect(mappings).toBe(WORKFLOWS_STEP_EXECUTIONS_INDEX_MAPPINGS);
   });
 });

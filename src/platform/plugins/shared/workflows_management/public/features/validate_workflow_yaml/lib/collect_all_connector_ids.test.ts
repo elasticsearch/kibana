@@ -100,4 +100,29 @@ steps:
     expect(result[1].key).toBe('openai');
     expect(result[1].connectorType).toBe('inference.unified_completion');
   });
+
+  it('should resolve connector type for waitForApproval notification channel connector-id', () => {
+    const yaml = `
+name: Test Workflow
+steps:
+  - name: request-approval
+    type: waitForApproval
+    with:
+      channels:
+        slack:
+          connector-id: my-slack
+        slack_api:
+          connector-id: my-slack-api
+          channels: ["C0123"]
+`;
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
+    const result = collectAllConnectorIds(yamlDocument, lineCounter);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].key).toBe('my-slack');
+    expect(result[0].connectorType).toBe('slack');
+    expect(result[1].key).toBe('my-slack-api');
+    expect(result[1].connectorType).toBe('slack_api');
+  });
 });

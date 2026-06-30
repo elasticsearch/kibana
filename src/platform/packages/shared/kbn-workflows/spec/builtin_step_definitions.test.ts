@@ -20,6 +20,7 @@ const EXPECTED_BUILT_IN_IDS = [
   'switch',
   'wait',
   'waitForInput',
+  'waitForApproval',
   'data.set',
   'workflow.execute',
   'workflow.executeAsync',

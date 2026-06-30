@@ -32,7 +32,7 @@ import type {
 } from '@kbn/workflows';
 import { ExecutionStatus, isExecuteSyncStepType, isTerminalStatus } from '@kbn/workflows';
 import type { JsonModelSchemaType } from '@kbn/workflows/spec/schema/common/json_model_schema';
-import { ResumeExecutionButton } from './resume_execution_button';
+import { type ApprovalLabels, ResumeExecutionButton } from './resume_execution_button';
 import { StepExecutionDataView } from './step_execution_data_view';
 import { WorkflowExecutionOverview } from './workflow_execution_overview';
 import type { WorkflowExecutionLinkInfo } from '../../../hooks/navigation/use_navigate_to_execution';
@@ -49,6 +49,7 @@ interface WorkflowStepExecutionDetailsProps {
   workflowExecutionStatus?: ExecutionStatus;
   resumeMessage?: string;
   resumeSchema?: JsonModelSchemaType;
+  approvalLabels?: ApprovalLabels;
   shouldAutoResume?: boolean;
   waitingStepExecutionId?: string;
   /** When the step is workflow.execute, the child workflow execution (to link to) */
@@ -67,6 +68,7 @@ export const WorkflowStepExecutionDetails = React.memo<WorkflowStepExecutionDeta
     workflowExecutionStatus,
     resumeMessage,
     resumeSchema,
+    approvalLabels,
     shouldAutoResume = false,
     waitingStepExecutionId,
     childWorkflowExecution,
@@ -199,6 +201,7 @@ export const WorkflowStepExecutionDetails = React.memo<WorkflowStepExecutionDeta
           executionId={workflowExecutionId}
           resumeMessage={resumeMessage}
           resumeSchema={resumeSchema}
+          approvalLabels={approvalLabels}
           shouldAutoResume={shouldAutoResume}
           waitingStepExecutionId={waitingStepExecutionId}
         />
@@ -320,6 +323,7 @@ export const WorkflowStepExecutionDetails = React.memo<WorkflowStepExecutionDeta
                             stepStartedAt={stepExecution?.startedAt}
                             resumeMessage={resumeMessage}
                             resumeSchema={resumeSchema}
+                            approvalLabels={approvalLabels}
                             autoOpen={shouldAutoResume}
                             waitingStepExecutionId={stepExecution?.id}
                           />

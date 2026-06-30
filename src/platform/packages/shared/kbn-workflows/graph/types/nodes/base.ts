@@ -12,6 +12,7 @@ import {
   DataSetStepSchema,
   ElasticsearchStepSchema,
   KibanaStepSchema,
+  WaitForApprovalStepSchema,
   WaitForInputStepSchema,
   WaitStepSchema,
   WorkflowExecuteAsyncStepSchema,
@@ -47,6 +48,13 @@ export const WaitForInputGraphNodeSchema = GraphNodeSchema.extend({
   configuration: WaitForInputStepSchema,
 });
 export type WaitForInputGraphNode = z.infer<typeof WaitForInputGraphNodeSchema>;
+
+export const WaitForApprovalGraphNodeSchema = GraphNodeSchema.extend({
+  id: z.string(),
+  type: z.literal('waitForApproval'),
+  configuration: WaitForApprovalStepSchema,
+});
+export type WaitForApprovalGraphNode = z.infer<typeof WaitForApprovalGraphNodeSchema>;
 
 export const DataSetGraphNodeSchema = GraphNodeSchema.extend({
   id: z.string(),

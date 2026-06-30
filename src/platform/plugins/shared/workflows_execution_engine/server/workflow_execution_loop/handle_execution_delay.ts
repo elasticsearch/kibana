@@ -8,8 +8,8 @@
  */
 
 import type { EsWorkflowExecution } from '@kbn/workflows';
-import { ExecutionStatus } from '@kbn/workflows';
-import { isEnterStepTimeoutZone } from '@kbn/workflows/graph';
+import { DEFAULT_WAIT_FOR_APPROVAL_TIMEOUT, ExecutionStatus } from '@kbn/workflows';
+import { isEnterStepTimeoutZone, isWaitForApproval } from '@kbn/workflows/graph';
 import { flushState } from './persistence_loop';
 import type { WorkflowExecutionLoopParams } from './types';
 import { abortableTimeout, parseDuration, TimeoutAbortedError } from '../utils';
@@ -17,11 +17,29 @@ import type { StepExecutionRuntime } from '../workflow_context_manager/step_exec
 
 const SHORT_DURATION_THRESHOLD = 1000 * 5; // 5 seconds
 
+function getWaitForApprovalIdleDeadlineMs(
+  stepExecutionRuntime: StepExecutionRuntime
+): number | undefined {
+  const { node, stepExecution } = stepExecutionRuntime;
+  if (!isWaitForApproval(node) || !stepExecution?.startedAt) {
+    return undefined;
+  }
+
+  const timeout = node.configuration.timeout ?? DEFAULT_WAIT_FOR_APPROVAL_TIMEOUT;
+  return new Date(stepExecution.startedAt).getTime() + parseDuration(timeout);
+}
+
 function getIdleTimeoutResumeDeadlineMs(
   params: WorkflowExecutionLoopParams,
-  workflowExecution: EsWorkflowExecution
+  workflowExecution: EsWorkflowExecution,
+  stepExecutionRuntime: StepExecutionRuntime
 ): number | undefined {
   const deadlineMs: number[] = [];
+
+  const approvalDeadlineMs = getWaitForApprovalIdleDeadlineMs(stepExecutionRuntime);
+  if (approvalDeadlineMs !== undefined) {
+    deadlineMs.push(approvalDeadlineMs);
+  }
 
   const workflowTimeoutStr = params.workflowExecutionGraph.getWorkflowLevelTimeout();
   if (workflowTimeoutStr && workflowExecution.startedAt) {
@@ -65,7 +83,11 @@ export async function handleExecutionDelay(
       status: stepStatus,
     });
 
-    const deadlineMs = getIdleTimeoutResumeDeadlineMs(params, workflowExecution);
+    const deadlineMs = getIdleTimeoutResumeDeadlineMs(
+      params,
+      workflowExecution,
+      stepExecutionRuntime
+    );
     if (deadlineMs !== undefined) {
       const resumeAtMs = Math.max(deadlineMs, new Date().getTime() + 500);
 

@@ -64,6 +64,9 @@ export const getStepIconType = (nodeType: string): IconType => {
     case 'waitForInput':
       iconType = 'user';
       break;
+    case 'waitForApproval':
+      iconType = 'user';
+      break;
     case 'enter-if':
     case 'exit-if':
     case 'enter-condition-branch':

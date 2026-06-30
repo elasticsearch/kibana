@@ -52,6 +52,7 @@ export type { WorkflowExecutionEventDispatchMetadata } from './common/workflow_e
 export * from './common/privileges';
 export * from './common/utils';
 export * from './common/step_types';
+export * from './common/wait_for_approval';
 export * from './definition';
 export * from './common/elasticsearch_request_builder';
 export * from './common/kibana_request_builder';

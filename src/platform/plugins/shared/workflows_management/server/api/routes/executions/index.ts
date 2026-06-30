@@ -16,6 +16,7 @@ import { registerGetStepExecutionRoute } from './get_step_execution';
 import { registerGetWorkflowExecutionsRoute } from './get_workflow_executions';
 import { registerGetWorkflowStepExecutionsRoute } from './get_workflow_step_executions';
 import { registerResumeExecutionRoute } from './resume_execution';
+import { registerExternalResumeExecutionRoute } from './resume_execution_external';
 import { registerRunWorkflowRoute } from './run_workflow';
 import { registerTestStepRoute } from './test_step';
 import { registerTestWorkflowRoute } from './test_workflow';
@@ -33,5 +34,6 @@ export function registerExecutionRoutes(deps: RouteDependencies) {
   registerCancelWorkflowExecutionsRoute(deps);
   registerGetStepExecutionRoute(deps);
   registerResumeExecutionRoute(deps);
+  registerExternalResumeExecutionRoute(deps);
   registerGetChildrenExecutionsRoute(deps);
 }

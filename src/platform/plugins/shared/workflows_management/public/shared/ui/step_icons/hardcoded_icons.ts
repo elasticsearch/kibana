@@ -44,6 +44,7 @@ export const HardcodedIcons: Record<string, string> = {
   if: branch,
   wait: clock,
   waitForInput: user,
+  waitForApproval: user,
   alert: warning,
   scheduled: clock,
   manual: user,

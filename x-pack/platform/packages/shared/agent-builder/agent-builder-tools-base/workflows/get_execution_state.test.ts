@@ -331,5 +331,56 @@ describe('getExecutionState', () => {
 
       expect(state?.waiting_input).toBeUndefined();
     });
+
+    it('includes approval labels from waitForApproval step execution input', async () => {
+      const workflowApi = createWorkflowApi();
+      workflowApi.getWorkflowExecution = jest.fn().mockResolvedValue({
+        status: ExecutionStatus.WAITING_FOR_INPUT,
+        workflowId: 'wf-approval',
+        startedAt: '2026-01-01T00:00:00.000Z',
+        workflowDefinition: {
+          name: 'Approval Flow',
+          steps: [
+            {
+              name: 'request-approval',
+              type: 'waitForApproval',
+              with: {
+                message: 'Approve change?',
+                approveLabel: 'Approve',
+                rejectLabel: 'Decline',
+              },
+            },
+          ],
+        },
+        stepExecutions: [
+          {
+            id: 'step-exec-approval',
+            stepId: 'request-approval',
+            status: ExecutionStatus.WAITING_FOR_INPUT,
+            scopeStack: [],
+            input: {
+              message: 'Approve change to prod?',
+              approveLabel: 'Ship it',
+              rejectLabel: 'Hold',
+              schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+            },
+          },
+        ],
+      });
+
+      const state = await getExecutionState({
+        executionId: 'exec-approval',
+        spaceId: 'default',
+        workflowApi,
+      });
+
+      expect(state?.waiting_input).toEqual({
+        step_execution_id: 'step-exec-approval',
+        message: 'Approve change to prod?',
+        schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+        approve_label: 'Ship it',
+        reject_label: 'Hold',
+      });
+    });
   });
 });

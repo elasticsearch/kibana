@@ -111,6 +111,16 @@ export function generateBuiltInStepSnippet(
         with: { message: 'User action is required' },
       };
       break;
+    case 'waitForApproval':
+      parameters = {
+        timeout: '24h',
+        with: {
+          message: 'Your approval is required to continue',
+          approveLabel: 'Approve',
+          rejectLabel: 'Decline',
+        },
+      };
+      break;
     case 'workflow.execute':
     case 'workflow.executeAsync':
       parameters = {

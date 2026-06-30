@@ -5,21 +5,32 @@
  * 2.0.
  */
 
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the "Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
 import type { JsonValue } from '@kbn/utility-types';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
-import type { WaitForInputStep, WorkflowExecutionDto } from '@kbn/workflows';
+import type { WaitForApprovalStep, WaitForInputStep, WorkflowExecutionDto } from '@kbn/workflows';
 import { ExecutionStatus, getStepByNameFromNestedSteps } from '@kbn/workflows';
 import { getWorkflowOutput } from './get_workflow_output';
 
 type WorkflowApi = WorkflowsServerPluginSetup['management'];
 
 export interface WaitingInputContext {
-  /** Step execution document id for the paused `waitForInput` instance. Compare across status polls. */
+  /** Step execution document id for the paused HITL step instance. Compare across status polls. */
   step_execution_id: string;
-  /** Human-readable prompt from the waitForInput step's `with.message`. */
+  /** Human-readable prompt from the step's `with.message`. */
   message?: string;
   /** JSON Schema describing the expected input, from the step's `with.schema`. */
   schema?: Record<string, unknown>;
+  /** Present for `waitForApproval` steps. */
+  approve_label?: string;
+  /** Present for `waitForApproval` steps. */
+  reject_label?: string;
 }
 
 export interface WorkflowExecutionState {
@@ -66,16 +77,34 @@ export const toWorkflowExecutionState = (
     );
 
     if (waitingStep) {
+      const stepInput = (waitingStep.input ?? {}) as {
+        message?: string;
+        schema?: Record<string, unknown>;
+        approveLabel?: string;
+        rejectLabel?: string;
+      };
       const step = getStepByNameFromNestedSteps(
         execution.workflowDefinition.steps,
         waitingStep.stepId
       );
       const stepConfig =
-        step?.type === 'waitForInput' ? (step as WaitForInputStep).with : undefined;
+        step?.type === 'waitForInput'
+          ? (step as WaitForInputStep).with
+          : step?.type === 'waitForApproval'
+          ? (step as WaitForApprovalStep).with
+          : undefined;
+
       const waitContext: WaitingInputContext = {
         step_execution_id: waitingStep.id,
-        ...(stepConfig?.message && { message: stepConfig.message }),
-        ...(stepConfig?.schema && { schema: stepConfig.schema as Record<string, unknown> }),
+        ...(stepInput.message && { message: stepInput.message }),
+        ...(stepInput.schema && { schema: stepInput.schema }),
+        ...(!stepInput.message && stepConfig?.message && { message: stepConfig.message }),
+        ...(!stepInput.schema &&
+          stepConfig &&
+          'schema' in stepConfig &&
+          stepConfig.schema && { schema: stepConfig.schema as Record<string, unknown> }),
+        ...(stepInput.approveLabel && { approve_label: stepInput.approveLabel }),
+        ...(stepInput.rejectLabel && { reject_label: stepInput.rejectLabel }),
       };
       state.waiting_input = waitContext;
     }

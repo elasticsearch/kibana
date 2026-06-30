@@ -17,11 +17,23 @@ import { triggerSchemas } from '../../../trigger_schemas';
 import type { ActionConnectorGroup, ActionGroup, ActionOptionData } from '../types';
 import { isActionGroup } from '../types';
 
-export function getActionOptions(
-  euiTheme: UseEuiTheme['euiTheme'],
-  workflowsExtensions: WorkflowsExtensionsPublicPluginStart
+function getBuiltInNestedFlowControlStepOptions(
+  euiTheme: UseEuiTheme['euiTheme']
 ): ActionOptionData[] {
-  const connectors = getAllConnectors();
+  return (['waitForApproval', 'workflow.execute', 'workflow.executeAsync'] as const)
+    .map((stepId) => getBuiltInStepDefinition(stepId))
+    .filter((def): def is NonNullable<typeof def> => def !== undefined)
+    .map((def) => ({
+      id: def.id,
+      label: def.label,
+      description: def.description,
+      iconType: 'nested' as const,
+      iconColor: euiTheme.colors.vis.euiColorVis0,
+      stability: def.stability,
+    }));
+}
+
+function buildTriggersGroup(euiTheme: UseEuiTheme['euiTheme']): ActionOptionData {
   const builtInTriggerOptions: ActionOptionData[] = [
     {
       id: 'manual',
@@ -67,7 +79,8 @@ export function getActionOptions(
       iconColor: euiTheme.colors.vis.euiColorVis6,
       stability: 'tech_preview',
     }));
-  const triggersGroup: ActionOptionData = {
+
+  return {
     iconType: 'bolt',
     iconColor: euiTheme.colors.vis.euiColorVis6,
     id: 'triggers',
@@ -79,6 +92,26 @@ export function getActionOptions(
     }),
     options: [...builtInTriggerOptions, ...registeredTriggerOptions],
   };
+}
+
+function mergeNestedStepGroups(stepGroups: Record<StepCategory, ActionGroup>): void {
+  for (const group of Object.values(stepGroups)) {
+    if (group.nestedGroups) {
+      for (const nestedGroup of group.nestedGroups) {
+        if (nestedGroup.options.length > 0) {
+          group.options.unshift(nestedGroup);
+        }
+      }
+    }
+  }
+}
+
+export function getActionOptions(
+  euiTheme: UseEuiTheme['euiTheme'],
+  workflowsExtensions: WorkflowsExtensionsPublicPluginStart
+): ActionOptionData[] {
+  const connectors = getAllConnectors();
+  const triggersGroup = buildTriggersGroup(euiTheme);
 
   const kibanaCasesGroup: ActionGroup = {
     iconType: 'briefcase',
@@ -239,17 +272,7 @@ export function getActionOptions(
         iconType: 'user',
         iconColor: euiTheme.colors.vis.euiColorVis0,
       },
-      ...(['workflow.execute', 'workflow.executeAsync'] as const)
-        .map((stepId) => getBuiltInStepDefinition(stepId))
-        .filter((def): def is NonNullable<typeof def> => def !== undefined)
-        .map((def) => ({
-          id: def.id,
-          label: def.label,
-          description: def.description,
-          iconType: 'nested' as const,
-          iconColor: euiTheme.colors.vis.euiColorVis0,
-          stability: def.stability,
-        })),
+      ...getBuiltInNestedFlowControlStepOptions(euiTheme),
     ],
   };
   const elasticSearchGroup: ActionOptionData = {
@@ -348,15 +371,7 @@ export function getActionOptions(
     }
   }
 
-  for (const group of Object.values(stepGroups)) {
-    if (group.nestedGroups) {
-      for (const nestedGroup of group.nestedGroups) {
-        if (nestedGroup.options.length > 0) {
-          group.options.unshift(nestedGroup);
-        }
-      }
-    }
-  }
+  mergeNestedStepGroups(stepGroups);
 
   const topLevelOptions: ActionOptionData[] = [
     triggersGroup,

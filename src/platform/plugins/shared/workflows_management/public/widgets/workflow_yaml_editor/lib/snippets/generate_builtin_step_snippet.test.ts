@@ -130,6 +130,19 @@ describe('generateBuiltInStepSnippet', () => {
     });
   });
 
+  describe('waitForApproval step', () => {
+    it('should generate a waitForApproval snippet with approval labels', () => {
+      const result = generateBuiltInStepSnippet('waitForApproval', {
+        full: true,
+        withStepsSection: false,
+      });
+      expect(result).toContain('name: waitForApproval_step');
+      expect(result).toContain('type: waitForApproval');
+      expect(result).toContain('approveLabel: Approve');
+      expect(result).toContain('rejectLabel: Decline');
+    });
+  });
+
   describe('workflow.execute step', () => {
     it('should generate a workflow.execute snippet with workflow-id and inputs', () => {
       const result = generateBuiltInStepSnippet('workflow.execute', {

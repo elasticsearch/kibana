@@ -27,6 +27,26 @@ export {
 export { WorkflowRepository } from './repositories/workflow_repository';
 export { GLOBAL_WORKFLOW_SPACE_ID } from './constants';
 
+export {
+  EXTERNAL_RESUME_API_PATH,
+  WORKFLOW_EXTERNAL_RESUME_APPLICATION,
+  WORKFLOW_EXTERNAL_RESUME_ROLE,
+  DEFAULT_WAIT_FOR_APPROVAL_TIMEOUT,
+} from './external_resume/constants';
+export { buildExternalResumeUrl } from './external_resume/build_external_resume_url';
+export {
+  createExternalResumeApiKey,
+  invalidateExternalResumeApiKey,
+} from './external_resume/create_external_resume_api_key';
+export type { ExternalResumeApiKey } from './external_resume/create_external_resume_api_key';
+export {
+  getAuthenticatedExternalResumeApiKeyId,
+  loadExternalResumeApiKeyMetadata,
+  parseExternalResumeApiKeyMetadata,
+  ExternalResumeApiKeyMetadataError,
+} from './external_resume/external_resume_api_key_request';
+export type { ExternalResumeApiKeyMetadata } from './external_resume/external_resume_api_key_request';
+
 export type {
   GetManagedWorkflowStatusOptions,
   ManagedWorkflowStatus,
