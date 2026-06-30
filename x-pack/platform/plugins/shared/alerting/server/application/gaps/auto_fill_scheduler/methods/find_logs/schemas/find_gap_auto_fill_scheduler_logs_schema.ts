@@ -6,6 +6,9 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { GAP_AUTO_FILL_STATUS } from '../../../../../../../common/constants';
+
+const statusValues = Object.values(GAP_AUTO_FILL_STATUS);
 
 export const findGapAutoFillSchedulerLogsParamsSchema = schema.object({
   id: schema.string(),
@@ -24,7 +27,8 @@ export const findGapAutoFillSchedulerLogsParamsSchema = schema.object({
         schema.literal('error'),
         schema.literal('skipped'),
         schema.literal('no_gaps'),
-      ])
+      ]),
+      { maxSize: statusValues.length }
     )
   ),
 });

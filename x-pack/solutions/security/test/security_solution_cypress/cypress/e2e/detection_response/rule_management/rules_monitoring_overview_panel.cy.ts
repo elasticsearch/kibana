@@ -24,7 +24,7 @@ import {
 
 const TEST_INDEX = 'test_monitoring_panel_index';
 
-describe.skip(
+describe(
   'Rules Monitoring Overview Panel',
   { tags: ['@ess', '@serverless', '@skipInServerlessMKI'] },
   () => {

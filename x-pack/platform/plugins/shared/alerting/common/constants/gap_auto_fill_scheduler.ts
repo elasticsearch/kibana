@@ -27,6 +27,8 @@ export const gapAutoFillSchedulerLimits = {
     defaultValue: 3,
   },
   minScheduleIntervalInMs: 60 * 1000,
+  maxScopeSize: 100,
+  maxRuleTypesSize: 100,
 } as const;
 
 export const GAP_AUTO_FILL_STATUS = {
