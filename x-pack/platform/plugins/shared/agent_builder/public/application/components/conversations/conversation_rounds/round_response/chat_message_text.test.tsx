@@ -37,9 +37,6 @@ jest.mock('@kbn/agent-builder-visualizations', () => {
     VisualizeLens: jest.fn(() =>
       _React.createElement('span', { 'data-test-subj': 'visualize-lens' })
     ),
-    VisualizeVega: jest.fn(() =>
-      _React.createElement('span', { 'data-test-subj': 'visualize-vega' })
-    ),
   };
 });
 
@@ -97,7 +94,6 @@ function createStartDependencies() {
     cloud: {},
     share: {},
     uiActions: {},
-    embeddable: {},
     unifiedSearch: {
       ui: {
         SearchBar: () => null,

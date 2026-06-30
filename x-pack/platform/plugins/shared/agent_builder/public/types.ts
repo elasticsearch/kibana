@@ -13,7 +13,6 @@ import type {
   DataViewsPublicPluginStart,
 } from '@kbn/data-views-plugin/public';
 import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
-import type { EmbeddableStart } from '@kbn/embeddable-plugin/public';
 import type { ManagementSetup } from '@kbn/management-plugin/public';
 import type { SharePluginSetup, SharePluginStart } from '@kbn/share-plugin/public';
 
@@ -64,7 +63,6 @@ export interface AgentBuilderStartDependencies {
   licensing: LicensingPluginStart;
   data: DataPublicPluginStart;
   dataViews: DataViewsPublicPluginStart;
-  embeddable: EmbeddableStart;
   cloud: CloudStart;
   share: SharePluginStart;
   uiActions: UiActionsStart;

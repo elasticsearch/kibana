@@ -11,7 +11,7 @@ import type { VisualizationAttachment } from '@kbn/agent-builder-visualizations-
 import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
 import { getVisualizationDimensionsFromConfig } from './shared/get_visualization_dimensions';
 import { InlineVisualization } from './inline_visualization';
-import type { VisualizationServices } from './services';
+import type { VegaVisualizationServices } from './services';
 
 const defaultVisualizationLabel = i18n.translate(
   'xpack.agentBuilder.attachments.visualization.label',
@@ -24,7 +24,7 @@ const defaultVisualizationLabel = i18n.translate(
  * this package stays decoupled from any single consumer's Kibana context shape.
  */
 export const createVisualizationAttachmentDefinition = (
-  services: VisualizationServices
+  services: VegaVisualizationServices
 ): AttachmentUIDefinition<VisualizationAttachment> => {
   return {
     getLabel: (attachment: VisualizationAttachment): string => {

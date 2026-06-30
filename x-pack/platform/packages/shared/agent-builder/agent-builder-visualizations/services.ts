@@ -13,9 +13,13 @@ import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
 
 /**
- * Services required to render Agent Builder visualizations. Passed explicitly by
- * consumers so the package stays decoupled from any single plugin's Kibana
- * context shape.
+ * Services required to render Lens-based Agent Builder visualizations. Passed
+ * explicitly by consumers so the package stays decoupled from any single
+ * plugin's Kibana context shape.
+ *
+ * This is intentionally Vega-free: the Lens renderers never touch `embeddable`
+ * or `presentationUtil`, so consumers that only render Lens (e.g. the chat
+ * markdown surface) can depend on the package without pulling those plugins.
  */
 export interface VisualizationServices {
   application: ApplicationStart;
@@ -23,5 +27,13 @@ export interface VisualizationServices {
   dataViews: DataViewsServicePublic;
   uiActions: UiActionsStart;
   unifiedSearch: UnifiedSearchPublicPluginStart;
+}
+
+/**
+ * Services required to render the Vega renderer, which embeds a by-value
+ * visualize embeddable and offers "save to dashboard". Vega-capable consumers
+ * (the visualization attachment) additionally provide `embeddable`.
+ */
+export interface VegaVisualizationServices extends VisualizationServices {
   embeddable: EmbeddableStart;
 }

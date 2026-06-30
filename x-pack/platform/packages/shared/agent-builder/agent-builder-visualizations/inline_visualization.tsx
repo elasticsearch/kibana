@@ -9,7 +9,7 @@ import React, { Suspense } from 'react';
 import { EuiLoadingSpinner } from '@elastic/eui';
 import type { TimeRange } from '@kbn/es-query';
 import type { InlineRenderCallbacks } from '@kbn/agent-builder-browser/attachments';
-import type { VisualizationServices } from './services';
+import type { VegaVisualizationServices } from './services';
 
 const LazyVisualizeLens = React.lazy(() =>
   import('./visualize_lens').then((m) => ({ default: m.VisualizeLens }))
@@ -20,7 +20,7 @@ const LazyVisualizeVega = React.lazy(() =>
 );
 
 export interface InlineVisualizationProps {
-  services: VisualizationServices;
+  services: VegaVisualizationServices;
   /** Which renderer to use. Anything other than `'vega'` renders via Lens. */
   renderer?: 'lens' | 'vega';
   /** Renderer-specific payload: a Lens config, or a Vega spec under `spec`. */
