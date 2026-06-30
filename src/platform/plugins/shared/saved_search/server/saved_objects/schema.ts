@@ -90,7 +90,6 @@ const SCHEMA_TAB_ATTRIBUTES_V13 = schema.object({
       schema.literal(DataGridDensity.NORMAL),
     ])
   ),
-
   // Chart
   breakdownField: schema.maybe(schema.string()),
   visContext: schema.maybe(

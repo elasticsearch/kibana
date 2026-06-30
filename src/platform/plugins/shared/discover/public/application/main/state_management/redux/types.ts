@@ -124,6 +124,10 @@ export interface DiscoverAppState {
    * Density of table
    */
   density?: DataGridDensity;
+  /**
+   * When true, ES|QL queries use approximate execution for faster, estimated results
+   */
+  useApproximation?: boolean;
 }
 
 export interface CascadedDocumentsState {

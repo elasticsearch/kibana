@@ -28,6 +28,7 @@ import type { DragDropIdentifier, DropType } from '@kbn/dom-drag-drop';
 import { ReorderProvider } from '@kbn/dom-drag-drop';
 import { DimensionButton } from '@kbn/visualization-ui-components';
 import { useStateFromPublishingSubject } from '@kbn/presentation-publishing';
+import { apiPublishesApproximation } from '@kbn/presentation-publishing';
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import { apiPublishesESQLVariables } from '@kbn/esql-types';
 import type { VisualizationDimensionGroupConfig } from '@kbn/lens-common';
@@ -98,6 +99,11 @@ export function LayerPanel(props: LayerPanelProps) {
   const esqlVariables = useStateFromPublishingSubject(
     apiPublishesESQLVariables(parentApi)
       ? parentApi?.esqlVariables$
+      : new BehaviorSubject(undefined)
+  );
+  const useApproximation = useStateFromPublishingSubject(
+    apiPublishesApproximation(parentApi)
+      ? parentApi?.useApproximation$
       : new BehaviorSubject(undefined)
   );
 
@@ -891,6 +897,7 @@ export function LayerPanel(props: LayerPanelProps) {
                 indexPatterns: dataViews.indexPatterns,
                 activeData: layerVisualizationConfigProps.activeData,
                 esqlVariables,
+                useApproximation: useApproximation ?? undefined,
                 dataSectionExtra: !isFullscreen &&
                   openDimension.isComplete &&
                   activeVisualization.DimensionEditorDataExtraComponent && (

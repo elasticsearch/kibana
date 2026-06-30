@@ -313,6 +313,10 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
 
         const inputQuery = ignoreGlobalFilters ? [] : input.query || [];
         params.filter = buildEsQuery(undefined, inputQuery, filters, esQueryConfigs);
+
+        if (input.useApproximation !== undefined) {
+          params.approximation = input.useApproximation;
+        }
       }
 
       let startTime = Date.now();
@@ -340,7 +344,6 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
 
         return request;
       };
-
       try {
         const { rawResponse, requestParams, warning } = await searchService.esql(
           {

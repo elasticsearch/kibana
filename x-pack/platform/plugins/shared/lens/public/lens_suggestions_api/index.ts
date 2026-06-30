@@ -28,6 +28,8 @@ interface SuggestionsApiProps {
   preferredVisAttributes?: TypedLensByValueInput['attributes'];
 }
 
+const APPROXIMATION_COLUMN_PREFIX = '_approximation_';
+
 export const suggestionsApi = ({
   context,
   dataView,
@@ -37,7 +39,15 @@ export const suggestionsApi = ({
   preferredChartType,
   preferredVisAttributes,
 }: SuggestionsApiProps) => {
-  const initialContext = context;
+  const initialContext =
+    'textBasedColumns' in context && context.textBasedColumns
+      ? {
+          ...context,
+          textBasedColumns: context.textBasedColumns.filter(
+            (col) => !col.name.startsWith(APPROXIMATION_COLUMN_PREFIX)
+          ),
+        }
+      : context;
   if (!datasourceMap || !visualizationMap || !dataView.id) return undefined;
   const datasourceStates = {
     formBased: {

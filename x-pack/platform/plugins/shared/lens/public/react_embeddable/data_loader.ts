@@ -16,6 +16,7 @@ import type {
 } from '@kbn/lens-common';
 import type { LensApi } from '@kbn/lens-common-2';
 import {
+  apiPublishesApproximation,
   apiPublishesProjectRouting,
   apiPublishesUnifiedSearch,
   fetch$,
@@ -87,6 +88,10 @@ function getSearchContext(parentApi: unknown) {
     ? parentApi
     : { projectRouting$: undefined };
 
+  const { useApproximation$ } = apiPublishesApproximation(parentApi)
+    ? parentApi
+    : { useApproximation$: undefined };
+
   return {
     filters: unifiedSearch$.filters$.getValue(),
     query: unifiedSearch$.query$.getValue(),
@@ -96,6 +101,7 @@ function getSearchContext(parentApi: unknown) {
       ? parentApi.esqlVariables$.getValue()
       : undefined,
     projectRouting: projectRouting$?.getValue(),
+    useApproximation: useApproximation$?.getValue(),
   };
 }
 

@@ -37,6 +37,7 @@ import type {
   PublishesTitle,
   PublishesUnifiedSearch,
   PublishesProjectRouting,
+  PublishesApproximation,
   PublishesViewMode,
   PublishesWritableViewMode,
   PublishingSubject,
@@ -169,6 +170,7 @@ export type DashboardApi = CanExpandPanels &
   PublishesSettings &
   PublishesUnifiedSearch &
   PublishesProjectRouting &
+  PublishesApproximation &
   PublishesViewMode &
   PublishesWritableViewMode &
   PublishesEditablePauseFetch &
@@ -216,6 +218,7 @@ export type DashboardApi = CanExpandPanels &
     setHighlightPanelId: (id: string | undefined) => void;
     setQuery: (query?: Query | undefined) => void;
     setProjectRouting: (projectRouting?: ProjectRouting) => void;
+    setUseApproximation: (useApproximation: boolean) => void;
     setScrollToPanelId: (id: string | undefined) => void;
     setSettings: (settings: DashboardSettings) => void;
     setTags: (tags: string[]) => void;

@@ -19,6 +19,7 @@ import type { DashboardSettings } from './settings_manager';
 import { initializeSettingsManager } from './settings_manager';
 import type { initializeUnifiedSearchManager } from './unified_search_manager';
 import type { initializeProjectRoutingManager } from './project_routing_manager';
+import type { initializeApproximationManager } from './approximation_manager';
 import type { DashboardPanel } from '../../server';
 import type { DashboardSaveEvent } from './types';
 import { getSampleDashboardState } from '../mocks';
@@ -67,6 +68,12 @@ const projectRoutingManagerMock = {
     startComparing: () => new BehaviorSubject<Partial<Pick<DashboardState, 'project_routing'>>>({}),
   },
 } as unknown as ReturnType<typeof initializeProjectRoutingManager>;
+const approximationManagerMock = {
+  internalApi: {
+    startComparing: () =>
+      new BehaviorSubject<Partial<Pick<DashboardState, 'use_approximation'>>>({}),
+  },
+} as unknown as ReturnType<typeof initializeApproximationManager>;
 const savedObjectId$ = new BehaviorSubject<string | undefined>('dashboard1234');
 const viewMode$ = new BehaviorSubject<ViewMode>('edit');
 let onSave$: Subject<DashboardSaveEvent>;
@@ -100,7 +107,7 @@ describe('unsavedChangesManager', () => {
           settingsManager,
           unifiedSearchManager: unifiedSearchManagerMock,
           projectRoutingManager: projectRoutingManagerMock,
-
+          approximationManager: approximationManagerMock,
           setState: setStateMock,
           onSave$: onSave$.asObservable(),
         });
@@ -127,7 +134,7 @@ describe('unsavedChangesManager', () => {
           settingsManager: settingsManagerMock,
           unifiedSearchManager: unifiedSearchManagerMock,
           projectRoutingManager: projectRoutingManagerMock,
-
+          approximationManager: approximationManagerMock,
           setState: setStateMock,
           onSave$: onSave$.asObservable(),
         });
@@ -183,7 +190,7 @@ describe('unsavedChangesManager', () => {
         settingsManager: settingsManagerMock,
         unifiedSearchManager: unifiedSearchManagerMock,
         projectRoutingManager: customProjectRoutingManagerMock,
-
+        approximationManager: approximationManagerMock,
         setState: setStateMock,
         onSave$: onSave$.asObservable(),
       });
@@ -219,7 +226,7 @@ describe('unsavedChangesManager', () => {
         settingsManager: settingsManagerMock,
         unifiedSearchManager: unifiedSearchManagerMock,
         projectRoutingManager: customProjectRoutingManagerMock,
-
+        approximationManager: approximationManagerMock,
         setState: setStateMock,
         onSave$: onSave$.asObservable(),
       });
@@ -245,7 +252,7 @@ describe('unsavedChangesManager', () => {
         settingsManager: settingsManagerMock,
         unifiedSearchManager: unifiedSearchManagerMock,
         projectRoutingManager: projectRoutingManagerMock,
-
+        approximationManager: approximationManagerMock,
         setState: setStateMock,
         onSave$: onSave$.asObservable(),
       });

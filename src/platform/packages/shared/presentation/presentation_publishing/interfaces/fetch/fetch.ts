@@ -47,6 +47,7 @@ import {
   type PublishesUnifiedSearch,
 } from './publishes_unified_search';
 import { apiPublishesProjectRouting } from './publishes_project_routing';
+import { apiPublishesApproximation } from './publishes_approximation';
 import { apiHasSections } from '../containers/presentation_container';
 
 function filterByMetaData<FilterType extends ESQLControlVariable | Filter>(
@@ -77,6 +78,7 @@ function getFetchContext$(api: unknown): Observable<Omit<FetchContext, 'isReload
     timeslice: of(undefined),
     esqlVariables: of(undefined),
     projectRouting: of(undefined),
+    useApproximation: of(undefined),
   };
 
   const sectionId$ =
@@ -93,6 +95,10 @@ function getFetchContext$(api: unknown): Observable<Omit<FetchContext, 'isReload
 
   if (apiHasParentApi(api) && apiPublishesProjectRouting(api.parentApi)) {
     observables.projectRouting = api.parentApi.projectRouting$;
+  }
+
+  if (apiHasParentApi(api) && apiPublishesApproximation(api.parentApi)) {
+    observables.useApproximation = api.parentApi.useApproximation$;
   }
 
   observables.timeRange = combineLatest({
@@ -189,6 +195,7 @@ export const useFetchContext = (api: unknown): FetchContext => {
       timeslice: typeApi?.timeRange$?.value ? undefined : typeApi?.parentApi?.timeslice$?.value,
       isReload: false,
       projectRouting: undefined,
+      useApproximation: undefined,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -276,6 +276,14 @@ export function getDashboardStateSchema(
           },
         })
       ),
+      use_approximation: schema.maybe(
+        schema.boolean({
+          meta: {
+            description:
+              'When `true`, ES|QL panels use approximate execution for faster, estimated results.',
+          },
+        })
+      ),
       query: schema.maybe(asCodeQuerySchema),
       refresh_interval: schema.maybe(refreshIntervalSchema),
       tags: schema.maybe(

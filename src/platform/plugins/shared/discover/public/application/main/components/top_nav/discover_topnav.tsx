@@ -80,6 +80,7 @@ export const DiscoverTopNav = ({
   const onSaveCbRef = useRef<(() => void) | undefined>(undefined);
 
   const query = useAppStateSelector((state) => state.query);
+  const useApproximation = useAppStateSelector((state) => state.useApproximation ?? false);
   const esqlVariables = useCurrentTabSelector((tab) => tab.esqlVariables);
   const { timeRangeAbsolute } = useCurrentTabSelector((tab) => tab.dataRequestParams);
   const refreshInterval = useCurrentTabSelector((state) => state.globalState.refreshInterval);
@@ -198,6 +199,13 @@ export const DiscoverTopNav = ({
       }
     },
     [dispatch, setAppState, getState, currentTabId, updateAppState]
+  );
+
+  const onUseApproximationChange = useCallback(
+    (nextValue: boolean) => {
+      dispatch(updateAppState({ appState: { useApproximation: nextValue } }));
+    },
+    [dispatch, updateAppState]
   );
 
   const dataStateContainer = useCurrentTabDataStateContainer();
@@ -436,6 +444,14 @@ export const DiscoverTopNav = ({
         }
         esqlQueryStats={esqlQueryStats}
         onOpenQueryInNewTab={onOpenQueryInNewTab}
+        esqlApproximation={
+          isEsqlMode
+            ? {
+                useApproximation,
+                onChange: onUseApproximationChange,
+              }
+            : undefined
+        }
       />
       {isESQLToDataViewTransitionModalVisible && (
         <ESQLToDataViewTransitionModal onClose={onESQLToDataViewTransitionModalClose} />

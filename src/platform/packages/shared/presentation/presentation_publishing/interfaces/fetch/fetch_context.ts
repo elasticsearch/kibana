@@ -21,6 +21,7 @@ export interface FetchContext {
   timeslice: [number, number] | undefined;
   esqlVariables: ESQLControlVariable[] | undefined;
   projectRouting: ProjectRouting | undefined;
+  useApproximation: boolean | undefined;
 }
 
 export interface ReloadTimeFetchContext extends Omit<FetchContext, 'isReload'> {
@@ -41,7 +42,8 @@ export function isReloadTimeFetchContextEqual(
     isTimeRangeEqualForFetch(previousContext.timeRange, currentContext.timeRange) &&
     isProjectRoutingEqualForFetch(previousContext.projectRouting, currentContext.projectRouting) &&
     isTimeSliceEqualForFetch(previousContext.timeslice, currentContext.timeslice) &&
-    areVariablesEqualForFetch(previousContext.esqlVariables, currentContext.esqlVariables)
+    areVariablesEqualForFetch(previousContext.esqlVariables, currentContext.esqlVariables) &&
+    previousContext.useApproximation === currentContext.useApproximation
   );
 }
 

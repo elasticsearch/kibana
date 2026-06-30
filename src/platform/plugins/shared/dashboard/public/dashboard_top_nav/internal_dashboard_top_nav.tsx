@@ -9,6 +9,7 @@
 
 import deepEqual from 'fast-deep-equal';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { map } from 'rxjs';
 import UseUnmount from 'react-use/lib/useUnmount';
 
 import type { EuiBreadcrumb, UseEuiTheme } from '@elastic/eui';
@@ -24,11 +25,17 @@ import {
 import { css } from '@emotion/react';
 import type { MountPoint } from '@kbn/core/public';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
-import type { Query } from '@kbn/es-query';
+import type { AggregateQuery, Query } from '@kbn/es-query';
+import { isOfAggregateQueryType } from '@kbn/es-query';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { getManagedContentBadge } from '@kbn/managed-content-badge';
 import type { TopNavMenuBadgeProps, TopNavMenuProps } from '@kbn/navigation-plugin/public';
-import { useBatchedPublishingSubjects } from '@kbn/presentation-publishing';
+import {
+  apiPublishesUnifiedSearch,
+  combineCompatibleChildrenApis,
+  type PublishesUnifiedSearch,
+  useBatchedPublishingSubjects,
+} from '@kbn/presentation-publishing';
 import { LazyLabsFlyout, withSuspense } from '@kbn/presentation-util-plugin/public';
 
 import { AppMenu } from '@kbn/core-chrome-app-menu';
@@ -103,6 +110,7 @@ export function InternalDashboardTopNav({
     unpublishedTimeslice,
     publishedEsqlVariables,
     unpublishedEsqlVariables,
+    useApproximation,
   ] = useBatchedPublishingSubjects(
     dashboardApi.dataViews$,
     dashboardApi.fullScreenMode$,
@@ -116,7 +124,8 @@ export function InternalDashboardTopNav({
     dashboardApi.publishedTimeslice$,
     dashboardApi.unpublishedTimeslice$,
     dashboardInternalApi.publishedEsqlVariables$,
-    dashboardInternalApi.unpublishedEsqlVariables$
+    dashboardInternalApi.unpublishedEsqlVariables$,
+    dashboardApi.useApproximation$
   );
 
   const hasUnpublishedFilters = useMemo(() => {
@@ -131,6 +140,17 @@ export function InternalDashboardTopNav({
 
   const [savedQueryId, setSavedQueryId] = useState<string | undefined>();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [hasEsqlPanel, setHasEsqlPanel] = useState(false);
+
+  useEffect(() => {
+    const subscription = combineCompatibleChildrenApis<
+      PublishesUnifiedSearch,
+      (Query | AggregateQuery | undefined)[]
+    >(dashboardApi, 'query$', apiPublishesUnifiedSearch, [])
+      .pipe(map((queries) => queries.some((q) => isOfAggregateQueryType(q))))
+      .subscribe(setHasEsqlPanel);
+    return () => subscription.unsubscribe();
+  }, [dashboardApi]);
 
   const dashboardTitle = useMemo(() => {
     return getDashboardTitle(title, viewMode, !lastSavedId);
@@ -420,6 +440,14 @@ export function InternalDashboardTopNav({
           useBackgroundSearchButton={
             dataService.search.isBackgroundSearchEnabled &&
             getDashboardCapabilities().storeSearchSession
+          }
+          esqlApproximation={
+            hasEsqlPanel
+              ? {
+                  useApproximation: useApproximation ?? false,
+                  onChange: dashboardApi.setUseApproximation,
+                }
+              : undefined
           }
         />
       )}

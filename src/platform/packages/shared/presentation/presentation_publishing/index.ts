@@ -75,6 +75,10 @@ export {
   type PublishesProjectRoutingOverrides,
 } from './interfaces/fetch/publishes_project_routing';
 export {
+  apiPublishesApproximation,
+  type PublishesApproximation,
+} from './interfaces/fetch/publishes_approximation';
+export {
   apiHasAppContext,
   type EmbeddableAppContext,
   type HasAppContext,

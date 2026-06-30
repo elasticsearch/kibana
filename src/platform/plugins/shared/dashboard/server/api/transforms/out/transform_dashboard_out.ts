@@ -43,6 +43,7 @@ export function transformDashboardOut(
     timeTo,
     title,
     projectRouting,
+    useApproximation,
   } = attributes;
 
   // Extract tag references
@@ -89,6 +90,7 @@ export function transformDashboardOut(
       DashboardState,
       | 'description'
       | 'project_routing'
+      | 'use_approximation'
       | 'refresh_interval'
       | 'tags'
       | 'time_range'
@@ -99,6 +101,7 @@ export function transformDashboardOut(
     description,
     options: options as DashboardState['options'], // defaults will be injected, so safe to remove partial typing
     project_routing: projectRouting,
+    use_approximation: useApproximation,
     ...(refreshInterval && {
       refresh_interval: { pause: refreshInterval.pause, value: refreshInterval.value },
     }),
