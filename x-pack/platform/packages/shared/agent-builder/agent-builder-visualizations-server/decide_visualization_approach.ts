@@ -8,7 +8,7 @@
 import { z } from '@kbn/zod/v4';
 import type { ModelProvider } from '@kbn/agent-builder-server';
 import { SupportedChartType } from '@kbn/agent-builder-common/tools/tool_result';
-import { getChartTypeSelectionPromptContent } from './chart_type_guidance';
+import { getChartTypeSelectionPromptContent } from './lens/chart_type_guidance';
 
 /**
  * Which engine renders a generated visualization. Lens is the default for

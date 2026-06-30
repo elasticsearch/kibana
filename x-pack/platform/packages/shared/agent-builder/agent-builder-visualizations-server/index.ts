@@ -8,15 +8,12 @@
 export {
   buildVisualizationConfig,
   type BuildVisualizationConfigParams,
-} from './visualization/build_visualization_config';
-export { getChartTypeSelectionPromptContent } from './visualization/chart_type_guidance';
-export { esqlAdditionalInstructions } from './visualization/prompts';
-export { decideVisualizationApproach } from './visualization/decide_visualization_approach';
-export type {
-  VisualizationRenderer,
-  VisualizationApproach,
-} from './visualization/decide_visualization_approach';
-export type { VisualizationConfig } from './visualization/types';
+} from './lens/build_visualization_config';
+export { getChartTypeSelectionPromptContent } from './lens/chart_type_guidance';
+export type { VisualizationConfig } from './lens/types';
+export { esqlAdditionalInstructions } from './shared/esql_instructions';
+export { decideVisualizationApproach } from './decide_visualization_approach';
+export type { VisualizationRenderer, VisualizationApproach } from './decide_visualization_approach';
 export { extractTextFromMessage } from './utils/extract_text_from_message';
 
 export {

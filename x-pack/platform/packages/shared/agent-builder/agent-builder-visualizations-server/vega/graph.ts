@@ -13,7 +13,7 @@ import type { IScopedClusterClient } from '@kbn/core-elasticsearch-server';
 import { generateEsql, executeEsql } from '@kbn/agent-builder-genai-utils';
 import { buildTimeRangeParams } from '@kbn/agent-builder-genai-utils/tools/utils/esql';
 import { extractTextFromMessage } from '../utils/extract_text_from_message';
-import { esqlAdditionalInstructions } from '../visualization/prompts';
+import { esqlAdditionalInstructions } from '../shared/esql_instructions';
 import {
   normalizeVegaSpec,
   normalizeRawVegaSpec,

@@ -28,7 +28,8 @@ import {
   isGenerateConfigAction,
   isValidateConfigAction,
 } from './actions_lens';
-import { createGenerateConfigPrompt, esqlAdditionalInstructions } from './prompts';
+import { createGenerateConfigPrompt } from './prompts';
+import { esqlAdditionalInstructions } from '../shared/esql_instructions';
 
 // Regex to extract JSON from markdown code blocks
 const INLINE_JSON_REGEX = /```(?:json)?\s*([\s\S]*?)\s*```/gm;

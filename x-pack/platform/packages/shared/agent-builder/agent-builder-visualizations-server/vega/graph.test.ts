@@ -24,7 +24,7 @@ jest.mock('../utils/extract_text_from_message', () => ({
   extractTextFromMessage: (message: unknown) => String(message),
 }));
 
-jest.mock('../visualization/prompts', () => ({
+jest.mock('../shared/esql_instructions', () => ({
   esqlAdditionalInstructions: 'esql-instructions',
 }));
 
