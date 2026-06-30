@@ -10987,10 +10987,10 @@
   resolved "https://registry.yarnpkg.com/@open-draft/until/-/until-2.1.0.tgz#0acf32f470af2ceaf47f095cdecd40d68666efda"
   integrity sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==
 
-"@openfeature/core@1.10.0":
-  version "1.10.0"
-  resolved "https://registry.yarnpkg.com/@openfeature/core/-/core-1.10.0.tgz#6fdcc2e00909bc0de45eae602c6650604bff1ed0"
-  integrity sha512-C3ynxtPYhe5qVJgQIqCNxZXeRXo4t1Eo86uiROr8+sD6F2OjEJGIp6VOGxz+r6jkad2s8Br9BnUJOvskhai/3A==
+"@openfeature/core@1.11.0":
+  version "1.11.0"
+  resolved "https://registry.yarnpkg.com/@openfeature/core/-/core-1.11.0.tgz#259574b2196c211b7eb487a47b9eadfbbd87473e"
+  integrity sha512-P0u3/ht/oZCQT89fOed+laLk0kZR529a825cS02uPDglxXbE97irWYpDAeRGGVETIzKfuy+H2g8c3Ccv/tXJNQ==
 
 "@openfeature/launchdarkly-client-provider@0.3.3":
   version "0.3.3"
@@ -11004,10 +11004,10 @@
   resolved "https://registry.yarnpkg.com/@openfeature/server-sdk/-/server-sdk-1.21.0.tgz#66ad00402c7580ae91845574af082f6b5342eeb0"
   integrity sha512-ZBVAiyMeN+dxurcXGJlvuOpYg9X7V923MVCI5dq/kE/5o8ys7MCOPhW44e4PS+XABHzSRTw44hcgWez93xwifw==
 
-"@openfeature/web-sdk@1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@openfeature/web-sdk/-/web-sdk-1.8.0.tgz#0c18a125fa920d14398ba2779086708e6dd718b5"
-  integrity sha512-B7NTG/mm9blV1Z7YjjcWhuoOHcDzyrHKwMRMcku9i9vvQGAE6ilVJPS3C/SsdvnOn2tDqm2lAg9SxvaJTRgp+Q==
+"@openfeature/web-sdk@1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@openfeature/web-sdk/-/web-sdk-1.9.0.tgz#af71728b8cc142225e7d92069f48a030b2524c01"
+  integrity sha512-FCrNfqvE/thHVfCNU0KKx1SD7rk+1wE2UaR5B5OPZl917QJv6AsKRwaI3N+SVgwXWI07GgtXP6hNlTVb49PGhg==
 
 "@opentelemetry/api-logs@0.218.0", "@opentelemetry/api-logs@^0.218.0":
   version "0.218.0"
