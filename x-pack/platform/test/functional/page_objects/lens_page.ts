@@ -1999,37 +1999,15 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       return testSubjects.exists('lnsEmptySizeRatioOption');
     },
 
-    settingsMenuOpen() {
-      return testSubjects.exists('lnsApp__settingsMenu');
-    },
-
-    async openSettingsMenu() {
-      if (await this.settingsMenuOpen()) return;
-
-      await testSubjects.click('lnsApp_settingsButton');
-    },
-
-    async closeSettingsMenu() {
-      if (await this.settingsMenuOpen()) {
-        await testSubjects.click('lnsApp_settingsButton');
-      }
-    },
-
     async enableAutoApply() {
-      await this.openSettingsMenu();
-
       return testSubjects.setEuiSwitch('lnsToggleAutoApply', 'check');
     },
 
     async disableAutoApply() {
-      await this.openSettingsMenu();
-
       return testSubjects.setEuiSwitch('lnsToggleAutoApply', 'uncheck');
     },
 
     async getAutoApplyEnabled() {
-      await this.openSettingsMenu();
-
       return testSubjects.isEuiSwitchChecked('lnsToggleAutoApply');
     },
 

@@ -9,33 +9,46 @@ import { LENS_DATASOURCE_ID } from '@kbn/lens-common';
 
 import { isEqual } from 'lodash';
 import { i18n } from '@kbn/i18n';
+import { useI18n } from '@kbn/i18n-react';
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import useObservable from 'react-use/lib/useObservable';
 import type { AggregateQuery, Query } from '@kbn/es-query';
 import { isOfAggregateQueryType } from '@kbn/es-query';
-import { useStore } from 'react-redux';
 import type { TopNavMenuData, TopNavMenuProps } from '@kbn/navigation-plugin/public';
 import { getEsQueryConfig } from '@kbn/data-plugin/public';
 import type { DataView, DataViewSpec } from '@kbn/data-views-plugin/public';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import type { DataViewPickerProps } from '@kbn/unified-search-plugin/public';
+import { AppHeader } from '@kbn/app-header';
+import type { AppHeaderBadge } from '@kbn/app-header';
 import { getManagedContentBadge } from '@kbn/managed-content-badge';
+import type { ChromeBreadcrumbsBadge } from '@kbn/core-chrome-browser';
+import type {
+  AppMenuConfig,
+  AppMenuItemType,
+  AppMenuPrimaryActionItem,
+  AppMenuRunActionParams,
+} from '@kbn/core-chrome-app-menu-components';
+import { APP_MENU_SHARE_ID } from '@kbn/core-chrome-app-menu-components';
+import type { ShareActionIntents } from '@kbn/share-plugin/public/types';
 import moment from 'moment';
-import type { UseEuiTheme } from '@elastic/eui';
-import { euiBreakpoint } from '@elastic/eui';
-import type { SerializedStyles } from '@emotion/react';
-import { css } from '@emotion/react';
 import { LENS_APP_LOCATOR } from '@kbn/deeplinks-analytics';
+import { Storage } from '@kbn/kibana-utils-plugin/public';
 import type { LensAppState, LensAppServices } from '@kbn/lens-common';
 import { LENS_APP_NAME } from '../../common/constants';
 import type { LensTopNavActions, LensTopNavMenuProps } from './types';
-import { toggleSettingsMenuOpen } from './settings_menu';
 import {
   setState,
   useLensSelector,
   useLensDispatch,
   switchAndCleanDatasource,
   selectIsManaged,
+  selectAutoApplyEnabled,
+  enableAutoApply,
+  disableAutoApply,
 } from '../state_management';
+import { writeToStorage } from '../settings_storage';
+import { AUTO_APPLY_DISABLED_STORAGE_KEY } from '../editor_frame_service/editor_frame/workspace_panel/workspace_panel_wrapper';
 import {
   getIndexPatternsObjects,
   getIndexPatternsIds,
@@ -109,22 +122,56 @@ function getSaveButtonMeta({
   }
 }
 
-const navItemWithDividerStyles = (euiThemeContext: UseEuiTheme) => css`
-  ${euiBreakpoint(euiThemeContext, ['m', 'l', 'xl'])} {
-    margin-right: ${euiThemeContext.euiTheme.size.m};
-    position: relative;
-    &:after {
-      border-right: ${euiThemeContext.euiTheme.border.thin};
-      bottom: 0;
-      content: '';
-      display: block;
-      pointer-events: none;
-      position: absolute;
-      right: -${euiThemeContext.euiTheme.size.s};
-      top: 0;
-    }
+const wrapTopNavRun = (run: TopNavMenuData['run']) => (params?: AppMenuRunActionParams) => {
+  if (params?.triggerElement) {
+    run(params.triggerElement);
   }
-`;
+};
+
+// Static metadata (label, icon, order) for each registered Lens export integration,
+// keyed by integration id. The actual export handler is resolved lazily at click time.
+const getLensExportItemMeta = (integrationId: string) => {
+  switch (integrationId) {
+    case 'csvDownloadLens':
+      return {
+        label: i18n.translate('xpack.lens.app.export.csvLabel', { defaultMessage: 'CSV' }),
+        iconType: 'table',
+        testId: 'exportMenuItem-CSV',
+        order: 0,
+      };
+    case 'pdfReports':
+      return {
+        label: i18n.translate('xpack.lens.app.export.pdfLabel', { defaultMessage: 'PDF' }),
+        iconType: 'document',
+        testId: 'exportMenuItem-PDF',
+        order: 1,
+      };
+    case 'imageReports':
+      return {
+        label: i18n.translate('xpack.lens.app.export.pngLabel', { defaultMessage: 'PNG' }),
+        iconType: 'image',
+        testId: 'exportMenuItem-PNG',
+        order: 2,
+      };
+    case 'scheduledReports':
+      return {
+        label: i18n.translate('xpack.lens.app.export.scheduleExportLabel', {
+          defaultMessage: 'Schedule export',
+        }),
+        iconType: 'calendar',
+        testId: 'scheduleExport',
+        order: 3,
+        separator: 'above' as const,
+      };
+    default:
+      return {
+        label: integrationId,
+        iconType: 'empty',
+        testId: `exportMenuItem-${integrationId}`,
+        order: 100,
+      };
+  }
+};
 
 function getLensTopNavConfig(options: {
   isByValueMode: boolean;
@@ -136,7 +183,8 @@ function getLensTopNavConfig(options: {
   showReplaceInDashboard: boolean;
   showReplaceInCanvas: boolean;
   contextFromEmbeddable?: boolean;
-}): TopNavMenuData[] {
+  exportItems?: NonNullable<AppMenuItemType['items']>;
+}): AppMenuConfig {
   const {
     actions,
     savingToLibraryPermitted,
@@ -146,11 +194,10 @@ function getLensTopNavConfig(options: {
     showReplaceInCanvas,
     contextFromEmbeddable,
     isByValueMode,
+    exportItems,
   } = options;
 
-  const topNavMenu: Array<
-    TopNavMenuData | ({ css: ({ euiTheme }: UseEuiTheme) => SerializedStyles } & TopNavMenuData)
-  > = [];
+  const items: AppMenuItemType[] = [];
 
   const showSaveAndReturn = actions.saveAndReturn.visible;
 
@@ -171,124 +218,130 @@ function getLensTopNavConfig(options: {
       });
 
   if (contextOriginatingApp && !actions.cancel.visible) {
-    topNavMenu.push({
+    items.push({
+      id: 'lnsApp_goBackToAppButton',
       label: i18n.translate('xpack.lens.app.goBackLabel', {
         defaultMessage: `Go back to {contextOriginatingApp}`,
         values: { contextOriginatingApp },
       }),
-      run: actions.goBack.execute,
+      iconType: 'arrowLeft',
       testId: 'lnsApp_goBackToAppButton',
-      description: i18n.translate('xpack.lens.app.goBackLabel', {
-        defaultMessage: `Go back to {contextOriginatingApp}`,
-        values: { contextOriginatingApp },
-      }),
       disableButton: !actions.goBack.enabled,
-      css: navItemWithDividerStyles,
+      order: 0,
+      run: wrapTopNavRun(actions.goBack.execute),
     });
   }
 
   if (actions.getUnderlyingDataUrl.visible) {
-    const exploreDataInDiscoverLabel = i18n.translate('xpack.lens.app.exploreDataInDiscover', {
-      defaultMessage: 'Explore in Discover',
-    });
-
-    topNavMenu.push({
-      label: exploreDataInDiscoverLabel,
-      run: actions.getUnderlyingDataUrl.execute,
+    items.push({
+      id: 'lnsApp_openInDiscover',
+      label: i18n.translate('xpack.lens.app.exploreDataInDiscover', {
+        defaultMessage: 'Open in Discover',
+      }),
+      iconType: 'discoverApp',
       testId: 'lnsApp_openInDiscover',
-      description: exploreDataInDiscoverLabel,
       disableButton: !actions.getUnderlyingDataUrl.enabled,
-      tooltip: actions.getUnderlyingDataUrl.tooltip,
+      tooltipContent: actions.getUnderlyingDataUrl.tooltip,
       target: '_blank',
       href: actions.getUnderlyingDataUrl.getLink?.(),
-      css: navItemWithDividerStyles,
+      order: 2,
+      run: wrapTopNavRun(actions.getUnderlyingDataUrl.execute),
     });
   }
 
-  topNavMenu.push({
+  items.push({
+    id: 'lnsApp_inspectButton',
     label: i18n.translate('xpack.lens.app.inspect', {
       defaultMessage: 'Inspect',
     }),
-    run: actions.inspect.execute,
+    iconType: 'inspect',
     testId: 'lnsApp_inspectButton',
-    description: i18n.translate('xpack.lens.app.inspectAriaLabel', {
-      defaultMessage: 'inspect',
-    }),
     disableButton: false,
+    order: 3,
+    run: wrapTopNavRun(actions.inspect.execute),
   });
 
   if (actions.export.visible) {
-    topNavMenu.push({
+    const exportButtonBase = {
+      id: 'lnsApp_exportButton',
       label: i18n.translate('xpack.lens.app.shareTitle', {
         defaultMessage: 'Export',
       }),
       iconType: 'download',
-      iconOnly: true,
-      run: actions.export.execute,
       testId: 'lnsApp_exportButton',
-      description: i18n.translate('xpack.lens.app.shareTitleAria', {
-        defaultMessage: 'Export visualization',
-      }),
       disableButton: !actions.export.enabled,
-      tooltip: actions.export.tooltip,
-    });
+      tooltipContent: actions.export.tooltip,
+      order: 4,
+    };
+
+    if (exportItems && exportItems.length > 1) {
+      // Multiple export integrations are available: render them as nested popover items.
+      items.push({
+        ...exportButtonBase,
+        items: exportItems,
+        popoverTestId: 'exportPopoverPanel',
+      });
+    } else if (exportItems && exportItems.length === 1) {
+      // A single export integration is available: trigger it directly.
+      items.push({
+        ...exportButtonBase,
+        run: (params) => exportItems[0].run?.(params),
+      });
+    } else {
+      items.push({
+        ...exportButtonBase,
+        run: wrapTopNavRun(actions.export.execute),
+      });
+    }
   }
 
   if (actions.share.visible) {
-    topNavMenu.push({
+    items.push({
+      id: APP_MENU_SHARE_ID,
       label: i18n.translate('xpack.lens.app.shareTitle', {
         defaultMessage: 'Share',
       }),
       iconType: 'share',
-      iconOnly: true,
-      run: actions.share.execute,
       testId: 'lnsApp_shareButton',
-      description: i18n.translate('xpack.lens.app.shareTitleAria', {
-        defaultMessage: 'Share visualization',
-      }),
       disableButton: !actions.share.enabled,
-      tooltip: actions.share.tooltip,
+      tooltipContent: actions.share.tooltip,
+      order: 6,
+      run: wrapTopNavRun(actions.share.execute),
     });
   }
 
-  topNavMenu.push({
-    label: i18n.translate('xpack.lens.app.settings', {
-      defaultMessage: 'Settings',
-    }),
-    run: actions.openSettings.execute,
-    testId: 'lnsApp_settingsButton',
-    description: i18n.translate('xpack.lens.app.settingsAriaLabel', {
-      defaultMessage: 'Open the Lens settings menu',
-    }),
-    css: navItemWithDividerStyles,
-  });
-
   if (actions.cancel.visible) {
-    topNavMenu.push({
+    items.push({
+      id: 'lnsApp_cancelButton',
       label: i18n.translate('xpack.lens.app.cancel', {
         defaultMessage: 'Cancel',
       }),
-      run: actions.cancel.execute,
+      iconType: 'cross',
       testId: 'lnsApp_cancelButton',
-      description: i18n.translate('xpack.lens.app.cancelButtonAriaLabel', {
-        defaultMessage: 'Return to the last app without saving changes',
-      }),
+      order: 0,
+      run: wrapTopNavRun(actions.cancel.execute),
     });
   }
 
-  topNavMenu.push({
+  const isSaveEmphasized =
+    showReplaceInDashboard || showReplaceInCanvas ? false : !showSaveAndReturn;
+
+  let primaryActionItem: AppMenuPrimaryActionItem | undefined;
+
+  const saveButtonItem = {
+    id: 'lnsApp_saveButton',
     label: saveButtonLabel,
-    iconType: (showReplaceInDashboard || showReplaceInCanvas ? false : !showSaveAndReturn)
-      ? 'save'
-      : undefined,
-    emphasize: showReplaceInDashboard || showReplaceInCanvas ? false : !showSaveAndReturn,
-    run: actions.showSaveModal.execute,
+    iconType: 'save',
     testId: 'lnsApp_saveButton',
-    description: i18n.translate('xpack.lens.app.saveButtonAriaLabel', {
-      defaultMessage: 'Save the current lens visualization',
-    }),
     disableButton: !enableSaveButton,
-  });
+    run: wrapTopNavRun(actions.showSaveModal.execute),
+  };
+
+  if (isSaveEmphasized) {
+    primaryActionItem = saveButtonItem;
+  } else {
+    items.push({ ...saveButtonItem, order: 1 });
+  }
 
   const saveButtonMeta = getSaveButtonMeta({
     showSaveAndReturn,
@@ -298,18 +351,20 @@ function getLensTopNavConfig(options: {
   });
 
   if (saveButtonMeta) {
-    topNavMenu.push({
-      ...saveButtonMeta,
-      run: actions.saveAndReturn.execute,
+    primaryActionItem = {
+      id: saveButtonMeta.testId,
+      label: saveButtonMeta.label,
+      iconType: saveButtonMeta.iconType,
+      testId: saveButtonMeta.testId,
       disableButton: !actions.saveAndReturn.enabled,
-    });
+      run: wrapTopNavRun(actions.saveAndReturn.execute),
+    };
   }
 
-  return topNavMenu;
+  return { items, primaryActionItem };
 }
 
 export const LensTopNavMenu = ({
-  setHeaderActionMenu,
   initialInput,
   incomingState,
   indicateNoData,
@@ -329,18 +384,23 @@ export const LensTopNavMenu = ({
   getUserMessages,
   shortUrlService,
   isCurrentStateDirty,
-  startServices,
 }: LensTopNavMenuProps) => {
   const {
     data,
-    navigation,
+    unifiedSearch,
     uiSettings,
     application,
     share,
+    chrome,
     dataViewFieldEditor,
     dataViewEditor,
     dataViews: dataViewsService,
   } = useKibana<LensAppServices>().services;
+
+  const isClassicChrome =
+    useObservable(chrome.getChromeStyle$(), chrome.getChromeStyle()) === 'classic';
+
+  const intl = useI18n();
 
   const { datasourceMap, visualizationMap } = useEditorFrameService();
 
@@ -361,6 +421,15 @@ export const LensTopNavMenu = ({
     (state: Partial<LensAppState>) => dispatch(setState(state)),
     [dispatch]
   );
+  const autoApplyEnabled = useLensSelector(selectAutoApplyEnabled);
+  const toggleAutoApply = useCallback(() => {
+    writeToStorage(
+      new Storage(localStorage),
+      AUTO_APPLY_DISABLED_STORAGE_KEY,
+      String(autoApplyEnabled)
+    );
+    dispatch(autoApplyEnabled ? disableAutoApply() : enableAutoApply());
+  }, [dispatch, autoApplyEnabled]);
   const [indexPatterns, setIndexPatterns] = useState<DataView[]>([]);
   const [currentIndexPattern, setCurrentIndexPattern] = useState<DataView>();
   const isOnTextBasedMode =
@@ -494,7 +563,7 @@ export const LensTopNavMenu = ({
     };
   }, []);
 
-  const { AggregateQueryTopNavMenu } = navigation.ui;
+  const { AggregateQuerySearchBar } = unifiedSearch.ui;
   const { from, to } = data.query.timefilter.timefilter.getTime();
 
   const savingToLibraryPermitted = Boolean(
@@ -569,11 +638,9 @@ export const LensTopNavMenu = ({
     application.capabilities,
   ]);
 
-  const lensStore = useStore();
-
   const adHocDataViews = indexPatterns.filter((pattern) => !pattern.isPersisted());
 
-  const topNavConfig = useMemo(() => {
+  const appMenuConfig = useMemo<AppMenuConfig>(() => {
     const contextFromEmbeddable =
       initialContext && 'isEmbeddable' in initialContext && initialContext.isEmbeddable;
     const showReplaceInDashboard = Boolean(
@@ -599,7 +666,9 @@ export const LensTopNavMenu = ({
 
     const showShareMenu = csvEnabled || shareUrlEnabled;
 
-    const shareExecutor = async (anchorElement: HTMLElement, asExport?: boolean) => {
+    // Builds the shared share-menu options reused by both the Share flyout and the
+    // per-integration export handlers. Returns `undefined` when sharing is not possible.
+    const buildShareContextMenuOptions = () => {
       if (!share) {
         return;
       }
@@ -658,9 +727,7 @@ export const LensTopNavMenu = ({
         },
       };
 
-      share.toggleShareContextMenu({
-        asExport,
-        anchorElement,
+      return {
         allowShortUrl: false,
         objectId: currentDoc?.savedObjectId,
         objectType: 'lens',
@@ -708,11 +775,82 @@ export const LensTopNavMenu = ({
         sharingData,
         // only want to know about changes when savedObjectURL.href
         isDirty: isCurrentStateDirty || !currentDoc?.savedObjectId,
+      };
+    };
+
+    const shareExecutor = async (anchorElement: HTMLElement, asExport?: boolean) => {
+      const shareOptions = buildShareContextMenuOptions();
+      if (!share || !shareOptions) {
+        return;
+      }
+
+      share.toggleShareContextMenu({
+        ...shareOptions,
+        asExport,
+        anchorElement,
         onClose: () => {
           anchorElement?.focus();
         },
       });
     };
+
+    // Build the export sub-items from the registered share integrations, so the Export
+    // button can render them as nested popover items instead of opening the share flyout.
+    const exportMenuItems: NonNullable<AppMenuItemType['items']> = [];
+    if (share) {
+      const exportIntegrations: ShareActionIntents[] = share.availableIntegrations(
+        'lens',
+        'export'
+      );
+      const exportDerivatives: ShareActionIntents[] = share.availableIntegrations(
+        'lens',
+        'exportDerivatives'
+      );
+
+      exportIntegrations
+        .filter(
+          (
+            integration
+          ): integration is typeof integration & { shareType: 'integration'; id: string } =>
+            integration.shareType === 'integration'
+        )
+        .forEach((integration) => {
+          exportMenuItems.push({
+            ...getLensExportItemMeta(integration.id),
+            id: integration.id,
+            run: async () => {
+              const shareOptions = buildShareContextMenuOptions();
+              if (!shareOptions) {
+                return;
+              }
+              const handler = await share.getExportHandler(shareOptions, integration.id, intl);
+              await handler?.();
+            },
+          });
+        });
+
+      exportDerivatives
+        .filter(
+          (
+            integration
+          ): integration is typeof integration & { shareType: 'integration'; id: string } =>
+            integration.shareType === 'integration' && integration.groupId === 'exportDerivatives'
+        )
+        .forEach((integration) => {
+          exportMenuItems.push({
+            ...getLensExportItemMeta(integration.id),
+            id: integration.id,
+            run: async () => {
+              const shareOptions = buildShareContextMenuOptions();
+              if (!shareOptions) {
+                return;
+              }
+              const handler = await share.getExportDerivativeHandler(shareOptions, integration.id);
+              await handler?.();
+            },
+          });
+        });
+    }
 
     const baseMenuEntries = getLensTopNavConfig({
       isByValueMode: getIsByValueMode(),
@@ -723,6 +861,7 @@ export const LensTopNavMenu = ({
       showReplaceInDashboard,
       showReplaceInCanvas,
       contextFromEmbeddable,
+      exportItems: exportMenuItems,
       actions: {
         inspect: { visible: true, execute: () => lensInspector.inspect({ title }) },
         export: {
@@ -844,18 +983,35 @@ export const LensTopNavMenu = ({
             });
           },
         },
-        openSettings: {
-          visible: true,
-          execute: (anchorElement) =>
-            toggleSettingsMenuOpen({
-              lensStore,
-              anchorElement,
-              startServices,
-            }),
-        },
       },
     });
-    return (additionalMenuEntries || []).concat(baseMenuEntries);
+
+    const extraItems: AppMenuItemType[] = (additionalMenuEntries ?? []).map((entry, index) => ({
+      id: entry.id ?? entry.testId ?? `lnsTopNavEntry_${index}`,
+      label: entry.label,
+      iconType: entry.iconType ?? 'empty',
+      testId: entry.testId,
+      disableButton: entry.disableButton,
+      tooltipContent: entry.tooltip,
+      // Render external entries before the built-in actions
+      order: index - (additionalMenuEntries?.length ?? 0),
+      run: wrapTopNavRun(entry.run),
+    }));
+
+    return {
+      ...baseMenuEntries,
+      items: [...extraItems, ...(baseMenuEntries.items ?? [])],
+      switch: {
+        id: 'lnsToggleAutoApply',
+        label: i18n.translate('xpack.lens.settings.autoApply', {
+          defaultMessage: 'Auto-apply visualization changes',
+        }),
+        labelProps: {},
+        checked: autoApplyEnabled,
+        onChange: toggleAutoApply,
+        'data-test-subj': 'lnsToggleAutoApply',
+      },
+    };
   }, [
     initialContext,
     initialInput?.ref_id,
@@ -871,6 +1027,7 @@ export const LensTopNavMenu = ({
     layerMetaInfo,
     additionalMenuEntries,
     share,
+    intl,
     visualization,
     visualizationMap,
     filters,
@@ -896,8 +1053,8 @@ export const LensTopNavMenu = ({
     indexPatterns,
     uiSettings,
     isOnTextBasedMode,
-    lensStore,
-    startServices,
+    autoApplyEnabled,
+    toggleAutoApply,
   ]);
 
   const onQuerySubmitWrapped = useCallback<
@@ -1155,56 +1312,88 @@ export const LensTopNavMenu = ({
 
   const managed = useLensSelector(selectIsManaged);
 
+  const managedBadgeTooltip = i18n.translate('xpack.lens.managedBadgeTooltip', {
+    defaultMessage:
+      'This visualization is managed by Elastic. Changes made here must be saved in a new visualization.',
+  });
+
+  const badges: AppHeaderBadge[] | undefined = managed
+    ? [
+        {
+          label: i18n.translate('xpack.lens.managedBadgeLabel', {
+            defaultMessage: 'Managed',
+          }),
+          color: 'primary',
+          tooltip: managedBadgeTooltip,
+          'data-test-subj': 'managedContentBadge',
+        },
+      ]
+    : undefined;
+
+  const breadcrumbsBadges = useMemo<ChromeBreadcrumbsBadge[]>(
+    () => (managed ? [getManagedContentBadge(managedBadgeTooltip)] : []),
+    [managed, managedBadgeTooltip]
+  );
+
+  useEffect(() => {
+    if (!isClassicChrome) {
+      return;
+    }
+    chrome.setAppMenu(appMenuConfig);
+    chrome.setBreadcrumbsBadges(breadcrumbsBadges);
+    return () => {
+      chrome.setAppMenu();
+      chrome.setBreadcrumbsBadges([]);
+    };
+  }, [isClassicChrome, chrome, appMenuConfig, breadcrumbsBadges]);
+
   return (
-    <AggregateQueryTopNavMenu
-      setMenuMountPoint={setHeaderActionMenu}
-      popoverBreakpoints={['xs', 's', 'm']}
-      config={topNavConfig}
-      allowSavingQueries
-      badges={
-        managed
-          ? [
-              getManagedContentBadge(
-                i18n.translate('xpack.lens.managedBadgeTooltip', {
-                  defaultMessage:
-                    'This visualization is managed by Elastic. Changes made here must be saved in a new visualization.',
-                })
-              ),
-            ]
-          : undefined
-      }
-      savedQuery={savedQuery}
-      onQuerySubmit={onQuerySubmitWrapped}
-      onSaved={onSavedWrapped}
-      onSavedQueryUpdated={onSavedQueryUpdatedWrapped}
-      onClearSavedQuery={onClearSavedQueryWrapped}
-      indexPatterns={indexPatterns}
-      query={query}
-      dateRangeFrom={from}
-      dateRangeTo={to}
-      indicateNoData={indicateNoData}
-      showSearchBar={true}
-      dataViewPickerComponentProps={dataViewPickerProps}
-      showDatePicker={
-        indexPatterns.some((ip) => ip.isTimeBased()) ||
-        // always show the timepicker for text based languages
-        isOnTextBasedMode ||
-        Boolean(
-          allLoaded &&
-            activeDatasourceId &&
-            datasourceMap[activeDatasourceId].isTimeBased(
-              datasourceStates[activeDatasourceId].state,
-              dataViews.indexPatterns
-            )
-        )
-      }
-      textBasedLanguageModeErrors={textBasedLanguageModeErrors}
-      showFilterBar={true}
-      data-test-subj="lnsApp_topNav"
-      screenTitle={'lens'}
-      appName={LENS_APP_NAME}
-      displayStyle="detached"
-      className="hide-for-sharing"
-    />
+    <>
+      {!isClassicChrome && (
+        <AppHeader
+          title={
+            title ||
+            i18n.translate('xpack.lens.app.headerTitle', {
+              defaultMessage: 'New visualization',
+            })
+          }
+          menu={appMenuConfig}
+          badges={badges}
+        />
+      )}
+      <AggregateQuerySearchBar
+        allowSavingQueries
+        savedQuery={savedQuery}
+        onQuerySubmit={onQuerySubmitWrapped}
+        onSaved={onSavedWrapped}
+        onSavedQueryUpdated={onSavedQueryUpdatedWrapped}
+        onClearSavedQuery={onClearSavedQueryWrapped}
+        indexPatterns={indexPatterns}
+        query={query}
+        dateRangeFrom={from}
+        dateRangeTo={to}
+        indicateNoData={indicateNoData}
+        dataViewPickerComponentProps={dataViewPickerProps}
+        showDatePicker={
+          indexPatterns.some((ip) => ip.isTimeBased()) ||
+          // always show the timepicker for text based languages
+          isOnTextBasedMode ||
+          Boolean(
+            allLoaded &&
+              activeDatasourceId &&
+              datasourceMap[activeDatasourceId].isTimeBased(
+                datasourceStates[activeDatasourceId].state,
+                dataViews.indexPatterns
+              )
+          )
+        }
+        textBasedLanguageModeErrors={textBasedLanguageModeErrors}
+        showFilterBar={true}
+        dataTestSubj="lnsApp_topNav"
+        screenTitle="lens"
+        appName={LENS_APP_NAME}
+        displayStyle="detached"
+      />
+    </>
   );
 };

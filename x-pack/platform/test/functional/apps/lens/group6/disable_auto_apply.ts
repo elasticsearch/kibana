@@ -42,13 +42,10 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await lens.disableAutoApply();
 
       expect(await lens.getAutoApplyEnabled()).not.to.be.ok();
-
-      await lens.closeSettingsMenu();
     });
 
     it('should preserve apply-changes button with full-screen datasource', async () => {
       await lens.disableAutoApply();
-      await lens.closeSettingsMenu();
 
       await lens.configureDimension({
         dimension: 'lnsXY_yDimensionPanel > lns-empty-dimension',

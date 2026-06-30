@@ -9,12 +9,15 @@ import React from 'react';
 import type { Visualization, LensAppState } from '@kbn/lens-common';
 import { createMockVisualization, renderWithReduxStore } from '../../../mocks';
 import { WorkspacePanelWrapper } from './workspace_panel_wrapper';
-import { updateVisualizationState } from '../../../state_management';
+import {
+  updateVisualizationState,
+  enableAutoApply,
+  disableAutoApply,
+  selectAutoApplyEnabled,
+} from '../../../state_management';
 import { setChangesApplied } from '../../../state_management/lens_slice';
 import { act, screen } from '@testing-library/react';
 import { faker } from '@faker-js/faker';
-import { SettingsMenu } from '../../../app_plugin/settings_menu';
-import userEvent from '@testing-library/user-event';
 import { EditorFrameServiceProvider } from '../../editor_frame_service_context';
 
 describe('workspace_panel_wrapper', () => {
@@ -38,12 +41,6 @@ describe('workspace_panel_wrapper', () => {
           displayOptions={undefined}
           {...propsOverrides}
         />
-        <SettingsMenu
-          anchorElement={document.createElement('button')}
-          isOpen
-          onClose={jest.fn()}
-          {...propsOverrides}
-        />
       </EditorFrameServiceProvider>,
       {},
       { preloadedState }
@@ -54,14 +51,14 @@ describe('workspace_panel_wrapper', () => {
     };
 
     const toggleAutoApply = async () => {
-      const autoApplyToggle = screen.getByTestId('lnsToggleAutoApply');
-      await userEvent.click(autoApplyToggle);
+      act(() => {
+        store.dispatch(
+          selectAutoApplyEnabled(store.getState()) ? disableAutoApply() : enableAutoApply()
+        );
+      });
     };
 
-    const isAutoApplyOn = () => {
-      const autoApplyToggle = screen.getByTestId('lnsToggleAutoApply');
-      return autoApplyToggle.getAttribute('aria-checked') === 'true';
-    };
+    const isAutoApplyOn = () => selectAutoApplyEnabled(store.getState());
 
     const editVisualization = () => {
       store.dispatch(

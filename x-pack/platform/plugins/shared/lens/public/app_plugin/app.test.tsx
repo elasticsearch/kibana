@@ -41,11 +41,20 @@ import { faker } from '@faker-js/faker';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { setMockedPresentationUtilServices } from '@kbn/presentation-util-plugin/public/mocks';
+import { ChromeServiceProvider } from '@kbn/core-chrome-browser-context';
+import { chromeServiceMock } from '@kbn/core-chrome-browser-mocks';
 import { EditorFrameServiceProvider } from '../editor_frame_service/editor_frame_service_context';
 
 jest.mock('lodash', () => ({
   ...jest.requireActual('lodash'),
   debounce: (fn: unknown) => fn,
+}));
+
+// Force the `xl` breakpoint so the AppHeader app menu renders its items inline
+// instead of collapsing them into the overflow popover (jsdom defaults to `l`).
+jest.mock('@elastic/eui', () => ({
+  ...jest.requireActual('@elastic/eui'),
+  useIsWithinBreakpoints: (breakpoints: string[]) => breakpoints.includes('xl'),
 }));
 
 const defaultSavedObjectId: string = faker.string.uuid();
@@ -98,12 +107,14 @@ describe('Lens App', () => {
   } = {}) {
     const Wrapper = ({ children }: { children: React.ReactNode }) => (
       <KibanaContextProvider services={services}>
-        <EditorFrameServiceProvider
-          visualizationMap={visualizationMap}
-          datasourceMap={datasourceMapOverride ?? datasourceMap}
-        >
-          {children}
-        </EditorFrameServiceProvider>
+        <ChromeServiceProvider value={{ chrome: chromeServiceMock.createStartContract() }}>
+          <EditorFrameServiceProvider
+            visualizationMap={visualizationMap}
+            datasourceMap={datasourceMapOverride ?? datasourceMap}
+          >
+            {children}
+          </EditorFrameServiceProvider>
+        </ChromeServiceProvider>
       </KibanaContextProvider>
     );
 
@@ -164,16 +175,15 @@ describe('Lens App', () => {
       props.topNavMenuEntryGenerators = [
         () => ({
           label: 'My entry',
+          testId: 'lnsApp_myEntry',
           run: runFn,
         }),
       ];
       await renderApp();
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
-        expect.objectContaining({
-          config: expect.arrayContaining([{ label: 'My entry', run: runFn }]),
-        }),
-        {}
-      );
+      const entry = screen.getByTestId('lnsApp_myEntry');
+      expect(entry).toBeInTheDocument();
+      await userEvent.click(entry);
+      expect(runFn).toHaveBeenCalled();
     });
 
     it('passes current state, filter, query timerange and initial context into getter', async () => {
@@ -461,7 +471,7 @@ describe('Lens App', () => {
           async (id) => ({ id, isTimeBased: () => true, isPersisted: () => true } as DataView)
         );
       await renderApp();
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({ showDatePicker: true }),
         {}
       );
@@ -482,7 +492,7 @@ describe('Lens App', () => {
           },
         },
       });
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({ showDatePicker: true }),
         {}
       );
@@ -503,7 +513,7 @@ describe('Lens App', () => {
           },
         },
       });
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({ showDatePicker: false }),
         {}
       );
@@ -523,7 +533,7 @@ describe('Lens App', () => {
         references: [{ type: 'index-pattern', id: '1', name: 'index-pattern-0' }],
       } as unknown as LensDocument;
 
-      (services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock).mockClear();
+      (services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock).mockClear();
       act(() => {
         lensStore.dispatch(
           setState({
@@ -532,7 +542,7 @@ describe('Lens App', () => {
           })
         );
       });
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           dataViewPickerComponentProps: expect.objectContaining({
             currentDataViewId: 'mockip',
@@ -569,7 +579,7 @@ describe('Lens App', () => {
         );
       });
 
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           query,
           indexPatterns: [
@@ -590,7 +600,7 @@ describe('Lens App', () => {
         .fn()
         .mockResolvedValue(Promise.reject({ reason: 'Could not locate that data view' }));
       await renderApp();
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({ indexPatterns: [] }),
         {}
       );
@@ -933,7 +943,7 @@ describe('Lens App', () => {
   });
 
   describe('share button', () => {
-    const getShareButton = () => screen.getByTestId('lnsApp_shareButton');
+    const getShareButton = () => screen.getByTestId(/lnsApp_shareButton/);
 
     it('should be disabled when no data is available', async () => {
       await renderApp({ preloadedState: { isSaveable: true } });
@@ -1017,7 +1027,7 @@ describe('Lens App', () => {
   describe('query bar state management', () => {
     it('uses the default time and query language settings', async () => {
       const { lensStore } = await renderApp();
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           query: { query: '', language: 'lucene' },
           dateRangeFrom: 'now-7d',
@@ -1043,7 +1053,7 @@ describe('Lens App', () => {
         min: moment('2021-01-09T04:00:00.000Z'),
         max: moment('2021-01-09T08:00:00.000Z'),
       });
-      const onQuerySubmit = (services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock).mock
+      const onQuerySubmit = (services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock).mock
         .calls[0][0].onQuerySubmit;
       await act(async () =>
         onQuerySubmit({
@@ -1052,7 +1062,7 @@ describe('Lens App', () => {
         })
       );
 
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           query: { query: 'new', language: 'lucene' },
           dateRangeFrom: 'now-14d',
@@ -1106,8 +1116,9 @@ describe('Lens App', () => {
         }),
       });
 
-      const AggregateQueryTopNavMenu = services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock;
-      const onQuerySubmit = AggregateQueryTopNavMenu.mock.calls[0][0].onQuerySubmit;
+      const AggregateQuerySearchBar = services.unifiedSearch.ui
+        .AggregateQuerySearchBar as jest.Mock;
+      const onQuerySubmit = AggregateQuerySearchBar.mock.calls[0][0].onQuerySubmit;
       act(() =>
         onQuerySubmit({
           dateRange: { from: 'now-14d', to: 'now-7d' },
@@ -1151,7 +1162,7 @@ describe('Lens App', () => {
     it('persists the saved query ID when the query is saved', async () => {
       await renderApp();
 
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           savedQuery: undefined,
           onSaved: expect.any(Function),
@@ -1161,7 +1172,7 @@ describe('Lens App', () => {
         {}
       );
 
-      const onSaved = (services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock).mock
+      const onSaved = (services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock).mock
         .calls[0][0].onSaved;
       act(() => {
         onSaved({
@@ -1174,7 +1185,7 @@ describe('Lens App', () => {
           namespaces: ['default'],
         });
       });
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           savedQuery: {
             id: '1',
@@ -1193,7 +1204,7 @@ describe('Lens App', () => {
     it('changes the saved query ID when the query is updated', async () => {
       await renderApp();
       const { onSaved, onSavedQueryUpdated } = (
-        services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock
+        services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock
       ).mock.calls[0][0];
       act(() => {
         onSaved({
@@ -1217,7 +1228,7 @@ describe('Lens App', () => {
           namespaces: ['default'],
         });
       });
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           savedQuery: {
             id: '2',
@@ -1235,8 +1246,9 @@ describe('Lens App', () => {
 
     it('updates the query if saved query is selected', async () => {
       await renderApp();
-      const { onSavedQueryUpdated } = (services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock)
-        .mock.calls[0][0];
+      const { onSavedQueryUpdated } = (
+        services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock
+      ).mock.calls[0][0];
       act(() => {
         onSavedQueryUpdated({
           id: '2',
@@ -1248,7 +1260,7 @@ describe('Lens App', () => {
           namespaces: ['default'],
         });
       });
-      expect(services.navigation.ui.AggregateQueryTopNavMenu).toHaveBeenCalledWith(
+      expect(services.unifiedSearch.ui.AggregateQuerySearchBar).toHaveBeenCalledWith(
         expect.objectContaining({
           query: { query: 'abc:def', language: 'lucene' },
         }),
@@ -1259,7 +1271,7 @@ describe('Lens App', () => {
     it('clears all existing unpinned filters when the active saved query is cleared', async () => {
       const { lensStore } = await renderApp();
       const { onQuerySubmit, onClearSavedQuery } = (
-        services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock
+        services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock
       ).mock.calls[0][0];
       act(() =>
         onQuerySubmit({
@@ -1287,7 +1299,7 @@ describe('Lens App', () => {
     it('updates the searchSessionId when the query is updated', async () => {
       const { lensStore } = await renderApp();
       const { onSaved, onSavedQueryUpdated } = (
-        services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock
+        services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock
       ).mock.calls[0][0];
       act(() => {
         onSaved({
@@ -1321,7 +1333,7 @@ describe('Lens App', () => {
     it('updates the searchSessionId when the active saved query is cleared', async () => {
       const { lensStore } = await renderApp();
       const { onQuerySubmit, onClearSavedQuery } = (
-        services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock
+        services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock
       ).mock.calls[0][0];
       act(() =>
         onQuerySubmit({
@@ -1346,8 +1358,8 @@ describe('Lens App', () => {
 
     it('dispatches update to searchSessionId and dateRange when the user hits refresh', async () => {
       const { lensStore } = await renderApp();
-      const { onQuerySubmit } = (services.navigation.ui.AggregateQueryTopNavMenu as jest.Mock).mock
-        .calls[0][0];
+      const { onQuerySubmit } = (services.unifiedSearch.ui.AggregateQuerySearchBar as jest.Mock)
+        .mock.calls[0][0];
       act(() =>
         onQuerySubmit({
           dateRange: { from: 'now-7d', to: 'now' },
