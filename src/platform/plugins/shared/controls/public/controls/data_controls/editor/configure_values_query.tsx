@@ -18,12 +18,13 @@ import type { ESQLColumn } from '@kbn/es-types';
 import type { ESQLControlVariable } from '@kbn/esql-types';
 import { apiCanAddNewPanel, apiCanPinPanels } from '@kbn/presentation-publishing';
 import { DEFAULT_ESQL_OPTIONS_LIST_STATE, ESQL_CONTROL } from '@kbn/controls-constants';
+import { ESQLValuesPreview } from '@kbn/control-editors-shared-ui';
 import { dataService } from '../../../services/kibana_services';
 import { getESQLSingleColumnValues } from '../../../../common/options_list';
 import { getControlsTimezone } from '../../utils';
-import { ESQLValuesPreview } from './esql_values_preview';
 import type { DataControlEditorState } from './types';
 import { getDataViewIdFromESQLQuery } from '../../utils/get_data_view_id_from_esql_query';
+import { ValuesPreviewHeader } from './values_preview_header';
 
 interface ConfigureValuesQueryProps {
   editorState: Partial<DataControlEditorState>;
@@ -50,7 +51,6 @@ export const ConfigureValuesQuery = ({
   const [previewColumns, setPreviewColumns] = useState<ESQLColumn[]>([]);
   const [previewError, setPreviewError] = useState<Error | undefined>();
 
-  const [previewQueryNeedsRunning, setPreviewQueryNeedsRunning] = useState<boolean>(!isEdit);
   const [isPreviewQueryRunning, setIsPreviewQueryRunning] = useState<boolean>(isEdit);
 
   const updatePreviewOptionsAndColumns = useCallback(
@@ -63,7 +63,6 @@ export const ConfigureValuesQuery = ({
 
   const submitESQLQuery = useCallback(
     async (query: string) => {
-      setPreviewQueryNeedsRunning(false);
       setIsPreviewQueryRunning(true);
       const result = await getESQLSingleColumnValues({
         query,
@@ -111,12 +110,10 @@ export const ConfigureValuesQuery = ({
   const onESQLQueryChange = useCallback(
     (q: AggregateQuery) => {
       updateEditorState({ esql_query: q.esql });
-      setPreviewQueryNeedsRunning(true);
       setPreviewError(undefined);
-      updatePreviewOptionsAndColumns([], []);
       setESQLQueryValidation(false);
     },
-    [updateEditorState, updatePreviewOptionsAndColumns, setESQLQueryValidation]
+    [updateEditorState, setESQLQueryValidation]
   );
 
   const appendColumnToESQLQuery = useCallback(
@@ -197,10 +194,9 @@ export const ConfigureValuesQuery = ({
         previewOptions={previewOptions}
         previewColumns={previewColumns}
         previewError={previewError}
-        queryNeedsRunning={previewQueryNeedsRunning}
         updateQuery={appendColumnToESQLQuery}
         isQueryRunning={isPreviewQueryRunning}
-        dataSource={dataSource}
+        header={<ValuesPreviewHeader previewColumns={previewColumns} dataSource={dataSource} />}
       />
     </>
   );

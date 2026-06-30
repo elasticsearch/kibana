@@ -337,6 +337,7 @@
     "@kbn/content-management-utils": "link:src/platform/packages/shared/kbn-content-management-utils",
     "@kbn/content-packs-schema": "link:x-pack/platform/packages/shared/kbn-content-packs-schema",
     "@kbn/context-switcher-components": "link:src/platform/packages/shared/context-switcher-components",
+    "@kbn/control-editors-shared-ui": "link:src/platform/packages/shared/controls/control-editors-shared-ui",
     "@kbn/control-group-renderer": "link:src/platform/packages/shared/controls/control-group-renderer",
     "@kbn/controls-constants": "link:src/platform/packages/shared/controls/controls-constants",
     "@kbn/controls-example-plugin": "link:examples/controls_example",

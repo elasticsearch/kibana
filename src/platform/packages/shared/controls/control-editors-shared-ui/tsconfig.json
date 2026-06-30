@@ -1,0 +1,23 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": [
+      "jest",
+      "node",
+      "react",
+      "@kbn/ambient-ui-types",
+      "@testing-library/jest-dom",
+      "@testing-library/react"
+    ]
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["target/**/*"],
+  "kbn_references": [
+    "@kbn/es-types",
+    "@kbn/esql-language",
+    "@kbn/field-formats-common",
+    "@kbn/i18n",
+    "@kbn/i18n-react"
+  ]
+}

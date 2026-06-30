@@ -5248,6 +5248,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/control-editors-shared-ui@link:src/platform/packages/shared/controls/control-editors-shared-ui":
+  version "0.0.0"
+  uid ""
+
 "@kbn/control-group-renderer@link:src/platform/packages/shared/controls/control-group-renderer":
   version "0.0.0"
   uid ""

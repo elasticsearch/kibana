@@ -384,6 +384,8 @@
       "@kbn/content-packs-schema/*": ["x-pack/platform/packages/shared/kbn-content-packs-schema/*"],
       "@kbn/context-switcher-components": ["src/platform/packages/shared/context-switcher-components"],
       "@kbn/context-switcher-components/*": ["src/platform/packages/shared/context-switcher-components/*"],
+      "@kbn/control-editors-shared-ui": ["src/platform/packages/shared/controls/control-editors-shared-ui"],
+      "@kbn/control-editors-shared-ui/*": ["src/platform/packages/shared/controls/control-editors-shared-ui/*"],
       "@kbn/control-group-renderer": ["src/platform/packages/shared/controls/control-group-renderer"],
       "@kbn/control-group-renderer/*": ["src/platform/packages/shared/controls/control-group-renderer/*"],
       "@kbn/controls-constants": ["src/platform/packages/shared/controls/controls-constants"],

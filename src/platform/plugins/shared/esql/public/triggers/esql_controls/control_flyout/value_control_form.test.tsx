@@ -249,7 +249,7 @@ describe('ValueControlForm', () => {
         );
 
         // values preview panel should be rendered
-        expect(await findByTestId('esqlValuesPreview')).toBeInTheDocument();
+        expect(await findByTestId('esqlValuesPreviewStrings')).toBeInTheDocument();
       });
 
       it('should be able to change in fields type', async () => {
@@ -348,28 +348,6 @@ describe('ValueControlForm', () => {
         if (queryEditor) {
           expect(queryEditor.textContent).toContain('custom-logs');
         }
-      });
-
-      it("should show the 'no results' callout", async () => {
-        (getESQLResults as jest.Mock).mockResolvedValueOnce({
-          response: {
-            columns: [],
-          },
-        });
-
-        const { findByTestId } = render(
-          <IntlProvider locale="en">
-            <KibanaContextProvider services={services}>
-              <ESQLControlsFlyout
-                {...defaultProps}
-                initialVariableType={ESQLVariableType.VALUES}
-                queryString="FROM foo | WHERE field.id  == 'lala' | STATS BY field.name"
-              />
-            </KibanaContextProvider>
-          </IntlProvider>
-        );
-
-        expect(await findByTestId('esqlNoValuesForControlCallout')).toBeInTheDocument();
       });
 
       it('should disable the save button until the values preview is successfully validated', async () => {

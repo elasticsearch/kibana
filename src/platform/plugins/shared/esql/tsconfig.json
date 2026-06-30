@@ -47,6 +47,7 @@
     "@kbn/core-http-server",
     "@kbn/es-types",
     "@kbn/controls-constants",
+    "@kbn/control-editors-shared-ui",
     "@kbn/logging",
     "@kbn/logging-mocks",
     "@kbn/agent-builder-genai-utils",
