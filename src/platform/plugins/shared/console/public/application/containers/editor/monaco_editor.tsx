@@ -11,13 +11,11 @@ import type { CSSProperties } from 'react';
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiButtonIcon, EuiToolTip, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { ESQLCallbacks } from '@kbn/esql-types';
 import { CodeEditor } from '@kbn/code-editor/code_editor';
 import type { monaco } from '@kbn/monaco';
 import { CONSOLE_LANG_ID, CONSOLE_THEME_ID, ConsoleLang } from '@kbn/monaco';
 
 import { i18n } from '@kbn/i18n';
-import { getESQLSources, getEsqlColumns } from '@kbn/esql-utils';
 import { MonacoEditorActionsProvider } from './monaco_editor_actions_provider';
 import type { EditorRequest } from './types';
 import {
@@ -26,6 +24,7 @@ import {
   useSetupAutosave,
   useResizeCheckerUtils,
   useKeyboardCommandsUtils,
+  useConsoleEsqlCallbacks,
 } from './hooks';
 import {
   useServicesContext,
@@ -179,22 +178,7 @@ export const MonacoEditor = ({
     unregisterKeyboardCommands();
   }, [destroyResizeChecker, unregisterKeyboardCommands]);
 
-  const esqlCallbacks: ESQLCallbacks = useMemo(() => {
-    const callbacks: ESQLCallbacks = {
-      getSources: async () => {
-        const getLicense = licensing?.getLicense;
-        return await getESQLSources({ application, http }, getLicense);
-      },
-      getColumnsFor: async ({ query }: { query?: string } | undefined = {}) => {
-        const columns = await getEsqlColumns({
-          esqlQuery: query,
-          search: data?.search?.search,
-        });
-        return columns;
-      },
-    };
-    return callbacks;
-  }, [licensing, application, http, data?.search?.search]);
+  const esqlCallbacks = useConsoleEsqlCallbacks({ application, http, licensing, data });
 
   const suggestionProvider = useMemo(
     () => ConsoleLang.getSuggestionProvider?.(esqlCallbacks, actionsProvider),
