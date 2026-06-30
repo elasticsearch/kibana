@@ -12,6 +12,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const es = getService('es');
   const testSubjects = getService('testSubjects');
   const log = getService('log');
+  const retry = getService('retry');
   const { common, header, dashboard, visChart, searchSessionsManagement } = getPageObjects([
     'common',
     'header',
@@ -123,16 +124,24 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
         const savedSessionId = await dashboardPanelActions.getSearchSessionIdByTitle('TSVB');
 
+        // wait for all panels to finish rendering so that their search polling requests
+        // have had time to propagate search IDs into the session saved object
+        await dashboard.waitForRenderComplete();
+
         // check that searches saved into the session
         await searchSessionsManagement.goTo();
 
-        const searchSessionList = await searchSessionsManagement.getList();
-        const searchSessionItem = searchSessionList.find(
-          (session) => session.id === savedSessionId
-        )!;
-        expect(searchSessionItem.searchesCount).to.be(3);
-
-        await searchSessionItem.view();
+        // searches are stored in the session saved object via a server-side debounced update,
+        // so we may need to retry until all searches are tracked
+        await retry.try(async () => {
+          await searchSessionsManagement.refresh();
+          const searchSessionList = await searchSessionsManagement.getList();
+          const searchSessionItem = searchSessionList.find(
+            (session) => session.id === savedSessionId
+          )!;
+          expect(searchSessionItem.searchesCount).to.be(3);
+          await searchSessionItem.view();
+        });
         await header.waitUntilLoadingHasFinished();
         await dashboard.waitForRenderComplete();
         expect(await toasts.getCount()).to.be(0); // no session restoration related warnings
