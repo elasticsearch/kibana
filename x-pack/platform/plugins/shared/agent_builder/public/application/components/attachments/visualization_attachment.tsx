@@ -8,17 +8,21 @@
 import React, { Suspense } from 'react';
 import { EuiLoadingSpinner } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
+import type { ApplicationStart } from '@kbn/core-application-browser';
 import type { VisualizationAttachment } from '@kbn/agent-builder-common/attachments';
 import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
+import {
+  getVisualizationDimensionsFromLensConfig,
+  type VisualizationServices,
+} from '@kbn/agent-builder-visualizations';
 import type { AgentBuilderStartDependencies } from '../../../types';
-import { getVisualizationDimensionsFromLensConfig } from '../tools/esql/shared/get_visualization_dimensions';
 
 const LazyVisualizeLens = React.lazy(() =>
-  import('../tools/esql/visualize_lens').then((m) => ({ default: m.VisualizeLens }))
+  import('@kbn/agent-builder-visualizations').then((m) => ({ default: m.VisualizeLens }))
 );
 
 const LazyVisualizeVega = React.lazy(() =>
-  import('../tools/esql/visualize_vega').then((m) => ({ default: m.VisualizeVega }))
+  import('@kbn/agent-builder-visualizations').then((m) => ({ default: m.VisualizeVega }))
 );
 
 const defaultVisualizationLabel = i18n.translate(
@@ -28,13 +32,24 @@ const defaultVisualizationLabel = i18n.translate(
 
 /**
  * Factory function that creates the visualization attachment UI definition.
- * Reuses the existing VisualizeLens component used for visualization tool results.
+ * Reuses the shared visualization renderers from `@kbn/agent-builder-visualizations`.
  */
 export const createVisualizationAttachmentDefinition = ({
+  application,
   startDependencies,
 }: {
+  application: ApplicationStart;
   startDependencies: AgentBuilderStartDependencies;
 }): AttachmentUIDefinition<VisualizationAttachment> => {
+  const services: VisualizationServices = {
+    application,
+    lens: startDependencies.lens,
+    dataViews: startDependencies.dataViews,
+    uiActions: startDependencies.uiActions,
+    unifiedSearch: startDependencies.unifiedSearch,
+    embeddable: startDependencies.embeddable,
+  };
+
   return {
     getLabel: (attachment: VisualizationAttachment): string => {
       const { data } = attachment;
@@ -59,13 +74,14 @@ export const createVisualizationAttachmentDefinition = ({
       const timeRange = data.time_range ?? screenContext?.time_range;
 
       if (data.renderer === 'vega') {
-        const spec = data.visualization.spec;
+        const spec = data.visualization?.spec;
         if (typeof spec !== 'string') {
           return null;
         }
         return (
           <Suspense fallback={<EuiLoadingSpinner />}>
             <LazyVisualizeVega
+              services={services}
               spec={spec}
               timeRange={timeRange}
               registerActionButtons={callbacks?.registerActionButtons}
@@ -77,10 +93,8 @@ export const createVisualizationAttachmentDefinition = ({
       return (
         <Suspense fallback={<EuiLoadingSpinner />}>
           <LazyVisualizeLens
+            services={services}
             lensConfig={data.visualization}
-            dataViews={startDependencies.dataViews}
-            lens={startDependencies.lens}
-            uiActions={startDependencies.uiActions}
             timeRange={timeRange}
             registerActionButtons={callbacks?.registerActionButtons}
           />

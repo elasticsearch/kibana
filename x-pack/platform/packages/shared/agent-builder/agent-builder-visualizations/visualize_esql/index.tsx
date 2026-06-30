@@ -5,8 +5,6 @@
  * 2.0.
  */
 
-import type { DataViewsServicePublic } from '@kbn/data-views-plugin/public/types';
-import type { LensPublicStart } from '@kbn/lens-plugin/public';
 import type { ChartType } from '@kbn/visualization-utils';
 import React, { useCallback, useState } from 'react';
 import { EuiSplitPanel } from '@elastic/eui';
@@ -14,8 +12,8 @@ import type { UseEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import type { EsqlResults } from '@kbn/agent-builder-common/tools/tool_result';
 import type { TimeRange } from '@kbn/agent-builder-common';
-import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 import type { ActionButton } from '@kbn/agent-builder-browser/attachments';
+import type { VisualizationServices } from '../services';
 import { useLensInput } from './use_lens_input';
 import { BaseVisualization } from '../shared/base_visualization';
 import { FallbackVisualizationActions } from '../shared/visualization_actions';
@@ -23,23 +21,20 @@ import { visualizationWrapperStyles } from '../shared/styles';
 import { getVisualizationDimensionsFromChartType } from '../shared/get_visualization_dimensions';
 
 export function VisualizeESQL({
-  lens,
-  dataViews,
-  uiActions,
+  services,
   esqlColumns,
   esqlQuery,
   preferredChartType,
   timeRange,
 }: {
-  lens: LensPublicStart;
-  dataViews: DataViewsServicePublic;
+  services: VisualizationServices;
   esqlColumns: EsqlResults['data']['columns'] | undefined;
-  uiActions: UiActionsStart;
   esqlQuery: string;
   preferredChartType?: ChartType;
   errorMessages?: string[];
   timeRange?: TimeRange;
 }) {
+  const { lens, dataViews } = services;
   const { lensInput, setLensInput, isLoading } = useLensInput({
     lens,
     dataViews,
@@ -70,8 +65,7 @@ export function VisualizeESQL({
     >
       {actionButtons.length > 0 && <FallbackVisualizationActions buttons={actionButtons} />}
       <BaseVisualization
-        lens={lens}
-        uiActions={uiActions}
+        services={services}
         lensInput={lensInput}
         setLensInput={setLensInput}
         isLoading={isLoading}

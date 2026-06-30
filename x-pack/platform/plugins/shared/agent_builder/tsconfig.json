@@ -21,6 +21,7 @@
     "@kbn/inference-plugin",
     "@kbn/agent-builder-server",
     "@kbn/agent-builder-browser",
+    "@kbn/agent-builder-visualizations",
     "@kbn/core-http-server",
     "@kbn/agent-builder-common",
     "@kbn/ebt-click",

@@ -38,6 +38,8 @@
       "@kbn/agent-builder-tools-base/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base/*"],
       "@kbn/agent-builder-vega": ["x-pack/platform/packages/shared/agent-builder/agent-builder-vega"],
       "@kbn/agent-builder-vega/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-vega/*"],
+      "@kbn/agent-builder-visualizations": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations"],
+      "@kbn/agent-builder-visualizations/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations/*"],
       "@kbn/agent-builder-workflow-gen": ["x-pack/platform/packages/shared/agent-builder/agent-builder-workflow-gen"],
       "@kbn/agent-builder-workflow-gen/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-workflow-gen/*"],
       "@kbn/agent-builder-workflows-plugin": ["x-pack/platform/plugins/shared/agent_builder_workflows"],

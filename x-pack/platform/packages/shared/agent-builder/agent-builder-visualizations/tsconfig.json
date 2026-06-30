@@ -1,0 +1,38 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": [
+      "jest",
+      "node",
+      "react",
+      "@kbn/ambient-ui-types"
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "target/**/*"
+  ],
+  "kbn_references": [
+    "@kbn/agent-builder-browser",
+    "@kbn/agent-builder-common",
+    "@kbn/core-application-browser",
+    "@kbn/data-views-plugin",
+    "@kbn/embeddable-plugin",
+    "@kbn/es-query",
+    "@kbn/esql-utils",
+    "@kbn/expressions-plugin",
+    "@kbn/field-types",
+    "@kbn/i18n",
+    "@kbn/lens-embeddable-utils",
+    "@kbn/lens-plugin",
+    "@kbn/presentation-util-plugin",
+    "@kbn/ui-actions-plugin",
+    "@kbn/unified-search-plugin",
+    "@kbn/visualization-utils",
+    "@kbn/visualizations-common"
+  ]
+}

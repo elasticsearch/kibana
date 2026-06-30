@@ -21,6 +21,7 @@ import {
   SavedObjectSaveModalDashboard,
   type SaveModalDashboardProps,
 } from '@kbn/presentation-util-plugin/public';
+import type { VisualizationServices } from '../services';
 import {
   visualizationWrapperStyles,
   visualizationEmbeddableStyles,
@@ -29,7 +30,6 @@ import {
 } from '../shared/styles';
 import { DEFAULT_VISUALIZATION_HEIGHT } from '../shared/get_visualization_dimensions';
 import { FallbackVisualizationActions } from '../shared/visualization_actions';
-import { useKibana } from '../../../../hooks/use_kibana';
 import { useVisPreviewUnifiedSearch } from '../shared/use_vis_preview_unified_search';
 
 /** `savedVis.type` Kibana uses to render a Vega/Vega-Lite spec. */
@@ -64,20 +64,17 @@ const saveModalObjectType = i18n.translate(
  * take precedence over the picker.
  */
 export function VisualizeVega({
+  services,
   spec,
   timeRange,
   registerActionButtons,
 }: {
+  services: VisualizationServices;
   spec: string;
   timeRange?: TimeRange;
   registerActionButtons?: InlineRenderCallbacks['registerActionButtons'];
 }) {
-  const {
-    services: {
-      application,
-      plugins: { unifiedSearch, embeddable },
-    },
-  } = useKibana();
+  const { application, unifiedSearch, embeddable } = services;
   const SearchBar = unifiedSearch.ui.SearchBar;
   const canWriteDashboards = application?.capabilities.dashboard_v2?.showWriteControls === true;
 

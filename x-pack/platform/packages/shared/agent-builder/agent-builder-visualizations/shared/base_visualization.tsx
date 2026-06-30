@@ -6,9 +6,8 @@
  */
 
 import { EuiLoadingSpinner } from '@elastic/eui';
-import type { InlineEditLensEmbeddableContext, LensPublicStart } from '@kbn/lens-plugin/public';
+import type { InlineEditLensEmbeddableContext } from '@kbn/lens-plugin/public';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 import type { TypedLensByValueInput } from '@kbn/lens-plugin/public';
 import {
   ActionButtonType,
@@ -16,13 +15,13 @@ import {
   type InlineRenderCallbacks,
 } from '@kbn/agent-builder-browser/attachments';
 import { i18n } from '@kbn/i18n';
+import type { VisualizationServices } from '../services';
 import {
   visualizationEmbeddableStyles,
   visualizationTimePickerContainerClassName,
   visualizationHeaderStyles,
 } from './styles';
 import { DEFAULT_VISUALIZATION_HEIGHT } from './get_visualization_dimensions';
-import { useKibana } from '../../../../hooks/use_kibana';
 import { useVisPreviewUnifiedSearch } from './use_vis_preview_unified_search';
 
 const saveButtonLabel = i18n.translate(
@@ -48,8 +47,7 @@ const viewConfigurationLabel = i18n.translate(
 );
 
 interface BaseVisualizationProps {
-  lens: LensPublicStart;
-  uiActions: UiActionsStart;
+  services: VisualizationServices;
   lensInput: TypedLensByValueInput | undefined;
   setLensInput: (input: TypedLensByValueInput) => void;
   isLoading: boolean;
@@ -58,23 +56,20 @@ interface BaseVisualizationProps {
 }
 
 export function BaseVisualization({
-  lens,
-  uiActions,
+  services,
   lensInput,
   setLensInput,
   isLoading,
   registerActionButtons,
   height = DEFAULT_VISUALIZATION_HEIGHT,
 }: BaseVisualizationProps) {
+  const { lens, uiActions, application, unifiedSearch } = services;
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [lensLoadEvent, setLensLoadEvent] = useState<
     InlineEditLensEmbeddableContext['lensEvent'] | null
   >(null);
 
-  const {
-    services: { application, plugins },
-  } = useKibana();
-  const SearchBar = plugins.unifiedSearch.ui.SearchBar;
+  const SearchBar = unifiedSearch.ui.SearchBar;
   const canWriteDashboards = application?.capabilities.dashboard_v2?.showWriteControls === true;
 
   const { searchBarProps, effectiveTimeRange, onBrushEnd } = useVisPreviewUnifiedSearch({

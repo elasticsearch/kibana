@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { EuiCode, EuiText } from '@elastic/eui';
+import type { ApplicationStart } from '@kbn/core-application-browser';
 import type { ConversationRoundStep } from '@kbn/agent-builder-common';
 import {
   type EsqlResults,
@@ -16,11 +17,14 @@ import {
   visualizationElement,
   type VisualizationElementAttributes,
 } from '@kbn/agent-builder-common/tools/custom_rendering';
+import {
+  VisualizeESQL,
+  VisualizeLens,
+  VisualizeVega,
+  type VisualizationServices,
+} from '@kbn/agent-builder-visualizations';
 
 import type { AgentBuilderStartDependencies } from '../../../../../../types';
-import { VisualizeESQL } from '../../../../tools/esql/visualize_esql';
-import { VisualizeLens } from '../../../../tools/esql/visualize_lens';
-import { VisualizeVega } from '../../../../tools/esql/visualize_vega';
 import { createTagParser, findToolResult } from './utils';
 
 export const visualizationTagParser = createTagParser({
@@ -38,14 +42,25 @@ export const visualizationTagParser = createTagParser({
 });
 
 export function createVisualizationRenderer({
+  application,
   startDependencies,
   stepsFromCurrentRound,
   stepsFromPrevRounds,
 }: {
+  application: ApplicationStart;
   startDependencies: AgentBuilderStartDependencies;
   stepsFromCurrentRound: ConversationRoundStep[];
   stepsFromPrevRounds: ConversationRoundStep[];
 }) {
+  const services: VisualizationServices = {
+    application,
+    lens: startDependencies.lens,
+    dataViews: startDependencies.dataViews,
+    uiActions: startDependencies.uiActions,
+    unifiedSearch: startDependencies.unifiedSearch,
+    embeddable: startDependencies.embeddable,
+  };
+
   return (props: VisualizationElementAttributes) => {
     const { toolResultId, chartType } = props;
 
@@ -88,22 +103,16 @@ export function createVisualizationRenderer({
       const { data } = toolResult;
 
       if (data.renderer === 'vega') {
-        const spec = data.visualization.spec;
+        const spec = data.visualization?.spec;
         if (typeof spec !== 'string') {
           return <EuiText>Unable to render Vega visualization for {ToolResultAttribute}.</EuiText>;
         }
-        return <VisualizeVega spec={spec} timeRange={data.time_range} />;
+        return <VisualizeVega services={services} spec={spec} timeRange={data.time_range} />;
       }
 
       const { visualization, time_range: visTimeRange } = data;
       return (
-        <VisualizeLens
-          lensConfig={visualization}
-          dataViews={startDependencies.dataViews}
-          lens={startDependencies.lens}
-          uiActions={startDependencies.uiActions}
-          timeRange={visTimeRange}
-        />
+        <VisualizeLens services={services} lensConfig={visualization} timeRange={visTimeRange} />
       );
     }
 
@@ -115,9 +124,7 @@ export function createVisualizationRenderer({
 
     return (
       <VisualizeESQL
-        lens={startDependencies.lens}
-        dataViews={startDependencies.dataViews}
-        uiActions={startDependencies.uiActions}
+        services={services}
         esqlQuery={query}
         esqlColumns={columns}
         preferredChartType={chartType}

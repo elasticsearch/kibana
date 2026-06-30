@@ -5,8 +5,6 @@
  * 2.0.
  */
 
-import type { DataViewsServicePublic } from '@kbn/data-views-plugin/public/types';
-import type { LensPublicStart } from '@kbn/lens-plugin/public';
 import type { TimeRange } from '@kbn/es-query';
 import React, { useCallback, useState } from 'react';
 import { EuiCallOut } from '@elastic/eui';
@@ -16,7 +14,7 @@ import {
   type ActionButton,
   type InlineRenderCallbacks,
 } from '@kbn/agent-builder-browser/attachments';
-import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
+import type { VisualizationServices } from '../services';
 import { useLensInput } from './use_lens_input';
 import { BaseVisualization } from '../shared/base_visualization';
 import { FallbackVisualizationActions } from '../shared/visualization_actions';
@@ -24,20 +22,17 @@ import { visualizationWrapperStyles } from '../shared/styles';
 import { getVisualizationDimensionsFromLensConfig } from '../shared/get_visualization_dimensions';
 
 export function VisualizeLens({
-  lens,
-  dataViews,
-  uiActions,
+  services,
   lensConfig,
   timeRange,
   registerActionButtons,
 }: {
-  lens: LensPublicStart;
-  dataViews: DataViewsServicePublic;
-  uiActions: UiActionsStart;
+  services: VisualizationServices;
   lensConfig: any;
   timeRange?: TimeRange;
   registerActionButtons?: InlineRenderCallbacks['registerActionButtons'];
 }) {
+  const { lens, dataViews } = services;
   const { lensInput, setLensInput, isLoading, error } = useLensInput({
     lens,
     dataViews,
@@ -79,8 +74,7 @@ export function VisualizeLens({
         <FallbackVisualizationActions buttons={localActionButtons} />
       )}
       <BaseVisualization
-        lens={lens}
-        uiActions={uiActions}
+        services={services}
         lensInput={lensInput}
         setLensInput={setLensInput}
         isLoading={isLoading}

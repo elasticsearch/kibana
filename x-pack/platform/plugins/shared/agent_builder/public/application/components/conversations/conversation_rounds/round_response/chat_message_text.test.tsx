@@ -20,21 +20,30 @@ import { ChatMessageText } from './chat_message_text';
 import { useAgentBuilderServices } from '../../../../hooks/use_agent_builder_service';
 import { useStepsFromPrevRounds } from '../../../../hooks/use_conversation';
 import { useConversationContext } from '../../../../context/conversation/conversation_context';
-import { VisualizeESQL } from '../../../tools/esql/visualize_esql';
+import { VisualizeESQL } from '@kbn/agent-builder-visualizations';
+import type { ApplicationStart } from '@kbn/core-application-browser';
 import type { AgentBuilderStartDependencies } from '../../../../../types';
 import { setWith } from '@kbn/safer-lodash-set';
 import { ChartType } from '@kbn/visualization-utils';
 import dedent from 'dedent';
 
-jest.mock('../../../tools/esql/visualize_esql', () => {
+jest.mock('@kbn/agent-builder-visualizations', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const _React = require('react'); // Use require to avoid hoisting issues with jest.mock
   return {
     VisualizeESQL: jest.fn(() =>
       _React.createElement('span', { 'data-test-subj': 'visualize-esql' })
     ),
+    VisualizeLens: jest.fn(() =>
+      _React.createElement('span', { 'data-test-subj': 'visualize-lens' })
+    ),
+    VisualizeVega: jest.fn(() =>
+      _React.createElement('span', { 'data-test-subj': 'visualize-vega' })
+    ),
   };
 });
+
+const application = {} as ApplicationStart;
 
 jest.mock('../../../../hooks/use_agent_builder_service', () => ({
   useAgentBuilderServices: jest.fn(),
@@ -88,6 +97,7 @@ function createStartDependencies() {
     cloud: {},
     share: {},
     uiActions: {},
+    embeddable: {},
     unifiedSearch: {
       ui: {
         SearchBar: () => null,
@@ -236,6 +246,7 @@ describe('chat_message_text', () => {
     it('returns a renderer that instantiates VisualizeESQL when the tool result exists', () => {
       const startDependencies = createStartDependencies();
       const renderer = createVisualizationRenderer({
+        application,
         startDependencies,
         stepsFromCurrentRound: [toolCallStep],
         stepsFromPrevRounds: [],
@@ -249,14 +260,17 @@ describe('chat_message_text', () => {
       expect(props).toMatchObject({
         esqlColumns: toolResult.data.columns,
         esqlQuery: toolResult.data.query,
-        lens: startDependencies.lens,
-        dataViews: startDependencies.dataViews,
-        uiActions: startDependencies.uiActions,
+        services: expect.objectContaining({
+          lens: startDependencies.lens,
+          dataViews: startDependencies.dataViews,
+          uiActions: startDependencies.uiActions,
+        }),
       });
     });
 
     it('returns a fallback when toolResultId is missing', () => {
       const renderer = createVisualizationRenderer({
+        application,
         startDependencies: createStartDependencies(),
         stepsFromCurrentRound: [toolCallStep],
         stepsFromPrevRounds: [],
@@ -271,6 +285,7 @@ describe('chat_message_text', () => {
 
     it('returns a fallback when tool result cannot be found', () => {
       const renderer = createVisualizationRenderer({
+        application,
         startDependencies: createStartDependencies(),
         stepsFromCurrentRound: [toolCallStep],
         stepsFromPrevRounds: [],
@@ -293,6 +308,7 @@ describe('chat_message_text', () => {
       setWith(stepWithoutQuery, 'results[0].data.query', undefined); // Remove the query
 
       const renderer = createVisualizationRenderer({
+        application,
         startDependencies: createStartDependencies(),
         stepsFromCurrentRound: [stepWithoutQuery],
         stepsFromPrevRounds: [],
@@ -310,6 +326,7 @@ describe('chat_message_text', () => {
 
     it('looks through previous rounds when current steps have no matching tool result', () => {
       const renderer = createVisualizationRenderer({
+        application,
         startDependencies: createStartDependencies(),
         stepsFromCurrentRound: [],
         stepsFromPrevRounds: [toolCallStep],
@@ -323,6 +340,7 @@ describe('chat_message_text', () => {
 
     it('passes the chartType as preferredChartType to VisualizeESQL', () => {
       const renderer = createVisualizationRenderer({
+        application,
         startDependencies: createStartDependencies(),
         stepsFromCurrentRound: [toolCallStep],
         stepsFromPrevRounds: [],
@@ -342,6 +360,7 @@ describe('chat_message_text', () => {
 
     it('works without a chartType attribute', () => {
       const renderer = createVisualizationRenderer({
+        application,
         startDependencies: createStartDependencies(),
         stepsFromCurrentRound: [toolCallStep],
         stepsFromPrevRounds: [],
