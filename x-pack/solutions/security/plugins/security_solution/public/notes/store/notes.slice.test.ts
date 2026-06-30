@@ -32,6 +32,7 @@ import {
   selectNotesByDocumentId,
   selectNotesByDocumentIdReversed,
   selectNotesBySavedObjectId,
+  makeSelectNotesBySavedObjectIds,
   selectNotesPagination,
   selectNotesTablePendingDeleteIds,
   selectNotesTableSearch,
@@ -790,6 +791,82 @@ describe('notesSlice', () => {
 
     it('should also return no notes if saved object id is empty string', () => {
       expect(selectNotesBySavedObjectIdReversed(mockGlobalState, '')).toHaveLength(0);
+    });
+
+    describe('makeSelectNotesBySavedObjectIds (multi-id, for Super Timeline)', () => {
+      const buildState = (entities: Record<string, Note>, ids: string[]) => ({
+        ...mockGlobalState,
+        notes: { ...mockGlobalState.notes, entities, ids },
+      });
+
+      it('returns notes whose timelineId matches any of the provided ids', () => {
+        const note1 = {
+          noteId: 'n1',
+          note: 'note 1',
+          timelineId: 'tl-a',
+          eventId: 'ev-1',
+          created: 1000,
+          createdBy: 'alice',
+          updated: 1000,
+          updatedBy: 'alice',
+          version: 'v1',
+        };
+        const note2 = {
+          ...note1,
+          noteId: 'n2',
+          note: 'note 2',
+          timelineId: 'tl-b',
+        };
+        const noteOther = { ...note1, noteId: 'n3', note: 'other', timelineId: 'tl-other' };
+        const state = buildState({ n1: note1, n2: note2, n3: noteOther }, ['n1', 'n2', 'n3']);
+
+        const selector = makeSelectNotesBySavedObjectIds();
+        const result = selector(state, ['tl-a', 'tl-b']);
+
+        expect(result).toHaveLength(2);
+        const noteIds = result.map((n) => n.noteId);
+        expect(noteIds).toContain('n1');
+        expect(noteIds).toContain('n2');
+        expect(noteIds).not.toContain('n3');
+      });
+
+      it('does not duplicate a note that appears in multiple id matches', () => {
+        // A note can only have one timelineId, so duplication is impossible,
+        // but the test documents this expectation explicitly.
+        const note = {
+          noteId: 'n1',
+          note: 'note',
+          timelineId: 'tl-a',
+          eventId: 'ev-1',
+          created: 1000,
+          createdBy: 'alice',
+          updated: 1000,
+          updatedBy: 'alice',
+          version: 'v1',
+        };
+        const state = buildState({ n1: note }, ['n1']);
+        const selector = makeSelectNotesBySavedObjectIds();
+        // Pass the same id twice — the result must still contain n1 only once.
+        const result = selector(state, ['tl-a', 'tl-a']);
+        expect(result).toHaveLength(1);
+      });
+
+      it('returns an empty array when no notes match any of the provided ids', () => {
+        const selector = makeSelectNotesBySavedObjectIds();
+        expect(selector(mockGlobalState, ['no-match-1', 'no-match-2'])).toHaveLength(0);
+      });
+
+      it('returns an empty array when the ids array is empty', () => {
+        const selector = makeSelectNotesBySavedObjectIds();
+        expect(selector(mockGlobalState, [])).toHaveLength(0);
+      });
+
+      it('filters out empty strings from the ids array', () => {
+        const selector = makeSelectNotesBySavedObjectIds();
+        // mockGlobalState has a note with timelineId 'timeline-1'; empty string should not match it.
+        const result = selector(mockGlobalState, ['', '']);
+        expect(result).toHaveLength(0);
+      });
     });
 
     it('should select notes pagination', () => {

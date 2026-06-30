@@ -6,6 +6,7 @@
  */
 
 import {
+  EuiBadge,
   EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
@@ -24,6 +25,7 @@ import { OpenTimelineButton } from '../actions/open_timeline_button';
 import { APP_ID } from '../../../../../common';
 import {
   selectDataInTimeline,
+  selectIsSuperTimeline,
   selectKqlQuery,
   selectTimelineById,
   selectTitleByTimelineById,
@@ -82,6 +84,7 @@ export const TimelineModalHeader = React.memo<FlyoutHeaderPanelProps>(
     const title = useSelector((state: State) => selectTitleByTimelineById(state, timelineId));
     const isDataInTimeline = useSelector((state: State) => selectDataInTimeline(state, timelineId));
     const kqlQueryObj = useSelector((state: State) => selectKqlQuery(state, timelineId));
+    const isSuperTimeline = useSelector((state: State) => selectIsSuperTimeline(state, timelineId));
 
     const { activeTab, dataProviders, timelineType, filters, kqlMode } = useSelector(
       (state: State) => selectTimelineById(state, timelineId)
@@ -127,9 +130,11 @@ export const TimelineModalHeader = React.memo<FlyoutHeaderPanelProps>(
         >
           <EuiFlexItem grow={false}>
             <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-              <EuiFlexItem grow={false}>
-                <AddToFavoritesButton timelineId={timelineId} />
-              </EuiFlexItem>
+              {!isSuperTimeline && (
+                <EuiFlexItem grow={false}>
+                  <AddToFavoritesButton timelineId={timelineId} />
+                </EuiFlexItem>
+              )}
               <EuiFlexItem grow={false}>
                 <EuiText
                   grow={false}
@@ -139,9 +144,17 @@ export const TimelineModalHeader = React.memo<FlyoutHeaderPanelProps>(
                   <h3>{title}</h3>
                 </EuiText>
               </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <TimelineSaveStatus timelineId={timelineId} />
-              </EuiFlexItem>
+              {isSuperTimeline ? (
+                <EuiFlexItem grow={false}>
+                  <EuiBadge color="hollow" data-test-subj="timeline-modal-super-timeline-badge">
+                    {i18n.SUPER_TIMELINE_READONLY_BADGE}
+                  </EuiBadge>
+                </EuiFlexItem>
+              ) : (
+                <EuiFlexItem grow={false}>
+                  <TimelineSaveStatus timelineId={timelineId} />
+                </EuiFlexItem>
+              )}
             </EuiFlexGroup>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
@@ -165,7 +178,9 @@ export const TimelineModalHeader = React.memo<FlyoutHeaderPanelProps>(
                   isDisabled={isInspectDisabled}
                 />
               </EuiFlexItem>
-              {userCasesPermissions.createComment && userCasesPermissions.read ? (
+              {!isSuperTimeline &&
+              userCasesPermissions.createComment &&
+              userCasesPermissions.read ? (
                 <>
                   <EuiFlexItem>
                     <VerticalDivider />
@@ -175,9 +190,11 @@ export const TimelineModalHeader = React.memo<FlyoutHeaderPanelProps>(
                   </EuiFlexItem>
                 </>
               ) : null}
-              <EuiFlexItem>
-                <SaveTimelineButton timelineId={timelineId} />
-              </EuiFlexItem>
+              {!isSuperTimeline && (
+                <EuiFlexItem>
+                  <SaveTimelineButton timelineId={timelineId} />
+                </EuiFlexItem>
+              )}
               <EuiFlexItem grow={false}>
                 <EuiToolTip
                   content={i18n.CLOSE_TIMELINE_OR_TEMPLATE(timelineType === 'default')}

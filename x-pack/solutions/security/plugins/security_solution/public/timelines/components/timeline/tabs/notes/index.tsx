@@ -36,6 +36,7 @@ import { selectTimelineById } from '../../../../store/selectors';
 import {
   fetchNotesBySavedObjectIds,
   makeSelectNotesBySavedObjectId,
+  makeSelectNotesBySavedObjectIds,
   ReqStatus,
   selectFetchNotesBySavedObjectIdsError,
   selectFetchNotesBySavedObjectIdsStatus,
@@ -89,6 +90,12 @@ const NotesTabContentComponent: React.FC<NotesTabContentProps> = React.memo(({ t
   const timeline: TimelineModel = useSelector((state: State) =>
     selectTimelineById(state, timelineId)
   );
+  const isSuperTimeline = timeline?.isSuperTimeline ?? false;
+  const superTimelineSourceIds = useMemo(
+    () => timeline?.superTimelineSourceIds ?? [],
+    [timeline?.superTimelineSourceIds]
+  );
+
   const timelineSavedObjectId = useMemo(
     () => timeline.savedObjectId ?? '',
     [timeline.savedObjectId]
@@ -98,21 +105,33 @@ const NotesTabContentComponent: React.FC<NotesTabContentProps> = React.memo(({ t
     [timeline.status]
   );
 
-  const fetchNotes = useCallback(
-    () => dispatch(fetchNotesBySavedObjectIds({ savedObjectIds: [timelineSavedObjectId] })),
-    [dispatch, timelineSavedObjectId]
-  );
+  // Super Timeline: fetch notes for all source timelines in one call.
+  // Normal timeline: fetch notes for the single saved object.
+  const fetchNotes = useCallback(() => {
+    if (isSuperTimeline) {
+      dispatch(fetchNotesBySavedObjectIds({ savedObjectIds: superTimelineSourceIds }));
+    } else {
+      dispatch(fetchNotesBySavedObjectIds({ savedObjectIds: [timelineSavedObjectId] }));
+    }
+  }, [dispatch, isSuperTimeline, superTimelineSourceIds, timelineSavedObjectId]);
 
   useEffect(() => {
-    if (isTimelineSaved) {
+    if (isSuperTimeline || isTimelineSaved) {
       fetchNotes();
     }
-  }, [fetchNotes, isTimelineSaved]);
-  const selectNotesBySavedObjectId = useMemo(() => makeSelectNotesBySavedObjectId(), []);
+  }, [fetchNotes, isSuperTimeline, isTimelineSaved]);
 
-  const notes: Note[] = useSelector((state: State) =>
+  // Super Timeline uses multi-id selector; normal timeline uses single-id selector.
+  const selectNotesBySavedObjectId = useMemo(() => makeSelectNotesBySavedObjectId(), []);
+  const selectNotesBySavedObjectIds = useMemo(() => makeSelectNotesBySavedObjectIds(), []);
+
+  const notesForSingle: Note[] = useSelector((state: State) =>
     selectNotesBySavedObjectId(state, timelineSavedObjectId)
   );
+  const notesForMulti: Note[] = useSelector((state: State) =>
+    selectNotesBySavedObjectIds(state, superTimelineSourceIds)
+  );
+  const notes: Note[] = isSuperTimeline ? notesForMulti : notesForSingle;
   const fetchStatus = useSelector((state: State) => selectFetchNotesBySavedObjectIdsStatus(state));
   const fetchError = useSelector((state: State) => selectFetchNotesBySavedObjectIdsError(state));
 
@@ -183,9 +202,12 @@ const NotesTabContentComponent: React.FC<NotesTabContentProps> = React.memo(({ t
                   </EuiFlexItem>
                 </EuiFlexGroup>
               ) : (
-                <NotesList notes={notes} options={{ hideTimelineIcon: true }} />
+                <NotesList
+                  notes={notes}
+                  options={{ hideTimelineIcon: true, hideDeleteIcon: isSuperTimeline }}
+                />
               )}
-              {canCreateNotes && (
+              {!isSuperTimeline && canCreateNotes && (
                 <>
                   <EuiSpacer />
                   <AddNote timelineId={timeline.savedObjectId} disableButton={!isTimelineSaved}>

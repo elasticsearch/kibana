@@ -28,6 +28,7 @@ import * as i18n from './translations';
 import { initializeTimelineSettings } from '../../../store/actions';
 import { selectTimelineById, selectTimelineESQLSavedSearchId } from '../../../store/selectors';
 import { fetchNotesBySavedObjectIds, makeSelectNotesBySavedObjectId } from '../../../../notes';
+import { makeSelectNotesBySavedObjectIds } from '../../../../notes/store/notes.slice';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { LazyTimelineTabRenderer, TimelineTabFallback } from './lazy_timeline_tab_renderer';
 
@@ -98,9 +99,12 @@ const ActiveTimelineTab = memo<ActiveTimelineTabProps>(
     const timelineESQLSavedSearch = useShallowEqualSelector((state) =>
       selectTimelineESQLSavedSearchId(state, timelineId)
     );
+    const isSuperTimeline = useShallowEqualSelector(
+      (state) => selectTimelineById(state, timelineId)?.isSuperTimeline ?? false
+    );
     const shouldShowESQLTab = useMemo(
-      () => isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null,
-      [isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
+      () => !isSuperTimeline && (isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null),
+      [isSuperTimeline, isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
     );
 
     return (
@@ -136,7 +140,7 @@ const ActiveTimelineTab = memo<ActiveTimelineTabProps>(
             timelineId={timelineId}
           />
         </LazyTimelineTabRenderer>
-        {timelineType === TimelineTypeEnum.default && (
+        {!isSuperTimeline && timelineType === TimelineTypeEnum.default && (
           <LazyTimelineTabRenderer
             timelineId={timelineId}
             shouldShowTab={TimelineTabs.eql === activeTimelineTab}
@@ -208,16 +212,17 @@ const TabsContentComponent: React.FC<BasicTimelineTab> = ({
 
   const activeTab = useShallowEqualSelector((state) => getActiveTab(state, timelineId));
   const showTimeline = useShallowEqualSelector((state) => getShowTimeline(state, timelineId));
+  const timeline = useSelector((state: State) => selectTimelineById(state, timelineId));
+  const isSuperTimeline = timeline?.isSuperTimeline ?? false;
+
   const shouldShowESQLTab = useMemo(
-    () => isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null,
-    [isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
+    () => !isSuperTimeline && (isEsqlAdvancedSettingEnabled || timelineESQLSavedSearch != null),
+    [isSuperTimeline, isEsqlAdvancedSettingEnabled, timelineESQLSavedSearch]
   );
 
   const numberOfPinnedEvents = useShallowEqualSelector((state) =>
     getNumberOfPinnedEvents(state, timelineId)
   );
-
-  const timeline = useSelector((state: State) => selectTimelineById(state, timelineId));
   const timelineSavedObjectId = useMemo(() => timeline?.savedObjectId ?? '', [timeline]);
   const isTimelineSaved: boolean = useMemo(
     () => timelineSavedObjectId.length > 0,
@@ -241,13 +246,37 @@ const TabsContentComponent: React.FC<BasicTimelineTab> = ({
   }, [fetchNotes, isTimelineSaved]);
 
   const selectNotesBySavedObjectId = useMemo(() => makeSelectNotesBySavedObjectId(), []);
+  const selectNotesBySavedObjectIds = useMemo(() => makeSelectNotesBySavedObjectIds(), []);
+
+  const superTimelineSourceIds = useMemo(
+    () => timeline?.superTimelineSourceIds ?? [],
+    [timeline?.superTimelineSourceIds]
+  );
+
+  // Super Timeline: eagerly fetch notes for all source timelines so the badge is populated
+  // immediately, without waiting for the user to open the Notes tab.
+  const fetchSuperTimelineNotes = useCallback(
+    () => dispatch(fetchNotesBySavedObjectIds({ savedObjectIds: superTimelineSourceIds })),
+    [dispatch, superTimelineSourceIds]
+  );
+  useEffect(() => {
+    if (isSuperTimeline && superTimelineSourceIds.length > 0) {
+      fetchSuperTimelineNotes();
+    }
+  }, [fetchSuperTimelineNotes, isSuperTimeline, superTimelineSourceIds]);
 
   const notesNewSystem = useSelector((state: State) =>
     selectNotesBySavedObjectId(state, timelineSavedObjectId)
   );
+  const superTimelineNotes = useSelector((state: State) =>
+    selectNotesBySavedObjectIds(state, superTimelineSourceIds)
+  );
   const numberOfNotesNewSystem = useMemo(
-    () => notesNewSystem.length + (isEmpty(timelineDescription) ? 0 : 1),
-    [notesNewSystem, timelineDescription]
+    () =>
+      isSuperTimeline
+        ? superTimelineNotes.length
+        : notesNewSystem.length + (isEmpty(timelineDescription) ? 0 : 1),
+    [isSuperTimeline, superTimelineNotes, notesNewSystem, timelineDescription]
   );
 
   const setActiveTab = useCallback(
@@ -316,7 +345,7 @@ const TabsContentComponent: React.FC<BasicTimelineTab> = ({
               <span>{i18n.DISCOVER_ESQL_IN_TIMELINE_TAB}</span>
             </StyledEuiTab>
           )}
-          {timelineType === TimelineTypeEnum.default && (
+          {!isSuperTimeline && timelineType === TimelineTypeEnum.default && (
             <StyledEuiTab
               data-test-subj={`timelineTabs-${TimelineTabs.eql}`}
               onClick={setEqlAsActiveTab}

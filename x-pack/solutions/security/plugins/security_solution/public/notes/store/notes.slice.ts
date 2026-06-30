@@ -399,6 +399,16 @@ export const makeSelectNotesBySavedObjectId = () =>
       )
   );
 
+/** Multi-id variant for Super Timeline: selects notes whose timelineId is in the provided set. */
+export const makeSelectNotesBySavedObjectIds = () =>
+  createSelector(
+    [selectAllNotes, (_: State, savedObjectIds: string[]) => savedObjectIds],
+    (notes, savedObjectIds) => {
+      const idSet = new Set(savedObjectIds.filter((id) => id !== ''));
+      return fallbackToEmptyArray(notes.filter((note) => idSet.has(note.timelineId ?? '')));
+    }
+  );
+
 export const selectDocumentNotesBySavedObjectId = createSelector(
   [
     selectAllNotes,
