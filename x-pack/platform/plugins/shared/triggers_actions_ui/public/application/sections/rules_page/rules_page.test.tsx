@@ -24,6 +24,35 @@ jest.mock('../rules_list/components/rules_list', () => {
   return () => <div data-test-subj="rulesListComponents">{'Render Rule list component'}</div>;
 });
 
+jest.mock('../../components/rules_setting/rules_settings_flyout', () => ({
+  RulesSettingsFlyout: () => (
+    <div data-test-subj="rulesSettingsFlyout">{'Render Rules Settings Flyout component'}</div>
+  ),
+}));
+
+jest.mock('@kbn/app-header', () => ({
+  AppHeader: (props: any) => (
+    <div data-test-subj="mockAppHeader">
+      {props.tabs?.map((tab: any) => (
+        <button key={tab.id} role="tab" data-test-subj={tab.id}>
+          {tab.label}
+        </button>
+      ))}
+      {props.menu?.primaryActionItem && (
+        <button data-test-subj={props.menu.primaryActionItem.testId} />
+      )}
+      {props.menu?.items?.map((item: any) => (
+        <button key={item.id} data-test-subj={item.testId} />
+      ))}
+      {props.docLink && (
+        <a data-test-subj="documentationLink" href={props.docLink}>
+          {'Documentation'}
+        </a>
+      )}
+    </div>
+  ),
+}));
+
 jest.mock('@kbn/ebt-tools', () => ({
   PerformanceContextProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));

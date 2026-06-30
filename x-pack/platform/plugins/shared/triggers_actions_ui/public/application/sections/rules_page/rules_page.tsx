@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import React, { lazy, useCallback, useEffect, useRef, useState } from 'react';
-import { FormattedMessage } from '@kbn/i18n-react';
+import React, { lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 import { useHistory, useLocation } from 'react-router-dom';
 import { Routes, Route } from '@kbn/shared-ux-router';
@@ -19,14 +18,16 @@ import {
 } from '@kbn/rule-data-utils';
 import { useGetRuleTypesPermissions } from '@kbn/alerts-ui-shared';
 import { RuleTypeModal } from '@kbn/response-ops-rule-form';
-import { RulesSettingsLink } from '../../components/rules_setting/rules_settings_link';
-import { RulesListDocLink } from '../rules_list/components/rules_list_doc_link';
+import { AppHeader, type AppHeaderTab } from '@kbn/app-header';
+import { i18n } from '@kbn/i18n';
+import type { AppMenuConfig } from '@kbn/core-chrome-app-menu-components';
+import { EuiSpacer } from '@elastic/eui';
 import { useKibana } from '../../../common/lib/kibana';
 import { getAlertingSectionBreadcrumb, getRulesBreadcrumbWithHref } from '../../lib/breadcrumb';
-import { CreateRuleButton } from '../rules_list/components/create_rule_button';
 import { getCurrentDocTitle } from '../../lib/doc_title';
 import type { Section } from '../../constants';
 import { suspendedComponentWithProps } from '../../lib/suspended_component_with_props';
+import { RulesSettingsFlyout } from '../../components/rules_setting/rules_settings_flyout';
 
 const LogsList = lazy(() => import('../rule_details/components/global_rule_event_log_list'));
 const RulesList = lazy(() => import('../rules_list/components/rules_list'));
@@ -36,11 +37,16 @@ const RulesPage = () => {
   const location = useLocation();
   const {
     chrome: { docTitle },
-    application: { getUrlForApp, isAppRegistered },
+    application: {
+      getUrlForApp,
+      isAppRegistered,
+      capabilities: { rulesSettings = {} },
+    },
     http,
     notifications: { toasts },
     ruleTypeRegistry,
     cps,
+    docLinks,
     setBreadcrumbs,
   } = useKibana().services;
 
@@ -50,49 +56,77 @@ const RulesPage = () => {
     filteredRuleTypes: [],
   });
 
-  const currentSection: Section = location.pathname.endsWith('/logs') ? 'logs' : 'rules';
-
-  const tabs: Array<{
-    id: Section;
-    name: React.ReactNode;
-  }> = [];
-
-  tabs.push({
-    id: 'rules',
-    name: (
-      <FormattedMessage id="xpack.triggersActionsUI.home.rulesTabTitle" defaultMessage="Rules" />
-    ),
-  });
-
-  if (authorizedToReadAnyRules) {
-    tabs.push({
-      id: 'logs',
-      name: (
-        <FormattedMessage id="xpack.triggersActionsUI.home.logsTabTitle" defaultMessage="Logs" />
-      ),
-    });
-  }
   const [ruleTypeModalVisible, setRuleTypeModalVisibility] = useState<boolean>(false);
+  const [isSettingsFlyoutVisible, setIsSettingsFlyoutVisible] = useState<boolean>(false);
+
+  const currentSection: Section = location.pathname.endsWith('/logs') ? 'logs' : 'rules';
+  const backButtonHref = getUrlForApp('observability-overview', { path: '/alerts' });
+
+  const { show, readFlappingSettingsUI, readQueryDelaySettingsUI } = rulesSettings;
+  const canShowSettings = show && (readFlappingSettingsUI || readQueryDelaySettingsUI);
 
   const openRuleTypeModal = useCallback(() => {
     setRuleTypeModalVisibility(true);
   }, []);
 
-  const headerActions = [
-    ...(authorizedToCreateAnyRules ? [<CreateRuleButton openFlyout={openRuleTypeModal} />] : []),
-    <RulesSettingsLink
-      alertDeleteCategoryIds={['management', 'observability', 'securitySolution']}
-    />,
-    <RulesListDocLink />,
-  ];
-
-  const onSectionChange = (newSection: Section) => {
-    if (newSection === 'logs') {
-      history.push('/logs');
-    } else {
-      history.push('/');
+  const tabs: AppHeaderTab[] = useMemo(() => {
+    const result: AppHeaderTab[] = [
+      {
+        id: 'rules',
+        label: i18n.translate('xpack.triggersActionsUI.home.rulesTabTitle', {
+          defaultMessage: 'Rules',
+        }),
+        isSelected: currentSection === 'rules',
+        onClick: () => history.push('/'),
+        'data-test-subj': 'rulesTab',
+      },
+    ];
+    if (authorizedToReadAnyRules) {
+      result.push({
+        id: 'logs',
+        label: i18n.translate('xpack.triggersActionsUI.home.logsTabTitle', {
+          defaultMessage: 'Logs',
+        }),
+        isSelected: currentSection === 'logs',
+        onClick: () => history.push('/logs'),
+        'data-test-subj': 'logsTab',
+      });
     }
-  };
+    return result;
+  }, [currentSection, authorizedToReadAnyRules, history]);
+
+  const appMenu = useMemo<AppMenuConfig>(
+    () => ({
+      primaryActionItem: authorizedToCreateAnyRules
+        ? {
+            id: 'createRule',
+            label: i18n.translate('xpack.triggersActionsUI.rules.addRuleButtonLabel', {
+              defaultMessage: 'Create rule',
+            }),
+            iconType: 'plusCircle',
+            run: openRuleTypeModal,
+            testId: 'createRuleButton',
+          }
+        : undefined,
+      items: [
+        ...(canShowSettings
+          ? [
+              {
+                id: 'rulesSettings',
+                order: 100,
+                label: i18n.translate('xpack.triggersActionsUI.rulesSettings.link.title', {
+                  defaultMessage: 'Settings',
+                }),
+                iconType: 'gear',
+                run: () => setIsSettingsFlyoutVisible(true),
+                testId: 'rulesSettingsLink',
+              },
+            ]
+          : []),
+      ],
+    }),
+    [authorizedToCreateAnyRules, canShowSettings, openRuleTypeModal]
+  );
 
   // Use ref to store latest location to avoid recreating callbacks when search/hash changes
   // Updating ref.current doesn't cause re-renders, so we can do it directly in render
@@ -143,6 +177,7 @@ const RulesPage = () => {
   const renderLogsList = useCallback(() => {
     return (
       <KibanaPageTemplate.Section grow={false} paddingSize="none">
+        <EuiSpacer size="s" />
         {suspendedComponentWithProps(
           LogsList,
           'xl'
@@ -167,31 +202,19 @@ const RulesPage = () => {
 
   return (
     <>
-      <KibanaPageTemplate.Header
-        paddingSize="none"
-        bottomBorder={true}
-        pageTitle={
-          <span data-test-subj="appTitle">
-            <FormattedMessage
-              id="xpack.triggersActionsUI.rulesPage.pageTitle"
-              defaultMessage="Rules"
-            />
-          </span>
-        }
-        rightSideItems={headerActions}
-        description={
-          <FormattedMessage
-            id="xpack.triggersActionsUI.rulesPage.pageDescription"
-            defaultMessage="Manage and monitor all of your rules in one place."
-          />
-        }
-        tabs={tabs.map((tab) => ({
-          label: tab.name,
-          onClick: () => onSectionChange(tab.id),
-          isSelected: tab.id === currentSection,
-          key: tab.id,
-          'data-test-subj': `${tab.id}Tab`,
-        }))}
+      <AppHeader
+        title={i18n.translate('xpack.triggersActionsUI.rulesPage.pageTitle', {
+          defaultMessage: 'Rules',
+        })}
+        tabs={tabs}
+        menu={appMenu}
+        docLink={docLinks.links.alerting.guide}
+        back={{
+          href: backButtonHref,
+          label: i18n.translate('xpack.triggersActionsUI.rulesPage.backButtonLabel', {
+            defaultMessage: 'Alerts',
+          }),
+        }}
       />
       <Routes>
         <Route exact path="/logs" component={renderLogsList} />
@@ -213,6 +236,11 @@ const RulesPage = () => {
           cps={cps}
         />
       )}
+      <RulesSettingsFlyout
+        isVisible={isSettingsFlyoutVisible}
+        onClose={() => setIsSettingsFlyoutVisible(false)}
+        alertDeleteCategoryIds={['management', 'observability', 'securitySolution']}
+      />
     </>
   );
 };

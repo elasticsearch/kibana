@@ -108,6 +108,8 @@ dependsOn:
   - '@kbn/lens-common'
   - '@kbn/inspector-plugin'
   - '@kbn/connector-specs'
+  - '@kbn/app-header'
+  - '@kbn/core-chrome-app-menu-components'
 tags:
   - plugin
   - prod
