@@ -1,0 +1,59 @@
+{
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Add single-alert triage eval scenario",
+      "description": "Create evals/single_alert_triage.spec.ts in kbn-evals-suite-security-alert-triage. Exercises ALERT_ATTACHMENT_PROMPT via callConverse with a single alert attachment and asserts that the alert-analysis skill is invoked and the response contains a markdown-formatted disposition recommendation.",
+      "acceptanceCriteria": [
+        "File x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/evals/single_alert_triage.spec.ts exists",
+        "TypeScript type check passes for the suite: node scripts/type_check --project x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/tsconfig.json",
+        "ESLint passes: node scripts/eslint x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/evals/single_alert_triage.spec.ts",
+        "The spec imports and uses callConverse from ../src/converse_task",
+        "The spec uses createSkillInvocationEvaluator with skillName: 'alert-analysis'",
+        "The evaluators array includes evaluators.criteria with at least 5 named criteria",
+        "The evaluators array includes Object.values(evaluators.traceBasedEvaluators)",
+        "metadata.expectedAttachmentReads is set to 0 on the example",
+        "The metadata.attachments array contains exactly one entry with type 'security.alerts'"
+      ],
+      "passes": true,
+      "dependsOn": [],
+      "notes": "Follow alert_triage_quality.spec.ts exactly — same fixture extension pattern, same dataset shape, same evaluator composition. Use generateSyntheticAlert (or equivalent) from src/synthetic_alerts.ts for the fixture alert. A single alert does NOT trigger summary mode so expectedAttachmentReads must be 0 — the existing attachmentReadCompliance evaluator will pass trivially, but include it for consistency. The beforeAll hook must insert the alert into .alerts-security.alerts-default via esClient. The afterAll hook must delete it."
+    },
+    {
+      "id": "T-002",
+      "title": "Add EASE alert summary eval spec and task function",
+      "description": "Create src/ease_summary_task.ts (task function mirroring use_alert_summary.tsx's HTTP call) and evals/ease_alert_summary.spec.ts (CODE evaluator verifying the response is parseable JSON with non-empty summary and recommendedActions keys). Directly addresses Jon's concern about silent JSON.parse failures in the EASE flyout.",
+      "acceptanceCriteria": [
+        "File x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/src/ease_summary_task.ts exists",
+        "File x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/evals/ease_alert_summary.spec.ts exists",
+        "TypeScript type check passes for the suite: node scripts/type_check --project x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/tsconfig.json",
+        "ESLint passes: node scripts/eslint x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/evals/ease_alert_summary.spec.ts x-pack/solutions/security/packages/kbn-evals-suite-security-alert-triage/src/ease_summary_task.ts",
+        "The EASE evaluator is kind: 'CODE' — there is no LLM evaluator in this spec",
+        "The evaluator attempts JSON.parse on the raw response and returns score 0 with an explanation if it throws",
+        "The evaluator checks that parsed.summary is a non-empty string",
+        "The evaluator checks that parsed.recommendedActions is a non-empty string",
+        "The spec does NOT include evaluators.traceBasedEvaluators",
+        "ease_summary_task.ts posts to the actions/connector execute route with promptIds: { promptGroupId: 'ease', promptId: 'alertSummarySystemPrompt' }"
+      ],
+      "passes": true,
+      "dependsOn": [],
+      "notes": "Read use_alert_summary.tsx (public/flyout/ease/hooks/) and post_actions_connector_execute.ts (elastic_assistant/server/routes/) before writing the task function — the request body shape must match exactly what the EASE hook sends. The CODE evaluator pattern to follow is in src/evaluators.ts (attachmentReadCompliance). Do NOT include traceBasedEvaluators — the actions/connector execute route does not emit a trace_id in the same shape as Agent Builder. The alert context for the dataset example should be a minimal plain-text string (rule name, severity, host, one-line reason) — no Elasticsearch insertion needed."
+    },
+    {
+      "id": "T-003",
+      "title": "Sync prompt changes to elastic/integrations",
+      "description": "Clone elastic/integrations, run yarn generate-security-ai-prompts, copy the generated prompt JSON files to the integrations package, bump the package version, add a changelog entry, and open a PR against elastic/integrations main.",
+      "acceptanceCriteria": [
+        "elastic/integrations is cloned at ~/Repos/integrations",
+        "yarn generate-security-ai-prompts exits with code 0",
+        "All .json files from target/security_ai_prompts/ have been copied to ~/Repos/integrations/packages/security_ai_prompts/kibana/security_ai_prompt/",
+        "The version in ~/Repos/integrations/packages/security_ai_prompts/manifest.yml has been incremented",
+        "A new entry has been prepended to ~/Repos/integrations/packages/security_ai_prompts/changelog.yml referencing elastic/kibana#271330",
+        "A PR has been opened against elastic/integrations main and its URL has been logged to stdout"
+      ],
+      "passes": true,
+      "dependsOn": [],
+      "notes": "Read x-pack/solutions/security/packages/security-ai-prompts/README.md before starting — it contains the authoritative steps and exact paths. If yarn generate-security-ai-prompts is not in package.json scripts, check for node scripts/generate_security_ai_prompts.js. Increment patch version only (1.2.3 → 1.2.4). Changelog entry format must match the existing entries in changelog.yml. Branch name: sync/security-ai-prompts-kibana-271330."
+    }
+  ]
+}
