@@ -25,7 +25,6 @@ export interface GetCaseIdsByAlertIdArgs {
   filter?: KueryNode;
   /**
    * Authorization + owner filter scoped to the unified `cases-attachments` saved object type.
-   * Only used when the unified attachments feature flag is enabled.
    */
   unifiedFilter?: KueryNode;
 }

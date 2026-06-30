@@ -13,6 +13,7 @@ import {
   toUnifiedAttachmentType,
   UNIFIED_ALERT_TYPES_ARRAY,
 } from '../../../../common/utils/attachments';
+import { getAttachmentSavedObjectType } from '../../../common/attachments';
 import { isSOError } from '../../../common/error';
 import { decodeOrThrow } from '../../../common/runtime_types';
 import type {
@@ -73,20 +74,15 @@ export class AttachmentGetter {
         `Attempting to retrieve attachments with ids: ${savedObjectIds.join()}`
       );
 
-      const isCaseAttachmentsEnabled = this.context.config.attachments?.enabled;
       const response =
         await this.context.unsecuredSavedObjectsClient.bulkGet<AttachmentAttributesV2>(
-          savedObjectIds.flatMap((id) =>
-            isCaseAttachmentsEnabled
-              ? [
-                  { id, type: CASE_ATTACHMENT_SAVED_OBJECT },
-                  { id, type: CASE_COMMENT_SAVED_OBJECT },
-                ]
-              : [{ id, type: CASE_COMMENT_SAVED_OBJECT }]
-          )
+          savedObjectIds.flatMap((id) => [
+            { id, type: CASE_ATTACHMENT_SAVED_OBJECT },
+            { id, type: CASE_COMMENT_SAVED_OBJECT },
+          ])
         );
 
-      const merged = this.mergeBulkGetResults(response.saved_objects, isCaseAttachmentsEnabled);
+      const merged = this.mergeBulkGetResults(response.saved_objects);
 
       if (mode === 'legacy') {
         return this.transformAndDecodeBulkGetResponseLegacy(merged);
@@ -101,23 +97,36 @@ export class AttachmentGetter {
   }
 
   private mergeBulkGetResults(
-    savedObjects: Array<SavedObject<AttachmentAttributesV2> | { id: string; error: unknown }>,
-    isCaseAttachmentsEnabled: boolean
+    savedObjects: Array<SavedObject<AttachmentAttributesV2> | { id: string; error: unknown }>
   ): Array<MixSavedObjectResponse> {
-    if (!isCaseAttachmentsEnabled) {
-      return savedObjects;
+    // We query 2 SO types per id (paired in bulkGet input order): one may hit,
+    // one may 404. For ids missing from both types both entries are errors; we
+    // surface a single "not found" from the FF-derived default write target so
+    // the error message stays consistent with where new writes go.
+    if (savedObjects.length % 2 !== 0) {
+      throw new Error(
+        `Expected bulkGet response to contain pairs of saved objects, received ${savedObjects.length} entries`
+      );
     }
-    // When FF is on we query 2 SO types per id: one may hit, one may 404. For non-existent ids
-    // both 404. We must preserve one "not found" error per id that has no hits so the client
-    // can return it.
+
+    const defaultSavedObjectType = getAttachmentSavedObjectType(this.context.config);
     const result: Array<MixSavedObjectResponse> = [];
     for (let i = 0; i < savedObjects.length; i += 2) {
       const pair = [savedObjects[i], savedObjects[i + 1]] as const;
+      if (pair[0].id !== pair[1].id) {
+        throw new Error(
+          `bulkGet response pair mismatch: expected matching ids, received "${pair[0].id}" and "${pair[1].id}"`
+        );
+      }
       const hit = pair.find((so) => !isSOError(so));
       if (hit) {
         result.push(hit);
       } else {
-        result.push(pair[0]);
+        // Both buckets are errors. Surface the one matching the FF-derived
+        // default write target so callers see a consistent "not found"
+        // (cases-comments when FF off, cases-attachments when FF on).
+        const [unifiedSO, legacySO] = pair;
+        result.push(defaultSavedObjectType === CASE_ATTACHMENT_SAVED_OBJECT ? unifiedSO : legacySO);
       }
     }
     return result;
@@ -261,7 +270,6 @@ export class AttachmentGetter {
   }: GetAllDocumentsAttachedToCaseArgs): Promise<
     Array<SavedObject<DocumentAttachmentAttributesV2>>
   > {
-    const isCasesAttachmentsEnabled = this.context.config.attachments?.enabled;
     try {
       this.context.log.debug(`Attempting to GET all documents for case id ${caseId}`);
       const legacyDocumentsFilter = buildFilter({
@@ -279,18 +287,13 @@ export class AttachmentGetter {
       });
 
       const combinedFilter = combineFilters([
-        combineFilters(
-          [legacyDocumentsFilter, ...(isCasesAttachmentsEnabled ? [unifiedDocumentsFilter] : [])],
-          NodeBuilderOperators.or
-        ),
+        combineFilters([legacyDocumentsFilter, unifiedDocumentsFilter], NodeBuilderOperators.or),
         filter,
       ]);
 
       const finder =
         this.context.unsecuredSavedObjectsClient.createPointInTimeFinder<AttachmentAttributesV2>({
-          type: isCasesAttachmentsEnabled
-            ? [CASE_COMMENT_SAVED_OBJECT, CASE_ATTACHMENT_SAVED_OBJECT]
-            : CASE_COMMENT_SAVED_OBJECT,
+          type: [CASE_COMMENT_SAVED_OBJECT, CASE_ATTACHMENT_SAVED_OBJECT],
           hasReference: { type: CASE_SAVED_OBJECT, id: caseId },
           sortField: 'created_at',
           sortOrder: 'asc',
@@ -324,7 +327,6 @@ export class AttachmentGetter {
    * Retrieves all the alerts attached to a case.
    */
   public async getAllAlertIds({ caseId }: { caseId: string }): Promise<Set<string>> {
-    const isCasesAttachmentsEnabled = this.context.config.attachments?.enabled;
     try {
       this.context.log.debug(`Attempting to GET all alerts ids for case id ${caseId}`);
       const legacyFindPromise = this.context.unsecuredSavedObjectsClient.find<
@@ -352,34 +354,35 @@ export class AttachmentGetter {
         },
       });
 
-      const unifiedFindPromise = isCasesAttachmentsEnabled
-        ? this.context.unsecuredSavedObjectsClient.find<unknown, AlertIdsAggsResult>({
-            type: CASE_ATTACHMENT_SAVED_OBJECT,
-            hasReference: { type: CASE_SAVED_OBJECT, id: caseId },
-            filter: buildFilter({
-              filters: UNIFIED_ALERT_TYPES_ARRAY,
-              field: 'type',
-              operator: 'or',
-              type: CASE_ATTACHMENT_SAVED_OBJECT,
-            }),
-            perPage: 0,
-            aggs: {
-              alertIds: {
-                terms: {
-                  field: `${CASE_ATTACHMENT_SAVED_OBJECT}.attributes.attachmentId`,
-                  size: MAX_ALERTS_PER_CASE,
-                },
-              },
+      const unifiedFindPromise = this.context.unsecuredSavedObjectsClient.find<
+        unknown,
+        AlertIdsAggsResult
+      >({
+        type: CASE_ATTACHMENT_SAVED_OBJECT,
+        hasReference: { type: CASE_SAVED_OBJECT, id: caseId },
+        filter: buildFilter({
+          filters: UNIFIED_ALERT_TYPES_ARRAY,
+          field: 'type',
+          operator: 'or',
+          type: CASE_ATTACHMENT_SAVED_OBJECT,
+        }),
+        perPage: 0,
+        aggs: {
+          alertIds: {
+            terms: {
+              field: `${CASE_ATTACHMENT_SAVED_OBJECT}.attributes.attachmentId`,
+              size: MAX_ALERTS_PER_CASE,
             },
-          })
-        : Promise.resolve(undefined);
+          },
+        },
+      });
 
       const [legacyRes, unifiedRes] = await Promise.all([legacyFindPromise, unifiedFindPromise]);
 
       const legacyAlertIds =
         legacyRes.aggregations?.alertIds.buckets.map((bucket) => bucket.key) ?? [];
       const unifiedAlertIds =
-        unifiedRes?.aggregations?.alertIds.buckets.map((bucket) => bucket.key) ?? [];
+        unifiedRes.aggregations?.alertIds.buckets.map((bucket) => bucket.key) ?? [];
 
       return new Set([...legacyAlertIds, ...unifiedAlertIds]);
     } catch (error) {
@@ -398,7 +401,6 @@ export class AttachmentGetter {
     caseId: string;
     owner: string;
   }): Promise<Set<string>> {
-    const isCasesAttachmentsEnabled = this.context.config.attachments?.enabled;
     try {
       this.context.log.debug(`Attempting to GET all event ids for case id ${caseId}`);
       const legacyEventsFilter = buildFilter({
@@ -414,14 +416,12 @@ export class AttachmentGetter {
         type: CASE_ATTACHMENT_SAVED_OBJECT,
       });
       const eventsFilter = combineFilters(
-        [legacyEventsFilter, ...(isCasesAttachmentsEnabled ? [unifiedEventsFilter] : [])],
+        [legacyEventsFilter, unifiedEventsFilter],
         NodeBuilderOperators.or
       );
 
       const res = await this.context.unsecuredSavedObjectsClient.find<unknown, EventIdsAggsResult>({
-        type: isCasesAttachmentsEnabled
-          ? [CASE_COMMENT_SAVED_OBJECT, CASE_ATTACHMENT_SAVED_OBJECT]
-          : CASE_COMMENT_SAVED_OBJECT,
+        type: [CASE_COMMENT_SAVED_OBJECT, CASE_ATTACHMENT_SAVED_OBJECT],
         hasReference: { type: CASE_SAVED_OBJECT, id: caseId },
         sortField: 'created_at',
         sortOrder: 'asc',
@@ -434,23 +434,19 @@ export class AttachmentGetter {
               size: MAX_ALERTS_PER_CASE,
             },
           },
-          ...(isCasesAttachmentsEnabled
-            ? {
-                unifiedEventIds: {
-                  terms: {
-                    field: `${CASE_ATTACHMENT_SAVED_OBJECT}.attributes.attachmentId`,
-                    size: MAX_ALERTS_PER_CASE,
-                  },
-                },
-              }
-            : {}),
+          unifiedEventIds: {
+            terms: {
+              field: `${CASE_ATTACHMENT_SAVED_OBJECT}.attributes.attachmentId`,
+              size: MAX_ALERTS_PER_CASE,
+            },
+          },
         },
       });
 
       const legacyEventIds =
         res.aggregations?.legacyEventIds.buckets.map((bucket) => bucket.key) ?? [];
       const unifiedEventIds =
-        res.aggregations?.unifiedEventIds?.buckets.map((bucket) => bucket.key) ?? [];
+        res.aggregations?.unifiedEventIds.buckets.map((bucket) => bucket.key) ?? [];
       const eventIds = [...legacyEventIds, ...unifiedEventIds];
       return new Set(eventIds);
     } catch (error) {
@@ -465,32 +461,24 @@ export class AttachmentGetter {
   }: GetAttachmentArgs): Promise<AttachmentSavedObjectTransformedV2> {
     try {
       this.context.log.debug(`Attempting to GET attachment ${savedObjectId}`);
-      const isCasesAttachmentsEnabled = this.context.config.attachments?.enabled;
 
       let res:
         | SavedObject<UnifiedAttachmentAttributes>
         | SavedObject<AttachmentPersistedAttributes>;
 
-      if (isCasesAttachmentsEnabled) {
-        // if feature flag is enabled, try to fetch unified first
-        try {
-          res = await this.context.unsecuredSavedObjectsClient.get<UnifiedAttachmentAttributes>(
-            CASE_ATTACHMENT_SAVED_OBJECT,
-            savedObjectId
-          );
-        } catch (error) {
-          if (!SavedObjectsErrorHelpers.isNotFoundError(error)) {
-            throw error;
-          }
-          this.context.log.debug(
-            `Attachment ${savedObjectId} not found in ${CASE_ATTACHMENT_SAVED_OBJECT}, falling back to ${CASE_COMMENT_SAVED_OBJECT}`
-          );
-          res = await this.context.unsecuredSavedObjectsClient.get<AttachmentPersistedAttributes>(
-            CASE_COMMENT_SAVED_OBJECT,
-            savedObjectId
-          );
+      // Try unified first; fall back to legacy on 404 to cover unmigrated rows.
+      try {
+        res = await this.context.unsecuredSavedObjectsClient.get<UnifiedAttachmentAttributes>(
+          CASE_ATTACHMENT_SAVED_OBJECT,
+          savedObjectId
+        );
+      } catch (error) {
+        if (!SavedObjectsErrorHelpers.isNotFoundError(error)) {
+          throw error;
         }
-      } else {
+        this.context.log.debug(
+          `Attachment ${savedObjectId} not found in ${CASE_ATTACHMENT_SAVED_OBJECT}, falling back to ${CASE_COMMENT_SAVED_OBJECT}`
+        );
         res = await this.context.unsecuredSavedObjectsClient.get<AttachmentPersistedAttributes>(
           CASE_COMMENT_SAVED_OBJECT,
           savedObjectId
@@ -568,24 +556,22 @@ export class AttachmentGetter {
         return acc;
       }, new Map<string, AttachmentTotals>()) ?? new Map();
 
-    if (this.context.config.attachments?.enabled) {
-      const unifiedStatsByCase = await this.getUnifiedAttachmentStatsByCaseId(caseIds);
-      for (const [caseId, unifiedStats] of unifiedStatsByCase) {
-        const existing = statsMap.get(caseId);
-        if (existing) {
-          statsMap.set(caseId, {
-            ...existing,
-            userComments: existing.userComments + unifiedStats.userComments,
-            alerts: existing.alerts + unifiedStats.alerts,
-            events: existing.events + unifiedStats.events,
-          });
-        } else {
-          statsMap.set(caseId, {
-            userComments: unifiedStats.userComments,
-            alerts: unifiedStats.alerts,
-            events: unifiedStats.events,
-          });
-        }
+    const unifiedStatsByCase = await this.getUnifiedAttachmentStatsByCaseId(caseIds);
+    for (const [caseId, unifiedStats] of unifiedStatsByCase) {
+      const existing = statsMap.get(caseId);
+      if (existing) {
+        statsMap.set(caseId, {
+          ...existing,
+          userComments: existing.userComments + unifiedStats.userComments,
+          alerts: existing.alerts + unifiedStats.alerts,
+          events: existing.events + unifiedStats.events,
+        });
+      } else {
+        statsMap.set(caseId, {
+          userComments: unifiedStats.userComments,
+          alerts: unifiedStats.alerts,
+          events: unifiedStats.events,
+        });
       }
     }
 
@@ -768,7 +754,6 @@ export class AttachmentGetter {
        * array instead of deleting the entire saved object in the situation where the file is attached to multiple cases.
        */
       const references = fileIds.map((id) => ({ id, type: FILE_SO_TYPE }));
-      const isCasesAttachmentsEnabled = this.context.config.attachments?.enabled === true;
 
       /**
        * In the event that we add the ability to attach a file to a case that has already been uploaded we'll run into a
@@ -778,9 +763,7 @@ export class AttachmentGetter {
       const finder = this.context.unsecuredSavedObjectsClient.createPointInTimeFinder<
         AttachmentPersistedAttributes | UnifiedAttachmentAttributes
       >({
-        type: isCasesAttachmentsEnabled
-          ? [CASE_COMMENT_SAVED_OBJECT, CASE_ATTACHMENT_SAVED_OBJECT]
-          : CASE_COMMENT_SAVED_OBJECT,
+        type: [CASE_COMMENT_SAVED_OBJECT, CASE_ATTACHMENT_SAVED_OBJECT],
         hasReference: references,
         sortField: 'created_at',
         sortOrder: 'asc',

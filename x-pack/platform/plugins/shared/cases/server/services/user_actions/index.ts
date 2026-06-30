@@ -14,7 +14,7 @@ import type {
 import type { estypes } from '@elastic/elasticsearch';
 import type { KueryNode } from '@kbn/es-query';
 import type { CaseUserActionDeprecatedResponse } from '../../../common/types/api';
-import { AttachmentType, UserActionActions, UserActionTypes } from '../../../common/types/domain';
+import { UserActionActions, UserActionTypes } from '../../../common/types/domain';
 import { decodeOrThrow } from '../../common/runtime_types';
 import {
   CASE_COMMENT_SAVED_OBJECT,
@@ -699,10 +699,6 @@ export class CaseUserActionService {
   }
 
   public async getCaseUserActionStats({ caseId }: { caseId: string }) {
-    const isCasesAttachmentsEnabled = this.context.isCasesAttachmentsEnabled === true;
-    const isComment = (type: string) =>
-      isCasesAttachmentsEnabled ? isCommentAttachmentType(type) : type === AttachmentType.user;
-
     const response = await this.context.unsecuredSavedObjectsClient.find<
       unknown,
       UserActionsStatsAggsResult
@@ -727,19 +723,19 @@ export class CaseUserActionService {
     };
 
     response.aggregations?.totals.buckets.forEach(({ key, doc_count: docCount }) => {
-      if (isComment(key)) {
+      if (isCommentAttachmentType(key)) {
         result.total_comments += docCount;
       }
     });
 
     response.aggregations?.deletions.deletions.buckets.forEach(({ key, doc_count: docCount }) => {
-      if (isComment(key)) {
+      if (isCommentAttachmentType(key)) {
         result.total_comment_deletions += docCount;
       }
     });
 
     response.aggregations?.creations.creations.buckets.forEach(({ key, doc_count: docCount }) => {
-      if (isComment(key)) {
+      if (isCommentAttachmentType(key)) {
         result.total_comment_creations += docCount;
       }
     });
@@ -758,7 +754,7 @@ export class CaseUserActionService {
         const commentTypeBuckets = bucket.reverse?.updates?.byCommentType?.buckets ?? [];
         const userCommentUpdates = commentTypeBuckets.reduce(
           (sum: number, b: { key: string; doc_count: number }) =>
-            isComment(b.key) ? sum + b.doc_count : sum,
+            isCommentAttachmentType(b.key) ? sum + b.doc_count : sum,
           0
         );
         result.total_hidden_comment_updates += userCommentUpdates;

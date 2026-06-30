@@ -213,20 +213,18 @@ async function getAlertComments({
     AttachmentType.alert
   );
 
-  const alertFilter = isCasesAttachmentsEnabled
-    ? combineFilters(
-        [
-          legacyAlertFilter,
-          buildFilter({
-            filters: UNIFIED_ALERT_TYPES_ARRAY,
-            field: 'type',
-            operator: 'or',
-            type: CASE_ATTACHMENT_SAVED_OBJECT,
-          }),
-        ],
-        NodeBuilderOperators.or
-      )
-    : legacyAlertFilter;
+  const alertFilter = combineFilters(
+    [
+      legacyAlertFilter,
+      buildFilter({
+        filters: UNIFIED_ALERT_TYPES_ARRAY,
+        field: 'type',
+        operator: 'or',
+        type: CASE_ATTACHMENT_SAVED_OBJECT,
+      }),
+    ],
+    NodeBuilderOperators.or
+  );
 
   return (await caseService.getAllCaseComments({
     id: idsOfCasesToSync,

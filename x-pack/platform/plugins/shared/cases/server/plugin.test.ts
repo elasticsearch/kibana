@@ -127,49 +127,14 @@ describe('Cases Plugin', () => {
       expect(pluginsSetup.features.registerKibanaFeature).not.toHaveBeenCalled();
     });
 
-    it('should register cases-attachments SO when attachments.enabled is true', async () => {
-      context = coreMock.createPluginInitializerContext<ConfigType>(
-        getConfig({ attachments: { enabled: true } })
-      );
-      const pluginWithAttachmentsEnabled = new CasePlugin(context);
-
-      pluginWithAttachmentsEnabled.setup(coreSetup, pluginsSetup);
+    it('should always register cases-attachments SO', async () => {
+      plugin.setup(coreSetup, pluginsSetup);
 
       const registerTypeCalls = coreSetup.savedObjects.registerType.mock.calls;
       const attachmentSOCall = registerTypeCalls.find(
         (call) => call[0]?.name === CASE_ATTACHMENT_SAVED_OBJECT
       );
       expect(attachmentSOCall).toBeDefined();
-    });
-
-    it('should not register cases-attachments SO when attachments.enabled is false', async () => {
-      context = coreMock.createPluginInitializerContext<ConfigType>(
-        getConfig({ attachments: { enabled: false } })
-      );
-      const pluginWithAttachmentsDisabled = new CasePlugin(context);
-
-      pluginWithAttachmentsDisabled.setup(coreSetup, pluginsSetup);
-
-      const registerTypeCalls = coreSetup.savedObjects.registerType.mock.calls;
-      const attachmentSOCall = registerTypeCalls.find(
-        (call) => call[0]?.name === 'cases-attachments'
-      );
-      expect(attachmentSOCall).toBeUndefined();
-    });
-
-    it('should not register cases-attachments SO when attachments is undefined', async () => {
-      context = coreMock.createPluginInitializerContext<ConfigType>(
-        getConfig({ attachments: undefined } as Partial<ConfigType>)
-      );
-      const pluginWithAttachmentsUndefined = new CasePlugin(context);
-
-      pluginWithAttachmentsUndefined.setup(coreSetup, pluginsSetup);
-
-      const registerTypeCalls = coreSetup.savedObjects.registerType.mock.calls;
-      const attachmentSOCall = registerTypeCalls.find(
-        (call) => call[0]?.name === 'cases-attachments'
-      );
-      expect(attachmentSOCall).toBeUndefined();
     });
   });
 

@@ -23,7 +23,6 @@ export class AlertsCount extends SingleCaseBaseHandler {
       authorization,
       services: { attachmentService },
       logger,
-      config,
     } = this.options.clientArgs;
 
     const { casesClient } = this.options;
@@ -37,8 +36,7 @@ export class AlertsCount extends SingleCaseBaseHandler {
 
       const { filter: authorizationFilter } = await getAttachmentAuthorizationFilter(
         authorization,
-        Operations.getAttachmentMetrics,
-        { isCasesAttachmentsEnabled: config.attachments?.enabled === true }
+        Operations.getAttachmentMetrics
       );
 
       const alertsCount = await attachmentService.countAlertsAttachedToCase({

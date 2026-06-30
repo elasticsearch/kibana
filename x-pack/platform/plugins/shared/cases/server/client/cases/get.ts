@@ -104,9 +104,8 @@ export const getCasesByAlertID = async (
 
     /**
      * The authorization filter above is scoped to `cases-comments` (the operation's saved object
-     * type). When the unified attachments feature flag is on we also need to query
-     * `cases-attachments`, so build an equivalent owner-scoped filter for that type using the
-     * same authorized owners.
+     * type). We also query `cases-attachments`, so build an equivalent owner-scoped filter for
+     * that type using the same authorized owners.
      */
     const unifiedAuthorizationFilter =
       authorizedOwners && authorizedOwners.length > 0

@@ -10,7 +10,7 @@ import { unset } from 'lodash';
 import { fromKueryExpression } from '@kbn/es-query';
 import { savedObjectsClientMock } from '@kbn/core/server/mocks';
 import { SavedObjectsErrorHelpers } from '@kbn/core/server';
-import type { SavedObjectsFindResponse } from '@kbn/core/server';
+import type { SavedObjectsBulkResponse, SavedObjectsFindResponse } from '@kbn/core/server';
 import { loggerMock } from '@kbn/logging-mocks';
 import { AttachmentGetter } from './get';
 import { createAlertAttachment, createFileAttachment, createUserAttachment } from '../test_utils';
@@ -52,24 +52,71 @@ describe('AttachmentService getter', () => {
   describe('bulkGet', () => {
     describe('Decoding', () => {
       it('does not throw when the response has the required fields', async () => {
+        // Production `bulkGet` is called with `[unified, legacy]` per id, so the
+        // mocked response must return matching pairs.
         unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
-          saved_objects: [createUserAttachment()],
+          saved_objects: [
+            createUserAttachment(),
+            { ...createErrorSO(CASE_COMMENT_SAVED_OBJECT), id: '1' },
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
         });
 
         await expect(attachmentGetter.bulkGet(['1'], mode)).resolves.not.toThrow();
       });
 
-      it('does not modified the error saved objects', async () => {
+      it('surfaces the legacy not-found error per id when FF is off and no SO type hits', async () => {
+        const unifiedNotFoundForId1 = {
+          ...createErrorSO(CASE_ATTACHMENT_SAVED_OBJECT),
+          id: '1',
+        };
+        const legacyNotFoundForMissing = {
+          ...createErrorSO(CASE_COMMENT_SAVED_OBJECT),
+          id: 'missing-id',
+        };
+        const unifiedNotFoundForMissing = {
+          ...createErrorSO(CASE_ATTACHMENT_SAVED_OBJECT),
+          id: 'missing-id',
+        };
+        // Production order is interleaved as `[unified, legacy]` per id.
         unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
-          // @ts-expect-error: SO client types are not correct
-          saved_objects: [createUserAttachment(), createErrorSO(CASE_COMMENT_SAVED_OBJECT)],
+          saved_objects: [
+            unifiedNotFoundForId1,
+            createUserAttachment(),
+            unifiedNotFoundForMissing,
+            legacyNotFoundForMissing,
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
         });
 
-        const res = await attachmentGetter.bulkGet(['1', '2'], mode);
+        const res = await attachmentGetter.bulkGet(['1', 'missing-id'], mode);
 
-        expect(res).toStrictEqual({
-          saved_objects: [createUserAttachment(), createErrorSO(CASE_COMMENT_SAVED_OBJECT)],
+        // The success at id 1 is kept; the duplicate not-founds at `missing-id`
+        // collapse to a single error. FF is off, so the surfaced error comes
+        // from the legacy (`cases-comments`) bucket to match where new writes go.
+        expect(res.saved_objects).toEqual([createUserAttachment(), legacyNotFoundForMissing]);
+      });
+
+      it('surfaces the unified not-found error per id when FF is on and no SO type hits', async () => {
+        const attachmentGetterWithFlagOn = createAttachmentGetter(true);
+        const legacyNotFoundForMissing = {
+          ...createErrorSO(CASE_COMMENT_SAVED_OBJECT),
+          id: 'missing-id',
+        };
+        const unifiedNotFoundForMissing = {
+          ...createErrorSO(CASE_ATTACHMENT_SAVED_OBJECT),
+          id: 'missing-id',
+        };
+        unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
+          saved_objects: [
+            unifiedNotFoundForMissing,
+            legacyNotFoundForMissing,
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
         });
+
+        const res = await attachmentGetterWithFlagOn.bulkGet(['missing-id'], mode);
+
+        // FF is on → surfaced error comes from the unified (`cases-attachments`)
+        // bucket since that's where new writes go.
+        expect(res.saved_objects).toEqual([unifiedNotFoundForMissing]);
       });
 
       it('Filters successful result over error', async () => {
@@ -102,7 +149,10 @@ describe('AttachmentService getter', () => {
 
       it('strips excess fields', async () => {
         unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
-          saved_objects: [{ ...createUserAttachment({ foo: 'bar' }) }],
+          saved_objects: [
+            { ...createUserAttachment({ foo: 'bar' }) },
+            { ...createErrorSO(CASE_COMMENT_SAVED_OBJECT), id: '1' },
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
         });
 
         const res = await attachmentGetter.bulkGet(['1'], mode);
@@ -112,6 +162,7 @@ describe('AttachmentService getter', () => {
       it('returns migrated legacy events in unified shape when mode=unified', async () => {
         unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
           saved_objects: [
+            { ...createErrorSO(CASE_ATTACHMENT_SAVED_OBJECT), id: '1' },
             {
               id: '1',
               type: CASE_COMMENT_SAVED_OBJECT,
@@ -133,7 +184,7 @@ describe('AttachmentService getter', () => {
               },
               references: [],
             },
-          ],
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
         });
 
         const res = await attachmentGetter.bulkGet(['1'], 'unified');
@@ -166,7 +217,10 @@ describe('AttachmentService getter', () => {
         });
 
         unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
-          saved_objects: [legacyFile],
+          saved_objects: [
+            { ...createErrorSO(CASE_ATTACHMENT_SAVED_OBJECT), id: '1' },
+            legacyFile,
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
         });
 
         const res = await attachmentGetter.bulkGet(['1'], 'unified');
@@ -199,7 +253,10 @@ describe('AttachmentService getter', () => {
         unset(invalidAttachment, 'attributes.comment');
 
         unsecuredSavedObjectsClient.bulkGet.mockResolvedValue({
-          saved_objects: [invalidAttachment],
+          saved_objects: [
+            invalidAttachment,
+            { ...createErrorSO(CASE_COMMENT_SAVED_OBJECT), id: '1' },
+          ] as unknown as SavedObjectsBulkResponse['saved_objects'],
         });
 
         await expect(
@@ -237,7 +294,7 @@ describe('AttachmentService getter', () => {
         expect(res).toStrictEqual([{ ...createAlertAttachment(), score: 0 }]);
       });
 
-      it('decodes unified event attachments from cases-attachments SO when feature flag is enabled', async () => {
+      it('decodes unified event attachments from cases-attachments SO', async () => {
         const attachmentGetterWithFlagOn = createAttachmentGetter(true);
         const soFindRes = createSOFindResponse([
           {
@@ -297,7 +354,7 @@ describe('AttachmentService getter', () => {
       });
     });
 
-    it('builds an OR group for legacy/unified type filters when attachments FF is enabled', async () => {
+    it('builds an OR group for legacy/unified type filters', async () => {
       const attachmentGetterWithFlagOn = createAttachmentGetter(true);
       mockFinder(createSOFindResponse([]));
 
@@ -486,6 +543,78 @@ describe('AttachmentService getter', () => {
               "type": "cases-comments",
             },
           ],
+          Array [
+            Object {
+              "aggs": Object {
+                "alertIds": Object {
+                  "terms": Object {
+                    "field": "cases-attachments.attributes.attachmentId",
+                    "size": 1000,
+                  },
+                },
+              },
+              "filter": Object {
+                "arguments": Array [
+                  Object {
+                    "arguments": Array [
+                      Object {
+                        "isQuoted": false,
+                        "type": "literal",
+                        "value": "cases-attachments.attributes.type",
+                      },
+                      Object {
+                        "isQuoted": false,
+                        "type": "literal",
+                        "value": "security.alert",
+                      },
+                    ],
+                    "function": "is",
+                    "type": "function",
+                  },
+                  Object {
+                    "arguments": Array [
+                      Object {
+                        "isQuoted": false,
+                        "type": "literal",
+                        "value": "cases-attachments.attributes.type",
+                      },
+                      Object {
+                        "isQuoted": false,
+                        "type": "literal",
+                        "value": "observability.alert",
+                      },
+                    ],
+                    "function": "is",
+                    "type": "function",
+                  },
+                  Object {
+                    "arguments": Array [
+                      Object {
+                        "isQuoted": false,
+                        "type": "literal",
+                        "value": "cases-attachments.attributes.type",
+                      },
+                      Object {
+                        "isQuoted": false,
+                        "type": "literal",
+                        "value": "stack.alert",
+                      },
+                    ],
+                    "function": "is",
+                    "type": "function",
+                  },
+                ],
+                "function": "or",
+                "type": "function",
+              },
+              "hasReference": Object {
+                "id": "test-case",
+                "type": "cases",
+              },
+              "perPage": 0,
+              "type": "cases-attachments",
+            },
+          ],
         ]
       `);
     });
@@ -542,37 +671,10 @@ describe('AttachmentService getter', () => {
         })
       );
     });
-
-    it('does not aggregate on cases-attachments when attachments FF is disabled', async () => {
-      unsecuredSavedObjectsClient.find.mockResolvedValue({
-        aggregations: {
-          legacyEventIds: { buckets: [{ key: 'legacy-event' }] },
-        },
-        saved_objects: [],
-        page: 1,
-        per_page: 0,
-        total: 0,
-      });
-
-      const ids = await attachmentGetter.getAllEventIds({
-        caseId,
-        owner: 'securitySolution',
-      });
-
-      expect(Array.from(ids.values())).toEqual(['legacy-event']);
-      expect(unsecuredSavedObjectsClient.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: CASE_COMMENT_SAVED_OBJECT,
-          aggs: {
-            legacyEventIds: expect.anything(),
-          },
-        })
-      );
-    });
   });
 
   describe('getCaseAttatchmentStats', () => {
-    it('aggregates unified comment and event totals when feature flag is enabled', async () => {
+    it('aggregates unified comment and event totals from cases-attachments', async () => {
       const attachmentGetterWithFlagOn = createAttachmentGetter(true);
       unsecuredSavedObjectsClient.find
         .mockResolvedValueOnce({
@@ -897,23 +999,10 @@ describe('AttachmentService getter', () => {
   });
 
   describe('getAttachmentIdsForCases', () => {
-    it('queries both SO types when feature flag is disabled', async () => {
+    it('always queries both legacy and unified SO types', async () => {
       mockFinder(createSOFindResponse([{ ...createUserAttachment(), score: 0 }]));
 
       await attachmentGetter.getAttachmentIdsForCases({ caseIds: ['case-1'] });
-
-      expect(unsecuredSavedObjectsClient.createPointInTimeFinder).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: [CASE_COMMENT_SAVED_OBJECT, CASE_ATTACHMENT_SAVED_OBJECT],
-        })
-      );
-    });
-
-    it('queries both SO types when feature flag is enabled', async () => {
-      const attachmentGetterWithFlagOn = createAttachmentGetter(true);
-      mockFinder(createSOFindResponse([{ ...createUserAttachment(), score: 0 }]));
-
-      await attachmentGetterWithFlagOn.getAttachmentIdsForCases({ caseIds: ['case-1'] });
 
       expect(unsecuredSavedObjectsClient.createPointInTimeFinder).toHaveBeenCalledWith(
         expect.objectContaining({
