@@ -1,0 +1,1077 @@
+// Canonical PUBLIC team-identity registry for the Kibana repo.
+//
+// This is the single source of truth for team *identity* (id, name, area,
+// GitHub team/label, responsibilities). It is consumed by @kbn/code-owners
+// (see src/teams.ts) and by external tooling.
+//
+// DO NOT add private operational data here (Slack channels, PagerDuty/oncall
+// rotations, notification preferences). Those live in a private overlay repo
+// and are joined to this registry by team "id".
+//
+// Each entry: { id, name, areas?, description?, github: { team?, label? }, responsibilities? }
+// "areas" entries must each be one of @kbn/code-owners CODE_OWNER_AREAS.
+[
+  {
+    "id": "actionable-obs",
+    "name": "Obs UX: Actionable Obs",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/actionable-obs-team",
+      "label": "Team:actionable-obs"
+    },
+    "responsibilities": [
+      "Observability Alerts",
+      "SLOs",
+      "Observability Cases",
+      "Exploratory view",
+      "Synthetics",
+      "Uptime",
+      "User Experience Dashboard"
+    ]
+  },
+  {
+    "id": "apm-ui",
+    "name": "Apm Ui",
+    "github": {
+      "team": "elastic/apm-ui",
+      "label": "Team:obs-ux-infra_services"
+    }
+  },
+  {
+    "id": "ai-infra",
+    "name": "AI Infrastructure",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/appex-ai-infra",
+      "label": "Team:AI Infra"
+    },
+    "responsibilities": [
+      "AI Infrastructure"
+    ]
+  },
+  {
+    "id": "qa",
+    "name": "QA",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/appex-qa",
+      "label": "Team:QA"
+    },
+    "responsibilities": [
+      "Integration testing",
+      "Smoke testing",
+      "Functional testing"
+    ]
+  },
+  {
+    "id": "shared-ux",
+    "name": "Appex SharedUX",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/appex-sharedux",
+      "label": "Team:SharedUX"
+    },
+    "responsibilities": [
+      "Shared UX"
+    ]
+  },
+  {
+    "id": "cloud-services",
+    "name": "Cloud Services",
+    "github": {
+      "team": "elastic/cloud-services"
+    }
+  },
+  {
+    "id": "context-eng",
+    "name": "Context Eng",
+    "github": {
+      "team": "elastic/context-eng"
+    }
+  },
+  {
+    "id": "contextual-security",
+    "name": "Contextual Security",
+    "github": {
+      "team": "elastic/contextual-security"
+    }
+  },
+  {
+    "id": "contextual-security-apps",
+    "name": "Contextual Security Apps",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/contextual-security-apps",
+      "label": "Team:Cloud Security"
+    }
+  },
+  {
+    "id": "security-core-analysis",
+    "name": "Core Analysis",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/core-analysis",
+      "label": "Team:Core Analysis"
+    }
+  },
+  {
+    "id": "docs",
+    "name": "Docs",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/docs"
+    }
+  },
+  {
+    "id": "eui",
+    "name": "Eui",
+    "github": {
+      "team": "elastic/eui"
+    }
+  },
+  {
+    "id": "eui-team",
+    "name": "Eui Team",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/eui-team",
+      "label": "EUI"
+    }
+  },
+  {
+    "id": "experience-docs",
+    "name": "Experience Docs",
+    "github": {
+      "team": "elastic/experience-docs",
+      "label": "Team:Docs"
+    }
+  },
+  {
+    "id": "fleet",
+    "name": "Fleet",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/fleet",
+      "label": "Team:Fleet"
+    }
+  },
+  {
+    "id": "integration-experience",
+    "name": "Security Integrations Integration Experience",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/integration-experience",
+      "label": "Team:Integration-Experience"
+    }
+  },
+  {
+    "id": "jinastic",
+    "name": "Jinastic",
+    "areas": [
+      "search"
+    ],
+    "github": {
+      "team": "elastic/jinastic"
+    }
+  },
+  {
+    "id": "kibana-accessibility",
+    "name": "Kibana Accessibility",
+    "github": {
+      "team": "elastic/kibana-accessibility",
+      "label": "Project:Accessibility"
+    }
+  },
+  {
+    "id": "cases",
+    "name": "Cases",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/kibana-cases",
+      "label": "Team:Cases"
+    },
+    "responsibilities": [
+      "Security Solution specific connectors",
+      "Security Solution Cases"
+    ]
+  },
+  {
+    "id": "kibana-cloud-security-posture",
+    "name": "Contextual Security Apps Team",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/kibana-cloud-security-posture",
+      "label": "Team:Cloud Security"
+    }
+  },
+  {
+    "id": "core",
+    "name": "Core",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-core",
+      "label": "Team:Core"
+    },
+    "responsibilities": [
+      "General Kibana architecture",
+      "Tech stack",
+      "Documentation",
+      "Performance",
+      "Core systems and services (e.g. server API, error handling, Plugin API, logging)",
+      "Middleware",
+      "Configuration (kibana.yml)",
+      "Advanced Settings ",
+      "Cloud Plugin",
+      "Global search",
+      "License-checking",
+      "Notification center",
+      "Saved Objects service & UI",
+      "Telemetry",
+      "User-specific settings",
+      "Migrations"
+    ]
+  },
+  {
+    "id": "discovery",
+    "name": "Data Discovery",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-data-discovery",
+      "label": "Team:DataDiscovery"
+    },
+    "responsibilities": [
+      "Discover",
+      "Graph App"
+    ]
+  },
+  {
+    "id": "design",
+    "name": "Design",
+    "areas": [
+      "platform"
+    ],
+    "description": "UI/UX design for Kibana Analytics and Stack Management (incl. Platform) areas of Kibana",
+    "github": {
+      "team": "elastic/kibana-design",
+      "label": "Team:Platform-Design"
+    }
+  },
+  {
+    "id": "kibana-esql",
+    "name": "Kibana ES|QL Team",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-esql",
+      "label": "Team:ESQL"
+    }
+  },
+  {
+    "id": "localization",
+    "name": "Localization",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-localization",
+      "label": "Project:i18n"
+    },
+    "responsibilities": [
+      "Internationalization (i18n)"
+    ]
+  },
+  {
+    "id": "management",
+    "name": "Kibana Management",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-management",
+      "label": "Team:Kibana Management"
+    },
+    "responsibilities": [
+      "Kibana Management app framework",
+      "Dev Tools",
+      "License Management",
+      "Upgrade Assistant",
+      "Most UIs in Stack Management's \"Data\" group"
+    ]
+  },
+  {
+    "id": "operations",
+    "name": "Operations",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-operations",
+      "label": "Team:Operations"
+    },
+    "responsibilities": [
+      "Node",
+      "upgrades",
+      "packages",
+      "cli",
+      "configs",
+      "Optimizer",
+      "developer experience",
+      "CI / Buildkite"
+    ]
+  },
+  {
+    "id": "kibana-performance-testing",
+    "name": "Kibana Performance Testing",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-performance-testing"
+    }
+  },
+  {
+    "id": "presentation",
+    "name": "Presentation",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-presentation",
+      "label": "Team:Presentation"
+    },
+    "responsibilities": [
+      "Canvas application",
+      "Dashboards (incl. Dashboard only mode)",
+      "Input Controls"
+    ]
+  },
+  {
+    "id": "reporting-services",
+    "name": "Reporting Services",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-reporting-services",
+      "label": "Team:Reporting Services"
+    },
+    "responsibilities": [
+      "Reporting"
+    ]
+  },
+  {
+    "id": "security",
+    "name": "Security",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-security",
+      "label": "Team:Security"
+    },
+    "responsibilities": [
+      "Security features (CSP, Spaces, Encrypted Saved Objects)",
+      "SAML",
+      "OAUTH",
+      "hardening Kibana",
+      "addressing scan results and security@ reports etc",
+      "users/roles UI"
+    ]
+  },
+  {
+    "id": "kibana-tech-leads",
+    "name": "Kibana Tech Leads",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-tech-leads"
+    }
+  },
+  {
+    "id": "kibana-telemetry",
+    "name": "Kibana Telemetry",
+    "github": {
+      "team": "elastic/kibana-telemetry",
+      "label": "Team:Core"
+      
+    }
+  },
+  {
+    "id": "kibana-visualization",
+    "name": "Kibana Visualization",
+    "github": {
+      "team": "elastic/kibana-visualization"
+    }
+  },
+  {
+    "id": "visualizations",
+    "name": "AnalystXP Visualization Team",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/kibana-visualizations",
+      "label": "Team:Visualizations"
+    },
+    "responsibilities": [
+      "Visualize (overall app & individual editors)",
+      "Visualizations (incl. Timelion, TSVB, Vega, ...; excl. map visualization)",
+      "Lens",
+      "Advanced Settings UI  ",
+      "Lens/Saved Search embeddable implementation",
+      "Visualize embeddable implementation",
+      "AppState (legacy)",
+      "Vislib",
+      "Embedding via iFrame"
+    ]
+  },
+  {
+    "id": "logstash",
+    "name": "Logstash",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/logstash",
+      "label": "Team:Logstash"
+    }
+  },
+  {
+    "id": "machine-learning",
+    "name": "Machine Learning",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/ml-ui",
+      "label": ":ml"
+    },
+    "responsibilities": [
+      "Machine Learning UI, Transforms UI"
+    ]
+  },
+  {
+    "id": "obs-ai",
+    "name": "Observability AI",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/nightshift-context-and-research-team",
+      "label": "Team:obs-ai"
+    },
+    "responsibilities": [
+      "Observability AI assistant",
+      "Observability AIOps",
+      "Observability BI and telemetry",
+      "Observability GenAI",
+      "Observability observed asset model"
+    ]
+  },
+  {
+    "id": "obs-cloudnative-monitoring",
+    "name": "Obs Cloudnative Monitoring",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-cloudnative-monitoring"
+    }
+  },
+  {
+    "id": "obs-docs",
+    "name": "Obs Docs",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-docs"
+    }
+  },
+  {
+    "id": "obs-elastic-brain-team",
+    "name": "Observability Brain Team",
+    "github": {
+      "team": "elastic/obs-elastic-brain-team",
+      "label": "Team:obs-elastic-brain-team"
+    }
+  },
+  {
+    "id": "obs-exploration-team",
+    "name": "Obs UX: Obs Exploration",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-exploration-team",
+      "label": "Team:obs-exploration"
+    },
+    "responsibilities": [
+      "Metrics Explorer",
+      "Logs Explorer",
+      "Logs UI",
+      "Log stream embeddable"
+    ]
+  },
+  {
+    "id": "obs-knowledge-team",
+    "name": "Obs Knowledge Team",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-knowledge-team"
+    }
+  },
+  {
+    "id": "obs-onboarding",
+    "name": "Obs UX: Obs Onboarding",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-onboarding-team",
+      "label": "Team:obs-onboarding"
+    },
+    "responsibilities": [
+      "Observability onboarding",
+      "Streams"
+    ]
+  },
+  {
+    "id": "obs-presentation",
+    "name": "Obs UX: Presentation",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-presentation-team",
+      "label": "Team:obs-presentation"
+    },
+    "responsibilities": [
+      "APM",
+      "Hosts",
+      "Infrastructure",
+      "Universal Profiling",
+      "Observability Overview"
+    ]
+  },
+  {
+    "id": "obs-sig-events-team",
+    "name": "Obs Sig Events Team",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-sig-events-team"
+    }
+  },
+  {
+    "id": "obs-ux-management-team",
+    "name": "Obs Ux Management Team",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/obs-ux-management-team",
+      "label": "Team:obs-ux-management"
+    }
+  },
+  {
+    "id": "observability-bi",
+    "name": "Observability Bi",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/observability-bi"
+    }
+  },
+  {
+    "id": "observability-design",
+    "name": "Observability Design",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/observability-design"
+    }
+  },
+  {
+    "id": "observability-ui",
+    "name": "Observability Ui",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/observability-ui"
+    }
+  },
+  {
+    "id": "observablt-robots",
+    "name": "Observablt Robots",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/observablt-robots"
+    }
+  },
+  {
+    "id": "platform-docs",
+    "name": "Platform Docs",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/platform-docs"
+    }
+  },
+  {
+    "id": "response-ops",
+    "name": "ResponseOps",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/response-ops",
+      "label": "Team:ResponseOps"
+    },
+    "responsibilities": [
+      "Rules and Connectors Management UIs",
+      "Alerting Framework",
+      "Actions Plugin",
+      "Task manager",
+      "Event Log",
+      "Stack Rules"
+    ]
+  },
+  {
+    "id": "rna-project-team",
+    "name": "Rules and Alerts Project Team",
+    "areas": [
+      "platform"
+    ],
+    "description": "Rules and Alerts Project Team",
+    "github": {
+      "team": "elastic/rna-project-team",
+      "label": "Team:rna-project"
+    },
+    "responsibilities": [
+      "Rules and Alerts Project"
+    ]
+  },
+  {
+    "id": "search-design",
+    "name": "Search Design",
+    "areas": [
+      "search"
+    ],
+    "github": {
+      "team": "elastic/search-design"
+    }
+  },
+  {
+    "id": "search-inference-team",
+    "name": "Search Inference Team",
+    "github": {
+      "team": "elastic/search-inference-team"
+    }
+  },
+  {
+    "id": "search-kibana",
+    "name": "Search Solution",
+    "areas": [
+      "search",
+      "workplaceai",
+      "vectordb"
+    ],
+    "description": "Enterprise Search & Search Solution",
+    "github": {
+      "team": "elastic/search-kibana",
+      "label": "Team:Search"
+    }
+  },
+  {
+    "id": "security-data-analytics",
+    "name": "Security Data Analytics",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-data-analytics",
+      "label": "Team: SecuritySolution"
+    },
+    "responsibilities": [
+      "Security Solution Telemetry"
+    ]
+  },
+  {
+    "id": "security-defend-workflows",
+    "name": "Security Defend Workflows",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-defend-workflows",
+      "label": "Team:Defend Workflows"
+    }
+  },
+  {
+    "id": "security-design",
+    "name": "Security Design",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-design"
+    }
+  },
+  {
+    "id": "security-detection-engine",
+    "name": "Security Detection Engine",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-detection-engine",
+      "label": "Team:Detection Engine"
+    }
+  },
+  {
+    "id": "security-detection-engineering",
+    "name": "Security Detection Engineering",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-detection-engineering"
+    }
+  },
+  {
+    "id": "security-detection-platform",
+    "name": "Security Detection Platform",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-detection-platform"
+    }
+  },
+  {
+    "id": "security-detection-rule-management",
+    "name": "Security Detection Rule Management",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-detection-rule-management",
+      "label": "Team:Detection Rule Management"
+    }
+  },
+  {
+    "id": "security-engineering-productivity",
+    "name": "Security Engineering Productivity",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-engineering-productivity"
+    }
+  },
+  {
+    "id": "security-entity-analytics",
+    "name": "Security Entity Analytics",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-entity-analytics",
+      "label": "Team:Entity Analytics"
+    },
+    "responsibilities": [
+      "Entity Analytics features in Kibana: Entity Risk Scoring, Privileged User monitoring, Explore pages, Asset Criticality"
+    ]
+  },
+  {
+    "id": "security-genai-research-and-development",
+    "name": "Security Genai Research And Development",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-genai-research-and-development"
+    }
+  },
+  {
+    "id": "security-generative-ai",
+    "name": "Security Generative AI",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-generative-ai",
+      "label": "Team:Security Generative AI"
+    }
+  },
+  {
+    "id": "security-ml",
+    "name": "Security Ml",
+    "github": {
+      "team": "elastic/security-ml"
+    }
+  },
+  {
+    "id": "security-pds-deployment",
+    "name": "Security Pds Deployment",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-pds-deployment"
+    }
+  },
+  {
+    "id": "security-service-integrations",
+    "name": "Security Service Integrations",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-service-integrations"
+    }
+  },
+  {
+    "id": "security-solution",
+    "name": "Security Solution",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-solution",
+      "label": "Team: SecuritySolution"
+    }
+  },
+  {
+    "id": "security-threat-hunting",
+    "name": "Security Threat Hunting",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-threat-hunting",
+      "label": "Team:Threat Hunting"
+    }
+  },
+  {
+    "id": "security-threat-hunting-investigations",
+    "name": "Security Threat Hunting Investigations",
+    "areas": [
+      "security"
+    ],
+    "github": {
+      "team": "elastic/security-threat-hunting-investigations",
+      "label": "Team:Threat Hunting:Investigations"
+    }
+  },
+  {
+    "id": "ski-docs",
+    "name": "Ski Docs",
+    "github": {
+      "team": "elastic/ski-docs"
+    }
+  },
+  {
+    "id": "stack-monitoring",
+    "name": "Stack Monitoring",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/stack-monitoring",
+      "label": "Team:Monitoring"
+    }
+  },
+  {
+    "id": "streams-program",
+    "name": "Streams Program",
+    "areas": [
+      "observability"
+    ],
+    "github": {
+      "team": "elastic/streams-program-team",
+      "label": "Team:streams-program"
+    },
+    "responsibilities": [
+      "Streams"
+    ]
+  },
+  {
+    "id": "workchat-eng",
+    "name": "Agent Builder",
+    "areas": [
+      "workplaceai"
+    ],
+    "github": {
+      "team": "elastic/workchat-eng",
+      "label": "Team:agent-builder"
+    }
+  },
+  {
+    "id": "workflows-eng",
+    "name": "One Workflow Engineering",
+    "areas": [
+      "platform"
+    ],
+    "github": {
+      "team": "elastic/workflows-eng",
+      "label": "Team:One Workflow"
+    }
+  },
+  {
+    "id": "data-vis",
+    "name": "DataVis",
+    "github": {
+      "label": "Team:DataVis"
+    },
+    "responsibilities": [
+      "Elastic Charts library"
+    ]
+  },
+  {
+    "id": "maps",
+    "name": "Maps",
+    "github": {
+      "team": "elastic/kibana-gis",
+      "label": "Team:Geo"
+    },
+    "responsibilities": [
+      "EMS (Elastic Map Service)",
+      "Map data",
+      "Maps (Visualize)",
+      "Region Maps",
+      "Tile Map visualization"
+    ]
+  },
+  {
+    "id": "ingest-management",
+    "name": "Ingest - Logstash",
+    "description": "Logstash Pipeline UI (under Management)",
+    "github": {
+      "team": "elastic/ingest-management",
+      "label": "logstash"
+    }
+  },
+  {
+    "id": "beats",
+    "name": "Ingest - Beats Central Management",
+    "description": "Beats central management UI app",
+    "github": {
+      "team": "elastic/beats",
+      "label": "Beats"
+    }
+  },
+  {
+    "id": "security-threat-hunting-explore",
+    "name": "Security Threat Hunting Explore",
+    "github": {
+      "team": "elastic/security-threat-hunting-explore",
+      "label": "Team:Threat Hunting:Explore"
+    }
+  },
+  {
+    "id": "opex",
+    "name": "Operational Experience",
+    "github": {
+      "team": "elastic/opex",
+      "label": "Team:OpEx"
+    },
+    "responsibilities": [
+      "Operational Experience"
+    ]
+  },
+  {
+    "id": "opex-back",
+    "name": "Operational Experience Backend",
+    "github": {
+      "team": "elastic/opex-back",
+      "label": "Team:OpEx Backend"
+    },
+    "responsibilities": [
+      "Operational Experience Backend"
+    ]
+  },
+  {
+    "id": "opex-front",
+    "name": "Operational Experience Frontend",
+    "github": {
+      "team": "elastic/opex-front",
+      "label": "Team:OpEx Frontend"
+    },
+    "responsibilities": [
+      "Operational Experience Frontend"
+    ]
+  },
+  {
+    "id": "security-scalability",
+    "name": "Security Integrations Scalability Team",
+    "github": {
+      "team": "elastic/security-scalability",
+      "label": "Team:Security-Scalability"
+    }
+  },
+  {
+    "id": "obs-ai-assistant",
+    "name": "Obs AI Assistant",
+    "github": {
+      "team": "elastic/obs-ai-assistant",
+      "label": "Team:Obs AI Assistant"
+    }
+  },
+  {
+    "id": "cloud-ui",
+    "name": "Cloud UI",
+    "github": {
+      "team": "elastic/cloud-ui",
+      "label": "Team:CloudUI"
+    }
+  },
+  {
+    "id": "platform-analytics",
+    "name": "Platform Analytics Team",
+    "github": {
+      "team": "elastic/platform-analytics",
+      "label": "Team:Platform Analytics"
+    }
+  }
+]

@@ -18,6 +18,7 @@ project:
   sourceRoot: src/platform/packages/private/kbn-code-owners
 dependsOn:
   - '@kbn/repo-info'
+  - '@kbn/repo-packages'
   - '@kbn/dev-cli-errors'
   - '@kbn/dev-cli-runner'
 tags:

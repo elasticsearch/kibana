@@ -1424,6 +1424,8 @@ packages/kbn-optimizer/limits.yml
 
 packages/kbn-generate/src/commands/user_activity_actions_docs_command.ts @elastic/kibana-core
 
+src/platform/packages/private/kbn-code-owners/teams.jsonc @elastic/kibana-operations @elastic/kibana-security
+
 src/platform/plugins/private/ftr_apis/server/routes/task_manager @elastic/response-ops
 
 /x-pack/solutions/observability/test/api_integration/apis/metrics_ui @elastic/obs-presentation-team

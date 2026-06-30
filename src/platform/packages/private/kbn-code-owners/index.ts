@@ -20,3 +20,4 @@ export {
   CODE_OWNER_AREA_MAPPINGS,
   findAreaForCodeOwner,
 } from './src/code_owner_areas';
+export { type Team, TEAMS_FILE, getTeams, getTeamById, getTeamByGithubHandle } from './src/teams';
