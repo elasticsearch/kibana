@@ -12,6 +12,19 @@ import type { WebElementWrapper } from '@kbn/ftr-common-functional-ui-services';
 import { Key } from 'selenium-webdriver';
 import { FtrService } from '../ftr_provider_context';
 
+function xpathTextLiteral(text: string) {
+  if (!text.includes("'")) {
+    return `'${text}'`;
+  }
+  if (!text.includes('"')) {
+    return `"${text}"`;
+  }
+  return `concat(${text
+    .split("'")
+    .map((part) => `'${part}'`)
+    .join(', "\'", ')})`;
+}
+
 export class ESQLService extends FtrService {
   private readonly retry = this.ctx.getService('retry');
   private readonly testSubjects = this.ctx.getService('testSubjects');
@@ -271,18 +284,11 @@ export class ESQLService extends FtrService {
       await badge.moveMouseTo();
 
       await this.findService.byCssSelector(`.monaco-hover`);
-      const options = await this.findService.allByCssSelector(`.monaco-hover .hover-row`);
-      let optionToSelect;
-      for (const option of options) {
-        if ((await option.getVisibleText()).includes(optionText)) {
-          optionToSelect = option;
-          break;
-        }
-      }
-
-      if (!optionToSelect) {
-        throw new Error(`Option with text "${optionText}" not found in badge hover.`);
-      }
+      const optionToSelect = await this.findService.byXPath(
+        `//*[contains(concat(' ', normalize-space(@class), ' '), ' monaco-hover ')]//a[normalize-space(.)=${xpathTextLiteral(
+          optionText
+        )}]`
+      );
 
       await optionToSelect.click();
       return true;
