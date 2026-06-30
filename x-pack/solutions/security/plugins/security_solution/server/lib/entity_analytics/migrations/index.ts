@@ -14,8 +14,6 @@ import { updateRiskScoreMappings } from '../risk_engine/migrations/update_risk_s
 import { renameRiskScoreComponentTemplate } from '../risk_engine/migrations/rename_risk_score_component_templates';
 import { cleanupLegacyRiskEngine } from '../risk_engine/migrations/cleanup_previous_risk_engine';
 import { createEventIngestedPipelineInAllNamespaces } from '../utils/event_ingested_pipeline';
-import { updatePrivilegedMonitoringSourceIndex } from '../privilege_monitoring/migrations/update_source_index';
-import { upsertPrivilegedMonitoringEntitySource } from '../privilege_monitoring/migrations/upsert_entity_source';
 import { installPrebuiltWatchlists } from '../watchlists/migrations/install_prebuilt_watchlists';
 import type { ExperimentalFeatures } from '../../../../common/experimental_features';
 
@@ -66,9 +64,6 @@ export const scheduleEntityAnalyticsMigration = async (params: EntityAnalyticsMi
   await scheduleAssetCriticalityEcsCompliancyMigration(paramsWithScopedLogger);
   await renameRiskScoreComponentTemplate(paramsWithScopedLogger);
   await updateRiskScoreMappings(paramsWithScopedLogger);
-  await updatePrivilegedMonitoringSourceIndex(paramsWithScopedLogger);
-  await upsertPrivilegedMonitoringEntitySource(paramsWithScopedLogger);
-
   if (paramsWithScopedLogger.experimentalFeatures?.entityAnalyticsWatchlistEnabled) {
     await installPrebuiltWatchlists(paramsWithScopedLogger);
   }
