@@ -3,12 +3,19 @@
   "compilerOptions": {
     "outDir": "target/types"
   },
-  "include": ["common/**/*", "server/**/*"],
+  "include": ["common/**/*", "public/**/*", "server/**/*"],
   "kbn_references": [
     "@kbn/core",
     "@kbn/agent-builder-server",
+    "@kbn/agent-builder-browser",
+    "@kbn/agent-builder-visualizations",
     "@kbn/agent-builder-visualizations-common",
-    "@kbn/lens-embeddable-utils"
+    "@kbn/lens-embeddable-utils",
+    "@kbn/lens-plugin",
+    "@kbn/data-views-plugin",
+    "@kbn/ui-actions-plugin",
+    "@kbn/unified-search-plugin",
+    "@kbn/embeddable-plugin"
   ],
   "exclude": ["target/**/*"]
 }

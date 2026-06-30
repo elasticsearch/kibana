@@ -78,10 +78,6 @@ jest.mock('./sidebar', () => ({
   clearSidebarRuntimeContext: jest.fn(),
 }));
 
-jest.mock('@kbn/agent-builder-visualizations', () => ({
-  createVisualizationAttachmentDefinition: jest.fn(() => ({})),
-}));
-
 jest.mock('./components/nav_control/lazy_agent_builder_nav_control', () => ({
   AgentBuilderNavControlInitiator: () => null,
 }));

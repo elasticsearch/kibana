@@ -7,7 +7,15 @@
   "plugin": {
     "id": "agentBuilderVisualizations",
     "server": true,
-    "browser": false,
-    "requiredPlugins": ["agentBuilder"]
+    "browser": true,
+    "requiredPlugins": [
+      "agentBuilder",
+      "lens",
+      "dataViews",
+      "uiActions",
+      "unifiedSearch",
+      "embeddable",
+      "presentationUtil"
+    ]
   }
 }
