@@ -62,12 +62,11 @@ export const assetCriticalityCSVUploadV2Route = ({
       ): Promise<IKibanaResponse<InternalUploadAssetCriticalityV2CsvResponse>> => {
         const start = new Date();
         const siemResponse = buildSiemResponse(response);
-        const [coreStart, securityStart] = await getStartServices();
+        const [coreStart] = await getStartServices();
         const telemetry = coreStart.analytics;
 
         try {
           const securitySolution = await context.securitySolution;
-          const spaceId = securitySolution.getSpaceId();
           securitySolution.getAuditLogger()?.log({
             message: 'User attempted to assign many asset criticalities via file upload',
             event: {
@@ -78,8 +77,7 @@ export const assetCriticalityCSVUploadV2Route = ({
             },
           });
 
-          const esClient = coreStart.elasticsearch.client.asScoped(request).asCurrentUser;
-          const entityStoreClient = securityStart.entityStore.createCRUDClient(esClient, spaceId);
+          const entityStoreClient = securitySolution.getEntityStoreUpdateClient();
 
           const fileStream = request.body.file as HapiReadableStream;
           logger.debug(`Parsing asset criticality CSV file ${fileStream.hapi.filename}`);

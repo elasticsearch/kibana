@@ -7,11 +7,11 @@
 
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import type { EntityType } from '@kbn/entity-store/common';
-import type { CRUDClient } from '@kbn/entity-store/server/domain/crud';
+import type { EntityStoreCRUDClient } from '@kbn/entity-store/server';
 import type { HapiReadableStream } from '../../../../../types';
 
 export interface CsvUploadOpts {
-  entityStoreClient: CRUDClient;
+  entityStoreClient: EntityStoreCRUDClient;
   esClient: ElasticsearchClient;
   fileStream: HapiReadableStream;
   logger: Logger;

@@ -48,6 +48,8 @@ dependsOn:
   - '@kbn/licensing-plugin'
   - '@kbn/licensing-types'
   - '@kbn/es-errors'
+  - '@kbn/workflows-extensions'
+  - '@kbn/i18n'
 tags:
   - plugin
   - prod

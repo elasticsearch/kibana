@@ -97,7 +97,8 @@ export class WorkflowEventPublisher {
       const newScore = get(doc, RISK_SCORE_CHANGED_WATCHED_FIELDS[0]);
       if (newScore === undefined) return [];
       const signedDelta = previousScore != null ? newScore - previousScore : null;
-      const direction = signedDelta != null ? (signedDelta >= 0 ? 'increase' : 'decrease') : null;
+      if (signedDelta === 0) return [];
+      const direction = signedDelta != null ? (signedDelta > 0 ? 'increase' : 'decrease') : null;
       const delta = signedDelta != null ? Math.abs(signedDelta) : null;
       return [
         this.emit?.(ENTITY_RISK_SCORE_CHANGED_TRIGGER_ID, {

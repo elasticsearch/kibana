@@ -7,8 +7,8 @@
 
 import type { Logger } from '@kbn/core/server';
 import type { EntityType } from '@kbn/entity-store/common';
-import type { CRUDClient } from '@kbn/entity-store/server/domain/crud';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import type { EntityStoreCRUDClient } from '@kbn/entity-store/server';
 import { MAX_ITERATIONS, LIST_PAGE_SIZE } from './constants';
 import type { MatchedEntity } from './types';
 import { parseEntityType, buildEntityFilters } from './parse';
@@ -23,7 +23,7 @@ interface LookupResult {
  * matching entities in the entity store.
  */
 export const lookupEntitiesForRow = async (
-  entityStoreClient: CRUDClient,
+  entityStoreClient: EntityStoreCRUDClient,
   row: Record<string, unknown>,
   rowIndex: number,
   logger: Logger
@@ -40,7 +40,7 @@ export const lookupEntitiesForRow = async (
  * that match the given filters.
  */
 const paginateEntityStore = async (
-  entityStoreClient: CRUDClient,
+  entityStoreClient: EntityStoreCRUDClient,
   filters: QueryDslQueryContainer[],
   type: EntityType,
   rowIndex: number,
