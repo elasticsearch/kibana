@@ -484,5 +484,125 @@ describe('mustache_renderer', () => {
       `);
       expect(renderMustacheString(logger, '{{a}}', { a: 1, 'a.b': 2 }, 'none')).toEqual('{"b":2}');
     });
+
+    it('combines a dotted key with a nested-object sibling regardless of input order', () => {
+      // A dotted key and a plain nested object sharing a prefix each contribute
+      // their own distinct leaves to the same object, in either order.
+      expect(
+        renderMustacheString(logger, '{{a.b}} {{a.x}}', { 'a.b': 2, a: { x: 1 } }, 'none')
+      ).toEqual('2 1');
+      expect(
+        renderMustacheString(logger, '{{a.b}} {{a.x}}', { a: { x: 1 }, 'a.b': 2 }, 'none')
+      ).toEqual('2 1');
+      // deeply nested prefixes combine the same way
+      expect(
+        renderMustacheString(
+          logger,
+          '{{a.b.c}} {{a.b.d}}',
+          { 'a.b.c': 1, a: { b: { d: 2 } } },
+          'none'
+        )
+      ).toEqual('1 2');
+    });
+
+    it('expands a large flat AAD-style object with many kibana.alert.* dotted keys', () => {
+      const aadAlert: Record<string, unknown> = {
+        'kibana.alert.rule.name': 'My Rule',
+        'kibana.alert.rule.category': 'Metric threshold',
+        'kibana.alert.rule.uuid': 'rule-uuid-123',
+        'kibana.alert.status': 'active',
+        'kibana.alert.uuid': 'alert-uuid-456',
+        'kibana.alert.instance.id': 'host-1',
+        'kibana.alert.start': '2024-01-01T00:00:00.000Z',
+        'kibana.alert.duration.us': 60000000,
+        'kibana.alert.reason': 'CPU usage above threshold',
+        'kibana.space_ids': ['default'],
+      };
+
+      expect(renderMustacheString(logger, '{{kibana.alert.rule.name}}', aadAlert, 'none')).toEqual(
+        'My Rule'
+      );
+
+      expect(
+        renderMustacheString(logger, '{{kibana.alert.instance.id}}', aadAlert, 'none')
+      ).toEqual('host-1');
+
+      expect(
+        renderMustacheString(logger, '{{kibana.alert.duration.us}}', aadAlert, 'none')
+      ).toEqual('60000000');
+
+      // The top-level 'kibana' object renders as JSON via its toString()
+      const rendered = renderMustacheString(logger, '{{kibana}}', aadAlert, 'none');
+      const parsed = JSON.parse(rendered);
+      expect(parsed.alert.rule.name).toEqual('My Rule');
+      expect(parsed.alert.status).toEqual('active');
+    });
+
+    it('does not mutate the caller input object', () => {
+      const input = {
+        a: 1,
+        'a.b': 2,
+        nested: { c: 3 },
+        arr: [1, 2, 3],
+      };
+      const inputCopy = JSON.parse(JSON.stringify(input));
+
+      renderMustacheString(logger, '{{a}}', input, 'none');
+
+      // Original keys must be unchanged (no dotted key deleted, no toString added)
+      expect(Object.keys(input)).toEqual(Object.keys(inputCopy));
+      expect(input['a.b']).toEqual(2);
+      expect(Object.hasOwn(input, 'toString')).toBe(false);
+      expect(Object.hasOwn(input.nested, 'toString')).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((input.arr as any).asJSON).toBeUndefined();
+    });
+
+    it('preserves user-supplied toString key and does not overwrite it with JSON serialiser', () => {
+      const input = { obj: { toString: 'user-value', extra: 42 } };
+      // The user's 'toString' string key should win; it renders as a plain string
+      expect(renderMustacheString(logger, '{{obj.toString}}', input, 'none')).toEqual('user-value');
+    });
+
+    it('does not allow prototype pollution via dotted __proto__ keys', () => {
+      // Dotted keys whose segments include '__proto__' (produced by JSON.parse)
+      // must be dropped, not expanded into a write onto Object.prototype.
+      const maliciousVars = JSON.parse('{"__proto__.polluted":"PWNED","a.__proto__.p":"C"}');
+      renderMustacheString(logger, '{{a}}', maliciousVars, 'none');
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(({} as any).polluted).toBeUndefined();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(({} as any).p).toBeUndefined();
+    });
+
+    it('does not allow prototype pollution via __proto__ keys nested inside a value', () => {
+      // An object value whose own-enumerable keys are literally '__proto__' /
+      // 'constructor' (produced by JSON.parse) must not leak onto Object.prototype
+      // while the tree is expanded.
+      const maliciousVars = JSON.parse(
+        '{"a.b":1,"a":{"__proto__":{"polluted":"PWNED"},"constructor":{"prototype":{"p":"C"}}}}'
+      );
+      renderMustacheString(logger, '{{a.b}}', maliciousVars, 'none');
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(({} as any).polluted).toBeUndefined();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(({} as any).p).toBeUndefined();
+    });
+
+    it('overwrites (does not deep-merge) when a dotted key and a nested object target the same path', () => {
+      // When a nested object and a dotted key resolve to the same path, the last
+      // write wins rather than unioning their sub-keys. Alerting payloads never
+      // produce this collision, so the simpler overwrite is safe.
+      expect(
+        renderMustacheString(
+          logger,
+          '{{a.b.x}}|{{a.b.y}}',
+          { a: { b: { y: 2 } }, 'a.b': { x: 1 } },
+          'none'
+        )
+      ).toEqual('1|');
+    });
   });
 });

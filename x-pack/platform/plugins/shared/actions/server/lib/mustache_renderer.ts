@@ -6,7 +6,8 @@
  */
 
 import Mustache from 'mustache';
-import { isString, isPlainObject, cloneDeepWith, merge } from 'lodash';
+import { isString, isPlainObject, cloneDeepWith } from 'lodash';
+import { setWith } from '@kbn/safer-lodash-set';
 import type { Logger } from '@kbn/core/server';
 import { getMustacheLambdas } from './mustache_lambdas';
 
@@ -101,56 +102,85 @@ export function renderMustacheObject<Params>(
   return result as unknown as Params;
 }
 
-// return variables cloned, with a toString() added to objects
+// Returns a fresh, isolated copy of the variables (the caller's object is not
+// mutated), prepared for mustache rendering:
+//   - dotted keys are expanded into nested objects ({ 'a.b': 2 } → { a: { b: 2 } }),
+//     with sibling dotted keys accumulating into the same object
+//     (kibana.alert.rule.name + kibana.alert.rule.category → one `rule` object)
+//   - every plain object gets a toString() that serialises it to JSON
+//   - every array gets an asJSON()
+//
+// When a dotted key and a nested object resolve to the same path, the last write
+// wins (the leaf is overwritten, not deep-merged). Alerting payloads never mix
+// the dotted and nested representations at the same node, so rendered output is
+// unaffected.
 function augmentObjectVariables(variables: Variables): Variables {
   const result = JSON.parse(JSON.stringify(variables));
-  // convert variables with '.' in the name to objects
-  convertDotVariables(result);
+  expandDottedKeys(result);
   addToStringDeep(result);
   return result;
 }
 
-function convertDotVariables(variables: Variables) {
-  Object.keys(variables).forEach((key) => {
-    if (key.includes('.')) {
-      const obj = buildObject(key, variables[key]);
-      variables = merge(variables, obj);
-    }
-    if (typeof variables[key] === 'object' && variables[key] != null) {
-      convertDotVariables(variables[key] as Variables);
-    }
-  });
+// Path segments that must never be used to index into an object: __proto__,
+// constructor and prototype expose the prototype chain and could be used for
+// prototype pollution. Any dotted key containing one of these is dropped.
+function isUnsafeKey(key: string): boolean {
+  return key === '__proto__' || key === 'constructor' || key === 'prototype';
 }
 
-function buildObject(key: string, value: unknown) {
-  const newObject: Variables = {};
-  let tempObject = newObject;
-  const splits = key.split('.');
-  const length = splits.length - 1;
-  splits.forEach((k, index) => {
-    tempObject[k] = index === length ? value : ({} as unknown);
-    tempObject = tempObject[k] as Variables;
-  });
-  return newObject;
+// setWith path-creation customizer: reuse an existing object/array at a path
+// segment, otherwise create a fresh plain object. Always using plain objects
+// keeps numeric-looking segments as object keys (instead of array indices), and
+// replaces a scalar already sitting at an intermediate path with the object
+// ({ a: 1, 'a.b': 2 } → { a: { b: 2 } }).
+function expandPathSegment(existing: unknown): unknown {
+  return existing !== null && typeof existing === 'object' ? existing : {};
 }
 
+// Expands dotted own-keys ('a.b.c') into nested objects in place, removing the
+// original dotted key. setWith walks into objects a prior sibling already
+// created, so keys sharing a prefix accumulate into one object. Recurses so
+// dotted keys nested inside values are expanded too.
+function expandDottedKeys(node: unknown): void {
+  if (Array.isArray(node)) {
+    node.forEach(expandDottedKeys);
+    return;
+  }
+  if (!isNonNullObject(node)) return;
+
+  // Snapshot keys up front: we mutate `node` (delete dotted keys, add expanded
+  // ones) while iterating.
+  for (const key of Object.keys(node)) {
+    if (!key.includes('.')) continue;
+    const value = node[key];
+    delete node[key];
+    const parts = key.split('.');
+    if (parts.some(isUnsafeKey)) continue;
+    setWith(node, parts, value, expandPathSegment);
+  }
+
+  // Recurse after expansion so dotted keys nested inside values are handled too.
+  for (const key of Object.keys(node)) {
+    expandDottedKeys(node[key]);
+  }
+}
+
+// Recursively attaches a toString() that JSON-serialises each plain object, and
+// an asJSON() to each array (arrays keep their default mustache toString). A
+// user-supplied 'toString' key is left untouched.
 function addToStringDeep(object: unknown): void {
-  // for objects, add a toString method, and then walk
   if (isNonNullObject(object)) {
     if (!Object.hasOwn(object, 'toString')) {
       object.toString = () => JSON.stringify(object);
     }
-    Object.values(object).forEach((value) => addToStringDeep(value));
+    Object.values(object).forEach(addToStringDeep);
+    return;
   }
 
-  // walk arrays, but don't add a toString() as mustache already does something
   if (Array.isArray(object)) {
-    // instead, add an asJSON()
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (object as any).asJSON = () => JSON.stringify(object);
-    object.forEach((element) => addToStringDeep(element));
-    return;
+    object.forEach(addToStringDeep);
   }
 }
 
