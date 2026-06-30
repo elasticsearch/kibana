@@ -681,6 +681,69 @@ interface InstallTransformsParams {
    */
   request?: KibanaRequest;
 }
+type TransformStackEnvironment = 'stateful' | 'serverless';
+
+/**
+ * Drops transform definitions that declare, via `_meta.environments`, that they do
+ * not apply to the current stack flavor (stateful vs serverless). A transform with no
+ * `_meta.environments` installs everywhere — so every existing package is unaffected.
+ *
+ * This lets a package ship environment-specific variants of the same transform — e.g. a
+ * cross-cluster (`*:`) source for stateful and a local-only source for serverless (where
+ * CCS is unsupported and ES rejects remote sources) — and have Fleet install only the
+ * matching one, verbatim, without mutating any asset body at install time.
+ */
+const filterTransformPathsByEnvironment = async (
+  packageInstallContext: PackageInstallContext,
+  transformPaths: string[],
+  logger: Logger
+): Promise<string[]> => {
+  if (transformPaths.length === 0) {
+    return transformPaths;
+  }
+
+  const currentEnvironment: TransformStackEnvironment = appContextService.getCloud()
+    ?.isServerlessEnabled
+    ? 'serverless'
+    : 'stateful';
+
+  const transformAssetsMap: AssetsMap = new Map();
+  await packageInstallContext.archiveIterator.traverseEntries(
+    async (entry) => {
+      if (entry.buffer) {
+        transformAssetsMap.set(entry.path, entry.buffer);
+      }
+    },
+    (path) => transformPaths.includes(path)
+  );
+
+  return transformPaths.filter((path) => {
+    const buffer = transformAssetsMap.get(path);
+    if (!buffer) {
+      return true;
+    }
+    let environments: unknown;
+    try {
+      environments = parse(buffer.toString('utf-8'))?._meta?.environments;
+    } catch (e) {
+      // Non-parseable here (e.g. a fields file) — leave it for the installer to handle.
+      return true;
+    }
+    if (!Array.isArray(environments) || environments.length === 0) {
+      return true;
+    }
+    const appliesToCurrentEnvironment = environments.includes(currentEnvironment);
+    if (!appliesToCurrentEnvironment) {
+      logger.debug(
+        `Skipping transform [${path}] on ${currentEnvironment}: _meta.environments=[${environments.join(
+          ', '
+        )}]`
+      );
+    }
+    return appliesToCurrentEnvironment;
+  });
+};
+
 export const installTransforms = async ({
   packageInstallContext,
   esClient,
@@ -691,7 +754,11 @@ export const installTransforms = async ({
   request,
 }: InstallTransformsParams) => {
   const { paths, packageInfo } = packageInstallContext;
-  const transformPaths = paths.filter((path) => isTransform(path));
+  const transformPaths = await filterTransformPathsByEnvironment(
+    packageInstallContext,
+    paths.filter((path) => isTransform(path)),
+    logger
+  );
 
   const installation = await getInstallation({
     savedObjectsClient,

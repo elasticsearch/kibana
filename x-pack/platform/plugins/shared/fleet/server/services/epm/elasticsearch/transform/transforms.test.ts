@@ -1358,3 +1358,105 @@ _meta:
     expect(esClient.transform.startTransform.mock.calls).toEqual([]);
   });
 });
+
+describe('installTransforms - _meta.environments gating', () => {
+  let esClient: ReturnType<typeof elasticsearchClientMock.createElasticsearchClient>;
+  let savedObjectsClient: jest.Mocked<SavedObjectsClientContract>;
+
+  const VERSION = '9.5.0';
+  const DEST_INDEX = '.metrics-endpoint.metadata_united_default';
+  const PIVOT = { group_by: { 'agent.id': { terms: { field: 'agent.id' } } }, aggs: {} };
+  const STATEFUL_SOURCE = [
+    'metrics-endpoint.metadata_current_default*',
+    '*:metrics-endpoint.metadata_current_default*',
+    '.fleet-agents*',
+  ];
+  const SERVERLESS_SOURCE = ['metrics-endpoint.metadata_current_default*', '.fleet-agents*'];
+
+  const statefulPath = `endpoint-${VERSION}/elasticsearch/transform/metadata_united/default.json`;
+  const serverlessPath = `endpoint-${VERSION}/elasticsearch/transform/metadata_united/serverless.json`;
+  const ungatedPath = `endpoint-${VERSION}/elasticsearch/transform/metadata_current/default.json`;
+
+  const buildTransformJson = (index: string[], environments?: string[]) =>
+    JSON.stringify({
+      source: { index },
+      dest: { index: DEST_INDEX },
+      pivot: PIVOT,
+      _meta: { managed: true, ...(environments ? { environments } : {}) },
+    });
+
+  const installPackage = (assets: Array<[string, string]>) =>
+    installTransforms({
+      packageInstallContext: {
+        packageInfo: { name: 'endpoint', version: VERSION },
+        paths: assets.map(([path]) => path),
+        archiveIterator: createArchiveIteratorFromMap(
+          new Map(assets.map(([path, content]) => [path, Buffer.from(content)]))
+        ),
+      } as unknown as PackageInstallContext,
+      esClient,
+      savedObjectsClient,
+      logger: loggerMock.create(),
+      esReferences: [],
+    });
+
+  const installedTransformIds = () =>
+    esClient.transform.putTransform.mock.calls.map(
+      (call) => (call[0] as { transform_id: string }).transform_id
+    );
+
+  beforeEach(() => {
+    esClient = elasticsearchClientMock.createClusterClient().asInternalUser;
+    savedObjectsClient = savedObjectsClientMock.create();
+    savedObjectsClient.update.mockImplementation(async (type, id, attributes) => ({
+      type: PACKAGES_SAVED_OBJECT_TYPE,
+      id: 'endpoint',
+      attributes,
+      references: [],
+    }));
+    (getInstallation as jest.MockedFunction<typeof getInstallation>).mockReset();
+    (getInstallation as jest.MockedFunction<typeof getInstallation>).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('installs only the serverless variant on serverless', async () => {
+    appContextService.start(createAppContextStartContractMock({}, true));
+
+    await installPackage([
+      [statefulPath, buildTransformJson(STATEFUL_SOURCE, ['stateful'])],
+      [serverlessPath, buildTransformJson(SERVERLESS_SOURCE, ['serverless'])],
+    ]);
+
+    expect(installedTransformIds()).toEqual([`endpoint.metadata_united-serverless-${VERSION}`]);
+    expect(esClient.transform.putTransform).toHaveBeenCalledWith(
+      expect.objectContaining({ source: expect.objectContaining({ index: SERVERLESS_SOURCE }) }),
+      expect.anything()
+    );
+  });
+
+  it('installs only the stateful variant on stateful', async () => {
+    appContextService.start(createAppContextStartContractMock());
+
+    await installPackage([
+      [statefulPath, buildTransformJson(STATEFUL_SOURCE, ['stateful'])],
+      [serverlessPath, buildTransformJson(SERVERLESS_SOURCE, ['serverless'])],
+    ]);
+
+    expect(installedTransformIds()).toEqual([`endpoint.metadata_united-default-${VERSION}`]);
+    expect(esClient.transform.putTransform).toHaveBeenCalledWith(
+      expect.objectContaining({ source: expect.objectContaining({ index: STATEFUL_SOURCE }) }),
+      expect.anything()
+    );
+  });
+
+  it('installs a transform with no _meta.environments everywhere (back-compat)', async () => {
+    appContextService.start(createAppContextStartContractMock({}, true));
+
+    await installPackage([[ungatedPath, buildTransformJson(SERVERLESS_SOURCE)]]);
+
+    expect(installedTransformIds()).toEqual([`endpoint.metadata_current-default-${VERSION}`]);
+  });
+});

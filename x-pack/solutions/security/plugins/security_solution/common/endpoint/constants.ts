@@ -42,8 +42,10 @@ export const METADATA_CURRENT_TRANSFORM_V2 = `${PACKAGE_V2_PREFIX}${metadataTran
 export const METADATA_TRANSFORMS_PATTERN = 'endpoint.metadata_*';
 export const METADATA_TRANSFORMS_PATTERN_V2 = `${PACKAGE_V2_PREFIX}${METADATA_TRANSFORMS_PATTERN}`;
 
-// united metadata transform id
-export const METADATA_UNITED_TRANSFORM = 'endpoint.metadata_united-default';
+// united metadata transform id prefix — variant-agnostic so it matches the deployment
+// variants of the transform (e.g. `-default` on stateful, `-serverless` on serverless).
+// All consumers use it as a prefix (`startsWith` / `${...}*`), never as an exact id.
+export const METADATA_UNITED_TRANSFORM = 'endpoint.metadata_united-';
 export const METADATA_UNITED_TRANSFORM_V2 = `${PACKAGE_V2_PREFIX}${METADATA_UNITED_TRANSFORM}`;
 
 // united metadata transform destination index
