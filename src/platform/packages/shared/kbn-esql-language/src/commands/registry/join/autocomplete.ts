@@ -35,12 +35,10 @@ export async function autocomplete(
   if (!callbacks?.getByType || !callbacks?.getColumnsForQuery) {
     return [];
   }
-  const innerText = query.substring(0, cursorPosition);
-  let commandText: string = innerText;
 
-  if (command.location) {
-    commandText = innerText.slice(command.location.min);
-  }
+  // Temporary during command-context migration: migrated commands are called through
+  // autocomplete preparation, so prepared command text is expected to exist.
+  const commandText = context!.commandSegment!.text;
 
   const position = getPosition(commandText, command, cursorPosition);
 

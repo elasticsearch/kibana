@@ -164,6 +164,10 @@ describe('RERANK Autocomplete', () => {
       await expectRerankSuggestions(buildRerankQuery({ targetField: 'col0' }) + ' ', ['= ']);
     });
 
+    test('suggests assignment operator after target field when earlier command text contains a pipe', async () => {
+      await expectRerankSuggestions('from a | eval x = "a|b" | rerank col0 ', ['= ']);
+    });
+
     test('suggests query literal after target field assignment', async () => {
       await expectRerankSuggestions(
         buildRerankQuery({ targetField: 'col0', targetAssignment: '' }),

@@ -236,6 +236,8 @@ export function findAstPosition(ast: ESQLAstQueryExpression, offset: number) {
 export function getBracketsToClose(text: string) {
   const stack: string[] = [];
 
+  // TODO: Deduplicate this scanner with token-scope delimiter tracking, or remove
+  // it once syntax repair can rely on the scoped parser path.
   // Order is important here, do not change it lightly,
   // we want to consume first `"""` before `"` , as `"`'s can be found inside `"""` strings,
   // and not the other way around.

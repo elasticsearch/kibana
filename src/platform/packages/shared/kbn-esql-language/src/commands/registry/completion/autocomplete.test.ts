@@ -86,6 +86,14 @@ describe('COMPLETION Autocomplete', () => {
     );
   });
 
+  it('suggests PROMPT_SUGGESTIONS when earlier command text contains a pipe', async () => {
+    await completionExpectSuggestions(
+      `FROM a | EVAL x = "a|b" | COMPLETION `,
+      ['"${0:Your prompt to the LLM.}"', ...PROMPT_SUGGESTIONS],
+      mockCallbacks
+    );
+  });
+
   it('suggests PROMPT_SUGGESTIONS when typing a column', async () => {
     await completionExpectSuggestions(
       `FROM a | COMPLETION kubernetes.some/`,

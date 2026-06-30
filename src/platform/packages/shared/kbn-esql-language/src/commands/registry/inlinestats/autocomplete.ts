@@ -24,8 +24,9 @@ export async function autocomplete(
     return [];
   }
 
-  const innerText = query.substring(0, cursorPosition);
-  const commandText = innerText.slice(command.location.min);
+  // Temporary during command-context migration: migrated commands are called through
+  // autocomplete preparation, so prepared command text is expected to exist.
+  const commandText = context!.commandSegment!.text;
 
   const currentInput = commandText.toUpperCase();
   const afterInlineMatch = currentInput.match(/^INLINE\s+(.*)$/);

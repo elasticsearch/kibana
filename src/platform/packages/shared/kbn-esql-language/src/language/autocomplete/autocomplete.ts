@@ -28,6 +28,7 @@ import type {
 } from '../../commands/registry/types';
 import { getControlSuggestionIfSupported } from '../../commands/definitions/utils';
 import { getAutocompleteCursorContext } from '../shared/parse_for_autocomplete_query';
+import type { CommandSegment } from '../shared/resolve_command_segment';
 import { getFromCommandHelper } from '../shared/resources_helpers';
 import { getCommandContext } from './get_command_context';
 import { mapRecommendedQueriesFromExtensions } from './recommended_queries_helpers';
@@ -63,7 +64,10 @@ export async function suggest(
   offset: number,
   resourceRetriever?: ESQLCallbacks
 ): Promise<ISuggestionItem[]> {
-  const { innerText, root, astContext, tokens } = getAutocompleteCursorContext(fullText, offset);
+  const { innerText, root, astContext, tokens, commandSegment } = getAutocompleteCursorContext(
+    fullText,
+    offset
+  );
 
   if (astContext.type === 'comment') {
     return [];
@@ -242,6 +246,7 @@ export async function suggest(
       fullText,
       commands,
       astContext,
+      commandSegment,
       getColumnsByType,
       getColumnMapOnce,
       resourceRetriever,
@@ -276,6 +281,7 @@ async function getSuggestionsWithinCommandExpression(
     containingFunction?: ESQLFunction;
     isCursorInSubquery: boolean;
   },
+  commandSegment: CommandSegment,
   getColumnsByType: GetColumnsByTypeFn,
   getColumnMap: GetColumnMapFn,
   callbacks?: ESQLCallbacks,
@@ -320,6 +326,7 @@ async function getSuggestionsWithinCommandExpression(
   const context = {
     ...references,
     ...additionalCommandContext,
+    commandSegment,
     activeProduct: callbacks?.getActiveProduct?.(),
     subquerySupport,
     isCursorInSubquery: astContext.isCursorInSubquery,

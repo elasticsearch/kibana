@@ -104,11 +104,13 @@ export async function autocomplete(
   context?: ICommandContext,
   cursorPosition: number = query.length
 ): Promise<ISuggestionItem[]> {
-  const innerText = query.substring(0, cursorPosition);
-  const hasTypedFragment = endsWithNonWhitespace(innerText);
+  // Temporary during command-context migration: migrated commands are called through
+  // autocomplete preparation, so prepared command text is expected to exist.
+  const commandText = context!.commandSegment!.text;
+  const hasTypedFragment = endsWithNonWhitespace(commandText);
   const { prompt } = command as ESQLAstCompletionCommand;
   const isExistingColumn = columnExists(prompt?.text, context);
-  const { position, expressionRoot } = getPosition(innerText, command, isExistingColumn);
+  const { position, expressionRoot } = getPosition(commandText, command, isExistingColumn);
 
   if (!callbacks?.getByType) {
     return [];
@@ -165,7 +167,7 @@ export async function autocomplete(
       return [assignCompletionItem];
 
     case CompletionPosition.EXPRESSION: {
-      if (withinQuotes(innerText)) {
+      if (withinQuotes(commandText)) {
         return [];
       }
 
@@ -206,7 +208,7 @@ export async function autocomplete(
         },
       };
 
-      return getCommandMapExpressionSuggestions(innerText, availableParameters);
+      return getCommandMapExpressionSuggestions(commandText, availableParameters);
 
     case CompletionPosition.AFTER_COMMAND:
       return newLineAndPipeCompleteItems;

@@ -18,9 +18,9 @@ import type { EsqlFieldType } from '@kbn/esql-types';
 import type { ESQLAstAllCommands } from '@elastic/esql/types';
 import type {
   ICommandCallbacks,
+  ICommandContext,
   ISuggestionItem,
   Location,
-  ESQLColumnData,
 } from '../../commands/registry/types';
 import { aggFunctionDefinitions } from '../../commands/definitions/generated/aggregation_functions';
 import { timeSeriesAggFunctionDefinitions } from '../../commands/definitions/generated/time_series_agg_functions';
@@ -79,15 +79,16 @@ export const suggest = async (
     arg0: string,
     arg1: ESQLAstAllCommands,
     arg2: ICommandCallbacks,
-    arg3: {
-      columns: Map<string, ESQLColumnData>;
-    },
+    arg3: ICommandContext,
     arg4?: number
   ) => Promise<ISuggestionItem[]>,
   offset?: number
 ): Promise<ISuggestionItem[]> => {
   const cursorPosition = offset ?? query.length;
-  const { innerText, root, command, tokens } = findAutocompleteAstPosition(query, cursorPosition);
+  const { innerText, root, command, tokens, commandSegment } = findAutocompleteAstPosition(
+    query,
+    cursorPosition
+  );
   const headerConstruction = root?.header?.find((cmd) => cmd.name === commandName);
   const targetCommand = headerConstruction ?? command;
 
@@ -95,7 +96,7 @@ export const suggest = async (
     throw new Error(`${commandName.toUpperCase()} command not found in the parsed query`);
   }
 
-  const contextWithRoot = { ...context, rootAst: root };
+  const contextWithRoot = { ...context, rootAst: root, commandSegment };
 
   const suggestions = await autocomplete(
     query,
@@ -121,9 +122,7 @@ export const expectSuggestions = async (
     arg0: string,
     arg1: ESQLAstAllCommands,
     arg2: ICommandCallbacks,
-    arg3: {
-      columns: Map<string, ESQLColumnData>;
-    },
+    arg3: ICommandContext,
     arg4?: number
   ) => Promise<ISuggestionItem[]>,
   offset?: number

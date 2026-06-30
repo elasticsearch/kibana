@@ -202,6 +202,10 @@ describe('FORK Autocomplete', () => {
             'FROM a | FORK (SORT ',
             EXPECTED_FIELD_AND_FUNCTION_SUGGESTIONS
           );
+          await forkExpectSuggestions(
+            'FROM a | FORK (LIMIT 1) (SORT ',
+            EXPECTED_FIELD_AND_FUNCTION_SUGGESTIONS
+          );
           await forkExpectSuggestions('FROM a | FORK (SORT integerField ', [
             'ASC',
             'DESC',

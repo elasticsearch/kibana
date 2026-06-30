@@ -38,8 +38,10 @@ export async function autocomplete(
   context?: ICommandContext,
   cursorPosition?: number
 ): Promise<ISuggestionItem[]> {
-  const innerText = query.substring(0, cursorPosition);
-  const pos = getPosition(innerText, command);
+  // Temporary during command-context migration: migrated commands are called through
+  // autocomplete preparation, so prepared command text is expected to exist.
+  const commandText = context!.commandSegment!.text;
+  const pos = getPosition(commandText, command);
   const policies = context?.policies ?? new Map<string, ESQLPolicy>();
   const columnMap = context?.columns ?? new Map<string, ESQLColumnData>();
 
@@ -128,7 +130,7 @@ export async function autocomplete(
         return [];
       }
 
-      const word = findPreviousWord(innerText);
+      const word = findPreviousWord(commandText);
       if (policyMetadata.enrichFields.includes(unescapeColumnName(word))) {
         // complete field name
         return [...newLineAndPipeCompleteItems, withAutoSuggest(commaCompleteItem)];

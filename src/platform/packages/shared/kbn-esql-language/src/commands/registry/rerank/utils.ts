@@ -32,9 +32,8 @@ export enum CaretPosition {
 /**
  * Determines caret position in RERANK command
  */
-export function getPosition(query: string, command: ESQLAstAllCommands): CaretPosition {
+export function getPosition(commandText: string, command: ESQLAstAllCommands): CaretPosition {
   const rerankCommand = command as ESQLAstRerankCommand;
-  const innerText = query.substring(rerankCommand.location.min);
   const onArg = rerankCommand.args[1];
   const withArg = rerankCommand.args[2];
 
@@ -67,7 +66,7 @@ export function getPosition(query: string, command: ESQLAstAllCommands): CaretPo
     return CaretPosition.RERANK_AFTER_TARGET_ASSIGNMENT;
   }
 
-  if (isAfterPotentialTargetFieldWithSpace(innerText)) {
+  if (isAfterPotentialTargetFieldWithSpace(commandText)) {
     return CaretPosition.RERANK_AFTER_TARGET_FIELD;
   }
 

@@ -38,13 +38,15 @@ export async function autocomplete(
   cursorPosition: number = query.length
 ): Promise<ISuggestionItem[]> {
   const rerankCommand = command as ESQLAstRerankCommand;
-  const innerText = query.substring(0, cursorPosition);
+  // Temporary during command-context migration: migrated commands are called through
+  // autocomplete preparation, so prepared command text is expected to exist.
+  const commandText = context!.commandSegment!.text;
 
   if (!callbacks?.getByType) {
     return [];
   }
 
-  const position = getPosition(innerText, command);
+  const position = getPosition(commandText, command);
 
   switch (position) {
     case CaretPosition.RERANK_KEYWORD: {
@@ -89,7 +91,7 @@ export async function autocomplete(
     }
 
     case CaretPosition.ON_KEYWORD: {
-      if (withinQuotes(innerText)) {
+      if (withinQuotes(commandText)) {
         return [];
       }
 
@@ -131,7 +133,7 @@ export async function autocomplete(
         },
       };
 
-      return getCommandMapExpressionSuggestions(innerText, availableParameters);
+      return getCommandMapExpressionSuggestions(commandText, availableParameters);
     }
 
     case CaretPosition.AFTER_COMMAND: {

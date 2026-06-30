@@ -100,4 +100,41 @@ describe('getAutocompleteCursorContext', () => {
 
     expect(astContext.type).toBe('expression');
   });
+
+  it('resolves a new command context after a real pipe when an earlier string contains a pipe', () => {
+    const query = 'FROM employees | EVAL x = "a|b" | ';
+    const { astContext, commandSegment } = getAutocompleteCursorContext(query, query.length);
+
+    expect(astContext.type).toBe('newCommand');
+    expect(commandSegment).toEqual({
+      start: query.length,
+      end: query.length,
+      text: '',
+    });
+  });
+
+  it.each([
+    ['fork branch', 'FROM employees | FORK (WHERE age > 30 | SORT salary)', 'SORT '],
+    [
+      'fork branch without in-branch pipe',
+      'FROM employees | FORK (LIMIT 1) (SORT salary)',
+      'SORT ',
+    ],
+    ['subquery', 'FROM employees, (FROM departments | WHERE name == "IT")', 'WHERE '],
+    [
+      'ENRICH',
+      'FROM employees | ENRICH policy WITH new_department = department',
+      'ENRICH policy WITH new_department = department',
+    ],
+  ])('returns command-local text before the cursor for %s', (_, query, textBeforeCursor) => {
+    const start = query.indexOf(textBeforeCursor);
+    const offset = start + textBeforeCursor.length;
+    const { commandSegment } = parseAutocompleteQuery(query, offset);
+
+    expect(commandSegment).toEqual({
+      start,
+      end: offset,
+      text: textBeforeCursor,
+    });
+  });
 });
