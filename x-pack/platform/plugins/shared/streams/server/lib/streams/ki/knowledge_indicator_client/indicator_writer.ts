@@ -6,7 +6,7 @@
  */
 
 import type { Logger } from '@kbn/core/server';
-import { isComputedFeature } from '@kbn/streams-schema';
+import { isComputedFeature } from '@kbn/significant-events-schema';
 import { isConditionComplete } from '@kbn/streamlang';
 import type { StoredFeatureKnowledgeIndicator, StoredKnowledgeIndicator } from '../data_stream';
 import { combineWhere, inPredicate, IS_NOT_DELETED } from '../esql_helpers';

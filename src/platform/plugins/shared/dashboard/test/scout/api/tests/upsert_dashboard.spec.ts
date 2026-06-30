@@ -220,45 +220,44 @@ apiTest.describe('dashboards - upsert', { tag: tags.deploymentAgnostic }, () => 
     }
   );
 
-  apiTest(
-    'authorization - does not apply state changes when access mode update fails',
-    async ({ apiClient }) => {
-      const initial = await apiClient.get(`${DASHBOARD_API_PATH}/${TEST_DASHBOARD_ID}`, {
-        headers: {
-          ...COMMON_HEADERS,
-          ...editorCredentials.apiKeyHeader,
-        },
-        responseType: 'json',
-      });
-      expect(initial).toHaveStatusCode(200);
+  apiTest('does not apply state changes when access mode update fails', async ({ apiClient }) => {
+    const initial = await apiClient.get(`${DASHBOARD_API_PATH}/${TEST_DASHBOARD_ID}`, {
+      headers: {
+        ...COMMON_HEADERS,
+        ...editorCredentials.apiKeyHeader,
+      },
+      responseType: 'json',
+    });
+    expect(initial).toHaveStatusCode(200);
 
-      const forbidden = await apiClient.put(`${DASHBOARD_API_PATH}/${TEST_DASHBOARD_ID}`, {
-        headers: {
-          ...COMMON_HEADERS,
-          ...viewerCredentials.apiKeyHeader,
+    const accessModeFailure = await apiClient.put(`${DASHBOARD_API_PATH}/${TEST_DASHBOARD_ID}`, {
+      headers: {
+        ...COMMON_HEADERS,
+        ...editorCredentials.apiKeyHeader,
+      },
+      body: {
+        title: 'Refresh Requests (SHOULD NOT APPLY)',
+        access_control: {
+          access_mode: 'write_restricted',
         },
-        body: {
-          title: 'Refresh Requests (SHOULD NOT APPLY)',
-          access_control: {
-            access_mode: 'write_restricted',
-          },
-        },
-        responseType: 'json',
-      });
+      },
+      responseType: 'json',
+    });
+    // non-interactive users can not set access_mode, saved objects client treats this as an unexpected error
+    // so we expect a 500.
+    // https://github.com/elastic/kibana/issues/227021
+    expect(accessModeFailure).toHaveStatusCode(500);
 
-      expect(forbidden).toHaveStatusCode(400);
-
-      const after = await apiClient.get(`${DASHBOARD_API_PATH}/${TEST_DASHBOARD_ID}`, {
-        headers: {
-          ...COMMON_HEADERS,
-          ...editorCredentials.apiKeyHeader,
-        },
-        responseType: 'json',
-      });
-      expect(after).toHaveStatusCode(200);
-      expect(after.body.data.title).toBe(initial.body.data.title);
-    }
-  );
+    const after = await apiClient.get(`${DASHBOARD_API_PATH}/${TEST_DASHBOARD_ID}`, {
+      headers: {
+        ...COMMON_HEADERS,
+        ...editorCredentials.apiKeyHeader,
+      },
+      responseType: 'json',
+    });
+    expect(after).toHaveStatusCode(200);
+    expect(after.body.data.title).toBe(initial.body.data.title);
+  });
 
   apiTest(
     'authorization - non-superuser cannot change access mode for a dashboard they do not own',

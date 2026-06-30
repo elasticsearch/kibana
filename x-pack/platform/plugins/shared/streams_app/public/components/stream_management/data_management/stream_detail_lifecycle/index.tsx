@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EuiFlexGroup, EuiHorizontalRule } from '@elastic/eui';
 import type { Streams } from '@kbn/streams-schema';
 import { usePerformanceContext } from '@kbn/ebt-tools';
@@ -25,6 +25,8 @@ export function StreamDetailLifecycle({
 }) {
   const { timeState } = useTimefilter();
   const data = useDataStreamStats({ definition, timeState });
+  const [isSuccessfulFlyoutOpen, setIsSuccessfulFlyoutOpen] = useState(false);
+  const [isFailureStoreFlyoutOpen, setIsFailureStoreFlyoutOpen] = useState(false);
 
   const { onPageReady } = usePerformanceContext();
 
@@ -66,12 +68,16 @@ export function StreamDetailLifecycle({
         definition={definition}
         refreshDefinition={refreshDefinition}
         data={data}
+        isExternalFlyoutOpen={isFailureStoreFlyoutOpen}
+        onFlyoutOpenChange={setIsSuccessfulFlyoutOpen}
       />
       <EuiHorizontalRule margin="m" />
       <StreamDetailFailureStore
         definition={definition}
         data={data}
         refreshDefinition={refreshDefinition}
+        isExternalFlyoutOpen={isSuccessfulFlyoutOpen}
+        onFlyoutOpenChange={setIsFailureStoreFlyoutOpen}
       />
     </EuiFlexGroup>
   );

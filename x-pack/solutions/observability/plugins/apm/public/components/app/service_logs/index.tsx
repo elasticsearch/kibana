@@ -8,7 +8,10 @@
 import React, { useMemo } from 'react';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { fromKueryExpression, toElasticsearchQuery } from '@kbn/es-query';
-import { ENVIRONMENT_ALL } from '../../../../common/environment_filter_values';
+import {
+  ENVIRONMENT_ALL,
+  ENVIRONMENT_NOT_DEFINED,
+} from '../../../../common/environment_filter_values';
 import { CONTAINER_ID, SERVICE_ENVIRONMENT, SERVICE_NAME } from '../../../../common/es_fields/apm';
 import { useApmServiceContext } from '../../../context/apm_service/use_apm_service_context';
 import { useKibana } from '../../../context/kibana_context/use_kibana';
@@ -71,6 +74,11 @@ export function ServiceLogs() {
     }
   }, [kuery]);
 
+  const logsOverviewKey = useMemo(
+    () => JSON.stringify([documentLogFilters, internalLogFilters]),
+    [documentLogFilters, internalLogFilters]
+  );
+
   if (
     status === FETCH_STATUS.SUCCESS ||
     (status === FETCH_STATUS.LOADING &&
@@ -78,6 +86,7 @@ export function ServiceLogs() {
   ) {
     return (
       <logsShared.LogsOverview
+        key={logsOverviewKey}
         documentFilters={documentLogFilters}
         nonHighlightingFilters={internalLogFilters}
         timeRange={timeRange}
@@ -128,6 +137,21 @@ export function getServiceShouldClauses({
 
   if (environment === ENVIRONMENT_ALL.value) {
     return [serviceNameFilter];
+  } else if (environment === ENVIRONMENT_NOT_DEFINED.value) {
+    return [
+      {
+        bool: {
+          filter: [serviceNameFilter],
+          must_not: [
+            {
+              exists: {
+                field: SERVICE_ENVIRONMENT,
+              },
+            },
+          ],
+        },
+      },
+    ];
   } else {
     return [
       {
@@ -137,18 +161,6 @@ export function getServiceShouldClauses({
             {
               term: {
                 [SERVICE_ENVIRONMENT]: environment,
-              },
-            },
-          ],
-        },
-      },
-      {
-        bool: {
-          filter: [serviceNameFilter],
-          must_not: [
-            {
-              exists: {
-                field: SERVICE_ENVIRONMENT,
               },
             },
           ],

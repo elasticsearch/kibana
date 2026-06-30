@@ -88,6 +88,11 @@ const stateSchemaV1 = schema.object({
   alerts_index_size_bytes: schema.maybe(schema.nullable(schema.number())),
 });
 
+const stateSchemaV2 = stateSchemaV1.extends({
+  count_agent_builder_assisted: schema.maybe(schema.number()),
+  action_policies_count_agent_builder_assisted: schema.maybe(schema.number()),
+});
+
 export const stateSchemaByVersion = {
   1: {
     up: (state: Record<string, unknown>) => ({
@@ -132,9 +137,18 @@ export const stateSchemaByVersion = {
     }),
     schema: stateSchemaV1,
   },
+  2: {
+    up: (state: Record<string, unknown>) => ({
+      ...state,
+      count_agent_builder_assisted: state.count_agent_builder_assisted ?? undefined,
+      action_policies_count_agent_builder_assisted:
+        state.action_policies_count_agent_builder_assisted ?? undefined,
+    }),
+    schema: stateSchemaV2,
+  },
 };
 
-const latestTaskStateSchema = stateSchemaByVersion[1].schema;
+const latestTaskStateSchema = stateSchemaByVersion[2].schema;
 export type LatestTaskStateSchema = TypeOf<typeof latestTaskStateSchema>;
 
 export const emptyState: LatestTaskStateSchema = {

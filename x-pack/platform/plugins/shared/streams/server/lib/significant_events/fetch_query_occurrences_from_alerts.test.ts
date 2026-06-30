@@ -8,7 +8,7 @@
 import { errors } from '@elastic/elasticsearch';
 import type { TransportResult } from '@elastic/elasticsearch';
 import type { IScopedClusterClient } from '@kbn/core/server';
-import type { QueryLink } from '@kbn/streams-schema';
+import type { QueryLink } from '@kbn/significant-events-schema';
 import { SecurityError } from '../streams/errors/security_error';
 import type { KnowledgeIndicatorClient } from '../streams/ki';
 import {

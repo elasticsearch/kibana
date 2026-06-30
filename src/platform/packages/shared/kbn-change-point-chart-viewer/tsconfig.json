@@ -20,6 +20,7 @@
     "@kbn/unified-histogram",
     "@kbn/embeddable-plugin",
     "@kbn/esql-types",
-    "@kbn/esql-language"
+    "@kbn/esql-language",
+    "@kbn/field-types"
   ]
 }

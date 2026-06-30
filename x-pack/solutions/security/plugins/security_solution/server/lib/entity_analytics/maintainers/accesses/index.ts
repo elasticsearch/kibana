@@ -23,6 +23,7 @@ export const accessesFrequentlyMaintainer: RegisterEntityMaintainerConfig = {
     logger,
     status,
     crudClient,
+    entityMetadataClient,
     abortController,
     telemetry,
   }) => {
@@ -40,11 +41,15 @@ export const accessesFrequentlyMaintainer: RegisterEntityMaintainerConfig = {
       logger,
       namespace,
       crudClient,
+      entityMetadataClient,
       integrations: ACCESSES_INTEGRATION_RELATIONSHIP_CONFIGS,
       abortController,
       telemetryCollector: collector,
     });
 
+    logger.info(
+      `Completed run: ${result.totalBuckets} buckets, ${result.totalRecords} records, ${result.totalWritten} entities written, ${result.totalMetadataDocsApplied} metadata docs appended`
+    );
     telemetry.report({
       iterations: result.totalIterations,
       truncated: result.truncated,
@@ -55,6 +60,7 @@ export const accessesFrequentlyMaintainer: RegisterEntityMaintainerConfig = {
         applied: result.totalWritten,
         droppedNotInStore: result.totalNotFound,
         failed: result.totalWriteErrors,
+        metadataDocsApplied: result.totalMetadataDocsApplied,
       },
       sources: collector.sources,
       ...(Object.keys(collector.relationshipTypeApplied).length > 0 && {
@@ -66,7 +72,7 @@ export const accessesFrequentlyMaintainer: RegisterEntityMaintainerConfig = {
     });
 
     logger.info(
-      `Completed run: ${result.totalBuckets} buckets, ${result.totalRecords} records, ${result.totalWritten} entities written, ${result.totalDroppedTargets} targets dropped`
+      `Completed run: ${result.totalBuckets} buckets, ${result.totalRecords} records, ${result.totalWritten} entities written, ${result.totalDroppedTargets} targets dropped, ${result.totalMetadataDocsApplied} metadata docs appended`
     );
     return result;
   },

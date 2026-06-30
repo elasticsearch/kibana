@@ -34,6 +34,11 @@ interface StoreUsageEventPayload {
   namespace: string;
 }
 
+interface MetadataUsageEventPayload {
+  namespace: string;
+  docCount: number;
+}
+
 interface EntityStoreHealthComponentPayload {
   id: string;
   resource: string;
@@ -79,6 +84,8 @@ interface EntityMaintainerRunSummaryFunnel {
   skipped?: number;
   /** Non-404 write errors */
   failed: number;
+  /** Relationship metadata docs successfully appended to the metadata datastream; omitted when not applicable */
+  metadataDocsApplied?: number;
 }
 
 interface EntityMaintainerRunSummarySource {
@@ -239,6 +246,24 @@ export const ENTITY_STORE_USAGE_EVENT = {
   },
 } as const satisfies EventTypeOpts<StoreUsageEventPayload>;
 
+export const ENTITY_STORE_METADATA_USAGE_EVENT = {
+  eventType: 'entity_store_metadata_usage',
+  schema: {
+    namespace: {
+      type: 'keyword',
+      _meta: {
+        description: 'Namespace where the metadata datastream lives (e.g. "default")',
+      },
+    },
+    docCount: {
+      type: 'long',
+      _meta: {
+        description: 'Total documents in the entity metadata datastream (.entities.v2.metadata.*)',
+      },
+    },
+  },
+} as const satisfies EventTypeOpts<MetadataUsageEventPayload>;
+
 export const ENTITY_MAINTAINER_EVENT = {
   eventType: 'entity_store_entity_maintainer',
   schema: {
@@ -376,6 +401,14 @@ export const ENTITY_MAINTAINER_RUN_SUMMARY_EVENT = {
         failed: {
           type: 'long',
           _meta: { description: 'Non-404 write errors' },
+        },
+        metadataDocsApplied: {
+          type: 'long',
+          _meta: {
+            optional: true,
+            description:
+              'Relationship metadata docs successfully appended to the metadata datastream; omitted when not applicable',
+          },
         },
       },
     },
@@ -550,6 +583,7 @@ const events = [
   ENTITY_STORE_INITIALIZATION_FAILURE_EVENT,
   ENTITY_STORE_DELETION_EVENT,
   ENTITY_STORE_USAGE_EVENT,
+  ENTITY_STORE_METADATA_USAGE_EVENT,
   ENTITY_STORE_HEALTH_REPORT_EVENT,
   ENTITY_MAINTAINER_EVENT,
   ENTITY_MAINTAINER_RUN_SUMMARY_EVENT,
@@ -567,6 +601,7 @@ interface TelemetryEventMap {
   [ENTITY_STORE_DELETION_EVENT.eventType]: DeletionEvent;
   [ENTITY_STORE_INITIALIZATION_FAILURE_EVENT.eventType]: InitializationFailureEvent;
   [ENTITY_STORE_USAGE_EVENT.eventType]: StoreUsageEventPayload;
+  [ENTITY_STORE_METADATA_USAGE_EVENT.eventType]: MetadataUsageEventPayload;
   [ENTITY_STORE_HEALTH_REPORT_EVENT.eventType]: EntityStoreHealthReportPayload;
   [ENTITY_MAINTAINER_EVENT.eventType]: EntityMaintainerEvent;
   [ENTITY_MAINTAINER_RUN_SUMMARY_EVENT.eventType]: EntityMaintainerRunSummaryEvent;

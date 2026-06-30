@@ -195,7 +195,7 @@ components:
           type: number
           minimum: 0
           maximum: 100
-          description: Maximum record_score (inclusive); omit to return all scores up to 100
+          description: Maximum record_score (exclusive); omit to return all scores up to 100
         job_ids:
           type: array
           maxItems: 200
@@ -227,6 +227,7 @@ components:
     AnomalySummaryEntry:
       type: object
       required:
+        - recordId
         - jobId
         - detectorIndex
         - detectorFunction
@@ -243,6 +244,10 @@ components:
         - typical
         - baselineValues
       properties:
+        recordId:
+          type: string
+          maxLength: 200
+          description: Elasticsearch document ID of the ML anomaly record
         jobId:
           type: string
           maxLength: 150
@@ -377,7 +382,7 @@ components:
           type: number
           minimum: 0
           maximum: 100
-          description: Maximum record_score (inclusive); omit to return all scores up to 100
+          description: Maximum record_score (exclusive); omit to return all scores up to 100
         threat_tactics:
           type: array
           maxItems: 100
@@ -411,11 +416,16 @@ components:
     AnomalyOverviewHit:
       type: object
       required:
+        - recordId
         - jobId
         - jobName
         - timestamp
         - anomalousValue
       properties:
+        recordId:
+          type: string
+          maxLength: 200
+          description: Elasticsearch document ID of the ML anomaly record
         jobId:
           type: string
           maxLength: 150

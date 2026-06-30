@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/evals-phoenix-executor'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/obs-ai-team'
+  defaultOwner: '@elastic/nightshift-context-and-research-team'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/evals-phoenix-executor'
   description: Moon project for @kbn/evals-phoenix-executor
   channel: ''
-  owner: '@elastic/obs-ai-team'
+  owner: '@elastic/nightshift-context-and-research-team'
   sourceRoot: x-pack/platform/packages/shared/kbn-evals-phoenix-executor
 dependsOn:
   - '@kbn/evals'

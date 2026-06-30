@@ -11,7 +11,6 @@ import { omit } from 'lodash';
 import { test } from '../../../fixtures';
 import { generateLogsData } from '../../../fixtures/generators';
 import {
-  ensureDslLifecycle,
   openLifecycleMethodFlyout,
   removeDeletePhase,
   RETENTION_TEST_IDS,
@@ -155,19 +154,25 @@ test.describe(
       pageObjects,
       logsSynthtraceEsClient,
       apiServices,
-      config,
     }) => {
       await generateLogsData(logsSynthtraceEsClient)({ index: 'logs-generic-default' });
       await apiServices.streams.clearStreamProcessors('logs-generic-default');
-      await pageObjects.streams.gotoDataRetentionTab('logs-generic-default');
 
       // Classic streams inherit their lifecycle from the backing index template,
-      // which may resolve to ILM. Switch to DSL so a custom delete phase can be set.
-      await ensureDslLifecycle(page);
-
-      await setCustomRetention(page, '7', 'd', {
-        expectOverrideConfirmation: config.serverless,
+      // which may resolve to ILM. Pin DSL via the API so the stream starts on DLM
+      // before the UI loads and a custom delete phase can be set deterministically.
+      const definition = await apiServices.streams.getStreamDefinition('logs-generic-default');
+      await apiServices.streams.updateStream('logs-generic-default', {
+        ingest: {
+          ...definition.stream.ingest,
+          processing: omit(definition.stream.ingest.processing, 'updated_at'),
+          lifecycle: { dsl: {} },
+        },
       });
+
+      await pageObjects.streams.gotoDataRetentionTab('logs-generic-default');
+
+      await setCustomRetention(page, '7', 'd');
       await expect(page.getByTestId(RETENTION_TEST_IDS.retentionMetric)).toContainText('7 days');
     });
 

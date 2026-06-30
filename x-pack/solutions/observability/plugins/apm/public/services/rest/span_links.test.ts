@@ -6,22 +6,23 @@
  */
 
 import { apm } from '@elastic/apm-rum';
-import { fetchSpanLinks, FETCH_SPAN_LINKS_OPERATION_ID } from './span_links';
+import { fetchSpanLinks } from './span_links';
+import { FETCHER_OPERATION_IDS } from '../../hooks/fetcher_operation_ids';
 import * as createCallApmApi from './create_call_apm_api';
-
-jest.mock('@elastic/apm-rum', () => ({
-  apm: {
-    captureError: jest.fn(),
-  },
-}));
 
 const signal = new AbortController().signal;
 
 describe('fetchSpanLinks', () => {
   const callApmApiSpy = jest.spyOn(createCallApmApi, 'callApmApi');
+  let captureErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    captureErrorSpy = jest.spyOn(apm, 'captureError').mockImplementation(() => {});
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    captureErrorSpy.mockRestore();
   });
 
   it('captures APM error with kibana_meta_operation_id label and re-throws when callApmApi fails', async () => {
@@ -32,8 +33,8 @@ describe('fetchSpanLinks', () => {
       fetchSpanLinks({ traceId: 'trace-1', docId: 'span-1', start: 'from', end: 'to' }, signal)
     ).rejects.toThrow('boom');
 
-    expect(apm.captureError).toHaveBeenCalledWith(error, {
-      labels: { kibana_meta_operation_id: FETCH_SPAN_LINKS_OPERATION_ID },
+    expect(captureErrorSpy).toHaveBeenCalledWith(error, {
+      labels: { kibana_meta_operation_id: FETCHER_OPERATION_IDS.FETCH_SPAN_LINKS },
     });
   });
 
@@ -46,6 +47,6 @@ describe('fetchSpanLinks', () => {
       fetchSpanLinks({ traceId: 'trace-1', docId: 'span-1', start: 'from', end: 'to' }, signal)
     ).rejects.toThrow('aborted');
 
-    expect(apm.captureError).not.toHaveBeenCalled();
+    expect(captureErrorSpy).not.toHaveBeenCalled();
   });
 });

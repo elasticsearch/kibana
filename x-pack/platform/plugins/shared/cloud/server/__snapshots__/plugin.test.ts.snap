@@ -12,6 +12,7 @@ Object {
   "cloudId": "cloudId",
   "csp": "aws",
   "deploymentId": "deployment-id",
+  "elasticsearchClusterId": undefined,
   "elasticsearchUrl": undefined,
   "instanceSizeMb": undefined,
   "isCloudEnabled": true,

@@ -78,6 +78,42 @@ describe('createAlertFactory()', () => {
     });
   });
 
+  test('sets snooze config on newly created alert when snoozedInstancesMap contains a matching entry', () => {
+    const snoozeConfig = {
+      instanceId: '1',
+      snoozedAt: '2024-01-01T00:00:00.000Z',
+      snoozedBy: 'user',
+    };
+    const alertFactory = createAlertFactory({
+      alerts: {},
+      logger,
+      configuredMaxAlerts: 1000,
+      autoRecoverAlerts: true,
+      snoozedInstancesMap: new Map([['1', snoozeConfig]]),
+    });
+    const setSnoozeConfigSpy = jest.spyOn(Alert.prototype, 'setSnoozeConfig');
+    alertFactory.create('1');
+    expect(setSnoozeConfigSpy).toHaveBeenCalledWith(snoozeConfig);
+    setSnoozeConfigSpy.mockRestore();
+  });
+
+  test('does not set snooze config on existing alert when called via create()', () => {
+    const existingAlert = new Alert('1');
+    const setSnoozeConfigSpy = jest.spyOn(Alert.prototype, 'setSnoozeConfig');
+    const alertFactory = createAlertFactory({
+      alerts: { '1': existingAlert },
+      logger,
+      configuredMaxAlerts: 1000,
+      autoRecoverAlerts: true,
+      snoozedInstancesMap: new Map([
+        ['1', { instanceId: '1', snoozedAt: '2024-01-01T00:00:00.000Z', snoozedBy: 'user' }],
+      ]),
+    });
+    alertFactory.create('1');
+    expect(setSnoozeConfigSpy).not.toHaveBeenCalled();
+    setSnoozeConfigSpy.mockRestore();
+  });
+
   test('mutates given alerts', () => {
     const alerts = {};
     const alertFactory = createAlertFactory({

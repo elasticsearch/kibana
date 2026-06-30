@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import type { Feature, FeatureUpsert } from '@kbn/streams-schema';
-import { computeFeatureUuid } from '@kbn/streams-schema';
+import type { Feature, FeatureUpsert } from '@kbn/significant-events-schema';
+import { computeFeatureUuid } from '@kbn/significant-events-schema';
 
 const normalizeIdPart = (value: string): string =>
   value

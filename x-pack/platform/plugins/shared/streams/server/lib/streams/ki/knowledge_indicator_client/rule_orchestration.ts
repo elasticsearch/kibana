@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { QueryLink } from '@kbn/streams-schema';
+import type { QueryLink } from '@kbn/significant-events-schema';
 import type { Streams } from '@kbn/streams-schema';
 import pLimit from 'p-limit';
 import {

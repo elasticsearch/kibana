@@ -22,6 +22,7 @@ export const ListItemOptionalFields: React.FC<ListItemOptionalFieldsProps> = ({
   const styles = useMemo(
     () => ({
       container: css`
+        position: relative;
         margin-top: ${euiTheme.size.s};
       `,
     }),
@@ -53,8 +54,7 @@ export const ListItemOptionalFields: React.FC<ListItemOptionalFieldsProps> = ({
     <EuiFlexGroup
       alignItems="center"
       gutterSize="s"
-      responsive={false}
-      wrap={false}
+      wrap
       data-test-subj="cases-list-item-optional-fields"
       css={styles.container}
     >

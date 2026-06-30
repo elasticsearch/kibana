@@ -5,8 +5,10 @@
  * 2.0.
  */
 
-import type { GeneratedSignificantEventQuery } from '@kbn/streams-schema';
-import { HIGH_SEVERITY_THRESHOLD, normalizeEsqlSafe, QUERY_TYPE_STATS } from '@kbn/streams-schema';
+import type { GeneratedSignificantEventQuery } from '@kbn/significant-events-schema';
+import { normalizeEsqlSafe } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
+import { HIGH_SEVERITY_THRESHOLD } from '@kbn/significant-events-schema';
 import { v4 } from 'uuid';
 import type { KnowledgeIndicatorClient, KIBulkOperation } from '../streams/ki';
 import { queryFromLink } from '../streams/ki/knowledge_indicator_client/serializers';

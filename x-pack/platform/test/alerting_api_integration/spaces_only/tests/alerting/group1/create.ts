@@ -13,6 +13,7 @@ import { ALERTING_CASES_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-serve
 import { RULE_SAVED_OBJECT_TYPE } from '@kbn/alerting-plugin/server';
 import { MAX_ARTIFACTS_DASHBOARDS_LENGTH } from '@kbn/alerting-plugin/common/routes/rule/request/schemas/v1';
 import { MAX_ARTIFACTS_INVESTIGATION_GUIDE_LENGTH } from '@kbn/alerting-types/rule/latest';
+import { ES_TEST_INDEX_NAME } from '@kbn/alerting-api-integration-helpers';
 import { omit } from 'lodash';
 import { Spaces } from '../../../scenarios';
 import type { TaskManagerDoc } from '../../../../common/lib';
@@ -506,6 +507,89 @@ export default function createAlertTests({ getService }: FtrProviderContext) {
       expect(response.status).to.eql(400);
       expect(response.body.error).to.eql('Bad Request');
       expect(response.body.message).to.contain('string is not a valid timezone: invalid');
+    });
+
+    it('creates a rule action with an is-one-of alerts filter', async () => {
+      const phrasesFilterQuery = {
+        bool: {
+          should: [{ match_phrase: { 'host.name': 'a' } }, { match_phrase: { 'host.name': 'b' } }],
+          minimum_should_match: 1,
+        },
+      };
+      const phrasesFilter = {
+        meta: {
+          type: 'phrases',
+          key: 'host.name',
+          params: ['a', 'b'],
+          negate: false,
+          disabled: false,
+        },
+        query: phrasesFilterQuery,
+      };
+
+      const { body: createdAction } = await supertest
+        .post(`${getUrlPrefix(Spaces.space1.id)}/api/actions/connector`)
+        .set('kbn-xsrf', 'foo')
+        .send({
+          name: 'MY action',
+          connector_type_id: 'test.noop',
+          config: {},
+          secrets: {},
+        })
+        .expect(200);
+
+      const response = await supertest
+        .post(`${getUrlPrefix(Spaces.space1.id)}/api/alerting/rule`)
+        .set('kbn-xsrf', 'foo')
+        .send(
+          getTestRuleData({
+            rule_type_id: 'test.always-firing-alert-as-data',
+            params: {
+              index: ES_TEST_INDEX_NAME,
+              reference: 'test-is-one-of-filter',
+            },
+            actions: [
+              {
+                id: createdAction.id,
+                group: 'default',
+                params: {},
+                alerts_filter: {
+                  query: {
+                    kql: '',
+                    filters: [phrasesFilter],
+                  },
+                },
+              },
+            ],
+          })
+        );
+
+      expect(response.status).to.eql(200);
+      objectRemover.add(Spaces.space1.id, response.body.id, 'rule', 'alerting');
+
+      const responseFilter = response.body.actions[0].alerts_filter.query.filters[0];
+      expect(responseFilter.meta.params).to.eql(['a', 'b']);
+      expect(responseFilter.meta).to.not.have.property('value');
+      expect(responseFilter.query).to.eql(phrasesFilterQuery);
+
+      const esResponse = await es.get<SavedObject<RawRule>>(
+        {
+          index: ALERTING_CASES_SAVED_OBJECT_INDEX,
+          id: `alert:${response.body.id}`,
+        },
+        { meta: true }
+      );
+
+      expect(esResponse.statusCode).to.eql(200);
+
+      const storedFilter = (esResponse.body._source as any)?.alert.actions[0].alertsFilter.query
+        .filters[0];
+
+      expect(storedFilter.meta.params).to.eql(['a', 'b']);
+      expect(storedFilter.meta).to.not.have.property('value');
+      expect(storedFilter.query).to.eql(phrasesFilterQuery);
+      expect(storedFilter.meta.type).to.eql('phrases');
+      expect(storedFilter.meta.key).to.eql('host.name');
     });
 
     describe('system actions', () => {

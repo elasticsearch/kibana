@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { BaseFeature } from '@kbn/streams-schema';
+import type { BaseFeature } from '@kbn/significant-events-schema';
 import type { Logger } from '@kbn/core/server';
 import type { KnowledgeIndicatorClient } from '../../../lib/streams/ki';
 

@@ -146,6 +146,13 @@ describe('registerAlertingV2UsageCollector', () => {
             _meta: { description: 'Number of enabled alerting v2 rules.' },
             type: 'long',
           },
+          count_agent_builder_assisted: {
+            _meta: {
+              description:
+                'Number of alerting v2 rules currently tagged as created/edited via Agent Builder.',
+            },
+            type: 'long',
+          },
           count_total: {
             _meta: { description: 'Total number of alerting v2 rules.' },
             type: 'long',
@@ -231,6 +238,13 @@ describe('registerAlertingV2UsageCollector', () => {
           },
           action_policies_count_with_matcher: {
             _meta: { description: 'Number of action policies with a matcher.' },
+            type: 'long',
+          },
+          action_policies_count_agent_builder_assisted: {
+            _meta: {
+              description:
+                'Number of action policies currently tagged as created/edited via Agent Builder.',
+            },
             type: 'long',
           },
           action_policies_unique_workflow_count: {

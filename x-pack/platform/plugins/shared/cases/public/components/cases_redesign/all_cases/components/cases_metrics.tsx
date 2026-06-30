@@ -25,6 +25,9 @@ import { ATTC_DESCRIPTION, ATTC_STAT, ATTC_STAT_INFO_ARIA_LABEL } from '../trans
 const PRETTY_MS_OPTIONS = { compact: true, verbose: false } as const;
 const MTTR_MULTIPLIER = 1000;
 
+// TODO: This stats bar currently shows unfiltered totals. It should be made responsive
+// to the active table filters (status, severity, tags, etc.) so the counts reflect the
+// filtered data set. https://github.com/elastic/security-team/issues/18001
 const CasesMetricsComponent: React.FC = () => {
   const { euiTheme } = useEuiTheme();
   const { data: { mttr, status } = { mttr: 0 }, isLoading: isCasesMetricsLoading } =

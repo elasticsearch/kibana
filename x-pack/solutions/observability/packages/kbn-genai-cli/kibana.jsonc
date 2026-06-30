@@ -1,7 +1,7 @@
 {
   "type": "shared-common",
   "id": "@kbn/kbn-genai-cli",
-  "owner": "@elastic/obs-ai-team",
+  "owner": "@elastic/nightshift-context-and-research-team",
   "group": "observability",
   "visibility": "private",
   "devOnly": true

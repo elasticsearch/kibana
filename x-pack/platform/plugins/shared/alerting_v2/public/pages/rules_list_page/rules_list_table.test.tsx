@@ -9,6 +9,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
 import { BULK_FILTER_MAX_RULES } from '@kbn/alerting-v2-schemas';
+import { RULE_KIND_TOOLTIPS } from '@kbn/alerting-v2-constants';
 import { RulesListTable, type RulesListTableProps } from './rules_list_table';
 
 const mockRules = [
@@ -162,6 +163,29 @@ describe('RulesListTable', () => {
 
       expect(screen.getByText('Alert')).toBeInTheDocument();
       expect(screen.getByText('Signal')).toBeInTheDocument();
+    });
+
+    it('renders kind-specific tooltip for Alert mode badge', async () => {
+      renderTable();
+
+      fireEvent.mouseOver(screen.getByText('Alert'));
+
+      await waitFor(() => {
+        expect(screen.getByText(RULE_KIND_TOOLTIPS.alert)).toBeInTheDocument();
+      });
+      expect(
+        screen.queryByText('Mode can be changed in the rule edit form')
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders kind-specific tooltip for Signal mode badge', async () => {
+      renderTable();
+
+      fireEvent.mouseOver(screen.getByText('Signal'));
+
+      await waitFor(() => {
+        expect(screen.getByText(RULE_KIND_TOOLTIPS.signal)).toBeInTheDocument();
+      });
     });
 
     it('renders tag badges for rules with tags', () => {

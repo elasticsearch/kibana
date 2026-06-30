@@ -36,7 +36,7 @@
 export function replaceParams(path: string, params: Record<string, string | number>): string {
   let output = path;
   Object.entries(params).forEach(([param, value]) => {
-    output = path.replace(`{${param}}`, `${value}`);
+    output = output.replace(`{${param}}`, `${value}`);
   });
   return output;
 }

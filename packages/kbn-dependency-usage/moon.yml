@@ -18,6 +18,7 @@ project:
   sourceRoot: packages/kbn-dependency-usage
 dependsOn:
   - '@kbn/repo-info'
+  - '@kbn/repo-packages'
 tags:
   - shared-common
   - package

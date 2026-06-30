@@ -9,12 +9,21 @@ import React, { useCallback, useContext, useMemo } from 'react';
 import type { EuiButtonEmpty, EuiButtonIcon } from '@elastic/eui';
 import { isString } from 'lodash/fp';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
+import { useHistory } from 'react-router-dom';
+import { useStore } from 'react-redux';
+import { DOC_VIEWER_FLYOUT_HISTORY_KEY } from '@kbn/unified-doc-viewer';
 import { HostPanelKey } from '../../../../../flyout/entity_details/shared/constants';
 import { StatefulEventContext } from '../../../../../common/components/events_viewer/stateful_event_context';
 import { HostDetailsLink } from '../../../../../common/components/links';
 import { getEmptyTagValue } from '../../../../../common/components/empty_value';
 import { TruncatableText } from '../../../../../common/components/truncatable_text';
 import { useIsInSecurityApp } from '../../../../../common/hooks/is_in_security_app';
+import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
+import { useKibana } from '../../../../../common/lib/kibana';
+import { Host } from '../../../../../flyout_v2/entity/host/main';
+import { flyoutProviders } from '../../../../../flyout_v2/shared/components/flyout_provider';
+import { useDefaultDocumentFlyoutProperties } from '../../../../../flyout_v2/shared/hooks/use_default_flyout_properties';
+import { documentFlyoutHistoryKey } from '../../../../../flyout_v2/shared/constants/flyout_history';
 
 interface Props {
   contextId: string;
@@ -36,8 +45,16 @@ const HostNameComponent: React.FC<Props> = ({
   entityId,
 }) => {
   const { openFlyout } = useExpandableFlyoutApi();
+  const { services } = useKibana();
+  const { overlays } = services;
+  const store = useStore();
+  const history = useHistory();
+  const newFlyoutSystemEnabled = useIsExperimentalFeatureEnabled('newFlyoutSystemEnabled');
+  const defaultDocumentFlyoutProperties = useDefaultDocumentFlyoutProperties();
 
   const isInSecurityApp = useIsInSecurityApp();
+
+  const historyKey = isInSecurityApp ? documentFlyoutHistoryKey : DOC_VIEWER_FLYOUT_HISTORY_KEY;
 
   const eventContext = useContext(StatefulEventContext);
   const hostName = `${value}`;
@@ -51,28 +68,55 @@ const HostNameComponent: React.FC<Props> = ({
         onClick();
       }
 
-      /*
-       * if and only if renderer is running inside security solution app
-       * we check for event and timeline context
-       * */
       if (!eventContext || !isInTimelineContext || !eventContext.enableHostDetailsFlyout) {
         return;
       }
 
-      const { timelineID } = eventContext;
-      openFlyout({
-        right: {
-          id: HostPanelKey,
-          params: {
-            hostName,
-            entityId,
-            contextID: contextId,
-            scopeId: timelineID,
+      if (newFlyoutSystemEnabled) {
+        overlays.openSystemFlyout(
+          flyoutProviders({
+            services,
+            store,
+            history,
+            children: <Host hostName={hostName} entityId={entityId} />,
+          }),
+          {
+            ...defaultDocumentFlyoutProperties,
+            historyKey,
+            session: 'start',
+          }
+        );
+      } else {
+        const { timelineID } = eventContext;
+        openFlyout({
+          right: {
+            id: HostPanelKey,
+            params: {
+              hostName,
+              entityId,
+              contextID: contextId,
+              scopeId: timelineID,
+            },
           },
-        },
-      });
+        });
+      }
     },
-    [onClick, eventContext, isInTimelineContext, hostName, entityId, openFlyout, contextId]
+    [
+      onClick,
+      eventContext,
+      isInTimelineContext,
+      hostName,
+      entityId,
+      openFlyout,
+      contextId,
+      newFlyoutSystemEnabled,
+      overlays,
+      services,
+      store,
+      history,
+      historyKey,
+      defaultDocumentFlyoutProperties,
+    ]
   );
 
   // The below is explicitly defined this way as the onClick takes precedence when it and the href are both defined

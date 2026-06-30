@@ -39,15 +39,20 @@ export const StepDetailPage = () => {
 
   const { remoteName } = useGetUrlParams();
 
+  // Once the step is known we forward its run `@timestamp` so the network
+  // events query can be bounded to that run and prune frozen-tier shards.
+  const stepTimestamp = currentStep?.['@timestamp'];
+
   useEffect(() => {
     dispatch(
       getNetworkEvents.get({
         checkGroup: checkGroupId,
         stepIndex: Number(stepIndex),
         remoteName,
+        timestamp: stepTimestamp,
       })
     );
-  }, [dispatch, stepIndex, checkGroupId, remoteName]);
+  }, [dispatch, stepIndex, checkGroupId, remoteName, stepTimestamp]);
 
   return (
     <>

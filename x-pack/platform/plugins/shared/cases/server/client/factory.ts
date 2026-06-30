@@ -63,6 +63,10 @@ import { EmailNotificationService } from '../services/notifications/email_notifi
 import type { ConfigType } from '../config';
 import type { CasesEventBus } from '../events/event_bus';
 import { getSavedObjectsTypes } from '../../common';
+import type {
+  CasesAnalyticsV2DataViewRefresher,
+  CasesAnalyticsV2WriterContract,
+} from '../cases_analytics_v2';
 
 interface CasesClientFactoryArgs {
   securityPluginSetup: SecurityPluginSetup;
@@ -88,6 +92,19 @@ interface CasesClientFactoryArgs {
     owner: string,
     request: KibanaRequest
   ) => Promise<boolean>;
+  /**
+   * Stable proxy returned by `CasesAnalyticsV2Service.getWriter()`. Always
+   * resolvable — when v2 is disabled, the proxy delegates to a no-op writer
+   * and SO-service hooks compile down to nothing.
+   */
+  analyticsV2Writer: CasesAnalyticsV2WriterContract;
+  /**
+   * Stable callback returned by `CasesAnalyticsV2Service.getDataViewRefresher()`.
+   * Always resolvable — when v2 is disabled, defaults to
+   * `V2_NOOP_DATA_VIEW_REFRESHER` so the templates service can call it
+   * unconditionally.
+   */
+  analyticsV2DataViewRefresher: CasesAnalyticsV2DataViewRefresher;
 }
 
 /**
@@ -232,11 +249,23 @@ export class CasesClientFactory {
       this.options.spacesPluginStart?.spacesService.getSpaceId(request) ?? DEFAULT_SPACE_ID;
     const namespace = spaceIdToNamespace(spaceId) ?? DEFAULT_NAMESPACE_STRING;
 
+    // Bound, parameterless callback handed to the templates service. The v2
+    // service handles the no-op-when-disabled case internally; the
+    // templates service only needs to fire-and-forget after every template
+    // mutation.
+    const refreshAnalyticsV2DataView = () =>
+      this.options.analyticsV2DataViewRefresher({
+        spaceId,
+        request,
+        savedObjectsClient: unsecuredSavedObjectsClient,
+      });
+
     const templatesService = new TemplatesService({
       unsecuredSavedObjectsClient,
       savedObjectsSerializer,
       esClient,
       namespace,
+      refreshAnalyticsV2DataView,
     });
 
     const fieldDefinitionsService = new FieldDefinitionsService({
@@ -247,6 +276,7 @@ export class CasesClientFactory {
       log: this.logger,
       unsecuredSavedObjectsClient,
       attachmentService,
+      analyticsV2Writer: this.options.analyticsV2Writer,
     });
 
     const licensingService = new LicensingService(

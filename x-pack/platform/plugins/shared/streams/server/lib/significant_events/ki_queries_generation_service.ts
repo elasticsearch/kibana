@@ -14,11 +14,11 @@ import type {
 import type { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
 import type { ToolsStart } from '@kbn/agent-builder-server';
 import type { InferenceClient } from '@kbn/inference-common';
+import { getStreamTypeFromDefinition } from '@kbn/streams-schema';
 import {
-  getStreamTypeFromDefinition,
-  STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
+  SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
   type SignificantEventsQueriesGenerationResult,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import { isInferenceProviderError } from '@kbn/inference-common';
 import type { SearchInferenceEndpointsPluginStart } from '@kbn/search-inference-endpoints/server';
 import type { SignificantEventsToolUsage } from '@kbn/streams-ai';
@@ -85,7 +85,7 @@ export async function generateKIQueries(
     connectorIdOverride ??
     (await resolveConnectorForFeature({
       searchInferenceEndpoints,
-      featureId: STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
+      featureId: SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
       featureName: 'query generation',
       request,
     }));

@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import { deriveQueryType, type StreamQuery, type Streams } from '@kbn/streams-schema';
+import { deriveQueryType, type Streams } from '@kbn/streams-schema';
+import { type StreamQuery } from '@kbn/significant-events-schema';
 import type { Logger } from '@kbn/core/server';
 import { v4 as uuidv4 } from 'uuid';
 import type { KnowledgeIndicatorClient } from '../../../lib/streams/ki';

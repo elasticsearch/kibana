@@ -20,6 +20,7 @@
     "@kbn/core",
     "@kbn/streamlang",
     "@kbn/streams-schema",
+    "@kbn/significant-events-schema",
     "@kbn/inference-common",
     "@kbn/zod",
     "@kbn/inference-prompt-utils",

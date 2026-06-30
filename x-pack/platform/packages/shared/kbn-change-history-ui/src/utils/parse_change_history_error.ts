@@ -6,16 +6,8 @@
  */
 
 import type { ChangeHistoryError, ChangeHistoryErrorCode } from '../types/change_history_error';
-
-const CHANGE_HISTORY_ERROR_CODES = new Set<ChangeHistoryErrorCode>([
-  'FORBIDDEN',
-  'NOT_FOUND',
-  'HISTORY_DISABLED',
-  'RESTORE_CONFLICT',
-  'RESTORE_VALIDATION',
-  'NETWORK',
-  'UNKNOWN',
-]);
+import { isChangeHistoryErrorCode } from './change_history_error_codes';
+import { getChangeHistoryErrorCodeFromBody } from './get_change_history_error_code';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -25,13 +17,14 @@ export const parseChangeHistoryError = (body: unknown): ChangeHistoryError | und
     return undefined;
   }
 
-  const { code, message, details } = body;
+  const { message, details } = body;
+  const code = getChangeHistoryErrorCodeFromBody(body);
 
   if (typeof message !== 'string' || message.length === 0) {
     return undefined;
   }
 
-  if (typeof code === 'string' && CHANGE_HISTORY_ERROR_CODES.has(code as ChangeHistoryErrorCode)) {
+  if (typeof code === 'string' && isChangeHistoryErrorCode(code)) {
     return {
       code: code as ChangeHistoryErrorCode,
       message,

@@ -14,6 +14,7 @@ export default function alertingTests({ loadTestFile, getService }: FtrProviderC
     after(async () => await tearDown(getService));
 
     loadTestFile(require.resolve('./execution_status'));
+    loadTestFile(require.resolve('./per_alert_snooze'));
     loadTestFile(require.resolve('./monitoring_collection'));
     loadTestFile(require.resolve('./monitoring'));
     loadTestFile(require.resolve('./mute_all'));

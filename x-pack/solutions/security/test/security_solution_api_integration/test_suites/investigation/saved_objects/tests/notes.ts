@@ -15,6 +15,8 @@ import { createNote, deleteNotes } from '../../utils/notes';
 
 export default function ({ getService }: FtrProviderContextWithSpaces) {
   const utils = getService('securitySolutionUtils');
+  const security = getService('security');
+  const supertestWithoutAuth = getService('supertestWithoutAuth');
   let supertest: TestAgent;
 
   describe('Note - Saved Objects', () => {
@@ -399,20 +401,60 @@ export default function ({ getService }: FtrProviderContextWithSpaces) {
         });
       });
 
-      // TODO we need to figure out how to create another user in the test environment
-      it.skip('should return nothing if no notes have been created by that user', async () => {
-        await Promise.all([
-          createNote(supertest, { text: 'first note' }),
-          createNote(supertest, { text: 'second note' }),
-        ]);
+      // Runs in ESS only: serverless does not support interactive login to activate user profiles.
+      describe('@skipInServerless', () => {
+        it('should return nothing if no notes have been created by that user', async () => {
+          // Create a second user who will not create any notes
+          const secondUsername = 'notes_filter_test_user';
+          const secondPassword = 'changeme';
+          await security.user.create(secondUsername, {
+            password: secondPassword,
+            roles: ['kibana_admin'],
+            full_name: 'Notes Filter Test User',
+          });
 
-        const response = await supertest
-          .get(`${NOTE_URL}?createdByFilter=user1`)
-          .set('kbn-xsrf', 'true')
-          .set('elastic-api-version', '2023-10-31');
-        const { totalCount } = response.body as GetNotesResult;
+          try {
+            // Activate the second user's profile by logging in interactively (basic auth
+            // API requests do not activate user profiles; only cookie-based login does).
+            const loginResponse = await supertestWithoutAuth
+              .post('/internal/security/login')
+              .set('kbn-xsrf', 'xxx')
+              .send({
+                providerType: 'basic',
+                providerName: 'basic',
+                currentURL: '/',
+                params: { username: secondUsername, password: secondPassword },
+              })
+              .expect(200);
 
-        expect(totalCount).to.be(0);
+            const rawCookie = loginResponse.headers['set-cookie'][0].split(';')[0];
+
+            // Retrieve the second user's profile UID
+            const profileResponse = await supertestWithoutAuth
+              .get('/internal/security/user_profile')
+              .set('Cookie', rawCookie)
+              .set('kbn-xsrf', 'true')
+              .expect(200);
+            const secondUserUid: string = profileResponse.body.uid;
+
+            // Create notes as the main (default) user — not the second user
+            await Promise.all([
+              createNote(supertest, { text: 'first note' }),
+              createNote(supertest, { text: 'second note' }),
+            ]);
+
+            // Filter notes by the second user's UID; they created no notes so expect 0
+            const response = await supertest
+              .get(`${NOTE_URL}?createdByFilter=${secondUserUid}`)
+              .set('kbn-xsrf', 'true')
+              .set('elastic-api-version', '2023-10-31');
+            const { totalCount } = response.body as GetNotesResult;
+
+            expect(totalCount).to.be(0);
+          } finally {
+            await security.user.delete(secondUsername);
+          }
+        });
       });
 
       it('should return error if user does not exist', async () => {

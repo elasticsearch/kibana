@@ -32,7 +32,7 @@ describe('buildTaskFakeRequest', () => {
     expect(fakeRequest!.spaceId).toBe('team-a');
   });
 
-  it('does not call the enrichment hook when userProfileId is absent', () => {
+  it('does not call the enrichment hook when userProfileId and userName are absent', () => {
     const enrichFakeRequest = jest.fn();
     buildTaskFakeRequest({ apiKey, enrichFakeRequest });
     expect(enrichFakeRequest).not.toHaveBeenCalled();
@@ -50,12 +50,43 @@ describe('buildTaskFakeRequest', () => {
       enrichFakeRequest,
     });
     expect(enrichFakeRequest).toHaveBeenCalledTimes(1);
-    expect(enrichFakeRequest).toHaveBeenCalledWith(fakeRequest, 'u_1');
+    expect(enrichFakeRequest).toHaveBeenCalledWith(fakeRequest, {
+      profileId: 'u_1',
+      username: undefined,
+    });
+  });
+
+  it('enriches the fake request with userName when present', () => {
+    const enrichFakeRequest = jest.fn();
+    const fakeRequest = buildTaskFakeRequest({
+      apiKey,
+      userProfileId: 'u_1',
+      userName: 'jdoe',
+      enrichFakeRequest,
+    });
+    expect(enrichFakeRequest).toHaveBeenCalledWith(fakeRequest, {
+      profileId: 'u_1',
+      username: 'jdoe',
+    });
+  });
+
+  it('enriches the fake request when only userName is present', () => {
+    const enrichFakeRequest = jest.fn();
+    const fakeRequest = buildTaskFakeRequest({
+      apiKey,
+      userName: 'jdoe',
+      enrichFakeRequest,
+    });
+    expect(enrichFakeRequest).toHaveBeenCalledTimes(1);
+    expect(enrichFakeRequest).toHaveBeenCalledWith(fakeRequest, {
+      profileId: undefined,
+      username: 'jdoe',
+    });
   });
 });
 
 describe('buildChildRequestEnricher', () => {
-  it('returns undefined when userProfileId is absent', () => {
+  it('returns undefined when userProfileId and userName are absent', () => {
     expect(buildChildRequestEnricher({ enrichFakeRequest: jest.fn() })).toBeUndefined();
   });
 
@@ -63,16 +94,20 @@ describe('buildChildRequestEnricher', () => {
     expect(buildChildRequestEnricher({ userProfileId: 'u_1' })).toBeUndefined();
   });
 
-  it('returns a function that forwards the bound profile to the enricher', () => {
+  it('returns a function that forwards the bound identity to the enricher', () => {
     const enrichFakeRequest = jest.fn();
     const enricher = buildChildRequestEnricher({
       userProfileId: 'u_42',
+      userName: 'jdoe',
       enrichFakeRequest,
     });
     expect(enricher).toBeInstanceOf(Function);
 
     const childRequest = { fake: 'child' } as unknown as KibanaRequest;
     enricher!(childRequest);
-    expect(enrichFakeRequest).toHaveBeenCalledWith(childRequest, 'u_42');
+    expect(enrichFakeRequest).toHaveBeenCalledWith(childRequest, {
+      profileId: 'u_42',
+      username: 'jdoe',
+    });
   });
 });

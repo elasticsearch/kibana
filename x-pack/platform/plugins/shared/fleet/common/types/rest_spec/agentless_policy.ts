@@ -5,12 +5,15 @@
  * 2.0.
  */
 
-import { type TypeOf, schema } from '@kbn/config-schema';
+import { schema, type TypeOf } from '@kbn/config-schema';
 
 import { SO_SEARCH_LIMIT } from '../../constants';
 
 import { SimplifiedCreatePackagePolicyRequestBodySchema } from '../models/package_policy_schema';
 import type { AgentlessPolicyResponseSchema } from '../models/agentless_policy_schema';
+import type { AgentlessPolicy } from '../models/agentless_policy';
+
+import type { ListResult } from './common';
 
 export const CreateAgentlessPolicyRequestSchema = {
   body: SimplifiedCreatePackagePolicyRequestBodySchema.extends(
@@ -104,6 +107,7 @@ export const DeleteAgentlessPolicyRequestSchema = {
   }),
   params: schema.object({
     policyId: schema.string({
+      maxLength: 256,
       meta: {
         description: 'The ID of the policy to delete.',
       },
@@ -187,3 +191,62 @@ export type AgentlessPolicyThroughput = TypeOf<typeof AgentlessPolicyThroughputS
 export type GetBulkAgentlessPolicyThroughputResponse = TypeOf<
   typeof GetBulkAgentlessPolicyThroughputResponseSchema
 >;
+
+/**
+ * Params validation schema for the GET-by-id endpoint.
+ *
+ * Lives here in `common/` (matching the Create/Delete endpoints in this file) so
+ * `server/` imports it for route registration and `common/` carries no dependency
+ * on `server/`.
+ */
+export const GetAgentlessPolicyRequestSchema = {
+  params: schema.object({
+    policyId: schema.string({
+      maxLength: 256,
+      meta: {
+        description: 'The ID of the agentless policy to retrieve.',
+      },
+    }),
+  }),
+};
+
+export type GetAgentlessPolicyResponse = TypeOf<typeof AgentlessPolicyResponseSchema>;
+
+/**
+ * Base query shape for the LIST endpoint.
+ *
+ * Defined here so the {@link ListAgentlessPoliciesRequest} type can be derived from it via `TypeOf`.
+ * The `kuery` validator is intentionally omitted: it depends on the server-only `validateKuery`,
+ * so `server/types/rest_spec/agentless_policy.ts` `.extends()` this schema to attach it.
+ */
+export const ListAgentlessPoliciesRequestQuerySchema = schema.object({
+  // Paging defaults (page=1, perPage=20) are owned by the service layer
+  // (`listAgentlessPolicies`), which is the single source of truth
+  page: schema.maybe(schema.number({ meta: { description: 'Page number. Defaults to `1`.' } })),
+  perPage: schema.maybe(
+    schema.number({ meta: { description: 'Number of results per page. Defaults to `20`.' } })
+  ),
+  sortField: schema.maybe(
+    schema.string({
+      maxLength: 256,
+      meta: { description: 'Field to sort results by. Defaults to `updated_at`.' },
+    })
+  ),
+  sortOrder: schema.maybe(
+    schema.oneOf([schema.literal('desc'), schema.literal('asc')], {
+      meta: { description: 'Sort order, ascending or descending. Defaults to `desc`.' },
+    })
+  ),
+  kuery: schema.maybe(
+    schema.string({
+      maxLength: 4096,
+      meta: { description: 'A KQL query string to filter results.' },
+    })
+  ),
+});
+
+export interface ListAgentlessPoliciesRequest {
+  query: TypeOf<typeof ListAgentlessPoliciesRequestQuerySchema>;
+}
+
+export type ListAgentlessPoliciesResponse = ListResult<AgentlessPolicy>;

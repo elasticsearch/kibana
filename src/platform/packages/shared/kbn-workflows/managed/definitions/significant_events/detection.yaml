@@ -1,5 +1,5 @@
 version: "1"
-name: ".significant-events-detection"
+name: "Significant Events Detection"
 description: "Detects statistically significant changes in alert firing patterns per rule using the Elasticsearch change_point aggregation."
 enabled: true
 tags:

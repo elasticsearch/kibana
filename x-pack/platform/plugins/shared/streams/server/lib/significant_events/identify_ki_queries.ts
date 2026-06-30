@@ -7,13 +7,14 @@
 
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import type { ChatCompletionTokenCount, InferenceClient } from '@kbn/inference-common';
-import type { GeneratedSignificantEventQuery, Streams } from '@kbn/streams-schema';
+import type { Streams } from '@kbn/streams-schema';
+import type { GeneratedSignificantEventQuery } from '@kbn/significant-events-schema';
+import { ensureMetadata } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import {
-  QUERY_TYPE_STATS,
-  ensureMetadata,
-  STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
-  STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID,
-} from '@kbn/streams-schema';
+  SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
+  SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID,
+} from '@kbn/significant-events-schema';
 import { identifyKIQueries as identifyKIQueriesThroughAgent } from '@kbn/streams-ai';
 import type { SignificantEventsToolUsage } from '@kbn/streams-ai';
 import type { ToolCallback, ToolDefinition } from '@kbn/inference-common';
@@ -101,8 +102,8 @@ export async function identifyKIQueries(
     connectorId,
     metadata: {
       connectorTelemetry: {
-        pluginId: STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
-        aggregateBy: STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID,
+        pluginId: SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
+        aggregateBy: SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID,
       },
     },
   });

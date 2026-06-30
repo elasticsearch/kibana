@@ -17,6 +17,7 @@ import {
   EuiPageHeader,
   EuiSpacer,
   EuiText,
+  EuiToolTip,
   type CriteriaWithPagination,
   type EuiBasicTableColumn,
   type EuiTableSelectionType,
@@ -34,6 +35,7 @@ import moment from 'moment';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ExperimentalBadge } from '../../components/experimental_badge';
 import { ActionPolicyDestinationsSummary } from '../../components/action_policy/action_policy_destinations_summary';
+import { PopoverItems } from '../../components/popover_items';
 import { ActionPolicySnoozePopover } from '../../components/action_policy/action_policy_snooze_popover';
 import { ActionPolicyStateBadge } from '../../components/action_policy/action_policy_state_badge';
 import { DeleteActionPolicyConfirmModal } from '../../components/action_policy/delete_confirmation_modal';
@@ -242,6 +244,7 @@ export const ListActionPoliciesPage = () => {
   const columns: Array<EuiBasicTableColumn<ActionPolicyResponse>> = [
     {
       field: 'name',
+      minWidth: '100px',
       name: (
         <FormattedMessage
           id="xpack.alertingV2.actionPoliciesList.column.name"
@@ -281,6 +284,7 @@ export const ListActionPoliciesPage = () => {
     },
     {
       field: 'tags',
+      width: '180px',
       name: (
         <FormattedMessage
           id="xpack.alertingV2.actionPoliciesList.column.tags"
@@ -289,14 +293,34 @@ export const ListActionPoliciesPage = () => {
       ),
       render: (tags: string[] | null) => {
         if (!tags || tags.length === 0) return null;
+        const visibleCount = 1;
+        const overflowCount = tags.length - visibleCount;
         return (
-          <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
-            {tags.map((tag) => (
-              <EuiFlexItem grow={false} key={tag}>
-                <EuiBadge color="hollow">{tag}</EuiBadge>
-              </EuiFlexItem>
-            ))}
-          </EuiFlexGroup>
+          <PopoverItems
+            items={tags}
+            numberOfItemsToDisplay={visibleCount}
+            popoverTitle={i18n.translate(
+              'xpack.alertingV2.actionPoliciesList.column.tags.popoverTitle',
+              { defaultMessage: 'Tags' }
+            )}
+            popoverButtonTitle={`+${overflowCount}`}
+            dataTestPrefix="actionPolicyTags"
+            renderItem={(tag) => (
+              <EuiToolTip key={tag} content={tag} position="top">
+                <EuiBadge
+                  color="hollow"
+                  title=""
+                  css={{
+                    maxWidth: 150,
+                    minWidth: 0,
+                    '.euiBadge__text': { minWidth: 0 },
+                  }}
+                >
+                  {tag}
+                </EuiBadge>
+              </EuiToolTip>
+            )}
+          />
         );
       },
     },
@@ -357,7 +381,7 @@ export const ListActionPoliciesPage = () => {
           defaultMessage="Notify"
         />
       ),
-      width: '120px',
+      width: '50px',
       render: (_snoozedUntil: string | undefined, policy: ActionPolicyResponse) => {
         if (!policy.enabled) {
           return null;
@@ -509,6 +533,7 @@ export const ListActionPoliciesPage = () => {
             loading={isFetching}
             pagination={pagination}
             responsiveBreakpoint={false}
+            scrollableInline={true}
             css={css`
               .euiTableHeaderMobile .euiCheckbox {
                 display: none;

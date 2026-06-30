@@ -1,5 +1,5 @@
 version: "1"
-name: ".significant-events-orchestrator"
+name: "Significant Events Orchestrator"
 description: "Sequences detection, discovery, and triage. Each workflow handles its own idle-skip logic."
 enabled: true
 tags:

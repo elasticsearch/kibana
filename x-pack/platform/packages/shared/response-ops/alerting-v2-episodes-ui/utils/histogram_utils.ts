@@ -38,7 +38,7 @@ export const computeBucketInterval = (startMs: number, endMs: number): string =>
   return '1w';
 };
 
-const intervalToMs = (interval: string): number => {
+export const intervalToMs = (interval: string): number => {
   // Accepts both numeric prefixed ('1h', '6h') and bare single-letter ('h', 'd') formats.
   // The unified-histogram interval selector emits bare letters; our own computeBucketInterval
   // emits numeric-prefixed strings. Both forms must be handled.

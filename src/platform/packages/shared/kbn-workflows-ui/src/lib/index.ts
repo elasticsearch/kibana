@@ -8,3 +8,4 @@
  */
 
 export * from './steps/editor_handlers';
+export * from './generate_sample_from_json_schema';

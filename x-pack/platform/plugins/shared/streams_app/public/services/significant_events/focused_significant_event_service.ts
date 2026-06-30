@@ -6,7 +6,7 @@
  */
 
 import { BehaviorSubject } from 'rxjs';
-import type { SignificantEvent } from '@kbn/streams-schema';
+import type { SignificantEvent } from '@kbn/significant-events-schema';
 
 export class FocusedSignificantEventService {
   private readonly focusedEventSubject$ = new BehaviorSubject<SignificantEvent | undefined>(

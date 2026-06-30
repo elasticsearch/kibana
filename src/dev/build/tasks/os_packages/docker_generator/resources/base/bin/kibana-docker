@@ -278,6 +278,11 @@ kibana_vars=(
     xpack.banners.textContent
     xpack.cases.enabled
     xpack.cases.analytics.index.enabled
+    xpack.cases.analyticsV2.enabled
+    xpack.cases.analyticsV2.enableAdminRoutes
+    xpack.cases.analyticsV2.reconciliationIntervalMinutes
+    xpack.cases.analyticsV2.resetTaskTimeoutMinutes
+    xpack.cases.analyticsV2.resetPageDelayMs
     xpack.cases.incrementalId.enabled
     xpack.cases.incrementalId.taskIntervalMinutes
     xpack.cases.incrementalId.taskStartDelayMinutes

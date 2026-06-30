@@ -26,6 +26,9 @@ export {
   QUICK_SNOOZE_POPOVER_APPLY,
 } from './components/translations';
 
+export { buildSnoozeSummary } from './utils/build_snooze_summary';
+export type { BuildSnoozeSummaryParams } from './utils/build_snooze_summary';
+
 export { ConditionalSnoozePanel } from './components/conditional_snooze_panel';
 export type {
   ConditionalSnoozePanelProps,

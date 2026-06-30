@@ -10,6 +10,10 @@ import { useLocation } from 'react-router-dom';
 
 import { AGENTS_PREFIX } from '../../../../../../../../../common/constants';
 import { sendGetAgents } from '../../../../../../hooks';
+// The flyout imports sendGetAgents directly from the top-level public/hooks barrel,
+// which is a different Jest module instance than the integrations hooks barrel the
+// table uses. Import + mock it separately so we can assert the flyout's own agent lookup.
+import { sendGetAgents as sendGetAgentsFromFlyout } from '../../../../../../../../hooks';
 import { createIntegrationsTestRendererMock } from '../../../../../../../../mock';
 
 import { AgentlessPackagePoliciesTable } from './agentless_table';
@@ -25,10 +29,18 @@ jest.mock('../../../../../../hooks', () => ({
   sendGetAgents: jest.fn(),
 }));
 
+jest.mock('../../../../../../../../hooks', () => ({
+  ...jest.requireActual('../../../../../../../../hooks'),
+  sendGetAgents: jest.fn(),
+}));
+
 const mockUseLocation = useLocation as jest.MockedFunction<typeof useLocation>;
 
 describe('AgentlessPackagePoliciesTable', () => {
   const mockSendGetAgents = sendGetAgents as jest.MockedFunction<typeof sendGetAgents>;
+  const mockSendGetAgentsFromFlyout = sendGetAgentsFromFlyout as jest.MockedFunction<
+    typeof sendGetAgentsFromFlyout
+  >;
 
   beforeEach(() => {
     mockUseLocation.mockReturnValue({
@@ -36,6 +48,13 @@ describe('AgentlessPackagePoliciesTable', () => {
       search: '',
       hash: '',
       state: undefined,
+    });
+
+    // The flyout polls for its enrolled agent; return an empty result so it keeps
+    // rendering its header without resolving to a healthy agent.
+    mockSendGetAgentsFromFlyout.mockResolvedValue({
+      data: { items: [], total: 0, page: 1, perPage: 20 },
+      error: null,
     });
 
     mockSendGetAgents.mockResolvedValue({

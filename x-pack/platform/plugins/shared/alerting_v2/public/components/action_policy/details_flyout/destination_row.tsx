@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiBadge, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { EuiBadge } from '@elastic/eui';
 import type { ActionPolicyDestination } from '@kbn/alerting-v2-schemas';
 import React from 'react';
 import { WorkflowDestinationLink } from '../workflow_destination_link';
@@ -17,13 +17,9 @@ interface Props {
 export const DestinationRow = ({ destination }: Props) => {
   if (destination.type === 'workflow') {
     return (
-      <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-        <EuiFlexItem grow={false}>
-          <EuiBadge color="hollow" iconType="workflow">
-            <WorkflowDestinationLink id={destination.id} />
-          </EuiBadge>
-        </EuiFlexItem>
-      </EuiFlexGroup>
+      <EuiBadge color="hollow" iconType="workflow" title="" css={{ alignSelf: 'flex-start' }}>
+        <WorkflowDestinationLink id={destination.id} />
+      </EuiBadge>
     );
   }
   return null;

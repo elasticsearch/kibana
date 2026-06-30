@@ -6,7 +6,8 @@
  */
 
 import { useMemo } from 'react';
-import { isComputedFeature, type Feature, type Streams } from '@kbn/streams-schema';
+import { type Streams } from '@kbn/streams-schema';
+import { isComputedFeature, type Feature } from '@kbn/significant-events-schema';
 import type { QueryFunctionContext } from '@kbn/react-query';
 import { useQuery } from '@kbn/react-query';
 import { useFetchErrorToast } from '../use_fetch_error_toast';

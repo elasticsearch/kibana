@@ -19,8 +19,10 @@ project:
 dependsOn:
   - '@kbn/core'
   - '@kbn/lens-plugin'
+  - '@kbn/lens-common'
   - '@kbn/security-plugin'
   - '@kbn/spaces-plugin'
+  - '@kbn/data-views-plugin'
   - '@kbn/actions-plugin'
   - '@kbn/rule-registry-plugin'
   - '@kbn/triggers-actions-ui-plugin'

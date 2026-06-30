@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { GetChangeHistoryOptions } from '@kbn/change-history';
+import type { GetChangeHistoryOptions, LogChangeHistoryOptions } from '@kbn/change-history';
 import { ChangeHistoryClient } from '@kbn/change-history';
 import type { KibanaRequest } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
@@ -15,6 +15,7 @@ import type { Logger } from '@kbn/logging';
 import type {
   IScopedWorkflowChangeHistoryService,
   IWorkflowChangeHistoryService,
+  ScopedLogChangeHistoryOptions,
   WorkflowChangeHistoryServiceInitializeParams,
 } from './workflow_change_history_types';
 import {
@@ -23,6 +24,16 @@ import {
   WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE,
   WORKFLOW_CHANGE_HISTORY_SYSTEM_USER,
 } from '../../common/lib/workflow_change_history/constants';
+
+const toLogChangeHistoryOptions = (
+  opts: ScopedLogChangeHistoryOptions,
+  identity: { username: string; userProfileId?: string }
+): LogChangeHistoryOptions => ({
+  ...opts,
+  ...identity,
+  // ChangeHistoryClient merges partial event overrides at runtime (e.g. restore `reason` only).
+  data: opts.data as LogChangeHistoryOptions['data'],
+});
 
 export class WorkflowChangeHistoryService implements IWorkflowChangeHistoryService {
   private readonly client: ChangeHistoryClient;
@@ -86,17 +97,9 @@ export class WorkflowChangeHistoryService implements IWorkflowChangeHistoryServi
   }): IScopedWorkflowChangeHistoryService {
     return {
       log: async (change, opts) =>
-        this.client.log(change, {
-          ...opts,
-          username,
-          userProfileId,
-        }),
+        this.client.log(change, toLogChangeHistoryOptions(opts, { username, userProfileId })),
       logBulk: async (changes, opts) =>
-        this.client.logBulk(changes, {
-          ...opts,
-          username,
-          userProfileId,
-        }),
+        this.client.logBulk(changes, toLogChangeHistoryOptions(opts, { username, userProfileId })),
       getHistory: (spaceId, workflowId, opts) => this.getHistory(spaceId, workflowId, opts),
     };
   }

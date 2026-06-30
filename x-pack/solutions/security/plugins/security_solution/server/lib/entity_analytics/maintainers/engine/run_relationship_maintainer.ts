@@ -5,11 +5,13 @@
  * 2.0.
  */
 
+import { randomUUID } from 'crypto';
+
 import { errors as esErrors } from '@elastic/elasticsearch';
 
 import type { ElasticsearchClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
-import type { EntityUpdateClient } from '@kbn/entity-store/server';
+import type { EntityUpdateClient, EntityMetadataClient } from '@kbn/entity-store/server';
 
 import type {
   RelationshipIntegrationConfig,
@@ -25,7 +27,11 @@ import {
 import { buildTargetsPerActorQuery } from './build_targets_per_actor_query';
 import { parseTargetsPerActorRows } from './parse_targets_per_actor_rows';
 import { writeEntityIds, type WriteEntityIdsResult } from './update_entities';
-import { MAX_ITERATIONS } from './constants';
+import {
+  writeRelationshipMetadatas,
+  type WriteRelationshipMetadatasResult,
+} from './write_relationship_metadatas';
+import { LOOKBACK_WINDOW, MAX_ITERATIONS } from './constants';
 import { assertValidNamespace } from './validate_namespace';
 import type {
   RelationshipMaintainerSourceResult,
@@ -166,11 +172,14 @@ async function runIntegration(
   logger: Logger,
   namespace: string,
   crudClient: EntityUpdateClient,
-  abortController: AbortController | undefined
+  entityMetadataClient: EntityMetadataClient,
+  abortController: AbortController | undefined,
+  metadataContext: { scanId: string; observedAt: string }
 ): Promise<{
   buckets: number;
   recordsCount: number;
   write: WriteEntityIdsResult;
+  metadata: WriteRelationshipMetadatasResult;
   outcome: 'index_missing' | 'empty' | 'partial' | 'producing' | 'error';
   iterations: number;
   truncated: boolean;
@@ -251,8 +260,9 @@ async function runIntegration(
       afterKey = newAfterKey;
     } while (afterKey);
 
-    // Stream per-integration: write this integration's records before
-    // returning so memory does not accumulate across the outer loop.
+    // Stream per-integration: write latest entities first, then metadata.
+    // Both writes are inside the try so any transport failure sets outcome:
+    // 'error' and the outer loop continues to other integrations.
     const write = await writeEntityIds(
       crudClient,
       logger,
@@ -261,13 +271,46 @@ async function runIntegration(
       namespace,
       config.validateTargetIds
     );
-    // When truncated, the final loop pass incremented `iterations` before breaking
-    // without fetching a page — clamp to the actual number of pages completed.
+    // Only write metadata for actors that actually landed in the latest index.
+    // When bulkUpdateEntity returns a 404 (actor not yet extracted), we skip
+    // the metadata write for that actor so the two stores stay in sync.
+    const { validTargetIds, succeededEntityIds } = write;
+    const actorFilteredRecords = records.filter(
+      (r) => r.entityId !== null && succeededEntityIds.has(r.entityId)
+    );
+
+    // When target validation also ran, further restrict to the validated target set.
+    const metadataRecords = validTargetIds
+      ? actorFilteredRecords.flatMap((r) => {
+          const filteredRels: Record<string, string[]> = {};
+          for (const [relType, targetEuids] of Object.entries(r.relationships)) {
+            const valid = targetEuids.filter((id) => validTargetIds.has(id));
+            if (valid.length > 0) filteredRels[relType] = valid;
+          }
+          return Object.keys(filteredRels).length > 0
+            ? [{ ...r, relationships: filteredRels }]
+            : [];
+        })
+      : actorFilteredRecords;
+    const metadata = await writeRelationshipMetadatas(
+      entityMetadataClient,
+      logger,
+      metadataRecords,
+      {
+        scanId: metadataContext.scanId,
+        lookbackWindow: config.disableLookbackWindow ? '' : LOOKBACK_WINDOW,
+        entitySource: config.id,
+        observedAt: metadataContext.observedAt,
+      }
+    );
+    // When truncated, the final loop pass incremented `iterations` before
+    // breaking without fetching a page — clamp to actual pages completed.
     const completedIterations = truncated ? MAX_ITERATIONS : iterations;
     return {
       buckets: totalBuckets,
       recordsCount: records.length,
       write,
+      metadata,
       outcome,
       iterations: completedIterations,
       truncated,
@@ -277,7 +320,15 @@ async function runIntegration(
     return {
       buckets: totalBuckets,
       recordsCount: records.length,
-      write: { updated: 0, notFound: 0, errors: 0, droppedTargets: 0, relationshipTypeApplied: {} },
+      write: {
+        updated: 0,
+        notFound: 0,
+        errors: 0,
+        droppedTargets: 0,
+        relationshipTypeApplied: {},
+        succeededEntityIds: new Set(),
+      },
+      metadata: { docsAttempted: 0, docsApplied: 0 },
       outcome: 'error',
       iterations,
       truncated: false,
@@ -306,6 +357,7 @@ export const runRelationshipMaintainer = async ({
   logger,
   namespace,
   crudClient,
+  entityMetadataClient,
   integrations,
   abortController,
   telemetryCollector,
@@ -315,6 +367,7 @@ export const runRelationshipMaintainer = async ({
   logger: Logger;
   namespace: string;
   crudClient: EntityUpdateClient;
+  entityMetadataClient: EntityMetadataClient;
   integrations: RelationshipIntegrationConfig[];
   abortController?: AbortController;
   /**
@@ -337,6 +390,8 @@ export const runRelationshipMaintainer = async ({
   totalNotFound: number;
   /** Count of non-404 errors returned by `bulkUpdateEntity` (5xx, etc.). */
   totalWriteErrors: number;
+  /** Count of relationship metadata docs successfully appended to the metadata datastream. */
+  totalMetadataDocsApplied: number;
   /** Count of target EUIDs pruned because they don't exist in the entity store. */
   totalDroppedTargets: number;
   /** Total composite-agg pagination passes across all integrations. */
@@ -357,11 +412,20 @@ export const runRelationshipMaintainer = async ({
 
   const readClient = cpsEsClient ?? esClient;
 
+  // One scan_id + observedAt for the whole maintainer pass. Every metadata doc
+  // doc emitted across all integrations in this run carries the same values
+  // so a reader can group records by maintainer-run.
+  const metadataContext = {
+    scanId: randomUUID(),
+    observedAt: new Date().toISOString(),
+  };
+
   let totalBuckets = 0;
   let totalRecords = 0;
   let totalWritten = 0;
   let totalNotFound = 0;
   let totalWriteErrors = 0;
+  let totalMetadataDocsApplied = 0;
   let totalDroppedTargets = 0;
   let totalIterations = 0;
   let truncated = false;
@@ -376,10 +440,20 @@ export const runRelationshipMaintainer = async ({
       buckets,
       recordsCount,
       write,
+      metadata,
       outcome,
       iterations,
       truncated: integrationTruncated,
-    } = await runIntegration(config, readClient, logger, namespace, crudClient, abortController);
+    } = await runIntegration(
+      config,
+      readClient,
+      logger,
+      namespace,
+      crudClient,
+      entityMetadataClient,
+      abortController,
+      metadataContext
+    );
 
     totalIterations += iterations;
     if (integrationTruncated) truncated = true;
@@ -392,6 +466,7 @@ export const runRelationshipMaintainer = async ({
       totalWritten += write.updated;
       totalNotFound += write.notFound;
       totalWriteErrors += write.errors;
+      totalMetadataDocsApplied += metadata.docsApplied;
       totalDroppedTargets += write.droppedTargets;
     }
 
@@ -415,6 +490,7 @@ export const runRelationshipMaintainer = async ({
     totalWritten,
     totalNotFound,
     totalWriteErrors,
+    totalMetadataDocsApplied,
     totalDroppedTargets,
     totalIterations,
     truncated,

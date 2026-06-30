@@ -13,3 +13,5 @@ export const RULE_MANAGEMENT_RULES_URL_SEARCH =
   `${INTERNAL_DETECTION_ENGINE_URL}/rules/_search` as const;
 export const RULE_HISTORY_URL =
   `${INTERNAL_DETECTION_ENGINE_URL}/rules/{ruleId}/history/_list` as const;
+export const RULE_RESTORE_FROM_HISTORY_URL =
+  `${INTERNAL_DETECTION_ENGINE_URL}/rules/{ruleId}/history/{changeId}/_restore` as const;

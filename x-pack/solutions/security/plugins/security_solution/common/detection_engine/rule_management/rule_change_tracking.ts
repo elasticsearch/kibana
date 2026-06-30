@@ -18,6 +18,7 @@ export enum SecurityRuleChangeTrackingAction {
   ruleDuplicate = 'rule_duplicate',
   ruleImport = 'rule_import',
   ruleRevert = 'rule_revert',
+  ruleRestore = 'rule_restore',
 }
 
 /**

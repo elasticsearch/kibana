@@ -42,6 +42,7 @@ jest.mock('@kbn/kibana-react-plugin/public', () => {
 });
 jest.mock('@kbn/workflows-ui', () => ({
   useRunWorkflow: () => mockUseRunWorkflow(),
+  useWorkflows: () => ({ data: { results: [] } }),
   useWorkflowsCapabilities: () => mockUseWorkflowsCapabilities(),
   useWorkflowsUIEnabledSetting: () => mockUseWorkflowsUIEnabledSetting(),
   WorkflowSelector: ({ onWorkflowChange }: { onWorkflowChange: (id: string) => void }) => (

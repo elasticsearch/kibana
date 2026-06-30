@@ -117,6 +117,44 @@ describe('WorkflowManagementAuditLog', () => {
       );
     });
 
+    it('logWorkflowRestored (success and failure)', async () => {
+      const { audit, request, log } = await createAuditHarness();
+      audit.logWorkflowRestored(request, {
+        id: 'wf-1',
+        eventId: 'event-v3',
+        version: 8,
+        sequence: 3,
+      });
+      expect(log.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          message:
+            'User restored workflow from history [id=wf-1] [eventId=event-v3] [sequence=3] [version=8]',
+          event: expect.objectContaining({
+            action: WorkflowManagementAuditActions.RESTORE,
+            outcome: 'success',
+            type: ['change'],
+          }),
+        })
+      );
+
+      const { audit: a2, request: r2, log: l2 } = await createAuditHarness();
+      a2.logWorkflowRestored(r2, {
+        id: 'wf-1',
+        eventId: 'missing-event',
+        error: err,
+      });
+      expect(l2.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          message: 'User failed to restore workflow from history [id=wf-1] [eventId=missing-event]',
+          event: expect.objectContaining({
+            action: WorkflowManagementAuditActions.RESTORE,
+            outcome: 'failure',
+          }),
+          error: { code: 'Error', message: 'boom' },
+        })
+      );
+    });
+
     it('logs managed workflow fields and uses the system logger without a request', async () => {
       const { audit, systemLog } = await createAuditHarness();
       audit.logWorkflowUpdated(undefined, {

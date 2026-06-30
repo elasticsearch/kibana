@@ -59,7 +59,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -81,7 +80,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -92,7 +90,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -102,7 +99,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -124,7 +120,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -135,7 +130,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -145,7 +139,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -167,7 +160,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -178,7 +170,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -188,7 +179,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -210,7 +200,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -221,7 +210,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -231,7 +219,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -253,7 +240,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -264,7 +250,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -274,7 +259,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -296,7 +280,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -307,7 +290,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -317,7 +299,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -339,7 +320,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -350,7 +330,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -360,7 +339,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -382,7 +360,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -393,7 +370,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -403,7 +379,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -425,7 +400,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -436,7 +410,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -446,7 +419,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -468,7 +440,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -490,7 +461,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -512,7 +482,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -523,7 +492,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -533,7 +501,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -555,7 +522,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -566,7 +532,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -576,7 +541,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -598,7 +562,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -609,7 +572,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -619,7 +581,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -641,7 +602,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -652,7 +612,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -662,7 +621,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -684,7 +642,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -695,7 +652,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -705,7 +661,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -727,7 +682,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -738,7 +692,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -748,7 +701,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -770,7 +722,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -781,7 +732,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -791,7 +741,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -813,7 +762,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -824,7 +772,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -834,7 +781,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -856,7 +802,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -867,7 +812,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -877,7 +821,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -899,7 +842,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -921,7 +863,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -943,7 +884,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -965,7 +905,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -976,7 +915,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -986,7 +924,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1008,7 +945,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1019,7 +955,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1029,7 +964,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1051,7 +985,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1062,7 +995,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1072,7 +1004,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1094,7 +1025,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1105,7 +1035,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1115,7 +1044,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1137,7 +1065,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1148,7 +1075,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1158,7 +1084,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1180,7 +1105,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1191,7 +1115,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1201,7 +1124,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1223,7 +1145,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1234,7 +1155,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1244,7 +1164,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1266,7 +1185,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1277,7 +1195,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1287,7 +1204,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1309,7 +1225,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1320,7 +1235,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1330,7 +1244,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1352,7 +1265,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1374,7 +1286,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1396,7 +1307,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1418,7 +1328,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1429,7 +1338,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1439,7 +1347,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1461,7 +1368,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1472,7 +1378,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1482,7 +1387,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1504,7 +1408,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1515,7 +1418,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1525,7 +1427,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1547,7 +1448,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1558,7 +1458,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1568,7 +1467,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1590,7 +1488,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1601,7 +1498,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1611,7 +1507,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1633,7 +1528,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1644,7 +1538,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1654,7 +1547,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1676,7 +1568,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1687,7 +1578,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1697,7 +1587,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1719,7 +1608,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1730,7 +1618,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1740,7 +1627,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1762,7 +1648,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1773,7 +1658,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1783,7 +1667,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1805,7 +1688,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1827,7 +1709,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1849,7 +1730,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1871,7 +1751,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1882,7 +1761,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1892,7 +1770,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1914,7 +1791,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1925,7 +1801,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1935,7 +1810,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -1957,7 +1831,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -1968,7 +1841,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -1978,7 +1850,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -2000,7 +1871,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -2011,7 +1881,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -2021,7 +1890,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -2043,7 +1911,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -2054,7 +1921,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -2064,7 +1930,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -2086,7 +1951,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -2097,7 +1961,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -2107,7 +1970,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -2129,7 +1991,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -2140,7 +2001,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -2150,7 +2010,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -2172,7 +2031,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -2183,7 +2041,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -2193,7 +2050,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -2215,7 +2071,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'from',
@@ -2226,7 +2081,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'to',
@@ -2236,7 +2090,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -2258,7 +2111,6 @@ const bucketDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',

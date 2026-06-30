@@ -20,6 +20,9 @@ export const MAX_PAGE_SIZE = 100;
 export const MAX_TRIGGER_EVENT_SEARCH_KQL_LENGTH = 4096;
 export const MAX_TRIGGER_EVENT_SEARCH_TIME_STRING_LENGTH = 64;
 
+/** Change history `event.id` values are UUID v7 (canonical string form). */
+export const MAX_CHANGE_HISTORY_EVENT_ID_LENGTH = 36;
+
 // Versioned API constants
 export const API_VERSION = '2023-10-31';
 export { INTERNAL_API_VERSION } from '../../../../common/lib/api_constants';

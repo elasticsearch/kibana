@@ -13,6 +13,7 @@ import type {
 } from '../../../../../../common/api/entity_analytics/anomaly_summary';
 import {
   ENTITY_ANOMALY_OVERVIEW_INTERNAL_URL,
+  ENTITY_ANOMALY_PRIVILEGES_INTERNAL_URL,
   ENTITY_ANOMALY_SUMMARY_INTERNAL_URL,
 } from '../../../../../../common/entity_analytics/anomalies/constants';
 import {
@@ -52,6 +53,8 @@ apiTest.describe(
   { tag: [...tags.stateful.classic, ...tags.serverless.security.complete] },
   () => {
     let defaultHeaders: Record<string, string>;
+    let noPrivsHeaders: Record<string, string>;
+    let noMlPrivsHeaders: Record<string, string>;
     let agentPolicyId = '';
     let packagePolicyId = '';
 
@@ -59,6 +62,18 @@ apiTest.describe(
       apiTest.setTimeout(300_000);
       const credentials = await samlAuth.asInteractiveUser('admin');
       defaultHeaders = { ...credentials.cookieHeader, ...INTERNAL_HEADERS };
+
+      const noPrivsCredentials = await samlAuth.asInteractiveUser({
+        elasticsearch: { cluster: [] },
+        kibana: [{ base: [], feature: { discover: ['all'] }, spaces: ['*'] }],
+      });
+      noPrivsHeaders = { ...noPrivsCredentials.cookieHeader, ...INTERNAL_HEADERS };
+
+      const noMlPrivsCredentials = await samlAuth.asInteractiveUser({
+        elasticsearch: { cluster: [] },
+        kibana: [{ base: [], feature: { siem: ['all'] }, spaces: ['*'] }],
+      });
+      noMlPrivsHeaders = { ...noMlPrivsCredentials.cookieHeader, ...INTERNAL_HEADERS };
 
       const startMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
@@ -746,6 +761,72 @@ apiTest.describe(
 
         expect(response).toHaveStatusCode(400);
         expect(response.body.message).toContain('`min_score` must not be greater than `max_score`');
+      }
+    );
+
+    apiTest(
+      'Anomaly summary API: returns error for user without .ml-anomlies* access',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
+          headers: { ...noPrivsHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: {},
+        });
+
+        expect(response.body.message).toBe('Insufficient privileges to access feature');
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: returns error for user without .ml-anomlies* access',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
+          headers: { ...noPrivsHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: {},
+        });
+
+        expect(response.body.message).toBe('Insufficient privileges to access feature');
+      }
+    );
+
+    apiTest(
+      'Anomaly privileges API: returns has_all_required false for user without .ml-anomlies* access',
+      async ({ apiClient }) => {
+        const response = await apiClient.get(ENTITY_ANOMALY_PRIVILEGES_INTERNAL_URL, {
+          headers: { ...noPrivsHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+        });
+
+        expect(response).toHaveStatusCode(200);
+        expect(response.body.has_all_required).toBe(false);
+      }
+    );
+
+    apiTest(
+      'Anomaly privileges API: returns has_all_required true for admin with ML index access',
+      async ({ apiClient }) => {
+        const response = await apiClient.get(ENTITY_ANOMALY_PRIVILEGES_INTERNAL_URL, {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+        });
+
+        expect(response).toHaveStatusCode(200);
+        expect(response.body.has_all_required).toBe(true);
+        expect(response.body.privileges).toBeDefined();
+      }
+    );
+
+    apiTest(
+      'Anomaly privileges API: returns has_all_required false for user without ML Kibana feature privilege',
+      async ({ apiClient }) => {
+        const response = await apiClient.get(ENTITY_ANOMALY_PRIVILEGES_INTERNAL_URL, {
+          headers: { ...noMlPrivsHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+        });
+
+        expect(response).toHaveStatusCode(200);
+        expect(response.body.has_all_required).toBe(false);
       }
     );
   }

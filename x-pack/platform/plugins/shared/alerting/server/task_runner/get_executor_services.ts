@@ -41,7 +41,6 @@ interface GetExecutorServicesOpts {
   ruleResultService: RuleResultService;
   ruleData: { name: string; alertTypeId: string; id: string; spaceId: string };
   ruleTaskTimeout?: string;
-  uiamApiKey?: string | null;
 }
 
 export interface ExecutorServices {

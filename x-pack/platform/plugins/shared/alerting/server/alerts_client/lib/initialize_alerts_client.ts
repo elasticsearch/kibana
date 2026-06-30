@@ -18,6 +18,7 @@ import type {
   RuleTypeParams,
   SanitizedRule,
 } from '../../types';
+import type { RawRuleSnoozedInstance } from '../../saved_objects/schemas/raw_rule';
 import { DEFAULT_FLAPPING_SETTINGS } from '../../types';
 import type { RuleTaskInstance, RuleTypeRunnerContext } from '../../task_runner/types';
 
@@ -32,7 +33,9 @@ export type RuleData<Params extends RuleTypeParams> = Pick<
   | 'params'
   | 'muteAll'
   | 'mutedInstanceIds'
->;
+> & {
+  snoozedInstances?: RawRuleSnoozedInstance[];
+};
 
 interface InitializeAlertsClientOpts<Params extends RuleTypeParams> {
   alertsService: AlertsService | null;
@@ -112,6 +115,7 @@ export const initializeAlertsClient = async <
           alertDelay: rule.alertDelay?.active ?? 0,
           muteAll: rule.muteAll,
           mutedInstanceIds: rule.mutedInstanceIds,
+          snoozedInstances: rule.snoozedInstances,
         },
       })) ?? null;
 
@@ -138,6 +142,7 @@ export const initializeAlertsClient = async <
     runTimestamp,
     activeAlertsFromState: alertRawInstances,
     recoveredAlertsFromState: alertRecoveredRawInstances,
+    snoozedInstances: rule.snoozedInstances,
   });
 
   return alertsClient;

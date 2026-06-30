@@ -6,8 +6,9 @@
  */
 
 import type { Logger } from '@kbn/core/server';
-import type { QueryLink, StreamQuery } from '@kbn/streams-schema';
-import { QUERY_TYPE_STATS, deriveQueryType, hasSameEsql } from '@kbn/streams-schema';
+import type { QueryLink, StreamQuery } from '@kbn/significant-events-schema';
+import { deriveQueryType, hasSameEsql } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import type { Streams } from '@kbn/streams-schema';
 import { computeRuleId } from '../helpers/compute_rule_id';
 import { installQueries, uninstallQueries } from './rule_orchestration';

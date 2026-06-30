@@ -20,7 +20,6 @@ dependsOn:
   - '@kbn/zod'
   - '@kbn/zod-helpers'
   - '@kbn/streamlang'
-  - '@kbn/inference-common'
   - '@kbn/std'
 tags:
   - shared-common

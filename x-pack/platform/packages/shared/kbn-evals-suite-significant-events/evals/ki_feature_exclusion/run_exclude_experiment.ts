@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { isDuplicateFeature } from '@kbn/streams-schema';
+import { isDuplicateFeature } from '@kbn/significant-events-schema';
 import { identifyFeatures, type ExcludedFeatureSummary } from '@kbn/streams-ai';
 import { featuresPrompt } from '@kbn/streams-ai/src/features/prompt';
 import { sortBy } from 'lodash';

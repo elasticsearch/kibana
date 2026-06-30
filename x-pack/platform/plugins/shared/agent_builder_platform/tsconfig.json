@@ -36,5 +36,7 @@
     "@kbn/core-spaces-common",
     "@kbn/agent-context-layer-plugin",
     "@kbn/actions-plugin",
+    "@kbn/logging-mocks",
+    "@kbn/triggers-actions-ui-plugin",
   ]
 }

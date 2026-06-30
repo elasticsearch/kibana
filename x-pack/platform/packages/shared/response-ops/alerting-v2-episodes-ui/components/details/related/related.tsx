@@ -46,7 +46,7 @@ export function AlertEpisodesRelated({
   }
 
   return (
-    <>
+    <div>
       {showHeading ? (
         <>
           <EuiTitle size="m" data-test-subj="alertingV2RelatedAlertEpisodesSection">
@@ -74,6 +74,6 @@ export function AlertEpisodesRelated({
         getEpisodeDetailsHref={getEpisodeDetailsHref}
         compressed={compressed}
       />
-    </>
+    </div>
   );
 }

@@ -15,15 +15,30 @@ import type { AppHeaderMetadataItem, AppHeaderMetadataItems } from '../types';
 const AppHeaderMetadataEntry = ({ item }: { item: AppHeaderMetadataItem }) => {
   const { euiTheme } = useEuiTheme();
 
+  // Shared resting style for every metadata entry: subdued color, bold label.
+  const labelStyles = css`
+    color: ${euiTheme.colors.textSubdued};
+    font-weight: ${euiTheme.font.weight.bold};
+  `;
+
   if (item.type === 'button') {
     const buttonInteraction = item.href ? { href: item.href } : { onClick: item.onClick };
 
     return (
       <EuiButtonEmpty
         color="text"
+        css={[
+          labelStyles,
+          // Collapse the button to its content height so it doesn't add vertical
+          // space and inflate the centered metadata row.
+          css`
+            block-size: auto;
+            min-block-size: 0;
+            line-height: inherit;
+          `,
+        ]}
         data-test-subj={item['data-test-subj']}
         flush="both"
-        iconType={item.iconType}
         size="xs"
         {...buttonInteraction}
       >
@@ -34,22 +49,30 @@ const AppHeaderMetadataEntry = ({ item }: { item: AppHeaderMetadataItem }) => {
 
   if (item.type === 'health') {
     return (
-      <EuiHealth color={item.color} data-test-subj={item['data-test-subj']} textSize="xs">
+      <EuiHealth
+        color={item.color}
+        css={labelStyles}
+        data-test-subj={item['data-test-subj']}
+        textSize="xs"
+      >
         {item.label}
       </EuiHealth>
     );
   }
 
   return (
-    <EuiText
-      css={css`
-        color: ${euiTheme.colors.textParagraph};
-        font-weight: ${euiTheme.font.weight.medium};
-      `}
-      data-test-subj={item['data-test-subj']}
-      size="xs"
-    >
+    <EuiText css={labelStyles} data-test-subj={item['data-test-subj']} size="xs">
       {item.label}
+      {item.value !== undefined && (
+        <span
+          css={css`
+            font-weight: ${euiTheme.font.weight.medium};
+          `}
+        >
+          {' '}
+          {item.value}
+        </span>
+      )}
     </EuiText>
   );
 };

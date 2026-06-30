@@ -6,6 +6,7 @@
  */
 
 import { z } from '@kbn/zod/v4';
+import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import { ToolType } from '@kbn/agent-builder-common';
 import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
@@ -24,6 +25,7 @@ import {
 } from '../../../lib/streams/helpers/unmapped_fields';
 import { getEffectiveLifecycle } from '../../../lib/streams/lifecycle/get_effective_lifecycle';
 import type { IlmPoliciesResponse } from '../../../lib/streams/lifecycle/ilm_policies';
+import { getEsqlView } from '../../../lib/streams/esql_views/manage_esql_views';
 import {
   getDegradedDocCountsForStreams,
   getDocCountsForStreams,
@@ -101,6 +103,8 @@ export const createInspectStreamsTool = ({
     - routing: child stream routes with conditions (wired streams only)
 
     All aspects return current-state data. For time-windowed diagnostics, use ${DIAGNOSE_STREAM}.
+
+    **Query streams:** Query streams are read-only ES|QL views and are included in names: ["*"] results. Only schema/quality/lifecycle/processing/routing aspects do not apply to them; instead, when overview is requested the result includes a \`query\` object with the resolved ES|QL (\`query.esql\`), the backing view name, and any field descriptions. Use it to understand what the stream selects and which sources it reads from.
 
     **Important:** The processing and schema aspects already include inherited ancestor data
     with source attribution. Do not call this tool on parent streams to check inherited
@@ -187,7 +191,13 @@ const resolveStreamNames = async (
 ): Promise<string[]> => {
   if (names.length === 1 && names[0] === '*') {
     const allStreams = await streamsClient.listStreamsWithDataStreamExistence();
-    return allStreams.filter(({ exists }) => exists).map(({ stream }) => stream.name);
+    // `exists` reflects whether a backing data stream is present. Query streams are ES|QL
+    // views with no backing data stream, so they always report `exists: false`; keep them
+    // regardless so they are not invisible to the agent. The flag still filters out ingest
+    // streams whose data stream has not been materialized yet.
+    return allStreams
+      .filter(({ stream, exists }) => exists || Streams.QueryStream.Definition.is(stream))
+      .map(({ stream }) => stream.name);
   }
   return names;
 };
@@ -214,7 +224,7 @@ const buildStreamEntry = async ({
     typeof getDocCountsForStreams
   >[0]['esClientAsSecondaryAuthUser'];
   isServerless: boolean;
-  logger: { warn: (msg: string) => void };
+  logger: Logger;
 }): Promise<Record<string, unknown>> => {
   const definition = await streamsClient.getStream(streamName);
   const entry: Record<string, unknown> = {};
@@ -242,7 +252,8 @@ const buildStreamEntry = async ({
   } else if (streamType === 'query') {
     entry.type_context =
       'Read-only stream defined by an ES|QL query. Not part of the stream hierarchy. ' +
-      'Cannot modify processing, lifecycle, or failure store.';
+      'Cannot modify processing, lifecycle, or failure store. ' +
+      'See the query field for the ES|QL definition and the sources it reads from.';
   }
 
   if (Streams.ingest.all.Definition.is(definition)) {
@@ -256,6 +267,13 @@ const buildStreamEntry = async ({
       name: definition.name,
       description: definition.description || '',
     };
+  }
+
+  // Query streams have no ingest configuration, so the aspects below do not apply to them.
+  // The ES|QL query is what defines them, so surface it (plus field descriptions) whenever the
+  // overview is requested — otherwise the agent only sees an opaque name and gets confused.
+  if (aspects.has('overview') && Streams.QueryStream.Definition.is(definition)) {
+    entry.query = await buildQueryStreamDetails({ definition, esClient, logger });
   }
 
   if (aspects.has('schema') && Streams.ingest.all.Definition.is(definition)) {
@@ -478,6 +496,40 @@ const buildStreamEntry = async ({
   }
 
   return entry;
+};
+
+/**
+ * Resolves the inspectable details of a query stream. The stored definition only keeps a
+ * reference to the ES|QL view, so the actual query is read back from the view (the source of
+ * truth). Failures are reported inline rather than thrown so a single unreadable view does not
+ * fail the whole inspection.
+ */
+const buildQueryStreamDetails = async ({
+  definition,
+  esClient,
+  logger,
+}: {
+  definition: Streams.QueryStream.Definition;
+  esClient: ElasticsearchClient;
+  logger: Logger;
+}): Promise<Record<string, unknown>> => {
+  const { view } = definition.query;
+  const details: Record<string, unknown> = { view };
+
+  try {
+    const esqlView = await getEsqlView({ esClient, logger, name: view });
+    details.esql = esqlView.query;
+  } catch (err) {
+    details.esql_error = `Could not resolve ES|QL query from view "${view}": ${
+      err instanceof Error ? err.message : String(err)
+    }`;
+  }
+
+  if (definition.field_descriptions && Object.keys(definition.field_descriptions).length > 0) {
+    details.field_descriptions = definition.field_descriptions;
+  }
+
+  return details;
 };
 
 interface ClassicMappedField {

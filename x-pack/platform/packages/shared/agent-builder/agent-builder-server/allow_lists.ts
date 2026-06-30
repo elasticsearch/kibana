@@ -110,6 +110,7 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   'data-exploration',
   'visualization-creation',
   'graph-creation',
+  'agent-builder-traces',
 
   // Platform – Alerting
   'rule-management',
@@ -142,6 +143,7 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   'entity-analytics',
   'alert-analysis',
   'detection-rule-edit',
+  'recommend-prebuilt-rules',
   'threat-hunting',
   'find-security-rules',
   'pci-compliance',
@@ -161,6 +163,7 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   `${internalNamespaces.search}.use-case-library`,
   `${internalNamespaces.search}.elasticsearch-tutorial`,
   'skill-authoring',
+  'connector-authoring',
 ] as const;
 
 export type AgentBuilderBuiltinSkill = (typeof AGENT_BUILDER_BUILTIN_SKILLS)[number];

@@ -62,6 +62,7 @@ describe('accessesFrequentlyMaintainer', () => {
           totalWritten: 8,
           totalNotFound: 0,
           totalWriteErrors: 0,
+          totalMetadataDocsApplied: 8,
           totalDroppedTargets: 0,
           totalIterations: 15,
           truncated: false,
@@ -84,6 +85,7 @@ describe('accessesFrequentlyMaintainer', () => {
       applied: 8,
       droppedNotInStore: 0,
       failed: 0,
+      metadataDocsApplied: 8,
     });
 
     expect(payload.sources).toEqual([
@@ -119,6 +121,7 @@ describe('accessesFrequentlyMaintainer', () => {
           totalWritten: 0,
           totalNotFound: 0,
           totalWriteErrors: 0,
+          totalMetadataDocsApplied: 0,
           totalDroppedTargets: 0,
           totalIterations: 2,
           truncated: false,
@@ -146,6 +149,7 @@ describe('accessesFrequentlyMaintainer', () => {
       totalWritten: 0,
       totalNotFound: 0,
       totalWriteErrors: 0,
+      totalMetadataDocsApplied: 0,
       totalDroppedTargets: 0,
       totalIterations: 1,
       truncated: false,

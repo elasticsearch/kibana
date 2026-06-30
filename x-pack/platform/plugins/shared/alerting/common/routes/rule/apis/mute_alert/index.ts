@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-export { muteAlertParamsSchema } from './schemas/latest';
+export { muteAlertParamsSchema, muteAlertQuerySchema } from './schemas/latest';
 export {
   muteAlertParamsSchema as muteAlertParamsSchemaV1,
   muteAlertQuerySchema as muteAlertQuerySchemaV1,

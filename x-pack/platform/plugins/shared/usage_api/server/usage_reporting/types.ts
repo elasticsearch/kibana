@@ -56,6 +56,8 @@ export interface UsageSource {
   region?: string;
   /** Optional metadata such as product tier. */
   metadata?: {
+    /** Elasticsearch resource ID from the Cloud ID. */
+    cluster_id?: string;
     tier?: string;
   };
 }

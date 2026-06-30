@@ -12,5 +12,6 @@ export default function ({ loadTestFile }: FtrProviderContext) {
     loadTestFile(require.resolve('./read_rule_execution_results'));
     loadTestFile(require.resolve('./get_rule_management_filters'));
     loadTestFile(require.resolve('./change_tracking'));
+    loadTestFile(require.resolve('./restore_rule_from_changes_history'));
   });
 }

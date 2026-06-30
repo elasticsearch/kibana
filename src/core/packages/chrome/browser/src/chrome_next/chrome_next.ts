@@ -99,7 +99,10 @@ export type AppHeaderMetadataItems = readonly [
 /** @public */
 export interface AppHeaderMetadataTextItem {
   type: 'text';
+  /** When `value` is set, this acts as the bold key (e.g. "Created by"). */
   label: string;
+  /** Optional value rendered next to `label` in a subdued color. */
+  value?: string;
   'data-test-subj'?: string;
 }
 
@@ -112,7 +115,6 @@ export type AppHeaderMetadataButtonItem =
 export interface AppHeaderMetadataButtonBase {
   type: 'button';
   label: string;
-  iconType?: string;
   'data-test-subj'?: string;
 }
 

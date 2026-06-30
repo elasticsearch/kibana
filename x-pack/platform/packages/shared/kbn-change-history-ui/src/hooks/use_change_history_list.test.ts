@@ -5,9 +5,11 @@
  * 2.0.
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useChangeHistoryList } from './use_change_history_list';
 import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
+import { TEST_OBJECT_ID } from '../test_utils/change_history_test_fixtures';
+import { createChangeHistoryHookWrapper } from '../test_utils/create_change_history_hook_wrapper';
 
 describe('useChangeHistoryList', () => {
   it('loads paginated changes and appends on loadMore', async () => {
@@ -31,12 +33,16 @@ describe('useChangeHistoryList', () => {
       getChange: jest.fn(),
     };
 
-    const { result } = renderHook(() =>
-      useChangeHistoryList({
-        adapter,
-        objectId: 'obj-1',
-        pageSize: 1,
-      })
+    const { wrapper } = createChangeHistoryHookWrapper({ adapter });
+
+    const { result } = renderHook(
+      () =>
+        useChangeHistoryList({
+          adapter,
+          objectId: 'obj-1',
+          pageSize: 1,
+        }),
+      { wrapper }
     );
 
     await waitFor(() => {
@@ -90,6 +96,8 @@ describe('useChangeHistoryList', () => {
       getChange: jest.fn(),
     };
 
+    const { wrapper } = createChangeHistoryHookWrapper({ adapter });
+
     const { result, rerender } = renderHook(
       ({ objectId }) =>
         useChangeHistoryList({
@@ -97,7 +105,7 @@ describe('useChangeHistoryList', () => {
           objectId,
           pageSize: 20,
         }),
-      { initialProps: { objectId: 'obj-1' } }
+      { initialProps: { objectId: 'obj-1' }, wrapper }
     );
 
     rerender({ objectId: 'obj-2' });
@@ -122,5 +130,73 @@ describe('useChangeHistoryList', () => {
     });
 
     expect(result.current.items[0]?.id).toBe('evt-b');
+  });
+
+  it('refetch reloads the first page', async () => {
+    const listChanges = jest
+      .fn()
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: 'evt-7',
+            timestamp: '2026-06-16T12:00:00.000Z',
+            actor: { name: 'Alice' },
+            action: 'Updated',
+            isCurrent: true,
+            metadata: { version: 7 },
+          },
+        ],
+        total: 7,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: 'evt-8',
+            timestamp: '2026-06-16T13:00:00.000Z',
+            actor: { name: 'Alice' },
+            action: 'restore',
+            isCurrent: true,
+            metadata: { version: 8 },
+          },
+          {
+            id: 'evt-7',
+            timestamp: '2026-06-16T12:00:00.000Z',
+            actor: { name: 'Alice' },
+            action: 'Updated',
+            metadata: { version: 7 },
+          },
+        ],
+        total: 8,
+      });
+
+    const adapter: ChangeHistoryAdapter = {
+      listChanges,
+      getChange: jest.fn(),
+    };
+
+    const { wrapper } = createChangeHistoryHookWrapper({ adapter });
+
+    const { result } = renderHook(
+      () =>
+        useChangeHistoryList({
+          adapter,
+          objectId: TEST_OBJECT_ID,
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(listChanges).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(result.current.items[0]?.id).toBe('evt-8');
+    });
+    expect(result.current.total).toBe(8);
   });
 });

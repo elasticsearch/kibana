@@ -102,11 +102,15 @@ function getFunctionDefinition(ESFunctionDefinition: Record<string, any>): Funct
           type: convertDateTime(param.type),
           license: param.license?.toLowerCase(),
           description: param.description,
+          // ES does not yet emit hints for full-text search functions, so we
+          // mark their non-field params as constant-only here. The `field` param instead
+          // only accepts fields (no function or literal).
           ...(FULL_TEXT_SEARCH_FUNCTIONS.includes(ESFunctionDefinition.name)
-            ? // Default to false. If set to true, this parameter does not accept a function or literal, only fields.
-              param.name === 'field'
+            ? param.name === 'field'
               ? { fieldsOnly: true }
-              : { constantOnly: true }
+              : !param.hint
+              ? { hint: { kind: 'constant' as const } }
+              : {}
             : {}),
         })),
         returnType: convertDateTime(signature.returnType),
@@ -150,31 +154,10 @@ const replaceParamName = (str: string) => {
 const enrichGrouping = (
   groupingFunctionDefinitions: FunctionDefinition[]
 ): FunctionDefinition[] => {
-  return groupingFunctionDefinitions.map((op) => {
-    const newOp = {
-      ...op,
-      locationsAvailable: [...op.locationsAvailable, Location.STATS_BY],
-    };
-    if (newOp.name === 'bucket') {
-      const updatedSignatures = newOp.signatures.map((signature) => {
-        const newSignature = { ...signature };
-        if (newSignature.params && newSignature.params.length > 1) {
-          const indicesToMakeConstantOnly = [1, 2, 3];
-
-          newSignature.params = newSignature.params.map((param, index) => {
-            const newParam = { ...param };
-            if (indicesToMakeConstantOnly.includes(index)) {
-              newParam.constantOnly = true;
-            }
-            return newParam;
-          });
-        }
-        return newSignature;
-      });
-      newOp.signatures = updatedSignatures;
-    }
-    return newOp;
-  });
+  return groupingFunctionDefinitions.map((op) => ({
+    ...op,
+    locationsAvailable: [...op.locationsAvailable, Location.STATS_BY],
+  }));
 };
 
 const enrichOperators = (

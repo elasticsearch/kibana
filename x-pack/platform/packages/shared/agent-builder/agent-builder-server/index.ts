@@ -128,6 +128,7 @@ export type {
   AgentRegistry,
 } from './agents';
 export type { SkillRegistry } from './skills';
+export type { RendererTypeDefinition } from './renderers';
 export type {
   AgentBuilderPluginSetup,
   AgentBuilderPluginStart,
@@ -135,6 +136,7 @@ export type {
   ToolsSetup,
   ToolsStart,
   AttachmentsSetup,
+  RenderersSetup,
   SkillsSetup,
   SkillsStart,
   AgentsSetup,

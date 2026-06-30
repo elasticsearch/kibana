@@ -21,14 +21,16 @@ const isSecurityJob = (job: ModuleJob): boolean =>
 
 interface GetSecurityMlJobIdsOpts {
   ml: MlPluginSetup;
+  request: KibanaRequest;
   soClient: SavedObjectsClientContract;
 }
 
 export const getSecurityMlJobIds = async ({
   ml,
+  request,
   soClient,
 }: GetSecurityMlJobIdsOpts): Promise<string[]> => {
-  const mlModulesProvider = ml.modulesProvider({} as KibanaRequest, soClient);
+  const mlModulesProvider = ml.modulesProvider(request, soClient);
   const modules = await mlModulesProvider?.listModules?.();
 
   return (modules ?? []).flatMap((module) =>

@@ -5,9 +5,11 @@
  * 2.0.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@kbn/react-query';
 import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
 import type { ChangeHistoryDetail } from '../types/change_history_detail';
+import { useChangeHistoryConfig } from '../provider/use_change_history_config';
+import { changeHistoryDetailQueryKey } from './change_history_list_query_key';
 
 export interface UseChangeHistoryDetailArgs {
   adapter: ChangeHistoryAdapter;
@@ -28,64 +30,29 @@ export const useChangeHistoryDetail = ({
   changeId,
   enabled = true,
 }: UseChangeHistoryDetailArgs): UseChangeHistoryDetailResult => {
-  const [change, setChange] = useState<ChangeHistoryDetail | undefined>();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | undefined>();
-  const abortControllerRef = useRef<AbortController | undefined>();
+  const { scope } = useChangeHistoryConfig();
+  const { data, error, isLoading } = useQuery<ChangeHistoryDetail, Error>(
+    changeHistoryDetailQueryKey({
+      objectId,
+      changeId: changeId ?? '__none__',
+      scope,
+    }),
+    ({ signal }) => {
+      if (!changeId) {
+        throw new Error('changeId is required');
+      }
 
-  useEffect(() => {
-    if (!enabled || !changeId || !objectId) {
-      setChange(undefined);
-      setError(undefined);
-      setIsLoading(false);
-      return;
+      return adapter.getChange({ objectId, changeId, signal });
+    },
+    {
+      enabled: enabled && Boolean(changeId) && Boolean(objectId),
+      keepPreviousData: true,
     }
+  );
 
-    abortControllerRef.current?.abort();
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    const showLoadingTimer = setTimeout(() => {
-      if (!abortController.signal.aborted) {
-        setIsLoading(true);
-      }
-    }, 0);
-
-    adapter
-      .getChange({ objectId, changeId, signal: abortController.signal })
-      .then((detail) => {
-        if (abortController.signal.aborted) {
-          return;
-        }
-
-        setChange(detail);
-        setError(undefined);
-      })
-      .catch((fetchError) => {
-        if (abortController.signal.aborted) {
-          return;
-        }
-
-        setChange(undefined);
-        setError(fetchError instanceof Error ? fetchError : new Error(String(fetchError)));
-      })
-      .finally(() => {
-        if (showLoadingTimer) {
-          clearTimeout(showLoadingTimer);
-        }
-
-        if (!abortController.signal.aborted) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      if (showLoadingTimer) {
-        clearTimeout(showLoadingTimer);
-      }
-      abortController.abort();
-    };
-  }, [adapter, changeId, enabled, objectId]);
-
-  return { change, isLoading, error };
+  return {
+    change: changeId ? data : undefined,
+    isLoading,
+    error: error ?? undefined,
+  };
 };

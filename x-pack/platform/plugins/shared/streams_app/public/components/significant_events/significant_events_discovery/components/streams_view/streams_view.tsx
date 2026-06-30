@@ -7,7 +7,7 @@
 
 import { EuiFlexGroup, EuiFlexItem, EuiText } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES } from '@kbn/streams-schema';
+import { KIS_ONBOARDING_IN_PROGRESS_STATUSES } from '@kbn/significant-events-schema';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { TableRow } from './utils';
 import { parseSearchQuery } from './utils';
@@ -56,7 +56,7 @@ export function StreamsView() {
     (streamName: string) => {
       if (generatingStreamNames.includes(streamName)) return false;
       const result = streamStatusMap[streamName];
-      return !!result && !STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(result.status);
+      return !!result && !KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(result.status);
     },
     [generatingStreamNames, streamStatusMap]
   );

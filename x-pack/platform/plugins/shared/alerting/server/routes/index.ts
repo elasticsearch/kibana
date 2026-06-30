@@ -38,6 +38,8 @@ import { muteAllRuleRoute } from './rule/apis/mute_all/mute_all_rule';
 import { muteAlertRoute } from './rule/apis/mute_alert/mute_alert';
 import { unmuteAllRuleRoute } from './rule/apis/unmute_all';
 import { unmuteAlertRoute } from './rule/apis/unmute_alert/unmute_alert_route';
+import { snoozeAlertRoute } from './rule/apis/snooze_alert/snooze_alert_route';
+import { unsnoozeAlertRoute } from './rule/apis/unsnooze_alert/unsnooze_alert_route';
 import { updateRuleApiKeyRoute } from './rule/apis/update_api_key/update_rule_api_key_route';
 import { bulkEditInternalRulesRoute } from './rule/apis/bulk_edit/bulk_edit_rules_route';
 import { snoozeRuleInternalRoute, snoozeRuleRoute } from './rule/apis/snooze';
@@ -160,7 +162,9 @@ export function defineRoutes(opts: RouteOptions) {
   bulkUntrackAlertsRoute(router, licenseState);
   bulkUntrackAlertsByQueryRoute(router, licenseState);
   muteAlertRoute(router, licenseState);
+  snoozeAlertRoute(router, licenseState);
   unmuteAlertRoute(router, licenseState);
+  unsnoozeAlertRoute(router, licenseState);
   bulkMuteAlertsRoute(router, licenseState);
   bulkUnmuteAlertsRoute(router, licenseState);
   alertDeletePreviewRoute(router, licenseState);

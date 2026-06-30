@@ -6,7 +6,7 @@
  */
 
 import { type QueryFunctionContext, useQuery } from '@kbn/react-query';
-import type { EventLifecycleResponse } from '@kbn/streams-schema';
+import type { EventLifecycleResponse } from '@kbn/significant-events-schema';
 import { useKibana } from '../use_kibana';
 import { useFetchErrorToast } from '../use_fetch_error_toast';
 

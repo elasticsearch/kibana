@@ -6,16 +6,15 @@
  */
 
 import type { ListStreamDetail } from '@kbn/streams-plugin/server/routes/internal/streams/crud/route';
+import { Streams, streamMatchesIndexPatterns } from '@kbn/streams-schema';
 import {
-  Streams,
-  StreamsKIsOnboardingStep,
+  KIsOnboardingStep,
   SignificantEventsWorkflowStatus,
-  STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES,
+  KIS_ONBOARDING_IN_PROGRESS_STATUSES,
   type SignificantEventsWorkflowStatusResult,
-  STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
-  STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
-  streamMatchesIndexPatterns,
-} from '@kbn/streams-schema';
+  SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
+  SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
+} from '@kbn/significant-events-schema';
 import React, {
   createContext,
   useCallback,
@@ -86,17 +85,14 @@ export function KiGenerationProvider({
   const { indexPatterns } = useIndexPatternsConfig();
 
   const featuresConnectors = useInferenceFeatureConnectors(
-    STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID
+    SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID
   );
   const queriesConnectors = useInferenceFeatureConnectors(
-    STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID
+    SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID
   );
 
   const [onboardingConfig, setOnboardingConfig] = useState<OnboardingConfig>({
-    steps: [
-      StreamsKIsOnboardingStep.FeaturesIdentification,
-      StreamsKIsOnboardingStep.QueriesGeneration,
-    ],
+    steps: [KIsOnboardingStep.FeaturesIdentification, KIsOnboardingStep.QueriesGeneration],
     connectors: {},
   });
 
@@ -133,7 +129,7 @@ export function KiGenerationProvider({
     (streamName: string, statusResult: SignificantEventsWorkflowStatusResult) => {
       setStreamStatusMap((current) => ({ ...current, [streamName]: statusResult }));
 
-      const isInProgress = STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(statusResult.status);
+      const isInProgress = KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(statusResult.status);
 
       setGeneratingStreams((current) => {
         const has = current.has(streamName);

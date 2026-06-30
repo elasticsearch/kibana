@@ -29,8 +29,16 @@ export interface PluginStartDependencies {
   spaces?: SpacesPluginStart;
 }
 
+export interface AgentBuilderPlatformTracingFeaturesStart {
+  /**
+   * Syncs the tracing features for a space.
+   */
+  sync: (options: { enabled: boolean; spaceId?: string }) => Promise<void>;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface AgentBuilderPlatformPluginSetup {}
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface AgentBuilderPlatformPluginStart {}
+export interface AgentBuilderPlatformPluginStart {
+  tracingFeatures: AgentBuilderPlatformTracingFeaturesStart;
+}

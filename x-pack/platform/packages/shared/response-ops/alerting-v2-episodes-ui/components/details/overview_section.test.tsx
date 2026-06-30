@@ -20,6 +20,10 @@ jest.mock('./lifecycle_heatmap_section', () => ({
   )),
 }));
 
+jest.mock('./trend_chart_section', () => ({
+  AlertEpisodeTrendChartSection: jest.fn(() => <div data-test-subj="trendChartSectionStub" />),
+}));
+
 jest.mock('./severity_heatmap_section', () => ({
   AlertEpisodeSeverityHeatmapSection: jest.fn(() => (
     <div data-test-subj="severityHeatmapSectionStub" />
@@ -49,6 +53,7 @@ describe('AlertEpisodeOverviewSection', () => {
     );
 
     expect(screen.getByTestId('overviewListSectionStub')).toBeInTheDocument();
+    expect(screen.getByTestId('trendChartSectionStub')).toBeInTheDocument();
     expect(screen.getByTestId('lifecycleHeatmapSectionStub')).toBeInTheDocument();
     expect(screen.getByTestId('severityHeatmapSectionStub')).toBeInTheDocument();
     expect(screen.getByTestId('ruleOverviewPanelSectionStub')).toBeInTheDocument();

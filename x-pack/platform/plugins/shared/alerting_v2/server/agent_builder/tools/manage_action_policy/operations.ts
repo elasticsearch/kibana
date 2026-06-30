@@ -19,6 +19,24 @@ import {
   STRATEGIES_REQUIRING_INTERVAL,
 } from '@kbn/alerting-v2-schemas';
 import { attachmentDataToActionPolicyPayload } from '../../../../common/agent_builder/action_policy_mappers';
+import { AGENT_BUILDER_TAG } from '../../common/constants';
+
+// Mirrors the `tagsSchema` cap in @kbn/alerting-v2-schemas (max 20 tags). Kept
+// local to avoid forcing an export purely for this guard.
+const MAX_ACTION_POLICY_TAGS = 20;
+
+/**
+ * Ensures the agent-builder provenance tag is present without clobbering any
+ * tags the user or LLM already set. Skips silently if the tag cap is already
+ * reached, so we never push a payload that fails schema validation.
+ */
+const withAgentBuilderTag = (tags: string[] | undefined | null): string[] => {
+  const existing = tags ?? [];
+  if (existing.includes(AGENT_BUILDER_TAG) || existing.length >= MAX_ACTION_POLICY_TAGS) {
+    return existing;
+  }
+  return [...existing, AGENT_BUILDER_TAG];
+};
 
 // ─── Operation schemas ────────────────────────────────────────────────────────
 // Derived from shared alerting-v2-schemas so tool-level validation stays
@@ -187,6 +205,13 @@ export const executeActionPolicyOperations = (
       }
     }
   }
+
+  // Stamp the agent-builder provenance tag on every action policy created or
+  // edited via Agent Builder so they can be measured (telemetry) and filtered
+  // alongside agent-created rules. Merged after all operations so it never
+  // overwrites user/LLM-provided tags. Applied on edits too, so a policy that
+  // loses the tag regains it whenever the agent touches it.
+  next = { ...next, tags: withAgentBuilderTag(next.tags) };
 
   if (isNew && !next.name) {
     throw new ActionPolicyOperationValidationError(

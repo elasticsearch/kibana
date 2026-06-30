@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/kbn-genai-cli'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/obs-ai-team'
+  defaultOwner: '@elastic/nightshift-context-and-research-team'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/kbn-genai-cli'
   description: Moon project for @kbn/kbn-genai-cli
   channel: ''
-  owner: '@elastic/obs-ai-team'
+  owner: '@elastic/nightshift-context-and-research-team'
   sourceRoot: x-pack/solutions/observability/packages/kbn-genai-cli
 dependsOn:
   - '@kbn/inference-common'

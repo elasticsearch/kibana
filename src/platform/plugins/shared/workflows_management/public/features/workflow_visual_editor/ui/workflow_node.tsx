@@ -21,6 +21,7 @@ import type { Node } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import React from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
+import { i18n } from '@kbn/i18n';
 import { ExecutionStatus } from '@kbn/workflows';
 import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
 import { getExecutionStatusColors } from '../../../shared/ui/status_badge';
@@ -138,10 +139,24 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
                 >
                   {node.data.label}
                   {node.data.stepExecution?.status === ExecutionStatus.COMPLETED && (
-                    <EuiIcon type="checkCircleFill" color="#16C5C0" />
+                    <EuiIcon
+                      type="checkCircleFill"
+                      color="#16C5C0"
+                      aria-label={i18n.translate(
+                        'workflows.workflowNode.completedStatusIconAriaLabel',
+                        { defaultMessage: 'Completed' }
+                      )}
+                    />
                   )}
                   {node.data.stepExecution?.status === ExecutionStatus.FAILED && (
-                    <EuiIcon type="warning" color={euiTheme.colors.danger} />
+                    <EuiIcon
+                      type="warning"
+                      color={euiTheme.colors.danger}
+                      aria-label={i18n.translate(
+                        'workflows.workflowNode.failedStatusIconAriaLabel',
+                        { defaultMessage: 'Failed' }
+                      )}
+                    />
                   )}
                 </span>
                 <div

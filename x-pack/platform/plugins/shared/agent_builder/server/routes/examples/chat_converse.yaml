@@ -8,6 +8,14 @@ requestBody:
             input: "What is Elasticsearch?"
             agent_id: "elastic-ai-agent"
             connector_id: "my-connector-id"
+        conversePublicRequestExample:
+          description: "Example request to create a public conversation"
+          value:
+            input: "What is Elasticsearch?"
+            agent_id: "elastic-ai-agent"
+            connector_id: "my-connector-id"
+            access_control:
+              access_mode: "public"
         converseRequestInferenceExample:
           description: "Example using inference_id (mutually exclusive with connector_id)"
           value:
@@ -24,6 +32,8 @@ responses:
             description: "Example response containing the chain of events representing a conversation with the agent"
             value:
               conversation_id: "696ccd6d-4bff-4b26-a62e-522ccf2dcd16"
+              access_control:
+                access_mode: "private"
               steps:
               - type: "reasoning"
                 reasoning: "Searching for official documentation or content that explains what Elasticsearch is"
@@ -50,11 +60,18 @@ x-codeSamples:
       -H "Content-Type: application/json" \
       -d '{
         "input": "What is Elasticsearch?",
-        "agent_id": "elastic-ai-agent"}'
+        "agent_id": "elastic-ai-agent",
+        "access_control": {
+          "access_mode": "public"
+        }
+      }'
 - lang: Console
   source: |
     POST kbn://api/agent_builder/converse
     {
       "input": "What is Elasticsearch?",
-      "agent_id": "elastic-ai-agent"
+      "agent_id": "elastic-ai-agent",
+      "access_control": {
+        "access_mode": "public"
+      }
     }

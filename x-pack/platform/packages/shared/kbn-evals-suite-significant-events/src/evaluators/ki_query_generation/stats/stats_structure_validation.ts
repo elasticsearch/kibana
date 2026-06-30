@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import { deriveQueryType, getStatsQueryHints, QUERY_TYPE_STATS } from '@kbn/streams-schema';
+import { deriveQueryType, getStatsQueryHints } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import type { KIQueryGenerationEvaluator } from '../types';
 import { getQueriesFromOutput } from '../types';
 

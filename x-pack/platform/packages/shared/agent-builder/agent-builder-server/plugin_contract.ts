@@ -14,6 +14,7 @@ import type {
 } from '@kbn/agent-builder-common';
 import type { StaticToolRegistration, ToolRegistry } from './tools';
 import type { AttachmentTypeDefinition } from './attachments';
+import type { RendererTypeDefinition } from './renderers';
 import type { SkillDefinition } from './skills';
 import type { SkillRegistry } from './skills/registry';
 import type { BuiltInAgentDefinition, AgentRegistry } from './agents';
@@ -57,6 +58,13 @@ export interface AttachmentsSetup {
    * Register an attachment type to be available in agentBuilder.
    */
   registerType(attachmentType: AttachmentTypeDefinition): void;
+}
+
+export interface RenderersSetup {
+  /**
+   * Register a renderer type to be available in agentBuilder.
+   */
+  register(rendererType: RendererTypeDefinition): void;
 }
 
 export interface SkillsSetup {
@@ -190,22 +198,6 @@ export interface TopSnippetsConfig {
 }
 
 /**
- * AgentBuilder dashboard service's start contract.
- */
-export interface DashboardStart {
-  /**
-   * Syncs the Agent Builder overview dashboard across all spaces.
-   * Installs when `tracingEnabled` is true, removes otherwise.
-   */
-  syncOverview: (tracingEnabled: boolean) => Promise<void>;
-  /**
-   * Syncs the Agent Builder overview dashboard for a single space.
-   * Installs when `tracingEnabled` is true, removes otherwise.
-   */
-  syncOverviewForSpace: (tracingEnabled: boolean, spaceId: string) => Promise<void>;
-}
-
-/**
  * Setup contract of the agentBuilder plugin.
  */
 export interface AgentBuilderPluginSetup {
@@ -221,6 +213,10 @@ export interface AgentBuilderPluginSetup {
    * Attachments setup contract, which can be used to register attachment types.
    */
   attachments: AttachmentsSetup;
+  /**
+   * Renderers setup contract, which can be used to register renderer types.
+   */
+  renderers: RenderersSetup;
   /**
    * Hooks setup contract, which can be used to register lifecycle event hooks.
    */
@@ -273,8 +269,4 @@ export interface AgentBuilderPluginStart {
    * Conversations service (read-only), to list and retrieve conversations.
    */
   conversations: ConversationsStart;
-  /**
-   * Dashboard service, to manage Agent Builder managed dashboards.
-   */
-  dashboard: DashboardStart;
 }

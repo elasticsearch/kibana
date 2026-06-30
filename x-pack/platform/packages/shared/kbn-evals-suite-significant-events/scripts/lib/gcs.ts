@@ -8,7 +8,6 @@
 import type { Client } from '@elastic/elasticsearch';
 import type { ToolingLog } from '@kbn/tooling-log';
 import { GCS_BUCKET, OTEL_DEMO_NAMESPACE } from './constants';
-import { getSigeventsSnapshotKIFeaturesIndex } from '../../src/data_generators/sigevents_ki_features_index';
 
 export function generateGcsBasePath({
   runId,
@@ -54,11 +53,9 @@ export async function createSnapshot({
   log: ToolingLog;
   snapshotName: string;
   runId: string;
-  indices?: string;
+  indices: string;
 }): Promise<string[]> {
   const repoName = generateGcsRepoName({ runId });
-  const kiFeaturesIndex = getSigeventsSnapshotKIFeaturesIndex(snapshotName);
-  const indicesToCapture = indices ?? `logs*,${kiFeaturesIndex}`;
 
   try {
     await esClient.snapshot.get({ repository: repoName, snapshot: snapshotName });
@@ -74,13 +71,13 @@ export async function createSnapshot({
     }
   }
 
-  log.info(`Creating snapshot "${repoName}/${snapshotName}" (indices: ${indicesToCapture})`);
+  log.info(`Creating snapshot "${repoName}/${snapshotName}" (indices: ${indices})`);
 
   const result = await esClient.snapshot.create({
     repository: repoName,
     snapshot: snapshotName,
     wait_for_completion: true,
-    indices: indicesToCapture,
+    indices,
     include_global_state: false,
     // Tolerate any requested index that doesn't exist (e.g. the KI data stream on a
     // fresh env) instead of failing the whole snapshot. Callers should log the

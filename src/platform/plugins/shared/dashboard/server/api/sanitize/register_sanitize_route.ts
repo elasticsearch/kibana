@@ -63,11 +63,10 @@ export function registerSanitizeRoute(
         const result = await sanitize(getCachedDashboardStateSchema(), req.body);
         return res.ok({ body: result });
       } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown error';
-        logRequest(logger, req, 'warn', e.message);
-        return res.badRequest({
-          body: { message },
-        });
+        const message = e.stack ?? e.message;
+        logRequest(logger, req, 'error', message);
+        // Throw so Kibana returns a 500 HTTP response on any uncaught errors.
+        throw e;
       }
     }
   );

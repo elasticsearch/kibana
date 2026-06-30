@@ -5,9 +5,10 @@
  * 2.0.
  */
 
-import type { Feature, QueryFeature, QueryType, Streams } from '@kbn/streams-schema';
+import type { Streams } from '@kbn/streams-schema';
+import type { QueryType } from '@kbn/significant-events-schema';
+import type { Feature, QueryFeature } from '@kbn/significant-events-schema';
 import {
-  QUERY_TYPE_STATS,
   deriveQueryType,
   ensureMetadata,
   getSourcesForStream,
@@ -15,6 +16,7 @@ import {
   normalizeEsqlSafe,
   replaceFromSources,
 } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import type {
   ChatCompletionTokenCount,

@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
+import { RULE_KIND_TOOLTIPS } from '@kbn/alerting-v2-constants';
 import { RuleHeaderDescription, RuleTitleWithBadges } from './rule_header_description';
 import { RuleProvider } from './rule_context';
 import type { RuleApiResponse } from '../../services/rules_api';
@@ -88,6 +89,26 @@ describe('RuleTitleWithBadges', () => {
   it('renders kind as Alert for alert rules', () => {
     wrap(<RuleTitleWithBadges />, { ...baseRule, kind: 'alert' } as RuleApiResponse);
     expect(screen.getByTestId('kindBadge')).toHaveTextContent('Alert');
+  });
+
+  it('renders kind-specific tooltip for signal rules', async () => {
+    wrap(<RuleTitleWithBadges />);
+
+    fireEvent.mouseOver(screen.getByTestId('kindBadge'));
+
+    await waitFor(() => {
+      expect(screen.getByText(RULE_KIND_TOOLTIPS.signal)).toBeInTheDocument();
+    });
+  });
+
+  it('renders kind-specific tooltip for alert rules', async () => {
+    wrap(<RuleTitleWithBadges />, { ...baseRule, kind: 'alert' } as RuleApiResponse);
+
+    fireEvent.mouseOver(screen.getByTestId('kindBadge'));
+
+    await waitFor(() => {
+      expect(screen.getByText(RULE_KIND_TOOLTIPS.alert)).toBeInTheDocument();
+    });
   });
 
   it('renders enabled badge when rule is enabled', () => {

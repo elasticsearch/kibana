@@ -1,0 +1,71 @@
+{
+  "10.11.0": [
+    {
+      "taskType": "string",
+      "scheduledAt": "string",
+      "startedAt": "string?|null",
+      "retryAt": "string?|null",
+      "runAt": "string",
+      "schedule": "object?",
+      "params": "string",
+      "state": "string",
+      "stateVersion": "number?",
+      "traceparent": "string",
+      "user": "string?",
+      "scope": "array?",
+      "ownerId": "string?|null",
+      "enabled": "boolean?",
+      "timeoutOverride": "string?",
+      "attempts": "number",
+      "status": "idle|claiming|running|failed|unrecognized|dead_letter",
+      "version": "string?",
+      "partition": "number?",
+      "priority": "number?",
+      "apiKey": "string?",
+      "cost": "string?",
+      "uiamApiKey": "string?",
+      "userScope": {
+        "apiKeyId": "string",
+        "uiamApiKeyId": "string?",
+        "spaceId": "string",
+        "apiKeyCreatedByUser": "boolean",
+        "userProfileId": "string?"
+      }
+    }
+  ],
+  "10.12.0": [
+    {
+      "taskType": "string",
+      "scheduledAt": "string",
+      "startedAt": "string?|null",
+      "retryAt": "string?|null",
+      "runAt": "string",
+      "schedule": "object?",
+      "params": "string",
+      "state": "string",
+      "stateVersion": "number?",
+      "traceparent": "string",
+      "user": "string?",
+      "scope": "array?",
+      "ownerId": "string?|null",
+      "enabled": "boolean?",
+      "timeoutOverride": "string?",
+      "attempts": "number",
+      "status": "idle|claiming|running|failed|unrecognized|dead_letter",
+      "version": "string?",
+      "partition": "number?",
+      "priority": "number?",
+      "apiKey": "string?",
+      "cost": "string?",
+      "uiamApiKey": "string?",
+      "userScope": {
+        "apiKeyId": "string",
+        "uiamApiKeyId": "string?",
+        "spaceId": "string",
+        "apiKeyCreatedByUser": "boolean",
+        "userProfileId": "string?",
+        "userName": "string?"
+      }
+    }
+  ]
+}

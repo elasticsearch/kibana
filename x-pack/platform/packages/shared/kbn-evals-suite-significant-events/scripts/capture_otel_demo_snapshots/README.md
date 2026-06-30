@@ -5,6 +5,8 @@ This folder contains a small CLI + helper modules for producing **repeatable Ela
 The snapshots are written to **GCS** (bucket: `significant-events-datasets`) under a run-specific base path, and each scenario snapshot contains:
 - `logs*` - Demo app log data generated during the run
 - `sigevents-streams-features-<scenario>` - extracted features produced by Streams feature extraction (copied out of system indices so it can be snapshotted)
+- `sigevents-knowledge-indicators-<scenario>` - the raw knowledge-indicator docs (feature + query KIs) copied out of the `.significant_events-knowledge_indicators` data stream
+- `sigevents-discoveries-<scenario>` / `sigevents-detections-<scenario>` - only when `--with-discovery` is set: the discovery workflow's discoveries + detections
 
 ## What this does
 
@@ -14,9 +16,10 @@ For each selected scenario, the [capture_otel_demo_snapshots](index.ts) script:
 2. Waits for pods to become ready
 3. Accumulates baseline traffic for a configurable window (`--baseline-wait`)
 4. Optionally patches a failure scenario and accumulates failure traffic (`--failure-wait`)
-5. Enables Significant Events + runs feature extraction for the `logs` stream
-6. Creates an Elasticsearch snapshot to GCS
-7. Cleans up logs + extracted features, disables streams, and tears down the demo
+5. Enables Significant Events + runs KI onboarding for the `logs` stream — feature extraction always; query-KI generation additionally when `--with-discovery` is set (discovery resolves detections to ES|QL through query KIs)
+6. Optionally (`--with-discovery`) runs the discovery workflow after a `--discovery-wait` accumulation window and folds its discoveries + detections into the snapshot
+7. Creates an Elasticsearch snapshot to GCS
+8. Cleans up logs + extracted KIs, disables streams, and tears down the demo
 
 The per-scenario deploy/teardown + data cleanup is intentional as each snapshot should be isolated and not contaminated by previous scenarios.
 
@@ -38,6 +41,8 @@ The per-scenario deploy/teardown + data cleanup is intentional as each snapshot 
 | `--demo-app` | Demo app to use. Must be a registered demo type (see `listAvailableDemos()`). | `otel-demo` |
 | `--baseline-wait` | Duration to wait for baseline traffic. Accepts `s`, `m`, `h`, `d` suffixes (e.g. `3m`, `90s`, `1h`). | `3m` |
 | `--failure-wait` | Duration to wait after applying a failure scenario. Same format as `--baseline-wait`. | `5m` |
+| `--with-discovery` | Also run the discovery workflow and fold its discoveries + detections into the snapshot. Adds query-KI onboarding (feature onboarding always runs). Omit for a features-only snapshot (query-generation / feature-extraction evals). | `false` |
+| `--discovery-wait` | Duration to let data accumulate before triggering discovery. Same format as `--baseline-wait`. Only applies with `--with-discovery`. | `5m` |
 | `--dry-run` | Print what would happen without deploying, extracting, or snapshotting. | `false` |
 | `--es-url` | Elasticsearch URL | from `config/kibana.dev.yml` |
 | `--es-username` | Elasticsearch username | from `config/kibana.dev.yml` |
@@ -92,6 +97,18 @@ node scripts/capture_sigevents_otel_demo_snapshots.js \
   --connector-id <connectorId> \
   --baseline-wait 5m \
   --failure-wait 15m
+```
+
+### Capture with the discovery workflow
+
+Run the discovery workflow and fold its discoveries + detections (and the query KIs it needs) into each snapshot. Required for the discovery investigator/judge evals:
+
+```
+node scripts/capture_sigevents_otel_demo_snapshots.js \
+  --connector-id <connectorId> \
+  --scenario ledger-db-disconnect \
+  --with-discovery \
+  --discovery-wait 5m
 ```
 
 ## Output

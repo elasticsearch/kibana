@@ -11,6 +11,7 @@ import type { AgentBuilderStartDependencies, OpenConversationSidebarReturn } fro
 import type { OpenSidebarInternalOptions } from '../sidebar/types';
 import type { AgentService } from './agents';
 import type { AttachmentsService } from './attachments';
+import type { RenderersService } from './renderers';
 import type { ChatService } from './chat';
 import type { ConversationsService } from './conversations';
 import type { DocLinksService } from './doc_links';
@@ -25,6 +26,7 @@ import type { EventsService } from './events';
 export interface AgentBuilderInternalService {
   agentService: AgentService;
   attachmentsService: AttachmentsService;
+  renderersService: RenderersService;
   chatService: ChatService;
   conversationsService: ConversationsService;
   docLinksService: DocLinksService;

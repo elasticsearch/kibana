@@ -208,3 +208,228 @@ describe('#alertAuditEvent - acknowledge/unacknowledge', () => {
     `);
   });
 });
+
+describe('#alertAuditEvent - snooze/unsnooze/auto_unsnooze', () => {
+  test('SNOOZE creates event with `unknown` outcome and rule context', () => {
+    expect(
+      alertAuditEvent({
+        action: AlertAuditAction.SNOOZE,
+        outcome: 'unknown',
+        id: 'instance-1',
+        ruleSavedObject: { type: 'alert', id: 'RULE_ID', name: 'my rule' },
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": undefined,
+        "event": Object {
+          "action": "alert_snooze",
+          "category": Array [
+            "database",
+          ],
+          "outcome": "unknown",
+          "type": Array [
+            "change",
+          ],
+        },
+        "kibana": Object {
+          "saved_object": Object {
+            "id": "RULE_ID",
+            "name": "my rule",
+            "type": "alert",
+          },
+        },
+        "message": "User is snoozing alert [id=instance-1] of rule [id=RULE_ID] and [name=my rule]",
+      }
+    `);
+  });
+
+  test('SNOOZE creates event with `success` outcome and rule context', () => {
+    expect(
+      alertAuditEvent({
+        action: AlertAuditAction.SNOOZE,
+        id: 'instance-1',
+        ruleSavedObject: { type: 'alert', id: 'RULE_ID', name: 'my rule' },
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": undefined,
+        "event": Object {
+          "action": "alert_snooze",
+          "category": Array [
+            "database",
+          ],
+          "outcome": "success",
+          "type": Array [
+            "change",
+          ],
+        },
+        "kibana": Object {
+          "saved_object": Object {
+            "id": "RULE_ID",
+            "name": "my rule",
+            "type": "alert",
+          },
+        },
+        "message": "User has snoozed alert [id=instance-1] of rule [id=RULE_ID] and [name=my rule]",
+      }
+    `);
+  });
+
+  test('SNOOZE creates `failure` event with rule context', () => {
+    expect(
+      alertAuditEvent({
+        action: AlertAuditAction.SNOOZE,
+        id: 'instance-1',
+        ruleSavedObject: { type: 'alert', id: 'RULE_ID', name: 'my rule' },
+        error: new Error('Unauthorized'),
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": Object {
+          "code": "Error",
+          "message": "Unauthorized",
+        },
+        "event": Object {
+          "action": "alert_snooze",
+          "category": Array [
+            "database",
+          ],
+          "outcome": "failure",
+          "type": Array [
+            "change",
+          ],
+        },
+        "kibana": Object {
+          "saved_object": Object {
+            "id": "RULE_ID",
+            "name": "my rule",
+            "type": "alert",
+          },
+        },
+        "message": "Failed attempt to snooze alert [id=instance-1] of rule [id=RULE_ID] and [name=my rule]",
+      }
+    `);
+  });
+
+  test('UNSNOOZE creates event with `success` outcome and rule context', () => {
+    expect(
+      alertAuditEvent({
+        action: AlertAuditAction.UNSNOOZE,
+        id: 'instance-1',
+        ruleSavedObject: { type: 'alert', id: 'RULE_ID', name: 'my rule' },
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": undefined,
+        "event": Object {
+          "action": "alert_unsnooze",
+          "category": Array [
+            "database",
+          ],
+          "outcome": "success",
+          "type": Array [
+            "change",
+          ],
+        },
+        "kibana": Object {
+          "saved_object": Object {
+            "id": "RULE_ID",
+            "name": "my rule",
+            "type": "alert",
+          },
+        },
+        "message": "User has unsnoozed alert [id=instance-1] of rule [id=RULE_ID] and [name=my rule]",
+      }
+    `);
+  });
+
+  test('AUTO_UNSNOOZE creates system event with `ttl_expired` reason', () => {
+    expect(
+      alertAuditSystemEvent({
+        action: AlertAuditAction.AUTO_UNSNOOZE,
+        id: 'instance-1',
+        reason: 'ttl_expired',
+        ruleSavedObject: { type: 'alert', id: 'RULE_ID', name: 'my rule' },
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": undefined,
+        "event": Object {
+          "action": "alert_auto_unsnooze",
+          "category": Array [
+            "database",
+          ],
+          "outcome": "success",
+          "type": Array [
+            "change",
+          ],
+        },
+        "kibana": Object {
+          "saved_object": Object {
+            "id": "RULE_ID",
+            "name": "my rule",
+            "type": "alert",
+          },
+        },
+        "message": "System has auto-unsnoozed alert [id=instance-1] of rule [id=RULE_ID] and [name=my rule] (reason: ttl_expired)",
+      }
+    `);
+  });
+
+  test('AUTO_UNSNOOZE creates system event with `condition_met` reason', () => {
+    expect(
+      alertAuditSystemEvent({
+        action: AlertAuditAction.AUTO_UNSNOOZE,
+        id: 'instance-2',
+        reason: 'condition_met',
+        ruleSavedObject: { type: 'alert', id: 'RULE_ID', name: 'my rule' },
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": undefined,
+        "event": Object {
+          "action": "alert_auto_unsnooze",
+          "category": Array [
+            "database",
+          ],
+          "outcome": "success",
+          "type": Array [
+            "change",
+          ],
+        },
+        "kibana": Object {
+          "saved_object": Object {
+            "id": "RULE_ID",
+            "name": "my rule",
+            "type": "alert",
+          },
+        },
+        "message": "System has auto-unsnoozed alert [id=instance-2] of rule [id=RULE_ID] and [name=my rule] (reason: condition_met)",
+      }
+    `);
+  });
+
+  test('SNOOZE without rule context falls back to alert-only message', () => {
+    expect(
+      alertAuditEvent({
+        action: AlertAuditAction.SNOOZE,
+        id: 'instance-1',
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": undefined,
+        "event": Object {
+          "action": "alert_snooze",
+          "category": Array [
+            "database",
+          ],
+          "outcome": "success",
+          "type": Array [
+            "change",
+          ],
+        },
+        "message": "User has snoozed alert [id=instance-1]",
+      }
+    `);
+  });
+});

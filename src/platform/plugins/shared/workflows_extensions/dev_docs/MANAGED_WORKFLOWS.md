@@ -422,11 +422,21 @@ For `yaml`-based definitions (no template values), a direct annotation (`: Manag
 
 ### `version` — definition versioning
 
-Every managed definition declares a `version: number` (positive integer, starting at 1). Bump it whenever you ship a change to the definition's `yaml` or `yamlTemplate`.
+Every managed definition declares a `version: number` (positive integer, starting at 1).
 
-- **`version` is metadata, not a reconciliation trigger.** The `definitionHash` (SHA-256 of the YAML content) remains the source of truth for whether an update is needed. The `version` provides a human-readable label persisted as `managedVersion` on the workflow document.
-- Consumers (and future APIs) can compare the installed `managedVersion` on a document against the registry definition's `version` to answer "is this workflow up to date?" without inspecting hashes.
+- **`version` participates in reconciliation.** An install is skipped only when both the `definitionHash` (SHA-256 of the YAML content) and the stored `managedVersion` match the definition's current values. A version bump alone (without YAML changes) is enough to trigger a managed update — this is how non-YAML config changes (e.g. `billable`) are propagated.
 - `version` is not auto-derived from the hash — it is an explicit declaration that the owner controls.
+
+The definition's `version` is persisted as `managedVersion` on the workflow document. It serves three main purposes:
+
+1. **yamlTemplate migration** — For definitions using `yamlTemplate`, the version drives migrations when the template value structure changes between versions. This is not relevant for definitions using static `yaml`.
+2. **Telemetry & visibility** — The `managedVersion` is a human-readable label logged in telemetry and audit events, and returned in API responses (to the user in the GET workflow endpoint, or plugin-to-plugin via `managedWorkflowClient.getWorkflowStatus`). It helps answer "is this workflow up to date?"
+3. **Non-YAML config updates** — While YAML content changes trigger managed workflow updates automatically (based on content hash), other config properties (e.g. `billable`) do not. Bumping the version explicitly forces the workflow and its full config to be updated.
+
+**When to bump `version`:**
+
+- **Bump** when the change involves non-YAML config (e.g. `billable`, `management` policy changes), or when it is a YAML change you want explicit visibility/auditability for.
+- **Optional** when the change is YAML-only and minor (e.g. a display name fix) — the content hash diff will trigger the upgrade regardless, and the version bump adds no functional value in this case.
 
 ### `billable` — execution metering
 
@@ -543,6 +553,6 @@ Because there is a **single persisted document** for a global workflow, any edit
 9. Pick lifecycle policy intentionally (`static`/`dynamic`, `auto`/`on_adopt`, `enforced`/`restorable`).
 10. Use `yamlTemplate` only when install-time values are required.
 11. Ask the Workflows team if you are unsure whether the workflow should be billable.
-12. Bump `version` on the definition whenever you change the `yaml` or `yamlTemplate`.
+12. Bump `version` on the definition when changing non-YAML config or when you want explicit visibility for a YAML change. For minor YAML-only fixes, bumping is optional (the content hash triggers the upgrade).
 13. Use `managed.getWorkflowStatus(...)` for read-only pre-flight checks before execution.
 14. Execute via `managed.execute(request, ...)`; for dynamic instances, pass the deterministic `workflowId`.

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { CODE_ANALYSIS_FEATURE_TYPE } from '@kbn/streams-schema';
+import { CODE_ANALYSIS_FEATURE_TYPE } from '@kbn/significant-events-schema';
 import type { ComputedFeatureGenerator } from './types';
 
 /**

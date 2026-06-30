@@ -5,13 +5,15 @@
  * 2.0.
  */
 
-import type { Feature, FeatureUpsert, QueryLink, StreamQuery } from '@kbn/streams-schema';
-import {
-  QUERY_TYPE_STATS,
-  computeFeatureUuid,
-  normalizeFeatureSlug,
-  deriveQueryType,
-} from '@kbn/streams-schema';
+import type {
+  Feature,
+  FeatureUpsert,
+  QueryLink,
+  StreamQuery,
+} from '@kbn/significant-events-schema';
+import { deriveQueryType } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
+import { computeFeatureUuid, normalizeFeatureSlug } from '@kbn/significant-events-schema';
 import type {
   StoredFeatureKnowledgeIndicator,
   StoredKnowledgeIndicator,

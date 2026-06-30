@@ -101,9 +101,15 @@ export const INCIDENT_MANAGEMENT_SYSTEM = i18n.translate('xpack.cases.caseTable.
 });
 
 export const SEARCH_PLACEHOLDER = i18n.translate('xpack.cases.caseTable.searchPlaceholder', {
-  defaultMessage:
-    'Free text, field label, or field:value. Use "" for multi-word, e.g. network Priority:high "Start date":01/01/2025',
+  defaultMessage: 'Search cases',
 });
+
+export const SEARCH_PLACEHOLDER_TEMPLATES_V2 = i18n.translate(
+  'xpack.cases.caseTable.searchPlaceholderTemplatesV2',
+  {
+    defaultMessage: 'Search by text, field label, or field:value',
+  }
+);
 
 export const CLOSED = i18n.translate('xpack.cases.caseTable.closed', {
   defaultMessage: 'Closed',

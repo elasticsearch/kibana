@@ -64,6 +64,7 @@ const makeAnomalySummaryEntry = (
   partitionFieldName: null,
   partitionFieldValue: null,
   recordScore: 75,
+  recordId: 'record-1',
   timestamp: '2023-11-14T22:13:20.000Z',
   actual: [],
   typical: [],

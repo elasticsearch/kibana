@@ -7,7 +7,7 @@
     "example": "examples"
   },
   "dependencies": {
-    "@redocly/cli": "2.30.4",
+    "@redocly/cli": "2.35.1",
     "bump-cli": "2.10.0"
   },
   "scripts": {

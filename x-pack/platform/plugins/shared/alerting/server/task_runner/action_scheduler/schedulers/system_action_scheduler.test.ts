@@ -155,6 +155,28 @@ describe('System Action Scheduler', () => {
       alerts = { ...newAlert1, ...newAlert2 };
     });
 
+    test('should include snoozed alert IDs in excludedAlertInstanceIds when querying summarized alerts', async () => {
+      alertsClient.getProcessedAlerts.mockReturnValue(alerts);
+      const summarizedAlerts = {
+        new: { count: 2, data: [mockAAD, mockAAD] },
+        ongoing: { count: 0, data: [] },
+        recovered: { count: 0, data: [] },
+      };
+      alertsClient.getSummarizedAlerts.mockResolvedValue(summarizedAlerts);
+
+      const scheduler = new SystemActionScheduler({
+        ...getSchedulerContext(),
+        activeSnoozedIds: new Set(['alert-snoozed-1']),
+      });
+      await scheduler.getActionsToSchedule({});
+
+      expect(alertsClient.getSummarizedAlerts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          excludedAlertInstanceIds: expect.arrayContaining(['alert-snoozed-1']),
+        })
+      );
+    });
+
     test('should create actions to schedule for each system action', async () => {
       alertsClient.getProcessedAlerts.mockReturnValue(alerts);
 

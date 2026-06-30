@@ -30,6 +30,9 @@ export const queryKeys = {
   episodeEventsAll: () => [...queryKeys.all, 'episode-events'] as const,
   episodeEvents: (spaceId: string, episodeId: string) =>
     [...queryKeys.episodeEventsAll(), spaceId, episodeId] as const,
+  episodeTrendAll: () => [...queryKeys.all, 'episode-trend'] as const,
+  episodeTrend: (spaceId: string, episodeId: string, metricLabels: string[]) =>
+    [...queryKeys.episodeTrendAll(), spaceId, episodeId, ...metricLabels] as const,
   relatedSameGroupEpisodes: (
     spaceId: string,
     ruleId: string,

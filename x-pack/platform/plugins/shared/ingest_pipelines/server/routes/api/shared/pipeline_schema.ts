@@ -15,4 +15,7 @@ export const pipelineSchema = {
     schema.arrayOf(schema.recordOf(schema.string(), schema.any()), { maxSize: 1000 })
   ),
   _meta: schema.maybe(schema.object({}, { unknowns: 'allow' })),
+  field_access_pattern: schema.maybe(
+    schema.oneOf([schema.literal('classic'), schema.literal('flexible')])
+  ),
 };

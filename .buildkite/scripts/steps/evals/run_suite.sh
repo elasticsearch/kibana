@@ -204,7 +204,11 @@ EOF
 EOF
       done <<<"$CONNECTOR_IDS"
 
-      if [[ "${KBN_EVALS_WEEKLY:-}" =~ ^(1|true)$ ]] && [[ -n "${EVAL_SUITE_SLACK_CHANNEL:-}" ]]; then
+      # Only ping suite owners on the pipeline's default branch (main). Manual rebuilds
+      # from feature branches still run the evals but skip the Slack notification, so we
+      # don't spam suite owners with results from in-progress/experimental branches.
+      EVAL_NOTIFY_BRANCH="${BUILDKITE_PIPELINE_DEFAULT_BRANCH:-main}"
+      if [[ "${KBN_EVALS_WEEKLY:-}" =~ ^(1|true)$ ]] && [[ -n "${EVAL_SUITE_SLACK_CHANNEL:-}" ]] && [[ "${BUILDKITE_BRANCH:-}" == "${EVAL_NOTIFY_BRANCH}" ]]; then
         cat >>"$FANOUT_PIPELINE_FILE" <<EOF
       - label: "LLM Evals: ${EVAL_SUITE_ID} (suite owner notify)"
         key: "kbn-evals-${group_key_safe}-suite-owner-notify"

@@ -16,15 +16,9 @@ import {
 } from '@elastic/eui';
 
 import { useStartServices } from '../../hooks';
-import type { PackagePolicy, RegistryPolicyTemplate } from '../../types';
+import type { RegistryPolicyTemplate } from '../../types';
 
-export const NextSteps = ({
-  packagePolicy,
-  policyTemplates,
-}: {
-  packagePolicy: PackagePolicy;
-  policyTemplates?: RegistryPolicyTemplate[];
-}) => {
+export const NextSteps = ({ policyTemplates }: { policyTemplates?: RegistryPolicyTemplate[] }) => {
   const { application } = useStartServices();
 
   const configurationLinks = useMemo(() => {

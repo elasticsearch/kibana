@@ -469,7 +469,9 @@ export class AdHocTaskRunner implements CancellableTask {
       }
 
       // Generate fake request with API key
-      const fakeRequest = getFakeKibanaRequest(this.context, spaceId, apiKeyToUse);
+      const { fakeRequest } = getFakeKibanaRequest(this.context, spaceId, apiKeyToUse, {
+        ruleId: rule.id,
+      });
 
       return {
         adHocRunData,
@@ -693,10 +695,11 @@ export class AdHocTaskRunner implements CancellableTask {
   private async updateGapsAfterBackfillComplete() {
     if (this.scheduleToRunIndex < 0 || !this.adHocRange) return null;
 
-    const fakeRequest = getFakeKibanaRequest(
+    const { fakeRequest } = getFakeKibanaRequest(
       this.context,
       this.taskInstance.params.spaceId,
-      this.apiKeyToUse
+      this.apiKeyToUse,
+      { ruleId: this.ruleId }
     );
 
     const eventLogClient = await this.context.getEventLogClient(fakeRequest);

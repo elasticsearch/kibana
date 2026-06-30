@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { httpServerMock } from '@kbn/core/server/mocks';
 import type { Logger, SavedObjectsClientContract } from '@kbn/core/server';
 import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import { getEntityAnomalyOverview } from './get_anomaly_overview';
@@ -33,6 +34,7 @@ const mockLogger: Logger = {
 } as unknown as Logger;
 
 const mockSoClient = {} as SavedObjectsClientContract;
+const mockRequest = httpServerMock.createKibanaRequest();
 
 const FROM_MS = 1_700_000_000_000;
 const TO_MS = FROM_MS + 7 * 24 * 60 * 60 * 1000; // 7 days later
@@ -44,6 +46,7 @@ const baseParams = {
   toMs: TO_MS,
   logger: mockLogger,
   ml: mockMl,
+  request: mockRequest,
   soClient: mockSoClient,
 };
 
@@ -56,6 +59,18 @@ const emptyResult = {
   to: TO_MS,
 };
 
+interface RawHit {
+  _id: string;
+  job_id: string;
+  detector_index: number;
+  timestamp: number;
+  record_score: number;
+  function?: string;
+  actual?: number[];
+  by_field_value?: string;
+  field_name?: string;
+}
+
 const makeSearchResponse = (
   timeBuckets: Array<{
     key: number;
@@ -64,9 +79,13 @@ const makeSearchResponse = (
     jobBuckets?: Array<{ key: string; doc_count: number }>;
   }>,
   allJobKeys: string[] = [],
-  total: number = 0
+  total: number = 0,
+  rawHits: RawHit[] = []
 ) => ({
-  hits: { hits: [], total: { value: total } },
+  hits: {
+    hits: rawHits.map(({ _id, ...source }) => ({ _id, _source: source })),
+    total: { value: total },
+  },
   aggregations: {
     by_time: {
       buckets: timeBuckets.map((b) => ({
@@ -226,6 +245,88 @@ describe('getEntityAnomalyOverview', () => {
     });
   });
 
+  describe('recentAnomalies', () => {
+    const JOB = 'job-a';
+
+    it('includes recordId from the ES hit _id', async () => {
+      mockGetSecurityMlJobIds.mockResolvedValue([JOB]);
+      mockGetJobConfig.mockResolvedValue(
+        new Map([
+          [JOB, { threatTactics: [], threatTechniques: [], detectors: [], jobName: 'Test Job' }],
+        ])
+      );
+      mockMlAnomalySearch.mockResolvedValue(
+        makeSearchResponse(
+          [
+            {
+              key: FROM_MS + 1000,
+              doc_count: 1,
+              max_score: 75,
+              jobBuckets: [{ key: JOB, doc_count: 1 }],
+            },
+          ],
+          [JOB],
+          1,
+          [
+            {
+              _id: 'rec-id-1',
+              job_id: JOB,
+              detector_index: 0,
+              timestamp: FROM_MS + 1000,
+              record_score: 75,
+            },
+          ]
+        )
+      );
+
+      const result = await getEntityAnomalyOverview(baseParams);
+
+      expect(result.recentAnomalies).toHaveLength(1);
+      expect(result.recentAnomalies[0].recordId).toBe('rec-id-1');
+    });
+
+    it('populates jobId, jobName and timestamp', async () => {
+      mockGetSecurityMlJobIds.mockResolvedValue([JOB]);
+      mockGetJobConfig.mockResolvedValue(
+        new Map([
+          [JOB, { threatTactics: [], threatTechniques: [], detectors: [], jobName: 'Auth Job' }],
+        ])
+      );
+      mockMlAnomalySearch.mockResolvedValue(
+        makeSearchResponse(
+          [
+            {
+              key: FROM_MS + 1000,
+              doc_count: 1,
+              max_score: 60,
+              jobBuckets: [{ key: JOB, doc_count: 1 }],
+            },
+          ],
+          [JOB],
+          1,
+          [
+            {
+              _id: 'rec-42',
+              job_id: JOB,
+              detector_index: 2,
+              timestamp: FROM_MS + 1000,
+              record_score: 60,
+            },
+          ]
+        )
+      );
+
+      const result = await getEntityAnomalyOverview(baseParams);
+
+      expect(result.recentAnomalies[0]).toMatchObject({
+        recordId: 'rec-42',
+        jobId: JOB,
+        jobName: 'Auth Job',
+        timestamp: new Date(FROM_MS + 1000).toISOString(),
+      });
+    });
+  });
+
   describe('tactic filtering', () => {
     it('filters jobs to those matching requested threatTactics before searching', async () => {
       const jobConfigMap = new Map([
@@ -352,6 +453,7 @@ describe('getEntityAnomalyOverview', () => {
         entityType: 'host' as const,
         logger: mockLogger,
         ml: mockMl,
+        request: mockRequest,
         soClient: mockSoClient,
       });
       const after = Date.now();

@@ -20,7 +20,11 @@ export const JourneyLastScreenshot = ({
   timestamp?: string;
   size: ScreenshotImageSize;
 }) => {
-  const { loading: stepsLoading, stepEnds } = useJourneySteps(checkGroupId);
+  const { loading: stepsLoading, stepEnds } = useJourneySteps({
+    checkGroup: checkGroupId,
+    timestamp,
+    stepsOnly: true, // this component only renders a screenshot, never journey details
+  });
 
   const lastSignificantStep = useMemo(() => {
     const copy = [...stepEnds];

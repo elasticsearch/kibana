@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/observability-ai-common'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/obs-ai-team'
+  defaultOwner: '@elastic/nightshift-context-and-research-team'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/observability-ai-common'
   description: Moon project for @kbn/observability-ai-common
   channel: ''
-  owner: '@elastic/obs-ai-team'
+  owner: '@elastic/nightshift-context-and-research-team'
   sourceRoot: x-pack/solutions/observability/packages/observability-ai/observability-ai-common
 dependsOn: []
 tags:

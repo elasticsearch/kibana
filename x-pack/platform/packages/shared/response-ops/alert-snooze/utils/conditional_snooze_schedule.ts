@@ -43,6 +43,26 @@ export interface BuildPreviewSentencesArgs {
 }
 
 /**
+ * Composes the unsnooze sentence from pre-computed parts. Returns `null` when
+ * neither part is available so callers can apply their own fallback.
+ */
+export const composeSnoozeSentence = (
+  conditionsPart: string | null,
+  formattedDate: string | null
+): string | null => {
+  if (conditionsPart && formattedDate) {
+    return i18n.getUnsnoozeIfConditionsOrOnDateMessage(conditionsPart, formattedDate);
+  }
+  if (conditionsPart) {
+    return i18n.getUnsnoozeIfConditionsMessage(conditionsPart);
+  }
+  if (formattedDate) {
+    return i18n.getUnsnoozeOnDateMessage(formattedDate);
+  }
+  return null;
+};
+
+/**
  * Compose the user-facing preview sentence(s) for the confirmed snooze
  * conditions. Returns the i18n footer hint when there's nothing to preview,
  * so the caller can render a stable array.
@@ -67,15 +87,7 @@ export const buildPreviewSentences = ({
           .reduce((acc, part) => `${acc} ${dataConnector} ${part}`)
       : null;
 
-  let sentence: string | null = null;
-  if (dataPreviewPart && formattedTimeDate) {
-    sentence = i18n.getUnsnoozeIfConditionsOrOnDateMessage(dataPreviewPart, formattedTimeDate);
-  } else if (dataPreviewPart) {
-    sentence = i18n.getUnsnoozeIfConditionsMessage(dataPreviewPart);
-  } else if (formattedTimeDate) {
-    sentence = i18n.getUnsnoozeOnDateMessage(formattedTimeDate);
-  }
-
+  const sentence = composeSnoozeSentence(dataPreviewPart, formattedTimeDate);
   return sentence ? [sentence] : [i18n.CONDITIONS_FOOTER_HINT];
 };
 

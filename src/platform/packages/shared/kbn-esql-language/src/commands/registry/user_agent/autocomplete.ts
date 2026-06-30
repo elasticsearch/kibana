@@ -12,7 +12,7 @@ import type { ESQLAstAllCommands, ESQLAstUserAgentCommand } from '@elastic/esql/
 import { isStringLiteral } from '@elastic/esql';
 import type { MapParameters } from '../../definitions/utils/autocomplete/map_expression';
 import { getCommandMapExpressionSuggestions } from '../../definitions/utils/autocomplete/map_expression';
-import { suggestForExpression } from '../../definitions/utils/autocomplete/expressions';
+import { suggestForExpression } from '../../definitions/utils';
 import { ESQL_STRING_TYPES } from '../../definitions/types';
 import {
   assignCompletionItem,

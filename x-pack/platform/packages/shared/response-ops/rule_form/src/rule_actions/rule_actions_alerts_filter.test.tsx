@@ -250,4 +250,68 @@ describe('ruleActionsAlertsFilter', () => {
     await userEvent.click(screen.getByText('Update Filter'));
     expect(mockOnChange).toHaveBeenLastCalledWith({ filters, kql: '' });
   });
+
+  test('strips array meta.value from phrases filters before onChange', async () => {
+    const phrasesFilter = {
+      $state: { store: FilterStateStore.APP_STATE },
+      meta: {
+        negate: false,
+        disabled: false,
+        type: 'phrases',
+        key: 'host.name',
+        params: ['a', 'b'],
+        value: ['a', 'b'],
+      },
+      query: {
+        bool: {
+          should: [{ match_phrase: { 'host.name': 'a' } }, { match_phrase: { 'host.name': 'b' } }],
+          minimum_should_match: 1,
+        },
+      },
+    };
+
+    (AlertsSearchBar as jest.Mock<any, any>).mockImplementation(
+      ({ onFiltersUpdated }: AlertsSearchBarProps) => (
+        <div>
+          AlertsSearchBar
+          <button onClick={() => onFiltersUpdated?.([phrasesFilter])}>Update Filter</button>
+        </div>
+      )
+    );
+
+    render(
+      <RuleActionsAlertsFilter
+        action={getAction('1', {
+          alertsFilter: {
+            query: {
+              kql: '',
+              filters: [],
+            },
+          },
+        })}
+        onChange={mockOnChange}
+        appName="stackAlerts"
+        ruleTypeId=".es-query"
+      />
+    );
+
+    await userEvent.click(screen.getByText('Update Filter'));
+
+    expect(mockOnChange).toHaveBeenLastCalledWith({
+      kql: '',
+      filters: [
+        {
+          $state: { store: FilterStateStore.APP_STATE },
+          meta: {
+            negate: false,
+            disabled: false,
+            type: 'phrases',
+            key: 'host.name',
+            params: ['a', 'b'],
+          },
+          query: phrasesFilter.query,
+        },
+      ],
+    });
+  });
 });

@@ -228,6 +228,12 @@ export const agentlessPolicyRouteService = {
   getCreatePath: () => {
     return AGENTLESS_POLICIES_ROUTES.CREATE_PATTERN;
   },
+  getListPath: () => {
+    return AGENTLESS_POLICIES_ROUTES.LIST_PATTERN;
+  },
+  getInfoPath: (policyId: string) => {
+    return AGENTLESS_POLICIES_ROUTES.GET_PATTERN.replace('{policyId}', policyId);
+  },
   getDeletePath: (policyId: string) => {
     return AGENTLESS_POLICIES_ROUTES.DELETE_PATTERN.replace('{policyId}', policyId);
   },

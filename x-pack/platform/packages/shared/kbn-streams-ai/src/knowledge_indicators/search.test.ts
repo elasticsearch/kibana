@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Feature, QueryLink, StreamQuery } from '@kbn/streams-schema';
+import type { Feature, QueryLink, StreamQuery } from '@kbn/significant-events-schema';
 import { searchKnowledgeIndicators } from './search';
 
 function makeFeature(overrides: Partial<Feature> = {}): Feature {

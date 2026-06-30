@@ -9,6 +9,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
 import { FullTraceWaterfallRenderer } from './full_trace_waterfall_renderer';
+import { FETCHER_OPERATION_IDS } from '../../../hooks/fetcher_operation_ids';
 import * as useFetcherModule from '../../../hooks/use_fetcher';
 import * as TraceWaterfallModule from '.';
 
@@ -100,6 +101,23 @@ describe('FullTraceWaterfallRenderer', () => {
     renderComponent();
 
     expect(screen.getByTestId('traceWaterfall')).toBeInTheDocument();
+  });
+
+  it('calls useFetcher with the correct operationId', () => {
+    mockUseFetcher.mockReturnValue({
+      data: undefined,
+      status: useFetcherModule.FETCH_STATUS.LOADING,
+      error: undefined,
+      refetch: jest.fn(),
+    });
+
+    renderComponent();
+
+    expect(mockUseFetcher).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.any(Array),
+      expect.objectContaining({ operationId: FETCHER_OPERATION_IDS.FETCH_FULL_TRACE_WATERFALL })
+    );
   });
 
   describe('service badge navigation', () => {

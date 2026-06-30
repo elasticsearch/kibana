@@ -7,7 +7,7 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
-import type { Feature } from '@kbn/streams-schema';
+import type { Feature } from '@kbn/significant-events-schema';
 import { useKnowledgeIndicatorsUrlState } from './use_knowledge_indicators_url_state';
 
 const mockPush = jest.fn();

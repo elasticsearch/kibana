@@ -24,10 +24,12 @@ import { ENTITY_STORE_STATUS } from '../domain/constants';
 import type { GetStatusResult } from '../domain/types';
 import {
   ENTITY_STORE_HEALTH_REPORT_EVENT,
+  ENTITY_STORE_METADATA_USAGE_EVENT,
   ENTITY_STORE_USAGE_EVENT,
   createReportEvent,
   type TelemetryReporter,
 } from '../telemetry/events';
+import { getMetadataEntitiesDataStreamName } from '../domain/asset_manager/metadata_data_stream';
 import { wrapTaskRun } from '../telemetry/traces';
 
 const config = TasksConfig[EntityStoreTaskType.enum.statusReport];
@@ -139,6 +141,20 @@ async function runTask({
       }
     })
   );
+
+  // Report metadata datastream doc count (only present when entity store v2 is enabled)
+  try {
+    const { count: docCount } = await esClient.count(
+      { index: getMetadataEntitiesDataStreamName(namespace) },
+      { signal: abortSignal }
+    );
+    telemetryReporter.reportEvent(ENTITY_STORE_METADATA_USAGE_EVENT, { namespace, docCount });
+  } catch (e) {
+    // Datastream doesn't exist when v2 FF is off — not an error worth surfacing.
+    logger.debug(
+      `Metadata datastream not present, skipping metadata usage report: ${getErrorMessage(e)}`
+    );
+  }
 
   // Report status
   try {

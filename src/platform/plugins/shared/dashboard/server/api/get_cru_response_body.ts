@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import Boom from '@hapi/boom';
 import { getMeta } from '@kbn/as-code-shared-schemas';
 import type { RequestTiming } from '@kbn/core-http-server';
 import type { SavedObject, SavedObjectsUpdateResponse } from '@kbn/core-saved-objects-api-server';
@@ -47,8 +46,6 @@ export function getDashboardCRUResponseBody(
       dashboardState = scopedDashboardState;
       warnings.push(...scopeWarnings);
     }
-  } catch (transformOutError) {
-    throw Boom.badRequest(`Invalid response. ${transformOutError.message}`);
   } finally {
     timer?.end();
   }

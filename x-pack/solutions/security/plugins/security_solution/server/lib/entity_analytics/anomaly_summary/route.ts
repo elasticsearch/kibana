@@ -17,12 +17,15 @@ import {
   API_VERSIONS,
   APP_ID,
   ENTITY_ANOMALY_OVERVIEW_INTERNAL_URL,
+  ENTITY_ANOMALY_PRIVILEGES_INTERNAL_URL,
   ENTITY_ANOMALY_SUMMARY_INTERNAL_URL,
+  ML_ANOMALIES_INDEX,
 } from '../../../../common/constants';
 import type { EntityAnalyticsRoutesDeps } from '../types';
 import { withMinimumLicense } from '../utils/with_minimum_license';
 import { getEntityAnomalies } from './get_anomaly_details';
 import { DEFAULT_OVERVIEW_LOOKBACK_MS, getEntityAnomalyOverview } from './get_anomaly_overview';
+import { _formatPrivileges, hasReadWritePermissions } from '../utils/check_and_format_privileges';
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
@@ -32,7 +35,51 @@ const getStartOfDayOneYearAgo = (): number => {
   return d.getTime();
 };
 
-export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnalyticsRoutesDeps) => {
+export const registerAnomalySummaryRoutes = ({
+  router,
+  logger,
+  ml,
+  getStartServices,
+}: EntityAnalyticsRoutesDeps) => {
+  router.versioned
+    .get({
+      access: 'internal',
+      path: ENTITY_ANOMALY_PRIVILEGES_INTERNAL_URL,
+      security: {
+        authz: {
+          requiredPrivileges: ['securitySolution', `${APP_ID}-entity-analytics`],
+        },
+      },
+    })
+    .addVersion(
+      { version: API_VERSIONS.internal.v1, validate: false },
+      async (__, request, response) => {
+        const siemResponse = buildSiemResponse(response);
+        try {
+          const [_, { security }] = await getStartServices();
+          const checkPrivileges = security.authz.checkPrivilegesDynamicallyWithRequest(request);
+          const { privileges, hasAllRequested } = await checkPrivileges({
+            elasticsearch: {
+              cluster: [],
+              index: { [ML_ANOMALIES_INDEX]: ['read'] },
+            },
+            kibana: [security.authz.actions.ui.get('ml', 'canGetJobs')],
+          });
+
+          return response.ok({
+            body: {
+              privileges: _formatPrivileges(privileges),
+              has_all_required: hasAllRequested,
+              ...hasReadWritePermissions(privileges.elasticsearch, ML_ANOMALIES_INDEX),
+            },
+          });
+        } catch (e) {
+          logger.error(`Error checking privileges for ${ML_ANOMALIES_INDEX}: ${e}`);
+          const error = transformError(e);
+          return siemResponse.error({ statusCode: error.statusCode, body: error.message });
+        }
+      }
+    );
   router.versioned
     .post({
       access: 'internal',
@@ -110,6 +157,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             threatTactics,
             logger,
             ml,
+            request,
             soClient,
           });
 
@@ -206,6 +254,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             ml,
             offset: (page - 1) * pageSize,
             pageSize,
+            request,
             sort,
             soClient,
           });

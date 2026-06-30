@@ -1,0 +1,63 @@
+responses:
+  200:
+    description: 'Indicates a successful response'
+    content:
+      application/json:
+        examples:
+          getAgentlessPolicyResponseExample:
+            description: 'Example response for getting an agentless policy by ID'
+            value:
+              item:
+                id: d52a7812-5736-4fdc-aed8-72152afa1ffa
+                name: ess_billing-1
+                description: test
+                namespace: default
+                package:
+                  name: ess_billing
+                  title: Elasticsearch Service Billing
+                  version: 1.6.0
+                inputs:
+                  ESS Billing-cel:
+                    enabled: true
+                    vars:
+                      organization_id: '1234'
+                      api_key:
+                        id: QY1sWpoBbWcMW-edr0Ee
+                        isSecretRef: true
+                      url: 'https://billing.elastic-cloud.com'
+                    streams:
+                      ess_billing.billing:
+                        enabled: true
+                        vars:
+                          lookbehind: 365
+                          hide_sensitive: true
+                          http_client_timeout: 30s
+                          tags:
+                            - forwarded
+                            - billing
+                      ess_billing.credits:
+                        enabled: false
+                created_at: '2025-11-06T18:27:43.541Z'
+                created_by: test_user
+                updated_at: '2025-11-06T18:27:43.541Z'
+                updated_by: test_user
+  400:
+    description: 'Bad Request'
+    content:
+      application/json:
+        examples:
+          genericErrorResponseExample:
+            description: 'Example of a generic error response'
+            value:
+              statusCode: 400
+              error: 'Bad Request'
+              message: 'An error message describing what went wrong'
+  404:
+    description: 'Not Found'
+    content:
+      application/json:
+        examples:
+          notFoundErrorResponseExample:
+            description: 'Example of a not found error response'
+            value:
+              message: 'Agentless policy d52a7812-5736-4fdc-aed8-72152afa1ffa not found'

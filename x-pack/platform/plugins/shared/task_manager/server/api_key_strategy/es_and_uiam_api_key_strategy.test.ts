@@ -278,6 +278,7 @@ describe('EsAndUiamApiKeyStrategy', () => {
       const result = await strategy.grantApiKeys(tasks, request, coreStart.security);
 
       expect(result.get('task-1')?.userScope.userProfileId).toBe('u_profile_456');
+      expect(result.get('task-1')?.userScope.userName).toBe('testuser');
     });
 
     test('leaves userProfileId undefined when the resolved user has no profile_uid', async () => {

@@ -20,6 +20,7 @@ import { useSendBulkToTimeline } from '../../../../detections/components/alerts_
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { EntityEventTypes } from '../../../../common/lib/telemetry';
 import { useKibana } from '../../../../common/lib/kibana/kibana_react';
+import { useIsInSecurityApp } from '../../../../common/hooks/is_in_security_app';
 
 export const useRiskInputActionsPanels = (inputs: InputAlert[], closePopover: () => void) => {
   const { cases: casesService, telemetry } = useKibana().services;
@@ -28,6 +29,7 @@ export const useRiskInputActionsPanels = (inputs: InputAlert[], closePopover: ()
   const {
     timelinePrivileges: { read: canReadTimelines },
   } = useUserPrivileges();
+  const isInSecurityApp = useIsInSecurityApp();
   const userCasesPermissions = casesService?.helpers.canUseCases([SECURITY_SOLUTION_OWNER]);
   const hasCasesPermissions = userCasesPermissions?.create && userCasesPermissions?.read;
 
@@ -37,7 +39,7 @@ export const useRiskInputActionsPanels = (inputs: InputAlert[], closePopover: ()
     tableId: TableId.riskInputs,
   });
   const timelineActions = useMemo(() => {
-    if (!canReadTimelines) {
+    if (!canReadTimelines || !isInSecurityApp) {
       return [];
     }
 
@@ -71,7 +73,14 @@ export const useRiskInputActionsPanels = (inputs: InputAlert[], closePopover: ()
         },
       },
     ];
-  }, [canReadTimelines, inputs, sendBulkEventsToTimelineHandler, closePopover, telemetry]);
+  }, [
+    canReadTimelines,
+    isInSecurityApp,
+    inputs,
+    sendBulkEventsToTimelineHandler,
+    closePopover,
+    telemetry,
+  ]);
 
   return useMemo(() => {
     const ruleName = get(['alert', ALERT_RULE_NAME], inputs[0]) ?? '';

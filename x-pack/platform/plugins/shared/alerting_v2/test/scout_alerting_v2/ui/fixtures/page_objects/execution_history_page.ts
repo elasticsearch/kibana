@@ -5,21 +5,24 @@
  * 2.0.
  */
 
-import type { Locator, ScoutPage } from '@kbn/scout';
+import type { KibanaUrl, Locator, ScoutPage } from '@kbn/scout';
 
 export class ExecutionHistoryPage {
   public readonly emptyPrompt: Locator;
   public readonly retryButton: Locator;
 
-  constructor(private readonly page: ScoutPage) {
-    // EuiBasicTable renders `noItemsMessage` in both an a11y `<caption>` and the
-    // visible `<td>`, so the empty-prompt test-subj appears twice. Scope to the
-    // cell so we match only the visible copy.
-    this.emptyPrompt = this.page.getByRole('cell').getByTestId('executionHistoryEmptyPrompt');
+  constructor(private readonly page: ScoutPage, private readonly kbnUrl: KibanaUrl) {
+    this.emptyPrompt = this.page.getByRole('cell').getByTestId('ruleExecutionHistoryEmptyPrompt');
     this.retryButton = this.page.testSubj.locator('executionHistoryRetryButton');
   }
 
-  async goto() {
+  async goto(spaceId?: string) {
+    if (spaceId) {
+      await this.page.goto(
+        this.kbnUrl.app('management/alertingV2/execution_history', { space: spaceId })
+      );
+      return;
+    }
     await this.page.gotoApp('management/alertingV2/execution_history');
   }
 }

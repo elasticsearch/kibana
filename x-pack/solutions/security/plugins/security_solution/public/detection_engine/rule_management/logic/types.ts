@@ -150,6 +150,13 @@ export interface FetchRuleHistoryProps {
   signal?: AbortSignal;
 }
 
+export interface RestoreRuleFromHistoryProps {
+  ruleId: string;
+  changeId: string;
+  revision?: number;
+  signal?: AbortSignal;
+}
+
 export interface FetchRuleSnoozingProps {
   ids: string[];
   signal?: AbortSignal;

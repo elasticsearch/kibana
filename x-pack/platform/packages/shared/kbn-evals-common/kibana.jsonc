@@ -2,7 +2,7 @@
   "type": "shared-common",
   "id": "@kbn/evals-common",
   "owner": [
-    "@elastic/obs-ai-team",
+    "@elastic/nightshift-context-and-research-team",
     "@elastic/security-genai-research-and-development"
   ],
   "group": "platform",

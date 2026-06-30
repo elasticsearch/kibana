@@ -83,7 +83,7 @@ describe('useCasesColumns ', () => {
         "columns": Array [
           Object {
             "field": "title",
-            "minWidth": "16em",
+            "minWidth": "12em",
             "name": "Name",
             "render": [Function],
             "sortable": true,
@@ -97,10 +97,10 @@ describe('useCasesColumns ', () => {
           },
           Object {
             "field": "tags",
-            "minWidth": "4em",
+            "minWidth": "8em",
             "name": "Tags",
             "render": [Function],
-            "width": "10em",
+            "width": "14em",
           },
           Object {
             "align": "right",
@@ -204,7 +204,7 @@ describe('useCasesColumns ', () => {
         "columns": Array [
           Object {
             "field": "title",
-            "minWidth": "16em",
+            "minWidth": "12em",
             "name": "Name",
             "render": [Function],
             "sortable": true,
@@ -218,10 +218,10 @@ describe('useCasesColumns ', () => {
           },
           Object {
             "field": "tags",
-            "minWidth": "4em",
+            "minWidth": "8em",
             "name": "Tags",
             "render": [Function],
-            "width": "10em",
+            "width": "14em",
           },
           Object {
             "align": "right",
@@ -319,7 +319,7 @@ describe('useCasesColumns ', () => {
         "columns": Array [
           Object {
             "field": "title",
-            "minWidth": "16em",
+            "minWidth": "12em",
             "name": "Name",
             "render": [Function],
             "sortable": true,
@@ -384,7 +384,7 @@ describe('useCasesColumns ', () => {
         "columns": Array [
           Object {
             "field": "title",
-            "minWidth": "16em",
+            "minWidth": "12em",
             "name": "Name",
             "render": [Function],
             "sortable": true,
@@ -449,7 +449,7 @@ describe('useCasesColumns ', () => {
         "columns": Array [
           Object {
             "field": "title",
-            "minWidth": "16em",
+            "minWidth": "12em",
             "name": "Name",
             "render": [Function],
             "sortable": true,
@@ -534,17 +534,17 @@ describe('useCasesColumns ', () => {
         "columns": Array [
           Object {
             "field": "title",
-            "minWidth": "16em",
+            "minWidth": "12em",
             "name": "Name",
             "render": [Function],
             "sortable": true,
           },
           Object {
             "field": "tags",
-            "minWidth": "4em",
+            "minWidth": "8em",
             "name": "Tags",
             "render": [Function],
-            "width": "10em",
+            "width": "14em",
           },
           Object {
             "align": "right",
@@ -656,17 +656,17 @@ describe('useCasesColumns ', () => {
         "columns": Array [
           Object {
             "field": "title",
-            "minWidth": "16em",
+            "minWidth": "12em",
             "name": "Name",
             "render": [Function],
             "sortable": true,
           },
           Object {
             "field": "tags",
-            "minWidth": "4em",
+            "minWidth": "8em",
             "name": "Tags",
             "render": [Function],
-            "width": "10em",
+            "width": "14em",
           },
           Object {
             "align": "right",

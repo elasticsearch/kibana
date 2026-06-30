@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { BaseFeature } from '@kbn/streams-schema';
+import type { BaseFeature } from '@kbn/significant-events-schema';
 import type { BoundInferenceClient } from '@kbn/inference-common';
 import type { ExcludedFeatureSummary, IgnoredFeature } from '@kbn/streams-ai';
 import { executeUntilValid } from '@kbn/inference-prompt-utils';

@@ -50,6 +50,7 @@ import {
   getIndexTemplate,
   createOrUpdateIndexTemplate,
   createConcreteWriteIndex,
+  getAlertSnoozeSnapshot,
   installWithTimeout,
   InstallShutdownError,
 } from './lib';
@@ -62,6 +63,8 @@ import type { ClearAlertFlappingHistoryParams } from './lib/clear_alert_flapping
 import { clearAlertFlappingHistory } from './lib/clear_alert_flapping_history';
 import type { IsExistingAlertParams } from './lib/is_existing_alert';
 import { isExistingAlert } from './lib/is_existing_alert';
+import type { GetAlertSnoozeSnapshotParams } from './lib/get_alert_snooze_snapshot';
+
 /**
  * Default field limit for alerts-as-data (`.alerts-*`) indices, their index
  * templates and component templates.
@@ -559,6 +562,16 @@ export class AlertsService implements IAlertsService {
 
   public async isExistingAlert(params: IsExistingAlertParams): Promise<boolean> {
     return isExistingAlert({
+      logger: this.options.logger,
+      esClient: await this.options.elasticsearchClientPromise,
+      ...params,
+    });
+  }
+
+  public async getAlertSnoozeSnapshot(
+    params: GetAlertSnoozeSnapshotParams
+  ): Promise<Record<string, unknown> | null> {
+    return getAlertSnoozeSnapshot({
       logger: this.options.logger,
       esClient: await this.options.elasticsearchClientPromise,
       ...params,

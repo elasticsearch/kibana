@@ -12,4 +12,9 @@ import type { ChangeHistoryDetail } from './change_history_detail';
 export type ChangeHistoryPreviewRenderFn = (props: {
   change: ChangeHistoryDetail;
   objectId: string;
+  /** Live/current version when loaded from the history list. */
+  currentChange?: ChangeHistoryDetail;
+  /** Chronologically previous version relative to the selected row. */
+  previousChange?: ChangeHistoryDetail;
+  isLoadingCompareContext?: boolean;
 }) => ReactNode;

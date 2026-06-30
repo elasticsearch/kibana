@@ -6,7 +6,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { SignificantEvent, SignificantEventStatus } from '@kbn/streams-schema';
+import type { SignificantEvent, SignificantEventStatus } from '@kbn/significant-events-schema';
 import type { EventClient } from '../../../lib/significant_events/events';
 
 export interface EventCreateInput {

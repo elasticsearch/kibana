@@ -11,7 +11,7 @@
  */
 
 import type { TaskDefinitionRegistry } from '@kbn/task-manager-plugin/server';
-import type { SignificantEventsQueriesGenerationResult } from '@kbn/streams-schema';
+import type { SignificantEventsQueriesGenerationResult } from '@kbn/significant-events-schema';
 import { getDeleteTaskRunResult } from '@kbn/task-manager-plugin/server/task';
 import { parseError } from '../../streams/errors/parse_error';
 import type { TaskContext } from '../../tasks/task_definitions';

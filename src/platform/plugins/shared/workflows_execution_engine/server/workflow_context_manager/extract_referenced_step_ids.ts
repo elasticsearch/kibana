@@ -8,9 +8,46 @@
  */
 
 import { extractPropertyPathsFromKql, scanForTemplateVariables } from '@kbn/workflows/common/utils';
-import type { EnterIfNode, GraphNodeUnion } from '@kbn/workflows/graph';
+import type { GraphNodeUnion } from '@kbn/workflows/graph';
 
 const STEPS_PREFIX = 'steps.';
+
+/**
+ * Node types whose `condition` field can be a bare KQL string referencing step
+ * outputs. For these we must KQL-parse the condition (not just Liquid-scan it),
+ * otherwise an evicted referenced output is never rehydrated.
+ */
+const CONDITION_BEARING_NODE_TYPES = new Set<GraphNodeUnion['type']>([
+  'enter-if',
+  'enter-while',
+  'exit-while',
+  'enter-continue',
+  'enter-then-branch',
+  'enter-else-branch',
+]);
+
+/**
+ * Reads a condition-bearing node's condition string regardless of where the
+ * shape stores it: `configuration.condition` (enter-if, enter-while,
+ * enter-continue) or a top-level `condition` (exit-while, condition branches).
+ * Returns `undefined` when absent or non-string (e.g. a boolean
+ * `enter-continue` condition).
+ */
+function getNodeConditionString(node: GraphNodeUnion): string | undefined {
+  if (!CONDITION_BEARING_NODE_TYPES.has(node.type)) {
+    return undefined;
+  }
+  const configuration = (node as { configuration?: { condition?: unknown } }).configuration;
+  const fromConfiguration = configuration?.condition;
+  if (typeof fromConfiguration === 'string') {
+    return fromConfiguration;
+  }
+  const topLevel = (node as { condition?: unknown }).condition;
+  if (typeof topLevel === 'string') {
+    return topLevel;
+  }
+  return undefined;
+}
 
 /**
  * Per-node cache. Graph nodes are immutable for the lifetime of an execution,
@@ -28,9 +65,11 @@ const referencedStepIdsCache = new WeakMap<GraphNodeUnion, Set<string> | null>()
  * - `null` when static analysis is ambiguous (e.g. dynamic bracket access like
  *    `steps[variables.x].output`) — caller should fall back to all predecessors
  *
- * For `enter-if` nodes, KQL condition strings are also analyzed via `extractPropertyPathsFromKql`.
- * The full node is scanned, not just `configuration`, because some graph nodes render
- * top-level fields or declare `templateDependencies` for values rendered by their implementation.
+ * For condition-bearing nodes (enter-if, enter-while, exit-while, enter-continue,
+ * condition branches), condition strings are also analyzed via `extractPropertyPathsFromKql`
+ * so bare-KQL references (no `{{ }}`) are discovered. The full node is scanned, not just
+ * `configuration`, because some graph nodes render top-level fields or declare
+ * `templateDependencies` for values rendered by their implementation.
  *
  * Result is memoised per-node — see {@link referencedStepIdsCache}.
  */
@@ -47,16 +86,17 @@ function computeReferencedStepIds(node: GraphNodeUnion): Set<string> | null {
   try {
     const variables: string[] = [];
 
-    // For enter-if nodes, the condition can be a KQL string that contains
-    // both KQL field references and template expressions. The graph union's
-    // `configuration` is broadened (atomic uses `any`), so TypeScript does
-    // not narrow `node.configuration` from the `type` discriminator alone —
-    // we keep the explicit cast to the if-specific node shape.
-    if (node.type === 'enter-if') {
-      const { condition } = (node as EnterIfNode).configuration;
-      if (typeof condition === 'string') {
-        variables.push(...extractPropertyPathsFromKql(condition));
-      }
+    // Condition strings (enter-if, enter-while, exit-while, enter-continue,
+    // condition branches) can be authored as KQL that references step outputs
+    // WITHOUT Liquid `{{ }}` markers — e.g. `steps.foo.output.status: "done"`.
+    // `scanForTemplateVariables` only sees Liquid expressions, so such bare-KQL
+    // conditions would otherwise be invisible to the rehydration planner,
+    // leaving an evicted source un-rehydrated (blank render -> wrong control
+    // flow). `extractPropertyPathsFromKql` handles both KQL field paths and any
+    // embedded `{{ }}` templates, so it is safe to apply to every condition.
+    const condition = getNodeConditionString(node);
+    if (condition !== undefined) {
+      variables.push(...extractPropertyPathsFromKql(condition));
     }
 
     // Scan the full graph node so template-bearing fields outside `configuration`

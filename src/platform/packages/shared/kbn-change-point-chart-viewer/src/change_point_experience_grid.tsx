@@ -10,13 +10,11 @@
 import { EuiDelayRender, EuiEmptyPrompt, EuiSkeletonText } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { ChartSectionTemplate } from '@kbn/unified-histogram';
-import { getChangePointSeriesColumns } from '@kbn/esql-utils';
 import React, { useMemo, useRef, useState } from 'react';
 import { i18n } from '@kbn/i18n';
 import { ChangePointExperienceGridContent } from './change_point_experience_grid_content';
 import type { UnifiedChangePointGridProps } from './types';
-import { getEsqlQuery } from './utils/get_esql_query';
-import { buildChangePointCards } from './utils/derive_change_point_cards';
+import { useChangePointCards } from './hooks/use_change_point_cards';
 
 export const ChangePointExperienceGrid: React.FC<UnifiedChangePointGridProps> = (props) => {
   const {
@@ -27,12 +25,7 @@ export const ChangePointExperienceGrid: React.FC<UnifiedChangePointGridProps> = 
     fetchParams,
   } = props;
 
-  const esql = useMemo(() => getEsqlQuery(fetchParams.query), [fetchParams.query]);
-
-  const cards = useMemo(
-    () => buildChangePointCards({ table: fetchParams.table, esql: esql ?? '' }),
-    [esql, fetchParams.table]
-  );
+  const { cards, seriesColumns } = useChangePointCards(fetchParams);
 
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -44,11 +37,6 @@ export const ChangePointExperienceGrid: React.FC<UnifiedChangePointGridProps> = 
     prevCardsRef.current = cards;
     setCurrentPage(0);
   }
-
-  const seriesColumns = useMemo(
-    () => (esql ? getChangePointSeriesColumns(esql) : undefined),
-    [esql]
-  );
 
   const hasTableRows = Boolean(fetchParams.table?.rows?.length);
   const canRenderChangePointCharts = Boolean(cards?.length);

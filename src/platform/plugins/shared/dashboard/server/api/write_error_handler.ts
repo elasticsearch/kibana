@@ -14,6 +14,7 @@ import type {
   Logger,
 } from '@kbn/core/server';
 import { SavedObjectsErrorHelpers } from '@kbn/core/server';
+import { ValidationError } from '@kbn/config-schema';
 import { TransformPanelsInError } from './transforms/in/transform_panels_in_error';
 import { logRequest } from './log_request';
 
@@ -26,6 +27,11 @@ export function writeErrorHandler(
   if (error.isBoom && error.output.statusCode === 403) {
     logRequest(logger, req, 'debug', error.message);
     return response.forbidden({ body: { message: error.message } });
+  }
+
+  if (error instanceof ValidationError) {
+    logRequest(logger, req, 'warn', error.message);
+    return response.badRequest({ body: { message: error.message } });
   }
 
   if (error instanceof TransformPanelsInError) {
@@ -49,6 +55,8 @@ export function writeErrorHandler(
     return response.conflict({ body: { message: error.message } });
   }
 
-  logRequest(logger, req, 'warn', error.message);
-  return response.badRequest({ body: { message: error.message } });
+  const message = error.stack ?? error.message;
+  logRequest(logger, req, 'error', message);
+  // Throw so Kibana returns a 500 HTTP response on any uncaught errors.
+  throw error;
 }

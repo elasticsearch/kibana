@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { type Feature } from '@kbn/streams-schema';
+import { type Feature } from '@kbn/significant-events-schema';
 import { pick } from 'lodash';
 
 export interface GetStreamFeaturesInput {

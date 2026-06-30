@@ -274,7 +274,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
                   type: 'lens',
                   name: 'lnsDatatable',
                   id: 'fb86b32f-fb7a-45cf-9511-f366fef51bbd',
-                  description: 'Cities by delay, cancellation',
+                  description: '[Flights] Most delayed cities',
                   url: '/app/lens#/edit_by_value',
                 },
               }),

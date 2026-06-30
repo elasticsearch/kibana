@@ -113,4 +113,13 @@ describe('convertBuiltinSkill', () => {
 
     expect(result.experimental).toBe(false);
   });
+
+  it('preserves uiSettingRequired', () => {
+    const skill = createMockSkillDefinition({
+      uiSettingRequired: 'agentBuilder:tracing:enabled',
+    });
+    const result = convertBuiltinSkill(skill);
+
+    expect(result.uiSettingRequired).toBe('agentBuilder:tracing:enabled');
+  });
 });

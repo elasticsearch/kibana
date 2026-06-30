@@ -14,11 +14,8 @@ import type {
   ToolAvailabilityResult,
 } from '@kbn/agent-builder-server';
 import type { Logger } from '@kbn/core/server';
-import {
-  getStreamTypeFromDefinition,
-  type StreamType,
-  upsertStreamQueryRequestSchema,
-} from '@kbn/streams-schema';
+import { getStreamTypeFromDefinition, type StreamType } from '@kbn/streams-schema';
+import { upsertStreamQueryRequestSchema } from '@kbn/significant-events-schema';
 import dedent from 'dedent';
 import type { StreamsServer } from '../../../types';
 import type { GetScopedClients } from '../../../routes/types';

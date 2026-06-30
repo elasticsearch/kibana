@@ -9,7 +9,7 @@ import type { SearchHit } from '@elastic/elasticsearch/lib/api/types';
 import { BasicPrettyPrinter } from '@elastic/esql';
 import type { ElasticsearchClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
-import type { FeatureWithFilter } from '@kbn/streams-schema';
+import type { FeatureWithFilter } from '@kbn/significant-events-schema';
 import { getDiverseSampleDocuments, getSampleDocumentsEsql } from '@kbn/ai-tools';
 import { fetchSampleDocuments } from './fetch_sample_documents';
 

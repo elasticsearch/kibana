@@ -152,6 +152,66 @@ export const WithManyItems: StoryObj<PropsAndArgs> = {
   render: (args) => <ControlledNavigation {...args} />,
 };
 
+const customTitleItem = PRIMARY_MENU_ITEMS.find((item) => item.sections)!;
+
+export const WithCustomSecondaryMenuTitle: StoryObj<PropsAndArgs> = {
+  name: 'Navigation with Custom Secondary Menu Title',
+  decorators: [
+    (Story) => {
+      return (
+        <>
+          <Global styles={styles} />
+          <Story />
+        </>
+      );
+    },
+  ],
+  args: {
+    activeItemId: customTitleItem.id,
+    items: {
+      primaryItems: PRIMARY_MENU_ITEMS.map((item) =>
+        item.id === customTitleItem.id
+          ? { ...item, secondaryMenuTitle: 'my-production-cluster' }
+          : item
+      ),
+      footerItems: PRIMARY_MENU_FOOTER_ITEMS,
+      overflowItems: [],
+    },
+  },
+  render: (args) => <ControlledNavigation {...args} />,
+};
+
+export const WithLongSecondaryMenuTitle: StoryObj<PropsAndArgs> = {
+  name: 'Navigation with Long Secondary Menu Title',
+  decorators: [
+    (Story) => {
+      return (
+        <>
+          <Global styles={styles} />
+          <Story />
+        </>
+      );
+    },
+  ],
+  args: {
+    activeItemId: customTitleItem.id,
+    items: {
+      primaryItems: PRIMARY_MENU_ITEMS.map((item) =>
+        item.id === customTitleItem.id
+          ? {
+              ...item,
+              secondaryMenuTitle:
+                'my-extremely-long-production-cluster-name-that-should-wrap-or-truncate-gracefully',
+            }
+          : item
+      ),
+      footerItems: PRIMARY_MENU_FOOTER_ITEMS,
+      overflowItems: [],
+    },
+  },
+  render: (args) => <ControlledNavigation {...args} />,
+};
+
 export const WithinLayout: StoryObj<PropsAndArgs> = {
   name: 'Navigation within Layout',
   render: (args) => <Layout {...args} />,

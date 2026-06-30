@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import os from 'os';
 import type { ConfigType } from './config';
 
 interface WindowSize {
@@ -77,12 +76,7 @@ export const args = ({
     flags.push('--no-sandbox');
   }
 
-  if (os.arch() === 'arm64' && process.platform === 'darwin') {
-    flags.push('--enable-gpu');
-  } else {
-    // see: https://chromium.googlesource.com/chromium/src/+/refs/tags/147.0.7727.57/docs/gpu/swiftshader.md
-    flags.push('--disable-gpu', '--enable-unsafe-swiftshader');
-  }
+  flags.push('--disable-gpu', '--enable-unsafe-swiftshader');
 
   return [...flags, 'about:blank'];
 };

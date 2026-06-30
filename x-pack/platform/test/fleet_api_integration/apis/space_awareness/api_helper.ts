@@ -45,6 +45,9 @@ import type {
   GetSettingsResponse,
   PutSettingsRequest,
   CreateAgentlessPolicyResponse,
+  GetAgentlessPolicyResponse,
+  ListAgentlessPoliciesRequest,
+  ListAgentlessPoliciesResponse,
   PutDownloadSourceRequest,
 } from '@kbn/fleet-plugin/common/types';
 import type {
@@ -150,6 +153,35 @@ export class SpaceTestApiClient {
       .auth(this.auth.username, this.auth.password)
       .set('kbn-xsrf', 'xxxx')
       .send();
+
+    expectStatusCode200(res);
+
+    return res.body;
+  }
+
+  async getAgentlessPolicy(
+    policyId: string,
+    spaceId?: string
+  ): Promise<GetAgentlessPolicyResponse> {
+    const res = await this.supertest
+      .get(`${this.getBaseUrl(spaceId)}/api/fleet/agentless_policies/${policyId}`)
+      .auth(this.auth.username, this.auth.password)
+      .set('kbn-xsrf', 'xxxx');
+
+    expectStatusCode200(res);
+
+    return res.body;
+  }
+
+  async listAgentlessPolicies(
+    query: ListAgentlessPoliciesRequest['query'] = {},
+    spaceId?: string
+  ): Promise<ListAgentlessPoliciesResponse> {
+    const res = await this.supertest
+      .get(`${this.getBaseUrl(spaceId)}/api/fleet/agentless_policies`)
+      .query(query)
+      .auth(this.auth.username, this.auth.password)
+      .set('kbn-xsrf', 'xxxx');
 
     expectStatusCode200(res);
 

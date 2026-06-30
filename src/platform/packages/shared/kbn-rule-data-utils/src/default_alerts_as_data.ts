@@ -160,6 +160,8 @@ const ALERT_INDEX_PATTERN = `${ALERT_NAMESPACE}.index_pattern` as const;
 
 const ALERT_MUTED = `${ALERT_NAMESPACE}.muted` as const;
 
+const ALERT_SNOOZED = `${ALERT_NAMESPACE}.snoozed` as const;
+
 const namespaces = {
   KIBANA_NAMESPACE,
   ALERT_NAMESPACE,
@@ -218,6 +220,7 @@ export const fields = {
   TIMESTAMP,
   VERSION,
   ALERT_MUTED,
+  ALERT_SNOOZED,
 };
 
 export {
@@ -278,6 +281,7 @@ export {
   TIMESTAMP,
   VERSION,
   ALERT_MUTED,
+  ALERT_SNOOZED,
 };
 
 export type DefaultAlertFieldName = ValuesType<typeof fields & typeof namespaces>;

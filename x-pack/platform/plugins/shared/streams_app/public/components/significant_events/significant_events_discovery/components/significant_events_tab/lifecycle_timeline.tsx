@@ -17,7 +17,7 @@ import {
   EuiEmptyPrompt,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { Discovery, EventLifecycleResponse } from '@kbn/streams-schema';
+import type { Discovery, EventLifecycleResponse } from '@kbn/significant-events-schema';
 import { formatTimestamp } from '../../../../../util/formatters';
 import {
   getLifecycleStatusColor,

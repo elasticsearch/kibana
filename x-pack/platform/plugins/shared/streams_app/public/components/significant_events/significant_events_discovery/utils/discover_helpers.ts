@@ -6,7 +6,7 @@
  */
 
 import type { TimeState } from '@kbn/es-query';
-import type { StreamQuery } from '@kbn/streams-schema';
+import type { StreamQuery } from '@kbn/significant-events-schema';
 
 export function buildDiscoverParams(query: StreamQuery, timeState: TimeState) {
   return {

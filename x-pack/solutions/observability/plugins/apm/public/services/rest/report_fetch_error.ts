@@ -6,13 +6,14 @@
  */
 
 import { apm } from '@elastic/apm-rum';
+import type { FetcherOperationId } from '../../hooks/fetcher_operation_ids';
 
 export const isAbortError = (error: unknown): boolean =>
   error instanceof Error && error.name === 'AbortError';
 
 interface ReportFetchErrorParams {
   error: unknown;
-  operationId: string;
+  operationId: FetcherOperationId;
 }
 
 export const reportFetchError = ({ error, operationId }: ReportFetchErrorParams): void => {

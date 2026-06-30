@@ -6,11 +6,11 @@
  */
 
 import { httpServiceMock } from '@kbn/core-http-browser-mocks';
-import { getMutedAlertsInstancesByRule } from './get_muted_alerts_instances_by_rule';
+import { getAlertSnoozeStateByRule } from './get_muted_alerts_instances_by_rule';
 
 const http = httpServiceMock.createStartContract();
 
-describe('getMutedAlertsInstancesByRule', () => {
+describe('getAlertSnoozeStateByRule', () => {
   const apiRes = {
     page: 1,
     per_page: 10,
@@ -25,20 +25,15 @@ describe('getMutedAlertsInstancesByRule', () => {
   });
 
   test('should call find API with correct params', async () => {
-    const result = await getMutedAlertsInstancesByRule({ http, ruleIds: ['foo'] });
+    const result = await getAlertSnoozeStateByRule({ http, ruleIds: ['foo'] });
 
-    expect(result).toEqual({
-      page: 1,
-      per_page: 10,
-      total: 0,
-      data: [],
-    });
+    expect(result).toEqual({ data: [] });
 
     expect(http.post.mock.calls[0]).toMatchInlineSnapshot(`
       Array [
         "/internal/alerting/rules/_find",
         Object {
-          "body": "{\\"filter\\":\\"{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"is\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert.id\\\\\\",\\\\\\"isQuoted\\\\\\":false},{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert:foo\\\\\\",\\\\\\"isQuoted\\\\\\":false}]}\\",\\"fields\\":[\\"id\\",\\"mutedInstanceIds\\"],\\"page\\":1,\\"per_page\\":1}",
+          "body": "{\\"filter\\":\\"{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"is\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert.id\\\\\\",\\\\\\"isQuoted\\\\\\":false},{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert:foo\\\\\\",\\\\\\"isQuoted\\\\\\":false}]}\\",\\"fields\\":[\\"id\\",\\"mutedInstanceIds\\",\\"snoozedInstances\\"],\\"page\\":1,\\"per_page\\":1}",
           "signal": undefined,
         },
       ]
@@ -46,20 +41,15 @@ describe('getMutedAlertsInstancesByRule', () => {
   });
 
   test('should call find API with multiple ruleIds', async () => {
-    const result = await getMutedAlertsInstancesByRule({ http, ruleIds: ['foo', 'bar'] });
+    const result = await getAlertSnoozeStateByRule({ http, ruleIds: ['foo', 'bar'] });
 
-    expect(result).toEqual({
-      page: 1,
-      per_page: 10,
-      total: 0,
-      data: [],
-    });
+    expect(result).toEqual({ data: [] });
 
     expect(http.post.mock.calls[0]).toMatchInlineSnapshot(`
       Array [
         "/internal/alerting/rules/_find",
         Object {
-          "body": "{\\"filter\\":\\"{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"or\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"is\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert.id\\\\\\",\\\\\\"isQuoted\\\\\\":false},{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert:foo\\\\\\",\\\\\\"isQuoted\\\\\\":false}]},{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"is\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert.id\\\\\\",\\\\\\"isQuoted\\\\\\":false},{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert:bar\\\\\\",\\\\\\"isQuoted\\\\\\":false}]}]}\\",\\"fields\\":[\\"id\\",\\"mutedInstanceIds\\"],\\"page\\":1,\\"per_page\\":2}",
+          "body": "{\\"filter\\":\\"{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"or\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"is\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert.id\\\\\\",\\\\\\"isQuoted\\\\\\":false},{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert:foo\\\\\\",\\\\\\"isQuoted\\\\\\":false}]},{\\\\\\"type\\\\\\":\\\\\\"function\\\\\\",\\\\\\"function\\\\\\":\\\\\\"is\\\\\\",\\\\\\"arguments\\\\\\":[{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert.id\\\\\\",\\\\\\"isQuoted\\\\\\":false},{\\\\\\"type\\\\\\":\\\\\\"literal\\\\\\",\\\\\\"value\\\\\\":\\\\\\"alert:bar\\\\\\",\\\\\\"isQuoted\\\\\\":false}]}]}\\",\\"fields\\":[\\"id\\",\\"mutedInstanceIds\\",\\"snoozedInstances\\"],\\"page\\":1,\\"per_page\\":2}",
           "signal": undefined,
         },
       ]

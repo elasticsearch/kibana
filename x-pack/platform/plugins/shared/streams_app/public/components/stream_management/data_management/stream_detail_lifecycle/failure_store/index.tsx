@@ -4,12 +4,10 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import React, { useState } from 'react';
+import React from 'react';
 import type { Streams } from '@kbn/streams-schema';
-import { EuiFlexGroup, EuiFlexItem, EuiTitle, EuiSpacer } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiTitle } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { withSuspense } from '@kbn/shared-ux-utility';
-import type { FailureStoreFormData } from '@kbn/failure-store-modal';
 import { NoFailureStorePanel } from './no_failure_store_panel';
 import { FailureStoreInfo } from './failure_store_info';
 import { useUpdateFailureStore } from '../../../../../hooks/use_update_failure_store';
@@ -17,138 +15,126 @@ import { useKibana } from '../../../../../hooks/use_kibana';
 import { NoPermissionBanner } from './no_permission_banner';
 import { useTimefilter } from '../../../../../hooks/use_timefilter';
 import type { useDataStreamStats } from '../hooks/use_data_stream_stats';
-import { getFormattedError } from '../../../../../util/errors';
-import {
-  transformFailureStoreConfig,
-  useFailureStoreConfig,
-} from '../hooks/use_failure_store_config';
+import { useFailureStoreConfig } from '../hooks/use_failure_store_config';
+import { LifecyclePreviewProvider } from '../common/hooks/lifecycle_preview';
+import { useEditFailedLifecycleFlyout } from './hooks/use_edit_failed_lifecycle_flyout';
 
-// Lazy load the FailureStoreModal to reduce bundle size
-const LazyFailureStoreModal = React.lazy(async () => ({
-  default: (await import('@kbn/failure-store-modal')).FailureStoreModal,
-}));
-
-const FailureStoreModal = withSuspense(LazyFailureStoreModal);
-
-export const StreamDetailFailureStore = ({
+const StreamDetailFailureStoreInner = ({
   definition,
   data,
   refreshDefinition,
+  isExternalFlyoutOpen = false,
+  onFlyoutOpenChange,
 }: {
   definition: Streams.ingest.all.GetResponse;
   data: ReturnType<typeof useDataStreamStats>;
   refreshDefinition: () => void;
+  isExternalFlyoutOpen?: boolean;
+  onFlyoutOpenChange?: (isOpen: boolean) => void;
 }) => {
-  const [isFailureStoreModalOpen, setIsFailureStoreModalOpen] = useState(false);
+  const kibana = useKibana();
   const { updateFailureStore } = useUpdateFailureStore(definition.stream);
-  const {
-    core: { notifications },
-  } = useKibana();
-
   const { timeState } = useTimefilter();
-  const { isServerless } = useKibana();
 
-  const {
-    privileges: {
-      read_failure_store: readFailureStorePrivilege,
-      manage_failure_store: manageFailureStorePrivilege,
-    },
-  } = definition;
+  const readFailureStorePrivilege = definition.privileges?.read_failure_store ?? false;
+  const manageFailureStorePrivilege = definition.privileges?.manage_failure_store ?? false;
 
   const failureStoreConfig = useFailureStoreConfig(definition);
+
   const {
-    failureStoreEnabled,
-    defaultRetentionPeriod,
-    customRetentionPeriod,
-    inheritOptions,
-    retentionDisabled,
-  } = failureStoreConfig;
-
-  const closeModal = () => {
-    setIsFailureStoreModalOpen(false);
-  };
-
-  const handleSaveModal = async (update: FailureStoreFormData) => {
-    try {
-      await updateFailureStore(definition.stream.name, transformFailureStoreConfig(update));
-
-      refreshDefinition();
-
-      notifications.toasts.addSuccess({
-        title: i18n.translate('xpack.streams.streamDetailFailureStore.updateFailureStoreSuccess', {
-          defaultMessage: 'Failure store settings saved',
-        }),
-      });
-    } catch (error) {
-      notifications.toasts.addError(getFormattedError(error), {
-        title: i18n.translate('xpack.streams.streamDetailFailureStore.updateFailureStoreFailed', {
-          defaultMessage: "We couldn't update the failure store settings.",
-        }),
-      });
-    } finally {
-      closeModal();
-      data.refresh();
-    }
-  };
+    mainFlyout,
+    deletePhaseFlyout,
+    overrideModal,
+    openMainFlyout,
+    openDeletePhaseFlyout,
+    removeDeletePhase,
+    isMainFlyoutOpen,
+    isDeletePhaseFlyoutOpen,
+    isAnyFlyoutOpen,
+    failureStoreEnabledForUi,
+    previewInheritLifecycle,
+    previewFailureStoreEnabled,
+  } = useEditFailedLifecycleFlyout({
+    definition,
+    data,
+    refreshDefinition,
+    failureStoreConfig,
+    kibana,
+    manageFailureStorePrivilege,
+    updateFailureStore,
+    isExternalFlyoutOpen,
+    onFlyoutOpenChange,
+  });
 
   return (
-    <EuiFlexItem grow={false}>
-      <EuiTitle size="xs">
-        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-          <EuiFlexItem grow={false}>
-            <h4>
-              {i18n.translate('xpack.streams.streamDetailLifecycle.failedData', {
-                defaultMessage: 'Failed data',
-              })}
-            </h4>
-          </EuiFlexItem>
+    <>
+      <EuiFlexItem grow={false}>
+        <EuiTitle size="xs">
+          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+            <EuiFlexItem grow={false}>
+              <h4>
+                {i18n.translate('xpack.streams.streamDetailLifecycle.failedData', {
+                  defaultMessage: 'Failed data',
+                })}
+              </h4>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiTitle>
+        <EuiSpacer size="m" />
+        <EuiFlexGroup direction="column" gutterSize="m">
+          {readFailureStorePrivilege ? (
+            <>
+              {failureStoreEnabledForUi ? (
+                <FailureStoreInfo
+                  onEditFailedLifecycle={openMainFlyout}
+                  onAddDeletePhase={openDeletePhaseFlyout}
+                  onEditDeletePhase={openDeletePhaseFlyout}
+                  onRemoveDeletePhase={removeDeletePhase}
+                  isExternalFlyoutOpen={isAnyFlyoutOpen}
+                  isDeletePhaseFlyoutOpen={isDeletePhaseFlyoutOpen}
+                  isHighlighted={isMainFlyoutOpen}
+                  previewInheritLifecycle={previewInheritLifecycle}
+                  previewFailureStoreEnabled={previewFailureStoreEnabled}
+                  definition={definition}
+                  statsError={data.error}
+                  isLoadingStats={data.isLoading}
+                  stats={data.stats?.fs.stats}
+                  timeState={timeState}
+                  aggregations={data?.stats?.fs.aggregations}
+                  failureStoreConfig={failureStoreConfig}
+                />
+              ) : (
+                <NoFailureStorePanel
+                  onEnableFailureStore={openMainFlyout}
+                  definition={definition}
+                  isExternalFlyoutOpen={isAnyFlyoutOpen}
+                />
+              )}
+              <EuiSpacer size="s" />
+            </>
+          ) : (
+            <NoPermissionBanner />
+          )}
         </EuiFlexGroup>
-      </EuiTitle>
-      <EuiSpacer size="m" />
-      <EuiFlexGroup direction="column" gutterSize="m">
-        {readFailureStorePrivilege ? (
-          <>
-            {isFailureStoreModalOpen && manageFailureStorePrivilege && (
-              <FailureStoreModal
-                onCloseModal={closeModal}
-                onSaveModal={handleSaveModal}
-                failureStoreProps={{
-                  failureStoreEnabled,
-                  defaultRetentionPeriod,
-                  customRetentionPeriod,
-                  retentionDisabled,
-                }}
-                inheritOptions={inheritOptions}
-                showIlmDescription={!isServerless}
-                canShowDisableLifecycle={!isServerless}
-                disableButtonLabel={i18n.translate(
-                  'xpack.streams.dataManagement.streamDetailLifecycle.indefinite',
-                  {
-                    defaultMessage: 'Indefinite',
-                  }
-                )}
-              />
-            )}
-            {failureStoreEnabled ? (
-              <FailureStoreInfo
-                openModal={setIsFailureStoreModalOpen}
-                definition={definition}
-                statsError={data.error}
-                isLoadingStats={data.isLoading}
-                stats={data.stats?.fs.stats}
-                timeState={timeState}
-                aggregations={data?.stats?.fs.aggregations}
-                failureStoreConfig={failureStoreConfig}
-              />
-            ) : (
-              <NoFailureStorePanel openModal={setIsFailureStoreModalOpen} definition={definition} />
-            )}
-            <EuiSpacer size="s" />
-          </>
-        ) : (
-          <NoPermissionBanner />
-        )}
-      </EuiFlexGroup>
-    </EuiFlexItem>
+      </EuiFlexItem>
+
+      {readFailureStorePrivilege ? mainFlyout : null}
+      {readFailureStorePrivilege ? deletePhaseFlyout : null}
+      {readFailureStorePrivilege ? overrideModal : null}
+    </>
+  );
+};
+
+export const StreamDetailFailureStore = (props: {
+  definition: Streams.ingest.all.GetResponse;
+  data: ReturnType<typeof useDataStreamStats>;
+  refreshDefinition: () => void;
+  isExternalFlyoutOpen?: boolean;
+  onFlyoutOpenChange?: (isOpen: boolean) => void;
+}) => {
+  return (
+    <LifecyclePreviewProvider>
+      <StreamDetailFailureStoreInner {...props} />
+    </LifecyclePreviewProvider>
   );
 };

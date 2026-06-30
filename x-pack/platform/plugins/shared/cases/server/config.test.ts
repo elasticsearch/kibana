@@ -17,6 +17,13 @@ describe('config validation', () => {
               "enabled": false,
             },
           },
+          "analyticsV2": Object {
+            "enableAdminRoutes": false,
+            "enabled": false,
+            "reconciliationIntervalMinutes": 30,
+            "resetPageDelayMs": 0,
+            "resetTaskTimeoutMinutes": 60,
+          },
           "attachments": Object {
             "enabled": false,
           },

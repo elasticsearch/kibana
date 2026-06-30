@@ -20,7 +20,7 @@ import type {
 import {
   SignificantEventsWorkflowStatus,
   type SignificantEventsWorkflowStatusResult,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 
 export interface WorkflowExecutionQueryParams {
   size?: number;

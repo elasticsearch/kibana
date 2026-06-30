@@ -11,7 +11,7 @@ import { EuiBasicTable, EuiBadge, EuiCallOut, EuiFlexGroup, EuiFlexItem } from '
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
-import type { Discovery } from '@kbn/streams-schema';
+import type { Discovery } from '@kbn/significant-events-schema';
 import { RUNNING_POLL_INTERVAL_MS } from '../../../constants';
 import {
   useFetchDiscoveriesEntities,

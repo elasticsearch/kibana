@@ -28,6 +28,7 @@ export interface ScoutServerConfig {
     license?: string;
     files: string[];
     serverArgs: string[];
+    esJavaOpts?: string;
     ssl: boolean;
     secureFiles?: string[];
   };

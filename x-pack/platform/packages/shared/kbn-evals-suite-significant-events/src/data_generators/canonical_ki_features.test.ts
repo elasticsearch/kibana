@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Feature } from '@kbn/streams-schema';
+import type { Feature } from '@kbn/significant-events-schema';
 import { canonicalKIFeaturesFromExpectedGroundTruth } from './canonical_ki_features';
 
 const getFeatureById = (features: Feature[], id: string) =>

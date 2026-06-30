@@ -1,7 +1,7 @@
 {
   "type": "functional-tests",
   "id": "@kbn/evals-suite-observability-ai",
-  "owner": "@elastic/obs-ai-team",
+  "owner": "@elastic/nightshift-context-and-research-team",
   "group": "observability",
   "visibility": "private"
 }

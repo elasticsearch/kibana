@@ -21,6 +21,7 @@ export const WorkflowManagementAuditActions = {
   CREATE: 'workflow_create',
   BULK_CREATE: 'workflow_bulk_create',
   UPDATE: 'workflow_update',
+  RESTORE: 'workflow_restore',
   DELETE: 'workflow_delete',
   BULK_DELETE: 'workflow_bulk_delete',
   CLONE: 'workflow_clone',
@@ -212,6 +213,29 @@ export class WorkflowManagementAuditLog {
     this.log(
       request,
       createEvent(WorkflowManagementAuditActions.UPDATE, 'change', message, error, params)
+    );
+  }
+
+  logWorkflowRestored(
+    request: KibanaRequest | undefined,
+    params: WorkflowAuditParams & { eventId: string; version?: number; sequence?: number }
+  ): void {
+    const { id, eventId, version, sequence, error } = params;
+    const actor = this.getActor(request);
+    const metadataSuffix = [
+      sequence !== undefined ? `[sequence=${sequence}]` : undefined,
+      version !== undefined ? `[version=${version}]` : undefined,
+    ]
+      .filter((part): part is string => part !== undefined)
+      .join(' ');
+    const metadataPart = metadataSuffix.length > 0 ? ` ${metadataSuffix}` : '';
+    const message =
+      error !== undefined
+        ? `${actor} failed to restore workflow from history [id=${id}] [eventId=${eventId}]`
+        : `${actor} restored workflow from history [id=${id}] [eventId=${eventId}]${metadataPart}`;
+    this.log(
+      request,
+      createEvent(WorkflowManagementAuditActions.RESTORE, 'change', message, error, params)
     );
   }
 

@@ -170,11 +170,9 @@ const mockCreateEpisodeActions = jest.mocked(createEpisodeActions);
 
 const mockedUseEpisodesKpisQuery = jest.mocked(useEpisodesKpisQuery);
 
-// The page calls useEpisodesKpisQuery twice: filtered (filterState defined)
-// and total (filterState undefined). Differentiate by that arg.
-const defaultKpisImpl: typeof useEpisodesKpisQuery = ({ filterState }) => ({
+const defaultKpisImpl: typeof useEpisodesKpisQuery = () => ({
   data: {
-    alertsCount: filterState ? 3 : 10,
+    alertsCount: 3,
     firingRules: 0,
     assignedToMe: 0,
     unassigned: 0,
@@ -394,17 +392,16 @@ describe('episode count + reset filters toolbar', () => {
     mockedUseEpisodesKpisQuery.mockImplementation(defaultKpisImpl);
   });
 
-  it('renders "Showing X of Y alerts" with filtered and total counts', async () => {
+  it('renders the episode count', async () => {
     renderPage();
     const node = await screen.findByTestId('alertEpisodesItemCount');
-    expect(node.textContent).toMatch(/^Showing\s+3\s+of\s+10\s+alerts$/);
+    expect(node.textContent).toMatch(/^Showing\s+3\s+episodes$/);
   });
 
-  it('fires useEpisodesKpisQuery both with and without filterState', () => {
+  it('fires useEpisodesKpisQuery only with filterState', () => {
     renderPage();
     const calls = mockedUseEpisodesKpisQuery.mock.calls.map(([args]) => args);
-    expect(calls.some((c) => c.filterState !== undefined)).toBe(true);
-    expect(calls.some((c) => c.filterState === undefined)).toBe(true);
+    expect(calls.every((c) => c.filterState !== undefined)).toBe(true);
   });
 
   it('disables the reset filters button when filter state equals the default', async () => {

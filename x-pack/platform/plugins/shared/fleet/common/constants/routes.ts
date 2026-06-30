@@ -217,6 +217,8 @@ export const AGENT_API_ROUTES = {
 
 export const AGENTLESS_POLICIES_ROUTES = {
   CREATE_PATTERN: `${API_ROOT}/agentless_policies`,
+  LIST_PATTERN: `${API_ROOT}/agentless_policies`,
+  GET_PATTERN: `${API_ROOT}/agentless_policies/{policyId}`,
   DELETE_PATTERN: `${API_ROOT}/agentless_policies/{policyId}`,
   SYNC_PATTERN: `${INTERNAL_ROOT}/agentless_policies/_sync`,
   BULK_THROUGHPUT_PATTERN: `${INTERNAL_ROOT}/agentless_policies/bulk_throughput`,

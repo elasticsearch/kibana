@@ -10,8 +10,8 @@ import type {
   QueriesGetResponse,
   QueriesOccurrencesGetResponse,
   SignificantEventsQueriesGenerationResult,
-} from '@kbn/streams-schema';
-import { generatedSignificantEventQuerySchema } from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
+import { generatedSignificantEventQuerySchema } from '@kbn/significant-events-schema';
 import { sortQueryLinksForTable } from '../../../../lib/significant_events/utils';
 import { STREAMS_API_PRIVILEGES } from '../../../../../common/constants';
 import { generateKIQueries } from '../../../../lib/significant_events/ki_queries_generation_service';

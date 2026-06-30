@@ -7,9 +7,9 @@
 
 import { i18n } from '@kbn/i18n';
 import {
-  StreamsKIsOnboardingStep,
+  KIsOnboardingStep,
   type SignificantEventsWorkflowStatusResult,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import pMap from 'p-map';
 import { useCallback, useState } from 'react';
 import type { ScheduleOnboardingOptions } from '../../../../hooks/use_onboarding_api';
@@ -104,7 +104,7 @@ export function useBulkOnboarding({
   const bulkOnboardFeaturesOnly = useCallback(
     (streamNames: string[]) =>
       bulkScheduleOnboarding(streamNames, {
-        steps: [StreamsKIsOnboardingStep.FeaturesIdentification],
+        steps: [KIsOnboardingStep.FeaturesIdentification],
         connectors: onboardingConfig.connectors,
       }),
     [bulkScheduleOnboarding, onboardingConfig.connectors]
@@ -113,7 +113,7 @@ export function useBulkOnboarding({
   const bulkOnboardQueriesOnly = useCallback(
     (streamNames: string[]) =>
       bulkScheduleOnboarding(streamNames, {
-        steps: [StreamsKIsOnboardingStep.QueriesGeneration],
+        steps: [KIsOnboardingStep.QueriesGeneration],
         connectors: onboardingConfig.connectors,
       }),
     [bulkScheduleOnboarding, onboardingConfig.connectors]

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { CODE_ANALYSIS_FEATURE_TYPE, COMPUTED_FEATURE_TYPES } from '@kbn/streams-schema';
+import { CODE_ANALYSIS_FEATURE_TYPE, COMPUTED_FEATURE_TYPES } from '@kbn/significant-events-schema';
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import type { Streams } from '@kbn/streams-schema';
 import { codeAnalysisGenerator, CODE_ANALYSIS_PROVIDER_KEY } from './code_analysis';

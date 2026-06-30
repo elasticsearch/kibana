@@ -24,6 +24,7 @@ jest.mock('@kbn/shared-ux-utility', () => ({
 jest.mock('./services', () => ({
   AgentService: jest.fn(),
   AttachmentsService: jest.fn(() => ({ addAttachmentType: jest.fn() })),
+  RenderersService: jest.fn(() => ({ register: jest.fn() })),
   ChatService: jest.fn(),
   ConversationsService: jest.fn(),
   DocLinksService: jest.fn(),
@@ -39,6 +40,10 @@ jest.mock('./services', () => ({
 
 jest.mock('./services/attachments', () => ({
   createPublicAttachmentContract: jest.fn(() => ({})),
+}));
+
+jest.mock('./services/renderers', () => ({
+  createPublicRenderersContract: jest.fn(() => ({})),
 }));
 
 jest.mock('./services/tools', () => ({

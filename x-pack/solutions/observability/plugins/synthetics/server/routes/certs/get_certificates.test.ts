@@ -12,15 +12,8 @@ import { MonitorConfigRepository } from '../../services/monitor_config_repositor
 import { savedObjectsClientMock } from '@kbn/core-saved-objects-api-server-mocks';
 import { encryptedSavedObjectsMock } from '@kbn/encrypted-saved-objects-plugin/server/mocks';
 
-const buildServer = (ccsEnabled: boolean) =>
-  ({
-    isElasticsearchServerless: false,
-    config: {
-      experimental: {
-        ccs: { enabled: ccsEnabled },
-      },
-    },
-  } as any);
+const serverlessServer = { isElasticsearchServerless: true } as any;
+const statefulServer = { isElasticsearchServerless: false } as any;
 
 describe('getSyntheticsCertsRoute', () => {
   afterEach(() => jest.clearAllMocks());
@@ -43,7 +36,7 @@ describe('getSyntheticsCertsRoute', () => {
         syntheticsEsClient: jest.fn(),
         savedObjectClient: soClient,
         monitorConfigRepository: mockMonitorConfigRepository,
-        server: buildServer(false),
+        server: serverlessServer,
         spaceId: 'default',
       })
     ).toEqual({
@@ -105,7 +98,7 @@ describe('getSyntheticsCertsRoute', () => {
       savedObjectClient: jest.fn(),
       // @ts-expect-error partial implementation for testing
       monitorConfigRepository: { getAll },
-      server: buildServer(false),
+      server: serverlessServer,
       spaceId: 'default',
     });
     expect(getAll).toHaveBeenCalledTimes(1);
@@ -154,7 +147,7 @@ describe('getSyntheticsCertsRoute', () => {
       syntheticsEsClient: jest.fn(),
       // @ts-expect-error partial implementation for testing
       monitorConfigRepository: { getAll },
-      server: buildServer(true),
+      server: statefulServer,
       spaceId: 'default',
     });
     expect(getSyntheticsCertsSpy).toHaveBeenCalledTimes(1);

@@ -31,9 +31,9 @@ import {
   type RiskStats,
 } from '../../../common/search_strategy';
 import { useUiSetting, useKibana } from '../../common/lib/kibana';
-import { HostPanelContent } from '../../flyout/entity_details/host_right/content';
-import { HostPanelHeader } from '../../flyout/entity_details/host_right/header';
-import { useObservedHost } from '../../flyout/entity_details/host_right/hooks/use_observed_host';
+import { Content as HostPanelContent } from '../../flyout_v2/entity/host/main/content';
+import { Header as HostPanelHeader } from '../../flyout_v2/entity/host/main/header';
+import { useObservedHost } from '../../flyout_v2/entity/host/main/hooks/use_observed_host';
 import { EntityType } from '../../../common/entity_analytics/types';
 import {
   buildRiskScoreStateFromEntityRecord,
@@ -45,8 +45,9 @@ import {
   mergeLegacyIdentityWhenStoreEntityMissing,
   type IdentityFields,
 } from '../../flyout/document_details/shared/utils';
-import { HOST_PANEL_RISK_SCORE_QUERY_ID } from '../../flyout/entity_details/host_right/constants';
+import { HOST_PANEL_RISK_SCORE_QUERY_ID } from '../../flyout_v2/entity/host/main/constants';
 import { FlyoutBody } from '../../flyout/shared/components/flyout_body';
+import { FlyoutHeader } from '../../flyout/shared/components/flyout_header';
 import {
   useEntityPanelTabs,
   TABLE_TAB_ID,
@@ -464,19 +465,21 @@ const HostEntityFlyoutOverviewCanvas: React.FC<{
 
   return (
     <>
-      <HostPanelHeader
-        hostName={hostName}
-        lastSeen={observedHost.lastSeen}
-        entityId={panelDisplayEntityId}
-        identityFields={documentEntityIdentifiers}
-        isEntityInStore={!!observedHost.entityRecord}
-        riskLevel={
-          observedHost.entityRecord
-            ? ((getRiskFromEntityRecord(observedHost.entityRecord)?.calculated_level ??
-                'Unknown') as RiskSeverity)
-            : undefined
-        }
-      />
+      <FlyoutHeader>
+        <HostPanelHeader
+          hostName={hostName}
+          lastSeen={observedHost.lastSeen}
+          entityId={panelDisplayEntityId}
+          identityFields={documentEntityIdentifiers}
+          isEntityInStore={!!observedHost.entityRecord}
+          riskLevel={
+            observedHost.entityRecord
+              ? ((getRiskFromEntityRecord(observedHost.entityRecord)?.calculated_level ??
+                  'Unknown') as RiskSeverity)
+              : undefined
+          }
+        />
+      </FlyoutHeader>
       <FlyoutBody>
         {observedHost.entityRecord && (
           <EntitySummaryGrid

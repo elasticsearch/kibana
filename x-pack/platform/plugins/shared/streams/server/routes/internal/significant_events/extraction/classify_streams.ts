@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { Streams } from '@kbn/streams-schema';
+import { Streams, streamMatchesIndexPatterns } from '@kbn/streams-schema';
 import type { WorkflowExecutionListItemDto } from '@kbn/workflows';
 import { minimatch } from 'minimatch';
 import { isTerminalStatus } from '@kbn/workflows';
@@ -33,6 +33,28 @@ export const parseExcludePatterns = (raw: string | undefined): string[] =>
 
 const matchesExcludePatterns = (name: string, patterns: string[]): boolean =>
   patterns.some((pattern) => minimatch(name, pattern));
+
+/**
+ * Selects the streams eligible for continuous knowledge indicator onboarding.
+ * Query streams are always included, gated only by the query-streams feature flag;
+ * all other stream types are eligible only when their name matches the configured
+ * significant events index patterns.
+ */
+export const filterEligibleStreams = ({
+  allStreams,
+  isQueryStreamsEnabled,
+  indexPatterns,
+}: {
+  allStreams: Streams.all.Definition[];
+  isQueryStreamsEnabled: boolean;
+  indexPatterns: string[];
+}): Streams.all.Definition[] =>
+  allStreams.filter((stream) => {
+    if (Streams.QueryStream.Definition.is(stream)) {
+      return isQueryStreamsEnabled;
+    }
+    return streamMatchesIndexPatterns(stream.name, indexPatterns);
+  });
 
 /**
  * Classifies streams into buckets (excluded, already-running, candidates, up-to-date)

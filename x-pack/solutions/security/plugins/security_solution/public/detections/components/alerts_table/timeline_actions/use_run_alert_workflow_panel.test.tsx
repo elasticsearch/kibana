@@ -34,6 +34,7 @@ const mockUseWorkflowsCapabilities = jest.fn(() => ({
   canCancelWorkflowExecution: true,
 }));
 const mockUseWorkflowsUIEnabledSetting = jest.fn(() => true);
+const mockUseWorkflows = jest.fn(() => ({ data: { results: [] } }));
 jest.mock('@kbn/kibana-react-plugin/public', () => {
   const actual = jest.requireActual('@kbn/kibana-react-plugin/public');
   return {
@@ -46,6 +47,7 @@ jest.mock('@kbn/workflows-ui', () => ({
   useRunWorkflow: () => mockUseRunWorkflow(),
   useWorkflowsCapabilities: () => mockUseWorkflowsCapabilities(),
   useWorkflowsUIEnabledSetting: () => mockUseWorkflowsUIEnabledSetting(),
+  useWorkflows: () => mockUseWorkflows(),
   WorkflowSelector: ({ onWorkflowChange }: { onWorkflowChange: (id: string) => void }) => (
     <div data-test-subj="workflow-selector-mock">
       {'Workflow selector'}

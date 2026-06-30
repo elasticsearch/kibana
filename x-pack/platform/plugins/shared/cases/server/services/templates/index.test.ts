@@ -72,6 +72,9 @@ describe('TemplatesService', () => {
   const unsecuredSavedObjectsClient = savedObjectsClientMock.create();
   const savedObjectsSerializer = serializerMock.create();
   const esClient = elasticsearchServiceMock.createElasticsearchClient();
+  // Spy on the analytics v2 refresh hook so the per-write-path assertions
+  // can verify it fires without any wiring.
+  const refreshAnalyticsV2DataView = jest.fn();
 
   const createService = () =>
     new TemplatesService({
@@ -79,6 +82,7 @@ describe('TemplatesService', () => {
       savedObjectsSerializer,
       esClient,
       namespace: 'default',
+      refreshAnalyticsV2DataView,
     });
 
   /** Default getAllTemplates params — override individual fields as needed */
@@ -1368,6 +1372,106 @@ describe('TemplatesService', () => {
       await service.deleteTemplate('non-existent');
 
       expect(unsecuredSavedObjectsClient.bulkUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cases-analytics v2 data view refresh hook', () => {
+    // The templates service can't observe template SOs directly — it owns
+    // them. So when fields land or change, it has to tell the v2 subsystem
+    // to refresh the per-space runtime field map. These tests pin down the
+    // hook firing on every successful create / update / delete path.
+
+    it('fires the refresh hook after createTemplate', async () => {
+      const service = createService();
+      unsecuredSavedObjectsClient.create.mockResolvedValue({
+        id: 'template-id',
+        attributes: {} as Template,
+      } as SavedObject<Template>);
+
+      await service.createTemplate(
+        { owner: 'securitySolution', definition: buildDefinition('Hook Template') },
+        'alice',
+        'generated-id'
+      );
+
+      expect(refreshAnalyticsV2DataView).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires the refresh hook after updateTemplate', async () => {
+      const service = createService();
+      const currentTemplate = createTemplateSO('current-id', {
+        templateId: 'template-id',
+        name: 'Old Name',
+        owner: 'securitySolution',
+        templateVersion: 1,
+      });
+      jest
+        .spyOn(
+          service as unknown as Record<'_getTemplate', typeof service.getTemplate>,
+          '_getTemplate'
+        )
+        .mockResolvedValue(currentTemplate);
+      unsecuredSavedObjectsClient.create.mockResolvedValue({
+        id: 'new-id',
+        attributes: {} as Template,
+      } as SavedObject<Template>);
+
+      await service.updateTemplate('template-id', {
+        owner: 'securitySolution',
+        definition: buildDefinition('Updated'),
+      });
+
+      expect(refreshAnalyticsV2DataView).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires the refresh hook after deleteTemplate', async () => {
+      const service = createService();
+      jest
+        .spyOn(
+          service as unknown as Record<'_getTemplate', typeof service.getTemplate>,
+          '_getTemplate'
+        )
+        .mockResolvedValue(
+          createTemplateSO('so-1', {
+            templateId: 'template-1',
+            name: 'Template 1',
+            owner: 'securitySolution',
+          })
+        );
+      unsecuredSavedObjectsClient.find.mockResolvedValue({
+        page: 1,
+        per_page: 10000,
+        total: 1,
+        saved_objects: [
+          {
+            id: 'so-1',
+            type: CASE_TEMPLATE_SAVED_OBJECT,
+            attributes: {} as Template,
+            references: [],
+            score: 0,
+          },
+        ],
+      } as SavedObjectsFindResponse);
+
+      await service.deleteTemplate('template-1');
+
+      expect(refreshAnalyticsV2DataView).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT fire the refresh hook when deleteTemplate finds nothing to delete', async () => {
+      const service = createService();
+      jest
+        .spyOn(
+          service as unknown as Record<'_getTemplate', typeof service.getTemplate>,
+          '_getTemplate'
+        )
+        .mockResolvedValue(undefined);
+
+      await service.deleteTemplate('non-existent');
+
+      // Cheap signal that the call sites are wired correctly: hook fires
+      // only on the actual write path, not on the early-return branch.
+      expect(refreshAnalyticsV2DataView).not.toHaveBeenCalled();
     });
   });
 });

@@ -30,7 +30,7 @@ export const useStepDetailPage = () => {
   const spaceId = useUrlSpaceId();
   const { remoteName } = useGetUrlParams();
 
-  const { data: journey, stepEnds } = useJourneySteps(checkGroupId);
+  const { data: journey, stepEnds } = useJourneySteps({ checkGroup: checkGroupId });
 
   const memoized = useMemo(
     () => ({

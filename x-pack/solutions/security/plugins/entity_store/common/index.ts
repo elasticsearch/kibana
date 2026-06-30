@@ -116,6 +116,7 @@ export {
   ENTITY_LATEST,
   ENTITY_UPDATES,
   ENTITY_HISTORY,
+  ENTITY_METADATA,
   ENTITY_BASE_PREFIX,
   ENTITY_SCHEMA_VERSION_V2,
   MAPPING_VERSION,
@@ -123,4 +124,13 @@ export {
   getEntitiesAlias,
   getLatestEntitiesIndexName,
   getLatestEntityIndexPattern,
+  getEntityMetadataAlias,
+  getMetadataEntityIndexPattern,
 } from './domain/entity_index';
+
+export { RELATIONSHIP_KINDS } from './domain/entity_metadata/relationship_metadata';
+export type {
+  RelationshipKind,
+  RelationshipMetadataDoc,
+  RelationshipMetadataMaintainer,
+} from './domain/entity_metadata/relationship_metadata';

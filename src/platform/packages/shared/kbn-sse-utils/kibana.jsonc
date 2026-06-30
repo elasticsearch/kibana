@@ -2,7 +2,7 @@
   "type": "shared-common",
   "id": "@kbn/sse-utils",
   "owner": [
-    "@elastic/obs-ai-team"
+    "@elastic/nightshift-context-and-research-team"
   ],
   "group": "platform",
   "visibility": "shared"

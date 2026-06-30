@@ -171,7 +171,7 @@ export const Navigation = ({
           {({ mainNavigationInstructionsId }) => (
             <>
               {visibleMenuItems.map((item, index) => {
-                const { sections, ...itemProps } = item;
+                const { sections, secondaryMenuTitle, ...itemProps } = item;
                 const isFirstItem = index === 0;
                 const ariaDescribedBy = isFirstItem ? mainNavigationInstructionsId : undefined;
 
@@ -182,6 +182,7 @@ export const Navigation = ({
                     isSidePanelOpen={!isCollapsed && item.id === openerNode?.id}
                     isAnyPopoverLocked={isAnyPopoverLocked}
                     label={item.label}
+                    secondaryMenuTitle={secondaryMenuTitle}
                     trigger={
                       <SideNav.PrimaryMenu.Item
                         aria-describedby={ariaDescribedBy}
@@ -201,7 +202,7 @@ export const Navigation = ({
                   >
                     {(closePopover, ids) => (
                       <SideNav.SecondaryMenu
-                        title={item.label}
+                        title={secondaryMenuTitle ?? item.label}
                         badgeType={item.badgeType}
                         isNew={getIsNewSecondary(item.id)}
                       >
@@ -294,7 +295,7 @@ export const Navigation = ({
                             <SideNav.NestedSecondaryMenu.Section>
                               {allOverflowItems.map((item, index) => {
                                 const hasSubmenu = getHasSubmenu(item);
-                                const { sections, ...itemProps } = item;
+                                const { sections, secondaryMenuTitle, ...itemProps } = item;
                                 const isFirstItem = index === 0;
                                 const ariaDescribedBy =
                                   [
@@ -352,7 +353,7 @@ export const Navigation = ({
                           {({ panelNavigationInstructionsId }) => (
                             <>
                               <SideNav.NestedSecondaryMenu.Header
-                                title={item.label}
+                                title={item.secondaryMenuTitle ?? item.label}
                                 aria-describedby={panelNavigationInstructionsId}
                               />
                               {item.sections?.map((section) => (
@@ -394,7 +395,7 @@ export const Navigation = ({
           {({ footerNavigationInstructionsId }) => (
             <>
               {items.footerItems.slice(0, MAX_FOOTER_ITEMS).map((item, index) => {
-                const { sections, ...itemProps } = item;
+                const { sections, secondaryMenuTitle, ...itemProps } = item;
                 const isFirstItem = index === 0;
                 const ariaDescribedBy = isFirstItem ? footerNavigationInstructionsId : undefined;
 
@@ -405,6 +406,7 @@ export const Navigation = ({
                     isSidePanelOpen={!isCollapsed && item.id === openerNode?.id}
                     isAnyPopoverLocked={isAnyPopoverLocked}
                     label={item.label}
+                    secondaryMenuTitle={secondaryMenuTitle}
                     persistent={false}
                     trigger={
                       <SideNav.Footer.Item
@@ -420,7 +422,7 @@ export const Navigation = ({
                   >
                     {(closePopover, ids) => (
                       <SideNav.SecondaryMenu
-                        title={item.label}
+                        title={secondaryMenuTitle ?? item.label}
                         badgeType={item.badgeType}
                         isNew={getIsNewSecondary(item.id)}
                       >
@@ -481,7 +483,7 @@ export const Navigation = ({
               <SideNav.SecondaryMenu
                 badgeType={openerNode.badgeType}
                 isPanel
-                title={openerNode.label}
+                title={openerNode.secondaryMenuTitle ?? openerNode.label}
                 isNew={getIsNewSecondary(openerNode.id)}
               >
                 {openerNode.sections?.map((section, sectionIndex) => (

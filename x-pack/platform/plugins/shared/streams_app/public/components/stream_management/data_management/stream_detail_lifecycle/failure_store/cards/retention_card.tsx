@@ -6,24 +6,29 @@
  */
 import React from 'react';
 import { i18n } from '@kbn/i18n';
-import { EuiButton } from '@elastic/eui';
 import { BaseMetricCard } from '../../common/base_metric_card';
 import { getTimeSizeAndUnitLabel } from '../../../../../../util/format_size_units';
 import type { useFailureStoreConfig } from '../../hooks/use_failure_store_config';
+import { useLifecyclePreview } from '../../common/hooks/lifecycle_preview';
 
 export const RetentionCard = ({
-  openModal,
-  canManageFailureStore,
   failureStoreConfig,
+  previewFailureStoreEnabled,
 }: {
-  openModal: (show: boolean) => void;
-  canManageFailureStore: boolean;
   failureStoreConfig: ReturnType<typeof useFailureStoreConfig>;
+  previewFailureStoreEnabled?: boolean;
 }) => {
+  const {
+    isActive: isPreviewActive,
+    retentionPeriod: previewRetentionPeriod,
+    dataPhasesCount: previewDataPhasesCount,
+  } = useLifecyclePreview();
   const { failureStoreEnabled, customRetentionPeriod, defaultRetentionPeriod, retentionDisabled } =
     failureStoreConfig;
 
-  if (!failureStoreEnabled) {
+  const effectiveFailureStoreEnabled = previewFailureStoreEnabled ?? failureStoreEnabled;
+
+  if (!effectiveFailureStoreEnabled) {
     return null;
   }
 
@@ -34,13 +39,22 @@ export const RetentionCard = ({
     }
   );
 
-  const failureRetentionPeriod = retentionDisabled
-    ? '∞'
-    : customRetentionPeriod
-    ? getTimeSizeAndUnitLabel(customRetentionPeriod)
-    : getTimeSizeAndUnitLabel(defaultRetentionPeriod);
+  const savedRetentionPeriod = retentionDisabled
+    ? undefined
+    : customRetentionPeriod ?? defaultRetentionPeriod;
 
-  const phasesCount = retentionDisabled ? 1 : 2;
+  const retentionPeriod = isPreviewActive ? previewRetentionPeriod : savedRetentionPeriod ?? null;
+
+  const failureRetentionPeriod =
+    (!isPreviewActive && retentionDisabled) || !retentionPeriod
+      ? '∞'
+      : getTimeSizeAndUnitLabel(retentionPeriod);
+
+  const phasesCount = (() => {
+    if (isPreviewActive && previewDataPhasesCount !== null) return previewDataPhasesCount;
+    if (retentionDisabled) return 1;
+    return savedRetentionPeriod ? 2 : 1;
+  })();
 
   const subtitles = [
     i18n.translate('xpack.streams.streamDetailLifecycle.lifecycleSummary.dataPhasesCount', {
@@ -58,33 +72,6 @@ export const RetentionCard = ({
   ];
 
   return (
-    <BaseMetricCard
-      title={title}
-      actions={
-        canManageFailureStore ? (
-          <EuiButton
-            data-test-subj="streamFailureStoreEditRetention"
-            size="s"
-            color="text"
-            onClick={() => openModal(true)}
-            aria-label={i18n.translate(
-              'xpack.streams.streamDetailView.failureStoreEnabled.failureRetentionCard.editFailureStoreLifecycleMethodAriaLabel',
-              {
-                defaultMessage: 'Edit failure store lifecycle method',
-              }
-            )}
-          >
-            {i18n.translate(
-              'xpack.streams.streamDetailView.failureStoreEnabled.failureRetentionCard.editLifecycleMethodButton',
-              {
-                defaultMessage: 'Edit lifecycle method',
-              }
-            )}
-          </EuiButton>
-        ) : undefined
-      }
-      metrics={metric}
-      data-test-subj="failureStoreRetentionCard"
-    />
+    <BaseMetricCard title={title} metrics={metric} data-test-subj="failureStoreRetentionCard" />
   );
 };

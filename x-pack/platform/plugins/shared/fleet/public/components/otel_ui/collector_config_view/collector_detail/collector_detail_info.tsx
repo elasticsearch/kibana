@@ -125,10 +125,7 @@ export const CollectorDetailInfo: React.FC<CollectorDetailInfoProps> = ({ agent,
           title: i18n.translate('xpack.fleet.otelUi.collectorDetail.info.platform', {
             defaultMessage: 'Platform',
           }),
-          description:
-            typeof agent.local_metadata?.os?.platform === 'string'
-              ? agent.local_metadata.os.platform
-              : '-',
+          description: nonIdentifying?.['os.description'] ?? '-',
         },
         {
           title: i18n.translate('xpack.fleet.otelUi.collectorDetail.info.collectorGroup', {

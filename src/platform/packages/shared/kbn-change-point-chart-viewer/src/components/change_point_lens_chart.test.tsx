@@ -49,6 +49,8 @@ const stubCard = (overrides: Partial<ChangePointCardModel> = {}): ChangePointCar
   lineEsql: 'FROM idx | STATS avg_bytes = AVG(bytes) BY bucket = BUCKET(@timestamp, 1d)',
   annotationEvents: [],
   changePointTypes: [],
+  typeColumnId: 'type',
+  pvalueColumnId: 'pvalue',
   entityValues: {},
   entityDescription: undefined,
   ...overrides,

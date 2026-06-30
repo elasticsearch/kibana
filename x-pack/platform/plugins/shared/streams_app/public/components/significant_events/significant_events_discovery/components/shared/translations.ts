@@ -6,7 +6,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import type { Detection, Discovery, SignificantEventStatus } from '@kbn/streams-schema';
+import type { Detection, Discovery, SignificantEventStatus } from '@kbn/significant-events-schema';
 
 export const FIND_SIGNIFICANT_EVENTS_LABEL = i18n.translate(
   'xpack.streams.significantEventsDiscovery.findSignificantEventsLabel',

@@ -18,7 +18,7 @@ import {
   isComputedFeature,
   isFeatureWithFilter,
   normalizeFeatureSlug,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import {
   EMPTY_TOKENS,
   identifyFeatures,

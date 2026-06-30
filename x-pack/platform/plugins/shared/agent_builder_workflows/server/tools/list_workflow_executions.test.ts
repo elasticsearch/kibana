@@ -35,6 +35,21 @@ const createWorkflowsManagement = () => ({
   },
 });
 
+const createSecurity = (hasAllRequested = true) => ({
+  authz: {
+    actions: { api: { get: jest.fn((priv: string) => `api:${priv}`) } },
+    checkPrivilegesWithRequest: jest.fn().mockReturnValue({
+      atSpace: jest.fn().mockResolvedValue({ hasAllRequested }),
+    }),
+  },
+});
+
+const buildTool = (wm: ReturnType<typeof createWorkflowsManagement>, hasAllRequested = true) =>
+  listWorkflowExecutionsTool({
+    workflowsManagement: wm as any,
+    getSecurity: () => createSecurity(hasAllRequested) as any,
+  });
+
 const mockContext = {
   spaceId: 'default',
   request: {} as KibanaRequest,
@@ -46,15 +61,13 @@ describe('listWorkflowExecutionsTool', () => {
   });
 
   it('should have the correct tool id', () => {
-    const tool = listWorkflowExecutionsTool({
-      workflowsManagement: createWorkflowsManagement() as any,
-    });
+    const tool = buildTool(createWorkflowsManagement());
     expect(tool.id).toBe(platformCoreTools.listWorkflowExecutions);
   });
 
   it('should call getWorkflowExecutions with defaults when no params provided', async () => {
     const wm = createWorkflowsManagement();
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     await tool.handler({}, mockContext as any);
 
@@ -66,7 +79,7 @@ describe('listWorkflowExecutionsTool', () => {
 
   it('should forward workflowId when provided', async () => {
     const wm = createWorkflowsManagement();
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     await tool.handler({ workflowId: 'wf-abc' }, mockContext as any);
 
@@ -78,7 +91,7 @@ describe('listWorkflowExecutionsTool', () => {
 
   it('should forward statuses when provided', async () => {
     const wm = createWorkflowsManagement();
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     await tool.handler({ statuses: ['failed'] }, mockContext as any);
 
@@ -90,7 +103,7 @@ describe('listWorkflowExecutionsTool', () => {
 
   it('should forward limit and page when provided', async () => {
     const wm = createWorkflowsManagement();
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     await tool.handler({ limit: 25, page: 2 }, mockContext as any);
 
@@ -102,7 +115,7 @@ describe('listWorkflowExecutionsTool', () => {
 
   it('should return slim execution summaries without internal fields', async () => {
     const wm = createWorkflowsManagement();
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     const result = await tool.handler({}, mockContext as any);
 
@@ -125,7 +138,7 @@ describe('listWorkflowExecutionsTool', () => {
 
   it('should include pagination metadata in the result', async () => {
     const wm = createWorkflowsManagement();
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     const result = await tool.handler({}, mockContext as any);
 
@@ -138,7 +151,7 @@ describe('listWorkflowExecutionsTool', () => {
   it('should return an error result when the API throws', async () => {
     const wm = createWorkflowsManagement();
     wm.management.getWorkflowExecutions.mockRejectedValue(new Error('ES unavailable'));
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     const result = await tool.handler({}, mockContext as any);
 
@@ -152,6 +165,18 @@ describe('listWorkflowExecutionsTool', () => {
     });
   });
 
+  it('should not read executions and return an empty list when the caller lacks readExecution', async () => {
+    const wm = createWorkflowsManagement();
+    const tool = buildTool(wm, false);
+
+    const result = await tool.handler({}, mockContext as any);
+
+    expect(wm.management.getWorkflowExecutions).not.toHaveBeenCalled();
+    const data = ((result as any).results[0] as any).data;
+    expect(data.executions).toEqual([]);
+    expect(data.total).toBe(0);
+  });
+
   it('should return an empty list when no executions exist', async () => {
     const wm = createWorkflowsManagement();
     wm.management.getWorkflowExecutions.mockResolvedValue({
@@ -160,7 +185,7 @@ describe('listWorkflowExecutionsTool', () => {
       page: 1,
       size: 10,
     });
-    const tool = listWorkflowExecutionsTool({ workflowsManagement: wm as any });
+    const tool = buildTool(wm);
 
     const result = await tool.handler({}, mockContext as any);
 

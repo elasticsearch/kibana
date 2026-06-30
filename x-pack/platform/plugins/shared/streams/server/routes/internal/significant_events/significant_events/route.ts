@@ -9,7 +9,7 @@ import type {
   SignificantEventsWorkflowStatusResult,
   SignificantEventsQueriesGenerationResult,
   SignificantEventsQueriesGenerationTaskResult,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import { TaskStatus, deriveQueryType } from '@kbn/streams-schema';
 import { z } from '@kbn/zod/v4';
 import { FeatureNotEnabledError } from '../../../../lib/streams/errors/feature_not_enabled_error';

@@ -4,7 +4,10 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import { ENVIRONMENT_ALL } from '../../../../common/environment_filter_values';
+import {
+  ENVIRONMENT_ALL,
+  ENVIRONMENT_NOT_DEFINED,
+} from '../../../../common/environment_filter_values';
 import { getInfrastructureFilter } from '.';
 
 describe('service logs', () => {
@@ -12,7 +15,7 @@ describe('service logs', () => {
   const environment = 'production';
 
   describe('getInfrastructureFilter', () => {
-    it('filter by service name and environment', () => {
+    it('filter by service name and a specific environment only', () => {
       expect(
         getInfrastructureFilter({
           containerIds: [],
@@ -31,6 +34,22 @@ describe('service logs', () => {
                 ],
               },
             },
+          ],
+        },
+      });
+    });
+
+    it('filter by service name and missing environment when environment is not defined', () => {
+      expect(
+        getInfrastructureFilter({
+          containerIds: [],
+          serviceName,
+          environment: ENVIRONMENT_NOT_DEFINED.value,
+        })
+      ).toEqual({
+        bool: {
+          minimum_should_match: 1,
+          should: [
             {
               bool: {
                 filter: [{ term: { 'service.name': 'opbeans-node' } }],
@@ -75,12 +94,6 @@ describe('service logs', () => {
             },
             {
               bool: {
-                filter: [{ term: { 'service.name': 'opbeans-node' } }],
-                must_not: [{ exists: { field: 'service.environment' } }],
-              },
-            },
-            {
-              bool: {
                 filter: [{ terms: { 'container.id': ['foo', 'bar'] } }],
                 must_not: [{ term: { 'service.name': '*' } }],
               },
@@ -107,12 +120,6 @@ describe('service logs', () => {
                   { term: { 'service.name': 'opbeans-node' } },
                   { term: { 'service.environment': 'production' } },
                 ],
-              },
-            },
-            {
-              bool: {
-                filter: [{ term: { 'service.name': 'opbeans-node' } }],
-                must_not: [{ exists: { field: 'service.environment' } }],
               },
             },
           ],

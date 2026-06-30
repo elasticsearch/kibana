@@ -70,13 +70,13 @@ export class SecurityService
 
         // Returned eagerly at setup but invoked at task-run time, by which point
         // the security delegate has been registered.
-        return (request, userProfileId) => {
+        return (request, user) => {
           if (!this.securityApi) {
             throw new Error(
               'Cannot enrich a fake request before the security delegate has been registered.'
             );
           }
-          this.securityApi.fakeRequestEnricher(request, userProfileId);
+          this.securityApi.fakeRequestEnricher(request, user);
         };
       },
       fips: {

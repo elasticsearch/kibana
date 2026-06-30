@@ -33,8 +33,7 @@ import {
 
 import { hostsUrl } from '../../../urls/navigation';
 
-// Failing: See https://github.com/elastic/kibana/issues/250924
-describe.skip('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
+describe('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
   before(() => {
     cy.task('esArchiverLoad', { archiveName: 'bulk_process' });
   });
@@ -58,53 +57,54 @@ describe.skip('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
   });
 
   it('Row renderers should be disabled by default', () => {
-    cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).should('exist');
     cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click();
-    cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).should('exist');
     cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).should('not.be.checked');
   });
 
   it('Selected renderer can be disabled and enabled', () => {
+    // The netflow renderer checkbox has id="netflow" per EuiCheckbox id={item.id}
+    const NETFLOW_CHECKBOX = '[data-test-subj="row-renderers-modal"] #netflow';
+
     // Ensure the row renders are not visible by default
     cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).should('have.length', 0);
     enableAllRowRenderersWithSwitch();
+    // Wait for at least one row renderer to appear before proceeding
     cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).should('have.length.gt', 0);
-    cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).eq(0).should('be.visible');
-    cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).eq(1).should('be.visible');
-    cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).should('exist');
+    cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).first().should('be.visible');
     cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click();
-    cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).should('exist');
+    cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).scrollIntoView();
     cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).type('flow');
+    // Wait for the table to filter and verify the netflow checkbox is present and checked
+    cy.get(NETFLOW_CHECKBOX).should('be.checked');
 
-    // Intercepts should be before click handlers that activate them rather than afterwards or you have race conditions
-    cy.intercept('PATCH', '/api/timeline', (req) => {
-      if (req.body.timeline.excludedRowRendererIds.includes('netflow')) {
-        req.alias = 'excludedNetflow';
-      } else {
-        req.alias = 'includedNetflow';
-      }
-    });
-    cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).first().uncheck();
+    // Register the intercept for the first save (excluding netflow) before triggering it
+    cy.intercept('PATCH', '/api/timeline').as('excludeNetflow');
+    cy.get(NETFLOW_CHECKBOX).uncheck();
 
     // close modal and save timeline changes
     cy.get(TIMELINE_ROW_RENDERERS_MODAL_CLOSE_BUTTON).click();
     addNameToTimelineAndSave('Test');
 
-    cy.wait('@excludedNetflow').then((interception) => {
+    cy.wait('@excludeNetflow').then((interception) => {
       expect(interception?.response?.body.excludedRowRendererIds).to.contain('netflow');
     });
 
     // open modal, filter and check
-    cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click({ force: true });
-
+    cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click();
+    cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).scrollIntoView();
     cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).type('flow');
-    cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).first().check();
+    // Wait for the table to filter and verify the netflow checkbox is present and unchecked
+    cy.get(NETFLOW_CHECKBOX).should('not.be.checked');
+
+    // Register the intercept for the second save (including netflow) before triggering it
+    cy.intercept('PATCH', '/api/timeline').as('includeNetflow');
+    cy.get(NETFLOW_CHECKBOX).check();
 
     // close modal and save timeline changes
     cy.get(TIMELINE_ROW_RENDERERS_MODAL_CLOSE_BUTTON).click();
     saveTimeline();
 
-    cy.wait('@includedNetflow').then((interception) => {
+    cy.wait('@includeNetflow').then((interception) => {
       expect(interception?.response?.body.excludedRowRendererIds).not.to.contain('netflow');
     });
   });

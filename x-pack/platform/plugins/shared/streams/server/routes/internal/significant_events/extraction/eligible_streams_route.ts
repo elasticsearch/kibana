@@ -11,11 +11,10 @@ import {
   OBSERVABILITY_STREAMS_CONTINUOUS_KI_EXTRACTION_INTERVAL_HOURS,
   OBSERVABILITY_STREAMS_CONTINUOUS_KI_EXTRACTION_EXCLUDED_STREAM_PATTERNS,
   OBSERVABILITY_STREAMS_ENABLE_QUERY_STREAMS,
+  OBSERVABILITY_STREAMS_SIGNIFICANT_EVENTS_INDEX_PATTERNS,
 } from '@kbn/management-settings-ids';
-import {
-  Streams,
-  STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
-} from '@kbn/streams-schema';
+import { parseIndexPatterns } from '@kbn/streams-schema';
+import { SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID } from '@kbn/significant-events-schema';
 import { createServerRoute } from '../../../create_server_route';
 import { assertSignificantEventsAccess } from '../../../utils/assert_significant_events_access';
 import {
@@ -27,6 +26,7 @@ import { StatusError } from '../../../../lib/streams/errors/status_error';
 import { FeatureNotEnabledError } from '../../../../lib/streams/errors/feature_not_enabled_error';
 import {
   classifyStreams,
+  filterEligibleStreams,
   parseExcludePatterns,
   type StreamCandidate,
   type StreamClassificationResult,
@@ -128,21 +128,27 @@ const eligibleStreamsRoute = createServerRoute({
     const maxStreams = query.maxScheduledStreams ?? MAX_SCHEDULED_STREAMS;
     const lookbackHours = query.lookbackHours ?? DEFAULT_LOOKBACK_HOURS;
 
-    const [connectorId, executions, allStreams, isQueryStreamsEnabled] = await Promise.all([
-      resolveConnectorForFeature({
-        searchInferenceEndpoints: server.searchInferenceEndpoints,
-        featureId: STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
-        featureName: 'knowledge indicator extraction',
-        request,
-      }),
-      streamsKIsOnboardingClient.getRecentExecutions(),
-      streamsClient.listStreams(),
-      uiSettingsClient.get<boolean>(OBSERVABILITY_STREAMS_ENABLE_QUERY_STREAMS),
-    ]);
+    const [connectorId, executions, allStreams, isQueryStreamsEnabled, rawIndexPatterns] =
+      await Promise.all([
+        resolveConnectorForFeature({
+          searchInferenceEndpoints: server.searchInferenceEndpoints,
+          featureId: SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
+          featureName: 'knowledge indicator extraction',
+          request,
+        }),
+        streamsKIsOnboardingClient.getRecentExecutions(),
+        streamsClient.listStreams(),
+        uiSettingsClient.get<boolean>(OBSERVABILITY_STREAMS_ENABLE_QUERY_STREAMS),
+        uiSettingsClient.get<string>(OBSERVABILITY_STREAMS_SIGNIFICANT_EVENTS_INDEX_PATTERNS),
+      ]);
 
-    const eligibleStreams = isQueryStreamsEnabled
-      ? allStreams
-      : allStreams.filter((stream) => !Streams.QueryStream.Definition.is(stream));
+    const indexPatterns = parseIndexPatterns(rawIndexPatterns);
+
+    const eligibleStreams = filterEligibleStreams({
+      allStreams,
+      isQueryStreamsEnabled,
+      indexPatterns,
+    });
 
     const intervalHours =
       query.extractionIntervalHours ?? intervalHoursSetting ?? DEFAULT_EXTRACTION_INTERVAL_HOURS;

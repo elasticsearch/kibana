@@ -99,6 +99,8 @@ function App() {
 
 The navigation is configured by passing the structure to `items` prop. The structure is an array of `MenuItem` objects, where each `MenuItem` can have an optional `sections` array of `Section` objects.
 
+A `MenuItem` with sections can set `secondaryMenuTitle` to show a custom header in its secondary menu (both the expanded side panel and the hover popover) instead of the item's `label`. Use it to surface dynamic context, e.g. the name of the resource currently in view. When omitted, the title falls back to `label`.
+
 ```js
 export const navigationItems = {
   primaryItems: [
@@ -116,6 +118,7 @@ export const navigationItems = {
       label: 'Analytics',
       iconType: 'graphApp',
       href: '/analytics/reports',
+      secondaryMenuTitle: 'Acme project', // optional, overrides the secondary menu/panel header title (defaults to `label`)
       sections: [
         {
           id: 'reports-section',

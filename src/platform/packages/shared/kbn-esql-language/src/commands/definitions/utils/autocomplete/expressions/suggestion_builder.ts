@@ -206,10 +206,11 @@ export class SuggestionBuilder {
    */
   private resolveIgnoredFunctions(excludeParentFunctions: boolean): string[] {
     const {
-      functionsToIgnore,
+      getFunctionsToIgnore,
       parentFunctionNames = [],
       functionParameterContext,
     } = this.context.options;
+    const functionsToIgnore = getFunctionsToIgnore?.(functionParameterContext);
     const parentFn = functionParameterContext?.functionDefinition?.name?.toLowerCase();
 
     const isAllowedInsideParent = (fn: string) =>

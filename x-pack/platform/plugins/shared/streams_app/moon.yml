@@ -27,6 +27,7 @@ dependsOn:
   - '@kbn/observability-ai-assistant-plugin'
   - '@kbn/unified-search-plugin'
   - '@kbn/streams-schema'
+  - '@kbn/significant-events-schema'
   - '@kbn/es-query'
   - '@kbn/zod'
   - '@kbn/share-plugin'

@@ -8,6 +8,7 @@
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { ALERTING_CASES_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-server';
 import { ACTION_POLICY_SAVED_OBJECT_TYPE } from '../../../saved_objects';
+import { AGENT_BUILDER_TAG } from '../../../agent_builder/common/constants';
 import { TERMS_SIZE, bucketsToArray } from './constants';
 import type { ActionPolicyStatsAggregations, ActionPolicyStatsResults } from './types';
 
@@ -100,6 +101,11 @@ export async function getActionPolicyStats(
       avg_group_by_fields_count: {
         avg: { field: 'ap_group_by_count' },
       },
+      count_agent_builder_assisted: {
+        filter: {
+          term: { [`${ACTION_POLICY_SAVED_OBJECT_TYPE}.tags`]: AGENT_BUILDER_TAG },
+        },
+      },
     },
   });
 
@@ -112,6 +118,7 @@ export async function getActionPolicyStats(
     action_policies_count: total,
     action_policies_unique_workflow_count: aggs?.unique_workflow_count.value ?? 0,
     action_policies_count_with_matcher: aggs?.count_with_matcher.doc_count ?? 0,
+    action_policies_count_agent_builder_assisted: aggs?.count_agent_builder_assisted.doc_count ?? 0,
     action_policies_count_with_group_by: aggs?.count_with_group_by.doc_count ?? 0,
     action_policies_avg_group_by_fields_count: aggs?.avg_group_by_fields_count.value ?? null,
     action_policies_count_by_throttle_interval: bucketsToArray(

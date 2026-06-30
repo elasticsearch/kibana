@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import type { Detection, Discovery, SignificantEventStatus } from '@kbn/streams-schema';
-import { SIGNIFICANT_EVENT_STATUS_OPTIONS } from '@kbn/streams-schema';
+import type { Detection, Discovery, SignificantEventStatus } from '@kbn/significant-events-schema';
+import { SIGNIFICANT_EVENT_STATUS_OPTIONS } from '@kbn/significant-events-schema';
 import {
   DETECTION_KIND_COLORS,
   DISCOVERY_KIND_COLORS,

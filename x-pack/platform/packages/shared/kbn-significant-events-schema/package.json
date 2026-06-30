@@ -1,0 +1,7 @@
+{
+  "name": "@kbn/significant-events-schema",
+  "description": "Significant Events Zod schema definitions and common models shared between public and server.",
+  "private": true,
+  "version": "1.0.0",
+  "license": "Elastic License 2.0"
+}

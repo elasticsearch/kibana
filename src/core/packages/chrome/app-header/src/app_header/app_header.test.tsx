@@ -78,7 +78,12 @@ describe('AppHeaderView', () => {
       <AppHeaderView
         metadata={[
           { type: 'health', label: 'Warning at llm 24', color: 'warning' },
-          { type: 'text', label: 'Created by: analyst', 'data-test-subj': 'createdByMetadata' },
+          {
+            type: 'text',
+            label: 'Created by',
+            value: 'elastic',
+            'data-test-subj': 'createdByMetadata',
+          },
           { type: 'button', label: 'Updated by: analyst', onClick: onInspect },
         ]}
       />
@@ -86,7 +91,7 @@ describe('AppHeaderView', () => {
 
     expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.metadata)).toBeInTheDocument();
     expect(screen.getByText('Warning at llm 24')).toBeInTheDocument();
-    expect(screen.getByTestId('createdByMetadata')).toHaveTextContent('Created by: analyst');
+    expect(screen.getByTestId('createdByMetadata')).toHaveTextContent('Created by elastic');
 
     fireEvent.click(screen.getByRole('button', { name: 'Updated by: analyst' }));
 

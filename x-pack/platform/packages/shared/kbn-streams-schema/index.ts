@@ -140,25 +140,6 @@ export {
 } from './src/fields';
 
 export {
-  type EsqlQuery,
-  esqlQuerySchema,
-  type QueryFeature,
-  queryFeatureSchema,
-  type StreamQuery as StreamQuery,
-  type QueryLink,
-  type QueryType,
-  QUERY_TYPE_MATCH,
-  QUERY_TYPE_STATS,
-  HIGH_SEVERITY_THRESHOLD,
-  queryTypeSchema,
-  type QueriesGetResponse,
-  type QueriesOccurrencesGetResponse,
-  upsertStreamQueryRequestSchema,
-  bulkStreamQueryInputSchema,
-  streamQuerySchema,
-} from './src/queries';
-
-export {
   findInheritedLifecycle,
   findInheritingStreams,
   effectiveToIngestLifecycle,
@@ -208,17 +189,6 @@ export {
   isEnabledLifecycleFailureStore,
 } from './src/models/ingest/failure_store';
 
-export type {
-  SignificantEventsResponse,
-  SignificantEventsGetResponse,
-  GeneratedSignificantEventQuery,
-  SignificantEventsQueriesGenerationResult,
-  SignificantEventsQueriesGenerationTaskResult,
-  LifecycleDetection,
-  EventLifecycleResponse,
-} from './src/api/significant_events';
-export { generatedSignificantEventQuerySchema } from './src/api/significant_events';
-
 export { emptyAssets } from './src/helpers/empty_assets';
 export {
   validateStreamName,
@@ -227,38 +197,6 @@ export {
   MAX_STREAM_NAME_LENGTH,
   INVALID_STREAM_NAME_CHARACTERS,
 } from './src/helpers/stream_name_validation';
-
-export {
-  type Feature,
-  type FeatureUpsert,
-  type FeatureWithFilter,
-  type BaseFeature,
-  type IdentifiedFeature,
-  type IgnoredFeature,
-  DATASET_ANALYSIS_FEATURE_TYPE,
-  LOG_SAMPLES_FEATURE_TYPE,
-  LOG_PATTERNS_FEATURE_TYPE,
-  ERROR_LOGS_FEATURE_TYPE,
-  CODE_ANALYSIS_FEATURE_TYPE,
-  COMPUTED_FEATURE_TYPES,
-  INFERRED_FEATURE_TYPES,
-  isFeature,
-  isFeatureWithFilter,
-  isComputedFeature,
-  isDuplicateFeature,
-  hasSameFingerprint,
-  computeFeatureUuid,
-  normalizeFeatureSlug,
-  mergeFeature,
-  toBaseFeature,
-  featureSchema,
-  featureUpsertSchema,
-  baseFeatureSchema,
-  identifiedFeatureSchema,
-  ignoredFeatureSchema,
-} from './src/feature';
-
-export { FeatureAccumulator } from './src/feature_accumulator';
 
 export {
   type BaseSimulationError,
@@ -277,33 +215,6 @@ export { type IngestStreamProcessing } from './src/models/ingest/processing';
 export { TaskStatus, type TaskResult } from './src/tasks/types';
 
 export type { GenerateDescriptionResult } from './src/api/description_generation';
-export type { IdentifyFeaturesResult, IterationResult } from './src/api/features';
-export { tokenCountSchema, iterationResultSchema } from './src/api/features';
-
-export {
-  SIGNIFICANT_EVENT_STATUS_OPTIONS,
-  detectionSchema,
-  type Detection,
-  discoverySchema,
-  type Discovery,
-  significantEventSchema,
-  significantEventStatusSchema,
-  type SignificantEvent,
-  type KnowledgeIndicator,
-  type SignificantEventStatus,
-} from './src/significant_events';
-export type {
-  StreamsKIsOnboardingResult,
-  StreamsKIsOnboardingFeaturesResult,
-  StreamsKIsOnboardingQueriesResult,
-  StreamsKIsOnboardingStatusResult,
-} from './src/onboarding';
-export {
-  StreamsKIsOnboardingStep,
-  STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES,
-} from './src/onboarding';
-export type { SignificantEventsWorkflowStatusResult } from './src/workflows';
-export { SignificantEventsWorkflowStatus } from './src/workflows';
 
 export { streamsOasDefinitions } from './src/oas_definitions';
 export type { StreamsOasDefinitions } from './src/oas_definitions';
@@ -313,13 +224,9 @@ export { mergeSourceIntoDocuments } from './src/helpers/merge_esql_source';
 
 export { streamMatchesIndexPatterns } from './src/helpers/stream_matches_index_patterns';
 export { DEFAULT_INDEX_PATTERNS } from './src/helpers/default_index_patterns';
+export { parseIndexPatterns } from './src/helpers/parse_index_patterns';
 
 export {
-  STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID,
-  STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID as STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
-  STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
-  STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID as STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID,
-  STREAMS_SIGNIFICANT_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID as STREAMS_SIGNIFICANT_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID,
   STREAMS_INFERENCE_PARENT_FEATURE_ID,
   STREAMS_PARTITIONING_SUGGESTIONS_INFERENCE_FEATURE_ID,
   STREAMS_PROCESSING_SUGGESTIONS_INFERENCE_FEATURE_ID,

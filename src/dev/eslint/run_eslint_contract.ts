@@ -27,7 +27,8 @@ import type { ToolingLog } from '@kbn/tooling-log';
 
 import { File } from '../file';
 import { LINT_LABEL } from './constants';
-import { lintFiles, pickFilesToLint } from '.';
+import { lintFiles } from './lint_files';
+import { pickFilesToLint } from './pick_files_to_lint';
 
 export interface ExecuteEslintValidationOptions {
   baseContext: ValidationBaseContext;

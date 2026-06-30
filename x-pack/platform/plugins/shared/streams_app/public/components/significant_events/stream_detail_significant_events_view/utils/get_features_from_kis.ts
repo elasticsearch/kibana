@@ -6,7 +6,7 @@
  */
 
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
-import type { Feature } from '@kbn/streams-schema';
+import type { Feature } from '@kbn/significant-events-schema';
 
 export const getFeaturesFromKIs = (knowledgeIndicators: KnowledgeIndicator[]): Feature[] =>
   knowledgeIndicators

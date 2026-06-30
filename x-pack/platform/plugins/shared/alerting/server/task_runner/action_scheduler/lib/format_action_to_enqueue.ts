@@ -13,6 +13,11 @@ import { RULE_SAVED_OBJECT_TYPE } from '../../..';
 interface FormatActionToEnqueueOpts {
   action: RuleAction | RuleSystemAction;
   apiKeyId?: string;
+  /**
+   * Resolved credential to enqueue for this connector action. Either the
+   * base64-encoded ES API key (`id:secret`) or the raw `essu_…` UIAM secret;
+   * see `getFakeKibanaRequest` in `rule_loader.ts` (`effectiveApiKey`).
+   */
   apiKey: string | null;
   executionId: string;
   priority?: TaskPriority;

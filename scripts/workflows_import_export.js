@@ -16,11 +16,12 @@
  *
  * Usage:
  *   Export: node scripts/workflows_import_export.js export --dir=./workflows [--space=default]
- *   Import: node scripts/workflows_import_export.js import --dir=./workflows [--space=default] [--overwrite]
+ *   Import: node scripts/workflows_import_export.js import --dir=./workflows [--space=default] [--overwrite] [--recursive]
  *
  * Examples:
  *   node scripts/workflows_import_export.js export --dir=./my-workflows
  *   node scripts/workflows_import_export.js import --dir=./my-workflows --overwrite
+ *   node scripts/workflows_import_export.js import --dir=./my-workflows --recursive
  */
 
 require('@kbn/setup-node-env');
@@ -223,10 +224,28 @@ async function exportWorkflows(options) {
 }
 
 /**
+ * Collect YAML files from a directory, optionally walking subdirectories.
+ * Returns absolute file paths.
+ */
+function collectYamlFiles(dir, recursive) {
+  const results = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory() && recursive) {
+      results.push(...collectYamlFiles(fullPath, recursive));
+    } else if (entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+/**
  * Import workflows from YAML files using Kibana API
  */
 async function importWorkflows(options) {
-  const { dir, space, overwrite, ssl } = options;
+  const { dir, space, overwrite, recursive, ssl } = options;
   const { kibanaUrl, username, password } = getKibanaConfig(ssl);
 
   try {
@@ -238,10 +257,8 @@ async function importWorkflows(options) {
       process.exit(1);
     }
 
-    // Read all YAML files from directory
-    const files = fs
-      .readdirSync(dir)
-      .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'));
+    // Read all YAML files from directory (optionally recursive)
+    const files = collectYamlFiles(dir, recursive);
 
     if (files.length === 0) {
       console.log('No YAML files found in directory.');
@@ -284,8 +301,8 @@ async function importWorkflows(options) {
     let updateCount = 0;
     let errorCount = 0;
 
-    for (const file of files) {
-      const filepath = path.join(dir, file);
+    for (const filepath of files) {
+      const file = path.relative(dir, filepath);
       const content = fs.readFileSync(filepath, 'utf8');
 
       // Strip the metadata comment block at the top of the file.
@@ -465,6 +482,7 @@ Options:
   --dir         Directory for workflow files (default: ./workflows)
   --space       Kibana space to use (default: default)
   --overwrite   Overwrite existing workflows on import (default: false)
+  --recursive   Walk subdirectories when importing (default: false)
   --ssl         Use HTTPS connection (default: true)
   --no-ssl      Use HTTP connection
   --help        Show this help message
@@ -490,6 +508,9 @@ Examples:
   Import workflows (overwrite existing):
     node scripts/workflows_import_export.js import --dir=./my-workflows --overwrite
 
+  Import workflows from all subdirectories:
+    node scripts/workflows_import_export.js import --dir=./my-workflows --recursive
+
   Import workflows to specific space:
     node scripts/workflows_import_export.js import --dir=./my-workflows --space=staging
 
@@ -512,12 +533,13 @@ async function main() {
       s: 'space',
       o: 'overwrite',
     },
-    boolean: ['help', 'overwrite', 'ssl', 'no-ssl'],
+    boolean: ['help', 'overwrite', 'recursive', 'ssl', 'no-ssl'],
     string: ['dir', 'space'],
     default: {
       dir: DEFAULT_DIR,
       space: DEFAULT_SPACE,
       overwrite: false,
+      recursive: false,
       ssl: false,
     },
   });
@@ -533,6 +555,7 @@ async function main() {
     dir: opts.dir,
     space: opts.space,
     overwrite: opts.overwrite,
+    recursive: opts.recursive,
     ssl: opts['no-ssl'] ? false : opts.ssl,
   };
 

@@ -85,6 +85,30 @@ describe('WorkflowStepExecutionDetails', () => {
     expect(inputTab).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('shows Event and Inputs tabs for non-manual trigger when both input and output exist', () => {
+    const stepExecution = createTriggerStep({
+      stepType: 'trigger_alert',
+      stepId: 'alert',
+      input: { alerts: [{ id: 'a1' }] },
+      output: { ticketId: 'ABC-123' },
+    });
+    render(
+      <TestWrapper>
+        <WorkflowStepExecutionDetails workflowExecutionId="exec-1" stepExecution={stepExecution} />
+      </TestWrapper>
+    );
+
+    const eventTab = screen.getByRole('tab', { name: 'Event' });
+    const inputsTab = screen.getByRole('tab', { name: 'Input' });
+    expect(eventTab).toBeInTheDocument();
+    expect(inputsTab).toBeInTheDocument();
+
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs[0]).toHaveTextContent('Event');
+    expect(tabs[1]).toHaveTextContent('Input');
+    expect(eventTab).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('shows only Input tab for trigger when output is missing', () => {
     const stepExecution = createTriggerStep({ input: { foo: 'bar' } });
     render(

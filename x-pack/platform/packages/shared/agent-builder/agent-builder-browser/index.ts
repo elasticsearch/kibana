@@ -16,6 +16,7 @@ export type {
 } from './tools';
 export type { AgentsServiceStartContract } from './agents';
 export type { AttachmentUIDefinition, AttachmentServiceStartContract } from './attachments';
+export type { RendererUIDefinition, RendererServiceStartContract } from './renderers';
 export type {
   EventsServiceStartContract,
   ChatUiEventsContract,

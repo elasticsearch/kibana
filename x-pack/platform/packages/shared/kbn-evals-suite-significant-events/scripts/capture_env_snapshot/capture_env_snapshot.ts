@@ -9,10 +9,11 @@ import type { ToolingLog } from '@kbn/tooling-log';
 import { Client } from '@elastic/elasticsearch';
 import type { MappingTypeMapping } from '@elastic/elasticsearch/lib/api/types';
 import moment from 'moment';
+import { extractDataStreamName } from '@kbn/es-snapshot-loader';
 import type { ConnectionConfig } from '../lib/get_connection_config';
 import { getConnectionConfig } from '../lib/get_connection_config';
 import { createSnapshot, generateGcsBasePath, registerGcsRepository } from '../lib/gcs';
-import { GCS_BUCKET, KNOWLEDGE_INDICATORS_DATA_STREAM } from '../lib/constants';
+import { GCS_BUCKET, SIGNIFICANT_EVENTS_DATA_STREAMS } from '../lib/constants';
 import { resolvePatterns, parseCommonSnapshotFlags, toSnapshotName } from '../lib/snapshot_utils';
 import { withTempSuperuser } from '../lib/user_utils';
 
@@ -43,10 +44,12 @@ async function captureSystemIndex({
 
     const mappings = await fetchMapping(sysClient, sourceIndex);
     if (!mappings) {
-      const hint =
-        sourceIndex === KNOWLEDGE_INDICATORS_DATA_STREAM
-          ? ' The KI data stream has no backing indices — run KI feature extraction before capturing.'
-          : '';
+      const hint = SIGNIFICANT_EVENTS_DATA_STREAMS.includes(
+        sourceIndex as (typeof SIGNIFICANT_EVENTS_DATA_STREAMS)[number]
+      )
+        ? ' The Significant Events data stream has no backing indices — run the feature extraction / ' +
+          'discovery workflow before capturing.'
+        : '';
       throw new Error(`Could not fetch mapping for "${sourceIndex}".${hint}`);
     }
 
@@ -107,7 +110,7 @@ export async function captureEnvSnapshot({
 
   const resolvedSystemIndices = await resolvePatterns(esClient, log, [
     ...systemIndices,
-    KNOWLEDGE_INDICATORS_DATA_STREAM,
+    ...SIGNIFICANT_EVENTS_DATA_STREAMS,
   ]);
   const resolvedIndices = await resolvePatterns(esClient, log, [logsIndex, ...alertIndices]);
 
@@ -132,8 +135,21 @@ export async function captureEnvSnapshot({
   // `ignore_unavailable: true` silently drops missing indices — report what was actually
   // captured so a partial snapshot surfaces immediately rather than at restore time.
   log.info(`Snapshot contains ${actualIndices.length} indices: ${actualIndices.join(', ')}`);
+  // `actualIndices` lists concrete indices — for a data stream these are its backing indices
+  // (`.ds-logs.otel-…`), not the data-stream name. Add the resolved data-stream name for each
+  // backing index so a requested data stream (e.g. `logs.otel`) isn't falsely flagged missing.
+  const capturedNames = new Set<string>();
+  for (const idx of actualIndices) {
+    capturedNames.add(idx);
+    const dataStream = extractDataStreamName(idx);
+    if (dataStream) {
+      capturedNames.add(dataStream);
+    }
+  }
+  // `requested` comes from `resolvePatterns` / `toSnapshotName`, so wildcards are already
+  // expanded — a plain membership check is enough.
   const requested = allSnapshotIndices.split(',');
-  const missing = requested.filter((i) => !i.includes('*') && !actualIndices.includes(i));
+  const missing = requested.filter((i) => !capturedNames.has(i));
   if (missing.length > 0) {
     log.warning(
       `Requested indices NOT in snapshot (skipped — did not exist): ${missing.join(', ')}`

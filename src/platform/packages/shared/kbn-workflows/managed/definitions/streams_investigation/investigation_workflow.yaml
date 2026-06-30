@@ -49,7 +49,7 @@ steps:
     agent-id: platform.streams.investigation
     connector-id: '{{ inputs.connector_id }}'
     # Keep plugin-id/aggregate-by in sync with @kbn/streams-schema inference_feature_ids.ts
-    # (STREAMS_SIGNIFICANT_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID / STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
+    # (STREAMS_SIGNIFICANT_EVENTS_INVESTIGATION_INFERENCE_FEATURE_ID / SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
     plugin-id: 'streams_significant_events_investigation'
     aggregate-by: 'streams_significant_events'
     create-conversation: true

@@ -163,6 +163,7 @@ export const getApiKeyAndUserScope = async (
           // not want to invalidate a specific API key that was not created by the task manager
           apiKeyCreatedByUser,
           userProfileId: user?.profile_uid,
+          userName: user?.username,
         },
       });
     }

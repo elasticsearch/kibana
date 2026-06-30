@@ -354,6 +354,224 @@ export default function (providerContext: FtrProviderContext) {
       });
     });
 
+    describe('Get Agentless Policy', () => {
+      before(async () => {
+        const mockAgentlessApiService = setupMockServer();
+        mockApiServer = await mockAgentlessApiService.listen(8089);
+      });
+
+      after(async () => {
+        await mockApiServer.close();
+      });
+
+      beforeEach(async () => {
+        await kibanaServer.savedObjects.cleanStandardList();
+        await cleanFleetIndices(es);
+        await apiClient.setup();
+      });
+
+      afterEach(async () => {
+        await kibanaServer.savedObjects.cleanStandardList();
+        await cleanFleetIndices(es);
+      });
+
+      it('should return an agentless policy with a clean response shape', async () => {
+        const id = uuidv4();
+        await apiClient.createAgentlessPolicy({
+          id,
+          package: {
+            name: 'test_agentless',
+            version: '1.0.0',
+          },
+          name: `test_agentless-${Date.now()}`,
+          description: 'test agentless policy',
+          namespace: 'default',
+          inputs: {
+            'sample-httpjson': {
+              enabled: true,
+              vars: {
+                api_key: 'TEST_VALUE_API_KEY',
+              },
+              streams: {},
+            },
+          },
+        });
+
+        const { item } = await apiClient.getAgentlessPolicy(id);
+
+        expect(item.id).to.be(id);
+        expect(item.namespace).to.be('default');
+        expect(item.package.name).to.be('test_agentless');
+
+        // The agentless contract must not leak underlying Fleet package-policy internals
+        expect(item).to.not.have.property('policy_ids');
+        expect(item).to.not.have.property('revision');
+        expect(item).to.not.have.property('supports_agentless');
+        expect(item).to.not.have.property('enabled');
+      });
+
+      it('should return 404 for a missing policy id', async () => {
+        await expectToRejectWithNotFound(() => apiClient.getAgentlessPolicy(uuidv4()));
+      });
+
+      it('should return 404 for an existing non-agentless package policy', async () => {
+        const agentPolicyRes = await apiClient.createAgentPolicy(undefined, {
+          name: `standard-policy-${Date.now()}`,
+          namespace: 'default',
+          description: '',
+        });
+
+        const packagePolicyRes = await apiClient.createPackagePolicy(undefined, {
+          package: {
+            name: 'test_agentless',
+            version: '1.0.0',
+          },
+          name: `regular-package-policy-${Date.now()}`,
+          namespace: 'default',
+          policy_ids: [agentPolicyRes.item.id],
+          inputs: {
+            'sample-httpjson': {
+              enabled: true,
+              vars: {
+                api_key: 'TEST_VALUE_API_KEY',
+              },
+              streams: {},
+            },
+          },
+        });
+
+        // The regular package policy exists, but must not be reachable via the agentless API
+        await apiClient.getPackagePolicy(packagePolicyRes.item.id);
+        await expectToRejectWithNotFound(() =>
+          apiClient.getAgentlessPolicy(packagePolicyRes.item.id)
+        );
+      });
+    });
+
+    describe('List Agentless Policies', () => {
+      before(async () => {
+        const mockAgentlessApiService = setupMockServer();
+        mockApiServer = await mockAgentlessApiService.listen(8089);
+      });
+
+      after(async () => {
+        await mockApiServer.close();
+      });
+
+      beforeEach(async () => {
+        await kibanaServer.savedObjects.cleanStandardList();
+        await cleanFleetIndices(es);
+        await apiClient.setup();
+      });
+
+      afterEach(async () => {
+        await kibanaServer.savedObjects.cleanStandardList();
+        await cleanFleetIndices(es);
+      });
+
+      const createAgentlessPolicyWithName = async (name: string) => {
+        const id = uuidv4();
+        await apiClient.createAgentlessPolicy({
+          id,
+          package: {
+            name: 'test_agentless',
+            version: '1.0.0',
+          },
+          name,
+          description: 'test agentless policy',
+          namespace: 'default',
+          inputs: {
+            'sample-httpjson': {
+              enabled: true,
+              vars: {
+                api_key: 'TEST_VALUE_API_KEY',
+              },
+              streams: {},
+            },
+          },
+        });
+        return id;
+      };
+
+      it('should only return agentless policies (scoped) with a clean response shape', async () => {
+        await createAgentlessPolicyWithName(`test_agentless-a-${Date.now()}`);
+        await createAgentlessPolicyWithName(`test_agentless-b-${Date.now()}`);
+
+        // A regular (non-agentless) package policy that must be excluded from the list
+        const agentPolicyRes = await apiClient.createAgentPolicy(undefined, {
+          name: `standard-policy-${Date.now()}`,
+          namespace: 'default',
+          description: '',
+        });
+        await apiClient.createPackagePolicy(undefined, {
+          package: {
+            name: 'test_agentless',
+            version: '1.0.0',
+          },
+          name: `regular-package-policy-${Date.now()}`,
+          namespace: 'default',
+          policy_ids: [agentPolicyRes.item.id],
+          inputs: {
+            'sample-httpjson': {
+              enabled: true,
+              vars: {
+                api_key: 'TEST_VALUE_API_KEY',
+              },
+              streams: {},
+            },
+          },
+        });
+
+        const res = await apiClient.listAgentlessPolicies();
+
+        expect(res.total).to.be(2);
+        expect(res.items.length).to.be(2);
+        expect(res.page).to.be(1);
+        expect(res.perPage).to.be(20);
+
+        for (const item of res.items) {
+          expect(item).to.not.have.property('policy_ids');
+          expect(item).to.not.have.property('revision');
+          expect(item).to.not.have.property('supports_agentless');
+        }
+      });
+
+      it('should respect paging parameters', async () => {
+        await createAgentlessPolicyWithName(`test_agentless-a-${Date.now()}`);
+        await createAgentlessPolicyWithName(`test_agentless-b-${Date.now()}`);
+        await createAgentlessPolicyWithName(`test_agentless-c-${Date.now()}`);
+
+        const firstPage = await apiClient.listAgentlessPolicies({ page: 1, perPage: 2 });
+        expect(firstPage.total).to.be(3);
+        expect(firstPage.items.length).to.be(2);
+
+        const secondPage = await apiClient.listAgentlessPolicies({ page: 2, perPage: 2 });
+        expect(secondPage.total).to.be(3);
+        expect(secondPage.items.length).to.be(1);
+      });
+
+      it('should filter results using an allowed kuery field', async () => {
+        const uniqueName = `test_agentless-unique-${uuidv4()}`;
+        await createAgentlessPolicyWithName(uniqueName);
+        await createAgentlessPolicyWithName(`test_agentless-other-${Date.now()}`);
+
+        const res = await apiClient.listAgentlessPolicies({
+          kuery: `name:"${uniqueName}"`,
+        });
+
+        expect(res.total).to.be(1);
+        expect(res.items.length).to.be(1);
+        expect(res.items[0].name).to.be(uniqueName);
+      });
+
+      it('should reject a kuery filtering on a disallowed field', async () => {
+        await expectToRejectWithError(
+          () => apiClient.listAgentlessPolicies({ kuery: 'supports_agentless:true' }),
+          /400/
+        );
+      });
+    });
+
     describe('Update Agentless Policy', () => {
       let apiCalls: Array<{
         url: string;

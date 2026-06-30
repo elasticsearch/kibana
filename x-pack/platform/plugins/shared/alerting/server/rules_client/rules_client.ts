@@ -9,6 +9,12 @@ import type { UnmuteAlertParams } from '../application/rule/methods/unmute_alert
 import type { RuleTagsParams } from '../application/rule/methods/tags';
 import { getRuleTags } from '../application/rule/methods/tags';
 import type { MuteAlertQuery, MuteAlertParams } from '../application/rule/methods/mute_alert/types';
+import { snoozeAlertInstance } from '../application/rule/methods/snooze_alert_instance/snooze_instance';
+import type {
+  SnoozeAlertInstanceParams,
+  SnoozeAlertInstanceQuery,
+  SnoozeAlertInstanceBody,
+} from '../application/rule/methods/snooze_alert_instance/types';
 import type { RuleTypeParams } from '../types';
 import { parseDuration } from '../../common/parse_duration';
 import type { RulesClientContext } from './types';
@@ -71,6 +77,8 @@ import { muteInstance } from '../application/rule/methods/mute_alert/mute_instan
 import { unmuteAll } from '../application/rule/methods/unmute_all';
 import { muteAll } from '../application/rule/methods/mute_all';
 import { unmuteInstance } from '../application/rule/methods/unmute_alert/unmute_instance';
+import { unsnoozeAlertInstance } from '../application/rule/methods/unsnooze_alert/unsnooze_instance';
+import type { UnsnoozeAlertParams } from '../application/rule/methods/unsnooze_alert/types';
 import { bulkMuteUnmuteInstances } from '../application/rule/methods/bulk_mute_unmute_alerts/bulk_mute_unmute_instances';
 import type { BulkMuteUnmuteAlertsParams } from '../application/rule/types';
 import type { RunSoonParams } from '../application/rule/methods/run_soon';
@@ -143,6 +151,7 @@ export const fieldsToExcludeFromRevisionUpdates: ReadonlySet<keyof RuleTypeParam
   'revision',
   'running',
   'snoozeSchedule',
+  'snoozedInstances',
   'systemActions',
   'updatedBy',
   'updatedAt',
@@ -221,11 +230,18 @@ export class RulesClient {
   public unmuteAll = (options: { id: string }) => unmuteAll(this.context, options);
   public muteInstance = (options: { params: MuteAlertParams; query: MuteAlertQuery }) =>
     muteInstance(this.context, options);
+  public snoozeAlertInstance = (options: {
+    params: SnoozeAlertInstanceParams;
+    query: SnoozeAlertInstanceQuery;
+    body: SnoozeAlertInstanceBody;
+  }) => snoozeAlertInstance(this.context, options);
   public bulkMuteInstances = (options: BulkMuteUnmuteAlertsParams) =>
     bulkMuteUnmuteInstances(this.context, { params: options, mute: true });
   public bulkUnmuteInstances = (options: BulkMuteUnmuteAlertsParams) =>
     bulkMuteUnmuteInstances(this.context, { params: options, mute: false });
   public unmuteInstance = (options: UnmuteAlertParams) => unmuteInstance(this.context, options);
+  public unsnoozeAlertInstance = (options: UnsnoozeAlertParams) =>
+    unsnoozeAlertInstance(this.context, options);
 
   public bulkUntrackAlerts = (options: BulkUntrackBody) => bulkUntrackAlerts(this.context, options);
 

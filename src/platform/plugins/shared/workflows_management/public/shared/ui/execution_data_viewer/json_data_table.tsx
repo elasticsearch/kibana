@@ -15,7 +15,7 @@ import type {
 } from '@elastic/eui';
 import { copyToClipboard, EuiDataGrid, EuiEmptyPrompt, useResizeObserver } from '@elastic/eui';
 import { css } from '@emotion/react';
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { usePager } from '@kbn/discover-utils';
 import { i18n } from '@kbn/i18n';
@@ -122,6 +122,12 @@ export const JSONDataTable = React.memo<JSONDataTableProps>(
       initialPageSize: 20,
       totalItems: filteredRecords.length,
     });
+
+    // Reset to page 0 when the data prop changes (e.g. switching between execution steps
+    // that have different row counts) so stale page indices don't go out of bounds.
+    useEffect(() => {
+      changePageIndex(0);
+    }, [data, changePageIndex]);
 
     const fieldCellActions = useMemo(() => {
       const cellActions: EuiDataGridColumnCellAction[] = [];
@@ -274,9 +280,12 @@ const getCopyCellActionComponent = (
   React.memo(function CopyCellAction({ rowIndex, Component }) {
     const record = records[rowIndex];
     const copy = useCallback(() => {
+      if (!record) return;
       copyToClipboard(appendKeyPath(fieldPathPrefix, record.field));
       closePopover();
-    }, [record.field]);
+    }, [record]);
+
+    if (!record) return null;
 
     return (
       <Component onClick={copy} iconType="copy" aria-label={CopyFieldPathText}>

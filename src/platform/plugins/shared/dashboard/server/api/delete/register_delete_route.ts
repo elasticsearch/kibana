@@ -98,8 +98,10 @@ export function registerDeleteRoute(
             return res.forbidden({ body: { message: e.message } });
           }
 
-          logRequest(logger, req, 'error', e.message);
-          return res.customError({ statusCode: 500, body: { message: e.message } });
+          const message = e.stack ?? e.message;
+          logRequest(logger, req, 'error', message);
+          // Throw so Kibana returns a 500 HTTP response on any uncaught errors.
+          throw e;
         }
 
         return res.noContent();

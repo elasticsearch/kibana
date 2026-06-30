@@ -50,6 +50,10 @@ jest.mock('@kbn/alerting-v2-episodes-ui/components/details/runbook_section', () 
   AlertEpisodeRunbookSection: () => <div data-test-subj="stubRunbookSection" />,
 }));
 
+jest.mock('@kbn/alerting-v2-episodes-ui/components/details/trend_chart_section', () => ({
+  AlertEpisodeTrendChartSection: () => <div data-test-subj="stubTrendChartSection" />,
+}));
+
 jest.mock('@kbn/alerting-v2-episodes-ui/components/details/lifecycle_heatmap_section', () => ({
   AlertEpisodeLifecycleHeatmapSection: () => <div data-test-subj="stubLifecycleHeatmapSection" />,
 }));

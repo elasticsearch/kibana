@@ -1165,6 +1165,165 @@ describe('Both modes', () => {
         expect(tracesLink).toHaveAttribute('target', '_blank');
       });
     });
+
+    describe('Custom secondary menu title', () => {
+      const longTitle =
+        'A very long custom secondary menu title that should still render fully in the header';
+
+      const customTitleNav = {
+        primaryItems: [
+          {
+            id: 'resource',
+            label: 'Resources',
+            iconType: 'apps',
+            href: '/resource/overview',
+            secondaryMenuTitle: longTitle,
+            sections: [
+              {
+                id: 'resource-section',
+                items: [
+                  { id: 'resource-overview', label: 'Overview', href: '/resource/overview' },
+                  { id: 'resource-settings', label: 'Settings', href: '/resource/settings' },
+                ],
+              },
+            ],
+          },
+        ],
+        overflowItems: [],
+        footerItems: [],
+      };
+
+      /**
+       * GIVEN a primary menu item defines a custom `secondaryMenuTitle`
+       * WHEN its side panel is open
+       * THEN the panel header shows the custom title instead of the item label
+       */
+      it('should render the custom title in the side panel header', () => {
+        render(
+          <TestComponent
+            items={customTitleNav}
+            logo={basicMock.logo}
+            initialActiveItemId="resource-overview"
+          />
+        );
+
+        const sidePanel = screen.getByTestId(sidePanelId);
+
+        expect(within(sidePanel).getByRole('heading', { name: longTitle })).toBeInTheDocument();
+        expect(
+          within(sidePanel).queryByRole('heading', { name: 'Resources' })
+        ).not.toBeInTheDocument();
+      });
+
+      /**
+       * GIVEN a primary menu item defines a custom `secondaryMenuTitle`
+       * WHEN I hover the item to open its popover
+       * THEN the popover header shows the custom title instead of the item label
+       */
+      it('should render the custom title in the hover popover header', async () => {
+        render(<TestComponent items={customTitleNav} logo={basicMock.logo} />);
+
+        const resourceLink = screen.getByTestId(primaryItemId('resource'));
+
+        await user.hover(resourceLink);
+        flushPopoverTimers();
+
+        const popover = await screen.findByTestId(popoverId('Resources'));
+
+        expect(within(popover).getByRole('heading', { name: longTitle })).toBeInTheDocument();
+      });
+
+      /**
+       * GIVEN a primary menu item does NOT define a custom `secondaryMenuTitle`
+       * WHEN its side panel is open
+       * THEN the panel header falls back to the item label
+       */
+      it('should fall back to the item label when no custom title is provided', () => {
+        render(
+          <TestComponent
+            items={basicMock.navItems}
+            logo={basicMock.logo}
+            initialActiveItemId={tlsCertificatesItemId}
+          />
+        );
+
+        const sidePanel = screen.getByTestId(sidePanelId);
+
+        expect(within(sidePanel).getByRole('heading', { name: 'Apps' })).toBeInTheDocument();
+      });
+
+      /**
+       * GIVEN an overflow item (in the "More" menu) defines a custom `secondaryMenuTitle`
+       * WHEN I open its nested panel
+       * THEN the nested panel header shows the custom title instead of the item label
+       */
+      it('should render the custom title in the "More" nested panel header', async () => {
+        const overflowNav = {
+          primaryItems: [
+            {
+              id: 'dashboards',
+              label: 'Dashboards',
+              iconType: 'dashboardApp',
+              href: '/dashboards',
+            },
+          ],
+          footerItems: [],
+          overflowItems: [
+            {
+              id: 'resource',
+              label: 'Resources',
+              iconType: 'apps',
+              href: '/resource/overview',
+              secondaryMenuTitle: longTitle,
+              sections: [
+                {
+                  id: 'resource-section',
+                  items: [
+                    { id: 'resource-overview', label: 'Overview', href: '/resource/overview' },
+                  ],
+                },
+              ],
+            },
+          ],
+        };
+
+        render(<TestComponent items={overflowNav} logo={basicMock.logo} />);
+
+        const moreButton = await screen.findByTestId(moreMenuId);
+
+        await user.click(moreButton);
+        flushPopoverTimers();
+
+        const popover = await screen.findByTestId(popoverId('More'));
+        const resourceTrigger = within(popover).getByTestId(secondaryItemId('resource'));
+
+        await user.click(resourceTrigger);
+        flushPopoverTimers();
+
+        expect(
+          await within(popover).findByRole('heading', { name: longTitle })
+        ).toBeInTheDocument();
+      });
+
+      /**
+       * GIVEN a primary menu item defines a custom `secondaryMenuTitle`
+       * WHEN I open its popover
+       * THEN the popover's accessible (screen-reader) label uses the custom title, not the item label
+       */
+      it('should use the custom title in the popover accessible label', async () => {
+        render(<TestComponent items={customTitleNav} logo={basicMock.logo} />);
+
+        const resourceLink = screen.getByTestId(primaryItemId('resource'));
+
+        await user.hover(resourceLink);
+        flushPopoverTimers();
+
+        const popover = await screen.findByTestId(popoverId('Resources'));
+        const instructions = within(popover).getByText(/secondary menu dialog/i);
+
+        expect(instructions).toHaveTextContent(longTitle);
+      });
+    });
   });
 
   describe('Keyboard navigation', () => {

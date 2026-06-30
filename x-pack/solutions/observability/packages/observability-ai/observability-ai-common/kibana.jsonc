@@ -1,7 +1,7 @@
 {
   "type": "shared-common",
   "id": "@kbn/observability-ai-common",
-  "owner": "@elastic/obs-ai-team",
+  "owner": "@elastic/nightshift-context-and-research-team",
   "group": "observability",
   "visibility": "private"
 }

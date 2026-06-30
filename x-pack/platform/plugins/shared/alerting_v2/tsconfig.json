@@ -121,7 +121,9 @@
     "@kbn/core-ui-settings-browser",
     "@kbn/management-settings-ids",
     "@kbn/core-logging-server-mocks",
-    "@kbn/core-application-browser-mocks"
+    "@kbn/core-application-browser-mocks",
+    "@kbn/alerts-ui-shared",
+    "@kbn/es-types"
   ],
   "exclude": ["target/**/*", ".storybook/**/*.js"]
 }

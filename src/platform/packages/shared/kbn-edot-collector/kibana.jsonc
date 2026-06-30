@@ -1,7 +1,7 @@
 {
   "type": "shared-server",
   "id": "@kbn/edot-collector",
-  "owner": "@elastic/obs-ai-team",
+  "owner": "@elastic/nightshift-context-and-research-team",
   "group": "platform",
   "visibility": "shared",
   "devOnly": true

@@ -11,7 +11,7 @@
     "configPath": ["xpack", "agentBuilderWorkflows"],
     "requiredPlugins": ["agentBuilder", "workflowsManagement", "agentContextLayer"],
     "requiredBundles": ["kibanaReact"],
-    "optionalPlugins": [],
+    "optionalPlugins": ["security"],
     "extraPublicDirs": []
   }
 }

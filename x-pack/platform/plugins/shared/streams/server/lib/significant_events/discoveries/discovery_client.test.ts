@@ -6,7 +6,7 @@
  */
 
 import type { ESQLSearchResponse } from '@kbn/es-types';
-import type { Discovery } from '@kbn/streams-schema';
+import type { Discovery } from '@kbn/significant-events-schema';
 import { DiscoveryClient } from './discovery_client';
 
 type StoredRow = Partial<Discovery> & { '@timestamp': string };

@@ -8,6 +8,7 @@
 import type { Client } from '@elastic/elasticsearch';
 import { errors } from '@elastic/elasticsearch';
 import inquirer from 'inquirer';
+import moment from 'moment';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type { ConnectionConfig } from './get_connection_config';
 import { kibanaRequest } from './kibana';
@@ -61,6 +62,31 @@ export const parseCommonSnapshotFlags = (flags: Record<string, unknown>): Common
   const logsIndex = String(flags['logs-index'] || DEFAULT_ENV_SNAPSHOT_LOGS_INDEX);
 
   return { snapshotName, systemIndices, alertIndices, logsIndex };
+};
+
+const DURATION_RE = /^(\d+)(s|m|h|d)$/;
+
+/**
+ * Parses a duration flag like "3m", "90s", "1h", "2d" into milliseconds. Returns `defaultMs`
+ * when the flag is absent; throws on a malformed value.
+ */
+export const parseDurationFlag = (
+  raw: string | string[] | boolean | undefined,
+  flagName: string,
+  defaultMs: number
+): number => {
+  if (!raw) return defaultMs;
+
+  const value = String(raw);
+
+  const match = value.match(DURATION_RE);
+  if (!match) {
+    throw new Error(`--${flagName} must be a duration like "3m", "90s", "1h". Got: "${value}"`);
+  }
+
+  const amount = Number(match[1]);
+  const unit = match[2] as moment.unitOfTime.DurationConstructor;
+  return moment.duration(amount, unit).asMilliseconds();
 };
 
 export async function resolvePatterns(

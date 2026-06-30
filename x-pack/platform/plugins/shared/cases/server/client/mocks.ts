@@ -61,6 +61,7 @@ import {
   createFieldDefinitionsServiceMock,
 } from '../services/mocks';
 import { ConfigSchema } from '../config';
+import { V2_NOOP_DATA_VIEW_REFRESHER, V2_NOOP_WRITER } from '../cases_analytics_v2';
 import { CasesEventBus } from '../events/event_bus';
 
 const createCasesEventBusMock = (): CasesEventBus => {
@@ -315,6 +316,12 @@ export const createCasesClientFactoryMockArgs = () => {
     config: ConfigSchema.validate({}),
     unifiedAttachmentTypeRegistry: createUnifiedAttachmentTypeRegistryMock(),
     casesEventBus: createCasesEventBusMock(),
+    // Tests don't drive analytics v2; the no-op writer keeps every hook
+    // invoked through the factory a tight no-op. The data view refresher
+    // gets the same treatment so the templates service is happy without
+    // any wiring.
+    analyticsV2Writer: V2_NOOP_WRITER,
+    analyticsV2DataViewRefresher: V2_NOOP_DATA_VIEW_REFRESHER,
   };
 };
 

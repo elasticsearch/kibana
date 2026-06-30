@@ -65,6 +65,7 @@ import { useMissingRiskEnginePrivileges } from '../hooks/use_missing_risk_engine
 import { useEntityEnginePrivileges } from '../components/entity_store/hooks/use_entity_engine_privileges';
 import { EntityAnalyticsReadPrivilegesCallout } from '../components/entity_analytics_read_privileges_callout';
 import { useLeadGenerationPrivileges } from '../api/hooks/use_lead_generation_privileges';
+import { useAnomalyPrivileges } from '../api/hooks/use_anomaly_privileges';
 import { NoPrivileges } from '../../common/components/no_privileges';
 
 const PAGE_TITLE = i18n.translate('xpack.securitySolution.entityAnalytics.homePage.pageTitle', {
@@ -93,7 +94,9 @@ export const EntityAnalyticsHomePage = () => {
   const isEnterprise = useLicense().isEnterprise();
   const leadGenerationEnabled =
     useIsExperimentalFeatureEnabled('leadGenerationEnabled') && isEnterprise;
+  const anomalyDetailsEnabled = useIsExperimentalFeatureEnabled('entityAnalyticsAnomalyDetails');
   const leadGenerationPrivilegesQuery = useLeadGenerationPrivileges(leadGenerationEnabled);
+  const anomalyPrivilegesQuery = useAnomalyPrivileges(anomalyDetailsEnabled);
 
   if (entityEnginePrivilegesQuery.isLoading || riskEngineReadPrivileges.isLoading) {
     return <PageLoader />;
@@ -108,6 +111,7 @@ export const EntityAnalyticsHomePage = () => {
         riskEngineReadPrivileges={riskEngineReadPrivileges}
         entityEnginePrivileges={entityEnginePrivilegesQuery.data}
         leadGenerationPrivileges={leadGenerationPrivilegesQuery.data}
+        anomalyPrivileges={anomalyPrivilegesQuery.data}
       />
       <SecuritySolutionPageWrapper data-test-subj="entityAnalyticsHomePage">
         {noPrivileges ? (

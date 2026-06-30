@@ -5,22 +5,37 @@
  * 2.0.
  */
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { RuleHistoryItem } from '../../../../../common/api/detection_engine/rule_management';
 import { DIFFABLE_CHANGE_ACTIONS } from '../changes_history_timeline/constants';
 
 interface UseChangeHistoryAutoSelectionParams {
   ruleId: string;
   items: RuleHistoryItem[];
+  isFetchingFirstPage: boolean;
   setSelectedItem: (item: RuleHistoryItem | undefined) => void;
+}
+
+interface UseChangeHistoryAutoSelectionResult {
+  lockSelectionDecision: () => void;
+  unlockSelectionDecision: () => void;
 }
 
 export function useChangeHistoryAutoSelection({
   ruleId,
   items,
+  isFetchingFirstPage,
   setSelectedItem,
-}: UseChangeHistoryAutoSelectionParams): void {
+}: UseChangeHistoryAutoSelectionParams): UseChangeHistoryAutoSelectionResult {
   const decidedRef = useRef(false);
+
+  const lockSelectionDecision = useCallback(() => {
+    decidedRef.current = true;
+  }, []);
+
+  const unlockSelectionDecision = useCallback(() => {
+    decidedRef.current = false;
+  }, []);
 
   // Reset when ruleId changes.
   useEffect(() => {
@@ -28,19 +43,30 @@ export function useChangeHistoryAutoSelection({
     decidedRef.current = false;
   }, [ruleId, setSelectedItem]);
 
-  // Auto-select the first diffable item once, when the first page settles.
-  // After the initial decision the hook is inert — any further navigation is
-  // left entirely to the user.
+  // Auto-select the first diffable item once per page open. The decision is
+  // deferred until the initial/background fetch settles so that stale React
+  // Query cache data doesn't lock in a stale selection before fresh items
+  // (including any newly created history entry) arrive.
+  // After the decision is locked (either by fresh data arriving or by the user
+  // manually selecting an item via lockDecision), the hook is inert so that
+  // manual navigation is preserved for the rest of the session.
   useEffect(() => {
     if (items.length === 0 || decidedRef.current) {
       return;
     }
 
-    decidedRef.current = true;
     const firstActive = items.find((item) => DIFFABLE_CHANGE_ACTIONS.includes(item.action));
 
-    if (firstActive) {
-      setSelectedItem(firstActive);
+    if (!firstActive) {
+      return;
     }
-  }, [items, setSelectedItem]);
+
+    setSelectedItem(firstActive);
+
+    if (!isFetchingFirstPage) {
+      decidedRef.current = true;
+    }
+  }, [items, isFetchingFirstPage, setSelectedItem]);
+
+  return { lockSelectionDecision, unlockSelectionDecision };
 }

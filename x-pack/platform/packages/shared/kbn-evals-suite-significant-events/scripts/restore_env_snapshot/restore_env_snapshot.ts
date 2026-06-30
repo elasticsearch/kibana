@@ -13,7 +13,7 @@ import type { LoadResult } from '@kbn/es-snapshot-loader';
 import { createGcsRepository, replaySnapshot, restoreSnapshot } from '@kbn/es-snapshot-loader';
 import type { ConnectionConfig } from '../lib/get_connection_config';
 import { getConnectionConfig } from '../lib/get_connection_config';
-import { GCS_BUCKET, KNOWLEDGE_INDICATORS_DATA_STREAM } from '../lib/constants';
+import { GCS_BUCKET, SIGNIFICANT_EVENTS_DATA_STREAMS } from '../lib/constants';
 import {
   ensureCleanEnvironment,
   ensureKnownAliases,
@@ -64,19 +64,28 @@ async function repromoteQueries({
   await promoteQueries(config);
 }
 
-async function restoreKiDataStream({
+/**
+ * Restores one SigEvents data stream (KI / discoveries / detections) from its captured
+ * `snapshot-*` plain index. The plugin owns the data-stream template, so we restore the
+ * captured docs into a temp index and reindex them into the data-stream name (op_type:
+ * create) — letting ES materialize the data stream. `allowNoMatches` makes this a no-op
+ * for older snapshots that predate a given data stream.
+ */
+async function restoreDataStream({
   esClient,
   log,
   repository,
   snapshotName,
+  dataStream,
 }: {
   esClient: Client;
   log: ToolingLog;
   repository: ReturnType<typeof createGcsRepository>;
   snapshotName: string;
+  dataStream: string;
 }): Promise<string> {
-  const snapshotIndex = toSnapshotName(KNOWLEDGE_INDICATORS_DATA_STREAM);
-  const tempIndex = `restore-temp-ki-${randomUUID()}`;
+  const snapshotIndex = toSnapshotName(dataStream);
+  const tempIndex = `restore-temp-${randomUUID()}`;
 
   try {
     const restoreResult = await restoreSnapshot({
@@ -87,20 +96,20 @@ async function restoreKiDataStream({
       indices: [snapshotIndex],
       renamePattern: '(.+)',
       renameReplacement: tempIndex,
-      allowNoMatches: true, // old snapshots predate KI capture
+      allowNoMatches: true, // older snapshots may predate this data stream
     });
 
     if (!restoreResult.success) {
       throw new Error(
-        `Failed to restore KI data stream from snapshot "${snapshotName}": ${restoreResult.errors.join(
+        `Failed to restore data stream "${dataStream}" from snapshot "${snapshotName}": ${restoreResult.errors.join(
           '; '
         )}`
       );
     }
 
     if (restoreResult.restoredIndices.length === 0) {
-      log.info(`KI store not in snapshot "${snapshotName}" — skipping (old snapshot).`);
-      return 'skipped (not in snapshot)';
+      log.info(`"${dataStream}" not in snapshot "${snapshotName}" — skipping (old snapshot).`);
+      return `${dataStream}: skipped (not in snapshot)`;
     }
 
     // Reindex into the data-stream name. ES auto-creates the data stream from the
@@ -108,21 +117,21 @@ async function restoreKiDataStream({
     const reindexResult = await esClient.reindex({
       wait_for_completion: true,
       source: { index: tempIndex },
-      dest: { index: KNOWLEDGE_INDICATORS_DATA_STREAM, op_type: 'create' },
+      dest: { index: dataStream, op_type: 'create' },
     });
 
     if ((reindexResult.version_conflicts ?? 0) > 0) {
       log.warning(
-        `KI data stream restore had ${reindexResult.version_conflicts} version conflicts — some documents may have been skipped.`
+        `"${dataStream}" restore had ${reindexResult.version_conflicts} version conflicts — some documents may have been skipped.`
       );
     }
 
     const created = reindexResult.created ?? 0;
-    log.info(`Restored KI data stream "${KNOWLEDGE_INDICATORS_DATA_STREAM}" (${created} docs)`);
-    return `restored (${created} docs)`;
+    log.info(`Restored data stream "${dataStream}" (${created} docs)`);
+    return `${dataStream}: restored (${created} docs)`;
   } finally {
     await esClient.indices.delete({ index: tempIndex, ignore_unavailable: true }).catch(() => {
-      log.debug(`Failed to delete temp KI index "${tempIndex}"`);
+      log.debug(`Failed to delete temp index "${tempIndex}"`);
     });
   }
 }
@@ -220,7 +229,7 @@ export const restoreEnvSnapshot = async ({
     await ensureCleanEnvironment({
       esClient: sysClient,
       log,
-      systemIndices: [...systemIndices, KNOWLEDGE_INDICATORS_DATA_STREAM],
+      systemIndices: [...systemIndices, ...SIGNIFICANT_EVENTS_DATA_STREAMS],
       alertIndices,
       logsIndex,
       clean,
@@ -228,8 +237,8 @@ export const restoreEnvSnapshot = async ({
 
     // Plain `.kibana` system indices are captured as snapshot-* via reindex
     // (e.g. .kibana_streams_tasks → snapshot-kibana_streams_tasks) so we match the
-    // snapshot-* names and rename them back on restore. The KI data stream is NOT here —
-    // it is re-materialized as a data stream after streams is enabled (Step 3b).
+    // snapshot-* names and rename them back on restore. The SigEvents data streams are NOT
+    // here — they are re-materialized as data streams after streams is enabled (Step 4).
     const snapshotSystemIndices = systemIndices.map(toSnapshotName);
 
     log.info('');
@@ -271,8 +280,13 @@ export const restoreEnvSnapshot = async ({
     await ensureStreamsEnabled(config, log);
 
     log.info('');
-    log.info('Step 4/7 — Restoring KI data stream (reindex into data stream)...');
-    const kiRestoreStatus = await restoreKiDataStream({ esClient, log, repository, snapshotName });
+    log.info('Step 4/7 — Restoring SigEvents data streams (reindex into data streams)...');
+    const dataStreamStatuses: string[] = [];
+    for (const dataStream of SIGNIFICANT_EVENTS_DATA_STREAMS) {
+      dataStreamStatuses.push(
+        await restoreDataStream({ esClient, log, repository, snapshotName, dataStream })
+      );
+    }
 
     const enabledStreams = await getEnabledStreams(esClient, log);
     const enabledStreamsSet = new Set(enabledStreams);
@@ -339,7 +353,10 @@ export const restoreEnvSnapshot = async ({
     log.info('='.repeat(70));
     log.info(`Snapshot: ${snapshotName}`);
     log.info(`Restored system indices: ${restoreResult.restoredIndices.join(', ')}`);
-    log.info(`KI data stream: ${kiRestoreStatus}`);
+    log.info(`SigEvents data streams:`);
+    for (const status of dataStreamStatuses) {
+      log.info(`  - ${status}`);
+    }
     log.info(`Replayed data indices: ${replayResult.restoredIndices.join(', ')}`);
   });
 };

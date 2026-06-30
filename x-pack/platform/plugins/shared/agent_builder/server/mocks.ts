@@ -27,6 +27,9 @@ const createSetupContractMock = (): AgentBuilderPluginSetupMock => {
     attachments: {
       registerType: jest.fn(),
     },
+    renderers: {
+      register: jest.fn(),
+    },
     skills: {
       register: jest.fn(),
     },
@@ -72,10 +75,6 @@ const createStartContractMock = (): AgentBuilderPluginStartMock => {
         get: jest.fn(),
         list: jest.fn(),
       }),
-    },
-    dashboard: {
-      syncOverview: jest.fn(),
-      syncOverviewForSpace: jest.fn(),
     },
   };
 };

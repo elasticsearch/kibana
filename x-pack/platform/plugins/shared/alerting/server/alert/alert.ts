@@ -12,6 +12,7 @@ import type { MutableAlertInstanceMeta } from '@kbn/alerting-state-types';
 import type { AlertStatus } from '@kbn/rule-data-utils';
 import { ALERT_STATUS_DELAYED, ALERT_UUID } from '@kbn/rule-data-utils';
 import type { AlertHit, CombinedSummarizedAlerts } from '../types';
+import type { RawRuleSnoozedInstance } from '../saved_objects/schemas/raw_rule';
 import type {
   AlertInstanceMeta,
   AlertInstanceState,
@@ -62,6 +63,7 @@ export class Alert<
   private readonly id: string;
   private alertAsData: AlertAsData | undefined;
   private status: AlertStatus | undefined;
+  private _snoozeConfig?: RawRuleSnoozedInstance;
 
   constructor(id: string, { state, meta = {} }: RawAlertInstance = {}) {
     this.id = id;
@@ -354,6 +356,14 @@ export class Alert<
 
   getMaintenanceWindowNames() {
     return this.meta.maintenanceWindowNames ?? [];
+  }
+
+  setSnoozeConfig(config: RawRuleSnoozedInstance) {
+    this._snoozeConfig = config;
+  }
+
+  getSnoozeConfig(): RawRuleSnoozedInstance | undefined {
+    return this._snoozeConfig;
   }
 
   incrementActiveCount() {

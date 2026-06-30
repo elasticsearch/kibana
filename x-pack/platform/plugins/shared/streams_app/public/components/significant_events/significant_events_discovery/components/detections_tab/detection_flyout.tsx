@@ -26,7 +26,7 @@ import {
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { Detection } from '@kbn/streams-schema';
+import type { Detection } from '@kbn/significant-events-schema';
 import { FlyoutMetadataCard } from '../../../../flyout_components/flyout_metadata_card';
 import { FlyoutToolbarHeader } from '../../../../flyout_components/flyout_toolbar_header';
 import { InfoPanel } from '../../../../info_panel';

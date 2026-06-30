@@ -8,7 +8,7 @@
  */
 
 import type { JSONSchema7 } from 'json-schema';
-import { generateSampleFromJsonSchema } from '../../../../../../../common/lib/generate_sample_from_json_schema';
+import { generateSampleFromJsonSchema } from '@kbn/workflows-ui';
 
 /**
  * Returns the placeholder value for a workflow input property based on its JSON Schema.

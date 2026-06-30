@@ -160,6 +160,7 @@ describe('Cloud Plugin', () => {
           defaultPort: '9000',
           elasticsearchUrl: 'elasticsearch-url',
           host: 'host',
+          elasticsearchClusterId: 'elasticsearch-cluster-id',
           kibanaUrl: 'kibana-url',
         };
         decodeCloudIdMock.mockReturnValue(decodedId);

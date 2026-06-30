@@ -22,6 +22,7 @@ import type { ToolingLog } from '@kbn/tooling-log';
 import { cache } from './utils/cache';
 import { resolveCustomSnapshotUrl } from './custom_snapshots';
 import { createCliError, isCliError } from './errors';
+import { shouldPreferCachedSnapshot } from './utils/find_local_cached_snapshot';
 
 const asyncPipeline = promisify(pipeline);
 const DAILY_SNAPSHOTS_BASE_URL = 'https://storage.googleapis.com/kibana-ci-es-snapshots-daily';
@@ -232,16 +233,13 @@ export class Artifact {
       const cacheMeta = cache.readMeta(dest);
       const tmpPath = `${dest}.tmp`;
 
-      if (useCached || process.env.KBN_ES_SNAPSHOT_USE_CACHED === 'true') {
-        if (cacheMeta.exists) {
-          this.log.info(
-            'use-cached passed, forcing to use existing snapshot',
-            chalk.bold(cacheMeta.ts)
-          );
+      if (shouldPreferCachedSnapshot(useCached)) {
+        if (fs.existsSync(dest)) {
+          this.log.info('using locally cached snapshot %s', chalk.bold(dest));
           return;
-        } else {
-          this.log.info('use-cached passed but no cached snapshot found. Continuing to download');
         }
+
+        this.log.info('prefer-cached enabled but no cached snapshot found at %s', chalk.bold(dest));
       }
 
       const artifactResp = await this.fetchArtifact(tmpPath, cacheMeta.etag, cacheMeta.ts);

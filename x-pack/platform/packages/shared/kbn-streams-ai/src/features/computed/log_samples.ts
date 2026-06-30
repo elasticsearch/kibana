@@ -7,7 +7,8 @@
 
 import { compact } from 'lodash';
 import { getSampleDocumentsEsql } from '@kbn/ai-tools';
-import { LOG_SAMPLES_FEATURE_TYPE, getStreamSamplingSource } from '@kbn/streams-schema';
+import { getStreamSamplingSource } from '@kbn/streams-schema';
+import { LOG_SAMPLES_FEATURE_TYPE } from '@kbn/significant-events-schema';
 import type { ComputedFeatureGenerator } from './types';
 import { formatRawDocument } from '../utils/format_raw_document';
 

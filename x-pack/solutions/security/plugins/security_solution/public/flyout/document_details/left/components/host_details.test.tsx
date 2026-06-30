@@ -15,7 +15,7 @@ import { TestProviders } from '../../../../common/mock';
 import { HostDetails } from './host_details';
 import { useMlCapabilities } from '../../../../common/components/ml/hooks/use_ml_capabilities';
 import { mockAnomalies } from '../../../../common/components/ml/mock';
-import { useObservedHost } from '../../../entity_details/host_right/hooks/use_observed_host';
+import { useObservedHost } from '../../../../flyout_v2/entity/host/main/hooks/use_observed_host';
 import { useHostRelatedUsers } from '../../../../common/containers/related_entities/related_users';
 import { RiskSeverity } from '../../../../../common/search_strategy';
 import {
@@ -97,7 +97,7 @@ jest.mock('../../../../common/components/ml/anomaly/anomaly_table_provider', () 
   }) => children({ anomaliesData: mockAnomalies, isLoadingAnomaliesData: false, jobNameById: {} }),
 }));
 
-jest.mock('../../../entity_details/host_right/hooks/use_observed_host');
+jest.mock('../../../../flyout_v2/entity/host/main/hooks/use_observed_host');
 const mockUseObservedHost = useObservedHost as jest.Mock;
 
 jest.mock('../../../../common/containers/related_entities/related_users');

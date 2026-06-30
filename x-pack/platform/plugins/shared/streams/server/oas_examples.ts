@@ -15,7 +15,8 @@
  * it immediately without any additional tooling or CI step.
  */
 
-import type { SignificantEventsGetResponse, StreamQuery, Streams } from '@kbn/streams-schema';
+import type { Streams } from '@kbn/streams-schema';
+import type { SignificantEventsGetResponse, StreamQuery } from '@kbn/significant-events-schema';
 
 // ---------------------------------------------------------------------------
 // PUT /api/streams/{name}  –  wired stream

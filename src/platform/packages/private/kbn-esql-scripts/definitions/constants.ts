@@ -116,17 +116,19 @@ export const mathOperatorsExtraSignatures = [
   },
 ];
 
+const constantHint = { kind: 'constant' as const };
+
 export const comparisonOperatorSignatures = (['ip', 'version'] as const).flatMap((type) => [
   {
     params: [
       { name: 'left', type },
-      { name: 'right', type: 'text' as const, constantOnly: true },
+      { name: 'right', type: 'text' as const, hint: constantHint },
     ],
     returnType: 'boolean' as const,
   },
   {
     params: [
-      { name: 'left', type: 'text' as const, constantOnly: true },
+      { name: 'left', type: 'text' as const, hint: constantHint },
       { name: 'right', type },
     ],
     returnType: 'boolean' as const,

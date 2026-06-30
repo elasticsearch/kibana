@@ -7,14 +7,13 @@
 
 import { z } from '@kbn/zod/v4';
 import { badData, badRequest } from '@hapi/boom';
-import { Streams, getEsqlViewName, getParentId } from '@kbn/streams-schema';
+import { Streams } from '@kbn/streams-schema';
 import { OBSERVABILITY_STREAMS_ENABLE_QUERY_STREAMS } from '@kbn/management-settings-ids';
-import { DefinitionNotFoundError } from '../../../lib/streams/errors/definition_not_found_error';
 import { STREAMS_API_PRIVILEGES } from '../../../../common/constants';
 import { createServerRoute } from '../../create_server_route';
 import { getEsqlView } from '../../../lib/streams/esql_views/manage_esql_views';
 import { upsertQueryStreamRequest } from '../../../oas_examples';
-import { getStreamAttachmentIds } from '../../../lib/streams/helpers/ingest_upsert';
+import { upsertQueryStream } from '../../../lib/streams/helpers/query_upsert';
 
 /**
  * Schema for API request body - accepts esql for UX simplicity.
@@ -143,7 +142,7 @@ const upsertQueryStreamRoute = createServerRoute({
       field_descriptions: z.record(z.string(), z.string()).optional(),
     }),
   }),
-  handler: async ({ params, request, getScopedClients, context, logger }) => {
+  handler: async ({ params, request, getScopedClients, context }) => {
     const { streamsClient, attachmentClient } = await getScopedClients({
       request,
     });
@@ -161,70 +160,13 @@ const upsertQueryStreamRoute = createServerRoute({
     const { esql } = params.body.query;
     const { field_descriptions: fieldDescriptions } = params.body;
 
-    // Generate the view name from the stream name
-    const viewName = getEsqlViewName(name);
-
-    // The query reference to include in the definition (with esql for validation and view creation)
-    const queryReference: Streams.QueryStream.Definition['query'] = {
-      view: viewName,
-      esql,
-    };
-
-    let definition: Streams.all.Definition;
-    try {
-      definition = await streamsClient.getStream(name);
-    } catch (error) {
-      if (error instanceof DefinitionNotFoundError) {
-        // Ensure the parent stream is registered in .streams index.
-        // Classic streams (plain data streams) may not have a stored definition yet.
-        const parentId = getParentId(name);
-        if (parentId) {
-          await streamsClient.ensureStream(parentId);
-        }
-
-        // Create new query stream - the state management will handle view creation
-        return await streamsClient.createQueryStream({
-          name,
-          query: queryReference,
-          field_descriptions: fieldDescriptions,
-        });
-      }
-      throw error;
-    }
-
-    if (definition && !Streams.QueryStream.Definition.is(definition)) {
-      throw badData(`The stream "${name}" already exists and is not a query stream.`);
-    }
-
-    const { dashboards, rules } = await getStreamAttachmentIds({
-      name,
+    // The state management layer handles ES|QL view creation/update and validation.
+    return await upsertQueryStream({
+      streamsClient,
       attachmentClient,
-    });
-
-    // Remove name and updated_at from definition - these are not allowed in UpsertRequest
-    const { name: _name, updated_at: _updatedAt, ...stream } = definition;
-
-    // Merge field_descriptions: use provided value if present, otherwise preserve existing
-    // When fieldDescriptions is undefined, it means the caller didn't provide any update,
-    // so we preserve the existing descriptions from the definition.
-    // When fieldDescriptions is explicitly provided (even as {}), use it.
-    const mergedFieldDescriptions =
-      fieldDescriptions !== undefined ? fieldDescriptions : definition.field_descriptions;
-
-    const upsertRequest: Streams.QueryStream.UpsertRequest = {
-      dashboards,
-      stream: {
-        ...stream,
-        query: queryReference,
-        ...(mergedFieldDescriptions && { field_descriptions: mergedFieldDescriptions }),
-      },
-      rules,
-    };
-
-    // The state management will handle ES|QL view creation/update and validation
-    return await streamsClient.upsertStream({
-      request: upsertRequest,
       name,
+      esql,
+      fieldDescriptions,
     });
   },
 });

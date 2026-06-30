@@ -15,6 +15,7 @@ import type { BrowserApiToolDefinition } from './tools/browser_api_tool';
 import type {
   AgentsServiceStartContract,
   AttachmentServiceStartContract,
+  RendererServiceStartContract,
   EventsServiceStartContract,
   ToolServiceStartContract,
 } from '.';
@@ -162,6 +163,10 @@ export interface AgentBuilderPluginStart {
    * Attachment service contract, can be used to register and retrieve attachment UI definitions.
    */
   attachments: AttachmentServiceStartContract;
+  /**
+   * Renderer service contract, can be used to register and retrieve renderer UI definitions.
+   */
+  renderers: RendererServiceStartContract;
   /**
    * Tool service contract, can be used to list or execute tools.
    */

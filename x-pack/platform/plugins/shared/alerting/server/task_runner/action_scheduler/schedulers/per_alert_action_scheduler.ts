@@ -40,6 +40,7 @@ import { injectActionParams } from '../../inject_action_params';
 
 enum Reasons {
   MUTED = 'muted',
+  SNOOZED = 'snoozed',
   THROTTLED = 'throttled',
   ACTION_GROUP_NOT_CHANGED = 'actionGroupHasNotChanged',
   DELAYED = 'delayed',
@@ -58,6 +59,7 @@ export class PerAlertActionScheduler<
 {
   private actions: RuleAction[] = [];
   private mutedAlertIdsSet: Set<string> = new Set();
+  private snoozedAlertIdsSet: Set<string> = new Set();
   private ruleTypeActionGroups?: Map<ActionGroupIds | RecoveryActionGroupId, string>;
   private skippedAlerts: { [key: string]: { reason: string } } = {};
 
@@ -77,6 +79,7 @@ export class PerAlertActionScheduler<
       context.ruleType.actionGroups.map((actionGroup) => [actionGroup.id, actionGroup.name])
     );
     this.mutedAlertIdsSet = new Set(context.rule.mutedInstanceIds);
+    this.snoozedAlertIdsSet = context.activeSnoozedIds ?? new Set();
 
     const canGetSummarizedAlerts =
       !!context.ruleType.alerts && !!context.alertsClient.getSummarizedAlerts;
@@ -125,7 +128,10 @@ export class PerAlertActionScheduler<
         const optionsBase = {
           spaceId: this.context.taskInstance.params.spaceId,
           ruleId: this.context.rule.id,
-          excludedAlertInstanceIds: this.context.rule.mutedInstanceIds,
+          excludedAlertInstanceIds: [
+            ...this.context.rule.mutedInstanceIds,
+            ...this.snoozedAlertIdsSet,
+          ],
           alertsFilter: action.alertsFilter,
         };
 
@@ -289,6 +295,7 @@ export class PerAlertActionScheduler<
     return (
       !this.hasActiveMaintenanceWindow({ alert, action }) &&
       !this.isAlertMuted(alert) &&
+      !this.isAlertSnoozed(alert) &&
       !this.isAlertDelayed(alert) &&
       !this.hasPendingCountButNotNotifyOnChange({ alert, action }) &&
       !alert.isFilteredOut(summarizedAlerts)
@@ -375,6 +382,26 @@ export class PerAlertActionScheduler<
         );
       }
       this.skippedAlerts[alertId] = { reason: Reasons.MUTED };
+      return true;
+    }
+    return false;
+  }
+
+  private isAlertSnoozed(
+    alert: Alert<AlertInstanceState, AlertInstanceContext, ActionGroupIds | RecoveryActionGroupId>
+  ) {
+    const alertId = alert.getId();
+    const snoozed = this.snoozedAlertIdsSet.has(alertId);
+    if (snoozed) {
+      if (
+        !this.skippedAlerts[alertId] ||
+        (this.skippedAlerts[alertId] && this.skippedAlerts[alertId].reason !== Reasons.SNOOZED)
+      ) {
+        this.context.logger.debug(
+          `skipping scheduling of actions for '${alertId}' in rule ${this.context.ruleLabel}: alert is snoozed`
+        );
+      }
+      this.skippedAlerts[alertId] = { reason: Reasons.SNOOZED };
       return true;
     }
     return false;

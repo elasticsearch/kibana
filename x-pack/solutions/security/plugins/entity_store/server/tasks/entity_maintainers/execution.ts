@@ -19,6 +19,7 @@ import {
   type EntityMaintainerTaskMethod,
 } from './types';
 import { CRUDClient, type EntityUpdateClient } from '../../domain/crud';
+import { EntityMetadataClient } from '../../domain/entity_metadata';
 import type { TelemetryReporter } from '../../telemetry/events';
 import { ENTITY_MAINTAINER_EVENT } from '../../telemetry/events';
 import { wrapTaskRun } from '../../telemetry/traces';
@@ -147,6 +148,11 @@ export async function executeMaintainerRun({
     namespace: maintainerStatus.metadata.namespace,
     emitWorkflowTriggerEvent,
   });
+  const entityMetadataClient = new EntityMetadataClient({
+    logger,
+    esClient: coreStart.elasticsearch.client.asInternalUser,
+    namespace: maintainerStatus.metadata.namespace,
+  });
   const taskLogger = logger.get(taskId);
   const abortController = taskAbortController ?? new AbortController();
   const telemetryClient = createMaintainerTelemetryClient({
@@ -174,6 +180,7 @@ export async function executeMaintainerRun({
         esClient,
         cpsEsClient,
         crudClient,
+        entityMetadataClient,
         id,
         analytics,
         telemetryClient,
@@ -205,6 +212,7 @@ export async function runEntityMaintainerTask({
   esClient,
   cpsEsClient,
   crudClient,
+  entityMetadataClient,
   id,
   analytics,
   telemetryClient,
@@ -218,6 +226,7 @@ export async function runEntityMaintainerTask({
   esClient: ElasticsearchClient;
   cpsEsClient: ElasticsearchClient;
   crudClient: EntityUpdateClient;
+  entityMetadataClient: EntityMetadataClient;
   id: string;
   analytics: TelemetryReporter;
   telemetryClient: InternalMaintainerTelemetryClient;
@@ -249,6 +258,7 @@ export async function runEntityMaintainerTask({
         esClient,
         cpsEsClient,
         crudClient,
+        entityMetadataClient,
         telemetry: telemetryClient,
       });
       analytics.reportEvent(ENTITY_MAINTAINER_EVENT, {
@@ -266,6 +276,7 @@ export async function runEntityMaintainerTask({
       esClient,
       cpsEsClient,
       crudClient,
+      entityMetadataClient,
       telemetry: telemetryClient,
     });
     analytics.reportEvent(ENTITY_MAINTAINER_EVENT, {

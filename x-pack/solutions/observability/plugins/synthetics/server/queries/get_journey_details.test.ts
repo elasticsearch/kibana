@@ -48,6 +48,42 @@ describe('getJourneyDetails', () => {
       expect(call.index).toBe(`cluster1:${syntheticsEsClient.heartbeatIndices}`);
     });
 
+    it('bounds the current-journey query by @timestamp when a timestamp is provided', async () => {
+      const { esClient: mockEsClient, syntheticsEsClient } = getUptimeESMockClient();
+      mockEsClient.search.mockResponseOnce(emptyResponse);
+
+      await getJourneyDetails({
+        syntheticsEsClient,
+        checkGroup: 'check-group-1',
+        timestamp: '2024-01-01T00:00:00.000Z',
+      });
+
+      const call: any = mockEsClient.search.mock.calls[0][0];
+      const rangeFilter = call.query.bool.filter.find((f: any) => f.range?.['@timestamp']);
+      expect(rangeFilter).toEqual({
+        range: {
+          '@timestamp': {
+            gte: '2023-12-31T23:00:00.000Z',
+            lte: '2024-01-01T01:00:00.000Z',
+          },
+        },
+      });
+    });
+
+    it('does not bound the current-journey query when no timestamp is provided', async () => {
+      const { esClient: mockEsClient, syntheticsEsClient } = getUptimeESMockClient();
+      mockEsClient.search.mockResponseOnce(emptyResponse);
+
+      await getJourneyDetails({
+        syntheticsEsClient,
+        checkGroup: 'check-group-1',
+      });
+
+      const call: any = mockEsClient.search.mock.calls[0][0];
+      const rangeFilter = call.query.bool.filter.find((f: any) => f.range?.['@timestamp']);
+      expect(rangeFilter).toBeUndefined();
+    });
+
     it('prefixes the sibling-journey queries with remoteName when present', async () => {
       const { esClient: mockEsClient, syntheticsEsClient } = getUptimeESMockClient();
 

@@ -6,7 +6,7 @@
  */
 
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
-import { isComputedFeature } from '@kbn/streams-schema';
+import { isComputedFeature } from '@kbn/significant-events-schema';
 import { getKnowledgeIndicatorStreamName } from './get_knowledge_indicator_stream_name';
 import { getKnowledgeIndicatorSubtype } from './get_knowledge_indicator_subtype';
 import { getKnowledgeIndicatorType } from './get_knowledge_indicator_type';

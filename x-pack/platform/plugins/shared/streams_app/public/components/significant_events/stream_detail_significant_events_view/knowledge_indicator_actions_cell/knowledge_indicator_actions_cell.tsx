@@ -14,7 +14,8 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
-import { isComputedFeature, QUERY_TYPE_STATS } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
+import { isComputedFeature } from '@kbn/significant-events-schema';
 import React, { useMemo, useState } from 'react';
 import {
   useKnowledgeIndicatorActions,

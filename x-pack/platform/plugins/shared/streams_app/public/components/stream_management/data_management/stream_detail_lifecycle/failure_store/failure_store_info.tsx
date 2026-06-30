@@ -18,7 +18,14 @@ import type { EnhancedFailureStoreStats } from '../hooks/use_data_stream_stats';
 import type { useFailureStoreConfig } from '../hooks/use_failure_store_config';
 
 export const FailureStoreInfo = ({
-  openModal,
+  onEditFailedLifecycle,
+  onAddDeletePhase,
+  onEditDeletePhase,
+  onRemoveDeletePhase,
+  isExternalFlyoutOpen = false,
+  isDeletePhaseFlyoutOpen = false,
+  previewInheritLifecycle,
+  previewFailureStoreEnabled,
   definition,
   statsError,
   isLoadingStats,
@@ -26,8 +33,16 @@ export const FailureStoreInfo = ({
   timeState,
   aggregations,
   failureStoreConfig,
+  isHighlighted = false,
 }: {
-  openModal: (show: boolean) => void;
+  onEditFailedLifecycle?: () => void;
+  onAddDeletePhase?: () => void;
+  onEditDeletePhase?: () => void;
+  onRemoveDeletePhase?: () => void;
+  isExternalFlyoutOpen?: boolean;
+  isDeletePhaseFlyoutOpen?: boolean;
+  previewInheritLifecycle?: boolean;
+  previewFailureStoreEnabled?: boolean;
   definition: Streams.ingest.all.GetResponse;
   statsError: Error | undefined;
   isLoadingStats: boolean;
@@ -35,8 +50,10 @@ export const FailureStoreInfo = ({
   timeState: TimeState;
   aggregations?: StreamAggregations;
   failureStoreConfig: ReturnType<typeof useFailureStoreConfig>;
+  isHighlighted?: boolean;
 }) => {
-  const hasPrivileges = definition.privileges?.manage_failure_store ?? false;
+  const canManageFailureStore = definition.privileges?.manage_failure_store ?? false;
+  const canReadFailureStore = definition.privileges?.read_failure_store ?? false;
 
   return (
     <>
@@ -44,20 +61,31 @@ export const FailureStoreInfo = ({
       <SectionPanel
         topCard={
           <RetentionCard
-            openModal={openModal}
-            canManageFailureStore={hasPrivileges}
             failureStoreConfig={failureStoreConfig}
+            previewFailureStoreEnabled={previewFailureStoreEnabled}
           />
         }
         bottomCard={
-          <StorageSizeCard stats={stats} hasPrivileges={hasPrivileges} statsError={statsError} />
+          <StorageSizeCard
+            stats={stats}
+            hasPrivileges={canManageFailureStore}
+            statsError={statsError}
+          />
         }
+        isHighlighted={isHighlighted}
       >
-        {definition.privileges.lifecycle ? (
+        {canReadFailureStore ? (
           <FailureStoreSummary
             stats={stats}
             failureStoreConfig={failureStoreConfig}
-            canManageLifecycle={definition.privileges.lifecycle}
+            canManageLifecycle={canManageFailureStore}
+            onEditFailedLifecycle={onEditFailedLifecycle}
+            onAddDeletePhase={onAddDeletePhase}
+            onEditDeletePhase={onEditDeletePhase}
+            onRemoveDeletePhase={onRemoveDeletePhase}
+            isExternalFlyoutOpen={isExternalFlyoutOpen}
+            isDeletePhaseFlyoutOpen={isDeletePhaseFlyoutOpen}
+            previewInheritLifecycle={previewInheritLifecycle}
           />
         ) : null}
       </SectionPanel>
@@ -66,7 +94,7 @@ export const FailureStoreInfo = ({
         topCard={
           <IngestionCard
             period="daily"
-            hasPrivileges={hasPrivileges}
+            hasPrivileges={canManageFailureStore}
             stats={stats}
             statsError={statsError}
           />
@@ -74,7 +102,7 @@ export const FailureStoreInfo = ({
         bottomCard={
           <IngestionCard
             period="monthly"
-            hasPrivileges={hasPrivileges}
+            hasPrivileges={canManageFailureStore}
             stats={stats}
             statsError={statsError}
           />

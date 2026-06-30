@@ -18,6 +18,21 @@ import {
 import type { SkillRegistryListOptions } from '@kbn/agent-builder-server/runner';
 import type { ReadonlySkillProvider, WritableSkillProvider } from './skill_provider';
 
+const isUiSettingRequirementMet = (
+  uiSettingRequired: string | { key: string; value: unknown },
+  uiSettingValues: ReadonlyMap<string, unknown>
+): boolean => {
+  if (typeof uiSettingRequired === 'string') {
+    return uiSettingValues.get(uiSettingRequired) === true;
+  }
+
+  if (typeof uiSettingRequired === 'object') {
+    return uiSettingValues.get(uiSettingRequired.key) === uiSettingRequired.value;
+  }
+
+  return false;
+};
+
 /**
  * Validates that all provided tool IDs exist in the tool registry
  * and that the count does not exceed the per-skill limit.
@@ -61,14 +76,26 @@ export const createSkillRegistry = ({
   persistedProvider,
   toolRegistry,
   experimentalFeaturesEnabled,
+  uiSettingValues = new Map(),
 }: {
   builtinProvider: ReadonlySkillProvider;
   persistedProvider: WritableSkillProvider;
   toolRegistry: ToolRegistry;
   experimentalFeaturesEnabled: boolean;
+  uiSettingValues?: ReadonlyMap<string, unknown>;
 }): SkillRegistry => {
-  const isVisible = (skill: InternalSkillDefinition): boolean =>
-    !skill.experimental || experimentalFeaturesEnabled;
+  const isVisible = (skill: InternalSkillDefinition): boolean => {
+    if (skill.experimental && !experimentalFeaturesEnabled) {
+      return false;
+    }
+    if (
+      skill.uiSettingRequired &&
+      !isUiSettingRequirementMet(skill.uiSettingRequired, uiSettingValues)
+    ) {
+      return false;
+    }
+    return true;
+  };
 
   return {
     async has(skillId) {

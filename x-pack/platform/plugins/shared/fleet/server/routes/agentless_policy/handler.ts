@@ -9,12 +9,13 @@ import type { TypeOf } from '@kbn/config-schema';
 import pMap from 'p-map';
 
 import type { CreateAgentlessPolicyRequestSchema } from '../../../common/types';
-import type { FleetRequestHandler } from '../../types';
 import { appContextService, packagePolicyService } from '../../services';
+import type { FleetRequestHandler, ListAgentlessPoliciesRequestSchema } from '../../types';
 import { AgentlessPoliciesServiceImpl } from '../../services/agentless/agentless_policies';
 import type {
   DeleteAgentlessPolicyRequestSchema,
   GetBulkAgentlessPolicyThroughputRequestSchema,
+  GetAgentlessPolicyRequestSchema,
 } from '../../../common/types/rest_spec/agentless_policy';
 import { syncAgentlessDeployments } from '../../services/agentless/deployment_sync';
 import { agentlessAgentService } from '../../services/agents/agentless_agent';
@@ -76,6 +77,71 @@ export const createAgentlessPolicyHandler: FleetRequestHandler<
   return response.ok({
     body: {
       item: agentlessPolicy,
+    },
+  });
+};
+
+export const getAgentlessPolicyHandler: FleetRequestHandler<
+  TypeOf<typeof GetAgentlessPolicyRequestSchema.params>
+> = async (context, request, response) => {
+  const [coreContext, fleetContext] = await Promise.all([context.core, context.fleet]);
+
+  const soClient = coreContext.savedObjects.client;
+  const esClient = coreContext.elasticsearch.client.asInternalUser;
+
+  const logger = appContextService.getLogger().get('agentless');
+
+  const agentlessPoliciesService = new AgentlessPoliciesServiceImpl(
+    fleetContext.packagePolicyService.asCurrentUser,
+    soClient,
+    esClient,
+    logger
+  );
+
+  const { policyId } = request.params;
+  const item = await agentlessPoliciesService.getAgentlessPolicy(policyId);
+
+  if (!item) {
+    return response.notFound({
+      body: { message: `Agentless policy ${policyId} not found` },
+    });
+  }
+
+  return response.ok({
+    body: {
+      item,
+    },
+  });
+};
+
+export const listAgentlessPoliciesHandler: FleetRequestHandler<
+  undefined,
+  TypeOf<typeof ListAgentlessPoliciesRequestSchema.query>
+> = async (context, request, response) => {
+  const [coreContext, fleetContext] = await Promise.all([context.core, context.fleet]);
+
+  const soClient = coreContext.savedObjects.client;
+  const esClient = coreContext.elasticsearch.client.asInternalUser;
+
+  const logger = appContextService.getLogger().get('agentless');
+
+  const agentlessPoliciesService = new AgentlessPoliciesServiceImpl(
+    fleetContext.packagePolicyService.asCurrentUser,
+    soClient,
+    esClient,
+    logger
+  );
+
+  const { items, total, page, perPage } = await agentlessPoliciesService.listAgentlessPolicies(
+    request.query
+  );
+
+  return response.ok({
+    body: {
+      items,
+      total,
+      page,
+      perPage,
     },
   });
 };

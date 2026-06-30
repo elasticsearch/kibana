@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { QueryLink } from '@kbn/streams-schema';
+import type { QueryLink } from '@kbn/significant-events-schema';
 
 export type { QueryLink };
 

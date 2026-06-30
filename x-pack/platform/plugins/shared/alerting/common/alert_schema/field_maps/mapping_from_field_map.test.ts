@@ -354,6 +354,9 @@ describe('mappingFromFieldMap', () => {
                 severity_improving: {
                   type: 'boolean',
                 },
+                snoozed: {
+                  type: 'boolean',
+                },
                 start: {
                   type: 'date',
                 },

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { type BaseFeature } from '@kbn/streams-schema';
+import { type BaseFeature } from '@kbn/significant-events-schema';
 import type { EvaluationCriterion, Evaluator } from '@kbn/evals';
 import type { SearchHit } from '@elastic/elasticsearch/lib/api/types';
 

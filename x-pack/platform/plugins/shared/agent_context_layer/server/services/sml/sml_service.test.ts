@@ -341,11 +341,13 @@ describe('SmlService', () => {
       expect(esql).toContain('| WHERE MV_CONTAINS(spaces, ?)');
       // Two FORK branches: BM25 (OR across text fields) + semantic (OR across semantic multi-fields).
       // Per-branch candidate depth is size(10) × MAX_SCAN_MULTIPLIER(10) for RRF recall.
+      // SORT _score DESC inside each branch is required so LIMIT selects the top-scoring
+      // candidates; without it LIMIT takes scan-order docs and FUSE assigns wrong RRF ranks.
       expect(esql).toContain(
-        '(WHERE MATCH(title, ?) OR MATCH(description, ?) OR MATCH(content, ?) | LIMIT 100)'
+        '(WHERE MATCH(title, ?) OR MATCH(description, ?) OR MATCH(content, ?) | SORT _score DESC | LIMIT 100)'
       );
       expect(esql).toContain(
-        '(WHERE MATCH(title.semantic, ?) OR MATCH(description.semantic, ?) OR MATCH(content.semantic, ?) | LIMIT 100)'
+        '(WHERE MATCH(title.semantic, ?) OR MATCH(description.semantic, ?) OR MATCH(content.semantic, ?) | SORT _score DESC | LIMIT 100)'
       );
       // Outer limit after FUSE is exactly `size` — authorization is enforced
       // in-query, so there is no overfetch to absorb a post-filter.

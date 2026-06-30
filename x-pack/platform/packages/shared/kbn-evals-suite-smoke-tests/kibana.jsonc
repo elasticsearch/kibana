@@ -1,7 +1,7 @@
 {
   "type": "functional-tests",
   "id": "@kbn/evals-suite-smoke-tests",
-  "owner": "@elastic/obs-ai-team",
+  "owner": "@elastic/nightshift-context-and-research-team",
   "group": "platform",
   "visibility": "shared"
 }

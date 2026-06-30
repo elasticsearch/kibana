@@ -24,7 +24,7 @@ import type {
   ThrottledActions,
 } from '../../../common';
 import type { NormalizedRuleType } from '../../rule_type_registry';
-import type { CombinedSummarizedAlerts, RawRule } from '../../types';
+import type { CombinedSummarizedAlerts } from '../../types';
 import type { RuleRunMetricsStore } from '../../lib/rule_run_metrics_store';
 import type {
   ActionOpts,
@@ -63,7 +63,20 @@ export interface ActionSchedulerOptions<
   taskInstance: RuleTaskInstance;
   ruleRunMetricsStore: RuleRunMetricsStore;
   apiKeyId?: string;
-  apiKey: RawRule['apiKey'];
+  /**
+   * Resolved credential to enqueue for scheduled connector actions. This is the
+   * value that the actions plugin will place after `ApiKey ` in the
+   * `Authorization` header when running each connector task.
+   *
+   * - For Elasticsearch API keys, this is the base64-encoded `id:secret` stored
+   *   on the rule SO as `apiKey`.
+   * - For UIAM API keys, this is the raw `essu_…` secret (decoded from the rule
+   *   SO's base64 `uiamApiKey` field) as expected by core security.
+   *
+   * Callers should obtain this from `getFakeKibanaRequest` in `rule_loader.ts`
+   * (`effectiveApiKey`) rather than passing the raw rule SO attributes directly.
+   */
+  apiKey: string | null;
   ruleConsumer: string;
   executionId: string;
   ruleLabel: string;
@@ -71,6 +84,7 @@ export interface ActionSchedulerOptions<
   actionsClient: PublicMethodsOf<ActionsClient>;
   alertsClient: IAlertsClient<AlertData, State, Context, ActionGroupIds, RecoveryActionGroupId>;
   priority?: TaskPriority;
+  activeSnoozedIds?: Set<string>;
 }
 
 export type Executable<

@@ -16,6 +16,9 @@ import type {
   DeleteAgentlessPolicyRequest,
   DeleteAgentlessPolicyResponse,
   GetBulkAgentlessPolicyThroughputResponse,
+  GetAgentlessPolicyResponse,
+  ListAgentlessPoliciesRequest,
+  ListAgentlessPoliciesResponse,
 } from '../../../common/types/rest_spec/agentless_policy';
 
 import { sendRequestForRq } from './use_request';
@@ -58,4 +61,21 @@ export const useBulkGetAgentlessPolicyThroughput = (policyIds: string[]) => {
       refetchOnWindowFocus: false,
     }
   );
+};
+
+export const sendGetAgentlessPolicy = (policyId: string) => {
+  return sendRequestForRq<GetAgentlessPolicyResponse>({
+    path: agentlessPolicyRouteService.getInfoPath(policyId),
+    method: 'get',
+    version: API_VERSIONS.public.v1,
+  });
+};
+
+export const sendListAgentlessPolicies = (query?: ListAgentlessPoliciesRequest['query']) => {
+  return sendRequestForRq<ListAgentlessPoliciesResponse>({
+    path: agentlessPolicyRouteService.getListPath(),
+    method: 'get',
+    version: API_VERSIONS.public.v1,
+    query,
+  });
 };

@@ -6,7 +6,11 @@
  */
 
 import type { IValidatedEvent } from '@kbn/event-log-plugin/server';
-import type { PolicyExecutionHistoryItem, PolicyExecutionOutcome } from '@kbn/alerting-v2-schemas';
+import type {
+  PolicyExecutionHistoryItem,
+  PolicyExecutionOutcome,
+  SearchMatchCounts,
+} from '@kbn/alerting-v2-schemas';
 import { ACTION_POLICY_SAVED_OBJECT_TYPE, RULE_SAVED_OBJECT_TYPE } from '../../saved_objects';
 import { ACTION_POLICY_EVENT_ACTIONS } from '../dispatcher/steps/constants';
 
@@ -16,6 +20,13 @@ export interface NameMaps {
   policyNames: Map<string, string>;
   ruleNames: Map<string, string>;
   workflowNames: Map<string, string>;
+}
+
+export interface ResolvedSearchIds {
+  policyIds: string[];
+  ruleIds: string[];
+  hasMatches: boolean;
+  matches: SearchMatchCounts | null;
 }
 
 export const isString = (v: unknown): v is string => typeof v === 'string';
@@ -57,11 +68,37 @@ export function collectIdsFromEvents(events: IValidatedEvent[]): {
   };
 }
 
+/**
+ * Returns the relevant rule IDs for a given log event, based on the resolved search IDs and the policy ID.
+ * If search is not active (i.e., no matchingSearchIds), all rule IDs are relevant.
+ * If the policy ID is in the resolved search IDs, all rule IDs are relevant.
+ * If there are specific rule IDs in the resolved search IDs, only those are relevant.
+ * Otherwise, no rule IDs are relevant.
+ * @param policyId the ID of the policy for the current log event
+ * @param allRuleIds all rule IDs referenced by the current log event
+ * @param matchingSearchIds search IDs resolved from the search query, or undefined if no search is active
+ * @returns an array of relevant rule IDs for the current log event
+ */
+export function getRelevantRuleIdsFromLogEvent(
+  policyId: string,
+  allRuleIds: string[],
+  matchingSearchIds?: ResolvedSearchIds
+): string[] {
+  if (!matchingSearchIds || matchingSearchIds.policyIds.includes(policyId)) {
+    return allRuleIds;
+  }
+
+  return allRuleIds.filter((ruleId) => matchingSearchIds.ruleIds.includes(ruleId));
+}
+
 export function denormalizeEvent(
   event: IValidatedEvent,
-  { policyNames, ruleNames, workflowNames }: NameMaps
+  { policyNames, ruleNames, workflowNames }: NameMaps,
+  matchingSearchIds?: ResolvedSearchIds
 ): PolicyExecutionHistoryItem[] {
-  if (!event) return [];
+  if (!event || (matchingSearchIds && !matchingSearchIds.hasMatches)) {
+    return [];
+  }
 
   const timestamp = event['@timestamp'];
   const action = event.event?.action;
@@ -77,12 +114,13 @@ export function denormalizeEvent(
     .filter((so) => so.type === RULE_SAVED_OBJECT_TYPE)
     .map((so) => so.id);
   const allRuleIds = [...referencedRuleIds, ...(dispatcher.rule_ids ?? [])].filter(isString);
+  const relevantRuleIds = getRelevantRuleIdsFromLogEvent(policyId, allRuleIds, matchingSearchIds);
 
   const workflows = (dispatcher.workflow_ids ?? [])
     .filter(isString)
     .map((id) => ({ id, name: workflowNames.get(id) ?? null }));
 
-  return allRuleIds.map((ruleId) => ({
+  return relevantRuleIds.map((ruleId) => ({
     '@timestamp': timestamp,
     policy: { id: policyId, name: policyNames.get(policyId) ?? null },
     rule: { id: ruleId, name: ruleNames.get(ruleId) ?? null },

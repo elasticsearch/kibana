@@ -6,7 +6,7 @@
  */
 
 import { createTaskRunError, TaskErrorSource } from '@kbn/task-manager-plugin/server';
-import { type FakeRawRequest, type Headers } from '@kbn/core-http-server';
+import { type FakeRawRequest, type Headers, type KibanaRequest } from '@kbn/core-http-server';
 import { asSpaceId } from '@kbn/core-spaces-common';
 import { kibanaRequestFactory } from '@kbn/core-http-server-utils';
 import type { SavedObject, SavedObjectReference } from '@kbn/core-saved-objects-api-server';
@@ -76,14 +76,12 @@ export function validateRuleAndCreateFakeRequest<Params extends RuleTypeParams>(
     );
   }
 
-  const fakeRequest = getFakeKibanaRequest(
-    context,
-    spaceId,
-    apiKey,
+  const { fakeRequest, effectiveApiKey } = getFakeKibanaRequest(context, spaceId, apiKey, {
     uiamApiKey,
     apiKeyCreatedByUser,
-    apiKeyOwner
-  );
+    apiKeyOwner,
+    ruleId,
+  });
   const rule = getAlertFromRaw({
     id: ruleId,
     isSystemAction: (actionId: string) => context.actionsPlugin.isSystemActionConnector(actionId),
@@ -121,10 +119,9 @@ export function validateRuleAndCreateFakeRequest<Params extends RuleTypeParams>(
   }
 
   return {
-    apiKey,
-    uiamApiKey,
+    effectiveApiKey,
     fakeRequest,
-    rule,
+    rule: { ...rule, snoozedInstances: rawRule.snoozedInstances ?? [] },
     validatedParams,
     version,
   };
@@ -163,49 +160,70 @@ export async function getDecryptedRule(
   };
 }
 
+/**
+ * Builds the fake request a rule run executes under AND returns the resolved
+ * credential it authenticates with, so callers (e.g. `ActionScheduler`) can
+ * enqueue scheduled connector tasks under the same key. `effectiveApiKey` is
+ * the value that was placed after `ApiKey ` in the request's `Authorization`
+ * header — the base64 `id:secret` for ES rules, or the decoded raw `essu_…`
+ * UIAM secret for UIAM rules.
+ */
+export interface GetFakeKibanaRequestOptions {
+  uiamApiKey?: RawRule['uiamApiKey'];
+  apiKeyCreatedByUser?: RawRule['apiKeyCreatedByUser'];
+  apiKeyOwner?: RawRule['apiKeyOwner'];
+  ruleId?: string;
+}
+
 export function getFakeKibanaRequest(
   context: TaskRunnerContext,
   spaceId: string,
   apiKey: RawRule['apiKey'],
-  uiamApiKey?: RawRule['uiamApiKey'],
-  apiKeyCreatedByUser?: RawRule['apiKeyCreatedByUser'],
-  apiKeyOwner?: RawRule['apiKeyOwner']
-) {
+  options: GetFakeKibanaRequestOptions = {}
+): { fakeRequest: KibanaRequest; effectiveApiKey: string | null } {
+  const { uiamApiKey, apiKeyCreatedByUser, apiKeyOwner, ruleId } = options;
   const requestHeaders: Headers = {};
+  let effectiveApiKey: string | null = null;
 
   const shouldUseUiamApiKey = context.shouldGrantUiam && context.apiKeyType === ApiKeyType.UIAM;
+  const logTags = ruleId ? [...UIAM_LOGS_USAGE_TAGS, ruleId] : UIAM_LOGS_USAGE_TAGS;
 
   if (shouldUseUiamApiKey) {
     if (!uiamApiKey) {
-      requestHeaders.authorization = `ApiKey ${apiKey}`;
+      if (apiKey) {
+        requestHeaders.authorization = `ApiKey ${apiKey}`;
+        effectiveApiKey = apiKey;
+      }
       if (apiKeyCreatedByUser && apiKey) {
         context.logger.debug(
           'UIAM API key is not provided to create a fake request, falling back to ES API key created by the user.',
           {
-            tags: UIAM_LOGS_USAGE_TAGS,
+            tags: logTags,
           }
         );
       } else if (isLikelyNonCloudUserApiKeyOwner(apiKeyOwner)) {
         context.logger.debug(
           'UIAM API key is not provided because the Elasticsearch API key creator is likely a non-Cloud user, falling back to regular API key.',
           {
-            tags: UIAM_LOGS_USAGE_TAGS,
+            tags: logTags,
           }
         );
       } else {
         context.logger.warn(
           'UIAM API key is not provided to create a fake request, falling back to regular API key.',
           {
-            tags: UIAM_LOGS_USAGE_TAGS,
+            tags: logTags,
           }
         );
       }
     } else {
-      const [_, uiamApiKeyValue] = Buffer.from(uiamApiKey, 'base64').toString().split(':');
+      const [, uiamApiKeyValue] = Buffer.from(uiamApiKey, 'base64').toString().split(':');
       requestHeaders.authorization = `ApiKey ${uiamApiKeyValue}`;
+      effectiveApiKey = uiamApiKeyValue;
     }
   } else if (apiKey) {
     requestHeaders.authorization = `ApiKey ${apiKey}`;
+    effectiveApiKey = apiKey;
   }
 
   const fakeRawRequest: FakeRawRequest = {
@@ -213,7 +231,9 @@ export function getFakeKibanaRequest(
     spaceId: asSpaceId(spaceId),
   };
 
-  return kibanaRequestFactory(fakeRawRequest);
+  const fakeRequest = kibanaRequestFactory(fakeRawRequest);
+
+  return { fakeRequest, effectiveApiKey };
 }
 
 const isLikelyNonCloudUserApiKeyOwner = (apiKeyOwner?: string | null): boolean => {

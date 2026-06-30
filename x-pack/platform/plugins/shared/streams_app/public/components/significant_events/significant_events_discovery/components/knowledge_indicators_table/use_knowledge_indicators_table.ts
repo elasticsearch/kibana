@@ -7,7 +7,7 @@
 
 import type { CriteriaWithPagination } from '@elastic/eui';
 import { useIsMutating, useMutation } from '@kbn/react-query';
-import { isComputedFeature } from '@kbn/streams-schema';
+import { isComputedFeature } from '@kbn/significant-events-schema';
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFetchKnowledgeIndicators } from '../../../../../hooks/significant_events/use_fetch_knowledge_indicators';

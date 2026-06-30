@@ -65,10 +65,16 @@ export { useConnectorContext } from './application/context/use_connector_context
 export {
   ActionForm,
   CreateConnectorFlyout,
+  CreateConnectorForm,
   EditConnectorFlyout,
 } from './application/sections/action_connector_form';
 
-export type { ConnectorFormSchema } from './application/sections/action_connector_form';
+export type {
+  ConnectorFormSchema,
+  CreateConnectorFormProps,
+  CreateConnectorFormHandle,
+  CreateConnectorFormStatus,
+} from './application/sections/action_connector_form';
 
 export type { ConfigFieldSchema, SecretsFieldSchema } from './application/components';
 

@@ -47,3 +47,55 @@ groups:
           stack: ga
           ech: ga
           self: ga
+
+  - group: Elastic Defend settings
+    id: elastic-defend-settings
+    settings:
+
+      - setting: xpack.securitySolution.maxUploadResponseActionFileBytes
+        description: |
+          Allow to configure the max file upload size for use with the Upload File Response action available with the Defend Integration. To learn more, check [Endpoint Response actions](docs-content://solutions/security/endpoint-response-actions.md).
+        datatype: int
+        applies_to:
+          stack: ga 8.9
+          ech: ga
+          self: ga
+
+      - setting: xpack.securitySolution.disableEndpointRuleAutoInstall
+        description: |
+          Set to `true` to disable the automatic installation of Elastic Defend SIEM rules when a new Endpoint integration policy is created.
+        datatype: bool
+        default: false
+        applies_to:
+          - "stack: ga 9.2.4!+"
+          - "ech: ga"
+          - "self: ga"
+
+      - setting: xpack.securitySolution.maxEndpointScriptFileSize
+        description: |
+          The maximum file size in bytes for scripts uploaded to the Elastic Defend script library. Default is `26214400` (25MB).
+        datatype: int
+        default: 26214400
+        applies_to:
+          - "stack: ga 9.4+"
+          - "ech: ga"
+          - "self: ga"
+
+  - group: Experimental features
+    id: experimental-features
+    settings:
+
+      - setting: xpack.securitySolution.enableExperimental
+        description: |
+          A list of experimental feature flags to enable.
+        datatype: array of strings
+        applies_to:
+          stack: ga
+          ech: ga
+          self: ga
+        note: "Experimental features should not be enabled in production environments. Experimental features may be changed or removed completely in future releases. Elastic will make a best effort to fix any issues, but experimental features are not supported to the same level as generally available (GA) features."
+        example: |
+          ```yaml
+          xpack.securitySolution.enableExperimental:
+            - sentinelRulesMigration
+          ```

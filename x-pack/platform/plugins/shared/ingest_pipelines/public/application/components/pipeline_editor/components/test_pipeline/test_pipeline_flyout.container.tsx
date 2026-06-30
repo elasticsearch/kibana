@@ -43,8 +43,12 @@ export const TestPipelineFlyout: React.FunctionComponent<Props> = ({
   const { services } = useKibana();
   const isMounted = useIsMounted();
 
-  const { testPipelineData, testPipelineDataDispatch, updateTestOutputPerProcessor } =
-    useTestPipelineContext();
+  const {
+    testPipelineData,
+    testPipelineDataDispatch,
+    updateTestOutputPerProcessor,
+    fieldAccessPattern,
+  } = useTestPipelineContext();
 
   const {
     config: { documents: cachedDocuments, verbose: cachedVerbose },
@@ -73,7 +77,7 @@ export const TestPipelineFlyout: React.FunctionComponent<Props> = ({
       const { error, data: currentTestOutput } = await services.api.simulatePipeline({
         documents,
         verbose,
-        pipeline: { ...serializedProcessors },
+        pipeline: { ...serializedProcessors, field_access_pattern: fieldAccessPattern },
       });
 
       if (!isMounted.current) {
@@ -129,6 +133,7 @@ export const TestPipelineFlyout: React.FunctionComponent<Props> = ({
       return { isSuccessful: true };
     },
     [
+      fieldAccessPattern,
       isMounted,
       processors,
       services.api,

@@ -109,6 +109,7 @@ export const esqlAsyncSearchStrategyProvider = (
 
     const params = {
       ...(await getCommonDefaultAsyncSubmitParams(searchConfig, options)),
+      ...(options.approximation !== undefined && { approximation: options.approximation }),
       ...requestParams,
     };
 

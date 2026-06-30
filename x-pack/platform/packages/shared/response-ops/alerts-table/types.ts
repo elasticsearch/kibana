@@ -44,7 +44,7 @@ import type { MaintenanceWindow } from '@kbn/maintenance-windows-plugin/common';
 import type { FieldFormatsStart } from '@kbn/field-formats-plugin/public';
 import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
 import type { FieldBrowserOptions } from '@kbn/response-ops-alerts-fields-browser';
-import type { MutedAlerts } from '@kbn/response-ops-alerts-apis/types';
+import type { MutedAlerts, SnoozedAlerts } from '@kbn/response-ops-alerts-apis/types';
 import type { NotificationsStart } from '@kbn/core-notifications-browser';
 import type { LicensingPluginStart } from '@kbn/licensing-plugin/public';
 import type { ApplicationStart } from '@kbn/core-application-browser';
@@ -532,6 +532,9 @@ export type RenderContext<AC extends AdditionalContext> = {
 
   isLoadingMutedAlerts: boolean;
   mutedAlerts?: MutedAlerts;
+
+  isLoadingSnoozedAlerts: boolean;
+  snoozedAlerts?: SnoozedAlerts;
 
   isLoadingCases: boolean;
   cases?: Map<string, Case>;

@@ -7,7 +7,7 @@
 
 import { httpServerMock } from '@kbn/core/server/mocks';
 import { startKiIdentificationToolHandler } from './handler';
-import { StreamsKIsOnboardingStep } from '@kbn/streams-schema';
+import { KIsOnboardingStep } from '@kbn/significant-events-schema';
 import { StreamsKIsOnboardingClient } from '../../../lib/workflows/onboarding_workflow_client';
 
 describe('startKiIdentificationToolHandler', () => {
@@ -40,10 +40,7 @@ describe('startKiIdentificationToolHandler', () => {
 
     const result = await startKiIdentificationToolHandler({
       streamName: 'logs.nginx',
-      steps: [
-        StreamsKIsOnboardingStep.FeaturesIdentification,
-        StreamsKIsOnboardingStep.QueriesGeneration,
-      ],
+      steps: [KIsOnboardingStep.FeaturesIdentification, KIsOnboardingStep.QueriesGeneration],
       streamsKIsOnboardingClient,
       request,
     });
@@ -72,7 +69,7 @@ describe('startKiIdentificationToolHandler', () => {
     await expect(
       startKiIdentificationToolHandler({
         streamName: 'logs.nginx',
-        steps: [StreamsKIsOnboardingStep.FeaturesIdentification],
+        steps: [KIsOnboardingStep.FeaturesIdentification],
         streamsKIsOnboardingClient,
         request,
       })

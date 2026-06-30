@@ -6,13 +6,13 @@
  */
 
 import { z } from '@kbn/zod/v4';
+import { MAX_STREAM_NAME_LENGTH } from '@kbn/streams-schema';
 import {
-  StreamsKIsOnboardingStep,
+  KIsOnboardingStep,
   SignificantEventsWorkflowStatus,
-  MAX_STREAM_NAME_LENGTH,
-  type StreamsKIsOnboardingStatusResult,
+  type KIsOnboardingStatusResult,
   type SignificantEventsWorkflowStatusResult,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import { STREAMS_API_PRIVILEGES } from '../../../../../common/constants';
 import { createServerRoute } from '../../../create_server_route';
 import { assertSignificantEventsAccess } from '../../../utils/assert_significant_events_access';
@@ -25,10 +25,10 @@ import {
 const timestampFromString = z.string().transform((input) => new Date(input).getTime());
 
 const mapStepsToSkipFlags = (
-  steps: StreamsKIsOnboardingStep[]
+  steps: KIsOnboardingStep[]
 ): { skipFeatures: boolean; skipQueries: boolean } => ({
-  skipFeatures: !steps.includes(StreamsKIsOnboardingStep.FeaturesIdentification),
-  skipQueries: !steps.includes(StreamsKIsOnboardingStep.QueriesGeneration),
+  skipFeatures: !steps.includes(KIsOnboardingStep.FeaturesIdentification),
+  skipQueries: !steps.includes(KIsOnboardingStep.QueriesGeneration),
 });
 
 export const onboardingExecuteRoute = createServerRoute({
@@ -52,12 +52,9 @@ export const onboardingExecuteRoute = createServerRoute({
         from: timestampFromString,
         to: timestampFromString,
         steps: z
-          .array(z.enum(StreamsKIsOnboardingStep))
+          .array(z.enum(KIsOnboardingStep))
           .optional()
-          .default([
-            StreamsKIsOnboardingStep.FeaturesIdentification,
-            StreamsKIsOnboardingStep.QueriesGeneration,
-          ])
+          .default([KIsOnboardingStep.FeaturesIdentification, KIsOnboardingStep.QueriesGeneration])
           .describe(
             'Optional list of steps to perform as part of stream onboarding in the specified sequence. By default it will execute all steps.'
           ),
@@ -90,7 +87,7 @@ export const onboardingExecuteRoute = createServerRoute({
     getScopedClients,
     server,
     workflowClients,
-  }): Promise<StreamsKIsOnboardingStatusResult> => {
+  }): Promise<KIsOnboardingStatusResult> => {
     const { streamsKIsOnboardingClient } = workflowClients;
     if (!streamsKIsOnboardingClient) {
       throw new FeatureNotEnabledError('Workflows management is not available');
@@ -156,7 +153,7 @@ export const onboardingStatusRoute = createServerRoute({
     getScopedClients,
     server,
     workflowClients,
-  }): Promise<StreamsKIsOnboardingStatusResult> => {
+  }): Promise<KIsOnboardingStatusResult> => {
     const { streamsKIsOnboardingClient } = workflowClients;
     if (!streamsKIsOnboardingClient) {
       throw new FeatureNotEnabledError('Workflows management is not available');

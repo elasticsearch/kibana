@@ -38,6 +38,7 @@ describe('writeEntityIds', () => {
       errors: 0,
       droppedTargets: 0,
       relationshipTypeApplied: {},
+      succeededEntityIds: new Set(),
     });
     expect(crudClient.bulkUpdateEntity).not.toHaveBeenCalled();
   });
@@ -64,6 +65,7 @@ describe('writeEntityIds', () => {
       errors: 0,
       droppedTargets: 0,
       relationshipTypeApplied: {},
+      succeededEntityIds: new Set(),
     });
     expect(crudClient.bulkUpdateEntity).not.toHaveBeenCalled();
   });
@@ -93,6 +95,7 @@ describe('writeEntityIds', () => {
       errors: 0,
       droppedTargets: 0,
       relationshipTypeApplied: {},
+      succeededEntityIds: new Set(),
     });
     expect(crudClient.bulkUpdateEntity).not.toHaveBeenCalled();
   });

@@ -9,6 +9,8 @@ export const mutationKeys = {
   root: 'alerts',
   muteAlertInstance: () => [mutationKeys.root, 'muteAlertInstance'] as const,
   unmuteAlertInstance: () => [mutationKeys.root, 'unmuteAlertInstance'] as const,
+  snoozeAlertInstance: () => [mutationKeys.root, 'snoozeAlertInstance'] as const,
+  unsnoozeAlertInstance: () => [mutationKeys.root, 'unsnoozeAlertInstance'] as const,
   bulkMuteAlerts: () => [mutationKeys.root, 'bulkMuteAlerts'] as const,
   bulkUnmuteAlerts: () => [mutationKeys.root, 'bulkUnmuteAlerts'] as const,
 };

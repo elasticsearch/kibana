@@ -101,6 +101,99 @@ describe('fetchAndAssignAgentMetrics', () => {
     );
   });
 
+  it('does not assign metrics to non-reporting OPAMP agents (offline, inactive, unenrolled, uninstalled)', async () => {
+    const esClient = {
+      search: jest
+        .fn()
+        .mockResolvedValueOnce({ aggregations: { agents: { buckets: [] } } }) // fleet
+        .mockResolvedValueOnce({
+          aggregations: {
+            agents: {
+              buckets: [
+                {
+                  key: 'my-collector-host',
+                  max_memory_size: { value: 512 },
+                  avg_cpu: { value: 0.5 },
+                },
+              ],
+            },
+          },
+        }), // otel — only the online agent
+    };
+    const agents = [
+      {
+        id: 'online-agent',
+        type: 'OPAMP',
+        status: 'online',
+        non_identifying_attributes: { 'elastic.display.name': 'my-collector-host' },
+      },
+      {
+        id: 'offline-agent',
+        type: 'OPAMP',
+        status: 'offline',
+        non_identifying_attributes: { 'elastic.display.name': 'my-collector-host' },
+      },
+      {
+        id: 'inactive-agent',
+        type: 'OPAMP',
+        status: 'inactive',
+        non_identifying_attributes: { 'elastic.display.name': 'my-collector-host' },
+      },
+      {
+        id: 'unenrolled-agent',
+        type: 'OPAMP',
+        status: 'unenrolled',
+        non_identifying_attributes: { 'elastic.display.name': 'my-collector-host' },
+      },
+    ];
+    const result = await fetchAndAssignAgentMetrics(esClient as any, agents as any);
+
+    // Only the online agent should receive metrics
+    expect(result.find((a) => a.id === 'online-agent')?.metrics).toEqual({
+      cpu_avg: 0.5,
+      memory_size_byte_avg: 512,
+    });
+    expect(result.find((a) => a.id === 'offline-agent')?.metrics).toEqual({
+      cpu_avg: undefined,
+      memory_size_byte_avg: undefined,
+    });
+    expect(result.find((a) => a.id === 'inactive-agent')?.metrics).toEqual({
+      cpu_avg: undefined,
+      memory_size_byte_avg: undefined,
+    });
+    expect(result.find((a) => a.id === 'unenrolled-agent')?.metrics).toEqual({
+      cpu_avg: undefined,
+      memory_size_byte_avg: undefined,
+    });
+
+    // Only the online agent's hostname is queried
+    const otelSearchCall = esClient.search.mock.calls[1][0];
+    expect(otelSearchCall.query.bool.must).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ terms: { 'service.instance.id': ['my-collector-host'] } }),
+      ])
+    );
+  });
+
+  it('skips the ES query entirely when all OPAMP agents are non-reporting', async () => {
+    const esClient = {
+      search: jest.fn().mockResolvedValueOnce({ aggregations: { agents: { buckets: [] } } }), // fleet only
+    };
+    const agents = [
+      {
+        id: 'offline-agent',
+        type: 'OPAMP',
+        status: 'offline',
+        non_identifying_attributes: { 'elastic.display.name': 'my-collector-host' },
+      },
+    ];
+    const result = await fetchAndAssignAgentMetrics(esClient as any, agents as any);
+
+    expect(result[0].metrics).toBeUndefined();
+    // Only the fleet search call fires; no OTel search call
+    expect(esClient.search).toHaveBeenCalledTimes(1);
+  });
+
   it('assigns the same metrics bucket to all agents sharing the same elastic.display.name', async () => {
     const esClient = {
       search: jest

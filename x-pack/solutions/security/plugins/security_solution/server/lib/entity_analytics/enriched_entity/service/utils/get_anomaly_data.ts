@@ -107,6 +107,7 @@ const getAnomalyDataFromApi = async ({
         fromMs: fromDate,
         ml,
         toMs: toDate,
+        request,
         soClient,
       });
 

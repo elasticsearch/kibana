@@ -117,3 +117,16 @@ export const taskSchemaV11 = taskSchemaV10.extends({
     })
   ),
 });
+
+export const taskSchemaV12 = taskSchemaV11.extends({
+  userScope: schema.maybe(
+    schema.object({
+      apiKeyId: schema.string(),
+      uiamApiKeyId: schema.maybe(schema.string()),
+      spaceId: schema.string(),
+      apiKeyCreatedByUser: schema.boolean(),
+      userProfileId: schema.maybe(schema.string()),
+      userName: schema.maybe(schema.string()),
+    })
+  ),
+});

@@ -122,6 +122,7 @@ export function taskRunner(opts: InvalidateApiKeysTaskRunnerOpts) {
           const [{ savedObjects }] = await coreStartServices();
           const savedObjectsClient = savedObjects.createInternalRepository([
             INVALIDATE_API_KEY_SO_NAME,
+            TASK_SO_NAME,
           ]);
 
           const result = await runInvalidate({

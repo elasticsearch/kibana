@@ -41,6 +41,17 @@ export interface RuleChangeTrackingMetadata {
    * Rule duplication action original rule's Saved Object id
    */
   originalRuleSoId?: string;
+  /**
+   * Rule restore action — the change-history event id of the snapshot being restored from.
+   */
+  restoredFromChangeId?: string;
+  /**
+   * Rule restore action — the rule's revision from the snapshot the rule being restored from.
+   * This is a de-normalized from as the rule's revision could be fetched from the changes
+   * history by restoredFromChangeId. However it requires an extra request to ES and besides
+   * that the desired change history item could be removed by the ILM policy.
+   */
+  restoredFromRevision?: number;
 }
 
 /**
@@ -60,6 +71,12 @@ export interface RuleChangeTracking<ChangeAction extends string = string> {
    * change. E.g. `metadata.bulkCount` says about how many rules were involved in a bulk operation.
    */
   metadata?: RuleChangeTrackingMetadata;
+  /**
+   * Controls ES index refresh behavior after the change is written.
+   * Use `'wait_for'` when the caller needs the history entry to be immediately
+   * searchable (e.g. rule restore, where the client refetches history right after).
+   */
+  refresh?: boolean | 'wait_for';
 }
 
 export const ISO_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;

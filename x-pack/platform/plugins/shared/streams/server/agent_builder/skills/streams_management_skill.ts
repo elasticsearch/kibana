@@ -59,7 +59,8 @@ export const streamsManagementSkill = defineSkillType({
     - Fields: field_overrides only cover fields the user explicitly overrides; all other fields use the data stream's own dynamic mappings.
 
     Query streams (ES|QL):
-    - Read-only. Defined by an ES|QL query over any combination of data in Elasticsearch.
+    - Read-only data. Defined by an ES|QL query over any combination of data in Elasticsearch.
+    - The query definition can be created and updated via ${UPDATE_STREAM} with changes.query = {esql, field_descriptions?}. Documents are never ingested into a query stream — the data it exposes lives in the underlying sources.
     - Not part of any stream hierarchy.
     - Cannot be converted to an ingest stream. No processing, no lifecycle control, no failure store.
     </stream_types>
@@ -116,7 +117,7 @@ export const streamsManagementSkill = defineSkillType({
     - Never construct Streamlang step objects manually — only use objects from ${DESIGN_PIPELINE} or ${INSPECT_STREAMS}.
     - Prefer a single comprehensive ${DESIGN_PIPELINE} call over multiple calls.
 
-    Write operations: "set retention" → ${UPDATE_STREAM} with changes.lifecycle. "create a partition" → ${CREATE_PARTITION}. "delete stream X" → ${DELETE_STREAM}. "map fields" → ${UPDATE_STREAM} with changes.fields. Multiple change types can be combined in a single ${UPDATE_STREAM} call.
+    Write operations: "set retention" → ${UPDATE_STREAM} with changes.lifecycle. "create a partition" → ${CREATE_PARTITION}. "delete stream X" → ${DELETE_STREAM}. "map fields" → ${UPDATE_STREAM} with changes.fields. "create a query stream" / "save this ES|QL as a stream" → ${UPDATE_STREAM} with changes.query = {esql, field_descriptions?} (optionally with changes.description). Multiple ingest change types can be combined in a single ${UPDATE_STREAM} call, but changes.query is exclusive with ingest settings — query streams have no processing, lifecycle, fields, or failure store.
 
     ILM retention workflow: When the user wants ILM retention but doesn't name a policy, call ${LIST_ILM_POLICIES} to discover options. If it returns ilm_available: false, explain that ILM is not available on this deployment and suggest DSL retention instead. Otherwise, present policies with phase summaries and current usage. After user selects, apply via ${UPDATE_STREAM} with changes.lifecycle.
 
@@ -208,7 +209,7 @@ export const streamsManagementSkill = defineSkillType({
     </temporal_behavior>
 
     <boundaries>
-    This skill can inspect and modify stream configurations but cannot create ILM policies (only reference existing ones), modify cluster settings, modify replicated (CCR) streams, reprocess or re-index existing documents, or write to query streams (read-only).
+    This skill can inspect and modify stream configurations, including creating and updating query streams (their ES|QL definition). It cannot create ILM policies (only reference existing ones), modify cluster settings, modify replicated (CCR) streams, reprocess or re-index existing documents, or ingest/process data through query streams (they are read-only ES|QL views with no processing, lifecycle, or failure store).
     </boundaries>
   `),
   getRegistryTools: () => [...STREAMS_READ_TOOL_IDS, ...STREAMS_WRITE_TOOL_IDS],

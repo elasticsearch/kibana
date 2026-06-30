@@ -8,7 +8,7 @@
 import React from 'react';
 import { EuiBadge } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { QUERY_TYPE_STATS, type QueryType } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS, type QueryType } from '@kbn/significant-events-schema';
 
 const STATS_LABEL = i18n.translate('xpack.streams.queryTypeBadge.statsLabel', {
   defaultMessage: 'Stats',

@@ -7,6 +7,7 @@
 
 import type { JourneyStep } from '../../common/runtime_types/ping/synthetics';
 import { getJourneySteps } from './get_journey_steps';
+import { CHECK_GROUP_TIME_RANGE_BUFFER_MS } from '../../common/constants/client_defaults';
 import { getUptimeESMockClient } from './test_helpers';
 
 describe('getJourneySteps request module', () => {
@@ -163,6 +164,47 @@ describe('getJourneySteps request module', () => {
 
         const call: any = mockEsClient.search.mock.calls[0][0];
         expect(call.index).toBe(`cluster1:${syntheticsEsClient.heartbeatIndices}`);
+      });
+    });
+
+    describe('timestamp bounding', () => {
+      it('bounds the query by a time range around the run when timestamp is provided', async () => {
+        const { esClient: mockEsClient, syntheticsEsClient } = getUptimeESMockClient();
+        mockEsClient.search.mockResolvedValueOnce(data);
+
+        const timestamp = '2021-02-01T17:45:19.001Z';
+        await getJourneySteps({
+          syntheticsEsClient,
+          checkGroup: '2bf952dc-64b5-11eb-8b3b-42010a84000d',
+          timestamp,
+        });
+
+        const call: any = mockEsClient.search.mock.calls[0][0];
+        const runTime = new Date(timestamp).getTime();
+        expect(call.query.bool.filter).toContainEqual({
+          range: {
+            '@timestamp': {
+              gte: new Date(runTime - CHECK_GROUP_TIME_RANGE_BUFFER_MS).toISOString(),
+              lte: new Date(runTime + CHECK_GROUP_TIME_RANGE_BUFFER_MS).toISOString(),
+            },
+          },
+        });
+      });
+
+      it('does not add a time range filter when timestamp is absent', async () => {
+        const { esClient: mockEsClient, syntheticsEsClient } = getUptimeESMockClient();
+        mockEsClient.search.mockResolvedValueOnce(data);
+
+        await getJourneySteps({
+          syntheticsEsClient,
+          checkGroup: '2bf952dc-64b5-11eb-8b3b-42010a84000d',
+        });
+
+        const call: any = mockEsClient.search.mock.calls[0][0];
+        const hasTimestampRange = call.query.bool.filter.some(
+          (clause: any) => clause?.range?.['@timestamp']
+        );
+        expect(hasTimestampRange).toBe(false);
       });
     });
 

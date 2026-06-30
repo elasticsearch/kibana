@@ -6,7 +6,7 @@
 #   3. Queries generation (optional, skippable — persistence handled by the child workflow)
 
 version: "1"
-name: ".streams-ki-onboarding"
+name: "KI Onboarding"
 enabled: true
 description: "Orchestrates KI feature identification and query generation for a stream."
 tags:

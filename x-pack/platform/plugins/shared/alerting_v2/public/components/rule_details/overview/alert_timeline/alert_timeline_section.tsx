@@ -19,7 +19,6 @@ import {
 } from '@elastic/eui';
 import type { OnTimeChangeProps } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import datemath from '@kbn/datemath';
 import { getRootEsqlQuery } from '@kbn/alerting-v2-schemas';
 import { CoreStart, useService } from '@kbn/core-di-browser';
 import { PluginStart } from '@kbn/core-di';
@@ -35,24 +34,7 @@ import { AlertTimelineChart } from './alert_timeline_chart';
 import { AlertTimelineStatsRow } from './alert_timeline_stats_row';
 import { AlertTimelineViewAllButton } from './alert_timeline_view_all_button';
 import { useAlertTimelineUrlState } from './use_alert_timeline_url_state';
-
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
-
-const DEFAULT_ALERT_TIMELINE_TIME_RANGE = { from: 'now-7d', to: 'now' };
-
-const resolveTimeWindow = (
-  from: string,
-  to: string
-): { windowStartMs: number; windowEndMs: number } => {
-  const fromMs = datemath.parse(from)?.valueOf();
-  const toMs = datemath.parse(to, { roundUp: true })?.valueOf();
-  const now = Date.now();
-  return {
-    windowStartMs: Number.isFinite(fromMs) ? (fromMs as number) : now - 7 * DAY_MS,
-    windowEndMs: Number.isFinite(toMs) ? (toMs as number) : now,
-  };
-};
+import { DEFAULT_ACTIVITY_TIME_RANGE, resolveGteLte } from '../time_range';
 
 export const AlertTimelineSection: React.FC = () => {
   const data = useService(PluginStart('data')) as DataPublicPluginStart;
@@ -65,7 +47,7 @@ export const AlertTimelineSection: React.FC = () => {
   const hasGroupingFields = (groupingFields?.length ?? 0) > 0;
   const timeZone = uiSettings.get<string>('dateFormat:tz', 'Browser');
 
-  const [timeRange, setTimeRange] = useAlertTimelineUrlState(DEFAULT_ALERT_TIMELINE_TIME_RANGE);
+  const [timeRange, setTimeRange] = useAlertTimelineUrlState(DEFAULT_ACTIVITY_TIME_RANGE);
   const [refreshTick, setRefreshTick] = useState(0);
 
   const handleTimeChange = useCallback(
@@ -79,7 +61,7 @@ export const AlertTimelineSection: React.FC = () => {
 
   const { windowStartMs, windowEndMs } = useMemo(() => {
     void refreshTick;
-    return resolveTimeWindow(timeRange.from, timeRange.to);
+    return resolveGteLte(timeRange.from, timeRange.to);
   }, [timeRange.from, timeRange.to, refreshTick]);
 
   const { phases, groupingValuesByHash, summary, isLoading, isError } = useFetchRuleEvents({

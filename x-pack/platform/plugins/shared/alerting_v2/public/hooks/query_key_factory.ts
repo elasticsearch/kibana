@@ -6,6 +6,7 @@
  */
 
 import type { WorkflowsSearchParams } from '@kbn/workflows';
+import type { GetRuleExecutionsQuery } from '@kbn/alerting-v2-schemas';
 
 export const ruleKeys = {
   all: ['rule'] as const,
@@ -67,6 +68,12 @@ export const executionHistoryKeys = {
     since: string,
     filters: { search?: string; outcome?: 'all' | 'dispatched' | 'throttled' } = {}
   ) => [...executionHistoryKeys.all, 'countSince', since, filters] as const,
+};
+
+export const ruleExecutionKeys = {
+  all: ['ruleExecution'] as const,
+  list: (filters: Partial<GetRuleExecutionsQuery>) =>
+    [...ruleExecutionKeys.all, 'list', filters] as const,
 };
 
 export const userProfileKeys = {

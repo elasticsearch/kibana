@@ -9,7 +9,7 @@ import { expect } from '@kbn/scout/ui';
 import { tags } from '@kbn/scout';
 import { test } from '../../fixtures';
 import { generateLogsData } from '../../fixtures/generators';
-import { saveFailureStoreChanges } from '../../fixtures/retention_helpers';
+import { saveFailureStoreChanges } from '../../fixtures/data_lifecycle_helpers';
 
 const TEST_STREAM = 'logs-nginx-default';
 

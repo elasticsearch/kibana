@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { INFERRED_FEATURE_TYPES } from '@kbn/streams-schema';
+import { INFERRED_FEATURE_TYPES } from '@kbn/significant-events-schema';
 import type { KnowledgeIndicatorClient } from '../../streams/ki';
 
 export interface ShouldIdentifyFeaturesResult {

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { loggingSystemMock, savedObjectsClientMock } from '@kbn/core/server/mocks';
+import { httpServerMock, loggingSystemMock, savedObjectsClientMock } from '@kbn/core/server/mocks';
 import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import { searchEntityAnomalies } from './search_anomalies';
 import { makeHit, makeResponse } from './test_helpers';
@@ -26,10 +26,12 @@ let mockMlAnomalySearch: jest.Mock;
 let mockMl: MlPluginSetup;
 let logger: ReturnType<typeof loggingSystemMock.createLogger>;
 const soClient = savedObjectsClientMock.create();
+const request = httpServerMock.createKibanaRequest();
 
 const defaultOpts = {
   entityType: 'user' as const,
   entityId: 'user:alice',
+  request,
 };
 
 beforeEach(() => {

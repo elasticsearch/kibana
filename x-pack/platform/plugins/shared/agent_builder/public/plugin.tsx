@@ -33,6 +33,7 @@ import {
   AgentBuilderAccessChecker,
   AgentService,
   AttachmentsService,
+  RenderersService,
   ChatService,
   ConversationsService,
   DocLinksService,
@@ -46,6 +47,7 @@ import {
   type AgentBuilderInternalService,
 } from './services';
 import { createPublicAttachmentContract } from './services/attachments';
+import { createPublicRenderersContract } from './services/renderers';
 import { createPublicToolContract } from './services/tools';
 import { createPublicAgentsContract } from './services/agents';
 import { createPublicEventsContract } from './services/events';
@@ -153,6 +155,7 @@ export class AgentBuilderPlugin
 
     const agentService = new AgentService({ http });
     const attachmentsService = new AttachmentsService({ http });
+    const renderersService = new RenderersService();
 
     attachmentsService.addAttachmentType(
       'visualization',
@@ -226,6 +229,7 @@ export class AgentBuilderPlugin
     const internalServices: AgentBuilderInternalService = {
       agentService,
       attachmentsService,
+      renderersService,
       chatService,
       conversationsService,
       docLinksService,
@@ -311,6 +315,7 @@ export class AgentBuilderPlugin
     const agentBuilderService: AgentBuilderPluginStart = {
       agents: createPublicAgentsContract({ agentService }),
       attachments: createPublicAttachmentContract({ attachmentsService }),
+      renderers: createPublicRenderersContract({ renderersService }),
       tools: createPublicToolContract({ toolsService }),
       events: createPublicEventsContract({ eventsService }),
       addAttachment: (attachment: AttachmentInput) => {

@@ -35,6 +35,7 @@ interface GetJobConfigOpts {
   jobIds: string[];
   logger: Logger;
   ml: MlPluginSetup;
+  request: KibanaRequest;
   soClient: SavedObjectsClientContract;
 }
 
@@ -47,6 +48,7 @@ export const getJobConfig = async ({
   jobIds,
   logger,
   ml,
+  request,
   soClient,
 }: GetJobConfigOpts): Promise<Map<string, JobConfig>> => {
   const result = new Map<string, JobConfig>();
@@ -56,7 +58,7 @@ export const getJobConfig = async ({
     const jobsSettled = await Promise.allSettled(
       jobIds.map((jobId) =>
         ml
-          .anomalyDetectorsProvider({} as KibanaRequest, soClient)
+          .anomalyDetectorsProvider(request, soClient)
           .jobs(jobId)
           .then((resp) => resp.jobs ?? [])
       )

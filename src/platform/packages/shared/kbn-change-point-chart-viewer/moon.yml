@@ -32,6 +32,7 @@ dependsOn:
   - '@kbn/embeddable-plugin'
   - '@kbn/esql-types'
   - '@kbn/esql-language'
+  - '@kbn/field-types'
   - '@kbn/embeddable-plugin'
 tags:
   - shared-browser

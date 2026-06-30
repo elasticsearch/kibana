@@ -13,11 +13,15 @@ import {
   getEntitiesAlias,
   ENTITY_LATEST,
   getLatestEntityIndexPattern,
+  getEntityMetadataAlias,
+  getMetadataEntityIndexPattern,
 } from '../../../../common';
 
 apiTest.describe('Entity Store check privileges API', { tag: ENTITY_STORE_TAGS }, () => {
   const ENTITIES_ALIAS_INDEX = getEntitiesAlias(ENTITY_LATEST, 'default');
   const LATEST_ENTITY_INDEX = getLatestEntityIndexPattern('default');
+  const METADATA_ALIAS_INDEX = getEntityMetadataAlias('default');
+  const METADATA_INDEX_PATTERN = getMetadataEntityIndexPattern('default');
 
   apiTest.beforeAll(async ({ kbnClient }) => {
     await kbnClient.uiSettings.update({
@@ -87,7 +91,7 @@ apiTest.describe('Entity Store check privileges API', { tag: ENTITY_STORE_TAGS }
   );
 
   apiTest(
-    'Should return has_read_permissions: false when user has read access to only one of the two required indices',
+    'Should return has_read_permissions: false when user has read access to only one of the required indices',
     async ({ apiClient, samlAuth }) => {
       const { cookieHeader } = await samlAuth.asInteractiveUser({
         elasticsearch: {
@@ -126,6 +130,8 @@ apiTest.describe('Entity Store check privileges API', { tag: ENTITY_STORE_TAGS }
           indices: [
             { names: [ENTITIES_ALIAS_INDEX], privileges: ['read'] },
             { names: [LATEST_ENTITY_INDEX], privileges: ['read'] },
+            { names: [METADATA_ALIAS_INDEX], privileges: ['read'] },
+            { names: [METADATA_INDEX_PATTERN], privileges: ['read'] },
           ],
         },
         kibana: [

@@ -6,7 +6,7 @@
  */
 
 import type { SearchHit } from '@elastic/elasticsearch/lib/api/types';
-import type { BaseFeature } from '@kbn/streams-schema';
+import type { BaseFeature } from '@kbn/significant-events-schema';
 
 export const createSearchHit = (
   source: Record<string, unknown>

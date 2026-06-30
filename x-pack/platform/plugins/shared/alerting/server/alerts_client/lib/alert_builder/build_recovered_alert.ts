@@ -16,6 +16,7 @@ import {
   ALERT_MAINTENANCE_WINDOW_IDS,
   ALERT_MAINTENANCE_WINDOW_NAMES,
   ALERT_MUTED,
+  ALERT_SNOOZED,
   ALERT_STATUS,
   EVENT_ACTION,
   TAGS,
@@ -99,8 +100,9 @@ export const buildRecoveredAlert = <
   const filteredAlertState = filterAlertState(alertState);
   const hasAlertState = Object.keys(filteredAlertState).length > 0;
 
-  // Preserve ALERT_MUTED from existing alert
+  // Preserve ALERT_MUTED and ALERT_SNOOZED from existing alert
   const alertMuted = get(alert, ALERT_MUTED);
+  const alertSnoozed = get(alert, ALERT_SNOOZED);
 
   const alertUpdates = {
     // Update the timestamp to reflect latest update time
@@ -124,8 +126,9 @@ export const buildRecoveredAlert = <
     // Set latest match count, should be 0
     [ALERT_CONSECUTIVE_MATCHES]: legacyAlert.getActiveCount(),
     [ALERT_PENDING_RECOVERED_COUNT]: legacyAlert.getPendingRecoveredCount(),
-    // Preserve muted state from existing alert
+    // Preserve muted and snoozed state from existing alert
     ...(alertMuted !== undefined ? { [ALERT_MUTED]: alertMuted } : {}),
+    ...(alertSnoozed !== undefined ? { [ALERT_SNOOZED]: alertSnoozed } : {}),
     // Set status to 'recovered'
     [ALERT_STATUS]: ALERT_STATUS_RECOVERED,
     // Set latest duration as recovered alerts should have updated duration

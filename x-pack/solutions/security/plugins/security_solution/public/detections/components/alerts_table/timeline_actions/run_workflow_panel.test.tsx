@@ -9,10 +9,48 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RunWorkflowPanel, type RunWorkflowPanelProps } from './run_workflow_panel';
 import * as i18n from '../translations';
+import type { WorkflowListItemDto } from '@kbn/workflows';
 
 const mockMutate = jest.fn();
+
+const noInputsWorkflow: WorkflowListItemDto = {
+  id: 'test-workflow-id',
+  name: 'Test Workflow',
+  description: '',
+  enabled: true,
+  valid: true,
+  createdAt: '',
+  definition: {
+    triggers: [{ type: 'alert' }],
+  } as unknown as WorkflowListItemDto['definition'],
+};
+
+const requiredInputsWorkflow: WorkflowListItemDto = {
+  id: 'test-workflow-id',
+  name: 'My Workflow',
+  description: '',
+  enabled: true,
+  valid: true,
+  createdAt: '',
+  definition: {
+    triggers: [
+      {
+        type: 'manual',
+        inputs: {
+          type: 'object',
+          properties: { ticketId: { type: 'string' } },
+          required: ['ticketId'],
+        },
+      },
+    ],
+  } as unknown as WorkflowListItemDto['definition'],
+};
+
+let mockWorkflowsData: WorkflowListItemDto[] = [noInputsWorkflow];
+
 jest.mock('@kbn/workflows-ui', () => ({
   useRunWorkflow: () => ({ mutate: mockMutate }),
+  useWorkflows: () => ({ data: { results: mockWorkflowsData } }),
   WorkflowSelector: ({ onWorkflowChange }: { onWorkflowChange: (id: string) => void }) => (
     <div data-test-subj="workflow-selector-mock">
       <button
@@ -21,6 +59,29 @@ jest.mock('@kbn/workflows-ui', () => ({
         onClick={() => onWorkflowChange('test-workflow-id')}
       >
         {'Select workflow'}
+      </button>
+    </div>
+  ),
+}));
+
+jest.mock('./run_workflow_inputs_modal', () => ({
+  RunWorkflowInputsModal: ({
+    onSubmit,
+    onCancel,
+  }: {
+    onSubmit: (v: Record<string, unknown>) => void;
+    onCancel: () => void;
+  }) => (
+    <div data-test-subj="run-workflow-inputs-modal">
+      <button
+        data-test-subj="inputs-modal-submit"
+        type="button"
+        onClick={() => onSubmit({ ticketId: 'ABC' })}
+      >
+        {'Run'}
+      </button>
+      <button data-test-subj="inputs-modal-cancel" type="button" onClick={onCancel}>
+        {'Cancel'}
       </button>
     </div>
   ),
@@ -62,6 +123,7 @@ const renderComponent = (props: Partial<RunWorkflowPanelProps> = {}) =>
 describe('RunWorkflowPanel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockWorkflowsData = [noInputsWorkflow];
   });
 
   it('should render the workflow selector', () => {
@@ -187,6 +249,64 @@ describe('RunWorkflowPanel', () => {
 
     expect(mockAddError).toHaveBeenCalledWith(error, {
       title: i18n.WORKFLOW_START_FAILED_TOAST,
+    });
+  });
+
+  describe('with required manual inputs', () => {
+    beforeEach(() => {
+      mockWorkflowsData = [requiredInputsWorkflow];
+    });
+
+    it('should open the inputs modal instead of running immediately', () => {
+      renderComponent();
+
+      fireEvent.click(screen.getByTestId('select-workflow-option'));
+      fireEvent.click(screen.getByTestId('test-execute-btn'));
+
+      expect(screen.getByTestId('run-workflow-inputs-modal')).toBeInTheDocument();
+      expect(mockMutate).not.toHaveBeenCalled();
+    });
+
+    it('should close the modal without running when cancel is clicked', () => {
+      renderComponent();
+
+      fireEvent.click(screen.getByTestId('select-workflow-option'));
+      fireEvent.click(screen.getByTestId('test-execute-btn'));
+
+      fireEvent.click(screen.getByTestId('inputs-modal-cancel'));
+
+      expect(screen.queryByTestId('run-workflow-inputs-modal')).not.toBeInTheDocument();
+      expect(mockMutate).not.toHaveBeenCalled();
+    });
+
+    it('should run with merged inputs when the modal is submitted', () => {
+      renderComponent();
+
+      fireEvent.click(screen.getByTestId('select-workflow-option'));
+      fireEvent.click(screen.getByTestId('test-execute-btn'));
+      fireEvent.click(screen.getByTestId('inputs-modal-submit'));
+
+      expect(mockMutate).toHaveBeenCalledWith(
+        {
+          id: 'test-workflow-id',
+          inputs: { ticketId: 'ABC', alert_ids: ['alert-1'] },
+        },
+        expect.objectContaining({
+          onSuccess: expect.any(Function),
+          onError: expect.any(Function),
+          onSettled: expect.any(Function),
+        })
+      );
+    });
+
+    it('should close the modal before starting execution', () => {
+      renderComponent();
+
+      fireEvent.click(screen.getByTestId('select-workflow-option'));
+      fireEvent.click(screen.getByTestId('test-execute-btn'));
+      fireEvent.click(screen.getByTestId('inputs-modal-submit'));
+
+      expect(screen.queryByTestId('run-workflow-inputs-modal')).not.toBeInTheDocument();
     });
   });
 });

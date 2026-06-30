@@ -6,7 +6,7 @@
  */
 
 import { compact, intersection, uniq } from 'lodash';
-import type { Feature, QueryLink } from '@kbn/streams-schema';
+import type { Feature, QueryLink } from '@kbn/significant-events-schema';
 import type {
   KnowledgeIndicator,
   KnowledgeIndicatorFeature,

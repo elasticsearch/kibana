@@ -5,12 +5,12 @@
  * 2.0.
  */
 
+import type { Streams } from '@kbn/streams-schema';
 import type {
   GeneratedSignificantEventQuery,
   QueryLink,
   StreamQuery,
-  Streams,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import { persistQueries } from './persist_queries';
 import type { KnowledgeIndicatorClient } from '../streams/ki';
 import type { StreamsClient } from '../streams/client';

@@ -21,7 +21,7 @@ import {
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
-import type { Detection } from '@kbn/streams-schema';
+import type { Detection } from '@kbn/significant-events-schema';
 import { RUNNING_POLL_INTERVAL_MS } from '../../../constants';
 import { useFetchDetections } from '../../../../../hooks/significant_events/use_fetch_detections';
 import { useTimefilter } from '../../../../../hooks/use_timefilter';

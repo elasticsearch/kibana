@@ -29,10 +29,11 @@ import {
   type EuiBasicTableColumn,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
-import { BULK_FILTER_MAX_RULES, getRootEsqlQuery } from '@kbn/alerting-v2-schemas';
+import { BULK_FILTER_MAX_RULES, getRootEsqlQuery, type RuleKind } from '@kbn/alerting-v2-schemas';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { getIndexPatternFromESQLQuery } from '@kbn/esql-utils';
+import { RULE_KIND_ICONS, RULE_KIND_LABELS, RULE_KIND_TOOLTIPS } from '@kbn/alerting-v2-constants';
 import type { RuleApiResponse } from '../../services/rules_api';
 import { RuleActionsMenu } from './rule_actions_menu';
 
@@ -313,25 +314,10 @@ export const RulesListTable: React.FC<RulesListTableProps> = ({
         ),
         width: '10%',
         sortable: true,
-        render: (kind: string) => (
-          <EuiToolTip
-            content={i18n.translate('xpack.alertingV2.rulesList.modeTooltip', {
-              defaultMessage: 'Mode can be changed in the rule edit form',
-            })}
-          >
-            <EuiBadge
-              color="hollow"
-              iconType={kind === 'alert' ? 'bell' : 'radar'}
-              iconSide="left"
-              tabIndex={0}
-            >
-              {kind === 'alert'
-                ? i18n.translate('xpack.alertingV2.rulesList.modeAlert', {
-                    defaultMessage: 'Alert',
-                  })
-                : i18n.translate('xpack.alertingV2.rulesList.modeSignal', {
-                    defaultMessage: 'Signal',
-                  })}
+        render: (kind: RuleKind) => (
+          <EuiToolTip content={RULE_KIND_TOOLTIPS[kind]}>
+            <EuiBadge color="hollow" iconType={RULE_KIND_ICONS[kind]} iconSide="left" tabIndex={0}>
+              {RULE_KIND_LABELS[kind]}
             </EuiBadge>
           </EuiToolTip>
         ),

@@ -64,12 +64,24 @@ export const APPROVED_TRIGGER_DEFINITIONS: Array<{ id: string; schemaHash: strin
     schemaHash: 'd280f377a1b17bcbd655e93f00ebb80b1935ef93951115cc1559305a5da01942',
   },
   {
-    id: 'entityStore.entityAssetCriticalityUpdated',
-    schemaHash: '0cac291f4c8f260c3484052be503985d84419a55978afc487aeafbf32353c87f',
+    id: 'alerting.ruleCreated',
+    schemaHash: '95d5d9bc425bbc2ef5391ee67d280aa42c1acfab230920a482e91d01a02c4a13',
   },
   {
-    id: 'entityStore.entityRiskScoreChanged',
-    schemaHash: '0a9ffcd4c85b3a1e6ae2ce38f969abd9b07adeaaea650d0b88ac670b1b083d58',
+    id: 'alerting.ruleDeleted',
+    schemaHash: '95d5d9bc425bbc2ef5391ee67d280aa42c1acfab230920a482e91d01a02c4a13',
+  },
+  {
+    id: 'alerting.ruleDisabled',
+    schemaHash: '95d5d9bc425bbc2ef5391ee67d280aa42c1acfab230920a482e91d01a02c4a13',
+  },
+  {
+    id: 'alerting.ruleEnabled',
+    schemaHash: '95d5d9bc425bbc2ef5391ee67d280aa42c1acfab230920a482e91d01a02c4a13',
+  },
+  {
+    id: 'alerting.ruleUpdated',
+    schemaHash: '95d5d9bc425bbc2ef5391ee67d280aa42c1acfab230920a482e91d01a02c4a13',
   },
   {
     id: 'cases.caseCreated',
@@ -90,6 +102,14 @@ export const APPROVED_TRIGGER_DEFINITIONS: Array<{ id: string; schemaHash: strin
   {
     id: 'cases.commentsAdded',
     schemaHash: '7e13967e0f1185cbd309f016b25d3631b514706e5217da41f8655e93d23d90c6',
+  },
+  {
+    id: 'entityStore.entityAssetCriticalityUpdated',
+    schemaHash: '0cac291f4c8f260c3484052be503985d84419a55978afc487aeafbf32353c87f',
+  },
+  {
+    id: 'entityStore.entityRiskScoreChanged',
+    schemaHash: '0a9ffcd4c85b3a1e6ae2ce38f969abd9b07adeaaea650d0b88ac670b1b083d58',
   },
   {
     id: 'workflows.failed',

@@ -95,6 +95,17 @@ export class ClientError extends Error {
 }
 
 /**
+ * Thrown when a rule operation is rejected due to a concurrent modification. Use this instead of
+ * {@link ClientError} with status 409 when the caller needs the current rule revision to retry.
+ */
+export class RuleConcurrencyError extends Error {
+  public readonly statusCode = 409;
+  constructor(message: string, public readonly currentRevision: number) {
+    super(message);
+  }
+}
+
+/**
  * Represents an error that occurred while validating a RuleResponse object.
  * Includes the ruleId (rule signature id) of the rule that failed validation.
  * Thrown when a rule does not match the RuleResponse schema.

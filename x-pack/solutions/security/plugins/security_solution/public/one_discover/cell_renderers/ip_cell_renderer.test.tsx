@@ -24,6 +24,10 @@ jest.mock('../../common/lib/kibana', () => ({
   }),
 }));
 
+jest.mock('../../common/hooks/is_in_security_app', () => ({
+  useIsInSecurityApp: () => false,
+}));
+
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useHistory: () => ({ push: jest.fn(), location: { pathname: '/' } }),

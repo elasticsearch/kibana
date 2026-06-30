@@ -49,6 +49,7 @@ dependsOn:
   - '@kbn/esql-utils'
   - '@kbn/react-hooks'
   - '@kbn/alerting-v2-constants'
+  - '@kbn/alerting-v2-rule-form'
   - '@kbn/es-types'
   - '@kbn/kibana-react-plugin'
   - '@kbn/search-types'

@@ -12,6 +12,7 @@ import {
   isInheritFailureStore,
 } from '@kbn/streams-schema/src/models/ingest/failure_store';
 import type { FailureStoreFormData } from '@kbn/failure-store-modal';
+import { useKibana } from '../../../../../hooks/use_kibana';
 import { useFailureStoreDefaultRetention } from './use_failure_store_default_retention';
 
 export function transformFailureStoreConfig(update: FailureStoreFormData) {
@@ -42,6 +43,7 @@ export function transformFailureStoreConfig(update: FailureStoreFormData) {
 }
 
 export function useFailureStoreConfig(definition: Streams.ingest.all.GetResponse) {
+  const { isServerless } = useKibana();
   const { effective_failure_store: failureStore } = definition;
 
   const isWired = Streams.WiredStream.GetResponse.is(definition);
@@ -61,10 +63,19 @@ export function useFailureStoreConfig(definition: Streams.ingest.all.GetResponse
   const isCurrentlyInherited = isInheritFailureStore(definition.stream.ingest.failure_store);
   const canShowInherit = (isWired && !isRootStream) || isClassicStream;
 
-  const { clusterDefaultRetention } = useFailureStoreDefaultRetention(!isDefaultRetention);
+  const { clusterDefaultRetention } = useFailureStoreDefaultRetention(true);
+
+  const defaultRetentionPeriod = isServerless
+    ? isDefaultRetention
+      ? retentionPeriod
+      : clusterDefaultRetention
+    : isDefaultRetention
+    ? retentionPeriod ?? clusterDefaultRetention
+    : undefined;
 
   return {
-    defaultRetentionPeriod: isDefaultRetention ? retentionPeriod : clusterDefaultRetention,
+    defaultRetentionPeriod,
+    clusterDefaultRetention,
     customRetentionPeriod: !isDefaultRetention && retentionPeriod ? retentionPeriod : undefined,
     failureStoreEnabled,
     inheritOptions: {

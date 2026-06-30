@@ -19,17 +19,8 @@ jest.mock('@kbn/kibana-react-plugin/public', () => ({
   useKibana: jest.fn(),
 }));
 
-jest.mock('@kbn/workflows-ui', () => ({
-  ...jest.requireActual('@kbn/workflows-ui'),
-  useWorkflowsCapabilities: jest.fn(),
-}));
-
 jest.mock('@kbn/workflows/spec/lib/build_fields_zod_validator', () => ({
   convertJsonSchemaToZod: jest.fn(),
-}));
-
-jest.mock('../../../../common/lib/generate_sample_from_json_schema', () => ({
-  generateSampleFromJsonSchema: jest.fn(),
 }));
 
 const { convertJsonSchemaToZod } = jest.requireMock(
@@ -40,7 +31,10 @@ const { convertJsonSchemaToZod } = jest.requireMock(
 let capturedOnSubmit: ((params: { stepInputs: Record<string, unknown> }) => void) | undefined;
 let capturedContextOverride: ContextOverrideData | undefined;
 
-jest.mock('./resume_execution_modal', () => ({
+jest.mock('@kbn/workflows-ui', () => ({
+  ...jest.requireActual('@kbn/workflows-ui'),
+  useWorkflowsCapabilities: jest.fn(),
+  generateSampleFromJsonSchema: jest.fn(),
   ResumeExecutionModal: ({
     onSubmit,
     onClose,

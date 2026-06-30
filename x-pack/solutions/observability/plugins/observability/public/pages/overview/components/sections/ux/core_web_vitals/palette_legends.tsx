@@ -72,7 +72,7 @@ export function PaletteLegends({ ranks, title, onItemHover, thresholds, isCls }:
             content={getCoreVitalTooltipMessage(thresholds, ind, title, ranks[ind], isCls)}
             position="bottom"
           >
-            <StyledSpan darkMode={darkMode}>
+            <StyledSpan darkMode={darkMode} tabIndex={0}>
               <PaletteLegend color={color}>
                 <EuiText size="xs" data-test-subj={`${labels[ind]}-${ranks?.[ind]}`}>
                   <FormattedMessage

@@ -102,6 +102,7 @@ import {
   ALERT_CONSECUTIVE_MATCHES,
   ALERT_RULE_EXECUTION_TIMESTAMP,
   ALERT_SEVERITY_IMPROVING,
+  ALERT_SNOOZED,
   ALERT_PENDING_RECOVERED_COUNT,
 } from '@kbn/rule-data-utils';
 import { backfillClientMock } from '../backfill_client/backfill_client.mock';
@@ -359,6 +360,7 @@ describe('Task Runner', () => {
             id: '1',
             muteAll: false,
             mutedInstanceIds: [],
+            snoozedInstances: [],
             name: 'rule-name',
             parameters: {
               bar: true,
@@ -655,6 +657,7 @@ describe('Task Runner', () => {
               [ALERT_RULE_TYPE_ID]: 'test',
               [ALERT_RULE_TAGS]: ['rule-', '-tags'],
               [ALERT_RULE_UUID]: '1',
+              [ALERT_SNOOZED]: false,
               [ALERT_START]: DATE_1970,
               [ALERT_STATUS]: 'active',
               [ALERT_TIME_RANGE]: { gte: DATE_1970 },
@@ -1009,6 +1012,8 @@ describe('Task Runner', () => {
         maxAlerts: 1000,
         recoveredAlertsFromState: {},
         ruleLabel: "test:1: 'rule-name'",
+        runTimestamp: undefined,
+        snoozedInstances: [],
         startedAt: new Date(DATE_1970),
       });
       expect(alertsClientNotToUse.initializeExecution).not.toHaveBeenCalled();

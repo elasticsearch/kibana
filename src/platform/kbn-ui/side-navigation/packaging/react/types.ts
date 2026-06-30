@@ -68,6 +68,8 @@ export interface MenuItem {
   id: string;
   /** Display text for the menu item. */
   label: string;
+  /** Optional override for the secondary menu/panel header title. Defaults to `label` when omitted. */
+  secondaryMenuTitle?: string;
   /** Optional test selector for automated testing. */
   'data-test-subj'?: string;
   /** Optional badge to display next to the label. */

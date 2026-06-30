@@ -6,6 +6,7 @@
  */
 
 import { type Locator, type ScoutPage } from '@kbn/scout';
+import { expect } from '@kbn/scout/ui';
 
 export const RETENTION_TEST_IDS = {
   // Entry points (lifecycle summary header actions)
@@ -41,6 +42,22 @@ export const RETENTION_TEST_IDS = {
   retentionColumn: (streamName: string) => `retentionColumn-${streamName}`,
   failureStoreRetentionMetric: 'failureStoreRetention-metric',
   failureStoreRetentionMetricSubtitle: 'failureStoreRetention-metric-subtitle',
+
+  // Failure store: edit failed lifecycle flyout
+  failureStoreEnableButton: 'streamsAppFailureStoreEnableButton',
+  failureStoreEditButton: 'failureStoreSummaryEditFailedLifecycle',
+  failureStoreAddDeletePhaseButton: 'failureStoreSummaryAddDeletePhase',
+  failedLifecycleFlyout: 'streamsEditFailedDataLifecycleFlyout',
+  failedInheritCheckbox: 'dataLifecycleInheritCheckbox',
+  enableFailureStoreCheckbox: 'editFailedDataLifecycle-enableFailureStoreCheckbox',
+  failedFlyoutApplyButton: 'dataLifecycleFlyoutApplyButton',
+  failedFlyoutCancelButton: 'dataLifecycleFlyoutCancelButton',
+
+  // Failure store: delete phase flyout (custom failed retention)
+  failedDeletePhaseFlyout: 'streamsEditFailedDeletePhaseFlyout',
+  failedDeletePhaseValue: 'streamsEditFailedDeletePhaseFlyoutDeleteAfterValue',
+  failedDeletePhaseUnit: 'streamsEditFailedDeletePhaseFlyoutDeleteAfterUnit',
+  failedDeletePhaseApplyButton: 'streamsEditFailedDeletePhaseFlyoutApplyButton',
 } as const;
 
 /**
@@ -108,42 +125,6 @@ export async function selectIlmMethod(page: ScoutPage): Promise<void> {
   const card = page.getByTestId(RETENTION_TEST_IDS.methodCardIlm);
   await card.waitFor({ state: 'visible' });
   await card.getByRole('radio').click();
-}
-
-/**
- * Selects the DLM (data stream lifecycle) method inside the lifecycle method flyout.
- */
-export async function selectDlmMethod(page: ScoutPage): Promise<void> {
-  const card = page.getByTestId(RETENTION_TEST_IDS.methodCardDlm);
-  await card.waitFor({ state: 'visible' });
-  await card.getByRole('radio').click();
-}
-
-/**
- * Ensures the successful data lifecycle uses DSL (DLM) so a custom DSL delete
- * phase can be configured afterwards, switching from an inherited/ILM lifecycle
- * when needed.
- */
-export async function ensureDslLifecycle(page: ScoutPage): Promise<void> {
-  const addDeletePhaseButton = page.getByTestId(RETENTION_TEST_IDS.addDeletePhaseButton);
-  const existingDeletePhase = page.getByTestId('lifecyclePhase-delete-button');
-
-  // Wait deterministically for the lifecycle summary to render before reading
-  // the effective lifecycle state. The retention metric is always present in the
-  // summary regardless of the current lifecycle, so it is a stable anchor (this
-  // replaces the previous fixed-timeout race).
-  await page.getByTestId(RETENTION_TEST_IDS.retentionMetric).waitFor({ state: 'visible' });
-
-  const dslAlreadyEffective =
-    (await addDeletePhaseButton.isVisible()) || (await existingDeletePhase.isVisible());
-  if (dslAlreadyEffective) {
-    return;
-  }
-
-  await openLifecycleMethodFlyout(page);
-  await toggleInheritSwitch(page, false);
-  await selectDlmMethod(page);
-  await saveRetentionChanges(page);
 }
 
 /**
@@ -232,14 +213,151 @@ export async function removeDeletePhase(
 }
 
 /**
- * Closes toasts if they exist (safe cleanup helper).
+ * Best-effort close of any currently visible toasts.
  */
 export async function closeToastsIfPresent(page: ScoutPage): Promise<void> {
-  const toasts = page.locator('.euiToast');
-  if ((await toasts.count()) > 0) {
-    await page
-      .locator('.euiToast__closeButton')
-      .click({ timeout: 1000 })
-      .catch(() => {});
+  const toastCloseButtons = page.getByTestId('toastCloseButton');
+  for (const button of await toastCloseButtons.all()) {
+    await button.click({ timeout: 1000 }).catch(() => {});
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Failure store helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Opens the "edit failed data lifecycle" flyout from the enabled summary (the
+ * controls/edit action). Pin the failure store as enabled via the API before
+ * calling so this entry point is deterministic.
+ */
+export async function openFailureStoreFlyout(page: ScoutPage): Promise<Locator> {
+  await page.getByTestId(RETENTION_TEST_IDS.failureStoreEditButton).click();
+  const flyout = page.getByTestId(RETENTION_TEST_IDS.failedLifecycleFlyout);
+  await expect(flyout).toBeVisible();
+  return flyout;
+}
+
+/**
+ * Opens the "edit failed data lifecycle" flyout from the disabled panel (the
+ * "Enable failure store" action). Pin the failure store as disabled via the API
+ * before calling so this entry point is deterministic.
+ */
+export async function openDisabledFailureStoreFlyout(page: ScoutPage): Promise<Locator> {
+  await page.getByTestId(RETENTION_TEST_IDS.failureStoreEnableButton).click();
+  const flyout = page.getByTestId(RETENTION_TEST_IDS.failedLifecycleFlyout);
+  await expect(flyout).toBeVisible();
+  return flyout;
+}
+
+/**
+ * Saves failure store changes in the shared failure store modal
+ * (`@kbn/failure-store-modal`, used from the data quality page).
+ */
+export async function saveFailureStoreChanges(page: ScoutPage): Promise<void> {
+  const saveButton = page.getByTestId('failureStoreModalSaveButton');
+  await expect(saveButton).toBeEnabled();
+  await saveButton.click();
+}
+
+/**
+ * Saves the streams "edit failed data lifecycle" flyout (Apply) and waits for it to close.
+ */
+export async function applyFailedLifecycleFlyout(
+  page: ScoutPage,
+  { expectOverrideConfirmation = false }: { expectOverrideConfirmation?: boolean } = {}
+): Promise<void> {
+  const saveButton = page.getByTestId(RETENTION_TEST_IDS.failedFlyoutApplyButton);
+  await expect(saveButton).toBeEnabled();
+  await saveButton.click();
+  if (expectOverrideConfirmation) {
+    await confirmOverride(page);
+  }
+  await expect(page.getByTestId(RETENTION_TEST_IDS.failedLifecycleFlyout)).toBeHidden();
+}
+
+/**
+ * Sets the failure store enabled/disabled state through the edit failed
+ * lifecycle flyout. The starting state must be pinned via
+ * `pinFailureStore` in setup so the entry point is
+ * deterministic: enabling starts from the disabled panel ("Enable failure
+ * store"), disabling starts from the edit button on the enabled panel.
+ */
+export async function setFailureStoreEnabled(
+  page: ScoutPage,
+  enabled: boolean,
+  { expectOverrideConfirmation = false }: { expectOverrideConfirmation?: boolean } = {}
+): Promise<void> {
+  if (enabled) {
+    await openDisabledFailureStoreFlyout(page);
+  } else {
+    await openFailureStoreFlyout(page);
+  }
+
+  const checkbox = page.getByTestId(RETENTION_TEST_IDS.enableFailureStoreCheckbox);
+  await checkbox.waitFor({ state: 'visible' });
+  if (enabled) {
+    await checkbox.check();
+  } else {
+    await checkbox.uncheck();
+  }
+
+  await applyFailedLifecycleFlyout(page, { expectOverrideConfirmation });
+}
+
+/**
+ * Sets a custom failure store retention by opening the failed delete-phase flyout
+ * via the "Add delete phase" action. Requires the failure store to be enabled
+ * with no delete phase yet (pin this via `pinFailureStore`).
+ */
+export async function setFailureStoreRetention(
+  page: ScoutPage,
+  value: string,
+  unit: 'd' | 'h' | 'm' | 's' = 'd',
+  {
+    existingDeletePhase = false,
+    expectOverrideConfirmation = false,
+  }: { existingDeletePhase?: boolean; expectOverrideConfirmation?: boolean } = {}
+): Promise<void> {
+  const flyout = page.getByTestId(RETENTION_TEST_IDS.failedDeletePhaseFlyout);
+
+  const addDeletePhaseButton = page.getByTestId(
+    RETENTION_TEST_IDS.failureStoreAddDeletePhaseButton
+  );
+
+  if (existingDeletePhase) {
+    await page.getByTestId('failureStore-lifecyclePhase-delete-button').click();
+    await page.getByTestId('lifecyclePhase-delete-editButton').click();
+  } else {
+    await expect(addDeletePhaseButton).toBeEnabled();
+    await addDeletePhaseButton.click();
+  }
+  await expect(flyout).toBeVisible();
+
+  const field = flyout.getByTestId(RETENTION_TEST_IDS.failedDeletePhaseValue);
+  await field.fill('');
+  await field.fill(value);
+  await flyout.getByTestId(RETENTION_TEST_IDS.failedDeletePhaseUnit).selectOption(unit);
+  await flyout.getByTestId(RETENTION_TEST_IDS.failedDeletePhaseUnit).click();
+
+  await page.getByTestId(RETENTION_TEST_IDS.failedDeletePhaseApplyButton).click();
+  if (expectOverrideConfirmation) {
+    await confirmOverride(page);
+  }
+  await expect(flyout).toBeHidden();
+}
+
+/**
+ * Removes the failure store delete phase (sets retention to indefinite / disables lifecycle)
+ * via the phase popover remove action. Requires the failure store to be enabled with a delete phase.
+ */
+export async function removeFailureStoreDeletePhase(
+  page: ScoutPage,
+  { expectOverrideConfirmation = false }: { expectOverrideConfirmation?: boolean } = {}
+): Promise<void> {
+  await page.getByTestId('failureStore-lifecyclePhase-delete-button').click();
+  await page.getByTestId('lifecyclePhase-delete-removeButton').click();
+  if (expectOverrideConfirmation) {
+    await confirmOverride(page);
   }
 }

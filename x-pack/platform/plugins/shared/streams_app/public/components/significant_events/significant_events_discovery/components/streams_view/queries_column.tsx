@@ -7,7 +7,7 @@
 
 import { EuiI18nNumber, EuiText } from '@elastic/eui';
 import { css } from '@emotion/css';
-import type { SignificantEventsWorkflowStatusResult } from '@kbn/streams-schema';
+import type { SignificantEventsWorkflowStatusResult } from '@kbn/significant-events-schema';
 import React from 'react';
 import { useFetchDiscoveryQueries } from '../../../../../hooks/significant_events/use_fetch_discovery_queries';
 

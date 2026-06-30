@@ -9,10 +9,14 @@ import type { ElasticsearchClient } from '@kbn/core/server';
 
 import {
   ALERT_UUID,
+  ALERT_INSTANCE_ID,
   ALERT_MAINTENANCE_WINDOW_IDS,
   ALERT_SCHEDULED_ACTION_GROUP,
   ALERT_SCHEDULED_ACTION_DATE,
   ALERT_SCHEDULED_ACTION_THROTTLING,
+  ALERT_SNOOZED,
+  ALERT_STATUS,
+  ALERT_STATUS_ACTIVE,
 } from '@kbn/rule-data-utils';
 import { get, isEmpty } from 'lodash';
 import type {
@@ -111,6 +115,7 @@ export class AlertsClient<
   private indexTemplateAndPattern: IIndexPatternString;
 
   private reportedAlerts: Record<string, DeepPartial<AlertData>> = {};
+  private activeAlertsDataCache: Map<string, Record<string, unknown>> = new Map();
   private _isUsingDataStreams: boolean;
   private ruleInfoMessage: string;
   private logTags: { tags: string[] };
@@ -316,6 +321,17 @@ export class AlertsClient<
     return this.legacyAlertsClient.getRawAlertInstancesForState(shouldOptimizeTaskState);
   }
 
+  /**
+   * Returns the alert document for a given alert instance ID as it was
+   * constructed and indexed during `persistAlerts()` for this execution.
+   * Returns undefined when the alert was not indexed this execution.
+   */
+  public getBuiltActiveAlertDataByInstanceId(
+    instanceId: string
+  ): Record<string, unknown> | undefined {
+    return this.activeAlertsDataCache.get(instanceId);
+  }
+
   public factory() {
     return this.legacyAlertsClient.factory();
   }
@@ -414,6 +430,15 @@ export class AlertsClient<
 
     const alertsToIndex = alertBuilder.buildAlerts();
 
+    this.activeAlertsDataCache = new Map();
+    for (const alert of alertsToIndex) {
+      const instanceId = get(alert, ALERT_INSTANCE_ID) as string | undefined;
+      const status = get(alert, ALERT_STATUS) as string | undefined;
+      if (instanceId && status === ALERT_STATUS_ACTIVE) {
+        this.activeAlertsDataCache.set(instanceId, alert as Record<string, unknown>);
+      }
+    }
+
     if (alertsToIndex.length > 0) {
       const bulkBody = alertBuilder.getBulkBody(alertsToIndex);
 
@@ -453,6 +478,59 @@ export class AlertsClient<
         );
         throw err;
       }
+    }
+  }
+
+  /**
+   * After per-alert snooze condition evaluation, some instances may have their
+   * snooze lifted mid-execution. Their alert documents were already persisted
+   * with `kibana.alert.snoozed: true` (because evaluation happens after persist),
+   * so we need a follow-up update to correct the field for those documents.
+   */
+  public async clearSnoozedStatusForAlerts(conditionExpiredInstanceIds: string[]): Promise<void> {
+    if (!this.ruleType.alerts?.shouldWrite || conditionExpiredInstanceIds.length === 0) {
+      return;
+    }
+
+    const uuidsToUpdate: string[] = [];
+    for (const instanceId of conditionExpiredInstanceIds) {
+      const alertData = this.activeAlertsDataCache.get(instanceId);
+      if (alertData) {
+        const uuid = get(alertData, ALERT_UUID) as string | undefined;
+        if (uuid) {
+          uuidsToUpdate.push(uuid);
+          // Keep the in-memory cache consistent with what will be in ES
+          alertData[ALERT_SNOOZED] = false;
+        }
+      }
+    }
+
+    if (uuidsToUpdate.length === 0) {
+      return;
+    }
+
+    try {
+      const esClient = await this.options.elasticsearchClientPromise;
+      await retryTransientEsErrors(
+        () =>
+          esClient.updateByQuery({
+            query: { terms: { _id: uuidsToUpdate } },
+            conflicts: 'proceed',
+            index: this.indexTemplateAndPattern.alias,
+            refresh: true,
+            script: {
+              source: `ctx._source['${ALERT_SNOOZED}'] = false;`,
+              lang: 'painless',
+            },
+          }),
+        { logger: this.options.logger }
+      );
+    } catch (err) {
+      // Swallow the error
+      this.options.logger.error(
+        `Error clearing snoozed status for condition-expired alerts ${this.ruleInfoMessage}: ${err}`,
+        this.logTags
+      );
     }
   }
 

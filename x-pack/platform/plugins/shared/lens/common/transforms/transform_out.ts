@@ -71,15 +71,34 @@ export const getTransformOut = (
     }
 
     const {
-      title: _, // ignore attributes title
-      description: __, // ignore attributes description
+      title: attributesTitle, // attributes title is only a legacy fallback (see below)
+      description: attributesDescription,
       ...apiConfig
     } = builder.toAPIFormat({
       ...migratedAttributes,
       visualizationType: migratedAttributes.visualizationType ?? LENS_UNKNOWN_VIS,
     });
 
+    // For by-value panels the panel-level title/description take precedence and the
+    // attributes title/description are ignored. Legacy by-value panels, however, were
+    // sometimes persisted with the title only inside `attributes` and no panel-level title.
+    // Without a fallback those panels would lose their title through the apiFormat
+    // round-trip (the non-apiFormat path keeps it via `defaultTitle$ = attributes.title`).
+    //
+    // `stripInheritedContext` already dropped any `undefined` title/description key, so a
+    // missing key here means the panel has no title (either absent or explicitly
+    // `undefined`) and we fall back to the attributes title. An explicit empty string
+    // survives stripping, so it is a real panel title and the fallback is NOT applied.
+    // See https://github.com/elastic/kibana/issues/268821
+    const titleFallback = !('title' in state) && attributesTitle ? { title: attributesTitle } : {};
+    const descriptionFallback =
+      !('description' in state) && attributesDescription
+        ? { description: attributesDescription }
+        : {};
+
     return {
+      ...titleFallback,
+      ...descriptionFallback,
       ...state,
       ...apiConfig,
     } satisfies LensByValueTransformOutResult;

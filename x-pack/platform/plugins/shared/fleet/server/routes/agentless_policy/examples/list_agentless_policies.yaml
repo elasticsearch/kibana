@@ -1,0 +1,71 @@
+responses:
+  200:
+    description: 'Indicates a successful response'
+    content:
+      application/json:
+        examples:
+          listAgentlessPoliciesResponseExample:
+            description: 'Example response for listing agentless policies'
+            value:
+              items:
+                - id: d52a7812-5736-4fdc-aed8-72152afa1ffa
+                  name: ess_billing-1
+                  description: test
+                  namespace: default
+                  package:
+                    name: ess_billing
+                    title: Elasticsearch Service Billing
+                    version: 1.6.0
+                  inputs:
+                    ESS Billing-cel:
+                      enabled: true
+                      vars:
+                        organization_id: '1234'
+                        api_key:
+                          id: QY1sWpoBbWcMW-edr0Ee
+                          isSecretRef: true
+                        url: 'https://billing.elastic-cloud.com'
+                      streams:
+                        ess_billing.billing:
+                          enabled: true
+                        ess_billing.credits:
+                          enabled: false
+                  created_at: '2025-11-06T18:27:43.541Z'
+                  created_by: test_user
+                  updated_at: '2025-11-06T18:27:43.541Z'
+                  updated_by: test_user
+                - id: aws-policy-12345
+                  name: cspm-aws-policy
+                  description: CSPM integration for AWS with cloud connector
+                  namespace: default
+                  package:
+                    name: cloud_security_posture
+                    title: Cloud Security Posture Management
+                    version: 3.1.1
+                  inputs:
+                    cspm-cloudbeat/cis_aws:
+                      enabled: true
+                  vars:
+                    posture: cspm
+                    deployment: aws
+                  cloud_connector:
+                    enabled: true
+                    cloud_connector_id: aws-connector-67890
+                  created_at: '2025-11-06T18:27:43.541Z'
+                  created_by: test_user
+                  updated_at: '2025-11-06T18:27:43.541Z'
+                  updated_by: test_user
+              total: 2
+              page: 1
+              perPage: 20
+  400:
+    description: 'Bad Request'
+    content:
+      application/json:
+        examples:
+          genericErrorResponseExample:
+            description: 'Example of a generic error response'
+            value:
+              statusCode: 400
+              error: 'Bad Request'
+              message: 'An error message describing what went wrong'

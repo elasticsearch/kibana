@@ -25,6 +25,13 @@ export {
   replayIntoManagedStream,
 } from './replay_into_managed_stream';
 
-export { loadKIFeaturesFromSnapshot } from './load_ki_features_from_snapshot';
+export { replayKnowledgeIndicatorsSnapshot } from './replay_knowledge_indicators_snapshot';
+
+export {
+  loadKIFeaturesFromSnapshot,
+  loadKnowledgeIndicatorsFromSnapshot,
+  loadDiscoveriesFromSnapshot,
+  loadDetectionsFromSnapshot,
+} from './load_from_snapshot';
 
 export { canonicalKIFeaturesFromExpectedGroundTruth } from './canonical_ki_features';

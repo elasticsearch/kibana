@@ -318,6 +318,20 @@
       }
     },
     {
+      "id": "9c73149e6b5701d-99e770fd6e12f41",
+      "title": "Connector actions for rules with UIAM-issued API keys index connector scheduled by a UIAM rule writes its document end-to-end",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting/test/scout/api/tests/connector_action_with_uiam_key.spec.ts",
+        "line": 69,
+        "column": 12
+      }
+    },
+    {
       "id": "d1dc88106f745d9-dd2bc2784574b5c",
       "title": "Alerting index template GET→PUT roundtrip GET response contains no unexpected fields outside PUT_SAFE and STRIPPED sets",
       "expectedStatus": "passed",

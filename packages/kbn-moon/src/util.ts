@@ -64,7 +64,7 @@ export function filterPackages(allPackages: Package[], filter: string[]): Packag
   });
 }
 
-export function writeYaml(filePath: string, obj: any, preamble: string | null = null) {
+export function renderYaml(obj: any, preamble: string | null = null) {
   const doc = new Document(obj, { aliasDuplicateObjects: false });
 
   // Quote string values that start with YAML indicator characters, matching the
@@ -81,14 +81,21 @@ export function writeYaml(filePath: string, obj: any, preamble: string | null = 
     },
   });
 
-  let fileContent = doc.toString({
+  const fileContent = doc.toString({
     lineWidth: 300,
     singleQuote: true,
   });
 
-  if (preamble) {
-    fileContent = preamble + '\n\n' + fileContent;
-  }
+  return preamble ? preamble + '\n\n' + fileContent : fileContent;
+}
+
+/** True when `filePath` already holds exactly the rendered YAML (no write needed). */
+export function yamlMatchesFile(filePath: string, obj: any, preamble: string | null = null) {
+  return existsSync(filePath) && readFile(filePath) === renderYaml(obj, preamble);
+}
+
+export function writeYaml(filePath: string, obj: any, preamble: string | null = null) {
+  const fileContent = renderYaml(obj, preamble);
 
   if (existsSync(filePath) && readFile(filePath) === fileContent) {
     return false;

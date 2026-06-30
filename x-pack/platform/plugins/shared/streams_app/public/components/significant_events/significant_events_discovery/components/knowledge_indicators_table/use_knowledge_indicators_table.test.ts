@@ -8,7 +8,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { CriteriaWithPagination } from '@elastic/eui';
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
-import type { Feature } from '@kbn/streams-schema';
+import type { Feature } from '@kbn/significant-events-schema';
 import {
   useKnowledgeIndicatorsTable,
   getKnowledgeIndicatorTitle,

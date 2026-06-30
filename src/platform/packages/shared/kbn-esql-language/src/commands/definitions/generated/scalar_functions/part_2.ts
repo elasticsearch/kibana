@@ -561,8 +561,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'boolean',
@@ -585,8 +583,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'date',
@@ -609,8 +605,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'date_nanos',
@@ -633,8 +627,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'double',
@@ -657,8 +649,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'integer',
@@ -681,8 +671,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'ip',
@@ -705,8 +693,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'keyword',
@@ -729,8 +715,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'long',
@@ -753,8 +737,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'keyword',
@@ -777,8 +759,6 @@ const mvSortDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'version',
@@ -2068,7 +2048,9 @@ const qstrDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Query string in Lucene query string format.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -2078,7 +2060,9 @@ const qstrDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Additional options for Query String as <<esql-function-named-params,function named parameters>>. See <<query-dsl-query-string-query,query string query>> for more information.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -2090,7 +2074,9 @@ const qstrDefinition: FunctionDefinition = {
           type: 'text',
           optional: false,
           description: 'Query string in Lucene query string format.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -2100,7 +2086,9 @@ const qstrDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Additional options for Query String as <<esql-function-named-params,function named parameters>>. See <<query-dsl-query-string-query,query string query>> for more information.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -2736,7 +2724,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -2755,7 +2745,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -2785,7 +2777,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'integer',
@@ -2804,7 +2798,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'integer',
@@ -2834,7 +2830,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -2853,7 +2851,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -2883,7 +2883,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'unsigned_long',
@@ -2902,7 +2904,9 @@ const roundDefinition: FunctionDefinition = {
           optional: true,
           description:
             'The number of decimal places to round to. Defaults to 0. If `null`, the function returns `null`.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'unsigned_long',
@@ -2955,7 +2959,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -2977,7 +2980,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date_nanos',
@@ -2999,7 +3001,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -3021,7 +3022,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -3043,7 +3043,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -3065,7 +3064,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -3087,7 +3085,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'integer',
@@ -3109,7 +3106,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -3131,7 +3127,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -3153,7 +3148,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -3175,7 +3169,6 @@ const roundToDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',

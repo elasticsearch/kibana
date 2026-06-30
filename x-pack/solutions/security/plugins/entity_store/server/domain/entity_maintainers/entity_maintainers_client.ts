@@ -36,6 +36,7 @@ import type {
 import { EntityMaintainerTaskStatus } from '../../tasks/entity_maintainers/types';
 import type { TelemetryReporter } from '../../telemetry/events';
 import { CRUDClient } from '../crud';
+import { EntityMetadataClient } from '../entity_metadata';
 import { createMaintainerTelemetryClient } from '../../tasks/entity_maintainers/maintainer_telemetry_client';
 
 interface TaskSnapshot {
@@ -73,6 +74,7 @@ interface SyncExecutionContext {
   esClient: ElasticsearchClient;
   cpsEsClient: ElasticsearchClient;
   crudClient: CRUDClient;
+  entityMetadataClient: EntityMetadataClient;
 }
 
 export class EntityMaintainersClient {
@@ -368,6 +370,11 @@ export class EntityMaintainersClient {
       esClient,
       namespace: status.metadata.namespace,
     });
+    const entityMetadataClient = new EntityMetadataClient({
+      logger: this.logger,
+      esClient: this.coreStart.elasticsearch.client.asInternalUser,
+      namespace: status.metadata.namespace,
+    });
     const abortController = new AbortController();
     const logger = this.logger.get(taskId);
 
@@ -380,6 +387,7 @@ export class EntityMaintainersClient {
       esClient,
       cpsEsClient,
       crudClient,
+      entityMetadataClient,
     };
   }
 }

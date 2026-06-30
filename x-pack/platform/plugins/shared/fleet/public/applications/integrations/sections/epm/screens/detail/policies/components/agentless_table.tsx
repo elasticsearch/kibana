@@ -45,6 +45,7 @@ import { AgentHealth } from '../../../../../../../fleet/sections/agents/componen
 
 import { PackagePolicyUpgradeCell } from './package_policy_upgrade_cell';
 import { ThroughputCell } from './throughput_cell';
+import { getConnectorsFromPackagePolicy, getSelectedInput } from './agentless_table_adapters';
 
 const REFRESH_INTERVAL_MS = 30000;
 
@@ -192,8 +193,9 @@ export const AgentlessPackagePoliciesTable = ({
     // The agentless save flow sets openEnrollmentFlyout=<packagePolicyId> via
     // appendOnSaveQueryParamsToPath (AgentlessPolicy has no policy_ids, so
     // policy.id is used). Match on packagePolicy.id accordingly.
-    // TODO: decouple this flyout from PackagePolicy — see follow-up issue for
-    // refactoring AgentlessEnrollmentFlyout to accept AgentlessPolicy directly.
+    // TODO: the flyout now takes a decoupled AgentlessEnrollmentFlyoutProps contract;
+    // the remaining work is to source this table from the AgentlessPolicy API and map
+    // AgentlessPolicy -> AgentlessEnrollmentFlyoutProps instead of PackagePolicy.
     const flyoutPolicyIdFromQuery = queryParams.get('openEnrollmentFlyout');
     if (flyoutPolicyIdFromQuery) {
       const pp = packagePolicies.find((p) => p.packagePolicy.id === flyoutPolicyIdFromQuery);
@@ -444,8 +446,17 @@ export const AgentlessPackagePoliciesTable = ({
             setFlyoutPackagePolicy(undefined);
             setFlyoutAgentPolicy(undefined);
           }}
-          packagePolicy={flyoutPackagePolicy}
+          policyId={flyoutPackagePolicy.policy_ids[0]}
+          policyName={flyoutPackagePolicy.name}
+          // package is always set for agentless policies (createAgentlessPolicy);
+          // optional only on the general PackagePolicy type.
+          packageInfo={{
+            name: flyoutPackagePolicy.package!.name,
+            version: flyoutPackagePolicy.package!.version,
+          }}
+          selectedInput={getSelectedInput(flyoutPackagePolicy)}
           agentPolicy={flyoutAgentPolicy}
+          connectors={getConnectorsFromPackagePolicy(flyoutPackagePolicy)}
         />
       )}
     </>

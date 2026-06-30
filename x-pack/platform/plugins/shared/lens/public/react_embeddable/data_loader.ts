@@ -186,7 +186,10 @@ export function loadEmbeddableData(
           type: 'lens',
           name: lastState.attributes.visualizationType ?? '',
           id: uuid || 'new',
-          description: lastState.attributes.title || lastState.title || '',
+          // Prefer the panel-level title when it is set, falling back to the
+          // chart's own title. With the `lens.apiFormat` path the chart title is
+          // stripped from the wire format, so the panel title is the source of truth.
+          description: lastState.title ?? lastState.attributes.title ?? '',
           url: `${services.coreStart.application.getUrlForApp('lens')}${getEditPath(
             lastState.ref_id
           )}`,

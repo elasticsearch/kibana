@@ -83,6 +83,10 @@ export interface MenuItem {
    */
   label: string;
   /**
+   * (optional) Override for the secondary menu/panel header title. Defaults to `label` when omitted.
+   */
+  secondaryMenuTitle?: string;
+  /**
    * (optional) `data-test-subj` attribute for testing and tracking purposes.
    */
   'data-test-subj'?: string;

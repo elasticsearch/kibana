@@ -6,7 +6,8 @@
  */
 
 import { describeDataset, formatDocumentAnalysis } from '@kbn/ai-tools';
-import { DATASET_ANALYSIS_FEATURE_TYPE, getStreamSamplingSource } from '@kbn/streams-schema';
+import { getStreamSamplingSource } from '@kbn/streams-schema';
+import { DATASET_ANALYSIS_FEATURE_TYPE } from '@kbn/significant-events-schema';
 import type { ComputedFeatureGenerator } from './types';
 
 export const datasetAnalysisGenerator: ComputedFeatureGenerator = {

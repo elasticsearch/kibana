@@ -9,12 +9,7 @@
 
 import type { AnalyticsServiceSetup } from '@kbn/core/public';
 import { workflowsTelemetryEvents } from './events/workflows';
-import type {
-  TelemetryEventTypeData,
-  TelemetryEventTypes,
-  TelemetryServiceClient,
-  TelemetryServiceSetupParams,
-} from './types';
+import type { TelemetryServiceClient, TelemetryServiceSetupParams } from './types';
 
 /**
  * Service that interacts with the Core's analytics module
@@ -25,9 +20,17 @@ export class TelemetryService {
 
   public setup({ analytics }: TelemetryServiceSetupParams) {
     this.analytics = analytics;
-    workflowsTelemetryEvents.forEach((eventConfig) =>
-      analytics.registerEventType<TelemetryEventTypeData<TelemetryEventTypes>>(eventConfig)
-    );
+    workflowsTelemetryEvents.forEach((eventConfig) => analytics.registerEventType(eventConfig));
+
+    // Lazy-load change-history telemetry registration to avoid pulling the full
+    // @kbn/change-history-ui package into the plugin page-load bundle.
+    void import('@kbn/change-history-ui/src/telemetry/register_change_history_telemetry_events')
+      .then(({ registerChangeHistoryTelemetryEvents }) => {
+        registerChangeHistoryTelemetryEvents(analytics);
+      })
+      .catch(() => {
+        // Telemetry registration must not break plugin setup.
+      });
   }
 
   public getClient(): TelemetryServiceClient {

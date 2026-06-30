@@ -19,9 +19,14 @@ export const SIGNAL_RULE_NAME_FIELD_NAME = 'kibana.alert.rule.name';
 export const LEGACY_SIGNAL_RULE_NAME_FIELD_NAME = 'signal.rule.name';
 export const ALERT_WORKFLOW_STATUS_FIELD_NAME = 'kibana.alert.workflow_status';
 
+export const HOST_NAME_FIELD = 'host.name';
+export const HOST_HOSTNAME_FIELD = 'host.hostname';
+
 // Also see: x-pack/solutions/security/plugins/security_solution/public/one_discover/cell_renderers/cell_renderers.tsx
 export const ALLOWED_CELL_RENDER_FIELDS = [
   ALERT_WORKFLOW_STATUS_FIELD_NAME,
   SIGNAL_RULE_NAME_FIELD_NAME,
   LEGACY_SIGNAL_RULE_NAME_FIELD_NAME,
+  HOST_NAME_FIELD,
+  HOST_HOSTNAME_FIELD,
 ];

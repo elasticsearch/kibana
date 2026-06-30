@@ -40,4 +40,18 @@ describe('fetchNetworkEvents remoteName plumbing', () => {
       expect.anything()
     );
   });
+
+  it('forwards timestamp to apiService.get when present', async () => {
+    await fetchNetworkEvents({
+      checkGroup: 'cg-1',
+      stepIndex: 2,
+      timestamp: '2023-01-01T00:00:00.000Z',
+    });
+
+    expect(mockGet).toHaveBeenCalledWith(
+      SYNTHETICS_API_URLS.NETWORK_EVENTS,
+      { checkGroup: 'cg-1', stepIndex: 2, timestamp: '2023-01-01T00:00:00.000Z' },
+      expect.anything()
+    );
+  });
 });

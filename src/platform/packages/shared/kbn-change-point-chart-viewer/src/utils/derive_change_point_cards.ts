@@ -63,6 +63,13 @@ export interface ChangePointCardModel {
   /** Distinct change-point type strings present in this card's annotations (empty in BY mode). */
   readonly changePointTypes: readonly string[];
   /**
+   * Column IDs used to identify change-point annotation rows in this result set.
+   * Used by {@link getCardForRow} to determine whether a no-BY row is an actual
+   * change point before returning the card.
+   */
+  readonly typeColumnId: string;
+  readonly pvalueColumnId: string;
+  /**
    * Serialized value of each entity-dimension column for this card (keyed by column ID).
    * Populated from entityColumnIds — covers both explicit BY columns and heuristic columns.
    * Empty object for no-split (single-series) cards.
@@ -357,10 +364,56 @@ export const buildChangePointCards = (params: {
       annotationEvents,
       minPvalue,
       changePointTypes: [...typesSeen],
+      typeColumnId,
+      pvalueColumnId,
       entityValues,
       entityDescription,
     });
   }
 
   return cards.length > 0 ? cards : undefined;
+};
+
+/**
+ * Finds the card in the given list that corresponds to a specific result row.
+ * Returns `undefined` when no match is found (e.g. the row belongs to a group
+ * that was filtered out by {@link buildChangePointCards}).
+ */
+export const getCardForRow = (
+  cards: ChangePointCardModel[],
+  row: Readonly<Record<string, unknown>>
+): ChangePointCardModel | undefined => {
+  const firstCard = cards[0];
+  if (!firstCard) return undefined;
+
+  const { byColumns } = firstCard;
+  if (!byColumns?.length) {
+    // No BY clause — one card covers the whole dataset. Only return it for rows that are
+    // actual change points (non-empty type + defined pvalue). All other rows (e.g. regular
+    // time-series buckets without a detected change) should show an empty state.
+    const { typeColumnId, pvalueColumnId } = firstCard;
+    if (!isChangePointTableRow(row as Record<string, unknown>, typeColumnId, pvalueColumnId)) {
+      return undefined;
+    }
+    return firstCard;
+  }
+
+  const entityCols = Object.keys(firstCard.entityValues);
+  const entityLabel = entityCols.map((col) => `${col}=${serializeCell(row[col])}`).join(', ');
+  const card = cards.find((c) => c.id === `cp-card-${entityLabel}`);
+  if (!card) return undefined;
+
+  // Typed cards come from result sets where type/pvalue are present in the schema. Verify
+  // this specific row is an actual change point before showing its card. BY-mode cards that
+  // omit type/pvalue have no card-level type or pvalue, so they skip this row-level check.
+  const cardHasTypedChangePointRows =
+    card.changePointTypes.length > 0 || card.minPvalue !== undefined;
+  if (
+    cardHasTypedChangePointRows &&
+    !isChangePointTableRow(row as Record<string, unknown>, card.typeColumnId, card.pvalueColumnId)
+  ) {
+    return undefined;
+  }
+
+  return card;
 };

@@ -10,15 +10,15 @@ import { EuiButton, EuiFlexGroup, EuiFlexItem, EuiPanel, EuiText } from '@elasti
 import type { Streams } from '@kbn/streams-schema';
 
 export const NoFailureStorePanel = ({
-  openModal,
+  onEnableFailureStore,
   definition,
+  isExternalFlyoutOpen = false,
 }: {
-  openModal: (show: boolean) => void;
+  onEnableFailureStore: () => void;
   definition: Streams.ingest.all.GetResponse;
+  isExternalFlyoutOpen?: boolean;
 }) => {
-  const {
-    privileges: { manage_failure_store: manageFailureStorePrivilege },
-  } = definition;
+  const manageFailureStorePrivilege = definition.privileges?.manage_failure_store ?? false;
   return (
     <EuiPanel
       paddingSize="m"
@@ -48,8 +48,9 @@ export const NoFailureStorePanel = ({
             <div>
               <EuiButton
                 type="button"
-                onClick={() => openModal(true)}
+                onClick={onEnableFailureStore}
                 data-test-subj="streamsAppFailureStoreEnableButton"
+                disabled={isExternalFlyoutOpen}
               >
                 {i18n.translate('xpack.streams.streamDetailView.failureStoreDisabled.button', {
                   defaultMessage: 'Enable failure store',

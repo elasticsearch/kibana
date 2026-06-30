@@ -7,14 +7,24 @@
 
 import React from 'react';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { renderWithTestingProviders } from '../../../../../common/mock';
 import { CaseListItem } from './case_list_item';
-import { basicCase } from '../../../../../containers/mock';
+import { basicCase, basicPush } from '../../../../../containers/mock';
 import { suggestionUserProfiles } from '../../../../../containers/user_profiles/api.mock';
 import { CaseSeverity } from '../../../../../../common/types/domain';
 import { CaseStatuses } from '@kbn/cases-components';
 import * as i18n from '../../translations';
+
+const mockNavigateToCaseView = jest.fn();
+jest.mock('../../../../../common/navigation/hooks', () => ({
+  ...jest.requireActual('../../../../../common/navigation/hooks'),
+  useCaseViewNavigation: () => ({
+    navigateToCaseView: mockNavigateToCaseView,
+    getCaseViewUrl: jest.fn().mockReturnValue('/cases/test-id'),
+  }),
+}));
 
 jest.mock('../../../../all_cases/use_actions', () => ({
   ...jest.requireActual('../../../../all_cases/use_actions'),
@@ -168,5 +178,71 @@ describe('CaseListItem', () => {
     renderWithTestingProviders(<CaseListItem {...defaultProps} />);
 
     expect(screen.getByTestId('mock-action-column')).toBeInTheDocument();
+  });
+
+  it('renders the link with href and aria-label inside the card', () => {
+    renderWithTestingProviders(<CaseListItem {...defaultProps} />);
+
+    const link = screen.getByTestId(`cases-list-item-clickable-${mockCase.id}`);
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '/cases/test-id');
+    expect(link).toHaveAttribute('aria-label', `click to visit case with title ${mockCase.title}`);
+  });
+
+  it('renders the action button as a sibling outside the link', () => {
+    renderWithTestingProviders(<CaseListItem {...defaultProps} />);
+
+    const link = screen.getByTestId(`cases-list-item-clickable-${mockCase.id}`);
+    const actionButton = screen.getByTestId('mock-action-column');
+
+    expect(link.contains(actionButton)).toBe(false);
+  });
+
+  it('renders optional fields outside the stretched link', () => {
+    renderWithTestingProviders(
+      <CaseListItem
+        {...defaultProps}
+        selectedFields={[{ field: 'tags', name: i18n.TAGS, isChecked: true }]}
+      />
+    );
+
+    const link = screen.getByTestId(`cases-list-item-clickable-${mockCase.id}`);
+    const optionalFields = screen.getByTestId('cases-list-item-optional-fields');
+
+    expect(link.contains(optionalFields)).toBe(false);
+  });
+
+  it('renders external incident link outside the stretched link when pushed', () => {
+    renderWithTestingProviders(
+      <CaseListItem
+        {...defaultProps}
+        theCase={{ ...mockCase, externalService: basicPush }}
+        selectedFields={[
+          { field: 'externalIncident', name: i18n.EXTERNAL_INCIDENT, isChecked: true },
+        ]}
+      />
+    );
+
+    const link = screen.getByTestId(`cases-list-item-clickable-${mockCase.id}`);
+    const externalLink = screen.getByTestId('cases-list-item-field-external-link');
+
+    expect(link.contains(externalLink)).toBe(false);
+    expect(externalLink).toHaveAttribute('href', basicPush.externalUrl);
+  });
+
+  it('navigates to case view when the link content is clicked', async () => {
+    renderWithTestingProviders(<CaseListItem {...defaultProps} />);
+
+    await userEvent.click(screen.getByTestId('cases-list-item-reporter'));
+
+    expect(mockNavigateToCaseView).toHaveBeenCalledWith({ detailName: mockCase.id });
+  });
+
+  it('does not navigate when the action button is clicked', async () => {
+    renderWithTestingProviders(<CaseListItem {...defaultProps} />);
+
+    await userEvent.click(screen.getByTestId('mock-action-column'));
+
+    expect(mockNavigateToCaseView).not.toHaveBeenCalled();
   });
 });

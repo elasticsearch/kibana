@@ -10,7 +10,7 @@ import { SIGEVENTS_ORCHESTRATOR_WORKFLOW_ID } from '@kbn/workflows/managed';
 import { GLOBAL_WORKFLOW_SPACE_ID } from '@kbn/workflows/server';
 import { isTerminalStatus } from '@kbn/workflows';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
-import { type SignificantEventsWorkflowStatusResult } from '@kbn/streams-schema';
+import { type SignificantEventsWorkflowStatusResult } from '@kbn/significant-events-schema';
 import { WorkflowExecutionService } from './workflow_execution_service';
 
 export interface SignificantEventsDiscoveryRunParams {

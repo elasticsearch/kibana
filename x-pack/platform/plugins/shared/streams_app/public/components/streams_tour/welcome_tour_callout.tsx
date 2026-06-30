@@ -116,12 +116,7 @@ export function WelcomeTourCallout({
                       margin-left: 10px;
                     `}
                   >
-                    <EuiLink
-                      onClick={dismissCallout}
-                      aria-label={i18n.translate('xpack.streams.welcomeCallout.dismissAriaLabel', {
-                        defaultMessage: 'Dismiss welcome callout',
-                      })}
-                    >
+                    <EuiLink onClick={dismissCallout}>
                       {i18n.translate('xpack.streams.welcomeCallout.dismissButton', {
                         defaultMessage: "Don't show this again",
                       })}

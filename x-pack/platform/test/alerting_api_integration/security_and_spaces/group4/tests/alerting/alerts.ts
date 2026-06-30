@@ -1499,6 +1499,7 @@ instanceStateValue: true
                             maintenance_window_names: [],
                             pending_recovered_count: 0,
                             severity_improving: false,
+                            snoozed: false,
                             muted: false,
                             rule: {
                               parameters: {
@@ -1546,6 +1547,7 @@ instanceStateValue: true
                             maintenance_window_names: [],
                             pending_recovered_count: 0,
                             severity_improving: false,
+                            snoozed: false,
                             muted: false,
                             rule: {
                               parameters: {
@@ -1632,6 +1634,7 @@ instanceStateValue: true
                             duration: { us: expectExpect.any(Number) },
                             time_range: { gte: expectExpect.any(String) },
                             instance: { id: '1' },
+                            snoozed: false,
                             start: expectExpect.any(String),
                             uuid: expectExpect.any(String),
                             status: 'active',
@@ -1679,6 +1682,7 @@ instanceStateValue: true
                             duration: { us: expectExpect.any(Number) },
                             time_range: { gte: expectExpect.any(String) },
                             instance: { id: '2' },
+                            snoozed: false,
                             start: expectExpect.any(String),
                             uuid: expectExpect.any(String),
                             status: 'active',
@@ -1767,6 +1771,7 @@ instanceStateValue: true
                       maintenance_window_names: [],
                       pending_recovered_count: 0,
                       severity_improving: false,
+                      snoozed: false,
                       muted: false,
                       rule: {
                         parameters: {
@@ -1814,6 +1819,7 @@ instanceStateValue: true
                       maintenance_window_names: [],
                       pending_recovered_count: 0,
                       severity_improving: false,
+                      snoozed: false,
                       muted: false,
                       rule: {
                         parameters: {

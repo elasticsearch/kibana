@@ -6,7 +6,7 @@
  */
 
 import type { Attachment, AttachmentInput } from '@kbn/agent-builder-common/attachments';
-import type { SignificantEvent } from '@kbn/streams-schema';
+import type { SignificantEvent } from '@kbn/significant-events-schema';
 
 export const SIGNIFICANT_EVENT_ATTACHMENT_TYPE = 'platform.streams.significant_event' as const;
 export const SIGNIFICANT_EVENT_SML_TYPE = 'significant_event' as const;

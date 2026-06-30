@@ -20,12 +20,12 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import { useDebouncedValue } from '@kbn/react-hooks';
 import { useQueryClient } from '@kbn/react-query';
+import { type Streams } from '@kbn/streams-schema';
 import {
-  type Streams,
   SignificantEventsWorkflowStatus,
   type SignificantEventsWorkflowStatusResult,
-  type StreamsKIsOnboardingStatusResult,
-} from '@kbn/streams-schema';
+  type KIsOnboardingStatusResult,
+} from '@kbn/significant-events-schema';
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
 import React, { useCallback, useMemo, useState } from 'react';
 import useInterval from 'react-use/lib/useInterval';
@@ -98,7 +98,7 @@ export function StreamDetailSignificantEventsView({ definition }: Props) {
   const onKnowledgeIndicatorsOnboardingComplete = useCallback(
     (
       completedState: Extract<
-        StreamsKIsOnboardingStatusResult,
+        KIsOnboardingStatusResult,
         { status: SignificantEventsWorkflowStatus.Completed }
       >
     ) => {

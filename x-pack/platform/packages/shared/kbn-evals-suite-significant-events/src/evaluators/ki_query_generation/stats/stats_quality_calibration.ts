@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import { deriveQueryType, QUERY_TYPE_STATS } from '@kbn/streams-schema';
+import { deriveQueryType } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import type { EvaluationCriterion, Evaluator } from '@kbn/evals';
 import { createScenarioCriteriaLlmEvaluator } from '../../scenario_criteria/evaluators';
 import type { KIQueryGenerationEvaluationExample, KIQueryGenerationOutput, Query } from '../types';

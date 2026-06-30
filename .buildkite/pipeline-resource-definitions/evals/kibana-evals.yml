@@ -9,7 +9,7 @@ metadata:
       title: Pipeline link
 spec:
   type: buildkite-pipeline
-  owner: 'group:obs-ai-team'
+  owner: 'group:nightshift-context-and-research-team'
   system: buildkite
   implementation:
     apiVersion: buildkite.elastic.dev/v1
@@ -39,7 +39,7 @@ spec:
       teams:
         kibana-operations:
           access_level: MANAGE_BUILD_AND_READ
-        obs-ai-team:
+        nightshift-context-and-research-team:
           access_level: MANAGE_BUILD_AND_READ
         security-generative_ai:
           access_level: MANAGE_BUILD_AND_READ

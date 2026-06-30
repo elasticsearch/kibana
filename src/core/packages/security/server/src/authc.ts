@@ -36,9 +36,23 @@ export interface CoreAuthenticationService {
 }
 
 /**
- * Binds a `profile_uid` to a fake request so
+ * Identity fields that can be bound to a fake request by a
+ * {@link FakeRequestEnricher}. At least one field should be provided.
+ *
+ * @internal
+ */
+export interface FakeRequestUserFields {
+  /** The originating user's profile ID, exposed as `profile_uid`. */
+  profileId?: string;
+  /** The originating user's username, exposed as `username`. */
+  username?: string;
+}
+
+/**
+ * Binds originating-user identity fields to a fake request so
  * `security.authc.getCurrentUser(request)` resolves to a synthetic
- * {@link AuthenticatedUser} exposing only that `profile_uid`. Obtained via
+ * {@link AuthenticatedUser} exposing only those fields (currently
+ * `profile_uid` and `username`). Obtained via
  * {@link SecurityServiceSetup.acquireFakeRequestEnricher}; see that method
  * for the security boundary. Throws on non-fake requests; calling twice on
  * the same fake request is a no-op (first-wins) and emits a warning.
@@ -46,4 +60,4 @@ export interface CoreAuthenticationService {
  * @internal Intended for trusted orchestrators that own the fake request
  *   lifecycle (e.g. Task Manager).
  */
-export type FakeRequestEnricher = (request: KibanaRequest, userProfileId: string) => void;
+export type FakeRequestEnricher = (request: KibanaRequest, user: FakeRequestUserFields) => void;

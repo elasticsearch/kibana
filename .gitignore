@@ -38,6 +38,7 @@ __tmp__
 .bug-fixer-session/
 .playwright-mcp/
 .exploratory-session/
+.codex/
 config_sets/bug_fixer/
 
 # Ignore example plugin builds

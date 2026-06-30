@@ -6,7 +6,8 @@
  */
 
 import { getSigEventsLogPatternsEsql, type LogPatternEsqlEntry } from '@kbn/ai-tools';
-import { LOG_PATTERNS_FEATURE_TYPE, getStreamSamplingSource } from '@kbn/streams-schema';
+import { getStreamSamplingSource } from '@kbn/streams-schema';
+import { LOG_PATTERNS_FEATURE_TYPE } from '@kbn/significant-events-schema';
 import { createTracedEsClient } from '@kbn/traced-es-client';
 import type { ComputedFeatureGenerator } from './types';
 

@@ -27,11 +27,11 @@ import { useLocation } from 'react-router-dom';
 import { css } from '@emotion/react';
 
 import type { TypedLensByValueInput, LensSavedObjectAttributes } from '@kbn/lens-plugin/public';
+import { LENS_EMBEDDABLE_TYPE } from '@kbn/lens-common';
 import type { EmbeddablePackageState } from '@kbn/embeddable-plugin/public';
 import { SavedObjectFinder } from '@kbn/saved-objects-finder-plugin/public';
 import type { SavedObjectCommon } from '@kbn/saved-objects-finder-plugin/common';
 import type { TimeRange } from '@kbn/data-plugin/common';
-import { isLensAPIFormat, LensConfigBuilder } from '@kbn/lens-embeddable-utils';
 import { useKibana } from '../../../../common/lib/kibana';
 import { DRAFT_COMMENT_STORAGE_ID, ID } from './constants';
 import { CommentEditorContext } from '../../context';
@@ -39,6 +39,7 @@ import { useLensDraftComment } from './use_lens_draft_comment';
 import { VISUALIZATION } from './translations';
 import { useIsMainApplication } from '../../../../common/hooks';
 import { convertToAbsoluteTimeRange } from '../../../attachments/lens/actions/convert_to_absolute_time_range';
+import { toLensAttributes } from './to_lens_attributes';
 
 const DEFAULT_TIMERANGE: TimeRange = {
   from: 'now-7d',
@@ -89,11 +90,7 @@ const LensEditorComponent: LensEuiMarkdownEditorUiPlugin['editor'] = ({
 
   const handleAdd = useCallback(
     (_attributes: Record<string, unknown>, timeRange?: TimeRange) => {
-      // For now, Lens attributes can come in either the API format or the internal format
-      // depending on the value of the lens.apiFormat feature flag
-      const attributes = isLensAPIFormat(_attributes)
-        ? new LensConfigBuilder().fromAPIFormat(_attributes)
-        : _attributes;
+      const attributes = toLensAttributes(_attributes);
 
       onSave(
         `!{${ID}${JSON.stringify({
@@ -116,11 +113,7 @@ const LensEditorComponent: LensEuiMarkdownEditorUiPlugin['editor'] = ({
       timeRange: TimeRange | undefined,
       position: EuiMarkdownAstNodePosition
     ) => {
-      // For now, Lens attributes can come in either the API format or the internal format
-      // depending on the value of the lens.apiFormat feature flag
-      const attributes = isLensAPIFormat(_attributes)
-        ? new LensConfigBuilder().fromAPIFormat(_attributes)
-        : _attributes;
+      const attributes = toLensAttributes(_attributes);
 
       markdownContext.replaceNode(
         position,
@@ -254,44 +247,52 @@ const LensEditorComponent: LensEuiMarkdownEditorUiPlugin['editor'] = ({
   }, [currentAppId$]);
 
   useEffect(() => {
-    let incomingEmbeddablePackage;
-
-    if (currentAppId) {
-      incomingEmbeddablePackage = embeddable
-        ?.getStateTransfer()
-        .getIncomingEmbeddablePackage(currentAppId, true);
+    if (!currentAppId) {
+      return;
     }
+    // `draftComment` hydrates asynchronously; wait for it so we don't drain the
+    // package before the draft is ready and drop the edit.
+    if (!draftComment) {
+      return;
+    }
+
+    // Peek first so we only drain when we are committing an add/update.
+    const incomingEmbeddablePackage = embeddable
+      ?.getStateTransfer()
+      .getIncomingEmbeddablePackage(currentAppId, false);
 
     const lensEmbeddablePackage = incomingEmbeddablePackage?.find(
-      (pkg) => pkg.type === 'lens'
+      (pkg) => pkg.type === LENS_EMBEDDABLE_TYPE
     ) as LensIncomingEmbeddablePackage;
 
-    if (lensEmbeddablePackage && lensEmbeddablePackage?.serializedState?.attributes) {
-      const lensTime = timefilter.getTime();
-      const newTimeRange =
-        lensTime?.from && lensTime?.to
-          ? {
-              from: lensTime.from,
-              to: lensTime.to,
-              mode: [lensTime.from, lensTime.to].join('').includes('now')
-                ? ('relative' as const)
-                : ('absolute' as const),
-            }
-          : undefined;
-
-      if (draftComment?.position) {
-        handleUpdate(
-          lensEmbeddablePackage.serializedState.attributes,
-          newTimeRange,
-          draftComment.position
-        );
-        return;
-      }
-
-      if (draftComment) {
-        handleAdd(lensEmbeddablePackage.serializedState.attributes, newTimeRange);
-      }
+    if (!lensEmbeddablePackage?.serializedState?.attributes) {
+      return;
     }
+
+    embeddable?.getStateTransfer().getIncomingEmbeddablePackage(currentAppId, true);
+
+    const lensTime = timefilter.getTime();
+    const newTimeRange =
+      lensTime?.from && lensTime?.to
+        ? {
+            from: lensTime.from,
+            to: lensTime.to,
+            mode: [lensTime.from, lensTime.to].join('').includes('now')
+              ? ('relative' as const)
+              : ('absolute' as const),
+          }
+        : undefined;
+
+    if (draftComment.position) {
+      handleUpdate(
+        lensEmbeddablePackage.serializedState.attributes,
+        newTimeRange,
+        draftComment.position
+      );
+      return;
+    }
+
+    handleAdd(lensEmbeddablePackage.serializedState.attributes, newTimeRange);
   }, [embeddable, storage, timefilter, currentAppId, handleAdd, handleUpdate, draftComment]);
 
   const createLensButton = (

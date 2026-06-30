@@ -39,7 +39,8 @@ export const registerCreateRoute = ({
       const { client: clusterClient } = (await ctx.core).elasticsearch;
       const pipeline = req.body as Pipeline;
 
-      const { name, description, processors, version, on_failure, _meta } = pipeline;
+      const { name, description, processors, version, on_failure, _meta, field_access_pattern } =
+        pipeline;
 
       try {
         // Check that a pipeline with the same name doesn't already exist
@@ -71,6 +72,7 @@ export const registerCreateRoute = ({
           version,
           on_failure,
           _meta,
+          field_access_pattern,
         });
 
         return res.ok({ body: response });

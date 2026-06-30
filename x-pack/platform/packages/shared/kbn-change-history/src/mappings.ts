@@ -60,6 +60,7 @@ export const changeHistoryMappings = {
           fields: mappings.object({
             properties: {
               hashed: mappings.keyword(),
+              redacted: mappings.keyword(),
             },
           }),
           // snapshot: mappings.object(), // <- unmapped field, please keep me commented out.

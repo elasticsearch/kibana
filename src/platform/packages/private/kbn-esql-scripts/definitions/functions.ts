@@ -6,7 +6,7 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import type { FunctionDefinition } from '@kbn/esql-language';
+import type { FunctionDefinition, FunctionParameter } from '@kbn/esql-language';
 import { FunctionDefinitionTypes } from '@kbn/esql-language';
 import {
   defaultScalarFunctionLocations,
@@ -50,11 +50,7 @@ export const extraFunctions: FunctionDefinition[] = [
 export function enrichFunctionSignatures(
   functionDefinition: FunctionDefinition,
   parameterName: string,
-  enrichments: {
-    constantOnly?: boolean;
-    suggestedValues?: string[];
-    [key: string]: any;
-  }
+  enrichments: Partial<FunctionParameter>
 ): FunctionDefinition {
   if (!functionDefinition.signatures) return functionDefinition;
 
@@ -86,112 +82,40 @@ export function enrichFunctionSignatures(
 /**
  * Applies function-specific parameter enrichments to ES|QL function definitions.
  *
- * This function enriches function parameters with additional metadata like constantOnly
- * flags and suggested values based on predefined rules for specific ES|QL functions.
- *
  * @param functionDefinition - The ES|QL function definition to enrich
  * @returns The enriched function definition with parameter-specific enhancements
  *
- * @example
- * ```typescript
- * const topFunction = { name: 'top', signatures: [...] };
- * const enriched = enrichFunctionSignatures(topFunction);
- * // Returns function with 'limit' marked as constantOnly and 'order' with suggested values
- * ```
- *
  * @remarks
  * Currently supports enrichments for:
- * - `top`: Marks 'limit' as constantOnly, 'order' as constantOnly with ['asc', 'desc'] suggestions
- * - `date_diff`: Adds unit suggestions from dateDiffSuggestions
- * - `date_extract`: Adds datePart suggestions from dateExtractOptions
- * - `mv_sort`: Marks 'order' as constantOnly with ['asc', 'desc'] suggestions
- * - `percentile`: Marks 'percentile' parameter as constantOnly
- * - `count_distinct`: Marks 'precision' parameter as constantOnly
- * - `count`: Marks 'percentile' parameter as constantOnly
- * - `round`: Marks 'decimals' parameter as constantOnly
- * - `round_to`: Marks 'points' parameter as constantOnly
+ * - `date_diff`: Marks 'unit' as a constant restricted to dateDiffSuggestions (ES parity pending)
+ * - `date_extract`: Marks 'datePart' as a constant restricted to dateExtractOptions (ES parity pending)
+ * - `round`: Marks 'decimals' as a constant (ES parity pending)
+ * - `mv_contains`: Marks 'superset' as supporting multiple values
  * - `qstr`: Adds custom parameter snippet for triple-quoted strings
  * - `kql`: Adds custom parameter snippet for triple-quoted strings
  */
 export function enrichFunctionParameters(functionDefinition: FunctionDefinition) {
-  if (functionDefinition.name === 'top') {
-    const rules = [
-      {
-        parameterName: 'limit',
-        enrichments: {
-          constantOnly: true,
-        },
-      },
-      {
-        parameterName: 'order',
-        enrichments: {
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
-        },
-      },
-    ];
-    let enrichedDefinition = functionDefinition;
-    for (const rule of rules) {
-      enrichedDefinition = enrichFunctionSignatures(
-        enrichedDefinition,
-        rule.parameterName,
-        rule.enrichments
-      );
-    }
-    return enrichedDefinition;
-  }
   if (functionDefinition.name === 'date_diff') {
     return enrichFunctionSignatures(functionDefinition, 'unit', {
-      suggestedValues: dateDiffSuggestions,
+      hint: { kind: 'constant', allowedValues: dateDiffSuggestions },
     });
   }
 
   if (functionDefinition.name === 'date_extract') {
     return enrichFunctionSignatures(functionDefinition, 'datePart', {
-      suggestedValues: dateExtractOptions,
+      hint: { kind: 'constant', allowedValues: dateExtractOptions },
     });
   }
 
-  if (functionDefinition.name === 'mv_sort') {
-    return enrichFunctionSignatures(functionDefinition, 'order', {
-      constantOnly: true,
-      suggestedValues: ['asc', 'desc'],
-    });
-  }
-
-  if (functionDefinition.name === 'percentile') {
-    return enrichFunctionSignatures(functionDefinition, 'percentile', {
-      constantOnly: true,
-    });
-  }
-
-  if (functionDefinition.name === 'count_distinct') {
-    return enrichFunctionSignatures(functionDefinition, 'precision', {
-      constantOnly: true,
-    });
-  }
-
-  if (functionDefinition.name === 'count') {
-    return enrichFunctionSignatures(functionDefinition, 'percentile', {
-      constantOnly: true,
+  if (functionDefinition.name === 'round') {
+    return enrichFunctionSignatures(functionDefinition, 'decimals', {
+      hint: { kind: 'constant' },
     });
   }
 
   if (functionDefinition.name === 'mv_contains') {
     return enrichFunctionSignatures(functionDefinition, 'superset', {
       supportsMultiValues: true,
-    });
-  }
-
-  if (functionDefinition.name === 'round') {
-    return enrichFunctionSignatures(functionDefinition, 'decimals', {
-      constantOnly: true,
-    });
-  }
-
-  if (functionDefinition.name === 'round_to') {
-    return enrichFunctionSignatures(functionDefinition, 'points', {
-      constantOnly: true,
     });
   }
 

@@ -38,7 +38,7 @@ export async function suggestFieldsList(
   cursorPosition: number = query.length,
   options?: {
     /** Listed functions will not be suggested in expressions */
-    functionsToIgnore?: ExpressionContextOptions['functionsToIgnore'];
+    getFunctionsToIgnore?: ExpressionContextOptions['getFunctionsToIgnore'];
     /** Suggestions to show after a complete field expression */
     afterCompleteSuggestions?: ISuggestionItem[];
     /** Include pipe/comma suggestions after a complete field expression */
@@ -82,7 +82,7 @@ export async function suggestFieldsList(
     callbacks,
     options: {
       preferredExpressionType: options?.preferredExpressionType,
-      functionsToIgnore: options?.functionsToIgnore,
+      getFunctionsToIgnore: options?.getFunctionsToIgnore,
       ignoredColumnsForEmptyExpression: options?.ignoredColumnsForEmptyExpression,
     },
   });

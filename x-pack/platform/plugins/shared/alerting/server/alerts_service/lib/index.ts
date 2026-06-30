@@ -11,3 +11,4 @@ export { getIndexTemplate, createOrUpdateIndexTemplate } from './create_or_updat
 export { createConcreteWriteIndex } from './create_concrete_write_index';
 export { installWithTimeout, InstallShutdownError } from './install_with_timeout';
 export { isValidAlertIndexName } from './is_valid_alert_index_name';
+export { getAlertSnoozeSnapshot } from './get_alert_snooze_snapshot';

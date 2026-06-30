@@ -10,9 +10,9 @@ import { i18n } from '@kbn/i18n';
 import { useCallback, useRef, useState } from 'react';
 import {
   SignificantEventsWorkflowStatus,
-  STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES,
-  type StreamsKIsOnboardingStatusResult,
-} from '@kbn/streams-schema';
+  KIS_ONBOARDING_IN_PROGRESS_STATUSES,
+  type KIsOnboardingStatusResult,
+} from '@kbn/significant-events-schema';
 import { useOnboardingApi } from '../../../../hooks/use_onboarding_api';
 import { getFormattedError } from '../../../../util/errors';
 import { useKibana } from '../../../../hooks/use_kibana';
@@ -21,13 +21,13 @@ interface Props {
   streamName: string;
   onComplete: (
     completedState: Extract<
-      StreamsKIsOnboardingStatusResult,
+      KIsOnboardingStatusResult,
       { status: SignificantEventsWorkflowStatus.Completed }
     >
   ) => void;
   onError: (
     failedState: Extract<
-      StreamsKIsOnboardingStatusResult,
+      KIsOnboardingStatusResult,
       { status: SignificantEventsWorkflowStatus.Failed }
     >
   ) => void;
@@ -35,9 +35,7 @@ interface Props {
 
 export function useKnowledgeIndicatorsOnboarding({ streamName, onComplete, onError }: Props) {
   const previousStatusRef = useRef<SignificantEventsWorkflowStatus | null>(null);
-  const [onboardingState, setOnboardingState] = useState<StreamsKIsOnboardingStatusResult | null>(
-    null
-  );
+  const [onboardingState, setOnboardingState] = useState<KIsOnboardingStatusResult | null>(null);
 
   const {
     core: {
@@ -65,8 +63,7 @@ export function useKnowledgeIndicatorsOnboarding({ streamName, onComplete, onErr
   });
 
   const isPending =
-    onboardingState !== null &&
-    STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(onboardingState.status);
+    onboardingState !== null && KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(onboardingState.status);
 
   const fetchStatus = useCallback(async () => {
     const state = await getOnboardingStatus(streamName);
@@ -116,7 +113,7 @@ export function useKnowledgeIndicatorsOnboarding({ streamName, onComplete, onErr
     return state;
   }, [getOnboardingStatus, streamName, onComplete, onError]);
 
-  useQuery<StreamsKIsOnboardingStatusResult, Error>({
+  useQuery<KIsOnboardingStatusResult, Error>({
     queryKey: ['knowledgeIndicatorsOnboardingStatus', streamName],
     queryFn: fetchStatus,
     enabled: !isScheduleLoading && !isCancelLoading,

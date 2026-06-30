@@ -25,6 +25,25 @@ jest.mock('../epm/packages/get');
 
 jest.mock('../agent_policy');
 
+const buildAgentlessPackagePolicy = (overrides: Record<string, any> = {}): any => ({
+  id: 'agentless-policy-id',
+  name: 'Test Agentless Policy',
+  namespace: 'default',
+  description: 'test agentless policy',
+  package: { name: 'test_agentless', title: 'Test Agentless', version: '1.0.0' },
+  inputs: [],
+  vars: {},
+  policy_ids: ['agentless-policy-id'],
+  revision: 1,
+  supports_agentless: true,
+  enabled: true,
+  created_at: '2024-01-01T00:00:00.000Z',
+  created_by: 'system',
+  updated_at: '2024-01-01T00:00:00.000Z',
+  updated_by: 'system',
+  ...overrides,
+});
+
 describe('AgentlessPoliciesService', () => {
   describe('createAgentlessPolicy', () => {
     let packagePolicyService: ReturnType<typeof createPackagePolicyServiceMock>;
@@ -383,6 +402,158 @@ describe('AgentlessPoliciesService', () => {
       ).rejects.toEqual(expect.objectContaining({ output: { statusCode: 500 } }));
 
       expect(jest.mocked(agentPolicyService.delete)).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAgentlessPolicy', () => {
+    let packagePolicyService: ReturnType<typeof createPackagePolicyServiceMock>;
+
+    const createService = () =>
+      new AgentlessPoliciesServiceImpl(
+        packagePolicyService,
+        savedObjectsClientMock.create(),
+        elasticsearchServiceMock.createClusterClient().asInternalUser,
+        loggingSystemMock.createLogger()
+      );
+
+    beforeEach(() => {
+      jest.resetAllMocks();
+      packagePolicyService = createPackagePolicyServiceMock();
+    });
+
+    it('should return the mapped agentless policy when the package policy supports agentless', async () => {
+      packagePolicyService.get.mockResolvedValueOnce(buildAgentlessPackagePolicy());
+
+      const result = await createService().getAgentlessPolicy('agentless-policy-id');
+
+      expect(packagePolicyService.get).toHaveBeenCalledWith(
+        expect.anything(),
+        'agentless-policy-id'
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'agentless-policy-id',
+          name: 'Test Agentless Policy',
+          namespace: 'default',
+          package: { name: 'test_agentless', title: 'Test Agentless', version: '1.0.0' },
+        })
+      );
+      // Internal Fleet fields must not leak through the agentless contract
+      expect(result).not.toHaveProperty('policy_ids');
+      expect(result).not.toHaveProperty('revision');
+      expect(result).not.toHaveProperty('supports_agentless');
+    });
+
+    it('should return null when the package policy is not agentless', async () => {
+      packagePolicyService.get.mockResolvedValueOnce(
+        buildAgentlessPackagePolicy({ supports_agentless: false })
+      );
+
+      const result = await createService().getAgentlessPolicy('regular-policy-id');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when packagePolicyService.get resolves null', async () => {
+      packagePolicyService.get.mockResolvedValueOnce(null);
+
+      const result = await createService().getAgentlessPolicy('missing-policy-id');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when packagePolicyService.get throws a not found error', async () => {
+      packagePolicyService.get.mockRejectedValueOnce(
+        SavedObjectsErrorHelpers.createGenericNotFoundError('test')
+      );
+
+      const result = await createService().getAgentlessPolicy('missing-policy-id');
+
+      expect(result).toBeNull();
+    });
+
+    it('should rethrow non not-found errors from packagePolicyService.get', async () => {
+      packagePolicyService.get.mockRejectedValueOnce(new Error('boom'));
+
+      await expect(() => createService().getAgentlessPolicy('some-policy-id')).rejects.toThrow(
+        'boom'
+      );
+    });
+  });
+
+  describe('listAgentlessPolicies', () => {
+    let packagePolicyService: ReturnType<typeof createPackagePolicyServiceMock>;
+
+    const createService = () =>
+      new AgentlessPoliciesServiceImpl(
+        packagePolicyService,
+        savedObjectsClientMock.create(),
+        elasticsearchServiceMock.createClusterClient().asInternalUser,
+        loggingSystemMock.createLogger()
+      );
+
+    beforeEach(() => {
+      jest.resetAllMocks();
+      packagePolicyService = createPackagePolicyServiceMock();
+      packagePolicyService.list.mockResolvedValue({
+        items: [buildAgentlessPackagePolicy()],
+        total: 1,
+        page: 1,
+        perPage: 20,
+      });
+    });
+
+    it('should scope the query to agentless policies and map the results', async () => {
+      const result = await createService().listAgentlessPolicies();
+
+      expect(packagePolicyService.list).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          kuery: 'fleet-package-policies.supports_agentless:true',
+        })
+      );
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toEqual(
+        expect.objectContaining({ id: 'agentless-policy-id', name: 'Test Agentless Policy' })
+      );
+      expect(result.items[0]).not.toHaveProperty('supports_agentless');
+      expect(result).toEqual(expect.objectContaining({ total: 1, page: 1, perPage: 20 }));
+    });
+
+    it('should apply the default paging and sorting contract', async () => {
+      await createService().listAgentlessPolicies();
+
+      expect(packagePolicyService.list).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          page: 1,
+          perPage: 20,
+          sortField: 'updated_at',
+          sortOrder: 'desc',
+        })
+      );
+    });
+
+    it('should forward caller paging, sorting and combine the kuery', async () => {
+      await createService().listAgentlessPolicies({
+        page: 2,
+        perPage: 5,
+        sortField: 'name',
+        sortOrder: 'asc',
+        kuery: 'name:foo',
+      });
+
+      expect(packagePolicyService.list).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          page: 2,
+          perPage: 5,
+          sortField: 'name',
+          sortOrder: 'asc',
+          kuery:
+            '(fleet-package-policies.supports_agentless:true) AND (fleet-package-policies.name: foo)',
+        })
+      );
     });
   });
 

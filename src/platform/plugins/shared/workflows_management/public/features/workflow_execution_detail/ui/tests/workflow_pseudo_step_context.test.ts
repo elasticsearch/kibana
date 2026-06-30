@@ -197,4 +197,65 @@ describe('buildTriggerStepExecutionFromContext', () => {
     expect(result?.stepId).toBe('event');
     expect(result?.stepType).toBe('trigger_event');
   });
+
+  it('should expose manual inputs as output when both event and inputs are present', () => {
+    const execution = createWorkflowExecution({
+      status: ExecutionStatus.COMPLETED,
+      stepExecutions: [
+        {
+          id: 'step-1',
+          stepId: 'action-1',
+          stepType: 'action',
+          status: ExecutionStatus.COMPLETED,
+          scopeStack: [],
+          workflowRunId: 'exec-1',
+          workflowId: 'wf-1',
+          startedAt: '',
+          topologicalIndex: 0,
+          globalExecutionIndex: 0,
+          stepExecutionIndex: 0,
+        },
+      ],
+      context: {
+        event: { alerts: [{ id: 'alert-1' }] },
+        inputs: { ticketId: 'ABC-123' },
+      },
+    });
+
+    const result = buildTriggerStepExecutionFromContext(execution);
+
+    expect(result).not.toBeNull();
+    expect(result?.input).toEqual({ alerts: [{ id: 'alert-1' }] });
+    expect(result?.output).toEqual({ ticketId: 'ABC-123' });
+  });
+
+  it('should not set output when only event is present', () => {
+    const execution = createWorkflowExecution({
+      status: ExecutionStatus.COMPLETED,
+      stepExecutions: [
+        {
+          id: 'step-1',
+          stepId: 'action-1',
+          stepType: 'action',
+          status: ExecutionStatus.COMPLETED,
+          scopeStack: [],
+          workflowRunId: 'exec-1',
+          workflowId: 'wf-1',
+          startedAt: '',
+          topologicalIndex: 0,
+          globalExecutionIndex: 0,
+          stepExecutionIndex: 0,
+        },
+      ],
+      // The server always persists an `inputs` key (empty object when no manual inputs
+      // were supplied alongside the event), so the realistic persisted shape includes it.
+      context: { event: { alerts: [{ id: 'alert-1' }] }, inputs: {} },
+    });
+
+    const result = buildTriggerStepExecutionFromContext(execution);
+
+    expect(result).not.toBeNull();
+    expect(result?.input).toEqual({ alerts: [{ id: 'alert-1' }] });
+    expect(result?.output).toBeUndefined();
+  });
 });

@@ -114,6 +114,7 @@ const AlertOptional = rt.partial({
   'kibana.alert.scheduled_action.group': schemaString,
   'kibana.alert.severity': schemaString,
   'kibana.alert.severity_improving': schemaBoolean,
+  'kibana.alert.snoozed': schemaBoolean,
   'kibana.alert.start': schemaDate,
   'kibana.alert.time_range': schemaDateRange,
   'kibana.alert.updated_at': schemaDate,

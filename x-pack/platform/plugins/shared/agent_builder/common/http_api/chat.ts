@@ -7,6 +7,7 @@
 
 import type {
   ConversationAction,
+  ConversationAccessControl,
   ConversationRound,
   AgentCapabilities,
   AssistantResponse,
@@ -24,6 +25,7 @@ export interface ChatRequestBodyPayload {
   connector_id?: string | null;
   inference_id?: string | null;
   conversation_id?: string;
+  access_control?: ConversationAccessControl;
   execution_id?: string;
   capabilities?: AgentCapabilities;
   attachments?: AttachmentInput[];
@@ -41,6 +43,7 @@ export type ChatResponse = Omit<
   'id' | 'input' | 'pending_prompts' | 'response' | 'state'
 > & {
   conversation_id: string;
+  access_control: ConversationAccessControl;
   round_id: string;
   response: Partial<AssistantResponse> & {
     prompts?: PromptRequest[];

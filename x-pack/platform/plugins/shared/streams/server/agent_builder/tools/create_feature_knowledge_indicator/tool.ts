@@ -14,11 +14,8 @@ import type {
 } from '@kbn/agent-builder-server';
 import type { Logger } from '@kbn/core/server';
 import { z } from '@kbn/zod/v4';
-import {
-  baseFeatureSchema,
-  getStreamTypeFromDefinition,
-  type StreamType,
-} from '@kbn/streams-schema';
+import { getStreamTypeFromDefinition, type StreamType } from '@kbn/streams-schema';
+import { baseFeatureSchema } from '@kbn/significant-events-schema';
 import dedent from 'dedent';
 import type { StreamsServer } from '../../../types';
 import type { GetScopedClients } from '../../../routes/types';

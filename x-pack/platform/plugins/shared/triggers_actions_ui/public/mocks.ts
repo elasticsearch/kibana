@@ -12,6 +12,7 @@ import { uiSettingsServiceMock } from '@kbn/core/public/mocks';
 import type { TriggersAndActionsUIPublicPluginStart } from './plugin';
 
 import { getAddConnectorFlyoutLazy } from './common/get_add_connector_flyout';
+import { getAddConnectorFormLazy } from './common/get_add_connector_form';
 import { getEditConnectorFlyoutLazy } from './common/get_edit_connector_flyout';
 import type {
   ActionTypeModel,
@@ -33,6 +34,7 @@ import { getAlertsSearchBarLazy } from './common/get_alerts_search_bar';
 import { getRulesListNotifyBadgeLazy } from './common/get_rules_list_notify_badge';
 import type { AlertsSearchBarProps } from './application/sections/alerts_search_bar';
 import type { CreateConnectorFlyoutProps } from './application/sections/action_connector_form/create_connector_flyout';
+import type { CreateConnectorFormProps } from './application/sections/action_connector_form/create_connector_form';
 import type { EditConnectorFlyoutProps } from './application/sections/action_connector_form/edit_connector_flyout';
 import { getActionFormLazy } from './common/get_action_form';
 import type { ActionAccordionFormProps } from './application/sections/action_connector_form/action_form';
@@ -68,6 +70,9 @@ function createStartMock(): TriggersAndActionsUIPublicPluginStart {
     },
     getAddConnectorFlyout: (props: Omit<CreateConnectorFlyoutProps, 'actionTypeRegistry'>) => {
       return getAddConnectorFlyoutLazy({ ...props, actionTypeRegistry, connectorServices });
+    },
+    getAddConnectorForm: (props: Omit<CreateConnectorFormProps, 'actionTypeRegistry'>) => {
+      return getAddConnectorFormLazy({ ...props, actionTypeRegistry, connectorServices });
     },
     getEditConnectorFlyout: (props: Omit<EditConnectorFlyoutProps, 'actionTypeRegistry'>) => {
       return getEditConnectorFlyoutLazy({

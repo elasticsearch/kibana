@@ -20,6 +20,7 @@ import { LogsExtractionClient } from './domain/logs_extraction';
 import { createRemoteLogsExtractionClient } from './domain/logs_extraction/remote';
 import { HistorySnapshotClient } from './domain/history_snapshot';
 import { CRUDClient } from './domain/crud';
+import { EntityMetadataClient } from './domain/entity_metadata';
 import { ResolutionClient } from './domain/resolution';
 import type { TelemetryReporter } from './telemetry/events';
 
@@ -79,6 +80,11 @@ export async function createRequestHandlerContext({
     namespace,
     emitWorkflowTriggerEvent: emitEvent,
   });
+  const entityMetadataClient = new EntityMetadataClient({
+    logger,
+    esClient: core.elasticsearch.client.asInternalUser,
+    namespace,
+  });
   const { client: remoteLogsExtractionClient, stateClient: remoteLogExtractionStateClient } =
     createRemoteLogsExtractionClient({
       logger,
@@ -132,6 +138,7 @@ export async function createRequestHandlerContext({
       licensing: startPlugins.licensing,
     }),
     crudClient,
+    entityMetadataClient,
     resolutionClient: new ResolutionClient({
       logger,
       esClient: core.elasticsearch.client.asCurrentUser,

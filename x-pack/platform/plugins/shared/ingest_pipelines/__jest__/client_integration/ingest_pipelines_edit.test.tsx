@@ -131,8 +131,9 @@ describe('<PipelinesEdit />', () => {
       `${API_BASE_PATH}/${name}`,
       expect.objectContaining({
         body: JSON.stringify({
-          ...omit(pipelineDefinition, 'deprecated'),
           description: UPDATED_DESCRIPTION,
+          field_access_pattern: 'classic',
+          ...omit(pipelineDefinition, 'deprecated', 'description'),
         }),
       })
     );

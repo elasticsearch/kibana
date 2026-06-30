@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import type { Feature } from '@kbn/streams-schema';
+import type { Feature } from '@kbn/significant-events-schema';
 import { useKibana } from '../use_kibana';
 
 export interface BulkOperationResult {

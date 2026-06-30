@@ -8,10 +8,9 @@
 import type { APIReturnType } from './create_call_apm_api';
 import { callApmApi } from './create_call_apm_api';
 import { reportFetchError } from './report_fetch_error';
+import { FETCHER_OPERATION_IDS } from '../../hooks/fetcher_operation_ids';
 
 type ErrorsByTraceId = APIReturnType<'GET /internal/apm/unified_traces/{traceId}/errors'>;
-
-export const FETCH_TRACE_ERRORS_OPERATION_ID = 'fetch-trace-errors';
 
 export const fetchErrorsByTraceId = async (
   {
@@ -40,7 +39,7 @@ export const fetchErrorsByTraceId = async (
       signal,
     });
   } catch (error) {
-    reportFetchError({ error, operationId: FETCH_TRACE_ERRORS_OPERATION_ID });
+    reportFetchError({ error, operationId: FETCHER_OPERATION_IDS.FETCH_TRACE_ERRORS });
     throw error;
   }
 };

@@ -20,7 +20,7 @@ It does **not** own trigger definitions, event subscription, or payload mapping.
 
 That distinction matters: this is not a request-scoped service instance. It is a stateless singleton adapter whose `emitEvent()` calls run in the auth context of the supplied request.
 
-Today the main caller is the singleton `AlertActionWorkflowSubscriber`, which receives `{ request }` from the event bus context and forwards it here.
+Today the main callers are the singleton workflow subscribers (`AlertActionWorkflowSubscriber`, `RuleWorkflowSubscriber`), which receive `{ request }` from the event bus context and forward it here.
 
 ## Where it sits in the flow
 
@@ -29,6 +29,12 @@ For alert-action events, the end-to-end flow is:
 1. `AlertActionEventPublisher` publishes an alerting domain event together with `{ request }`.
 2. `AlertActionWorkflowSubscriber` receives the event, selects the matching trigger binding, and builds the workflow payload.
 3. `WorkflowService.emitEvent(request, triggerId, payload)` resolves a workflows client for that request and emits the trigger.
+
+For rule-lifecycle events (create, update, delete, enable, disable):
+
+1. `RuleEventPublisher` publishes a `rule.*` domain event together with `{ request }`.
+2. `RuleWorkflowSubscriber` receives the event, selects the matching trigger binding, and maps the payload.
+3. `WorkflowService.emitEvent(request, triggerId, payload)` emits the workflow trigger.
 
 Trigger registration is handled separately during setup by [`register_trigger_definitions.ts`](../../workflow_extensions/register_trigger_definitions.ts), using the same trigger catalog the subscriber uses at runtime.
 
@@ -83,11 +89,14 @@ The event envelope may also carry alerting-specific metadata such as `actorUid`.
 
 ## Adding a new trigger
 
-This folder does not own the trigger catalog. New alert-action workflow triggers are added under [`server/lib/events/alert_action_workflow_subscriber/triggers/`](../../events/alert_action_workflow_subscriber/triggers/).
+This folder does not own the trigger catalog. New workflow triggers are added under the relevant subscriber catalog:
 
-That catalog is the single source of truth used by both:
+- Alert actions: [`server/lib/events/alert_action_workflow_subscriber/triggers/`](../../events/alert_action_workflow_subscriber/triggers/)
+- Rule lifecycle: [`server/lib/events/rule_workflow_subscriber/triggers/`](../../events/rule_workflow_subscriber/triggers/)
+
+Each catalog is the single source of truth used by both:
 
 - [`register_trigger_definitions.ts`](../../workflow_extensions/register_trigger_definitions.ts) during setup
-- `AlertActionWorkflowSubscriber` during runtime dispatch
+- The corresponding workflow subscriber during runtime dispatch
 
-See the catalog JSDoc in [`triggers/index.ts`](../../events/alert_action_workflow_subscriber/triggers/index.ts) for the exact add-a-trigger workflow.
+See the catalog JSDoc in each `triggers/index.ts` for the exact add-a-trigger workflow.

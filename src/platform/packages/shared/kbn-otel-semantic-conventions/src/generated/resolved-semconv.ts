@@ -1214,7 +1214,7 @@ export const semconvFlat = {
   },
   'db.operation.batch.size': {
     name: 'db.operation.batch.size',
-    description: 'The number of queries included in a batch operation.',
+    description: 'The number of database operations included in a batch operation.',
     type: 'long',
     example: '2',
   },
@@ -5608,7 +5608,8 @@ export const semconvFlat = {
   },
   'network.io.direction': {
     name: 'network.io.direction',
-    description: 'The network IO operation direction.',
+    description:
+      "The direction of traffic from the perspective of the observing host's physical or virtual network interface. It should not be used to represent the logical direction of a stateful connection or network flow.",
     type: 'keyword',
     example: 'transmit',
   },

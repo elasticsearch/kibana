@@ -534,6 +534,50 @@ describe('Per-Alert Action Scheduler', () => {
       expect(scheduler.skippedAlerts).toEqual({ '2': { reason: 'muted' } });
     });
 
+    test('should skip creating actions to schedule when alert is snoozed', async () => {
+      // 2 per-alert actions * 2 alerts = 4 actions to schedule
+      // but alert 2 is snoozed (active snooze, no expiry), so only actions for alert 1 should be scheduled
+      const scheduler = new PerAlertActionScheduler({
+        ...getSchedulerContext(),
+        activeSnoozedIds: new Set(['2']),
+      });
+      const results = await scheduler.getActionsToSchedule({
+        activeAlerts: alerts,
+      });
+
+      expect(alertsClient.getSummarizedAlerts).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledTimes(1);
+      expect(logger.debug).toHaveBeenNthCalledWith(
+        1,
+        `skipping scheduling of actions for '2' in rule rule-label: alert is snoozed`
+      );
+
+      expect(ruleRunMetricsStore.getNumberOfGeneratedActions()).toEqual(2);
+      expect(ruleRunMetricsStore.getNumberOfTriggeredActions()).toEqual(2);
+
+      expect(results).toHaveLength(2);
+      expect(results).toEqual([
+        getResult('action-1', '1', '111-111'),
+        getResult('action-2', '1', '222-222'),
+      ]);
+
+      // @ts-expect-error private variable
+      expect(scheduler.skippedAlerts).toEqual({ '2': { reason: 'snoozed' } });
+    });
+
+    test('should NOT skip alert when activeSnoozedIds does not contain it', async () => {
+      // alert 2 has an expired snooze (expiresAt before epoch 0 since sinon fake timers start at 0)
+      const scheduler = new PerAlertActionScheduler({
+        ...getSchedulerContext(),
+        activeSnoozedIds: new Set(),
+      });
+      const results = await scheduler.getActionsToSchedule({
+        activeAlerts: alerts,
+      });
+
+      expect(results).toHaveLength(4);
+    });
+
     test('should skip creating actions to schedule when alert action group has not changed and notifyWhen is onActionGroupChange', async () => {
       const onActionGroupChangeAction: SanitizedRuleAction = {
         id: 'action-4',
@@ -766,6 +810,47 @@ describe('Per-Alert Action Scheduler', () => {
         getResult('action-6', '1', '666-666'),
         getResult('action-6', '2', '666-666'),
       ]);
+    });
+
+    test('should include snoozed alert IDs in excludedAlertInstanceIds when querying summarized alerts', async () => {
+      alertsClient.getProcessedAlerts.mockReturnValue(alerts);
+      const summarizedAlerts = {
+        new: {
+          count: 1,
+          data: [{ ...mockAAD, [ALERT_UUID]: alerts[1].getUuid() }],
+        },
+        ongoing: { count: 0, data: [] },
+        recovered: { count: 0, data: [] },
+      };
+      alertsClient.getSummarizedAlerts.mockResolvedValue(summarizedAlerts);
+      const actionWithUseAlertDataForTemplate: SanitizedRuleAction = {
+        id: 'action-6',
+        group: 'default',
+        actionTypeId: 'test',
+        frequency: { summary: false, notifyWhen: 'onActiveAlert', throttle: null },
+        params: {
+          foo: true,
+          contextVal: 'My {{context.value}} goes here',
+          stateVal: 'My {{state.value}} goes here',
+          alertVal:
+            'My {{rule.id}} {{rule.name}} {{rule.spaceId}} {{rule.tags}} {{alert.id}} goes here',
+        },
+        uuid: '666-666',
+        useAlertDataForTemplate: true,
+      };
+      const scheduler = new PerAlertActionScheduler({
+        ...getSchedulerContext(),
+        rule: { ...rule, actions: [actionWithUseAlertDataForTemplate] },
+        activeSnoozedIds: new Set(['2']),
+      });
+      await scheduler.getActionsToSchedule({ activeAlerts: alerts });
+
+      expect(alertsClient.getSummarizedAlerts).toHaveBeenCalledTimes(1);
+      expect(alertsClient.getSummarizedAlerts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          excludedAlertInstanceIds: expect.arrayContaining(['2']),
+        })
+      );
     });
 
     test('should query for summarized alerts if useAlertDataForTemplate is true and action has throttle interval', async () => {

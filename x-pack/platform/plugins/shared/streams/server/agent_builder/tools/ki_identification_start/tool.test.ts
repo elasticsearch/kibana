@@ -7,7 +7,7 @@
 
 import { createKiIdentificationStartTool } from './tool';
 import { createMockToolContext } from '../../utils/test_helpers';
-import { StreamsKIsOnboardingStep } from '@kbn/streams-schema';
+import { KIsOnboardingStep } from '@kbn/significant-events-schema';
 import { StreamsKIsOnboardingClient } from '../../../lib/workflows/onboarding_workflow_client';
 
 describe('createKiIdentificationStartTool', () => {
@@ -46,10 +46,7 @@ describe('createKiIdentificationStartTool', () => {
     const result = await tool.handler(
       {
         stream_name: 'logs.nginx',
-        steps: [
-          StreamsKIsOnboardingStep.FeaturesIdentification,
-          StreamsKIsOnboardingStep.QueriesGeneration,
-        ],
+        steps: [KIsOnboardingStep.FeaturesIdentification, KIsOnboardingStep.QueriesGeneration],
       },
       context
     );
@@ -79,10 +76,7 @@ describe('createKiIdentificationStartTool', () => {
     const result = await tool.handler(
       {
         stream_name: 'logs.nginx',
-        steps: [
-          StreamsKIsOnboardingStep.FeaturesIdentification,
-          StreamsKIsOnboardingStep.QueriesGeneration,
-        ],
+        steps: [KIsOnboardingStep.FeaturesIdentification, KIsOnboardingStep.QueriesGeneration],
       },
       context
     );

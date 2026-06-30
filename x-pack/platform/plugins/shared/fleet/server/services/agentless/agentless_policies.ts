@@ -23,9 +23,14 @@ import type {
   AgentlessPolicy,
   AgentlessAgentPolicyConfig,
   PackagePolicy,
+  ListWithKuery,
+  ListResult,
 } from '../../../common/types';
 
-import { AGENTLESS_AGENT_POLICY_INACTIVITY_TIMEOUT } from '../../../common/constants';
+import {
+  AGENTLESS_AGENT_POLICY_INACTIVITY_TIMEOUT,
+  PACKAGE_POLICY_SAVED_OBJECT_TYPE,
+} from '../../../common/constants';
 
 import {
   formatInputs,
@@ -48,6 +53,20 @@ import {
 import { agentlessAgentService } from '../agents/agentless_agent';
 import { createAndIntegrateCloudConnector } from '../cloud_connectors';
 
+import { prefixKueryFieldsWithSavedObjectType } from './kuery_utils';
+
+/**
+ * Options accepted by {@link AgentlessPoliciesService.listAgentlessPolicies}.
+ *
+ * Built from {@link ListWithKuery} but narrowed to the fields the agentless LIST
+ * endpoint actually supports — `fields` and the `HttpFetchQuery` index signature
+ * are intentionally excluded.
+ */
+export type ListAgentlessPoliciesOptions = Pick<
+  ListWithKuery,
+  'page' | 'perPage' | 'sortField' | 'sortOrder' | 'kuery'
+>;
+
 export interface AgentlessPoliciesService {
   createAgentlessPolicy: (
     data: NewAgentlessPolicy,
@@ -61,6 +80,12 @@ export interface AgentlessPoliciesService {
     context?: RequestHandlerContext,
     request?: KibanaRequest
   ) => Promise<void>;
+
+  getAgentlessPolicy: (policyId: string) => Promise<AgentlessPolicy | null>;
+
+  listAgentlessPolicies: (
+    options?: ListAgentlessPoliciesOptions
+  ) => Promise<ListResult<AgentlessPolicy>>;
 }
 
 const getAgentlessAgentPolicyConfig = (
@@ -341,6 +366,69 @@ export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
       force: options?.force,
       user,
     });
+  }
+
+  async getAgentlessPolicy(policyId: string): Promise<AgentlessPolicy | null> {
+    this.logger.debug(`Getting agentless policy ${policyId}`);
+
+    let packagePolicy: PackagePolicy | null;
+    try {
+      packagePolicy = await this.packagePolicyService.get(this.soClient, policyId);
+    } catch (error) {
+      // packagePolicyService.get throws (rather than returning null) when the underlying
+      // package policy is missing. Collapse a not-found into a null result so the handler
+      // can return a clean 404 instead of leaking the underlying saved-object error.
+      if (error instanceof FleetNotFoundError || SavedObjectsErrorHelpers.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
+
+    // Treat a regular (non-agentless) package policy as not found so this API never
+    // exposes standard Fleet package policies through the agentless contract.
+    if (!packagePolicy || packagePolicy.supports_agentless !== true) {
+      return null;
+    }
+
+    return packagePolicyToAgentlessPolicy(packagePolicy);
+  }
+
+  async listAgentlessPolicies(
+    options: ListAgentlessPoliciesOptions = {}
+  ): Promise<ListResult<AgentlessPolicy>> {
+    // Pin the agentless LIST defaults to our API contract rather than inheriting
+    // whatever packagePolicyService.list happens to default to.
+    const { page = 1, perPage = 20, sortField = 'updated_at', sortOrder = 'desc', kuery } = options;
+
+    // Always scope the result set to agentless package policies. This filter is applied
+    // server-side (and `supports_agentless` is excluded from the allowed kuery fields) so
+    // callers can neither widen the scope to regular package policies nor override it.
+    const agentlessFilter = `${PACKAGE_POLICY_SAVED_OBJECT_TYPE}.supports_agentless:true`;
+    const normalizedKuery = kuery
+      ? prefixKueryFieldsWithSavedObjectType(kuery, PACKAGE_POLICY_SAVED_OBJECT_TYPE)
+      : undefined;
+    const combinedKuery = normalizedKuery
+      ? `(${agentlessFilter}) AND (${normalizedKuery})`
+      : agentlessFilter;
+
+    this.logger.debug(`Listing agentless policies with kuery [${combinedKuery}]`);
+
+    const result = await this.packagePolicyService.list(this.soClient, {
+      page,
+      perPage,
+      sortField,
+      sortOrder,
+      kuery: combinedKuery,
+    });
+
+    this.logger.debug(`Listed ${result.total} agentless policies`);
+
+    return {
+      items: result.items.map(packagePolicyToAgentlessPolicy),
+      total: result.total,
+      page: result.page,
+      perPage: result.perPage,
+    };
   }
 
   private async deleteOrphanedAgentlessResources(policyId: string, user?: AuthenticatedUser) {

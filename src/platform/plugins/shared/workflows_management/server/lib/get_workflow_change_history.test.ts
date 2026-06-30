@@ -33,7 +33,7 @@ const createHistoryDocument = (eventId: string, sequence: number): ChangeHistory
     type: 'workflow',
     hash: 'abc',
     sequence,
-    fields: { hashed: [] },
+    fields: { hashed: [], redacted: [] },
     snapshot: {
       name: 'My workflow',
       enabled: true,

@@ -226,6 +226,37 @@ export class AlertUtils {
     return request;
   }
 
+  public getSnoozeInstanceRequest(
+    alertId: string,
+    instanceId: string,
+    body: { expires_at?: string; conditions?: unknown[]; condition_operator?: string }
+  ) {
+    const request = this.supertestWithoutAuth
+      .post(
+        `${getUrlPrefix(
+          this.space.id
+        )}/api/alerting/rule/${alertId}/alert/${instanceId}/_snooze?validate_alerts_existence=false`
+      )
+      .set('kbn-xsrf', 'foo')
+      .send(body);
+    if (this.user) {
+      return request.auth(this.user.username, this.user.password);
+    }
+    return request;
+  }
+
+  public getUnsnoozeInstanceRequest(alertId: string, instanceId: string) {
+    const request = this.supertestWithoutAuth
+      .post(
+        `${getUrlPrefix(this.space.id)}/api/alerting/rule/${alertId}/alert/${instanceId}/_unsnooze`
+      )
+      .set('kbn-xsrf', 'foo');
+    if (this.user) {
+      return request.auth(this.user.username, this.user.password);
+    }
+    return request;
+  }
+
   public getUpdateApiKeyRequest(alertId: string) {
     const request = this.supertestWithoutAuth
       .post(`${getUrlPrefix(this.space.id)}/api/alerting/rule/${alertId}/_update_api_key`)

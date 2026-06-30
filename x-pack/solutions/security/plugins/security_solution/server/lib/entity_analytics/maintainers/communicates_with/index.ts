@@ -22,6 +22,7 @@ export const communicatesWithMaintainer: RegisterEntityMaintainerConfig = {
     logger,
     status,
     crudClient,
+    entityMetadataClient,
     abortController,
     telemetry,
   }) => {
@@ -39,6 +40,7 @@ export const communicatesWithMaintainer: RegisterEntityMaintainerConfig = {
       logger,
       namespace,
       crudClient,
+      entityMetadataClient,
       integrations: COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS,
       abortController,
       telemetryCollector: collector,
@@ -54,13 +56,14 @@ export const communicatesWithMaintainer: RegisterEntityMaintainerConfig = {
         applied: result.totalWritten,
         droppedNotInStore: result.totalNotFound,
         failed: result.totalWriteErrors,
+        metadataDocsApplied: result.totalMetadataDocsApplied,
       },
       sources: collector.sources,
       // no breakdown — communicates_with is a single relationship type
     });
 
     logger.info(
-      `Completed run: ${result.totalBuckets} buckets, ${result.totalRecords} records, ${result.totalWritten} entities written, ${result.totalDroppedTargets} targets dropped`
+      `Completed run: ${result.totalBuckets} buckets, ${result.totalRecords} records, ${result.totalWritten} entities written, ${result.totalDroppedTargets} targets dropped, ${result.totalMetadataDocsApplied} metadata docs appended`
     );
     return result;
   },

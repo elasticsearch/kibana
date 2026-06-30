@@ -38,7 +38,7 @@ describe('getMaintenanceWindows', () => {
     jest.resetAllMocks();
     contextMock = getTaskRunnerContext();
     context = contextMock as unknown as TaskRunnerContext;
-    fakeRequest = getFakeKibanaRequest(context, 'default', apiKey);
+    fakeRequest = getFakeKibanaRequest(context, 'default', apiKey).fakeRequest;
   });
 
   test('returns active maintenance windows if they exist', async () => {

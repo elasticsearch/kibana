@@ -33,7 +33,7 @@ import { useSearchAlertsQuery } from '@kbn/alerts-ui-shared/src/common/hooks/use
 import { DEFAULT_ALERTS_PAGE_SIZE } from '@kbn/alerts-ui-shared/src/common/constants';
 import { AlertsQueryContext } from '@kbn/alerts-ui-shared/src/common/contexts/alerts_query_context';
 import type { Alert, BrowserFields } from '@kbn/alerting-types';
-import { useGetMutedAlertsQuery } from '@kbn/response-ops-alerts-apis/hooks/use_get_muted_alerts_query';
+import { useGetAlertSnoozeStateQuery } from '@kbn/response-ops-alerts-apis/hooks/use_get_alert_snooze_state_query';
 import deepEqual from 'fast-deep-equal';
 import { useFetchAlertsFieldsQuery } from '@kbn/alerts-ui-shared/src/common/hooks/use_fetch_alerts_fields_query';
 import { queryKeys as alertsQueryKeys } from '@kbn/response-ops-alerts-apis/query_keys';
@@ -411,7 +411,7 @@ const AlertsTableContent = typedForwardRef(
     );
 
     const ruleIds = useMemo(() => getRuleIdsFromAlerts(alerts), [alerts]);
-    const mutedAlertsQuery = useGetMutedAlertsQuery(
+    const alertSnoozeStateQuery = useGetAlertSnoozeStateQuery(
       {
         ruleIds,
         http,
@@ -445,7 +445,7 @@ const AlertsTableContent = typedForwardRef(
         refetchAlerts();
       }
       queryClient.invalidateQueries(queryKeys.casesBulkGet(caseIds));
-      queryClient.invalidateQueries(alertsQueryKeys.getMutedAlerts(ruleIds));
+      queryClient.invalidateQueries(alertsQueryKeys.getAlertSnoozeState(ruleIds));
       queryClient.invalidateQueries(queryKeys.maintenanceWindowsBulkGet(maintenanceWindowIds));
     }, [
       pageIndex,
@@ -524,7 +524,7 @@ const AlertsTableContent = typedForwardRef(
             isLoadingAlerts ||
             casesQuery.isFetching ||
             maintenanceWindowsQuery.isFetching ||
-            mutedAlertsQuery.isFetching ||
+            alertSnoozeStateQuery.isFetching ||
             fieldsQuery.isFetching,
           isLoadingAlerts,
           alerts,
@@ -535,8 +535,10 @@ const AlertsTableContent = typedForwardRef(
           cases: casesQuery.data,
           isLoadingMaintenanceWindows: maintenanceWindowsQuery.isFetching,
           maintenanceWindows: maintenanceWindowsQuery.data,
-          isLoadingMutedAlerts: mutedAlertsQuery.isFetching,
-          mutedAlerts: mutedAlertsQuery.data,
+          isLoadingMutedAlerts: alertSnoozeStateQuery.isFetching,
+          mutedAlerts: alertSnoozeStateQuery.data?.mutedAlerts,
+          isLoadingSnoozedAlerts: alertSnoozeStateQuery.isFetching,
+          snoozedAlerts: alertSnoozeStateQuery.data?.snoozedAlerts,
           pageIndex,
           onPageIndexChange: setPageIndex,
           pageSize,
@@ -570,8 +572,8 @@ const AlertsTableContent = typedForwardRef(
         casesQuery.data,
         maintenanceWindowsQuery.isFetching,
         maintenanceWindowsQuery.data,
-        mutedAlertsQuery.isFetching,
-        mutedAlertsQuery.data,
+        alertSnoozeStateQuery.isFetching,
+        alertSnoozeStateQuery.data,
         fieldsQuery.isFetching,
         alerts,
         alertsCount,

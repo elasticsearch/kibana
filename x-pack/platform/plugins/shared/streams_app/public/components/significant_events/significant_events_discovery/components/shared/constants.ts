@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Detection, Discovery, SignificantEventStatus } from '@kbn/streams-schema';
+import type { Detection, Discovery, SignificantEventStatus } from '@kbn/significant-events-schema';
 
 export const DETECTION_KIND_COLORS: Record<Detection['kind'], string> = {
   detection: 'warning',

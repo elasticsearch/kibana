@@ -11,7 +11,7 @@ import type {
   QueriesGetResponse,
   SignificantEventsResponse,
   StreamQuery,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import type { QueryStatus } from '@kbn/streams-plugin/common';
 import moment from 'moment';
 import { useKibana } from '../use_kibana';

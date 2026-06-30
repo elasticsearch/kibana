@@ -8,7 +8,11 @@
  */
 
 export type { SecurityServiceSetup, SecurityServiceStart } from './src/contracts';
-export type { CoreAuthenticationService, FakeRequestEnricher } from './src/authc';
+export type {
+  CoreAuthenticationService,
+  FakeRequestEnricher,
+  FakeRequestUserFields,
+} from './src/authc';
 export type { CoreAuditService } from './src/audit';
 export type {
   CoreSecurityDelegateContract,

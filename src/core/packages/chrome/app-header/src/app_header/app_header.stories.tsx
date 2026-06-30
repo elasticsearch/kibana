@@ -61,9 +61,9 @@ const tabs: AppHeaderTab[] = [
 ];
 
 const metadata: AppHeaderMetadataItems = [
-  { type: 'text', label: 'Created by: analyst' },
   { type: 'health', label: 'Healthy', color: 'success' },
-  { type: 'button', label: 'Updated 2 minutes ago', onClick: action('metadata-clicked') },
+  { type: 'text', label: 'Created by', value: 'analyst' },
+  { type: 'button', label: 'View details', onClick: action('view-details-clicked') },
 ];
 
 // Six items so the menu overflows the visible limit into the "More" popover.

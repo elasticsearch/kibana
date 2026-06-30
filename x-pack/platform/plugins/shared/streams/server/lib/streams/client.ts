@@ -555,10 +555,12 @@ export class StreamsClient {
     name,
     query,
     field_descriptions,
+    description = '',
   }: {
     name: string;
     query: Streams.QueryStream.UpsertRequest['stream']['query'];
     field_descriptions?: Record<string, string>;
+    description?: string;
   }): Promise<UpsertStreamResponse> {
     await State.attemptChanges(
       [
@@ -567,7 +569,7 @@ export class StreamsClient {
           definition: {
             type: 'query',
             name,
-            description: '',
+            description,
             updated_at: new Date().toISOString(),
             query_streams: [],
             query,

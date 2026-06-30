@@ -8,6 +8,7 @@
 export * from './common';
 export * from './agent_policy';
 export * from './agent';
+export * from './agentless_policy';
 export * from './package_policy';
 export * from './epm';
 export * from './enrollment_api_key';

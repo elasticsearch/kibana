@@ -1,6 +1,6 @@
 # Capture Environment Snapshot
 
-Captures the current Streams/SigEvents environment into a GCS snapshot. `.kibana` system indices are reindexed to snapshot-safe names with mappings preserved, then everything is snapshotted together.
+Captures the current Streams/Significant Events environment into a GCS snapshot. `.kibana` system indices are reindexed to snapshot-safe names with mappings preserved, then everything is snapshotted together.
 
 ## Prerequisites
 
@@ -43,17 +43,19 @@ node scripts/capture_sigevents_env_snapshot.js \
 
 1. Creates a temporary Elasticsearch user (`restore_sigevents_env_snapshot_tmp`) with the `system_indices_superuser` role. This user is deleted on script exit (success or failure).
 2. Resolves wildcard patterns to concrete index names via `GET _resolve/index`.
-3. For each fixed system index (`.kibana_streams_tasks-*`) and the KI data stream (`.significant_events-knowledge_indicators`), fetches its mapping, creates a `snapshot-*` copy, and reindexes the data. `--logs-index` and `--alert-indices` targets are included directly in the snapshot without reindexing.
+3. For each fixed system index (`.kibana_streams_tasks-*`) and each Significant Events data stream (`.significant_events-knowledge_indicators`, `.significant_events-discoveries`, `.significant_events-detections`), fetches its mapping, creates a `snapshot-*` copy, and reindexes the data. `--logs-index` and `--alert-indices` targets are included directly in the snapshot without reindexing.
 4. Registers a GCS snapshot repository and creates the snapshot containing all captured indices.
 
 ### Naming convention
 
-System indices and the KI data stream are reindexed under a renamed copy. Leading `.` is replaced with `snapshot-`:
+System indices and the Significant Events data streams are reindexed under a renamed copy. Leading `.` is replaced with `snapshot-`:
 
 | Source index | Snapshot index |
 | --- | --- |
 | `.kibana_streams_tasks-000001` | `snapshot-kibana_streams_tasks-000001` |
 | `.significant_events-knowledge_indicators` | `snapshot-significant_events-knowledge_indicators` |
+| `.significant_events-discoveries` | `snapshot-significant_events-discoveries` |
+| `.significant_events-detections` | `snapshot-significant_events-detections` |
 | `.internal.alerts-streams.alerts-default-000001` | `.internal.alerts-streams.alerts-default-000001` (no change) |
 | `logs.otel` | `logs.otel` (no change) |
 

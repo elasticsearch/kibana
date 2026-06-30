@@ -54,6 +54,12 @@ export interface PopoverProps {
   isAnyPopoverLocked?: boolean;
   setIsLocked?: (isLocked: boolean) => void;
   label: string;
+  /**
+   * Accessible title for the popover dialog (aria-label and screen-reader instructions).
+   * Defaults to `label`. Set when the visible secondary header differs from `label`
+   * (e.g. a custom `secondaryMenuTitle`) so the announced title matches what is shown.
+   */
+  secondaryMenuTitle?: string;
   persistent?: boolean;
   trigger: ReactElement<{
     ref?: Ref<HTMLElement>;
@@ -82,9 +88,11 @@ export const Popover = ({
   isAnyPopoverLocked = false,
   setIsLocked = () => {},
   label,
+  secondaryMenuTitle,
   persistent = false,
   trigger,
 }: PopoverProps): JSX.Element => {
+  const dialogLabel = secondaryMenuTitle ?? label;
   const { euiTheme } = useEuiTheme();
   const { setHoverTimeout, clearHoverTimeout } = useHoverTimeout();
   const popoverEnterAndExitInstructionsId = useGeneratedHtmlId({
@@ -292,7 +300,7 @@ export const Popover = ({
         </EuiScreenReaderOnly>
       )}
       <EuiPopover
-        aria-label={label}
+        aria-label={dialogLabel}
         anchorPosition="rightUp"
         buffer={[TOP_BAR_HEIGHT + TOP_BAR_POPOVER_GAP, 0, BOTTOM_POPOVER_GAP, POPOVER_OFFSET]}
         button={enhancedTrigger}
@@ -333,7 +341,7 @@ export const Popover = ({
                 defaultMessage:
                   'You are in the {label} secondary menu dialog. Use Up and Down arrow keys to navigate the menu. Press Escape to exit to the menu trigger.',
                 values: {
-                  label,
+                  label: dialogLabel,
                 },
               })}
             </p>

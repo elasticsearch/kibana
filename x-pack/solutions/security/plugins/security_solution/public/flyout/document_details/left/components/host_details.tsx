@@ -90,7 +90,7 @@ import { useSelectedPatterns } from '../../../../data_view_manager/hooks/use_sel
 import { useSecurityDefaultPatterns } from '../../../../data_view_manager/hooks/use_security_default_patterns';
 import { useSpaceId } from '../../../../common/hooks/use_space_id';
 import type { EntityFromStoreResult } from '../../../entity_details/shared/hooks/use_entity_from_store';
-import { useObservedHost } from '../../../entity_details/host_right/hooks/use_observed_host';
+import { useObservedHost } from '../../../../flyout_v2/entity/host/main/hooks/use_observed_host';
 import {
   buildRiskScoreStateFromEntityRecord,
   getRiskFromEntityRecord,

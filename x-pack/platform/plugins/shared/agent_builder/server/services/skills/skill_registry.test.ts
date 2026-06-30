@@ -7,6 +7,7 @@
 
 import type { InternalSkillDefinition } from '@kbn/agent-builder-server/skills';
 import type { ToolRegistry } from '@kbn/agent-builder-server';
+import { AGENT_BUILDER_TRACING_ENABLED_SETTING_ID } from '@kbn/management-settings-ids';
 import { createSkillRegistry } from './skill_registry';
 import type { ReadonlySkillProvider, WritableSkillProvider } from './skill_provider';
 
@@ -795,6 +796,43 @@ describe('createSkillRegistry', () => {
       expect(await registryOn.has('normal-skill')).toBe(true);
       expect(await registryOff.get('normal-skill')).toEqual(normalSkill);
       expect(await registryOn.get('normal-skill')).toEqual(normalSkill);
+    });
+  });
+
+  describe('ui setting requirement filtering', () => {
+    const tracesSkill = createMockInternalSkillDefinition({
+      id: 'agent-builder-traces',
+      name: 'agent-builder-traces',
+      experimental: true,
+      readonly: true,
+      uiSettingRequired: AGENT_BUILDER_TRACING_ENABLED_SETTING_ID,
+    });
+
+    it('hides skills when the required ui setting is false', async () => {
+      const registry = createSkillRegistry({
+        builtinProvider: createMockBuiltinProvider([tracesSkill]),
+        persistedProvider: createMockPersistedProvider([]),
+        toolRegistry: createMockToolRegistry(),
+        experimentalFeaturesEnabled: true,
+        uiSettingValues: new Map([[AGENT_BUILDER_TRACING_ENABLED_SETTING_ID, false]]),
+      });
+
+      expect(await registry.has('agent-builder-traces')).toBe(false);
+      expect(await registry.get('agent-builder-traces')).toBeUndefined();
+      expect(await registry.list()).toEqual([]);
+    });
+
+    it('shows skills when the required ui setting is true', async () => {
+      const registry = createSkillRegistry({
+        builtinProvider: createMockBuiltinProvider([tracesSkill]),
+        persistedProvider: createMockPersistedProvider([]),
+        toolRegistry: createMockToolRegistry(),
+        experimentalFeaturesEnabled: true,
+        uiSettingValues: new Map([[AGENT_BUILDER_TRACING_ENABLED_SETTING_ID, true]]),
+      });
+
+      expect(await registry.has('agent-builder-traces')).toBe(true);
+      expect(await registry.get('agent-builder-traces')).toEqual(tracesSkill);
     });
   });
 });

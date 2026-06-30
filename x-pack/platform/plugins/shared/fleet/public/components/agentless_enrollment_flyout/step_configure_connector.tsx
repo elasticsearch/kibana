@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { EuiStepStatus } from '@elastic/eui';
@@ -14,9 +14,10 @@ import { EuiText, EuiSpacer, EuiCallOut, EuiFlexGroup, EuiFlexItem, EuiCard } fr
 import { MANAGEMENT_APP_ID } from '@kbn/deeplinks-management/constants';
 
 import { useStartServices } from '../../hooks';
-import type { PackagePolicy, RegistryPolicyTemplate } from '../../types';
+import type { RegistryPolicyTemplate } from '../../types';
 
 import { NextSteps } from './next_steps';
+import type { AgentlessEnrollmentConnector } from './types';
 
 const CONNECTORS_PATH = '/data/content_connectors/connectors';
 
@@ -26,12 +27,14 @@ const CONNECTORS_PATH = '/data/content_connectors/connectors';
  * connector configuration and is considered complete as soon as it renders.
  */
 export const AgentlessStepConfigureConnector = ({
-  packagePolicy,
+  connectors,
+  policyName,
   setStepStatus,
   policyTemplates,
   onClose,
 }: {
-  packagePolicy: PackagePolicy;
+  connectors?: AgentlessEnrollmentConnector[];
+  policyName: string;
   setStepStatus: (status: EuiStepStatus) => void;
   policyTemplates?: RegistryPolicyTemplate[];
   onClose: () => void;
@@ -49,33 +52,25 @@ export const AgentlessStepConfigureConnector = ({
     });
   };
 
-  // A connector may already be associated with the policy (via its input vars).
-  // When it is, deep-link to that connector; otherwise fall back to the
-  // connectors list so the user can still reach the configuration screen.
-  const connectorInputs = useMemo(
-    () =>
-      packagePolicy.inputs.filter(
-        (input) => !!input?.vars?.connector_id?.value || !!input?.vars?.connector_name?.value
-      ),
-    [packagePolicy.inputs]
-  );
-
   const cardDescription = i18n.translate(
     'xpack.fleet.agentlessEnrollmentFlyout.configureConnector.cardDescription',
     { defaultMessage: 'Configure connector' }
   );
 
+  // A connector may already be associated with the policy. When it is, deep-link
+  // to that connector; otherwise fall back to the connectors list so the user can
+  // still reach the configuration screen.
   const connectorCards =
-    connectorInputs.length > 0 ? (
-      connectorInputs.map((input, index) => {
-        const connectorId = input?.vars?.connector_id?.value ?? index;
+    connectors && connectors.length > 0 ? (
+      connectors.map((connector, index) => {
+        const connectorKey = connector.id ?? index;
         return (
-          <EuiFlexItem key={connectorId}>
+          <EuiFlexItem key={connectorKey}>
             <EuiCard
-              data-test-subj={`agentlessStepConfigureConnector.connectorCard.${connectorId}`}
-              title={`${input?.vars?.connector_name?.value ?? packagePolicy.name}`}
+              data-test-subj={`agentlessStepConfigureConnector.connectorCard.${connectorKey}`}
+              title={`${connector.name ?? policyName}`}
               description={cardDescription}
-              onClick={() => navigateToConnector(input?.vars?.connector_id?.value)}
+              onClick={() => navigateToConnector(connector.id)}
             />
           </EuiFlexItem>
         );
@@ -84,7 +79,7 @@ export const AgentlessStepConfigureConnector = ({
       <EuiFlexItem>
         <EuiCard
           data-test-subj="agentlessStepConfigureConnector.connectorCard"
-          title={packagePolicy.name}
+          title={policyName}
           description={cardDescription}
           onClick={() => navigateToConnector()}
         />
@@ -117,7 +112,7 @@ export const AgentlessStepConfigureConnector = ({
       <EuiFlexGroup alignItems="center" direction="row" wrap={true}>
         {connectorCards}
       </EuiFlexGroup>
-      <NextSteps packagePolicy={packagePolicy} policyTemplates={policyTemplates} />
+      <NextSteps policyTemplates={policyTemplates} />
     </>
   );
 };

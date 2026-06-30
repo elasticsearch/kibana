@@ -65,18 +65,6 @@ export const FORMAT_EPISODE_DURATION_MS = (ms: number): string => {
   });
 };
 
-/** --- Rule kind --- */
-export const RULE_KIND_SIGNAL = i18n.translate('xpack.alertingV2.episodeDetails.ruleKindSignal', {
-  defaultMessage: 'Signal',
-});
-
-export const RULE_KIND_ALERTING = i18n.translate(
-  'xpack.alertingV2.episodeDetails.ruleKindAlerting',
-  {
-    defaultMessage: 'Alert',
-  }
-);
-
 /** --- Error state --- */
 export const EPISODE_NOT_FOUND_TITLE = i18n.translate(
   'xpack.alertingV2.episodes.episodeNotFoundTitle',

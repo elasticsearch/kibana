@@ -13,7 +13,7 @@ import { useJourneySteps } from '../monitor_details/hooks/use_journey_steps';
 export const StepTitle = () => {
   const { checkGroupId, stepIndex } = useParams<{ checkGroupId: string; stepIndex: string }>();
 
-  const { data } = useJourneySteps(checkGroupId);
+  const { data } = useJourneySteps({ checkGroup: checkGroupId });
 
   const currentStep = data?.steps.find((step) => step.synthetics.step?.index === Number(stepIndex));
 

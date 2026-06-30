@@ -793,21 +793,25 @@ const buildSmlEsqlQuery = ({
   if (trimmed === '' || trimmed === '*') {
     lines.push('| SORT id ASC');
   } else {
-    // LIMIT inside each FORK branch caps the per-leg candidate set before FUSE
-    // computes RRF scores; without it FUSE would merge all matches. The outer
-    // LIMIT after FUSE+SORT bounds the final set to `size` (authorization is
-    // already enforced by the pre-FORK WHERE clauses above).
+    // SORT _score DESC inside each branch is required so LIMIT selects the
+    // top-scoring candidates before FUSE computes RRF ranks. Without it,
+    // LIMIT takes the first N docs in scan order and FUSE assigns arbitrary
+    // ranks, producing wrong results regardless of relevance scores.
     lines.push('| FORK');
     const bm25Conditions = SML_BM25_FIELDS.map((field) => {
       params.push(trimmed);
       return `MATCH(${field}, ?)`;
     }).join(' OR ');
-    lines.push(`  (WHERE ${bm25Conditions} | LIMIT ${size * MAX_SCAN_MULTIPLIER})`);
+    lines.push(
+      `  (WHERE ${bm25Conditions} | SORT _score DESC | LIMIT ${size * MAX_SCAN_MULTIPLIER})`
+    );
     const semanticConditions = SML_SEMANTIC_FIELDS.map((field) => {
       params.push(trimmed);
       return `MATCH(${field}, ?)`;
     }).join(' OR ');
-    lines.push(`  (WHERE ${semanticConditions} | LIMIT ${size * MAX_SCAN_MULTIPLIER})`);
+    lines.push(
+      `  (WHERE ${semanticConditions} | SORT _score DESC | LIMIT ${size * MAX_SCAN_MULTIPLIER})`
+    );
     lines.push('| FUSE');
     lines.push('| SORT _score DESC, id ASC');
   }

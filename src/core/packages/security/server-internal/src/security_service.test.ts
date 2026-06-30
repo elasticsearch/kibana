@@ -98,7 +98,7 @@ describe('SecurityService', function () {
         const enricher = setup.acquireFakeRequestEnricher();
 
         const request = { isFakeRequest: true } as any;
-        expect(() => enricher(request, 'u_test_profile_123')).toThrow(
+        expect(() => enricher(request, { profileId: 'u_test_profile_123' })).toThrow(
           /Cannot enrich a fake request before the security delegate has been registered/
         );
       });
@@ -113,10 +113,13 @@ describe('SecurityService', function () {
         } as unknown as CoreSecurityDelegateContract);
 
         const request = { isFakeRequest: true } as any;
-        enricher(request, 'u_test_profile_123');
+        enricher(request, { profileId: 'u_test_profile_123', username: 'jdoe' });
 
         expect(fakeRequestEnricher).toHaveBeenCalledTimes(1);
-        expect(fakeRequestEnricher).toHaveBeenCalledWith(request, 'u_test_profile_123');
+        expect(fakeRequestEnricher).toHaveBeenCalledWith(request, {
+          profileId: 'u_test_profile_123',
+          username: 'jdoe',
+        });
       });
     });
 

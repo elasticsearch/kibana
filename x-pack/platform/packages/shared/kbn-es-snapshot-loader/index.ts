@@ -24,3 +24,4 @@ export {
   type GcsRepositoryConfig,
   type FsRepositoryConfig,
 } from './src/repository';
+export { extractDataStreamName } from './src/utils';

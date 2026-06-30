@@ -7,12 +7,15 @@
 
 import React, { useMemo } from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
-
+import { useIsExperimentalFeatureEnabled } from '../../../common/hooks/use_experimental_features';
 import {
+  getAnomaliesTab,
   getInsightsInputTab,
   getResolutionGroupTab,
   getRiskInputTab,
 } from '../../../entity_analytics/components/entity_details_flyout';
+import { useHasAnomalies } from '../../../entity_analytics/api/hooks/use_has_anomalies';
+import { useAnomalyPrivileges } from '../../../entity_analytics/api/hooks/use_anomaly_privileges';
 import { UserAssetTableType } from '../../../explore/users/store/model';
 import { ManagedUserDatasetKey } from '../../../../common/search_strategy/security_solution/users/managed_details';
 import type {
@@ -41,6 +44,15 @@ export const useTabs = (
   entityStoreEntityId?: string
 ): LeftPanelTabsType => {
   const hasEntityResolutionLicense = useHasEntityResolutionLicense();
+  const isAnomalyDetailsEnabled = useIsExperimentalFeatureEnabled('entityAnalyticsAnomalyDetails');
+  const { data: anomalyPrivilegesData } = useAnomalyPrivileges(isAnomalyDetailsEnabled);
+  const hasAnomalyPrivileges = anomalyPrivilegesData?.has_all_required ?? false;
+  const loadAnomalies = isAnomalyDetailsEnabled && hasAnomalyPrivileges && !!entityStoreEntityId;
+  const hasAnomalies = useHasAnomalies({
+    entityId: entityStoreEntityId ?? '',
+    entityType: EntityType.user,
+    enabled: loadAnomalies,
+  });
 
   return useMemo(() => {
     const tabs: LeftPanelTabsType = [];
@@ -55,6 +67,15 @@ export const useTabs = (
           entityType: EntityType.user,
           scopeId,
           entityId: entityStoreEntityId,
+        })
+      );
+    }
+
+    if (loadAnomalies && hasAnomalies) {
+      tabs.push(
+        getAnomaliesTab({
+          entityId: entityStoreEntityId,
+          entityType: EntityType.user,
         })
       );
     }
@@ -94,16 +115,18 @@ export const useTabs = (
 
     return tabs;
   }, [
-    entityId,
-    hasEntityResolutionLicense,
+    managedUser,
+    isRiskScoreExist,
+    entityStoreEntityId,
+    loadAnomalies,
+    hasAnomalies,
     hasMisconfigurationFindings,
     hasNonClosedAlerts,
-    identityFields,
-    isRiskScoreExist,
-    managedUser,
     name,
     scopeId,
-    entityStoreEntityId,
+    entityId,
+    identityFields,
+    hasEntityResolutionLicense,
   ]);
 };
 

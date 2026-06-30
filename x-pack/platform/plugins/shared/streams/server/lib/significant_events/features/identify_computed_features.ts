@@ -7,7 +7,8 @@
 
 import type { ElasticsearchClient, KibanaRequest } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
-import { getStreamTypeFromDefinition, type FeatureUpsert, type Streams } from '@kbn/streams-schema';
+import { getStreamTypeFromDefinition, type Streams } from '@kbn/streams-schema';
+import { type FeatureUpsert } from '@kbn/significant-events-schema';
 import type { ToolsStart } from '@kbn/agent-builder-server';
 import {
   generateAllComputedFeatures,

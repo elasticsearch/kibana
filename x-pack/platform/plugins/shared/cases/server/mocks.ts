@@ -791,6 +791,13 @@ export const mockCasesContract = (): CasesServerStart => ({
         enabled: true,
       },
     },
+    analyticsV2: {
+      enabled: false,
+      reconciliationIntervalMinutes: 30,
+      enableAdminRoutes: false,
+      resetTaskTimeoutMinutes: 60,
+      resetPageDelayMs: 0,
+    },
     incrementalId: {
       enabled: true,
       taskIntervalMinutes: 10,

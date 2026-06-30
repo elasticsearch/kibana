@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import type { SavedObjectsClientContract } from '@kbn/core/server';
+import type { SavedObject, SavedObjectsClientContract } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core-saved-objects-server';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   CreateExceptionListItemSchema,
@@ -63,9 +64,11 @@ export const bulkCreateExceptionListItems = async ({
   const { saved_objects: savedObjects } =
     await savedObjectsClient.bulkCreate<ExceptionListSoSchema>(formattedItems);
 
-  const result = savedObjects.map<ExceptionListItemSchema>((so) =>
-    transformSavedObjectToExceptionListItem({ savedObject: so })
-  );
+  const result = savedObjects
+    .filter((so): so is SavedObject<ExceptionListSoSchema> => !isSavedObjectErrorResult(so))
+    .map<ExceptionListItemSchema>((so) =>
+      transformSavedObjectToExceptionListItem({ savedObject: so })
+    );
 
   return result;
 };

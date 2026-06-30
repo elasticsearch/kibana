@@ -9,7 +9,7 @@ import { identifyFeatures, toPreviouslyIdentifiedFeature } from '@kbn/streams-ai
 import { featuresPrompt } from '@kbn/streams-ai/src/features/prompt';
 import { tags } from '@kbn/scout';
 import { createSpanLatencyEvaluator, getCurrentTraceId } from '@kbn/evals';
-import { FeatureAccumulator, type BaseFeature, mergeFeature } from '@kbn/streams-schema';
+import { FeatureAccumulator, type BaseFeature, mergeFeature } from '@kbn/significant-events-schema';
 import type { GcsConfig } from '../../src/data_generators/replay';
 import {
   SIGEVENTS_SNAPSHOT_RUN,

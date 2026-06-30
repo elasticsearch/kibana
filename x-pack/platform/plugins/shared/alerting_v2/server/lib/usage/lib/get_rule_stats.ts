@@ -8,6 +8,7 @@
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { ALERTING_CASES_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-server';
 import { RULE_SAVED_OBJECT_TYPE } from '../../../saved_objects';
+import { AGENT_BUILDER_TAG } from '../../../agent_builder/common/constants';
 import { TERMS_SIZE, bucketsToRecord, bucketsToArray } from './constants';
 import type { RuleStatsAggregations, RuleStatsResults } from './types';
 
@@ -157,6 +158,9 @@ export async function getRuleStats(esClient: ElasticsearchClient): Promise<RuleS
       count_enabled: {
         filter: { term: { [`${RULE_SAVED_OBJECT_TYPE}.enabled`]: true } },
       },
+      count_agent_builder_assisted: {
+        filter: { term: { [`${RULE_SAVED_OBJECT_TYPE}.metadata.tags`]: AGENT_BUILDER_TAG } },
+      },
       count_by_kind: {
         terms: { field: `${RULE_SAVED_OBJECT_TYPE}.kind`, size: TERMS_SIZE },
       },
@@ -198,6 +202,7 @@ export async function getRuleStats(esClient: ElasticsearchClient): Promise<RuleS
   return {
     count_total: total,
     count_enabled: aggs?.count_enabled.doc_count ?? 0,
+    count_agent_builder_assisted: aggs?.count_agent_builder_assisted.doc_count ?? 0,
     count_by_kind: bucketsToRecord<'alert' | 'signal'>(aggs?.count_by_kind.buckets),
     count_by_schedule: bucketsToArray(aggs?.count_by_schedule.buckets),
     count_by_lookback: bucketsToArray(aggs?.count_by_lookback.buckets),

@@ -10,6 +10,8 @@ import { AsyncDomainEventBus } from '../lib/events/event_bus';
 import { AlertingDomainEventBusToken } from '../lib/events/domain_events';
 import { AlertActionEventPublisher } from '../lib/events/alert_action_event_publisher/alert_action_event_publisher';
 import { AlertActionWorkflowSubscriber } from '../lib/events/alert_action_workflow_subscriber/alert_action_workflow_subscriber';
+import { RuleEventPublisher } from '../lib/events/rule_event_publisher/rule_event_publisher';
+import { RuleWorkflowSubscriber } from '../lib/events/rule_workflow_subscriber/rule_workflow_subscriber';
 
 /**
  * DI bindings for the in-process event subsystem.
@@ -31,4 +33,8 @@ export const bindEvents = ({ bind }: ContainerModuleLoadOptions) => {
   bind(AlertActionEventPublisher).toSelf().inSingletonScope();
 
   bind(AlertActionWorkflowSubscriber).toSelf().inSingletonScope();
+
+  bind(RuleEventPublisher).toSelf().inSingletonScope();
+
+  bind(RuleWorkflowSubscriber).toSelf().inSingletonScope();
 };

@@ -97,6 +97,12 @@ export interface SkillDefinition<
    */
   experimental?: boolean;
   /**
+   * Required UI setting to enable a skill.
+   * To enable a skill when a boolean UiSetting is true, pass the key as a string.
+   * To enable a skill when a specific value is set for a UiSetting, pass an object with key and value.
+   */
+  uiSettingRequired?: string | { key: string; value: unknown };
+  /**
    * Content of the skill.
    */
   content: string;

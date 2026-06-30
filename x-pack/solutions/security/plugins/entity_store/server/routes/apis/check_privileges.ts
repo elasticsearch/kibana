@@ -11,6 +11,8 @@ import {
   ENTITY_STORE_ROUTES,
   getEntitiesAlias,
   getLatestEntityIndexPattern,
+  getEntityMetadataAlias,
+  getMetadataEntityIndexPattern,
   ENTITY_LATEST,
 } from '../../../common';
 import { DEFAULT_ENTITY_STORE_PERMISSIONS } from '../constants';
@@ -49,8 +51,13 @@ export function registerCheckPrivileges(router: EntityStorePluginRouter) {
         const spaceId = entityStoreCtx.namespace;
         const entitiesAliasPattern = getEntitiesAlias(ENTITY_LATEST, spaceId);
         const latestEntityIndexPattern = getLatestEntityIndexPattern(spaceId);
+        const metadataAliasPattern = getEntityMetadataAlias(spaceId);
+        const metadataEntityIndexPattern = getMetadataEntityIndexPattern(spaceId);
 
         const response = await checkAndFormatPrivileges({
+          // Metadata indices are written by asInternalUser — exclude from has_read/write_permissions
+          // calculation (which gates the enable-store button) while still checking read access via
+          // privilegesToCheck so has_all_required correctly requires read on metadata.
           indexPatterns: [entitiesAliasPattern, latestEntityIndexPattern],
           request: req,
           security,
@@ -60,6 +67,8 @@ export function registerCheckPrivileges(router: EntityStorePluginRouter) {
               index: {
                 [entitiesAliasPattern]: ['read', 'write'],
                 [latestEntityIndexPattern]: ['read', 'write'],
+                [metadataAliasPattern]: ['read'],
+                [metadataEntityIndexPattern]: ['read'],
               },
             },
           },

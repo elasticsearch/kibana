@@ -199,6 +199,7 @@ const SecurityAlertOptional = rt.partial({
   'kibana.alert.scheduled_action.group': schemaString,
   'kibana.alert.severity': schemaString,
   'kibana.alert.severity_improving': schemaBoolean,
+  'kibana.alert.snoozed': schemaBoolean,
   'kibana.alert.start': schemaDate,
   'kibana.alert.suppression.docs_count': schemaStringOrNumber,
   'kibana.alert.suppression.end': schemaDate,

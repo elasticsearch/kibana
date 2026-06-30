@@ -11,7 +11,7 @@ import { useJourneySteps } from '../../monitor_details/hooks/use_journey_steps';
 export const useStepDetails = ({ checkGroup }: { checkGroup: string }) => {
   const [stepIndex, setStepIndex] = React.useState(1);
 
-  const { data: stepsData, loading: stepsLoading, stepEnds } = useJourneySteps(checkGroup);
+  const { data: stepsData, loading: stepsLoading, stepEnds } = useJourneySteps({ checkGroup });
 
   const step = stepEnds.find((stepN) => stepN.synthetics?.step?.index === stepIndex);
 

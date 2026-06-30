@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { FeatureWithFilter } from '@kbn/streams-schema';
+import type { FeatureWithFilter } from '@kbn/significant-events-schema';
 import type { Condition } from '@kbn/streamlang';
 
 export function getEntityFilters(features: FeatureWithFilter[], maxFilters: number): Condition[] {

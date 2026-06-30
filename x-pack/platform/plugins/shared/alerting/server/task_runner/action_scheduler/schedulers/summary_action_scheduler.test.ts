@@ -270,6 +270,29 @@ describe('Summary Action Scheduler', () => {
       ]);
     });
 
+    test('should include snoozed alert IDs in excludedAlertInstanceIds when querying summarized alerts', async () => {
+      alertsClient.getProcessedAlerts.mockReturnValue(alerts);
+      const summarizedAlerts = {
+        new: { count: 2, data: [mockAAD, mockAAD] },
+        ongoing: { count: 0, data: [] },
+        recovered: { count: 0, data: [] },
+      };
+      alertsClient.getSummarizedAlerts.mockResolvedValue(summarizedAlerts);
+
+      const throttledSummaryActions = {};
+      const scheduler = new SummaryActionScheduler({
+        ...getSchedulerContext(),
+        activeSnoozedIds: new Set(['alert-snoozed-1']),
+      });
+      await scheduler.getActionsToSchedule({ activeAlerts: alerts, throttledSummaryActions });
+
+      expect(alertsClient.getSummarizedAlerts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          excludedAlertInstanceIds: expect.arrayContaining(['alert-snoozed-1']),
+        })
+      );
+    });
+
     test('should create action to schedule with priority if specified for summary action when summary action is per rule run', async () => {
       alertsClient.getProcessedAlerts.mockReturnValue(alerts);
       const summarizedAlerts = {

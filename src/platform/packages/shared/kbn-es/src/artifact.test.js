@@ -220,6 +220,25 @@ describe('Artifact', () => {
       expect(fetch).toHaveBeenCalledTimes(2);
     });
 
+    it('reuses a cached artifact without a meta file when prefer-cached is enabled', async () => {
+      process.env.KBN_ES_SNAPSHOT_USE_CACHED = 'true';
+
+      const artifact = new Artifact(log, {
+        url: MOCK_URL,
+        filename: MOCK_FILENAME,
+        checksumUrl: `${MOCK_URL}.sha512`,
+        checksumType: 'sha512',
+      });
+      const cachedContents = Buffer.from('cached artifact without meta');
+      const dest = createArtifactDest();
+      fs.writeFileSync(dest, cachedContents);
+
+      await artifact.download(dest);
+
+      expect(fs.readFileSync(dest)).toEqual(cachedContents);
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
     it('skips the truncation guard for content-encoded responses', async () => {
       const artifact = new Artifact(log, {
         url: MOCK_URL,

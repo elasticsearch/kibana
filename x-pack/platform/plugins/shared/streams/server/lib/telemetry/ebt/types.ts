@@ -6,7 +6,8 @@
  */
 
 import type { SignificantEventsToolUsage } from '@kbn/streams-ai';
-import type { SignificantEventStatus, StreamType } from '@kbn/streams-schema';
+import type { StreamType } from '@kbn/streams-schema';
+import type { SignificantEventStatus } from '@kbn/significant-events-schema';
 
 interface StreamEndpointLatencyProps {
   name: string;

@@ -6,7 +6,12 @@
  */
 
 import type { ComposerSortShorthand } from '@elastic/esql';
-import type { Feature, KnowledgeIndicator, QueryLink, StreamQuery } from '@kbn/streams-schema';
+import type {
+  Feature,
+  KnowledgeIndicator,
+  QueryLink,
+  StreamQuery,
+} from '@kbn/significant-events-schema';
 import type { Streams } from '@kbn/streams-schema';
 import {
   DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG,

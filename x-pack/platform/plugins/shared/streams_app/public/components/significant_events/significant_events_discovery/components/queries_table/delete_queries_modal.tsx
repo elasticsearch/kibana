@@ -23,7 +23,7 @@ import {
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import React, { useMemo } from 'react';
-import { QUERY_TYPE_MATCH } from '@kbn/streams-schema';
+import { QUERY_TYPE_MATCH } from '@kbn/significant-events-schema';
 import type { SignificantEventQueryRow } from '../../../../../hooks/significant_events/use_fetch_discovery_queries';
 import { SeverityBadge } from '../severity_badge/severity_badge';
 import { QueryTypeBadge } from '../query_type_badge/query_type_badge';

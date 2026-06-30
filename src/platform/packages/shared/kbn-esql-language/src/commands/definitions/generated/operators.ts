@@ -1376,7 +1376,9 @@ const equalsDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -1386,7 +1388,9 @@ const equalsDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -1404,7 +1408,9 @@ const equalsDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -1414,7 +1420,9 @@ const equalsDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -1801,7 +1809,9 @@ const greaterThanDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -1811,7 +1821,9 @@ const greaterThanDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -1829,7 +1841,9 @@ const greaterThanDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -1839,7 +1853,9 @@ const greaterThanDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -2226,7 +2242,9 @@ const greaterThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -2236,7 +2254,9 @@ const greaterThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -2254,7 +2274,9 @@ const greaterThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -2264,7 +2286,9 @@ const greaterThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -3600,7 +3624,9 @@ const lessThanDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -3610,7 +3636,9 @@ const lessThanDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -3628,7 +3656,9 @@ const lessThanDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -3638,7 +3668,9 @@ const lessThanDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -4025,7 +4057,9 @@ const lessThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4035,7 +4069,9 @@ const lessThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -4053,7 +4089,9 @@ const lessThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4063,7 +4101,9 @@ const lessThanOrEqualDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -4176,7 +4216,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'boolean',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4195,7 +4237,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4214,7 +4258,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'date',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4233,7 +4279,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4252,7 +4300,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'date_nanos',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4271,7 +4321,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4290,7 +4342,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4309,7 +4363,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4328,7 +4384,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4347,7 +4405,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4366,7 +4426,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4385,7 +4447,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4404,7 +4468,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4423,7 +4489,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4442,7 +4510,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'ip',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4461,7 +4531,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4480,7 +4552,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4499,7 +4573,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4518,7 +4594,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4537,7 +4615,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4556,7 +4636,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4575,7 +4657,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4594,7 +4678,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4613,7 +4699,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4632,7 +4720,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4651,7 +4741,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4670,7 +4762,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'unsigned_long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4689,7 +4783,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -4708,7 +4804,9 @@ const matchOperatorDefinition: FunctionDefinition = {
           type: 'version',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -5822,7 +5920,9 @@ const notEqualsDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -5832,7 +5932,9 @@ const notEqualsDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',
@@ -5850,7 +5952,9 @@ const notEqualsDefinition: FunctionDefinition = {
         {
           name: 'right',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -5860,7 +5964,9 @@ const notEqualsDefinition: FunctionDefinition = {
         {
           name: 'left',
           type: 'text',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'right',

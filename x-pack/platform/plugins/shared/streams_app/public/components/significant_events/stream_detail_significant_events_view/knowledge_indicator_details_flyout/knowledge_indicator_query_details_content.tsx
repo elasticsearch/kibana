@@ -16,8 +16,8 @@ import {
   EuiText,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { Feature, StreamQuery } from '@kbn/streams-schema';
-import { COMPUTED_FEATURE_TYPES } from '@kbn/streams-schema';
+import type { Feature, StreamQuery } from '@kbn/significant-events-schema';
+import { COMPUTED_FEATURE_TYPES } from '@kbn/significant-events-schema';
 import React, { useMemo } from 'react';
 import { SeverityBadge } from '../../significant_events_discovery/components/severity_badge/severity_badge';
 import { InfoPanel } from '../../../info_panel';

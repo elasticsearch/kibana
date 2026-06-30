@@ -30,7 +30,9 @@
         "^src/dev/prs/kibana_qa_pr_list\\.json$",
         "^\\.buildkite/pull_requests\\.json$",
         "^\\.devcontainer/",
-        "^\\.ona/"
+        "^\\.ona/",
+        "(^|/)\\.gitignore$",
+        "(^|/)\\.editorconfig$"
       ],
       "always_require_ci_on_changed": [
         "^docs/developer/plugin-list.asciidoc$",

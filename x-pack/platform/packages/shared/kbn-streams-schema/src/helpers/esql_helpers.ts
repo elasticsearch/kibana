@@ -24,7 +24,6 @@ import type {
   ESQLSingleAstItem,
   ESQLSource,
 } from '@elastic/esql/types';
-import type { QueryType } from '../queries';
 
 // ---------------------------------------------------------------------------
 // Internal helpers — shared parsing, type-guarding, and printing logic
@@ -451,10 +450,11 @@ export function hasStatsCommand(esql: string): boolean {
 }
 
 /**
- * Derives the canonical {@link QueryType} from an ES|QL query string
- * by checking whether it contains a STATS command.
+ * Derives the canonical significant-events query type (`'match' | 'stats'`,
+ * structurally equal to `QueryType` in `@kbn/significant-events-schema`) from an
+ * ES|QL query string by checking whether it contains a STATS command.
  */
-export function deriveQueryType(esql: string): QueryType {
+export function deriveQueryType(esql: string): 'match' | 'stats' {
   return hasStatsCommand(esql) ? 'stats' : 'match';
 }
 

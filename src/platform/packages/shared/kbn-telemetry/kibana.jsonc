@@ -1,7 +1,7 @@
 {
   "type": "shared-server",
   "id": "@kbn/telemetry",
-  "owner": ["@elastic/kibana-core", "@elastic/obs-ai-team"],
+  "owner": ["@elastic/kibana-core", "@elastic/nightshift-context-and-research-team"],
   "group": "platform",
   "visibility": "shared"
 }

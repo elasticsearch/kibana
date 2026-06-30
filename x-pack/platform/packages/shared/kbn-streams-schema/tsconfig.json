@@ -9,7 +9,6 @@
     "@kbn/zod",
     "@kbn/zod-helpers",
     "@kbn/streamlang",
-    "@kbn/inference-common",
     "@kbn/std"
   ],
   "exclude": ["target/**/*"]

@@ -7,7 +7,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@kbn/react-query';
 import { i18n } from '@kbn/i18n';
-import { SignificantEventsWorkflowStatus } from '@kbn/streams-schema';
+import { SignificantEventsWorkflowStatus } from '@kbn/significant-events-schema';
 import React, {
   createContext,
   useCallback,

@@ -16,6 +16,7 @@ import { useRiskInputActionsPanels } from './use_risk_input_actions_panels';
 import { useSendBulkToTimeline } from '../../../../detections/components/alerts_table/timeline_actions/use_send_bulk_to_timeline';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { EntityEventTypes } from '../../../../common/lib/telemetry';
+import { useIsInSecurityApp } from '../../../../common/hooks/is_in_security_app';
 
 const casesServiceMock = casesPluginMock.createStartContract();
 const mockCanUseCases = jest.fn();
@@ -50,9 +51,11 @@ jest.mock(
   '../../../../detections/components/alerts_table/timeline_actions/use_send_bulk_to_timeline'
 );
 jest.mock('../../../../common/components/user_privileges');
+jest.mock('../../../../common/hooks/is_in_security_app');
 
 const mockUseSendBulkToTimeline = useSendBulkToTimeline as jest.Mock;
 const mockUseUserPrivileges = useUserPrivileges as jest.Mock;
+const mockUseIsInSecurityApp = useIsInSecurityApp as jest.Mock;
 
 const TestMenu = ({ panels }: { panels: EuiContextMenuPanelDescriptor[] }) => (
   <EuiContextMenu initialPanelId={0} panels={panels} />
@@ -83,6 +86,7 @@ describe('useRiskInputActionsPanels', () => {
     mockUseUserPrivileges.mockReturnValue({
       timelinePrivileges: { read: false },
     });
+    mockUseIsInSecurityApp.mockReturnValue(true);
   });
 
   it('displays the rule name when only one alert is selected', () => {

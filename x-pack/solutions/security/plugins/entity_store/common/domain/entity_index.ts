@@ -8,6 +8,7 @@
 export const ENTITY_LATEST = 'latest' as const;
 export const ENTITY_UPDATES = 'updates' as const;
 export const ENTITY_HISTORY = 'history' as const;
+export const ENTITY_METADATA = 'metadata' as const;
 
 export const ENTITY_BASE_PREFIX = 'entities';
 
@@ -17,7 +18,11 @@ export const ENTITY_SCHEMA_VERSION_V2 = 'v2';
 export const MAPPING_VERSION = 1;
 
 type SchemaVersion = `v${number}`;
-type Dataset = typeof ENTITY_LATEST | typeof ENTITY_UPDATES | typeof ENTITY_HISTORY;
+type Dataset =
+  | typeof ENTITY_LATEST
+  | typeof ENTITY_UPDATES
+  | typeof ENTITY_HISTORY
+  | typeof ENTITY_METADATA;
 
 interface IndexPatternOptions<TDataset extends Dataset> {
   dataset: TDataset;
@@ -46,6 +51,14 @@ export const getLatestEntityIndexPattern = (namespace: string) =>
     namespace,
   })}-*` as const;
 
+// Returns the index pattern matching the entity metadata datastream.
+export const getMetadataEntityIndexPattern = (namespace: string) =>
+  `${getEntityIndexPattern({
+    schemaVersion: ENTITY_SCHEMA_VERSION_V2,
+    dataset: ENTITY_METADATA,
+    namespace,
+  })}-*` as const;
+
 const padVersion = (version: number): string => String(version).padStart(5, '0');
 
 // Returns the concrete index name for the latest entities index (with version suffix)
@@ -55,3 +68,7 @@ export const getLatestEntitiesIndexName = (namespace: string) =>
     dataset: ENTITY_LATEST,
     namespace,
   })}-${padVersion(MAPPING_VERSION)}`;
+
+// Returns the write alias for the entity metadata datastream.
+export const getEntityMetadataAlias = (namespace: string) =>
+  `${ENTITY_BASE_PREFIX}-${ENTITY_METADATA}-${namespace}` as const;

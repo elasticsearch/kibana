@@ -55,12 +55,13 @@ const getFloatingActionItem = (
         key={tooltipKey}
         id={tooltipKey}
         content={action.getDisplayNameTooltip?.(context) || action.getDisplayName(context)}
+        disableScreenReaderOutput
       >
         <EuiButtonIcon
           iconType={action.getIconType(context) ?? 'empty'}
           color="text"
           onClick={() => action.execute(context)}
-          aria-labelledby={tooltipKey}
+          aria-label={action.getDisplayName(context)}
           data-test-subj={`embeddablePanelAction-${action.id}`}
         />
       </EuiToolTip>

@@ -501,6 +501,12 @@ interface InternalUnifiedDataTableProps {
   customBulkActions?: CustomBulkActions;
 
   /**
+   * When true, hides the built-in copy (as text/markdown/JSON) and show-selected bulk actions,
+   * leaving only custom bulk actions and selection management controls.
+   */
+  hideDefaultBulkActions?: boolean;
+
+  /**
    * When editing fields, it will create a new ad-hoc data view instead of modifying the existing one.
    */
   shouldKeepAdHocDataViewImmutable?: boolean;
@@ -603,6 +609,7 @@ const InternalUnifiedDataTable = React.forwardRef<
       disableCellActions = false,
       disableCellPopover = false,
       customBulkActions,
+      hideDefaultBulkActions,
       shouldKeepAdHocDataViewImmutable,
       onFullScreenChange,
       hideFilteringOnComputedColumns,
@@ -1177,6 +1184,7 @@ const InternalUnifiedDataTable = React.forwardRef<
                 toastNotifications={toastNotifications}
                 columns={visibleColumns}
                 customBulkActions={customBulkActions}
+                hideDefaultBulkActions={hideDefaultBulkActions}
               />
             </EuiFlexItem>
           )}
@@ -1214,6 +1222,7 @@ const InternalUnifiedDataTable = React.forwardRef<
       visibleColumns,
       renderCustomToolbar,
       customBulkActions,
+      hideDefaultBulkActions,
     ]);
 
     const renderCustomToolbarFn: EuiDataGridProps['renderCustomToolbar'] | undefined = useMemo(

@@ -447,16 +447,19 @@ export class TaskManagerRunner implements TaskRunner {
             modifiedContext.taskInstance
           );
           const userProfileId = modifiedContext.taskInstance.userScope?.userProfileId;
+          const userName = modifiedContext.taskInstance.userScope?.userName;
 
           const fakeRequest = buildTaskFakeRequest({
             apiKey: apiKeyForRequest,
             spaceId: modifiedContext.taskInstance.userScope?.spaceId,
             userProfileId,
+            userName,
             enrichFakeRequest: this.enrichFakeRequest,
           });
 
           const enrichRequest = buildChildRequestEnricher({
             userProfileId,
+            userName,
             enrichFakeRequest: this.enrichFakeRequest,
           });
 

@@ -16,7 +16,7 @@ import {
   mergeFeature,
   normalizeFeatureSlug,
   toBaseFeature,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import type { IgnoredFeature } from '@kbn/streams-ai';
 
 export const toFeatureSummary = ({ id, title }: BaseFeature) => ({ id, title: title ?? id });

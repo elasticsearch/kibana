@@ -322,6 +322,10 @@ export const createMockAgentlessPoliciesService = (): jest.Mocked<AgentlessPolic
   return {
     createAgentlessPolicy: jest.fn().mockReturnValue(Promise.resolve()),
     deleteAgentlessPolicy: jest.fn().mockReturnValue(Promise.resolve()),
+    getAgentlessPolicy: jest.fn().mockReturnValue(Promise.resolve(null)),
+    listAgentlessPolicies: jest
+      .fn()
+      .mockReturnValue(Promise.resolve({ items: [], total: 0, page: 1, perPage: 20 })),
   };
 };
 

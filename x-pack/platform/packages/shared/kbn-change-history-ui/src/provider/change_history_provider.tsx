@@ -6,21 +6,34 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
+import type { AnalyticsServiceStart } from '@kbn/core/public';
 import type { ChangeHistoryBadgeRenderFn } from '../types/change_history_badge';
+import type {
+  ChangeHistoryFeatures,
+  ChangeHistoryPermissions,
+} from '../types/change_history_features';
 import type { ChangeHistoryLabels } from '../types/change_history_labels';
-import type { ChangeHistoryPreviewFooterRenderFn } from '../types/change_history_preview_footer';
 import type { ChangeHistoryPreviewRenderFn } from '../types/change_history_preview';
-import { ChangeHistoryContext } from './change_history_context';
+import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
+import { createChangeHistoryTelemetryReporter } from '../telemetry/create_change_history_telemetry_reporter';
+import type { ChangeHistoryScope } from '../types/change_history_scope';
+import { DEFAULT_CHANGE_HISTORY_PAGE_SIZE } from '../types/change_history_constants';
+import { ChangeHistoryConfigContext } from './change_history_config_context';
+import { ChangeHistoryModalContext } from './change_history_modal_context';
+import { resolveChangeHistorySupports } from './resolve_change_history_supports';
 import * as i18n from '../components/timeline/translations';
 
 export interface ChangeHistoryProviderProps {
   objectId: string;
   adapter: ChangeHistoryAdapter;
   renderPreview: ChangeHistoryPreviewRenderFn;
-  renderPreviewFooter?: ChangeHistoryPreviewFooterRenderFn;
   renderBadge?: ChangeHistoryBadgeRenderFn;
-  labels?: ChangeHistoryLabels;
+  labels: ChangeHistoryLabels;
+  features?: ChangeHistoryFeatures;
+  permissions?: ChangeHistoryPermissions;
+  scope: ChangeHistoryScope;
+  listPageSize?: number;
+  analytics?: Pick<AnalyticsServiceStart, 'reportEvent'>;
   children: React.ReactNode;
 }
 
@@ -28,69 +41,90 @@ export const ChangeHistoryProvider = ({
   objectId,
   adapter,
   renderPreview,
-  renderPreviewFooter,
   renderBadge,
   labels,
+  features,
+  permissions,
+  scope,
+  listPageSize = DEFAULT_CHANGE_HISTORY_PAGE_SIZE,
+  analytics,
   children,
 }: ChangeHistoryProviderProps): JSX.Element => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedChangeId, setSelectedChangeId] = useState<string | undefined>();
+  const [isOpen, setIsOpen] = useState(false);
   const [prevObjectId, setPrevObjectId] = useState(objectId);
 
   if (objectId !== prevObjectId) {
     setPrevObjectId(objectId);
-    setSelectedChangeId(undefined);
-    setIsModalOpen(false);
+    setIsOpen(false);
   }
 
+  const supports = useMemo(
+    () => resolveChangeHistorySupports(adapter, { features, permissions }),
+    [adapter, features, permissions]
+  );
+
+  const telemetry = useMemo(
+    () =>
+      createChangeHistoryTelemetryReporter({
+        analytics,
+        scope,
+        enabled: features?.telemetry !== false,
+      }),
+    [analytics, features?.telemetry, scope]
+  );
+
   const openModal = useCallback(() => {
-    setIsModalOpen(true);
-  }, []);
+    setIsOpen((wasOpen) => {
+      if (!wasOpen) {
+        telemetry.reportOpened();
+      }
+      return true;
+    });
+  }, [telemetry]);
 
   const closeModal = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedChangeId(undefined);
+    setIsOpen(false);
   }, []);
 
-  const handleSelectChangeId = useCallback((changeId: string | undefined) => {
-    setSelectedChangeId(changeId);
-  }, []);
-
-  const value = useMemo(
+  const configValue = useMemo(
     () => ({
       objectId,
       adapter,
       renderPreview,
-      renderPreviewFooter,
       renderBadge,
       labels: {
-        previewBackLabel: labels?.previewBackLabel ?? i18n.BACK_TO_HOST,
-        previewTitle: labels?.previewTitle ?? labels?.modalTitle ?? '',
-        timelinePanelTitle: labels?.timelinePanelTitle ?? i18n.TIMELINE_PANEL_TITLE,
+        previewBackLabel: labels.previewBackLabel ?? i18n.BACK_TO_HOST,
+        previewTitle: labels.previewTitle,
       },
-      isModalOpen,
-      openModal,
-      closeModal,
-      selectedChangeId,
-      setSelectedChangeId: handleSelectChangeId,
+      supports,
+      telemetry,
+      scope,
+      listPageSize,
     }),
     [
       adapter,
-      closeModal,
-      handleSelectChangeId,
-      isModalOpen,
-      labels?.modalTitle,
-      labels?.previewBackLabel,
-      labels?.previewTitle,
-      labels?.timelinePanelTitle,
+      labels.previewBackLabel,
+      labels.previewTitle,
+      listPageSize,
       objectId,
-      openModal,
       renderBadge,
       renderPreview,
-      renderPreviewFooter,
-      selectedChangeId,
+      scope,
+      supports,
+      telemetry,
     ]
   );
 
-  return <ChangeHistoryContext.Provider value={value}>{children}</ChangeHistoryContext.Provider>;
+  const modalValue = useMemo(
+    () => ({ isOpen, openModal, closeModal }),
+    [isOpen, openModal, closeModal]
+  );
+
+  return (
+    <ChangeHistoryConfigContext.Provider value={configValue}>
+      <ChangeHistoryModalContext.Provider value={modalValue}>
+        {children}
+      </ChangeHistoryModalContext.Provider>
+    </ChangeHistoryConfigContext.Provider>
+  );
 };

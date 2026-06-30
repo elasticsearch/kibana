@@ -6,7 +6,7 @@
  */
 
 import { useDebouncedValue } from '@kbn/react-hooks';
-import { COMPUTED_FEATURE_TYPES } from '@kbn/streams-schema';
+import { COMPUTED_FEATURE_TYPES } from '@kbn/significant-events-schema';
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

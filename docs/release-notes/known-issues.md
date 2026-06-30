@@ -8,6 +8,23 @@ For Elastic {{observability}} known issues, refer to [Elastic Observability know
 
 For Elastic Security known issues, refer to [Elastic Security known issues](docs-content://release-notes/elastic-security/known-issues.md).
 
+::::{dropdown} Upgrading to versions 9.4.0-9.4.2 on deployments with many rules might cause {{kib}} instability
+
+Applies to: {{stack}} 9.4.0-9.4.2
+
+**Details**
+
+Deployments with a large number of active rules (for example, thousands of rules) and multiple {{kib}} nodes might experience {{kib}} process crashes after upgrading to 9.4.0-9.4.2. Affected deployments exhibit high memory usage that causes the OS to terminate {{kib}} processes.
+
+**Workaround**
+
+Upgrade to {{stack}} 9.4.3+.
+
+**Resolved**
+
+This issue is resolved in {{stack}} 9.4.3+.
+::::
+
 ::::{dropdown} Canvas workpad autoplay stops after the first page
 
 Applies to: {{stack}} 9.3.6, 8.19.17

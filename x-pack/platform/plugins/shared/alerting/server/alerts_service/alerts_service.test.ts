@@ -2976,6 +2976,66 @@ describe('Alerts Service', () => {
         });
       });
 
+      describe('getAlertSnoozeSnapshot', () => {
+        test('should fetch and return the requested snapshot fields', async () => {
+          clusterClient.search.mockResponseOnce({
+            hits: {
+              total: 1,
+              hits: [
+                {
+                  _index: '.alerts-default',
+                  _id: 'alert-1',
+                  _source: {
+                    'host.name': 'web-01',
+                    'kibana.alert.severity': 'high',
+                  },
+                },
+              ],
+            },
+            took: 0,
+            timed_out: false,
+            _shards: { total: 0, successful: 0, skipped: 0, failed: 0 },
+          });
+
+          const alertsService = new AlertsService({
+            logger,
+            elasticsearchClientPromise: Promise.resolve(clusterClient),
+            pluginStop$,
+            kibanaVersion: '8.8.0',
+            dataStreamAdapter,
+            elasticsearchAndSOAvailability$,
+            isServerless: false,
+          });
+
+          const result = await alertsService.getAlertSnoozeSnapshot({
+            indices: ['.alerts-default'],
+            alertId: 'alert-1',
+            ruleId: 'rule-1',
+            fields: ['host.name', 'kibana.alert.severity'],
+          });
+
+          expect(result).toEqual({
+            'host.name': 'web-01',
+            'kibana.alert.severity': 'high',
+          });
+          expect(clusterClient.search).toHaveBeenCalledWith({
+            index: ['.alerts-default'],
+            allow_no_indices: true,
+            size: 1,
+            _source: ['host.name', 'kibana.alert.severity'],
+            query: {
+              bool: {
+                must: [
+                  { term: { 'kibana.alert.rule.uuid': 'rule-1' } },
+                  { term: { 'kibana.alert.status': 'active' } },
+                ],
+                filter: [{ term: { 'kibana.alert.instance.id': 'alert-1' } }],
+              },
+            },
+          });
+        });
+      });
+
       describe('muteAlertInstances', () => {
         test('should throw an error if no indices are provided', async () => {
           const alertsService = new AlertsService({

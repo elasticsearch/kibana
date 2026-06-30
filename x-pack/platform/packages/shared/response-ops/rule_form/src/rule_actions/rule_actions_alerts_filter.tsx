@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRuleFormState } from '../hooks';
 import type { RuleAction } from '../types';
 import type { RuleFormPlugins } from '../types';
+import { normalizePersistedFilterMeta } from './normalize_filter_meta';
 
 const DEFAULT_QUERY = { kql: '', filters: [] };
 
@@ -85,7 +86,7 @@ export const RuleActionsAlertsFilter = ({
         const { $state, meta, ...rest } = filter;
         return {
           $state,
-          meta,
+          meta: normalizePersistedFilterMeta(meta),
           query: filter?.query ? { ...filter.query } : { ...rest },
         };
       });

@@ -121,20 +121,9 @@ export interface FunctionParameter {
   supportsWildcard?: boolean;
 
   /**
-   * If set, this parameter does not accept a field. It only accepts a constant,
-   * though a function can be used to create the value. (e.g. now() for dates or concat() for strings)
-   */
-  constantOnly?: boolean;
-
-  /**
    * Default to false. If set to true, this parameter does not accept a function or literal, only fields.
    */
   fieldsOnly?: boolean;
-
-  /**
-   * A list of suggested values for this parameter.
-   */
-  suggestedValues?: string[];
 
   mapParams?: string;
 
@@ -144,8 +133,10 @@ export interface FunctionParameter {
   supportsMultiValues?: boolean;
 
   /**
-   * Provides information that is useful for getting parameter values from external sources.
-   * For example, an inference endpoint
+   * Describes how this parameter's value should be sourced. It can constrain the
+   * parameter to constants (`kind: 'constant'`, optionally with `allowedValues`),
+   * mark it as expecting an aggregation, or point to an external source such as an
+   * inference endpoint.
    */
   hint?: ParameterHint;
 }

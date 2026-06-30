@@ -7,6 +7,6 @@
 
 export const queryKeys = {
   root: 'alerts',
-  getMutedAlerts: (ruleIds: string[]) =>
-    [queryKeys.root, 'mutedInstanceIdsForRuleIds', ruleIds] as const,
+  getAlertSnoozeState: (ruleIds: string[]) =>
+    [queryKeys.root, 'alertSnoozeStateForRuleIds', ruleIds] as const,
 };

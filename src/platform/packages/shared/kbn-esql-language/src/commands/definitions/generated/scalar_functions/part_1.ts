@@ -3598,19 +3598,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3634,19 +3637,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3670,19 +3676,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3706,19 +3715,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3742,19 +3754,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'text',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3778,19 +3793,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'text',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3814,19 +3832,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'text',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3850,19 +3871,22 @@ const dateDiffDefinition: FunctionDefinition = {
           type: 'text',
           optional: false,
           description: 'Time difference unit',
-          suggestedValues: [
-            'year',
-            'quarter',
-            'month',
-            'week',
-            'day',
-            'hour',
-            'minute',
-            'second',
-            'millisecond',
-            'microsecond',
-            'nanosecond',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'year',
+              'quarter',
+              'month',
+              'week',
+              'day',
+              'hour',
+              'minute',
+              'second',
+              'millisecond',
+              'microsecond',
+              'nanosecond',
+            ],
+          },
         },
         {
           name: 'startTimestamp',
@@ -3920,38 +3944,41 @@ const dateExtractDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Part of the date to extract.  Can be: `aligned_day_of_week_in_month`, `aligned_day_of_week_in_year`, `aligned_week_of_month`, `aligned_week_of_year`, `ampm_of_day`, `clock_hour_of_ampm`, `clock_hour_of_day`, `day_of_month`, `day_of_week`, `day_of_year`, `epoch_day`, `era`, `hour_of_ampm`, `hour_of_day`, `instant_seconds`, `micro_of_day`, `micro_of_second`, `milli_of_day`, `milli_of_second`, `minute_of_day`, `minute_of_hour`, `month_of_year`, `nano_of_day`, `nano_of_second`, `offset_seconds`, `proleptic_month`, `second_of_day`, `second_of_minute`, `year`, or `year_of_era`. Refer to {javadoc8}/java/time/temporal/ChronoField.html[java.time.temporal.ChronoField] for a description of these values.  If `null`, the function returns `null`.',
-          suggestedValues: [
-            'ALIGNED_DAY_OF_WEEK_IN_MONTH',
-            'ALIGNED_DAY_OF_WEEK_IN_YEAR',
-            'ALIGNED_WEEK_OF_MONTH',
-            'ALIGNED_WEEK_OF_YEAR',
-            'AMPM_OF_DAY',
-            'CLOCK_HOUR_OF_AMPM',
-            'CLOCK_HOUR_OF_DAY',
-            'DAY_OF_MONTH',
-            'DAY_OF_WEEK',
-            'DAY_OF_YEAR',
-            'EPOCH_DAY',
-            'ERA',
-            'HOUR_OF_AMPM',
-            'HOUR_OF_DAY',
-            'INSTANT_SECONDS',
-            'MICRO_OF_DAY',
-            'MICRO_OF_SECOND',
-            'MILLI_OF_DAY',
-            'MILLI_OF_SECOND',
-            'MINUTE_OF_DAY',
-            'MINUTE_OF_HOUR',
-            'MONTH_OF_YEAR',
-            'NANO_OF_DAY',
-            'NANO_OF_SECOND',
-            'OFFSET_SECONDS',
-            'PROLEPTIC_MONTH',
-            'SECOND_OF_DAY',
-            'SECOND_OF_MINUTE',
-            'YEAR',
-            'YEAR_OF_ERA',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'ALIGNED_DAY_OF_WEEK_IN_MONTH',
+              'ALIGNED_DAY_OF_WEEK_IN_YEAR',
+              'ALIGNED_WEEK_OF_MONTH',
+              'ALIGNED_WEEK_OF_YEAR',
+              'AMPM_OF_DAY',
+              'CLOCK_HOUR_OF_AMPM',
+              'CLOCK_HOUR_OF_DAY',
+              'DAY_OF_MONTH',
+              'DAY_OF_WEEK',
+              'DAY_OF_YEAR',
+              'EPOCH_DAY',
+              'ERA',
+              'HOUR_OF_AMPM',
+              'HOUR_OF_DAY',
+              'INSTANT_SECONDS',
+              'MICRO_OF_DAY',
+              'MICRO_OF_SECOND',
+              'MILLI_OF_DAY',
+              'MILLI_OF_SECOND',
+              'MINUTE_OF_DAY',
+              'MINUTE_OF_HOUR',
+              'MONTH_OF_YEAR',
+              'NANO_OF_DAY',
+              'NANO_OF_SECOND',
+              'OFFSET_SECONDS',
+              'PROLEPTIC_MONTH',
+              'SECOND_OF_DAY',
+              'SECOND_OF_MINUTE',
+              'YEAR',
+              'YEAR_OF_ERA',
+            ],
+          },
         },
         {
           name: 'date',
@@ -3970,38 +3997,41 @@ const dateExtractDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Part of the date to extract.  Can be: `aligned_day_of_week_in_month`, `aligned_day_of_week_in_year`, `aligned_week_of_month`, `aligned_week_of_year`, `ampm_of_day`, `clock_hour_of_ampm`, `clock_hour_of_day`, `day_of_month`, `day_of_week`, `day_of_year`, `epoch_day`, `era`, `hour_of_ampm`, `hour_of_day`, `instant_seconds`, `micro_of_day`, `micro_of_second`, `milli_of_day`, `milli_of_second`, `minute_of_day`, `minute_of_hour`, `month_of_year`, `nano_of_day`, `nano_of_second`, `offset_seconds`, `proleptic_month`, `second_of_day`, `second_of_minute`, `year`, or `year_of_era`. Refer to {javadoc8}/java/time/temporal/ChronoField.html[java.time.temporal.ChronoField] for a description of these values.  If `null`, the function returns `null`.',
-          suggestedValues: [
-            'ALIGNED_DAY_OF_WEEK_IN_MONTH',
-            'ALIGNED_DAY_OF_WEEK_IN_YEAR',
-            'ALIGNED_WEEK_OF_MONTH',
-            'ALIGNED_WEEK_OF_YEAR',
-            'AMPM_OF_DAY',
-            'CLOCK_HOUR_OF_AMPM',
-            'CLOCK_HOUR_OF_DAY',
-            'DAY_OF_MONTH',
-            'DAY_OF_WEEK',
-            'DAY_OF_YEAR',
-            'EPOCH_DAY',
-            'ERA',
-            'HOUR_OF_AMPM',
-            'HOUR_OF_DAY',
-            'INSTANT_SECONDS',
-            'MICRO_OF_DAY',
-            'MICRO_OF_SECOND',
-            'MILLI_OF_DAY',
-            'MILLI_OF_SECOND',
-            'MINUTE_OF_DAY',
-            'MINUTE_OF_HOUR',
-            'MONTH_OF_YEAR',
-            'NANO_OF_DAY',
-            'NANO_OF_SECOND',
-            'OFFSET_SECONDS',
-            'PROLEPTIC_MONTH',
-            'SECOND_OF_DAY',
-            'SECOND_OF_MINUTE',
-            'YEAR',
-            'YEAR_OF_ERA',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'ALIGNED_DAY_OF_WEEK_IN_MONTH',
+              'ALIGNED_DAY_OF_WEEK_IN_YEAR',
+              'ALIGNED_WEEK_OF_MONTH',
+              'ALIGNED_WEEK_OF_YEAR',
+              'AMPM_OF_DAY',
+              'CLOCK_HOUR_OF_AMPM',
+              'CLOCK_HOUR_OF_DAY',
+              'DAY_OF_MONTH',
+              'DAY_OF_WEEK',
+              'DAY_OF_YEAR',
+              'EPOCH_DAY',
+              'ERA',
+              'HOUR_OF_AMPM',
+              'HOUR_OF_DAY',
+              'INSTANT_SECONDS',
+              'MICRO_OF_DAY',
+              'MICRO_OF_SECOND',
+              'MILLI_OF_DAY',
+              'MILLI_OF_SECOND',
+              'MINUTE_OF_DAY',
+              'MINUTE_OF_HOUR',
+              'MONTH_OF_YEAR',
+              'NANO_OF_DAY',
+              'NANO_OF_SECOND',
+              'OFFSET_SECONDS',
+              'PROLEPTIC_MONTH',
+              'SECOND_OF_DAY',
+              'SECOND_OF_MINUTE',
+              'YEAR',
+              'YEAR_OF_ERA',
+            ],
+          },
         },
         {
           name: 'date',
@@ -4020,38 +4050,41 @@ const dateExtractDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Part of the date to extract.  Can be: `aligned_day_of_week_in_month`, `aligned_day_of_week_in_year`, `aligned_week_of_month`, `aligned_week_of_year`, `ampm_of_day`, `clock_hour_of_ampm`, `clock_hour_of_day`, `day_of_month`, `day_of_week`, `day_of_year`, `epoch_day`, `era`, `hour_of_ampm`, `hour_of_day`, `instant_seconds`, `micro_of_day`, `micro_of_second`, `milli_of_day`, `milli_of_second`, `minute_of_day`, `minute_of_hour`, `month_of_year`, `nano_of_day`, `nano_of_second`, `offset_seconds`, `proleptic_month`, `second_of_day`, `second_of_minute`, `year`, or `year_of_era`. Refer to {javadoc8}/java/time/temporal/ChronoField.html[java.time.temporal.ChronoField] for a description of these values.  If `null`, the function returns `null`.',
-          suggestedValues: [
-            'ALIGNED_DAY_OF_WEEK_IN_MONTH',
-            'ALIGNED_DAY_OF_WEEK_IN_YEAR',
-            'ALIGNED_WEEK_OF_MONTH',
-            'ALIGNED_WEEK_OF_YEAR',
-            'AMPM_OF_DAY',
-            'CLOCK_HOUR_OF_AMPM',
-            'CLOCK_HOUR_OF_DAY',
-            'DAY_OF_MONTH',
-            'DAY_OF_WEEK',
-            'DAY_OF_YEAR',
-            'EPOCH_DAY',
-            'ERA',
-            'HOUR_OF_AMPM',
-            'HOUR_OF_DAY',
-            'INSTANT_SECONDS',
-            'MICRO_OF_DAY',
-            'MICRO_OF_SECOND',
-            'MILLI_OF_DAY',
-            'MILLI_OF_SECOND',
-            'MINUTE_OF_DAY',
-            'MINUTE_OF_HOUR',
-            'MONTH_OF_YEAR',
-            'NANO_OF_DAY',
-            'NANO_OF_SECOND',
-            'OFFSET_SECONDS',
-            'PROLEPTIC_MONTH',
-            'SECOND_OF_DAY',
-            'SECOND_OF_MINUTE',
-            'YEAR',
-            'YEAR_OF_ERA',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'ALIGNED_DAY_OF_WEEK_IN_MONTH',
+              'ALIGNED_DAY_OF_WEEK_IN_YEAR',
+              'ALIGNED_WEEK_OF_MONTH',
+              'ALIGNED_WEEK_OF_YEAR',
+              'AMPM_OF_DAY',
+              'CLOCK_HOUR_OF_AMPM',
+              'CLOCK_HOUR_OF_DAY',
+              'DAY_OF_MONTH',
+              'DAY_OF_WEEK',
+              'DAY_OF_YEAR',
+              'EPOCH_DAY',
+              'ERA',
+              'HOUR_OF_AMPM',
+              'HOUR_OF_DAY',
+              'INSTANT_SECONDS',
+              'MICRO_OF_DAY',
+              'MICRO_OF_SECOND',
+              'MILLI_OF_DAY',
+              'MILLI_OF_SECOND',
+              'MINUTE_OF_DAY',
+              'MINUTE_OF_HOUR',
+              'MONTH_OF_YEAR',
+              'NANO_OF_DAY',
+              'NANO_OF_SECOND',
+              'OFFSET_SECONDS',
+              'PROLEPTIC_MONTH',
+              'SECOND_OF_DAY',
+              'SECOND_OF_MINUTE',
+              'YEAR',
+              'YEAR_OF_ERA',
+            ],
+          },
         },
         {
           name: 'date',
@@ -4070,38 +4103,41 @@ const dateExtractDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Part of the date to extract.  Can be: `aligned_day_of_week_in_month`, `aligned_day_of_week_in_year`, `aligned_week_of_month`, `aligned_week_of_year`, `ampm_of_day`, `clock_hour_of_ampm`, `clock_hour_of_day`, `day_of_month`, `day_of_week`, `day_of_year`, `epoch_day`, `era`, `hour_of_ampm`, `hour_of_day`, `instant_seconds`, `micro_of_day`, `micro_of_second`, `milli_of_day`, `milli_of_second`, `minute_of_day`, `minute_of_hour`, `month_of_year`, `nano_of_day`, `nano_of_second`, `offset_seconds`, `proleptic_month`, `second_of_day`, `second_of_minute`, `year`, or `year_of_era`. Refer to {javadoc8}/java/time/temporal/ChronoField.html[java.time.temporal.ChronoField] for a description of these values.  If `null`, the function returns `null`.',
-          suggestedValues: [
-            'ALIGNED_DAY_OF_WEEK_IN_MONTH',
-            'ALIGNED_DAY_OF_WEEK_IN_YEAR',
-            'ALIGNED_WEEK_OF_MONTH',
-            'ALIGNED_WEEK_OF_YEAR',
-            'AMPM_OF_DAY',
-            'CLOCK_HOUR_OF_AMPM',
-            'CLOCK_HOUR_OF_DAY',
-            'DAY_OF_MONTH',
-            'DAY_OF_WEEK',
-            'DAY_OF_YEAR',
-            'EPOCH_DAY',
-            'ERA',
-            'HOUR_OF_AMPM',
-            'HOUR_OF_DAY',
-            'INSTANT_SECONDS',
-            'MICRO_OF_DAY',
-            'MICRO_OF_SECOND',
-            'MILLI_OF_DAY',
-            'MILLI_OF_SECOND',
-            'MINUTE_OF_DAY',
-            'MINUTE_OF_HOUR',
-            'MONTH_OF_YEAR',
-            'NANO_OF_DAY',
-            'NANO_OF_SECOND',
-            'OFFSET_SECONDS',
-            'PROLEPTIC_MONTH',
-            'SECOND_OF_DAY',
-            'SECOND_OF_MINUTE',
-            'YEAR',
-            'YEAR_OF_ERA',
-          ],
+          hint: {
+            kind: 'constant',
+            allowedValues: [
+              'ALIGNED_DAY_OF_WEEK_IN_MONTH',
+              'ALIGNED_DAY_OF_WEEK_IN_YEAR',
+              'ALIGNED_WEEK_OF_MONTH',
+              'ALIGNED_WEEK_OF_YEAR',
+              'AMPM_OF_DAY',
+              'CLOCK_HOUR_OF_AMPM',
+              'CLOCK_HOUR_OF_DAY',
+              'DAY_OF_MONTH',
+              'DAY_OF_WEEK',
+              'DAY_OF_YEAR',
+              'EPOCH_DAY',
+              'ERA',
+              'HOUR_OF_AMPM',
+              'HOUR_OF_DAY',
+              'INSTANT_SECONDS',
+              'MICRO_OF_DAY',
+              'MICRO_OF_SECOND',
+              'MILLI_OF_DAY',
+              'MILLI_OF_SECOND',
+              'MINUTE_OF_DAY',
+              'MINUTE_OF_HOUR',
+              'MONTH_OF_YEAR',
+              'NANO_OF_DAY',
+              'NANO_OF_SECOND',
+              'OFFSET_SECONDS',
+              'PROLEPTIC_MONTH',
+              'SECOND_OF_DAY',
+              'SECOND_OF_MINUTE',
+              'YEAR',
+              'YEAR_OF_ERA',
+            ],
+          },
         },
         {
           name: 'date',
@@ -6728,7 +6764,9 @@ const kqlDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Query string in KQL query string format.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -6738,7 +6776,9 @@ const kqlDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) KQL additional options as <<esql-function-named-params,function named parameters>>. Available in stack version 9.3.0 and later.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -6750,7 +6790,9 @@ const kqlDefinition: FunctionDefinition = {
           type: 'text',
           optional: false,
           description: 'Query string in KQL query string format.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -6760,7 +6802,9 @@ const kqlDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) KQL additional options as <<esql-function-named-params,function named parameters>>. Available in stack version 9.3.0 and later.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -7875,7 +7919,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'boolean',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -7885,7 +7931,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -7904,7 +7952,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -7914,7 +7964,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -7933,7 +7985,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'date',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -7943,7 +7997,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -7962,7 +8018,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -7972,7 +8030,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -7991,7 +8051,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'date_nanos',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8001,7 +8063,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8020,7 +8084,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8030,7 +8096,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8049,7 +8117,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8059,7 +8129,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8078,7 +8150,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8088,7 +8162,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8107,7 +8183,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8117,7 +8195,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8136,7 +8216,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8146,7 +8228,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8165,7 +8249,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8175,7 +8261,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8194,7 +8282,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8204,7 +8294,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8223,7 +8315,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8233,7 +8327,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8252,7 +8348,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8262,7 +8360,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8281,7 +8381,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'ip',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8291,7 +8393,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8310,7 +8414,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8320,7 +8426,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8339,7 +8447,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8349,7 +8459,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8368,7 +8480,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8378,7 +8492,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8397,7 +8513,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8407,7 +8525,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8426,7 +8546,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8436,7 +8558,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8455,7 +8579,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8465,7 +8591,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8484,7 +8612,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8494,7 +8624,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8513,7 +8645,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8523,7 +8657,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8542,7 +8678,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8552,7 +8690,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8571,7 +8711,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8581,7 +8723,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8600,7 +8744,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8610,7 +8756,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8629,7 +8777,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'unsigned_long',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8639,7 +8789,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8658,7 +8810,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8668,7 +8822,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8687,7 +8843,9 @@ const matchDefinition: FunctionDefinition = {
           type: 'version',
           optional: false,
           description: 'Value to find in the provided field.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8697,7 +8855,9 @@ const matchDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) Match additional options as <<esql-function-named-params,function named parameters>>.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8738,7 +8898,6 @@ const matchPhraseDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'options',
@@ -8748,7 +8907,9 @@ const matchPhraseDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) MatchPhrase additional options as <<esql-function-named-params,function named parameters>>. See [`match_phrase`](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase) for more information.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',
@@ -8770,7 +8931,6 @@ const matchPhraseDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'options',
@@ -8780,7 +8940,9 @@ const matchPhraseDefinition: FunctionDefinition = {
           optional: true,
           description:
             '(Optional) MatchPhrase additional options as <<esql-function-named-params,function named parameters>>. See [`match_phrase`](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase) for more information.',
-          constantOnly: true,
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'boolean',

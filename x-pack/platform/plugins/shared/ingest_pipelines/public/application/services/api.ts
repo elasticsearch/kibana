@@ -119,7 +119,7 @@ export class ApiService {
   public async simulatePipeline(reqBody: {
     documents: object[];
     verbose?: boolean;
-    pipeline: Pick<Pipeline, 'processors' | 'on_failure'>;
+    pipeline: Pick<Pipeline, 'processors' | 'on_failure' | 'field_access_pattern'>;
   }) {
     const result = await this.sendRequest({
       path: `${API_BASE_PATH}/simulate`,

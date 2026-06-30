@@ -22,7 +22,7 @@ import {
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import { upperFirst } from 'lodash';
-import type { Feature } from '@kbn/streams-schema';
+import type { Feature } from '@kbn/significant-events-schema';
 import React, { useMemo } from 'react';
 
 interface DeleteFeatureModalProps {

@@ -9,9 +9,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import nodePath from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { parse as parseJsonc } from 'jsonc-parser';
-
+import { Jsonc } from '@kbn/repo-packages';
 import { REPO_ROOT } from '@kbn/repo-info';
 
 import { getCodeOwnersForFile, getPathsWithOwnersReversed } from '../lib/code_owners.ts';
@@ -39,7 +37,7 @@ function readKibanaJsonc(packagePath: string): KibanaJsonc | null {
   if (!existsSync(filePath)) return null;
   try {
     const raw = readFileSync(filePath, 'utf8');
-    return parseJsonc(raw) as KibanaJsonc;
+    return Jsonc.parse(raw) as KibanaJsonc;
   } catch {
     return null;
   }

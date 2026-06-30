@@ -15,6 +15,7 @@ import type {
 } from '@kbn/core/server';
 import type { ConcreteTaskInstance, DecoratedError } from '@kbn/task-manager-plugin/server';
 import type { PublicMethodsOf } from '@kbn/utility-types';
+import type { AuditServiceSetup } from '@kbn/security-plugin-types-server';
 import type { PluginStartContract as ActionsPluginStartContract } from '@kbn/actions-plugin/server';
 import type { ActionsClient } from '@kbn/actions-plugin/server/actions_client';
 import type { PluginStart as DataPluginStart } from '@kbn/data-plugin/server';
@@ -57,6 +58,7 @@ import type { ElasticsearchError } from '../lib';
 import type { ConnectorAdapterRegistry } from '../connector_adapters/connector_adapter_registry';
 import type { RulesSettingsService } from '../rules_settings';
 import type { MaintenanceWindowsService } from './maintenance_windows';
+import type { RawRuleSnoozedInstance } from '../saved_objects/schemas/raw_rule';
 
 export interface RuleTaskRunResult {
   state: RuleTaskState;
@@ -76,13 +78,33 @@ export const getDeleteRuleTaskRunResult = (): RuleTaskRunResult => ({
 export interface RunRuleResult {
   metrics: RuleRunMetrics;
   state: RuleTaskState;
+  /**
+   * Per-alert snooze entries that expired (TTL or condition met) during this run,
+   * as (instanceId, snoozedAt) pairs for identity-aware atomic removal.
+   */
+  expiredSnoozedInstances?: Array<{ instanceId: string; snoozedAt: string }>;
+  /**
+   * Audit context for `alert_auto_unsnooze`
+   */
+  autoUnsnoozeAudit?: {
+    expired: RawRuleSnoozedInstance[];
+    conditionExpired: RawRuleSnoozedInstance[];
+    ruleName: string;
+  };
 }
 
 export interface RunRuleParams<Params extends RuleTypeParams> {
-  apiKey: RawRule['apiKey'];
-  uiamApiKey?: RawRule['uiamApiKey'];
+  /**
+   * Resolved credential the rule run executes under, ready to use after
+   * `ApiKey ` in an `Authorization` header. For ES rules this is the
+   * base64-encoded `id:secret` stored on the rule SO as `apiKey`; for UIAM
+   * rules it is the decoded raw `essu_…` UIAM secret. Computed once by
+   * `validateRuleAndCreateFakeRequest` so the rest of the rule run never has
+   * to look at the raw `apiKey`/`uiamApiKey` fields again.
+   */
+  effectiveApiKey: string | null;
   fakeRequest: KibanaRequest;
-  rule: SanitizedRule<Params>;
+  rule: SanitizedRule<Params> & { snoozedInstances: RawRuleSnoozedInstance[] };
   validatedParams: Params;
   version: string | undefined;
 }
@@ -175,6 +197,7 @@ export interface TaskRunnerContext {
   actionsConfigMap: ActionsConfigMap;
   actionsPlugin: ActionsPluginStartContract;
   alertsService: AlertsService | null;
+  auditService?: AuditServiceSetup;
   backfillClient: BackfillClient;
   cancelAlertsOnRuleTimeout: boolean;
   connectorAdapterRegistry: ConnectorAdapterRegistry;

@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export type { ChangeHistoryScope } from './change_history_scope';
 export type { ChangeHistoryListItem } from './change_history_list_item';
 export type { ChangeHistoryDetail } from './change_history_detail';
 export type {
@@ -15,10 +16,18 @@ export type {
 export type { ChangeHistoryError, ChangeHistoryErrorCode } from './change_history_error';
 export { DEFAULT_CHANGE_HISTORY_PAGE_SIZE } from './change_history_constants';
 export type { ChangeHistoryPreviewRenderFn } from './change_history_preview';
-export type { ChangeHistoryPreviewFooterRenderFn } from './change_history_preview_footer';
 export type { ChangeHistoryBadgeRenderFn } from './change_history_badge';
 export type { ChangeHistoryAdapter } from './change_history_adapter';
+export type {
+  ChangeHistoryFeatures,
+  ChangeHistoryPermissions,
+  ChangeHistorySupports,
+} from './change_history_features';
 export type { ChangeHistoryLabels } from './change_history_labels';
+export type {
+  RestoreChangeParams,
+  ChangeHistoryRestoreTelemetryParams,
+} from './restore_change_params';
 export type {
   ChangeHistoryHttpClient,
   ChangeHistoryHttpGetOptions,

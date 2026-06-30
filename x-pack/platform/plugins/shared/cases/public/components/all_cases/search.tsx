@@ -9,6 +9,7 @@ import { EuiFieldSearch } from '@elastic/eui';
 import React, { useCallback, useState } from 'react';
 import * as i18n from './translations';
 import type { FilterOptions } from '../../containers/types';
+import { useCasesConfig } from '../../common/lib/kibana';
 
 interface TableSearchComponentProps {
   filterOptionsSearch: string;
@@ -20,6 +21,7 @@ const TableSearchComponent: React.FC<TableSearchComponentProps> = ({
   onFilterOptionsChange,
 }) => {
   const [search, setSearch] = useState(filterOptionsSearch);
+  const { templatesEnabled } = useCasesConfig();
 
   const onSearch = useCallback(
     (newSearch: string) => {
@@ -30,13 +32,17 @@ const TableSearchComponent: React.FC<TableSearchComponentProps> = ({
     [onFilterOptionsChange]
   );
 
+  const placeholder = templatesEnabled
+    ? i18n.SEARCH_PLACEHOLDER_TEMPLATES_V2
+    : i18n.SEARCH_PLACEHOLDER;
+
   return (
     <EuiFieldSearch
       aria-label={i18n.SEARCH_CASES}
       data-test-subj="search-cases"
       fullWidth
       incremental={false}
-      placeholder={i18n.SEARCH_PLACEHOLDER}
+      placeholder={placeholder}
       onChange={(e) => setSearch(e.target.value)}
       onSearch={onSearch}
       value={search}

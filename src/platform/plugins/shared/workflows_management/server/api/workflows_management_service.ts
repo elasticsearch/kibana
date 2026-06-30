@@ -75,7 +75,10 @@ import type {
   SearchStepExecutionsParams,
 } from './workflows_management_api';
 
-import type { WorkflowChangesHistoryResponse } from '../../common/lib/workflow_change_history/types';
+import type {
+  RestoreWorkflowVersionResponseDto,
+  WorkflowChangesHistoryResponse,
+} from '../../common/lib/workflow_change_history/types';
 import type { BulkFailureEntry } from '../lib/bulk_id_helpers';
 import { getAuthenticatedUser } from '../lib/get_user';
 import { getHistoryForWorkflow } from '../lib/get_workflow_change_history';
@@ -330,6 +333,16 @@ export class WorkflowsService {
   ): Promise<UpdatedWorkflowResponseDto> {
     await this.ensureInitialized();
     return this.crudService.updateWorkflow(id, workflow, spaceId, request);
+  }
+
+  public async restoreWorkflowVersion(
+    workflowId: string,
+    eventId: string,
+    spaceId: string,
+    request: KibanaRequest
+  ): Promise<RestoreWorkflowVersionResponseDto> {
+    await this.ensureInitialized();
+    return this.crudService.restoreWorkflowVersion(workflowId, eventId, spaceId, request);
   }
 
   public async deleteWorkflows(

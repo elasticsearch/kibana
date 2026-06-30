@@ -7,7 +7,7 @@
 
 import type { RetrieverContainer } from '@elastic/elasticsearch/lib/api/types';
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
-import type { Feature, KnowledgeIndicator, QueryLink } from '@kbn/streams-schema';
+import type { Feature, KnowledgeIndicator, QueryLink } from '@kbn/significant-events-schema';
 import {
   isStoredFeatureKnowledgeIndicator,
   isStoredQueryKnowledgeIndicator,

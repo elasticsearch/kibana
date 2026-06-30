@@ -44,8 +44,8 @@ export const test = baseTest.extend<
       loginAsUserWithoutAlertingV2Access: () => browserAuth.loginWithCustomRole(NO_ACCESS_ROLE),
     });
   },
-  pageObjects: async ({ pageObjects, page }, use) => {
-    await use(extendPageObjects(pageObjects, page));
+  pageObjects: async ({ pageObjects, page, kbnUrl }, use) => {
+    await use(extendPageObjects(pageObjects, page, kbnUrl));
   },
   apiServices: [
     async (

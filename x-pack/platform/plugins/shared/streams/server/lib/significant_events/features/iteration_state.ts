@@ -6,7 +6,7 @@
  */
 
 import type { ChatCompletionTokenCount } from '@kbn/inference-common';
-import type { FeatureUpsert, IterationResult } from '@kbn/streams-schema';
+import type { FeatureUpsert, IterationResult } from '@kbn/significant-events-schema';
 import { EMPTY_TOKENS, sumTokens } from '@kbn/streams-ai';
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;

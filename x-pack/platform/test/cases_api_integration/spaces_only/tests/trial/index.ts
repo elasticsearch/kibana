@@ -23,5 +23,6 @@ export default ({ loadTestFile, getService }: FtrProviderContext): void => {
 
     loadTestFile(require.resolve('./cases/push_case'));
     loadTestFile(require.resolve('./configure'));
+    loadTestFile(require.resolve('./analytics_v2_off'));
   });
 };

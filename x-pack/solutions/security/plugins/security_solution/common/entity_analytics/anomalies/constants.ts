@@ -14,3 +14,6 @@ export const ENTITY_ANOMALY_SUMMARY_INTERNAL_URL =
 
 export const ENTITY_ANOMALY_OVERVIEW_INTERNAL_URL =
   '/internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_overview';
+
+export const ENTITY_ANOMALY_PRIVILEGES_INTERNAL_URL =
+  '/internal/entity_analytics/anomalies/privileges' as const;

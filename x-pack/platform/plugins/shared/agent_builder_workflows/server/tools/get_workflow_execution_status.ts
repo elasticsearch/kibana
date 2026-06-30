@@ -7,11 +7,13 @@
 
 import { z } from '@kbn/zod/v4';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
+import type { SecurityPluginStart } from '@kbn/security-plugin-types-server';
 import { platformCoreTools, ToolType } from '@kbn/agent-builder-common';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { cleanPrompt } from '@kbn/agent-builder-genai-utils/prompts';
 import { getExecutionState } from '@kbn/agent-builder-tools-base/workflows';
 import { errorResult, otherResult } from '@kbn/agent-builder-genai-utils/tools/utils/results';
+import { hasWorkflowExecutionReadPrivilege } from './utils/check_execution_read_privilege';
 
 const getWorkflowExecutionStatusSchema = z.object({
   executionId: z
@@ -21,8 +23,10 @@ const getWorkflowExecutionStatusSchema = z.object({
 
 export const getWorkflowExecutionStatusTool = ({
   workflowsManagement,
+  getSecurity,
 }: {
   workflowsManagement: WorkflowsServerPluginSetup;
+  getSecurity: () => SecurityPluginStart | undefined;
 }): BuiltinToolDefinition<typeof getWorkflowExecutionStatusSchema> => {
   const { management: workflowApi } = workflowsManagement;
 
@@ -37,20 +41,38 @@ export const getWorkflowExecutionStatusTool = ({
     Instead, if the workflow didn't complete, tell the user they can ask you to check the execution.
     `),
     schema: getWorkflowExecutionStatusSchema,
-    handler: async ({ executionId }, { spaceId }) => {
-      const execution = await getExecutionState({
-        executionId,
-        spaceId,
-        workflowApi,
-      });
+    handler: async ({ executionId }, { spaceId, request }) => {
+      try {
+        const authorized = await hasWorkflowExecutionReadPrivilege({
+          getSecurity,
+          request,
+          spaceId,
+        });
+        if (!authorized) {
+          return {
+            results: [errorResult(`Workflow execution with ID '${executionId}' not found.`)],
+          };
+        }
 
-      if (execution) {
+        const execution = await getExecutionState({
+          executionId,
+          spaceId,
+          workflowApi,
+        });
+
+        if (execution) {
+          return {
+            results: [otherResult({ execution })],
+          };
+        } else {
+          return {
+            results: [errorResult(`Workflow execution with ID '${executionId}' not found.`)],
+          };
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
         return {
-          results: [otherResult({ execution })],
-        };
-      } else {
-        return {
-          results: [errorResult(`Workflow execution with ID '${executionId}' not found.`)],
+          results: [errorResult(`Failed to retrieve workflow execution status: ${message}`)],
         };
       }
     },

@@ -10,7 +10,7 @@
     "server": true,
     "configPath": ["xpack", "genAiSettings"],
     "requiredPlugins": ["management", "actions", "inference", "licensing", "productDocBase"],
-    "optionalPlugins": ["spaces", "agentBuilder"],
+    "optionalPlugins": ["spaces", "agentBuilder", "agentBuilderPlatform"],
     "requiredBundles": ["kibanaReact", "productDocBase"]
   }
 }

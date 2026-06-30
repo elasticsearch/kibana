@@ -1,5 +1,6 @@
 env:
   IGNORE_SHIP_CI_STATS_ERROR: 'true'
+  KBN_ES_SNAPSHOT_USE_CACHED: 'false'
 steps:
   - block: 'Verify'
     prompt: "Enter the details for the snapshot you'd like to verify"

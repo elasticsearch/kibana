@@ -53,6 +53,8 @@ import type { Rule, RuleUiAction } from './types';
 import type { AlertsSearchBarProps } from './application/sections/alerts_search_bar';
 
 import { getAddConnectorFlyoutLazy } from './common/get_add_connector_flyout';
+import { getAddConnectorFormLazy } from './common/get_add_connector_form';
+import type { CreateConnectorFormProps } from './application/sections/action_connector_form';
 import { getEditConnectorFlyoutLazy } from './common/get_edit_connector_flyout';
 import { getRuleEventLogListLazy } from './common/get_rule_event_log_list';
 import { getRuleStatusDropdownLazy } from './common/get_rule_status_dropdown';
@@ -122,6 +124,9 @@ export interface TriggersAndActionsUIPublicPluginStart {
   getAddConnectorFlyout: (
     props: Omit<CreateConnectorFlyoutProps, 'actionTypeRegistry'>
   ) => ReactElement<CreateConnectorFlyoutProps>;
+  getAddConnectorForm: (
+    props: Omit<CreateConnectorFormProps, 'actionTypeRegistry'>
+  ) => ReactElement;
   getEditConnectorFlyout: (
     props: Omit<EditConnectorFlyoutProps, 'actionTypeRegistry'>
   ) => ReactElement<EditConnectorFlyoutProps>;
@@ -529,6 +534,14 @@ export class Plugin
       },
       getAddConnectorFlyout: (props: Omit<CreateConnectorFlyoutProps, 'actionTypeRegistry'>) => {
         return getAddConnectorFlyoutLazy({
+          ...props,
+          actionTypeRegistry: this.actionTypeRegistry,
+          connectorServices: this.connectorServices!,
+          isServerless: !!plugins.serverless,
+        });
+      },
+      getAddConnectorForm: (props: Omit<CreateConnectorFormProps, 'actionTypeRegistry'>) => {
+        return getAddConnectorFormLazy({
           ...props,
           actionTypeRegistry: this.actionTypeRegistry,
           connectorServices: this.connectorServices!,

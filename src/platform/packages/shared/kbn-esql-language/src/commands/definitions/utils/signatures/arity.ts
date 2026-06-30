@@ -8,6 +8,7 @@
  */
 
 import type { FunctionDefinition, FunctionParameter, Signature } from '../../types';
+import { isConstantParameter } from './traits';
 
 /** Finds which parameter a given argument position belongs to. */
 export function getParamAtPosition(
@@ -43,7 +44,7 @@ export function getParamDefsAtPosition(
       continue;
     }
 
-    const key = `${param.type}-${param.constantOnly}`;
+    const key = `${param.type}-${isConstantParameter(param)}`;
 
     if (!seen.has(key)) {
       seen.add(key);

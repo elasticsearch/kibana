@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { BaseFeature } from '@kbn/streams-schema';
+import type { BaseFeature } from '@kbn/significant-events-schema';
 import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import { createFeatureKnowledgeIndicatorToolHandler } from './handler';
 

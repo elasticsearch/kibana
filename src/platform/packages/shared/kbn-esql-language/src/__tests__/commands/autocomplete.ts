@@ -56,9 +56,9 @@ export const DATE_DIFF_TIME_UNITS = (() => {
   const dateDiffDefinition = scalarFunctionDefinitions.find(
     ({ name }) => name.toLowerCase() === 'date_diff'
   );
-  const suggestedValues = dateDiffDefinition?.signatures?.[0]?.params?.[0]?.suggestedValues ?? [];
+  const allowedValues = dateDiffDefinition?.signatures?.[0]?.params?.[0]?.hint?.allowedValues ?? [];
 
-  return suggestedValues.map((unit) => `"${unit}", `);
+  return allowedValues.map((unit) => `"${unit}", `);
 })();
 
 export const mockFieldsWithTypes = (

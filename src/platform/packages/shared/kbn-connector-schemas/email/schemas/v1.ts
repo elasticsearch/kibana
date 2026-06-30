@@ -22,6 +22,7 @@ const ConfigSchemaProps = {
   tenantId: z.string().nullable().default(null),
   clientId: z.string().nullable().default(null),
   oauthTokenUrl: z.string().nullable().default(null),
+  allowHtml: z.boolean().optional(),
 };
 
 export const ConfigSchema = lazySchema(() => z.object(ConfigSchemaProps).strict());

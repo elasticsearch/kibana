@@ -73,6 +73,7 @@ export interface SearchEntityAnomaliesOpts {
   size?: number;
   logger: Logger;
   ml: MlPluginSetup;
+  request: KibanaRequest;
   securityJobIds?: string[];
   soClient: SavedObjectsClientContract;
 }
@@ -95,11 +96,12 @@ export const searchEntityAnomalies = async ({
   size = 100,
   logger,
   ml,
+  request,
   securityJobIds,
   soClient,
 }: SearchEntityAnomaliesOpts): Promise<SearchEntityAnomaliesResult> => {
-  const mlSystem = ml.mlSystemProvider({} as KibanaRequest, soClient);
-  const jobIds = securityJobIds ?? (await getSecurityMlJobIds({ ml, soClient }));
+  const mlSystem = ml.mlSystemProvider(request, soClient);
+  const jobIds = securityJobIds ?? (await getSecurityMlJobIds({ ml, request, soClient }));
 
   const empty: SearchEntityAnomaliesResult = { hits: [], total: 0 };
 
@@ -130,8 +132,8 @@ export const searchEntityAnomalies = async ({
               {
                 range: {
                   record_score: {
-                    gte: minScore ?? 1,
-                    ...(maxScore !== undefined ? { lte: maxScore } : {}),
+                    gte: minScore || 1,
+                    ...(maxScore !== undefined ? { lt: maxScore } : {}),
                   },
                 },
               },

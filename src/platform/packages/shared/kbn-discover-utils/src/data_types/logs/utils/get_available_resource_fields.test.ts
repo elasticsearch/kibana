@@ -133,4 +133,47 @@ describe('getAvailableResourceFields', () => {
     // Arrays are not extracted, returned as field names
     expect(fields).toEqual(['service.name']);
   });
+
+  it('should ignore an array containing only an empty string', () => {
+    const fields = getAvailableResourceFields({
+      'service.name': [''],
+    });
+    expect(fields).toEqual([]);
+  });
+
+  it('should ignore an array containing only empty strings', () => {
+    const fields = getAvailableResourceFields({
+      'service.name': ['', ''],
+    });
+    expect(fields).toEqual([]);
+  });
+
+  it('should ignore an array containing only null values', () => {
+    const fields = getAvailableResourceFields({
+      'service.name': [null],
+    });
+    expect(fields).toEqual([]);
+  });
+
+  it('should ignore an empty array', () => {
+    const fields = getAvailableResourceFields({
+      'service.name': [],
+    });
+    expect(fields).toEqual([]);
+  });
+
+  it('should fall through to a populated field when an earlier field in the group is an empty array', () => {
+    const fields = getAvailableResourceFields({
+      'kubernetes.container.name': [''],
+      'container.name': 'my-container',
+    });
+    expect(fields).toEqual(['container.name']);
+  });
+
+  it('should keep an array that contains at least one non-empty value', () => {
+    const fields = getAvailableResourceFields({
+      'service.name': ['', 'my-service'],
+    });
+    expect(fields).toEqual(['service.name']);
+  });
 });

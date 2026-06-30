@@ -36,8 +36,8 @@ export const createGetMultiSpaceSettingsRoute: SyntheticsRestApiRouteFactory<
   path: SYNTHETICS_API_URLS.MULTI_SPACE_SETTINGS,
   validate: false,
   handler: async ({ savedObjectsClient, server, response }) => {
-    // Mirror the UI's gating: the endpoint must not exist on serverless or when the
-    // experimental CCS flag is off, so external clients can't write a `synthetics-settings-multi-space`
+    // Mirror the UI's gating: the endpoint must not exist on serverless (where CCS is
+    // unavailable), so external clients can't write a `synthetics-settings-multi-space`
     // SO that nothing else respects.
     if (!isCCSEnabled(server)) {
       return response.notFound();

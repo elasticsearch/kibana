@@ -23,19 +23,34 @@ import { runLintRules, TsProjectLintTarget } from '@kbn/repo-linter';
 
 import { RULES } from './rules';
 
-function getFilter(input: string) {
+// Resolve a single user input (package id/name, or a path to a package or directory)
+// to every ts project it refers to. A directory input matches that project and all
+// projects nested under it, so passing a parent path lints everything beneath it.
+function resolveTargets(input: string, allTargets: TsProjectLintTarget[]) {
   const abs = Path.resolve(input);
 
-  return ({ tsProject }: TsProjectLintTarget) =>
-    tsProject.name === input ||
-    tsProject.repoRel === input ||
-    tsProject.repoRelDir === input ||
-    tsProject.path === abs ||
-    tsProject.directory === abs ||
-    abs.startsWith(tsProject.directory + '/') ||
-    tsProject.pkg?.normalizedRepoRelativeDir === input ||
-    tsProject.pkg?.directory === abs ||
-    (tsProject.pkg && abs.startsWith(tsProject.pkg.directory + '/'));
+  const matches = allTargets.filter(
+    ({ tsProject }) =>
+      tsProject.name === input ||
+      tsProject.repoRel === input ||
+      tsProject.repoRelDir === input ||
+      tsProject.path === abs ||
+      tsProject.directory === abs ||
+      tsProject.directory.startsWith(abs + '/') ||
+      tsProject.pkg?.normalizedRepoRelativeDir === input ||
+      tsProject.pkg?.directory === abs
+  );
+  if (matches.length) {
+    return matches;
+  }
+
+  // Fallback: input points inside a project (e.g. a file path) but isn't itself a
+  // project root — lint the closest enclosing project.
+  const enclosing = allTargets
+    .filter(({ tsProject }) => abs.startsWith(tsProject.directory + '/'))
+    .sort((a, b) => b.tsProject.directory.length - a.tsProject.directory.length);
+
+  return enclosing.length ? [enclosing[0]] : [];
 }
 
 function validateProjectOwnership(
@@ -113,24 +128,22 @@ run(
   async ({ log, flagsReader }) => {
     const filter = flagsReader.getPositionals();
     const packages = getPackages(REPO_ROOT);
-    const allTargets = Array.from(TS_PROJECTS, (p) => new TsProjectLintTarget(p)).sort(
-      (a, b) => b.repoRel.length - a.repoRel.length
-    );
+    const allTargets = Array.from(TS_PROJECTS, (p) => new TsProjectLintTarget(p));
 
     const toLint = Array.from(
       new Set(
         !filter.length
           ? allTargets
-          : filter.map((input) => {
-              const pkg = allTargets.find(getFilter(input));
+          : filter.flatMap((input) => {
+              const targets = resolveTargets(input, allTargets);
 
-              if (!pkg) {
+              if (!targets.length) {
                 throw createFailError(
                   `unable to find a package matching [${input}]. Supply either a package id/name or path to a package`
                 );
               }
 
-              return pkg;
+              return targets;
             })
       )
     ).sort((a, b) => a.repoRel.localeCompare(b.repoRel));

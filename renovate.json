@@ -147,11 +147,11 @@
       "minimumReleaseAge": "14 days"
     },
     {
-      "groupName": "@elastic/obs-ai-team dependencies",
+      "groupName": "@elastic/nightshift-context-and-research-team dependencies",
       "matchDepNames": ["@arizeai/phoenix-client", "simple-statistics"],
-      "reviewers": ["team:obs-ai-team"],
+      "reviewers": ["team:nightshift-context-and-research-team"],
       "matchBaseBranches": ["main"],
-      "addLabels": ["Team:obs-ai-team"],
+      "addLabels": ["Team:nightshift-context-and-research"],
       "enabled": true,
       "minimumReleaseAge": "14 days"
     },
@@ -2569,6 +2569,15 @@
       "reviewers": ["team:eui-team"],
       "matchBaseBranches": ["main"],
       "addLabels": ["Team:EUI"],
+      "minimumReleaseAge": "14 days",
+      "enabled": true
+    },
+    {
+      "groupName": "patch-package",
+      "matchDepNames": ["patch-package"],
+      "reviewers": ["team:kibana-operations"],
+      "matchBaseBranches": ["main"],
+      "addLabels": ["Team:Operations"],
       "minimumReleaseAge": "14 days",
       "enabled": true
     }

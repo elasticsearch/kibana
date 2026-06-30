@@ -6,9 +6,9 @@
  */
 
 import {
-  STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES,
+  KIS_ONBOARDING_IN_PROGRESS_STATUSES,
   type SignificantEventsWorkflowStatusResult,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import { useCallback, useRef } from 'react';
 import { useOnboardingApi } from '../../../../hooks/use_onboarding_api';
 
@@ -42,7 +42,7 @@ export function useOnboardingStatusUpdateQueue(
 
       onStreamStatusUpdate(streamName, statusResult);
 
-      if (!STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(statusResult.status)) {
+      if (!KIS_ONBOARDING_IN_PROGRESS_STATUSES.has(statusResult.status)) {
         queue.current.delete(streamName);
       }
     }

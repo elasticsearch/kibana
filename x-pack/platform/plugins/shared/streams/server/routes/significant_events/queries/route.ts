@@ -5,12 +5,12 @@
  * 2.0.
  */
 import type { ErrorCause } from '@elastic/elasticsearch/lib/api/types';
-import type { StreamQuery } from '@kbn/streams-schema';
+import type { StreamQuery } from '@kbn/significant-events-schema';
+import { deriveQueryType } from '@kbn/streams-schema';
 import {
   bulkStreamQueryInputSchema,
   upsertStreamQueryRequestSchema,
-  deriveQueryType,
-} from '@kbn/streams-schema';
+} from '@kbn/significant-events-schema';
 import { z } from '@kbn/zod/v4';
 import { STREAMS_API_PRIVILEGES } from '../../../../common/constants';
 import { QueryNotFoundError } from '../../../lib/streams/errors/query_not_found_error';

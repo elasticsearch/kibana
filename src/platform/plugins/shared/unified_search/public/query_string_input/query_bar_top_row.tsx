@@ -67,6 +67,7 @@ import { AddFilterPopover } from './add_filter_popover';
 import type { DataViewPickerProps } from '../dataview_picker';
 import { DataViewPicker } from '../dataview_picker';
 import { NoDataPopover } from './no_data_popover';
+import { EsqlApproximationToggle } from './esql_approximation_toggle';
 import type { IUnifiedSearchPluginServices, UnifiedSearchDraft } from '../types';
 import { shallowEqual } from '../utils/shallow_equal';
 import { FilterBarToggleButton } from '../filter_bar/filter_bar_toggle_button';
@@ -258,6 +259,15 @@ export interface QueryBarTopRowProps<QT extends Query | AggregateQuery = Query> 
    * the flag is disabled, the legacy picker is always used.
    */
   enableDateRangePicker?: boolean;
+  /**
+   * When provided, renders the ES|QL approximate execution toggle (bolt icon) before the date picker.
+   */
+  esqlApproximation?: {
+    useApproximation: boolean;
+    onChange: (useApproximation: boolean) => void;
+    additionalText?: string;
+    disabled?: boolean;
+  };
 }
 
 export const SharingMetaFields = React.memo(function SharingMetaFields({
@@ -1041,6 +1051,14 @@ export const QueryBarTopRow = React.memo(
               {shouldRenderESQLUi ? (
                 <>
                   {shouldRenderUpdateButton() ? button : null}
+                  {props.esqlApproximation && (
+                    <EsqlApproximationToggle
+                      useApproximation={props.esqlApproximation.useApproximation}
+                      onChange={props.esqlApproximation.onChange}
+                      additionalText={props.esqlApproximation.additionalText}
+                      disabled={props.esqlApproximation.disabled}
+                    />
+                  )}
                   {shouldRenderDatePicker() ? renderDatePicker() : null}
                 </>
               ) : (
@@ -1300,6 +1318,14 @@ export const QueryBarTopRow = React.memo(
                 {renderQueryInput()}
                 {props.renderQueryInputAppend?.()}
                 {shouldShowDatePickerAsBadge() && props.filterBar}
+                {props.esqlApproximation && (
+                  <EsqlApproximationToggle
+                    useApproximation={props.esqlApproximation.useApproximation}
+                    onChange={props.esqlApproximation.onChange}
+                    additionalText={props.esqlApproximation.additionalText}
+                    disabled={props.esqlApproximation.disabled}
+                  />
+                )}
                 {renderDatePickerWithUpdateBtn()}
               </EuiFlexGroup>
               {!shouldShowDatePickerAsBadge() && props.filterBar}

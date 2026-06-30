@@ -292,6 +292,10 @@ export const UNMUTE = i18n.translate('xpack.responseOpsAlertsTable.actions.unmut
   defaultMessage: 'Unmute',
 });
 
+export const UNSNOOZE = i18n.translate('xpack.responseOpsAlertsTable.actions.unsnooze', {
+  defaultMessage: 'Unsnooze',
+});
+
 export const MUTE_SELECTED = i18n.translate('xpack.responseOpsAlertsTable.actions.muteSelected', {
   defaultMessage: 'Mute selected',
 });

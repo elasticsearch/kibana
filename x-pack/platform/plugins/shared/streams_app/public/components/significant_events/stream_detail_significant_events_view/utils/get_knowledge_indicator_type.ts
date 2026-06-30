@@ -6,7 +6,7 @@
  */
 
 import type { KnowledgeIndicator } from '@kbn/streams-ai';
-import { QUERY_TYPE_STATS } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 
 export const MATCH_QUERY_TYPE = 'match_query';
 export const STATS_QUERY_TYPE = 'stats_query';

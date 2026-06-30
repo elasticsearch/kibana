@@ -17,7 +17,6 @@ import {
 } from '@kbn/streams-schema';
 import type { PhaseName } from '@kbn/streams-schema';
 import { i18n } from '@kbn/i18n';
-import { css } from '@emotion/react';
 import {
   EuiBadge,
   EuiButton,
@@ -27,7 +26,6 @@ import {
   EuiFlexItem,
   EuiSpacer,
   EuiToolTip,
-  useEuiTheme,
 } from '@elastic/eui';
 import type { DataStreamStats } from '../hooks/use_data_stream_stats';
 import { DataLifecycleSummary } from '../common/data_lifecycle/data_lifecycle_summary';
@@ -39,6 +37,7 @@ import { useLifecyclePreview } from '../common/hooks/lifecycle_preview';
 import { useEditFlyoutPreviewSync } from '../common/hooks/use_edit_flyout_preview_sync';
 import { useOverrideSettingsConfirmation } from '../common/hooks/use_override_settings_confirmation';
 import { useKibana } from '../../../../../hooks/use_kibana';
+import { HeaderActionsSeparator } from '../common/header_actions_separator';
 import type {
   IlmPhaseSelectOption,
   IlmPhaseSelectRenderButtonProps,
@@ -83,23 +82,6 @@ const deletePhaseAlreadyInUseTooltip = i18n.translate(
   'xpack.streams.dataLifecycleSummary.deletePhaseAlreadyInUseTooltip',
   { defaultMessage: 'Delete phase is already in use' }
 );
-
-const HeaderActionsSeparator = () => {
-  const { euiTheme } = useEuiTheme();
-
-  return (
-    <span
-      aria-hidden="true"
-      css={css({
-        display: 'block',
-        width: euiTheme.border.width.thin,
-        height: euiTheme.size.l,
-        backgroundColor: euiTheme.border.color,
-        marginBlock: 'auto',
-      })}
-    />
-  );
-};
 
 const renderAddPhaseButton = (label: string) => (buttonProps: IlmPhaseSelectRenderButtonProps) => {
   const button = (

@@ -49,6 +49,7 @@ dependsOn:
   - '@kbn/react-query'
   - '@kbn/maintenance-windows-plugin'
   - '@kbn/es-query'
+  - '@kbn/response-ops-alert-snooze'
   - '@kbn/rison'
   - '@kbn/reporting-common'
   - '@kbn/core-rendering-browser-mocks'

@@ -2492,6 +2492,59 @@ describe('SearchInterceptor', () => {
     });
   });
 
+  describe('approximation parameter handling', () => {
+    const getSearchInterceptor = () =>
+      new SearchInterceptor({
+        toasts: mockCoreSetup.notifications.toasts,
+        startServices: new Promise((resolve) => {
+          resolve([
+            mockCoreStart,
+            {
+              inspector: {} as unknown as InspectorStart,
+            } as unknown as SearchServiceStartDependencies,
+            {},
+          ]);
+        }),
+        uiSettings: mockCoreSetup.uiSettings,
+        http: mockCoreSetup.http,
+        executionContext: mockCoreSetup.executionContext,
+        session: sessionService,
+        searchConfig: getMockSearchConfig({}),
+      });
+
+    beforeEach(() => {
+      mockCoreSetup.http.post.mockResolvedValue(getMockSearchResponse());
+    });
+
+    test('sends approximation to ES when passed', async () => {
+      searchInterceptor = getSearchInterceptor();
+
+      await searchInterceptor
+        .search({ params: {} }, { approximation: true, strategy: ESQL_ASYNC_SEARCH_STRATEGY })
+        .toPromise();
+
+      const requestOptions = (
+        mockCoreSetup.http.post.mock.calls[0] as unknown as [string, HttpFetchOptions]
+      )[1];
+      const requestBody = JSON.parse(requestOptions.body as string);
+      expect(requestBody.approximation).toBe(true);
+    });
+
+    test('does not send approximation when not passed', async () => {
+      searchInterceptor = getSearchInterceptor();
+
+      await searchInterceptor
+        .search({ params: {} }, { strategy: ESQL_ASYNC_SEARCH_STRATEGY })
+        .toPromise();
+
+      const requestOptions = (
+        mockCoreSetup.http.post.mock.calls[0] as unknown as [string, HttpFetchOptions]
+      )[1];
+      const requestBody = JSON.parse(requestOptions.body as string);
+      expect(requestBody.approximation).toBeUndefined();
+    });
+  });
+
   describe('pollLength configuration', () => {
     const inspectorServiceMock = {
       open: () => {},

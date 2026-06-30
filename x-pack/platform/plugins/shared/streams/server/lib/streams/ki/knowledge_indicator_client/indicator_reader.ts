@@ -6,8 +6,8 @@
  */
 
 import { esql, type ComposerSortShorthand } from '@elastic/esql';
-import type { Feature, QueryLink } from '@kbn/streams-schema';
-import { QUERY_TYPE_STATS } from '@kbn/streams-schema';
+import type { Feature, QueryLink } from '@kbn/significant-events-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import { isStoredFeatureKnowledgeIndicator, isStoredQueryKnowledgeIndicator } from '../data_stream';
 import {
   combineWhere,

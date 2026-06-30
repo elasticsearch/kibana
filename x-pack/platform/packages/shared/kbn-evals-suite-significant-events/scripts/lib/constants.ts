@@ -6,6 +6,11 @@
  */
 import type { IndicesUpdateAliasesAddAction } from '@elastic/elasticsearch/lib/api/types';
 import type { Scenario } from './types';
+import {
+  DISCOVERIES_DATA_STREAM,
+  DETECTIONS_DATA_STREAM,
+  KNOWLEDGE_INDICATORS_DATA_STREAM,
+} from '../../src/data_generators/snapshot_indices';
 
 export {
   DEFAULT_LOGS_INDEX,
@@ -23,9 +28,24 @@ export const FAILURE_WAIT_MS = 5 * 60 * 1000;
 export const KI_FEATURE_EXTRACTION_POLL_INTERVAL_MS = 10_000;
 export const KI_FEATURE_EXTRACTION_TIMEOUT_MS = 15 * 60 * 1000;
 
+// The discovery workflow runs the full detection → investigator pipeline space-wide,
+// so it can take longer than feature extraction.
+export const DISCOVERY_POLL_INTERVAL_MS = 10_000;
+export const DISCOVERY_TIMEOUT_MS = 30 * 60 * 1000;
+
+// Time to let data accumulate after KI feature extraction before triggering discovery,
+// so the detection step has enough signal to analyze.
+export const DISCOVERY_WAIT_MS = 5 * 60 * 1000;
+
 export const HEALTHY_BASELINE_SCENARIO: Scenario = { id: 'healthy-baseline' };
 
-export const KNOWLEDGE_INDICATORS_DATA_STREAM = '.significant_events-knowledge_indicators';
+// Significant events data streams captured/restored faithfully (reindex → snapshot-*, restore as
+// data stream) by the env snapshot tooling — not the plain-index path used for eval data.
+export const SIGNIFICANT_EVENTS_DATA_STREAMS = [
+  KNOWLEDGE_INDICATORS_DATA_STREAM,
+  DISCOVERIES_DATA_STREAM,
+  DETECTIONS_DATA_STREAM,
+] as const;
 
 export const VALID_SYSTEM_INDICES = ['.kibana_streams_tasks-*'] as const;
 

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { SignificantEvent } from '@kbn/streams-schema';
+import type { SignificantEvent } from '@kbn/significant-events-schema';
 import { FocusedSignificantEventService } from './focused_significant_event_service';
 
 const createEvent = (discoverySlug: string): SignificantEvent => ({

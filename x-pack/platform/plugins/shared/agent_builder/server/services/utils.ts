@@ -20,9 +20,14 @@ const KIBANA_APPLICATION = `${APPLICATION_PREFIX}.kibana`;
  * For real HTTP requests, `security.authc.getCurrentUser` returns the authenticated user
  * (including profile_uid and username).
  *
- * For fake requests (e.g. from Task Manager using an API key), `getCurrentUser` returns null.
- * In that case, we fall back to the ES `_security/_authenticate` API, which works with API keys
- * and returns the username of the API key owner.
+ * For fake requests (e.g. from Task Manager using an API key), `getCurrentUser` returns the
+ * originating user's identity when the request was enriched at schedule time (profile_uid and
+ * username persisted on the task's userScope). This is required for Cross-Project Search, where
+ * the API key owner's username does not match the originating user.
+ *
+ * For un-enriched fake requests (e.g. tasks scheduled before enrichment was available), we fall
+ * back to the ES `_security/_authenticate` API, which works with API keys and returns the
+ * username of the API key owner.
  */
 export const getUserFromRequest = async ({
   request,
@@ -33,19 +38,19 @@ export const getUserFromRequest = async ({
   security: SecurityServiceStart;
   esClient: ElasticsearchClient;
 }): Promise<CurrentUser> => {
-  if (!request.isFakeRequest) {
-    const authUser = security.authc.getCurrentUser(request);
-    if (authUser) {
-      return {
-        id: authUser.profile_uid!,
-        username: authUser.username,
-      };
-    }
+  const authUser = security.authc.getCurrentUser(request);
+  if (authUser?.username) {
+    return {
+      id: authUser.profile_uid,
+      username: authUser.username,
+    };
   }
 
-  // Fallback for fake requests (e.g. Task Manager execution): call ES _security/_authenticate
+  // Fallback for un-enriched fake requests (e.g. Task Manager execution of a
+  // task scheduled before enrichment): call ES _security/_authenticate
   const authResponse = await esClient.security.authenticate();
   return {
+    id: authUser?.profile_uid,
     username: authResponse.username,
   };
 };

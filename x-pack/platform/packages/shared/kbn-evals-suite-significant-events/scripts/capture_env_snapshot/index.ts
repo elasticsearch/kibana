@@ -11,7 +11,7 @@ import { DEFAULT_ENV_SNAPSHOT_LOGS_INDEX, VALID_ALERT_INDICES } from '../lib/con
 
 run(({ log, flags }) => captureEnvSnapshot({ log, flags }), {
   description: `
-    Capture the current Streams/SigEvents environment into a GCS snapshot.
+    Capture the current Streams/Significant Events environment into a GCS snapshot.
 
     Protected Kibana system indices (Streams .kibana_streams_*) and the KI data stream are
     reindexed to snapshot-safe names (snapshot-*) with mappings preserved.

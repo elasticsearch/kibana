@@ -109,6 +109,8 @@ const SCENARIO_ALIASES: Record<string, string> = {
   simple_trace: 'x-pack/solutions/observability/plugins/apm/test/scenarios/simple_trace.ts',
   slash_logs: 'x-pack/platform/plugins/shared/streams/test/scenarios/slash_logs.ts',
   span_links: 'x-pack/solutions/observability/plugins/apm/test/scenarios/span_links.ts',
+  trace_with_long_service_names:
+    'x-pack/solutions/observability/plugins/apm/test/scenarios/trace_with_long_service_names.ts',
   trace_with_orphan_items:
     'x-pack/solutions/observability/plugins/apm/test/scenarios/trace_with_orphan_items.ts',
   trace_with_service_names_with_slashes:

@@ -717,7 +717,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -739,7 +738,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -761,7 +759,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -794,7 +791,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -816,7 +812,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -838,7 +833,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -871,7 +865,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -893,7 +886,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -915,7 +907,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -948,7 +939,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -970,7 +960,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -992,7 +981,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1025,7 +1013,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1047,7 +1034,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1069,7 +1055,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1102,7 +1087,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1124,7 +1108,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1146,7 +1129,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1179,7 +1161,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1201,7 +1182,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1223,7 +1203,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1256,7 +1235,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1278,7 +1256,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1300,7 +1277,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1333,7 +1309,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1355,7 +1330,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1377,7 +1351,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1410,7 +1383,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1432,7 +1404,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -1454,7 +1425,6 @@ const countDistinctDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -4413,7 +4383,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4434,7 +4403,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4455,7 +4423,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4476,7 +4443,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4497,7 +4463,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4518,7 +4483,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4539,7 +4503,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4560,7 +4523,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4581,7 +4543,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4602,7 +4563,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4623,7 +4583,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4644,7 +4603,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4665,7 +4623,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4686,7 +4643,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -4707,7 +4663,6 @@ const percentileDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -5807,7 +5762,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'boolean',
@@ -5828,7 +5782,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -5840,8 +5793,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'boolean',
@@ -5862,7 +5813,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'date',
@@ -5883,7 +5833,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -5895,8 +5844,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'date',
@@ -5917,7 +5864,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -5929,8 +5875,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -5958,7 +5902,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -5970,8 +5913,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -5999,7 +5940,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6011,8 +5951,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6040,7 +5978,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6052,8 +5989,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6081,7 +6016,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6093,8 +6027,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6122,7 +6054,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6134,8 +6065,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6163,7 +6092,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'double',
@@ -6184,7 +6112,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6196,8 +6123,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'double',
@@ -6218,7 +6143,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6230,8 +6154,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6259,7 +6181,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6271,8 +6192,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6300,7 +6219,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6312,8 +6230,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6341,7 +6257,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6353,8 +6268,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6382,7 +6295,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6394,8 +6306,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6423,7 +6333,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6435,8 +6344,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6464,7 +6371,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'integer',
@@ -6485,7 +6391,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6497,8 +6402,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'integer',
@@ -6519,7 +6422,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6531,8 +6433,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6560,7 +6460,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6572,8 +6471,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6601,7 +6498,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6613,8 +6509,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6642,7 +6536,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6654,8 +6547,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6683,7 +6574,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6695,8 +6585,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6724,7 +6612,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6736,8 +6623,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6765,7 +6650,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'ip',
@@ -6786,7 +6670,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6798,8 +6681,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'ip',
@@ -6820,7 +6701,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'keyword',
@@ -6841,7 +6721,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6853,8 +6732,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'keyword',
@@ -6875,7 +6752,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6887,8 +6763,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6916,7 +6790,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6928,8 +6801,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6957,7 +6828,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -6969,8 +6839,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -6998,7 +6866,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7010,8 +6877,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7039,7 +6904,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7051,8 +6915,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7080,7 +6942,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7092,8 +6953,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7121,7 +6980,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'long',
@@ -7142,7 +7000,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7154,8 +7011,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'long',
@@ -7176,7 +7031,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7188,8 +7042,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7217,7 +7069,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7229,8 +7080,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7258,7 +7107,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7270,8 +7118,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7299,7 +7145,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7311,8 +7156,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7340,7 +7183,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7352,8 +7194,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7381,7 +7221,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7393,8 +7232,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7422,7 +7259,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
       ],
       returnType: 'keyword',
@@ -7443,7 +7279,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7455,8 +7290,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
       ],
       returnType: 'keyword',
@@ -7477,7 +7310,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7489,8 +7321,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7518,7 +7348,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7530,8 +7359,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7559,7 +7386,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7571,8 +7397,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7600,7 +7424,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7612,8 +7435,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7641,7 +7462,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7653,8 +7473,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',
@@ -7682,7 +7500,6 @@ const topDefinition: FunctionDefinition = {
           hint: {
             kind: 'constant',
           },
-          constantOnly: true,
         },
         {
           name: 'order',
@@ -7694,8 +7511,6 @@ const topDefinition: FunctionDefinition = {
             kind: 'constant',
             allowedValues: ['asc', 'desc'],
           },
-          constantOnly: true,
-          suggestedValues: ['asc', 'desc'],
         },
         {
           name: 'outputField',

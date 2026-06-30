@@ -17,8 +17,11 @@ project:
   owner: '@elastic/workflows-eng'
   sourceRoot: x-pack/platform/packages/shared/kbn-change-history-ui
 dependsOn:
+  - '@kbn/core'
   - '@kbn/i18n'
   - '@kbn/i18n-react'
+  - '@kbn/react-query'
+  - '@kbn/logging-mocks'
 tags:
   - shared-browser
   - package

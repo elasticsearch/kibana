@@ -287,16 +287,15 @@ export const WorkflowStepExecutionTree = ({
       stepExecutionMap.set('__overview', executionOverview);
     }
 
-    const triggerPseudoStep =
+    const triggerTreeItem =
       stepExecutionsTree.find((item) => item.stepType === '__trigger') ??
       stepExecutionsTree.find((item) => item.stepType === '__inputs');
-
-    if (triggerPseudoStep && execution.context) {
+    if (triggerTreeItem && execution.context) {
       const triggerExecution = buildTriggerStepExecutionFromContext(execution);
       if (triggerExecution) {
         stepExecutionMap.set(triggerExecution.id, triggerExecution);
-        triggerPseudoStep.stepExecutionId = triggerExecution.id;
-        triggerPseudoStep.stepType = triggerExecution.stepType ?? '';
+        triggerTreeItem.stepExecutionId = triggerExecution.id;
+        triggerTreeItem.stepType = triggerExecution.stepType ?? '';
       }
     }
     const items: EuiTreeViewProps['items'] = convertTreeToEuiTreeViewItems(

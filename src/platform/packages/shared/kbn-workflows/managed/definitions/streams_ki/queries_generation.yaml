@@ -11,7 +11,7 @@
 # for a given stream at any time; overlapping triggers are dropped.
 
 version: "1"
-name: ".streams-ki-queries-generation"
+name: "KI Queries Generation"
 enabled: true
 description: "Generates KI queries for a stream using LLM inference."
 tags:

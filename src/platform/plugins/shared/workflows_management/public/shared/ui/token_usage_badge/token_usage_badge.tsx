@@ -60,7 +60,13 @@ export const TokenUsageBadge = React.memo<TokenUsageBadgeProps>(
 
     return (
       <EuiToolTip content={tooltipContent}>
-        <EuiBadge color="hollow" iconType="sparkles" title="" data-test-subj={dataTestSubj}>
+        <EuiBadge
+          color="hollow"
+          iconType="sparkles"
+          title=""
+          tabIndex={0}
+          data-test-subj={dataTestSubj}
+        >
           {label}
         </EuiBadge>
       </EuiToolTip>

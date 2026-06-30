@@ -7,18 +7,9 @@
 
 import { apm } from '@elastic/apm-rum';
 import { isAbortError, reportFetchError } from './report_fetch_error';
-
-jest.mock('@elastic/apm-rum', () => ({
-  apm: {
-    captureError: jest.fn(),
-  },
-}));
+import { FETCHER_OPERATION_IDS } from '../../hooks/fetcher_operation_ids';
 
 describe('report_fetch_error', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('isAbortError', () => {
     it('returns true for an Error whose name is AbortError', () => {
       const error = new Error('aborted');
@@ -39,14 +30,24 @@ describe('report_fetch_error', () => {
   });
 
   describe('reportFetchError', () => {
+    let captureErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      captureErrorSpy = jest.spyOn(apm, 'captureError').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      captureErrorSpy.mockRestore();
+    });
+
     it('captures the error with the operation id label', () => {
       const error = new Error('boom');
 
-      reportFetchError({ error, operationId: 'op-1' });
+      reportFetchError({ error, operationId: FETCHER_OPERATION_IDS.FETCH_SPAN_LINKS });
 
-      expect(apm.captureError).toHaveBeenCalledWith(error, {
+      expect(captureErrorSpy).toHaveBeenCalledWith(error, {
         labels: {
-          kibana_meta_operation_id: 'op-1',
+          kibana_meta_operation_id: FETCHER_OPERATION_IDS.FETCH_SPAN_LINKS,
         },
       });
     });
@@ -55,15 +56,15 @@ describe('report_fetch_error', () => {
       const error = new Error('aborted');
       error.name = 'AbortError';
 
-      reportFetchError({ error, operationId: 'op-1' });
+      reportFetchError({ error, operationId: FETCHER_OPERATION_IDS.FETCH_SPAN_LINKS });
 
-      expect(apm.captureError).not.toHaveBeenCalled();
+      expect(captureErrorSpy).not.toHaveBeenCalled();
     });
 
     it('skips non-Error values', () => {
-      reportFetchError({ error: 'boom', operationId: 'op-1' });
+      reportFetchError({ error: 'boom', operationId: FETCHER_OPERATION_IDS.FETCH_SPAN_LINKS });
 
-      expect(apm.captureError).not.toHaveBeenCalled();
+      expect(captureErrorSpy).not.toHaveBeenCalled();
     });
   });
 });

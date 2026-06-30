@@ -7,8 +7,13 @@
 
 import { z } from '@kbn/zod/v4';
 import { BooleanFromString } from '@kbn/zod-helpers/v4';
-import type { IdentifyFeaturesResult, TaskResult } from '@kbn/streams-schema';
-import { baseFeatureSchema, featureUpsertSchema, type Feature } from '@kbn/streams-schema';
+import type { TaskResult } from '@kbn/streams-schema';
+import type { IdentifyFeaturesResult } from '@kbn/significant-events-schema';
+import {
+  baseFeatureSchema,
+  featureUpsertSchema,
+  type Feature,
+} from '@kbn/significant-events-schema';
 import { searchModeSchema } from '../../../utils/search_mode';
 import { createServerRoute } from '../../../create_server_route';
 import { assertSignificantEventsAccess } from '../../../utils/assert_significant_events_access';

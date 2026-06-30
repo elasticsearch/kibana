@@ -462,12 +462,14 @@ export function MachineLearningJobWizardCommonProvider(
     },
 
     async addInfluencer(influencer: string) {
-      await comboBox.set('mlInfluencerSelect > comboBoxInput', influencer);
-      const actualInfluencerSelection = await this.getSelectedInfluencers();
-      expect(actualInfluencerSelection).to.contain(
-        influencer,
-        `Expected influencer selection to contain '${influencer}' (got '${actualInfluencerSelection}')`
-      );
+      await retry.tryForTime(5000, async () => {
+        await comboBox.set('mlInfluencerSelect > comboBoxInput', influencer);
+        const actualInfluencerSelection = await this.getSelectedInfluencers();
+        expect(actualInfluencerSelection).to.contain(
+          influencer,
+          `Expected influencer selection to contain '${influencer}' (got '${actualInfluencerSelection}')`
+        );
+      });
     },
 
     async assertAnomalyChartExists(chartType: string, preSelector?: string) {

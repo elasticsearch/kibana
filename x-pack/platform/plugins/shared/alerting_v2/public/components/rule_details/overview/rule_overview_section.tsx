@@ -18,7 +18,9 @@ export const RuleOverviewSection: React.FC = () => {
   return (
     <div data-test-subj="ruleOverviewSection">
       {rule.kind === 'signal' ? (
-        <SignalRuleOverview />
+        <EuiErrorBoundary>
+          <SignalRuleOverview />
+        </EuiErrorBoundary>
       ) : (
         <EuiErrorBoundary>
           <AlertTimelineSection />

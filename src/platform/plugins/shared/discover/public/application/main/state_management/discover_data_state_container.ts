@@ -44,7 +44,7 @@ import { validateTimeRange } from './utils/validate_time_range';
 import { fetchAll, type CommonFetchParams, fetchMoreDocuments } from '../data_fetching/fetch_all';
 import { sendResetMsg } from '../hooks/use_saved_search_messages';
 import { getFetch$ } from '../data_fetching/get_fetch_observable';
-import { getDefaultProfileState, getProfileStateSnapshot } from './utils/default_profile_state';
+import { getDefaultProfileState } from './utils/default_profile_state';
 import type { InternalStateStore, RuntimeStateManager, TabActionInjector, TabState } from './redux';
 import { internalStateActions, selectTabRuntimeState } from './redux';
 import { buildEsqlFetchSubscribe } from './utils/build_esql_fetch_subscribe';
@@ -380,33 +380,31 @@ export function getDataStateContainer({
             );
 
           let shouldApplyDefaultProfileState = true;
+          let appliedDefaultProfileState = defaultProfileState;
 
           // If the data source profile changed, we may need to restore previous profile state
           if (didProfileChange) {
             const profileId = scopedProfilesManager.getContexts().dataSourceContext.profileId;
             const profileStateSnapshot =
               getCurrentTab().defaultProfileState.snapshotsByProfileId[profileId];
-            const profileStateUpdate = getProfileStateSnapshot(
-              profileStateSnapshot ?? {},
-              defaultProfileState.fieldsToReset
-            );
-            const hasProfileStateUpdate =
-              profileStateUpdate && Object.keys(profileStateUpdate).length > 0;
+            const hasProfileStateSnapshot =
+              profileStateSnapshot && Object.keys(profileStateSnapshot).length > 0;
 
             // Only apply the default profile state if we have no profile state to restore
-            shouldApplyDefaultProfileState = !hasProfileStateUpdate;
+            shouldApplyDefaultProfileState = !hasProfileStateSnapshot;
 
-            if (hasProfileStateUpdate) {
+            if (hasProfileStateSnapshot) {
               await withSkipNextFetch(() =>
                 internalState.dispatch(
                   injectCurrentTab(internalStateActions.updateAppStateAndReplaceUrl)({
-                    appState: profileStateUpdate,
+                    appState: profileStateSnapshot,
                   })
                 )
               );
             } else {
               // If it's not the first profile resolution (i.e. page load or tab init),
               // and there's no profile state to restore, fall back to shared layout state
+              // and ensure any applicable default profile state gets applied
               if (!isFirstResolution) {
                 await withSkipNextFetch(async () =>
                   internalState.dispatch(
@@ -420,6 +418,8 @@ export function getDataStateContainer({
                     })
                   )
                 );
+
+                appliedDefaultProfileState = { ...defaultProfileState, fieldsToReset: 'all' };
               }
 
               // If there is no profile state yet, sync a snapshot of the current
@@ -435,7 +435,7 @@ export function getDataStateContainer({
             shouldApplyDefaultProfileState && dataView
               ? getDefaultProfileState({
                   scopedProfilesManager,
-                  defaultProfileState,
+                  defaultProfileState: appliedDefaultProfileState,
                   dataView,
                 })
               : undefined;

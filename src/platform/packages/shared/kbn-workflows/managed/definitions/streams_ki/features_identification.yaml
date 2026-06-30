@@ -13,7 +13,7 @@
 # for a given stream at any time; overlapping triggers are dropped.
 
 version: "1"
-name: ".streams-ki-features-identification"
+name: "KI Features Identification"
 enabled: true
 description: "Identifies KI features in a stream using LLM analysis and computed KI features."
 tags:

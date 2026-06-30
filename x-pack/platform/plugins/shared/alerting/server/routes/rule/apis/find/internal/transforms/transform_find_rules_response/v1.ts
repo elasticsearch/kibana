@@ -11,6 +11,7 @@ import type {
   RuleParamsV1,
 } from '../../../../../../../../common/routes/rule/response';
 import type { FindResult } from '../../../../../../../application/rule/methods/find';
+import type { RuleSnoozedInstance } from '../../../../../../../application/rule/types';
 import {
   transformRuleActionsInternalV1,
   transformMonitoringV1,
@@ -18,8 +19,12 @@ import {
   transformFlappingV1,
 } from '../../../../../transforms';
 
+type RuleWithSnoozedInstances = FindResult<{}>['data'][number] & {
+  snoozedInstances?: RuleSnoozedInstance[];
+};
+
 export const transformPartialRule = (
-  rule: FindResult<{}>['data'][number],
+  rule: RuleWithSnoozedInstances,
   fields?: string[]
 ): FindRulesInternalResponseV1['data'][number] => {
   const ruleResponse = {
@@ -65,6 +70,20 @@ export const transformPartialRule = (
     ...(rule.monitoring ? { monitoring: transformMonitoringV1(rule.monitoring) } : {}),
     ...(rule.snoozeSchedule ? { snooze_schedule: rule.snoozeSchedule } : {}),
     ...(rule.activeSnoozes ? { active_snoozes: rule.activeSnoozes } : {}),
+    ...(rule.snoozedInstances
+      ? {
+          snoozed_alert_instances: rule.snoozedInstances.map((si) => ({
+            instance_id: si.instanceId,
+            ...(si.expiresAt !== undefined && { expires_at: si.expiresAt }),
+            ...(si.conditions !== undefined && { conditions: si.conditions }),
+            ...(si.conditionOperator !== undefined && {
+              condition_operator: si.conditionOperator,
+            }),
+            snoozed_at: si.snoozedAt,
+            snoozed_by: si.snoozedBy,
+          })),
+        }
+      : {}),
     ...(rule.isSnoozedUntil !== undefined
       ? { is_snoozed_until: rule.isSnoozedUntil?.toISOString() || null }
       : {}),
@@ -111,6 +130,6 @@ export const transformFindRulesInternalResponse = (
     page: result.page,
     per_page: result.perPage,
     total: result.total,
-    data: result.data.map((rule) => transformPartialRule(rule, fields)),
+    data: result.data.map((rule) => transformPartialRule(rule as RuleWithSnoozedInstances, fields)),
   };
 };

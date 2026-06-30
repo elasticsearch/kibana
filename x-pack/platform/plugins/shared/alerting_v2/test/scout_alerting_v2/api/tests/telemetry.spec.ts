@@ -19,6 +19,7 @@
 import { expect } from '@kbn/scout/api';
 import { tags } from '@kbn/scout';
 import type { NameValuePair } from '../../../../server/lib/usage/types';
+import { AGENT_BUILDER_TAG } from '../../../../server/agent_builder/common/constants';
 import { apiTest, buildCreateActionPolicyData, buildCreateRuleData } from '../fixtures';
 
 const sortByName = (buckets: NameValuePair[] | undefined): NameValuePair[] =>
@@ -35,7 +36,7 @@ apiTest.describe('Alerting V2 Telemetry', { tag: tags.stateful.classic }, () => 
       apiServices.alertingV2.rules.create(
         buildCreateRuleData({
           kind: 'alert',
-          metadata: { name: 'alert-rule-1' },
+          metadata: { name: 'alert-rule-1', tags: [AGENT_BUILDER_TAG] },
           time_field: '@timestamp',
           schedule: { every: '1m', lookback: '5m' },
           query: { format: 'standalone', breach: { query: 'FROM metrics-* | LIMIT 10' } },
@@ -78,6 +79,7 @@ apiTest.describe('Alerting V2 Telemetry', { tag: tags.stateful.classic }, () => 
           matcher: "env == 'production'",
           groupBy: ['service.name', 'environment'],
           throttle: { interval: '5m' },
+          tags: [AGENT_BUILDER_TAG],
         })
       ),
       apiServices.alertingV2.actionPolicies.create(
@@ -108,6 +110,7 @@ apiTest.describe('Alerting V2 Telemetry', { tag: tags.stateful.classic }, () => 
     // Rule stats
     expect(state.count_total).toBe(3);
     expect(state.count_enabled).toBe(2);
+    expect(state.count_agent_builder_assisted).toBe(1);
     expect(state.count_by_kind).toStrictEqual({ alert: 2, signal: 1 });
     expect(sortByName(state.count_by_schedule)).toStrictEqual([
       { name: '1m', value: 1 },
@@ -129,6 +132,7 @@ apiTest.describe('Alerting V2 Telemetry', { tag: tags.stateful.classic }, () => 
     expect(state.action_policies_count).toBe(2);
     expect(state.action_policies_unique_workflow_count).toBe(2);
     expect(state.action_policies_count_with_matcher).toBe(1);
+    expect(state.action_policies_count_agent_builder_assisted).toBe(1);
     expect(state.action_policies_count_with_group_by).toBe(1);
     expect(state.action_policies_avg_group_by_fields_count).toBe(2);
     expect(sortByName(state.action_policies_count_by_throttle_interval)).toStrictEqual([

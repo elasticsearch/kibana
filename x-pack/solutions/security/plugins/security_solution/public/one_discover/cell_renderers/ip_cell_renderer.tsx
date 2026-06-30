@@ -9,6 +9,7 @@ import React, { useCallback, useMemo } from 'react';
 import { EuiLink } from '@elastic/eui';
 import type { DataGridCellValueElementProps } from '@kbn/unified-data-table';
 import { useHistory } from 'react-router-dom';
+import { useIsInSecurityApp } from '../../common/hooks/is_in_security_app';
 import { getOrEmptyTagFromValue } from '../../common/components/empty_value';
 import { flyoutProviders } from '../../flyout_v2/shared/components/flyout_provider';
 import { useDefaultDocumentFlyoutProperties } from '../../flyout_v2/shared/hooks/use_default_flyout_properties';
@@ -30,6 +31,7 @@ export interface IpCellRendererProps extends DataGridCellValueElementProps {
  */
 export const IpCellRenderer = React.memo<IpCellRendererProps>(({ services, store, ...props }) => {
   const history = useHistory();
+  const isInSecurityApp = useIsInSecurityApp();
   const defaultDocumentFlyoutProperties = useDefaultDocumentFlyoutProperties();
   const { overlays } = services;
   const rawValue = props.row.flattened[props.columnId];
@@ -51,7 +53,7 @@ export const IpCellRenderer = React.memo<IpCellRendererProps>(({ services, store
             history,
             children: (
               <>
-                <DataViewManagerBootstrap />
+                {!isInSecurityApp && <DataViewManagerBootstrap />}
                 {flyoutContent}
               </>
             ),
@@ -63,7 +65,15 @@ export const IpCellRenderer = React.memo<IpCellRendererProps>(({ services, store
         );
       }
     },
-    [defaultDocumentFlyoutProperties, overlays, services, store, history, props.columnId]
+    [
+      props.columnId,
+      overlays,
+      services,
+      store,
+      history,
+      isInSecurityApp,
+      defaultDocumentFlyoutProperties,
+    ]
   );
 
   if (addresses.length === 0) {

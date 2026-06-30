@@ -1,7 +1,7 @@
 {
   "type": "test-helper",
   "id": "@kbn/evals",
-  "owner": ["@elastic/obs-ai-team", "@elastic/security-genai-research-and-development"],
+  "owner": ["@elastic/nightshift-context-and-research-team", "@elastic/security-genai-research-and-development"],
   "group": "platform",
   "visibility": "shared",
   "devOnly": true

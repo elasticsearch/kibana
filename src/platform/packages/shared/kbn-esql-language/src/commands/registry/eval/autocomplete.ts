@@ -36,7 +36,7 @@ export async function autocomplete(
     context,
     cursorPosition,
     {
-      functionsToIgnore: FUNCTIONS_TO_IGNORE,
+      getFunctionsToIgnore: () => FUNCTIONS_TO_IGNORE,
       preferredExpressionType: 'any',
     }
   );

@@ -19,6 +19,7 @@ function mockSearchResponse({
   total = 5,
   uniqueWorkflowCount = 3,
   countWithMatcher = 2,
+  countAgentBuilderAssisted = 1,
   countWithGroupBy = 1,
   avgGroupByFieldsCount = 2.5,
   throttleIntervalBuckets = [
@@ -29,6 +30,7 @@ function mockSearchResponse({
   total?: number;
   uniqueWorkflowCount?: number;
   countWithMatcher?: number;
+  countAgentBuilderAssisted?: number;
   countWithGroupBy?: number;
   avgGroupByFieldsCount?: number | null;
   throttleIntervalBuckets?: Array<{ key: string; doc_count: number }>;
@@ -41,6 +43,7 @@ function mockSearchResponse({
     aggregations: {
       unique_workflow_count: { value: uniqueWorkflowCount },
       count_with_matcher: { doc_count: countWithMatcher },
+      count_agent_builder_assisted: { doc_count: countAgentBuilderAssisted },
       count_by_throttle_interval: { buckets: throttleIntervalBuckets },
       count_with_group_by: { doc_count: countWithGroupBy },
       avg_group_by_fields_count: { value: avgGroupByFieldsCount },
@@ -58,6 +61,7 @@ describe('getActionPolicyStats', () => {
       action_policies_count: 5,
       action_policies_unique_workflow_count: 3,
       action_policies_count_with_matcher: 2,
+      action_policies_count_agent_builder_assisted: 1,
       action_policies_count_with_group_by: 1,
       action_policies_avg_group_by_fields_count: 2.5,
       action_policies_count_by_throttle_interval: [
@@ -92,6 +96,7 @@ describe('getActionPolicyStats', () => {
       total: 0,
       uniqueWorkflowCount: 0,
       countWithMatcher: 0,
+      countAgentBuilderAssisted: 0,
       countWithGroupBy: 0,
       avgGroupByFieldsCount: null,
       throttleIntervalBuckets: [],
@@ -103,6 +108,7 @@ describe('getActionPolicyStats', () => {
       action_policies_count: 0,
       action_policies_unique_workflow_count: 0,
       action_policies_count_with_matcher: 0,
+      action_policies_count_agent_builder_assisted: 0,
       action_policies_count_with_group_by: 0,
       action_policies_avg_group_by_fields_count: null,
       action_policies_count_by_throttle_interval: [],
@@ -123,6 +129,7 @@ describe('getActionPolicyStats', () => {
       action_policies_count: 0,
       action_policies_unique_workflow_count: 0,
       action_policies_count_with_matcher: 0,
+      action_policies_count_agent_builder_assisted: 0,
       action_policies_count_with_group_by: 0,
       action_policies_avg_group_by_fields_count: null,
       action_policies_count_by_throttle_interval: [],
@@ -138,6 +145,7 @@ describe('getActionPolicyStats', () => {
       aggregations: {
         unique_workflow_count: { value: 4 },
         count_with_matcher: { doc_count: 1 },
+        count_agent_builder_assisted: { doc_count: 0 },
         count_by_throttle_interval: { buckets: [] },
         count_with_group_by: { doc_count: 0 },
         avg_group_by_fields_count: { value: null },

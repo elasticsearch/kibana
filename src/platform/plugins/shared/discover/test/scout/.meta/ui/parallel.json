@@ -1,5 +1,5 @@
 {
-  "sha1": "ed82a5f400cbdced52e8a162206795ae5321a440",
+  "sha1": "1c68a0cded7d73d353f5510bd52d0fe13f4e90af",
   "tests": [
     {
       "id": "5f3825f308b4d12-d89fd2ade65d14f",
@@ -58,7 +58,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_copy_to_clipboard.spec.ts",
-        "line": 73,
+        "line": 72,
         "column": 14
       }
     },
@@ -71,7 +71,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_copy_to_clipboard.spec.ts",
-        "line": 95,
+        "line": 94,
         "column": 14
       }
     },
@@ -84,7 +84,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_density_saved_search.spec.ts",
-        "line": 44,
+        "line": 43,
         "column": 14
       }
     },
@@ -97,7 +97,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_navigation.spec.ts",
-        "line": 43,
+        "line": 42,
         "column": 14
       }
     },
@@ -110,7 +110,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_navigation.spec.ts",
-        "line": 55,
+        "line": 54,
         "column": 14
       }
     },
@@ -544,7 +544,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 137,
+        "line": 136,
         "column": 14
       }
     },
@@ -557,7 +557,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 157,
+        "line": 156,
         "column": 14
       }
     },
@@ -570,7 +570,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 170,
+        "line": 169,
         "column": 14
       }
     },
@@ -583,7 +583,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 183,
+        "line": 182,
         "column": 14
       }
     },
@@ -596,7 +596,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 199,
+        "line": 198,
         "column": 14
       }
     },

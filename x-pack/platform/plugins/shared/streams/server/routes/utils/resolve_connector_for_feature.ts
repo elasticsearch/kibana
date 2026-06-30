@@ -7,7 +7,7 @@
 
 import type { KibanaRequest } from '@kbn/core/server';
 import type { SearchInferenceEndpointsPluginStart } from '@kbn/search-inference-endpoints/server';
-import { STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID } from '@kbn/streams-schema';
+import { SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID } from '@kbn/significant-events-schema';
 import { StatusError } from '../../lib/streams/errors/status_error';
 
 /**
@@ -62,7 +62,7 @@ export async function resolveConnectorForSignificantEventsDiscovery({
 }): Promise<string> {
   return resolveConnectorForFeature({
     searchInferenceEndpoints,
-    featureId: STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID,
+    featureId: SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID,
     featureName: 'discovery',
     request,
   });

@@ -1677,35 +1677,6 @@ groups:
           - "self: ga"
         deprecation_details: "Rollups are deprecated and will be removed in a future version. Use [downsampling](docs-content://manage-data/data-store/data-streams/downsampling-time-series-data-stream.md) instead."
 
-      - setting: xpack.securitySolution.maxUploadResponseActionFileBytes
-        description: |
-          Allow to configure the max file upload size for use with the Upload File Response action available with the Defend Integration. To learn more, check [Endpoint Response actions](docs-content://solutions/security/endpoint-response-actions.md).
-        datatype: string
-        applies_to:
-          stack: ga 8.9
-          ech: ga
-          self: ga
-
-      - setting: xpack.securitySolution.disableEndpointRuleAutoInstall
-        description: |
-          Set to `true` to disable the automatic installation of Elastic Defend SIEM rules when a new Endpoint integration policy is created. Introduced with v9.2.4.
-        datatype: bool
-        default: false
-        applies_to:
-          - "stack: ga 9.2.4+"
-          - "ech: ga"
-          - "self: ga"
-
-      - setting: xpack.securitySolution.maxEndpointScriptFileSize
-        description: |
-          The maximum file size in bytes for scripts uploaded to the Elastic Defend script library. Default is `26214400` (25MB).
-        datatype: bool
-        default: 26214400
-        applies_to:
-          - "stack: ga 9.4+"
-          - "ech: ga"
-          - "self: ga"
-
       - setting: xpack.snapshot_restore.ui.enabled
         description: |
           Set this value to false to disable the Snapshot and Restore UI.

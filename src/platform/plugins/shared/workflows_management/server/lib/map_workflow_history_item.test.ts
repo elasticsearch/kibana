@@ -28,7 +28,7 @@ const createDocument = (overrides: Partial<ChangeHistoryDocument> = {}): ChangeH
     type: 'workflow',
     hash: 'abc',
     sequence: 3,
-    fields: { hashed: [] },
+    fields: { hashed: [], redacted: [] },
     snapshot: {
       name: 'My workflow',
       description: 'desc',
@@ -59,6 +59,34 @@ describe('mapWorkflowHistoryItem', () => {
     });
   });
 
+  it('maps restore comment from change-history document', () => {
+    const result = mapWorkflowHistoryItem(
+      createDocument({
+        event: {
+          id: 'event-restore',
+          module: 'stack',
+          dataset: 'workflows',
+          action: 'restore',
+          type: 'change',
+          reason: 'Restored from v3',
+        },
+        metadata: {
+          restore: {
+            eventId: 'event-v3',
+          },
+        },
+      })
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        action: 'restore',
+        comment: 'Restored from v3',
+      })
+    );
+    expect(result).not.toHaveProperty('restoredFromSequence');
+  });
+
   it('omits optional fields when absent', () => {
     const result = mapWorkflowHistoryItem(
       createDocument({
@@ -67,7 +95,7 @@ describe('mapWorkflowHistoryItem', () => {
           id: 'wf-1',
           type: 'workflow',
           hash: 'abc',
-          fields: { hashed: [] },
+          fields: { hashed: [], redacted: [] },
           snapshot: {
             name: 'W',
             enabled: false,

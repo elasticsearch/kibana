@@ -161,13 +161,13 @@ export const GenAiSettingsApp: React.FC<GenAiSettingsAppProps> = ({ setBreadcrum
     if (tracingSettingChanged) {
       try {
         await genAiSettingsApi(
-          'POST /internal/gen_ai_settings/agent_builder/sync_tracing_dashboard',
+          'POST /internal/gen_ai_settings/agent_builder/sync_tracing_platform_features',
           { signal: null }
         );
       } catch (error) {
         notifications.toasts.addDanger({
-          title: i18n.translate('xpack.gen_ai_settings.agentBuilderTracing.syncDashboardError', {
-            defaultMessage: 'Failed to sync Agent Builder tracing dashboard',
+          title: i18n.translate('xpack.gen_ai_settings.agentBuilderTracing.syncFeaturesError', {
+            defaultMessage: 'Failed to sync Agent Builder tracing features',
           }),
           text: error?.body?.message ?? error?.message,
         });

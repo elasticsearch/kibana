@@ -12,14 +12,17 @@ import { EuiBadge, EuiFlexGroup, EuiToolTip, useEuiTheme } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { css } from '@emotion/react';
 import { AlertLifecycleStatusBadge } from '@kbn/alerts-ui-shared';
+import { buildSnoozeSummary } from '@kbn/response-ops-alert-snooze';
 import { DefaultCell } from './default_cell';
 import { useAlertMutedState } from '../hooks/use_alert_muted_state';
+import { useAlertSnoozedState } from '../hooks/use_alert_snoozed_state';
 import type { CellComponent } from '../types';
 
 export const AlertLifecycleStatusCell: CellComponent = memo((props) => {
   const { euiTheme } = useEuiTheme();
   const { alert, showAlertStatusWithFlapping } = props;
   const { isMuted } = useAlertMutedState(alert);
+  const { isSnoozed, expiresAt, snoozedInstance } = useAlertSnoozedState(alert);
   const workflowStatus = alert?.[ALERT_WORKFLOW_STATUS]?.[0] as string | undefined;
   const isAcknowledged = workflowStatus === 'acknowledged';
 
@@ -28,6 +31,13 @@ export const AlertLifecycleStatusCell: CellComponent = memo((props) => {
   }
 
   const alertStatus = (alert?.[ALERT_STATUS] ?? []) as string[] | undefined;
+
+  const snoozedTooltip = buildSnoozeSummary({
+    isMuted,
+    expiresAt: isMuted ? null : expiresAt,
+    conditions: snoozedInstance?.conditions,
+    conditionOperator: snoozedInstance?.conditionOperator,
+  });
 
   if (Array.isArray(alertStatus) && alertStatus.length) {
     const flapping = alert?.[ALERT_FLAPPING]?.[0] as boolean | undefined;
@@ -38,13 +48,10 @@ export const AlertLifecycleStatusCell: CellComponent = memo((props) => {
           alertStatus={alertStatus.join() as AlertStatus}
           flapping={flapping}
         />
-        {isMuted && (
-          <EuiToolTip
-            content={i18n.translate('xpack.triggersActionsUI.sections.alertsTable.alertMuted', {
-              defaultMessage: 'Alert muted',
-            })}
-          >
+        {(isMuted || isSnoozed) && (
+          <EuiToolTip content={snoozedTooltip}>
             <EuiBadge
+              data-test-subj="alertSnoozedBadge"
               iconType="bellSlash"
               tabIndex={0}
               css={css`

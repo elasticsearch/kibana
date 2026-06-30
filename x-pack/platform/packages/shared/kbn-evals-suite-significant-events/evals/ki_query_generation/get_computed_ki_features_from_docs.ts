@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import type { Feature, FeatureUpsert } from '@kbn/streams-schema';
-import { computeFeatureUuid } from '@kbn/streams-schema';
+import type { Feature, FeatureUpsert } from '@kbn/significant-events-schema';
+import { computeFeatureUuid } from '@kbn/significant-events-schema';
 import { selectLogPatternsForLlm } from '@kbn/streams-ai/src/features/computed/log_patterns';
 
 const ERROR_KEYWORDS = ['error', 'exception', 'fatal', 'fail', 'panic', 'timeout', 'traceback'];

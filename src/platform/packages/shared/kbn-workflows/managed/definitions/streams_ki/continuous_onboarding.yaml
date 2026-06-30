@@ -16,7 +16,7 @@
 # disabled and enabled/disabled via the continuous KI extraction setting.
 
 version: "1"
-name: ".streams-continuous-ki-onboarding"
+name: "Continuous KI Onboarding"
 enabled: false
 description: "This workflow is used by the system and should not be modified."
 tags:

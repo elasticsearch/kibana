@@ -19,6 +19,7 @@ export enum ReadOperations {
   GetActionErrorLog = 'getActionErrorLog',
   GetHistory = 'getHistory',
   Find = 'find',
+  FindMutedAlerts = 'findMutedAlerts',
   GetAuthorizedAlertsIndices = 'getAuthorizedAlertsIndices',
   GetRuleExecutionKPI = 'getRuleExecutionKPI',
   GetBackfill = 'getBackfill',
@@ -53,4 +54,6 @@ export enum WriteOperations {
   CreateGapAutoFillScheduler = 'createGapAutoFillScheduler',
   UpdateGapAutoFillScheduler = 'updateGapAutoFillScheduler',
   DeleteGapAutoFillScheduler = 'deleteGapAutoFillScheduler',
+  snoozeAlert = 'snoozeAlert',
+  unsnoozeAlert = 'unsnoozeAlert',
 }

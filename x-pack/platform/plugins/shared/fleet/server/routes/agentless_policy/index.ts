@@ -14,17 +14,21 @@ import {
   DeleteAgentlessPolicyResponseSchema,
   GetBulkAgentlessPolicyThroughputRequestSchema,
   GetBulkAgentlessPolicyThroughputResponseSchema,
+  GetAgentlessPolicyRequestSchema,
 } from '../../../common/types/rest_spec/agentless_policy';
 import { AgentlessPolicyResponseSchema } from '../../../common/types/models/agentless_policy_schema';
 import { AGENTLESS_POLICIES_ROUTES, API_VERSIONS } from '../../../common/constants';
 import type { FleetAuthzRouter } from '../../services/security';
+import { AgentlessPolicyListResponseSchema, ListAgentlessPoliciesRequestSchema } from '../../types';
 import { FLEET_API_PRIVILEGES } from '../../constants/api_privileges';
 
-import { genericErrorResponse } from '../schema/errors';
+import { genericErrorResponse, notFoundResponse } from '../schema/errors';
 
 import {
   createAgentlessPolicyHandler,
   deleteAgentlessPolicyHandler,
+  getAgentlessPolicyHandler,
+  listAgentlessPoliciesHandler,
   syncAgentlessPoliciesHandler,
   getBulkAgentlessPolicyThroughputHandler,
 } from './handler';
@@ -123,6 +127,92 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
         },
       },
       createAgentlessPolicyHandler
+    );
+
+  // List
+  router.versioned
+    // @ts-ignore https://github.com/elastic/kibana/issues/203170
+    .get({
+      path: AGENTLESS_POLICIES_ROUTES.LIST_PATTERN,
+      summary: 'Get agentless policies',
+      description: 'List agentless policies',
+      options: {
+        tags: ['oas-tag:Fleet agentless policies'],
+        availability: {
+          since: '9.5.0',
+          stability: 'experimental',
+        },
+      },
+      fleetAuthz: {
+        integrations: { readIntegrationPolicies: true },
+      },
+    })
+    .addVersion(
+      {
+        version: API_VERSIONS.public.v1,
+        options: {
+          oasOperationObject: () => path.join(__dirname, 'examples/list_agentless_policies.yaml'),
+        },
+        validate: {
+          request: ListAgentlessPoliciesRequestSchema,
+          response: {
+            200: {
+              description: 'OK: A successful request.',
+              body: () => AgentlessPolicyListResponseSchema,
+            },
+            400: {
+              description: 'A bad request.',
+              body: genericErrorResponse,
+            },
+          },
+        },
+      },
+      listAgentlessPoliciesHandler
+    );
+
+  // Get
+  router.versioned
+    // @ts-ignore https://github.com/elastic/kibana/issues/203170
+    .get({
+      path: AGENTLESS_POLICIES_ROUTES.GET_PATTERN,
+      summary: 'Get an agentless policy',
+      description: 'Get an agentless policy by ID',
+      options: {
+        tags: ['oas-tag:Fleet agentless policies'],
+        availability: {
+          since: '9.5.0',
+          stability: 'experimental',
+        },
+      },
+      fleetAuthz: {
+        integrations: { readIntegrationPolicies: true },
+      },
+    })
+    .addVersion(
+      {
+        version: API_VERSIONS.public.v1,
+        options: {
+          oasOperationObject: () => path.join(__dirname, 'examples/get_agentless_policy.yaml'),
+        },
+        validate: {
+          request: GetAgentlessPolicyRequestSchema,
+          response: {
+            200: {
+              description: 'OK: A successful request.',
+              body: () => AgentlessPolicyResponseSchema,
+            },
+            400: {
+              description: 'A bad request.',
+              body: genericErrorResponse,
+            },
+            404: {
+              description: 'The agentless policy was not found.',
+              body: notFoundResponse,
+            },
+          },
+        },
+      },
+      getAgentlessPolicyHandler
     );
 
   // Delete

@@ -19,6 +19,7 @@ project:
 dependsOn:
   - '@kbn/repo-info'
   - '@kbn/dev-utils'
+  - '@kbn/dev-cli-errors'
   - '@kbn/dev-cli-runner'
   - '@kbn/repo-packages'
   - '@kbn/tooling-log'

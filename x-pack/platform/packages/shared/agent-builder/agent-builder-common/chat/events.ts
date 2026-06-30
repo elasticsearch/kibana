@@ -21,6 +21,7 @@ import type {
   AskUserQuestionAnswer,
 } from '../agents/prompts';
 import type { VersionedAttachment } from '../attachments';
+import type { ConversationAccessControl } from './access_control/types';
 
 export enum ChatEventType {
   toolCall = 'tool_call',
@@ -316,6 +317,7 @@ export const isRoundCompleteEvent = (
 export interface ConversationCreatedEventData {
   conversation_id: string;
   title: string;
+  access_control: ConversationAccessControl;
 }
 
 export type ConversationCreatedEvent = ChatEventBase<
@@ -334,6 +336,7 @@ export const isConversationCreatedEvent = (
 export interface ConversationUpdatedEventData {
   conversation_id: string;
   title: string;
+  access_control: ConversationAccessControl;
 }
 
 export type ConversationUpdatedEvent = ChatEventBase<

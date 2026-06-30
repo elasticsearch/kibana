@@ -620,7 +620,7 @@ describe('autocomplete', () => {
       // literalSuggestions parameter
       const dateDiffFirstParamSuggestions =
         scalarFunctionDefinitions.find(({ name }) => name === 'date_diff')?.signatures[0]
-          .params?.[0].suggestedValues ?? [];
+          .params?.[0].hint?.allowedValues ?? [];
       testSuggestions(
         'FROM a | EVAL DATE_DIFF(/)',
         dateDiffFirstParamSuggestions.map((s) => `"${s}", `).map(attachTriggerCommand)

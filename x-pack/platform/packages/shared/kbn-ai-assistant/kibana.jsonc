@@ -1,6 +1,6 @@
 {
   "id": "@kbn/ai-assistant",
-  "owner": ["@elastic/search-kibana", "@elastic/obs-ai-team"],
+  "owner": ["@elastic/search-kibana", "@elastic/nightshift-context-and-research-team"],
   "type": "shared-browser",
   "group": "platform",
   "visibility": "shared"

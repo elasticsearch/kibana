@@ -421,4 +421,135 @@ describe('findInternalRulesRoute', () => {
       }
     `);
   });
+
+  it('transforms snoozedInstances into snoozed_alert_instances in the response', async () => {
+    const licenseState = licenseStateMock.create();
+    const router = httpServiceMock.createRouter();
+
+    findInternalRulesRoute(router, licenseState);
+
+    const [, handler] = router.post.mock.calls[0];
+
+    const baseRule = {
+      id: 'rule-id-1',
+      alertTypeId: '.index-threshold',
+      name: 'test rule',
+      consumer: 'alerts',
+      tags: [],
+      enabled: true,
+      throttle: null,
+      apiKeyOwner: 'elastic',
+      createdBy: 'elastic',
+      updatedBy: 'elastic',
+      muteAll: false,
+      mutedInstanceIds: [],
+      schedule: { interval: '1m' },
+      snoozeSchedule: [],
+      actions: [],
+      params: {},
+      updatedAt: new Date('2024-03-21T13:15:00.498Z'),
+      createdAt: new Date('2024-03-21T13:15:00.498Z'),
+      executionStatus: {
+        status: 'ok' as const,
+        lastExecutionDate: new Date('2024-03-21T13:15:00.498Z'),
+      },
+      revision: 0,
+    };
+
+    const findResult = {
+      page: 1,
+      perPage: 3,
+      total: 3,
+      data: [
+        {
+          ...baseRule,
+          id: 'rule-id-1',
+          // time-based snooze only
+          snoozedInstances: [
+            {
+              instanceId: 'alert-1',
+              expiresAt: '2024-04-01T00:00:00.000Z',
+              snoozedAt: '2024-03-21T13:15:00.000Z',
+              snoozedBy: 'elastic',
+            },
+          ],
+        },
+        {
+          ...baseRule,
+          id: 'rule-id-2',
+          // condition-based snooze only
+          snoozedInstances: [
+            {
+              instanceId: 'alert-2',
+              conditions: [{ type: 'field_change', field: 'kibana.alert.severity' }],
+              conditionOperator: 'any' as const,
+              snoozedAt: '2024-03-21T13:15:00.000Z',
+              snoozedBy: 'elastic',
+            },
+          ],
+        },
+        {
+          ...baseRule,
+          id: 'rule-id-3',
+          // time-based + condition-based snooze combined
+          snoozedInstances: [
+            {
+              instanceId: 'alert-3',
+              expiresAt: '2024-04-01T00:00:00.000Z',
+              conditions: [{ type: 'severity_change' }],
+              conditionOperator: 'any' as const,
+              snoozedAt: '2024-03-21T13:15:00.000Z',
+              snoozedBy: 'elastic',
+            },
+          ],
+        },
+      ],
+    } as unknown as FindResult<{}>;
+
+    rulesClient.find.mockResolvedValueOnce(findResult);
+
+    const [context, req, res] = mockHandlerArguments(
+      { rulesClient },
+      { body: { per_page: 3, page: 1, default_search_operator: 'OR' } },
+      ['ok']
+    );
+
+    await handler(context, req, res);
+
+    // @ts-expect-error
+    const { data } = res.ok.mock.calls[0][0].body;
+
+    // time-based snooze: expires_at present, no conditions
+    expect(data[0].snoozed_alert_instances).toEqual([
+      {
+        instance_id: 'alert-1',
+        expires_at: '2024-04-01T00:00:00.000Z',
+        snoozed_at: '2024-03-21T13:15:00.000Z',
+        snoozed_by: 'elastic',
+      },
+    ]);
+
+    // condition-based snooze: conditions + conditionOperator present, no expires_at
+    expect(data[1].snoozed_alert_instances).toEqual([
+      {
+        instance_id: 'alert-2',
+        conditions: [{ type: 'field_change', field: 'kibana.alert.severity' }],
+        condition_operator: 'any',
+        snoozed_at: '2024-03-21T13:15:00.000Z',
+        snoozed_by: 'elastic',
+      },
+    ]);
+
+    // combined snooze: both expires_at and conditions present
+    expect(data[2].snoozed_alert_instances).toEqual([
+      {
+        instance_id: 'alert-3',
+        expires_at: '2024-04-01T00:00:00.000Z',
+        conditions: [{ type: 'severity_change' }],
+        condition_operator: 'any',
+        snoozed_at: '2024-03-21T13:15:00.000Z',
+        snoozed_by: 'elastic',
+      },
+    ]);
+  });
 });

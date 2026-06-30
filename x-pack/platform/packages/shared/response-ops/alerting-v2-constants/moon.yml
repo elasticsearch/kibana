@@ -16,7 +16,8 @@ project:
   channel: ''
   owner: '@elastic/rna-project-team'
   sourceRoot: x-pack/platform/packages/shared/response-ops/alerting-v2-constants
-dependsOn: []
+dependsOn:
+  - '@kbn/i18n'
 tags:
   - shared-common
   - package

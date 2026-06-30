@@ -17,6 +17,8 @@ import { createExpandableFlyoutApiMock } from '../../../../../common/mock/expand
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 
 const mockOpenFlyout = jest.fn();
+const mockOpenSystemFlyout = jest.fn();
+const mockUseIsExperimentalFeatureEnabled = jest.fn().mockReturnValue(false);
 
 jest.mock('@kbn/expandable-flyout');
 
@@ -24,8 +26,43 @@ jest.mock('../../../../../common/components/draggables', () => ({
   DefaultDraggable: () => <div data-test-subj="DefaultDraggable" />,
 }));
 
+jest.mock('../../../../../common/hooks/use_experimental_features', () => ({
+  useIsExperimentalFeatureEnabled: (flag: string) => mockUseIsExperimentalFeatureEnabled(flag),
+}));
+
+jest.mock('../../../../../flyout_v2/shared/components/flyout_provider', () => ({
+  flyoutProviders: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('../../../../../flyout_v2/shared/hooks/use_default_flyout_properties', () => ({
+  useDefaultDocumentFlyoutProperties: () => ({ size: 'm' }),
+}));
+
+jest.mock('../../../../../flyout_v2/entity/host/main', () => ({
+  Host: () => <div data-test-subj="mockHostPanel" />,
+}));
+
+// Keep the real kibana services (HostDetailsLink relies on them) but inject openSystemFlyout.
+jest.mock('../../../../../common/lib/kibana', () => {
+  const actual = jest.requireActual('../../../../../common/lib/kibana');
+  return {
+    ...actual,
+    useKibana: () => {
+      const kibana = actual.useKibana();
+      return {
+        ...kibana,
+        services: {
+          ...kibana.services,
+          overlays: { ...kibana.services.overlays, openSystemFlyout: mockOpenSystemFlyout },
+        },
+      };
+    },
+  };
+});
+
 describe('HostName', () => {
   beforeEach(() => {
+    mockUseIsExperimentalFeatureEnabled.mockReturnValue(false);
     jest.mocked(useExpandableFlyoutApi).mockReturnValue({
       ...createExpandableFlyoutApiMock(),
       openFlyout: mockOpenFlyout,
@@ -174,5 +211,32 @@ describe('HostName', () => {
         },
       });
     });
+  });
+
+  test('should open the v2 system flyout when newFlyoutSystemEnabled is true', async () => {
+    mockUseIsExperimentalFeatureEnabled.mockReturnValue(true);
+    const context = {
+      enableHostDetailsFlyout: true,
+      enableIpDetailsFlyout: true,
+      timelineID: TimelineId.active,
+      tabType: TimelineTabs.query,
+    };
+    const wrapper = mount(
+      <TestProviders>
+        <StatefulEventContext.Provider value={context}>
+          <HostName {...props} />
+        </StatefulEventContext.Provider>
+      </TestProviders>
+    );
+
+    wrapper.find('[data-test-subj="host-details-button"]').last().simulate('click');
+    await waitFor(() => {
+      expect(mockOpenSystemFlyout).toHaveBeenCalledTimes(1);
+    });
+    expect(mockOpenSystemFlyout).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ session: 'start' })
+    );
+    expect(mockOpenFlyout).not.toHaveBeenCalled();
   });
 });

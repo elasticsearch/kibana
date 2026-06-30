@@ -22,6 +22,7 @@ import { run } from '@kbn/dev-cli-runner';
 import { ProcRunner } from '@kbn/dev-proc-runner';
 import {
   readValidationRunFlags,
+  resolveValidationAffectedProjects,
   resolveValidationBaseContext,
   type ValidationBaseContext,
   VALIDATION_RUN_HELP,
@@ -166,6 +167,41 @@ const findJestUnitConfig = (filePath: string): string | undefined => {
 
 const stripAnsi = (s: string) => s.replace(/\x1B\[[0-9;]*[A-Za-z]/g, '');
 
+const runLintTsProjects = async (
+  affectedSourceRoots: string[],
+  fix: boolean
+): Promise<{ passed: boolean; output: string }> => {
+  const execa = (await import('execa')).default;
+  const args = ['scripts/lint_ts_projects'];
+  if (fix) args.push('--fix');
+  args.push(...affectedSourceRoots);
+
+  const result = await execa(process.execPath, args, {
+    cwd: REPO_ROOT,
+    reject: false,
+  });
+
+  return {
+    passed: result.exitCode === 0,
+    output: [result.stdout, result.stderr].filter(Boolean).join('\n'),
+  };
+};
+
+const runMoonRegeneration = async (fix: boolean): Promise<{ passed: boolean; output: string }> => {
+  const execa = (await import('execa')).default;
+  // --update writes regenerated configs; --check fails on drift without writing.
+  const result = await execa(
+    process.execPath,
+    ['scripts/regenerate_moon_projects.js', fix ? '--update' : '--check'],
+    { cwd: REPO_ROOT, reject: false }
+  );
+
+  return {
+    passed: result.exitCode === 0,
+    output: [result.stdout, result.stderr].filter(Boolean).join('\n'),
+  };
+};
+
 const runJestTestsDirectly = async (
   testFiles: string[]
 ): Promise<{ testCount: number; passed: boolean; output: string }> => {
@@ -238,6 +274,98 @@ run(
       (baseContext.runContext.kind === 'skip' ||
         baseContext.runContext.kind === 'full' ||
         baseContext.contract.testMode === 'all');
+
+    // Steps run in a fixed order: tsproj → moon → lint → jest → tsc.
+    // @kbn/ts-projects is cached for the process; tsproj autofixes tsconfigs in a
+    // subprocess, so lint/tsc must not load TS_PROJECTS until those fixes are on disk.
+    // Do not reorder or add top-level imports that pull in @kbn/ts-projects earlier.
+
+    // ── ts projects ────────────────────────────────────────────────────
+
+    {
+      const tsProjectsProgress = startProgress('tsproj');
+
+      if (isSkipOrFull) {
+        tsProjectsProgress.writeResult(
+          line('tsproj', '—', 'skipped', tsProjectsProgress.elapsed())
+        );
+      } else if (changedFiles.length === 0) {
+        tsProjectsProgress.writeResult(
+          line('tsproj', '—', 'no changed files', tsProjectsProgress.elapsed())
+        );
+      } else {
+        try {
+          const affected = await resolveValidationAffectedProjects({
+            changedFilesJson: JSON.stringify({ files: changedFiles }),
+            downstream: baseContext.mode === 'contract' ? baseContext.contract.downstream : 'none',
+          });
+
+          if (affected.isRootProjectAffected || affected.affectedSourceRoots.length === 0) {
+            // Root-level inputs touched (or nothing to scope to) — skip the scoped run; the
+            // repo-wide lint_ts_projects check still runs in its own dedicated CI step.
+            tsProjectsProgress.writeResult(
+              line('tsproj', '—', 'no scoped projects', tsProjectsProgress.elapsed())
+            );
+          } else {
+            const result = await runLintTsProjects(affected.affectedSourceRoots, fix);
+            if (result.passed) {
+              tsProjectsProgress.writeResult(
+                line(
+                  'tsproj',
+                  '✓',
+                  pluralize(affected.affectedSourceRoots.length, 'project'),
+                  tsProjectsProgress.elapsed()
+                )
+              );
+            } else {
+              tsProjectsProgress.writeResult(
+                line('tsproj', '✗', 'failed', tsProjectsProgress.elapsed())
+              );
+              writeln('');
+              const excerpt = result.output.split('\n').slice(-20);
+              for (const l of excerpt) writeln(`    ${l}`);
+              writeln(
+                `    $ node scripts/lint_ts_projects${
+                  fix ? ' --fix' : ''
+                } ${affected.affectedSourceRoots.join(' ')}`
+              );
+              writeln('');
+              errors.push(new Error('lint_ts_projects failed'));
+            }
+          }
+        } catch (error) {
+          tsProjectsProgress.writeResult(
+            line('tsproj', '✗', 'failed', tsProjectsProgress.elapsed())
+          );
+          errors.push(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+    }
+
+    // ── moon ───────────────────────────────────────────────────────────
+
+    {
+      const moonProgress = startProgress('moon');
+      try {
+        const result = await runMoonRegeneration(fix);
+        if (result.passed) {
+          moonProgress.writeResult(
+            line('moon', '✓', fix ? 'projects regenerated' : 'up to date', moonProgress.elapsed())
+          );
+        } else {
+          moonProgress.writeResult(line('moon', '✗', 'failed', moonProgress.elapsed()));
+          writeln('');
+          const excerpt = result.output.split('\n').slice(-15);
+          for (const l of excerpt) writeln(`    ${l}`);
+          writeln('    $ node scripts/regenerate_moon_projects.js --update');
+          writeln('');
+          errors.push(new Error('regenerate_moon_projects failed'));
+        }
+      } catch (error) {
+        moonProgress.writeResult(line('moon', '✗', 'failed', moonProgress.elapsed()));
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
 
     // ── lint ───────────────────────────────────────────────────────────
 

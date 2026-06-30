@@ -1,5 +1,5 @@
 version: '1'
-name: '.significant-events-triage'
+name: 'Significant Events Triage'
 description: 'Analyses unreviewed discoveries with a judge agent and creates significant events.'
 enabled: true
 tags:
@@ -127,7 +127,7 @@ steps:
     agent-id: 'platform.streams.significant-events.discovery.judge'
     connector-id: '.anthropic-claude-4.6-sonnet-chat_completion'
     # Keep plugin-id/aggregate-by in sync with @kbn/streams-schema inference_feature_ids.ts
-    # (STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID / STREAMS_SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
+    # (STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID / SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
     plugin-id: 'streams_significant_events_discovery'
     aggregate-by: 'streams_significant_events'
     create-conversation: true

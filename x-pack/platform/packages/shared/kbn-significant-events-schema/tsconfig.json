@@ -1,0 +1,16 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": ["jest", "node"]
+  },
+  "include": ["**/*.ts"],
+  "kbn_references": [
+    "@kbn/zod",
+    "@kbn/zod-helpers",
+    "@kbn/streamlang",
+    "@kbn/inference-common",
+    "@kbn/streams-schema"
+  ],
+  "exclude": ["target/**/*"]
+}

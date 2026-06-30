@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
-import { LazyChangePointExperienceGrid } from '@kbn/change-point-chart-viewer';
+import { BehaviorSubject } from 'rxjs';
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import { hasChangePointCommand, getChangePointOutputColumnNames } from '@kbn/esql-utils';
+import { i18n } from '@kbn/i18n';
 import type {
   DataGridCellValueElementProps,
   CustomGridColumnsConfiguration,
@@ -21,23 +22,42 @@ import type { DataSourceProfileProvider } from '../../../profiles';
 import { DataSourceCategory } from '../../../profiles';
 import { ChangePointPvalueCell } from './change_point_pvalue_cell';
 import { ChangePointPvalueColumnHeader } from './change_point_pvalue_column_header';
-import { CHANGE_POINT_DATA_SOURCE_PROFILE_ID } from './change_point_context';
+import {
+  CHANGE_POINT_DATA_SOURCE_PROFILE_ID,
+  type ChangePointChartSectionProps$,
+  type ChangePointChartSectionSnapshot,
+} from './change_point_context';
 import type { ChangePointPvalueCellContext } from './change_point_pvalue_cell';
+import { ChangePointChartSectionSync } from './change_point_chart_section_sync';
+import { ChangePointDocViewerPanel } from './change_point_doc_viewer_panel';
 
 const CHANGE_POINT_CHART_LOCAL_STORAGE_KEY = 'discover:changePointExperience';
 
+/**
+ * Extends the p-value cell context with the chart section props subject needed
+ * by the flyout doc viewer tab.
+ *
+ * `DataSourceProfileProvider<TProviderContext>` merges this with the base
+ * `DataSourceContext` (which already contributes `category`), so `category`
+ * must NOT be included here.
+ */
+interface ChangePointDataSourceProfileContext extends ChangePointPvalueCellContext {
+  chartSectionProps$: ChangePointChartSectionProps$;
+}
+
 export const createChangePointDataSourceProfileProvider =
-  (): DataSourceProfileProvider<ChangePointPvalueCellContext> => ({
+  (): DataSourceProfileProvider<ChangePointDataSourceProfileContext> => ({
     profileId: CHANGE_POINT_DATA_SOURCE_PROFILE_ID,
     profile: {
       getChartSectionConfiguration:
-        (prev, { toolkit }) =>
+        (prev, { context, toolkit }) =>
         () => ({
           ...prev(),
           renderChartSection: (props) =>
-            React.createElement(LazyChangePointExperienceGrid, {
-              ...props,
+            React.createElement(ChangePointChartSectionSync, {
+              gridProps: props,
               actions: toolkit.actions,
+              chartSectionProps$: context.chartSectionProps$,
             }),
           replaceDefaultChart: true as const,
           localStorageKeyPrefix: CHANGE_POINT_CHART_LOCAL_STORAGE_KEY,
@@ -76,6 +96,32 @@ export const createChangePointDataSourceProfileProvider =
             [pvalueColumnId]: pvalueRenderer,
           };
         },
+      getDocViewer:
+        (prev, { context, toolkit }) =>
+        (params) => {
+          const prevDocViewer = prev(params);
+          return {
+            ...prevDocViewer,
+            docViewsRegistry: (registry) => {
+              registry.add({
+                id: 'doc_view_change_point_chart',
+                title: i18n.translate('discover.docViews.changePoint.title', {
+                  defaultMessage: 'Overview',
+                }),
+                order: 0,
+                render: () =>
+                  // DocViewRenderProps.hit === params.record; use the closure value
+                  // so the panel does not need to accept DocViewRenderProps itself.
+                  React.createElement(ChangePointDocViewerPanel, {
+                    record: params.record,
+                    context,
+                    actions: toolkit.actions,
+                  }),
+              });
+              return prevDocViewer.docViewsRegistry(registry);
+            },
+          };
+        },
     },
     resolve: (params) => {
       if (!isDataSourceType(params.dataSource, DataSourceType.Esql)) {
@@ -94,11 +140,16 @@ export const createChangePointDataSourceProfileProvider =
       const columnNames = getChangePointOutputColumnNames(query.esql);
       const pvalueColumnId = columnNames?.pvalueColumn ?? 'pvalue';
 
+      const chartSectionProps$ = new BehaviorSubject<ChangePointChartSectionSnapshot | undefined>(
+        undefined
+      );
+
       return {
         isMatch: true,
         context: {
           category: DataSourceCategory.Default,
           pvalueColumnId,
+          chartSectionProps$,
         },
       };
     },

@@ -13,6 +13,17 @@ import { DATA_TIERS } from '../../../common/constants';
 
 const AGGREGATION_MAX_SIZE = 1000;
 
+// Agents in these states are not actively reporting OTel telemetry.
+// Excluding them from the hostname-keyed metrics query prevents a newly enrolled collector
+// on the same host from leaking its live metrics to a stale/offline agent entry.
+// See https://github.com/elastic/kibana/issues/274843
+const NON_REPORTING_OPAMP_STATUSES: Array<NonNullable<Agent['status']>> = [
+  'offline',
+  'inactive',
+  'unenrolled',
+  'uninstalled',
+];
+
 export async function fetchAndAssignAgentMetrics(esClient: ElasticsearchClient, agents: Agent[]) {
   const logger = appContextService.getLogger();
   const fleetAgents = agents.filter((agent) => agent.type !== 'OPAMP');
@@ -45,8 +56,15 @@ async function _fetchAndAssignOtelMetrics(esClient: ElasticsearchClient, agents:
   // Map service.instance.id (hostname from elastic.display.name) → agentIds.
   // Multiple agents can share the same display name, and all should receive the same metrics bucket.
   // Collectors report service.instance.id as their hostname, not their Fleet agent ID.
+  //
+  // Only include agents that are actively reporting. Offline/inactive/unenrolled agents must not
+  // be included in the query: they share the same hostname as any newly enrolled collector on the
+  // same host, so they would otherwise receive that collector's live metrics.
   const instanceIdToAgentIds = new Map<string, string[]>();
   for (const agent of agents) {
+    if (agent.status && NON_REPORTING_OPAMP_STATUSES.includes(agent.status)) {
+      continue;
+    }
     const instanceId =
       (agent.non_identifying_attributes?.['elastic.display.name'] as string | undefined) ??
       agent.id;
@@ -58,6 +76,11 @@ async function _fetchAndAssignOtelMetrics(esClient: ElasticsearchClient, agents:
     }
   }
   const instanceIds = Array.from(instanceIdToAgentIds.keys());
+
+  // If no agents are actively reporting, skip the ES query entirely.
+  if (instanceIds.length === 0) {
+    return agents.map(({ id }) => ({ id, metrics: undefined }));
+  }
 
   const res = await esClient.search<
     unknown,

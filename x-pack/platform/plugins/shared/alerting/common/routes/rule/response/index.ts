@@ -35,6 +35,7 @@ export {
   ruleResponseSchema as ruleResponseSchemaV1,
   ruleResponseInternalSchema as ruleResponseInternalSchemaV1,
   ruleSnoozeScheduleSchema as ruleSnoozeScheduleSchemaV1,
+  snoozedAlertInstanceSchema as snoozedAlertInstanceSchemaV1,
   notifyWhenSchema as notifyWhenSchemaV1,
   scheduleIdsSchema as scheduleIdsSchemaV1,
   alertDelaySchema as alertDelaySchemaV1,

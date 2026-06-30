@@ -9,6 +9,11 @@ import type { SkillDefinition } from '@kbn/agent-builder-server/skills';
 import type { ToolRegistry } from '@kbn/agent-builder-server';
 import { createSkillService } from './skill_service';
 
+const mockPersistedSkillNotFoundError = () =>
+  jest
+    .requireActual<typeof import('@kbn/agent-builder-common')>('@kbn/agent-builder-common')
+    .createSkillNotFoundError({ skillId: 'missing' });
+
 jest.mock('@kbn/agent-builder-server/skills', () => {
   const actual = jest.requireActual('@kbn/agent-builder-server/skills');
   return {
@@ -28,7 +33,7 @@ jest.mock('../execution/runner/store/volumes/skills/utils', () => ({
 jest.mock('./persisted/client', () => ({
   createClient: jest.fn(() => ({
     has: jest.fn().mockResolvedValue(false),
-    get: jest.fn().mockRejectedValue(new Error('not found')),
+    get: jest.fn().mockRejectedValue(mockPersistedSkillNotFoundError()),
     list: jest.fn().mockResolvedValue([]),
     create: jest.fn(),
     bulkCreate: jest.fn(),
@@ -137,7 +142,7 @@ describe('createSkillService', () => {
       const { createClient: mockCreateClient } = jest.requireMock('./persisted/client/client');
       mockCreateClient.mockReturnValue({
         has: jest.fn().mockResolvedValue(false),
-        get: jest.fn().mockRejectedValue(new Error('not found')),
+        get: jest.fn().mockRejectedValue(mockPersistedSkillNotFoundError()),
         list: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
         update: jest.fn(),

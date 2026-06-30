@@ -7,6 +7,7 @@
 
 import React from 'react';
 import {
+  EuiBadge,
   EuiCode,
   EuiDescriptionList,
   EuiFlexGroup,
@@ -18,7 +19,8 @@ import type { ActionPolicyResponse } from '@kbn/alerting-v2-schemas';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { getGroupingModeLabel, getThrottleStrategyLabel } from '../labels';
-import { BadgeList } from './badge_list';
+import { BadgeList } from '../badge_list';
+import { PopoverItems } from '../../popover_items';
 import { DestinationRow } from './destination_row';
 
 const EMPTY_VALUE = '-';
@@ -44,7 +46,35 @@ export const ActionPolicyDefinitionList = ({ policy }: ActionPolicyDefinitionLis
       title: i18n.translate('xpack.alertingV2.actionPolicyDefinition.tags', {
         defaultMessage: 'Tags',
       }),
-      description: tags && tags.length > 0 ? <BadgeList items={tags} /> : EMPTY_VALUE,
+      description:
+        tags && tags.length > 0 ? (
+          <PopoverItems
+            items={tags}
+            numberOfItemsToDisplay={1}
+            wrapItems
+            popoverTitle={i18n.translate(
+              'xpack.alertingV2.actionPolicyDefinition.tags.popoverTitle',
+              { defaultMessage: 'Tags' }
+            )}
+            popoverButtonTitle={`+${Math.max(tags.length - 1, 0)}`}
+            dataTestPrefix="actionPolicyDefinitionTags"
+            renderItem={(tag) => (
+              <EuiBadge
+                key={tag}
+                color="hollow"
+                title={tag}
+                css={{
+                  maxWidth: '100%',
+                  '.euiBadge__text': { minWidth: 0 },
+                }}
+              >
+                {tag}
+              </EuiBadge>
+            )}
+          />
+        ) : (
+          EMPTY_VALUE
+        ),
     },
     {
       title: i18n.translate('xpack.alertingV2.actionPolicyDefinition.matcher', {
@@ -119,5 +149,13 @@ export const ActionPolicyDefinitionList = ({ policy }: ActionPolicyDefinitionLis
       ),
   });
 
-  return <EuiDescriptionList compressed type="column" listItems={items} />;
+  return (
+    <EuiDescriptionList
+      compressed
+      type="column"
+      columnWidths={[1, 3]}
+      descriptionProps={{ style: { minWidth: 0 } }}
+      listItems={items}
+    />
+  );
 };

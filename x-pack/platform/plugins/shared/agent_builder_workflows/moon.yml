@@ -43,6 +43,7 @@ dependsOn:
   - '@kbn/workflows-yaml'
   - '@kbn/react-query'
   - '@kbn/agent-builder-workflow-gen'
+  - '@kbn/security-plugin-types-server'
 tags:
   - plugin
   - prod

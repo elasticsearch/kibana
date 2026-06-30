@@ -29,6 +29,8 @@ import {
   isUiamCredential,
 } from '@kbn/core-security-server';
 import type { InvalidateAPIKeyResult } from '@kbn/core-security-server';
+import type { FakeRawRequest } from '@kbn/core-http-server';
+import { kibanaRequestFactory } from '@kbn/core-http-server-utils';
 import type { RuleTypeRegistry, SpaceIdToNamespaceFunction } from './types';
 import { RulesClient } from './rules_client';
 import type { AlertingAuthorizationClientFactory } from './alerting_authorization_client_factory';
@@ -258,49 +260,80 @@ export class RulesClientFactory {
    * invalidation queue. Errors are logged but never rethrown so that this cannot break
    * the surrounding rule delete operation.
    *
+   * Authentication for both branches is derived from server-side state rather than the
+   * caller's request, so the sync path works regardless of how the delete was authenticated:
+   * - ES keys are invalidated as the Kibana internal user (matches the queued task path).
+   * - UIAM keys are invalidated by forging a request that carries the rule's own UIAM
+   *   credential (mirrors {@link invalidateUiamAPIKeys} in @kbn/task-manager-plugin).
+   *
    * Mirrors the decode logic of {@link bulkMarkApiKeysForInvalidation}: each input is
    * `base64(id:value)`; for UIAM keys the value is a UIAM credential, for ES keys we
    * only need the id.
    */
-  private async invalidateApiKeyNow(
-    request: KibanaRequest,
-    {
-      ruleName,
-      apiKey,
-      uiamApiKey,
-    }: { ruleName: string; apiKey?: string | null; uiamApiKey?: string | null }
-  ): Promise<void> {
+  private async invalidateApiKeyNow({
+    ruleName,
+    apiKey,
+    uiamApiKey,
+  }: {
+    ruleName: string;
+    apiKey?: string | null;
+    uiamApiKey?: string | null;
+  }): Promise<void> {
     const esApiKeyId = apiKey ? decodeApiKeyId(apiKey) : undefined;
-    const uiamApiKeyId = uiamApiKey ? decodeApiKeyId(uiamApiKey) : undefined;
 
     const tasks: Array<Promise<unknown>> = [];
 
-    if (uiamApiKeyId) {
-      tasks.push(
-        (async () => {
-          try {
-            await this.invalidateUiamApiKey(request, ruleName, uiamApiKeyId);
-          } catch (err) {
-            this.logger.error(
-              `Failed to synchronously invalidate UIAM API key for alerting rule : ${ruleName}: ${
-                err instanceof Error ? err.message : String(err)
-              }`,
-              {
-                tags: UIAM_LOGS_INVALIDATE_TAGS,
-                error: { stack_trace: err instanceof Error ? err.stack : undefined },
-              }
-            );
-          }
-        })()
-      );
+    if (uiamApiKey) {
+      const [uiamApiKeyId, uiamApiKeyValue] = Buffer.from(uiamApiKey, 'base64')
+        .toString()
+        .split(':');
+
+      if (uiamApiKeyId && uiamApiKeyValue && isUiamCredential(uiamApiKeyValue)) {
+        tasks.push(
+          (async () => {
+            try {
+              // `uiam.invalidate` requires the request to carry a UIAM credential. Forge
+              // one from the rule's own stored UIAM key so this works regardless of how
+              // the caller authenticated — mirrors the queued invalidation path in
+              // @kbn/task-manager-plugin.
+              const fakeRawRequest: FakeRawRequest = {
+                headers: { authorization: `ApiKey ${uiamApiKeyValue}` },
+                path: '/',
+              };
+              const fakeRequest = kibanaRequestFactory(fakeRawRequest);
+              await this.invalidateUiamApiKey(fakeRequest, ruleName, uiamApiKeyId);
+            } catch (err) {
+              this.logger.error(
+                `Failed to synchronously invalidate UIAM API key for alerting rule : ${ruleName}: ${
+                  err instanceof Error ? err.message : String(err)
+                }`,
+                {
+                  tags: UIAM_LOGS_INVALIDATE_TAGS,
+                  error: { stack_trace: err instanceof Error ? err.stack : undefined },
+                }
+              );
+            }
+          })()
+        );
+      } else {
+        this.logger.error(
+          `Failed to synchronously invalidate UIAM API key for alerting rule : ${ruleName}: stored credential is not a UIAM API key`,
+          { tags: UIAM_LOGS_INVALIDATE_TAGS }
+        );
+      }
     }
 
     if (esApiKeyId) {
       tasks.push(
         (async () => {
           try {
+            // Use the Kibana internal user so invalidation does not depend on the caller
+            // having `manage_api_key` for the rule's API key. Matches the queued task path
+            // (`alerts_invalidate_api_keys`), Fleet, entity manager, synthetics, etc.
             const result: InvalidateAPIKeyResult | null =
-              await this.securityService.authc.apiKeys.invalidate(request, { ids: [esApiKeyId] });
+              await this.securityService.authc.apiKeys.invalidateAsInternalUser({
+                ids: [esApiKeyId],
+              });
             if (result && result.error_count > 0) {
               this.logger.error(
                 `Failed to synchronously invalidate ES API key for alerting rule : ${ruleName}: ${result.error_details
@@ -491,7 +524,7 @@ export class RulesClientFactory {
       },
       cloneApiKeysOnCreate: options?.cloneApiKeysOnCreate === true,
       async invalidateApiKeyNow(params) {
-        await factory.invalidateApiKeyNow(request, params);
+        await factory.invalidateApiKeyNow(params);
       },
       async cloneAPIKey(name: string) {
         const cloneResult = await securityService.authc.apiKeys.cloneAsInternalUser(request, {

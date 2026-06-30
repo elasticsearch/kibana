@@ -30,10 +30,12 @@ import type {
   ImportRuleArgs,
   ImportRulesArgs,
   PatchRuleArgs,
+  RestoreRuleFromHistoryArgs,
   RevertPrebuiltRuleArgs,
   UpdateRuleArgs,
   UpgradePrebuiltRuleArgs,
 } from './detection_rules_client_interface';
+import type { RestoreRuleFromHistoryResponse } from '../../../../../../common/api/detection_engine/rule_management';
 import { createRule } from './methods/create_rule';
 import { bulkDeleteRules } from './methods/bulk_delete_rules';
 import { deleteRule } from './methods/delete_rule';
@@ -44,6 +46,7 @@ import { updateRule } from './methods/update_rule';
 import { upgradePrebuiltRule } from './methods/upgrade_prebuilt_rule';
 import { revertPrebuiltRule } from './methods/revert_prebuilt_rule';
 import { getHistoryForRule } from './methods/get_history_for_rule';
+import { restoreRuleFromHistory } from './methods/restore_rule_from_history';
 import { MINIMUM_RULE_CUSTOMIZATION_LICENSE } from '../../../../../../common/constants';
 
 interface DetectionRulesClientParams {
@@ -226,6 +229,25 @@ export const createDetectionRulesClient = ({
     async getHistoryForRule(args: GetHistoryForRuleArgs) {
       return withSecuritySpan('DetectionRulesClient.getHistoryForRule', async () => {
         return getHistoryForRule({ rulesClient, ...args });
+      });
+    },
+
+    async restoreRuleFromHistory({
+      ruleId,
+      changeId,
+      currentRuleRevision,
+    }: RestoreRuleFromHistoryArgs): Promise<RestoreRuleFromHistoryResponse> {
+      return withSecuritySpan('DetectionRulesClient.restoreRuleFromHistory', async () => {
+        return restoreRuleFromHistory({
+          actionsClient,
+          rulesClient,
+          prebuiltRuleAssetClient,
+          mlAuthz,
+          rulesAuthz,
+          ruleId,
+          changeId,
+          currentRuleRevision,
+        });
       });
     },
   };

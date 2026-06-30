@@ -1,10 +1,10 @@
 {
-  "sha1": "ac82c2700769801041405bdb39723bb929320840",
+  "sha1": "018921d96ff1ddeb0936c80ef5f93f953744c4e0",
   "tests": [
     {
       "id": "451ff2b9982142c-9a17f71a4f5ef91",
       "title": "Discover App - Performance Metrics & Bundle Analysis collects and validates JS Bundles loaded on page",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -24,14 +24,14 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/private/discover_enhanced/test/scout/ui/tests/discover_cdp_perf.spec.ts",
-        "line": 130,
+        "line": 131,
         "column": 9
       }
     },
     {
       "id": "451ff2b9982142c-0744d4070723e77",
       "title": "Discover App - Performance Metrics & Bundle Analysis measures Performance Metrics before and after Discover load",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -51,7 +51,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/private/discover_enhanced/test/scout/ui/tests/discover_cdp_perf.spec.ts",
-        "line": 176,
+        "line": 177,
         "column": 9
       }
     },

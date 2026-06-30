@@ -7,7 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Signature } from '../../types';
+import type { FunctionParameter, Signature } from '../../types';
+
+/** Detects whether a parameter only accepts constant values. */
+export const isConstantParameter = (param: FunctionParameter): boolean =>
+  param.hint?.kind === 'constant';
 
 /** Detects signatures where all parameters are expected to stay on the same type family. */
 export function areParamsHomogeneous(signatures: Signature[]): boolean {

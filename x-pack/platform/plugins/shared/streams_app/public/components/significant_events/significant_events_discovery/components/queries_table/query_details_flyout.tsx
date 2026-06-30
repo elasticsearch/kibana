@@ -34,7 +34,7 @@ import { css } from '@emotion/react';
 import { DISCOVER_APP_LOCATOR } from '@kbn/deeplinks-analytics';
 import type { DiscoverAppLocatorParams } from '@kbn/discover-plugin/common';
 import { i18n } from '@kbn/i18n';
-import { QUERY_TYPE_MATCH, QUERY_TYPE_STATS } from '@kbn/streams-schema';
+import { QUERY_TYPE_MATCH, QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import React, { useEffect, useState } from 'react';
 import { FlyoutMetadataCard } from '../../../../flyout_components/flyout_metadata_card';
 import { FlyoutToolbarHeader } from '../../../../flyout_components/flyout_toolbar_header';

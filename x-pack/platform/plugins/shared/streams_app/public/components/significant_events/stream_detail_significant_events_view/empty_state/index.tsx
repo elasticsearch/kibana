@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import React from 'react';
 import {
   EuiButton,
   EuiButtonIcon,
@@ -19,10 +20,9 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import {
-  STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
-  STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
-} from '@kbn/streams-schema';
-import React from 'react';
+  SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID,
+  SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID,
+} from '@kbn/significant-events-schema';
 import { useInferenceFeatureConnectors } from '../../../../hooks/significant_events/use_inference_feature_connectors';
 import { useModelSettingsUrl } from '../../../../hooks/use_model_settings_url';
 import noSigEventsImage from './no_sig_events.svg';
@@ -41,10 +41,10 @@ export function EmptyState({
   onGenerateSuggestionsClick: () => void;
 }) {
   const featuresConnectors = useInferenceFeatureConnectors(
-    STREAMS_SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID
+    SIGNIFICANT_EVENTS_KI_EXTRACTION_INFERENCE_FEATURE_ID
   );
   const queriesConnectors = useInferenceFeatureConnectors(
-    STREAMS_SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID
+    SIGNIFICANT_EVENTS_KI_QUERY_GENERATION_INFERENCE_FEATURE_ID
   );
 
   const isConnectorLoading = featuresConnectors.loading || queriesConnectors.loading;

@@ -27,6 +27,7 @@ export {
   hasRepeatingSignature,
   hasArbitraryExpressionSignature,
   hasBooleanSignature,
+  isConstantParameter,
 } from './traits';
 
 export {

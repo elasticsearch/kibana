@@ -1,5 +1,5 @@
 {
-  "sha1": "3320bd045a90ca6fb751c1379f6f8cda92025265",
+  "sha1": "94616cae3326965b3fcd4fa5e7330fc50397972a",
   "tests": [
     {
       "id": "4aaafd2a7000640-70ec3e6d9549722",
@@ -104,7 +104,7 @@
       }
     },
     {
-      "id": "504e25785616fe1-1d8b985de6fcd2d",
+      "id": "11b72ca5d443a08-1d8b985de6fcd2d",
       "title": "Onboarding bulk status API returns not_started for every requested stream that has never been onboarded",
       "expectedStatus": "passed",
       "tags": [
@@ -120,7 +120,7 @@
       }
     },
     {
-      "id": "504e25785616fe1-6eae18e8b4c773e",
+      "id": "11b72ca5d443a08-6eae18e8b4c773e",
       "title": "Onboarding bulk status API rejects an empty streamNames array",
       "expectedStatus": "passed",
       "tags": [
@@ -136,7 +136,7 @@
       }
     },
     {
-      "id": "504e25785616fe1-4d182347c2af93f",
+      "id": "11b72ca5d443a08-4d182347c2af93f",
       "title": "Onboarding bulk status API returns 403 when significant events is disabled",
       "expectedStatus": "passed",
       "tags": [
@@ -152,10 +152,13 @@
       }
     },
     {
-      "id": "94c80912f6246f4-094ac08f869a28e",
+      "id": "e0e7435b0fe0092-094ac08f869a28e",
       "title": "Significant Events discovery pipeline API POST _execute (trigger) returns an executionId",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/significant_event_discovery_run.spec.ts",
         "line": 30,
@@ -163,10 +166,13 @@
       }
     },
     {
-      "id": "94c80912f6246f4-b38b60bd6807012",
+      "id": "e0e7435b0fe0092-b38b60bd6807012",
       "title": "Significant Events discovery pipeline API GET _status returns a valid status after trigger",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/significant_event_discovery_run.spec.ts",
         "line": 47,
@@ -174,10 +180,13 @@
       }
     },
     {
-      "id": "94c80912f6246f4-8f29a28b4278864",
+      "id": "e0e7435b0fe0092-8f29a28b4278864",
       "title": "Significant Events discovery pipeline API POST _execute (cancel) returns executionId or null",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/significant_event_discovery_run.spec.ts",
         "line": 72,
@@ -188,7 +197,10 @@
       "id": "53fcb18bfdd8ffe-9ee0f0d7f22c74a",
       "title": "Draft stream simulation should simulate a set processor on a draft stream",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/draft_stream_simulate.spec.ts",
         "line": 57,
@@ -199,7 +211,10 @@
       "id": "53fcb18bfdd8ffe-613a376a423c275",
       "title": "Draft stream simulation should simulate grok processing on a draft stream",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/draft_stream_simulate.spec.ts",
         "line": 85,
@@ -210,7 +225,10 @@
       "id": "53fcb18bfdd8ffe-13442199fc239a6",
       "title": "Draft stream simulation should detect mapping errors for draft stream detected_fields",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/draft_stream_simulate.spec.ts",
         "line": 122,
@@ -221,7 +239,10 @@
       "id": "53fcb18bfdd8ffe-8021a5e1c328229",
       "title": "Draft stream simulation should report processor failures correctly on a draft stream",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/draft_stream_simulate.spec.ts",
         "line": 162,
@@ -232,7 +253,10 @@
       "id": "53fcb18bfdd8ffe-8814c3f8c6c4449",
       "title": "Draft stream simulation should simulate processing on a nested draft (draft child of draft)",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/draft_stream_simulate.spec.ts",
         "line": 194,
@@ -243,7 +267,10 @@
       "id": "53fcb18bfdd8ffe-eca05f32c585194",
       "title": "Draft stream simulation should simulate multiple sequential processors on a draft stream",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/draft_stream_simulate.spec.ts",
         "line": 230,
@@ -254,7 +281,10 @@
       "id": "bf9123d2f461ba3-a9d65106606d0b3",
       "title": "Stream lifecycle - inherited ILM config API (classic) returns the ILM policy a classic stream would inherit from its index template",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/lifecycle_inherited_ilm.spec.ts",
         "line": 61,
@@ -1209,7 +1239,10 @@
       "id": "da66d204d97df91-255efc350dc5f73",
       "title": "Query stream isolation - child query streams excluded from parent views should include query streams in the streams list",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 79,
@@ -1220,7 +1253,10 @@
       "id": "da66d204d97df91-7c5fdac142bf4f8",
       "title": "Query stream isolation - child query streams excluded from parent views parent ingest stream schema does not include query stream columns",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 98,
@@ -1231,7 +1267,10 @@
       "id": "da66d204d97df91-e0cc81d023024f2",
       "title": "Query stream isolation - child query streams excluded from parent views parent wildcard does not resolve query stream ES|QL views",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 109,
@@ -1242,7 +1281,10 @@
       "id": "da66d204d97df91-4ddfe89446a053c",
       "title": "Query stream isolation - child query streams excluded from parent views query stream view exposes its own transformed columns",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 117,
@@ -1253,7 +1295,10 @@
       "id": "da66d204d97df91-88c6814a62d8fc8",
       "title": "Query stream isolation - child query streams excluded from parent views nested query stream exposes its own columns, not parent query stream columns",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 127,
@@ -1264,7 +1309,10 @@
       "id": "da66d204d97df91-d5258883037fd20",
       "title": "Query stream isolation - child query streams excluded from parent views parent query stream schema is unaffected by nested child",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 139,
@@ -1275,7 +1323,10 @@
       "id": "da66d204d97df91-fb6bf952d9e70fc",
       "title": "Query stream isolation - child query streams excluded from parent views ingest parent remains isolated from all query stream descendants",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 147,
@@ -1286,7 +1337,10 @@
       "id": "da66d204d97df91-75bf9e735bfae86",
       "title": "Query stream isolation - child query streams excluded from parent views deleting a wired sibling preserves query stream references on parent",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 160,
@@ -1297,7 +1351,10 @@
       "id": "da66d204d97df91-0eeadaff4ce4043",
       "title": "Query stream isolation - child query streams excluded from parent views should delete a query stream via API",
       "expectedStatus": "passed",
-      "tags": ["@local-stateful-classic", "@cloud-stateful-classic"],
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
       "location": {
         "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/streams/query_stream_isolation.spec.ts",
         "line": 222,

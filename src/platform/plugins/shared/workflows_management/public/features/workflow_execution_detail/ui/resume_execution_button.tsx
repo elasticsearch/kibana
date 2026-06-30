@@ -16,9 +16,13 @@ import { useKibana } from '@kbn/kibana-react-plugin/public';
 import type { StepContext } from '@kbn/workflows';
 import { convertJsonSchemaToZod } from '@kbn/workflows/spec/lib/build_fields_zod_validator';
 import type { JsonModelSchemaType } from '@kbn/workflows/spec/schema/common/json_model_schema';
-import { useWorkflowsApi, useWorkflowsCapabilities } from '@kbn/workflows-ui';
-import { ResumeExecutionModal } from './resume_execution_modal';
-import { generateSampleFromJsonSchema } from '../../../../common/lib/generate_sample_from_json_schema';
+import {
+  generateSampleFromJsonSchema,
+  ResumeExecutionModal,
+  useWorkflowsApi,
+  useWorkflowsCapabilities,
+} from '@kbn/workflows-ui';
+
 import { useTelemetry } from '../../../hooks/use_telemetry';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
 import type { ContextOverrideData } from '../../../shared/utils/build_step_context_override/build_step_context_override';

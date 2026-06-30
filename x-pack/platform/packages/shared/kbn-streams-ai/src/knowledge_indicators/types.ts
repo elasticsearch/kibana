@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Feature, StreamQuery } from '@kbn/streams-schema';
+import type { Feature, StreamQuery } from '@kbn/significant-events-schema';
 
 export type SearchKnowledgeIndicatorsKind = 'feature' | 'query';
 
