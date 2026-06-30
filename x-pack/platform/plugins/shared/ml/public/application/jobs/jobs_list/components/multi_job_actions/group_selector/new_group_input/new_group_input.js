@@ -14,6 +14,7 @@ import {
   EuiFlexItem,
   EuiFieldText,
   EuiFormRow,
+  EuiToolTip,
   keys,
 } from '@elastic/eui';
 
@@ -106,17 +107,27 @@ export class NewGroupInput extends Component {
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             <EuiFormRow className="new-group-input">
-              <EuiButtonIcon
-                onClick={this.addNewGroup}
-                iconType="plusCircle"
-                aria-label={i18n.translate(
+              <EuiToolTip
+                content={i18n.translate(
                   'xpack.ml.jobsList.multiJobActions.groupSelector.addButtonAriaLabel',
                   {
                     defaultMessage: 'Add',
                   }
                 )}
-                disabled={tempNewGroupName === '' || groupsValidationError !== ''}
-              />
+                disableScreenReaderOutput
+              >
+                <EuiButtonIcon
+                  onClick={this.addNewGroup}
+                  iconType="plusCircle"
+                  aria-label={i18n.translate(
+                    'xpack.ml.jobsList.multiJobActions.groupSelector.addButtonAriaLabel',
+                    {
+                      defaultMessage: 'Add',
+                    }
+                  )}
+                  disabled={tempNewGroupName === '' || groupsValidationError !== ''}
+                />
+              </EuiToolTip>
             </EuiFormRow>
           </EuiFlexItem>
         </EuiFlexGroup>

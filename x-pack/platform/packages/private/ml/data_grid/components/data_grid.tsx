@@ -259,11 +259,16 @@ export const DataGrid: FC<Props> = memo(
                   textToCopy={props.copyToClipboard}
                 >
                   {(copy: () => void) => (
-                    <EuiButtonIcon
-                      onClick={copy}
-                      iconType="copy"
-                      aria-label={props.copyToClipboardDescription}
-                    />
+                    <EuiToolTip
+                      content={props.copyToClipboardDescription}
+                      disableScreenReaderOutput
+                    >
+                      <EuiButtonIcon
+                        onClick={copy}
+                        iconType="copy"
+                        aria-label={props.copyToClipboardDescription}
+                      />
+                    </EuiToolTip>
                   )}
                 </EuiCopy>
               </EuiFlexItem>

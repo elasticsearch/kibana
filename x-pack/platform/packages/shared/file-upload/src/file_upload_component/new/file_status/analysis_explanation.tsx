@@ -17,6 +17,7 @@ import {
   EuiText,
   useGeneratedHtmlId,
   EuiHorizontalRule,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { FC } from 'react';
 import React, { useState } from 'react';
@@ -41,16 +42,23 @@ export const AnalysisExplanation: FC<Props> = ({ fileStatus, index }) => {
 
   return (
     <>
-      <EuiButtonIcon
-        onClick={() => setIsModalVisible(true)}
-        iconType="inspect"
-        size="xs"
-        color="text"
-        data-test-subj={`mlFileUploadAnalysisExplanationButton-${index}`}
-        aria-label={i18n.translate('xpack.fileUpload.analysisSummary.inspectButtonLabel', {
+      <EuiToolTip
+        content={i18n.translate('xpack.fileUpload.analysisSummary.inspectButtonLabel', {
           defaultMessage: 'Analysis explanation',
         })}
-      />
+        disableScreenReaderOutput
+      >
+        <EuiButtonIcon
+          onClick={() => setIsModalVisible(true)}
+          iconType="inspect"
+          size="xs"
+          color="text"
+          data-test-subj={`mlFileUploadAnalysisExplanationButton-${index}`}
+          aria-label={i18n.translate('xpack.fileUpload.analysisSummary.inspectButtonLabel', {
+            defaultMessage: 'Analysis explanation',
+          })}
+        />
+      </EuiToolTip>
 
       {isModalVisible && results?.explanation ? (
         <EuiModal

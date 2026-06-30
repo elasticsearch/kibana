@@ -8,7 +8,13 @@
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 
-import { EuiButtonIcon, EuiContextMenuPanel, EuiContextMenuItem, EuiPopover } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiContextMenuPanel,
+  EuiContextMenuItem,
+  EuiPopover,
+  EuiToolTip,
+} from '@elastic/eui';
 
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -62,23 +68,24 @@ class MultiJobActionsMenuUI extends Component {
 
   render() {
     const anyJobsBlocked = this.props.jobs.some((j) => j.blocked !== undefined);
+    const managementActionsLabel = i18n.translate(
+      'xpack.ml.jobsList.multiJobActionsMenu.managementActionsAriaLabel',
+      { defaultMessage: 'Management actions' }
+    );
     const button = (
-      <EuiButtonIcon
-        size="s"
-        onClick={this.onButtonClick}
-        iconType="gear"
-        aria-label={i18n.translate(
-          'xpack.ml.jobsList.multiJobActionsMenu.managementActionsAriaLabel',
-          {
-            defaultMessage: 'Management actions',
+      <EuiToolTip content={managementActionsLabel} disableScreenReaderOutput>
+        <EuiButtonIcon
+          size="s"
+          onClick={this.onButtonClick}
+          iconType="gear"
+          aria-label={managementActionsLabel}
+          color="text"
+          disabled={
+            anyJobsBlocked || (this.canDeleteJob === false && this.canStartStopDatafeed === false)
           }
-        )}
-        color="text"
-        disabled={
-          anyJobsBlocked || (this.canDeleteJob === false && this.canStartStopDatafeed === false)
-        }
-        data-test-subj="mlADJobListMultiSelectManagementActionsButton"
-      />
+          data-test-subj="mlADJobListMultiSelectManagementActionsButton"
+        />
+      </EuiToolTip>
     );
 
     const items = [

@@ -12,7 +12,14 @@
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 
-import { EuiButtonIcon, EuiPopover, EuiForm, EuiFormRow, EuiFieldText } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiPopover,
+  EuiForm,
+  EuiFormRow,
+  EuiFieldText,
+  EuiToolTip,
+} from '@elastic/eui';
 
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -63,21 +70,22 @@ export class EditDescriptionPopover extends Component {
   render() {
     const { isPopoverOpen, value } = this.state;
 
+    const editDescriptionLabel = i18n.translate(
+      'xpack.ml.settings.filterLists.editDescriptionPopover.editDescriptionAriaLabel',
+      { defaultMessage: 'Edit description' }
+    );
     const button = (
-      <EuiButtonIcon
-        size="s"
-        color="primary"
-        onClick={this.onButtonClick}
-        iconType="pencil"
-        aria-label={i18n.translate(
-          'xpack.ml.settings.filterLists.editDescriptionPopover.editDescriptionAriaLabel',
-          {
-            defaultMessage: 'Edit description',
-          }
-        )}
-        isDisabled={this.props.canCreateFilter === false}
-        data-test-subj="mlFilterListEditDescriptionButton"
-      />
+      <EuiToolTip content={editDescriptionLabel} disableScreenReaderOutput>
+        <EuiButtonIcon
+          size="s"
+          color="primary"
+          onClick={this.onButtonClick}
+          iconType="pencil"
+          aria-label={editDescriptionLabel}
+          isDisabled={this.props.canCreateFilter === false}
+          data-test-subj="mlFilterListEditDescriptionButton"
+        />
+      </EuiToolTip>
     );
 
     return (

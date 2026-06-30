@@ -95,19 +95,24 @@ exports[`EditFilterListHeader renders the header when creating a new filter list
           class="euiPopover emotion-euiPopover-inline-block"
           id="filter_list_description_popover"
         >
-          <button
-            aria-label="Edit description"
-            class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
-            data-test-subj="mlFilterListEditDescriptionButton"
-            type="button"
+          <span
+            class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+            id="generated-id_euiToolTipAnchor"
           >
-            <span
-              aria-hidden="true"
-              class="euiButtonIcon__icon"
-              color="inherit"
-              data-euiicon-type="pencil"
-            />
-          </button>
+            <button
+              aria-label="Edit description"
+              class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
+              data-test-subj="mlFilterListEditDescriptionButton"
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                class="euiButtonIcon__icon"
+                color="inherit"
+                data-euiicon-type="pencil"
+              />
+            </button>
+          </span>
         </div>
       </div>
     </div>
@@ -225,19 +230,24 @@ exports[`EditFilterListHeader renders the header when creating a new filter list
           class="euiPopover emotion-euiPopover-inline-block"
           id="filter_list_description_popover"
         >
-          <button
-            aria-label="Edit description"
-            class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
-            data-test-subj="mlFilterListEditDescriptionButton"
-            type="button"
+          <span
+            class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+            id="generated-id_euiToolTipAnchor"
           >
-            <span
-              aria-hidden="true"
-              class="euiButtonIcon__icon"
-              color="inherit"
-              data-euiicon-type="pencil"
-            />
-          </button>
+            <button
+              aria-label="Edit description"
+              class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
+              data-test-subj="mlFilterListEditDescriptionButton"
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                class="euiButtonIcon__icon"
+                color="inherit"
+                data-euiicon-type="pencil"
+              />
+            </button>
+          </span>
         </div>
       </div>
     </div>
@@ -300,19 +310,24 @@ exports[`EditFilterListHeader renders the header when editing an existing unused
           class="euiPopover emotion-euiPopover-inline-block"
           id="filter_list_description_popover"
         >
-          <button
-            aria-label="Edit description"
-            class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
-            data-test-subj="mlFilterListEditDescriptionButton"
-            type="button"
+          <span
+            class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+            id="generated-id_euiToolTipAnchor"
           >
-            <span
-              aria-hidden="true"
-              class="euiButtonIcon__icon"
-              color="inherit"
-              data-euiicon-type="pencil"
-            />
-          </button>
+            <button
+              aria-label="Edit description"
+              class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
+              data-test-subj="mlFilterListEditDescriptionButton"
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                class="euiButtonIcon__icon"
+                color="inherit"
+                data-euiicon-type="pencil"
+              />
+            </button>
+          </span>
         </div>
       </div>
     </div>
@@ -384,19 +399,24 @@ exports[`EditFilterListHeader renders the header when editing an existing used f
           class="euiPopover emotion-euiPopover-inline-block"
           id="filter_list_description_popover"
         >
-          <button
-            aria-label="Edit description"
-            class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
-            data-test-subj="mlFilterListEditDescriptionButton"
-            type="button"
+          <span
+            class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
+            id="generated-id_euiToolTipAnchor"
           >
-            <span
-              aria-hidden="true"
-              class="euiButtonIcon__icon"
-              color="inherit"
-              data-euiicon-type="pencil"
-            />
-          </button>
+            <button
+              aria-label="Edit description"
+              class="euiButtonIcon emotion-euiButtonIcon-s-empty-primary"
+              data-test-subj="mlFilterListEditDescriptionButton"
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                class="euiButtonIcon__icon"
+                color="inherit"
+                data-euiicon-type="pencil"
+              />
+            </button>
+          </span>
         </div>
       </div>
     </div>

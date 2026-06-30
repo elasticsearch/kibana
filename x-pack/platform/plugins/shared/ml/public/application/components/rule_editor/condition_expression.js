@@ -21,6 +21,7 @@ import {
   EuiPopover,
   EuiSelect,
   EuiFieldNumber,
+  EuiToolTip,
   htmlIdGenerator,
 } from '@elastic/eui';
 
@@ -251,18 +252,28 @@ export class ConditionExpression extends Component {
           </EuiPopover>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            size="s"
-            color="danger"
-            onClick={() => deleteCondition(index)}
-            iconType="trash"
-            aria-label={i18n.translate(
+          <EuiToolTip
+            content={i18n.translate(
               'xpack.ml.ruleEditor.conditionExpression.deleteConditionButtonAriaLabel',
               {
                 defaultMessage: 'Delete condition',
               }
             )}
-          />
+            disableScreenReaderOutput
+          >
+            <EuiButtonIcon
+              size="s"
+              color="danger"
+              onClick={() => deleteCondition(index)}
+              iconType="trash"
+              aria-label={i18n.translate(
+                'xpack.ml.ruleEditor.conditionExpression.deleteConditionButtonAriaLabel',
+                {
+                  defaultMessage: 'Delete condition',
+                }
+              )}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
       </EuiFlexGroup>
     );

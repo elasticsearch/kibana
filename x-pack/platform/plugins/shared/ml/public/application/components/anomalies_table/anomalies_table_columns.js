@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiButtonIcon, EuiLink, EuiScreenReaderOnly, EuiIconTip } from '@elastic/eui';
+import { EuiButtonIcon, EuiLink, EuiScreenReaderOnly, EuiIconTip, EuiToolTip } from '@elastic/eui';
 
 import React from 'react';
 import { get } from 'lodash';
@@ -83,23 +83,28 @@ export function getColumns(
           </p>
         </EuiScreenReaderOnly>
       ),
-      render: (item) => (
-        <EuiButtonIcon
-          onClick={() => toggleRow(item)}
-          iconType={itemIdToExpandedRowMap[item.rowId] ? 'chevronSingleDown' : 'chevronSingleRight'}
-          aria-label={
-            itemIdToExpandedRowMap[item.rowId]
-              ? i18n.translate('xpack.ml.anomaliesTable.hideDetailsAriaLabel', {
-                  defaultMessage: 'Hide details',
-                })
-              : i18n.translate('xpack.ml.anomaliesTable.showDetailsAriaLabel', {
-                  defaultMessage: 'Show details',
-                })
-          }
-          data-row-id={item.rowId}
-          data-test-subj="mlAnomaliesListRowDetailsToggle"
-        />
-      ),
+      render: (item) => {
+        const toggleLabel = itemIdToExpandedRowMap[item.rowId]
+          ? i18n.translate('xpack.ml.anomaliesTable.hideDetailsAriaLabel', {
+              defaultMessage: 'Hide details',
+            })
+          : i18n.translate('xpack.ml.anomaliesTable.showDetailsAriaLabel', {
+              defaultMessage: 'Show details',
+            });
+        return (
+          <EuiToolTip content={toggleLabel} disableScreenReaderOutput>
+            <EuiButtonIcon
+              onClick={() => toggleRow(item)}
+              iconType={
+                itemIdToExpandedRowMap[item.rowId] ? 'chevronSingleDown' : 'chevronSingleRight'
+              }
+              aria-label={toggleLabel}
+              data-row-id={item.rowId}
+              data-test-subj="mlAnomaliesListRowDetailsToggle"
+            />
+          </EuiToolTip>
+        );
+      },
     },
     {
       field: 'time',

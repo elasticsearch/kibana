@@ -224,6 +224,11 @@ export const FullTimeRangeSelector: FC<FullTimeRangeSelectorProps> = (props) => 
     }
   }, [frozenDataPreference, showFrozenDataTierChoice]);
 
+  const moreOptionsLabel = i18n.translate(
+    'xpack.ml.datePicker.fullTimeRangeSelector.moreOptionsButtonAriaLabel',
+    { defaultMessage: 'More options' }
+  );
+
   return (
     <EuiFlexGroup responsive={false} gutterSize="s">
       <EuiToolTip content={buttonTooltip}>
@@ -249,19 +254,16 @@ export const FullTimeRangeSelector: FC<FullTimeRangeSelectorProps> = (props) => 
               }
             )}
             button={
-              <EuiButtonIcon
-                data-test-subj="mlDatePickerButtonDataTierOptions"
-                display="base"
-                size="m"
-                iconType="boxesVertical"
-                aria-label={i18n.translate(
-                  'xpack.ml.datePicker.fullTimeRangeSelector.moreOptionsButtonAriaLabel',
-                  {
-                    defaultMessage: 'More options',
-                  }
-                )}
-                onClick={onButtonClick}
-              />
+              <EuiToolTip content={moreOptionsLabel} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  data-test-subj="mlDatePickerButtonDataTierOptions"
+                  display="base"
+                  size="m"
+                  iconType="boxesVertical"
+                  aria-label={moreOptionsLabel}
+                  onClick={onButtonClick}
+                />
+              </EuiToolTip>
             }
             isOpen={isPopoverOpen}
             closePopover={closePopover}
