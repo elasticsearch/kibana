@@ -10,12 +10,20 @@ import { createMemoryHistory } from 'history';
 import React from 'react';
 
 import { coreMock } from '@kbn/core/public/mocks';
+import { useCurrentUser } from '@kbn/core-user-profile-browser';
+import { currentUserMock } from '@kbn/core-user-profile-browser-mocks';
 
 import type { ChangePasswordFormValues } from './change_password_modal';
 import { ChangePasswordModal, validateChangePasswordForm } from './change_password_modal';
-import * as currentUserModule from '../../../components/use_current_user';
 import { securityMock } from '../../../mocks';
 import { Providers } from '../users_management_app';
+
+jest.mock('@kbn/core-user-profile-browser', () => {
+  const actual = jest.requireActual('@kbn/core-user-profile-browser');
+  return { ...actual, useCurrentUser: jest.fn() };
+});
+
+const useCurrentUserMock = useCurrentUser as jest.Mock;
 
 describe('ChangePasswordModal', () => {
   describe('#validateChangePasswordForm', () => {
@@ -173,22 +181,15 @@ describe('ChangePasswordModal', () => {
     beforeEach(() => {
       jest.clearAllMocks();
       // Mock useCurrentUser to return a different user by default
-      jest.spyOn(currentUserModule, 'useCurrentUser').mockReturnValue({
-        loading: false,
-        value: {
-          username: 'different_user',
-          roles: [],
-          full_name: '',
-          email: '',
-          enabled: true,
-          authentication_realm: { name: 'native', type: 'native' },
-          lookup_realm: { name: 'native', type: 'native' },
-          authentication_provider: { type: 'basic', name: 'basic' },
-          authentication_type: 'realm',
-          elastic_cloud_user: false,
-        },
-        error: undefined,
-      });
+      useCurrentUserMock.mockReturnValue(
+        currentUserMock.createResultWithRaw({
+          rawAuthQuery: {
+            isLoading: false,
+            state: { username: 'different_user' } as any,
+            error: undefined,
+          },
+        })
+      );
     });
 
     it(`does not render the current password field when changing another user's password`, () => {
@@ -307,22 +308,15 @@ describe('ChangePasswordModal', () => {
     describe('when rendered for current user', () => {
       beforeEach(() => {
         // Mock useCurrentUser to return the current user
-        jest.spyOn(currentUserModule, 'useCurrentUser').mockReturnValue({
-          loading: false,
-          value: {
-            username: 'currentuser',
-            roles: [],
-            full_name: '',
-            email: '',
-            enabled: true,
-            authentication_realm: { name: 'native', type: 'native' },
-            lookup_realm: { name: 'native', type: 'native' },
-            authentication_provider: { type: 'basic', name: 'basic' },
-            authentication_type: 'realm',
-            elastic_cloud_user: false,
-          },
-          error: undefined,
-        });
+        useCurrentUserMock.mockReturnValue(
+          currentUserMock.createResultWithRaw({
+            rawAuthQuery: {
+              isLoading: false,
+              state: { username: 'currentuser' } as any,
+              error: undefined,
+            },
+          })
+        );
       });
 
       it('renders current password field when changing own password', () => {

@@ -56,6 +56,20 @@ describe('<AccountManagementPage>', () => {
 
     authc.getCurrentUser.mockResolvedValue(user);
     coreStart.http.get.mockResolvedValue({ user, data });
+    coreStart.userProfile.getCurrent.mockResolvedValue({
+      uid: user.profile_uid!,
+      enabled: true,
+      user: {
+        username: user.username,
+        email: user.email,
+        full_name: user.full_name,
+        roles: [...user.roles],
+        realm_name: user.authentication_realm.name,
+        authentication_provider: user.authentication_provider,
+      },
+      data,
+      labels: {},
+    } as any);
 
     const { findByRole } = render(
       coreStart.rendering.addContext(
@@ -75,7 +89,10 @@ describe('<AccountManagementPage>', () => {
 
     await findByRole('form');
 
-    expect(UserProfileMock).toHaveBeenCalledWith({ user, data }, expect.anything());
+    expect(UserProfileMock).toHaveBeenCalledWith(
+      expect.objectContaining({ user: expect.objectContaining(user), data }),
+      expect.anything()
+    );
     expect(coreStart.chrome.setBreadcrumbs).toHaveBeenLastCalledWith([
       { href: '/security/account', text: 'User settings' },
       { href: undefined, text: 'user' },

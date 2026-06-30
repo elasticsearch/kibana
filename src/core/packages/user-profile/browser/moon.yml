@@ -19,6 +19,7 @@ project:
 dependsOn:
   - '@kbn/core-user-profile-common'
   - '@kbn/core-security-common'
+  - '@kbn/core-security-browser'
 tags:
   - shared-browser
   - package

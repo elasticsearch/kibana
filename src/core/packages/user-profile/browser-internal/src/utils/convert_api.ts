@@ -16,6 +16,7 @@ export const convertUserProfileAPI = (
   return {
     getUserProfile$: () => delegate.userProfile$,
     getEnabled$: () => delegate.enabled$,
+    dataUpdates$: delegate.dataUpdates$,
     getCurrent: delegate.getCurrent.bind(delegate),
     bulkGet: delegate.bulkGet.bind(delegate),
     suggest: delegate.suggest.bind(delegate),

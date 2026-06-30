@@ -7,4 +7,5 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+export { currentUserMock } from './src/current_user.mock';
 export { userProfileServiceMock } from './src/user_profile_service.mock';

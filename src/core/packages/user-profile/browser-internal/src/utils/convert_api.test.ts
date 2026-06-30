@@ -20,6 +20,7 @@ describe('convertUserProfileAPI', () => {
     source = {
       userProfile$: of(null),
       enabled$: of(false),
+      dataUpdates$: of({}),
       getCurrent: jest.fn(),
       bulkGet: jest.fn(),
       suggest: jest.fn(),

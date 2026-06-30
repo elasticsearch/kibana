@@ -250,6 +250,7 @@ export class SecurityPlugin
         userProfile$: this.securityApiClients.userProfiles.userProfile$,
         userProfileLoaded$: this.securityApiClients.userProfiles.userProfileLoaded$,
         enabled$: this.securityApiClients.userProfiles.enabled$,
+        dataUpdates$: this.securityApiClients.userProfiles.dataUpdates$,
       },
     };
   }

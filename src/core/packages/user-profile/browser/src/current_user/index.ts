@@ -7,32 +7,22 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export type { UserProfileServiceSetup, UserProfileServiceStart } from './src/contracts';
-export type { CoreUserProfileDelegateContract } from './src/api_provider';
+export { buildCurrentUser } from './build_current_user';
+export { CurrentUserContext } from './current_user_context';
+export type { CurrentUserServices } from './current_user_context';
+export { CurrentUserProvider } from './current_user_provider';
+export type { CurrentUserProviderProps } from './current_user_provider';
+export { useCurrentUser, CURRENT_USER_DATA_PATH } from './use_current_user';
 export type {
-  UserProfileService,
-  UserProfileSuggestParams,
-  UserProfileBulkGetParams,
-  GetUserProfileResponse,
-  UserProfileGetCurrentParams,
-} from './src/service';
-
-export {
-  buildCurrentUser,
-  CurrentUserContext,
-  CurrentUserProvider,
-  useCurrentUser,
-  CURRENT_USER_DATA_PATH,
-} from './src/current_user';
-export type {
-  CurrentUserServices,
-  CurrentUserProviderProps,
   UseCurrentUserOptions,
   UseCurrentUserResult,
   UseCurrentUserResultWithRaw,
+} from './use_current_user';
+export type {
   AuthenticatedUser,
   CurrentUser,
+  GetUserProfileResponse,
   RawQuerySource,
   UserProfileAvatarData,
   UserSettingsData,
-} from './src/current_user';
+} from './types';

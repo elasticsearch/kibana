@@ -10,6 +10,7 @@ import type { Observable } from 'rxjs';
 import { BehaviorSubject, distinctUntilChanged, skipWhile, Subject, switchMap } from 'rxjs';
 
 import type { HttpStart } from '@kbn/core/public';
+import { CURRENT_USER_DATA_PATH } from '@kbn/core-user-profile-browser';
 import type {
   UserProfileAPIClient as UserProfileAPIClientType,
   UserProfileBulkGetParams,
@@ -20,9 +21,9 @@ import type { UserProfileData } from '@kbn/user-profile-components';
 
 import type { GetUserProfileResponse, UserProfile } from '../../../common';
 
-const DEFAULT_DATAPATHS = 'avatar,userSettings';
-
 export class UserProfileAPIClient implements UserProfileAPIClientType {
+  private readonly _cache = new Map<string, Promise<GetUserProfileResponse>>();
+
   private readonly internalDataUpdates$: Subject<UserProfileData> = new Subject();
 
   /**
@@ -51,11 +52,7 @@ export class UserProfileAPIClient implements UserProfileAPIClientType {
   }
 
   public start() {
-    // Fetch the user profile with default path to initialize the user profile observable.
-    // This will also enable or not the user profile for the user by checking if we receive a 404 on this request.
-    this.getCurrent({ dataPath: DEFAULT_DATAPATHS }).catch(() => {
-      // silently ignore the error
-    });
+    this.getCurrent({ dataPath: CURRENT_USER_DATA_PATH }).catch(() => {});
   }
 
   /**
@@ -71,28 +68,32 @@ export class UserProfileAPIClient implements UserProfileAPIClientType {
       this._userProfileLoaded$.next(true);
       return Promise.reject(new Error('Unable to retrieve user profile for anonymous paths'));
     }
-    return this.http
-      .get<GetUserProfileResponse<D>>('/internal/security/user_profile', {
-        query: { dataPath: params?.dataPath },
-      })
-      .then((response) => {
-        const data = response?.data ?? {};
-        const updated = merge(this._userProfile$.getValue(), data);
 
-        this._userProfile$.next(updated);
-        this._enabled$.next(true);
-        this._userProfileLoaded$.next(true);
+    const key = params?.dataPath ?? '__profile__';
 
-        return response;
-      })
-      .catch((err) => {
-        // If we receive a 404 on the request, it means there are no user profile for the user.
-        const notFound = err?.response?.status === 404;
-        this._enabled$.next(notFound ? false : true);
-        this._userProfileLoaded$.next(true);
+    if (!this._cache.has(key)) {
+      const req = this.http
+        .get<GetUserProfileResponse<D>>('/internal/security/user_profile', {
+          query: { dataPath: params?.dataPath },
+        })
+        .then((response) => {
+          this._userProfile$.next(merge(this._userProfile$.getValue(), response?.data ?? {}));
+          this._enabled$.next(true);
+          this._userProfileLoaded$.next(true);
+          return response;
+        })
+        .catch((err) => {
+          this._cache.delete(key);
+          const notFound = err?.response?.status === 404;
+          this._enabled$.next(notFound ? false : true);
+          this._userProfileLoaded$.next(true);
+          return Promise.reject(err);
+        });
 
-        return Promise.reject(err);
-      });
+      this._cache.set(key, req);
+    }
+
+    return this._cache.get(key)! as Promise<GetUserProfileResponse<D>>;
   }
 
   /**
@@ -143,6 +144,7 @@ export class UserProfileAPIClient implements UserProfileAPIClientType {
     return this.http
       .post('/internal/security/user_profile/_data', { body: JSON.stringify(data) })
       .then(() => {
+        this._cache.clear();
         this.internalDataUpdates$.next(data);
       })
       .catch((err) => {

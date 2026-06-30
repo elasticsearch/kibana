@@ -18,6 +18,7 @@ export const getDefaultUserProfileImplementation = (): CoreUserProfileDelegateCo
   return {
     userProfile$: of(null),
     enabled$: of(false),
+    dataUpdates$: of({}),
     getCurrent: <D extends UserProfileData>() =>
       Promise.resolve(null as unknown as GetUserProfileResponse<D>),
     bulkGet: () => Promise.resolve([]),

@@ -165,7 +165,7 @@ pageLoadAssetSize:
   searchprofiler: 6509
   searchQueryRules: 6689
   searchSynonyms: 6371
-  security: 79627
+  security: 79860
   securitySolution: 188674
   securitySolutionEss: 42592
   securitySolutionServerless: 57290
@@ -216,4 +216,3 @@ pageLoadAssetSize:
   workflowsExtensions: 43032
   workflowsManagement: 39968
   workplaceAIApp: 6234
-  

@@ -16,6 +16,7 @@ import type {
   CoreStart,
   StartServicesAccessor,
 } from '@kbn/core/public';
+import { CurrentUserProvider } from '@kbn/core-user-profile-browser';
 import { i18n } from '@kbn/i18n';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { toMountPoint } from '@kbn/react-kibana-mount';
@@ -91,19 +92,21 @@ export const Providers: FC<PropsWithChildren<ProvidersProps>> = ({
   <KibanaContextProvider services={services}>
     <AuthenticationProvider authc={authc}>
       <SecurityApiClientsProvider {...securityApiClients}>
-        <Router history={history}>
-          <BreadcrumbsProvider onChange={onChange}>
-            <UserProfilesKibanaProvider
-              core={services}
-              security={{
-                userProfiles: securityApiClients.userProfiles,
-              }}
-              toMountPoint={toMountPoint}
-            >
-              {children}
-            </UserProfilesKibanaProvider>
-          </BreadcrumbsProvider>
-        </Router>
+        <CurrentUserProvider authc={authc} userProfile={services.userProfile}>
+          <Router history={history}>
+            <BreadcrumbsProvider onChange={onChange}>
+              <UserProfilesKibanaProvider
+                core={services}
+                security={{
+                  userProfiles: securityApiClients.userProfiles,
+                }}
+                toMountPoint={toMountPoint}
+              >
+                {children}
+              </UserProfilesKibanaProvider>
+            </BreadcrumbsProvider>
+          </Router>
+        </CurrentUserProvider>
       </SecurityApiClientsProvider>
     </AuthenticationProvider>
   </KibanaContextProvider>

@@ -30,6 +30,7 @@ const createStartMock = () => {
   const mock: jest.Mocked<UserProfileServiceStart> = lazyObject({
     getUserProfile$: jest.fn().mockReturnValue(of(null)),
     getEnabled$: jest.fn().mockReturnValue(of(false)),
+    dataUpdates$: of({}),
     getCurrent: jest.fn(),
     bulkGet: jest.fn(),
     suggest: jest.fn(),
@@ -52,6 +53,7 @@ const createInternalStartMock = () => {
   const mock: jest.Mocked<InternalUserProfileServiceStart> = lazyObject({
     getUserProfile$: jest.fn().mockReturnValue(of(null)),
     getEnabled$: jest.fn().mockReturnValue(of(false)),
+    dataUpdates$: of({}),
     getCurrent: jest.fn(),
     bulkGet: jest.fn(),
     suggest: jest.fn(),

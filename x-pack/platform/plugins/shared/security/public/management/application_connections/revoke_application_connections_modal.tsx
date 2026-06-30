@@ -24,8 +24,8 @@ import type { EuiBasicTableColumn } from '@elastic/eui';
 import React, { useCallback } from 'react';
 
 import type { CoreStart } from '@kbn/core/public';
+import { useCurrentUser } from '@kbn/core-user-profile-browser';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
-import { getUserDisplayName } from '@kbn/user-profile-components';
 
 import { labels } from './constants/i18n';
 import type {
@@ -33,7 +33,6 @@ import type {
   RevokedApplicationConnection,
 } from './constants/types';
 import { useRevokeConnections } from './hooks/use_revoke_connections';
-import { useCurrentUser } from '../../components/use_current_user';
 
 export interface RevokeApplicationConnectionsModalProps {
   connections: RevokeApplicationConnectionsModalConnection[];
@@ -50,7 +49,7 @@ export const RevokeApplicationConnectionsModal = ({
   const { revokeConnections, isRevoking } = useRevokeConnections();
   const { services } = useKibana<CoreStart>();
   const { toasts } = services.notifications;
-  const { value: currentUser } = useCurrentUser();
+  const { user } = useCurrentUser();
 
   const count = connections.length;
 
@@ -113,9 +112,7 @@ export const RevokeApplicationConnectionsModal = ({
         if (!item.userId) {
           return <EuiTextColor color="subdued">{'—'}</EuiTextColor>;
         }
-        return currentUser && item.userId === currentUser.username
-          ? getUserDisplayName(currentUser)
-          : item.userId;
+        return user && item.userId === user.username ? user.displayName : item.userId;
       },
     },
   ];

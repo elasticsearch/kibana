@@ -20,6 +20,17 @@ jest.mock('../assets/illustration_empty_state.svg', () => 'illustration-empty-st
   virtual: true,
 });
 
+jest.mock('@kbn/core-user-profile-browser', () => {
+  const actual = jest.requireActual('@kbn/core-user-profile-browser');
+  return {
+    ...actual,
+    useCurrentUser: jest.fn(() => ({
+      isLoading: false,
+      user: { username: 'current_user', displayName: 'Current User' },
+    })),
+  };
+});
+
 type CoreStartMock = ReturnType<typeof coreMock.createStart>;
 
 interface GetResponses {

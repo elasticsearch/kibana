@@ -52,6 +52,7 @@ describe('buildUserProfileApi', () => {
       userProfile$: of(null),
       userProfileLoaded$: of(false),
       enabled$: of(true),
+      dataUpdates$: of({}),
       getCurrent: jest.fn(),
       bulkGet: jest.fn(),
       suggest: jest.fn(),

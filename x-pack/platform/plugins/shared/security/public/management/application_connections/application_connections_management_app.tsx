@@ -11,6 +11,7 @@ import React from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
 
 import type { CoreStart, StartServicesAccessor } from '@kbn/core/public';
+import { CurrentUserProvider } from '@kbn/core-user-profile-browser';
 import { i18n } from '@kbn/i18n';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import type { RegisterManagementAppArgs } from '@kbn/management-plugin/public';
@@ -88,9 +89,11 @@ export const Providers: FC<PropsWithChildren<ProvidersProps>> = ({
 }) => (
   <KibanaContextProvider services={services}>
     <AuthenticationProvider authc={authc}>
-      <Router history={history}>
-        <BreadcrumbsProvider onChange={onChange}>{children}</BreadcrumbsProvider>
-      </Router>
+      <CurrentUserProvider authc={authc} userProfile={services.userProfile}>
+        <Router history={history}>
+          <BreadcrumbsProvider onChange={onChange}>{children}</BreadcrumbsProvider>
+        </Router>
+      </CurrentUserProvider>
     </AuthenticationProvider>
   </KibanaContextProvider>
 );

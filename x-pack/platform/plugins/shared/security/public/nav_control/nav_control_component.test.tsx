@@ -10,44 +10,42 @@ import React from 'react';
 import useObservable from 'react-use/lib/useObservable';
 import { BehaviorSubject } from 'rxjs';
 
+import { useCurrentUser } from '@kbn/core-user-profile-browser';
 import { I18nProvider } from '@kbn/i18n-react';
 
 import { SecurityNavControl } from './nav_control_component';
 import { mockAuthenticatedUser } from '../../common/model/authenticated_user.mock';
 import { userProfileMock } from '../../common/model/user_profile.mock';
-import * as UseCurrentUserImports from '../components/use_current_user';
 
-jest.mock('../components/use_current_user');
+jest.mock('@kbn/core-user-profile-browser', () => {
+  const actual = jest.requireActual('@kbn/core-user-profile-browser');
+  return { ...actual, useCurrentUser: jest.fn() };
+});
 jest.mock('react-use/lib/useObservable');
 
 const useObservableMock = useObservable as jest.Mock;
-const useUserProfileMock = jest.spyOn(UseCurrentUserImports, 'useUserProfile');
-const useCurrentUserMock = jest.spyOn(UseCurrentUserImports, 'useCurrentUser');
+const useCurrentUserMock = useCurrentUser as jest.Mock;
 
-const userProfileWithSecurity = userProfileMock.createWithSecurity();
 const userProfile = {
-  ...userProfileWithSecurity,
+  ...userProfileMock.createWithSecurity(),
   user: {
-    ...userProfileWithSecurity.user,
+    ...userProfileMock.createWithSecurity().user,
     authentication_provider: { type: 'basic', name: 'basic1' },
   },
 };
+
 const userMenuLinks$ = new BehaviorSubject([]);
 
 const renderWithIntl = (ui: React.ReactElement) => render(<I18nProvider>{ui}</I18nProvider>);
 
 describe('SecurityNavControl', () => {
   beforeEach(() => {
-    useUserProfileMock.mockReset();
-    useUserProfileMock.mockReturnValue({
-      loading: false,
-      value: userProfile,
-    });
-
     useCurrentUserMock.mockReset();
     useCurrentUserMock.mockReturnValue({
-      loading: false,
-      value: mockAuthenticatedUser(),
+      isLoading: false,
+      user: { displayName: 'full name', isAnonymous: false, avatar: undefined },
+      rawAuthQuery: { isLoading: false, state: mockAuthenticatedUser(), error: undefined },
+      rawProfileQuery: { isLoading: false, state: userProfile, error: undefined },
     });
 
     useObservableMock.mockReset();
@@ -61,7 +59,6 @@ describe('SecurityNavControl', () => {
       <SecurityNavControl editProfileUrl="" logoutUrl="" userMenuLinks$={userMenuLinks$} />
     );
 
-    expect(useUserProfileMock).toHaveBeenCalledTimes(1);
     expect(useCurrentUserMock).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('userMenuButton')).toMatchInlineSnapshot(`
       <button
@@ -108,18 +105,17 @@ describe('SecurityNavControl', () => {
   });
 
   it('should render a spinner while loading', () => {
-    useUserProfileMock.mockReturnValue({
-      loading: true,
-    });
     useCurrentUserMock.mockReturnValue({
-      loading: true,
+      isLoading: true,
+      user: null,
+      rawAuthQuery: { isLoading: true, state: undefined, error: undefined },
+      rawProfileQuery: { isLoading: true, state: undefined, error: undefined },
     });
 
     renderWithIntl(
       <SecurityNavControl editProfileUrl="" logoutUrl="" userMenuLinks$={userMenuLinks$} />
     );
 
-    expect(useUserProfileMock).toHaveBeenCalledTimes(1);
     expect(useCurrentUserMock).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('userMenuButton')).toMatchInlineSnapshot(`
       <button
@@ -164,11 +160,11 @@ describe('SecurityNavControl', () => {
   });
 
   it('should not open popover while loading', () => {
-    useUserProfileMock.mockReturnValue({
-      loading: true,
-    });
     useCurrentUserMock.mockReturnValue({
-      loading: true,
+      isLoading: true,
+      user: null,
+      rawAuthQuery: { isLoading: true, state: undefined, error: undefined },
+      rawProfileQuery: { isLoading: true, state: undefined, error: undefined },
     });
 
     renderWithIntl(
@@ -515,17 +511,14 @@ describe('SecurityNavControl', () => {
   });
 
   it('should render anonymous user', async () => {
-    useUserProfileMock.mockReturnValue({
-      loading: false,
-      value: undefined,
-      error: new Error('404'),
+    const anonymousUser = mockAuthenticatedUser({
+      authentication_provider: { type: 'anonymous', name: 'does no matter' },
     });
-
     useCurrentUserMock.mockReturnValue({
-      loading: false,
-      value: mockAuthenticatedUser({
-        authentication_provider: { type: 'anonymous', name: 'does no matter' },
-      }),
+      isLoading: false,
+      user: { displayName: 'full name', isAnonymous: true, avatar: undefined },
+      rawAuthQuery: { isLoading: false, state: anonymousUser, error: undefined },
+      rawProfileQuery: { isLoading: false, state: undefined, error: undefined },
     });
 
     renderWithIntl(
