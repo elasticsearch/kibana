@@ -30,6 +30,15 @@ export const DEFAULT_TIME_RANGE = {
   to: '2015-09-23T18:31:44.000Z',
 };
 
+export const INDEX_PATTERN_WITHOUT_TIMEFIELD_ARCHIVE =
+  'src/platform/test/functional/fixtures/kbn_archiver/index_pattern_without_timefield';
+
+export const KIBANA_SAMPLE_DATA_FLIGHTS_ARCHIVE =
+  'src/platform/test/functional/fixtures/es_archiver/kibana_sample_data_flights';
+
+export const KIBANA_SAMPLE_DATA_FLIGHTS_INDEX_PATTERN_ARCHIVE =
+  'src/platform/test/functional/fixtures/kbn_archiver/kibana_sample_data_flights_index_pattern';
+
 /**
  * {@link DEFAULT_TIME_RANGE} expressed in the date-picker display format, for
  * driving the time-picker UI (e.g. resetting a tab's range via the picker).

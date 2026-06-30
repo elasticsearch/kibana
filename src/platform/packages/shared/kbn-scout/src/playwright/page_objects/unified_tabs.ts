@@ -17,6 +17,7 @@ import { expect } from '..';
 export const UNIFIED_TABS_TEST_SUBJ = {
   selectTabBtnPrefix: 'unifiedTabs_selectTabBtn_',
   tabMenuBtnPrefix: 'unifiedTabs_tabMenuBtn_',
+  editTabLabelInputPrefix: 'unifiedTabs_editTabLabelInput_',
   newTabBtn: 'unifiedTabs_tabsBar_newTabBtn',
   tabsBar: 'unifiedTabs_tabsBar',
   duplicateMenuItem: 'unifiedTabs_tabMenuItem_duplicate',
@@ -69,8 +70,9 @@ export class UnifiedTabs {
 
   /**
    * Switches to the tab at the given 0-based index and waits for it to become active.
-   * Does NOT wait for content to load — consumers should call their own
-   * content-loading waiter after this if needed.
+   * Dismisses the hover tab-preview afterwards so a following interaction is not
+   * intercepted. Does NOT wait for content to load — consumers should call their
+   * own content-loading waiter after this if needed.
    */
   async selectTab(index: number) {
     const tabs = await this.getTabs().all();
@@ -82,6 +84,7 @@ export class UnifiedTabs {
     const tab = tabs[index];
     await tab.click();
     await expect(tab).toHaveAttribute('aria-selected', 'true');
+    await this.hideTabPreview();
   }
 
   /**
@@ -176,5 +179,65 @@ export class UnifiedTabs {
     // The per-tab menu button is only revealed on hover for non-active tabs.
     await tab.hover();
     await this.duplicateTabByTestSubj(originalTestSubj);
+  }
+
+  /**
+   * Returns the label text for every tab in the tab bar, in DOM order
+   * (left to right).
+   */
+  async getTabLabels(): Promise<string[]> {
+    await this.getTabsBar().waitFor({ state: 'visible' });
+    const tabs = await this.getTabs().all();
+    const labels: string[] = [];
+    for (const tab of tabs) {
+      // The tab label is rendered by EuiTextTruncate which always includes
+      // a span[data-test-subj="fullText"] containing the complete label.
+      // Use evaluate to reliably read the text even when visually truncated.
+      const text = await tab.evaluate((el) => {
+        const fullTextEl = el.querySelector('[data-test-subj="fullText"]');
+        return fullTextEl?.textContent?.trim() ?? '';
+      });
+      labels.push(text);
+    }
+    return labels;
+  }
+
+  /**
+   * Renames the tab at the given 0-based index by double-clicking its label,
+   * typing the new label, and pressing Enter. Waits for the label to update.
+   */
+  async editTabLabel(index: number, newLabel: string) {
+    const tabs = await this.getTabs().all();
+    if (index < 0 || index >= tabs.length) {
+      throw new Error(`Tab index ${index} is out of bounds (found ${tabs.length} tabs)`);
+    }
+
+    const tab = tabs[index];
+    const testSubj = await tab.getAttribute('data-test-subj');
+    if (!testSubj) {
+      throw new Error(`Tab at index ${index} is missing a data-test-subj attribute`);
+    }
+
+    await tab.dblclick();
+
+    const tabId = testSubj.slice(UNIFIED_TABS_TEST_SUBJ.selectTabBtnPrefix.length);
+    const labelInput = this.page.testSubj.locator(
+      `${UNIFIED_TABS_TEST_SUBJ.editTabLabelInputPrefix}${tabId}`
+    );
+    await labelInput.waitFor({ state: 'visible' });
+    await labelInput.fill(newLabel);
+    await this.page.keyboard.press('Enter');
+
+    // Wait for the label to update.
+    await this.page.waitForFunction(
+      ({ tabTestSubj, label }) => {
+        const tabButton = document.querySelector(`[data-test-subj="${tabTestSubj}"]`);
+        return (
+          tabButton?.querySelector('[data-test-subj="fullText"]')?.textContent?.trim() === label
+        );
+      },
+      { tabTestSubj: testSubj, label: newLabel },
+      { timeout: 10_000 }
+    );
   }
 }

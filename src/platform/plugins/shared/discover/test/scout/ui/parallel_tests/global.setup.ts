@@ -66,6 +66,12 @@ globalSetupHook(
       '[setup:index_pattern_without_timefield] index_pattern_without_timefield ES data ready'
     );
 
+    log.debug('[setup:flights] loading Kibana sample flights ES data...');
+    await esArchiver.loadIfNeeded(
+      'src/platform/test/functional/fixtures/es_archiver/kibana_sample_data_flights'
+    );
+    log.debug('[setup:flights] Kibana sample flights ES data ready');
+
     // Metrics Experience setup
     log.debug('[setup:metrics] creating metrics test index (only if it does not exist)...');
     const created = await createMetricsTestIndexIfNeeded(esClient);
