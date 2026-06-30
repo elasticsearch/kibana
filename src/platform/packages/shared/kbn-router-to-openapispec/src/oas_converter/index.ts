@@ -10,13 +10,30 @@
 import type { OpenAPIV3 } from 'openapi-types';
 import type { KnownParameters, OpenAPIConverter } from '../type';
 import type { Env } from '../generate_oas';
+import type { OnCollision } from './kbn_config_schema/post_process_mutations';
+import {
+  describeSchemaCollision,
+  OasSchemaCollisionError,
+  schemasMatch,
+} from './kbn_config_schema/post_process_mutations/schema_collision';
 
 import { kbnConfigSchemaConverter } from './kbn_config_schema';
 import { zodConverter } from './zod';
 import { catchAllConverter } from './catch_all';
 
+export interface OasConverterOptions {
+  /**
+   * Behaviour when a shared schema id is registered with two different shapes
+   * within a single generation pass. Defaults to `'throw'`.
+   *
+   * @see {@link OnCollision}
+   */
+  onCollision?: OnCollision;
+}
+
 export class OasConverter {
   readonly #env: Env;
+  readonly #onCollision: OnCollision;
   readonly #converters: OpenAPIConverter[] = [
     kbnConfigSchemaConverter,
     zodConverter,
@@ -24,8 +41,9 @@ export class OasConverter {
   ];
   readonly #sharedSchemas = new Map<string, OpenAPIV3.SchemaObject>();
 
-  constructor(env: Env = { serverless: false }) {
+  constructor(env: Env = { serverless: false }, options: OasConverterOptions = {}) {
     this.#env = env;
+    this.#onCollision = options.onCollision ?? 'throw';
   }
 
   /**
@@ -45,6 +63,20 @@ export class OasConverter {
 
   #addComponents(components: { [id: string]: OpenAPIV3.SchemaObject }) {
     Object.entries(components).forEach(([id, schema]) => {
+      if (this.#sharedSchemas.get(id) === schema) {
+        return;
+      }
+      if (this.#onCollision !== 'ignore') {
+        const existing = this.#sharedSchemas.get(id);
+        if (existing && !schemasMatch(existing, schema)) {
+          const message = describeSchemaCollision(id, existing, schema);
+          if (this.#onCollision === 'throw') {
+            throw new OasSchemaCollisionError(message, id);
+          }
+          // eslint-disable-next-line no-console
+          console.warn(message);
+        }
+      }
       this.#sharedSchemas.set(id, schema);
     });
   }
@@ -58,6 +90,7 @@ export class OasConverter {
     const { schema: oasSchema, shared } = this.#getConverter(unwrapped)!.convert(unwrapped, {
       env: this.#env,
       sharedSchemas: this.#sharedSchemas,
+      onCollision: this.#onCollision,
     });
     this.#addComponents(shared);
     return oasSchema as OpenAPIV3.SchemaObject;
@@ -86,3 +119,5 @@ export class OasConverter {
     };
   }
 }
+
+export { OasSchemaCollisionError } from './kbn_config_schema/post_process_mutations/schema_collision';

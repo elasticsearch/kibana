@@ -177,6 +177,30 @@ export const InstallationInfoSchema = schema.object(
   { meta: { id: 'installation_info' } }
 );
 
+const PackageInfoKibanaAssetReferenceSchema = KibanaAssetReferenceSchema.extends(
+  {},
+  { meta: { id: 'package_info_kibana_asset_reference' } }
+);
+
+const PackageInfoEsAssetReferenceSchema = EsAssetReferenceSchema.extends(
+  {},
+  { meta: { id: 'package_info_es_asset_reference' } }
+);
+
+const PackageInfoInstallationInfoSchema = InstallationInfoSchema.extends(
+  {
+    installed_kibana: schema.arrayOf(PackageInfoKibanaAssetReferenceSchema, { maxSize: 10000 }),
+    additional_spaces_installed_kibana: schema.maybe(
+      schema.recordOf(
+        schema.string({ maxLength: 255 }),
+        schema.arrayOf(PackageInfoKibanaAssetReferenceSchema, { maxSize: 100 })
+      )
+    ),
+    installed_es: schema.arrayOf(PackageInfoEsAssetReferenceSchema, { maxSize: 10000 }),
+  },
+  { meta: { id: 'package_info_installation_info' } }
+);
+
 const PackageIconSchema = schema.object(
   {
     path: schema.maybe(schema.string()),
@@ -189,17 +213,29 @@ const PackageIconSchema = schema.object(
   { meta: { id: 'package_icon' } }
 );
 
+const PackageInfoIconSchema = PackageIconSchema.extends({}, { meta: { id: 'package_info_icon' } });
+
+const PackageInfoDeprecationInfoSchema = DeprecationInfoSchema.extends(
+  {},
+  { meta: { id: 'package_info_deprecation_info' } }
+);
+
+const PackageInfoConditionsDeprecationInfoSchema = DeprecationInfoSchema.extends(
+  {},
+  { meta: { id: 'package_info_conditions_deprecation_info' } }
+);
+
 export const PackageInfoSchema = schema
   .object(
     {
       status: schema.maybe(schema.string()),
-      installationInfo: schema.maybe(InstallationInfoSchema),
+      installationInfo: schema.maybe(PackageInfoInstallationInfoSchema),
       name: schema.string(),
       version: schema.string(),
       description: schema.maybe(schema.string()),
       title: schema.string(),
-      icons: schema.maybe(schema.arrayOf(PackageIconSchema, { maxSize: 100 })),
-      deprecated: schema.maybe(DeprecationInfoSchema),
+      icons: schema.maybe(schema.arrayOf(PackageInfoIconSchema, { maxSize: 100 })),
+      deprecated: schema.maybe(PackageInfoDeprecationInfoSchema),
       conditions: schema.maybe(
         schema.object({
           kibana: schema.maybe(schema.object({ version: schema.maybe(schema.string()) })),
@@ -209,7 +245,7 @@ export const PackageInfoSchema = schema
               capabilities: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 10 })),
             })
           ),
-          deprecated: schema.maybe(DeprecationInfoSchema),
+          deprecated: schema.maybe(PackageInfoConditionsDeprecationInfoSchema),
         })
       ),
       release: schema.maybe(

@@ -257,6 +257,7 @@ export const parse = ({ schema, ctx = createCtx() }: ParseArgs) => {
     }
     Object.entries(parsed.schemas).forEach(([id, s]) => {
       postProcessMutations({ schema: s, ctx });
+      removeInternalOptionalMarker(s);
       ctx.addSharedSchema(id, s);
     });
   } else {

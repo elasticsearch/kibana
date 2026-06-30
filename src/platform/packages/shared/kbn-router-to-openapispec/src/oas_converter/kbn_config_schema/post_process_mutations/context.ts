@@ -10,6 +10,19 @@
 import type { OpenAPIV3 } from 'openapi-types';
 import type { Env } from '../../../generate_oas';
 import { getIdFromRefString } from './mutations/utils';
+import { describeSchemaCollision, OasSchemaCollisionError, schemasMatch } from './schema_collision';
+
+/**
+ * Behaviour when a shared schema is registered under an id that is already
+ * present in the registry with a different shape.
+ *
+ * - `'throw'` (default): raise {@link OasSchemaCollisionError} with a diff of
+ *   the conflicting properties. Catches silent overwrite bugs at OAS generate
+ *   time (see https://github.com/elastic/kibana/issues/271809).
+ * - `'warn'`: log a warning and let the new shape win (transitional).
+ * - `'ignore'`: keep the existing legacy semantics (last-write-wins, silent).
+ */
+export type OnCollision = 'throw' | 'warn' | 'ignore';
 
 export interface IContext {
   addSharedSchema: (id: string, schema: OpenAPIV3.SchemaObject) => void;
@@ -21,18 +34,32 @@ export interface IContext {
 interface Options {
   sharedSchemas?: Map<string, OpenAPIV3.SchemaObject>;
   env?: Env;
+  onCollision?: OnCollision;
 }
 
 class Context implements IContext {
   private readonly sharedSchemas: Map<string, OpenAPIV3.SchemaObject>;
   private readonly namespace?: string;
   private readonly env: Env;
+  private readonly onCollision: OnCollision;
   constructor(opts: Options) {
     this.sharedSchemas = opts.sharedSchemas ?? new Map();
     this.env = opts.env ?? { serverless: false };
+    this.onCollision = opts.onCollision ?? 'throw';
   }
 
   public addSharedSchema(id: string, schema: OpenAPIV3.SchemaObject): void {
+    if (this.onCollision !== 'ignore') {
+      const existing = this.sharedSchemas.get(id);
+      if (existing && !schemasMatch(existing, schema)) {
+        const message = describeSchemaCollision(id, existing, schema);
+        if (this.onCollision === 'throw') {
+          throw new OasSchemaCollisionError(message, id);
+        }
+        // eslint-disable-next-line no-console
+        console.warn(message);
+      }
+    }
     this.sharedSchemas.set(id, schema);
   }
 
@@ -57,3 +84,5 @@ class Context implements IContext {
 export const createCtx = (opts: Options = { sharedSchemas: new Map() }) => {
   return new Context(opts);
 };
+
+export { OasSchemaCollisionError } from './schema_collision';

@@ -74,5 +74,5 @@ const walkSchema = (ctx: IContext, schema: Schema): void => {
   ensureNullableEnumIncludesNull(schema);
 };
 
-export { createCtx } from './context';
-export type { IContext } from './context';
+export { createCtx, OasSchemaCollisionError } from './context';
+export type { IContext, OnCollision } from './context';

@@ -9,7 +9,7 @@
 
 import { expectType } from 'tsd';
 
-import { schema, type TypeOf } from '@kbn/config-schema';
+import { schema, type ObjectType, type TypeOf } from '@kbn/config-schema';
 
 import { objectUnion } from './object_union';
 
@@ -32,6 +32,38 @@ const typeABPlus = typeAB.extends(
     meta: { id: 'typeABPlus', title: 'Type AB Plus' },
   }
 );
+
+const namedTypeA = schema.object(
+  {
+    type: schema.literal('A'),
+    str: schema.string(),
+  },
+  {
+    meta: { id: 'typeA', title: 'Type A', description: 'Type A description' },
+  }
+);
+
+const namedTypeB = schema.object(
+  {
+    type: schema.literal('B'),
+    num: schema.number(),
+  },
+  {
+    meta: { id: 'typeB', title: 'Type B', description: 'Type B description' },
+  }
+);
+
+const getTypeId = (type: ObjectType<any>): string | undefined => {
+  return (type.getSchema().describe().flags as { id?: string } | undefined)?.id;
+};
+
+const getTypeMeta = (type: ObjectType<any>): Record<string, unknown> => {
+  return Object.assign({}, ...(type.getSchema().describe().metas ?? []));
+};
+
+const getTypeDescription = (type: ObjectType<any>): string | undefined => {
+  return (type.getSchema().describe().flags as { description?: string } | undefined)?.description;
+};
 
 type TypeAB = TypeOf<typeof typeAB>;
 type TypeABPlus = TypeOf<typeof typeABPlus>;
@@ -68,6 +100,33 @@ describe('objectUnion', () => {
       { type: 'B', num: 123, bool: 'string' },
     ])('should invalidate extended union for %j', (input) => {
       expect(() => typeABPlus.validate(input)).toThrowErrorMatchingSnapshot();
+    });
+
+    it('applies semantic branch metadata when extending named union members', () => {
+      const namedTypeABPlus = objectUnion([namedTypeA, namedTypeB]).extends(
+        { bool: schema.boolean() },
+        {
+          meta: { id: 'namedTypeABPlus', title: 'Named Type AB Plus' },
+          extendedBranchMeta: ({ description, id, index, meta }) => ({
+            ...meta,
+            id: `${id ?? 'unknown'}ForPanel`,
+            title: `${String(meta.title)} for panel`,
+            description: `${description} for panel branch ${index}`,
+          }),
+        }
+      );
+
+      const [extendedTypeA, extendedTypeB] = namedTypeABPlus.getUnionTypes();
+      expect(getTypeId(extendedTypeA)).toBe('typeAForPanel');
+      expect(getTypeMeta(extendedTypeA)).toMatchObject({
+        title: 'Type A for panel',
+      });
+      expect(getTypeDescription(extendedTypeA)).toBe('Type A description for panel branch 0');
+      expect(getTypeId(extendedTypeB)).toBe('typeBForPanel');
+      expect(getTypeMeta(extendedTypeB)).toMatchObject({
+        title: 'Type B for panel',
+      });
+      expect(getTypeDescription(extendedTypeB)).toBe('Type B description for panel branch 1');
     });
   });
 

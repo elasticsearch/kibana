@@ -7,7 +7,7 @@
 
 import { schema } from '@kbn/config-schema';
 
-import { NewOutputSchema, OutputSchema, UpdateOutputSchema } from '../models';
+import { NewOutputSchema, OutputResponseItemSchema, UpdateOutputSchema } from '../models';
 import { ListResponseSchema } from '../../routes/schema/utils';
 
 export const GetOneOutputRequestSchema = {
@@ -32,11 +32,7 @@ export const GenerateLogstashApiKeyResponseSchema = schema.object({
 
 export const GetOutputsRequestSchema = {};
 
-export const GetOutputsResponseSchema = ListResponseSchema(
-  OutputSchema.extendsDeep({
-    unknowns: 'allow',
-  })
-);
+export const GetOutputsResponseSchema = ListResponseSchema(OutputResponseItemSchema);
 
 export const PostOutputRequestSchema = {
   body: NewOutputSchema,

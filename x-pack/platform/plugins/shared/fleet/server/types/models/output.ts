@@ -93,6 +93,16 @@ const OutputShipperSchema = schema.object(
   { meta: { id: 'output_shipper' } }
 );
 
+const OutputResponseSslSchema = OutputSslSchema.extends(
+  {},
+  { meta: { id: 'output_response_ssl' } }
+);
+
+const OutputResponseShipperSchema = OutputShipperSchema.extends(
+  {},
+  { meta: { id: 'output_response_shipper' } }
+);
+
 /**
  * Base schemas
  */
@@ -334,10 +344,36 @@ export const NewOutputSchema = schema.discriminatedUnion('type', [
   schema.object({ ...KafkaSchema }, { meta: { id: 'new_output_kafka' } }),
 ]);
 
-export const OutputResponseSchema = schema.object({
-  item: OutputSchema.extendsDeep({
+const OutputResponseSharedSchema = {
+  ssl: schema.maybe(schema.oneOf([schema.literal(null), OutputResponseSslSchema])),
+  shipper: schema.maybe(schema.oneOf([schema.literal(null), OutputResponseShipperSchema])),
+};
+
+export const OutputResponseItemSchema = schema
+  .discriminatedUnion('type', [
+    schema.object(
+      { ...ElasticSearchSchema, ...OutputResponseSharedSchema },
+      { meta: { id: 'output_response_elasticsearch' } }
+    ),
+    schema.object(
+      { ...RemoteElasticSearchSchema, ...OutputResponseSharedSchema },
+      { meta: { id: 'output_response_remote_elasticsearch' } }
+    ),
+    schema.object(
+      { ...LogstashSchema, ...OutputResponseSharedSchema },
+      { meta: { id: 'output_response_logstash' } }
+    ),
+    schema.object(
+      { ...KafkaSchema, ...OutputResponseSharedSchema },
+      { meta: { id: 'output_response_kafka' } }
+    ),
+  ])
+  .extendsDeep({
     unknowns: 'allow',
-  }),
+  });
+
+export const OutputResponseSchema = schema.object({
+  item: OutputResponseItemSchema,
 });
 
 export const UpdateOutputSchema = schema.oneOf([

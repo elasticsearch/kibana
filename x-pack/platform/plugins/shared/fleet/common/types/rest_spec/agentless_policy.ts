@@ -10,9 +10,17 @@ import { type TypeOf, schema } from '@kbn/config-schema';
 import { SO_SEARCH_LIMIT } from '../../constants';
 
 import { SimplifiedCreatePackagePolicyRequestBodySchema } from '../models/package_policy_schema';
-import type { AgentlessPolicyResponseSchema } from '../models/agentless_policy_schema';
+import { AgentlessPolicyResponseSchema } from '../models/agentless_policy_schema';
 
 export const CreateAgentlessPolicyRequestSchema = {
+  query: schema.object({
+    format: schema.oneOf([schema.literal('legacy'), schema.literal('simplified')], {
+      defaultValue: 'simplified',
+      meta: {
+        description: 'The format of the response package policy.',
+      },
+    }),
+  }),
   body: SimplifiedCreatePackagePolicyRequestBodySchema.extends(
     {
       // Remove all properties that are not relevant for agentless policies
@@ -20,7 +28,6 @@ export const CreateAgentlessPolicyRequestSchema = {
       policy_ids: undefined,
       supports_agentless: undefined,
       output_id: undefined,
-      condition: undefined,
       policy_template: schema.maybe(
         schema.string({
           meta: {
@@ -126,19 +133,15 @@ export const DeleteAgentlessPolicyResponseSchema = schema.object(
   }
 );
 
-export type CreateAgentlessPolicyResponse = TypeOf<typeof AgentlessPolicyResponseSchema>;
+export const CreateAgentlessPolicyResponseSchema = AgentlessPolicyResponseSchema;
+
+export type CreateAgentlessPolicyResponse = TypeOf<typeof CreateAgentlessPolicyResponseSchema>;
 
 export interface CreateAgentlessPolicyRequest {
   body: TypeOf<typeof CreateAgentlessPolicyRequestSchema.body>;
+  query: TypeOf<typeof CreateAgentlessPolicyRequestSchema.query>;
 }
 
-/**
- * Request body for creating an agentless policy.
- *
- * Derived from the route schema so it always reflects the accepted contract: a
- * `cloud_connector` may carry `name`/`target_csp` when creating a new connector
- * (instead of `cloud_connector_id`), and `package.title` is not required.
- */
 export type NewAgentlessPolicy = CreateAgentlessPolicyRequest['body'];
 
 export type DeleteAgentlessPolicyResponse = TypeOf<typeof DeleteAgentlessPolicyResponseSchema>;

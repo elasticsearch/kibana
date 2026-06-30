@@ -14,7 +14,7 @@ import type {
   Props,
   TypeOptions,
 } from '@kbn/config-schema/src/types';
-import type { ObjectUnionType } from './charts/utils/object_union';
+import type { ObjectUnionExtendOptions, ObjectUnionType } from './charts/utils/object_union';
 import { objectUnion } from './charts/utils/object_union';
 import type { MetricConfig, MetricConfigESQL, MetricConfigNoESQL } from './charts/metric';
 import {
@@ -226,6 +226,23 @@ export type LensApiConfigESQL =
 
 export const lensApiConfigSchemaESQL: Type<LensApiConfigESQL> = _lensApiConfigSchemaESQL;
 
+const byValuePanelBranchMeta: ObjectUnionExtendOptions<LensApiConfig>['extendedBranchMeta'] = ({
+  description,
+  id,
+  meta,
+}) => {
+  const title = typeof meta.title === 'string' ? meta.title : 'Lens visualization';
+
+  return {
+    ...meta,
+    ...(id ? { id: `${id}ByValuePanel` } : {}),
+    title: `${title} by-value panel`,
+    description: description
+      ? `${description} Panel configuration stored inline.`
+      : 'Panel configuration stored inline.',
+  };
+};
+
 /**
  * Extends `lensApiConfigSchema` with extra props and options.
  *
@@ -238,7 +255,11 @@ export function extendLensApiConfigSchema<T extends Props>(
   // these types are a bit of a hack mainly due to the tsc compiler limit
   // but baseSchema can extend with any props correctly and return the correct `Type` wrapper
   const baseSchema = _lensApiConfigSchema as ObjectUnionType<[ObjectType<any>], LensApiConfig & T>;
-  return baseSchema.extends(props, options as any).toType();
+  const extendOptions = {
+    ...(options as TypeOptions<any> | undefined),
+    extendedBranchMeta: byValuePanelBranchMeta,
+  } as ObjectUnionExtendOptions<any>;
+  return baseSchema.extends(props, extendOptions).toType();
 }
 
 export type {

@@ -10,11 +10,64 @@
 import type { ObjectType } from '@kbn/config-schema';
 import { Type } from '@kbn/config-schema';
 import { internals } from '@kbn/config-schema/src/internals';
-import type { ObjectResultType, Props, TypeOptions } from '@kbn/config-schema/src/types';
+import type {
+  ObjectResultType,
+  ObjectTypeOptions,
+  Props,
+  TypeOptions,
+} from '@kbn/config-schema/src/types';
 import { SchemaTypeError, SchemaTypesError } from '@kbn/config-schema/src/errors';
 import typeDetect from 'type-detect';
 
 type SomeObjectType = ObjectType<any>;
+type ObjectUnionBranchMeta = TypeOptions<unknown>['meta'] & { id?: string };
+
+interface ObjectUnionBranch {
+  description?: string;
+  id?: string;
+  meta: ObjectUnionBranchMeta;
+  index: number;
+  type: SomeObjectType;
+}
+
+export type ObjectUnionExtendedBranchMeta = (
+  branch: ObjectUnionBranch
+) => ObjectUnionBranchMeta | undefined;
+
+export type ObjectUnionExtendOptions<T> = TypeOptions<T> & {
+  extendedBranchMeta?: ObjectUnionExtendedBranchMeta;
+};
+
+const getSchemaId = (type: SomeObjectType): string | undefined => {
+  return (type.getSchema().describe().flags as { id?: string } | undefined)?.id;
+};
+
+const getSchemaMeta = (type: SomeObjectType): Record<string, unknown> => {
+  return Object.assign({}, ...(type.getSchema().describe().metas ?? []));
+};
+
+const getSchemaDescription = (type: SomeObjectType): string | undefined => {
+  return (type.getSchema().describe().flags as { description?: string } | undefined)?.description;
+};
+
+const getExtendedTypeOptions = (
+  type: SomeObjectType,
+  index: number,
+  extendedBranchMeta?: ObjectUnionExtendedBranchMeta
+): ObjectTypeOptions<any> | undefined => {
+  if (!extendedBranchMeta) return undefined;
+
+  const meta = getSchemaMeta(type);
+  const extendedMeta = extendedBranchMeta({
+    description: getSchemaDescription(type),
+    id: getSchemaId(type),
+    meta,
+    index,
+    type,
+  });
+
+  return extendedMeta ? { meta: extendedMeta } : undefined;
+};
 
 /**
  * A custom schema type used in lens for object unions with ability to extend
@@ -68,13 +121,20 @@ export class ObjectUnionType<RTS extends Array<SomeObjectType>, T> extends Type<
     return this.unionTypes;
   }
 
-  public extends<P extends Props>(props: P, options?: TypeOptions<ObjectResultType<P> & T>) {
-    const newTypes = this.unionTypes.map((t) => {
-      return t.extends(props); // no overriding type.options
+  public extends<P extends Props>(
+    props: P,
+    options?: ObjectUnionExtendOptions<ObjectResultType<P> & T>
+  ) {
+    const { extendedBranchMeta, ...typeOptions } = options ?? {};
+    const newTypes = this.unionTypes.map((t, index) => {
+      const extendedTypeOptions = getExtendedTypeOptions(t, index, extendedBranchMeta);
+      return extendedTypeOptions
+        ? t.extends(props, extendedTypeOptions as never)
+        : t.extends(props);
     }) as RTS; // these types are correct but need to be forced to work
     const newOptions = {
       ...this.typeOptions,
-      ...options,
+      ...typeOptions,
     } as TypeOptions<ObjectResultType<P> & T>;
     return new ObjectUnionType<RTS, ObjectResultType<P> & T>(newTypes, newOptions);
   }

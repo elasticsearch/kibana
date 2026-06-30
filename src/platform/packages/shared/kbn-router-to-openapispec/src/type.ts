@@ -10,6 +10,7 @@
 import type { Router } from '@kbn/core-http-router-server-internal';
 import type { OpenAPIV3 } from '../openapi-types';
 import type { Env } from './generate_oas';
+import type { OnCollision } from './oas_converter/kbn_config_schema/post_process_mutations';
 export type { OpenAPIV3 } from '../openapi-types';
 export interface KnownParameters {
   [paramName: string]: { optional: boolean };
@@ -18,6 +19,7 @@ export interface KnownParameters {
 export interface ConvertOptions {
   sharedSchemas?: Map<string, OpenAPIV3.SchemaObject>;
   env?: Env;
+  onCollision?: OnCollision;
 }
 
 export interface OpenAPIConverter {

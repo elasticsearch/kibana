@@ -147,12 +147,15 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
             200: {
               description: 'OK: A successful request.',
               body: () =>
-                ListResponseSchema(EnrollmentAPIKeySchema).extends({
-                  list: schema.arrayOf(EnrollmentAPIKeySchema, {
-                    meta: { deprecated: true },
-                    maxSize: 10000,
-                  }),
-                }),
+                ListResponseSchema(EnrollmentAPIKeySchema).extends(
+                  {
+                    list: schema.arrayOf(EnrollmentAPIKeySchema, {
+                      meta: { deprecated: true },
+                      maxSize: 10000,
+                    }),
+                  },
+                  { meta: { id: 'get_enrollment_api_keys_response' } }
+                ),
             },
             400: {
               description: 'A bad request.',
@@ -232,9 +235,12 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
             200: {
               description: 'OK: A successful request.',
               body: () =>
-                EnrollmentAPIKeyResponseSchema.extends({
-                  action: schema.literal('created'),
-                }),
+                EnrollmentAPIKeyResponseSchema.extends(
+                  {
+                    action: schema.literal('created'),
+                  },
+                  { meta: { id: 'create_enrollment_api_key_response' } }
+                ),
             },
             400: {
               description: 'A bad request.',
