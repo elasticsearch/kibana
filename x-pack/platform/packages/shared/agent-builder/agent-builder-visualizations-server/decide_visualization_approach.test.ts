@@ -62,6 +62,15 @@ describe('decideVisualizationApproach', () => {
     expect(approach).not.toHaveProperty('chartType');
   });
 
+  it('instructs the model to honor an explicit request for Vega', async () => {
+    invoke.mockResolvedValue({ renderer: 'vega' });
+
+    await decideVisualizationApproach(modelProvider, 'a gauge as a Vega-Lite visualization');
+
+    const [systemMessage] = invoke.mock.calls[0][0];
+    expect(systemMessage.content).toContain('explicitly asks for a Vega');
+  });
+
   it('passes the existing chart type as context for edits', async () => {
     invoke.mockResolvedValue({ renderer: 'lens', chartType: SupportedChartType.XY });
 
