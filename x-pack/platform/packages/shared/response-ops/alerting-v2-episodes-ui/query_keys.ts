@@ -16,6 +16,9 @@ export const queryKeys = {
   groupActionsAll: () => [...queryKeys.all, 'group-actions'] as const,
   groupActions: (spaceId: string, groupHashes: string[]) =>
     [...queryKeys.groupActionsAll(), spaceId, ...groupHashes] as const,
+  actionsHistoryAll: () => [...queryKeys.all, 'actions-history'] as const,
+  actionsHistory: (spaceId: string, episodeId: string, groupHash: string) =>
+    [...queryKeys.actionsHistoryAll(), spaceId, episodeId, groupHash] as const,
   listAll: () => [...queryKeys.all, 'list'] as const,
   list: (
     spaceId: string,

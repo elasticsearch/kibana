@@ -34,12 +34,13 @@ import { AlertEpisodeOverviewSection } from './overview_section';
 import { AlertEpisodesRelatedSection } from './related_section';
 import { AlertEpisodeMetadataSection } from './metadata_section';
 import { AlertEpisodeRunbookSection } from './runbook_section';
+import { AlertEpisodeTimelineSection } from './timeline_section';
 import type { EpisodeAction } from '../../actions/types';
 import type { AlertEpisodeDetailsServices } from './types';
 import * as i18n from './translations';
 import { EpisodeActionsBar } from '../episode_actions_bar';
 
-type TabId = 'overview' | 'related' | 'metadata' | 'runbook';
+type TabId = 'overview' | 'related' | 'timeline' | 'metadata' | 'runbook';
 
 export interface AlertEpisodeDetailsFlyoutProps {
   episodeId: string;
@@ -153,6 +154,13 @@ export const AlertEpisodeDetailsFlyout = ({
             >
               {i18n.FLYOUT_TAB_RELATED}
             </EuiTab>
+            <EuiTab
+              isSelected={effectiveTab === 'timeline'}
+              onClick={() => setTab('timeline')}
+              data-test-subj="alertingV2EpisodeFlyoutTabTimeline"
+            >
+              {i18n.FLYOUT_TAB_TIMELINE}
+            </EuiTab>
             {showRuleDependentTabs ? (
               <>
                 <EuiTab
@@ -206,6 +214,17 @@ export const AlertEpisodeDetailsFlyout = ({
                   padding-inline: ${euiTheme.size.m};
                 }
               `
+            : effectiveTab === 'timeline'
+            ? css`
+                padding: ${euiTheme.size.m};
+                // EuiFlyoutBody applies a static overflow-shadow mask that fades
+                // the top/bottom edges of the scroll container regardless of
+                // scrollability. The timeline's comment list starts flush at the
+                // top, so add inner top padding to clear the mask's fade band.
+                [class*='euiFlyoutBody__overflowContent'] {
+                  padding-block-start: ${euiTheme.size.s};
+                }
+              `
             : css`
                 padding: ${euiTheme.size.m};
               `
@@ -224,6 +243,13 @@ export const AlertEpisodeDetailsFlyout = ({
             services={services}
             showHeading={false}
             compressed
+          />
+        )}
+        {effectiveTab === 'timeline' && (
+          <AlertEpisodeTimelineSection
+            episodeId={episodeId}
+            groupHash={groupHash}
+            services={services}
           />
         )}
         {effectiveTab === 'metadata' && (

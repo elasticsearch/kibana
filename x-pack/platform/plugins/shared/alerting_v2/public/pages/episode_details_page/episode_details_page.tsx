@@ -46,6 +46,7 @@ import { CenterJustifiedSpinner } from '../../components/center_justified_spinne
 import type { AlertEpisodesKibanaServices } from '../../episodes_kibana_services';
 import { useBreadcrumbs } from '../../hooks/use_breadcrumbs';
 import { getDiscoverHrefForRuleAndEpisodeTimestamp } from '../../utils/discover_href_for_episode';
+import { EpisodeTimelineTab } from './components/episode_timeline_tab';
 import * as i18n from './translations';
 
 interface EpisodeRouteParams {
@@ -54,7 +55,7 @@ interface EpisodeRouteParams {
 
 type EpisodeDetailsSidebarPanel = 'episode_details' | 'runbook';
 
-type EpisodeDetailsMainPanel = 'overview' | 'metadata';
+type EpisodeDetailsMainPanel = 'overview' | 'metadata' | 'timeline';
 
 export function EpisodeDetailsPage() {
   const { euiTheme } = useEuiTheme();
@@ -347,6 +348,13 @@ export function EpisodeDetailsPage() {
                 },
               ]
             : []),
+          {
+            id: 'timeline',
+            'data-test-subj': 'alertingV2EpisodeDetailsMainTabTimeline',
+            label: i18n.TIMELINE_TAB_TITLE,
+            isSelected: actualMainPanel === 'timeline',
+            onClick: () => setMainPanel('timeline'),
+          },
         ],
       }}
     >
@@ -383,6 +391,8 @@ export function EpisodeDetailsPage() {
               grow
               paddingSize="none"
               css={css`
+                min-width: 0;
+
                 ${smallMediaQuery} {
                   [class*='InternalDocViewerTable'] {
                     display: block;
@@ -405,7 +415,13 @@ export function EpisodeDetailsPage() {
                 }
               `}
             >
-              {actualMainPanel === 'metadata' ? (
+              {actualMainPanel === 'timeline' ? (
+                <EpisodeTimelineTab
+                  episodeId={episodeId}
+                  groupHash={groupHash}
+                  services={{ data, spaces, userProfile: services.userProfile }}
+                />
+              ) : actualMainPanel === 'metadata' ? (
                 <AlertEpisodeMetadataSection episodeId={episodeId} services={metadataServices} />
               ) : (
                 <EuiPanel

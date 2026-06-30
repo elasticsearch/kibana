@@ -29,6 +29,13 @@ export const METADATA_TAB_TITLE = i18n.translate(
   }
 );
 
+export const TIMELINE_TAB_TITLE = i18n.translate(
+  'xpack.alertingV2.episodeDetails.mainTabTimeline',
+  {
+    defaultMessage: 'Timeline',
+  }
+);
+
 /** --- Duration (sidebar) --- */
 export const FORMAT_EPISODE_DURATION_MS = (ms: number): string => {
   if (ms < 1000) {
