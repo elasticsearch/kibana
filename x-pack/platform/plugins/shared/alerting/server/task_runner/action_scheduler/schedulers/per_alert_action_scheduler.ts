@@ -46,6 +46,12 @@ enum Reasons {
   DELAYED = 'delayed',
 }
 
+// Yield to the event loop after holding the thread for this many milliseconds
+// during the action-parameter building loop. Prevents event loop starvation
+// when a rule has many alert×action pairs. Does not reduce CPU; only ensures
+// other pending I/O and Task Manager heartbeats get a turn between slices.
+const YIELD_AFTER_MS = 50;
+
 export class PerAlertActionScheduler<
   Params extends RuleTypeParams,
   ExtractedParams extends RuleTypeParams,
@@ -190,7 +196,12 @@ export class PerAlertActionScheduler<
       spaceId: this.context.taskInstance.params.spaceId,
     });
 
+    let sliceStart = Date.now();
     for (const { action, alert } of executables) {
+      if (Date.now() - sliceStart > YIELD_AFTER_MS) {
+        await new Promise(setImmediate);
+        sliceStart = Date.now();
+      }
       const { actionTypeId } = action;
       if (
         !shouldScheduleAction({

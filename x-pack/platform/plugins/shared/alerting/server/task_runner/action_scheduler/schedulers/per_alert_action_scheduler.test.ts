@@ -1390,5 +1390,59 @@ describe('Per-Alert Action Scheduler', () => {
       // @ts-expect-error private variable
       expect(scheduler.skippedAlerts).toEqual({ '2': { reason: 'delayed' } });
     });
+
+    describe('event loop yielding', () => {
+      beforeEach(() => {
+        // Restore real timers so that `await new Promise(setImmediate)` resolves
+        // naturally without requiring clock.tick(). The global fake-timer clock is
+        // reinstated in afterEach so subsequent tests are unaffected.
+        clock.restore();
+      });
+
+      afterEach(() => {
+        jest.restoreAllMocks();
+        clock = sinon.useFakeTimers();
+      });
+
+      test('yields to the event loop when the time budget is exceeded and returns correct results', async () => {
+        // Simulate elapsed time: sliceStart captures 0 on the first call; every
+        // subsequent call returns 100ms, so the first iteration immediately exceeds
+        // the 50ms budget and triggers exactly one yield.
+        let nowCallCount = 0;
+        jest.spyOn(Date, 'now').mockImplementation(() => (nowCallCount++ === 0 ? 0 : 100));
+
+        const setImmediateSpy = jest.spyOn(global, 'setImmediate');
+
+        const scheduler = new PerAlertActionScheduler({
+          ...getSchedulerContext(),
+          rule,
+        });
+        const results = await scheduler.getActionsToSchedule({ activeAlerts: alerts });
+
+        expect(setImmediateSpy).toHaveBeenCalledTimes(1);
+        expect(results).toHaveLength(4);
+        expect(results).toEqual([
+          getResult('action-1', '1', '111-111'),
+          getResult('action-1', '2', '111-111'),
+          getResult('action-2', '1', '222-222'),
+          getResult('action-2', '2', '222-222'),
+        ]);
+      });
+
+      test('does not yield when the time budget is not exceeded', async () => {
+        // Date.now always returns 0, so elapsed time never exceeds the budget.
+        jest.spyOn(Date, 'now').mockReturnValue(0);
+        const setImmediateSpy = jest.spyOn(global, 'setImmediate');
+
+        const scheduler = new PerAlertActionScheduler({
+          ...getSchedulerContext(),
+          rule,
+        });
+        const results = await scheduler.getActionsToSchedule({ activeAlerts: alerts });
+
+        expect(setImmediateSpy).not.toHaveBeenCalled();
+        expect(results).toHaveLength(4);
+      });
+    });
   });
 });
