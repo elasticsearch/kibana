@@ -11,7 +11,6 @@ import { Parser } from '@elastic/esql';
 import type { ESQLCommand } from '@elastic/esql/types';
 import type { ESQLMessage } from '../../commands/definitions/types';
 import type { ESQLColumnData } from '../../commands/registry/types';
-import { unwrapExpressionParens } from '../../commands/definitions/utils/ast';
 import { mockContext } from './context_fixtures';
 /**
  * This function is used to assert that a query produces the expected errors.
@@ -35,7 +34,6 @@ export const expectErrors = (
   ) => ESQLMessage[]
 ) => {
   const { root } = Parser.parse(query);
-  unwrapExpressionParens(root);
   const command = root.commands.find((cmd) => cmd.name === commandName.toLowerCase());
   if (!command) {
     throw new Error(`${commandName.toUpperCase()} command not found in the parsed query`);

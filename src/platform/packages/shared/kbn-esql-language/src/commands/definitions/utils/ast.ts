@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { isList, isOptionNode, isParens, isSubQuery, Walker } from '@elastic/esql';
+import { isList, isOptionNode, Walker } from '@elastic/esql';
 import type { PromQLAstNode } from '@elastic/esql';
 import type {
   ESQLFunction,
@@ -16,8 +16,6 @@ import type {
   ESQLCommandOption,
   ESQLAstHeaderCommand,
   ESQLAstQueryExpression,
-  ESQLAstExpression,
-  ESQLParens,
 } from '@elastic/esql/types';
 import { EDITOR_MARKER } from '../constants';
 import { endsWithComma, endsWithWhitespace } from './regex';
@@ -121,45 +119,6 @@ export function removeAutocompleteMarkers<T>(value: T): T {
   }
 
   return cleanObject(value);
-}
-
-function replaceProperties(obj: object, replacement: object): void {
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      delete (obj as Record<string, unknown>)[key];
-    }
-  }
-  Object.assign(obj, replacement);
-}
-
-/**
- * Unwraps expression-only parentheses from the AST, mutating the provided root in place.
- * @elastic/esql parser emits explicit parens nodes in the AST for grouping parentheses in expressions.
- * With the new behavior, command validators and autocomplete readers, which access expression arguments positionally, would see a parens wrapper node instead of the inner expression
- *
- */
-export function unwrapExpressionParens(root: ESQLAstQueryExpression) {
-  const parensNodes = Walker.findAll(root, (node) => isParens(node) && !isSubQuery(node), {
-    visitCommand: (node, _parent, walker) => {
-      if (node.name === 'promql') {
-        walker.skipChildren();
-      }
-    },
-  }) as ESQLParens[];
-
-  for (const node of parensNodes) {
-    let child: ESQLAstExpression | undefined = node.child;
-
-    while (isParens(child) && !isSubQuery(child)) {
-      child = child.child;
-    }
-
-    if (child) {
-      replaceProperties(node, child);
-    }
-  }
-
-  return root;
 }
 
 function findOption(nodes: ESQLAstItem[], offset: number): ESQLCommandOption | undefined {

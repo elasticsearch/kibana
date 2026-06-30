@@ -15,7 +15,6 @@ import {
   correctQuerySyntax,
   findAstPosition,
   removeAutocompleteMarkers,
-  unwrapExpressionParens,
 } from '../../commands/definitions/utils/ast';
 import { getCursorContext } from './get_cursor_context';
 import { getEsqlLexerTokens, type EsqlLexerToken } from './lexer_scope';
@@ -40,7 +39,7 @@ export function parseAutocompleteQuery(fullText: string, offset: number): Parsed
 
   return {
     innerText,
-    root: unwrapExpressionParens(cleanRoot),
+    root: cleanRoot,
     tokens,
   };
 }

@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { isParens, isSubQuery, Parser, PromQLParser, Walker } from '@elastic/esql';
+import { Parser, PromQLParser, Walker } from '@elastic/esql';
 import type { ESQLAstItem, ESQLAstQueryExpression } from '@elastic/esql/types';
 import { EDITOR_MARKER } from '../constants';
 import {
@@ -16,7 +16,6 @@ import {
   getBracketsToClose,
   isMarkerNode,
   removeAutocompleteMarkers,
-  unwrapExpressionParens,
 } from './ast';
 
 describe('getBracketsToClose', () => {
@@ -165,70 +164,5 @@ describe('removeAutocompleteMarkers', () => {
     // Before cleaning, the marker leaks into inlineCast.castType (a plain string property).
     expect(JSON.stringify(root)).toContain(EDITOR_MARKER);
     expect(JSON.stringify(removeAutocompleteMarkers(root))).not.toContain(EDITOR_MARKER);
-  });
-});
-
-describe('unwrapExpressionParens', () => {
-  const parse = (query: string): ESQLAstQueryExpression => Parser.parse(query).root;
-
-  const countExpressionParens = (root: ESQLAstQueryExpression): number => {
-    let count = 0;
-
-    Walker.walk(root, {
-      visitAny: (node) => {
-        if (isParens(node) && !isSubQuery(node)) {
-          count++;
-        }
-      },
-    });
-
-    return count;
-  };
-
-  const countSubQueryParens = (root: ESQLAstQueryExpression): number => {
-    let count = 0;
-
-    Walker.walk(root, {
-      visitAny: (node) => {
-        if (isSubQuery(node)) {
-          count++;
-        }
-      },
-    });
-
-    return count;
-  };
-
-  it('mutates and returns the same root', () => {
-    const root = parse('FROM index | EVAL (field)');
-
-    expect(unwrapExpressionParens(root)).toBe(root);
-  });
-
-  it.each([
-    ['single field parens', 'FROM index | EVAL (field)'],
-    ['nested field parens', 'FROM index | EVAL ((field))'],
-    ['operator operand parens', 'FROM index | WHERE (a + b) > 0'],
-    ['function argument parens', 'FROM index | EVAL result = ROUND((field))'],
-    ['nested function argument parens', 'FROM index | WHERE LENGTH(TRIM((field))) > 0'],
-    ['BY expression parens', 'FROM index | STATS COUNT(*) BY (field)'],
-    ['IN list value parens', 'FROM index | WHERE foo IN (1, (2 + 3))'],
-  ])('unwraps %s', (_, query) => {
-    const root = unwrapExpressionParens(parse(query));
-
-    expect(countExpressionParens(root)).toBe(0);
-  });
-
-  it('preserves subquery parens', () => {
-    const root = unwrapExpressionParens(parse('FROM index | WHERE field IN (FROM other)'));
-
-    expect(countSubQueryParens(root)).toBe(1);
-  });
-
-  it('preserves PromQL query parens', () => {
-    const root = unwrapExpressionParens(parse('PROMQL (?my_query)'));
-    const [arg] = root.commands[0].args;
-
-    expect(arg).toMatchObject({ type: 'parens' });
   });
 });
