@@ -753,6 +753,56 @@ interface TransformEsAssetReference extends EsAssetReference {
   version?: string;
 }
 /**
+ * A cross-cluster search source pattern takes the form `<cluster>:<index>`
+ * (e.g. `*:metrics-endpoint.metadata_current_default*`). The leading `::` guard
+ * avoids misreading the data-stream selector separator (e.g. `logs::failures`)
+ * as a remote-cluster separator.
+ */
+export const isRemoteIndexExpression = (indexExpression: string): boolean => {
+  const separatorIndex = indexExpression.indexOf(':');
+  return separatorIndex > 0 && !indexExpression.startsWith('::', separatorIndex);
+};
+
+/**
+ * Cross-cluster search (the `<remote>:<index>` source syntax) is a stateful-only
+ * Elasticsearch feature. On Serverless, ES rejects ANY transform whose source
+ * targets remote indices with `action_request_validation_exception`
+ * ("Cross-project calls are not supported, but remote indices were requested"),
+ * which aborts the whole package install. Since no transform can read a remote
+ * source on Serverless, strip remote-cluster entries from the source there so the
+ * transform installs and runs against its local indices. The rewrite only happens
+ * for transforms that actually carry a remote entry (today: Elastic Defend's
+ * `metadata_united`), and is a no-op on stateful, where remote patterns are valid
+ * and resolve to empty when no remote is connected.
+ */
+export const removeRemoteClusterSourceIndicesOnServerless = (
+  transform: TransformInstallation,
+  logger: Logger
+): void => {
+  if (!appContextService.getCloud()?.isServerlessEnabled) {
+    return;
+  }
+  const sourceIndex = transform.content?.source?.index;
+  if (!sourceIndex) {
+    return;
+  }
+  const indices: string[] = Array.isArray(sourceIndex) ? sourceIndex : [sourceIndex];
+  const remoteIndices = indices.filter((index) => isRemoteIndexExpression(index));
+  const localIndices = indices.filter((index) => !isRemoteIndexExpression(index));
+  // Only rewrite when remotes were actually present and at least one local index
+  // remains; a transform sourced solely from remote indices is a package error we
+  // shouldn't silently turn into an empty (and invalid) source.
+  if (remoteIndices.length > 0 && localIndices.length > 0) {
+    logger.info(
+      `Removed cross-cluster source indices [${remoteIndices.join(', ')}] from transform [${
+        transform.installationName
+      }] on Serverless; cross-cluster search is not supported there.`
+    );
+    transform.content.source.index = localIndices;
+  }
+};
+
+/**
  * Create transform and optionally start transform
  * Note that we want to add the current user's roles/permissions to the es-secondary-auth with a API Key.
  * If API Key has insufficient permissions, it should still create the transforms but not start it
@@ -772,6 +822,8 @@ async function handleTransformInstall({
   startTransform?: boolean;
   secondaryAuth?: SecondaryAuthorizationHeader;
 }): Promise<TransformEsAssetReference> {
+  removeRemoteClusterSourceIndicesOnServerless(transform, logger);
+
   let isUnauthorizedAPIKey = false;
   try {
     await retryTransientEsErrors(

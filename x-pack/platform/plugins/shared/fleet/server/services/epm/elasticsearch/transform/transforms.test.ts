@@ -24,7 +24,11 @@ import { createArchiveIteratorFromMap } from '../../archive/archive_iterator';
 import { createAppContextStartContractMock } from '../../../../mocks';
 import type { PackageInstallContext } from '../../../../../common/types';
 
-import { installTransforms } from './install';
+import {
+  installTransforms,
+  isRemoteIndexExpression,
+  removeRemoteClusterSourceIndicesOnServerless,
+} from './install';
 
 jest.mock('../../packages/get', () => {
   return { getInstallation: jest.fn(), getInstallationObject: jest.fn() };
@@ -1356,5 +1360,212 @@ _meta:
     // No new transform is created or started
     expect(esClient.transform.putTransform.mock.calls).toEqual([]);
     expect(esClient.transform.startTransform.mock.calls).toEqual([]);
+  });
+});
+
+describe('isRemoteIndexExpression', () => {
+  it.each([
+    ['*:metrics-endpoint.metadata_current_default*', true],
+    ['remote1:logs-*', true],
+    ['metrics-endpoint.metadata_current_default*', false],
+    ['.fleet-agents*', false],
+    // `::` is the data-stream selector separator, not a remote-cluster separator
+    ['logs-endpoint.events::failures', false],
+    ['logs::data', false],
+    // a leading colon means the remote part is empty -> not a valid remote expression
+    [':no-remote-name', false],
+    ['', false],
+  ])('classifies %s as remote=%s', (expression, expected) => {
+    expect(isRemoteIndexExpression(expression as string)).toBe(expected);
+  });
+});
+
+describe('removeRemoteClusterSourceIndicesOnServerless', () => {
+  type TransformArg = Parameters<typeof removeRemoteClusterSourceIndicesOnServerless>[0];
+  let logger: ReturnType<typeof loggerMock.create>;
+
+  const buildTransform = (index: string | string[]): TransformArg =>
+    ({
+      installationName: 'endpoint.metadata_united-default-9.5.0-prerelease.1',
+      content: { source: { index } },
+    } as unknown as TransformArg);
+
+  beforeEach(() => {
+    logger = loggerMock.create();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('on serverless', () => {
+    beforeEach(() => {
+      appContextService.start(createAppContextStartContractMock({}, true));
+    });
+
+    it('strips remote (`*:`) entries from the source and logs the change', () => {
+      const transform = buildTransform([
+        'metrics-endpoint.metadata_current_default*',
+        '*:metrics-endpoint.metadata_current_default*',
+        '.fleet-agents*',
+      ]);
+
+      removeRemoteClusterSourceIndicesOnServerless(transform, logger);
+
+      expect(transform.content.source.index).toEqual([
+        'metrics-endpoint.metadata_current_default*',
+        '.fleet-agents*',
+      ]);
+      expect(logger.info).toHaveBeenCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('*:metrics-endpoint.metadata_current_default*')
+      );
+    });
+
+    it('is a no-op when the source has no remote entry', () => {
+      const transform = buildTransform([
+        'metrics-endpoint.metadata_current_default*',
+        '.fleet-agents*',
+      ]);
+
+      removeRemoteClusterSourceIndicesOnServerless(transform, logger);
+
+      expect(transform.content.source.index).toEqual([
+        'metrics-endpoint.metadata_current_default*',
+        '.fleet-agents*',
+      ]);
+      expect(logger.info).not.toHaveBeenCalled();
+    });
+
+    it('leaves a source made up solely of remote entries untouched', () => {
+      const transform = buildTransform(['*:metrics-endpoint.metadata_current_default*']);
+
+      removeRemoteClusterSourceIndicesOnServerless(transform, logger);
+
+      expect(transform.content.source.index).toEqual([
+        '*:metrics-endpoint.metadata_current_default*',
+      ]);
+      expect(logger.info).not.toHaveBeenCalled();
+    });
+
+    it('handles a single string source with no remote as a no-op', () => {
+      const transform = buildTransform('metrics-endpoint.metadata_current_default*');
+
+      removeRemoteClusterSourceIndicesOnServerless(transform, logger);
+
+      expect(transform.content.source.index).toBe('metrics-endpoint.metadata_current_default*');
+      expect(logger.info).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the transform content has no source index', () => {
+      const transform = {
+        installationName: 'endpoint.metadata_united-default-9.5.0-prerelease.1',
+        content: {},
+      } as unknown as TransformArg;
+
+      expect(() => removeRemoteClusterSourceIndicesOnServerless(transform, logger)).not.toThrow();
+      expect(logger.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('on stateful', () => {
+    beforeEach(() => {
+      appContextService.start(createAppContextStartContractMock());
+    });
+
+    it('preserves remote (`*:`) entries in the source', () => {
+      const index = [
+        'metrics-endpoint.metadata_current_default*',
+        '*:metrics-endpoint.metadata_current_default*',
+        '.fleet-agents*',
+      ];
+      const transform = buildTransform([...index]);
+
+      removeRemoteClusterSourceIndicesOnServerless(transform, logger);
+
+      expect(transform.content.source.index).toEqual(index);
+      expect(logger.info).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('installTransforms - cross-cluster source indices', () => {
+  let esClient: ReturnType<typeof elasticsearchClientMock.createElasticsearchClient>;
+  let savedObjectsClient: jest.Mocked<SavedObjectsClientContract>;
+
+  const sourceWithRemote = [
+    'metrics-endpoint.metadata_current_default*',
+    '*:metrics-endpoint.metadata_current_default*',
+    '.fleet-agents*',
+  ];
+  const legacyTransformPath =
+    'endpoint-9.5.0-prerelease.1/elasticsearch/transform/metadata_united/default.json';
+  const legacyTransformJson = JSON.stringify({
+    source: { index: sourceWithRemote },
+    dest: { index: '.metrics-endpoint.metadata_united_default' },
+    pivot: { group_by: { 'agent.id': { terms: { field: 'agent.id' } } }, aggs: {} },
+  });
+
+  const installLegacyEndpointTransform = () =>
+    installTransforms({
+      packageInstallContext: {
+        packageInfo: { name: 'endpoint', version: '9.5.0-prerelease.1' },
+        paths: [legacyTransformPath],
+        archiveIterator: createArchiveIteratorFromMap(
+          new Map([[legacyTransformPath, Buffer.from(legacyTransformJson)]])
+        ),
+      } as unknown as PackageInstallContext,
+      esClient,
+      savedObjectsClient,
+      logger: loggerMock.create(),
+      esReferences: [],
+    });
+
+  beforeEach(() => {
+    esClient = elasticsearchClientMock.createClusterClient().asInternalUser;
+    savedObjectsClient = savedObjectsClientMock.create();
+    savedObjectsClient.update.mockImplementation(async (type, id, attributes) => ({
+      type: PACKAGES_SAVED_OBJECT_TYPE,
+      id: 'endpoint',
+      attributes,
+      references: [],
+    }));
+    (getInstallation as jest.MockedFunction<typeof getInstallation>).mockReset();
+    (getInstallation as jest.MockedFunction<typeof getInstallation>).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('strips the `*:` source before putTransform on serverless (legacy json path)', async () => {
+    appContextService.start(createAppContextStartContractMock({}, true));
+
+    await installLegacyEndpointTransform();
+
+    expect(esClient.transform.putTransform).toHaveBeenCalledTimes(1);
+    expect(esClient.transform.putTransform).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transform_id: 'endpoint.metadata_united-default-9.5.0-prerelease.1',
+        source: expect.objectContaining({
+          index: ['metrics-endpoint.metadata_current_default*', '.fleet-agents*'],
+        }),
+      }),
+      expect.anything()
+    );
+  });
+
+  it('keeps the `*:` source in putTransform on stateful (legacy json path)', async () => {
+    appContextService.start(createAppContextStartContractMock());
+
+    await installLegacyEndpointTransform();
+
+    expect(esClient.transform.putTransform).toHaveBeenCalledTimes(1);
+    expect(esClient.transform.putTransform).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: expect.objectContaining({ index: sourceWithRemote }),
+      }),
+      expect.anything()
+    );
   });
 });
