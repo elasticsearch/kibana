@@ -47,6 +47,12 @@ import {
   ENTITY_ANOMALY_DATE_RANGE_LAST_1_YEAR,
 } from './translations';
 import { useAnomalySummary } from '../../api/hooks/use_anomaly_summary';
+import {
+  ANOMALIES_TAB_TEST_ID,
+  ANOMALIES_TAB_ATTACK_CHAIN_TEST_ID,
+  ANOMALIES_TAB_MANAGE_JOBS_BUTTON_TEST_ID,
+  ANOMALIES_TAB_DATE_RANGE_ERROR_TEST_ID,
+} from './test_ids';
 import { MitreAttackChain } from './mitre/components/mitre_attack_chain';
 import { AnomalyTabTimelineSection } from './anomalies_tab_timeline';
 import type { TableChangeEvent } from './anomalies_tab_table';
@@ -224,7 +230,7 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
   });
 
   return (
-    <>
+    <div data-test-subj={ANOMALIES_TAB_TEST_ID}>
       <EuiFlexGroup
         alignItems="center"
         justifyContent="spaceBetween"
@@ -256,6 +262,7 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiButtonEmpty
+            data-test-subj={ANOMALIES_TAB_MANAGE_JOBS_BUTTON_TEST_ID}
             color="primary"
             size="s"
             iconType="external"
@@ -272,6 +279,7 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
       {isDateRangeTooOld && (
         <>
           <EuiCallOut
+            data-test-subj={ANOMALIES_TAB_DATE_RANGE_ERROR_TEST_ID}
             announceOnMount
             color="warning"
             iconType="warning"
@@ -280,9 +288,10 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
           <EuiSpacer size="m" />
         </>
       )}
-      <>
+      {uniqueTactics.length > 0 && (
         <EuiAccordion
           id="entity-anomalies-tab-attack-chain-accordion"
+          data-test-subj={ANOMALIES_TAB_ATTACK_CHAIN_TEST_ID}
           initialIsOpen
           buttonContent={
             <EuiTitle size="xs">
@@ -308,7 +317,7 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
             />
           </EuiPanel>
         </EuiAccordion>
-      </>
+      )}
       <EuiSpacer size="l" />
       <AnomalyTabTimelineSection
         anomalies={anomalyOverview.data?.anomalyByTimeBucket ?? []}
@@ -327,6 +336,6 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
         timeRange={{ from: start, to: end }}
         total={anomalySummary.data?.total ?? 0}
       />
-    </>
+    </div>
   );
 };

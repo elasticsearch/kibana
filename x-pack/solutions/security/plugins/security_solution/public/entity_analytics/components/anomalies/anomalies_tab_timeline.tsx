@@ -20,6 +20,7 @@ import { tacticOrder as mitreTacticOrder } from '../../../../common/detection_en
 import { tactics as mitreTactics } from '../../../../common/detection_engine/mitre/mitre_tactics_techniques';
 import { AnomaliesSwimlane } from './anomalies_swimlane';
 import { ENTITY_ANOMALY_TIMELINE_TITLE } from './translations';
+import { ANOMALIES_TAB_TIMELINE_TEST_ID } from './test_ids';
 import { useAnomalyBands } from '../recent_anomalies/anomaly_bands';
 import { getAnomalyChartStyling } from '../recent_anomalies';
 
@@ -83,6 +84,7 @@ export const AnomalyTabTimelineSection: React.FC<AnomalyTabTimelineProps> = ({
     <div>
       <EuiAccordion
         id="entity-anomalies-tab-timeline-accordion"
+        data-test-subj={ANOMALIES_TAB_TIMELINE_TEST_ID}
         initialIsOpen
         buttonContent={
           <EuiTitle size="xs">

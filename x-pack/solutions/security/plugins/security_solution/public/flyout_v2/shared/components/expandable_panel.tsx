@@ -242,7 +242,7 @@ export const ExpandablePanel: FC<PropsWithChildren<ExpandablePanelPanelProps>> =
   );
 
   return (
-    <EuiSplitPanel.Outer grow hasBorder>
+    <EuiSplitPanel.Outer grow hasBorder data-test-subj={dataTestSubj}>
       <EuiSplitPanel.Inner grow={false} color="subdued" paddingSize={'xs'}>
         <EuiFlexGroup justifyContent="spaceBetween" alignItems="center">
           {headerLeftSection}
