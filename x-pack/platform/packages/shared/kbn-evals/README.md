@@ -231,6 +231,63 @@ EVAL_INCLUDE_EIS_MODELS=1
 
 ---
 
+### 1.4 Generating the LLM performance matrix
+
+The `matrix` command turns already-exported evaluation results into a publishable
+**LLM performance matrix** (the table comparing models across capabilities in the
+docs). It **does not run any evals** -- it reads the latest experiment per
+(model, suite) from the evals plugin on the target Kibana (typically the golden
+cluster, where the weekly pipeline posts results), normalizes scores onto a 0-10
+scale via a config file, and writes markdown + CSV + JSON.
+
+```
+Weekly LLM evals  ->  golden cluster (.evaluation-scores via evals plugin)
+        |
+        v
+node scripts/evals matrix --config <matrix.config.json>   (kibana-evals-security-matrix pipeline)
+        |
+        v
+target/llm_matrix/{proprietary,open-source}-models.csv + matrix.{md,json}
+        |
+        v  (CI: upload to GCS gs://<bucket>/security/{latest|<version>}/)
+docs-content "Sync LLM performance matrix" workflow  ->  PR  ->  :::{csv-include} render
+```
+
+**Run it locally** against the golden cluster:
+
+```bash
+# Runtime Vault (requires `vault login --method oidc`)
+node scripts/evals matrix \
+  --config .buildkite/pipelines/evals/security_matrix.config.json \
+  --profile dev-vault
+
+# Or with explicit credentials
+EVALUATIONS_KBN_URL=https://<golden-cluster-kibana> EVALUATIONS_KBN_API_KEY=<key> \
+  node scripts/evals matrix --config .buildkite/pipelines/evals/security_matrix.config.json
+```
+
+Outputs land in `target/llm_matrix/` (override with `--out`). See
+[`CLI.md`](./CLI.md#matrix----generate-an-llm-performance-matrix-artifact) for all flags.
+
+**Configuration.** The matrix engine is domain-agnostic; the column taxonomy
+(columns -> suites/datasets/evaluators), model allowlist (display names +
+open-source classification), and normalization/thresholds live in a config file.
+The Security taxonomy is
+[`.buildkite/pipelines/evals/security_matrix.config.json`](../../../../../.buildkite/pipelines/evals/security_matrix.config.json).
+Other teams can add their own config + pipeline to opt in.
+
+**CI + publishing.** The [`kibana-evals-security-matrix`](../../../../../.buildkite/pipeline-resource-definitions/evals/kibana-evals-security-matrix.yml)
+Buildkite pipeline runs `matrix` weekly (after the weekly evals), uploads the
+artifacts as a Buildkite artifact, and (once a bucket is provisioned) to GCS under
+`security/latest/` -- or `security/<version>/` when `MATRIX_VERSION` is set for a
+Stack release. A keyless-WIF GitHub Action in `elastic/docs-content` then pulls the
+CSVs and opens a PR: scheduled weekly for serverless (`latest` -> `main`) and via
+manual `workflow_dispatch` with a version input for versioned releases. The
+docs-content side (page edit, sync workflow, provisioning steps) is staged as a
+separate PR bundle; see its `README.md` for the apply + provisioning checklist.
+
+---
+
 ## 2. Creating a new evaluation suite
 
 Each eval suite lives in its own `kbn-evals-suite-<name>` package. The package contains a Playwright config, evaluation specs, and optionally custom fixtures.

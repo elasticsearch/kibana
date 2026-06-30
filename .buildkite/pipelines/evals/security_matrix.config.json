@@ -1,0 +1,78 @@
+{
+  "title": "Large language model performance matrix for Elastic Security",
+  "branch": "main",
+  "lookbackDays": 14,
+  "defaultScale": 10,
+  "decimals": 2,
+  "notRecommendedBelow": 0,
+  "notRecommendedLabel": "Not recommended",
+  "notRecommendedCountsAsZeroInOverall": true,
+  "overall": {
+    "label": "Overall",
+    "mode": "weighted"
+  },
+  "columns": [
+    {
+      "id": "alert_triage",
+      "label": "Alert Triage",
+      "suites": ["security-alert-triage"],
+      "weight": 1
+    },
+    {
+      "id": "detection_engineering",
+      "label": "Detection Engineering",
+      "suites": ["security-esql-generation-regression", "security-ai-rules"],
+      "weight": 1
+    },
+    {
+      "id": "investigation",
+      "label": "Investigation",
+      "suites": ["attack-discovery", "security-alerts-rag-regression"],
+      "weight": 1
+    },
+    {
+      "id": "kb_retrieval",
+      "label": "KB Retrieval",
+      "suites": ["security-alerts-rag-regression"],
+      "weight": 1
+    },
+    {
+      "id": "workflow_execution",
+      "label": "Workflow Execution",
+      "suites": ["endpoint"],
+      "weight": 1
+    }
+  ],
+  "models": [
+    {
+      "id": "anthropic-claude-4.6-opus",
+      "label": "Claude Opus 4.6",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-4.6-sonnet",
+      "label": "Claude Sonnet 4.6",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-5.4",
+      "label": "GPT-5.4",
+      "openSource": false
+    },
+    {
+      "id": "google-gemini-3.1-pro",
+      "label": "Gemini 3.1 Pro",
+      "openSource": false
+    },
+    {
+      "id": "google-gemini-3.0-flash",
+      "label": "Gemini 3.0 Flash",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-oss-120b",
+      "label": "GPT OSS 120B",
+      "openSource": true
+    }
+  ]
+}

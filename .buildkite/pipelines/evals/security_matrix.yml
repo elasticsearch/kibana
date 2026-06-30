@@ -1,0 +1,43 @@
+env:
+  # Exposes EVALUATIONS_KBN_URL / EVALUATIONS_KBN_API_KEY via the CI env hook
+  # (see .buildkite/scripts/common/setup_job_env.sh).
+  KBN_EVALS: '1'
+steps:
+  - label: '👨‍🔧 Pre-Build'
+    command: .buildkite/scripts/lifecycle/pre_build.sh
+    agents:
+      image: family/kibana-ubuntu-2404
+      imageProject: elastic-images-prod
+      provider: gcp
+      machineType: n2-standard-2
+
+  - wait
+
+  - label: ':bar_chart: Generate Security LLM Performance Matrix'
+    key: security-llm-matrix
+    command: bash .buildkite/scripts/steps/evals/generate_matrix.sh
+    env:
+      KBN_EVALS: '1'
+      MATRIX_DOMAIN: 'security'
+      MATRIX_CONFIG: '.buildkite/pipelines/evals/security_matrix.config.json'
+      # Destination bucket for the docs-content sync workflow to pull from.
+      # Recommended: a dedicated bucket in the elastic-observability-ci project
+      # (e.g. elastic-observability-ci-llm-matrix), writable by the eval CI
+      # GCS_CREDENTIALS service account and readable by the docs-content
+      # `docs-content-sheets@elastic-observability-ci` WIF identity.
+      # NOTE: bucket + IAM must be provisioned before this produces a published
+      # artifact; until then the Buildkite artifact upload is the guaranteed
+      # output and the GCS upload is skipped when unset.
+      MATRIX_GCS_BUCKET: ''
+      # Set MATRIX_VERSION (e.g. via a manual rebuild env var) to publish a
+      # version-pinned artifact under <bucket>/security/<version>/ instead of latest/.
+    timeout_in_minutes: 30
+    agents:
+      image: family/kibana-ubuntu-2404
+      imageProject: elastic-images-prod
+      provider: gcp
+      machineType: n2-standard-2
+    retry:
+      automatic:
+        - exit_status: '-1'
+          limit: 2

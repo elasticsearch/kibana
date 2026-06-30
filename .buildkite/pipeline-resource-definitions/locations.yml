@@ -9,6 +9,7 @@ spec:
   targets:
     - https://github.com/elastic/kibana/blob/main/.buildkite/pipeline-resource-definitions/cloud-security-posture/cspm-agentless-scout.yml
     - https://github.com/elastic/kibana/blob/main/.buildkite/pipeline-resource-definitions/evals/kibana-evals-on-demand.yml
+    - https://github.com/elastic/kibana/blob/main/.buildkite/pipeline-resource-definitions/evals/kibana-evals-security-matrix.yml
     - https://github.com/elastic/kibana/blob/main/.buildkite/pipeline-resource-definitions/evals/kibana-evals.yml
     - https://github.com/elastic/kibana/blob/main/.buildkite/pipeline-resource-definitions/kibana-agent-builder-smoke-tests-daily.yml
     - https://github.com/elastic/kibana/blob/main/.buildkite/pipeline-resource-definitions/kibana-apis-capacity-testing-daily.yml

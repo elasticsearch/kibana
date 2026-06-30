@@ -200,6 +200,46 @@ node scripts/evals doctor --fix
 node scripts/evals compare <run-id-a> <run-id-b>
 ```
 
+### `matrix` -- Generate an LLM performance matrix artifact
+
+Reads the **latest experiment per (model, suite)** from the evals plugin on the
+target Kibana (it does **not** run any evals), maps suites/datasets/evaluators
+onto matrix columns via a config file, normalizes scores onto a 0-10 scale, and
+writes markdown + CSV + JSON artifacts. Point it at the golden cluster to turn the
+weekly pipeline's results into a publishable matrix.
+
+```bash
+# Against the golden cluster via runtime Vault (requires `vault login --method oidc`)
+node scripts/evals matrix \
+  --config .buildkite/pipelines/evals/security_matrix.config.json \
+  --profile dev-vault
+
+# Against any Kibana via explicit env/flags
+EVALUATIONS_KBN_URL=https://<golden-cluster-kibana> EVALUATIONS_KBN_API_KEY=<key> \
+  node scripts/evals matrix --config .buildkite/pipelines/evals/security_matrix.config.json
+```
+
+| Flag              | Description                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| `--config <path>` | Path to the matrix config JSON (required).                                                   |
+| `--out <dir>`     | Output directory for artifacts (default: `target/llm_matrix`).                               |
+| `--branch <name>` | Git branch filter override (default: `config.branch`).                                       |
+| `--lookback-days` | Only consider experiments newer than `now-<n>d` (default: `config.lookbackDays`).            |
+| `--profile`       | Golden-cluster config profile (`dev-vault` for runtime Vault, or a `config.<name>.json`).    |
+| `--kbn-url`       | Kibana URL override.                                                                         |
+| `--kbn-api-key`   | Kibana API key override.                                                                     |
+
+Outputs written to `--out` (default `target/llm_matrix/`): `proprietary-models.csv`,
+`open-source-models.csv`, `matrix.md`, `matrix.json`. The CSVs are what the
+docs-content page consumes via `:::{csv-include}`.
+
+The matrix config (columns -> suites/datasets/evaluators, model allowlist + display
+names + open-source classification, normalization/thresholds) is decoupled from this
+package. The Security taxonomy lives at
+`.buildkite/pipelines/evals/security_matrix.config.json`. In CI this command runs in
+the `kibana-evals-security-matrix` Buildkite pipeline, which uploads the artifacts to
+GCS for the docs-content sync workflow.
+
 ### `env` -- List environment variables
 
 ```bash

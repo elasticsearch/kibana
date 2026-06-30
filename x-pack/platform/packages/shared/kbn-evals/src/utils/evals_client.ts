@@ -15,13 +15,16 @@ import {
   EVALS_DATASET_URL,
   EVALS_EXPERIMENT_SCORES_URL,
   EVALS_EXPERIMENT_URL,
+  EVALS_EXPERIMENTS_URL,
   EVALS_SCORES_URL,
   GetEvaluationDatasetResponse,
   GetEvaluationExperimentResponse,
   GetEvaluationExperimentScoresResponse,
+  GetEvaluationExperimentsResponse,
   IngestScoresRequestBody,
   IngestScoresResponse,
   MAX_SCORES_PER_QUERY,
+  type EvaluationExperimentSummary,
   type EvaluationScoreDocument,
   type IngestScoresRequestBodyInput,
   type Model as EvalsModel,
@@ -53,8 +56,25 @@ export interface ExperimentStats {
 interface GetExperimentFilters {
   taskModelId?: string;
   suiteId?: string;
+  /**
+   * When provided, the experiment detail route filters by `metadata.execution_id`
+   * instead of the path `experiment_id`. The experiments listing route returns
+   * `execution_id` as the grouping key, so callers that paginate experiments and
+   * then fetch stats must pass it here (the bare `experiment_id` path lookup will
+   * 404 because it targets a different field).
+   */
   executionId?: string;
 }
+
+export interface ListExperimentsFilters {
+  suiteId?: string;
+  taskModelId?: string;
+  branch?: string;
+  datasetId?: string;
+  buildId?: string;
+}
+
+const LIST_EXPERIMENTS_PER_PAGE = 100;
 
 export interface UpsertDatasetInput {
   name: string;
@@ -189,6 +209,42 @@ export class EvalsClient {
     return IngestScoresResponse.parse(data);
   }
 
+  /**
+   * Lists evaluation experiment summaries, transparently paginating through the
+   * route's `page`/`per_page` window until all matching experiments are fetched.
+   */
+  async listExperiments(filters?: ListExperimentsFilters): Promise<EvaluationExperimentSummary[]> {
+    const all: EvaluationExperimentSummary[] = [];
+    let page = 1;
+
+    for (;;) {
+      const response = await this.kbnClient.request({
+        path: EVALS_EXPERIMENTS_URL,
+        method: 'GET',
+        query: {
+          suite_id: filters?.suiteId,
+          model_id: filters?.taskModelId,
+          branch: filters?.branch,
+          dataset_id: filters?.datasetId,
+          build_id: filters?.buildId,
+          page,
+          per_page: LIST_EXPERIMENTS_PER_PAGE,
+        },
+        headers: VERSIONED_HEADERS,
+      });
+
+      const parsed = GetEvaluationExperimentsResponse.parse(getResponseData(response));
+      all.push(...parsed.experiments);
+
+      if (parsed.experiments.length === 0 || all.length >= parsed.total) {
+        break;
+      }
+      page += 1;
+    }
+
+    return all;
+  }
+
   async getExperimentStats(
     experimentId: string,
     options?: GetExperimentFilters
@@ -203,7 +259,13 @@ export class EvalsClient {
 
       return mapStatsResponse(GetEvaluationExperimentResponse.parse(getResponseData(response)));
     } catch (error: unknown) {
-      this.log.error(`Failed to retrieve stats for experiment ID ${experimentId}:`, error);
+      const status = getStatusCode(error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.log.error(
+        `Failed to retrieve stats for experiment ID ${experimentId}: ${
+          status ? `[HTTP ${status}] ` : ''
+        }${message}`
+      );
       return null;
     }
   }

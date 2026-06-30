@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://gist.githubusercontent.com/elasticmachine/988b80dae436cafea07d9a4a460a011d/raw/rre.schema.json
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: bk-kibana-evals-security-matrix
+  description: 'Generates the Security LLM performance matrix artifact from weekly eval results'
+  # Cross-team dependency: this pipeline (owned by security-genai-research-and-development) publishes
+  # artifacts to a GCS bucket in the elastic-observability-ci project (eval-platform
+  # infra owned by obs-ai-team). The docs-content sync workflow reads from that bucket
+  # via the docs-content-sheets@elastic-observability-ci WIF identity. If the bucket,
+  # writer SA (GCS_CREDENTIALS), or reader WIF changes, the Security docs sync breaks
+  # and this pipeline is the contact point. The Buildkite artifact upload is a backstop
+  # that works even when the GCS bucket is unavailable.
+  links:
+    - url: 'https://buildkite.com/elastic/kibana-evals-security-matrix'
+      title: Pipeline link
+spec:
+  type: buildkite-pipeline
+  owner: 'group:security-genai-research-and-development'
+  system: buildkite
+  implementation:
+    apiVersion: buildkite.elastic.dev/v1
+    kind: Pipeline
+    metadata:
+      name: 'Kibana / Evals / Security LLM Matrix'
+      description: 'Generates and uploads the Security LLM performance matrix artifact from exported eval results'
+    spec:
+      env:
+        SLACK_NOTIFICATIONS_CHANNEL: '#kbn-evals-notifications'
+        KIBANA_SLACK_NOTIFICATIONS_ENABLED: 'true'
+        KBN_EVALS: '1'
+      allow_rebuilds: true
+      branch_configuration: main
+      cancel_intermediate_builds: false
+      default_branch: main
+      repository: elastic/kibana
+      pipeline_file: .buildkite/pipelines/evals/security_matrix.yml
+      provider_settings:
+        build_branches: false
+        build_pull_requests: false
+        publish_commit_status: false
+        trigger_mode: none
+        prefix_pull_request_fork_branch_names: false
+        skip_pull_request_builds_for_existing_commits: false
+        build_tags: false
+      teams:
+        kibana-operations:
+          access_level: MANAGE_BUILD_AND_READ
+        security-generative_ai:
+          access_level: MANAGE_BUILD_AND_READ
+        obs-ai-team:
+          access_level: MANAGE_BUILD_AND_READ
+        everyone:
+          access_level: READ_ONLY
+      schedules:
+        # Runs after the Monday weekly evals so it picks up fresh results. Should technically expand to sync to serverless release schedule
+        Weekly matrix:
+          cronline: 0 6 * * 2 GMT
+          message: Weekly Security LLM performance matrix
+          branch: main
+      tags:
+        - kibana
+        - kbn-evals
