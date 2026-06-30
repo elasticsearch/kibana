@@ -15,6 +15,7 @@ import {
   GetBulkAgentlessPolicyThroughputRequestSchema,
   GetBulkAgentlessPolicyThroughputResponseSchema,
   GetAgentlessPolicyRequestSchema,
+  UpdateAgentlessPolicyRequestSchema,
 } from '../../../common/types/rest_spec/agentless_policy';
 import { AgentlessPolicyResponseSchema } from '../../../common/types/models/agentless_policy_schema';
 import { AGENTLESS_POLICIES_ROUTES, API_VERSIONS } from '../../../common/constants';
@@ -31,6 +32,7 @@ import {
   listAgentlessPoliciesHandler,
   syncAgentlessPoliciesHandler,
   getBulkAgentlessPolicyThroughputHandler,
+  updateAgentlessPolicyHandler,
 } from './handler';
 
 export const registerRoutes = (router: FleetAuthzRouter) => {
@@ -213,6 +215,57 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
         },
       },
       getAgentlessPolicyHandler
+    );
+
+  // Update
+  router.versioned
+    // @ts-ignore https://github.com/elastic/kibana/issues/203170
+    .put({
+      path: AGENTLESS_POLICIES_ROUTES.UPDATE_PATTERN,
+      summary: 'Update an agentless policy',
+      description:
+        'Update an agentless policy by ID. Uses full-replace semantics: the policy is rebuilt entirely from the request body, so any omitted optional field (description, vars, global_data_tags, cloud_connector, etc.) is cleared or reset to its default. The integration package name is immutable and the runtime-managed cluster_id is preserved from the existing policy.',
+      options: {
+        tags: ['oas-tag:Fleet agentless policies'],
+        availability: {
+          since: '9.5.0',
+          stability: 'experimental',
+        },
+      },
+      fleetAuthz: {
+        integrations: { writeIntegrationPolicies: true },
+      },
+    })
+    .addVersion(
+      {
+        version: API_VERSIONS.public.v1,
+        options: {
+          oasOperationObject: () => path.join(__dirname, 'examples/update_agentless_policy.yaml'),
+        },
+        validate: {
+          request: UpdateAgentlessPolicyRequestSchema,
+          response: {
+            200: {
+              description: 'OK: A successful request.',
+              body: () => AgentlessPolicyResponseSchema,
+            },
+            400: {
+              description: 'A bad request.',
+              body: genericErrorResponse,
+            },
+            404: {
+              description: 'The agentless policy was not found.',
+              body: notFoundResponse,
+            },
+            409: {
+              description:
+                'A conflict occurred — for example, the requested name is already used by another integration policy.',
+              body: genericErrorResponse,
+            },
+          },
+        },
+      },
+      updateAgentlessPolicyHandler
     );
 
   // Delete

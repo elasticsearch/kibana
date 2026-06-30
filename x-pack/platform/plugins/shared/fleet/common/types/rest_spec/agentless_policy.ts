@@ -49,40 +49,48 @@ export const CreateAgentlessPolicyRequestSchema = {
           }
         )
       ),
-      // Cloud connector configuration - all connector settings go here
+      // Cloud connector configuration - all connector settings go here.
+      // Nullable (not just optional) so a GET response round-trips cleanly into a PUT/POST:
+      // the GET mapper emits `cloud_connector: null` when no connector is attached, and `null`
+      // is treated the same as omitted (no connector / detach on update).
       cloud_connector: schema.maybe(
-        schema.object({
-          enabled: schema.boolean({
-            defaultValue: false,
-            meta: { description: 'Set to `true` to enable cloud connectors for this policy.' },
-          }),
-          cloud_connector_id: schema.maybe(
-            schema.string({
-              meta: {
-                description:
-                  'ID of an existing cloud connector to reuse. If not provided, a new connector is created.',
-              },
-            })
-          ),
-          name: schema.maybe(
-            schema.string({
-              minLength: 1,
-              maxLength: 255,
-              meta: {
-                description:
-                  'Name for the cloud connector. If not provided, a name is generated automatically from the credentials.',
-              },
-            })
-          ),
-          target_csp: schema.maybe(
-            schema.oneOf([schema.literal('aws'), schema.literal('azure'), schema.literal('gcp')], {
-              meta: {
-                description:
-                  'Target cloud service provider. If not provided, the provider is detected automatically from the inputs.',
-              },
-            })
-          ),
-        })
+        schema.nullable(
+          schema.object({
+            enabled: schema.boolean({
+              defaultValue: false,
+              meta: { description: 'Set to `true` to enable cloud connectors for this policy.' },
+            }),
+            cloud_connector_id: schema.maybe(
+              schema.string({
+                meta: {
+                  description:
+                    'ID of an existing cloud connector to reuse. If not provided, a new connector is created.',
+                },
+              })
+            ),
+            name: schema.maybe(
+              schema.string({
+                minLength: 1,
+                maxLength: 255,
+                meta: {
+                  description:
+                    'Name for the cloud connector. If not provided, a name is generated automatically from the credentials.',
+                },
+              })
+            ),
+            target_csp: schema.maybe(
+              schema.oneOf(
+                [schema.literal('aws'), schema.literal('azure'), schema.literal('gcp')],
+                {
+                  meta: {
+                    description:
+                      'Target cloud service provider. If not provided, the provider is detected automatically from the inputs.',
+                  },
+                }
+              )
+            ),
+          })
+        )
       ),
     },
     // Distinct meta.id so this extension does not silently overwrite the
@@ -92,6 +100,25 @@ export const CreateAgentlessPolicyRequestSchema = {
     // shared registry is last-write-wins on collisions.
     { meta: { id: 'create_agentless_policy_request' } }
   ),
+};
+
+export const UpdateAgentlessPolicyRequestSchema = {
+  params: schema.object({
+    policyId: schema.string({
+      meta: {
+        description: 'The ID of the agentless policy to update.',
+      },
+    }),
+  }),
+  // PUT uses full-replace semantics with the exact same body contract as POST
+  //
+  // Two inherited create-only fields are accepted but intentionally ignored on
+  // update (kept in the body purely to share the schema/OAS component with POST):
+  //  - `id`: the target is identified by the `policyId`
+  //  - `create_dataset_templates`: a create-time install flag for dataset index
+  //    templates; `packagePolicyService.update` has no equivalent option, so the
+  //    service never forwards it on update.
+  body: CreateAgentlessPolicyRequestSchema.body,
 };
 
 export const DeleteAgentlessPolicyRequestSchema = {
@@ -144,6 +171,20 @@ export interface CreateAgentlessPolicyRequest {
  * (instead of `cloud_connector_id`), and `package.title` is not required.
  */
 export type NewAgentlessPolicy = CreateAgentlessPolicyRequest['body'];
+
+/**
+ * Request for updating an agentless policy.
+ *
+ * `body` reuses the create contract (full-replace PUT), so it stays in sync with
+ * {@link NewAgentlessPolicy}. The response is the unified {@link AgentlessPolicy}
+ * envelope shared with create/get.
+ */
+export interface UpdateAgentlessPolicyRequest {
+  params: TypeOf<typeof UpdateAgentlessPolicyRequestSchema.params>;
+  body: TypeOf<typeof UpdateAgentlessPolicyRequestSchema.body>;
+}
+
+export type UpdateAgentlessPolicyResponse = TypeOf<typeof AgentlessPolicyResponseSchema>;
 
 export type DeleteAgentlessPolicyResponse = TypeOf<typeof DeleteAgentlessPolicyResponseSchema>;
 

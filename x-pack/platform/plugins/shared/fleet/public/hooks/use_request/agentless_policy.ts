@@ -19,6 +19,8 @@ import type {
   GetAgentlessPolicyResponse,
   ListAgentlessPoliciesRequest,
   ListAgentlessPoliciesResponse,
+  UpdateAgentlessPolicyRequest,
+  UpdateAgentlessPolicyResponse,
 } from '../../../common/types/rest_spec/agentless_policy';
 
 import { sendRequestForRq } from './use_request';
@@ -28,6 +30,18 @@ export const sendCreateAgentlessPolicy = (body: CreateAgentlessPolicyRequest['bo
   return sendRequestForRq<CreateAgentlessPolicyResponse>({
     path: agentlessPolicyRouteService.getCreatePath(),
     method: 'post',
+    version: API_VERSIONS.public.v1,
+    body: JSON.stringify(body),
+  });
+};
+
+export const sendUpdateAgentlessPolicy = (
+  policyId: string,
+  body: UpdateAgentlessPolicyRequest['body']
+) => {
+  return sendRequestForRq<UpdateAgentlessPolicyResponse>({
+    path: agentlessPolicyRouteService.getUpdatePath(policyId),
+    method: 'put',
     version: API_VERSIONS.public.v1,
     body: JSON.stringify(body),
   });

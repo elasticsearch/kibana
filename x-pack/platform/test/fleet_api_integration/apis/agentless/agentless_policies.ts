@@ -18,6 +18,7 @@ import {
   expectToRejectWithError,
   expectToRejectWithNotFound,
 } from '../space_awareness/helpers';
+import { setupTestUsers, testUsers } from '../test_users';
 
 export default function (providerContext: FtrProviderContext) {
   describe('Agentless Policies', () => {
@@ -579,7 +580,27 @@ export default function (providerContext: FtrProviderContext) {
         data?: any;
       }> = [];
 
+      // A user with integrations read (but not write) to assert the route's write authz.
+      const readOnlyApiClient = new SpaceTestApiClient(supertest, testUsers.fleet_all_int_read);
+
+      const createTestAgentlessPolicy = (id: string, name: string) =>
+        apiClient.createAgentlessPolicy({
+          id,
+          package: { name: 'test_agentless', version: '1.0.0' },
+          name,
+          description: 'test agentless policy',
+          namespace: 'default',
+          inputs: {
+            'sample-httpjson': {
+              enabled: true,
+              vars: { api_key: 'TEST_VALUE_API_KEY' },
+              streams: {},
+            },
+          },
+        });
+
       before(async () => {
+        await setupTestUsers(getService('security'));
         const mockAgentlessApiService = setupMockServer();
         mockApiServer = await mockAgentlessApiService.listen(8089);
         mockApiServer.addListener('request', (request) => {
@@ -669,6 +690,156 @@ export default function (providerContext: FtrProviderContext) {
         // The agent policy revision should be incremented exactly once
         const agentPolicyAfterUpdate = await apiClient.getAgentPolicy(policyId);
         expect(agentPolicyAfterUpdate.item.revision).to.be(revisionBeforeUpdate + 1);
+      });
+
+      it('should full-replace an agentless policy and return a clean response shape', async () => {
+        const policyId = uuidv4();
+        await createTestAgentlessPolicy(policyId, `test_agentless-${Date.now()}`);
+
+        apiCalls = [];
+
+        const updatedName = `test_agentless-updated-${Date.now()}`;
+        const { item } = await apiClient.updateAgentlessPolicy(policyId, {
+          package: { name: 'test_agentless', version: '1.0.0' },
+          name: updatedName,
+          description: 'updated description',
+          namespace: 'default',
+          inputs: {
+            'sample-httpjson': {
+              enabled: true,
+              vars: { api_key: 'UPDATED_VALUE_API_KEY' },
+              streams: {},
+            },
+          },
+        });
+
+        expect(item.id).to.be(policyId);
+        expect(item.name).to.be(updatedName);
+        expect(item.description).to.be('updated description');
+
+        // The agentless contract must not leak underlying Fleet package-policy internals
+        expect(item).to.not.have.property('policy_ids');
+        expect(item).to.not.have.property('revision');
+        expect(item).to.not.have.property('supports_agentless');
+        expect(item).to.not.have.property('enabled');
+
+        // Both backing saved objects reflect the change (agent policy name stays in sync).
+        const packagePolicy = await apiClient.getPackagePolicy(policyId);
+        expect(packagePolicy.item.name).to.be(updatedName);
+        expect(packagePolicy.item.supports_agentless).to.be(true);
+
+        const agentPolicy = await apiClient.getAgentPolicy(policyId);
+        expect(agentPolicy.item.name).to.be(`Agentless policy for ${updatedName}`);
+
+        // The live workload is reconciled with the agentless API.
+        expect(
+          apiCalls.find(
+            (call) => call.method === 'POST' && call.url === '/agentless-api/api/v1/ess/deployments'
+          )
+        ).not.to.be(undefined);
+      });
+
+      it('should reject a change to the package name', async () => {
+        const policyId = uuidv4();
+        await createTestAgentlessPolicy(policyId, `test_agentless-${Date.now()}`);
+
+        await expectToRejectWithError(
+          () =>
+            apiClient.updateAgentlessPolicy(policyId, {
+              package: { name: 'a_different_package', version: '1.0.0' },
+              name: `test_agentless-${Date.now()}`,
+              description: 'test agentless policy',
+              namespace: 'default',
+              inputs: {
+                'sample-httpjson': {
+                  enabled: true,
+                  vars: { api_key: 'TEST_VALUE_API_KEY' },
+                  streams: {},
+                },
+              },
+            }),
+          /400 .*Cannot change the integration package/
+        );
+      });
+
+      it('should return 404 when updating a missing policy', async () => {
+        await expectToRejectWithNotFound(() =>
+          apiClient.updateAgentlessPolicy(uuidv4(), {
+            package: { name: 'test_agentless', version: '1.0.0' },
+            name: `test_agentless-${Date.now()}`,
+            description: 'test agentless policy',
+            namespace: 'default',
+            inputs: {
+              'sample-httpjson': {
+                enabled: true,
+                vars: { api_key: 'TEST_VALUE_API_KEY' },
+                streams: {},
+              },
+            },
+          })
+        );
+      });
+
+      it('should return 404 when updating an existing non-agentless package policy', async () => {
+        const agentPolicyRes = await apiClient.createAgentPolicy(undefined, {
+          name: `standard-policy-${Date.now()}`,
+          namespace: 'default',
+          description: '',
+        });
+
+        const packagePolicyRes = await apiClient.createPackagePolicy(undefined, {
+          package: { name: 'test_agentless', version: '1.0.0' },
+          name: `regular-package-policy-${Date.now()}`,
+          namespace: 'default',
+          policy_ids: [agentPolicyRes.item.id],
+          inputs: {
+            'sample-httpjson': {
+              enabled: true,
+              vars: { api_key: 'TEST_VALUE_API_KEY' },
+              streams: {},
+            },
+          },
+        });
+
+        // The regular package policy exists, but must not be mutable via the agentless API
+        await expectToRejectWithNotFound(() =>
+          apiClient.updateAgentlessPolicy(packagePolicyRes.item.id, {
+            package: { name: 'test_agentless', version: '1.0.0' },
+            name: `regular-package-policy-updated-${Date.now()}`,
+            description: 'test',
+            namespace: 'default',
+            inputs: {
+              'sample-httpjson': {
+                enabled: true,
+                vars: { api_key: 'TEST_VALUE_API_KEY' },
+                streams: {},
+              },
+            },
+          })
+        );
+      });
+
+      it('should reject the update for a user without writeIntegrationPolicies', async () => {
+        const policyId = uuidv4();
+        await createTestAgentlessPolicy(policyId, `test_agentless-${Date.now()}`);
+
+        await expectToRejectWithError(
+          () =>
+            readOnlyApiClient.updateAgentlessPolicy(policyId, {
+              package: { name: 'test_agentless', version: '1.0.0' },
+              name: `test_agentless-${Date.now()}`,
+              description: 'test agentless policy',
+              namespace: 'default',
+              inputs: {
+                'sample-httpjson': {
+                  enabled: true,
+                  vars: { api_key: 'TEST_VALUE_API_KEY' },
+                  streams: {},
+                },
+              },
+            }),
+          /403/
+        );
       });
     });
 
