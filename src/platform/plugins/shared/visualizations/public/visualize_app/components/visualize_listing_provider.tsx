@@ -32,6 +32,7 @@ import { getTypes } from '../../services';
 import type { VisualizeServices } from '../types';
 import { getVisualizeListItemLinkFn } from '../utils/get_visualize_list_item_link';
 import { navigateToVisualizeEditor, type VisualizeEditor } from './navigate_to_visualize_editor';
+import { visualizeTypeFilter } from './visualize_type_filter';
 
 /**
  * Shape returned by {@link ContentListClientProvider}'s strategy after it
@@ -264,6 +265,9 @@ export const VisualizeListingProvider = ({ children }: { children: ReactNode }) 
         initialSort: { field: 'updatedAt', direction: 'desc' as const },
         fields: sortFields,
       },
+      // Registers the `typeTitle` filter dimension (KQL search + facet counts).
+      // The toolbar control is placed explicitly via `<VisualizeTypeFilter />`.
+      filters: { visualizationType: visualizeTypeFilter },
       selection: canSave,
       contentEditor: {
         isReadonly: !canSave,
