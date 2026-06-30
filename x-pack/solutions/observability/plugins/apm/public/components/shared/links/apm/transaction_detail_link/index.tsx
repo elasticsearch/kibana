@@ -41,7 +41,8 @@ export function TransactionDetailLink({ transactionName, href, ...rest }: Props)
       <EuiFlexItem>
         <PopoverTooltip
           ariaLabel={i18n.translate('xpack.apm.transactionDetail.tooltip', {
-            defaultMessage: 'Max transaction groups reached tooltip',
+            defaultMessage:
+              'Number of services instrumented has reached the current capacity of the APM server',
           })}
           iconType="warning"
         >

@@ -11,11 +11,11 @@
 
 ### Data model
 
-Elastic APM agents capture different types of information from within their instrumented applications. These are known as events, and can be spans, transactions, errors, or metrics. You can find more information [here](https://www.elastic.co/guide/en/apm/get-started/current/apm-data-model.html).
+Elastic APM agents capture different types of information from within their instrumented applications. These are known as events, and can be spans, transactions, errors, or metrics. You can find more information in the [APM Application data types documentation](https://www.elastic.co/guide/en/apm/get-started/current/apm-data-model.html).
 
 ### Running examples
 
-You can run the example queries on the [edge cluster](https://edge-oblt.elastic.dev/) or any another cluster that contains APM data.
+You can see example data on [demo.elastic.co](https://demo.elastic.co/app/r?l=DISCOVER_APP_LOCATOR&v=8.19.16&lz=N4IgjgrgpgTgniAXKKBnMAbJIBiAlAeQFkACAFxgEMBjNAWkoAcBbAKgBoTmoKBLa1AxasQAX3YhUAexhkkAbQC6E6lIwRmAO1QLlIXprKwAbpSyIQlCGSkgJAM14YjMHYiUSAJpTKUAarxQAO4AyoxQ1EigvJ7YlADMACyUCQAM1J5QAExZ9okAHKmp9pQARvnUAOyFlPmliVD5WYmelamlAIyVpfaVidTxngCcAGzVntQj1KmVAKxD3llQIx12IGS8ZBhQ2BQ09Exs7Nx8AkJsaxvcOIEYngBylNzYAAJXaL7MjGvSEDC0N2csDcHnWcHC2DQmDWjigdxwMmYPjcwHEIBgEEMvGut08RCYUTRZgwUiC9ykAElNJkAB5IEoYVBQCSaJ47Cx7WiCQ4cE4wfjc4RrYmkgASMUymnpZiZaPeeEomgA5uzQPYYFJmNhNKS6B1ZlqJDZtaSxBIYFB1WgABZUlymcygB3QJAjIpFCSMKxMpAUaCiURAA%3D) or any another cluster that contains APM data.
 
 # Transactions
 
@@ -54,9 +54,9 @@ A pre-aggregated document where `_doc_count` is the number of transaction events
 }
 ```
 
-You can find all the APM transaction fields [here](https://www.elastic.co/guide/en/apm/server/current/exported-fields-apm-transaction.html).
+You can find all the APM transaction fields [in the apm-data Elasticsearch plugin](https://github.com/elastic/elasticsearch/tree/main/x-pack/plugin/apm-data/src/main/resources/component-templates) (See also [Legacy APM Server Reference](https://www.elastic.co/guide/en/apm/server/current/exported-fields-apm-transaction.html)).
 
-The decision to use aggregated transactions or not is determined in [`getSearchTransactionsEvents`](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/helpers/aggregated_transactions/index.ts#L53-L79) and then used to specify [the transaction index](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/suggestions/get_suggestions.ts#L30-L32) and [the latency field](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/alerts/chart_preview/get_transaction_duration.ts#L62-L65)
+The decision to use aggregated transactions or not is determined in [`getSearchTransactionsEvents`](../server/lib/helpers/transactions/index.ts) and then used to specify [the transaction index](../../apm_data_access/server/lib/helpers/create_es_client/create_apm_event_client/get_request_base.ts) and [the latency field](../../apm_data_access/server/lib/helpers/transactions/index.ts).
 
 ### Latency
 
@@ -101,7 +101,7 @@ GET apm-*-metric-*,metrics-apm*/_search?terminate_after=1000
 }
 ```
 
-Please note: `metricset.name: transaction` was only recently introduced. To retain backwards compatability we still use the old filter `{ "exists": { "field": "transaction.duration.histogram" }}` when filtering for aggregated transactions ([see example](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/helpers/aggregated_transactions/index.ts#L89-L95)).
+Please note: `metricset.name: transaction` was only recently introduced. To retain backwards compatability we still use the old filter `{ "exists": { "field": "transaction.duration.histogram" }}` when filtering for aggregated transactions ([see example](../../apm_data_access/server/lib/helpers/transactions/index.ts)).
 
 ### Throughput
 
@@ -226,9 +226,9 @@ GET apm-*-metric-*,metrics-apm*/_search?terminate_after=1000
 
 Service transaction metrics are aggregated metric documents that hold latency and throughput metrics pivoted by `service.name`, `service.environment` and `transaction.type`. Additionally, `agent.name` and `service.language.name` are included as metadata.
 
-We use the response from the `GET /internal/apm/time_range_metadata` endpoint to determine what data source is available. Service transaction metrics docs, introduced in APM >= 8.7, is considered available if there is data before *and* within the current time range. This ensure the UI won't miss information shipped by APM < 8.7. For < 8.7 documents, availability is determined by whether there is data before the current time range, or no data at all before the current time range, but there is data within the current time range. This means that existing deployments will use transaction metrics right after upgrading (instead of using service transaction metrics and seeing a mostly blank screen), but also that new deployments immediately get the benefits of service transaction metrics, instead of falling all the way back to transaction events.
+We use the response from the `GET /internal/apm/time_range_metadata` endpoint to determine what data source is available. Service transaction metrics docs, introduced in APM >= 8.7, are considered available if there is data before *and* within the current time range. This ensure the UI won't miss information shipped by APM < 8.7. For < 8.7 documents, availability is determined by whether there is data before the current time range, or no data at all before the current time range, but there is data within the current time range. This means that existing deployments will use transaction metrics right after upgrading (instead of using service transaction metrics and seeing a mostly blank screen), but also that new deployments immediately get the benefits of service transaction metrics, instead of falling all the way back to transaction events.
 
-A pre-aggregated document where `_doc_count` is the number of transaction events
+A pre-aggregated document where `_doc_count` is the number of transaction events:
 
 ```
 {
@@ -261,8 +261,8 @@ A pre-aggregated document where `_doc_count` is the number of transaction events
 }
 ```
 
-- `_doc_count` is the number of bucket counts
-- `transaction.duration.summary` is an [aggregate_metric_double](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/aggregate-metric-double.html) field and holds an aggregated transaction duration summary, for service transaction metrics
+- `_doc_count` is the number of bucket counts.
+- `transaction.duration.summary` is an [aggregate_metric_double](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/aggregate-metric-double) field and holds an aggregated transaction duration summary, for service transaction metrics.
 - `event.success_count` holds an aggregate metric double that describes the _success rate_. E.g., in this example, the success rate is 50% (1/2).
 
 In addition to `service_transaction`, `service_summary` metrics are also generated. Every service outputs these, even when it does not record any transaction (that also means there is no transaction data on this metric). This means that we can use `service_summary` to display services without transactions, i.e. services that only have app/system metrics or errors.
@@ -285,13 +285,13 @@ In addition to `service_transaction`, `service_summary` metrics are also generat
 
 # System metrics
 
-System metrics are captured periodically (every 60 seconds by default). You can find all the System Metrics fields [here](https://www.elastic.co/guide/en/apm/server/current/exported-fields-system.html).
+System metrics are captured periodically (every 60 seconds by default). You can find all the System Metrics fields in the [Legacy APM Server documentation](https://www.elastic.co/guide/en/apm/server/current/exported-fields-system.html).
 
 ### CPU
 
 ![image](https://user-images.githubusercontent.com/209966/135990500-f85bd8d9-b5a5-4b7c-b9e1-0759eefb8a29.png)
 
-Used in: [Metrics section](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/metrics/by_agent/shared/cpu/index.ts#L83)
+Used in: [Metrics section](../server/routes/metrics/by_agent/shared/cpu/index.ts)
 
 Noteworthy fields: `system.cpu.total.norm.pct`, `system.process.cpu.total.norm.pct`
 
@@ -377,7 +377,7 @@ GET apm-*-metric-*,metrics-apm*/_search?terminate_after=1000
 }
 ```
 
-The above example is overly simplified. In reality [we do a bit more](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/metrics/by_agent/shared/memory/index.ts#L51-L71) to properly calculate memory usage inside containers. Please note that an [Exists Query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html) is used in the filter context in the query to ensure that the memory fields exist.
+The above example is overly simplified. In reality [we do a bit more](../server/routes/metrics/by_agent/shared/memory/index.ts) to properly calculate memory usage inside containers. Please note that an [Exists query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html) is used in the filter context in the query to ensure that the memory fields exist.
 
 # Span breakdown metrics
 
@@ -387,7 +387,7 @@ Span breakdown metrics are used to power the "Time spent by span type" graph. Ag
 
 ![image](https://user-images.githubusercontent.com/209966/135990865-9077ae3e-a7a4-4b5d-bdce-41dc832689ea.png)
 
-Used in: ["Time spent by span type" chart](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/transactions/breakdown/index.ts#L48-L87)
+Used in: ["Time spent by span type" chart](../server/routes/transactions/breakdown/index.test.ts)
 
 Noteworthy fields: `transaction.name`, `transaction.type`, `span.type`, `span.subtype`, `span.self_time.*`
 
@@ -447,7 +447,7 @@ These metrics measure the count and total duration of requests from one service 
 
 ![image](https://user-images.githubusercontent.com/209966/135990117-170070da-2fc5-4014-a597-0dda0970854c.png)
 
-Used in: [Dependencies (latency)](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/backends/get_latency_charts_for_backend.ts#L68-L79), [Dependencies (throughput)](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/backends/get_throughput_charts_for_backend.ts#L67-L74) and [Service map](https://github.com/elastic/kibana/blob/main/x-pack/solutions/observability/plugins/apm/server/lib/service_map/get_service_map_backend_node_info.ts#L57-L67)
+Used in: [Dependencies (latency)](../server/routes/dependencies/get_latency_charts_for_dependency.ts), [Dependencies (throughput)](../server/routes/dependencies/get_throughput_charts_for_dependency.ts) and [Service map](../server/routes/service_map/get_service_map_dependency_node_info.ts)
 
 Noteworthy fields: `span.destination.service.*`
 
