@@ -6,9 +6,8 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { css } from '@emotion/react';
 
-import type { EuiBasicTableColumn, UseEuiTheme } from '@elastic/eui';
+import type { EuiBasicTableColumn } from '@elastic/eui';
 import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { InferenceAPIConfigResponse } from '@kbn/ml-trained-models-utils';
@@ -37,10 +36,7 @@ import { DeleteAction } from './render_table_columns/render_actions/actions/dele
 
 import { EndpointsTable } from './endpoints_table';
 import { GroupedEndpointsTables } from './grouped_endpoints/grouped_endpoints_tables';
-
-const searchContainerStyles = ({ euiTheme }: UseEuiTheme) => css`
-  width: ${euiTheme.base * 25}px;
-`;
+import { SearchContainerStyles } from './styles';
 
 const DEFAULT_GROUP_BY = GroupByOptions.None;
 
@@ -203,7 +199,7 @@ export const TabularPage: React.FC<TabularPageProps> = ({ inferenceEndpoints }) 
     <>
       <EuiFlexGroup direction="column">
         <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween">
-          <EuiFlexItem css={searchContainerStyles} grow={false}>
+          <EuiFlexItem css={SearchContainerStyles} grow={false}>
             <TableSearch searchKey={searchKey} setSearchKey={setSearchKey} />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>

@@ -14,35 +14,16 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiToolTip,
-  type UseEuiTheme,
 } from '@elastic/eui';
-import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { TASK_TYPE_DESCRIPTIONS } from '@kbn/inference-endpoint-ui-common';
 import type { InferenceInferenceEndpointInfo } from '@elastic/elasticsearch/lib/api/types';
 import { isEndpointPreconfigured } from '../../../../utils/preconfigured_endpoint_helper';
 import { isProviderTechPreview } from '../../../../utils/reranker_helper';
+import { EndpointInfoContainer, getCopyButtonStyles } from '../../styles';
 
 const COPIED_ICON_DISPLAY_DURATION_MS = 1000;
-
-const containerStyles = css`
-  &:hover .copyButton {
-    opacity: 1;
-  }
-`;
-
-const getCopyButtonStyles =
-  (visible: boolean) =>
-  ({ euiTheme }: UseEuiTheme) =>
-    css`
-      opacity: ${visible ? 1 : 0};
-      transition: opacity ${euiTheme.animation.fast} ease-in-out;
-
-      &:focus {
-        opacity: 1;
-      }
-    `;
 
 export interface EndpointInfoProps {
   inferenceId: string;
@@ -78,7 +59,12 @@ export const EndpointInfo: React.FC<EndpointInfoProps> = ({ inferenceId, endpoin
   return (
     <EuiFlexGroup direction="column" gutterSize="xs">
       <EuiFlexItem grow={false}>
-        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} css={containerStyles}>
+        <EuiFlexGroup
+          gutterSize="xs"
+          alignItems="center"
+          responsive={false}
+          css={EndpointInfoContainer}
+        >
           <EuiFlexItem grow={false}>
             <strong>{inferenceId}</strong>
           </EuiFlexItem>

@@ -6,12 +6,11 @@
  */
 
 import React, { useMemo } from 'react';
-import { css } from '@emotion/react';
-import type { UseEuiTheme } from '@elastic/eui';
 import { EuiFlexGroup, EuiFlexItem, EuiText, EuiTextColor } from '@elastic/eui';
 import type { InferenceInferenceEndpointInfo } from '@elastic/elasticsearch/lib/api/types';
 import { i18n } from '@kbn/i18n';
 import { getModelId } from '../../utils/get_model_id';
+import { StatItemStyles } from './styles';
 
 interface EndpointStatsProps {
   endpoints: InferenceInferenceEndpointInfo[];
@@ -22,13 +21,6 @@ interface StatItemProps {
   count: number;
   testSubj: string;
 }
-
-const statItemStyles = ({ euiTheme }: UseEuiTheme) => css`
-  &:not(:last-child) {
-    border-right: ${euiTheme.border.thin};
-    padding-right: ${euiTheme.size.m};
-  }
-`;
 
 const StatItem: React.FC<StatItemProps> = ({ label, count, testSubj }) => (
   <EuiText size="s">
@@ -81,7 +73,7 @@ export const EndpointStats: React.FC<EndpointStatsProps> = ({ endpoints }) => {
       data-test-subj="endpointStats"
     >
       {statItems.map((item, index) => (
-        <EuiFlexItem key={`stat-${index}`} grow={false} css={statItemStyles}>
+        <EuiFlexItem key={`stat-${index}`} grow={false} css={StatItemStyles}>
           <StatItem label={item.label} count={item.count} testSubj={item.testSubj} />
         </EuiFlexItem>
       ))}

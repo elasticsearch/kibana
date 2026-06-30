@@ -29,7 +29,6 @@ import {
   euiDragDropReorder,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { css } from '@emotion/react';
 import { NO_DEFAULT_MODEL } from '../../../common/constants';
 import { useRegisteredFeatures } from '../../hooks/use_registered_features';
 import { getConnectorIcon } from '../../utils/connector_display';
@@ -41,6 +40,7 @@ import { AddModelPopover } from './add_model_popover';
 import { CopyToModal } from './copy_to_modal';
 import { DisableRecommendedModelsModal } from './disable_recommended_models_modal';
 import { ResetDefaultsModal } from './reset_defaults_modal';
+import { EndpointIdTextLabel, MinWidthZeroContainer, SubFeatureCardFlexItem } from './styles';
 
 const COLLAPSED_COUNT = 5;
 
@@ -212,11 +212,7 @@ export const SubFeatureCard: React.FC<SubFeatureCardProps> = ({
         alignItems="baseline"
         wrap
       >
-        <EuiFlexItem
-          css={css`
-            min-inline-size: min(20rem, 50%);
-          `}
-        >
+        <EuiFlexItem css={SubFeatureCardFlexItem}>
           <EuiFlexGroup responsive={false}>
             <EuiFlexItem grow={false}>
               <EuiTitle size="xs">
@@ -261,11 +257,7 @@ export const SubFeatureCard: React.FC<SubFeatureCardProps> = ({
           />
         </EuiFlexItem>
 
-        <EuiFlexItem
-          css={css`
-            min-inline-size: min(20rem, 50%);
-          `}
-        >
+        <EuiFlexItem css={SubFeatureCardFlexItem}>
           <EuiPanel paddingSize="s" hasBorder={false} hasShadow={false}>
             <EuiText size="xs" color="subdued">
               <strong>
@@ -376,22 +368,9 @@ export const SubFeatureCard: React.FC<SubFeatureCardProps> = ({
                                         <EuiIcon type={icon} size="m" aria-hidden />
                                       )}
                                     </EuiFlexItem>
-                                    <EuiFlexItem
-                                      grow
-                                      css={css`
-                                        min-width: 0;
-                                      `}
-                                    >
+                                    <EuiFlexItem grow css={MinWidthZeroContainer}>
                                       <EuiToolTip title={label} content={endpointId} position="top">
-                                        <EuiText
-                                          size="s"
-                                          tabIndex={0}
-                                          css={css`
-                                            overflow: hidden;
-                                            text-overflow: ellipsis;
-                                            white-space: nowrap;
-                                          `}
-                                        >
+                                        <EuiText size="s" tabIndex={0} css={EndpointIdTextLabel}>
                                           <span>{label}</span>
                                         </EuiText>
                                       </EuiToolTip>
@@ -552,23 +531,9 @@ const GlobalDefaultLockedRow: React.FC<GlobalDefaultLockedRowProps> = ({
         <EuiFlexItem grow={false}>
           <EuiIcon type={icon} size="m" aria-hidden />
         </EuiFlexItem>
-        <EuiFlexItem
-          grow
-          css={css`
-            min-width: 0;
-          `}
-        >
+        <EuiFlexItem grow css={MinWidthZeroContainer}>
           <EuiToolTip title={label} content={globalDefaultId} position="top">
-            <EuiText
-              size="s"
-              color="subdued"
-              tabIndex={0}
-              css={css`
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-              `}
-            >
+            <EuiText size="s" color="subdued" tabIndex={0} css={EndpointIdTextLabel}>
               <span>{label}</span>
             </EuiText>
           </EuiToolTip>
@@ -655,12 +620,7 @@ const RecommendedEndpointsList: React.FC<RecommendedEndpointsListProps> = ({
                     <EuiIcon type={icon} size="m" color="subdued" aria-hidden />
                   )}
                 </EuiFlexItem>
-                <EuiFlexItem
-                  grow
-                  css={css`
-                    min-width: 0;
-                  `}
-                >
+                <EuiFlexItem grow css={MinWidthZeroContainer}>
                   <EuiText size="s" color="subdued">
                     <span>{label}</span>
                   </EuiText>
