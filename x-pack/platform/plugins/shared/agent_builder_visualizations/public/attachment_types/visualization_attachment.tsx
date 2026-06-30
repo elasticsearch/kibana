@@ -40,9 +40,8 @@ export const createVisualizationAttachmentDefinition = (
 ): AttachmentUIDefinition<VisualizationAttachment> => {
   return {
     getLabel: (attachment: VisualizationAttachment): string => {
-      return 'title' in attachment.data && typeof attachment.data.title === 'string'
-        ? attachment.data.title
-        : defaultVisualizationLabel;
+      const { title } = attachment.data.visualization ?? {};
+      return typeof title === 'string' && title.length > 0 ? title : defaultVisualizationLabel;
     },
     getIcon: () => 'lensApp',
     getMaxWidth: (attachment) => {
