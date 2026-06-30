@@ -1,0 +1,1139 @@
+# =============================================================================
+# Security Alert Analysis Workflow
+# =============================================================================
+#
+# Purpose:
+#   Automatically triages security alerts using an AI agent. For each
+#   triggered alert the workflow gathers contextual enrichment data
+#   (prevalence, related alerts, rule metadata, alert history, close history),
+#   sends the enriched context to an LLM-based agent for classification
+#   (true_positive / false_positive / inconclusive), records the verdict as
+#   an alert note, applies workflow tags, and optionally auto-closes alerts
+#   classified as false positives with high confidence.
+#
+# Flow:
+#   - Initialise workflow variables (tag prefix, version).
+#   - For each alert in the trigger batch:
+#     - Skip if already analyzed (unless override_previous is true).
+#     - Add an "execution started" note to the alert timeline.
+#     - Gather enrichment data (close history, global prevalence,
+#       related alerts graph, alert history, rule metadata).
+#     - Build human-readable timeline strings for the seed and related
+#       alerts.
+#     - Invoke the AI agent with the enriched context and a structured
+#       output schema (classification, confidence, rationale, factors).
+#     - Write the verdict note back to the alert timeline.
+#     - Apply workflow tags to the seed alert.
+#     - Auto-close the alert if it meets the false-positive thresholds.
+#
+#
+# Author: Elastic
+# =============================================================================
+
+name: "security.alert.analysis"
+enabled: true
+description: "Security alert analysis workflow. Author: Elastic"
+version: "1"
+tags:
+  - security
+  - alert_analysis
+
+triggers:
+  - type: alert
+
+settings:
+  on-failure:
+    retry:
+      max-attempts: 1
+
+# ---------------------------------------------------------------------------
+# Configuration constants
+# ---------------------------------------------------------------------------
+# Adjust these values to tune workflow behaviour without editing step logic.
+
+consts:
+  workflow_version: "v0.0.1"
+
+  # When false, the workflow exits early if the alert already carries the
+  # workflow tag prefix. Set to true to re-evaluate previously analyzed alerts.
+  override_previous: false
+
+  # --- Auto-close settings ---------------------------------------------------
+  # Automatically close alerts classified as false_positive when their
+  # confidence score falls within the defined thresholds.
+  auto_close_enabled: true
+
+  # Confidence score thresholds (0–1 scale)
+  auto_close_confidence_score_min_threshold: 0.85
+  auto_close_confidence_score_max_threshold: 1.0
+
+  # Tag suffix appended when an alert is auto-closed by this workflow
+  closed_tag_suffix: "closed-by-agent"
+
+  # AI connector used for alert classification
+  connector_id: "gpt41Azure"
+
+  # Whether the AI agent step creates a new conversation per alert analysis
+  create_conversation: true
+
+# =============================================================================
+# Steps
+# =============================================================================
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Initialise workflow-scoped variables
+  # ---------------------------------------------------------------------------
+  # Derive normalised names and a tag prefix that is used throughout the
+  # workflow to mark and identify alerts processed by this execution.
+  - name: set_workflow_variables
+    type: data.set
+    with:
+      running_note: false
+      normalized_name: "{{ workflow.name | downcase | replace: ' ', '_' }}"
+      normalized_version: "{{ consts.workflow_version | downcase | replace: ' ', '_' }}"
+      tag_prefix: "workflow.{{ workflow.name | downcase | replace: ' ', '_' }}"
+
+  # ---------------------------------------------------------------------------
+  # Iterate over each alert in the trigger batch
+  # ---------------------------------------------------------------------------
+  - name: loop_over_results
+    type: foreach
+    foreach: "{{ event.alerts | json }}"
+    steps:
+      # Log a link to the alert for traceability at the start of processing.
+      - name: log_alert_link
+        type: console
+        with:
+          message: >-
+            Processing alert {{ foreach.item._id }}:
+            /app/security/alerts/redirect/{{ foreach.item._id }}
+
+      # -----------------------------------------------------------------------
+      # Build the "already analyzed" check expression
+      # -----------------------------------------------------------------------
+      # Creates a Liquid expression that evaluates to true when the alert's
+      # workflow_tags array already contains the workflow tag prefix.
+      - name: build_already_analyzed_expr
+        type: data.set
+        with:
+          already_analyzed_expr: 'tag == "{{ variables.tag_prefix }}"'
+
+      - name: build_already_analyzed_condition
+        type: data.set
+        with:
+          already_analyzed_condition: "${{ foreach.item.kibana.alert.workflow_tags | has_exp: 'tag', variables.already_analyzed_expr }}"
+
+      # -----------------------------------------------------------------------
+      # Gate: skip if the alert was already analyzed
+      # -----------------------------------------------------------------------
+      - name: already_analyzed
+        type: if
+        condition: "${{ variables.already_analyzed_condition and consts.override_previous == false }}"
+        steps:
+          - name: log_already_analyzed
+            type: console
+            with:
+              message: >-
+                Alert {{ foreach.item._id }} has already been analyzed.
+                Remove the "{{ variables.tag_prefix }}" tag to re-run.
+        else:
+
+          # -------------------------------------------------------------------
+          # Add an "execution started" note to the alert timeline
+          # -------------------------------------------------------------------
+          - name: add_execution_started_note_to_alert
+            type: kibana.request
+            on-failure:
+              retry:
+                max-attempts: 3
+                delay: 5s
+            with:
+              method: PATCH
+              path: /api/note
+              body:
+                note:
+                  eventId: '{{ foreach.item._id }}'
+                  note: |
+                    ⏳ [{{workflow.name}}:{{execution.id}}]({{execution.url}})
+
+                    ---
+                  timelineId: ''
+              headers:
+                kbn-xsrf: string
+                Content-Type: application/json
+
+          # Persist the created note ID so we can update it later with the
+          # verdict or an error message.
+          - name: set_note_id
+            type: data.set
+            with:
+              note_id: "{{ steps.add_execution_started_note_to_alert.output.note.noteId }}"
+
+          # -------------------------------------------------------------------
+          # Gather enrichment data
+          # -------------------------------------------------------------------
+          # Each step below fetches a different facet of context that the AI
+          # agent will use to classify the alert.
+
+          # Close history: how often this rule's alerts have been closed and
+          # the distribution of close reasons (e.g. false_positive, resolved).
+          # Looks back from the alert timestamp so results are relative to
+          # when the alert actually fired, not when the workflow runs.
+          - name: get_close_history_search
+            type: elasticsearch.search
+            with:
+              index: ".alerts-security.alerts-*"
+              size: 0
+              track_total_hits: true
+              query:
+                bool:
+                  filter:
+                    - term:
+                        kibana.alert.rule.uuid: "{{event.rule.id}}"
+                    - term:
+                        kibana.alert.workflow_status: "closed"
+                    - range:
+                        "@timestamp":
+                          gte: '{{foreach.item["@timestamp"]}}||-30d'
+                          lte: '{{foreach.item["@timestamp"]}}'
+
+          - name: get_close_history_false_positive_count
+            type: elasticsearch.search
+            with:
+              index: ".alerts-security.alerts-*"
+              size: 0
+              track_total_hits: true
+              query:
+                bool:
+                  filter:
+                    - term:
+                        kibana.alert.rule.uuid: "{{event.rule.id}}"
+                    - term:
+                        kibana.alert.workflow_status: "closed"
+                    - range:
+                        "@timestamp":
+                          gte: '{{foreach.item["@timestamp"]}}||-30d'
+                          lte: '{{foreach.item["@timestamp"]}}'
+                    - bool:
+                        should:
+                          - term:
+                              kibana.alert.workflow_reason: "false_positive"
+                          - script:
+                              script:
+                                lang: painless
+                                source: |
+                                  if (!doc.containsKey('kibana.alert.workflow_tags') || doc['kibana.alert.workflow_tags'].empty) return false;
+                                  for (def tag : doc['kibana.alert.workflow_tags']) {
+                                    def normalized = tag.toLowerCase();
+                                    if (normalized.contains('false_positive') || normalized.contains('false-positive') || normalized.contains('fp')) {
+                                      return true;
+                                    }
+                                  }
+                                  return false;
+                        minimum_should_match: 1
+
+          - name: get_close_history_reasons_summary
+            type: elasticsearch.esql.query
+            with:
+              query: |-
+                FROM .alerts-security.alerts-*
+                | WHERE `kibana.alert.rule.uuid` == ?1 AND `kibana.alert.workflow_status` == "closed"
+                | EVAL close_reason = COALESCE(`kibana.alert.workflow_reason`, "unknown")
+                | STATS close_reason_count = COUNT(*) BY close_reason
+                | SORT close_reason_count DESC
+              params:
+                - "{{event.rule.id}}"
+              filter:
+                bool:
+                  filter:
+                    - range:
+                        "@timestamp":
+                          gte: '{{foreach.item["@timestamp"]}}||-30d'
+                          lte: '{{foreach.item["@timestamp"]}}'
+
+          - name: get_close_history
+            type: data.set
+            with:
+              total_closed_alerts: "{{ steps.get_close_history_search.output.hits.total.value | default: 0 }}"
+              false_positive_count: "{{ steps.get_close_history_false_positive_count.output.hits.total.value | default: 0 }}"
+              close_reasons_summary: "${{ steps.get_close_history_reasons_summary.output.values }}"
+              message: >-
+                Found {{ steps.get_close_history_search.output.hits.total.value | default: 0 }} closed alert{% if steps.get_close_history_search.output.hits.total.value != 1 %}s{% endif %}
+                for same rule in the last 30d.
+                {% if steps.get_close_history_false_positive_count.output.hits.total.value > 0 %}{{ steps.get_close_history_false_positive_count.output.hits.total.value }} were marked as false positive.{% endif %}
+
+          # Global prevalence: total alert count, unique sources (host,
+          # cloud account, or IP), and unique actors (user or cloud
+          # principal) for this rule across the environment.
+          # Uses a regular ES search with runtime/scripted aggregations
+          # so that vendor-specific fields (aws.cloudtrail.*, azure.*,
+          # gcp.*) can be referenced even if they are not in the mapping.
+          # Uses the alert timestamp as the anchor so prevalence reflects
+          # the state of the environment at the time the alert was raised.
+          - name: get_global_prevalence_stats
+            type: elasticsearch.search
+            with:
+              index: ".alerts-security.alerts-*"
+              size: 0
+              track_total_hits: true
+              runtime_mappings:
+                effective_source:
+                  type: keyword
+                  script:
+                    source: |-
+                      def v = params._source?.host?.name;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.host?.id;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.cloud?.account?.id;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.source?.ip;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                effective_actor:
+                  type: keyword
+                  script:
+                    source: |-
+                      def v = params._source?.user?.name;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.user?.id;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.aws?.cloudtrail?.user_identity?.arn;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.azure?.auditlogs?.properties?.initiated_by?.user?.user_principal_name;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.gcp?.audit?.authentication_info?.principal_email;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+              query:
+                bool:
+                  filter:
+                    - term:
+                        kibana.alert.rule.uuid: "{{event.rule.id}}"
+                    - range:
+                        "@timestamp":
+                          gte: '{{foreach.item["@timestamp"]}}||-24h'
+                          lte: '{{foreach.item["@timestamp"]}}||+24h'
+              aggs:
+                unique_sources:
+                  cardinality:
+                    field: effective_source
+                unique_actors:
+                  cardinality:
+                    field: effective_actor
+                top_sources:
+                  terms:
+                    field: effective_source
+                    size: 10
+
+          - name: set_global_prevalence_values
+            type: data.set
+            with:
+              global_prevalence_total_alerts: "${{ steps.get_global_prevalence_stats.output.hits.total.value | default: 0 }}"
+              global_prevalence_unique_sources: "${{ steps.get_global_prevalence_stats.output.aggregations.unique_sources.value | default: 0 }}"
+              global_prevalence_unique_actors: "${{ steps.get_global_prevalence_stats.output.aggregations.unique_actors.value | default: 0 }}"
+              global_prevalence_top_sources: "${{ steps.get_global_prevalence_stats.output.aggregations.top_sources.buckets }}"
+
+          - name: get_global_prevalence
+            type: data.set
+            with:
+              total_alerts: "${{ variables.global_prevalence_total_alerts }}"
+              unique_sources: "${{ variables.global_prevalence_unique_sources }}"
+              unique_actors: "${{ variables.global_prevalence_unique_actors }}"
+              top_sources: "${{ variables.global_prevalence_top_sources }}"
+              message: >-
+                {% if variables.global_prevalence_unique_sources >= 50 -%}
+                Very high prevalence: Rule is triggering across {{ variables.global_prevalence_unique_sources }} unique sources (host, cloud account, or IP) during +- 24h. This suggests widespread activity.
+                {% elsif variables.global_prevalence_unique_sources >= 20 -%}
+                High prevalence: Rule is triggering across {{ variables.global_prevalence_unique_sources }} unique sources (host, cloud account, or IP) during +- 24h. This suggests significant spread.
+                {% elsif variables.global_prevalence_unique_sources >= 5 -%}
+                Medium prevalence: Rule is triggering across {{ variables.global_prevalence_unique_sources }} unique sources (host, cloud account, or IP) during +- 24h.
+                {% else -%}
+                Low prevalence: Rule is triggering across {{ variables.global_prevalence_unique_sources }} unique source(s) (host, cloud account, or IP) during +- 24h.
+                {% endif -%}
+
+          - name: get_noise_signal_stats
+            type: elasticsearch.search
+            with:
+              index: ".alerts-security.alerts-*"
+              size: 0
+              track_total_hits: true
+              runtime_mappings:
+                effective_source:
+                  type: keyword
+                  script:
+                    source: |-
+                      def v = params._source?.host?.name;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.host?.id;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.cloud?.account?.id;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.source?.ip;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                effective_actor:
+                  type: keyword
+                  script:
+                    source: |-
+                      def v = params._source?.user?.name;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.user?.id;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.aws?.cloudtrail?.user_identity?.arn;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.azure?.auditlogs?.properties?.initiated_by?.user?.user_principal_name;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+                      v = params._source?.gcp?.audit?.authentication_info?.principal_email;
+                      if (v != null && v != '') { emit(v.toString()); return; }
+              query:
+                bool:
+                  filter:
+                    - term:
+                        kibana.alert.rule.uuid: "{{event.rule.id}}"
+                    - range:
+                        "@timestamp":
+                          gte: '{{foreach.item["@timestamp"]}}||-7d'
+                          lte: '{{foreach.item["@timestamp"]}}||+7d'
+              aggs:
+                unique_sources:
+                  cardinality:
+                    field: effective_source
+                unique_actors:
+                  cardinality:
+                    field: effective_actor
+
+          - name: set_noise_signal_values
+            type: data.set
+            with:
+              noise_signal_total_alerts: "${{ steps.get_noise_signal_stats.output.hits.total.value | default: 0 }}"
+              noise_signal_unique_sources: "${{ steps.get_noise_signal_stats.output.aggregations.unique_sources.value | default: 0 }}"
+              noise_signal_unique_actors: "${{ steps.get_noise_signal_stats.output.aggregations.unique_actors.value | default: 0 }}"
+
+          - name: get_noise_signal
+            type: data.set
+            with:
+              total_alerts: "${{ variables.noise_signal_total_alerts }}"
+              unique_sources: "${{ variables.noise_signal_unique_sources }}"
+              unique_actors: "${{ variables.noise_signal_unique_actors }}"
+              message: >-
+                {% if variables.noise_signal_unique_sources >= 50 -%}
+                Very high prevalence: Rule is triggering across {{ variables.noise_signal_unique_sources }} unique sources (host, cloud account, or IP) during +- 7d. This suggests widespread activity.
+                {% elsif variables.noise_signal_unique_sources >= 20 -%}
+                High prevalence: Rule is triggering across {{ variables.noise_signal_unique_sources }} unique sources (host, cloud account, or IP) during +- 7d. This suggests significant spread.
+                {% elsif variables.noise_signal_unique_sources >= 5 -%}
+                Medium prevalence: Rule is triggering across {{ variables.noise_signal_unique_sources }} unique sources (host, cloud account, or IP) during +- 7d.
+                {% else -%}
+                Low prevalence: Rule is triggering across {{ variables.noise_signal_unique_sources }} unique source(s) (host, cloud account, or IP) during +- 7d.
+                {% endif -%}
+
+          # Alert history: how many times the rule fired in a symmetric
+          # window around the alert timestamp (past and future from that time),
+          # with a date histogram of alerts over time.
+          # Rule metadata: name, description, severity, MITRE ATT&CK mapping.
+          - name: get_rule_metadata_source
+            type: elasticsearch.search
+            with:
+              index: ".alerts-security.alerts-*"
+              size: 1
+              _source:
+                - "kibana.alert.rule.name"
+                - "kibana.alert.rule.rule_id"
+                - "kibana.alert.rule.uuid"
+                - "kibana.alert.rule.description"
+                - "kibana.alert.rule.category"
+                - "kibana.alert.rule.type"
+                - "kibana.alert.severity"
+                - "kibana.alert.rule.references"
+                - "kibana.alert.rule.threat"
+              query:
+                term:
+                  kibana.alert.rule.uuid: "{{event.rule.id}}"
+
+          - name: get_rule_metadata
+            type: data.set
+            with:
+              rule_id: "{{event.rule.id}}"
+              metadata:
+                rule_id: "{{event.rule.id}}"
+                rule_name: '{{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.name"] }}'
+                rule_uuid: '{{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.uuid"] }}'
+                rule_description: '{{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.description"] }}'
+                rule_category: '{{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.category"] }}'
+                rule_type: '{{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.type"] }}'
+                severity: '{{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.severity"] }}'
+                references: '${{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.references"] }}'
+                threat_framework: '{{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.threat"][0].framework }}'
+                threats: '${{ steps.get_rule_metadata_source.output.hits.hits[0]._source["kibana.alert.rule.threat"] }}'
+              message: "Fetched latest rule metadata from recent alerts."
+              note: "Note: Exceptions are not included in alert data. To check for exceptions, query the rule directly from saved objects."
+
+          # Build a flat list of "Tactic > Technique" lines from all threats
+          - name: init_threat_technique_lines
+            type: data.set
+            with:
+              threat_technique_lines: []
+
+          - name: build_threat_technique_lines
+            type: foreach
+            foreach: '{{ steps.get_rule_metadata.output.metadata.threats | json }}'
+            steps:
+              - name: set_current_threat_tactic
+                type: data.set
+                with:
+                  current_threat_tactic_name: "{{ foreach.item.tactic.name }}"
+                  current_threat_tactic_id: "{{ foreach.item.tactic.id }}"
+
+              - name: build_techniques_for_tactic
+                type: foreach
+                foreach: '{{ foreach.item.technique | json }}'
+                steps:
+                  - name: set_threat_technique_line
+                    type: data.set
+                    with:
+                      threat_technique_line: "{{ variables.current_threat_tactic_name }} ({{ variables.current_threat_tactic_id }}) > {{ foreach.item.name }} ({{ foreach.item.id }})"
+
+                  - name: push_threat_technique_line
+                    type: data.set
+                    with:
+                      threat_technique_lines: "${{ variables.threat_technique_lines | push: variables.threat_technique_line }}"
+
+          # Primary observable context: extract the most discriminating fields
+          # from the seed alert across all alert categories (endpoint, network,
+          # cloud, DNS/proxy) so the LLM can reason about the specific invocation
+          # before reading rule metadata or prevalence numbers.
+          - name: build_alert_observable_context
+            type: data.set
+            with:
+              alert_observable_context: |
+                {% assign a = foreach.item -%}
+                {% comment %}── Event metadata (confidence tier) ─────────────{% endcomment %}
+                {% if a.event.outcome != blank -%}
+                - event.outcome: {{ a.event.outcome }}
+                {% endif -%}
+                {% if a.event.type != blank -%}
+                - event.type: {{ a.event.type | join: ', ' }}
+                {% endif -%}
+                {% if a.event.action != blank -%}
+                - event.action: {{ a.event.action }}
+                {% endif -%}
+                {% if a.event.category != blank -%}
+                - event.category: {{ a.event.category | join: ', ' }}
+                {% endif -%}
+                {% if a.event.code != blank -%}
+                - event.code: {{ a.event.code }}
+                {% endif -%}
+                {% if a.event.severity != blank -%}
+                - event.severity: {{ a.event.severity }}
+                {% endif -%}
+                {% comment %}── Actor ────────────────────────────────────────{% endcomment %}
+                {% if a.user.name != blank -%}
+                - user.name: {{ a.user.name }}
+                {% endif -%}
+                {% if a.user.domain != blank -%}
+                - user.domain: {{ a.user.domain }}
+                {% endif -%}
+                {% if a.user.id != blank -%}
+                - user.id: {{ a.user.id }}
+                {% endif -%}
+                {% comment %}── Host ─────────────────────────────────────────{% endcomment %}
+                {% if a.host.name != blank -%}
+                - host.name: {{ a.host.name }}
+                {% endif -%}
+                {% if a.host.hostname != blank and a.host.hostname != a.host.name -%}
+                - host.hostname: {{ a.host.hostname }}
+                {% endif -%}
+                {% comment %}── Process (endpoint) ───────────────────────────{% endcomment %}
+                {% if a.process.name != blank -%}
+                - process.name: {{ a.process.name }}
+                {% endif -%}
+                {% if a.process.executable != blank -%}
+                - process.executable: {{ a.process.executable }}
+                {% endif -%}
+                {% if a.process.command_line != blank -%}
+                - process.command_line: {{ a.process.command_line }}
+                {% endif -%}
+                {% if a.process.code_signature.exists != blank -%}
+                - process.code_signature.exists: {{ a.process.code_signature.exists }}
+                {% endif -%}
+                {% if a.process.code_signature.trusted != blank -%}
+                - process.code_signature.trusted: {{ a.process.code_signature.trusted }}
+                {% endif -%}
+                {% if a.process.code_signature.subject_name != blank -%}
+                - process.code_signature.subject_name: {{ a.process.code_signature.subject_name }}
+                {% endif -%}
+                {% if a.process.parent.name != blank -%}
+                - process.parent.name: {{ a.process.parent.name }}
+                {% endif -%}
+                {% if a.process.parent.command_line != blank -%}
+                - process.parent.command_line: {{ a.process.parent.command_line }}
+                {% endif -%}
+                {% if a.process.parent.executable != blank -%}
+                - process.parent.executable: {{ a.process.parent.executable }}
+                {% endif -%}
+                {% if a.process.parent.code_signature.trusted != blank -%}
+                - process.parent.code_signature.trusted: {{ a.process.parent.code_signature.trusted }}
+                {% endif -%}
+                {% if a.process.parent.code_signature.subject_name != blank -%}
+                - process.parent.code_signature.subject_name: {{ a.process.parent.code_signature.subject_name }}
+                {% endif -%}
+                {% comment %}── File ─────────────────────────────────────────{% endcomment %}
+                {% if a.file.path != blank -%}
+                - file.path: {{ a.file.path }}
+                {% endif -%}
+                {% if a.file.name != blank -%}
+                - file.name: {{ a.file.name }}
+                {% endif -%}
+                {% comment %}── Network ──────────────────────────────────────{% endcomment %}
+                {% if a.source.ip != blank -%}
+                - source.ip: {{ a.source.ip }}{% if a.source.port != blank %}:{{ a.source.port }}{% endif %}
+                {% endif -%}
+                {% if a.destination.ip != blank -%}
+                - destination.ip: {{ a.destination.ip }}{% if a.destination.port != blank %}:{{ a.destination.port }}{% endif %}
+                {% endif -%}
+                {% if a.network.protocol != blank -%}
+                - network.protocol: {{ a.network.protocol }}
+                {% endif -%}
+                {% if a.url.full != blank -%}
+                - url.full: {{ a.url.full }}
+                {% endif -%}
+                {% if a.dns.question.name != blank -%}
+                - dns.question.name: {{ a.dns.question.name }}
+                {% endif -%}
+                {% comment %}── Cloud ────────────────────────────────────────{% endcomment %}
+                {% if a.cloud.account.id != blank -%}
+                - cloud.account.id: {{ a.cloud.account.id }}
+                {% endif -%}
+                {% if a.cloud.region != blank -%}
+                - cloud.region: {{ a.cloud.region }}
+                {% endif -%}
+                {% assign ct_user = a.aws.cloudtrail.user_identity.arn -%}
+                {% if ct_user != blank -%}
+                - aws.cloudtrail.user_identity.arn: {{ ct_user }}
+                {% endif -%}
+                {% assign az_user = a.azure.auditlogs.properties.initiated_by.user.user_principal_name -%}
+                {% if az_user != blank -%}
+                - azure principal: {{ az_user }}
+                {% endif -%}
+                {% assign gcp_user = a.gcp.audit.authentication_info.principal_email -%}
+                {% if gcp_user != blank -%}
+                - gcp principal: {{ gcp_user }}
+                {% endif -%}
+                {% comment %}── Rule context (describes what the rule DETECTS, not what happened) ─{% endcomment %}
+                {% if a.message != blank -%}
+
+                NOTE — The following "message" field is the rule description. It explains the threat the rule was DESIGNED to detect. It is NOT an observation about this specific alert. Use the fields above as ground truth for what actually occurred.
+                - message: {{ a.message }}
+                {% endif -%}
+
+          # Related alerts: starting from the seed alert, searches a time
+          # window (seed_window) for other alerts that share entity field
+          # values (host, user, process, IP, cloud identity, etc.).
+          # Each match is then expanded by expand_window to chain through
+          # transitively linked entities up to max_depth hops, building a
+          # scored graph of correlated alerts. Edge weights reflect field
+          # specificity so strong identifiers (process.entity_id, user.id)
+          # rank higher than noisier ones (source.ip, host.name).
+          - name: get_related_alerts
+            type: security.buildAlertEntityGraph
+            with:
+              alertId: "{{foreach.item._id}}"
+              alertIndex: "{{foreach.item._index}}"
+              include_seed: true
+              entity_fields:
+                # --- Strong, stable identifiers (likely same attack) ---
+                - field: "process.entity_id"
+                  score: 5
+                - field: "host.id"
+                  score: 4
+                - field: "entity.id"
+                  score: 4
+
+                # --- Identity-level correlation ---
+                - field: "user.id"
+                  score: 4
+                - field: "user.name"
+                  score: 1
+                - field: "related.user"
+                  score: 1
+
+                # --- Cloud-specific user identifiers ---
+                - field: "aws.cloudtrail.user_identity.arn"
+                  score: 3
+                - field: "azure.auditlogs.properties.initiated_by.user.user_principal_name"
+                  score: 3
+                - field: "gcp.audit.authentication_info.principal_email"
+                  score: 3
+
+                # --- Host-level correlation ---
+                - field: "host.name"
+                  score: 1
+                - field: "host.hostname"
+                  score: 1
+
+                # --- Service / workload identity ---
+                - field: "service.id"
+                  score: 2
+
+                # --- Network-based correlation (weaker, noisier) ---
+                - field: "source.ip"
+                  score: 1
+                  aliases:
+                    - field: "destination.ip"
+                      score: 4 # lateral-movement detection
+                - field: "destination.ip"
+                  score: 1
+                  aliases:
+                    - field: "source.ip"
+                      score: 4 # lateral-movement detection
+
+                # --- Container / cloud (contextual) ---
+                - field: "container.id"
+                  score: 2
+              min_entity_score: 6
+              # Ignore common service accounts that create false correlation chains
+              ignore_entities:
+                - field: "user.id"
+                  values: ["S-1-5-18", "S-1-5-19", "S-1-5-20", "0"]
+                - field: "source.ip"
+                  values: ["::1", "127.0.0.1", "0.0.0.0", "169.254.169.254", "fe80::1"]
+                - field: "destination.ip"
+                  values: ["::1", "127.0.0.1", "0.0.0.0", "169.254.169.254", "fe80::1"]
+              seed_window: "1h"
+              expand_window: "1h"
+              max_depth: 20
+              max_alerts: 20
+
+          # -------------------------------------------------------------------
+          # Build timeline strings for the seed and related alerts
+          # -------------------------------------------------------------------
+          # Timeline strings are short, human-readable summaries of each alert
+          # that the AI agent can scan quickly.
+
+          # Initialise the accumulator array for related alert lines.
+          - name: init_related_alert_lines
+            type: data.set
+            with:
+              related_alert_lines: []
+
+          # Iterate over every related alert and build a line for each.
+          - name: build_related_alert_lines
+            type: foreach
+            foreach: "{{ steps.get_related_alerts.output.alerts | json }}"
+            steps:
+              - name: get_related_alert_timeline_string
+                type: security.renderAlertNarrative
+                with:
+                  alertId: "{{ foreach.item.alert_id }}"
+                  alertIndex: "{{ foreach.item.alert_index }}"
+
+              - name: set_related_alert_line
+                type: data.set
+                with:
+                  related_alert_line: "{{foreach.item.alert_index}}:{{ foreach.item.alert_id }}: {{ steps.get_related_alert_timeline_string.output.timeline_string }}"
+
+              - name: push_related_alert_line
+                type: data.set
+                with:
+                  related_alert_lines: "${{ variables.related_alert_lines | push: variables.related_alert_line }}"
+                  
+          # Timeline string for the seed alert (used as an LLM attachment label).
+          - name: get_seed_timeline_string
+            type: security.renderAlertNarrative
+            with:
+              alertId: "{{ foreach.item._id }}"
+              alertIndex: "{{ foreach.item._index }}"
+
+          # -------------------------------------------------------------------
+          # Invoke the AI agent for classification
+          # -------------------------------------------------------------------
+          # Sends the enriched context (prevalence, related alerts, rule info,
+          # alert history) and the raw alert as an attachment to the AI agent.
+          # The agent returns a structured JSON object conforming to the schema
+          # defined below.
+          - name: build_agent_message
+            type: data.set
+            with:
+              message: |
+                <role>
+                You are a security analyst reasoning over a detection alert. Determine whether the alert is a true positive or a false positive.
+
+                You may use tools to gather more context about this alert. Your verdict must be defensible from literal alert fields, the gathered context and general security knowledge. Do not invent facts; identify what is present, what is missing, and what matters.
+                </role>
+
+                <operational_constraints>
+                Output only the required schema. Do not ask clarifying questions. Reflect uncertainty via confidence_score. Do not fabricate command syntax, tools, or unseen file paths.
+
+                Missing Critical Fields reduce confidence only and must not change the classification.
+                </operational_constraints>
+
+                <alert_confidence_tier>
+                Alerts vary in inherent confidence. Use event.code and the rule name prefix as the primary confidence signals — NOT event.type or event.outcome, which reflect whether the endpoint blocked the action, not whether the detection is reliable:
+
+                - Tier 1 — Highest-confidence (event.code = "ransomware" or "malicious_file"): Elastic Defend's automated malware/ransomware engine has identified a known-bad file hash or confirmed ransomware behaviour. These detections have very high specificity. Classify as true_positive unless you have clear, concrete evidence of a benign explanation (e.g. a documented security researcher tool explicitly expected in this environment).
+                - Tier 2 — High-confidence behavioral (event.code = "behavior", rule name prefix = "Malicious Behavior Detection Alert:" or "Malicious Behavior Prevention Alert:", and the specific technique is inherently low-FP): Elastic Defend's behavioral ML engine detected a specific attack technique pattern. Rules naming techniques such as shellcode execution, LSASS credential access, ransomware file activity, memory injection, or process hollowing have very few legitimate explanations. Apply a TP prior.
+                - Tier 3 — Moderate behavioral (event.code = "behavior", technique has known legitimate uses): Rules naming techniques such as WMI execution, startup persistence, token manipulation, obfuscated scripts, or file creation can fire legitimately on admin tooling, software installers, or scheduled automation. Require positive anomaly evidence (suspicious command-line content, unsigned process in system paths, external C2 URLs) to classify as TP.
+                - Tier 4 — Low-confidence (generic heuristic or threshold rules): Rules without Elastic Defend-specific prefixes, or rules that fire on broad patterns. Require positive anomaly evidence before TP classification.
+
+                NOTE: "Prevention" vs "Detection" in the rule name prefix does NOT determine confidence tier. Prevention alerts (event.type includes "denied") can be false positives when the blocked action is legitimate. Do not assume "denied" = TP.
+                </alert_confidence_tier>
+
+                <verdict_semantics>
+                You MUST classify every alert as either true_positive or false_positive. Use confidence_score to express uncertainty — never use inconclusive as a hedge.
+
+                true_positive: The observable evidence (action, actor, target, parameters) contains anomalies that a competent analyst would flag — suspicious command-line content (external C2 URLs, download-and-execute patterns, encoded payloads), unsigned processes in system directories, DLLs loaded from anomalous paths, processes masquerading as system binaries, or a coherent attack chain with corroborating alerts. For Tier 1 (ransomware/malicious_file) and Tier 2 (specific high-precision behavioral technique) detections, classify as true_positive when the observable evidence is consistent with the technique and no concrete legitimate explanation is present.
+                false_positive: The observable evidence collectively fits a plausible legitimate operational pattern (IT management, automation, scheduled jobs, developer workflows, known software) AND the process/actor is consistent with that pattern (e.g., signed process from a known vendor, well-understood scheduled task command-line, standard software installer). For Tier 3 and Tier 4 alerts, default to false_positive when positive anomaly evidence is absent.
+                inconclusive: Reserve ONLY for cases where critical observable fields are entirely absent (no action details, no actor, no parameters whatsoever) making any classification indefensible. This should be extremely rare.
+                </verdict_semantics>
+
+                <epistemic_framework>
+                Apply hypothesis testing: weigh observable evidence against competing explanations.
+
+                Missing context lowers confidence but must not change classification.
+
+                Don't use any tools. Just reason about the alert and the context.
+                </epistemic_framework>
+
+                <reasoning_process>
+                1. Determine the alert confidence tier using event.code and the rule name:
+                   - event.code = "ransomware" or "malicious_file" → Tier 1 (very high TP prior)
+                   - event.code = "behavior" with a specific high-precision technique in the rule name → assess whether the technique is inherently low-FP (shellcode, LSASS access, memory injection, credential dumping, ransomware activity) → Tier 2, or has known legitimate uses (WMI execution, startup persistence, token manipulation, obfuscated scripts) → Tier 3
+                   - Other → Tier 4
+
+                2. Characterize what literally happened using the Primary Observable Evidence:
+                   - What action was taken? (process execution, network connection, API call, file write, etc.)
+                   - Who performed it? (interactive user, service/automation account, system process, cloud principal)
+                   - What was the specific target or argument? (destination, parameters, flags, payload)
+                   - Inspect the command line for malicious indicators: external URLs (especially combined with download+execute patterns like iex/Invoke-Expression + Invoke-RestMethod/curl/wget), encoded payloads (base64, char substitution), lateral movement commands.
+                   - Inspect process.executable for suspicious paths: DLLs loaded from C:\ProgramData\, C:\Windows\Tasks\, or Temp directories are highly anomalous when loaded via rundll32.exe.
+                   - Inspect process.code_signature: an unsigned process (code_signature.exists = false or trusted = false) performing sensitive actions (LSASS access, privilege escalation, network connections) is a strong TP signal. A process signed by a well-known vendor performing routine operations is a FP signal.
+
+                3. Assess whether the action fits a plausible legitimate operational pattern:
+                   - Does the actor type match the action? (e.g. a scheduled backup account performing archiving operations)
+                   - Are the arguments/parameters consistent with routine IT, development, or administrative work?
+                   - Is the signing authority (code_signature.subject_name) consistent with the claimed identity and action?
+
+                4. Look for corroborating attack-chain evidence in the Related Alerts section.
+                   - Presence of related alerts sharing strong identifiers (process lineage, unique IDs) raises TP confidence.
+                   - Absence of corroboration lowers TP confidence for Tier 3/4 alerts but does NOT override a Tier 1/2 assessment.
+
+                5. Apply Decision Gates (in order — stop at the first gate that matches):
+                   - Gate A (High-confidence automated detection): event.code is "ransomware" or "malicious_file" (Tier 1). These are Elastic Defend's highest-confidence automated detections. Classify as true_positive unless there is concrete evidence of a benign explanation.
+                   - Gate B (Corroborated attack chain): multiple related alerts with strong entity correlation form a coherent attack sequence → true_positive.
+                   - Gate C (Malicious observable evidence): the command line, process path, or actor contains clear attack indicators (e.g. external C2 URL with download+execute, DLL from anomalous path, unsigned process accessing LSASS, process masquerading as a system binary with no signature) → true_positive. The technique name alone is NOT sufficient; require at least one concrete observable indicator.
+                   - Gate D (Routine operational pattern): actor, action, arguments, and signing authority collectively fit a plausible legitimate workflow with no anomalous indicators → false_positive. Use lower confidence_score when evidence is thin. This gate is appropriate for Tier 3/4 alerts; apply it cautiously for Tier 2 alerts.
+                   - Gate E (Tier 2 no-evidence default): for Tier 2 (specific high-precision behavioral technique) alerts where observable evidence is ambiguous but not clearly benign, classify as true_positive with moderate-low confidence (rather than defaulting to FP).
+                   - Gate F (No evidence at all): critical fields are entirely absent — no action, no actor, no parameters — making any classification indefensible → inconclusive. This should almost never apply.
+
+                6. Produce Rationale citing the applied gate, specific observable evidence (decoded values where relevant), the alert confidence tier and event.code, presence or absence of corroborating alerts, and confidence justification.
+                </reasoning_process>
+
+                ## Primary Observable Evidence
+                The following fields are extracted directly from the alert. Treat these as the ground truth for what actually happened — they must take precedence over rule descriptions or prevalence numbers when reasoning about whether the behaviour is benign.
+
+                {{ steps.build_alert_observable_context.output.alert_observable_context }}
+
+                ## Preliminary Context
+
+                ### Global Prevalence
+                {{steps.get_global_prevalence.output.message}}
+
+                Total alerts: {{steps.get_global_prevalence.output.total_alerts}}
+                Unique sources: {{steps.get_global_prevalence.output.unique_sources}}
+                Unique actors: {{steps.get_global_prevalence.output.unique_actors}}
+
+                {% if steps.get_global_prevalence.output.top_sources and steps.get_global_prevalence.output.top_sources.size > 0 -%}
+                ##### Top Sources
+                {%- for source in steps.get_global_prevalence.output.top_sources %}
+                - {{ source.key }}: {{source.doc_count}} alerts
+                {%- endfor %}
+                {%- endif %}
+
+                ### Noise Signal
+                {{steps.get_noise_signal.output.message}}
+
+                Total alerts: {{steps.get_noise_signal.output.total_alerts}}
+                Unique sources: {{steps.get_noise_signal.output.unique_sources}}
+                Unique actors: {{steps.get_noise_signal.output.unique_actors}}
+
+                ### Related Alerts
+                Graph nodes: {{steps.get_related_alerts.output.stats.nodes}}
+                Graph edges: {{steps.get_related_alerts.output.stats.edges}}
+
+                {% if variables.related_alert_lines and variables.related_alert_lines.size > 0 -%}
+                {%- for line in variables.related_alert_lines %}
+                - {{ line }}
+                {%- endfor %}
+                {%- endif %}
+                ### Rule: {{steps.get_rule_metadata.output.metadata.rule_name}}
+                {% assign rule_description = steps.get_rule_metadata.output.metadata.rule_description -%}
+                {% if rule_description != blank %}
+                {{ rule_description }}
+                {% endif -%}
+
+                {% capture metadata -%}
+                {% if steps.get_rule_metadata.output.metadata.severity != blank %}
+                - Severity: {{ steps.get_rule_metadata.output.metadata.severity }}
+                {% endif -%}
+                {% if steps.get_rule_metadata.output.metadata.rule_type != blank %}
+                - Type: {{ steps.get_rule_metadata.output.metadata.rule_type }}
+                {% endif -%}
+                {% if steps.get_rule_metadata.output.metadata.rule_id != blank %}
+                - Id: {{ steps.get_rule_metadata.output.metadata.rule_id }}
+                {% endif -%}
+                {% if steps.get_rule_metadata.output.metadata.rule_uuid != blank %}
+                - UUID: {{ steps.get_rule_metadata.output.metadata.rule_uuid }}
+                {% endif -%}
+                {% if steps.get_rule_metadata.output.metadata.threat_framework != blank %}
+                - Threat framework: {{ steps.get_rule_metadata.output.metadata.threat_framework }}
+                {% endif -%}
+                {% endcapture -%}
+                {% assign metadata = metadata | strip -%}
+                {% if metadata != blank %}
+                {{ metadata }}
+                {% endif -%}
+
+                {% if variables.threat_technique_lines and variables.threat_technique_lines.size > 0 %}
+                ##### Threat Mapping
+                {%- for line in variables.threat_technique_lines limit: 5 %}
+                - {{ line }}
+                {%- endfor %}
+                {% endif -%}
+
+                {% if steps.get_close_history.output.total_closed_alerts > 0 -%}
+                ### Alert Close History
+                {{steps.get_close_history.output.message}}
+
+                Total closed alerts: {{steps.get_close_history.output.total_closed_alerts}}
+                False positive count: {{steps.get_close_history.output.false_positive_count}}
+
+                {% if steps.get_close_history.output.close_reasons_summary -%}
+                ##### Close Reasons
+                {% for reason in steps.get_close_history.output.close_reasons_summary -%}
+                - {{ reason[1] }}: {{ reason[0] }}
+                {% endfor %}
+                {%- endif %}
+                {%- endif %}
+
+          - name: onechat_runAgent_step
+            type: ai.agent
+            agent-id: "elastic-ai-agent"
+            connector-id: "{{ consts.connector_id }}"
+            create-conversation: "{{ consts.create_conversation }}"
+            on-failure:
+              retry:
+                max-attempts: 3
+                delay: "30s"
+            with:
+              message: "{{ steps.build_agent_message.output.message }}"
+              attachments:
+                - type: "security.alert"
+                  data:
+                    alert: "{{ foreach.item | json:2 }}"
+                    attachmentLabel: "{{ steps.get_seed_timeline_string.output.attachment_label }}"
+
+              # Structured output schema the AI agent must conform to.
+              schema:
+                type: object
+                properties:
+                  classification:
+                    type: string
+                    enum:
+                      - false_positive
+                      - true_positive
+                      - inconclusive
+                    description: Classification of the alert based on analysis
+                  confidence_score:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                    description: Confidence score from 0.0-1.0 indicating certainty of the classification
+                  rationale:
+                    type: string
+                    description: Human-readable explanation of the classification decision
+                  contributing_factors:
+                    type: array
+                    items:
+                      type: string
+                    description: List of factors that contributed to the classification decision
+                required:
+                  - classification
+                  - confidence_score
+                  - rationale
+                  - contributing_factors
+
+          # -------------------------------------------------------------------
+          # Guard: ensure the AI agent returned a valid classification
+          # -------------------------------------------------------------------
+          # If no classification was returned, update the note with an error
+          # and abort processing for this alert.
+          - name: check_if_output_exists
+            type: if
+            condition: "not steps.onechat_runAgent_step.output.structured_output.classification:*"
+            steps:
+              - name: add_no_data_note_to_alert
+                type: kibana.request
+                on-failure:
+                  retry:
+                    max-attempts: 3
+                    delay: 5s
+                with:
+                  method: PATCH
+                  path: /api/note
+                  body:
+                    noteId: "{{variables.note_id}}"
+                    note:
+                      eventId: '{{ foreach.item._id }}'
+                      timelineId: ''
+                      note: |
+                        ❌ [{{workflow.name}}:{{execution.id}}]({{execution.url}})
+
+                        ---
+                        Error: No classification returned.
+            else:
+
+              # -------------------------------------------------------------------
+              # Write the verdict note to the alert timeline
+              # -------------------------------------------------------------------
+              - name: add_verdict_note_to_alert
+                type: kibana.request
+                on-failure:
+                  retry:
+                    max-attempts: 3
+                    delay: 5s
+                with:
+                  method: PATCH
+                  path: /api/note
+                  body:
+                    noteId: "{{variables.note_id}}"
+                    note:
+                      eventId: '{{ foreach.item._id }}'
+                      note: |
+                        ✅ [{{workflow.name}}:{{execution.id}}]({{execution.url}})
+
+                        ---
+                        ## Automated Alert Analysis
+                        ### Classification
+                        **{{ steps.onechat_runAgent_step.output.structured_output.classification }}**
+
+                        ### Confidence Score
+                        {{ steps.onechat_runAgent_step.output.structured_output.confidence_score }}
+
+                        ### Rationale
+                        {{ steps.onechat_runAgent_step.output.structured_output.rationale }}
+
+                        ### Contributing Factors
+                        {% for factor in steps.onechat_runAgent_step.output.structured_output.contributing_factors %}
+                        - {{ factor }}
+                        {%- endfor %}
+
+                        ### Related Alert IDs
+                        {% for alert in steps.onechat_runAgent_step.output.structured_output.related_alert_ids %}
+                        - [{{ alert.alert_id }}](/app/security/alerts/redirect/{{ alert.alert_id }})
+                        {%- endfor %}
+
+
+                        ### Timestamp
+                        {{ execution.startedAt | date: '%Y-%m-%dT%H:%M:%S' }}
+
+                        {% if steps.onechat_runAgent_step.output.conversation_id -%}
+                        [Continue conversation](/app/agent_builder/conversations/{{ steps.onechat_runAgent_step.output.conversation_id }})
+                        {%- endif %}
+
+                      timelineId: ''
+                  headers:
+                    kbn-xsrf: string
+                    Content-Type: application/json
+
+              # -------------------------------------------------------------------
+              # Apply workflow tags to the seed alert
+              # -------------------------------------------------------------------
+              # Tags follow the convention:
+              #   workflow.<name>                              — marks the alert as processed
+              #   workflow.<name>.version.<ver>                — tracks the workflow version
+              #   workflow.<name>.output.classification.<cls>  — records the verdict
+
+              # Build a filter expression to find any existing workflow tags
+              # (used for tag replacement on re-runs).
+              - name: build_tags_filter_expr
+                type: data.set
+                with:
+                  tags_filter_expr: 'tag contains "{{ variables.tag_prefix }}."'
+
+              - name: set_tags
+                type: data.set
+                with:
+                  tags_to_add:
+                    - "{{ variables.tag_prefix }}"
+                    - "{{ variables.tag_prefix }}.version.{{ variables.normalized_version }}"
+                    - "{{ variables.tag_prefix }}.output.classification.{{ steps.onechat_runAgent_step.output.structured_output.classification | downcase }}"
+                    - "{{ variables.tag_prefix }}.output.confidence_score.{{ steps.onechat_runAgent_step.output.structured_output.confidence_score }}"
+                  tags_to_remove: "${{ foreach.item.kibana.alert.workflow_tags | where_exp: 'tag', variables.tags_filter_expr }}"
+
+              # Remove stale tags first (if any) to avoid conflicts with the add.
+              - name: has_tags_to_remove
+                type: if
+                condition: "${{ variables.tags_to_remove | has_exp: 'item', 'true' }}"
+                steps:
+                  - name: remove_stale_tags
+                    type: kibana.SetAlertTags
+                    with:
+                      ids:
+                        - '{{ foreach.item._id }}'
+                      tags:
+                        tags_to_remove: "${{ variables.tags_to_remove }}"
+                        tags_to_add: []
+
+              # Add the new tags for this execution.
+              - name: add_result_tags
+                type: kibana.SetAlertTags
+                on-failure:
+                  retry:
+                    max-attempts: 3
+                    delay: 5s
+                with:
+                  ids:
+                    - '{{ foreach.item._id }}'
+                  tags:
+                    tags_to_remove: []
+                    tags_to_add: "${{ variables.tags_to_add }}"
+
+              # -------------------------------------------------------------------
+              # Auto-close: close the alert if it meets FP thresholds
+              # -------------------------------------------------------------------
+              # When auto_close_enabled is true and the alert is classified as
+              # false_positive with a confidence score within the configured
+              # thresholds, the alert is tagged and closed automatically.
+              - name: check_auto_close_conditions
+                type: if
+                condition: >-
+                  consts.auto_close_enabled: true
+                  and steps.onechat_runAgent_step.output.structured_output.classification: "false_positive"
+                  and steps.onechat_runAgent_step.output.structured_output.confidence_score >= {{ consts.auto_close_confidence_score_min_threshold }}
+                  and steps.onechat_runAgent_step.output.structured_output.confidence_score <= {{ consts.auto_close_confidence_score_max_threshold }}
+                steps:
+                  # Tag the alert so it can be identified as auto-closed.
+                  - name: set_close_tags
+                    type: kibana.SetAlertTags
+                    on-failure:
+                      retry:
+                        max-attempts: 3
+                        delay: 5s
+                    with:
+                      ids:
+                        - '{{ foreach.item._id }}'
+                      tags:
+                        tags_to_remove: []
+                        tags_to_add:
+                          - "{{variables.tag_prefix}}.{{consts.closed_tag_suffix}}"
+
+                  # Close the alert with reason "false_positive".
+                  - name: close_alert_as_false_positive
+                    type: kibana.SetAlertsStatus
+                    on-failure:
+                      retry:
+                        max-attempts: 3
+                        delay: 5s
+                    with:
+                      status: 'closed'
+                      signal_ids:
+                        - '{{ foreach.item._id }}'
+                      reason: 'false_positive'

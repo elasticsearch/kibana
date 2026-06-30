@@ -95,6 +95,7 @@ describe('GenAiSettingsApp', () => {
       },
       observabilityAIAssistant: { show: true },
       securitySolutionAssistant: { 'ai-assistant': true },
+      securitySolution: { show: true, crud: true },
       agentBuilder: { show: true },
       anonymization: { show: true, manage: true },
       advancedSettings: { show: true, save: true },
@@ -107,11 +108,11 @@ describe('GenAiSettingsApp', () => {
 
     // Mock settings client with default settings
     coreStart.settings.client.getAll.mockReturnValue(createSettingsMock() as any);
-    coreStart.http.fetch.mockResolvedValue({
-      page: 1,
-      perPage: 20,
-      total: 0,
-      data: [],
+    coreStart.application.getUrlForApp.mockImplementation((appId, options) => {
+      if (appId === 'workflows') {
+        return `/app/workflows${options?.path ?? ''}`;
+      }
+      return `/app/${appId}${options?.path ?? ''}`;
     });
 
     // Default mock for enabled features

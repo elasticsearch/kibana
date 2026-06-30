@@ -36,6 +36,8 @@ export interface FindRuleOptions {
   hasReference?: HasReferences | undefined;
   ruleIds?: string[] | undefined;
   aggregations?: Record<string, AggregationsAggregationContainer>;
+  search?: string;
+  searchFields?: string[];
 }
 
 export const findRules = ({
@@ -50,6 +52,8 @@ export const findRules = ({
   hasReference,
   aggregations,
   ruleIds,
+  search,
+  searchFields,
 }: FindRuleOptions): Promise<FindResult<RuleParams>> => {
   return rulesClient.find({
     options: {
@@ -62,6 +66,8 @@ export const findRules = ({
       searchAfter,
       hasReference,
       aggs: aggregations,
+      search,
+      searchFields,
     },
   });
 };

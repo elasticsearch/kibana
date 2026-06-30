@@ -124,6 +124,7 @@ export const RULES_ADD_PATH = `${RULES_PATH}/add_rules` as const;
 export const RULES_UPDATES = `${RULES_PATH}/updates` as const;
 export const RULES_CREATE_PATH = `${RULES_PATH}/create` as const;
 export const RULES_CHANGES_HISTORY_PATH = `${RULES_PATH}/id/:ruleId/changes-history` as const;
+export const ALERT_VALIDATION_WORKFLOW_PATH = `${RULES_PATH}/alert_validation_workflow` as const;
 export const EXCEPTIONS_PATH = '/exceptions' as const;
 export const EXCEPTION_LIST_DETAIL_PATH = `${EXCEPTIONS_PATH}/details/:detailName` as const;
 export const HOSTS_PATH = '/hosts' as const;
@@ -736,4 +737,4 @@ export const SECURITY_RULE_ATTACHMENT_ID = 'ai-rule-creation';
 
 export const REGISTER_ALERT_VALIDATION_STEPS_FEATURE_FLAG =
   'securitySolution.registerAlertValidationStepsEnabled' as const;
-export const REGISTER_ALERT_VALIDATION_STEP_FEATURE_FLAG_DEFAULT = false as const;
+export const REGISTER_ALERT_VALIDATION_STEP_FEATURE_FLAG_DEFAULT = true as const;

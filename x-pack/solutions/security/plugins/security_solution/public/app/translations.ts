@@ -101,6 +101,13 @@ export const ADD_RULES = i18n.translate('xpack.securitySolution.navigation.addRu
   defaultMessage: 'Add Rules',
 });
 
+export const ALERT_VALIDATION_WORKFLOW = i18n.translate(
+  'xpack.securitySolution.navigation.alertValidationWorkflow',
+  {
+    defaultMessage: 'Alert analysis workflow',
+  }
+);
+
 export const EXCEPTIONS = i18n.translate('xpack.securitySolution.navigation.exceptions', {
   defaultMessage: 'Shared exception lists',
 });

@@ -13,6 +13,7 @@ import {
   SECURITY_UI_SHOW_PRIVILEGE,
 } from '@kbn/security-solution-features/constants';
 import {
+  ALERT_VALIDATION_WORKFLOW_PATH,
   COVERAGE_OVERVIEW_PATH,
   DE_SPACE_RULES_HEALTH_PATH,
   EXCEPTIONS_PATH,
@@ -23,6 +24,7 @@ import {
 } from '../../common/constants';
 import {
   ADD_RULES,
+  ALERT_VALIDATION_WORKFLOW,
   COVERAGE_OVERVIEW,
   CREATE_NEW_RULE,
   DE_SPACE_RULES_HEALTH,
@@ -33,6 +35,7 @@ import {
 import { SecurityPageName } from '../app/types';
 import { benchmarksLink } from '../cloud_security_posture/links';
 import type { LinkItem } from '../common/links';
+import { IconAlerts } from '../common/icons/alerts';
 import { IconConsoleCloud } from '../common/icons/console_cloud';
 import { IconRollup } from '../common/icons/rollup';
 import { IconDashboards } from '../common/icons/dashboards';
@@ -103,6 +106,22 @@ export const links: LinkItem = {
         }),
       ],
     },
+    {
+      id: SecurityPageName.alertValidationWorkflow,
+      title: ALERT_VALIDATION_WORKFLOW,
+      description: i18n.translate(
+        'xpack.securitySolution.appLinks.alertValidationWorkflowDescription',
+        {
+          defaultMessage:
+            'Configure the managed alert analysis workflow that automatically classifies and closes false positive alerts.',
+        }
+      ),
+      landingIcon: IconAlerts,
+      path: ALERT_VALIDATION_WORKFLOW_PATH,
+      capabilities: RULES_UI_READ_PRIVILEGE,
+      skipUrlState: true,
+      hideTimeline: true,
+    },
     benchmarksLink,
     {
       id: SecurityPageName.coverageOverview,
@@ -132,6 +151,7 @@ export const links: LinkItem = {
         SecurityPageName.rules,
         SecurityPageName.cloudSecurityPostureBenchmarks,
         SecurityPageName.exceptions,
+        SecurityPageName.alertValidationWorkflow,
       ],
     },
     {
