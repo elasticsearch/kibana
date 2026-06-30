@@ -12,6 +12,8 @@ export {
   SECURITY_GET_ENTITY_TOOL_ID,
   searchEntitiesTool,
   SECURITY_SEARCH_ENTITIES_TOOL_ID,
+  setAssetCriticalityTool,
+  SECURITY_SET_ASSET_CRITICALITY_TOOL_ID,
 } from './entity_analytics';
 export {
   attackDiscoverySearchTool,

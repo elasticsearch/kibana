@@ -8,3 +8,7 @@
 export { entityRiskScoreTool, SECURITY_ENTITY_RISK_SCORE_TOOL_ID } from './entity_risk_score_tool';
 export { getEntityTool, SECURITY_GET_ENTITY_TOOL_ID } from './get_entity_tool';
 export { searchEntitiesTool, SECURITY_SEARCH_ENTITIES_TOOL_ID } from './search_entities_tool';
+export {
+  setAssetCriticalityTool,
+  SECURITY_SET_ASSET_CRITICALITY_TOOL_ID,
+} from './set_asset_criticality_tool';

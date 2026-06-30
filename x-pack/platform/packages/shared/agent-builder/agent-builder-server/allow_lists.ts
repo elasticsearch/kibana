@@ -48,6 +48,7 @@ export const AGENT_BUILDER_BUILTIN_TOOLS = [
   `${internalNamespaces.security}.alerts`,
   `${internalNamespaces.security}.get_entity`,
   `${internalNamespaces.security}.search_entities`,
+  `${internalNamespaces.security}.set_asset_criticality`,
   `${internalNamespaces.security}.pci_scope_discovery`,
   `${internalNamespaces.security}.pci_compliance`,
   `${internalNamespaces.security}.pci_field_mapper`,
