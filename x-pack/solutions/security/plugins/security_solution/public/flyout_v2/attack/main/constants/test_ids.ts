@@ -25,3 +25,9 @@ export const HEADER_ASSIGNEES_ADD_BUTTON_TEST_ID =
   `${ATTACK_FLYOUT_V2_PREFIX}-header-assignees-add-button` as const;
 export const HEADER_SUMMARY_PANEL_TEST_ID =
   `${ATTACK_FLYOUT_V2_PREFIX}-header-summary-panel` as const;
+export const INSIGHTS_CORRELATIONS_TEST_ID =
+  `${ATTACK_FLYOUT_V2_PREFIX}-overview-insights-correlations` as const;
+export const INSIGHTS_ENTITIES_TEST_ID =
+  `${ATTACK_FLYOUT_V2_PREFIX}-overview-insights-entities` as const;
+export const INSIGHTS_SECTION_TEST_ID =
+  `${ATTACK_FLYOUT_V2_PREFIX}-overview-insights-section` as const;
