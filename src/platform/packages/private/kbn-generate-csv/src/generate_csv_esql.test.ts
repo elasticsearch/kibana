@@ -493,7 +493,7 @@ describe('CsvESQLGenerator', () => {
               },
             },
             locale: 'en',
-            query: 'FROM kibana_sample_data_logs | LIMIT 10 | LIMIT 500',
+            query: 'from kibana_sample_data_logs | limit 10 | LIMIT 500',
             time_zone: 'America/New_York',
           },
         },

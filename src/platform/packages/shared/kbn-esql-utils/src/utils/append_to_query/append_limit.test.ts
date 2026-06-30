@@ -22,9 +22,32 @@ describe('appendLimitToQuery', () => {
     expect(updatedQueryString).toBe('FROM my_index | LIMIT 50 | STATS BY meow | LIMIT 10');
   });
 
-  it('shouldappend the limit clause to the query with no commands', () => {
+  it('should append the limit clause to the query with no commands', () => {
     const queryString = '';
     const updatedQueryString = appendLimitToQuery(queryString, 10);
     expect(updatedQueryString).toBe(' | LIMIT 10');
+  });
+
+  it('preserves parentheses used for order of operations', () => {
+    const queryString =
+      'FROM metrics | EVAL disk_used_pct = ROUND(100 * (1 - (available_in_bytes / (total_in_bytes * 1.0))), 2) | WHERE disk_used_pct > 80';
+    const updatedQueryString = appendLimitToQuery(queryString, 1000);
+    expect(updatedQueryString).toBe(
+      `FROM metrics | EVAL disk_used_pct = ROUND(100 * (1 - (available_in_bytes / (total_in_bytes * 1.0))), 2) | WHERE disk_used_pct > 80 | LIMIT 1000`
+    );
+  });
+
+  it('does not treat // inside the query as a comment', () => {
+    const queryString = 'FROM my_index | WHERE url == "http://example.com"';
+    const updatedQueryString = appendLimitToQuery(queryString, 1000);
+    expect(updatedQueryString).toBe(
+      'FROM my_index | WHERE url == "http://example.com" | LIMIT 1000'
+    );
+  });
+
+  it('removes trailing block comments before appending the limit', () => {
+    const queryString = 'FROM my_index | KEEP a /* trailing note */';
+    const updatedQueryString = appendLimitToQuery(queryString, 1000);
+    expect(updatedQueryString).toBe('FROM my_index | KEEP a | LIMIT 1000');
   });
 });

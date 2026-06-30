@@ -308,7 +308,7 @@ describe('fetchEsqlQuery', () => {
               ],
             },
           },
-          "query": "FROM test | LIMIT 1000",
+          "query": "from test | LIMIT 1000",
         }
       `);
     });
@@ -348,7 +348,7 @@ describe('fetchEsqlQuery', () => {
               "_tend": "2020-02-09T23:15:41.941Z",
             },
           ],
-          "query": "FROM test | WHERE event.action == \\"execute\\" AND event.duration > 0 AND @timestamp > ?_tstart | STATS duration = AVG(event.duration) BY BUCKET(@timestamp, 30, ?_tstart, ?_tend), event.provider | WHERE duration > 0 | LIMIT 1000",
+          "query": "from test | where event.action == \\"execute\\" AND event.duration > 0 AND @timestamp > ?_tstart | stats duration = AVG(event.duration) BY BUCKET(@timestamp, 30, ?_tstart, ?_tend), event.provider | where duration > 0 | LIMIT 1000",
         }
       `);
     });
@@ -375,7 +375,7 @@ describe('fetchEsqlQuery', () => {
               ],
             },
           },
-          "query": "FROM test | LIMIT 100",
+          "query": "from test | LIMIT 100",
         }
       `);
     });

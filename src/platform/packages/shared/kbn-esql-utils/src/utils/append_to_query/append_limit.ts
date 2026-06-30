@@ -6,10 +6,24 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import { BasicPrettyPrinter, Parser } from '@elastic/esql';
+import { Parser } from '@elastic/esql';
+import { Token } from 'antlr4';
 
 export const appendLimitToQuery = (queryString: string, limit: number) => {
-  const { root } = Parser.parse(queryString);
-  const prettyQueryString = BasicPrettyPrinter.print(root);
-  return `${prettyQueryString} | LIMIT ${limit}`;
+  const { tokens } = Parser.parse(queryString);
+
+  let endOfQuery = -1;
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    const token = tokens[i];
+    // Stop if the token is not the end-of-file marker
+    // and on the default channel (comments and whitespaces are on the hidden channel)
+    if (token.type !== Token.EOF && token.channel === Token.DEFAULT_CHANNEL) {
+      endOfQuery = token.stop;
+      break;
+    }
+  }
+  const trimmedQuery =
+    endOfQuery >= 0 ? queryString.slice(0, endOfQuery + 1) : queryString.trimEnd();
+
+  return `${trimmedQuery} | LIMIT ${limit}`;
 };
