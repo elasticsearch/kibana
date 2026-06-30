@@ -11,8 +11,12 @@ import { useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { TakeAction } from '../shared/components/take_action';
 import type { IdentityFields } from '../../document_details/shared/utils';
 import type { EntityStoreRecord } from '../shared/hooks/use_entity_from_store';
+import { getRiskFromEntityRecord } from '../shared/entity_store_risk_utils';
 import { AiAssistantButton } from '../../../entity_analytics/components/ai_assistant_button/ai_assistant_button';
 import { EntityType } from '../../../../common/entity_analytics/types';
+import type { RiskSeverity } from '../../../../common/search_strategy';
+import type { EntityToAttach } from '../../../cases/attachments/entity';
+import { useEntityCaseTakeActionItems } from '../../../cases/attachments/entity/hooks/use_entity_case_take_action_items';
 
 export const UserPanelFooter = ({
   identityFields,
@@ -35,6 +39,17 @@ export const UserPanelFooter = ({
     return euidApi.euid.kql.getEuidFilterBasedOnDocument('user', entity);
   }, [euidApi?.euid, entity]);
 
+  const entityStoreId = entity?.entity?.id;
+  const risk = entity ? getRiskFromEntityRecord(entity) : undefined;
+  const riskLevel = risk?.calculated_level as RiskSeverity | undefined;
+  const riskScore = risk?.calculated_score_norm;
+
+  const entityToAttach = useMemo<EntityToAttach>(
+    () => ({ id: entityStoreId ?? '', name: userName, type: 'user', riskLevel, riskScore }),
+    [entityStoreId, userName, riskLevel, riskScore]
+  );
+  const additionalItems = useEntityCaseTakeActionItems(entityToAttach);
+
   return (
     <EuiFlyoutFooter>
       <EuiPanel color="transparent">
@@ -50,6 +65,7 @@ export const UserPanelFooter = ({
             <TakeAction
               isDisabled={!userName}
               kqlQuery={euidEntityFilter ?? `user.name: "${userName}"`}
+              additionalItems={additionalItems}
             />
           </EuiFlexItem>
         </EuiFlexGroup>

@@ -121,6 +121,13 @@ export const allowedExperimentalValues = Object.freeze({
   entityStoreDisabled: false,
 
   /**
+   * Entity Analytics: enables attaching entities (users, hosts, IPs) to a case from
+   * Entity Analytics surfaces such as the entity flyout, and registers the
+   * `security.entity` unified cases attachment type.
+   */
+  entityAttachmentsEnabled: false,
+
+  /**
    * Enables AI rule creation feature
    */
   aiRuleCreationEnabled: true,

@@ -6,8 +6,6 @@
  */
 import React from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { IconType } from '@elastic/eui';
-import { EntityType } from '../../../../common/entity_analytics/types';
 
 import {
   ASSET_CRITICALITY_INDEX_PATTERN,
@@ -83,12 +81,10 @@ export const getEntityRecordRiskForListDisplay = (
   return null;
 };
 
-export const EntityIconByType: Record<EntityType, IconType> = {
-  [EntityType.user]: 'user',
-  [EntityType.host]: 'storage',
-  [EntityType.service]: 'node',
-  [EntityType.generic]: 'globe',
-};
+// Back-compat re-export for existing `./helpers` importers. New code should import
+// directly from `./entity_icon_by_type` to keep the icon map out of this module's
+// heavier dependency graph in page-load-sensitive bundles.
+export { EntityIconByType } from './entity_icon_by_type';
 
 /**
  * `entity.source` is modeled as a string but Elasticsearch may return a keyword as a

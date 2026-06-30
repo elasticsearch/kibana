@@ -2807,6 +2807,7 @@ x-pack/platform/test/functional/page_objects/search_profiler_page.ts @elastic/se
 /x-pack/solutions/security/test/serverless/functional/test_suites/ftr/cases/ @elastic/kibana-cases
 
 /x-pack/solutions/security/plugins/security_solution/public/cases @elastic/kibana-cases
+/x-pack/solutions/security/plugins/security_solution/public/cases/attachments/entity @elastic/kibana-cases @elastic/security-entity-analytics
 
 /x-pack/solutions/observability/test/screenshot_creation/apps/response_ops_docs/observability_cases @elastic/kibana-cases
 /x-pack/solutions/observability/test/serverless/functional/test_suites/screenshot_creation/response_ops_docs/cases @elastic/kibana-cases

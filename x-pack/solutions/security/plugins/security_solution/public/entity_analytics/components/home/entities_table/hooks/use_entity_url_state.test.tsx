@@ -86,7 +86,6 @@ const renderUseEntityURLState = (store: Store = createMockStore()) => {
     () =>
       useEntityURLState({
         paginationLocalStorageKey: 'test:pagination',
-        columnsLocalStorageKey: 'test:columns',
       }),
     { wrapper }
   );

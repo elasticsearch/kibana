@@ -268,6 +268,12 @@ export const UserPanel = memo(function UserPanel({
     ? observedUser.entityRecord ?? undefined
     : undefined;
 
+  const headerRiskLevel = useMemo<RiskSeverity | undefined>(() => {
+    if (!entityFromStoreResult.entityRecord) return undefined;
+    return (getRiskFromEntityRecord(entityFromStoreResult.entityRecord)?.calculated_level ??
+      'Unknown') as RiskSeverity;
+  }, [entityFromStoreResult.entityRecord]);
+
   const entityStoreLookupRequested =
     Boolean(entityIdProp) ||
     Boolean(userStoreIdentityFields && Object.keys(userStoreIdentityFields).length > 0);
@@ -315,12 +321,7 @@ export const UserPanel = memo(function UserPanel({
         entityId={panelDisplayEntityId}
         identityFields={documentEntityIdentifiers}
         isEntityInStore={!!entityFromStoreResult.entityRecord}
-        riskLevel={
-          entityFromStoreResult.entityRecord
-            ? ((getRiskFromEntityRecord(entityFromStoreResult.entityRecord)?.calculated_level ??
-                'Unknown') as RiskSeverity)
-            : undefined
-        }
+        riskLevel={headerRiskLevel}
       />
       <FlyoutBody>
         {entityFromStoreResult.entityRecord && (

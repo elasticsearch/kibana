@@ -49,6 +49,7 @@ const renderCallout = (
         riskEngineReadPrivileges={riskEngineReadPrivileges}
         entityEnginePrivileges={entityEnginePrivileges}
         leadGenerationPrivileges={leadGenerationPrivileges}
+        id="entity-analytics-home"
       />
     </TestProviders>
   );

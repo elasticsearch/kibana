@@ -17,12 +17,13 @@ import { ENTITY_ANALYTICS_TABLE_ID } from '../constants';
 
 const createEntityDataProviders = (
   entityType: EntityType | undefined,
-  entityName: string | undefined
+  entityName: string | undefined,
+  contextId: string
 ) => {
   if (!entityName || !entityType) return null;
   const fieldName: string = EntityTypeToIdentifierField[entityType] || 'entity.id';
   return createDataProviders({
-    contextId: ENTITY_ANALYTICS_TABLE_ID,
+    contextId,
     field: fieldName,
     values: entityName,
   });
@@ -34,11 +35,14 @@ interface UseLeadingControlColumnsArgs {
     query?: { query: string; language: string };
     dataProviders?: NonNullable<ReturnType<typeof createDataProviders>>;
   }) => void;
+  /** Scopes "Investigate in Timeline" data providers; defaults to the EA home table id. */
+  tableId?: string;
 }
 
 export const useLeadingControlColumns = ({
   canUseTimeline,
   investigateInTimeline,
+  tableId = ENTITY_ANALYTICS_TABLE_ID,
 }: UseLeadingControlColumnsArgs): RowControlColumn[] => {
   const euidApi = useEntityStoreEuidApi();
 
@@ -70,7 +74,7 @@ export const useLeadingControlColumns = ({
                 if (kqlFilter) {
                   investigateInTimeline({ query: { query: kqlFilter, language: 'kuery' } });
                 } else {
-                  const dataProviders = createEntityDataProviders(entityType, entityName);
+                  const dataProviders = createEntityDataProviders(entityType, entityName, tableId);
                   if (dataProviders?.length) {
                     investigateInTimeline({ dataProviders });
                   }
@@ -84,5 +88,5 @@ export const useLeadingControlColumns = ({
     }
 
     return columns;
-  }, [canUseTimeline, investigateInTimeline, euidApi]);
+  }, [canUseTimeline, investigateInTimeline, euidApi, tableId]);
 };

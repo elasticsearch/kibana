@@ -50,9 +50,11 @@ const openEntityFlyoutLabel = i18n.translate(
 const ResolutionGroupPanel = ({
   bucket,
   targetMetadata,
+  tableId,
 }: {
   bucket: RawBucket<EntitiesGroupingAggregation>;
   targetMetadata: TargetMetadataMap;
+  tableId: string;
 }) => {
   const { openFlyout } = useExpandableFlyoutApi();
 
@@ -80,13 +82,13 @@ const ResolutionGroupPanel = ({
           params: {
             [panelParam]: targetEntityName,
             entityId,
-            contextID: ENTITY_ANALYTICS_TABLE_ID,
-            scopeId: ENTITY_ANALYTICS_TABLE_ID,
+            contextID: tableId,
+            scopeId: tableId,
           },
         },
       });
     },
-    [openFlyout, targetEntityName, entityType, entityId]
+    [openFlyout, targetEntityName, entityType, entityId, tableId]
   );
 
   return (
@@ -119,14 +121,19 @@ const ResolutionGroupPanel = ({
   );
 };
 
-export const createGroupPanelRenderer = (targetMetadata: TargetMetadataMap) => {
+export const createGroupPanelRenderer = (
+  targetMetadata: TargetMetadataMap,
+  tableId: string = ENTITY_ANALYTICS_TABLE_ID
+) => {
   const GroupPanelRenderer = (
     selectedGroup: string,
     bucket: RawBucket<EntitiesGroupingAggregation>,
     _nullGroupMessage?: string
   ) => {
     if (selectedGroup === ENTITY_GROUPING_OPTIONS.RESOLUTION) {
-      return <ResolutionGroupPanel bucket={bucket} targetMetadata={targetMetadata} />;
+      return (
+        <ResolutionGroupPanel bucket={bucket} targetMetadata={targetMetadata} tableId={tableId} />
+      );
     }
 
     if (selectedGroup === ENTITY_GROUPING_OPTIONS.ENTITY_TYPE) {

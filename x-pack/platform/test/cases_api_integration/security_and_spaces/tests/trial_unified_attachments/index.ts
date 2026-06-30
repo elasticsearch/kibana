@@ -27,6 +27,7 @@ export default ({ loadTestFile, getService }: FtrProviderContext): void => {
     loadTestFile(require.resolve('./unified_persistable_state'));
     loadTestFile(require.resolve('./mixed_reads'));
     loadTestFile(require.resolve('./unified_validation'));
+    loadTestFile(require.resolve('./entity_sub_privilege'));
 
     // Unified only attachments
     loadTestFile(require.resolve('./dashboard'));

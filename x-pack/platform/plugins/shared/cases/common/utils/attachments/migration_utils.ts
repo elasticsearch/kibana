@@ -13,7 +13,6 @@ import {
   PERSISTABLE_STATE_LEGACY_TO_UNIFIED_MAP,
   PERSISTABLE_STATE_UNIFIED_TO_LEGACY_MAP,
   PERSISTABLE_ATTACHMENT_TYPES,
-  UNIFIED_ATTACHMENT_TYPES,
   UNIFIED_TO_LEGACY_MAP,
   OWNER_TO_PREFIX_MAP,
   LEGACY_EVENT_TYPE,
@@ -30,12 +29,24 @@ export const isMigratedAttachmentType = (type: string, owner: string): boolean =
 };
 
 /**
- * True for unified attachment types that have no legacy (v1) equivalent
+ * True only for migrated attachment types that have no legacy (v1) equivalent.
+ *
+ * The incoming `type` may be legacy (`alert`/`event`) or unified, so we first
+ * normalize via `toUnifiedAttachmentType(type, owner)`. A type is treated
+ * as unified-only when it:
+ *  1) is in `MIGRATED_ATTACHMENT_TYPES`,
+ *  2) has no entry in `UNIFIED_TO_LEGACY_MAP`, and
+ *  3) is not a persistable-state subtype (handled separately).
  */
-export const isUnifiedOnlyAttachmentType = (type: string): boolean =>
-  UNIFIED_ATTACHMENT_TYPES.has(type) &&
-  !Object.hasOwn(UNIFIED_TO_LEGACY_MAP, type) &&
-  !Object.hasOwn(PERSISTABLE_STATE_UNIFIED_TO_LEGACY_MAP, type);
+export const isUnifiedOnlyAttachmentType = (type: string, owner: string): boolean => {
+  const unifiedType = toUnifiedAttachmentType(type, owner);
+  if (!MIGRATED_ATTACHMENT_TYPES.has(unifiedType)) {
+    return false;
+  }
+  const hasLegacyMapping = unifiedType in UNIFIED_TO_LEGACY_MAP;
+  const isPersistable = PERSISTABLE_ATTACHMENT_TYPES.has(unifiedType);
+  return !hasLegacyMapping && !isPersistable;
+};
 
 export const toLegacyAttachmentType = (type?: string): string | undefined => {
   if (typeof type !== 'string') {

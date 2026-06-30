@@ -9,7 +9,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import type { CustomCellRenderer } from '@kbn/unified-data-table';
 import { EntitiesDataTable } from './entities_data_table';
-import { DataViewContext } from '.';
+import { DataViewContext, DEFAULT_ENTITIES_TABLE_CONFIG } from '.';
 import { TestProviders } from '../../../../common/mock';
 import { useFetchGridData } from './hooks/use_fetch_grid_data';
 import { useInvestigateInTimeline } from '../../../../common/hooks/timeline/use_investigate_in_timeline';
@@ -108,14 +108,8 @@ const createMockState = (overrides: Partial<EntityURLStateResult> = {}): EntityU
     onSort: jest.fn(),
     setUrlQuery: jest.fn(),
     filters: [],
-    pageFilters: [],
     pageIndex: 0,
-    urlQuery: {},
-    setTableOptions: jest.fn(),
-    handleUpdateQuery: jest.fn(),
-    setPageSize: jest.fn(),
     onChangePage: jest.fn(),
-    columnsLocalStorageKey: 'entityAnalytics:columns',
     ...overrides,
   } as EntityURLStateResult);
 
@@ -146,7 +140,7 @@ const renderWithProviders = (
   render(
     <TestProviders>
       <DataViewContext.Provider value={{ dataView, dataViewIsLoading }}>
-        <EntitiesDataTable state={state} />
+        <EntitiesDataTable state={state} config={DEFAULT_ENTITIES_TABLE_CONFIG} />
       </DataViewContext.Provider>
     </TestProviders>
   );

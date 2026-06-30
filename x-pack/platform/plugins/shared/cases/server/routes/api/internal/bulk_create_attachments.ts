@@ -40,7 +40,7 @@ export const bulkCreateAttachmentsRoute = createCasesRoute({
       // file, …) keep the legacy-shaped response so existing public consumers
       // of this route aren't affected by the new SO attachment types.
       const hasUnifiedOnlyAttachment = attachments.some((attachment) =>
-        isUnifiedOnlyAttachmentType(attachment.type)
+        isUnifiedOnlyAttachmentType(attachment.type, attachment.owner)
       );
       const res: caseDomainV1.Case = await casesClient.attachments.bulkCreate({
         caseId,

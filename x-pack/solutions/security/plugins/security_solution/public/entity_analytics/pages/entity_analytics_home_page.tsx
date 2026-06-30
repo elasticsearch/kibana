@@ -38,13 +38,11 @@ import { useStoredAssistantConnectorId } from '../../onboarding/components/hooks
 import { EntityAnalyticsRecentAnomalies } from '../components/home/anomalies_panel';
 import { WatchlistFilter } from '../components/watchlists/watchlist_filter';
 import { useEntityStoreDataView } from '../components/home/use_entity_store_data_view';
-import {
-  ENTITY_ANALYTICS_LOCAL_STORAGE_COLUMNS_KEY,
-  ENTITY_ANALYTICS_LOCAL_STORAGE_PAGE_SIZE_KEY,
-} from '../components/home/constants';
+import { ENTITY_ANALYTICS_LOCAL_STORAGE_PAGE_SIZE_KEY } from '../components/home/constants';
 import {
   DataViewContext,
   useEntityURLState,
+  DEFAULT_ENTITIES_TABLE_CONFIG,
   DEFAULT_ENTITIES_TABLE_SORT,
   type EntitiesBaseURLQuery,
   EntitiesTableSection,
@@ -108,6 +106,7 @@ export const EntityAnalyticsHomePage = () => {
         riskEngineReadPrivileges={riskEngineReadPrivileges}
         entityEnginePrivileges={entityEnginePrivilegesQuery.data}
         leadGenerationPrivileges={leadGenerationPrivilegesQuery.data}
+        id="entity-analytics-home"
       />
       <SecuritySolutionPageWrapper data-test-subj="entityAnalyticsHomePage">
         {noPrivileges ? (
@@ -376,7 +375,6 @@ const EntityAnalyticsEntitiesTable = ({
 const EntityAnalyticsEntitiesTableContent = ({ watchlistId }: { watchlistId?: string }) => {
   const urlState = useEntityURLState({
     paginationLocalStorageKey: ENTITY_ANALYTICS_LOCAL_STORAGE_PAGE_SIZE_KEY,
-    columnsLocalStorageKey: ENTITY_ANALYTICS_LOCAL_STORAGE_COLUMNS_KEY,
     defaultQuery: getDefaultQuery,
   });
 
@@ -398,5 +396,5 @@ const EntityAnalyticsEntitiesTableContent = ({ watchlistId }: { watchlistId?: st
     };
   }, [urlState, watchlistId]);
 
-  return <EntitiesTableSection state={state} />;
+  return <EntitiesTableSection state={state} config={DEFAULT_ENTITIES_TABLE_CONFIG} />;
 };

@@ -65,13 +65,7 @@ const createMockState = (overrides: Partial<EntityURLStateResult> = {}): EntityU
     onChangeItemsPerPage: jest.fn(),
     onResetFilters: jest.fn(),
     onSort: jest.fn(),
-    pageFilters: [],
-    urlQuery: {},
-    setTableOptions: jest.fn(),
-    handleUpdateQuery: jest.fn(),
-    setPageSize: jest.fn(),
     onChangePage: jest.fn(),
-    columnsLocalStorageKey: 'entityAnalytics:columns',
     ...overrides,
   } as EntityURLStateResult);
 
@@ -220,7 +214,15 @@ describe('useEntityGrouping — license gating', () => {
 
   it('excludes Resolution from grouping options when license is inactive', () => {
     (useHasEntityResolutionLicense as jest.Mock).mockReturnValue(false);
-    renderHook(() => useEntityGrouping({ state: createMockState() }), { wrapper });
+    renderHook(
+      () =>
+        useEntityGrouping({
+          state: createMockState(),
+          tableId: 'test-table',
+          groupingId: 'test-grouping',
+        }),
+      { wrapper }
+    );
     const { defaultGroupingOptions } = mockUseGrouping.mock.calls[0][0];
     expect(defaultGroupingOptions.map((o: { key: string }) => o.key)).not.toContain(
       ENTITY_GROUPING_OPTIONS.RESOLUTION
@@ -229,7 +231,15 @@ describe('useEntityGrouping — license gating', () => {
 
   it('includes Resolution in grouping options when license is active', () => {
     (useHasEntityResolutionLicense as jest.Mock).mockReturnValue(true);
-    renderHook(() => useEntityGrouping({ state: createMockState() }), { wrapper });
+    renderHook(
+      () =>
+        useEntityGrouping({
+          state: createMockState(),
+          tableId: 'test-table',
+          groupingId: 'test-grouping',
+        }),
+      { wrapper }
+    );
     const { defaultGroupingOptions } = mockUseGrouping.mock.calls[0][0];
     expect(defaultGroupingOptions.map((o: { key: string }) => o.key)).toContain(
       ENTITY_GROUPING_OPTIONS.RESOLUTION

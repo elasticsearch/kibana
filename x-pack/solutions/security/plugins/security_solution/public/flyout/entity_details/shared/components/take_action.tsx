@@ -20,17 +20,23 @@ import { normalizeTimeRange } from '../../../../common/utils/normalize_time_rang
 interface TakeActionProps {
   kqlQuery: string;
   isDisabled?: boolean;
+  /**
+   * Additional menu items rendered in the popover, after the default "Investigate in Timeline".
+   * Receives a `closePopover` callback that callers should invoke from item click handlers
+   * so the popover dismisses after the action runs.
+   */
+  additionalItems?: (closePopover: () => void) => React.ReactElement[];
 }
 
 /*
  * This component is used to investigate a host|user|entity using Timeline from Flyout
  */
-export const TakeAction = ({ kqlQuery, isDisabled }: TakeActionProps) => {
+export const TakeAction = ({ kqlQuery, isDisabled, additionalItems }: TakeActionProps) => {
   const [isPopoverOpen, setPopoverOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const closePopover = () => {
+  const closePopover = useCallback(() => {
     setPopoverOpen(false);
-  };
+  }, []);
 
   const last30MinRange = normalizeTimeRange({
     kind: 'absolute',
@@ -80,6 +86,7 @@ export const TakeAction = ({ kqlQuery, isDisabled }: TakeActionProps) => {
       setIsLoading={setIsLoading}
       closePopover={closePopover}
     />,
+    ...(additionalItems?.(closePopover) ?? []),
   ];
 
   return (

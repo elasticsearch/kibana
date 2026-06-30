@@ -57,6 +57,7 @@ export default ({ getService }: FtrProviderContext): void => {
           'security.event': '0337735d3e57178e44b426e41e616aae57fd794d',
           'security.alert': '1bd2e2db3314929fbd4b03feae1010c09b2e97cd',
           'security.timeline': 'ccf37f135657dfa479411f88ee44ec3fd8863720',
+          'security.entity': '78cf449622aa476faa53a5a1aad067f2ae74631b',
           'observability.alert': 'fd6ee185111ca9bd45e98e5414428399583a7e5e',
           'stack.alert': '3c45f9f2b29831df4d9c7262c59d3a7e2f29b9ee',
           'aiops.change_point_chart': '2620ad738edfb370b0f9053c25ce0f40a1658ab7',

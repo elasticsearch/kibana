@@ -5,17 +5,46 @@
  * 2.0.
  */
 
-import { spaceTest as baseSpaceTest } from '@kbn/scout-security';
-import type { ScoutWorkerFixtures } from '@kbn/scout-security';
+import { spaceTest as baseSpaceTest, createLazyPageObject } from '@kbn/scout-security';
+import type {
+  SecurityTestFixtures,
+  SecurityWorkerFixtures,
+  SecurityPageObjects,
+  ScoutPage,
+} from '@kbn/scout-security';
 import { createLlmProxy, type LlmProxy } from '@kbn/ftr-llm-proxy';
+import { EntityCasesPage } from './page_objects/entity_cases_page';
 
 const XSRF = { 'kbn-xsrf': 'scout-security-solution' };
 
-interface SecuritySolutionWorkerFixtures extends ScoutWorkerFixtures {
+interface SecuritySolutionTestFixtures extends SecurityTestFixtures {
+  pageObjects: SecurityPageObjects & { entityCases: EntityCasesPage };
+}
+
+interface SecuritySolutionWorkerFixtures extends SecurityWorkerFixtures {
   llmProxy: LlmProxy;
 }
 
-export const spaceTest = baseSpaceTest.extend<{}, SecuritySolutionWorkerFixtures>({
+export const spaceTest = baseSpaceTest.extend<
+  SecuritySolutionTestFixtures,
+  SecuritySolutionWorkerFixtures
+>({
+  pageObjects: async (
+    {
+      pageObjects,
+      page,
+    }: {
+      pageObjects: SecuritySolutionTestFixtures['pageObjects'];
+      page: ScoutPage;
+    },
+    use: (pageObjects: SecuritySolutionTestFixtures['pageObjects']) => Promise<void>
+  ) => {
+    await use({
+      ...pageObjects,
+      entityCases: createLazyPageObject(EntityCasesPage, page),
+    });
+  },
+
   llmProxy: [
     // scoutSpace is declared first so Playwright sets up the test space before the proxy,
     // avoiding concurrent initialization that can delay Sourcerer setup.
