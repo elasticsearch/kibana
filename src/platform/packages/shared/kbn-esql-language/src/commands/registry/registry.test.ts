@@ -263,14 +263,8 @@ describe('CommandRegistry', () => {
 
     test('should only return subquery source commands when starting a subquery', () => {
       const fromCommand = createMockCommand('from', undefined, { subquerySource: true });
-      const rowCommand = createMockCommand('row', undefined, {
-        subquerySource: true,
-        subquerySourceHidden: true,
-      });
-      const tsCommand = createMockCommand('ts', undefined, {
-        subquerySource: true,
-        subquerySourceHidden: true,
-      });
+      const rowCommand = createMockCommand('row', undefined, { subquerySource: true });
+      const tsCommand = createMockCommand('ts', undefined, { subquerySource: true });
       const evalCommand = createMockCommand('eval');
       const whereCommand = createMockCommand('where');
 
@@ -285,9 +279,7 @@ describe('CommandRegistry', () => {
       });
 
       const commandNames = commands.map((cmd) => cmd.name);
-      expect(commandNames).toEqual(['from']);
-      expect(commandNames).not.toContain('row');
-      expect(commandNames).not.toContain('ts');
+      expect(commandNames).toEqual(['from', 'row', 'ts']);
       expect(commandNames).not.toContain('eval');
       expect(commandNames).not.toContain('where');
     });

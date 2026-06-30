@@ -394,12 +394,7 @@ function buildSubqueryCompleteItem(sourceCommand: string): ISuggestionItem {
 export function buildSubqueryCompleteItems(): ISuggestionItem[] {
   return esqlCommandRegistry
     .getAllCommands()
-    .filter(
-      ({ metadata }) =>
-        metadata.subquerySource === true &&
-        metadata.hidden !== true &&
-        !metadata.subquerySourceHidden
-    )
+    .filter(({ metadata }) => metadata.subquerySource === true && metadata.hidden !== true)
     .map(({ name }) => buildSubqueryCompleteItem(name));
 }
 

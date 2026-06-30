@@ -27,7 +27,6 @@ export const rowCommand = {
   metadata: {
     type: 'source' as const,
     subquerySource: true,
-    subquerySourceHidden: !(process.env.NODE_ENV === 'test'),
     description: i18n.translate('kbn-esql-language.esql.definitions.rowDoc', {
       defaultMessage:
         'Produces a row with one or more columns with values that you specify. This can be useful for testing.',
