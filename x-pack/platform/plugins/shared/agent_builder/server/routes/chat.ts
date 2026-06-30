@@ -54,8 +54,8 @@ export const promptResponseEntrySchema = schema.oneOf([
     },
     {
       meta: {
-        description:
-          '**Technical Preview.** Answers to an `ask_user_question` prompt; one entry per question, in order.',
+        availability: { stability: 'tech_preview' },
+        description: 'Answers to an `ask_user_question` prompt; one entry per question, in order.',
       },
     }
   ),
@@ -177,8 +177,8 @@ export const conversePayloadSchema = schema.object({
       ),
       {
         meta: {
-          description:
-            '**Technical Preview; added in 9.3.0.** Optional attachments to send with the message.',
+          availability: { stability: 'tech_preview', since: '9.3.0' },
+          description: 'Optional attachments to send with the message.',
         },
       }
     )
@@ -201,8 +201,8 @@ export const conversePayloadSchema = schema.object({
       },
       {
         meta: {
-          description:
-            '**Technical Preview; added in 9.5.0.** Optional conversation access control. Defaults to private.',
+          availability: { stability: 'tech_preview', since: '9.5.0' },
+          description: 'Optional conversation access control. Defaults to private.',
         },
       }
     )
@@ -284,8 +284,8 @@ export const conversePayloadSchema = schema.object({
   _execution_mode: schema.maybe(
     schema.oneOf([schema.literal('local'), schema.literal('task_manager')], {
       meta: {
-        description:
-          '**Experimental; added in 9.4.0.** define how to execute the agent (local execution or via task_manager)',
+        availability: { stability: 'experimental', since: '9.4.0' },
+        description: 'define how to execute the agent (local execution or via task_manager)',
       },
     })
   ),
