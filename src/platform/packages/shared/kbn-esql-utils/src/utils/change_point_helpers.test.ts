@@ -10,6 +10,7 @@ import {
   hasChangePointCommand,
   getChangePointOutputColumnNames,
   getChangePointSeriesColumns,
+  getChangePointEntityColumns,
   buildChangePointLineDataQuery,
   appendEntityFiltersToChangePointLineEsql,
   formatEsqlIdentifier,
@@ -96,6 +97,37 @@ describe('getChangePointSeriesColumns', () => {
   ( WHERE referer == "http://a.com" | STATS avg_bytes = AVG(bytes) BY bucket = BUCKET(@timestamp, 1 day) | CHANGE_POINT avg_bytes ON bucket )
 | WHERE type IS NOT NULL`;
     expect(getChangePointSeriesColumns(forkQuery)).toBeUndefined();
+  });
+});
+
+describe('getChangePointEntityColumns', () => {
+  it('returns empty array when esql is undefined or empty', () => {
+    expect(getChangePointEntityColumns(undefined)).toEqual([]);
+    expect(getChangePointEntityColumns('')).toEqual([]);
+  });
+
+  it('returns empty array when there is no CHANGE_POINT command', () => {
+    expect(getChangePointEntityColumns('FROM index | STATS count = COUNT(*)')).toEqual([]);
+  });
+
+  it('returns empty array when CHANGE_POINT has no BY clause', () => {
+    expect(getChangePointEntityColumns('FROM a | CHANGE_POINT value ON time')).toEqual([]);
+  });
+
+  it('returns single BY column', () => {
+    expect(getChangePointEntityColumns('FROM a | CHANGE_POINT value ON time BY host')).toEqual([
+      'host',
+    ]);
+  });
+
+  it('returns multiple BY columns', () => {
+    expect(
+      getChangePointEntityColumns('FROM a | CHANGE_POINT value ON time BY host, service')
+    ).toEqual(['host', 'service']);
+  });
+
+  it('returns empty array for an unparseable query', () => {
+    expect(getChangePointEntityColumns('NOT VALID ESQL !!!')).toEqual([]);
   });
 });
 

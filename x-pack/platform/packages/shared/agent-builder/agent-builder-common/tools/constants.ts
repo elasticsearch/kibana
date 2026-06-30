@@ -39,6 +39,7 @@ export const platformCoreTools = {
   smlAttach: platformCoreTool('sml_attach'),
   // Connector tools
   executeConnectorSubAction: platformCoreTool('execute_connector_sub_action'),
+  detectChangePoints: platformCoreTool('detect_change_points'),
 } as const;
 
 /**

@@ -1016,7 +1016,31 @@ const xyLayerUnionNoESQL = objectUnion(
   }
 );
 
-const xyLayerUnionESQL = objectUnion([xyDataLayerSchemaESQL], {
+/**
+ * Manual-only annotation layer for ES|QL charts.
+ * Unlike {@link annotationLayerByValueSchema}, this variant has no `data_source` field because
+ * manual point/range annotations have statically-defined timestamps and require no data view.
+ */
+const annotationLayerManualOnlySchema = schema.object(
+  {
+    ...ignoringGlobalFiltersSchemaRaw,
+    type: schema.literal('annotations'),
+    events: schema.arrayOf(schema.oneOf([annotationManualEvent, annotationManualRange]), {
+      minSize: 1,
+      maxSize: 100,
+      meta: { description: 'Manual annotation events' },
+    }),
+  },
+  {
+    meta: {
+      id: 'xyAnnotationLayerManualOnly',
+      title: 'Annotation Layer (manual, ES|QL)',
+      description: 'Manual-only annotation layer for ES|QL charts — no data source required',
+    },
+  }
+);
+
+const xyLayerUnionESQL = objectUnion([xyDataLayerSchemaESQL, annotationLayerManualOnlySchema], {
   meta: {
     id: 'xyLayersESQL',
     description: 'XY chart layer types for ES|QL queries',
@@ -1096,6 +1120,7 @@ export type ReferenceLineLayerType = ReferenceLineLayerTypeNoESQL | ReferenceLin
 export type AnnotationLayerType = TypeOf<typeof annotationLayerSchema>;
 export type AnnotationLayerByRefType = TypeOf<typeof annotationByRefLayerSchema>;
 export type AnnotationLayerByValueType = TypeOf<typeof annotationLayerByValueSchema>;
+export type AnnotationLayerManualOnlyType = TypeOf<typeof annotationLayerManualOnlySchema>;
 /**
  * Reference line layers are not support but included to keep existing logic
  */

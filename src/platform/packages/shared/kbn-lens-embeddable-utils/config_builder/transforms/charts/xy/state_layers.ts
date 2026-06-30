@@ -24,6 +24,7 @@ import type {
   DataLayerType,
   ReferenceLineLayerType,
   AnnotationLayerByValueType,
+  AnnotationLayerManualOnlyType,
   XYConfig,
 } from '../../../schema/charts/xy';
 import { addLayerColumn, generateLayer } from '../../utils';
@@ -114,14 +115,14 @@ function buildDataLayer(config: XYConfig, layer: DataLayerType, i: number): XYDa
 }
 
 function buildByValueAnnotationLayer(
-  layer: AnnotationLayerByValueType,
+  layer: AnnotationLayerByValueType | AnnotationLayerManualOnlyType,
   i: number,
-  dataViewId: string
+  dataViewId: string | undefined
 ): XYAnnotationLayerConfig {
   return {
     layerType: 'annotations',
     layerId: getIdForLayer(layer, i),
-    indexPatternId: dataViewId,
+    indexPatternId: dataViewId ?? '',
     ignoreGlobalFilters: layer.ignore_global_filters,
     annotations: layer.events.map((annotation, index) => {
       if (annotation.type === 'range') {
@@ -222,7 +223,7 @@ export function buildXYLayer(
   config: XYConfig,
   layer: unknown,
   i: number,
-  dataViewId: string,
+  dataViewId: string | undefined,
   annotationGroupReferences: SavedObjectReference[]
 ): XYPersistedLayerConfig | undefined {
   if (!isAPIXYLayer(layer)) {

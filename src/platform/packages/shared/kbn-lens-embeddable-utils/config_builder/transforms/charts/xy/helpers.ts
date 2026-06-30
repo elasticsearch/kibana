@@ -11,6 +11,7 @@ import type { XYDataLayerConfig, XYLayerConfig, XYPersistedLayerConfig } from '@
 import type { AvailableAnnotationIcon } from '@kbn/event-annotation-common';
 import type {
   AnnotationLayerType,
+  AnnotationLayerManualOnlyType,
   DataLayerType,
   LayerTypeESQL,
   ReferenceLineLayerType,
@@ -40,7 +41,9 @@ export function getIdForLayer(layer: XYLayer, i: number) {
   return `${layer.type}_${i}`;
 }
 
-export function isAPIAnnotationLayer(layer: XYLayer): layer is AnnotationLayerType {
+export function isAPIAnnotationLayer(
+  layer: XYLayer
+): layer is AnnotationLayerType | AnnotationLayerManualOnlyType {
   return XY_ANNOTATION_LAYER_TYPES.some((annotationType) => annotationType === layer.type);
 }
 

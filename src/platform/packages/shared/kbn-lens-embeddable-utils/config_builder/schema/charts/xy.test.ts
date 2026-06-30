@@ -606,7 +606,7 @@ describe('XY', () => {
       ).toThrow();
     });
 
-    it('should not let esql annotations', () => {
+    it('should reject annotation layer with esql data_source', () => {
       expect(() =>
         xyConfigSchema.validate({
           type: 'xy',
@@ -626,10 +626,10 @@ describe('XY', () => {
               },
               y: [{ operation: 'count', empty_as_null: false }],
             },
+            // @ts-expect-error - ES|QL data_source on annotation layer is not allowed
             {
               type: 'annotations',
               ignore_global_filters: false,
-              // @ts-expect-error - mixing not allowed
               data_source: {
                 type: 'esql',
                 query:
@@ -733,6 +733,40 @@ describe('XY', () => {
             },
           },
           layers: [minimalLayer],
+        })
+      ).not.toThrow();
+    });
+
+    it('should accept ES|QL line layer combined with a manual-only annotation layer', () => {
+      expect(() =>
+        xyConfigSchema.validate({
+          type: 'xy',
+          title: 'Change Points',
+          layers: [
+            {
+              data_source: {
+                type: 'esql',
+                query:
+                  'FROM logs-* | STATS avg_bytes = AVG(bytes) BY bucket = BUCKET(@timestamp, 1 day)',
+              },
+              type: 'line',
+              ignore_global_filters: false,
+              sampling: 1,
+              y: [{ column: 'avg_bytes' }],
+            },
+            {
+              type: 'annotations',
+              ignore_global_filters: false,
+              events: [
+                {
+                  type: 'point',
+                  label: 'step_change (p=0.001)',
+                  timestamp: '2024-01-15T12:00:00Z',
+                  text: { visible: true },
+                },
+              ],
+            },
+          ],
         })
       ).not.toThrow();
     });

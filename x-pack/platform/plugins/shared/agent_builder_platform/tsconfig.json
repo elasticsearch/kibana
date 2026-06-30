@@ -38,5 +38,6 @@
     "@kbn/actions-plugin",
     "@kbn/logging-mocks",
     "@kbn/triggers-actions-ui-plugin",
+    "@kbn/esql-utils",
   ]
 }

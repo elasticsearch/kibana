@@ -398,6 +398,10 @@ export const buildDatasourceStates = (
         // by-ref annotation layers don't require a data_source
         continue;
       }
+      if ('type' in layer && layer.type === 'annotations' && !('data_source' in layer)) {
+        // manual-only annotation layers have no data source — timestamps are static
+        continue;
+      }
       throw Error('DataSource must be defined');
     }
 

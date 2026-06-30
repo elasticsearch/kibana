@@ -6,12 +6,13 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import { Parser, WrappingPrettyPrinter } from '@elastic/esql';
+import { Parser, WrappingPrettyPrinter, isColumn } from '@elastic/esql';
 import { CommandNames } from '@kbn/esql-language';
 import type {
   ESQLAstChangePointCommand,
   ESQLAstQueryExpression,
   ESQLAstCommand,
+  ESQLCommandOption,
 } from '@elastic/esql/types';
 import { escapeStringValue } from './append_to_query/utils';
 import { sanitazeESQLInput } from './sanitaze_input';
@@ -80,7 +81,31 @@ export const getChangePointSeriesColumns = (
   }
 };
 
-// Entity filters need readable identifiers when possible, and escaped backticks when not.
+/**
+ * Entity (BY-clause) column names from the first CHANGE_POINT command in the query.
+ * Returns an empty array when there is no BY clause or no CHANGE_POINT command.
+ * These are the column names needed to group CHANGE_POINT result rows by entity and to call
+ * {@link appendEntityFiltersToChangePointLineEsql}.
+ */
+export const getChangePointEntityColumns = (esql?: string): string[] => {
+  if (!esql) return [];
+  try {
+    const { root } = Parser.parse(esql);
+    const cp = root.commands.find((c) => c.name === CommandNames.CHANGE_POINT) as
+      | ESQLAstChangePointCommand
+      | undefined;
+    if (!cp) return [];
+    const byOption = cp.args.find(
+      (a): a is ESQLCommandOption =>
+        (a as ESQLCommandOption).type === 'option' && (a as ESQLCommandOption).name === 'by'
+    );
+    if (!byOption) return [];
+    return byOption.args.filter(isColumn).map((c) => c.parts.join('.'));
+  } catch {
+    return [];
+  }
+};
+
 export const formatEsqlIdentifier = (columnId: string): string => {
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(columnId)) {
     return columnId;

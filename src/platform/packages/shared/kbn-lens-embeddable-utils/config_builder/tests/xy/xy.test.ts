@@ -830,5 +830,69 @@ describe('XY', () => {
         }
       }
     });
+
+    it('should convert ES|QL line chart with manual annotation layer (no data source)', () => {
+      const config = {
+        type: 'xy',
+        title: 'Change Points — avg_bytes',
+        layers: [
+          {
+            data_source: {
+              type: 'esql' as const,
+              query:
+                'FROM logs-* | STATS avg_bytes = AVG(bytes) BY bucket = BUCKET(@timestamp, 1 day)',
+            },
+            type: 'line' as const,
+            ignore_global_filters: false,
+            sampling: 1,
+            y: [{ column: 'avg_bytes' }],
+          },
+          {
+            type: 'annotations' as const,
+            ignore_global_filters: false,
+            events: [
+              {
+                type: 'point' as const,
+                label: 'step_change (p=0.001)',
+                timestamp: '2024-01-15T12:00:00Z',
+                text: { visible: true },
+              },
+            ],
+          },
+        ],
+      } satisfies XYConfig;
+
+      const builder = new LensConfigBuilder();
+      const lensState = builder.fromAPIFormat(config);
+
+      const visualization = lensState.state.visualization as XYVisualizationState;
+      expect(visualization.layers).toHaveLength(2);
+
+      const dataLayer = visualization.layers.find((l) => !l.layerType || l.layerType === 'data');
+      expect(dataLayer).toBeDefined();
+
+      const annotationLayer = visualization.layers.find((l) => l.layerType === 'annotations');
+      expect(annotationLayer).toBeDefined();
+      if (annotationLayer && 'annotations' in annotationLayer) {
+        expect(annotationLayer.annotations).toHaveLength(1);
+        expect((annotationLayer as any).annotations[0].label).toBe('step_change (p=0.001)');
+        // Annotation layers must use a *regular* (non-ES|QL-typed) ad-hoc data view so
+        // that the Lens XY visualization can initialise the annotation context without
+        // triggering the ES|QL text-based initialisation path (which would hang).
+        const annotationDataViewId = (annotationLayer as any).indexPatternId;
+        expect(annotationDataViewId).toBeTruthy();
+        const adHocDataViews = lensState.state.adHocDataViews ?? {};
+        const esqlDataViewEntry = Object.entries(adHocDataViews).find(
+          ([, dataView]) => (dataView as any).type === 'esql'
+        );
+        expect(esqlDataViewEntry).toBeDefined();
+        const [esqlDataViewId] = esqlDataViewEntry!;
+        expect(annotationDataViewId).not.toBe(esqlDataViewId);
+        const annotationDataView = adHocDataViews[annotationDataViewId];
+        expect(annotationDataView).toBeDefined();
+        // Must NOT be an ES|QL data view type
+        expect((annotationDataView as any).type).not.toBe('esql');
+      }
+    });
   });
 });
