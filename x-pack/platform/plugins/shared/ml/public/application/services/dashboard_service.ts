@@ -29,7 +29,7 @@ export function dashboardServiceProvider(
         query: query ?? '',
         per_page: 1000,
       });
-      return responses.dashboards;
+      return responses.data;
     },
     /**
      * Fetch dashboards by id

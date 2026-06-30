@@ -18,8 +18,8 @@ describe('DashboardService', () => {
     },
     findDashboardsService: jest.fn().mockResolvedValue({
       search: jest.fn().mockResolvedValue({
-        total: 0,
-        dashboards: [],
+        meta: { total: 0 },
+        data: [],
       }),
     }),
   };

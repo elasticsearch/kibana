@@ -12,7 +12,7 @@ import type { ApmPluginStartDeps } from '../plugin';
 import { FETCH_STATUS } from './use_fetcher';
 
 export interface SearchDashboardsResult {
-  data: DashboardSearchResponseBody['dashboards'];
+  data: DashboardSearchResponseBody['data'];
   status: FETCH_STATUS;
 }
 
@@ -34,13 +34,13 @@ export function useDashboardFetcher(query?: string): SearchDashboardsResult {
       });
       try {
         const findDashboardsService = await dashboard?.findDashboardsService();
-        const { dashboards } = await findDashboardsService.search({
+        const { data } = await findDashboardsService.search({
           query: query ?? '',
           per_page: 1000,
         });
 
         setResult({
-          data: dashboards,
+          data,
           status: FETCH_STATUS.SUCCESS,
         });
       } catch {

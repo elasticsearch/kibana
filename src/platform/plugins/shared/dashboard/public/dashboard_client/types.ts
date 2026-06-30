@@ -23,7 +23,7 @@ export type FindDashboardsByIdResponse = { id: string } & (
 );
 
 export interface FindDashboardsService {
-  search: (search: DashboardSearchRequestParams) => Promise<DashboardSearchResponseBody>;
+  search: (search: Partial<DashboardSearchRequestParams>) => Promise<DashboardSearchResponseBody>;
   findById: (id: string) => Promise<FindDashboardsByIdResponse>;
   findByIds: (ids: string[]) => Promise<FindDashboardsByIdResponse[]>;
   findByTitle: (title: string) => Promise<{ id: string } | undefined>;

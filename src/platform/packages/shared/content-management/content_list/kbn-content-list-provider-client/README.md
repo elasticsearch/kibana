@@ -38,9 +38,9 @@ const findItems = useCallback(
   async (searchTerm) => {
     return dashboardClient.search({
       query: searchTerm,
-    }).then(({ total, dashboards }) => ({
+    }).then(({ meta: { total }, data }) => ({
       total,
-      hits: dashboards.map(transformToDashboardUserContent),
+      hits: data.map(transformToDashboardUserContent),
     }));
   },
   []

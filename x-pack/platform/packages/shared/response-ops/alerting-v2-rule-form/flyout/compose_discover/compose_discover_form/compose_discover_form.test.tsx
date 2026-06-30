@@ -63,7 +63,10 @@ const mockFindByIds = jest.fn(async (ids: string[]) =>
 );
 
 const mockFindDashboardsService = jest.fn(async () => ({
-  search: jest.fn(async () => ({ total: 0, dashboards: [] })),
+  search: jest.fn(async () => ({
+    data: [],
+    meta: { page: 1, per_page: 100, total: 0 },
+  })),
   findById: jest.fn(),
   findByIds: mockFindByIds,
   findByTitle: jest.fn(),

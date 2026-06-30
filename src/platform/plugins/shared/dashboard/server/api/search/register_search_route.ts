@@ -13,10 +13,16 @@ import { telemetryHandler } from '@kbn/as-code-shared-telemetry';
 import type { VersionedRouter } from '@kbn/core-http-server';
 import type { Logger, RequestHandlerContext } from '@kbn/core/server';
 import type { UsageCounter } from '@kbn/usage-collection-plugin/server';
+import { schema } from '@kbn/config-schema';
 
 import { getRouteConfig } from '../get_route_config';
 import { logRequest } from '../log_request';
-import { searchRequestParamsSchema, searchResponseBodySchema } from './schemas';
+import {
+  legacySearchRequestParamsSchema,
+  legacySearchResponseBodySchema,
+  searchRequestParamsSchema,
+  searchResponseBodySchema,
+} from './schemas';
 import { search } from './search';
 import { getDashboardStateSchema } from '../dashboard_state_schemas';
 
@@ -50,11 +56,11 @@ export function registerSearchRoute(
       },
       validate: {
         request: {
-          query: searchRequestParamsSchema,
+          query: schema.oneOf([searchRequestParamsSchema, legacySearchRequestParamsSchema]),
         },
         response: {
           200: {
-            body: () => searchResponseBodySchema,
+            body: () => schema.oneOf([searchResponseBodySchema, legacySearchResponseBodySchema]),
             description: 'success',
           },
           403: {
@@ -69,7 +75,11 @@ export function registerSearchRoute(
     async (ctx, req, res) =>
       telemetryHandler(req, usageCounter, async () => {
         try {
+          // Request query is validated against `oneOf([GA, legacy])` by the router (returns 400),
+          // and the response is validated against the same schemas in dev. The active shape is
+          // determined by the feature flag inside `search`.
           const result = await search(ctx, req.query, getCachedDashboardStateSchema());
+
           return res.ok({ body: result });
         } catch (e) {
           if (e.isBoom && e.output.statusCode === 403) {

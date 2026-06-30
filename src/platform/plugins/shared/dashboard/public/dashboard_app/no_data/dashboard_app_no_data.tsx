@@ -158,6 +158,7 @@ export const isDashboardAppInNoDataState = async () => {
   // consider has data if there is at least one dashboard
   const { total } = await dashboardClient
     .search({ query: '', per_page: 1 })
+    .then(({ meta }) => meta)
     .catch(() => ({ total: 0 }));
   if (total > 0) return false;
 

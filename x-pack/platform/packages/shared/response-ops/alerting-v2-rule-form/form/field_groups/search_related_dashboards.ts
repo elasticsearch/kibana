@@ -30,7 +30,7 @@ export const searchRelatedDashboard = async (
 ): Promise<Dashboard[]> => {
   const { search, perPage = 100 } = options;
   const findService = await dashboard.findDashboardsService();
-  const { dashboards } = await findService.search({ query: search, per_page: perPage });
+  const { data: dashboards } = await findService.search({ query: search, per_page: perPage });
   return dashboards.map(({ id, data }) => ({ id, title: data.title }));
 };
 

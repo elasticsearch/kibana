@@ -29,7 +29,7 @@ export const computeSaveAsTitle = (title: string, existingTitles: string[]): str
 
 export const getSaveAsTitle = async (title: string) => {
   const [baseTitle] = extractTitleAndCount(title);
-  const { dashboards } = await dashboardClient.search({
+  const { data: dashboards } = await dashboardClient.search({
     query: baseTitle,
     per_page: 20,
   });

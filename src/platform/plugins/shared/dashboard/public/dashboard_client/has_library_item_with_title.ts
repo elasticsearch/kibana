@@ -10,7 +10,7 @@
 import { dashboardClient } from './dashboard_client';
 
 export async function hasLibraryItemWithTitle(title: string): Promise<boolean> {
-  const { dashboards } = await dashboardClient.search({
+  const { data: dashboards } = await dashboardClient.search({
     query: title,
     per_page: 20,
   });

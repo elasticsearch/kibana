@@ -13,7 +13,7 @@ import { useKibanaContextForPlugin } from '../../../hooks/use_kibana';
 import { useTabSwitcherContext } from './use_tab_switcher';
 
 export interface SearchDashboardsResult {
-  data: DashboardSearchResponseBody['dashboards'];
+  data: DashboardSearchResponseBody['data'];
   status: FETCH_STATUS;
 }
 
@@ -35,13 +35,13 @@ export function useDashboardFetcher(query = ''): SearchDashboardsResult {
       });
       try {
         const findDashboardsService = await dashboard?.findDashboardsService();
-        const data = await findDashboardsService.search({
+        const { data } = await findDashboardsService.search({
           query,
           per_page: 1000,
         });
 
         setResult({
-          data: data.dashboards,
+          data,
           status: FETCH_STATUS.SUCCESS,
         });
       } catch (error) {

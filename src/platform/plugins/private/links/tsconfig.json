@@ -40,7 +40,8 @@
     "@kbn/kibana-utils-plugin",
     "@kbn/dashboard-navigation-options-common",
     "@kbn/dashboard-navigation-options-components",
-    "@kbn/dashboard-navigation-options-schema"
+    "@kbn/dashboard-navigation-options-schema",
+    "@kbn/as-code-shared-schemas"
   ],
   "exclude": ["target/**/*"]
 }

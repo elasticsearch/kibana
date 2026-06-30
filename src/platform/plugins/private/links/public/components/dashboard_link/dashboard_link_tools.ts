@@ -10,6 +10,7 @@
 import { isEmpty, filter } from 'lodash';
 
 import type { DashboardState } from '@kbn/dashboard-plugin/server';
+import { PAGINATION_DEFAULT_PER_PAGE } from '@kbn/as-code-shared-schemas';
 import type { DashboardItem } from '../../types';
 import { dashboardServices } from '../../services/kibana_services';
 
@@ -47,10 +48,12 @@ export const fetchDashboard = async (dashboardId: string): Promise<DashboardItem
 
 export const fetchDashboards = async ({
   search = '',
-  size = 10,
+  size = PAGINATION_DEFAULT_PER_PAGE,
+  page = 1,
   parentDashboardId,
   selectedDashboardId,
 }: {
+  page?: number;
   size?: number;
   search?: string;
   parentDashboardId?: string;
@@ -60,9 +63,10 @@ export const fetchDashboards = async ({
   const responses = await findDashboardsService.search({
     query: search,
     per_page: size,
+    page,
   });
 
-  let dashboardList: DashboardItem[] = responses.dashboards.map(({ id, data }) => {
+  let dashboardList: DashboardItem[] = responses.data.map(({ id, data }) => {
     return getDashboardItem(id, data);
   });
 

@@ -207,7 +207,7 @@ export const useDashboardListingTable = ({
           tags: (references ?? []).map(({ id }) => id),
           excluded_tags: (referencesToExclude ?? []).map(({ id }) => id),
         })
-        .then(({ total, dashboards }) => {
+        .then(({ meta: { total }, data: dashboards }) => {
           const searchEndTime = window.performance.now();
           const searchDuration = searchEndTime - searchStartTime;
           reportPerformanceMetricEvent(coreServices.analytics, {

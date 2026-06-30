@@ -13,8 +13,8 @@ const DASHBOARD_TITLE = 'Dashboard 1';
 const MISSING_DASHBOARD_ID = 'missing-dashboard';
 
 const search = jest.fn(async () => ({
-  total: 1,
-  dashboards: [{ id: DASHBOARD_ID, data: { title: DASHBOARD_TITLE }, meta: {} }],
+  data: [{ id: DASHBOARD_ID, data: { title: DASHBOARD_TITLE }, meta: {} }],
+  meta: { page: 1, per_page: 100, total: 1 },
 }));
 
 const findByIds = jest.fn(async (ids: string[]) =>

@@ -36,8 +36,8 @@ const DASHBOARD_TITLE = 'Dashboard 123';
 const MISSING_DASHBOARD_ID = 'missing-dashboard';
 
 const mockSearch = jest.fn(async () => ({
-  total: 1,
-  dashboards: [{ id: DASHBOARD_ID, data: { title: DASHBOARD_TITLE }, meta: {} }],
+  data: [{ id: DASHBOARD_ID, data: { title: DASHBOARD_TITLE }, meta: {} }],
+  meta: { page: 1, per_page: 100, total: 1 },
 }));
 
 // Resolves only DASHBOARD_ID; any other id is reported as a not-found (deleted) artifact.

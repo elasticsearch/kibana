@@ -23,7 +23,7 @@ export const searchAction: ActionDefinition<Context> = {
   execute: async (context: Context) => {
     const searchResults = await dashboardClient.search(context.search);
     context.onResults(
-      searchResults.dashboards.map(({ id, data, meta }) => ({
+      searchResults.data.map(({ id, data, meta }) => ({
         id,
         isManaged: Boolean(meta.managed),
         title: data.title,

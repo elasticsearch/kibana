@@ -92,7 +92,7 @@ export function Dashboards() {
   useEffect(() => {
     const allAvailableDashboardsMap = new Map<
       string,
-      DashboardSearchResponseBody['dashboards'][number]
+      DashboardSearchResponseBody['data'][number]
     >();
     allAvailableDashboards.forEach((availableDashboard) => {
       allAvailableDashboardsMap.set(availableDashboard.id, availableDashboard);

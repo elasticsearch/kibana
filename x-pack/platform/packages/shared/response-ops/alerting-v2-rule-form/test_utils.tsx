@@ -44,7 +44,10 @@ export const createTestQueryClient = () =>
 export const createMockDashboardStart = (): DashboardStart =>
   ({
     findDashboardsService: jest.fn().mockResolvedValue({
-      search: jest.fn().mockResolvedValue({ total: 0, dashboards: [] }),
+      search: jest.fn().mockResolvedValue({
+        data: [],
+        meta: { page: 1, per_page: 100, total: 0 },
+      }),
       findById: jest.fn(),
       findByIds: jest.fn().mockResolvedValue([]),
       findByTitle: jest.fn(),
