@@ -8,21 +8,17 @@
 import React, { Suspense } from 'react';
 import { EuiLoadingSpinner } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { ApplicationStart } from '@kbn/core-application-browser';
 import type { VisualizationAttachment } from '@kbn/agent-builder-common/attachments';
 import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
-import {
-  getVisualizationDimensionsFromLensConfig,
-  type VisualizationServices,
-} from '@kbn/agent-builder-visualizations';
-import type { AgentBuilderStartDependencies } from '../../../types';
+import { getVisualizationDimensionsFromLensConfig } from './shared/get_visualization_dimensions';
+import type { VisualizationServices } from './services';
 
 const LazyVisualizeLens = React.lazy(() =>
-  import('@kbn/agent-builder-visualizations').then((m) => ({ default: m.VisualizeLens }))
+  import('./visualize_lens').then((m) => ({ default: m.VisualizeLens }))
 );
 
 const LazyVisualizeVega = React.lazy(() =>
-  import('@kbn/agent-builder-visualizations').then((m) => ({ default: m.VisualizeVega }))
+  import('./visualize_vega').then((m) => ({ default: m.VisualizeVega }))
 );
 
 const defaultVisualizationLabel = i18n.translate(
@@ -32,32 +28,15 @@ const defaultVisualizationLabel = i18n.translate(
 
 /**
  * Factory function that creates the visualization attachment UI definition.
- * Reuses the shared visualization renderers from `@kbn/agent-builder-visualizations`.
+ * Renderers receive Kibana services explicitly via `VisualizationServices`, so
+ * this package stays decoupled from any single consumer's Kibana context shape.
  */
-export const createVisualizationAttachmentDefinition = ({
-  application,
-  startDependencies,
-}: {
-  application: ApplicationStart;
-  startDependencies: AgentBuilderStartDependencies;
-}): AttachmentUIDefinition<VisualizationAttachment> => {
-  const services: VisualizationServices = {
-    application,
-    lens: startDependencies.lens,
-    dataViews: startDependencies.dataViews,
-    uiActions: startDependencies.uiActions,
-    unifiedSearch: startDependencies.unifiedSearch,
-    embeddable: startDependencies.embeddable,
-  };
-
+export const createVisualizationAttachmentDefinition = (
+  services: VisualizationServices
+): AttachmentUIDefinition<VisualizationAttachment> => {
   return {
     getLabel: (attachment: VisualizationAttachment): string => {
-      const { data } = attachment;
-      if (data.renderer === 'vega') {
-        return defaultVisualizationLabel;
-      }
-      const { title } = data.visualization;
-      return typeof title === 'string' ? title : defaultVisualizationLabel;
+      return attachment.data?.title ?? defaultVisualizationLabel;
     },
     getIcon: () => 'lensApp',
     getMaxWidth: (attachment) => {

@@ -20,6 +20,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import type { UsageCollectionSetup } from '@kbn/usage-collection-plugin/public';
 import { dynamic } from '@kbn/shared-ux-utility';
+import { createVisualizationAttachmentDefinition } from '@kbn/agent-builder-visualizations';
 import { registerLocators } from './locator/register_locators';
 import { buildAgentBuilderDeepLinks, registerAnalytics, registerApp } from './register';
 import { AgentBuilderNavControlInitiator } from './components/nav_control/lazy_agent_builder_nav_control';
@@ -72,7 +73,6 @@ import {
   setSidebarRuntimeContext,
   clearSidebarRuntimeContext,
 } from './sidebar';
-import { createVisualizationAttachmentDefinition } from './application/components/attachments/visualization_attachment';
 import { storageKeys } from './application/storage_keys';
 
 export class AgentBuilderPlugin
@@ -159,7 +159,14 @@ export class AgentBuilderPlugin
 
     attachmentsService.addAttachmentType(
       'visualization',
-      createVisualizationAttachmentDefinition({ application: core.application, startDependencies })
+      createVisualizationAttachmentDefinition({
+        application: core.application,
+        lens: startDependencies.lens,
+        dataViews: startDependencies.dataViews,
+        uiActions: startDependencies.uiActions,
+        unifiedSearch: startDependencies.unifiedSearch,
+        embeddable: startDependencies.embeddable,
+      })
     );
 
     const eventsService = new EventsService();

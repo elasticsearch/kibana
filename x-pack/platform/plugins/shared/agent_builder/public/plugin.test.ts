@@ -78,7 +78,7 @@ jest.mock('./sidebar', () => ({
   clearSidebarRuntimeContext: jest.fn(),
 }));
 
-jest.mock('./application/components/attachments/visualization_attachment', () => ({
+jest.mock('@kbn/agent-builder-visualizations', () => ({
   createVisualizationAttachmentDefinition: jest.fn(() => ({})),
 }));
 
