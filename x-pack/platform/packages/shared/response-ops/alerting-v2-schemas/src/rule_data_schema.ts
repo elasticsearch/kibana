@@ -255,11 +255,17 @@ export const getRecoverEsqlQuery = (
 
 /**
  * Returns the has-data ES|QL query when `noDataStrategy` is not `'none'`,
- * otherwise `undefined`. Only standalone queries support a `no_data` block.
+ * otherwise `undefined`.
+ *
+ * - Standalone: returns the explicit `no_data.query` block, if configured.
+ * - Composed: returns the `base` query.
  */
 export const getNoDataEsqlQuery = (query: Query, strategy?: NoDataStrategy): string | undefined => {
   if (strategy == null || strategy === noDataStrategy.none) return undefined;
-  if (query.format === 'standalone' && query.no_data) {
+  if (query.format === 'composed') {
+    return query.base;
+  }
+  if (query.no_data) {
     return query.no_data.query;
   }
   return undefined;
@@ -373,7 +379,7 @@ export const createRuleDataBaseSchema = z
     no_data_strategy: noDataStrategySchema
       .optional()
       .describe(
-        'How to handle no-data situations. "emit" emits a no-data event; "last_known_status" holds the last known status; "recover" forces recovery; "none" disables no-data detection.'
+        'How to handle no-data situations. "emit" emits a no-data event; "last_known_status" holds the last known status; "recover" forces recovery; "none" disables no-data detection. Standalone-format rules must provide a `no_data` query block when this is not "none"; composed-format rules use `base` as the data-presence query.'
       ),
     state_transition: stateTransitionSchema,
     grouping: groupingSchema.optional(),
@@ -420,6 +426,33 @@ export const isRecoveryQueryProvidedForStrategy = (data: {
   query?: { recovery?: unknown };
 }): boolean => data.recovery_strategy !== recoveryStrategy.query || data.query?.recovery != null;
 
+/** query.no_data is only meaningful when no_data_strategy is not "none". */
+type QueryWithOptionalNoData = Record<string, unknown>;
+
+export const isNoDataQueryConsistentWithStrategy = (data: {
+  no_data_strategy?: NoDataStrategy | null;
+  query?: QueryWithOptionalNoData;
+}): boolean => {
+  if (data.query?.no_data == null) return true;
+  return data.no_data_strategy != null && data.no_data_strategy !== noDataStrategy.none;
+};
+
+/**
+ * Standalone rules with `no_data_strategy != 'none'` must provide a
+ * `query.no_data` block. Composed rules use their `base` query as the
+ * data-presence query, so they don't need a separate block.
+ */
+export const isNoDataQueryProvidedForStrategy = (data: {
+  no_data_strategy?: NoDataStrategy | null;
+  query?: QueryWithOptionalNoData;
+}): boolean => {
+  if (data.no_data_strategy == null || data.no_data_strategy === noDataStrategy.none) {
+    return true;
+  }
+  if (data.query?.format !== queryFormat.standalone) return true;
+  return data.query?.no_data != null;
+};
+
 export const createRuleDataSchema = createRuleDataBaseSchema
   .refine(isStateTransitionAllowed, {
     message: 'state_transition is only allowed when kind is "alert".',
@@ -440,6 +473,15 @@ export const createRuleDataSchema = createRuleDataBaseSchema
   .refine(isRecoveryQueryProvidedForStrategy, {
     message: 'query.recovery is required when recovery_strategy is "query".',
     path: ['query', 'recovery'],
+  })
+  .refine(isNoDataQueryConsistentWithStrategy, {
+    message: 'query.no_data is only allowed when no_data_strategy is set to a non-"none" value.',
+    path: ['query', 'no_data'],
+  })
+  .refine(isNoDataQueryProvidedForStrategy, {
+    message:
+      'query.no_data is required when no_data_strategy is not "none" for standalone-format rules.',
+    path: ['query', 'no_data'],
   });
 
 export type CreateRuleData = z.infer<typeof createRuleDataSchema>;

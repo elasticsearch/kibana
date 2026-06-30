@@ -13,6 +13,7 @@ import { isEsqlUserError } from '../../errors/esql_user_error';
 import type { PipelineStateStream, RuleExecutionStep, RulePipelineState } from '../types';
 import { buildRecoveryAlertEvents, buildQueryRecoveryAlertEvents } from '../build_alert_events';
 import { getQueryPayload } from '../get_query_payload';
+import { fetchActiveAlertGroupHashes } from '../fetch_active_alert_group_hashes';
 import {
   LoggerServiceToken,
   type LoggerServiceContract,
@@ -22,11 +23,10 @@ import {
   QueryServiceScopedSpaceRoutingToken,
 } from '../../services/query_service/tokens';
 import type { QueryServiceContract } from '../../services/query_service/query_service';
-import { getActiveAlertGroupHashesQuery, type ActiveAlertGroupHash } from '../queries';
+import type { ActiveAlertGroupHash } from '../queries';
 import { guardedExpandStep } from '../stream_utils';
 import type { RuleResponse } from '../../rules_client';
 import type { AlertEvent } from '../../../resources/datastreams/alert_events';
-import type { ExecutionContext } from '../../execution_context';
 
 @injectable()
 export class CreateRecoveryEventsStep implements RuleExecutionStep {
@@ -62,7 +62,8 @@ export class CreateRecoveryEventsStep implements RuleExecutionStep {
         return;
       }
 
-      const activeGroupHashes = await step.fetchActiveAlertGroupHashes(
+      const activeGroupHashes = await fetchActiveAlertGroupHashes(
+        step.internalQueryService,
         rule.id,
         input.executionContext
       );
@@ -152,20 +153,5 @@ export class CreateRecoveryEventsStep implements RuleExecutionStep {
       }
       throw error;
     }
-  }
-
-  private async fetchActiveAlertGroupHashes(
-    ruleId: string,
-    executionContext: ExecutionContext
-  ): Promise<ActiveAlertGroupHash[]> {
-    const request = getActiveAlertGroupHashesQuery({ ruleId }).toRequest();
-    return this.internalQueryService.executeQueryRows<ActiveAlertGroupHash>({
-      query: request.query,
-      // @ts-expect-error - the types of the composer query are not compatible with the types of the esql client
-      params: request.params,
-      // @ts-expect-error - the types of the composer query are not compatible with the types of the esql client
-      filter: request.filter,
-      abortSignal: executionContext.signal,
-    });
   }
 }

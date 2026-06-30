@@ -1294,4 +1294,180 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
       }
     }
   );
+
+  apiTest("no_data_strategy 'emit' sets the episode to active", async ({ apiServices }) => {
+    const HOST = 'host-director-no-data-emit';
+
+    await apiServices.alertingV2.sourceIndex.indexDocs({
+      index: SOURCE_INDEX,
+      docs: [
+        {
+          '@timestamp': new Date().toISOString(),
+          'host.name': HOST,
+          severity: 'high',
+          value: 1,
+        },
+      ],
+    });
+
+    const rule = await apiServices.alertingV2.rules.create(
+      buildCreateRuleData({
+        metadata: { name: 'director-no-data-emit' },
+        query: {
+          format: 'standalone',
+          breach: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+          },
+          no_data: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name`,
+          },
+        },
+        // Use recovery_strategy 'none' so the recovery step never fires.
+        recovery_strategy: 'none',
+        no_data_strategy: 'emit',
+      })
+    );
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+      episodeStatus: 'active',
+    });
+
+    await apiServices.alertingV2.sourceIndex.deleteDocs({
+      index: SOURCE_INDEX,
+      query: { term: { 'host.name': HOST } },
+    });
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+      status: 'no_data',
+    });
+
+    const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      status: 'no_data',
+    });
+
+    expect(noDataEvents.length).toBeGreaterThanOrEqual(1);
+    for (const event of noDataEvents) {
+      expect(event.episode?.status).toBe('active');
+    }
+  });
+
+  apiTest(
+    "no_data_strategy 'last_known_status' preserves the prior episode status",
+    async ({ apiServices }) => {
+      const HOST = 'host-director-no-data-last-known';
+
+      await apiServices.alertingV2.sourceIndex.indexDocs({
+        index: SOURCE_INDEX,
+        docs: [
+          {
+            '@timestamp': new Date().toISOString(),
+            'host.name': HOST,
+            severity: 'high',
+            value: 1,
+          },
+        ],
+      });
+
+      const rule = await apiServices.alertingV2.rules.create(
+        buildCreateRuleData({
+          metadata: { name: 'director-no-data-last-known' },
+          query: {
+            format: 'standalone',
+            breach: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+            },
+            no_data: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name`,
+            },
+          },
+          // Use recovery_strategy 'none' so the recovery step never fires.
+          recovery_strategy: 'none',
+          no_data_strategy: 'last_known_status',
+          state_transition: { pending_count: 10 },
+        })
+      );
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+        episodeStatus: 'pending',
+      });
+
+      await apiServices.alertingV2.sourceIndex.deleteDocs({
+        index: SOURCE_INDEX,
+        query: { term: { 'host.name': HOST } },
+      });
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+        status: 'no_data',
+      });
+
+      const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        status: 'no_data',
+      });
+
+      expect(noDataEvents.length).toBeGreaterThanOrEqual(1);
+      for (const event of noDataEvents) {
+        expect(event.episode?.status).toBe('pending');
+      }
+    }
+  );
+
+  apiTest(
+    "no_data_strategy 'recover' transitions the episode toward recovery via a no_data event",
+    async ({ apiServices }) => {
+      const HOST = 'host-director-no-data-recover';
+
+      await apiServices.alertingV2.sourceIndex.indexDocs({
+        index: SOURCE_INDEX,
+        docs: [
+          {
+            '@timestamp': new Date().toISOString(),
+            'host.name': HOST,
+            severity: 'high',
+            value: 1,
+          },
+        ],
+      });
+
+      // Use recovery_strategy 'none' so the recovery step never fires.
+      const rule = await apiServices.alertingV2.rules.create(
+        buildCreateRuleData({
+          metadata: { name: 'director-no-data-recover' },
+          query: {
+            format: 'standalone',
+            breach: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+            },
+            no_data: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name`,
+            },
+          },
+          recovery_strategy: 'none',
+          no_data_strategy: 'recover',
+        })
+      );
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+        episodeStatus: 'active',
+      });
+
+      await apiServices.alertingV2.sourceIndex.deleteDocs({
+        index: SOURCE_INDEX,
+        query: { term: { 'host.name': HOST } },
+      });
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+        status: 'no_data',
+      });
+
+      const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        status: 'no_data',
+      });
+
+      expect(noDataEvents.length).toBeGreaterThanOrEqual(1);
+      // The director applies the recovered FSM transition: active → recovering.
+      for (const event of noDataEvents) {
+        expect(event.episode?.status).toBe('recovering');
+      }
+    }
+  );
 });

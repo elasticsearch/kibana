@@ -260,6 +260,72 @@ describe('DirectorService', () => {
       });
     });
 
+    it("sets the episode status to active on a no_data event when no_data_strategy is 'emit'", async () => {
+      const ruleWithEmit = createRuleResponse({ no_data_strategy: 'emit' });
+      const alertEvent = createAlertEvent({
+        group_hash: 'hash-1',
+        status: 'no_data',
+        episode: undefined,
+      });
+
+      mockEsClient.esql.query.mockResolvedValue(
+        createLatestAlertEventStateResponse([
+          {
+            last_episode_timestamp: '2026-01-01T00:00:00.000Z',
+            last_status: 'breached',
+            last_episode_id: 'existing-episode',
+            last_episode_status: alertEpisodeStatus.active,
+            last_episode_status_count: null,
+            group_hash: 'hash-1',
+          },
+        ])
+      );
+
+      const result = await directorService.run({
+        rule: ruleWithEmit,
+        executionContext: testExecutionContext,
+        alertEvents: [alertEvent],
+      });
+
+      expect(result[0].episode).toEqual({
+        id: 'existing-episode',
+        status: alertEpisodeStatus.active,
+      });
+    });
+
+    it("preserves the prior episode status on a no_data event when no_data_strategy is 'last_known_status'", async () => {
+      const ruleWithLastKnown = createRuleResponse({ no_data_strategy: 'last_known_status' });
+      const alertEvent = createAlertEvent({
+        group_hash: 'hash-1',
+        status: 'no_data',
+        episode: undefined,
+      });
+
+      mockEsClient.esql.query.mockResolvedValue(
+        createLatestAlertEventStateResponse([
+          {
+            last_episode_timestamp: '2026-01-01T00:00:00.000Z',
+            last_status: 'breached',
+            last_episode_id: 'existing-episode',
+            last_episode_status: alertEpisodeStatus.recovering,
+            last_episode_status_count: null,
+            group_hash: 'hash-1',
+          },
+        ])
+      );
+
+      const result = await directorService.run({
+        rule: ruleWithLastKnown,
+        executionContext: testExecutionContext,
+        alertEvents: [alertEvent],
+      });
+
+      expect(result[0].episode).toEqual({
+        id: 'existing-episode',
+        status: alertEpisodeStatus.recovering,
+      });
+    });
+
     it('processes multiple alert events correctly', async () => {
       const alertEvents = [
         createAlertEvent({ group_hash: 'hash-1', status: 'breached', episode: undefined }),

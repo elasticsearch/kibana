@@ -95,7 +95,7 @@ Auto-generated from \`@kbn/alerting-v2-schemas\`. This is the source of truth fo
 | \`schedule\` | object | required | Execution schedule configuration. |
 | \`query\` | { format: \\"composed\\", ... } | { format: \\"standalone\\", ... } | required | Detection query configuration. |
 | \`recovery_strategy\` | \\"no_breach\\" | \\"query\\" | \\"none\\" | optional | How recovery is detected. \\"no_breach\\" recovers groups that stop breaching; \\"query\\" uses a custom recovery query; \\"none\\" disables recovery. (enum: no_breach | query | none) |
-| \`no_data_strategy\` | \\"last_known_status\\" | \\"emit\\" | \\"recover\\" | \\"none\\" | optional | How to handle no-data situations. \\"emit\\" emits a no-data event; \\"last_known_status\\" holds the last known status; \\"recover\\" forces recovery; \\"none\\" disables no-data detection. (enum: last_known_status | emit | recover | none) |
+| \`no_data_strategy\` | \\"last_known_status\\" | \\"emit\\" | \\"recover\\" | \\"none\\" | optional | How to handle no-data situations. \\"emit\\" emits a no-data event; \\"last_known_status\\" holds the last known status; \\"recover\\" forces recovery; \\"none\\" disables no-data detection. Standalone-format rules must provide a \`no_data\` query block when this is not \\"none\\"; composed-format rules use \`base\` as the data-presence query. (enum: last_known_status | emit | recover | none) |
 | \`state_transition\` | object | null | optional |  |
 | \`grouping\` | object | optional | Grouping configuration. |
 | \`artifacts\` | object[] | optional |  (max items: 100) |

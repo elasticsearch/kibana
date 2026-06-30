@@ -1718,6 +1718,232 @@ apiTest.describe('Rule executor', { tag: tags.stateful.classic }, () => {
     }
   );
 
+  apiTest("no_data_strategy 'emit' writes a no_data rule event", async ({ apiServices }) => {
+    const HOST = 'host-no-data-emit';
+
+    await apiServices.alertingV2.sourceIndex.indexDocs({
+      index: SOURCE_INDEX,
+      docs: [
+        {
+          '@timestamp': new Date().toISOString(),
+          'host.name': HOST,
+          severity: 'high',
+          value: 1,
+        },
+      ],
+    });
+
+    const rule = await apiServices.alertingV2.rules.create(
+      buildCreateRuleData({
+        metadata: { name: 'executor-no-data-emit' },
+        query: {
+          format: 'standalone',
+          breach: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+          },
+          no_data: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name`,
+          },
+        },
+        // Use recovery_strategy 'none' so the recovery step never fires.
+        recovery_strategy: 'none',
+        no_data_strategy: 'emit',
+      })
+    );
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'breached' });
+
+    const breachedEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      status: 'breached',
+    });
+    const breachedHash = breachedEvents[0].group_hash;
+
+    await apiServices.alertingV2.sourceIndex.deleteDocs({
+      index: SOURCE_INDEX,
+      query: { term: { 'host.name': HOST } },
+    });
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'no_data' });
+
+    const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      status: 'no_data',
+    });
+
+    expect(noDataEvents.length).toBeGreaterThanOrEqual(1);
+    expect(noDataEvents[0].group_hash).toBe(breachedHash);
+  });
+
+  apiTest(
+    "no_data_strategy 'last_known_status' emits the same no_data rule event as 'emit'",
+    async ({ apiServices }) => {
+      const HOST = 'host-no-data-last-known';
+
+      await apiServices.alertingV2.sourceIndex.indexDocs({
+        index: SOURCE_INDEX,
+        docs: [
+          {
+            '@timestamp': new Date().toISOString(),
+            'host.name': HOST,
+            severity: 'high',
+            value: 1,
+          },
+        ],
+      });
+
+      const rule = await apiServices.alertingV2.rules.create(
+        buildCreateRuleData({
+          metadata: { name: 'executor-no-data-last-known' },
+          query: {
+            format: 'standalone',
+            breach: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+            },
+            no_data: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name`,
+            },
+          },
+          // Use recovery_strategy 'none' so the recovery step never fires.
+          recovery_strategy: 'none',
+          no_data_strategy: 'last_known_status',
+        })
+      );
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'breached' });
+
+      const breachedEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        status: 'breached',
+      });
+      const breachedHash = breachedEvents[0].group_hash;
+
+      await apiServices.alertingV2.sourceIndex.deleteDocs({
+        index: SOURCE_INDEX,
+        query: { term: { 'host.name': HOST } },
+      });
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'no_data' });
+
+      const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        status: 'no_data',
+      });
+
+      expect(noDataEvents.length).toBeGreaterThanOrEqual(1);
+      expect(noDataEvents[0].group_hash).toBe(breachedHash);
+    }
+  );
+
+  apiTest("no_data_strategy 'recover' writes a no_data rule event", async ({ apiServices }) => {
+    const HOST = 'host-no-data-recover';
+
+    await apiServices.alertingV2.sourceIndex.indexDocs({
+      index: SOURCE_INDEX,
+      docs: [
+        {
+          '@timestamp': new Date().toISOString(),
+          'host.name': HOST,
+          severity: 'high',
+          value: 1,
+        },
+      ],
+    });
+
+    const rule = await apiServices.alertingV2.rules.create(
+      buildCreateRuleData({
+        metadata: { name: 'executor-no-data-recover' },
+        query: {
+          format: 'standalone',
+          breach: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+          },
+          no_data: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name`,
+          },
+        },
+        // Pair 'recover' no-data strategy with recovery_strategy 'none' so
+        // the recovery step does not emit a recovered event for the group —
+        // confirming the no_data event comes from the no-data step and the
+        // director drives the episode toward recovery.
+        recovery_strategy: 'none',
+        no_data_strategy: 'recover',
+      })
+    );
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'breached' });
+
+    const breachedEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      status: 'breached',
+    });
+    const breachedHash = breachedEvents[0].group_hash;
+
+    await apiServices.alertingV2.sourceIndex.deleteDocs({
+      index: SOURCE_INDEX,
+      query: { term: { 'host.name': HOST } },
+    });
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'no_data' });
+
+    const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      status: 'no_data',
+    });
+
+    expect(noDataEvents.length).toBeGreaterThanOrEqual(1);
+    expect(noDataEvents[0].group_hash).toBe(breachedHash);
+
+    // The no-data step writes a no_data event; the recovery step is
+    // disabled so no recovered rule event should exist.
+    const recoveredEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      status: 'recovered',
+    });
+    expect(recoveredEvents).toHaveLength(0);
+  });
+
+  apiTest("no_data_strategy 'none' does not write no_data events", async ({ apiServices }) => {
+    const HOST = 'host-no-data-none';
+
+    await apiServices.alertingV2.sourceIndex.indexDocs({
+      index: SOURCE_INDEX,
+      docs: [
+        {
+          '@timestamp': new Date().toISOString(),
+          'host.name': HOST,
+          severity: 'high',
+          value: 1,
+        },
+      ],
+    });
+
+    const rule = await apiServices.alertingV2.rules.create(
+      buildCreateRuleData({
+        metadata: { name: 'executor-no-data-none' },
+        query: {
+          format: 'standalone',
+          breach: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+          },
+        },
+        // Default no_data_strategy is 'none'; spell it out so the test
+        // intent is unambiguous.
+        no_data_strategy: 'none',
+      })
+    );
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'breached' });
+
+    await apiServices.alertingV2.sourceIndex.deleteDocs({
+      index: SOURCE_INDEX,
+      query: { term: { 'host.name': HOST } },
+    });
+
+    // Recovery is still on by default ('no_breach'), so we wait for the
+    // recovery side of the lifecycle as the positive signal that the
+    // executor processed the absence — then assert no no_data events.
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, { status: 'recovered' });
+
+    const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      status: 'no_data',
+    });
+    expect(noDataEvents).toHaveLength(0);
+  });
+
   apiTest('a deleted rule writes no new events', async ({ apiServices }) => {
     await apiServices.alertingV2.sourceIndex.indexDocs({
       index: SOURCE_INDEX,

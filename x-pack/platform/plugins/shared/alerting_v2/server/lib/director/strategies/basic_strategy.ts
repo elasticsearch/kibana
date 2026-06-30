@@ -6,10 +6,11 @@
  */
 
 import { injectable } from 'inversify';
-import type { AlertEventStatus } from '../../../resources/datastreams/alert_events';
 import {
   alertEpisodeStatus,
+  alertEventStatus,
   type AlertEpisodeStatus,
+  type AlertEventStatus,
 } from '../../../resources/datastreams/alert_events';
 import type { RuleResponse } from '../../rules_client/types';
 import type { ITransitionStrategy, StateTransitionContext, StateTransitionResult } from './types';
@@ -18,29 +19,26 @@ import type { ITransitionStrategy, StateTransitionContext, StateTransitionResult
 export class BasicTransitionStrategy implements ITransitionStrategy {
   readonly name: string = 'basic';
 
-  protected readonly stateMachine: Record<
-    AlertEpisodeStatus,
-    Record<AlertEventStatus, AlertEpisodeStatus>
+  // Deterministic state machine transitions using current episode status and alert event status.
+  // `no_data` events are not in this table. Their outcome also depends on `rule.no_data_strategy`, and is resolved in getNextStatusForNoData below
+  protected readonly stateMachine: Partial<
+    Record<AlertEpisodeStatus, Partial<Record<AlertEventStatus, AlertEpisodeStatus>>>
   > = {
     [alertEpisodeStatus.inactive]: {
       breached: alertEpisodeStatus.pending,
       recovered: alertEpisodeStatus.inactive,
-      no_data: alertEpisodeStatus.inactive,
     },
     [alertEpisodeStatus.pending]: {
       breached: alertEpisodeStatus.active,
       recovered: alertEpisodeStatus.inactive,
-      no_data: alertEpisodeStatus.pending,
     },
     [alertEpisodeStatus.active]: {
       breached: alertEpisodeStatus.active,
       recovered: alertEpisodeStatus.recovering,
-      no_data: alertEpisodeStatus.active,
     },
     [alertEpisodeStatus.recovering]: {
       breached: alertEpisodeStatus.active,
       recovered: alertEpisodeStatus.inactive,
-      no_data: alertEpisodeStatus.recovering,
     },
   };
 
@@ -48,11 +46,19 @@ export class BasicTransitionStrategy implements ITransitionStrategy {
     return true;
   }
 
-  getNextState({ alertEvent, previousEpisode }: StateTransitionContext): StateTransitionResult {
+  getNextState({
+    rule,
+    alertEvent,
+    previousEpisode,
+  }: StateTransitionContext): StateTransitionResult {
     const currentAlertEpisodeStatus = previousEpisode?.last_episode_status;
 
     if (!currentAlertEpisodeStatus) {
       return { status: alertEpisodeStatus.pending };
+    }
+
+    if (alertEvent.status === alertEventStatus.no_data) {
+      return { status: this.getNextStatusForNoData(rule, currentAlertEpisodeStatus) };
     }
 
     const stateRules = this.stateMachine[currentAlertEpisodeStatus];
@@ -64,5 +70,18 @@ export class BasicTransitionStrategy implements ITransitionStrategy {
     const nextState = stateRules[alertEvent.status];
 
     return { status: nextState ?? currentAlertEpisodeStatus ?? alertEpisodeStatus.pending };
+  }
+
+  private getNextStatusForNoData(
+    rule: RuleResponse,
+    currentStatus: AlertEpisodeStatus
+  ): AlertEpisodeStatus {
+    if (rule.no_data_strategy === 'emit') {
+      return alertEpisodeStatus.active;
+    } else if (rule.no_data_strategy === 'recover') {
+      return this.stateMachine[currentStatus]?.recovered ?? currentStatus;
+    }
+    // for all other no_data_strategy types return the last known episode status
+    return currentStatus;
   }
 }

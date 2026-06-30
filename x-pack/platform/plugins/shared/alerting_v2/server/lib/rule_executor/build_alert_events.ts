@@ -49,7 +49,7 @@ function sha256(value: string) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function buildGroupHash({
+export function buildGroupHash({
   rowDoc,
   groupKeyFields,
   fallbackSeed,
@@ -178,7 +178,42 @@ export function buildRecoveryAlertEvents({
     }));
 }
 
-function rowToDocument(
+export interface BuildNoDataAlertEventsOpts {
+  ruleId: string;
+  ruleVersion: number;
+  spaceId: string;
+  groupHashes: string[];
+  scheduledTimestamp: string;
+}
+
+/**
+ * Creates `no_data` alert events for the supplied group hashes.
+ *
+ * Used when no_data_strategy is configured on the rule.
+ */
+export function buildNoDataAlertEvents({
+  ruleId,
+  ruleVersion,
+  spaceId,
+  groupHashes,
+  scheduledTimestamp,
+}: BuildNoDataAlertEventsOpts): AlertEvent[] {
+  const wroteAt = new Date().toISOString();
+
+  return groupHashes.map((groupHash) => ({
+    '@timestamp': wroteAt,
+    scheduled_timestamp: scheduledTimestamp,
+    rule: { id: ruleId, version: ruleVersion },
+    group_hash: groupHash,
+    data: {},
+    status: 'no_data' as const,
+    source: 'internal',
+    type: 'signal' as const,
+    space_id: spaceId,
+  }));
+}
+
+export function rowToDocument(
   columns: EsqlQueryResponse['columns'],
   row: unknown[]
 ): Record<string, unknown> {

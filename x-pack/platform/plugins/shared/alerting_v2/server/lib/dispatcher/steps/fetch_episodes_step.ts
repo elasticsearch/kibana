@@ -15,7 +15,10 @@ import type {
   DispatcherPipelineState,
   DispatcherStepOutput,
 } from '../types';
-import type { AlertEventSeverity } from '../../../resources/datastreams/alert_events';
+import type {
+  AlertEpisodeStatus,
+  AlertEventSeverity,
+} from '../../../resources/datastreams/alert_events';
 import type { QueryServiceContract } from '../../services/query_service/query_service';
 import { QueryServiceInternalToken } from '../../services/query_service/tokens';
 import { LOOKBACK_WINDOW_MINUTES } from '../constants';
@@ -26,7 +29,7 @@ interface RawAlertEpisode {
   rule_id: string;
   group_hash: string;
   episode_id: string;
-  episode_status: 'inactive' | 'pending' | 'active' | 'recovering';
+  episode_status: AlertEpisodeStatus;
   data_json: string | null;
   severity: AlertEventSeverity | null;
 }

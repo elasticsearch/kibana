@@ -39,7 +39,11 @@ apiTest.describe('Alerting V2 Telemetry', { tag: tags.stateful.classic }, () => 
           metadata: { name: 'alert-rule-1', tags: [AGENT_BUILDER_TAG] },
           time_field: '@timestamp',
           schedule: { every: '1m', lookback: '5m' },
-          query: { format: 'standalone', breach: { query: 'FROM metrics-* | LIMIT 10' } },
+          query: {
+            format: 'standalone',
+            breach: { query: 'FROM metrics-* | LIMIT 10' },
+            no_data: { query: 'FROM metrics-* | STATS c = COUNT(*)' },
+          },
           grouping: { fields: ['host.name', 'service.name'] },
           no_data_strategy: 'last_known_status',
           // Builder defaults to `no_breach`; original FTR rule had no recovery strategy.
@@ -65,7 +69,11 @@ apiTest.describe('Alerting V2 Telemetry', { tag: tags.stateful.classic }, () => 
           metadata: { name: 'alert-rule-2' },
           time_field: '@timestamp',
           schedule: { every: '5m', lookback: '10m' },
-          query: { format: 'standalone', breach: { query: 'FROM metrics-* | LIMIT 5' } },
+          query: {
+            format: 'standalone',
+            breach: { query: 'FROM metrics-* | LIMIT 5' },
+            no_data: { query: 'FROM metrics-* | STATS c = COUNT(*)' },
+          },
           no_data_strategy: 'recover',
           recovery_strategy: undefined,
           grouping: undefined,

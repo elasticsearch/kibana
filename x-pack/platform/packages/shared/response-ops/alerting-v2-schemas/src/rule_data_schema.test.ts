@@ -534,6 +534,68 @@ describe('createRuleDataSchema', () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it('rejects standalone no_data_strategy "emit" when query.no_data is absent', () => {
+      const result = createRuleDataSchema.safeParse({
+        ...validCreateData,
+        no_data_strategy: 'emit',
+        query: {
+          format: 'standalone',
+          breach: { query: 'FROM logs-* | LIMIT 1' },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects standalone no_data_strategy "last_known_status" when query.no_data is absent', () => {
+      const result = createRuleDataSchema.safeParse({
+        ...validCreateData,
+        no_data_strategy: 'last_known_status',
+        query: {
+          format: 'standalone',
+          breach: { query: 'FROM logs-* | LIMIT 1' },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects no_data_strategy "none" when query.no_data is also provided', () => {
+      const result = createRuleDataSchema.safeParse({
+        ...validCreateData,
+        no_data_strategy: 'none',
+        query: {
+          format: 'standalone',
+          breach: { query: 'FROM logs-* | LIMIT 1' },
+          no_data: { query: 'FROM heartbeat-* | LIMIT 1' },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects standalone query.no_data when no_data_strategy is omitted', () => {
+      const result = createRuleDataSchema.safeParse({
+        ...validCreateData,
+        query: {
+          format: 'standalone',
+          breach: { query: 'FROM logs-* | LIMIT 1' },
+          no_data: { query: 'FROM heartbeat-* | LIMIT 1' },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts composed no_data_strategy "emit" without a no_data block', () => {
+      const result = createRuleDataSchema.safeParse({
+        ...validCreateData,
+        no_data_strategy: 'emit',
+        query: {
+          format: 'composed',
+          base: 'FROM metrics-* | STATS AVG(cpu) BY host.name',
+          breach: { segment: 'WHERE AVG(cpu) > 0.9' },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('schedule.lookback', () => {
@@ -1239,13 +1301,22 @@ describe('getNoDataEsqlQuery', () => {
     expect(getNoDataEsqlQuery(query, 'emit')).toBe('FROM heartbeat-* | LIMIT 1');
   });
 
-  it('returns undefined for composed format (no no_data block)', () => {
+  it('returns base for composed format (base is the data-presence query)', () => {
     const query = {
       format: 'composed' as const,
       base: 'FROM metrics-*',
       breach: { segment: 'WHERE cpu > 0.9' },
     };
-    expect(getNoDataEsqlQuery(query, 'emit')).toBeUndefined();
+    expect(getNoDataEsqlQuery(query, 'emit')).toBe('FROM metrics-*');
+  });
+
+  it('returns undefined for composed format when no_data_strategy is "none"', () => {
+    const query = {
+      format: 'composed' as const,
+      base: 'FROM metrics-*',
+      breach: { segment: 'WHERE cpu > 0.9' },
+    };
+    expect(getNoDataEsqlQuery(query, 'none')).toBeUndefined();
   });
 
   it('returns undefined when no_data_strategy is "none"', () => {

@@ -161,4 +161,57 @@ describe('BasicTransitionStrategy', () => {
       expect(result).toEqual({ status: alertEpisodeStatus.active });
     });
   });
+
+  describe('no_data event branching on rule.no_data_strategy', () => {
+    it.each<[AlertEpisodeStatus]>([
+      [alertEpisodeStatus.inactive],
+      [alertEpisodeStatus.pending],
+      [alertEpisodeStatus.active],
+      [alertEpisodeStatus.recovering],
+    ])("'emit' sets %s to active", (from) => {
+      const result = getNextState({
+        eventStatus: alertEventStatus.no_data,
+        noDataStrategy: 'emit',
+        previousEpisode: buildLatestAlertEvent({
+          episodeStatus: from,
+          eventStatus: alertEventStatus.no_data,
+        }),
+      });
+      expect(result).toEqual({ status: alertEpisodeStatus.active });
+    });
+
+    it.each<[AlertEpisodeStatus]>([
+      [alertEpisodeStatus.inactive],
+      [alertEpisodeStatus.pending],
+      [alertEpisodeStatus.active],
+      [alertEpisodeStatus.recovering],
+    ])("'last_known_status' preserves %s", (from) => {
+      const result = getNextState({
+        eventStatus: alertEventStatus.no_data,
+        noDataStrategy: 'last_known_status',
+        previousEpisode: buildLatestAlertEvent({
+          episodeStatus: from,
+          eventStatus: alertEventStatus.no_data,
+        }),
+      });
+      expect(result).toEqual({ status: from });
+    });
+
+    it.each<[AlertEpisodeStatus, AlertEpisodeStatus]>([
+      [alertEpisodeStatus.inactive, alertEpisodeStatus.inactive],
+      [alertEpisodeStatus.pending, alertEpisodeStatus.inactive],
+      [alertEpisodeStatus.active, alertEpisodeStatus.recovering],
+      [alertEpisodeStatus.recovering, alertEpisodeStatus.inactive],
+    ])("'recover' transitions %s → %s (mirrors recovered-event FSM)", (from, to) => {
+      const result = getNextState({
+        eventStatus: alertEventStatus.no_data,
+        noDataStrategy: 'recover',
+        previousEpisode: buildLatestAlertEvent({
+          episodeStatus: from,
+          eventStatus: alertEventStatus.no_data,
+        }),
+      });
+      expect(result).toEqual({ status: to });
+    });
+  });
 });

@@ -58,6 +58,7 @@ RuleExecutionPipeline
    +--> ExecuteRuleQueryStep
    +--> CreateAlertEventsStep
    +--> CreateRecoveryEventsStep
+   +--> CreateNoDataEventsStep
    +--> DirectorStep
    +--> StoreAlertEventsStep
 ```
@@ -131,7 +132,7 @@ Top-level strategy fields (sit alongside `query` on the rule, not inside it):
 | Top-level field | Values | Meaning |
 | --- | --- | --- |
 | `recovery_strategy` | `'no_breach'` \| `'query'` \| `'none'` | How the executor detects recovery. `'none'` disables recovery entirely. |
-| `no_data_strategy` | `'emit'` \| `'last_known_status'` \| `'recover'` \| `'none'` | How the executor reacts when `no_data` returns no rows. The executor does not yet act on this field — no-data event emission will be wired up in a future change. |
+| `no_data_strategy` | `'emit'` \| `'last_known_status'` \| `'recover'` \| `'none'` | How the executor reacts when an active group is absent from the breach batch and the `no_data` query reports no data. See [No-data behavior](#no-data-behavior). |
 
 ## Operational parameters
 
@@ -166,8 +167,9 @@ Step order is defined in `setup/bind_rule_executor.ts`.
 | 5 | `ExecuteRuleQueryStep` | Build and run ES\|QL, emitting streamed row batches. |
 | 6 | `CreateAlertEventsStep` | Turn a row batch into breached rule events. |
 | 7 | `CreateRecoveryEventsStep` | Append recovery events for alert rules when configured. |
-| 8 | `DirectorStep` | Enrich alert-type events with episode state. |
-| 9 | `StoreAlertEventsStep` | Persist the final batch into `.rule-events`. |
+| 8 | `CreateNoDataEventsStep` | Apply `no_data_strategy` for alert rules: emit `no_data` events, force recovery, or leave the batch alone based on a data-presence check. |
+| 9 | `DirectorStep` | Enrich alert-type events with episode state. |
+| 10 | `StoreAlertEventsStep` | Persist the final batch into `.rule-events`. |
 
 ## Recovery behavior
 
@@ -198,6 +200,52 @@ Selected when `recovery_strategy === 'query'`. The executor runs the configured 
 | `'query'` | A recovery query row matches a currently active group. |
 
 Recovered documents are appended to `alertEventsBatch` before `DirectorStep` and storage.
+
+## No-data behavior
+
+No-data handling lives in `CreateNoDataEventsStep`, which runs after `CreateRecoveryEventsStep` and post-processes the events recovery emitted. It only runs for `kind: alert` rules.
+
+Recovery answers "the group is absent from breach, was it because the group recovered?" The no-data step then asks the follow-up: "or was it because the group has no data at all?" — and rewrites the batch accordingly.
+
+### How it classifies absent groups
+
+For each active group missing from the current breach batch, the executor runs a data-presence query and partitions:
+
+1. Standalone rules use the configured `query.no_data` block as the data-presence query. The API schema requires this block whenever `no_data_strategy` is not `'none'`.
+2. Composed rules use `base` as the data-presence query — `breach.segment` is what filters `base` down to breaching rows, so any group that appears in `base` results has data.
+3. Groups present in the data-presence result make up the **data-present partition**. Groups absent from it make up the **no-data partition**.
+
+The step also keeps a defensive runtime skip if no data-presence query is available — this only protects against stale saved objects that pre-date the schema constraint or non-API write paths.
+
+### Recovery takes priority
+
+If the recovery step already emitted a `recovered` event for a group, the no-data step leaves that event intact regardless of the `no_data_strategy`. Only groups **without** an upstream recovered event receive a `no_data` event.
+
+### `no_data_strategy` outcomes (no-data partition)
+
+The executor emits a `no_data` rule event; the director's FSM consumes it and decides the next episode status based on the strategy.
+
+| `no_data_strategy` | Rule event the step writes | Episode status the FSM lands on |
+| --- | --- | --- |
+| `'emit'` | Append a `no_data` event (groups that already have a `recovered` event are skipped — recovery takes priority). | Set the episode to `'active'` so downstream consumers (dispatcher, actions) keep treating the group as live during the data gap. |
+| `'last_known_status'` | Same as `'emit'` — append a `no_data` event for groups without an upstream `recovered` event. | Preserves the prior episode status (e.g. an `active` episode stays `active`). |
+| `'recover'` | Append a `no_data` event for groups without an upstream `recovered` event. The director applies the same FSM transitions as a `recovered` event would. | Follows the recovery transitions — the episode moves toward `inactive` via the normal lifecycle. |
+| `'none'` | No-op. The recovery step's output stands. When `recovery_strategy` is also `'none'`, no event is written for this group and the episode drifts out of lookback windows over time. | n/a (no event is produced). |
+
+The `no_data_strategy` branch lives in `BasicTransitionStrategy.getNextState`. There is no `'no_data'` episode status; the FSM sets the episode to `'active'` for `'emit'`, preserves the prior status for `'last_known_status'`, and mirrors the `'recovered'` FSM transitions for `'recover'`.
+
+### Data-present partition
+
+When the no-data query reports the group as still having data, the no-data step is a no-op regardless of the `recovery_strategy`. If recovery already emitted a `recovered` event for that group it passes through unchanged; if recovery did not fire (e.g. the recovery query did not match), no additional event is written. The episode drifts out of lookback windows over time if neither breach nor recovery fires — this is the documented trade-off of using a narrow recovery query.
+
+### Summary
+
+| `no_data_strategy` | What the step writes |
+| --- | --- |
+| absent / `'none'` | Nothing. The step is a no-op apart from the active-groups lookup, which is also skipped when both strategies are off. |
+| `'emit'` | One `no_data` event per active-but-absent group with no data and no upstream `recovered` event. The FSM sets the episode to `'active'`. |
+| `'last_known_status'` | One `no_data` event per active-but-absent group with no data and no upstream `recovered` event. The FSM preserves the prior episode status. |
+| `'recover'` | One `no_data` event per active-but-absent group with no data and no upstream `recovered` event. The director FSM drives the episode toward recovery (`active → recovering → inactive`). |
 
 ## Severity behavior
 
@@ -342,6 +390,7 @@ bind(RuleExecutionStepsToken).to(ExecuteRuleQueryStep).inRequestScope();
 bind(RuleExecutionStepsToken).to(CreateAlertEventsStep).inSingletonScope();
 bind(RuleExecutionStepsToken).to(MyNewStep).inSingletonScope();
 bind(RuleExecutionStepsToken).to(CreateRecoveryEventsStep).inRequestScope();
+bind(RuleExecutionStepsToken).to(CreateNoDataEventsStep).inRequestScope();
 bind(RuleExecutionStepsToken).to(DirectorStep).inSingletonScope();
 bind(RuleExecutionStepsToken).to(StoreAlertEventsStep).inSingletonScope();
 ```
