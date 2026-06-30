@@ -168,7 +168,11 @@ export function createCreateIndexStream({
           log.debug(`Deleted saved object index [${index}]`);
         }
 
-        // create the index without the aliases
+        // create the index without the aliases.
+        // Use a generous requestTimeout: archives with large mappings (e.g. auditbeat_single
+        // has >7 000 lines) can take >30 s to create on loaded CI machines, exceeding the
+        // default 30 s ES client timeout and causing unretriable "before all" hook failures.
+        // See: https://github.com/elastic/kibana/issues/262814
         await client.indices.create(
           {
             index,
@@ -177,6 +181,7 @@ export function createCreateIndexStream({
           },
           {
             headers: ES_CLIENT_HEADERS,
+            requestTimeout: 120_000,
           }
         );
 
