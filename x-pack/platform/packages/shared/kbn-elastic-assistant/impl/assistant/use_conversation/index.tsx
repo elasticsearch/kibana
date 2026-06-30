@@ -12,14 +12,12 @@ import type { DataStreamApis } from '../use_data_stream_apis';
 import * as i18n from './translations';
 import { useAssistantContext } from '../../assistant_context';
 import type { Conversation, ClientMessage } from '../../assistant_context/types';
-import { getDefaultSystemPrompt } from './helpers';
 import {
   createConversation as createConversationApi,
   deleteConversation as deleteConversationApi,
   getConversationById,
   updateConversation,
 } from '../api/conversations';
-import { useFetchPrompts } from '../api/prompts/use_fetch_prompts';
 
 interface SetApiConfigProps {
   conversation: Conversation;
@@ -64,9 +62,6 @@ export interface UseConversation {
 
 export const useConversation = (): UseConversation => {
   const { http, toasts } = useAssistantContext();
-  const {
-    data: { data: allPrompts },
-  } = useFetchPrompts();
 
   const getConversation = useCallback(
     async (conversationId: string, silent?: boolean) => {
@@ -103,22 +98,17 @@ export const useConversation = (): UseConversation => {
   const clearConversation = useCallback(
     async (conversation: Conversation) => {
       if (conversation.apiConfig) {
-        const defaultSystemPromptId = getDefaultSystemPrompt({
-          allSystemPrompts: allPrompts,
-          conversation,
-        })?.id;
-
         return updateConversation({
           http,
           toasts,
           conversationId: conversation.id,
-          apiConfig: { ...conversation.apiConfig, defaultSystemPromptId },
+          apiConfig: conversation.apiConfig,
           messages: [],
           replacements: {},
         });
       }
     },
-    [allPrompts, http, toasts]
+    [http, toasts]
   );
 
   /**

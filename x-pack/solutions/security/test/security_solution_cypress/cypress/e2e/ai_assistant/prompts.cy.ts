@@ -113,8 +113,7 @@ describe('AI Assistant Prompts', { tags: ['@ess', '@serverless'] }, () => {
       assertErrorResponse();
     });
 
-    // Skipping this test as it fails on CI
-    it.skip('Last selected system prompt persists in conversation', () => {
+    it('Last selected system prompt persists in conversation', () => {
       visitGetStartedPage();
       openAssistant();
       selectConversation(mockConvo1.title);
