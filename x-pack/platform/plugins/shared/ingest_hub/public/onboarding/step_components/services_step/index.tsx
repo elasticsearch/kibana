@@ -31,7 +31,7 @@ import { useServicesStep, CATEGORY_ORDER } from './use_services_step';
 import type { SignalFilter } from './use_services_step';
 
 interface ServicesStepProps {
-  onNext: () => void;
+  onContinue: () => void;
   onBack?: () => void;
 }
 
@@ -59,7 +59,7 @@ function categoryColor(category: string): string {
   return CATEGORY_COLORS[Math.max(0, index)];
 }
 
-export function ServicesStep({ onNext, onBack }: ServicesStepProps) {
+export function ServicesStep({ onContinue, onBack }: ServicesStepProps) {
   const {
     signalFilter,
     setSignalFilter,
@@ -78,7 +78,7 @@ export function ServicesStep({ onNext, onBack }: ServicesStepProps) {
     handleSelectAllInCategory,
     handleDeselectAllInCategory,
     handleNext,
-  } = useServicesStep({ onNext });
+  } = useServicesStep({ onContinue });
 
   return (
     <div data-test-subj="onboardingStep-services">
@@ -247,9 +247,12 @@ export function ServicesStep({ onNext, onBack }: ServicesStepProps) {
             fill
             onClick={handleNext}
             isDisabled={!isReady}
-            data-test-subj="servicesStep-nextButton"
+            data-test-subj="servicesStep-continueButton"
           >
-            <FormattedMessage id="xpack.ingestHub.servicesStep.nextButton" defaultMessage="Next" />
+            <FormattedMessage
+              id="xpack.ingestHub.servicesStep.continueButton"
+              defaultMessage="Continue"
+            />
           </EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>

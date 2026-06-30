@@ -7,10 +7,25 @@
 
 import type { FileEntry } from '@kbn/agent-builder-server/runner/filestore';
 
-export interface ToolCallEntryMeta {
-  tool_result_type: string;
-  tool_id: string;
+export type ToolCallFileEntry<TData extends object = object> = FileEntry<TData>;
+
+/**
+ * Content of a tool call's `meta.json` file.
+ */
+export interface ToolCallMetaContent {
   tool_call_id: string;
+  tool_id: string;
+  params: Record<string, unknown>;
+  results: ToolCallResultManifestEntry[];
 }
 
-export type ToolCallFileEntry<TData extends object = object> = FileEntry<TData, ToolCallEntryMeta>;
+/**
+ * One entry of the `meta.json` results manifest
+ */
+export interface ToolCallResultManifestEntry {
+  file: string;
+  type: string;
+  tool_result_id: string;
+}
+
+export type ToolCallMetaFileEntry = FileEntry<ToolCallMetaContent>;

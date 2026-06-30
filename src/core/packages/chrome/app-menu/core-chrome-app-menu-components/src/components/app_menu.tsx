@@ -15,6 +15,7 @@ import { AppMenuItem } from './app_menu_item';
 import { AppMenuOverflowButton } from './app_menu_overflow_button';
 import { AppMenuSwitchComponent } from './app_menu_switch';
 import type { AppMenuConfig, AppMenuStaticItem } from '../types';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 export interface AppMenuItemsProps {
   config?: AppMenuConfig;
@@ -66,7 +67,7 @@ export const AppMenuComponent = ({
   const showMoreButtonId = 'show-more';
 
   const headerLinksProps = {
-    'data-test-subj': 'app-menu',
+    'data-test-subj': APP_MENU_TEST_SUBJECTS.root,
     gutterSize: 'xs' as const,
     popoverBreakpoints: 'none' as const,
     className: 'kbnTopNavMenu__wrapper',

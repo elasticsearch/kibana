@@ -32,6 +32,12 @@ export interface MonitorFilterState {
   remoteNames?: string[];
   showFromAllSpaces?: boolean;
   useLogicalAndFor?: UseLogicalAndField[];
+  // Date-range window for the overview list, sourced from the page-level date
+  // picker so it stays in sync with the visualizations. Each monitor's status
+  // is scoped to this window; monitors with no run in the window show as
+  // `pending` rather than being removed from the list.
+  dateRangeStart?: string;
+  dateRangeEnd?: string;
 }
 
 export interface MonitorListPageState extends MonitorFilterState {

@@ -17,6 +17,7 @@ export const componentTemplateSchema = schema.object({
       schema.object({
         enabled: schema.boolean(),
         data_retention: schema.maybe(schema.string({ maxLength: 1000 })),
+        frozen_after: schema.maybe(schema.string({ maxLength: 1000 })),
       })
     ),
     // Allowing unknowns here to support data stream options that are not yet defined in the schema

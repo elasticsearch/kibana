@@ -587,6 +587,55 @@ describe('StepIoService', () => {
         await service.flushStepChanges();
         expect(service.getStepOutput('source-exec')).toBeUndefined();
       });
+
+      it('re-pinning the same loop-source step releases its previous execution (no per-iteration leak)', async () => {
+        // Models a `while` condition referencing a step produced *inside* the
+        // loop body: each iteration yields a new execution id for the same
+        // stepId. Re-pinning must keep only the latest resident, not one copy
+        // per iteration (otherwise the eviction memory protection is defeated).
+        const { state, service } = buildHarness({ evictionMinBytes: EVICTION_THRESHOLD });
+
+        // Iteration 1 produces execution `inner-exec-1` of step `innerProducer`.
+        seedCompletedStepWithSize(
+          state,
+          service,
+          'inner-exec-1',
+          'innerProducer',
+          { value: 'a'.repeat(200) },
+          250,
+          'connector'
+        );
+        service.pinLoopSource('whileLoop', 'steps.innerProducer.output.value : "x"');
+        expect(service.getStepOutput('inner-exec-1')).toBeDefined();
+
+        // Iteration 2 produces a new execution `inner-exec-2` of the same step.
+        seedCompletedStepWithSize(
+          state,
+          service,
+          'inner-exec-2',
+          'innerProducer',
+          { value: 'b'.repeat(200) },
+          250,
+          'connector'
+        );
+        // exit-while re-pins before evaluating the next iteration.
+        service.pinLoopSource('whileLoop', 'steps.innerProducer.output.value : "x"');
+
+        // The previous iteration's output is no longer pinned and becomes
+        // evictable; the current iteration's output stays resident.
+        await service.flushStepChanges();
+        await service.flushStepChanges();
+
+        expect(service.getStepOutput('inner-exec-1')).toBeUndefined();
+        expect(service.getStepOutput('inner-exec-2')).toEqual({ value: 'b'.repeat(200) });
+
+        // On loop exit nothing is pinned, so the latest becomes evictable too.
+        service.unpinLoopScope('whileLoop');
+        service.setStepOutput('inner-exec-2', { value: 'b'.repeat(200) }, 250);
+        await service.flushStepChanges();
+        await service.flushStepChanges();
+        expect(service.getStepOutput('inner-exec-2')).toBeUndefined();
+      });
     });
 
     it('does not evict failed steps (output: null is semantic)', async () => {

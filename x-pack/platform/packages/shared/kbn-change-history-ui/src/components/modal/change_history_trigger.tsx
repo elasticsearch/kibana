@@ -6,30 +6,16 @@
  */
 
 import React from 'react';
-import type { EuiButtonProps } from '@elastic/eui';
 import { EuiButton } from '@elastic/eui';
-import { useChangeHistoryConfig } from '../../provider/use_change_history_config';
+import { useChangeHistoryModal } from '../../provider/use_change_history_modal';
 import * as i18n from '../timeline/translations';
 
-export interface ChangeHistoryTriggerProps {
-  buttonProps?: Partial<EuiButtonProps>;
-  children?: React.ReactNode;
-}
-
-export function ChangeHistoryTrigger({
-  buttonProps,
-  children,
-}: ChangeHistoryTriggerProps): JSX.Element {
-  const { openModal } = useChangeHistoryConfig();
+export function ChangeHistoryTrigger(): JSX.Element {
+  const { openModal } = useChangeHistoryModal();
 
   return (
-    <EuiButton
-      iconType="clock"
-      onClick={openModal}
-      data-test-subj="changeHistoryTrigger"
-      {...buttonProps}
-    >
-      {children ?? i18n.TRIGGER_LABEL}
+    <EuiButton iconType="clock" onClick={openModal} data-test-subj="changeHistoryTrigger">
+      {i18n.TRIGGER_LABEL}
     </EuiButton>
   );
 }

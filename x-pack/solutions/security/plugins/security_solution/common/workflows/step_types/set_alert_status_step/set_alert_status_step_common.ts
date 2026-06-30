@@ -9,7 +9,7 @@ import { z } from '@kbn/zod/v4';
 import { StepCategory } from '@kbn/workflows';
 import type { BaseStepDefinition } from '@kbn/workflows';
 import { i18n } from '@kbn/i18n';
-import { Reason } from '../../../api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
+import { Reason } from '../../../api/model/alert.gen';
 import { MAX_ALERT_ID_LENGTH, MAX_WORKFLOW_MESSAGE_LENGTH } from '../common/constants';
 
 export const SetAlertStatusStepId = 'security.setAlertStatus' as const;

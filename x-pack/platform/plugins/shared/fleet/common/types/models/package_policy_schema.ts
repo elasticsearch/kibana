@@ -414,71 +414,73 @@ export const SimplifiedVarsSchema = schema.recordOf(
   }
 );
 
-export const SimplifiedPackagePolicyInputsSchema = schema.maybe(
-  schema.recordOf(
-    schema.string(),
-    schema.object({
-      enabled: schema.maybe(
-        schema.boolean({
+export const SimplifiedPackagePolicyInputRecordSchema = schema.recordOf(
+  schema.string({ maxLength: 1024 }),
+  schema.object({
+    enabled: schema.maybe(
+      schema.boolean({
+        meta: {
+          description: 'Enable or disable that input. Defaults to `true` (enabled).',
+        },
+      })
+    ),
+    deprecated: schema.maybe(DeprecationInfoSchema),
+    vars: schema.maybe(SimplifiedVarsSchema),
+    condition: schema.maybe(
+      schema.nullable(
+        schema.string({
+          maxLength: 10000,
           meta: {
-            description: 'Enable or disable that input. Defaults to `true` (enabled).',
+            description: 'Agent condition expression to evaluate whether to apply this input.',
           },
         })
-      ),
-      deprecated: schema.maybe(DeprecationInfoSchema),
-      vars: schema.maybe(SimplifiedVarsSchema),
-      condition: schema.maybe(
-        schema.nullable(
-          schema.string({
-            maxLength: 10000,
-            meta: {
-              description: 'Agent condition expression to evaluate whether to apply this input.',
-            },
-          })
-        )
-      ),
-      streams: schema.maybe(
-        schema.recordOf(
-          schema.string(),
-          schema.object({
-            enabled: schema.maybe(
-              schema.boolean({
+      )
+    ),
+    streams: schema.maybe(
+      schema.recordOf(
+        schema.string({ maxLength: 1024 }),
+        schema.object({
+          enabled: schema.maybe(
+            schema.boolean({
+              meta: {
+                description: 'Enable or disable that stream. Defaults to `true` (enabled).',
+              },
+            })
+          ),
+          vars: schema.maybe(SimplifiedVarsSchema),
+          var_group_selections: VarGroupSelectionsSchema,
+          deprecated: schema.maybe(DeprecationInfoSchema),
+          condition: schema.maybe(
+            schema.nullable(
+              schema.string({
+                maxLength: 10000,
                 meta: {
-                  description: 'Enable or disable that stream. Defaults to `true` (enabled).',
+                  description:
+                    'Agent condition expression to evaluate whether to apply this stream.',
                 },
               })
-            ),
-            vars: schema.maybe(SimplifiedVarsSchema),
-            var_group_selections: VarGroupSelectionsSchema,
-            deprecated: schema.maybe(DeprecationInfoSchema),
-            condition: schema.maybe(
-              schema.nullable(
-                schema.string({
-                  maxLength: 10000,
-                  meta: {
-                    description:
-                      'Agent condition expression to evaluate whether to apply this stream.',
-                  },
-                })
-              )
-            ),
-          }),
-          {
-            meta: {
-              description:
-                'Input streams. Refer to the integration documentation to know which streams are available.',
-            },
-          }
-        )
-      ),
-    }),
-    {
-      meta: {
-        description:
-          'Package policy inputs. Refer to the integration documentation to know which inputs are available.',
-      },
-    }
-  )
+            )
+          ),
+        }),
+        {
+          meta: {
+            description:
+              'Input streams. Refer to the integration documentation to know which streams are available.',
+          },
+        }
+      )
+    ),
+  }),
+  {
+    meta: {
+      description:
+        'Package policy inputs. Refer to the integration documentation to know which inputs are available.',
+    },
+  }
+);
+
+export const SimplifiedPackagePolicyInputsSchema = schema.maybe(
+  SimplifiedPackagePolicyInputRecordSchema
 );
 
 const VALIDATE_DATASTREAMS_PERMISSION_REGEX =

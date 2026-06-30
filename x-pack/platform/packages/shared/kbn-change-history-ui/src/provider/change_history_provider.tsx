@@ -6,21 +6,27 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
 import type { ChangeHistoryBadgeRenderFn } from '../types/change_history_badge';
+import type {
+  ChangeHistoryFeatures,
+  ChangeHistoryPermissions,
+} from '../types/change_history_features';
 import type { ChangeHistoryLabels } from '../types/change_history_labels';
-import type { ChangeHistoryPreviewFooterRenderFn } from '../types/change_history_preview_footer';
 import type { ChangeHistoryPreviewRenderFn } from '../types/change_history_preview';
-import { ChangeHistoryContext } from './change_history_context';
+import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
+import { ChangeHistoryConfigContext } from './change_history_config_context';
+import { ChangeHistoryModalContext } from './change_history_modal_context';
+import { resolveChangeHistorySupports } from './resolve_change_history_supports';
 import * as i18n from '../components/timeline/translations';
 
 export interface ChangeHistoryProviderProps {
   objectId: string;
   adapter: ChangeHistoryAdapter;
   renderPreview: ChangeHistoryPreviewRenderFn;
-  renderPreviewFooter?: ChangeHistoryPreviewFooterRenderFn;
   renderBadge?: ChangeHistoryBadgeRenderFn;
-  labels?: ChangeHistoryLabels;
+  labels: ChangeHistoryLabels;
+  features?: ChangeHistoryFeatures;
+  permissions?: ChangeHistoryPermissions;
   children: React.ReactNode;
 }
 
@@ -28,69 +34,66 @@ export const ChangeHistoryProvider = ({
   objectId,
   adapter,
   renderPreview,
-  renderPreviewFooter,
   renderBadge,
   labels,
+  features,
+  permissions,
   children,
 }: ChangeHistoryProviderProps): JSX.Element => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedChangeId, setSelectedChangeId] = useState<string | undefined>();
+  const [isOpen, setIsOpen] = useState(false);
   const [prevObjectId, setPrevObjectId] = useState(objectId);
 
   if (objectId !== prevObjectId) {
     setPrevObjectId(objectId);
-    setSelectedChangeId(undefined);
-    setIsModalOpen(false);
+    setIsOpen(false);
   }
 
   const openModal = useCallback(() => {
-    setIsModalOpen(true);
+    setIsOpen(true);
   }, []);
 
   const closeModal = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedChangeId(undefined);
+    setIsOpen(false);
   }, []);
 
-  const handleSelectChangeId = useCallback((changeId: string | undefined) => {
-    setSelectedChangeId(changeId);
-  }, []);
+  const supports = useMemo(
+    () => resolveChangeHistorySupports(adapter, { features, permissions }),
+    [adapter, features, permissions]
+  );
 
-  const value = useMemo(
+  const configValue = useMemo(
     () => ({
       objectId,
       adapter,
       renderPreview,
-      renderPreviewFooter,
       renderBadge,
       labels: {
-        previewBackLabel: labels?.previewBackLabel ?? i18n.BACK_TO_HOST,
-        previewTitle: labels?.previewTitle ?? labels?.modalTitle ?? '',
-        timelinePanelTitle: labels?.timelinePanelTitle ?? i18n.TIMELINE_PANEL_TITLE,
+        previewBackLabel: labels.previewBackLabel ?? i18n.BACK_TO_HOST,
+        previewTitle: labels.previewTitle,
       },
-      isModalOpen,
-      openModal,
-      closeModal,
-      selectedChangeId,
-      setSelectedChangeId: handleSelectChangeId,
+      supports,
     }),
     [
       adapter,
-      closeModal,
-      handleSelectChangeId,
-      isModalOpen,
-      labels?.modalTitle,
-      labels?.previewBackLabel,
-      labels?.previewTitle,
-      labels?.timelinePanelTitle,
+      labels.previewBackLabel,
+      labels.previewTitle,
       objectId,
-      openModal,
       renderBadge,
       renderPreview,
-      renderPreviewFooter,
-      selectedChangeId,
+      supports,
     ]
   );
 
-  return <ChangeHistoryContext.Provider value={value}>{children}</ChangeHistoryContext.Provider>;
+  const modalValue = useMemo(
+    () => ({ isOpen, openModal, closeModal }),
+    [isOpen, openModal, closeModal]
+  );
+
+  return (
+    <ChangeHistoryConfigContext.Provider value={configValue}>
+      <ChangeHistoryModalContext.Provider value={modalValue}>
+        {children}
+      </ChangeHistoryModalContext.Provider>
+    </ChangeHistoryConfigContext.Provider>
+  );
 };

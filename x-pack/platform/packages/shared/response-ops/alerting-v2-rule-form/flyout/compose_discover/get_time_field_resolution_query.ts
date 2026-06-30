@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { RuleQuery } from './compose_form_types';
+import type { RuleQuery } from '../../form/types';
 
 const FROM_QUERY_PATTERN = /^\s*FROM\s+[a-zA-Z0-9_.*-]/i;
 

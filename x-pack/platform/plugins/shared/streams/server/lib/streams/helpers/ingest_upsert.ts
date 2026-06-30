@@ -6,59 +6,53 @@
  */
 
 import { badData } from '@hapi/boom';
-import type { StreamQuery, WiredIngestUpsertRequest } from '@kbn/streams-schema';
+import type { WiredIngestUpsertRequest } from '@kbn/streams-schema';
 import { Streams } from '@kbn/streams-schema';
 import type { ClassicIngestUpsertRequest } from '@kbn/streams-schema';
 import type { UpsertStreamResponse } from '../client';
 import type { StreamsClient } from '../client';
 import type { AttachmentClient } from '../attachments/attachment_client';
-import type { KnowledgeIndicatorClient } from '../ki';
 
-export async function getStreamAssets({
+/**
+ * Returns the dashboard and rule attachment ids linked to a stream, partitioned by type.
+ * Significant-event queries are not attachments and are not returned here; they are managed
+ * through the `/api/streams/{name}/queries` endpoints.
+ */
+export async function getStreamAttachmentIds({
   name,
-  kiClient,
   attachmentClient,
 }: {
   name: string;
-  kiClient: KnowledgeIndicatorClient;
   attachmentClient: AttachmentClient;
-}): Promise<{ dashboards: string[]; queries: StreamQuery[]; rules: string[] }> {
-  const [queryLinksMap, attachments] = await Promise.all([
-    kiClient.getStreamToQueryLinksMap([name]),
-    attachmentClient.getAttachments(name),
-  ]);
+}): Promise<{ dashboards: string[]; rules: string[] }> {
+  const attachments = await attachmentClient.getAttachments(name);
 
   const dashboards = attachments
     .filter((attachment) => attachment.type === 'dashboard')
     .map((attachment) => attachment.id);
 
-  const queries = (queryLinksMap[name] ?? []).map((link) => link.query);
-
   const rules = attachments
     .filter((attachment) => attachment.type === 'rule')
     .map((attachment) => attachment.id);
 
-  return { dashboards, queries, rules };
+  return { dashboards, rules };
 }
 
 export async function updateWiredIngest({
   streamsClient,
-  kiClient,
   attachmentClient,
   name,
   ingest,
   description,
 }: {
   streamsClient: StreamsClient;
-  kiClient: KnowledgeIndicatorClient;
   attachmentClient: AttachmentClient;
   name: string;
   ingest: WiredIngestUpsertRequest;
   description?: string;
 }): Promise<UpsertStreamResponse> {
-  const { dashboards, queries, rules } = await getStreamAssets({
+  const { dashboards, rules } = await getStreamAttachmentIds({
     name,
-    kiClient,
     attachmentClient,
   });
 
@@ -77,7 +71,6 @@ export async function updateWiredIngest({
 
   const upsertRequest: Streams.WiredStream.UpsertRequest = {
     dashboards,
-    queries,
     stream: {
       ...stream,
       ...(queryStreams !== undefined && { query_streams: queryStreams }),
@@ -95,22 +88,19 @@ export async function updateWiredIngest({
 
 export async function updateClassicIngest({
   streamsClient,
-  kiClient,
   attachmentClient,
   name,
   ingest,
   description,
 }: {
   streamsClient: StreamsClient;
-  kiClient: KnowledgeIndicatorClient;
   attachmentClient: AttachmentClient;
   name: string;
   ingest: ClassicIngestUpsertRequest;
   description?: string;
 }): Promise<UpsertStreamResponse> {
-  const { dashboards, queries, rules } = await getStreamAssets({
+  const { dashboards, rules } = await getStreamAttachmentIds({
     name,
-    kiClient,
     attachmentClient,
   });
 
@@ -129,7 +119,6 @@ export async function updateClassicIngest({
 
   const upsertRequest: Streams.ClassicStream.UpsertRequest = {
     dashboards,
-    queries,
     stream: {
       ...stream,
       ...(queryStreams !== undefined && { query_streams: queryStreams }),
@@ -166,13 +155,11 @@ export interface StreamPatch {
 
 export async function patchIngestAndUpsert({
   streamsClient,
-  kiClient,
   attachmentClient,
   name,
   patchFn,
 }: {
   streamsClient: StreamsClient;
-  kiClient: KnowledgeIndicatorClient;
   attachmentClient: AttachmentClient;
   name: string;
   patchFn: (definition: Streams.ingest.all.Definition) => StreamPatch;
@@ -192,7 +179,6 @@ export async function patchIngestAndUpsert({
   if (isWired) {
     return await updateWiredIngest({
       streamsClient,
-      kiClient,
       attachmentClient,
       name,
       ingest: upsertIngest as WiredIngestUpsertRequest,
@@ -202,7 +188,6 @@ export async function patchIngestAndUpsert({
 
   return await updateClassicIngest({
     streamsClient,
-    kiClient,
     attachmentClient,
     name,
     ingest: upsertIngest as ClassicIngestUpsertRequest,

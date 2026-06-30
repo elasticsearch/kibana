@@ -17,10 +17,10 @@ import type {
 import { SavedObjectsClient, SavedObjectsErrorHelpers } from '@kbn/core/server';
 import {
   AGENT_BUILDER_OVERVIEW_DASHBOARD_ID,
+  AGENT_BUILDER_OVERVIEW_DASHBOARD_VERSION,
   AGENT_BUILDER_TRACES_NAMESPACE_PLACEHOLDER,
 } from './constants';
 import { overviewDashboard } from './assets/overview_dashboard';
-import { AGENT_BUILDER_OVERVIEW_DASHBOARD_VERSION } from './constants';
 
 const SYNC_CONCURRENCY = 5;
 
@@ -144,14 +144,14 @@ async function removeAgentBuilderOverviewDashboard(
 }
 
 /**
- * sync the dashboard for all spaces. The dashboard visualizes Agent Builder
- * traces, which are only shipped to the local cluster when
- * `xpack.agentBuilder.tracing.send_to_self` is enabled, so the dashboard is
- * installed only when that flag is on and removed from every space otherwise.
+ * Sync the dashboard for all spaces. The dashboard visualizes Agent Builder
+ * traces. When tracing is enabled (via the experimental features and tracing
+ * uiSettings), the dashboard is installed into every space; otherwise it is
+ * removed.
  */
 export async function syncAgentBuilderOverviewDashboard(
   coreStart: Pick<CoreStart, 'savedObjects'>,
-  sendToSelf: boolean,
+  tracingEnabled: boolean,
   logger: Logger
 ): Promise<void> {
   const client = new SavedObjectsClient(coreStart.savedObjects.createInternalRepository());
@@ -168,7 +168,7 @@ export async function syncAgentBuilderOverviewDashboard(
     async (spaceId) => {
       const namespace = spaceId === 'default' ? undefined : spaceId;
       try {
-        if (sendToSelf) {
+        if (tracingEnabled) {
           await installAgentBuilderOverviewDashboard(client, importer, logger, spaceId, namespace);
         } else {
           await removeAgentBuilderOverviewDashboard(client, logger, spaceId, namespace);
@@ -179,6 +179,27 @@ export async function syncAgentBuilderOverviewDashboard(
     },
     { concurrency: SYNC_CONCURRENCY }
   );
+}
+
+/**
+ * Sync the dashboard for a single space. Installs when tracing is enabled,
+ * removes otherwise.
+ */
+export async function syncAgentBuilderOverviewDashboardForSpace(
+  coreStart: Pick<CoreStart, 'savedObjects'>,
+  tracingEnabled: boolean,
+  spaceId: string,
+  logger: Logger
+): Promise<void> {
+  const client = new SavedObjectsClient(coreStart.savedObjects.createInternalRepository());
+  const importer = coreStart.savedObjects.createImporter(client);
+  const namespace = spaceId === 'default' ? undefined : spaceId;
+
+  if (tracingEnabled) {
+    await installAgentBuilderOverviewDashboard(client, importer, logger, spaceId, namespace);
+  } else {
+    await removeAgentBuilderOverviewDashboard(client, logger, spaceId, namespace);
+  }
 }
 
 /**

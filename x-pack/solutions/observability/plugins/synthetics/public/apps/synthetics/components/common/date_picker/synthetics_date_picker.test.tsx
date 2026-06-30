@@ -25,6 +25,26 @@ describe('SyntheticsDatePicker component', () => {
     expect(await findByText('Refresh')).toBeInTheDocument();
   });
 
+  it('applies defaultDateRange when the URL carries no range', async () => {
+    const { findByText } = render(
+      <SyntheticsDatePicker defaultDateRange={{ from: 'now-12h', to: 'now' }} />
+    );
+    expect(await findByText('Last 12 hours')).toBeInTheDocument();
+  });
+
+  it('prefers the URL range over defaultDateRange', async () => {
+    const customHistory = createMemoryHistory({
+      initialEntries: ['/?dateRangeStart=now-10m&dateRangeEnd=now'],
+    });
+
+    const { findByText } = render(
+      <SyntheticsDatePicker defaultDateRange={{ from: 'now-12h', to: 'now' }} />,
+      { history: customHistory, core: startPlugins }
+    );
+
+    expect(await findByText('Last 10 minutes')).toBeInTheDocument();
+  });
+
   it('should use url date range even if shared date range is present', async () => {
     const customHistory = createMemoryHistory({
       initialEntries: ['/?g=%22%22&dateRangeStart=now-10m&dateRangeEnd=now'],

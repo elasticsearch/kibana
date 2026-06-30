@@ -1,0 +1,65 @@
+openapi: 3.0.0
+info:
+  title: Restore Rule API endpoint
+  version: '1'
+paths:
+  /internal/detection_engine/rules/{ruleId}/history/{changeId}/_restore:
+    post:
+      x-labels: [ess, serverless]
+      x-internal: true
+      x-codegen-enabled: true
+      operationId: RestoreRuleFromHistory
+      summary: Restore a detection rule to a historical revision
+      description: |
+        Restore a detection rule to a specific historical snapshot.
+      tags:
+        - Rules API
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          description: The rule's object `id` value (Saved Object id).
+          schema:
+            $ref: '../../model/rule_schema/common_attributes.schema.yaml#/components/schemas/RuleObjectId'
+        - name: changeId
+          in: path
+          required: true
+          description: The unique identifier of the history entry to restore to.
+          schema:
+            $ref: '../../../model/primitives.schema.yaml#/components/schemas/UUID'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revision:
+                  $ref: '../../model/rule_schema/common_attributes.schema.yaml#/components/schemas/RuleRevision'
+                  description: |
+                    The caller's known current revision of the rule for concurrency control.
+                    The value is required to restore a rule. To restore a deleted rule the revision
+                    has to be omitted.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - rule
+                properties:
+                  rule:
+                    $ref: '../../model/rule_schema/rule_schemas.schema.yaml#/components/schemas/RuleResponse'
+                  no_change:
+                    type: boolean
+                    description: True when the rule was already at the requested historical state and no update was applied.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorised to restore the rule.
+        '404':
+          description: Rule or history entry not found.
+        '409':
+          description: Unable to restore the rule due to a conflict.

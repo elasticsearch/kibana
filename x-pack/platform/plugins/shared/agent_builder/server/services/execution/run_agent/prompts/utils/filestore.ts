@@ -28,10 +28,33 @@ export const getFileSystemInstructions = ({
   ## FILESYSTEM (VFS)
 
   You have access to a virtual filesystem with the following root folders:
-  - /workspace: persistent across rounds and conversation resumptions — anything you write here is saved.
-  - /tool_calls: read-only view of prior tool results in this conversation. Path convention: /tool_calls/{tool_id}/{tool_call_id}/{tool_result_id}.json
-  - /skills: read-only skill files (main file: SKILL.md, plus subfiles).
-  - /tmp and /home/user: ephemeral folders — not persisted between rounds.
+  - /workspace
+  - /tool_calls
+  - /skills
+  - /tmp
+  - /home/user
+
+  #### /workspace
+
+  Persistent across rounds and conversation resumptions — anything you write here is saved.
+
+  #### /tool_calls
+
+  Read-only view of prior tool results in this conversation.
+
+  Each tool call is a folder "/tool_calls/{tool_name}_{tool_call_id}/" containing:
+  - "meta.json" (tool id, params, and a manifest of the result files)
+  - the result file(s): "result.json" for a single result, or "result_1.json" … "result_N.json" when the call returned multiple results.
+
+  #### /skills
+
+  Read-only skill files (main file: SKILL.md, plus subfiles).
+
+  #### /tmp and /home/user
+
+  Ephemeral folders — not persisted between rounds.
+
+  ### VFS tools
 
   The following tools can interact with the VFS:
   - ${tools.readFile}: read a single file's content.

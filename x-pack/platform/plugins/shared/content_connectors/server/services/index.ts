@@ -6,7 +6,7 @@
  */
 
 import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
-import type { Agent, AgentPolicy } from '@kbn/fleet-plugin/common';
+import type { Agent, AgentlessPolicy } from '@kbn/fleet-plugin/common';
 import { PACKAGE_POLICY_SAVED_OBJECT_TYPE } from '@kbn/fleet-plugin/common';
 import type {
   AgentlessPoliciesService,
@@ -47,7 +47,6 @@ export interface PackagePolicyAndAgentMetadata extends PackagePolicyMetadata {
 
 const connectorsInputName = 'connectors-py';
 const pkgName = 'elastic_connectors';
-const pkgTitle = 'Elastic Connectors';
 
 // A few native connector `service_type` values don't match their `policy_template`
 // name in the `elastic_connectors` package manifest (see issue #266539).
@@ -170,7 +169,7 @@ export class AgentlessConnectorsInfraService {
     return policiesMetadata;
   };
 
-  public deployConnector = async (connector: ConnectorMetadata): Promise<AgentPolicy> => {
+  public deployConnector = async (connector: ConnectorMetadata): Promise<AgentlessPolicy> => {
     this.logger.info(
       `Connector ${connector.id} has no integration policy associated with it, creating`
     );
@@ -200,14 +199,11 @@ export class AgentlessConnectorsInfraService {
 
     const packagePolicyToCreate = {
       package: {
-        title: pkgTitle,
         name: pkgName,
         version: pkgVersion,
       },
       name: `${connector.service_type} connector ${connector.id}`,
-      description: '',
       namespace: '',
-      enabled: true,
       policy_template: policyTemplate,
       inputs: {
         [`${policyTemplate}-${connectorsInputName}`]: {

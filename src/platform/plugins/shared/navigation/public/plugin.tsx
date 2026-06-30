@@ -18,7 +18,7 @@ import type {
 } from '@kbn/core/public';
 import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
 import type { Space } from '@kbn/spaces-plugin/public';
-import type { SolutionId } from '@kbn/core-chrome-browser';
+import { type SolutionId } from '@kbn/core-chrome-browser';
 import type { InternalChromeStart } from '@kbn/core-chrome-browser-internal';
 import type {
   NavigationPublicSetup,
@@ -29,6 +29,7 @@ import type {
 } from './types';
 import { TopNavMenuExtensionsRegistry, createTopNav } from './top_nav_menu';
 import type { RegisteredTopNavMenuData } from './top_nav_menu/top_nav_menu_data';
+import { NavigationCustomizationService } from './navigation_customization';
 
 export class NavigationPublicPlugin
   implements
@@ -43,6 +44,7 @@ export class NavigationPublicPlugin
     new TopNavMenuExtensionsRegistry();
   private readonly stop$ = new ReplaySubject<void>(1);
   private readonly solutionNavDefinitions = new Map<SolutionId, AddSolutionNavigationArg>();
+  private readonly customizationService = new NavigationCustomizationService();
   private chrome?: InternalChromeStart;
   private activeSolutionId: SolutionId | null = null;
   private isSolutionNavEnabled = false;
@@ -61,13 +63,14 @@ export class NavigationPublicPlugin
     core: CoreStart,
     depsStart: NavigationPublicStartDependencies
   ): NavigationPublicStart {
-    const { unifiedSearch, cloud, spaces } = depsStart;
+    const { unifiedSearch, cloud, spaces, security } = depsStart;
     const extensions = this.topNavMenuExtensionsRegistry.getAll();
     const chrome = core.chrome as InternalChromeStart;
     this.chrome = chrome;
     const activeSpace$: Observable<Space | undefined> = spaces?.getActiveSpace$() ?? of(undefined);
     const isServerless = this.initializerContext.env.packageInfo.buildFlavor === 'serverless';
     this.isSolutionNavEnabled = spaces?.isSolutionViewEnabled ?? false;
+    const isUnauthenticated = this.getIsUnauthenticated(core.http);
 
     /**
      * @deprecated Use AppMenu from "@kbn/core-chrome-app-menu" instead
@@ -99,13 +102,45 @@ export class NavigationPublicPlugin
           chrome.project.setCloudUrls({ ...privilegedUrls, ...cloud.getUrls() }); // Merge the privileged URLs once available
         });
       }
+
+      // Add the "Customize navigation" user-menu link once the active space
+      // confirms a project-nav solution. The handler may have already been
+      // registered synchronously below; enableUi's per-capability idempotency
+      // guards prevent double-registration.
+      if (security && !isServerless && getIsProjectNav(activeSpace?.solution)) {
+        this.customizationService.enableUi({ core, chrome, security });
+      }
     };
 
-    if (this.getIsUnauthenticated(core.http)) {
+    if (isUnauthenticated) {
       // Don't fetch the active space if the user is not authenticated
       initSolutionNavigation();
     } else {
       activeSpace$.pipe(take(1)).subscribe(initSolutionNavigation);
+    }
+
+    // Register the chrome customize-navigation handler synchronously so it is
+    // available before the active-space observable resolves. The menu link is
+    // added separately (above) once the space is confirmed as project-nav.
+    if (this.isSolutionNavEnabled) {
+      this.customizationService.enableUi({ core, chrome });
+    }
+
+    // Sync stored customization to chrome. Initial emission is synchronous
+    // (preload: true on the server), keeping startup ordering safe.
+    this.customizationService.start({ core, chrome, isUnauthenticated });
+
+    if (isServerless && !isUnauthenticated) {
+      // In serverless, the serverless plugin initializes project navigation directly,
+      // bypassing this plugin's addSolutionNavigation flow. Listen for the navigation
+      // to become available, then enable customization support.
+      chrome.project
+        .getNavigation$()
+        .pipe(take(1))
+        .subscribe(({ solutionId }) => {
+          this.activeSolutionId = solutionId;
+          this.customizationService.enableUi({ core, chrome, security });
+        });
     }
 
     return {
@@ -127,9 +162,9 @@ export class NavigationPublicPlugin
         if (!this.isSolutionNavEnabled) return;
         this.addSolutionNavigation(solutionNavigation);
       },
-      isSolutionNavEnabled$: of(this.getIsUnauthenticated(core.http)).pipe(
-        switchMap((isUnauthenticated) => {
-          if (isUnauthenticated) return of(false);
+      isSolutionNavEnabled$: of(isUnauthenticated).pipe(
+        switchMap((unauth) => {
+          if (unauth) return of(false);
           return activeSpace$.pipe(
             map((activeSpace) => {
               return this.isSolutionNavEnabled && getIsProjectNav(activeSpace?.solution);
@@ -142,6 +177,7 @@ export class NavigationPublicPlugin
 
   public stop() {
     this.stop$.next();
+    this.customizationService.stop();
   }
 
   private addSolutionNavigation(def: AddSolutionNavigationArg) {

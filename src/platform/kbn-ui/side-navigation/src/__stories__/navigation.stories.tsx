@@ -61,6 +61,7 @@ export default {
     items: {
       primaryItems: PRIMARY_MENU_ITEMS,
       footerItems: PRIMARY_MENU_FOOTER_ITEMS,
+      overflowItems: [],
     },
     logo: {
       id: 'observability',
@@ -103,6 +104,7 @@ export const WithMinimalItems: StoryObj<PropsAndArgs> = {
     items: {
       primaryItems: PRIMARY_MENU_ITEMS.slice(0, 3),
       footerItems: PRIMARY_MENU_FOOTER_ITEMS.slice(0, 2),
+      overflowItems: [],
     },
   },
   render: (args) => <ControlledNavigation {...args} />,
@@ -144,6 +146,7 @@ export const WithManyItems: StoryObj<PropsAndArgs> = {
         },
       ],
       footerItems: PRIMARY_MENU_FOOTER_ITEMS,
+      overflowItems: [],
     },
   },
   render: (args) => <ControlledNavigation {...args} />,

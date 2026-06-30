@@ -73,6 +73,8 @@ export const convertUpsertRequestIntoDefinition = (
 /**
  * Parses a stream get response and converts it into the corresponding stream upsert request.
  * It will omit fields that are not part of the upsert request, such as name and updated_at timestamps.
+ * Significant-event queries are intentionally excluded: they are not part of the stream upsert
+ * contract and are managed via the dedicated `/api/streams/{name}/queries` endpoints and content import.
  * @param getResponse The stream get response to be converted
  * @throws Error if the get response doesn't match any known stream get response schema
  * @returns The corresponding stream upsert request for the provided get response
@@ -83,7 +85,6 @@ export const convertGetResponseIntoUpsertRequest = (
   if (Streams.WiredStream.GetResponse.is(getResponse)) {
     return {
       dashboards: getResponse.dashboards,
-      queries: getResponse.queries,
       rules: getResponse.rules,
       stream: {
         ...omit(getResponse.stream, ['name', 'updated_at']),
@@ -98,7 +99,6 @@ export const convertGetResponseIntoUpsertRequest = (
   if (Streams.ClassicStream.GetResponse.is(getResponse)) {
     return {
       dashboards: getResponse.dashboards,
-      queries: getResponse.queries,
       rules: getResponse.rules,
       stream: {
         ...omit(getResponse.stream, ['name', 'updated_at']),
@@ -113,7 +113,6 @@ export const convertGetResponseIntoUpsertRequest = (
   if (QueryStream.GetResponse.is(getResponse)) {
     return {
       dashboards: getResponse.dashboards,
-      queries: getResponse.queries,
       rules: getResponse.rules,
       stream: omit(getResponse.stream, ['name', 'updated_at']),
     };

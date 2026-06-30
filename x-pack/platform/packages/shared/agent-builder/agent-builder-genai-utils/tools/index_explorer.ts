@@ -14,11 +14,13 @@ import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
 import type {
   AliasSearchSource,
   DataStreamSearchSource,
+  DatasetSearchSource,
   IndexSearchSource,
 } from './steps/list_search_sources';
 import { listSearchSources } from './steps/list_search_sources';
 import { flattenMapping, getDataStreamMappings } from './utils/mappings';
 import { getIndexFields, partitionByCcs, getBatchedFieldsFromFieldCaps } from './utils/ccs';
+import { getDatasetFields } from './utils/datasets';
 
 export interface RelevantResource {
   type: EsResourceType;
@@ -141,6 +143,30 @@ const createDatastreamSummaries = async ({
 };
 
 /**
+ * Builds resource descriptors for a list of external ES|QL datasets by introspecting their
+ * columns via `FROM <name> | LIMIT 0` (datasets have no mappings or field caps).
+ */
+const createDatasetSummaries = async ({
+  datasets,
+  esClient,
+}: {
+  datasets: DatasetSearchSource[];
+  esClient: ElasticsearchClient;
+}): Promise<ResourceDescriptor[]> => {
+  return Promise.all(
+    datasets.map(async ({ name, data_source: dataSource, resource }) => {
+      const fields = await getDatasetFields({ name, esClient });
+      return {
+        type: EsResourceType.dataset,
+        name,
+        description: `External ES|QL dataset (data source: ${dataSource}, resource: ${resource}). Query with ES|QL "FROM ${name}".`,
+        fields: fields.map((f) => ({ path: f.path, type: f.type })),
+      };
+    })
+  );
+};
+
+/**
  * Builds resource descriptors for a pre-fetched set of search sources.
  * Splits the work per source type and optionally skips aliases / data streams.
  */
@@ -148,11 +174,13 @@ const buildResourceDescriptors = async ({
   sources,
   includeAliases,
   includeDatastream,
+  includeDatasets,
   esClient,
 }: {
   sources: Awaited<ReturnType<typeof listSearchSources>>;
   includeAliases: boolean;
   includeDatastream: boolean;
+  includeDatasets: boolean;
   esClient: ElasticsearchClient;
 }): Promise<ResourceDescriptor[]> => {
   const resources: ResourceDescriptor[] = [];
@@ -167,6 +195,9 @@ const buildResourceDescriptors = async ({
   if (sources.aliases.length > 0 && includeAliases) {
     resources.push(...(await createAliasSummaries({ aliases: sources.aliases })));
   }
+  if (sources.datasets.length > 0 && includeDatasets) {
+    resources.push(...(await createDatasetSummaries({ datasets: sources.datasets, esClient })));
+  }
   return resources;
 };
 
@@ -178,21 +209,30 @@ export const gatherResourceDescriptors = async ({
   indexPattern = '*',
   includeAliases = true,
   includeDatastream = true,
+  includeDatasets = false,
   esClient,
 }: {
   indexPattern?: string;
   includeAliases?: boolean;
   includeDatastream?: boolean;
+  includeDatasets?: boolean;
   esClient: ElasticsearchClient;
 }): Promise<ResourceDescriptor[]> => {
   const sources = await listSearchSources({
     pattern: indexPattern,
     excludeIndicesRepresentedAsDatastream: true,
     excludeIndicesRepresentedAsAlias: false,
+    includeDatasets,
     esClient,
   });
 
-  return buildResourceDescriptors({ sources, includeAliases, includeDatastream, esClient });
+  return buildResourceDescriptors({
+    sources,
+    includeAliases,
+    includeDatastream,
+    includeDatasets,
+    esClient,
+  });
 };
 
 export const indexExplorer = async ({
@@ -200,6 +240,7 @@ export const indexExplorer = async ({
   indexPattern = '*',
   includeAliases = true,
   includeDatastream = true,
+  includeDatasets = false,
   limit = 1,
   esClient,
   model,
@@ -209,6 +250,7 @@ export const indexExplorer = async ({
   indexPattern?: string;
   includeAliases?: boolean;
   includeDatastream?: boolean;
+  includeDatasets?: boolean;
   limit?: number;
   esClient: ElasticsearchClient;
   model: ScopedModel;
@@ -220,30 +262,35 @@ export const indexExplorer = async ({
     pattern: indexPattern,
     excludeIndicesRepresentedAsDatastream: true,
     excludeIndicesRepresentedAsAlias: false,
+    includeDatasets,
     esClient,
   });
 
   const indexCount = sources.indices.length;
   const aliasCount = sources.aliases.length;
   const dataStreamCount = sources.data_streams.length;
-  const totalCount = indexCount + aliasCount + dataStreamCount;
+  const datasetCount = includeDatasets ? sources.datasets.length : 0;
+  const totalCount = indexCount + aliasCount + dataStreamCount + datasetCount;
 
   logger?.trace(
     () =>
-      `index_explorer - found ${indexCount} indices, ${aliasCount} aliases, ${dataStreamCount} datastreams for query="${nlQuery}"`
+      `index_explorer - found ${indexCount} indices, ${aliasCount} aliases, ${dataStreamCount} datastreams, ${datasetCount} datasets for query="${nlQuery}"`
   );
 
   if (totalCount <= limit) {
     return {
-      resources: [...sources.indices, ...sources.aliases, ...sources.data_streams].map(
-        (resource) => {
-          return {
-            type: resource.type,
-            name: resource.name,
-            reason: `Index pattern matched less resources that the specified limit of ${limit}.`,
-          };
-        }
-      ),
+      resources: [
+        ...sources.indices,
+        ...sources.aliases,
+        ...sources.data_streams,
+        ...(includeDatasets ? sources.datasets : []),
+      ].map((resource) => {
+        return {
+          type: resource.type,
+          name: resource.name,
+          reason: `Index pattern matched less resources that the specified limit of ${limit}.`,
+        };
+      }),
     };
   }
 
@@ -251,6 +298,7 @@ export const indexExplorer = async ({
     sources,
     includeAliases,
     includeDatastream,
+    includeDatasets,
     esClient,
   });
 
@@ -307,7 +355,7 @@ The 'select_resources' tool expects this exact structure:
   "targets": [
     {
       "name": "resource_name",
-      "type": "index" | "alias" | "data_stream",
+      "type": "index" | "alias" | "data_stream" | "dataset",
       "reason": "why this resource is relevant"
     }
   ]
@@ -361,14 +409,19 @@ const selectResources = async ({
                 .string()
                 .describe('brief explanation of why this resource could be relevant'),
               type: z
-                .enum([EsResourceType.index, EsResourceType.alias, EsResourceType.dataStream])
+                .enum([
+                  EsResourceType.index,
+                  EsResourceType.alias,
+                  EsResourceType.dataStream,
+                  EsResourceType.dataset,
+                ])
                 .describe('the type of the resource'),
               name: z.string().describe('name of the resource'),
             })
           )
           .default([])
           .describe(
-            'The list of selected resources (indices, aliases and/or datastreams). Must be an array. Use an empty array if no resources match.'
+            'The list of selected resources (indices, aliases, datastreams and/or datasets). Must be an array. Use an empty array if no resources match.'
           ),
       })
       .describe('Tool to select the relevant Elasticsearch resources to search against'),

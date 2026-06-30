@@ -9,13 +9,8 @@ import type {
   AgentHandlerContext,
   ScopedRunnerRunAgentParams,
   RunAgentReturn,
-  ExperimentalFeatures,
 } from '@kbn/agent-builder-server';
 import { getConnectorProvider } from '@kbn/inference-common';
-import {
-  AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
-  AGENT_BUILDER_BASH_SUPPORT_SETTING_ID,
-} from '@kbn/management-settings-ids';
 import { getCurrentSpaceId } from '../../../utils/spaces';
 import { withAgentSpan } from '../../../tracing';
 import { createAgentHandler } from '../run_agent/create_handler';
@@ -58,27 +53,11 @@ export const createAgentHandlerContext = async <TParams = Record<string, unknown
     toolManager,
     analyticsService,
     trackingService,
+    experimentalFeatures,
   } = manager.deps;
 
   const spaceId = getCurrentSpaceId({ request, spaces });
   const toolRegistry = await toolsService.getRegistry({ request });
-
-  const uiSettingsClient = manager.deps.uiSettings.asScopedToClient(
-    manager.deps.savedObjects.getScopedClient(request)
-  );
-  const [isExperimentalEnabled, isBashEnabled] = await Promise.all([
-    uiSettingsClient
-      .get<boolean>(AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID)
-      .catch(() => false),
-    uiSettingsClient.get<boolean>(AGENT_BUILDER_BASH_SUPPORT_SETTING_ID).catch(() => false),
-  ]);
-
-  const experimentalFeatures: ExperimentalFeatures = {
-    skills: true,
-    subagents: isExperimentalEnabled,
-    todos: isExperimentalEnabled,
-    bash: isBashEnabled,
-  };
 
   const { filesystemService, bashService } = await createFilesystemServices({
     manager,

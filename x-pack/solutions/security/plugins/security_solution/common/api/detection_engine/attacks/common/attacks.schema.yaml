@@ -1,0 +1,12 @@
+openapi: 3.0.0
+info:
+  title: Shared Attacks API Primitives Schema
+  version: 'not applicable'
+paths: {}
+components:
+  x-codegen-enabled: true
+  schemas:
+    UpdateRelatedAlerts:
+      type: boolean
+      description: When `true`, the change is also applied to detection alerts related to the attacks via `kibana.alert.attack_discovery.alert_ids`.
+      default: false

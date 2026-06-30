@@ -662,6 +662,33 @@ describe('create()', () => {
     `);
   });
 
+  test('uses initialRevision when provided in options', async () => {
+    const data = getMockData();
+    unsecuredSavedObjectsClient.create.mockResolvedValueOnce({
+      id: '1',
+      type: RULE_SAVED_OBJECT_TYPE,
+      attributes: {
+        ...data,
+        alertTypeId: '123',
+        createdAt: '2019-02-12T21:01:22.479Z',
+        updatedAt: '2019-02-12T21:01:22.479Z',
+        createdBy: 'elastic',
+        updatedBy: 'elastic',
+        muteAll: false,
+        snoozeSchedule: [],
+        mutedInstanceIds: [],
+        running: false,
+        executionStatus: getRuleExecutionStatusPending('2019-02-12T21:01:22.479Z'),
+        actions: [],
+      },
+      references: [],
+    });
+
+    await rulesClient.create({ data: { ...data, actions: [] }, options: { initialRevision: 5 } });
+
+    expect(unsecuredSavedObjectsClient.create.mock.calls[0][1]).toMatchObject({ revision: 5 });
+  });
+
   test('sets legacyId when kibanaVersion is < 8.0.0', async () => {
     const customrulesClient = new RulesClient({
       ...rulesClientParams,

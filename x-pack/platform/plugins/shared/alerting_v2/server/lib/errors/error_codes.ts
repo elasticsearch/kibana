@@ -6,13 +6,20 @@
  */
 
 /**
- * Catalog of stable, machine-readable error codes returned by the routes.
- * These codes are part of the public API contract. Adding new codes is
- * backwards compatible, while renaming or removing a code is a breaking change.
+ * This file hosts two distinct catalogs:
  *
- * Each code's metadata (HTTP status, when it's thrown, `details` shape) is
- * documented in the README at
- * `x-pack/platform/plugins/shared/alerting_v2/server/lib/errors/README.md`.
+ * - {@link ALERTING_V2_ERROR_CODES} — codes that travel out over HTTP. Part
+ *   of the public API contract; see the README at
+ *   `x-pack/platform/plugins/shared/alerting_v2/server/lib/errors/README.md`
+ *   for status / details shape per code.
+ * - {@link ALERTING_V2_LOG_CODES} — codes attached to `logger.error(...)` /
+ *   `logger.warn(...)` calls for fire-and-forget failure paths (degraded but
+ *   recoverable). Stable identifiers for log-based monitoring; never
+ *   serialized into HTTP responses.
+ *
+ * Both catalogs treat renaming or removing a code as a breaking change to
+ * downstream consumers (API clients in one case, observability tooling in
+ * the other). Adding new codes is backwards compatible.
  */
 export const ALERTING_V2_ERROR_CODES = {
   // ────────────────────────── Rules ──────────────────────────
@@ -74,3 +81,60 @@ export const ALERTING_V2_ERROR_CODES = {
 
 export type AlertingV2ErrorCode =
   (typeof ALERTING_V2_ERROR_CODES)[keyof typeof ALERTING_V2_ERROR_CODES];
+
+/**
+ * Catalog of stable, machine-readable codes attached to `logger.error(...)` /
+ * `logger.warn(...)` calls for fire-and-forget failure paths. These never
+ * become part of an HTTP response — they exist so log-based monitoring can
+ * group and alert on specific degraded code paths without parsing free-form
+ * `message` strings.
+ *
+ * Naming convention: `<DOMAIN>_<WHAT_FAILED>`. Read-path failures that
+ * degrade gracefully should encode the degradation (e.g.
+ * `*_LOOKUP_FAILED` — the page was still returned, just without that piece
+ * of enrichment).
+ */
+export const ALERTING_V2_LOG_CODES = {
+  // ─────────────── Execution history (graceful degradation) ──────────────
+  /**
+   * One or more `task-run` hits returned by Elasticsearch on the rule
+   * executions read path failed structural normalization (missing hit id,
+   * malformed `kibana.task.id`, missing `event.start`, unrecognized
+   * `event.outcome`). The upstream filter on `kibana.task.type` is meant
+   * to prevent this. Emission of this code signals that the invariant
+   * has been violated and the read path silently shrank a page.
+   */
+  EXECUTION_HISTORY_NORMALIZER_REJECTED_EVENTS: 'EXECUTION_HISTORY_NORMALIZER_REJECTED_EVENTS',
+  /**
+   * Action-policy id resolution failed while building the search filter for
+   * the action-policy execution-history search. The search proceeds without
+   * policy-id matches contributed by the search term.
+   */
+  EXECUTION_HISTORY_SEARCH_POLICY_LOOKUP_FAILED: 'EXECUTION_HISTORY_SEARCH_POLICY_LOOKUP_FAILED',
+  /**
+   * Rule id resolution failed while building the search filter for the
+   * action-policy execution-history search. The search proceeds without
+   * rule-id matches contributed by the search term.
+   */
+  EXECUTION_HISTORY_SEARCH_RULE_LOOKUP_FAILED: 'EXECUTION_HISTORY_SEARCH_RULE_LOOKUP_FAILED',
+  /**
+   * Action-policy name lookup failed while enriching a page of action-policy
+   * execution events. The page is still returned; affected policy names
+   * degrade to `null`.
+   */
+  EXECUTION_HISTORY_POLICY_LOOKUP_FAILED: 'EXECUTION_HISTORY_POLICY_LOOKUP_FAILED',
+  /**
+   * Rule name lookup failed while enriching a page of action-policy
+   * execution events. The page is still returned; affected rule names
+   * degrade to `null`.
+   */
+  EXECUTION_HISTORY_RULE_LOOKUP_FAILED: 'EXECUTION_HISTORY_RULE_LOOKUP_FAILED',
+  /**
+   * Workflow name lookup failed while enriching a page of action-policy
+   * execution events. The page is still returned; affected workflow names
+   * degrade to `null`.
+   */
+  EXECUTION_HISTORY_WORKFLOW_LOOKUP_FAILED: 'EXECUTION_HISTORY_WORKFLOW_LOOKUP_FAILED',
+} as const;
+
+export type AlertingV2LogCode = (typeof ALERTING_V2_LOG_CODES)[keyof typeof ALERTING_V2_LOG_CODES];

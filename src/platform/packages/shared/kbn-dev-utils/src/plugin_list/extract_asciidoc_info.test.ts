@@ -9,8 +9,8 @@
 
 import { extractAsciidocInfo } from './extract_asciidoc_info';
 
-it('Returns the info and anchor when there is only one paragraph', () => {
-  const { firstParagraph, anchor } = extractAsciidocInfo(
+it('Returns the intro paragraph when there is only one paragraph', () => {
+  const { firstParagraph } = extractAsciidocInfo(
     `[[this-is-the-anchor]]
 == I'm the heading!
 
@@ -20,11 +20,10 @@ I'm an intro paragraph!`
   );
 
   expect(firstParagraph).toEqual(`Hello\n\nI'm an intro paragraph!`);
-  expect(anchor).toEqual('this-is-the-anchor');
 });
 
-it('Returns the info and anchor when there are multiple paragraphs without an anchor', () => {
-  const { firstParagraph, anchor } = extractAsciidocInfo(
+it('Returns only the intro paragraph when there are multiple paragraphs without an anchor', () => {
+  const { firstParagraph } = extractAsciidocInfo(
     `[[this-is-the-anchor]]
 == Heading here
 
@@ -36,11 +35,10 @@ More details`
   );
 
   expect(firstParagraph).toEqual(`Intro.`);
-  expect(anchor).toEqual('this-is-the-anchor');
 });
 
-it('Returns the info and anchor when there are multiple paragraphs with anchors', () => {
-  const { firstParagraph, anchor } = extractAsciidocInfo(
+it('Returns only the intro paragraph when there are multiple paragraphs with anchors', () => {
+  const { firstParagraph } = extractAsciidocInfo(
     `[[this-is-the-anchor]]
 == Heading here
 
@@ -54,11 +52,10 @@ More details
   );
 
   expect(firstParagraph).toEqual(`Intro.`);
-  expect(anchor).toEqual('this-is-the-anchor');
 });
 
-it('Returns the info and anchor when there are multiple paragraphs with discrete prefixes', () => {
-  const { firstParagraph, anchor } = extractAsciidocInfo(
+it('Returns only the intro paragraph when there are multiple paragraphs with discrete prefixes', () => {
+  const { firstParagraph } = extractAsciidocInfo(
     `[[this-is-the-anchor]]
 == Heading here
 
@@ -72,5 +69,4 @@ More details
   );
 
   expect(firstParagraph).toEqual(`Intro.`);
-  expect(anchor).toEqual('this-is-the-anchor');
 });

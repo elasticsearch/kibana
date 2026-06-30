@@ -37,7 +37,12 @@ export const spaceTest = spaceBaseTest.extend<
   ) => {
     const extendedPageObjects = {
       ...pageObjects,
-      tracesExperience: createLazyPageObject(TracesExperiencePage, page, pageObjects.discover),
+      tracesExperience: createLazyPageObject(
+        TracesExperiencePage,
+        page,
+        pageObjects.dataGrid,
+        pageObjects.discover
+      ),
     };
 
     await use(extendedPageObjects);

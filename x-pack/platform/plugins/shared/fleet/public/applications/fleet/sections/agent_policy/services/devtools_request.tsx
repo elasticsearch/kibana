@@ -17,9 +17,13 @@ import type {
   NewPackagePolicy,
   UpdatePackagePolicy,
   UpdateAgentPolicyRequest,
+  RegistryVarGroup,
 } from '../../../types';
 import { canUseMultipleAgentPolicies } from '../../../hooks';
-import { agentlessPolicyRouteService } from '../../../../../../common/services';
+import {
+  agentlessPolicyRouteService,
+  toNewAgentlessPolicy,
+} from '../../../../../../common/services';
 
 function generateKibanaDevToolsRequest(method: string, path: string, body: any) {
   return `${method} kbn:${path}\n${JSON.stringify(body, null, 2)}\n`;
@@ -66,22 +70,14 @@ export function generateCreatePackagePolicyDevToolsRequest(
 }
 
 export function generateCreateAgentlessPolicyDevToolsRequest(
-  packagePolicy: NewPackagePolicy & { force?: boolean; create_dataset_templates?: boolean }
+  packagePolicy: NewPackagePolicy & { force?: boolean; create_dataset_templates?: boolean },
+  varGroups?: RegistryVarGroup[]
 ) {
-  return generateKibanaDevToolsRequest('POST', agentlessPolicyRouteService.getCreatePath(), {
-    package: formatPackage(packagePolicy.package),
-    ...omit(
-      packagePolicy,
-      'package',
-      'enabled',
-      'policy_ids',
-      'policy_id',
-      'supports_agentless',
-      'supports_cloud_connector'
-    ),
-    inputs: formatInputs(packagePolicy.inputs, true),
-    vars: formatVars(packagePolicy.vars),
-  });
+  return generateKibanaDevToolsRequest(
+    'POST',
+    agentlessPolicyRouteService.getCreatePath(),
+    toNewAgentlessPolicy(packagePolicy, varGroups)
+  );
 }
 
 /**

@@ -141,19 +141,17 @@ responses:
       application/json:
         examples:
           createAgentlessPoliciesResponseExample:
-            description: 'Example response showing the successful result of communication initialisation over MCP protocol'
+            description: 'Example response for creating an agentless policy'
             value:
               item:
                 id: d52a7812-5736-4fdc-aed8-72152afa1ffa
-                version: WzE0OTgsMV0=
                 name: ess_billing-1
-                namespace: default
                 description: test
+                namespace: default
                 package:
                   name: ess_billing
                   title: Elasticsearch Service Billing
                   version: 1.6.0
-                enabled: true
                 inputs:
                   ESS Billing-cel:
                     enabled: true
@@ -175,10 +173,6 @@ responses:
                             - billing
                       ess_billing.credits:
                         enabled: false
-                supports_agentless: true
-                secret_references:
-                  - id: QY1sWpoBbWcMW-edr0Ee
-                revision: 1
                 created_at: '2025-11-06T18:27:43.541Z'
                 created_by: test_user
                 updated_at: '2025-11-06T18:27:43.541Z'
@@ -188,15 +182,13 @@ responses:
             value:
               item:
                 id: aws-policy-12345
-                version: WzE0OTgsMV0=
                 name: cspm-aws-policy
-                namespace: default
                 description: CSPM integration for AWS with cloud connector
+                namespace: default
                 package:
                   name: cloud_security_posture
                   title: Cloud Security Posture Management
                   version: 3.1.1
-                enabled: true
                 inputs:
                   cspm-cloudbeat/cis_aws:
                     enabled: true
@@ -219,12 +211,9 @@ responses:
                 vars:
                   posture: cspm
                   deployment: aws
-                supports_agentless: true
-                supports_cloud_connector: true
-                cloud_connector_id: aws-connector-67890
-                secret_references:
-                  - id: secret-external-id-123
-                revision: 1
+                cloud_connector:
+                  enabled: true
+                  cloud_connector_id: aws-connector-67890
                 created_at: '2025-11-06T18:27:43.541Z'
                 created_by: test_user
                 updated_at: '2025-11-06T18:27:43.541Z'
@@ -234,15 +223,13 @@ responses:
             value:
               item:
                 id: azure-policy-12345
-                version: WzE0OTgsMV0=
                 name: cspm-azure-policy
-                namespace: default
                 description: CSPM integration for Azure with cloud connector
+                namespace: default
                 package:
                   name: cloud_security_posture
                   title: Cloud Security Posture Management
                   version: 3.1.1
-                enabled: true
                 inputs:
                   cspm-cloudbeat/cis_azure:
                     enabled: true
@@ -267,13 +254,9 @@ responses:
                 vars:
                   posture: cspm
                   deployment: azure
-                supports_agentless: true
-                supports_cloud_connector: true
-                cloud_connector_id: azure-connector-67890
-                secret_references:
-                  - id: tenant-secret-id-123
-                  - id: client-secret-id-456
-                revision: 1
+                cloud_connector:
+                  enabled: true
+                  cloud_connector_id: azure-connector-67890
                 created_at: '2025-11-06T18:27:43.541Z'
                 created_by: test_user
                 updated_at: '2025-11-06T18:27:43.541Z'

@@ -1,9 +1,9 @@
 {
-  "sha1": "7fa812090fb014d9667c9d682307a8f26847181a",
+  "sha1": "388966a9375f04264e741ec0d942bf8dc8036f05",
   "tests": [
     {
-      "id": "2e34171f24bcdca-9e9bcc234fbcf5f",
-      "title": "Onboarding connect step static keys path — form enables Next when credentials are filled",
+      "id": "2e34171f24bcdca-674591f076626ad",
+      "title": "Onboarding deploy settings step static keys path — form enables Next when credentials are filled",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -16,8 +16,8 @@
       }
     },
     {
-      "id": "2e34171f24bcdca-6f25f6af6aac93b",
-      "title": "Onboarding connect step identity federation create — New Identity tab active when no connectors exist",
+      "id": "2e34171f24bcdca-90e5aa39d02d5a8",
+      "title": "Onboarding deploy settings step identity federation create — New Identity tab active when no connectors exist",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -30,8 +30,8 @@
       }
     },
     {
-      "id": "2e34171f24bcdca-71f5ed0a35a0c8f",
-      "title": "Onboarding connect step identity federation reuse — shows connector selector on Existing Identity tab",
+      "id": "2e34171f24bcdca-15500196b0e1b26",
+      "title": "Onboarding deploy settings step identity federation reuse — shows connector selector on Existing Identity tab",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -58,8 +58,8 @@
       }
     },
     {
-      "id": "b0669359ac1acfc-0e3d67be95f42a3",
-      "title": "Onboarding connect step IAM permissions viewer shows the aggregated IAM policy for the selected services",
+      "id": "b0669359ac1acfc-a80b304ef315b8d",
+      "title": "Onboarding deploy settings step IAM permissions viewer shows the aggregated IAM policy for the selected services",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -72,8 +72,8 @@
       }
     },
     {
-      "id": "b0669359ac1acfc-de90b35ab9eb820",
-      "title": "Onboarding connect step IAM permissions viewer narrows the policy when a single integration is selected",
+      "id": "b0669359ac1acfc-7a437c0b8c2cda8",
+      "title": "Onboarding deploy settings step IAM permissions viewer narrows the policy when a single integration is selected",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -81,13 +81,13 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/ingest_hub/test/scout/ui/tests/onboarding_permissions_viewer.spec.ts",
-        "line": 100,
+        "line": 99,
         "column": 9
       }
     },
     {
-      "id": "f11cb343b6e8637-2fcfd1009ebf5b1",
-      "title": "Onboarding Service Settings step Continue is disabled until global region is set",
+      "id": "f11cb343b6e8637-b46173407ce021c",
+      "title": "Onboarding Service Settings step Continue button is always enabled; clicking without global region shows validation error",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -100,8 +100,8 @@
       }
     },
     {
-      "id": "f11cb343b6e8637-2d9744fddad0b6b",
-      "title": "Onboarding Service Settings step Continue enables once global region is set and no inline fields are required",
+      "id": "f11cb343b6e8637-f67abd51007e525",
+      "title": "Onboarding Service Settings step Continue button is always enabled when global region is set and no inline fields are required",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -109,13 +109,13 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/ingest_hub/test/scout/ui/tests/onboarding_service_settings_step.spec.ts",
-        "line": 64,
+        "line": 72,
         "column": 7
       }
     },
     {
-      "id": "f11cb343b6e8637-816b2e035d3e817",
-      "title": "Onboarding Service Settings step Continue is disabled when an inline required field is empty",
+      "id": "f11cb343b6e8637-b9753f4b6fc18bc",
+      "title": "Onboarding Service Settings step clicking Continue with an empty inline required field shows validation error",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -123,7 +123,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/ingest_hub/test/scout/ui/tests/onboarding_service_settings_step.spec.ts",
-        "line": 87,
+        "line": 95,
         "column": 7
       }
     },
@@ -137,7 +137,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/ingest_hub/test/scout/ui/tests/onboarding_service_settings_step.spec.ts",
-        "line": 117,
+        "line": 129,
         "column": 7
       }
     },
@@ -151,7 +151,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/ingest_hub/test/scout/ui/tests/onboarding_service_settings_step.spec.ts",
-        "line": 154,
+        "line": 166,
         "column": 7
       }
     },
@@ -198,8 +198,8 @@
       }
     },
     {
-      "id": "240d7a094dcfd2b-215fb10fa4ca864",
-      "title": "Onboarding services step Next is disabled when no services are selected",
+      "id": "240d7a094dcfd2b-3cf6363f59cca14",
+      "title": "Onboarding services step Continue is disabled when no services are selected",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",

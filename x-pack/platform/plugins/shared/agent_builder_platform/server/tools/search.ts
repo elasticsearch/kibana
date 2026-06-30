@@ -76,7 +76,15 @@ Note:
     schema: searchSchema,
     handler: async (
       { query: nlQuery, index, time_range: explicitTimeRange },
-      { esClient, modelProvider, logger, events, attachments, savedObjectsClient }
+      {
+        esClient,
+        modelProvider,
+        logger,
+        events,
+        attachments,
+        savedObjectsClient,
+        experimentalFeatures,
+      }
     ) => {
       logger.debug(`search tool called with query: ${nlQuery}, index: ${index}`);
       const timeRange = resolveTimeRange(attachments, explicitTimeRange);
@@ -110,6 +118,7 @@ Note:
         events,
         logger,
         topSnippetsConfig,
+        includeDatasets: experimentalFeatures.datasets,
         rowLimit: 100,
       });
       return { results };

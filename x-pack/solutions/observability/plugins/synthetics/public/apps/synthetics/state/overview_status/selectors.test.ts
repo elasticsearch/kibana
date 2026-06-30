@@ -9,7 +9,7 @@ import type {
   OverviewStatusMetaData,
   OverviewStatusState,
 } from '../../../../../common/runtime_types';
-import { getStatusByConfig, selectOverviewStatus } from './selectors';
+import { getStatusByConfig, resolveDisplayStatus, selectOverviewStatus } from './selectors';
 import type { SyntheticsAppState } from '../root_reducer';
 
 const makeMeta = (
@@ -288,5 +288,55 @@ describe('selectOverviewStatus', () => {
     };
     const result = selectOverviewStatus(state as SyntheticsAppState);
     expect(result.status).toBeNull();
+  });
+});
+
+describe('resolveDisplayStatus', () => {
+  it('returns overallStatus unchanged when the toggle is off', () => {
+    const monitor = makeMeta({
+      configId: 'stale',
+      overallStatus: 'stale',
+      locations: [{ id: 'loc1', label: 'Loc 1', status: 'stale', lastStatus: 'up' }],
+    });
+    expect(resolveDisplayStatus(monitor, false)).toBe('stale');
+  });
+
+  it('returns overallStatus unchanged for non-stale monitors even when toggle is on', () => {
+    const monitor = makeMeta({
+      configId: 'up',
+      overallStatus: 'up',
+      locations: [{ id: 'loc1', label: 'Loc 1', status: 'up' }],
+    });
+    expect(resolveDisplayStatus(monitor, true)).toBe('up');
+  });
+
+  it('surfaces an "up" last run when the toggle is on', () => {
+    const monitor = makeMeta({
+      configId: 'stale',
+      overallStatus: 'stale',
+      locations: [{ id: 'loc1', label: 'Loc 1', status: 'stale', lastStatus: 'up' }],
+    });
+    expect(resolveDisplayStatus(monitor, true)).toBe('up');
+  });
+
+  it('surfaces a "down" last run when any location was last down', () => {
+    const monitor = makeMeta({
+      configId: 'stale',
+      overallStatus: 'stale',
+      locations: [
+        { id: 'loc1', label: 'Loc 1', status: 'stale', lastStatus: 'up' },
+        { id: 'loc2', label: 'Loc 2', status: 'stale', lastStatus: 'down' },
+      ],
+    });
+    expect(resolveDisplayStatus(monitor, true)).toBe('down');
+  });
+
+  it('stays stale when no last status was carried', () => {
+    const monitor = makeMeta({
+      configId: 'stale',
+      overallStatus: 'stale',
+      locations: [{ id: 'loc1', label: 'Loc 1', status: 'stale' }],
+    });
+    expect(resolveDisplayStatus(monitor, true)).toBe('stale');
   });
 });

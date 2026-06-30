@@ -52,18 +52,7 @@ describe('content pack tree helpers', () => {
         routing: [{ destination: 'root.child1.nested', where: { always: {} }, status: 'enabled' }],
       });
       const child2 = testContentPackEntry({ name: 'root.child2' });
-      const child1Nested = testContentPackEntry({
-        name: 'root.child1.nested',
-        queries: [
-          {
-            id: 'keep',
-            type: 'match',
-            title: 'keep query',
-            description: '',
-            esql: { query: 'FROM logs | LIMIT 1' },
-          },
-        ],
-      });
+      const child1Nested = testContentPackEntry({ name: 'root.child1.nested' });
 
       const tree = asTree({
         root: 'root',
@@ -71,7 +60,6 @@ describe('content pack tree helpers', () => {
         include: {
           objects: {
             mappings: true,
-            queries: [],
             routing: [{ destination: 'root.child1', objects: { all: {} } }],
           },
         },
@@ -87,62 +75,9 @@ describe('content pack tree helpers', () => {
       ]);
       expect(tree.children[0].children).toHaveLength(1);
       expect(tree.children[0].children[0].name).toEqual('root.child1.nested');
-      expect(tree.children[0].children[0].request.queries).toEqual([
-        {
-          id: 'keep',
-          type: 'match',
-          title: 'keep query',
-          description: '',
-          esql: { query: 'FROM logs | LIMIT 1' },
-        },
-      ]);
     });
 
-    it('filters streams and queries according to include spec', () => {
-      const root = testContentPackEntry({
-        name: 'root',
-        queries: [
-          {
-            id: 'keep',
-            type: 'match',
-            title: 'keep query',
-            description: '',
-            esql: { query: 'FROM logs | LIMIT 1' },
-          },
-          {
-            id: 'drop',
-            type: 'match',
-            title: 'drop query',
-            description: '',
-            esql: { query: 'FROM logs | LIMIT 10' },
-          },
-        ],
-      });
-
-      const tree = asTree({
-        root: 'root',
-        streams: [root],
-        include: {
-          objects: {
-            mappings: true,
-            queries: [{ id: 'keep' }],
-            routing: [],
-          },
-        },
-      });
-
-      expect(tree.request.queries).toEqual([
-        {
-          id: 'keep',
-          type: 'match',
-          title: 'keep query',
-          description: '',
-          esql: { query: 'FROM logs | LIMIT 1' },
-        },
-      ]);
-    });
-
-    it('throws when included stream or query do not exist', () => {
+    it('throws when an included stream does not exist', () => {
       const root = testContentPackEntry({
         name: 'root',
         routing: [{ destination: 'root.child1', where: { always: {} }, status: 'enabled' }],
@@ -156,31 +91,11 @@ describe('content pack tree helpers', () => {
           include: {
             objects: {
               mappings: true,
-              queries: [],
               routing: [{ destination: 'root.child2', objects: { all: {} } }],
             },
           },
         })
       ).toThrow('Stream [root] does not route to [root.child2]');
-
-      expect(() =>
-        asTree({
-          root: 'root',
-          streams: [root, child1],
-          include: {
-            objects: {
-              mappings: true,
-              queries: [],
-              routing: [
-                {
-                  destination: 'root.child1',
-                  objects: { mappings: true, queries: [{ id: 'foo' }], routing: [] },
-                },
-              ],
-            },
-          },
-        })
-      ).toThrow('Stream [root.child1] does not define query [foo]');
     });
   });
 
@@ -268,50 +183,6 @@ describe('content pack tree helpers', () => {
 
       expect(() => mergeTrees({ existing, incoming })).toThrow(
         'Cannot change mapping of [custom] for [logs.foo]'
-      );
-    });
-
-    it('throws on duplicate query', () => {
-      const existing = asTree({
-        root: 'logs',
-        streams: [
-          testContentPackEntry({
-            name: 'logs',
-            queries: [
-              {
-                id: 'one',
-                type: 'match',
-                title: 'title',
-                description: '',
-                esql: { query: 'FROM logs | WHERE qty == "one"' },
-              },
-            ],
-          }),
-        ],
-        include: { objects: { all: {} } },
-      });
-
-      const incoming = asTree({
-        root: 'logs',
-        streams: [
-          testContentPackEntry({
-            name: 'logs',
-            queries: [
-              {
-                id: 'one',
-                type: 'match',
-                title: 'title',
-                description: '',
-                esql: { query: 'FROM logs | WHERE qty == "two"' },
-              },
-            ],
-          }),
-        ],
-        include: { objects: { all: {} } },
-      });
-
-      expect(() => mergeTrees({ existing, incoming })).toThrow(
-        `Query [one | title] already exists on [logs]`
       );
     });
 

@@ -23,8 +23,9 @@ import {
   SYNTHETICS_TLS_RULE,
 } from '../../../../../../../common/constants/synthetics_alerts';
 import type { ClientPluginsStart } from '../../../../../../plugin';
-import { useGetUrlParams, useRefreshedRangeFromUrl } from '../../../../hooks';
+import { useGetUrlParams } from '../../../../hooks';
 import { selectOverviewStatus } from '../../../../state/overview_status';
+import { useOverviewRefreshedRange } from '../../common/use_overview_date_range';
 import { AlertsLink } from '../../../common/links/view_alerts';
 import { useMonitorFilters } from '../../hooks/use_monitor_filters';
 import { useMonitorQueryFilters } from '../../hooks/use_monitor_query_filters';
@@ -62,10 +63,9 @@ export const useMonitorQueryIds = () => {
 };
 
 export const OverviewAlerts = () => {
-  // Range now follows the page-level date picker (URL params). When the user
-  // hasn't touched the picker, this falls back to "now-24h → now" via the
-  // `now-24h` default in `getSupportedUrlParams`.
-  const { from, to } = useRefreshedRangeFromUrl();
+  // Follows the page-level date picker (URL params), defaulting to the overview's
+  // own window when untouched so it stays in step with the status panel.
+  const { from, to } = useOverviewRefreshedRange();
 
   const {
     exploratoryView: { ExploratoryViewEmbeddable },

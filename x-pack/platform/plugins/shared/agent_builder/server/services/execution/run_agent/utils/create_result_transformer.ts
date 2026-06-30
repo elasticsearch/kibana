@@ -10,10 +10,7 @@ import { ToolResultType } from '@kbn/agent-builder-common';
 import type { ToolResultStore } from '@kbn/agent-builder-server/runner';
 import type { ToolRegistry } from '@kbn/agent-builder-server';
 import type { ToolManager } from '@kbn/agent-builder-server/runner/tool_manager';
-import {
-  getToolCallEntryPath,
-  getToolCallEntryAbsolutePath,
-} from '../../runner/store/volumes/tool_results/utils';
+import { getToolCallEntryAbsolutePath } from '../../runner/store/volumes/tool_results/utils';
 import type { ToolCallResultTransformer } from './tool_summarization';
 import {
   areAllResultsCleaned,
@@ -109,8 +106,6 @@ export const createResultTransformer = ({
         toolCall.results.map((result) =>
           tryFilestoreSubstitution({
             result,
-            toolId: toolCall.tool_id,
-            toolCallId: toolCall.tool_call_id,
             resultStore,
             threshold: toolCallTokenThreshold,
           })
@@ -129,14 +124,10 @@ export const createResultTransformer = ({
  */
 const tryFilestoreSubstitution = async ({
   result,
-  toolId,
-  toolCallId,
   resultStore,
   threshold,
 }: {
   result: ToolResult;
-  toolId: string;
-  toolCallId: string;
   resultStore: ToolResultStore;
   threshold: number;
 }): Promise<ToolResult> => {
@@ -145,16 +136,8 @@ const tryFilestoreSubstitution = async ({
     return result;
   }
 
-  const lookupArgs = {
-    toolId,
-    toolCallId,
-    toolResultId: result.tool_result_id,
-  };
-  const relativePath = getToolCallEntryPath(lookupArgs);
-  const agentVisiblePath = getToolCallEntryAbsolutePath(lookupArgs);
-
   try {
-    const entry = await resultStore.getEntry(relativePath);
+    const entry = await resultStore.getEntryByResultId(result.tool_result_id);
 
     // If entry exists and exceeds threshold, substitute with file reference
     if (entry && entry.metadata.token_count > threshold) {
@@ -162,7 +145,7 @@ const tryFilestoreSubstitution = async ({
         tool_result_id: result.tool_result_id,
         type: ToolResultType.fileReference,
         data: {
-          filepath: agentVisiblePath,
+          filepath: getToolCallEntryAbsolutePath(entry.path),
           comment:
             'The result has been stored in the virtual file system. You can access it using the read_file tool with the specified filepath.',
         },

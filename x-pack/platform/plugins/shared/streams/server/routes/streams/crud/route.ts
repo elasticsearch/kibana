@@ -71,15 +71,12 @@ export const readStreamRoute = createServerRoute({
     server,
     logger,
   }): Promise<Streams.all.GetResponse> => {
-    const { getKnowledgeIndicatorClient, attachmentClient, streamsClient, scopedClusterClient } =
-      await getScopedClients({
-        request,
-      });
+    const { attachmentClient, streamsClient, scopedClusterClient } = await getScopedClients({
+      request,
+    });
 
-    const kiClient = await getKnowledgeIndicatorClient();
     const body = await readStream({
       name: params.path.name,
-      queryClient: kiClient,
       attachmentClient,
       scopedClusterClient,
       streamsClient,
@@ -189,7 +186,7 @@ export const editStreamRoute = createServerRoute({
     const { streamsClient } = await getScopedClients({ request });
 
     // Replicated data streams are managed by the source cluster via CCR.
-    // Only Kibana-side data (description, dashboards, queries) can be updated.
+    // Only Kibana-side data (description, dashboards, rules) can be updated.
     if (Streams.ClassicStream.UpsertRequest.is(params.body)) {
       const dataStream = await streamsClient.getDataStream(params.path.name).catch(() => null);
       if (dataStream?.replicated && classicIngestHasEsLevelChanges(params.body.stream.ingest)) {

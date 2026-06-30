@@ -56,6 +56,7 @@ describe('useUserProfileForm', () => {
     coreStart.notifications.toasts.addSuccess.mockReset();
     coreStart.settings.client.get.mockReset();
     coreStart.settings.client.isOverridden.mockReset();
+    coreStart.analytics.reportEvent.mockReset();
   });
 
   it('should initialise form with values from user profile', () => {
@@ -434,6 +435,43 @@ describe('useUserProfileForm', () => {
         expect.objectContaining({ title: 'Profile updated' }),
         expect.objectContaining({ toastLifeTimeMs: 300000 })
       );
+    });
+  });
+
+  describe('Display Language Form', () => {
+    it('should report display_language_changed event when locale is changed on submit', async () => {
+      const data: UserProfileData = {
+        userSettings: { darkMode: 'light', contrastMode: 'standard', locale: 'en' },
+      };
+
+      const { result } = renderHook(() => useUserProfileForm({ user, data }), { wrapper });
+
+      await act(async () => {
+        await result.current.setFieldValue('data.userSettings.locale', 'fr-FR');
+      });
+
+      await act(async () => {
+        await result.current.submitForm();
+      });
+
+      expect(coreStart.analytics.reportEvent).toHaveBeenCalledWith('display_language_changed', {
+        from: 'en',
+        to: 'fr-FR',
+      });
+    });
+
+    it('should not report event when locale is unchanged on submit', async () => {
+      const data: UserProfileData = {
+        userSettings: { darkMode: 'light', contrastMode: 'standard', locale: 'en' },
+      };
+
+      const { result } = renderHook(() => useUserProfileForm({ user, data }), { wrapper });
+
+      await act(async () => {
+        await result.current.submitForm();
+      });
+
+      expect(coreStart.analytics.reportEvent).not.toHaveBeenCalled();
     });
   });
 

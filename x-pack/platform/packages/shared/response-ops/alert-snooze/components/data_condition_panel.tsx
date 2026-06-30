@@ -16,6 +16,7 @@ import {
   EuiSelect,
   EuiSpacer,
   EuiText,
+  EuiToolTip,
 } from '@elastic/eui';
 import * as i18n from './translations';
 import type { DataConditionEntry, DataConditionTypeDescriptor } from './types';
@@ -88,21 +89,25 @@ export const DataConditionPanel = ({
             </EuiFlexGroup>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="pencil"
-              aria-label={i18n.EDIT_DATA_CONDITION_ARIA_LABEL}
-              onClick={() => onChange({ ...entry, confirmed: false })}
-              data-test-subj={`editDataCondition-${entry.id}`}
-            />
+            <EuiToolTip content={i18n.EDIT_DATA_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="pencil"
+                aria-label={i18n.EDIT_DATA_CONDITION_ARIA_LABEL}
+                onClick={() => onChange({ ...entry, confirmed: false })}
+                data-test-subj={`editDataCondition-${entry.id}`}
+              />
+            </EuiToolTip>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="trash"
-              color="danger"
-              aria-label={i18n.REMOVE_DATA_CONDITION_ARIA_LABEL}
-              onClick={() => onChange(null)}
-              data-test-subj={`deleteDataCondition-${entry.id}`}
-            />
+            <EuiToolTip content={i18n.REMOVE_DATA_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="trash"
+                color="danger"
+                aria-label={i18n.REMOVE_DATA_CONDITION_ARIA_LABEL}
+                onClick={() => onChange(null)}
+                data-test-subj={`deleteDataCondition-${entry.id}`}
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiPanel>
@@ -129,23 +134,27 @@ export const DataConditionPanel = ({
           </EuiText>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            iconType="check"
-            color="success"
-            display="base"
-            aria-label={i18n.CONFIRM_CONDITION_ARIA_LABEL}
-            onClick={() => onChange({ ...entry, confirmed: true })}
-            isDisabled={!isComplete}
-            data-test-subj={`confirmDataCondition-${entry.id}`}
-          />
+          <EuiToolTip content={i18n.CONFIRM_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType="check"
+              color="success"
+              display="base"
+              aria-label={i18n.CONFIRM_CONDITION_ARIA_LABEL}
+              onClick={() => onChange({ ...entry, confirmed: true })}
+              isDisabled={!isComplete}
+              data-test-subj={`confirmDataCondition-${entry.id}`}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            iconType="cross"
-            aria-label={i18n.REMOVE_DATA_CONDITION_ARIA_LABEL}
-            onClick={() => onChange(null)}
-            data-test-subj={`removeDataCondition-${entry.id}`}
-          />
+          <EuiToolTip content={i18n.REMOVE_DATA_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType="cross"
+              aria-label={i18n.REMOVE_DATA_CONDITION_ARIA_LABEL}
+              onClick={() => onChange(null)}
+              data-test-subj={`removeDataCondition-${entry.id}`}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="s" />

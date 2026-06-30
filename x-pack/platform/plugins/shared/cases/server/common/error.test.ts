@@ -22,6 +22,10 @@ describe('common utils', () => {
     it('returns false if the SO is not an error', () => {
       expect(isSOError({})).toBe(false);
     });
+
+    it('returns false when the error property is undefined', () => {
+      expect(isSOError({ error: undefined })).toBe(false);
+    });
   });
 
   describe('isSODecoratedError', () => {

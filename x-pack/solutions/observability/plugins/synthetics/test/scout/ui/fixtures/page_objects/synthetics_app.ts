@@ -430,7 +430,10 @@ export class SyntheticsAppPage {
   }
 
   async refreshOverview() {
-    await this.page.testSubj.click('syntheticsRefreshButtonButton');
+    // The overview header replaced the shared refresh button with the
+    // SyntheticsDatePicker, whose EuiSuperDatePicker apply/refresh button drives
+    // the app refresh.
+    await this.page.testSubj.click('superDatePickerApplyTimeButton');
     await this.waitForLoadingToFinish();
   }
 

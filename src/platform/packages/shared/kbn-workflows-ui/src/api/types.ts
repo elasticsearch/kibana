@@ -11,6 +11,7 @@ import type {
   BulkCreateWorkflowsCommand,
   ExecutionStatus,
   ExecutionType,
+  UpdatedWorkflowResponseDto,
   WorkflowDetailDto,
   WorkflowExecutionSortField,
   WorkflowExecutionSortOrder,
@@ -162,4 +163,12 @@ export interface SearchTriggerEventLogResult {
   total: number;
   page: number;
   size: number;
+}
+
+export interface RestoreWorkflowVersionParams {
+  signal?: AbortSignal;
+}
+
+export interface RestoreWorkflowVersionResponseDto extends UpdatedWorkflowResponseDto {
+  version: number;
 }

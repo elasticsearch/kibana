@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/evals-suite-pci-compliance'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/security-defend-workflows'
+  defaultOwner: '@elastic/security-solution'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/evals-suite-pci-compliance'
   description: Moon project for @kbn/evals-suite-pci-compliance
   channel: ''
-  owner: '@elastic/security-defend-workflows'
+  owner: '@elastic/security-solution'
   sourceRoot: x-pack/solutions/security/packages/kbn-evals-suite-pci-compliance
 dependsOn:
   - '@kbn/evals'

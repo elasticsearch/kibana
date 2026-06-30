@@ -31,8 +31,6 @@ export const fuseCommand = {
       `…| FUSE linear`,
       `…| FUSE linear WITH { "weights": { "fork1": 0.7, "fork2": 0.3 }, "normalizer": "minmax" }`,
     ],
-    hidden: true,
-    preview: true,
     name: 'fuse',
   },
 };

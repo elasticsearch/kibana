@@ -9,23 +9,28 @@ import { parse, stringify } from 'query-string';
 import type {
   CreatePackagePolicyRouteState,
   OnSaveQueryParamOpts,
-  PackagePolicy,
   OnSaveQueryParamKeys,
 } from '../../../../types';
+import type { SavedPolicyResult } from '../types';
 
 export function appendOnSaveQueryParamsToPath({
   path,
-  policy,
+  savedPolicyResult,
   paramsToApply,
   mappingOptions = {},
 }: {
   path: string;
-  policy: PackagePolicy;
+  savedPolicyResult: SavedPolicyResult;
   paramsToApply: OnSaveQueryParamKeys[];
   mappingOptions?: CreatePackagePolicyRouteState['onSaveQueryParams'];
 }) {
   const [basePath, queryStringIn] = path.split('?');
   const queryParams = parse(queryStringIn);
+  // Agentless policies have no agent policies; use their own id. TODO handle multiple.
+  const policyId =
+    savedPolicyResult.type === 'agentless'
+      ? savedPolicyResult.policy.id
+      : savedPolicyResult.policy.policy_ids[0];
 
   paramsToApply.forEach((paramName) => {
     const paramOptions = mappingOptions[paramName];
@@ -33,7 +38,7 @@ export function appendOnSaveQueryParamsToPath({
       const [paramKey, paramValue] = createQueryParam(
         paramName,
         paramOptions,
-        (policy.policy_ids && policy.policy_ids[0]) || undefined // TODO handle multiple
+        policyId || undefined
       );
       if (paramKey && paramValue) {
         queryParams[paramKey] = paramValue;

@@ -49,7 +49,7 @@ export const AlertItem = ({
           {count > 0 && showWarningIcon ? (
             <>
               &nbsp;
-              <EuiIcon type="warning" ascent={10} />
+              <EuiIcon type="warning" ascent={10} aria-hidden={true} />
             </>
           ) : null}
         </EuiTextColor>

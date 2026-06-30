@@ -18,6 +18,7 @@ import { BACK_TO_WORKFLOW } from './translations';
 import {
   useWorkflowChangeHistoryAdapter,
   useWorkflowChangeHistoryEnabled,
+  useWorkflowChangeHistoryRestoreEligibility,
 } from './use_workflow_change_history';
 import { renderWorkflowChangeHistoryBadge } from './workflow_change_history_badge';
 import { renderWorkflowChangeHistoryPreview } from './workflow_change_history_preview';
@@ -34,7 +35,8 @@ export const WorkflowChangeHistoryProvider = ({
   children,
 }: WorkflowChangeHistoryProviderProps): JSX.Element => {
   const isEnabled = useWorkflowChangeHistoryEnabled();
-  const adapter = useWorkflowChangeHistoryAdapter();
+  const adapter = useWorkflowChangeHistoryAdapter(workflowId);
+  const canRestore = useWorkflowChangeHistoryRestoreEligibility();
 
   if (!isEnabled) {
     return <>{children}</>;
@@ -48,8 +50,10 @@ export const WorkflowChangeHistoryProvider = ({
       renderBadge={renderWorkflowChangeHistoryBadge}
       labels={{
         previewBackLabel: BACK_TO_WORKFLOW,
-        previewTitle: workflowName,
+        previewTitle: workflowName ?? workflowId,
       }}
+      features={{ restore: true }}
+      permissions={{ canRestore }}
     >
       {children}
       <ChangeHistoryModal />
@@ -57,18 +61,12 @@ export const WorkflowChangeHistoryProvider = ({
   );
 };
 
-export interface WorkflowChangeHistoryListItemProps {
-  onClick?: () => void;
-}
-
-export const WorkflowChangeHistoryListItem = ({
-  onClick,
-}: WorkflowChangeHistoryListItemProps): JSX.Element | null => {
+export const WorkflowChangeHistoryListItem = (): JSX.Element | null => {
   const isEnabled = useWorkflowChangeHistoryEnabled();
 
   if (!isEnabled) {
     return null;
   }
 
-  return <ChangeHistoryListGroupItem onClick={onClick} />;
+  return <ChangeHistoryListGroupItem />;
 };

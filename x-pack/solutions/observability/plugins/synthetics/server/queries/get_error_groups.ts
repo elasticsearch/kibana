@@ -6,6 +6,7 @@
  */
 
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import DateMath from '@kbn/datemath';
 import { ALL_SPACES_ID } from '@kbn/spaces-plugin/common/constants';
 import {
   EXCLUDE_RUN_ONCE_FILTER,
@@ -42,6 +43,36 @@ function classifyPattern(histogram: ErrorGroupHistogramBucket[]): ErrorGroupPatt
   if (!earlyBucketsHaveErrors) return 'new';
 
   return 'intermittent';
+}
+
+const HISTOGRAM_BUCKET_TARGET = 24;
+const MIN_HISTOGRAM_INTERVAL_MS = 60_000;
+const FALLBACK_HISTOGRAM_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
+ * Every error group must share one aligned time grid. The "Errors over time"
+ * chart derives a single bar width from the first group's bucket spacing, then
+ * merges all groups into one series; if a short-lived (intermittent) group has
+ * a finer bucket interval, the merged series ends up with sub-interval spacing
+ * and every bar collapses to sub-pixel width — i.e. the chart renders blank.
+ * A per-group `auto_date_histogram` produced exactly that, so we bucket with a
+ * single window-derived `fixed_interval` shared by all groups instead.
+ */
+export function getErrorGroupsHistogramInterval(from: string, to: string): number {
+  const fromMs = DateMath.parse(from)?.valueOf();
+  const toMs = DateMath.parse(to, { roundUp: true })?.valueOf();
+
+  if (
+    fromMs == null ||
+    toMs == null ||
+    !Number.isFinite(fromMs) ||
+    !Number.isFinite(toMs) ||
+    toMs <= fromMs
+  ) {
+    return FALLBACK_HISTOGRAM_INTERVAL_MS;
+  }
+
+  return Math.max(Math.floor((toMs - fromMs) / HISTOGRAM_BUCKET_TARGET), MIN_HISTOGRAM_INTERVAL_MS);
 }
 
 interface GetErrorGroupsParams {
@@ -103,6 +134,14 @@ export async function getErrorGroups({
     must.push(getQueryFilters(query) as QueryDslQueryContainer);
   }
 
+  const histogramIntervalMs = getErrorGroupsHistogramInterval(from, to);
+  const histogramRangeStart = DateMath.parse(from)?.valueOf();
+  const histogramRangeEnd = DateMath.parse(to, { roundUp: true })?.valueOf();
+  const histogramBounds =
+    histogramRangeStart != null && histogramRangeEnd != null
+      ? { extended_bounds: { min: histogramRangeStart, max: histogramRangeEnd } }
+      : {};
+
   const result = await syntheticsEsClient.search(
     {
       size: 0,
@@ -162,9 +201,11 @@ export async function getErrorGroups({
               },
             },
             over_time: {
-              auto_date_histogram: {
+              date_histogram: {
                 field: '@timestamp',
-                buckets: 24,
+                fixed_interval: `${histogramIntervalMs}ms`,
+                min_doc_count: 0,
+                ...histogramBounds,
               },
             },
           },

@@ -126,3 +126,6 @@ export const getConnectorActionErrorMeta = (
 
   return connectorActionErrorMeta.get(error);
 };
+
+/** Strips trailing slashes from a URL base, e.g. `https://host/` → `https://host`. */
+export const normalizeUrl = (url: string): string => url.replace(/\/+$/, '');

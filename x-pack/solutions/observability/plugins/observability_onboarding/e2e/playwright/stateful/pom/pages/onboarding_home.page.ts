@@ -14,7 +14,6 @@ export class OnboardingHomePage {
   private readonly useCaseKubernetes: Locator;
   readonly useCaseCloud: Locator;
 
-  private readonly otelKubernetesQuickStartCard: Locator;
   private readonly autoDetectElasticAgent: Locator;
   private readonly otelHostCard: Locator;
   readonly awsCollectionCard: Locator;
@@ -37,8 +36,6 @@ export class OnboardingHomePage {
       .getByTestId('observabilityOnboardingUseCaseCard-cloud')
       .getByRole('radio');
 
-    this.otelKubernetesQuickStartCard = this.page.getByTestId('integration-card:otel-kubernetes');
-
     this.autoDetectElasticAgent = this.page.getByTestId('integration-card:auto-detect-logs');
     this.otelHostCard = this.page.getByTestId('integration-card:otel-logs');
     this.awsCollectionCard = this.page.getByTestId('integration-card:aws-logs-virtual');
@@ -57,6 +54,7 @@ export class OnboardingHomePage {
 
   public async selectKubernetesUseCase() {
     await this.useCaseKubernetes.click();
+    await this.page.waitForURL(/\/kubernetes(\?|$|#)/);
   }
 
   public async selectAutoDetectWithElasticAgent() {
@@ -67,10 +65,6 @@ export class OnboardingHomePage {
     await this.page.goto(
       `${process.env.KIBANA_BASE_URL}/app/observabilityOnboarding/kubernetes/elastic-agent`
     );
-  }
-
-  public async selectOtelKubernetesQuickstart() {
-    await this.otelKubernetesQuickStartCard.click();
   }
 
   public async selectOtelHostQuickstart() {

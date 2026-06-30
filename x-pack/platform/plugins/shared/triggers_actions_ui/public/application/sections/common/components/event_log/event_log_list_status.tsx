@@ -57,7 +57,7 @@ export const EventLogListStatus = (props: EventLogListStatusProps) => {
 
   return (
     <span style={statusContainerStyles} data-test-subj="eventLogListStatus">
-      <EuiIcon type="dot" color={color} style={iconStyles} />
+      <EuiIcon type="dot" color={color} style={iconStyles} aria-hidden={true} />
       {statusString}
     </span>
   );

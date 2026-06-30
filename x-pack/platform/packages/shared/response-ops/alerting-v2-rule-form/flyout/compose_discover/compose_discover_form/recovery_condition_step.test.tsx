@@ -14,7 +14,7 @@ import { createTestQueryClient, createMockServices } from '../../../test_utils';
 import { RuleFormProvider, type RuleFormServices } from '../../../form/contexts';
 import { createInitialState } from '../use_compose_discover_state';
 import type { ComposeDiscoverState } from '../types';
-import type { ComposeFormValues, RuleQuery } from '../compose_form_types';
+import type { FormValues, RuleQuery } from '../../../form/types';
 import { RecoveryConditionStep } from './recovery_condition_step';
 import { EsqlRecoveryContent } from './esql_recovery_content';
 
@@ -32,7 +32,7 @@ const createState = (overrides: Partial<ComposeDiscoverState> = {}): ComposeDisc
   ...overrides,
 });
 
-const BASE_COMPOSE_VALUES: ComposeFormValues = {
+const BASE_COMPOSE_VALUES: FormValues = {
   kind: 'alert',
   metadata: { name: '', enabled: true },
   timeField: '@timestamp',
@@ -47,13 +47,13 @@ const createComposeFormWrapper = (
   services: RuleFormServices = createMockServices()
 ) => {
   const queryClient = createTestQueryClient();
-  const defaultValues: ComposeFormValues = {
+  const defaultValues: FormValues = {
     ...BASE_COMPOSE_VALUES,
     ...(queryOverride ? { query: queryOverride } : {}),
   };
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
-    const form = useForm<ComposeFormValues>({ defaultValues });
+    const form = useForm<FormValues>({ defaultValues });
     return (
       <IntlProvider locale="en">
         <QueryClientProvider client={queryClient}>

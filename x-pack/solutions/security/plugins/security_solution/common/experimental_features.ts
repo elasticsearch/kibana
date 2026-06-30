@@ -245,6 +245,12 @@ export const allowedExperimentalValues = Object.freeze({
   dexAiSkillFindRules: false,
 
   /**
+   * Enables the recommend-prebuilt-rules Agent Builder skill.
+   * Part of the DEX AI skills family (`dexAiSkill*`).
+   */
+  dexAiSkillRecommendPrebuiltRules: false,
+
+  /**
    * Enables the new flyout using the EUI flyout system
    */
   newFlyoutSystemEnabled: false,
@@ -296,6 +302,12 @@ export const allowedExperimentalValues = Object.freeze({
    * Enables the risk score history API endpoint for Entity Analytics.
    */
   riskScoreHistoryEnabled: false,
+
+  /**
+   * Enables the Attacks page tour (welcome callout + guided tour).
+   * Release: 9.5
+   */
+  attacksPageTourEnabled: false,
 });
 
 type ExperimentalConfigKeys = Array<keyof ExperimentalFeatures>;

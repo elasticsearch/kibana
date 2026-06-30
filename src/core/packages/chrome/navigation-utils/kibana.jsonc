@@ -1,0 +1,9 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/core-chrome-browser-navigation-utils",
+  "owner": [
+    "@elastic/appex-sharedux"
+  ],
+  "group": "platform",
+  "visibility": "shared"
+}

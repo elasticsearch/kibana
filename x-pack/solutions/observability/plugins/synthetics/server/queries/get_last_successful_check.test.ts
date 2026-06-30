@@ -5,8 +5,15 @@
  * 2.0.
  */
 
-import { getLastSuccessfulCheck, getLastSuccessfulStepParams } from './get_last_successful_check';
+import {
+  getLastSuccessfulCheck,
+  getLastSuccessfulStepParams,
+  LAST_SUCCESSFUL_CHECK_LOOKBACK_MS,
+} from './get_last_successful_check';
 import { getUptimeESMockClient } from './test_helpers';
+
+const lookbackStart = (timestamp: string) =>
+  new Date(new Date(timestamp).getTime() - LAST_SUCCESSFUL_CHECK_LOOKBACK_MS).toISOString();
 
 describe('getLastSuccessfulStep', () => {
   describe('getLastSuccessfulCheck remoteName CCS index override', () => {
@@ -71,6 +78,7 @@ describe('getLastSuccessfulStep', () => {
               {
                 range: {
                   '@timestamp': {
+                    gte: lookbackStart(timestamp),
                     lte: '2021-10-31T19:47:52.392Z',
                   },
                 },
@@ -101,6 +109,7 @@ describe('getLastSuccessfulStep', () => {
           },
         },
         size: 1,
+        track_total_hits: false,
         sort: [
           {
             '@timestamp': {
@@ -125,6 +134,7 @@ describe('getLastSuccessfulStep', () => {
               {
                 range: {
                   '@timestamp': {
+                    gte: lookbackStart('2021-10-31T19:47:52.392Z'),
                     lte: '2021-10-31T19:47:52.392Z',
                   },
                 },
@@ -155,6 +165,7 @@ describe('getLastSuccessfulStep', () => {
           },
         },
         size: 1,
+        track_total_hits: false,
         sort: [
           {
             '@timestamp': {

@@ -16,6 +16,7 @@ import type { MappingField } from '../mappings';
 import { flattenMapping, getIndexMappings } from '../mappings';
 import { processFieldCapsResponse } from '../field_caps';
 import { isCcsTarget, getFieldsFromFieldCaps } from '../ccs';
+import { listDatasets, getDatasetFields } from '../datasets';
 
 export interface ResolveResourceResponse {
   /** name of the resource */
@@ -122,16 +123,53 @@ export const resolveResource = async ({
 };
 
 /**
- * Retrieve resource metadata for ES|QL generation.
- * Supports index patterns and comma-separated targets by using field_caps
- * when multiple resources are resolved. Multi-target results use {@link EsResourceType.indexPattern}.
+ * Resolves a single external ES|QL dataset by name, or undefined when none matches. Datasets are
+ * invisible to `_resolve/index`/`_field_caps`, so they're looked up via `_query/dataset` and their
+ * fields introspected with `FROM <name> | LIMIT 0`.
  */
-export const resolveResourceForEsql = async ({
+const tryResolveDataset = async ({
   resourceName,
   esClient,
 }: {
   resourceName: string;
   esClient: ElasticsearchClient;
+}): Promise<ResolveResourceResponse | undefined> => {
+  if (resourceName.includes(',') || resourceName.includes('*')) {
+    return undefined;
+  }
+  const datasets = await listDatasets({ esClient });
+  if (!datasets.some((dataset) => dataset.name === resourceName)) {
+    return undefined;
+  }
+  const fields = await getDatasetFields({ name: resourceName, esClient });
+  return {
+    name: resourceName,
+    type: EsResourceType.dataset,
+    fields,
+    isTsdb: false,
+  };
+};
+
+const EMPTY_RESOLVE_RESPONSE: IndicesResolveIndexResponse = {
+  indices: [],
+  aliases: [],
+  data_streams: [],
+};
+
+/**
+ * Retrieve resource metadata for ES|QL generation.
+ * Supports index patterns and comma-separated targets by using field_caps
+ * when multiple resources are resolved. Multi-target results use {@link EsResourceType.indexPattern}.
+ * When `includeDatasets` is true, a name that resolves to no index falls back to an external ES|QL dataset.
+ */
+export const resolveResourceForEsql = async ({
+  resourceName,
+  esClient,
+  includeDatasets = false,
+}: {
+  resourceName: string;
+  esClient: ElasticsearchClient;
+  includeDatasets?: boolean;
 }): Promise<ResolveResourceResponse> => {
   let resolveRes: IndicesResolveIndexResponse;
   try {
@@ -141,17 +179,23 @@ export const resolveResourceForEsql = async ({
       expand_wildcards: ['all'],
     });
   } catch (e) {
-    if (isNotFoundError(e)) {
-      throw new Error(`No resource found for '${resourceName}'`);
+    if (!isNotFoundError(e)) {
+      throw e;
     }
-    throw e;
+    resolveRes = EMPTY_RESOLVE_RESPONSE;
   }
 
   const resourceCount =
     resolveRes.indices.length + resolveRes.aliases.length + resolveRes.data_streams.length;
 
   if (resourceCount === 0) {
-    throw new Error(`No resource found for pattern ${resourceName}`);
+    if (includeDatasets) {
+      const dataset = await tryResolveDataset({ resourceName, esClient });
+      if (dataset) {
+        return dataset;
+      }
+    }
+    throw new Error(`No resource found for '${resourceName}'`);
   }
 
   if (resourceCount === 1) {

@@ -33,6 +33,10 @@ describe('LanguageSwitcher', () => {
     expect(
       screen.getByTestId('luceneLanguageMenuItem').querySelector('[data-euiicon-type="check"]')
     ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Documentation/i })).toHaveAttribute(
+      'href',
+      startMock.docLinks.links.query.luceneQuerySyntax
+    );
   });
 
   it('should select the kql context menu if language is kuery', async () => {
@@ -41,6 +45,10 @@ describe('LanguageSwitcher', () => {
     expect(
       screen.getByTestId('kqlLanguageMenuItem').querySelector('[data-euiicon-type="check"]')
     ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Documentation/i })).toHaveAttribute(
+      'href',
+      startMock.docLinks.links.query.kueryQuerySyntax
+    );
   });
 
   it('should select the lucene context menu if language is text', async () => {
@@ -92,6 +100,14 @@ describe('LanguageSwitcher', () => {
     });
 
     await userEvent.click(screen.getByRole('button'));
+    expect(
+      screen.getByTestId('luceneLanguageMenuItem').querySelector('[data-euiicon-type="check"]')
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Documentation/i })).toHaveAttribute(
+      'href',
+      startMock.docLinks.links.query.luceneQuerySyntax
+    );
+
     fireEvent.click(screen.getByTestId('kqlLanguageMenuItem'));
     expect(onSelectLanguage).toHaveBeenCalledWith('kuery');
   });

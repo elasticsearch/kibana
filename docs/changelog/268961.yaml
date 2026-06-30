@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/268961
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Dashboards and visualizations
+title: "Improve default Y axis sort order for numeric heatmap buckets"
+description: "Heatmaps with numeric Y axis values now default to descending sort so buckets appear in natural numeric order instead of alphabetical order."

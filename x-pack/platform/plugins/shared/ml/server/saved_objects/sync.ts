@@ -7,6 +7,7 @@
 
 import Boom from '@hapi/boom';
 import type { IScopedClusterClient } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type {
   JobType,
   SyncSavedObjectResponse,
@@ -432,10 +433,13 @@ export function syncSavedObjectsFactory(
     try {
       // create missing job saved objects
       const createJobsResults = await mlSavedObjectService.bulkCreateJobs(jobObjects);
-      createJobsResults.saved_objects.forEach(({ attributes }) => {
+      createJobsResults.saved_objects.forEach((savedObject) => {
+        if (isSavedObjectErrorResult(savedObject)) {
+          return;
+        }
         results.jobs.push({
-          id: attributes.job_id,
-          type: attributes.type,
+          id: savedObject.attributes.job_id,
+          type: savedObject.attributes.type,
         });
       });
 
@@ -453,9 +457,12 @@ export function syncSavedObjectsFactory(
         modelObjects,
         '*'
       );
-      createModelsResults.saved_objects.forEach(({ attributes }) => {
+      createModelsResults.saved_objects.forEach((savedObject) => {
+        if (isSavedObjectErrorResult(savedObject)) {
+          return;
+        }
         results.trainedModels.push({
-          id: attributes.model_id,
+          id: savedObject.attributes.model_id,
         });
       });
     } catch (error) {

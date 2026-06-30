@@ -33,5 +33,6 @@ export type ManagedWorkflowDefinition<
   id: string;
   pluginId: string;
   version: number;
+  billable: boolean;
   management: ManagedWorkflowManagement;
 } & ManagedWorkflowDefinitionSource<TValues>;

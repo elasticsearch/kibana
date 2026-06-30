@@ -5,17 +5,21 @@
  * 2.0.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { EuiModal, EuiModalBody, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { ChangeHistoryEmptyPrompt } from '../timeline/change_history_empty_prompt';
 import { ChangeHistoryListErrorPrompt } from '../timeline/change_history_list_error_prompt';
 import { ChangeHistoryTimeline } from '../timeline/change_history_timeline';
+import { useChangeHistoryAutoSelection } from '../../hooks/use_change_history_auto_selection';
 import { useChangeHistoryList } from '../../hooks/use_change_history_list';
 import { useChangeHistoryConfig } from '../../provider/use_change_history_config';
+import { useChangeHistoryModal } from '../../provider/use_change_history_modal';
+import * as i18n from '../timeline/translations';
 import { ChangeHistoryPreviewPanel } from './change_history_preview_panel';
 import { ChangeHistoryPreviewShell } from './change_history_preview_shell';
 import { ChangeHistorySidebarPanel } from './change_history_sidebar_panel';
+import { ChangeHistoryDefaultPreviewHeaderActions } from './change_history_default_preview_header_actions';
 
 const getHistoryStartedAt = (timestamps: string[]): Date | undefined => {
   if (timestamps.length === 0) {
@@ -28,31 +32,39 @@ const getHistoryStartedAt = (timestamps: string[]): Date | undefined => {
 
 export function ChangeHistoryModal(): JSX.Element | null {
   const { euiTheme } = useEuiTheme();
-  const {
-    adapter,
-    objectId,
-    renderBadge,
-    renderPreviewFooter,
-    labels,
-    isModalOpen,
-    closeModal,
-    selectedChangeId,
-    setSelectedChangeId,
-  } = useChangeHistoryConfig();
+  const { adapter, objectId, labels, supports } = useChangeHistoryConfig();
+  const { isOpen, closeModal } = useChangeHistoryModal();
 
-  const { items, total, isLoading, isLoadingMore, error, loadMore } = useChangeHistoryList({
-    adapter,
+  const [selectedChangeId, setSelectedChangeId] = useState<string | undefined>();
+  const { items, total, isLoading, isFetchingFirstPage, isLoadingMore, error, loadMore } =
+    useChangeHistoryList({
+      adapter,
+      objectId,
+      enabled: isOpen,
+    });
+
+  const { lockSelectionDecision, unlockSelectionDecision } = useChangeHistoryAutoSelection({
     objectId,
-    enabled: isModalOpen,
+    items,
+    isFetchingFirstPage,
+    enabled: isOpen,
+    setSelectedChangeId,
   });
 
   useEffect(() => {
-    if (!isModalOpen || selectedChangeId || isLoading || items.length === 0) {
-      return;
+    if (!isOpen) {
+      setSelectedChangeId(undefined);
+      unlockSelectionDecision();
     }
+  }, [isOpen, unlockSelectionDecision]);
 
-    setSelectedChangeId(items[0]?.id);
-  }, [isModalOpen, isLoading, items, selectedChangeId, setSelectedChangeId]);
+  const handleSelectItem = useCallback(
+    (changeId: string) => {
+      lockSelectionDecision();
+      setSelectedChangeId(changeId);
+    },
+    [lockSelectionDecision]
+  );
 
   const styles = useMemo(
     () => ({
@@ -105,7 +117,7 @@ export function ChangeHistoryModal(): JSX.Element | null {
     [euiTheme]
   );
 
-  if (!isModalOpen) {
+  if (!isOpen) {
     return null;
   }
 
@@ -117,10 +129,12 @@ export function ChangeHistoryModal(): JSX.Element | null {
     ? getHistoryStartedAt(items.map((item) => item.timestamp))
     : undefined;
 
-  const previewFooter = renderPreviewFooter?.({
-    objectId,
-    selectedChangeId,
-  });
+  const previewHeaderActions = supports.restore ? (
+    <ChangeHistoryDefaultPreviewHeaderActions
+      selectedChangeId={selectedChangeId}
+      onRestored={unlockSelectionDecision}
+    />
+  ) : undefined;
 
   const renderSidebarContent = () => {
     if (showLoadingSidebar) {
@@ -149,9 +163,8 @@ export function ChangeHistoryModal(): JSX.Element | null {
         selectedItemId={selectedChangeId}
         historyStartedAt={historyStartedAt}
         isLoading={isLoadingMore}
-        onSelectItem={(item) => setSelectedChangeId(item.id)}
+        onSelectItem={(item) => handleSelectItem(item.id)}
         onLoadMore={loadMore}
-        renderBadge={renderBadge}
       />
     );
   };
@@ -169,12 +182,12 @@ export function ChangeHistoryModal(): JSX.Element | null {
             backLabel={labels.previewBackLabel}
             title={labels.previewTitle}
             onBack={closeModal}
-            footer={previewFooter}
+            headerActions={previewHeaderActions}
           >
-            <ChangeHistoryPreviewPanel />
+            <ChangeHistoryPreviewPanel selectedChangeId={selectedChangeId} listItems={items} />
           </ChangeHistoryPreviewShell>
 
-          <ChangeHistorySidebarPanel title={labels.timelinePanelTitle} onClose={closeModal}>
+          <ChangeHistorySidebarPanel title={i18n.TIMELINE_PANEL_TITLE} onClose={closeModal}>
             {renderSidebarContent()}
           </ChangeHistorySidebarPanel>
         </div>

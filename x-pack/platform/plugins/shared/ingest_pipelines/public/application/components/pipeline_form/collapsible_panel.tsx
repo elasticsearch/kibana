@@ -7,7 +7,7 @@
 
 import type { ReactNode } from 'react';
 import React, { useState, useEffect } from 'react';
-import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 import type { EuiAccordionProps, EuiSwitchEvent, EuiSwitchProps } from '@elastic/eui';
 import { EuiSpacer, EuiSwitch, EuiPanel, EuiAccordion, useGeneratedHtmlId } from '@elastic/eui';
 import { useFormContext, useFormData } from '../../../shared_imports';
@@ -81,12 +81,10 @@ export const CollapsiblePanel: React.FunctionComponent<Props> = ({
         extraAction={
           <EuiSwitch
             {...toggleProps}
-            label={
-              <FormattedMessage
-                id="xpack.ingestPipelines.collapsiblePanelToggle"
-                defaultMessage="Enabled"
-              />
-            }
+            showLabel={false}
+            label={i18n.translate('xpack.ingestPipelines.collapsiblePanelToggle', {
+              defaultMessage: 'Enabled',
+            })}
             checked={isEnabled}
             onChange={onToggleChange}
           />

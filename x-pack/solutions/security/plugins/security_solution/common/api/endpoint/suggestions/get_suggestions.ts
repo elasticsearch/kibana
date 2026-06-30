@@ -10,8 +10,8 @@ import { schema } from '@kbn/config-schema';
 
 export const EndpointSuggestionsSchema = {
   body: schema.object({
-    field: schema.string(),
-    query: schema.string(),
+    field: schema.string({ maxLength: 1024 }),
+    query: schema.string({ maxLength: 2048 }),
     filters: schema.maybe(
       schema.arrayOf(schema.object({}, { unknowns: 'allow' }), { maxSize: 50 })
     ),

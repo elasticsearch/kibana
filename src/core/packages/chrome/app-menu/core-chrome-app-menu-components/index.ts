@@ -28,6 +28,12 @@ export type {
 export { APP_MENU_ITEM_LIMIT, APP_MENU_SHARE_ID } from './src';
 
 export {
+  APP_MENU_TEST_SUBJECTS,
+  getAppMenuItemTestSubj,
+  getAppMenuActionButtonTestSubj,
+} from './src';
+
+export {
   getDisplayedItemsAllowedAmount,
   getShouldOverflow,
   isDisabled,

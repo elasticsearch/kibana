@@ -21,6 +21,7 @@ import {
   HIDDEN_API_REFERENCE_PACKAGES,
 } from '../../../../../../../../common/constants';
 import type { PackageInfo, NewAgentPolicy, NewPackagePolicy } from '../../../../../types';
+import { ExperimentalFeaturesService } from '../../../../../services';
 import { SelectedPolicyTab } from '../../components';
 import { generateCreateAgentlessPolicyDevToolsRequest } from '../../../services/devtools_request';
 
@@ -43,16 +44,23 @@ export function useDevToolsRequest({
 }) {
   const showDevtoolsRequest = !HIDDEN_API_REFERENCE_PACKAGES.includes(packageInfo?.name ?? '');
 
+  const { enableVarGroups } = ExperimentalFeaturesService.get();
+  const varGroups =
+    enableVarGroups && packageInfo?.var_groups ? packageInfo?.var_groups : undefined;
+
   const [devtoolRequest, devtoolRequestDescription] = useMemo(() => {
     if (selectedPolicyTab === SelectedPolicyTab.NEW) {
       const packagePolicyIsSystem = packagePolicy?.package?.name === FLEET_SYSTEM_PACKAGE;
 
       if (packagePolicy.supports_agentless) {
         return [
-          generateCreateAgentlessPolicyDevToolsRequest({
-            ...packagePolicy,
-            create_dataset_templates: createDatasetTemplates,
-          }),
+          generateCreateAgentlessPolicyDevToolsRequest(
+            {
+              ...packagePolicy,
+              create_dataset_templates: createDatasetTemplates,
+            },
+            varGroups
+          ),
           i18n.translate(
             'xpack.fleet.editPackagePolicy.devtoolsRequestAgentlessPolicyDescription',
             {
@@ -124,6 +132,7 @@ export function useDevToolsRequest({
     selectedPolicyTab,
     packagePolicyId,
     createDatasetTemplates,
+    varGroups,
   ]);
 
   return { showDevtoolsRequest, devtoolRequest, devtoolRequestDescription };

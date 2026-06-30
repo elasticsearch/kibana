@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/274033
+issues:
+- https://github.com/elastic/kibana/issues/243315
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+title: "Fix an issue where all Security AI Assistant conversations were deleted after selecting all conversations and saving one."
+description: "Selecting all conversations in Stack Management and then saving a visibility change on one conversation no longer deletes every conversation. Only the edited conversation is updated."

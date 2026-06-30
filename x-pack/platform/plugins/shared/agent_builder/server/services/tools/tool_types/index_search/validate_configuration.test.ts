@@ -35,6 +35,7 @@ describe('validateConfig', () => {
       indices: [{ type: EsResourceType.index, name: 'some-pattern-index' }],
       aliases: [],
       data_streams: [],
+      datasets: [],
     });
 
     await validateConfig({ config, esClient });
@@ -55,6 +56,7 @@ describe('validateConfig', () => {
       indices: [],
       aliases: [],
       data_streams: [],
+      datasets: [],
     });
 
     await expect(() =>
@@ -71,6 +73,7 @@ describe('validateConfig', () => {
       indices: [{ type: EsResourceType.index, name: 'some-pattern-index' }],
       aliases: [],
       data_streams: [],
+      datasets: [],
     });
 
     await validateConfig({ config, esClient });

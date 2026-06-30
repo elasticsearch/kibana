@@ -134,7 +134,7 @@ export const StreamingResponse = ({
     inner = (
       <EuiFlexGroup direction="row" gutterSize="s" alignItems="center">
         <EuiFlexItem grow={false}>
-          <EuiIcon color="danger" type="warning" />
+          <EuiIcon color="danger" type="warning" aria-hidden={true} />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiText size="s">{content}</EuiText>

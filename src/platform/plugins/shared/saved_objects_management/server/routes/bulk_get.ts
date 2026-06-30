@@ -9,6 +9,7 @@
 
 import { schema } from '@kbn/config-schema';
 import type { IRouter } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import { injectMetaAttributes, toSavedObjectWithMeta } from '../lib';
 import type { v1 } from '../../common';
 import type { ISavedObjectsManagement } from '../services';
@@ -50,11 +51,11 @@ export const registerBulkGetRoute = (
       const response = await client.bulkGet<unknown>(objects);
 
       const body: v1.BulkGetResponseHTTP = response.saved_objects.map((obj) => {
-        const so = toSavedObjectWithMeta(obj);
-        if (!so.error) {
+        if (isSavedObjectErrorResult(obj)) {
+          return toSavedObjectWithMeta(obj);
+        } else {
           return injectMetaAttributes(obj, managementService);
         }
-        return so;
       });
 
       return res.ok({ body });

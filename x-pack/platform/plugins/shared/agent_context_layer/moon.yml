@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/agent-context-layer-plugin'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/workchat-eng'
+  defaultOwner: '@elastic/context-eng'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/agent-context-layer-plugin'
   description: Moon project for @kbn/agent-context-layer-plugin
   channel: ''
-  owner: '@elastic/workchat-eng'
+  owner: '@elastic/context-eng'
   sourceRoot: x-pack/platform/plugins/shared/agent_context_layer
 dependsOn:
   - '@kbn/core'

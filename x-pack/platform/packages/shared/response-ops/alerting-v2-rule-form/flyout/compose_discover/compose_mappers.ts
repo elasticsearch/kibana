@@ -18,13 +18,12 @@ import {
 } from '../../form/utils/state_transition_helpers';
 import { resolveRecoveryStrategy } from '../../form/utils/rule_request_mappers';
 import type { FormValues } from '../../form/types';
-import type { ComposeFormValues } from './compose_form_types';
 
 const DELAY_IMMEDIATE = 'immediate';
 const DELAY_BREACHES = 'breaches';
 const DELAY_DURATION = 'duration';
 
-const mapStateTransition = (formValues: ComposeFormValues) => {
+const mapStateTransition = (formValues: FormValues) => {
   const { kind, stateTransition } = formValues;
   if (kind !== 'alert') return undefined;
 
@@ -58,7 +57,7 @@ const mapStateTransition = (formValues: ComposeFormValues) => {
 };
 
 export const composeFormToCreateRequest = (
-  formValues: ComposeFormValues,
+  formValues: FormValues,
   builderType?: string
 ): CreateRuleData => {
   const artifacts = mapArtifacts(mergeArtifactsByType(formValues));
@@ -87,7 +86,7 @@ export const composeFormToCreateRequest = (
 };
 
 export const composeFormToUpdateRequest = (
-  formValues: ComposeFormValues,
+  formValues: FormValues,
   builderType?: string
 ): UpdateRuleData => {
   const { kind, ...request } = composeFormToCreateRequest(formValues, builderType);
@@ -115,17 +114,17 @@ export const composeFormToUpdateRequest = (
 };
 
 // ---------------------------------------------------------------------------
-// API response → ComposeFormValues
+// API response → FormValues
 // ---------------------------------------------------------------------------
 
 /** Bridge YAML parse output into compose form values for the Discover flyout. */
-export const mapYamlFormValuesToComposeFormValues = (parsed: FormValues): ComposeFormValues => ({
+export const mapYamlFormValuesToComposeFormValues = (parsed: FormValues): FormValues => ({
   ...parsed,
   ...splitArtifactsByType(parsed.artifacts),
 });
 
-export const mapRuleToComposeFormValues = (rule: RuleResponse): ComposeFormValues => {
-  const stateTransition: ComposeFormValues['stateTransition'] = rule.state_transition
+export const mapRuleToComposeFormValues = (rule: RuleResponse): FormValues => {
+  const stateTransition: FormValues['stateTransition'] = rule.state_transition
     ? {
         pendingCount: rule.state_transition.pending_count ?? null,
         pendingTimeframe: rule.state_transition.pending_timeframe ?? null,

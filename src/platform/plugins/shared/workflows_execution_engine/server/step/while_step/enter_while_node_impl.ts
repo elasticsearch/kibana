@@ -10,6 +10,7 @@
 import type { EnterWhileNode } from '@kbn/workflows/graph';
 import type { WhileStepState } from './types';
 import type { StepExecutionRuntime } from '../../workflow_context_manager/step_execution_runtime';
+import type { StepIoService } from '../../workflow_context_manager/step_io_service';
 import type { WorkflowExecutionRuntimeManager } from '../../workflow_context_manager/workflow_execution_runtime_manager';
 import type { IWorkflowEventLogger } from '../../workflow_event_logger';
 import type { NodeImplementation } from '../node_implementation';
@@ -19,7 +20,8 @@ export class EnterWhileNodeImpl implements NodeImplementation {
     private node: EnterWhileNode,
     private wfExecutionRuntimeManager: WorkflowExecutionRuntimeManager,
     private stepExecutionRuntime: StepExecutionRuntime,
-    private workflowLogger: IWorkflowEventLogger
+    private workflowLogger: IWorkflowEventLogger,
+    private stepIoService: StepIoService
   ) {}
 
   public run(): void {
@@ -35,6 +37,16 @@ export class EnterWhileNodeImpl implements NodeImplementation {
     this.stepExecutionRuntime.setInput({
       condition: this.node.configuration.condition,
     });
+
+    // Pin the outputs referenced by the loop condition for the lifetime of the
+    // loop. The exit-while node re-evaluates this condition synchronously on
+    // every iteration (ExitWhileNodeImpl.run -> evaluateCondition); without
+    // pinning, a concurrent flush can evict a referenced source between an
+    // inner step's prepareForRead and that re-evaluation, leaving the
+    // condition to read `undefined` (premature exit, or a hard
+    // `Cannot use 'in' operator` error from KQL path traversal). Unpinned in
+    // ExitWhileNodeImpl on loop exit.
+    this.stepIoService.pinLoopSource(this.node.stepId, this.node.configuration.condition);
 
     this.workflowLogger.logDebug(`While step "${this.node.stepId}" starting first iteration.`, {
       workflow: { step_id: this.node.stepId },

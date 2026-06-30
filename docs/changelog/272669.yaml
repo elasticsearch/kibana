@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/272669
+issues:
+- https://github.com/elastic/kibana/issues/269421
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Discover and ES|QL
+title: "Fix inability to insert newlines in the ES|QL editor"
+description: "Pressing Enter in the ES|QL editor now inserts a newline instead of accepting the highlighted autocomplete suggestion."

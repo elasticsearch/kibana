@@ -56,7 +56,6 @@ const createClassicDefinition = (
   effective_failure_store: failureStoreConfig,
   data_stream_exists: true,
   dashboards: [],
-  queries: [],
   rules: [],
 });
 
@@ -100,7 +99,6 @@ const createWiredDefinition = (
   data_stream_exists: true,
   inherited_fields: {},
   dashboards: [],
-  queries: [],
   rules: [],
 });
 

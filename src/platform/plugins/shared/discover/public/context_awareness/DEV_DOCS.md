@@ -9,7 +9,9 @@
 context_awareness/
 ├── types.ts                  # Profile interface — all extension point signatures
 ├── composable_profile.ts     # ComposableProfile, AppliedProfile, getMergedAccessor
-├── toolkit.ts                # ContextAwarenessToolkit — actions injected by the host
+├── toolkit.ts                # ContextAwarenessToolkit — toolkit injected by the host
+├── in_memory_toolkit.ts      # Simplified toolkit implementation for non-tab hosts
+├── profile_state.ts          # ProfileStateDefinition, registry, adapter contract
 ├── profile_service.ts        # BaseProfileService, ProfileService (sync), AsyncProfileService
 ├── profiles/                 # Per-level provider types and service subclasses
 ├── profiles_manager/         # ProfilesManager + ScopedProfilesManager
@@ -176,6 +178,7 @@ flowchart LR
 plugin.tsx  getDiscoverServicesWithProfiles()
   → import('./context_awareness/profile_providers')
   → createProfileProviderSharedServices(deps)       // async init of shared services
+  → registerProfileStateDefinitions(services.profileStateRegistry)
   → registerProfileProviders({...})
       → createRootProfileProviders(providerServices)       // returns ordered array
       → createDataSourceProfileProviders(providerServices)
@@ -189,6 +192,42 @@ plugin.tsx  getDiscoverServicesWithProfiles()
 2. Providers with `restrictedToProductFeature` whose feature isn't active (serverless pricing tier check).
 
 **Array order = resolution priority.** The first provider whose `resolve` returns `isMatch: true` wins.
+
+## Profile state
+
+Profile state is typed state owned by profile providers and exposed through `ContextAwarenessToolkit.getStateAdapter()`. It lets profiles share state across extension points and other profiles without host-specific plumbing in the profile implementation.
+
+Definitions live near the providers that use them and are registered from `profile_providers/register_profile_state_definitions.ts`. Each `ProfileStateDefinition<TState>` has:
+
+- `key`: Unique storage key, enforced by `ProfileStateRegistry`.
+- `descriptor`: Field-level `ProfileStateType` metadata.
+- `defaultState`: Typed fallback returned before host state is written.
+
+`getStateAdapter()` validates that the requested definition matches the registered descriptor and default state.
+
+### State types and lifetime
+
+`ProfileStateType` is a field-level lifetime preference: `Ui` for ephemeral UI state, `Url` for future URL sync, and `Persistent` for future persistence. The current implementation stores state ephemerally only.
+
+- Main Discover stores state in `TabState.profileState`, scoped to a tab. Fresh tabs start with raw `profileState: {}`, duplicated tabs copy profile state, and restored or locally reloaded tabs reset it.
+- Simplified hosts (document route, surrounding documents page, embeddables) use `createInMemoryContextAwarenessToolkit()`, storing all profile state in memory for that scoped host instance. `Url` and `Persistent` fields are accepted there but do not change the lifetime.
+- Adapters return `definition.defaultState` until state has been written.
+
+### State adapters
+
+Profiles access state through the host toolkit:
+
+```ts
+const stateAdapter = toolkit.getStateAdapter(MY_PROFILE_STATE_DEF);
+
+const state = stateAdapter.getState();
+stateAdapter.updateState({ value: 'next' });
+stateAdapter.getState$().subscribe((nextState) => {});
+```
+
+`ProfileStateAdapter<TState>` exposes synchronous reads, an observable stream, full replacement via `setState()`, and shallow immutable updates via `updateState()`. Adapters assume consumers do not mutate returned state objects in place.
+
+The main Discover app uses the Redux-backed toolkit from `application/main/state_management/redux/context_awareness_toolkit.ts`; non-tab hosts use `createInMemoryContextAwarenessToolkit()` with their supported `actions` on the same toolkit object.
 
 ## React integration
 
@@ -242,11 +281,11 @@ This is rare and significant. Steps:
 
 ## The toolkit
 
-`ContextAwarenessToolkit` is injected by the host (Discover app or embeddable) and provides action callbacks (`openInNewTab`, `updateESQLQuery`, `addFilter`, etc.). It's passed through `ComposableAccessorParams` alongside `context`.
+`ContextAwarenessToolkit` is injected by the host (Discover app or embeddable) and provides action callbacks (`openInNewTab`, `updateESQLQuery`, `addFilter`, etc.) plus profile state adapters. It's passed through `ComposableAccessorParams` alongside `context`.
 
 The toolkit is created per `ScopedProfilesManager` at creation time and is immutable for its lifetime.
 
-`EMPTY_CONTEXT_AWARENESS_TOOLKIT` (no-op actions) is used for the root profile accessors returned directly from `ProfilesManager.resolveRootProfile()` — specifically `getDefaultAdHocDataViews` and `getDefaultEsqlQuery`, which are consumed before any scoped manager exists (e.g. during app initialization). Scoped managers pass through the toolkit supplied by their host surface. In the main Discover app this is usually the full runtime toolkit, while the document route, surrounding documents page, embeddables, and tests may provide a partial or empty toolkit depending on which actions they can support.
+`EMPTY_CONTEXT_AWARENESS_TOOLKIT` (no-op actions, no state adapter) is used for the root profile accessors returned directly from `ProfilesManager.resolveRootProfile()` — specifically `getDefaultAdHocDataViews` and `getDefaultEsqlQuery`, which are consumed before any scoped manager exists (e.g. during app initialization). Scoped managers pass through the toolkit supplied by their host surface. In the main Discover app this is usually the full Redux-backed runtime toolkit, while the document route, surrounding documents page, embeddables, and tests may provide an in-memory toolkit with only the actions they can support.
 
 When adding new toolkit actions:
 

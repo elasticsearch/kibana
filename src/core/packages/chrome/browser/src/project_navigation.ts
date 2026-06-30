@@ -291,3 +291,24 @@ export type EuiSideNavItemTypeEnhanced<T = unknown> = Omit<EuiSideNavItemType<T>
   iconToString?: string;
   nameToString?: string;
 };
+
+/** A single user-specified move: place item `id` directly after item `afterId` (or at position 0 if `afterId` is null). */
+export interface NavigationCustomizationMove {
+  id: string;
+  afterId: string | null;
+}
+
+/**
+ * Customization configuration for navigation items, stored as a delta from the default order.
+ * Resilient to nav items being added, removed, or reordered by default across releases.
+ */
+export interface NavigationCustomization {
+  /**
+   * User-specified moves applied sequentially on top of the default order.
+   * Only items the user explicitly moved are recorded.
+   * Moves operate on the full item list (including hidden items).
+   */
+  moves: NavigationCustomizationMove[];
+  /** IDs of items to hide from the main navigation (moved to overflow menu). */
+  hidden: AppDeepLinkId[];
+}

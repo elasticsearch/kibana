@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 
 import { i18n } from '@kbn/i18n';
 import { EntityRiskQueries } from '../../../../common/api/search_strategy';
-import { useMlCapabilities } from '../../../common/components/ml/hooks/use_ml_capabilities';
+import { useLicense } from '../../../common/hooks/use_license';
 import { createFilter } from '../../../common/containers/helpers';
 import type {
   EntityType,
@@ -82,9 +82,10 @@ export const useRiskScore = <T extends EntityType>({
   const factoryQueryType = EntityRiskQueries.list;
   const { querySize, cursorStart } = pagination || {};
   const { addError } = useAppToasts();
-  const { isPlatinumOrTrialLicense } = useMlCapabilities();
+  const license = useLicense();
+  const hasRequiredLicense = license.isPlatinumPlus();
   const hasEntityAnalyticsCapability = useHasSecurityCapability('entity-analytics');
-  const isAuthorized = isPlatinumOrTrialLicense && hasEntityAnalyticsCapability;
+  const isAuthorized = hasRequiredLicense && hasEntityAnalyticsCapability;
   const hasEngineBeenInstalled = riskEngineStatus?.risk_engine_status !== 'NOT_INSTALLED';
   const {
     loading,

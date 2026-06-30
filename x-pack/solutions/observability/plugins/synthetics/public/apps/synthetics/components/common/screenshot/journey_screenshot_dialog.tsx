@@ -235,11 +235,13 @@ export const getScreenshotUrl = ({
   checkGroup,
   stepNumber,
   remoteName,
+  timestamp,
 }: {
   basePath: string;
   checkGroup?: string;
   stepNumber: number;
   remoteName?: string;
+  timestamp?: string;
 }) => {
   if (!checkGroup) {
     return '';
@@ -249,10 +251,19 @@ export const getScreenshotUrl = ({
     checkGroup
   ).replace('{stepIndex}', stepNumber.toString())}`;
 
-  // For remote monitors append `?remoteName=...` so the route handler
-  // forwards it to `get_journey_screenshot` and the query targets
+  const params: string[] = [];
+  // For remote monitors forward `remoteName` so the route handler targets
   // `${remoteName}:synthetics-*` via CCS.
-  return remoteName ? `${path}?remoteName=${encodeURIComponent(remoteName)}` : path;
+  if (remoteName) {
+    params.push(`remoteName=${encodeURIComponent(remoteName)}`);
+  }
+  // Forward the run timestamp so the screenshot query can be bounded to a
+  // narrow window and prune frozen-tier shards instead of scanning every index.
+  if (timestamp) {
+    params.push(`timestamp=${encodeURIComponent(timestamp)}`);
+  }
+
+  return params.length ? `${path}?${params.join('&')}` : path;
 };
 
 const prevAriaLabel = i18n.translate('xpack.synthetics.monitor.step.previousStep', {

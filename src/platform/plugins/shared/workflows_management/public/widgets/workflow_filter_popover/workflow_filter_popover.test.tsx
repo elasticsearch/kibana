@@ -104,6 +104,38 @@ describe('WorkflowsFilterPopover', () => {
     expect(button).toBeInTheDocument();
   });
 
+  it('matches boolean selected values against string option keys', () => {
+    render(
+      <WorkflowsFilterPopover
+        filter="enabled"
+        title="Enabled"
+        values={[{ label: 'false', key: 'false' }]}
+        selectedValues={[false]}
+        onSelectedValuesChanged={onSelectedValuesChanged}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('enabled-filter-popover-button'));
+
+    expect(screen.getByText('false')).toBeInTheDocument();
+  });
+
+  it('shows selected values that are missing from the available options', () => {
+    render(
+      <WorkflowsFilterPopover
+        filter="tags"
+        title="Tags"
+        values={[]}
+        selectedValues={['prod']}
+        onSelectedValuesChanged={onSelectedValuesChanged}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('tags-filter-popover-button'));
+
+    expect(screen.getByText('prod')).toBeInTheDocument();
+  });
+
   it('calls onSelectedValuesChanged when an option is toggled', () => {
     render(
       <WorkflowsFilterPopover

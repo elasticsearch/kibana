@@ -252,6 +252,23 @@ describe('EVAL Autocomplete', () => {
     );
 
     await evalExpectSuggestions(
+      'from a | eval a=round((doubleField)) ',
+      [
+        '\n',
+        ', ',
+        '| ',
+        ...getFunctionSignaturesByReturnType(
+          Location.EVAL,
+          'any',
+          { operators: true, skipAssign: true },
+          ['double', 'long']
+        ),
+        ...getOperatorSuggestions([...inOperators, ...nullCheckOperators]),
+      ],
+      mockCallbacks
+    );
+
+    await evalExpectSuggestions(
       'from a | eval a=raund( ', // note the typo in round
       [],
       mockCallbacks

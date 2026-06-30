@@ -121,6 +121,7 @@ function buildLogsPageEndFilter(end: LogSlicePaginationParams): string {
 
 export function aggregationStats(fields: EntityField[], renameToRecent: boolean = true): string {
   return fields
+    .filter((field) => field.retention.operation !== 'managed')
     .map((field) => {
       const { retention, destination: dest } = field;
       const finalDest = renameToRecent ? recentData(dest) : dest;
@@ -141,6 +142,7 @@ export function aggregationStats(fields: EntityField[], renameToRecent: boolean 
 
 export function fieldsToKeep(definitionFields: EntityField[], defaultFields: string[]): string {
   const allFieldPatterns = definitionFields
+    .filter((field) => field.retention.operation !== 'managed')
     .map(({ destination }) => destination)
     .concat(defaultFields)
     .map((field) => {
@@ -282,7 +284,7 @@ export function buildPostStatsLogicalToColumnMap(
   useRecentDataPrefix: boolean
 ): Map<string, string> {
   const m = new Map<string, string>();
-  for (const f of entityFields) {
+  for (const f of entityFields.filter((field) => field.retention.operation !== 'managed')) {
     const col = useRecentDataPrefix ? recentData(f.destination) : f.destination;
     m.set(f.destination, col);
     m.set(f.source, col);
@@ -294,7 +296,9 @@ const RECENT_ESQL_COLUMN_PREFIX = 'recent.';
 
 /** Destinations aggregated under `recent.<destination>` in main logs extraction STATS. */
 export function statsFieldDestinations(fields: EntityField[]): Set<string> {
-  return new Set(fields.map((f) => f.destination));
+  return new Set(
+    fields.filter((f) => f.retention.operation !== 'managed').map((f) => f.destination)
+  );
 }
 
 /**

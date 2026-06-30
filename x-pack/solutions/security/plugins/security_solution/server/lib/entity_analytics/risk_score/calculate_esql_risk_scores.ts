@@ -597,15 +597,14 @@ export const getBaseScoreESQL = (
 export const getResolutionCompositeQuery = (
   index: string,
   pageSize: number,
-  afterKey?: Record<string, string>
+  afterKey?: Record<string, string>,
+  targetEntityIds?: string[]
 ) => ({
   index,
   size: 0,
-  query: {
-    term: {
-      relationship_type: 'entity.relationships.resolution.resolved_to',
-    },
-  },
+  query: targetEntityIds
+    ? { terms: { resolution_target_id: targetEntityIds } }
+    : { term: { relationship_type: 'entity.relationships.resolution.resolved_to' } },
   aggs: {
     by_resolution_target: {
       composite: {

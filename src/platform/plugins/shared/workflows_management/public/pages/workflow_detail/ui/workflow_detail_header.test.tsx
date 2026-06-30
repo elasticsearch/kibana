@@ -16,6 +16,7 @@ import {
   WorkflowDetailHeader,
   type WorkflowDetailHeaderProps,
 } from './workflow_detail_header';
+import { PLUGIN_ID } from '../../../../common';
 import { createMockStore } from '../../../entities/workflows/store/__mocks__/store.mock';
 import {
   _clearComputedData,
@@ -33,6 +34,7 @@ const mockUseWorkflowUrlState = jest.fn();
 const mockUseSaveYaml = jest.fn();
 const mockUseUpdateWorkflow = jest.fn();
 const mockUseMemoCss = jest.fn();
+let mockNavigateToApp: jest.Mock;
 
 jest.mock('../../../hooks/use_kibana', () => ({
   useKibana: () => mockUseKibana(),
@@ -96,6 +98,7 @@ describe('WorkflowDetailHeader', () => {
       serverValid = true,
       isSaving = false,
       isManaged = false,
+      routerHistory,
     }: {
       isValid?: boolean;
       hasChanges?: boolean;
@@ -103,6 +106,7 @@ describe('WorkflowDetailHeader', () => {
       serverValid?: boolean;
       isSaving?: boolean;
       isManaged?: boolean;
+      routerHistory?: React.ComponentProps<typeof TestWrapper>['routerHistory'];
     } = {}
   ) => {
     const store = createMockStore();
@@ -126,7 +130,11 @@ describe('WorkflowDetailHeader', () => {
     }
 
     const wrapper = ({ children }: { children: React.ReactNode }) => {
-      return <TestWrapper store={store}>{children}</TestWrapper>;
+      return (
+        <TestWrapper store={store} routerHistory={routerHistory}>
+          {children}
+        </TestWrapper>
+      );
     };
 
     return { ...render(component, { wrapper }), store };
@@ -135,10 +143,11 @@ describe('WorkflowDetailHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
+    mockNavigateToApp = jest.fn();
     mockUseKibana.mockReturnValue({
       services: {
         application: {
-          navigateToApp: jest.fn(),
+          navigateToApp: mockNavigateToApp,
         },
         settings: {
           client: {
@@ -168,6 +177,23 @@ describe('WorkflowDetailHeader', () => {
   it('should render', () => {
     const { getByText } = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />);
     expect(getByText('Test Workflow')).toBeInTheDocument();
+  });
+
+  it('navigates back to the workflows list with the stored list search params', () => {
+    const result = renderWithProviders(<WorkflowDetailHeader {...defaultProps} />, {
+      routerHistory: [
+        {
+          pathname: '/test-123',
+          state: { workflowsListSearch: '?tags=prod&enabled=true' },
+        },
+      ],
+    });
+
+    fireEvent.click(result.getByRole('button', { name: 'Back to Workflows' }));
+
+    expect(mockNavigateToApp).toHaveBeenCalledWith(PLUGIN_ID, {
+      path: '?tags=prod&enabled=true',
+    });
   });
 
   it('shows saved status when no changes', () => {

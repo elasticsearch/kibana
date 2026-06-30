@@ -41,7 +41,9 @@ export const SimilarCasesBadge = ({
   euiTheme: EuiThemeComputed<{}>;
 }) => (
   <EuiNotificationBadge
+    size="m"
     css={css`
+      border-radius: 999px;
       margin-left: ${euiTheme.size.xs};
     `}
     data-test-subj="case-view-similar-cases-badge"
@@ -62,7 +64,9 @@ export const AttachmentsBadge = ({
   euiTheme: EuiThemeComputed<{}>;
 }) => (
   <EuiNotificationBadge
+    size="m"
     css={css`
+      border-radius: 999px;
       margin-left: ${euiTheme.size.xs};
     `}
     data-test-subj="case-view-attachments-badge"

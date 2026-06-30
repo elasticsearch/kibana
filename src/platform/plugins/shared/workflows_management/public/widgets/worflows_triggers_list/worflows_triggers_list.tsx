@@ -11,6 +11,7 @@ import { EuiFlexGroup, EuiFlexItem, EuiIcon, EuiLoadingSpinner, EuiText } from '
 import { css } from '@emotion/react';
 import { capitalize } from 'lodash';
 import React, { Suspense } from 'react';
+import { i18n as i18nTranslate } from '@kbn/i18n';
 import { isTriggerType } from '@kbn/workflows';
 import { PopoverItems } from './popover_items';
 import * as i18n from '../../../common/translations';
@@ -73,7 +74,17 @@ const triggerIconAnchorStyle = css({
   lineHeight: 0,
 });
 
-export function TriggerIcon({ triggerType }: { triggerType: string }) {
+interface TriggerIconProps {
+  triggerType: string;
+  nextExecution?: string;
+  showLabelInTooltip?: boolean;
+}
+
+export function TriggerIcon({
+  triggerType,
+  nextExecution,
+  showLabelInTooltip = true,
+}: TriggerIconProps) {
   const icon = getTriggerIconType(triggerType);
   const label = getTriggerLabel(triggerType);
   const iconNode =
@@ -84,7 +95,28 @@ export function TriggerIcon({ triggerType }: { triggerType: string }) {
         <EuiIcon type={icon} size="m" title={label} />
       </Suspense>
     );
-  return <span css={triggerIconAnchorStyle}>{withTooltip(iconNode, label)}</span>;
+
+  if (nextExecution) {
+    const tooltipContent = (
+      <>
+        {showLabelInTooltip && <div>{label}</div>}
+        <div>
+          {i18nTranslate.translate('workflows.triggers.nextExecution.tooltip', {
+            defaultMessage: 'Next execution: {date}',
+            values: { date: nextExecution },
+          })}
+        </div>
+      </>
+    );
+
+    return withTooltip(iconNode, tooltipContent);
+  }
+
+  if (showLabelInTooltip) {
+    return withTooltip(iconNode, label);
+  }
+
+  return <span css={triggerIconAnchorStyle}>{iconNode}</span>;
 }
 
 export const WorkflowsTriggersList = ({ triggers }: WorkflowsTriggersListProps) => {

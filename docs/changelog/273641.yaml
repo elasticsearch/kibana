@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/273641
+issues:
+- https://github.com/elastic/kibana-team/issues/2854
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Search and data
+title: Remove feedback button from Fleet

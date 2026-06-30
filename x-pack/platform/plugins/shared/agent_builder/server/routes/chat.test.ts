@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { promptResponseEntrySchema } from './chat';
+import { conversePayloadSchema, promptResponseEntrySchema } from './chat';
 
 describe('promptResponseEntrySchema', () => {
   it('accepts the confirmation variant', () => {
@@ -56,5 +56,18 @@ describe('promptResponseEntrySchema', () => {
 
   it('rejects unknown payload shapes', () => {
     expect(() => promptResponseEntrySchema.validate({ foo: 'bar' })).toThrow();
+  });
+});
+
+describe('conversePayloadSchema', () => {
+  it('rejects unsupported conversation access mode values', () => {
+    expect(() =>
+      conversePayloadSchema.validate({
+        input: 'Unsupported access mode test',
+        access_control: {
+          access_mode: 'shared',
+        },
+      })
+    ).toThrow(/access_mode/);
   });
 });

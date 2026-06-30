@@ -234,7 +234,7 @@ export const PackagePoliciesPage = ({
                         <h4>
                           <FormattedMessage
                             id="xpack.fleet.epm.packageDetails.integrationList.agentlessHeader"
-                            defaultMessage="Agentless"
+                            defaultMessage="Elastic Managed Integration"
                           />
                         </h4>
                       </EuiText>

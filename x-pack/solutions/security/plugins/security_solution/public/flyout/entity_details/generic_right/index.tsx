@@ -122,11 +122,12 @@ export const GenericEntityPanel = memo(function GenericEntityPanel(
     (refetchRiskInputsTab as Refetch | null)?.();
   }, [refetch, refetchRiskInputsTab]);
 
-  const { calculateEntityRiskScore } = useCalculateEntityRiskScore(
-    EntityType.generic,
-    genericInsightsValue || '',
-    { onSuccess: refetchRiskScore }
-  );
+  const { calculateEntityRiskScore } = useCalculateEntityRiskScore({
+    identifierType: EntityType.generic,
+    identifier: genericInsightsValue || '',
+    entityId: genericInsightsValue || undefined,
+    onSuccess: refetchRiskScore,
+  });
 
   useEffect(() => {
     if (getGenericEntity.data?._id) {

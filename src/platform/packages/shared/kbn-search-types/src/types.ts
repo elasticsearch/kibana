@@ -129,6 +129,11 @@ export interface ISearchOptions {
    * Project routing configuration for cross-project search (CPS).
    */
   projectRouting?: ProjectRouting;
+
+  /**
+   * When true, ES|QL queries use approximate execution for faster, estimated results.
+   */
+  approximation?: boolean;
 }
 
 /**
@@ -147,4 +152,5 @@ export type ISearchOptionsSerializable = Pick<
   | 'executionContext'
   | 'stream'
   | 'projectRouting'
+  | 'approximation'
 >;

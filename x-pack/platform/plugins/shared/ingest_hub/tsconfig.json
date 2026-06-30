@@ -6,6 +6,7 @@
   "include": [
     "common/**/*",
     "public/**/*",
+    "server/**/*",
     "test/scout/**/*"
   ],
   "exclude": [
@@ -13,6 +14,7 @@
   ],
   "kbn_references": [
     "@kbn/core",
+    "@kbn/config-schema",
     "@kbn/i18n",
     "@kbn/shared-ux-utility",
     "@kbn/shared-ux-router",

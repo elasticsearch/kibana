@@ -17,6 +17,7 @@ import {
   EuiPanel,
   EuiSpacer,
   EuiText,
+  EuiToolTip,
 } from '@elastic/eui';
 
 import { DeveloperToolbar, type DeveloperToolbarProps } from '../components/developer_toolbar';
@@ -294,64 +295,74 @@ const ExtensibleDemoApp = (props: DeveloperToolbarProps) => {
 
       {/* Items that appear in the toolbar - render anywhere in the component tree! */}
       <DeveloperToolbarItem priority={10} id="Debug current state">
-        <EuiButtonIcon
-          iconType="inspect"
-          size="xs"
-          color="text"
-          onClick={onDebugClick}
-          aria-label="Debug current state"
-        />
+        <EuiToolTip content="Debug current state" disableScreenReaderOutput>
+          <EuiButtonIcon
+            iconType="inspect"
+            size="xs"
+            color="text"
+            onClick={onDebugClick}
+            aria-label="Debug current state"
+          />
+        </EuiToolTip>
       </DeveloperToolbarItem>
 
       <DeveloperToolbarItem priority={5} id="Refresh data">
-        <EuiButtonIcon
-          iconType="refresh"
-          size="xs"
-          color="text"
-          onClick={onRefreshClick}
-          aria-label="Refresh data"
-        />
+        <EuiToolTip content="Refresh data" disableScreenReaderOutput>
+          <EuiButtonIcon
+            iconType="refresh"
+            size="xs"
+            color="text"
+            onClick={onRefreshClick}
+            aria-label="Refresh data"
+          />
+        </EuiToolTip>
       </DeveloperToolbarItem>
 
       {/* Conditional items - only show when debug mode is enabled */}
       {debugEnabled && (
         <DeveloperToolbarItem priority={8} id="Advanced debug options">
-          <EuiButtonIcon
-            iconType="bug"
-            size="xs"
-            color="accent"
-            onClick={onDebugClick}
-            aria-label="Advanced debug options"
-          />
+          <EuiToolTip content="Advanced debug options" disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType="bug"
+              size="xs"
+              color="accent"
+              onClick={onDebugClick}
+              aria-label="Advanced debug options"
+            />
+          </EuiToolTip>
         </DeveloperToolbarItem>
       )}
 
       {/* Dynamic items - show notification count when there are notifications */}
       {notifications > 0 && (
         <DeveloperToolbarItem priority={3} id={`${notifications} notifications`}>
-          <EuiButtonIcon
-            iconType="bell"
-            size="xs"
-            color="warning"
-            onClick={clearNotifications}
-            aria-label="Clear notifications"
-          />
+          <EuiToolTip content="Clear notifications" disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType="bell"
+              size="xs"
+              color="warning"
+              onClick={clearNotifications}
+              aria-label="Clear notifications"
+            />
+          </EuiToolTip>
         </DeveloperToolbarItem>
       )}
 
       {/* Render test items */}
       {testItems.map((item) => (
         <DeveloperToolbarItem key={item.id} priority={item.priority} id={item.id}>
-          <EuiButtonIcon
-            iconType={item.icon}
-            size="xs"
-            color="primary"
-            onClick={() => {
-              // eslint-disable-next-line no-console
-              console.log(`Clicked ${item.id}`);
-            }}
-            aria-label={`Test item: ${item.id}`}
-          />
+          <EuiToolTip content={`Test item: ${item.id}`} disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType={item.icon}
+              size="xs"
+              color="primary"
+              onClick={() => {
+                // eslint-disable-next-line no-console
+                console.log(`Clicked ${item.id}`);
+              }}
+              aria-label={`Test item: ${item.id}`}
+            />
+          </EuiToolTip>
         </DeveloperToolbarItem>
       ))}
 

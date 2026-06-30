@@ -7,7 +7,7 @@
 import { describeDataset, formatDocumentAnalysis } from '@kbn/ai-tools';
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import type { ChatCompletionTokenCount, BoundInferenceClient } from '@kbn/inference-common';
-import type { Streams } from '@kbn/streams-schema';
+import { getStreamSamplingSource, type Streams } from '@kbn/streams-schema';
 import { withSpan } from '@kbn/apm-utils';
 import { createGenerateStreamDescriptionPrompt } from './prompt';
 
@@ -41,7 +41,7 @@ export async function generateStreamDescription({
       start,
       end,
       esClient,
-      index: stream.name,
+      index: getStreamSamplingSource(stream),
     })
   );
 

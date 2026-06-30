@@ -203,7 +203,9 @@ describe('logsDataSourceProfileProvider', () => {
   describe('getCellRenderers', () => {
     it('should return cell renderers for log level fields', () => {
       const toolkit = {
+        ...EMPTY_CONTEXT_AWARENESS_TOOLKIT,
         actions: {
+          ...EMPTY_CONTEXT_AWARENESS_TOOLKIT.actions,
           addFilter: jest.fn(),
         },
       };
@@ -229,7 +231,9 @@ describe('logsDataSourceProfileProvider', () => {
   describe('getRowAdditionalLeadingControls', () => {
     it('should return the passed additional controls', () => {
       const toolkit = {
+        ...EMPTY_CONTEXT_AWARENESS_TOOLKIT,
         actions: {
+          ...EMPTY_CONTEXT_AWARENESS_TOOLKIT.actions,
           setExpandedDoc: jest.fn(),
         },
       };

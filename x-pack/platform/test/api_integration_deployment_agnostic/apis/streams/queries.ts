@@ -6,7 +6,7 @@
  */
 
 import expect from '@kbn/expect';
-import { sortBy } from 'lodash';
+import { omit, sortBy } from 'lodash';
 import { emptyAssets } from '@kbn/streams-schema';
 import type { Streams } from '@kbn/streams-schema';
 import { v4 } from 'uuid';
@@ -16,6 +16,7 @@ import type { DeploymentAgnosticFtrProviderContext } from '../../ftr_provider_co
 import type { StreamsSupertestRepositoryClient } from './helpers/repository_client';
 import { createStreamsRepositoryAdminClient } from './helpers/repository_client';
 import {
+  bulkQueries,
   deleteStream,
   disableStreams,
   enableStreams,
@@ -112,12 +113,12 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         },
       ];
 
-      const updateStreamResponse = await putStream(apiClient, STREAM_NAME, {
-        stream,
-        ...emptyAssets,
-        queries,
-      });
-      expect(updateStreamResponse).to.have.property('acknowledged', true);
+      const bulkResponse = await bulkQueries(
+        apiClient,
+        STREAM_NAME,
+        queries.map((query) => ({ index: omit(query, 'type') }))
+      );
+      expect(bulkResponse).to.have.property('acknowledged', true);
 
       const getQueriesResponse = await getQueries(apiClient, STREAM_NAME);
       expect(sortBy(getQueriesResponse.queries, 'id')).to.eql(sortBy(queries, 'id'));
@@ -131,6 +132,33 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
       expect(rules.body.data[0].params.query).to.eql(
         `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("message:'OutOfMemoryError'")`
       );
+    });
+
+    it('rejects a stray top-level `queries` field on PUT and leaves detections unchanged', async () => {
+      // Significant-event queries are not part of the stream upsert; request validation rejects a
+      // stray `queries` field (DeepStrict) instead of silently dropping it. Cast past the type
+      // that no longer allows `queries`.
+      await putStream(
+        apiClient,
+        STREAM_NAME,
+        {
+          stream,
+          ...emptyAssets,
+          queries: [
+            {
+              id: v4(),
+              title: 'stray query',
+              esql: {
+                query: `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("message:'stray'")`,
+              },
+            },
+          ],
+        } as Streams.WiredStream.UpsertRequest,
+        400
+      );
+
+      const getQueriesResponse = await getQueries(apiClient, STREAM_NAME);
+      expect(getQueriesResponse.queries).to.eql([]);
     });
 
     describe('PUT /api/streams/{name}/queries/{queryId}', () => {
@@ -212,11 +240,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
             query: `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("initial query")`,
           },
         };
-        await putStream(apiClient, STREAM_NAME, {
-          stream,
-          ...emptyAssets,
-          queries: [query],
-        });
+        await bulkQueries(apiClient, STREAM_NAME, [{ index: omit(query, 'type') }]);
         const initialRules = await alertingApi.searchRules(roleAuthc, '');
 
         const updatedEsql = `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("updated query")`;
@@ -261,11 +285,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
             query: `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("initial query")`,
           },
         };
-        await putStream(apiClient, STREAM_NAME, {
-          stream,
-          ...emptyAssets,
-          queries: [query],
-        });
+        await bulkQueries(apiClient, STREAM_NAME, [{ index: omit(query, 'type') }]);
         const initialRules = await alertingApi.searchRules(roleAuthc, '');
 
         const upsertQueryResponse = await apiClient
@@ -302,21 +322,18 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
 
     it('deletes an existing query and the associated rule successfully', async () => {
       const queryId = v4();
-      await putStream(apiClient, STREAM_NAME, {
-        stream,
-        ...emptyAssets,
-        queries: [
-          {
+      await bulkQueries(apiClient, STREAM_NAME, [
+        {
+          index: {
             id: queryId,
-            type: 'match' as const,
             title: 'Significant Query',
             description: '',
             esql: {
               query: `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("message:'query'")`,
             },
           },
-        ],
-      });
+        },
+      ]);
 
       const deleteQueryResponse = await apiClient
         .fetch('DELETE /api/streams/{name}/queries/{queryId} 2023-10-31', {
@@ -370,11 +387,11 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           query: `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("query 3")`,
         },
       };
-      await putStream(apiClient, STREAM_NAME, {
-        stream,
-        ...emptyAssets,
-        queries: [firstQuery, secondQuery, thirdQuery],
-      });
+      await bulkQueries(
+        apiClient,
+        STREAM_NAME,
+        [firstQuery, secondQuery, thirdQuery].map((query) => ({ index: omit(query, 'type') }))
+      );
       const initialRules = await alertingApi.searchRules(roleAuthc, '');
 
       const newQuery = {
@@ -457,11 +474,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           query: `FROM ${STREAM_NAME},${STREAM_NAME}.* METADATA _id, _source | WHERE KQL("query 1")`,
         },
       };
-      await putStream(apiClient, STREAM_NAME, {
-        stream,
-        ...emptyAssets,
-        queries: [firstQuery],
-      });
+      await bulkQueries(apiClient, STREAM_NAME, [{ index: omit(firstQuery, 'type') }]);
 
       const invalidQuery = {
         id: 'invalid',

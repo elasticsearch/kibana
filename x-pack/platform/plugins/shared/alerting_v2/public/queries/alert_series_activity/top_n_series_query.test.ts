@@ -5,17 +5,18 @@
  * 2.0.
  */
 
+import { ALERT_TIMELINE_TOP_N_DEFAULT } from '@kbn/alerting-v2-episodes-ui/alert_timeline';
 import { buildTopNSeriesQuery } from './top_n_series_query';
 
 const RULE_ID = 'rule-abc';
-const GTE_MS = Date.parse('2026-04-01T00:00:00Z');
-const LTE_MS = Date.parse('2026-04-08T00:00:00Z');
+const WINDOW_START_MS = Date.parse('2026-04-01T00:00:00Z');
+const WINDOW_END_MS = Date.parse('2026-04-08T00:00:00Z');
 
 describe('buildTopNSeriesQuery', () => {
   const queryString = buildTopNSeriesQuery({
     ruleId: RULE_ID,
-    gteMs: GTE_MS,
-    lteMs: LTE_MS,
+    windowStartMs: WINDOW_START_MS,
+    windowEndMs: WINDOW_END_MS,
   }).print('basic');
 
   it('scopes to alert type and the given rule id', () => {
@@ -38,8 +39,8 @@ describe('buildTopNSeriesQuery', () => {
     expect(queryString).toContain('SORT last_event_ts DESC');
   });
 
-  it('applies a high limit to capture all series', () => {
-    expect(queryString).toContain('LIMIT 10000');
+  it('fetches only as many series as the chart renders', () => {
+    expect(queryString).toContain(`LIMIT ${ALERT_TIMELINE_TOP_N_DEFAULT}`);
   });
 
   it('keeps only group_hash in the output', () => {

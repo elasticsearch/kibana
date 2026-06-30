@@ -9,6 +9,7 @@ import type {
   DeprecationInfo,
   RegistryElasticsearch,
   RegistryPolicyTemplate,
+  RegistryProviderPermissions,
   RegistrySection,
   RegistryVarsEntry,
 } from './epm';
@@ -81,6 +82,8 @@ export interface PackageSpecManifest {
     datasets?: DiscoveryDataset[];
   };
   deprecated?: DeprecationInfo;
+  /** Package-level cloud provider permissions (package-spec 3.7.0+). */
+  provider_permissions?: RegistryProviderPermissions[];
 }
 export interface DiscoveryDataset {
   name: string;

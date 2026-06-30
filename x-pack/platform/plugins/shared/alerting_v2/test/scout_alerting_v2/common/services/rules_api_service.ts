@@ -24,8 +24,12 @@ export interface WaitForEnabledStateParams {
   enabled: boolean;
 }
 
+export interface RuleApiSpaceOptions {
+  spaceId?: string;
+}
+
 export interface RulesApiService {
-  create: (data: CreateRuleData) => Promise<RuleResponse>;
+  create: (data: CreateRuleData, options?: RuleApiSpaceOptions) => Promise<RuleResponse>;
   upsert: (id: string, data: CreateRuleData) => Promise<RuleResponse>;
   get: (id: string) => Promise<RuleResponse>;
   find: (query?: FindRulesParams) => Promise<FindRulesResponse>;
@@ -42,6 +46,9 @@ const stripUndefined = <T extends Record<string, unknown>>(query: T): Partial<T>
   Object.fromEntries(
     Object.entries(query).filter(([, value]) => value !== undefined)
   ) as Partial<T>;
+
+const withSpace = (path: string, spaceId: string | undefined): string =>
+  spaceId ? `/s/${encodeURIComponent(spaceId)}${path}` : path;
 
 export const getRulesApiService = ({
   log,
@@ -71,11 +78,11 @@ export const getRulesApiService = ({
     });
 
   return {
-    create: (data) =>
+    create: (data, options) =>
       measurePerformanceAsync(log, 'rules.create', async () => {
         const response = await kbnClient.request<RuleResponse>({
           method: 'POST',
-          path: RULE_API_PATH,
+          path: withSpace(RULE_API_PATH, options?.spaceId),
           headers: COMMON_HEADERS,
           body: data,
         });

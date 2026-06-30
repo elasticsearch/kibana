@@ -6,6 +6,7 @@
  */
 
 import Boom from '@hapi/boom';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type {
   BulkGetMaintenanceWindowsParams,
   BulkGetMaintenanceWindowsError,
@@ -42,7 +43,7 @@ export async function bulkGetMaintenanceWindows(
     const errors: BulkGetMaintenanceWindowsError[] = [];
 
     savedObjects.forEach((so) => {
-      if (so.error) {
+      if (isSavedObjectErrorResult(so)) {
         errors.push({
           id: so.id,
           error: so.error.error,

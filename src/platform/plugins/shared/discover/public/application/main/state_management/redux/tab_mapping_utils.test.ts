@@ -181,6 +181,7 @@ describe('tab mapping utils', () => {
               "column1",
             ],
           },
+          "profileState": Object {},
           "renderDocumentViewMeta": undefined,
           "uiState": Object {},
         }
@@ -266,6 +267,7 @@ describe('tab mapping utils', () => {
               "column1",
             ],
           },
+          "profileState": Object {},
           "renderDocumentViewMeta": undefined,
           "uiState": Object {},
         }

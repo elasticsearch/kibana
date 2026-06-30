@@ -6,12 +6,16 @@
  */
 
 import expect from '@kbn/expect';
-import { generateArchive, parseArchive } from '@kbn/streams-plugin/server/lib/content';
+import {
+  generateArchive,
+  isContentPackStreamRequest,
+  parseArchive,
+} from '@kbn/streams-plugin/server/lib/content';
 import { Readable } from 'stream';
 import type { ContentPack, ContentPackStream } from '@kbn/content-packs-schema';
 import { ROOT_STREAM_ID } from '@kbn/content-packs-schema';
-import type { FieldDefinition, RoutingDefinition, StreamQuery } from '@kbn/streams-schema';
-import { Streams, emptyAssets } from '@kbn/streams-schema';
+import type { FieldDefinition, RoutingDefinition, Streams } from '@kbn/streams-schema';
+import { emptyAssets } from '@kbn/streams-schema';
 import {
   OBSERVABILITY_STREAMS_ENABLE_CONTENT_PACKS,
   OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS,
@@ -20,25 +24,25 @@ import type { DeploymentAgnosticFtrProviderContext } from '../../ftr_provider_co
 import type { StreamsSupertestRepositoryClient } from './helpers/repository_client';
 import { createStreamsRepositoryAdminClient } from './helpers/repository_client';
 import {
+  bulkQueries,
   disableStreams,
   enableStreams,
   exportContent,
+  getQueries,
   getStream,
   importContent,
+  previewContent,
   putStream,
 } from './helpers/requests';
 
 const upsertRequest = ({
   fields = {},
   routing = [],
-  queries = [],
 }: {
   fields?: FieldDefinition;
   routing?: RoutingDefinition[];
-  queries?: StreamQuery[];
 }): Streams.WiredStream.UpsertRequest => ({
   ...emptyAssets,
-  queries,
   stream: {
     type: 'wired',
     description: 'Test stream',
@@ -60,32 +64,17 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
   describe('Content packs', () => {
     before(async () => {
       await kibanaServer.uiSettings.update({
-        [OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS]: true,
         [OBSERVABILITY_STREAMS_ENABLE_CONTENT_PACKS]: true,
+        // Significant events are seeded via the queries API in some tests below to prove export
+        // never carries them; that API is gated behind this feature flag.
+        [OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS]: true,
       });
       await kibanaServer.uiSettings.waitForEventualCacheRefresh();
 
       apiClient = await createStreamsRepositoryAdminClient(roleScopedSupertest);
       await enableStreams(apiClient);
 
-      await putStream(
-        apiClient,
-        'logs.otel.branch_a.child1.nested',
-        upsertRequest({
-          queries: [
-            {
-              id: 'my-error-query',
-              type: 'match',
-              title: 'error query',
-              description: '',
-              esql: {
-                query:
-                  'FROM logs.otel.branch_a.child1.nested,logs.otel.branch_a.child1.nested.* METADATA _id, _source | WHERE KQL("message: ERROR")',
-              },
-            },
-          ],
-        })
-      );
+      await putStream(apiClient, 'logs.otel.branch_a.child1.nested', upsertRequest({}));
       await putStream(
         apiClient,
         'logs.otel.branch_a.child1',
@@ -145,7 +134,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
 
     after(async () => {
       await disableStreams(apiClient);
-
       await kibanaServer.uiSettings.update({
         [OBSERVABILITY_STREAMS_ENABLE_SIGNIFICANT_EVENTS]: false,
       });
@@ -173,7 +161,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           (entry): entry is ContentPackStream => entry.type === 'stream'
         );
 
-        expect(streamEntries.every((entry) => Streams.all.UpsertRequest.is(entry.request))).to.eql(
+        expect(streamEntries.every((entry) => isContentPackStreamRequest(entry.request))).to.eql(
           true
         );
         expect(streamEntries.map((entry) => entry.name).sort()).to.eql([
@@ -196,25 +184,21 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           include: {
             objects: {
               mappings: true,
-              queries: [],
               routing: [
                 {
                   destination: 'branch_a',
                   objects: {
                     mappings: true,
-                    queries: [],
                     routing: [
                       {
                         destination: 'branch_a.child1',
                         objects: {
                           mappings: true,
-                          queries: [],
                           routing: [
                             {
                               destination: 'branch_a.child1.nested',
                               objects: {
                                 mappings: true,
-                                queries: [{ id: 'my-error-query' }],
                                 routing: [],
                               },
                             },
@@ -256,22 +240,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
             status: 'disabled',
           },
         ]);
-        const leafEntry = contentPack.entries.find(
-          (entry): entry is ContentPackStream =>
-            entry.type === 'stream' && entry.name === 'branch_a.child1.nested'
-        )!;
-        expect(leafEntry.request.queries).to.eql([
-          {
-            id: 'my-error-query',
-            type: 'match',
-            title: 'error query',
-            description: '',
-            esql: {
-              query:
-                'FROM logs.otel.branch_a.child1.nested,logs.otel.branch_a.child1.nested.* METADATA _id, _source | WHERE KQL("message: ERROR")',
-            },
-          },
-        ]);
       });
 
       const expectMappings = (contentPack: ContentPack, fields: FieldDefinition) => {
@@ -294,7 +262,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
               include: {
                 objects: {
                   mappings: false,
-                  queries: [],
                   routing: [],
                 },
               },
@@ -312,7 +279,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
               include: {
                 objects: {
                   mappings: true,
-                  queries: [],
                   routing: [],
                 },
               },
@@ -334,7 +300,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
               description: '',
               version: '1.0.0',
               include: {
-                objects: { mappings: true, queries: [], routing: [] },
+                objects: { mappings: true, routing: [] },
               },
             })
           )
@@ -351,7 +317,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
               description: '',
               version: '1.0.0',
               include: {
-                objects: { mappings: true, queries: [], routing: [] },
+                objects: { mappings: true, routing: [] },
               },
             })
           )
@@ -368,17 +334,15 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           include: {
             objects: {
               mappings: true,
-              queries: [],
               routing: [
                 {
                   destination: 'branch_b',
                   objects: {
                     mappings: true,
-                    queries: [],
                     routing: [
                       {
                         destination: 'branch_b.child1',
-                        objects: { mappings: true, queries: [], routing: [] },
+                        objects: { mappings: true, routing: [] },
                       },
                     ],
                   },
@@ -389,6 +353,45 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         };
 
         await exportContent(apiClient, 'logs.otel.branch_a', exportBody, 400);
+      });
+
+      it('omits significant-event queries from the exported pack', async () => {
+        // Significant-event queries live outside the stream definition (in the knowledge-indicator
+        // data stream), so export must never carry them even when the stream has detections.
+        await bulkQueries(apiClient, 'logs.otel.branch_a', [
+          {
+            index: {
+              id: 'export-omits-me',
+              title: 'detector',
+              description: '',
+              esql: {
+                query: `FROM logs.otel.branch_a,logs.otel.branch_a.* METADATA _id, _source | WHERE KQL("message:'ERROR'")`,
+              },
+            },
+          },
+        ]);
+
+        const archiveBuffer = await exportContent(apiClient, 'logs.otel.branch_a', {
+          name: 'branch_a_pack',
+          description: 'export should not carry queries',
+          version: '1.0.0',
+          include: { objects: { all: {} } },
+        });
+        const contentPack = await parseArchive(Readable.from(archiveBuffer));
+
+        const streamEntries = contentPack.entries.filter(
+          (entry): entry is ContentPackStream => entry.type === 'stream'
+        );
+        expect(streamEntries.length).to.be.greaterThan(0);
+        streamEntries.forEach((entry) => {
+          expect(entry.request).to.not.have.property('queries');
+        });
+
+        // the detection still exists on the stream, it is just not part of the pack
+        const { queries } = await getQueries(apiClient, 'logs.otel.branch_a');
+        expect(queries.map((query) => query.id)).to.contain('export-omits-me');
+
+        await bulkQueries(apiClient, 'logs.otel.branch_a', [{ delete: { id: 'export-omits-me' } }]);
       });
     });
 
@@ -465,11 +468,10 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           include: {
             objects: {
               mappings: true,
-              queries: [],
               routing: [
                 {
                   destination: 'nested',
-                  objects: { mappings: true, queries: [{ id: 'my-error-query' }], routing: [] },
+                  objects: { mappings: true, routing: [] },
                 },
               ],
             },
@@ -509,24 +511,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         expect(updatedStream.stream.ingest.wired.fields['resource.attributes.foo.bar']).to.eql({
           type: 'keyword',
         });
-
-        // check that the created stream includes the queries
-        const createdStream = (await getStream(
-          apiClient,
-          'logs.otel.branch_c.nested'
-        )) as Streams.WiredStream.GetResponse;
-        expect(createdStream.queries).to.eql([
-          {
-            id: 'my-error-query',
-            type: 'match',
-            title: 'error query',
-            description: '',
-            esql: {
-              query:
-                'FROM logs.otel.branch_c.nested, logs.otel.branch_c.nested.* METADATA _id, _source | WHERE KQL("message: ERROR")',
-            },
-          },
-        ]);
       });
 
       it('imports selected streams', async () => {
@@ -544,17 +528,15 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           include: {
             objects: {
               mappings: true,
-              queries: [],
               routing: [
                 {
                   destination: 'branch_b',
                   objects: {
                     mappings: true,
-                    queries: [],
                     routing: [
                       {
                         destination: 'branch_b.child1',
-                        objects: { mappings: true, queries: [], routing: [] },
+                        objects: { mappings: true, routing: [] },
                       },
                     ],
                   },
@@ -583,6 +565,228 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
             status: 'disabled',
           },
         ]);
+      });
+
+      it('rejects significant-event queries carried by older packs', async () => {
+        const archive = await generateArchive(
+          {
+            name: 'legacy_pack',
+            description: 'pack that still carries queries',
+            version: '1.0.0',
+          },
+          [
+            // Content packs are structural-only. Older or hand-authored archives may still
+            // carry significant-event queries; import must reject them (no partial structural
+            // import, no knowledge-indicator writes) so detections are never silently dropped.
+            // Cast past the type that no longer allows `queries`.
+            {
+              type: 'stream',
+              name: ROOT_STREAM_ID,
+              request: {
+                stream: {
+                  type: 'wired',
+                  description: '',
+                  ingest: {
+                    processing: { steps: [] },
+                    settings: {},
+                    wired: {
+                      fields: {},
+                      routing: [
+                        { destination: 'detector', where: { never: {} }, status: 'disabled' },
+                      ],
+                    },
+                    lifecycle: { inherit: {} },
+                    failure_store: { inherit: {} },
+                  },
+                },
+                ...emptyAssets,
+                queries: [
+                  {
+                    id: 'legacy-query',
+                    type: 'match',
+                    title: 'legacy query',
+                    description: '',
+                    esql: {
+                      query:
+                        'FROM logs.otel.branch_e METADATA _id, _source | WHERE KQL("message: ERROR")',
+                    },
+                  },
+                ],
+              },
+            } as ContentPackStream,
+            {
+              type: 'stream',
+              name: 'detector',
+              request: {
+                stream: {
+                  type: 'wired',
+                  description: '',
+                  ingest: {
+                    processing: { steps: [] },
+                    settings: {},
+                    wired: { fields: {}, routing: [] },
+                    lifecycle: { inherit: {} },
+                    failure_store: { inherit: {} },
+                  },
+                },
+                ...emptyAssets,
+              },
+            },
+          ]
+        );
+
+        await putStream(apiClient, 'logs.otel.branch_e', upsertRequest({}));
+
+        const response = await importContent(
+          apiClient,
+          'logs.otel.branch_e',
+          {
+            include: { objects: { all: {} } },
+            content: Readable.from(archive),
+            filename: 'legacy_pack-1.0.0.zip',
+          },
+          400
+        );
+
+        expect((response as unknown as { message: string }).message).to.contain(
+          'contains significant-event queries'
+        );
+
+        // the rejected import must not partially create any streams
+        await getStream(apiClient, 'logs.otel.branch_e.detector', 404);
+      });
+
+      it('rejects an empty `queries: []` carried by a pack', async () => {
+        const archive = await generateArchive(
+          {
+            name: 'empty_queries_pack',
+            description: 'pack carrying an empty queries array',
+            version: '1.0.0',
+          },
+          [
+            // Content packs are structural-only and tech preview, so import hard-fails on any
+            // `queries` field rather than half-supporting a legacy shape; even an empty
+            // `queries: []` is rejected. Cast past the type that no longer allows `queries`.
+            {
+              type: 'stream',
+              name: ROOT_STREAM_ID,
+              request: {
+                stream: {
+                  type: 'wired',
+                  description: '',
+                  ingest: {
+                    processing: { steps: [] },
+                    settings: {},
+                    wired: {
+                      fields: {},
+                      routing: [{ destination: 'child', where: { never: {} }, status: 'disabled' }],
+                    },
+                    lifecycle: { inherit: {} },
+                    failure_store: { inherit: {} },
+                  },
+                },
+                ...emptyAssets,
+                queries: [],
+              },
+            } as ContentPackStream,
+            {
+              type: 'stream',
+              name: 'child',
+              request: {
+                stream: {
+                  type: 'wired',
+                  description: '',
+                  ingest: {
+                    processing: { steps: [] },
+                    settings: {},
+                    wired: { fields: {}, routing: [] },
+                    lifecycle: { inherit: {} },
+                    failure_store: { inherit: {} },
+                  },
+                },
+                ...emptyAssets,
+              },
+            },
+          ]
+        );
+
+        await putStream(apiClient, 'logs.otel.branch_f', upsertRequest({}));
+
+        const response = await importContent(
+          apiClient,
+          'logs.otel.branch_f',
+          {
+            include: { objects: { all: {} } },
+            content: Readable.from(archive),
+            filename: 'empty_queries_pack-1.0.0.zip',
+          },
+          400
+        );
+
+        expect((response as unknown as { message: string }).message).to.contain(
+          'contains significant-event queries'
+        );
+
+        // the rejected import must not partially create any streams
+        await getStream(apiClient, 'logs.otel.branch_f.child', 404);
+      });
+
+      it('rejects significant-event queries at preview time', async () => {
+        const archive = await generateArchive(
+          {
+            name: 'legacy_preview_pack',
+            description: 'pack that still carries queries',
+            version: '1.0.0',
+          },
+          [
+            // Preview shares the parse path with import, so a pack carrying queries must be
+            // rejected before the UI can render it. Cast past the type that no longer allows
+            // `queries`.
+            {
+              type: 'stream',
+              name: ROOT_STREAM_ID,
+              request: {
+                stream: {
+                  type: 'wired',
+                  description: '',
+                  ingest: {
+                    processing: { steps: [] },
+                    settings: {},
+                    wired: { fields: {}, routing: [] },
+                    lifecycle: { inherit: {} },
+                    failure_store: { inherit: {} },
+                  },
+                },
+                ...emptyAssets,
+                queries: [
+                  {
+                    id: 'legacy-query',
+                    type: 'match',
+                    title: 'legacy query',
+                    description: '',
+                    esql: {
+                      query: 'FROM logs.otel METADATA _id, _source | WHERE KQL("message: ERROR")',
+                    },
+                  },
+                ],
+              },
+            } as ContentPackStream,
+          ]
+        );
+
+        const response = await previewContent(
+          apiClient,
+          'logs.otel',
+          {
+            content: Readable.from(archive),
+            filename: 'legacy_preview_pack-1.0.0.zip',
+          },
+          400
+        );
+
+        expect((response as unknown as { message: string }).message).to.contain(
+          'contains significant-event queries'
+        );
       });
 
       it('fails when importing conflicting mappings', async () => {
@@ -749,66 +953,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
 
         expect((response as unknown as { message: string }).message).to.eql(
           '[logs.otel.overlapping.child] already exists'
-        );
-      });
-
-      it('fails when importing existing query', async () => {
-        const archive = await generateArchive(
-          {
-            name: 'content_pack',
-            description: 'with overlapping query',
-            version: '1.0.0',
-          },
-          [
-            {
-              type: 'stream',
-              name: ROOT_STREAM_ID,
-              request: {
-                stream: {
-                  type: 'wired',
-                  description: '',
-                  ingest: {
-                    processing: { steps: [] },
-                    settings: {},
-                    wired: {
-                      fields: {},
-                      routing: [],
-                    },
-                    lifecycle: { inherit: {} },
-                    failure_store: { inherit: {} },
-                  },
-                },
-                ...emptyAssets,
-                queries: [
-                  {
-                    id: 'my-error-query',
-                    type: 'match',
-                    title: 'error query',
-                    description: '',
-                    esql: {
-                      query:
-                        'FROM logs.otel.branch_a.child1.nested,logs.otel.branch_a.child1.nested.* METADATA _id, _source | WHERE KQL("message: ERROR")',
-                    },
-                  },
-                ],
-              },
-            },
-          ]
-        );
-
-        const response = await importContent(
-          apiClient,
-          'logs.otel.branch_a.child1.nested',
-          {
-            include: { objects: { all: {} } },
-            content: Readable.from(archive),
-            filename: 'overlap-1.0.0.zip',
-          },
-          409
-        );
-
-        expect((response as unknown as { message: string }).message).to.eql(
-          'Query [my-error-query | error query] already exists on [logs.otel.branch_a.child1.nested]'
         );
       });
     });

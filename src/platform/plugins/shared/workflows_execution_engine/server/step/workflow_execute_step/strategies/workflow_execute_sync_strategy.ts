@@ -11,7 +11,7 @@ import { omit } from 'lodash';
 import type { KibanaRequest } from '@kbn/core/server';
 import type { JsonValue } from '@kbn/utility-types';
 import type { EsWorkflow } from '@kbn/workflows';
-import { ExecutionStatus, isTerminalStatus } from '@kbn/workflows';
+import { ExecutionStatus, isTerminalStatus, toWorkflowExecutionEngineModel } from '@kbn/workflows';
 import { ExecutionError } from '@kbn/workflows/server';
 import type { WorkflowStepExecutionDto } from '@kbn/workflows/types/v1';
 import type { StepExecutionRepository } from '../../../repositories/step_execution_repository';
@@ -20,7 +20,6 @@ import type { WorkflowsExecutionEnginePluginStart } from '../../../types';
 import type { StepExecutionRuntime } from '../../../workflow_context_manager/step_execution_runtime';
 import type { IWorkflowEventLogger } from '../../../workflow_event_logger';
 import type { StrategyResult } from '../types';
-import { toExecutionModel } from '../utils';
 
 export type { StrategyResult } from '../types';
 
@@ -100,7 +99,7 @@ export class WorkflowExecuteSyncStrategy {
       const workflowExecution = this.stepExecutionRuntime.workflowExecution;
       const isTestRun = !!this.stepExecutionRuntime.workflowExecution.isTestRun;
       const { workflowExecutionId } = await this.workflowsExecutionEngine.executeWorkflow(
-        toExecutionModel(workflow, isTestRun),
+        toWorkflowExecutionEngineModel(workflow, { isTestRun }),
         {
           spaceId,
           inputs,

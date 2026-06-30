@@ -13,6 +13,7 @@ import { i18n } from '@kbn/i18n';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import React, { useMemo } from 'react';
 import type { ShareAction } from './hooks';
+import { APP_HEADER_TEST_SUBJECTS } from './test_subjects';
 
 const SHARE_ARIA_LABEL = i18n.translate('core.ui.chrome.appHeader.shareAriaLabel', {
   defaultMessage: 'Share',
@@ -65,7 +66,7 @@ export const TitleActions = React.memo<TitleActionsProps>(({ shareAction, favori
   const hasCustomTooltip = !!shareAction?.tooltipContent || !!shareAction?.tooltipTitle;
 
   return (
-    <div css={styles.root} data-test-subj="appHeaderTitleActions">
+    <div css={styles.root} data-test-subj={APP_HEADER_TEST_SUBJECTS.titleActions}>
       {shareAction ? (
         <EuiToolTip
           content={shareTooltipContent}
@@ -80,7 +81,9 @@ export const TitleActions = React.memo<TitleActionsProps>(({ shareAction, favori
             css={styles.iconButton}
             aria-label={SHARE_ARIA_LABEL}
             isDisabled={shareAction.isDisabled}
-            data-test-subj={`appHeaderShare ${shareAction.testId ?? ''}`.trim()}
+            data-test-subj={`${APP_HEADER_TEST_SUBJECTS.sharePrefix} ${
+              shareAction.testId ?? ''
+            }`.trim()}
             onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
               shareAction.onClick(event.currentTarget)
             }
@@ -91,7 +94,7 @@ export const TitleActions = React.memo<TitleActionsProps>(({ shareAction, favori
         // Temporary slot: favorite is still a caller-owned React node.
         // Replace with a typed app-header action before treating it as a stable API.
         // https://github.com/elastic/kibana/issues/271402
-        <div css={styles.favoriteSlot} data-test-subj="appHeaderFavorite">
+        <div css={styles.favoriteSlot} data-test-subj={APP_HEADER_TEST_SUBJECTS.favorite}>
           {favorite}
         </div>
       ) : null}

@@ -1,0 +1,33 @@
+{
+  "sha1": "05730ed0907432037c62af59d9d530b314ef0a26",
+  "tests": [
+    {
+      "id": "e85bee88fa6873c-503612110510f40",
+      "title": "PKI authentication — with role mapping logs in via client certificate without the login form",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_pki/ui/tests/pki_login.spec.ts",
+        "line": 31,
+        "column": 7
+      }
+    },
+    {
+      "id": "a48f9fe16178b12-7fa9740b6188fa0",
+      "title": "PKI authentication — no role mapping redirects to the reset session page when the cert user has no privileges",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_pki/ui/tests/pki_no_role_mapping.spec.ts",
+        "line": 18,
+        "column": 7
+      }
+    }
+  ]
+}

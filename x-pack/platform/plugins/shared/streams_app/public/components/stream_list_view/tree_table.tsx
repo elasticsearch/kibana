@@ -146,6 +146,7 @@ export function StreamsTreeTable({
     getCanReadFailureStore: (streamName: string | undefined) =>
       streamName ? privilegeMap.get(streamName) ?? false : hasFailureStoreAccess,
     numDataPoints: STREAMS_HISTOGRAM_NUM_DATA_POINTS,
+    fetchIngestionDocCounts: true,
   });
 
   const docCountsFetch = getStreamDocCounts();
@@ -211,16 +212,10 @@ export function StreamsTreeTable({
   const qualityLoaded =
     !!totalDocsResult.value && !!degradedDocsResult.value && !!failedDocsResult.value;
 
-  const streamNamesWithData = React.useMemo(
-    () => streams.filter((s) => !!s.data_stream).map((s) => s.stream.name),
-    [streams]
-  );
-
-  const { ingestionByStream, ingestionLoaded } = useStreamsIngestionRates({
-    streamNames: streamNamesWithData,
+  const { ingestionByStream, ingestionLoaded, ingestionError } = useStreamsIngestionRates({
+    ingestionDocCount: docCountsFetch.ingestionDocCount,
     timeStart: timeState.start,
     timeEnd: timeState.end,
-    getStreamHistogram,
   });
 
   const { storageByStream, storageLoaded } = useStreamsStorageStats();
@@ -649,9 +644,10 @@ export function StreamsTreeTable({
               field: 'ingestionRate',
               name: INGESTION_COLUMN_HEADER,
               width: '112px',
-              sortable: ingestionLoaded
-                ? (row: TableRow) => ingestionByStream[row.stream.name] ?? 0
-                : false,
+              sortable:
+                ingestionLoaded && !ingestionError
+                  ? (row: TableRow) => ingestionByStream[row.stream.name] ?? 0
+                  : false,
               align: 'right',
               dataType: 'number',
               render: (_: unknown, item: TableRow) =>
@@ -659,6 +655,7 @@ export function StreamsTreeTable({
                   <IngestionColumn
                     rate={ingestionByStream[item.stream.name] ?? 0}
                     isLoading={!ingestionLoaded}
+                    hasError={ingestionError}
                   />
                 ) : (
                   '-'

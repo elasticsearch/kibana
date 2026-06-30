@@ -31,6 +31,7 @@ const EntrySchema = schema.object({
   operator: schema.literal('included'),
   type: schema.literal('match'),
   value: schema.string({
+    maxLength: 64,
     validate: validateIp,
   }),
 });

@@ -54,6 +54,14 @@ jest.mock('./concurrency/concurrency_manager', () => ({
   })),
 }));
 
+jest.mock('@kbn/workflows/server', () => {
+  const actual = jest.requireActual('@kbn/workflows/server');
+  return {
+    ...actual,
+    readWorkflowVersioningEnabled: jest.fn().mockResolvedValue(false),
+  };
+});
+
 import { checkLicense } from './lib/check_license';
 import { getAuthenticatedUser } from './lib/get_user';
 import { WorkflowsExecutionEnginePlugin } from './plugin';

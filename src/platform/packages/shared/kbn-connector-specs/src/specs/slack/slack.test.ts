@@ -10,7 +10,16 @@
 import type { ActionContext } from '../../connector_spec';
 import { getConnectorSpec } from '../../..';
 import { Slack } from './slack';
-import { SlackListChannelsInputSchema, SlackResolveChannelIdInputSchema } from './types';
+import {
+  SlackGetConversationHistoryInputSchema,
+  SlackGetFileInfoInputSchema,
+  SlackListChannelsInputSchema,
+  SlackListFilesInputSchema,
+  SlackListUserConversationsInputSchema,
+  SlackListUsersInputSchema,
+  SlackResolveChannelIdInputSchema,
+  SlackWhoAmIInputSchema,
+} from './types';
 
 describe('Slack', () => {
   const mockClient = {
@@ -66,7 +75,7 @@ describe('Slack', () => {
         authorizationUrl: 'https://slack.com/oauth/v2/authorize',
         tokenUrl: 'https://slack.com/api/oauth.v2.access',
         scope:
-          'channels:read chat:write files:read groups:read im:read mpim:read search:read.files search:read.im search:read.mpim search:read.private search:read.public users:read',
+          'channels:read channels:history chat:write files:read groups:read groups:history im:read im:history mpim:read mpim:history search:read.files search:read.im search:read.mpim search:read.private search:read.public users:read users:read.email',
       },
     });
   });
@@ -88,7 +97,7 @@ describe('Slack', () => {
       defaults: {
         provider: 'slack',
         scope:
-          'channels:read chat:write files:read groups:read im:read mpim:read search:read.files search:read.im search:read.mpim search:read.private search:read.public users:read',
+          'channels:read channels:history chat:write files:read groups:read groups:history im:read im:history mpim:read mpim:history search:read.files search:read.im search:read.mpim search:read.private search:read.public users:read users:read.email',
       },
       overrides: {
         meta: { scope: { disabled: true } },
@@ -563,6 +572,807 @@ describe('Slack', () => {
           users: 'U01PWE77HD2',
         })
       ).rejects.toThrow('Slack inviteToConversation error: channel_not_found');
+    });
+  });
+
+  describe('getConversationHistory action', () => {
+    it('should fetch history with defaults', async () => {
+      const mockResponse = {
+        data: {
+          ok: true,
+          messages: [
+            { type: 'message', user: 'U1', text: 'hi', ts: '1.1' },
+            { type: 'message', user: 'U2', text: 'bye', ts: '2.2' },
+          ],
+          has_more: false,
+          response_metadata: { next_cursor: '' },
+        },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.getConversationHistory.handler(
+        mockContext,
+        SlackGetConversationHistoryInputSchema.parse({ channel: 'C123' })
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/conversations.history', {
+        params: { channel: 'C123', limit: 100 },
+      });
+      expect(result).toEqual({
+        ok: true,
+        channel: 'C123',
+        messages: [
+          {
+            ts: '1.1',
+            type: 'message',
+            subtype: undefined,
+            user: 'U1',
+            bot_id: undefined,
+            username: undefined,
+            text: 'hi',
+            thread_ts: undefined,
+            reply_count: undefined,
+            blocks: undefined,
+            attachments: undefined,
+            files: undefined,
+          },
+          {
+            ts: '2.2',
+            type: 'message',
+            subtype: undefined,
+            user: 'U2',
+            bot_id: undefined,
+            username: undefined,
+            text: 'bye',
+            thread_ts: undefined,
+            reply_count: undefined,
+            blocks: undefined,
+            attachments: undefined,
+            files: undefined,
+          },
+        ],
+        nextCursor: undefined,
+        hasMore: false,
+      });
+    });
+
+    it('should fall back to attachment text/fallback when message text is empty (bot posts)', async () => {
+      mockClient.get.mockResolvedValue({
+        data: {
+          ok: true,
+          messages: [
+            {
+              type: 'message',
+              bot_id: 'B1',
+              username: 'alertbot',
+              text: '',
+              ts: '3.3',
+              attachments: [
+                { fallback: 'Alert: prod CPU high', text: 'CPU at 95%', title: 'CPU alert' },
+              ],
+            },
+          ],
+          has_more: false,
+          response_metadata: { next_cursor: '' },
+        },
+      });
+
+      const result = await Slack.actions.getConversationHistory.handler(
+        mockContext,
+        SlackGetConversationHistoryInputSchema.parse({ channel: 'C1' })
+      );
+
+      expect(result.messages?.[0]?.text).toBe('Alert: prod CPU high');
+      expect(result.messages?.[0]?.attachments).toEqual([
+        { fallback: 'Alert: prod CPU high', text: 'CPU at 95%', title: 'CPU alert' },
+      ]);
+      expect(result.messages?.[0]?.username).toBe('alertbot');
+    });
+
+    it('should pass oldest, latest, inclusive, cursor', async () => {
+      mockClient.get.mockResolvedValue({
+        data: { ok: true, messages: [], has_more: true, response_metadata: { next_cursor: 'n1' } },
+      });
+
+      await Slack.actions.getConversationHistory.handler(
+        mockContext,
+        SlackGetConversationHistoryInputSchema.parse({
+          channel: 'C123',
+          oldest: '1000.0',
+          latest: '2000.0',
+          inclusive: true,
+          cursor: 'prev',
+          limit: 50,
+        })
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/conversations.history', {
+        params: {
+          channel: 'C123',
+          limit: 50,
+          oldest: '1000.0',
+          latest: '2000.0',
+          inclusive: true,
+          cursor: 'prev',
+        },
+      });
+    });
+
+    it('should set hasMore true and surface nextCursor', async () => {
+      mockClient.get.mockResolvedValue({
+        data: {
+          ok: true,
+          messages: [{ type: 'message', text: 'a', ts: '1.0' }],
+          has_more: true,
+          response_metadata: { next_cursor: 'next-page' },
+        },
+      });
+
+      const result = await Slack.actions.getConversationHistory.handler(
+        mockContext,
+        SlackGetConversationHistoryInputSchema.parse({ channel: 'C1' })
+      );
+
+      expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBe('next-page');
+    });
+
+    it('should return raw response when raw=true', async () => {
+      const mockResponse = { data: { ok: true, messages: [{ ts: '1.0' }] } };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.getConversationHistory.handler(
+        mockContext,
+        SlackGetConversationHistoryInputSchema.parse({ channel: 'C1', raw: true })
+      );
+
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should throw when Slack API returns error', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'channel_not_found' } });
+
+      await expect(
+        Slack.actions.getConversationHistory.handler(
+          mockContext,
+          SlackGetConversationHistoryInputSchema.parse({ channel: 'BAD' })
+        )
+      ).rejects.toThrow('Slack getConversationHistory error: channel_not_found');
+    });
+  });
+
+  describe('getConversationInfo action', () => {
+    it('should return just the channel object by default', async () => {
+      const channel = { id: 'C1', name: 'general', is_private: false };
+      mockClient.get.mockResolvedValue({ data: { ok: true, channel } });
+
+      const result = await Slack.actions.getConversationInfo.handler(mockContext, {
+        channel: 'C1',
+      });
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/conversations.info', {
+        params: { channel: 'C1' },
+      });
+      expect(result).toEqual(channel);
+    });
+
+    it('should return the full response when raw=true', async () => {
+      const mockResponse = {
+        data: { ok: true, channel: { id: 'C1', name: 'general' } },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.getConversationInfo.handler(mockContext, {
+        channel: 'C1',
+        raw: true,
+      });
+
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should forward include_num_members and include_locale', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: true, channel: { id: 'C1' } } });
+
+      await Slack.actions.getConversationInfo.handler(mockContext, {
+        channel: 'C1',
+        includeNumMembers: true,
+        includeLocale: true,
+      });
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/conversations.info', {
+        params: { channel: 'C1', include_num_members: true, include_locale: true },
+      });
+    });
+
+    it('should throw when Slack API returns error', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'channel_not_found' } });
+
+      await expect(
+        Slack.actions.getConversationInfo.handler(mockContext, { channel: 'BAD' })
+      ).rejects.toThrow('Slack getConversationInfo error: channel_not_found');
+    });
+  });
+
+  describe('lookupUserByEmail action', () => {
+    it('should return just the user object by default', async () => {
+      const user = { id: 'U1', name: 'kir', profile: { email: 'kir@elastic.co' } };
+      mockClient.get.mockResolvedValue({ data: { ok: true, user } });
+
+      const result = await Slack.actions.lookupUserByEmail.handler(mockContext, {
+        email: 'kir@elastic.co',
+      });
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/users.lookupByEmail', {
+        params: { email: 'kir@elastic.co' },
+      });
+      expect(result).toEqual(user);
+    });
+
+    it('should return the full response when raw=true', async () => {
+      const mockResponse = {
+        data: { ok: true, user: { id: 'U1', name: 'kir' } },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.lookupUserByEmail.handler(mockContext, {
+        email: 'kir@elastic.co',
+        raw: true,
+      });
+
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should throw when no user has that email', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'users_not_found' } });
+
+      await expect(
+        Slack.actions.lookupUserByEmail.handler(mockContext, { email: 'nope@elastic.co' })
+      ).rejects.toThrow('Slack lookupUserByEmail error: users_not_found');
+    });
+  });
+
+  describe('listUsers action', () => {
+    it('should list users with defaults', async () => {
+      const mockResponse = {
+        data: {
+          ok: true,
+          members: [
+            { id: 'U1', name: 'a' },
+            { id: 'U2', name: 'b' },
+          ],
+          response_metadata: { next_cursor: 'next' },
+        },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.listUsers.handler(
+        mockContext,
+        SlackListUsersInputSchema.parse({})
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/users.list', {
+        params: { limit: 200 },
+      });
+      expect(result).toEqual({
+        ok: true,
+        members: [
+          {
+            id: 'U1',
+            name: 'a',
+            real_name: undefined,
+            is_bot: undefined,
+            is_admin: undefined,
+            is_owner: undefined,
+            deleted: undefined,
+            profile: undefined,
+          },
+          {
+            id: 'U2',
+            name: 'b',
+            real_name: undefined,
+            is_bot: undefined,
+            is_admin: undefined,
+            is_owner: undefined,
+            deleted: undefined,
+            profile: undefined,
+          },
+        ],
+        nextCursor: 'next',
+        hasMore: true,
+      });
+    });
+
+    it('should project members to compact shape, stripping heavy fields', async () => {
+      mockClient.get.mockResolvedValue({
+        data: {
+          ok: true,
+          members: [
+            {
+              id: 'U1',
+              team_id: 'T1',
+              name: 'alice',
+              real_name: 'Alice Smith',
+              is_bot: false,
+              is_admin: true,
+              is_owner: false,
+              deleted: false,
+              tz: 'America/New_York',
+              tz_label: 'Eastern Daylight Time',
+              tz_offset: -14400,
+              updated: 1234567890,
+              is_app_user: false,
+              profile: {
+                email: 'alice@example.com',
+                display_name: 'alice',
+                real_name: 'Alice Smith',
+                title: 'Engineer',
+                phone: '555-0100',
+                skype: '',
+                image_24: 'https://example.com/24.png',
+                image_32: 'https://example.com/32.png',
+                image_48: 'https://example.com/48.png',
+                image_72: 'https://example.com/72.png',
+                image_192: 'https://example.com/192.png',
+                image_512: 'https://example.com/512.png',
+              },
+            },
+          ],
+          response_metadata: { next_cursor: '' },
+        },
+      });
+
+      const result = await Slack.actions.listUsers.handler(
+        mockContext,
+        SlackListUsersInputSchema.parse({})
+      );
+
+      expect(result).toEqual({
+        ok: true,
+        members: [
+          {
+            id: 'U1',
+            name: 'alice',
+            real_name: 'Alice Smith',
+            is_bot: false,
+            is_admin: true,
+            is_owner: false,
+            deleted: false,
+            profile: {
+              email: 'alice@example.com',
+              display_name: 'alice',
+              real_name: 'Alice Smith',
+              title: 'Engineer',
+            },
+          },
+        ],
+        nextCursor: undefined,
+        hasMore: false,
+      });
+
+      const member = (result as { members: Array<Record<string, unknown>> }).members[0];
+      expect(member).not.toHaveProperty('team_id');
+      expect(member).not.toHaveProperty('tz');
+      expect(member).not.toHaveProperty('tz_offset');
+      expect(member.profile).not.toHaveProperty('image_24');
+      expect(member.profile).not.toHaveProperty('image_512');
+      expect(member.profile).not.toHaveProperty('phone');
+    });
+
+    it('should pass cursor, limit, includeLocale', async () => {
+      mockClient.get.mockResolvedValue({
+        data: { ok: true, members: [], response_metadata: { next_cursor: '' } },
+      });
+
+      await Slack.actions.listUsers.handler(
+        mockContext,
+        SlackListUsersInputSchema.parse({
+          cursor: 'prev',
+          limit: 50,
+          includeLocale: true,
+        })
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/users.list', {
+        params: { limit: 50, cursor: 'prev', include_locale: true },
+      });
+    });
+
+    it('should return raw response when raw=true', async () => {
+      const mockResponse = { data: { ok: true, members: [{ id: 'U1' }] } };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.listUsers.handler(
+        mockContext,
+        SlackListUsersInputSchema.parse({ raw: true })
+      );
+
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should throw when Slack API returns error', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'missing_scope' } });
+
+      await expect(
+        Slack.actions.listUsers.handler(mockContext, SlackListUsersInputSchema.parse({}))
+      ).rejects.toThrow('Slack listUsers error: missing_scope');
+    });
+  });
+
+  describe('listUserConversations action', () => {
+    it('should list conversations for a user with defaults', async () => {
+      const mockResponse = {
+        data: {
+          ok: true,
+          channels: [
+            { id: 'C1', name: 'general', is_private: false, is_archived: false, is_member: true },
+          ],
+          response_metadata: { next_cursor: '' },
+        },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.listUserConversations.handler(
+        mockContext,
+        SlackListUserConversationsInputSchema.parse({ user: 'U123' })
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/users.conversations', {
+        params: {
+          types: 'public_channel,private_channel,im,mpim',
+          exclude_archived: true,
+          limit: 1000,
+          user: 'U123',
+        },
+      });
+      expect(result).toEqual({
+        ok: true,
+        source: 'users.conversations',
+        channels: [
+          { id: 'C1', name: 'general', is_private: false, is_archived: false, is_member: true },
+        ],
+        nextCursor: undefined,
+        hasMore: false,
+      });
+    });
+
+    it('should omit user when not provided (lists for authenticated user)', async () => {
+      mockClient.get.mockResolvedValue({
+        data: { ok: true, channels: [], response_metadata: { next_cursor: '' } },
+      });
+
+      await Slack.actions.listUserConversations.handler(
+        mockContext,
+        SlackListUserConversationsInputSchema.parse({})
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/users.conversations', {
+        params: {
+          types: 'public_channel,private_channel,im,mpim',
+          exclude_archived: true,
+          limit: 1000,
+        },
+      });
+    });
+
+    it('should pass cursor, types, excludeArchived', async () => {
+      mockClient.get.mockResolvedValue({
+        data: { ok: true, channels: [], response_metadata: { next_cursor: 'n' } },
+      });
+
+      const result = await Slack.actions.listUserConversations.handler(
+        mockContext,
+        SlackListUserConversationsInputSchema.parse({
+          user: 'U1',
+          cursor: 'prev',
+          types: ['private_channel', 'im'],
+          excludeArchived: false,
+          limit: 100,
+        })
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/users.conversations', {
+        params: {
+          types: 'private_channel,im',
+          exclude_archived: false,
+          limit: 100,
+          user: 'U1',
+          cursor: 'prev',
+        },
+      });
+      expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBe('n');
+    });
+
+    it('should throw when Slack API returns error', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'user_not_found' } });
+
+      await expect(
+        Slack.actions.listUserConversations.handler(
+          mockContext,
+          SlackListUserConversationsInputSchema.parse({ user: 'UNKNOWN' })
+        )
+      ).rejects.toThrow('Slack listUserConversations error: user_not_found');
+    });
+  });
+
+  describe('whoAmI action', () => {
+    it('should return compact identity by default', async () => {
+      mockClient.get.mockResolvedValue({
+        data: {
+          ok: true,
+          url: 'https://elastic.slack.com/',
+          team: 'Elastic',
+          user: 'claude',
+          team_id: 'T0CUZ52US',
+          user_id: 'U09E1LQM6RY',
+          enterprise_id: 'E0123',
+          is_enterprise_install: false,
+          response_metadata: { scopes: ['users:read'] },
+        },
+      });
+
+      const result = await Slack.actions.whoAmI.handler(
+        mockContext,
+        SlackWhoAmIInputSchema.parse({})
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/auth.test');
+      expect(result).toEqual({
+        ok: true,
+        url: 'https://elastic.slack.com/',
+        team: 'Elastic',
+        user: 'claude',
+        team_id: 'T0CUZ52US',
+        user_id: 'U09E1LQM6RY',
+        bot_id: undefined,
+        enterprise_id: 'E0123',
+        is_enterprise_install: false,
+      });
+      expect(result).not.toHaveProperty('response_metadata');
+    });
+
+    it('should return raw response when raw=true', async () => {
+      const mockResponse = {
+        data: { ok: true, url: 'x', team: 'T', user: 'u', response_metadata: { scopes: [] } },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.whoAmI.handler(
+        mockContext,
+        SlackWhoAmIInputSchema.parse({ raw: true })
+      );
+
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should throw when Slack API returns error', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'invalid_auth' } });
+
+      await expect(
+        Slack.actions.whoAmI.handler(mockContext, SlackWhoAmIInputSchema.parse({}))
+      ).rejects.toThrow('Slack whoAmI error: invalid_auth');
+    });
+  });
+
+  describe('getFileInfo action', () => {
+    it('should return just the file object by default', async () => {
+      const file = {
+        id: 'F123',
+        name: 'screenshot.png',
+        mimetype: 'image/png',
+        size: 12345,
+        permalink: 'https://example.com/f',
+      };
+      mockClient.get.mockResolvedValue({ data: { ok: true, file } });
+
+      const result = await Slack.actions.getFileInfo.handler(
+        mockContext,
+        SlackGetFileInfoInputSchema.parse({ file: 'F123' })
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/files.info', {
+        params: { file: 'F123' },
+      });
+      expect(result).toEqual(file);
+    });
+
+    it('should return the full response when raw=true', async () => {
+      const mockResponse = {
+        data: {
+          ok: true,
+          file: { id: 'F123' },
+          response_metadata: { scopes: ['files:read'] },
+        },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.getFileInfo.handler(
+        mockContext,
+        SlackGetFileInfoInputSchema.parse({ file: 'F123', raw: true })
+      );
+
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should throw when Slack API returns error', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'file_not_found' } });
+
+      await expect(
+        Slack.actions.getFileInfo.handler(
+          mockContext,
+          SlackGetFileInfoInputSchema.parse({ file: 'F404' })
+        )
+      ).rejects.toThrow('Slack getFileInfo error: file_not_found');
+    });
+  });
+
+  describe('listFiles action', () => {
+    it('should project files to a compact shape, strip heavy fields, and surface paging.next via nextPage', async () => {
+      mockClient.get.mockResolvedValue({
+        data: {
+          ok: true,
+          files: [
+            {
+              id: 'F1',
+              name: 'a.png',
+              title: 'A',
+              mimetype: 'image/png',
+              filetype: 'png',
+              pretty_type: 'PNG',
+              user: 'U1',
+              size: 100,
+              created: 1700000000,
+              url_private: 'https://example.com/a',
+              url_private_download: 'https://example.com/a?dl=1',
+              permalink: 'https://example.com/p/a',
+              permalink_public: 'https://example.com/pub/a',
+              channels: ['C1'],
+              groups: [],
+              ims: [],
+              thumb_64: 'https://example.com/t64',
+              thumb_360: 'https://example.com/t360',
+              thumb_480: 'https://example.com/t480',
+              original_w: 1024,
+              original_h: 768,
+            },
+          ],
+          // Slack files.list is classic-paginated — `paging`, not `response_metadata`.
+          paging: { count: 100, total: 250, page: 1, pages: 3 },
+        },
+      });
+
+      const result = await Slack.actions.listFiles.handler(
+        mockContext,
+        SlackListFilesInputSchema.parse({})
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/files.list', {
+        params: { count: 100, page: 1 },
+      });
+      expect(result).toEqual({
+        ok: true,
+        files: [
+          {
+            id: 'F1',
+            name: 'a.png',
+            title: 'A',
+            mimetype: 'image/png',
+            filetype: 'png',
+            user: 'U1',
+            size: 100,
+            created: 1700000000,
+            url_private: 'https://example.com/a',
+            permalink: 'https://example.com/p/a',
+            channels: ['C1'],
+          },
+        ],
+        page: 1,
+        pages: 3,
+        total: 250,
+        nextPage: 2,
+        hasMore: true,
+      });
+
+      const f = (result as { files: Array<Record<string, unknown>> }).files[0];
+      expect(f).not.toHaveProperty('thumb_64');
+      expect(f).not.toHaveProperty('thumb_480');
+      expect(f).not.toHaveProperty('original_w');
+      expect(f).not.toHaveProperty('permalink_public');
+      expect(f).not.toHaveProperty('url_private_download');
+    });
+
+    it('should pass channel, user, ts range, types, count, page', async () => {
+      mockClient.get.mockResolvedValue({
+        data: { ok: true, files: [], paging: { count: 25, total: 0, page: 2, pages: 2 } },
+      });
+
+      await Slack.actions.listFiles.handler(
+        mockContext,
+        SlackListFilesInputSchema.parse({
+          channel: 'C1',
+          user: 'U1',
+          tsFrom: '1700000000',
+          tsTo: '1700100000',
+          types: 'images,pdfs',
+          count: 25,
+          page: 2,
+        })
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith('https://slack.com/api/files.list', {
+        params: {
+          count: 25,
+          page: 2,
+          channel: 'C1',
+          user: 'U1',
+          ts_from: '1700000000',
+          ts_to: '1700100000',
+          types: 'images,pdfs',
+        },
+      });
+    });
+
+    it('should set hasMore false and omit nextPage on the last page', async () => {
+      mockClient.get.mockResolvedValue({
+        data: { ok: true, files: [], paging: { count: 100, total: 5, page: 1, pages: 1 } },
+      });
+
+      const result = await Slack.actions.listFiles.handler(
+        mockContext,
+        SlackListFilesInputSchema.parse({})
+      );
+
+      expect(result).toEqual({
+        ok: true,
+        files: [],
+        page: 1,
+        pages: 1,
+        total: 5,
+        nextPage: undefined,
+        hasMore: false,
+      });
+    });
+
+    it('should treat a missing paging block as a single-page result', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: true, files: [{ id: 'F1' }] } });
+
+      const result = await Slack.actions.listFiles.handler(
+        mockContext,
+        SlackListFilesInputSchema.parse({ page: 3 })
+      );
+
+      expect(result).toMatchObject({
+        page: 3,
+        pages: 3,
+        nextPage: undefined,
+        hasMore: false,
+      });
+    });
+
+    it('should return raw response when raw=true', async () => {
+      const mockResponse = {
+        data: {
+          ok: true,
+          files: [{ id: 'F1' }],
+          paging: { count: 100, total: 1, page: 1, pages: 1 },
+        },
+      };
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await Slack.actions.listFiles.handler(
+        mockContext,
+        SlackListFilesInputSchema.parse({ raw: true })
+      );
+
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should throw when Slack API returns error', async () => {
+      mockClient.get.mockResolvedValue({ data: { ok: false, error: 'missing_scope' } });
+
+      await expect(
+        Slack.actions.listFiles.handler(mockContext, SlackListFilesInputSchema.parse({}))
+      ).rejects.toThrow('Slack listFiles error: missing_scope');
     });
   });
 

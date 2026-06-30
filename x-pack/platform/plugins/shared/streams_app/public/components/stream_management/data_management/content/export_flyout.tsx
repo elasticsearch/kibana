@@ -27,7 +27,6 @@ import {
 import { i18n } from '@kbn/i18n';
 import { useKibana } from '../../../../hooks/use_kibana';
 import { useStreamsAppFetch } from '../../../../hooks/use_streams_app_fetch';
-import { useStreamsPrivileges } from '../../../../hooks/use_streams_privileges';
 import { getFormattedError } from '../../../../util/errors';
 import { ContentPackObjectsList } from './objects_list';
 import { previewContent } from './requests';
@@ -53,10 +52,6 @@ export function ExportContentPackFlyout({
       },
     },
   } = useKibana();
-
-  const {
-    features: { significantEvents },
-  } = useStreamsPrivileges();
 
   const [manifest, setManifest] = useState<ContentPackManifest | undefined>();
 
@@ -131,9 +126,6 @@ export function ExportContentPackFlyout({
             <ContentPackObjectsList
               objects={exportResponse.contentPack.entries}
               onSelectionChange={setIncludedObjects}
-              significantEventsAvailable={
-                (!!significantEvents?.enabled && !!significantEvents?.available) ?? false
-              }
             />
           </>
         ) : null}

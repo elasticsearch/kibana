@@ -42,6 +42,7 @@ interface ScoreBaseEntitiesParams {
 interface ScoreAndPersistBaseEntitiesParams extends ScoreBaseEntitiesParams {
   writer: RiskEngineDataWriter;
   idBasedRiskScoringEnabled: boolean;
+  refresh?: Parameters<typeof persistScoresToRiskIndex>[0]['refresh'];
 }
 
 export interface Phase1BaseScoringSummary extends StepResult {
@@ -141,6 +142,7 @@ export const calculateBaseEntityScores = async function* ({
 export const scoreBaseEntities = async ({
   writer,
   idBasedRiskScoringEnabled,
+  refresh,
   ...params
 }: ScoreAndPersistBaseEntitiesParams): Promise<Phase1BaseScoringSummary> => {
   let pagesProcessed = 0;
@@ -168,6 +170,7 @@ export const scoreBaseEntities = async ({
       entityType: params.entityType,
       scores: inStoreScores,
       logger: params.logger,
+      refresh,
     });
     await persistScoresToEntityStore({
       crudClient: params.crudClient,

@@ -90,6 +90,13 @@ When the resource identifier parses the query
 Then the result contains two resources of type "lookup", named "AccountsA" and "AccountsB"
 ```
 
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
+
 #### Scenario: Multi-alias extraction from `_FooBarMulti(dynamic([...]))` returns one `lookup` resource per alias
 
 **Priority:** P0
@@ -101,6 +108,13 @@ When the resource identifier parses the query
 Then the result contains two resources of type "lookup", named "AliasA" and "AliasB"
 ```
 
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
+
 #### Scenario: Existing `_FooBar(...)` extraction is not regressed when new helpers are absent
 
 **Priority:** P0
@@ -111,6 +125,13 @@ Given a KQL query that only uses `_FooBar('A')` and `_FooBar('B')`
 When the resource identifier parses the query
 Then the result contains exactly two resources of type "lookup", named "A" and "B", with no extra entries
 ```
+
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
 
 ---
 
@@ -125,6 +146,13 @@ When the resource identifier parses the query
 Then the result contains exactly one resource with name "Shared" and type "lookup"
 ```
 
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
+
 #### Scenario: Whitespace around `_FooBarSingle` arguments does not prevent extraction
 
 **Priority:** P1
@@ -135,6 +163,13 @@ Given a KQL query that references `_FooBarSingle  (   'Spaced'   )`
 When the resource identifier parses the query
 Then the result contains a single resource with name "Spaced" and type "lookup"
 ```
+
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
 
 ---
 
@@ -148,6 +183,13 @@ Given a KQL query that references `_FooBarSingle('Accounts')`
 When the resource identifier parses the same query twice in succession
 Then both invocations return the same single resource with name "Accounts" and type "lookup"
 ```
+
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
 
 </details>
 

@@ -8,7 +8,7 @@ import { createAction } from '@reduxjs/toolkit';
 import type { MonitorOverviewPageState } from '..';
 import { createAsyncAction } from '../utils/actions';
 
-import type { OverviewStatus } from '../../../../../common/runtime_types';
+import type { OverviewStaleStatus, OverviewStatus } from '../../../../../common/runtime_types';
 
 export const fetchOverviewStatusAction = createAsyncAction<
   { pageState: MonitorOverviewPageState; scopeStatusByLocation?: boolean },
@@ -19,6 +19,16 @@ export const quietFetchOverviewStatusAction = createAsyncAction<
   { pageState: MonitorOverviewPageState; scopeStatusByLocation?: boolean },
   OverviewStatus
 >('quietFetchOverviewStatusAction');
+
+/**
+ * Supplementary lookup that promotes `pending` monitors which stopped reporting
+ * before the overview window started to `stale`. Triggered automatically after
+ * each overview status load (see `augmentStaleStatusEffect`).
+ */
+export const fetchStaleStatusAction = createAsyncAction<
+  { pageState: MonitorOverviewPageState; monitorQueryIds: string[] },
+  OverviewStaleStatus
+>('fetchStaleStatusAction');
 
 export const clearOverviewStatusErrorAction = createAction<void>('clearOverviewStatusErrorAction');
 export const initialLoadReported = createAction<void>('initialLoadReported');

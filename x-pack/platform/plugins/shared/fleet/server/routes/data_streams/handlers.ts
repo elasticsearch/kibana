@@ -7,6 +7,7 @@
 import type { Dictionary } from 'lodash';
 import { keyBy, keys, merge } from 'lodash';
 import type { RequestHandler } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import pMap from 'p-map';
 import type { IndicesDataStreamsStatsDataStreamsStatsItem } from '@elastic/elasticsearch/lib/api/types';
 import { ByteSizeValue } from '@kbn/config-schema';
@@ -136,7 +137,7 @@ export const getListHandler: RequestHandler = async (context, request, response)
     );
     // Ignore dashboards not found
     const allDashboardSavedObjects = allDashboardSavedObjectsResponse.saved_objects.filter((so) => {
-      if (so.error) {
+      if (isSavedObjectErrorResult(so)) {
         if (so.error.statusCode === 404) {
           return false;
         }

@@ -17,6 +17,8 @@ export interface Processor {
   [typeName: string]: ESProcessorConfig;
 }
 
+export type FieldAccessPattern = 'classic' | 'flexible';
+
 export interface Pipeline {
   name: string;
   description?: string;
@@ -24,6 +26,7 @@ export interface Pipeline {
   processors: Processor[];
   _meta?: { [key: string]: any };
   on_failure?: Processor[];
+  field_access_pattern?: FieldAccessPattern;
   isManaged?: boolean;
   deprecated?: boolean;
 }

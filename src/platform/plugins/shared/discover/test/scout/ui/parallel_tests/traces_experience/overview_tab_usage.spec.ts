@@ -24,14 +24,14 @@ type DiscoverPage = PageObjects['discover'];
 const openOverviewTab = async (
   pageObjects: {
     discover: DiscoverPage;
-    tracesExperience: { openOverviewTab: (d: DiscoverPage) => Promise<void> };
+    tracesExperience: { openOverviewTab: () => Promise<void> };
   },
   esqlWhereClause: string
 ) => {
   await pageObjects.discover.writeAndSubmitEsqlQuery(
     `${TRACES.ESQL_QUERY} | WHERE ${esqlWhereClause}`
   );
-  await pageObjects.tracesExperience.openOverviewTab(pageObjects.discover);
+  await pageObjects.tracesExperience.openOverviewTab();
 };
 
 spaceTest.describe(

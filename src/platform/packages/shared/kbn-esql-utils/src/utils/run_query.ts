@@ -186,6 +186,7 @@ export async function getESQLResults({
   variables,
   timezone,
   executionContext,
+  approximation,
 }: {
   esqlQuery: string;
   search: ISearchGeneric;
@@ -196,6 +197,7 @@ export async function getESQLResults({
   variables?: ESQLControlVariable[];
   timezone?: string;
   executionContext?: KibanaExecutionContext;
+  approximation?: boolean;
 }): Promise<{
   response: ESQLSearchResponse;
   params: ESQLSearchParams;
@@ -216,6 +218,7 @@ export async function getESQLResults({
         abortSignal: signal,
         strategy: 'esql_async',
         ...(executionContext ? { executionContext } : {}),
+        ...(approximation !== undefined ? { approximation } : {}),
       }
     )
   );

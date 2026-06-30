@@ -13,3 +13,4 @@ export {
   createProfileProviderSharedServices,
 } from './profile_provider_services';
 export { registerProfileProviders } from './register_profile_providers';
+export { registerProfileStateDefinitions } from './register_profile_state_definitions';

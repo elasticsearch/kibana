@@ -8,14 +8,25 @@
 import React, { useContext, useEffect } from 'react';
 import type { OnRefreshChangeProps } from '@elastic/eui';
 import { EuiSuperDatePicker } from '@elastic/eui';
+import { useLocation } from 'react-router-dom';
+import { parse } from 'query-string';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import type { ClientPluginsStart } from '../../../../../plugin';
 import { useUrlParams } from '../../../hooks';
 import { CLIENT_DEFAULTS } from '../../../../../../common/constants';
 import { SyntheticsSettingsContext, SyntheticsRefreshContext } from '../../../contexts';
 
-export const SyntheticsDatePicker = ({ fullWidth }: { fullWidth?: boolean }) => {
+export const SyntheticsDatePicker = ({
+  fullWidth,
+  defaultDateRange,
+}: {
+  fullWidth?: boolean;
+  // Overrides the app-wide default range when the URL carries no explicit one.
+  // Used by the overview to scope its (narrower) default window to itself.
+  defaultDateRange?: { from: string; to: string };
+}) => {
   const [getUrlParams, updateUrl] = useUrlParams();
+  const { search } = useLocation();
   const { commonlyUsedRanges } = useContext(SyntheticsSettingsContext);
   // The picker's built-in auto-refresh dropdown was previously local-state
   // only — clicking it did nothing app-wide. Wire it to
@@ -30,7 +41,13 @@ export const SyntheticsDatePicker = ({ fullWidth }: { fullWidth?: boolean }) => 
   // read time from state and update the url
   const sharedTimeState = data?.query.timefilter.timefilter.getTime();
 
-  const { dateRangeStart: start, dateRangeEnd: end } = getUrlParams();
+  const { dateRangeStart: urlStart, dateRangeEnd: urlEnd } = getUrlParams();
+
+  // `getUrlParams` already merges in the app-wide default, so detect absence via
+  // the raw URL: only then does `defaultDateRange` take over.
+  const rawParams = parse(search[0] === '?' ? search.slice(1) : search);
+  const start = rawParams.dateRangeStart != null ? urlStart : defaultDateRange?.from ?? urlStart;
+  const end = rawParams.dateRangeEnd != null ? urlEnd : defaultDateRange?.to ?? urlEnd;
 
   useEffect(() => {
     const { from, to } = sharedTimeState ?? {};

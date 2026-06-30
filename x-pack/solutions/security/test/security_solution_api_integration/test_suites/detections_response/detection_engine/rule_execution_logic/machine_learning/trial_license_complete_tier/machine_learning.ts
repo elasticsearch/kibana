@@ -334,7 +334,7 @@ export default ({ getService }: FtrProviderContext) => {
         await entityStoreV2.teardown();
       });
 
-      it('should be enriched with host risk score', async () => {
+      it('@skipInServerlessMKI should be enriched with host risk score', async () => {
         const { previewId } = await previewRule({ supertest, rule });
         const previewAlerts = await getPreviewAlerts({ es, previewId });
         expect(previewAlerts).toHaveLength(1);
@@ -369,7 +369,7 @@ export default ({ getService }: FtrProviderContext) => {
         await entityStoreV2.teardown();
       });
 
-      it('should be enriched alert with criticality_level', async () => {
+      it('@skipInServerlessMKI should be enriched alert with criticality_level', async () => {
         const { previewId } = await previewRule({ supertest, rule });
         const previewAlerts = await getPreviewAlerts({ es, previewId });
 

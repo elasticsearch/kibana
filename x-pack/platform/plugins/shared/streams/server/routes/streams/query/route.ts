@@ -14,7 +14,7 @@ import { STREAMS_API_PRIVILEGES } from '../../../../common/constants';
 import { createServerRoute } from '../../create_server_route';
 import { getEsqlView } from '../../../lib/streams/esql_views/manage_esql_views';
 import { upsertQueryStreamRequest } from '../../../oas_examples';
-import { getStreamAssets } from '../../../lib/streams/helpers/ingest_upsert';
+import { getStreamAttachmentIds } from '../../../lib/streams/helpers/ingest_upsert';
 
 /**
  * Schema for API request body - accepts esql for UX simplicity.
@@ -144,11 +144,9 @@ const upsertQueryStreamRoute = createServerRoute({
     }),
   }),
   handler: async ({ params, request, getScopedClients, context, logger }) => {
-    const { streamsClient, getKnowledgeIndicatorClient, attachmentClient } = await getScopedClients(
-      {
-        request,
-      }
-    );
+    const { streamsClient, attachmentClient } = await getScopedClients({
+      request,
+    });
 
     const core = await context.core;
     const queryStreamsEnabled = await core.uiSettings.client.get(
@@ -198,10 +196,8 @@ const upsertQueryStreamRoute = createServerRoute({
       throw badData(`The stream "${name}" already exists and is not a query stream.`);
     }
 
-    const kiClient = await getKnowledgeIndicatorClient();
-    const { dashboards, queries, rules } = await getStreamAssets({
+    const { dashboards, rules } = await getStreamAttachmentIds({
       name,
-      kiClient,
       attachmentClient,
     });
 
@@ -222,7 +218,6 @@ const upsertQueryStreamRoute = createServerRoute({
         query: queryReference,
         ...(mergedFieldDescriptions && { field_descriptions: mergedFieldDescriptions }),
       },
-      queries,
       rules,
     };
 

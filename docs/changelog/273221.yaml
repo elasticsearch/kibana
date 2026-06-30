@@ -1,0 +1,7 @@
+prs:
+- https://github.com/elastic/kibana/pull/273221
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+title: "Fix unreadable wrapped log messages in Logs Anomalies example table"

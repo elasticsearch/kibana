@@ -5,41 +5,13 @@ title: Add data
 description: Learn how to add data to Kibana
 date: 2021-08-11
 tags: ['kibana', 'onboarding', 'dev', 'architecture', 'tutorials']
+redirect_url: https://www.elastic.co/docs/extend/kibana/getting-started/add-data
 ---
 
-Building a feature and need an easy way to test it out with some data? Below are three options.
+{/* REDIRECT_NOTICE_START */}
 
-## Sample data
-
-Kibana ships with sample data that you can install at the click of the button. If you are building a feature and need some data to test it out with, sample data is a great option. The only limitation is that this data will not work for Security or Observability solutions (see [#62962](https://github.com/elastic/kibana/issues/62962)).
-
-1. Navigate to the home page.
-2. Click **Add data**.
-3. Click on the **Sample data** tab.
-4. Select a dataset by clicking on the **Add data** button.
-
-![Sample Data](../assets/sample_data.png)
-
-## CSV upload
-
-1. If you don't have any data, navigate to Stack Management > Index Patterns and click the link to the uploader. If you do have data, navigate to the **Machine Learning** application.
-2. Click on the **Data Visualizer** tab.
-3. Click on **Select file** in the **Import data** container.
-
-![CSV Upload](../assets/ml_csv_upload.png)
-
-## makelogs
-
-The makelogs script generates sample web server logs. Make sure Elasticsearch is running before running the script.
-
-```sh
-node scripts/makelogs --auth <username>:<password>
-```
-
-## Realistic solution data
-
-<DocCallOut color="warning" title="Internal only">
-
-Security and Observability solution applications only work if data exists in particularly named indices, abiding by our [ECS format](https://www.elastic.co/guide/en/ecs/current/index.html). If you would like to use these applications with realistic data, check out the [oblt_cli tool](https://github.com/elastic/observability-test-environments/blob/main/docs/tools/oblt-cli/CONTRIBUTING.md). This tool sets you up to connect to a remote Elasticsearch cluster that contains the appropriate data via CCS.
-
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://www.elastic.co/docs/extend/kibana/getting-started/add-data](https://www.elastic.co/docs/extend/kibana/getting-started/add-data)
 </DocCallOut>
+
+{/* REDIRECT_NOTICE_END */}

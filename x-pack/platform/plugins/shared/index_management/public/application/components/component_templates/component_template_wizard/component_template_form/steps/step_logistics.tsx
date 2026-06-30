@@ -5,10 +5,12 @@
  * 2.0.
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
+  EuiBadge,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiIcon,
   EuiTitle,
   EuiButtonEmpty,
   EuiSpacer,
@@ -17,6 +19,10 @@ import {
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
+import { DlmPhasesSelector } from '../../../../data_lifecycle';
+import type { DlmPhasesSelectorProps, SerializedDlmPhases } from '../../../../data_lifecycle';
+import { resolveLogisticsLifecycle } from '../../../../../../../common/lib';
+import { buildDataRetentionFromSerializedDlmPhases } from '../../../../data_lifecycle/dlm_phases_selector/utils/build_data_retention';
 import type { Forms } from '../../../shared_imports';
 import {
   useForm,
@@ -24,23 +30,112 @@ import {
   getUseField,
   getFormRow,
   Field,
-  NumericField,
   JsonEditorField,
-  useFormData,
 } from '../../../shared_imports';
 import type { DataRetention } from '../../../../../../../common';
-import { UnitField, timeUnits } from '../../../../shared';
-import { useComponentTemplatesContext } from '../../../component_templates_context';
+import { useApi, useComponentTemplatesContext } from '../../../component_templates_context';
+import { useAppContext } from '../../../../../app_context';
+import { useLicense } from '../../../../../../hooks/use_license';
 import { logisticsFormSchema } from './step_logistics_schema';
 
 const UseField = getUseField({ component: Field });
 const FormRow = getFormRow({ titleTag: 'h3' });
 
+const SUBSCRIPTION_FEATURES_URL = 'https://www.elastic.co/subscriptions/cloud';
+
 interface Props {
-  defaultValue: { [key: string]: any };
+  defaultValue: { [key: string]: any; lifecycle?: DataRetention; _meta?: Record<string, unknown> };
   onChange: (content: Forms.Content) => void;
   isEditing?: boolean;
 }
+
+const buildDlmDefaultValue = (
+  lifecycle?: DataRetention
+): DlmPhasesSelectorProps['defaultValue'] => {
+  if (!lifecycle) {
+    return undefined;
+  }
+
+  const deletePhase =
+    lifecycle.enabled && !lifecycle.infiniteDataRetention && lifecycle.value !== undefined
+      ? { enabled: true, value: String(lifecycle.value), unit: lifecycle.unit ?? 'd' }
+      : undefined;
+
+  const frozenPhase =
+    lifecycle.frozen?.enabled && lifecycle.frozen.value !== undefined
+      ? { enabled: true, value: String(lifecycle.frozen.value), unit: lifecycle.frozen.unit ?? 'd' }
+      : undefined;
+
+  if (!deletePhase && !frozenPhase) {
+    return undefined;
+  }
+
+  return {
+    ...(frozenPhase ? { frozen: frozenPhase } : {}),
+    ...(deletePhase ? { delete: deletePhase } : {}),
+  };
+};
+
+interface DlmPhasesSelectorFieldProps {
+  defaultValue: DlmPhasesSelectorProps['defaultValue'];
+  onChange: DlmPhasesSelectorProps['onChange'];
+}
+
+const useDlmRepositoryUrls = () => {
+  const { getUrlForApp } = useComponentTemplatesContext();
+
+  return {
+    manageRepositoriesUrl: getUrlForApp('management', {
+      path: 'data/snapshot_restore/repositories',
+    }),
+    createDefaultRepositoryUrl: getUrlForApp('management', {
+      path: 'data/snapshot_restore/add_repository',
+    }),
+  };
+};
+
+const useDlmEnterpriseConfig = (): DlmPhasesSelectorProps['enterprise'] => {
+  const {
+    plugins: { cloud },
+    core: { application },
+  } = useAppContext();
+
+  return {
+    isCloudEnabled: Boolean(cloud?.isCloudEnabled),
+    canManageLicense: Boolean(application?.capabilities?.management?.stack?.license_management),
+    trialDaysLeft: cloud?.trialDaysLeft?.(),
+    subscriptionFeaturesUrl: SUBSCRIPTION_FEATURES_URL,
+  };
+};
+
+const StatefulDlmPhasesSelector = ({ defaultValue, onChange }: DlmPhasesSelectorFieldProps) => {
+  const { isAtLeastEnterprise } = useLicense();
+  const { useLoadSnapshotRepositories } = useApi();
+  const { data: snapshotRepositories, resendRequest: refreshSnapshotRepositories } =
+    useLoadSnapshotRepositories();
+  const { manageRepositoriesUrl, createDefaultRepositoryUrl } = useDlmRepositoryUrls();
+  const enterprise = useDlmEnterpriseConfig();
+
+  return (
+    <DlmPhasesSelector
+      defaultValue={defaultValue}
+      serverless={false}
+      hasEnterpriseLicense={isAtLeastEnterprise()}
+      hasDefaultSnapshotRepository={Boolean(snapshotRepositories?.hasDefaultRepository)}
+      canCreateDefaultSnapshotRepository={Boolean(snapshotRepositories?.canCreateRepository)}
+      defaultSnapshotRepository={snapshotRepositories?.defaultRepository}
+      manageRepositoriesUrl={manageRepositoriesUrl}
+      createDefaultRepositoryUrl={createDefaultRepositoryUrl}
+      onRefreshDefaultSnapshotRepository={refreshSnapshotRepositories}
+      enterprise={enterprise}
+      onChange={onChange}
+    />
+  );
+};
+
+const ServerlessDlmPhasesSelector = ({ defaultValue, onChange }: DlmPhasesSelectorFieldProps) => {
+  return <DlmPhasesSelector defaultValue={defaultValue} serverless onChange={onChange} />;
+};
 
 export const StepLogistics: React.FunctionComponent<Props> = React.memo(
   ({ defaultValue, isEditing, onChange }) => {
@@ -52,41 +147,71 @@ export const StepLogistics: React.FunctionComponent<Props> = React.memo(
 
     const { isValid: isFormValid, submit, getFormData, subscribe } = form;
 
-    const [{ lifecycle }] = useFormData<{
-      lifecycle: DataRetention;
-    }>({
-      form,
-      watch: ['lifecycle.enabled', 'lifecycle.infiniteDataRetention'],
-    });
-
     const { documentation } = useComponentTemplatesContext();
+    const {
+      config: { isServerless: isDlmPhasesSelectorServerless },
+    } = useAppContext();
+
+    const dlmDefaultValue = useMemo(
+      () => buildDlmDefaultValue(defaultValue.lifecycle),
+      [defaultValue.lifecycle]
+    );
+
+    const [lifecycle, setLifecycle] = useState<DataRetention | undefined>(defaultValue.lifecycle);
+    const [isDlmValid, setIsDlmValid] = useState(true);
+
+    const handleDlmChange = useCallback(
+      (_value: unknown, serialized: SerializedDlmPhases, nextIsValid: boolean) => {
+        setLifecycle(buildDataRetentionFromSerializedDlmPhases(serialized));
+        setIsDlmValid(nextIsValid);
+      },
+      []
+    );
+
+    const totalRetentionValue = useMemo(() => {
+      if (lifecycle?.enabled && lifecycle.value !== undefined) {
+        return `${lifecycle.value}${lifecycle.unit ?? 'd'}`;
+      }
+      return undefined;
+    }, [lifecycle]);
 
     const [isMetaVisible, setIsMetaVisible] = useState<boolean>(
       Boolean(defaultValue._meta && Object.keys(defaultValue._meta).length)
     );
 
+    const isStepValid = isFormValid && isDlmValid;
+
     const validate = useCallback(async () => {
-      return (await submit()).isValid;
-    }, [submit]);
+      const formValidation = await submit();
+      return formValidation.isValid && isDlmValid;
+    }, [submit, isDlmValid]);
+
+    const buildData = useCallback(
+      (formData: ReturnType<typeof getFormData>) => ({
+        ...formData,
+        lifecycle: resolveLogisticsLifecycle(lifecycle, { isDataStreamTemplate: true }),
+      }),
+      [lifecycle]
+    );
 
     useEffect(() => {
       onChange({
-        isValid: isFormValid,
+        isValid: isStepValid,
         validate,
-        getData: getFormData,
+        getData: () => buildData(getFormData()),
       });
-    }, [isFormValid, getFormData, validate, onChange]);
+    }, [isStepValid, getFormData, validate, onChange, buildData]);
 
     useEffect(() => {
       const subscription = subscribe(({ data, isValid }) => {
         onChange({
-          isValid,
+          isValid: isValid && isDlmValid,
           validate,
-          getData: data.format,
+          getData: () => buildData(data.format()),
         });
       });
       return subscription.unsubscribe;
-    }, [subscribe, validate, onChange]);
+    }, [subscribe, validate, onChange, buildData, isDlmValid]);
 
     return (
       <Form form={form} data-test-subj="stepLogistics">
@@ -145,61 +270,56 @@ export const StepLogistics: React.FunctionComponent<Props> = React.memo(
           />
         </FormRow>
 
-        {/* Data retention field */}
+        {/* Data lifecycle field */}
         <FormRow
           title={
-            <FormattedMessage
-              id="xpack.idxMgmt.componentTemplateForm.stepLogistics.dataRetentionTitle"
-              defaultMessage="Data retention"
-            />
+            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <FormattedMessage
+                  id="xpack.idxMgmt.componentTemplateForm.stepLogistics.dataLifecycleTitle"
+                  defaultMessage="Data lifecycle"
+                />
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiBadge color="hollow" data-test-subj="totalRetentionBadge">
+                  {totalRetentionValue ?? (
+                    <EuiIcon
+                      type="infinity"
+                      size="s"
+                      aria-label={i18n.translate(
+                        'xpack.idxMgmt.componentTemplateForm.stepLogistics.totalRetentionInfiniteAriaLabel',
+                        { defaultMessage: 'Data is kept indefinitely' }
+                      )}
+                    />
+                  )}
+                </EuiBadge>
+              </EuiFlexItem>
+            </EuiFlexGroup>
           }
           description={
-            <>
+            isDlmPhasesSelectorServerless ? (
               <FormattedMessage
-                id="xpack.idxMgmt.componentTemplateForm.stepLogistics.dataRetentionDescription"
-                defaultMessage="Data will be kept at least this long before being automatically deleted."
+                id="xpack.idxMgmt.componentTemplateForm.stepLogistics.dataLifecycleDescriptionServerless"
+                defaultMessage="Add a delete phase to your data lifecycle to specify the length of time you wish to retain your data."
               />
-              <EuiSpacer size="m" />
-              <UseField
-                path="lifecycle.enabled"
-                componentProps={{ 'data-test-subj': 'dataRetentionToggle' }}
+            ) : (
+              <FormattedMessage
+                id="xpack.idxMgmt.componentTemplateForm.stepLogistics.dataLifecycleDescriptionStateful"
+                defaultMessage="The data lifecycle defines how your stream's data is managed as it ages, dictating storage and retention. Use these settings to automate and optimize storage costs and query performance over time."
               />
-            </>
+            )
           }
+          fieldFlexItemProps={{
+            'data-test-subj': 'dataLifecyclePhasesSelector',
+          }}
         >
-          {lifecycle?.enabled && (
-            <UseField
-              path="lifecycle.value"
-              component={NumericField}
-              labelAppend={
-                <UseField
-                  path="lifecycle.infiniteDataRetention"
-                  data-test-subj="infiniteDataRetentionToggle"
-                  componentProps={{
-                    euiFieldProps: {
-                      compressed: true,
-                    },
-                  }}
-                />
-              }
-              componentProps={{
-                euiFieldProps: {
-                  disabled: lifecycle?.infiniteDataRetention,
-                  'data-test-subj': 'valueDataRetentionField',
-                  min: 1,
-                  append: (
-                    <UnitField
-                      path="lifecycle.unit"
-                      options={timeUnits}
-                      disabled={lifecycle?.infiniteDataRetention}
-                      euiFieldProps={{
-                        'data-test-subj': 'unitDataRetentionField',
-                      }}
-                    />
-                  ),
-                },
-              }}
+          {isDlmPhasesSelectorServerless ? (
+            <ServerlessDlmPhasesSelector
+              defaultValue={dlmDefaultValue}
+              onChange={handleDlmChange}
             />
+          ) : (
+            <StatefulDlmPhasesSelector defaultValue={dlmDefaultValue} onChange={handleDlmChange} />
           )}
         </FormRow>
 

@@ -8,7 +8,6 @@
  */
 
 import type { estypes } from '@elastic/elasticsearch';
-import { v4 as generateUuid } from 'uuid';
 import type {
   CoreSetup,
   CoreStart,
@@ -17,7 +16,11 @@ import type {
   Plugin,
   PluginInitializerContext,
 } from '@kbn/core/server';
-import { ExecutionStatus, pickManagedWorkflowFields, WorkflowRepository } from '@kbn/workflows';
+import {
+  ExecutionStatus,
+  toWorkflowExecutionEngineModel,
+  WorkflowRepository,
+} from '@kbn/workflows';
 import type {
   BulkScheduleWorkflowResult,
   EsWorkflowExecution,
@@ -28,6 +31,7 @@ import {
   WorkflowExecutionInvalidStatusError,
   WorkflowExecutionNotFoundError,
 } from '@kbn/workflows/common/errors';
+import { readWorkflowVersioningEnabled } from '@kbn/workflows/server';
 import { ConcurrencyManager } from './concurrency/concurrency_manager';
 import type { WorkflowsExecutionEngineConfig } from './config';
 import {
@@ -36,6 +40,7 @@ import {
   resumeWorkflow,
   runWorkflow,
 } from './execution_functions';
+import { buildWorkflowExecutionDocument } from './lib/build_workflow_execution_document';
 import { checkLicense } from './lib/check_license';
 import { ensureWorkflowsDataStreamsRolledOver } from './lib/data_streams/ensure_data_streams_rolled_over';
 import { getAuthenticatedUser } from './lib/get_user';
@@ -44,7 +49,6 @@ import {
   resolveInterruptedWorkflowResumeTask,
   resolveInterruptedWorkflowRunTask,
 } from './lib/task_recovery';
-import { normalizeEventChainVisitedWorkflowIds } from './lib/telemetry/utils/extract_execution_metadata';
 import { WorkflowExecutionTelemetryClient } from './lib/telemetry/workflow_execution_telemetry_client';
 import { validateWorkflowInputs } from './lib/validate_workflow_inputs';
 import { WorkflowsMeteringService } from './metering/metering_service';
@@ -532,45 +536,32 @@ export class WorkflowsExecutionEnginePlugin
               );
               span?.end();
 
-              const workflowExecution: Partial<EsWorkflowExecution> = {
-                id: generateUuid(),
-                spaceId,
-                workflowId: workflow.id,
-                ...pickManagedWorkflowFields(workflow),
-                isTestRun: false,
-                workflowDefinition: workflow.definition,
-                yaml: workflow.yaml,
+              const workflowExecution = buildWorkflowExecutionDocument({
+                workflow: toWorkflowExecutionEngineModel(workflow),
                 context: executionContext,
-                status: ExecutionStatus.PENDING,
-                // Store task's runAt to link execution to specific scheduled run
-                // runAt is stable across retries (retries use the same runAt but get a new startedAt)
-                // This allows us to detect stale executions from previous scheduled runs
-                taskRunAt: taskInstance.runAt?.toISOString() || null,
-                createdAt: workflowCreatedAt.toISOString(),
-                executedBy,
-                triggeredBy: 'scheduled',
-                // Store queue delay metrics for observability (only if enabled in config)
-                ...(this.config.collectQueueMetrics
-                  ? {
-                      queueMetrics: {
-                        scheduledAt: taskInstance.scheduledAt?.toString(),
-                        runAt: taskInstance.runAt?.toString(),
-                        startedAt: new Date(now).toISOString(),
-                        queueDelayMs,
-                        scheduleDelayMs,
-                      },
-                    }
-                  : {}),
-              };
+                defaultTriggeredBy: 'scheduled',
+                authenticatedUser: executedBy,
+                now: workflowCreatedAt,
+                workflowVersioningEnabled: await readWorkflowVersioningEnabled(coreStart, logger),
+                maxEventChainDepth: this.config.eventDriven.maxChainDepth,
+                getConcurrencyGroupKey: (execution) =>
+                  this.getConcurrencyGroupKey(
+                    execution,
+                    workflow.definition?.settings,
+                    coreStart,
+                    dependencies
+                  ),
+              });
 
-              const concurrencyGroupKey = this.getConcurrencyGroupKey(
-                workflowExecution,
-                workflow.definition?.settings,
-                coreStart,
-                dependencies
-              );
-              if (concurrencyGroupKey) {
-                workflowExecution.concurrencyGroupKey = concurrencyGroupKey;
+              workflowExecution.taskRunAt = taskInstance.runAt?.toISOString() ?? null;
+              if (this.config.collectQueueMetrics) {
+                workflowExecution.queueMetrics = {
+                  scheduledAt: taskInstance.scheduledAt?.toString(),
+                  runAt: taskInstance.runAt?.toString(),
+                  startedAt: new Date(now).toISOString(),
+                  queueDelayMs,
+                  scheduleDelayMs,
+                };
               }
 
               // Use refresh: 'wait_for' to ensure the execution is immediately searchable
@@ -668,68 +659,30 @@ export class WorkflowsExecutionEnginePlugin
       }
     };
 
-    // Builds an execution document without persisting it. Shared by the
-    // single-item persist helper and the bulk scheduling path.
-    const buildWorkflowExecutionDocument = (args: {
+    const isWorkflowVersioningEnabled = async (): Promise<boolean> => {
+      return readWorkflowVersioningEnabled(coreStart, this.logger);
+    };
+
+    const buildExecutionDocument = async (args: {
       workflow: WorkflowExecutionEngineModel;
       context: Record<string, unknown>;
       defaultTriggeredBy: string;
       authenticatedUser: string;
       now: Date;
-    }): WorkflowExecutionForInputRendering => {
-      const { workflow, context, defaultTriggeredBy, authenticatedUser, now } = args;
-      const triggeredBy = (context.triggeredBy as string | undefined) || defaultTriggeredBy;
-      const spaceId = (context.spaceId as string | undefined) || 'default';
-      const metadata = context.metadata as Record<string, unknown> | undefined;
-      const eventPayload = context.event as Record<string, unknown> | undefined;
-      let rootEventChainDepth: number | undefined;
-      if (eventPayload) {
-        const rawDepth = eventPayload.eventChainDepth;
-        if (typeof rawDepth === 'number' && !Number.isNaN(rawDepth) && rawDepth >= 0) {
-          rootEventChainDepth = rawDepth;
-        } else if (typeof rawDepth === 'string' && rawDepth.trim() !== '') {
-          const parsed = parseInt(rawDepth, 10);
-          if (!Number.isNaN(parsed) && parsed >= 0) {
-            rootEventChainDepth = parsed;
-          }
-        }
-      }
-      const rootVisited = normalizeEventChainVisitedWorkflowIds(
-        eventPayload?.eventChainVisitedWorkflowIds,
-        this.config.eventDriven.maxChainDepth
-      );
-      const dispatchEventId =
-        typeof metadata?.eventId === 'string' ? metadata.eventId.trim() || undefined : undefined;
-      const workflowExecution: WorkflowExecutionForInputRendering = {
-        id: generateUuid(),
-        spaceId,
-        workflowId: workflow.id,
-        ...pickManagedWorkflowFields(workflow),
-        isTestRun: workflow.isTestRun,
-        workflowDefinition: workflow.definition,
-        yaml: workflow.yaml,
-        context,
-        status: ExecutionStatus.PENDING,
-        createdAt: now.toISOString(),
-        executedBy: authenticatedUser,
-        triggeredBy,
-        ...(metadata ? { metadata } : {}),
-        ...(rootEventChainDepth !== undefined ? { eventChainDepth: rootEventChainDepth } : {}),
-        ...(rootVisited.length > 0 ? { eventChainVisitedWorkflowIds: rootVisited } : {}),
-        ...(dispatchEventId ? { dispatchEventId } : {}),
-      };
-
-      const concurrencyGroupKey = this.getConcurrencyGroupKey(
-        workflowExecution,
-        workflow.definition?.settings,
-        coreStart,
-        dependencies
-      );
-      if (concurrencyGroupKey) {
-        workflowExecution.concurrencyGroupKey = concurrencyGroupKey;
-      }
-
-      return workflowExecution;
+    }): Promise<WorkflowExecutionForInputRendering> => {
+      const versioningEnabled = await isWorkflowVersioningEnabled();
+      return buildWorkflowExecutionDocument({
+        ...args,
+        workflowVersioningEnabled: versioningEnabled,
+        maxEventChainDepth: this.config.eventDriven.maxChainDepth,
+        getConcurrencyGroupKey: (execution) =>
+          this.getConcurrencyGroupKey(
+            execution,
+            args.workflow.definition?.settings,
+            coreStart,
+            dependencies
+          ),
+      });
     };
 
     const createAndPersistWorkflowExecution = async (
@@ -752,7 +705,7 @@ export class WorkflowsExecutionEnginePlugin
         coreStart.elasticsearch.client
       );
 
-      const workflowExecution = buildWorkflowExecutionDocument({
+      const workflowExecution = await buildExecutionDocument({
         workflow,
         context,
         defaultTriggeredBy,
@@ -981,7 +934,7 @@ export class WorkflowsExecutionEnginePlugin
               );
             }
           }
-          const workflowExecution = buildWorkflowExecutionDocument({
+          const workflowExecution = await buildExecutionDocument({
             workflow: item.workflow,
             context: item.context,
             defaultTriggeredBy: 'alert',
@@ -1101,33 +1054,26 @@ export class WorkflowsExecutionEnginePlugin
       await this.initialize(coreStart);
       await ensureWorkflowEnabled(workflow, workflow.spaceId || 'default');
 
-      const workflowCreatedAt = new Date();
+      const spaceId = workflow.spaceId || 'default';
       const context: Record<string, unknown> = {
+        spaceId,
         ...(executionContext ?? {}),
         contextOverride,
       };
 
-      const triggeredBy = (context.triggeredBy as string | undefined) || 'manual'; // 'manual' or 'scheduled'
       const executedBy = await getAuthenticatedUser(
         request,
         coreStart.security,
         coreStart.elasticsearch.client
       );
-      const workflowExecution = {
-        id: generateUuid(),
-        spaceId: workflow.spaceId,
-        stepId,
-        workflowId: workflow.id,
-        ...pickManagedWorkflowFields(workflow),
-        isTestRun: workflow.isTestRun,
-        workflowDefinition: workflow.definition,
-        yaml: workflow.yaml,
+      const workflowExecution = await buildExecutionDocument({
+        workflow,
         context,
-        status: ExecutionStatus.PENDING,
-        createdAt: workflowCreatedAt.toISOString(),
-        executedBy,
-        triggeredBy,
-      };
+        defaultTriggeredBy: 'manual',
+        authenticatedUser: executedBy,
+        now: new Date(),
+      });
+      workflowExecution.stepId = stepId;
 
       await workflowExecutionRepository.createWorkflowExecution(workflowExecution);
 

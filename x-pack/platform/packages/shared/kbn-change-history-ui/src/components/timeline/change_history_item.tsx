@@ -15,8 +15,8 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { ChangeHistoryBadgeRenderFn } from '../../types/change_history_badge';
 import type { ChangeHistoryListItem } from '../../types/change_history_list_item';
+import { useChangeHistoryConfig } from '../../provider/use_change_history_config';
 import { ChangeHistoryActionBadge } from './change_history_action_badge';
 import { ChangeHistoryItemComment } from './change_history_item_comment';
 import { ChangeHistoryListTimestamp } from './change_history_list_timestamp';
@@ -26,15 +26,14 @@ export interface ChangeHistoryItemProps {
   item: ChangeHistoryListItem;
   selected?: boolean;
   onClick: () => void;
-  renderBadge?: ChangeHistoryBadgeRenderFn;
 }
 
 export const ChangeHistoryItem = memo(function ChangeHistoryItem({
   item,
   selected,
   onClick,
-  renderBadge,
 }: ChangeHistoryItemProps): JSX.Element {
+  const { renderBadge } = useChangeHistoryConfig();
   const { euiTheme } = useEuiTheme();
   const timestamp = useMemo(() => new Date(item.timestamp), [item.timestamp]);
 

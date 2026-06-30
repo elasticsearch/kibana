@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  title: Set attacks workflow status API endpoint
+  version: '2023-10-31'
+paths:
+  /api/detection_engine/attacks/status:
+    post:
+      x-labels: [serverless, ess]
+      x-internal: true
+      operationId: SetAttacksStatus
+      x-codegen-enabled: true
+      summary: Set attack discovery alerts workflow status
+      description: Set the workflow status of one or more attack discovery alerts by IDs, optionally cascading the status to their related detection alerts.
+      tags:
+        - Attacks API
+      requestBody:
+        description: An object containing the desired status and explicit attack ids
+        required: true
+        content:
+          application/json:
+            schema:
+              description: Set attacks status by IDs request
+              $ref: '#/components/schemas/SetAttacksStatusByIds'
+            examples:
+              byId:
+                value:
+                  status: acknowledged
+                  ids: ['80e1383f856e67c1b7f7a1634744fa6d66b6e2ef7aa26d226e57afb5a7b2b4a1']
+              closedWithReason:
+                value:
+                  status: closed
+                  ids: ['80e1383f856e67c1b7f7a1634744fa6d66b6e2ef7aa26d226e57afb5a7b2b4a1']
+                  reason: false_positive
+              withRelatedAlerts:
+                value:
+                  status: closed
+                  ids: ['80e1383f856e67c1b7f7a1634744fa6d66b6e2ef7aa26d226e57afb5a7b2b4a1']
+                  update_related_alerts: true
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                description: Elasticsearch update by query response
+              examples:
+                success:
+                  value:
+                    took: 81
+                    timed_out: false
+                    total: 1
+                    updated: 1
+                    deleted: 0
+                    batches: 1
+                    version_conflicts: 0
+                    noops: 0
+                    retries:
+                      bulk: 0
+                      search: 0
+                    throttled_millis: 0
+                    requests_per_second: -1
+                    throttled_until_millis: 0
+                    failures: []
+        400:
+          description: Invalid input data response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '../../../model/error_responses.schema.yaml#/components/schemas/PlatformErrorResponse'
+                  - $ref: '../../../model/error_responses.schema.yaml#/components/schemas/SiemErrorResponse'
+              examples:
+                badRequest:
+                  value:
+                    statusCode: 400
+                    error: Bad Request
+                    message: '[request body].ids: at least one attack id is required to update status'
+        401:
+          description: Unsuccessful authentication response
+          content:
+            application/json:
+              schema:
+                $ref: '../../../model/error_responses.schema.yaml#/components/schemas/PlatformErrorResponse'
+        500:
+          description: Internal server error response
+          content:
+            application/json:
+              schema:
+                $ref: '../../../model/error_responses.schema.yaml#/components/schemas/SiemErrorResponse'
+
+components:
+  schemas:
+    SetAttacksStatusByIdsBase:
+      type: object
+      properties:
+        ids:
+          $ref: '../../../model/alert.schema.yaml#/components/schemas/AlertIds'
+        status:
+          $ref: '../../../model/alert.schema.yaml#/components/schemas/AlertStatusExceptClosed'
+        update_related_alerts:
+          $ref: '../common/attacks.schema.yaml#/components/schemas/UpdateRelatedAlerts'
+      required: [ids, status]
+
+    CloseAttacksByIds:
+      type: object
+      properties:
+        ids:
+          $ref: '../../../model/alert.schema.yaml#/components/schemas/AlertIds'
+        status:
+          type: string
+          enum: [closed]
+        reason:
+          $ref: '../../../model/alert.schema.yaml#/components/schemas/Reason'
+        update_related_alerts:
+          $ref: '../common/attacks.schema.yaml#/components/schemas/UpdateRelatedAlerts'
+      required: [ids, status]
+
+    SetAttacksStatusByIds:
+      oneOf:
+        - $ref: '#/components/schemas/CloseAttacksByIds'
+        - $ref: '#/components/schemas/SetAttacksStatusByIdsBase'
+      discriminator:
+        propertyName: status
+        mapping:
+          closed: '#/components/schemas/CloseAttacksByIds'

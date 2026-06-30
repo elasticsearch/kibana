@@ -39,9 +39,8 @@ spaceTest.describe('Discover data grid - doc table', { tag: tags.stateful.all },
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     // Viewer is sufficient for read-only grid interactions.
     await browserAuth.loginAsViewer();
-    await pageObjects.discover.setQueryMode('classic');
-    await pageObjects.discover.goto();
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
+    await pageObjects.dataGrid.waitForLoad();
     // Search can finish before the grid leaves "Loading documents" (histogram may
     // render first). Wait until the table reports a stable render before row counts.
     await pageObjects.dataGrid.waitForDocTableRendered();
@@ -68,7 +67,7 @@ spaceTest.describe('Discover data grid - doc table', { tag: tags.stateful.all },
     expect(initialCount).toBeGreaterThan(0);
 
     await pageObjects.datePicker.setAbsoluteRange(NARROWED_TIME_RANGE);
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
     await pageObjects.dataGrid.waitForDocTableRendered();
 
     const finalCount = await rows.count();
@@ -79,7 +78,7 @@ spaceTest.describe('Discover data grid - doc table', { tag: tags.stateful.all },
     for (const column of EXTRA_COLUMNS) {
       await addColumnFromSidebar(page, column);
     }
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
 
     for (const column of EXTRA_COLUMNS) {
       await expect(
@@ -94,12 +93,12 @@ spaceTest.describe('Discover data grid - doc table', { tag: tags.stateful.all },
     for (const column of EXTRA_COLUMNS) {
       await addColumnFromSidebar(page, column);
     }
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
 
     const [firstColumn, secondColumn] = EXTRA_COLUMNS;
     await page.testSubj.fill('fieldListFiltersFieldSearch', secondColumn);
     await page.testSubj.click(`fieldToggle-${secondColumn}`);
-    await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+    await pageObjects.dataGrid.waitForLoad();
 
     await expect(pageObjects.dataGrid.getColumnHeader(secondColumn)).toBeHidden();
     await expect(pageObjects.dataGrid.getColumnHeader(firstColumn)).toBeVisible();

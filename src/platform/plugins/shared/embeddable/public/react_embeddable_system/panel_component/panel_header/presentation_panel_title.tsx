@@ -160,6 +160,10 @@ export const PresentationPanelTitle = ({
               // styles necessary for applying ellipsis and showing the info icon if description is present
               css={css`
                 overflow: hidden;
+                // The panel title is a heading, but rendered at the regular text size. Reset the
+                // heading's font and margin so a global h2 style cannot override the panel title size
+                font: inherit;
+                margin: 0;
               `}
             >
               <EuiScreenReaderOnly>

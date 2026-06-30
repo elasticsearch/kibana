@@ -27,6 +27,7 @@ export const getStatusByConfig = (
     status.downConfigs[configId] ||
     status.upConfigs[configId] ||
     status.pendingConfigs[configId] ||
+    status.staleConfigs?.[configId] ||
     status.disabledConfigs[configId];
   if (configStatus) {
     const config = configStatus?.locations.find((loc) => loc.id === locId);
@@ -37,6 +38,7 @@ export const getStatusByConfig = (
       status.downConfigs[configByIdLoc] ||
       status.upConfigs[configByIdLoc] ||
       status.pendingConfigs[configByIdLoc] ||
+      status.staleConfigs?.[configByIdLoc] ||
       status.disabledConfigs[configByIdLoc];
     const config = configS?.locations.find((loc) => loc.id === locId);
     return config?.status ?? MONITOR_STATUS_ENUM.PENDING;
@@ -62,15 +64,45 @@ export const selectOverviewStatus = createSelector(
         up: Object.keys(status.upConfigs).length,
         down: Object.keys(status.downConfigs).length,
         pending: Object.keys(status.pendingConfigs).length,
+        stale: Object.keys(status.staleConfigs ?? {}).length,
         disabledCount: Object.keys(status.disabledConfigs).length,
       },
     };
   }
 );
 
+/**
+ * Resolve the status a monitor card/row should *render* with.
+ *
+ * `stale` monitors stay in their `stale` bucket (so the count and the
+ * "Stale" filter keep working), but when the user enables "Show last run" we
+ * want the card/row to surface the last-known up/down the server carried on the
+ * location (`lastStatus`) instead of the neutral "Stale" treatment. This is a
+ * presentation-only resolution — it never moves a monitor between buckets.
+ *
+ * Returns the unchanged `overallStatus` for every other case (including when
+ * the toggle is off, or when no last-known status was carried).
+ */
+export const resolveDisplayStatus = (
+  monitor: Pick<OverviewStatusMetaData, 'overallStatus' | 'locations'>,
+  showLastRun: boolean
+): string => {
+  const status = monitor.overallStatus;
+  if (!showLastRun || status !== MONITOR_STATUS_ENUM.STALE) {
+    return status;
+  }
+  const locations = monitor.locations ?? [];
+  if (!locations.some((loc) => loc.lastStatus)) {
+    return status;
+  }
+  return locations.some((loc) => loc.lastStatus === MONITOR_STATUS_ENUM.DOWN)
+    ? MONITOR_STATUS_ENUM.DOWN
+    : MONITOR_STATUS_ENUM.UP;
+};
+
 type ConfigBuckets = Pick<
   OverviewStatusState,
-  'upConfigs' | 'downConfigs' | 'pendingConfigs' | 'disabledConfigs'
+  'upConfigs' | 'downConfigs' | 'pendingConfigs' | 'staleConfigs' | 'disabledConfigs'
 >;
 
 const bucketForStatus = (
@@ -86,6 +118,8 @@ const bucketForStatus = (
       return buckets.disabledConfigs;
     case 'pending':
       return buckets.pendingConfigs;
+    case 'stale':
+      return buckets.staleConfigs;
     default:
       return undefined;
   }
@@ -106,6 +140,7 @@ const formatStatus = (status: OverviewStatusState, groupBy?: string): OverviewSt
     upConfigs: { ...(status.upConfigs ?? {}) },
     downConfigs: { ...(status.downConfigs ?? {}) },
     pendingConfigs: { ...(status.pendingConfigs ?? {}) },
+    staleConfigs: { ...(status.staleConfigs ?? {}) },
     disabledConfigs: { ...(status.disabledConfigs ?? {}) },
   };
 
@@ -115,6 +150,7 @@ const formatStatus = (status: OverviewStatusState, groupBy?: string): OverviewSt
     [status.upConfigs, newBuckets.upConfigs],
     [status.downConfigs, newBuckets.downConfigs],
     [status.pendingConfigs, newBuckets.pendingConfigs],
+    [status.staleConfigs, newBuckets.staleConfigs],
     [status.disabledConfigs, newBuckets.disabledConfigs],
   ];
 

@@ -6,6 +6,7 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { MAX_FEATURE_ID_LENGTH } from '../../../../..';
 
 export const connectorTypesQuerySchema = schema.object({
   feature_id: schema.maybe(
@@ -14,6 +15,7 @@ export const connectorTypesQuerySchema = schema.object({
         description:
           'A filter to limit the retrieved connector types to those that support a specific feature (such as alerting or cases).',
       },
+      maxLength: MAX_FEATURE_ID_LENGTH,
     })
   ),
 });

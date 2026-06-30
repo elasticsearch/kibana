@@ -26,10 +26,7 @@ import type {
   InstallRuleAssetsRequestSchema,
 } from '../../types';
 import { createArchiveIteratorFromMap } from '../../services/epm/archive/archive_iterator';
-import {
-  createInactivityMonitoringTemplate,
-  stepCreateAlertingAssets,
-} from '../../services/epm/packages/install_state_machine/steps/step_create_alerting_assets';
+import { stepCreateAlertingAssets } from '../../services/epm/packages/install_state_machine/steps/step_create_alerting_assets';
 
 export async function checkIntegrationsAllPrivilegesForSpaces(
   request: KibanaRequest,
@@ -89,6 +86,12 @@ export const installPackageKibanaAssetsHandler: FleetRequestHandler<
     const installAsAdditionalSpace =
       (installation.attributes.installed_kibana_space_id ?? DEFAULT_SPACE_ID) !== spaceToInstallId;
 
+    const packageInstallContext = {
+      packageInfo,
+      paths: installedPkgWithAssets.paths,
+      archiveIterator: createArchiveIteratorFromMap(installedPkgWithAssets.assetsMap),
+    };
+
     await installKibanaAssetsAndReferences({
       savedObjectsClient: spaceScopedClient,
       logger,
@@ -98,17 +101,17 @@ export const installPackageKibanaAssetsHandler: FleetRequestHandler<
       spaceId: spaceToInstallId,
       assetTags: installedPkgWithAssets.packageInfo?.asset_tags,
       installedPkg: installation,
-      packageInstallContext: {
-        packageInfo,
-        paths: installedPkgWithAssets.paths,
-        archiveIterator: createArchiveIteratorFromMap(installedPkgWithAssets.assetsMap),
-      },
+      packageInstallContext,
     });
 
-    await createInactivityMonitoringTemplate(
-      { logger, savedObjectsClient: spaceScopedClient },
-      { packageInfo, spaceId: spaceToInstallId, installAsAdditionalSpace }
-    );
+    await stepCreateAlertingAssets({
+      logger,
+      savedObjectsClient: spaceScopedClient,
+      packageInstallContext,
+      spaceId: spaceToInstallId,
+      request,
+      installAsAdditionalSpace,
+    });
   }
 
   return response.ok({ body: { success: true } });
@@ -179,16 +182,39 @@ export const installRuleAssetsHandler: FleetRequestHandler<
   const installAsAdditionalSpace =
     (installation.attributes.installed_kibana_space_id ?? DEFAULT_SPACE_ID) !== spaceId;
 
+  const spaceScopedClient = installAsAdditionalSpace
+    ? appContextService.getInternalUserSOClientForSpaceId(spaceId)
+    : savedObjectsClient;
+
+  const packageInstallContext = {
+    packageInfo,
+    paths: installedPkgWithAssets.paths,
+    archiveIterator: createArchiveIteratorFromMap(installedPkgWithAssets.assetsMap),
+  };
+
+  // Ensure archive SO assets (including alerting_rule_template SOs) are present in this space
+  // before attempting rule creation. Only required for secondary spaces that have not yet had
+  // assets installed via the "Install Kibana assets" flow; the primary space already has them
+  // from the original install, and reinstalling unconditionally would wipe and recreate all
+  // Kibana assets (dashboards, visualizations, etc.) as an unintended side effect.
+  if (installAsAdditionalSpace) {
+    await installKibanaAssetsAndReferences({
+      savedObjectsClient: spaceScopedClient,
+      logger,
+      pkgName,
+      pkgTitle: packageInfo.title,
+      installAsAdditionalSpace,
+      spaceId,
+      assetTags: installedPkgWithAssets.packageInfo?.asset_tags,
+      installedPkg: installation,
+      packageInstallContext,
+    });
+  }
+
   await stepCreateAlertingAssets({
     logger,
-    savedObjectsClient: installAsAdditionalSpace
-      ? appContextService.getInternalUserSOClientForSpaceId(spaceId)
-      : savedObjectsClient,
-    packageInstallContext: {
-      packageInfo,
-      paths: installedPkgWithAssets.paths,
-      archiveIterator: createArchiveIteratorFromMap(installedPkgWithAssets.assetsMap),
-    },
+    savedObjectsClient: spaceScopedClient,
+    packageInstallContext,
     spaceId,
     request,
     installAsAdditionalSpace,

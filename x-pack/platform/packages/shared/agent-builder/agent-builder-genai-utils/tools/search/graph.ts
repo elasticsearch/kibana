@@ -67,12 +67,14 @@ export const createSearchToolGraph = async ({
   logger,
   events,
   topSnippetsConfig,
+  includeDatasets = false,
 }: {
   modelProvider: ModelProvider;
   esClient: ElasticsearchClient;
   logger: Logger;
   events: ToolEventEmitter;
   topSnippetsConfig?: TopSnippetsConfig;
+  includeDatasets?: boolean;
 }) => {
   const defaultModel = await modelProvider.getDefaultModel();
 
@@ -92,6 +94,7 @@ export const createSearchToolGraph = async ({
       rowLimit: state.rowLimit,
       customInstructions: state.customInstructions,
       timeRange: state.timeRange,
+      includeDatasets,
     });
     const noMatchTool = createNoMatchingResourceTool();
     return [relevanceTool, nlSearchTool, noMatchTool];
@@ -105,10 +108,14 @@ export const createSearchToolGraph = async ({
         pattern: state.targetPattern,
         excludeIndicesRepresentedAsDatastream: true,
         excludeIndicesRepresentedAsAlias: false,
+        includeDatasets,
         esClient,
       });
       const matchedResourceCount =
-        sources.indices.length + sources.aliases.length + sources.data_streams.length;
+        sources.indices.length +
+        sources.aliases.length +
+        sources.data_streams.length +
+        sources.datasets.length;
 
       if (matchedResourceCount === 0) {
         return { error: `No resources found for pattern "${state.targetPattern}"` };
@@ -130,6 +137,7 @@ export const createSearchToolGraph = async ({
 
     const resources = await gatherResourceDescriptors({
       indexPattern: state.targetPattern ?? '*',
+      includeDatasets,
       esClient,
     });
 

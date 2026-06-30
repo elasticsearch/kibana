@@ -110,7 +110,7 @@ describe('<ComponentTemplateDetails />', () => {
       expect(within(summaryTabContent).getByTestId('usedByTitle')).toBeInTheDocument();
       expect(within(summaryTabContent).getByTestId('versionTitle')).toBeInTheDocument();
       expect(within(summaryTabContent).getByTestId('metaTitle')).toBeInTheDocument();
-      expect(within(summaryTabContent).getByTestId('dataRetentionTitle')).toBeInTheDocument();
+      expect(within(summaryTabContent).getByTestId('dataLifecycleTitle')).toBeInTheDocument();
 
       // [Settings tab] Navigate to tab and verify content
       fireEvent.click(screen.getByTestId('settingsTab'));

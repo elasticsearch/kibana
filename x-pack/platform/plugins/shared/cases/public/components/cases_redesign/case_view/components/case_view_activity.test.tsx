@@ -13,15 +13,12 @@ import {
   alertComment,
   basicCase,
   connectorsMock,
-  customFieldsConfigurationMock,
-  customFieldsMock,
   getCaseUsersMockResponse,
   getUserAction,
 } from '../../../../containers/mock';
 import { noUpdateCasesPermissions, renderWithTestingProviders } from '../../../../common/mock';
 import { CaseViewActivity } from './case_view_activity';
 import type { CaseUI } from '../../../../../common';
-import { CASE_VIEW_PAGE_TABS } from '../../../../../common/types';
 import type { CaseViewProps } from '../../../case_view/types';
 import { useFindCaseUserActions } from '../../../../containers/use_find_case_user_actions';
 import { usePostPushToService } from '../../../../containers/use_post_push_to_service';
@@ -39,22 +36,14 @@ import {
 import { useGetCaseUserActionsStats } from '../../../../containers/use_get_case_user_actions_stats';
 import { useInfiniteFindCaseUserActions } from '../../../../containers/use_infinite_find_case_user_actions';
 import { useOnUpdateField } from '../../../case_view/use_on_update_field';
-import { useCasesFeatures } from '../../../../common/use_cases_features';
 import {
   AttachmentType,
   ConnectorTypes,
   UserActionTypes,
 } from '../../../../../common/types/domain';
-import { CaseMetricsFeature } from '../../../../../common/types/api';
 import { useGetCaseConfiguration } from '../../../../containers/configure/use_get_case_configuration';
 import { useGetCurrentUserProfile } from '../../../../containers/user_profiles/use_get_current_user_profile';
-import { useReplaceCustomField } from '../../../../containers/use_replace_custom_field';
-import { KibanaServices } from '../../../../common/lib/kibana';
 import { isLegacyAttachmentRequest } from '../../../../../common/utils/attachments';
-
-jest.mock('../../../case_view/components/template_fields', () => ({
-  TemplateFields: () => <div data-test-subj="case-view-template-fields" />,
-}));
 
 jest.mock('../../../../containers/use_infinite_find_case_user_actions');
 jest.mock('../../../../containers/use_find_case_user_actions');
@@ -71,9 +60,7 @@ jest.mock('../../../../containers/use_get_categories');
 jest.mock('../../../../containers/user_profiles/use_bulk_get_user_profiles');
 jest.mock('../../../../containers/use_get_case_connectors');
 jest.mock('../../../../containers/use_get_case_users');
-jest.mock('../../../../containers/use_replace_custom_field');
 jest.mock('../../../case_view/use_on_update_field');
-jest.mock('../../../../common/use_cases_features');
 jest.mock('../../../../containers/configure/use_get_case_configuration');
 jest.mock('../../../../containers/user_profiles/use_get_current_user_profile');
 
@@ -106,8 +93,6 @@ const userActivityQueryParams = {
 
 const pushCaseToExternalService = jest.fn();
 
-const activityTab = CASE_VIEW_PAGE_TABS.ACTIVITY;
-
 const userActionsStats = {
   total: 21,
   totalDeletions: 0,
@@ -123,19 +108,9 @@ const caseProps = {
   ...caseViewProps,
   caseData,
   fetchCaseMetrics: jest.fn(),
-  activeTab: activityTab,
 };
 
 const caseUsers = getCaseUsersMockResponse();
-const useGetCasesFeaturesRes = {
-  metricsFeatures: [CaseMetricsFeature.ALERTS_COUNT],
-  pushToServiceAuthorized: true,
-  caseAssignmentAuthorized: true,
-  isAlertsEnabled: true,
-  isSyncAlertsEnabled: true,
-};
-
-const replaceCustomField = jest.fn();
 
 const useFindCaseUserActionsMock = useFindCaseUserActions as jest.Mock;
 const useInfiniteFindCaseUserActionsMock = useInfiniteFindCaseUserActions as jest.Mock;
@@ -145,18 +120,13 @@ const usePostPushToServiceMock = usePostPushToService as jest.Mock;
 const useGetCaseConnectorsMock = useGetCaseConnectors as jest.Mock;
 const useGetCaseUsersMock = useGetCaseUsers as jest.Mock;
 const useOnUpdateFieldMock = useOnUpdateField as jest.Mock;
-const useCasesFeaturesMock = useCasesFeatures as jest.Mock;
-const useReplaceCustomFieldMock = useReplaceCustomField as jest.Mock;
 
 const localStorageKey = `${basicCase.owner}.cases.userActivity.sortOrder`;
 
-describe('Case View Page activity tab', () => {
+describe('Case View Page activity tab (redesign)', () => {
   const caseConnectors = getCaseConnectorsMockResponse();
   const platinumLicense = licensingMock.createLicense({
     license: { type: 'platinum' },
-  });
-  const basicLicense = licensingMock.createLicense({
-    license: { type: 'basic' },
   });
   // eslint-disable-next-line prefer-object-spread
   const originalGetComputedStyle = Object.assign({}, window.getComputedStyle);
@@ -178,21 +148,9 @@ describe('Case View Page activity tab', () => {
       isLoading: false,
       useOnUpdateField: jest.fn,
     });
-    useReplaceCustomFieldMock.mockImplementation(() => ({
-      isUpdatingCustomField: false,
-      isError: false,
-      mutate: replaceCustomField,
-    }));
 
     Object.defineProperty(window, 'getComputedStyle', {
       value: (el: HTMLElement) => {
-        /**
-         * This is based on the jsdom implementation of getComputedStyle
-         * https://github.com/jsdom/jsdom/blob/9dae17bf0ad09042cfccd82e6a9d06d3a615d9f4/lib/jsdom/browser/Window.js#L779-L820
-         *
-         * It is missing global style parsing and will only return styles applied directly to an element.
-         * Will not return styles that are global or from emotion
-         */
         const declaration = new CSSStyleDeclaration();
         const { style } = el;
 
@@ -221,7 +179,6 @@ describe('Case View Page activity tab', () => {
     localStorage.clear();
 
     useGetCaseUsersMock.mockReturnValue({ isLoading: false, data: caseUsers });
-    useCasesFeaturesMock.mockReturnValue(useGetCasesFeaturesRes);
   });
 
   it('should render the activity content and main components', async () => {
@@ -237,12 +194,16 @@ describe('Case View Page activity tab', () => {
 
     expect(await screen.findByTestId('description')).toBeInTheDocument();
 
-    const caseViewSidebar = await screen.findByTestId('case-view-page-sidebar');
-    expect(await within(caseViewSidebar).findByTestId('case-tags')).toBeInTheDocument();
-    expect(await within(caseViewSidebar).findByTestId('cases-categories')).toBeInTheDocument();
-    expect(await within(caseViewSidebar).findByTestId('connector-edit-header')).toBeInTheDocument();
-
     await waitForComponentToUpdate();
+  });
+
+  it('should not render the sidebar (sidebar is now a separate component)', async () => {
+    renderWithTestingProviders(<CaseViewActivity {...caseProps} />, {
+      wrapperProps: { license: platinumLicense },
+    });
+
+    await screen.findByTestId('case-view-activity');
+    expect(screen.queryByTestId('case-view-page-sidebar')).not.toBeInTheDocument();
   });
 
   it('should call use get user actions as per top and bottom actions list', async () => {
@@ -277,16 +238,6 @@ describe('Case View Page activity tab', () => {
     await waitForComponentToUpdate();
   });
 
-  it('should disable the severity selector when the user does not have update permissions', async () => {
-    renderWithTestingProviders(<CaseViewActivity {...caseProps} />, {
-      wrapperProps: { license: platinumLicense, permissions: noUpdateCasesPermissions() },
-    });
-
-    expect(await screen.findByTestId('case-severity-selection')).toBeDisabled();
-
-    await waitForComponentToUpdate();
-  });
-
   it('should show a loading when loading user actions stats', async () => {
     useGetCaseUserActionsStatsMock.mockReturnValue({ isLoading: true });
 
@@ -297,123 +248,8 @@ describe('Case View Page activity tab', () => {
     expect(screen.queryByTestId('user-actions-list')).not.toBeInTheDocument();
   });
 
-  it('should show a loading when updating severity ', async () => {
-    useOnUpdateFieldMock.mockReturnValue({ isLoading: true, loadingKey: 'severity' });
-
-    renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
-
-    expect(
-      (await screen.findByTestId('case-severity-selection')).classList.contains(
-        'euiSuperSelectControl-isLoading'
-      )
-    ).toBeTruthy();
-  });
-
-  it('should not show a loading for severity when updating tags', async () => {
-    useOnUpdateFieldMock.mockReturnValue({ isLoading: true, loadingKey: 'tags' });
-
-    renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
-
-    expect(
-      (await screen.findByTestId('case-severity-selection')).classList.contains(
-        'euiSuperSelectControl-isLoading'
-      )
-    ).not.toBeTruthy();
-  });
-
-  it('should not render the assignees on basic license', () => {
-    useCasesFeaturesMock.mockReturnValue({
-      ...useGetCasesFeaturesRes,
-      caseAssignmentAuthorized: false,
-    });
-
-    renderWithTestingProviders(<CaseViewActivity {...caseProps} />, {
-      wrapperProps: { license: basicLicense },
-    });
-
-    expect(screen.queryByTestId('case-view-assignees')).not.toBeInTheDocument();
-  });
-
-  it('should render the assignees on platinum license', async () => {
-    renderWithTestingProviders(<CaseViewActivity {...caseProps} />, {
-      wrapperProps: { license: platinumLicense },
-    });
-
-    expect(await screen.findByTestId('case-view-assignees')).toBeInTheDocument();
-
-    await waitForComponentToUpdate();
-  });
-
-  it('should not render the connector on basic license', () => {
-    useCasesFeaturesMock.mockReturnValue({
-      ...useGetCasesFeaturesRes,
-      pushToServiceAuthorized: false,
-    });
-
-    renderWithTestingProviders(<CaseViewActivity {...caseProps} />, {
-      wrapperProps: { license: basicLicense },
-    });
-
-    expect(screen.queryByTestId('case-view-edit-connector')).not.toBeInTheDocument();
-  });
-
-  it('should render the connector on platinum license', async () => {
-    renderWithTestingProviders(<CaseViewActivity {...caseProps} />, {
-      wrapperProps: { license: platinumLicense },
-    });
-
-    expect(await screen.findByTestId('case-view-edit-connector')).toBeInTheDocument();
-  });
-
-  it('should call useReplaceCustomField correctly', async () => {
-    (useGetCaseConfiguration as jest.Mock).mockReturnValue({
-      data: {
-        customFields: [customFieldsConfigurationMock[1]],
-        observableTypes: [],
-      },
-    });
-
-    const caseDataWithCustomFields: CaseUI = {
-      ...caseProps.caseData,
-      customFields: [customFieldsMock[1]],
-    };
-
-    renderWithTestingProviders(
-      <CaseViewActivity {...caseProps} caseData={caseDataWithCustomFields} />
-    );
-
-    await userEvent.click(await screen.findByRole('switch'));
-
-    await waitFor(() => {
-      expect(replaceCustomField).toHaveBeenCalledWith({
-        caseId: caseData.id,
-        caseVersion: caseData.version,
-        caseData: caseDataWithCustomFields,
-        customFieldId: customFieldsMock[1].key,
-        customFieldValue: false,
-      });
-    });
-
-    expect(await screen.findByTestId('case-view-edit-connector')).toBeInTheDocument();
-  });
-
   it('should save sortOrder in localstorage', async () => {
-    (useGetCaseConfiguration as jest.Mock).mockReturnValue({
-      data: {
-        customFields: [customFieldsConfigurationMock[1]],
-        observableTypes: [],
-      },
-    });
-
-    renderWithTestingProviders(
-      <CaseViewActivity
-        {...caseProps}
-        caseData={{
-          ...caseProps.caseData,
-          customFields: [customFieldsMock[1]],
-        }}
-      />
-    );
+    renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
 
     await userEvent.selectOptions(await screen.findByTestId('user-actions-sort-select'), 'desc');
 
@@ -502,194 +338,124 @@ describe('Case View Page activity tab', () => {
     });
   });
 
-  describe('Case users', () => {
-    describe('Assignees', () => {
-      it('should render assignees in the participants section', async () => {
-        renderWithTestingProviders(
-          <CaseViewActivity
-            {...caseProps}
-            caseData={{
-              ...caseProps.caseData,
-              assignees: caseUsers.assignees.map((assignee) => ({
-                uid: assignee.uid ?? 'not-valid',
-              })),
-            }}
-          />,
-          {
-            wrapperProps: { license: platinumLicense },
-          }
-        );
-
-        const assigneesSection = within(await screen.findByTestId('case-view-assignees'));
-
-        expect(await assigneesSection.findByText('Unknown')).toBeInTheDocument();
-        expect(await assigneesSection.findByText('Fuzzy Marten')).toBeInTheDocument();
-        expect(await assigneesSection.findByText('elastic')).toBeInTheDocument();
-        expect(await assigneesSection.findByText('Misty Mackerel')).toBeInTheDocument();
+  describe('User actions', () => {
+    it('renders the unassigned users correctly', async () => {
+      useFindCaseUserActionsMock.mockReturnValue({
+        ...defaultUseFindCaseUserActions,
+        data: {
+          userActions: [getUserAction(UserActionTypes.assignees, 'delete')],
+        },
       });
-    });
-
-    describe('User actions', () => {
-      it('renders the unassigned users correctly', async () => {
-        useFindCaseUserActionsMock.mockReturnValue({
-          ...defaultUseFindCaseUserActions,
-          data: {
-            userActions: [getUserAction(UserActionTypes.assignees, 'delete')],
-          },
-        });
-
-        renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
-
-        const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
-
-        expect(await userActions.findByText('cases_no_connectors')).toBeInTheDocument();
-        expect(await userActions.findByText('Valid Chimpanzee')).toBeInTheDocument();
-      });
-
-      it('renders the assigned users correctly', async () => {
-        useFindCaseUserActionsMock.mockReturnValue({
-          ...defaultUseFindCaseUserActions,
-          data: {
-            userActions: [
-              getUserAction(UserActionTypes.assignees, 'add', {
-                payload: {
-                  assignees: [
-                    { uid: 'not-valid' },
-                    { uid: 'u_3OgKOf-ogtr8kJ5B0fnRcqzXs2aQQkZLtzKEEFnKaYg_0' },
-                  ],
-                },
-              }),
-            ],
-          },
-        });
-
-        renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
-
-        const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
-
-        expect(await userActions.findByText('Fuzzy Marten')).toBeInTheDocument();
-        expect(await userActions.findByText('Unknown')).toBeInTheDocument();
-      });
-
-      it('renders the user action users correctly', async () => {
-        const commentUpdate = getUserAction('comment', 'update', {
-          createdBy: {
-            ...caseUsers.participants[1].user,
-            fullName: caseUsers.participants[1].user.full_name,
-            profileUid: caseUsers.participants[1].uid,
-          },
-        });
-
-        useFindCaseUserActionsMock.mockReturnValue({
-          ...defaultUseFindCaseUserActions,
-          data: {
-            userActions: [
-              getUserAction('description', 'create'),
-              getUserAction('description', 'update', {
-                createdBy: {
-                  ...caseUsers.participants[0].user,
-                  fullName: caseUsers.participants[0].user.full_name,
-                  profileUid: caseUsers.participants[0].uid,
-                },
-              }),
-              commentUpdate,
-              getUserAction('description', 'update', {
-                createdBy: {
-                  ...caseUsers.participants[2].user,
-                  fullName: caseUsers.participants[2].user.full_name,
-                  profileUid: caseUsers.participants[2].uid,
-                },
-              }),
-              getUserAction('title', 'update', {
-                createdBy: {
-                  ...caseUsers.participants[3].user,
-                  fullName: caseUsers.participants[3].user.full_name,
-                  profileUid: caseUsers.participants[3].uid,
-                },
-              }),
-              getUserAction('tags', 'add', {
-                createdBy: {
-                  ...caseUsers.participants[4].user,
-                  fullName: caseUsers.participants[4].user.full_name,
-                  profileUid: caseUsers.participants[4].uid,
-                },
-              }),
-            ],
-            latestAttachments:
-              commentUpdate.type === 'comment' &&
-              commentUpdate.payload.comment?.type === AttachmentType.user &&
-              isLegacyAttachmentRequest(commentUpdate.payload.comment)
-                ? [
-                    {
-                      comment: commentUpdate.payload.comment.comment,
-                      createdAt: commentUpdate.createdAt,
-                      createdBy: commentUpdate.createdBy,
-                      id: commentUpdate.commentId,
-                      owner: commentUpdate.owner,
-                      pushed_at: null,
-                      pushed_by: null,
-                      type: 'user',
-                      updated_at: null,
-                      updated_by: null,
-                      version: commentUpdate.version,
-                    },
-                  ]
-                : [],
-          },
-        });
-
-        renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
-
-        const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
-
-        expect(await userActions.findByText('Participant 1')).toBeInTheDocument();
-        expect(await userActions.findByText('participant_2@elastic.co')).toBeInTheDocument();
-        expect(await userActions.findByText('participant_3')).toBeInTheDocument();
-        expect(await userActions.findByText('P4')).toBeInTheDocument();
-        expect(await userActions.findByText('Participant 5')).toBeInTheDocument();
-      });
-    });
-
-    describe('Category', () => {
-      it('should show the category correctly', async () => {
-        renderWithTestingProviders(
-          <CaseViewActivity
-            {...caseProps}
-            caseData={{
-              ...caseProps.caseData,
-              category: 'My category',
-            }}
-          />
-        );
-
-        expect(await screen.findByText('My category'));
-      });
-    });
-  });
-
-  describe('TemplateFields', () => {
-    it('does not render TemplateFields when templates v2 is disabled', async () => {
-      jest.spyOn(KibanaServices, 'getConfig').mockReturnValue(undefined);
 
       renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('case-view-page-sidebar')).toBeInTheDocument();
-      });
+      const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
 
-      expect(screen.queryByTestId('case-view-template-fields')).not.toBeInTheDocument();
+      expect(await userActions.findByText('cases_no_connectors')).toBeInTheDocument();
+      expect(await userActions.findByText('Valid Chimpanzee')).toBeInTheDocument();
     });
 
-    it('renders TemplateFields when templates v2 is enabled', async () => {
-      jest
-        .spyOn(KibanaServices, 'getConfig')
-        .mockReturnValue({ templates: { enabled: true } } as ReturnType<
-          typeof KibanaServices.getConfig
-        >);
+    it('renders the assigned users correctly', async () => {
+      useFindCaseUserActionsMock.mockReturnValue({
+        ...defaultUseFindCaseUserActions,
+        data: {
+          userActions: [
+            getUserAction(UserActionTypes.assignees, 'add', {
+              payload: {
+                assignees: [
+                  { uid: 'not-valid' },
+                  { uid: 'u_3OgKOf-ogtr8kJ5B0fnRcqzXs2aQQkZLtzKEEFnKaYg_0' },
+                ],
+              },
+            }),
+          ],
+        },
+      });
 
       renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
 
-      expect(await screen.findByTestId('case-view-template-fields')).toBeInTheDocument();
+      const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
+
+      expect(await userActions.findByText('Fuzzy Marten')).toBeInTheDocument();
+      expect(await userActions.findByText('Unknown')).toBeInTheDocument();
+    });
+
+    it('renders the user action users correctly', async () => {
+      const commentUpdate = getUserAction('comment', 'update', {
+        createdBy: {
+          ...caseUsers.participants[1].user,
+          fullName: caseUsers.participants[1].user.full_name,
+          profileUid: caseUsers.participants[1].uid,
+        },
+      });
+
+      useFindCaseUserActionsMock.mockReturnValue({
+        ...defaultUseFindCaseUserActions,
+        data: {
+          userActions: [
+            getUserAction('description', 'create'),
+            getUserAction('description', 'update', {
+              createdBy: {
+                ...caseUsers.participants[0].user,
+                fullName: caseUsers.participants[0].user.full_name,
+                profileUid: caseUsers.participants[0].uid,
+              },
+            }),
+            commentUpdate,
+            getUserAction('description', 'update', {
+              createdBy: {
+                ...caseUsers.participants[2].user,
+                fullName: caseUsers.participants[2].user.full_name,
+                profileUid: caseUsers.participants[2].uid,
+              },
+            }),
+            getUserAction('title', 'update', {
+              createdBy: {
+                ...caseUsers.participants[3].user,
+                fullName: caseUsers.participants[3].user.full_name,
+                profileUid: caseUsers.participants[3].uid,
+              },
+            }),
+            getUserAction('tags', 'add', {
+              createdBy: {
+                ...caseUsers.participants[4].user,
+                fullName: caseUsers.participants[4].user.full_name,
+                profileUid: caseUsers.participants[4].uid,
+              },
+            }),
+          ],
+          latestAttachments:
+            commentUpdate.type === 'comment' &&
+            commentUpdate.payload.comment?.type === AttachmentType.user &&
+            isLegacyAttachmentRequest(commentUpdate.payload.comment)
+              ? [
+                  {
+                    comment: commentUpdate.payload.comment.comment,
+                    createdAt: commentUpdate.createdAt,
+                    createdBy: commentUpdate.createdBy,
+                    id: commentUpdate.commentId,
+                    owner: commentUpdate.owner,
+                    pushed_at: null,
+                    pushed_by: null,
+                    type: 'user',
+                    updated_at: null,
+                    updated_by: null,
+                    version: commentUpdate.version,
+                  },
+                ]
+              : [],
+        },
+      });
+
+      renderWithTestingProviders(<CaseViewActivity {...caseProps} />);
+
+      const userActions = within((await screen.findAllByTestId('user-actions-list'))[0]);
+
+      expect(await userActions.findByText('Participant 1')).toBeInTheDocument();
+      expect(await userActions.findByText('participant_2@elastic.co')).toBeInTheDocument();
+      expect(await userActions.findByText('participant_3')).toBeInTheDocument();
+      expect(await userActions.findByText('P4')).toBeInTheDocument();
+      expect(await userActions.findByText('Participant 5')).toBeInTheDocument();
     });
   });
 });

@@ -15,6 +15,7 @@ export interface ApiEndpointContext {
   managedOtlpServiceUrl?: string;
   isManagedOtlpServiceAvailable: boolean;
   isServerless: boolean;
+  managedOtlpPrwEndpointEnabled: boolean;
 }
 
 export interface ApiEndpointDefinition {
@@ -34,12 +35,17 @@ export const API_ENDPOINTS: readonly ApiEndpointDefinition[] = [
       defaultMessage: 'Prometheus',
     }),
     logo: 'prometheus',
-    getUrl: ({ isServerless, managedOtlpServiceUrl, elasticsearchUrl }) => {
-      // The managed OTLP service only accepts Prometheus remote write on Serverless; every other
-      // deployment (ECH, ECE, ECK, self-managed) uses the Elasticsearch-native Prometheus endpoint.
-      if (isServerless && managedOtlpServiceUrl) {
+    getUrl: ({
+      isServerless,
+      managedOtlpServiceUrl,
+      elasticsearchUrl,
+      managedOtlpPrwEndpointEnabled,
+    }) => {
+      // Serverless or ECH with mOTLP PRW endpoint enabled
+      if (managedOtlpServiceUrl && (isServerless || managedOtlpPrwEndpointEnabled)) {
         return `${trimTrailingSlashes(managedOtlpServiceUrl)}/api/v1/write`;
       }
+      // ECH with mOTLP PRW endpoint disabled or on-prem
       if (elasticsearchUrl) {
         return `${trimTrailingSlashes(elasticsearchUrl)}/_prometheus/api/v1/write`;
       }

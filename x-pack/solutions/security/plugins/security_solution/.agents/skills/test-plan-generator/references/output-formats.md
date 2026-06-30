@@ -24,11 +24,19 @@ Every scenario in the test plan must follow this structure exactly:
 **Priority:** <P0|P1|P2>
 
 **Automation coverage**: <see rules below>
+
 ```gherkin
 Given ...
 When ...
 Then ...
 ```
+
+**Execution:**
+- [ ] ✅ Pass
+- [ ] ❌ Fail
+- [ ] 🚫 Blocked
+
+_If Fail or Blocked, reply to this comment with details (env, build, repro steps)._
 ````
 
 **Automation coverage rules:**
@@ -38,6 +46,14 @@ Then ...
 - If no tests cover the scenario, write: `No existing tests found covering this scenario.`
 - Never aggregate counts without naming the specific tests — the goal is full traceability, not a summary number.
 - The count in the summary (e.g. `2 unit tests`) must equal the number of test names listed. Count the names you write before finalising the number.
+
+**Execution block rules:**
+- Render exactly the three task-list items shown above, in that order, with the leading emoji on each line. The italic instruction line is part of the canonical block — do not reword or omit it.
+- The block must be present in **every** scenario, regardless of priority or automation coverage. Devs need a consistent place to record execution status across the whole plan.
+- All three checkboxes start empty (`- [ ]`) at draft time. They become clickable in the published GitHub comment for any user with write access to the repo.
+- Marking a checkbox is technically an edit of the comment by the user who clicked it; GitHub records the action with timestamp and actor in the comment edit history. That is the audit trail — do not invent a separate "Executed by"/"Executed on" line.
+- The three states (`Pass`/`Fail`/`Blocked`) are mutually exclusive by convention. Markdown does not enforce this; rely on the visible labels and the instruction line to communicate intent. Do not add a fourth state.
+- **In update mode only**, this block participates in the preserve-on-match strategy defined in [`mode-update.md`](mode-update.md). Update mode may insert an additional italic callout (`_Scenario updated on YYYY-MM-DD, please re-execute_`) immediately above the three checkboxes when a scenario's Gherkin substantively changed since the last publication. Do not emit this callout in fresh `generate` mode.
 
 ---
 
@@ -55,6 +71,7 @@ Before saving the draft to `.agents/tmp/`, review every scenario in the test pla
 - [ ] Title is descriptive and unique — it conveys what is tested without reading the steps
 - [ ] Is independent — does not rely on state left by a previous scenario
 - [ ] Is not redundant — covers something not already covered by another scenario in this plan or in a sub-issue test plan
+- [ ] **Execution block** is present at the end of the scenario, after the Gherkin block, in the canonical shape defined under *Scenario format*: three checkboxes (`✅ Pass` / `❌ Fail` / `🚫 Blocked`) plus the italic instruction line. All three boxes are unchecked. No `_Scenario updated on..._` callout is present in fresh `generate` mode
 
 **Per-section checks (after writing all scenarios in a section):**
 - [ ] Scenarios are coherent as a set — they collectively cover the acceptance criteria for this area

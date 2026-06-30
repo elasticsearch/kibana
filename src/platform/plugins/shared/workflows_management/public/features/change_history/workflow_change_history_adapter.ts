@@ -9,11 +9,13 @@
 
 import type { ChangeHistoryAdapter, ChangeHistoryDetail } from '@kbn/change-history-ui';
 import type { HttpSetup } from '@kbn/core/public';
+import { WorkflowApi } from '@kbn/workflows-ui';
 
 import {
   mapWorkflowHistoryItemToDetail,
   mapWorkflowHistoryItemToListItem,
 } from './map_workflow_history_item';
+import { mapWorkflowRestoreHttpError } from './map_workflow_restore_http_error';
 import { INTERNAL_API_VERSION } from '../../../common/lib/api_constants';
 import { WORKFLOW_CHANGE_HISTORY_LIST_PATH } from '../../../common/lib/workflow_change_history/constants';
 import type { WorkflowChangesHistoryResponse } from '../../../common/lib/workflow_change_history/types';
@@ -33,8 +35,16 @@ const clearObjectCache = (
   }
 };
 
-export const createWorkflowChangeHistoryAdapter = (http: HttpSetup): ChangeHistoryAdapter => {
+export interface CreateWorkflowChangeHistoryAdapterOptions {
+  onWorkflowRestored?: (objectId: string) => Promise<void>;
+}
+
+export const createWorkflowChangeHistoryAdapter = (
+  http: HttpSetup,
+  { onWorkflowRestored }: CreateWorkflowChangeHistoryAdapterOptions = {}
+): ChangeHistoryAdapter => {
   const changeCache = new Map<string, ChangeHistoryDetail>();
+  const workflowApi = new WorkflowApi(http);
 
   return {
     listChanges: async ({ objectId, page, signal }) => {
@@ -82,6 +92,15 @@ export const createWorkflowChangeHistoryAdapter = (http: HttpSetup): ChangeHisto
       }
 
       return cached;
+    },
+
+    restoreChange: async ({ objectId, changeId, signal }) => {
+      try {
+        await workflowApi.restoreWorkflowVersion(objectId, changeId, { signal });
+        await onWorkflowRestored?.(objectId);
+      } catch (error) {
+        throw mapWorkflowRestoreHttpError(error);
+      }
     },
   };
 };

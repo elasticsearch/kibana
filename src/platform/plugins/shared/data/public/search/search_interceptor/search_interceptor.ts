@@ -312,6 +312,9 @@ export class SearchInterceptor {
     if (combined.projectRouting !== undefined) {
       serializableOptions.projectRouting = combined.projectRouting;
     }
+    if (combined.approximation !== undefined) {
+      serializableOptions.approximation = combined.approximation;
+    }
 
     return serializableOptions;
   }

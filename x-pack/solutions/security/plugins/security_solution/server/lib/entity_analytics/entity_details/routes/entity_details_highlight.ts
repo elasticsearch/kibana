@@ -86,9 +86,11 @@ export const entityDetailsHighlightsRoute = ({
               entityDetailsHighlightsServiceFactory({
                 riskEngineClient,
                 entityStoreClient,
+                experimentalFeatures: config.experimentalFeatures,
                 spaceId,
                 logger,
                 esClient,
+                request,
                 assetCriticalityClient,
                 soClient,
                 uiSettingsClient: coreContext.uiSettings.client,
@@ -96,9 +98,16 @@ export const entityDetailsHighlightsRoute = ({
                 anonymizationFields,
               });
 
+            const getDataOpts = {
+              entityType,
+              entityIdentifier,
+              anomalyFromDate: fromDate,
+              anomalyToDate: toDate,
+            };
+
             const entitySummary = config.experimentalFeatures.entityAnalyticsEntityStoreV2
-              ? await getV2Data({ request, entityType, entityIdentifier, fromDate, toDate })
-              : await getV1Data({ request, entityType, entityIdentifier, fromDate, toDate });
+              ? await getV2Data(getDataOpts)
+              : await getV1Data(getDataOpts);
 
             const prompt = await getPrompt({
               getInferenceConnectorById: (id) => inference.getConnectorById(id, request),

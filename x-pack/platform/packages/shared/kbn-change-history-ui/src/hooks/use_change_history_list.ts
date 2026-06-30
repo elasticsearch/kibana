@@ -5,10 +5,13 @@
  * 2.0.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery } from '@kbn/react-query';
+import { useCallback, useMemo } from 'react';
 import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
 import type { ChangeHistoryListItem } from '../types/change_history_list_item';
+import type { ListChangeHistoryResult } from '../types/list_change_history_params';
 import { DEFAULT_CHANGE_HISTORY_PAGE_SIZE } from '../types/change_history_constants';
+import { changeHistoryListQueryKey } from './change_history_list_query_key';
 
 export interface UseChangeHistoryListArgs {
   adapter: ChangeHistoryAdapter;
@@ -21,11 +24,13 @@ export interface UseChangeHistoryListResult {
   items: ChangeHistoryListItem[];
   total: number;
   isLoading: boolean;
+  isFetching: boolean;
+  isFetchingFirstPage: boolean;
   isLoadingMore: boolean;
   error?: Error;
   hasMore: boolean;
   loadMore: () => void;
-  refetch: () => void;
+  refetch: () => Promise<ListChangeHistoryResult | undefined>;
 }
 
 export const useChangeHistoryList = ({
@@ -34,98 +39,56 @@ export const useChangeHistoryList = ({
   enabled = true,
   pageSize = DEFAULT_CHANGE_HISTORY_PAGE_SIZE,
 }: UseChangeHistoryListArgs): UseChangeHistoryListResult => {
-  const [items, setItems] = useState<ChangeHistoryListItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [error, setError] = useState<Error | undefined>();
-  const abortControllerRef = useRef<AbortController | undefined>();
-
-  const hasMore = items.length < total;
-
-  const fetchPage = useCallback(
-    async (nextPageIndex: number, append: boolean) => {
-      abortControllerRef.current?.abort();
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-
-      if (append) {
-        setIsLoadingMore(true);
-      } else {
-        setIsLoading(true);
-      }
-
-      try {
-        const result = await adapter.listChanges({
-          objectId,
-          page: { index: nextPageIndex, size: pageSize },
-          signal: abortController.signal,
-        });
-
-        if (abortController.signal.aborted) {
-          return;
-        }
-
-        setTotal(result.total);
-        setPageIndex(nextPageIndex);
-        setItems((current) => (append ? [...current, ...result.items] : result.items));
-        setError(undefined);
-      } catch (fetchError) {
-        if (abortController.signal.aborted) {
-          return;
-        }
-
-        setError(fetchError instanceof Error ? fetchError : new Error(String(fetchError)));
-      } finally {
-        if (!abortController.signal.aborted) {
-          setIsLoading(false);
-          setIsLoadingMore(false);
-        }
-      }
-    },
-    [adapter, objectId, pageSize]
+  const {
+    data,
+    error,
+    isLoading,
+    isFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch: refetchQuery,
+  } = useInfiniteQuery<ListChangeHistoryResult, Error>(
+    changeHistoryListQueryKey({ objectId, pageSize }),
+    ({ signal, pageParam = 0 }) =>
+      adapter.listChanges({
+        objectId,
+        page: { index: pageParam as number, size: pageSize },
+        signal,
+      }),
+    {
+      enabled: enabled && Boolean(objectId),
+      getNextPageParam: (lastPage, allPages) => {
+        const loadedCount = allPages.reduce((count, page) => count + page.items.length, 0);
+        return loadedCount < lastPage.total ? allPages.length : undefined;
+      },
+    }
   );
 
-  const refetch = useCallback(() => {
-    void fetchPage(0, false);
-  }, [fetchPage]);
+  const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data?.pages]);
+  const total = data?.pages[0]?.total ?? 0;
+  const isFetchingFirstPage = isFetching && !isFetchingNextPage;
 
   const loadMore = useCallback(() => {
-    if (!enabled || isLoading || isLoadingMore || !hasMore) {
-      return;
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
     }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-    void fetchPage(pageIndex + 1, true);
-  }, [enabled, fetchPage, hasMore, isLoading, isLoadingMore, pageIndex]);
-
-  useEffect(() => {
-    if (!enabled || !objectId) {
-      setItems([]);
-      setTotal(0);
-      setPageIndex(0);
-      setError(undefined);
-      return;
-    }
-
-    setItems([]);
-    setTotal(0);
-    setPageIndex(0);
-    setError(undefined);
-    void fetchPage(0, false);
-
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, [enabled, fetchPage, objectId]);
+  const refetch = useCallback(async (): Promise<ListChangeHistoryResult | undefined> => {
+    const result = await refetchQuery();
+    return result.data?.pages[0];
+  }, [refetchQuery]);
 
   return {
     items,
     total,
     isLoading,
-    isLoadingMore,
-    error,
-    hasMore,
+    isFetching,
+    isFetchingFirstPage,
+    isLoadingMore: isFetchingNextPage,
+    error: error ?? undefined,
+    hasMore: hasNextPage ?? false,
     loadMore,
     refetch,
   };

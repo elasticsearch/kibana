@@ -346,6 +346,7 @@ export const elasticsearchMock = {
   logo: LOGO,
   navItems: {
     primaryItems: PRIMARY_MENU_ITEMS,
+    overflowItems: [],
     footerItems: PRIMARY_MENU_FOOTER_ITEMS,
   },
 };

@@ -6,6 +6,8 @@
  */
 
 import type { ToolResult } from '@kbn/agent-builder-common/tools';
+import type { ToolCallWithResult } from '@kbn/agent-builder-common';
+import type { FileEntry } from './filestore';
 import type { FileEntryAccessor } from './file_entry_accessor';
 
 /**
@@ -16,14 +18,14 @@ import type { FileEntryAccessor } from './file_entry_accessor';
 export interface ToolResultStore extends FileEntryAccessor {
   has(resultId: string): boolean;
   get(resultId: string): ToolResult;
+  getEntryByResultId(toolResultId: string): Promise<FileEntry | undefined>;
 }
 
 /**
- * Writable version of ToolResultStore, used internally by the runner/agent
+ * Writable version of ToolResultStore, used internally by the runner/agent.
  */
 export interface WritableToolResultStore extends ToolResultStore {
-  add(result: ToolResultWithMeta): void;
-  delete(resultId: string): boolean;
+  add(toolCall: ToolCallWithResult): void;
   asReadonly(): ToolResultStore;
 }
 

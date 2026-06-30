@@ -137,7 +137,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         expect(found).to.be.ok();
         expect(found!.excluded).to.be(undefined);
         expect(found!.updated_at).to.be.a('string');
-        expect(found!.expires_at).to.be.a('string');
 
         // Cleanup
         await deleteFeature(apiClient, STREAM_NAME, uuid);

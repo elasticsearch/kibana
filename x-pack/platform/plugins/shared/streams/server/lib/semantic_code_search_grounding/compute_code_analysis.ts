@@ -9,6 +9,7 @@ import type { KibanaRequest } from '@kbn/core/server';
 import type { ToolsStart } from '@kbn/agent-builder-server';
 import type { ComputedFeatureProvider } from '@kbn/streams-ai';
 import { getSigEventsLogPatternsEsql } from '@kbn/ai-tools';
+import { getStreamSamplingSource } from '@kbn/streams-schema';
 import { createTracedEsClient } from '@kbn/traced-es-client';
 import {
   formatToolResults,
@@ -175,11 +176,10 @@ export const createCodeAnalysisProvider = ({
     try {
       const patterns = await getSigEventsLogPatternsEsql({
         esClient: tracedClient,
-        index: stream.name,
+        samplingSource: getStreamSamplingSource(stream),
         start,
         end,
         fields: LOG_MESSAGE_FIELDS,
-        logger,
       });
       distinctiveStrings = patterns
         .map(({ sample }) => sample)

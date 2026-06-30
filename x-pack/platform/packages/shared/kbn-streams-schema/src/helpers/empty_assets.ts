@@ -5,10 +5,7 @@
  * 2.0.
  */
 
-import type { StreamQuery } from '../queries';
-
 export const emptyAssets = {
   dashboards: [] as string[],
   rules: [] as string[],
-  queries: [] as StreamQuery[],
 } as const;

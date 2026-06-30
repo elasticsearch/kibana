@@ -151,7 +151,6 @@ describe('QueryStream', () => {
           },
         },
         dashboards: [],
-        queries: [],
       },
       {
         stream: {
@@ -169,7 +168,6 @@ describe('QueryStream', () => {
           query: {},
         },
         rules: [],
-        queries: [],
       },
     ])('is not valid', (val) => {
       expect(
@@ -229,7 +227,6 @@ describe('QueryStream', () => {
       {
         dashboards: [],
         rules: [],
-        queries: [],
         stream: {
           query: {
             view: [],
@@ -239,7 +236,6 @@ describe('QueryStream', () => {
       {
         dashboards: [],
         rules: [],
-        queries: [],
         stream: {
           description: '',
         },
@@ -247,7 +243,6 @@ describe('QueryStream', () => {
       {
         dashboards: [],
         rules: [],
-        queries: [],
         stream: {
           name: 'my-name',
           description: '',

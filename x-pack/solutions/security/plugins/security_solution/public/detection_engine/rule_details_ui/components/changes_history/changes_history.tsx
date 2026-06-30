@@ -20,24 +20,29 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
+import type { RuleObjectId } from '../../../../../common/api/detection_engine';
 import noChangeHistoryImg from './images/no_change_history.png';
 import { SecurityPageName } from '../../../../app/types';
 import { useKibana } from '../../../../common/lib/kibana';
 import { APP_UI_ID } from '../../../../../common/constants';
 import { getRuleDetailsTabUrl } from '../../../../common/components/link_to/redirect_to_detection_engine';
 import type { RuleHistoryItem } from '../../../../../common/api/detection_engine/rule_management';
+import { useRule } from '../../../rule_management/logic';
 import { RuleChangesHistoryTimeline } from '../changes_history_timeline';
 import { useInfiniteChangeHistory } from '../../../rule_management/api/hooks/use_infinite_change_history';
 import { RuleDetailTabs } from '../../pages/rule_details/use_rule_details_tabs';
 import { RuleChangesDiff } from '../changes_diff/changes_diff';
-import * as i18n from './translations';
 import { useChangeHistoryAutoSelection } from './use_change_history_auto_selection';
+import { useRuleRestoreFromHistory } from './use_rule_restore_from_history';
+import { useRuleRestoreConflict } from './use_rule_restore_conflict';
+import { RuleRestoreConflictModal } from './rule_restore_conflict_modal';
+import * as i18n from './translations';
 
 const SIDEBAR_WIDTH = 400;
 const NO_HISTORY_IMG_SIZE = 128;
 
 interface RuleChangesHistoryProps {
-  ruleId: string;
+  ruleId: RuleObjectId;
   header?: React.ReactNode;
 }
 
@@ -55,6 +60,9 @@ export const RuleChangesHistory = memo(function RuleChangesHistory({
       path: getRuleDetailsTabUrl(ruleId, RuleDetailTabs.overview),
     });
   }, [navigateToApp, ruleId]);
+  const { isFetching: isRuleLoading, data: rule } = useRule(ruleId, false, {
+    refetchOnWindowFocus: false,
+  });
 
   const [selectedItem, setSelectedItem] = useState<RuleHistoryItem | undefined>();
   const { data, isLoading, isFetching, isFetchingNextPage, fetchNextPage, hasNextPage } =
@@ -75,11 +83,35 @@ export const RuleChangesHistory = memo(function RuleChangesHistory({
     [trackingStartedAt]
   );
 
-  useChangeHistoryAutoSelection({
+  const { lockSelectionDecision, unlockSelectionDecision } = useChangeHistoryAutoSelection({
     ruleId,
     items,
+    isFetchingFirstPage: isFetching && !isFetchingNextPage,
     setSelectedItem,
   });
+
+  const {
+    conflictState,
+    handleConflict,
+    handleConflictReviewChanges,
+    handleConflictRestoreAnyway,
+    handleConflictCancel,
+  } = useRuleRestoreConflict({ unlockSelectionDecision });
+
+  const { restoreFromHistory, restoringItemId } = useRuleRestoreFromHistory({
+    ruleId,
+    ruleRevision: rule?.revision,
+    onRestoreSuccess: unlockSelectionDecision,
+    onConflict: handleConflict,
+  });
+
+  const handleSelectItem = useCallback(
+    (item: RuleHistoryItem) => {
+      lockSelectionDecision();
+      setSelectedItem(item);
+    },
+    [lockSelectionDecision, setSelectedItem]
+  );
 
   const styles = useMemo(
     () => ({
@@ -138,6 +170,15 @@ export const RuleChangesHistory = memo(function RuleChangesHistory({
 
   return (
     <>
+      {conflictState && (
+        <RuleRestoreConflictModal
+          item={conflictState.item}
+          isDeletedRule={conflictState.isDeletedRule}
+          onCancel={handleConflictCancel}
+          onReviewChanges={handleConflictReviewChanges}
+          onRestoreAnyway={handleConflictRestoreAnyway}
+        />
+      )}
       <EuiFlyout
         type="push"
         size={`${SIDEBAR_WIDTH}px`}
@@ -179,10 +220,12 @@ export const RuleChangesHistory = memo(function RuleChangesHistory({
             key={ruleId}
             items={items}
             selectedItem={selectedItem}
-            isLoading={isLoading || isFetching}
+            isLoading={isLoading || isFetching || isRuleLoading}
             startedAt={changeHistoryStartedAt}
             onLoadMore={handleNextPageLoading}
-            onSelectItem={setSelectedItem}
+            onSelectItem={handleSelectItem}
+            onRestore={restoreFromHistory}
+            restoringItemId={restoringItemId}
           />
         </EuiFlyoutBody>
       </EuiFlyout>

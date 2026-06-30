@@ -157,18 +157,21 @@ describe('FrozenPhaseCard', () => {
       ).toBeInTheDocument();
     });
 
-    it('renders the default repository callout and opens the create-repository modal', () => {
-      const { getByTestId, queryByTestId, getByRole } = renderFrozenPhaseCard({
+    it('renders the default repository callout with a direct create-repository link', () => {
+      const { getByTestId, queryByTestId } = renderFrozenPhaseCard({
         hasDefaultSnapshotRepository: false,
         defaultSnapshotRepository: 'my-repo',
+        createDefaultRepositoryUrl: '/app/management/data/snapshot_restore/add_repository',
       });
 
       expect(getByTestId('frozenDefaultRepositoryRequiredCallout')).toBeInTheDocument();
       expect(queryByTestId('frozenSearchableSnapshotInfo')).not.toBeInTheDocument();
 
-      fireEvent.click(getByTestId('frozenCreateDefaultRepositoryButton'));
-      // The modal (not the callout) exposes a "Refresh snapshot repositories" button.
-      expect(getByRole('button', { name: 'Refresh snapshot repositories' })).toBeInTheDocument();
+      // The create button links directly to the repository creation page (no modal).
+      expect(getByTestId('frozenCreateDefaultRepositoryButton')).toHaveAttribute(
+        'href',
+        '/app/management/data/snapshot_restore/add_repository'
+      );
     });
 
     it('disables the create repository action when the user cannot create one', () => {

@@ -159,7 +159,9 @@ export const FrozenPhaseCard = ({
                 <EuiSpacer size="s" />
 
                 <FrozenDefaultRepositoryRequiredCallout
-                  onCreateDefaultRepository={openCreateDefaultRepositoryModal}
+                  createDefaultRepositoryHref={
+                    canCreateDefaultSnapshotRepository ? createDefaultRepositoryUrl : undefined
+                  }
                   onRefresh={refreshDefaultRepository}
                   isRefreshing={isRefreshingDefaultRepository}
                   calloutTestSubj="frozenDefaultRepositoryRequiredCallout"

@@ -76,7 +76,12 @@ const FlyoutHeaderComponent: React.FC<{
         {icon ? (
           <Suspense fallback={null}>
             <EuiFlexItem grow={false}>
-              <EuiIcon type={icon} size="m" data-test-subj="edit-connector-flyout-header-icon" />
+              <EuiIcon
+                type={icon}
+                size="m"
+                data-test-subj="edit-connector-flyout-header-icon"
+                aria-hidden={true}
+              />
             </EuiFlexItem>
           </Suspense>
         ) : null}

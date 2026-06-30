@@ -10,14 +10,14 @@ import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { BuiltinToolDefinition, StaticToolRegistration } from '@kbn/agent-builder-server';
 import type { Logger } from '@kbn/core/server';
 import { i18n } from '@kbn/i18n';
-import { sigEventStatusSchema } from '@kbn/streams-schema';
+import { significantEventStatusSchema } from '@kbn/streams-schema';
 import { z } from '@kbn/zod/v4';
 import dedent from 'dedent';
 import type { EbtTelemetryClient } from '../../../lib/telemetry/ebt';
 import type { GetScopedClients } from '../../../routes/types';
 import { assertSignificantEventsAccess } from '../../../routes/utils/assert_significant_events_access';
 import type { StreamsServer } from '../../../types';
-import { createSigEventsAvailability } from '../sig_events_availability';
+import { createSignificantEventsAvailability } from '../significant_events_availability';
 import { updateEventStatusToolHandler } from './handler';
 
 export const STREAMS_EVENT_STATUS_UPDATE_TOOL_ID = platformStreamsSigEventsTools.updateEventStatus;
@@ -28,7 +28,7 @@ const eventStatusUpdateSchema = z.object({
       defaultMessage: 'Identifier of the significant event to update.',
     })
   ),
-  status: sigEventStatusSchema.describe(
+  status: significantEventStatusSchema.describe(
     i18n.translate('xpack.streams.agentBuilder.tools.eventStatusUpdate.schema.status', {
       defaultMessage: 'Target status value to set.',
     })
@@ -56,7 +56,7 @@ export function createEventStatusUpdateTool({
     `,
     schema: eventStatusUpdateSchema,
     tags: ['streams', 'significant_events'],
-    availability: createSigEventsAvailability({ server, logger }),
+    availability: createSignificantEventsAvailability({ server, logger }),
     handler: async (toolParams, context) => {
       const { request } = context;
       try {

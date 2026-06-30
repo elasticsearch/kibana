@@ -17,6 +17,7 @@ import {
   EuiFlexItem,
   EuiFieldText,
   EuiButtonIcon,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { AddDeleteButtons } from '../../add_delete_buttons';
@@ -51,6 +52,11 @@ function MarkdownSeriesUi(props) {
   const model = { ...defaults, ...props.model };
 
   const handleChange = createTextHandler(onChange);
+
+  const toggleEditorLabel = intl.formatMessage({
+    id: 'visTypeTimeseries.markdown.editor.toggleEditorAriaLabel',
+    defaultMessage: 'Toggle series editor',
+  });
 
   let caretIcon = 'chevronSingleDown';
   if (!visible) caretIcon = 'chevronSingleRight';
@@ -121,16 +127,15 @@ function MarkdownSeriesUi(props) {
     <div className={`${props.className}`} style={props.style}>
       <EuiFlexGroup responsive={false} gutterSize="s" alignItems="center">
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            iconType={caretIcon}
-            color="text"
-            onClick={props.toggleVisible}
-            aria-label={intl.formatMessage({
-              id: 'visTypeTimeseries.markdown.editor.toggleEditorAriaLabel',
-              defaultMessage: 'Toggle series editor',
-            })}
-            aria-expanded={props.visible}
-          />
+          <EuiToolTip content={toggleEditorLabel} disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType={caretIcon}
+              color="text"
+              onClick={props.toggleVisible}
+              aria-label={toggleEditorLabel}
+              aria-expanded={props.visible}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
 
         <EuiFlexItem>

@@ -13,6 +13,7 @@ import type {
   SavedObjectReference,
   SecurityServiceStart,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core-saved-objects-server';
 import type { SetOptional } from 'type-fest';
 import type {
   AggregationsStringTermsAggregate,
@@ -192,7 +193,11 @@ export class WatchlistConfigClient {
       );
 
       soResults.saved_objects.forEach((so) => {
-        if (!so.error && so.attributes.type === 'index' && !!so.attributes.apiKeyId) {
+        if (
+          !isSavedObjectErrorResult(so) &&
+          so.attributes.type === 'index' &&
+          !!so.attributes.apiKeyId
+        ) {
           indexSourcesApiKeyIdMap.set(so.id, so.attributes.apiKeyId);
         }
       });

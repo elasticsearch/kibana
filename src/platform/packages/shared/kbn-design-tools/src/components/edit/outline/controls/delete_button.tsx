@@ -8,22 +8,26 @@
  */
 
 import React from 'react';
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
 interface Props {
   onClick: () => void;
 }
 
+const deleteLabel = i18n.translate('kbnDesignTools.edit.outline.controls.deleteElement', {
+  defaultMessage: 'Delete element',
+});
+
 export const DeleteButton = ({ onClick }: Props) => (
-  <EuiButtonIcon
-    iconType="trash"
-    color="danger"
-    size="xs"
-    aria-label={i18n.translate('kbnDesignTools.edit.outline.controls.deleteElement', {
-      defaultMessage: 'Delete element',
-    })}
-    onClick={onClick}
-    data-test-subj="editOutlineDeleteButton"
-  />
+  <EuiToolTip content={deleteLabel} disableScreenReaderOutput>
+    <EuiButtonIcon
+      iconType="trash"
+      color="danger"
+      size="xs"
+      aria-label={deleteLabel}
+      onClick={onClick}
+      data-test-subj="editOutlineDeleteButton"
+    />
+  </EuiToolTip>
 );

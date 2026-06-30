@@ -35,16 +35,20 @@ const AVAILABLE_RESOURCE_FIELDS: Array<Array<keyof ResourceFields>> = [
   ],
 ];
 
+const isEmptyScalar = (value: unknown): boolean =>
+  value === undefined || value === null || value === '';
+
+// In Classic mode the `fields` API returns values wrapped in arrays, so a blank
+// field arrives as `['']`. Treat empty arrays and arrays containing only
+// empty/null values as empty, consistent with how scalar null/'' are handled.
+const isEmptyResourceValue = (value: unknown): boolean =>
+  Array.isArray(value) ? value.every(isEmptyScalar) : isEmptyScalar(value);
+
 export const getAvailableResourceFields = (resourceDoc: Record<string, unknown>): string[] =>
   AVAILABLE_RESOURCE_FIELDS.reduce<string[]>((acc, fields) => {
     for (const fieldName of fields) {
       const result = getFieldValueWithFallback(resourceDoc, fieldName);
-      if (
-        result.field &&
-        result.value !== undefined &&
-        result.value !== null &&
-        result.value !== ''
-      ) {
+      if (result.field && !isEmptyResourceValue(result.value)) {
         acc.push(result.field);
         break;
       }

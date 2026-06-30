@@ -266,7 +266,7 @@ describe('MemoryServiceImpl', () => {
       output: { statusCode: 404 },
     });
     await expect(service.listAll()).resolves.toEqual([]);
-    await expect(service.getCategoryTree()).resolves.toEqual([]);
+    await expect(service.getCategoryTree()).resolves.toEqual({ tree: [], uncategorized: [] });
   });
 
   it('restores a deleted page when recreated with the same name', async () => {

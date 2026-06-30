@@ -31,7 +31,10 @@ describe('statusDocsAndOrphanedUiamKeysFromTaskBulkUpdate', () => {
       provisioningStatusForFailedTasks,
       orphanedInvalidationTargets,
     } = statusDocsAndOrphanedUiamKeysFromTaskBulkUpdate(
-      [{ id: 'a', error: { message: 'conflict' } }, { id: 'b' }],
+      [
+        { id: 'a', error: { error: 'Conflict', message: 'conflict', statusCode: 409 } },
+        { id: 'b' },
+      ],
       uiamKeyByTaskId
     );
 

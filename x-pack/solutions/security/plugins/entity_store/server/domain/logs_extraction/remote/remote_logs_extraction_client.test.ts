@@ -7,6 +7,7 @@
 
 import type { ESQLSearchResponse } from '@kbn/es-types';
 import moment from 'moment';
+import { errors } from '@elastic/elasticsearch';
 import { loggerMock } from '@kbn/logging-mocks';
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { RemoteLogsExtractionClient } from './remote_logs_extraction_client';
@@ -693,6 +694,62 @@ describe('RemoteLogsExtractionClient', () => {
 
       expect(result.error).toBeUndefined();
       expect(mockLogger.warn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('CPS/CCS extraction error handling', () => {
+    const makeClient = (id: 'ccs' | 'cps') =>
+      new RemoteLogsExtractionClient(mockLogger, namespace, {
+        id,
+        client: mockEsClient,
+        stateClient: mockStateClient,
+        buildPatterns: ({ remoteIndexPatterns }) => remoteIndexPatterns,
+      });
+
+    // The matcher reads only body.error.type, so statusCode is irrelevant here.
+    const esResponseError = (type: string) =>
+      new errors.ResponseError({
+        warnings: [],
+        meta: {} as never,
+        body: { error: { type, reason: null } },
+      });
+
+    it('CPS: treats no_such_element_exception (no linked projects) as empty, no error', async () => {
+      mockExecuteEsqlQuery.mockRejectedValueOnce(esResponseError('no_such_element_exception'));
+
+      const result = await makeClient('cps').extractToUpdates(defaultExtractParams);
+
+      expect(result).toEqual({ count: 0, pages: 0 });
+    });
+
+    it('CPS: treats no_such_remote_cluster_exception (CPS disabled) as empty, no error', async () => {
+      mockExecuteEsqlQuery.mockRejectedValueOnce(
+        esResponseError('no_such_remote_cluster_exception')
+      );
+
+      const result = await makeClient('cps').extractToUpdates(defaultExtractParams);
+
+      expect(result).toEqual({ count: 0, pages: 0 });
+    });
+
+    it('CCS: surfaces no_such_remote_cluster_exception as an error (gate is CPS-only)', async () => {
+      mockExecuteEsqlQuery.mockRejectedValueOnce(
+        esResponseError('no_such_remote_cluster_exception')
+      );
+
+      const result = await makeClient('ccs').extractToUpdates(defaultExtractParams);
+
+      expect(result.count).toBe(0);
+      expect(result.pages).toBe(0);
+      expect(result.error).toBeDefined();
+    });
+
+    it('CPS: surfaces unrelated failures as an error', async () => {
+      mockExecuteEsqlQuery.mockRejectedValueOnce(new Error('some other failure'));
+
+      const result = await makeClient('cps').extractToUpdates(defaultExtractParams);
+
+      expect(result.error?.message).toContain('some other failure');
     });
   });
 });

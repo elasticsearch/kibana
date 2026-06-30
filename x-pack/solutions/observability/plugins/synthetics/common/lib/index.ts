@@ -6,4 +6,5 @@
  */
 
 export * from './combine_filters_and_user_search';
+export * from './stale_run';
 export * from './stringify_kueries';

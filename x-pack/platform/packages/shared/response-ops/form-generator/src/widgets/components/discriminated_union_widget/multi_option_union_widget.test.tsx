@@ -544,6 +544,131 @@ describe('MultiOptionUnionWidget', () => {
     });
   });
 
+  describe('badges', () => {
+    const renderOptions = (options: Array<z.ZodObject<z.ZodRawShape>>) => {
+      const schema = z.discriminatedUnion('type', options as any);
+      render(
+        <TestFormWrapper>
+          <MultiOptionUnionWidget
+            meta={meta}
+            formConfig={{}}
+            path="auth"
+            schema={schema}
+            options={options as any}
+            fieldProps={{ label: 'Authentication', euiFieldProps: {} }}
+            fieldConfig={{ validations: [{ validator: () => undefined }] }}
+            discriminatorKey="type"
+          />
+        </TestFormWrapper>,
+        { wrapper }
+      );
+    };
+
+    it('renders a "Recommended" badge only for options flagged isRecommended', () => {
+      const ears = z
+        .object({ type: z.literal('ears'), token: z.string().meta({ label: 'Token' }) })
+        .meta({ label: 'Quick Connect', isRecommended: true });
+      const oauth = z
+        .object({ type: z.literal('oauth'), clientId: z.string().meta({ label: 'Client ID' }) })
+        .meta({ label: 'OAuth 2.0' });
+
+      renderOptions([ears, oauth]);
+
+      // Exactly one "Recommended" badge (on the ears card).
+      expect(screen.getAllByText('Recommended')).toHaveLength(1);
+    });
+
+    it('renders authMode badges: per-user -> Personal credentials, shared -> Service account', () => {
+      const perUser = z
+        .object({ type: z.literal('oauth'), clientId: z.string().meta({ label: 'Client ID' }) })
+        .meta({ label: 'OAuth 2.0', authMode: 'per-user' });
+      const shared = z
+        .object({ type: z.literal('client'), secret: z.string().meta({ label: 'Secret' }) })
+        .meta({ label: 'Client Credentials', authMode: 'shared' });
+
+      renderOptions([perUser, shared]);
+
+      expect(screen.getByText('Personal credentials')).toBeInTheDocument();
+      expect(screen.getByText('Service account')).toBeInTheDocument();
+    });
+
+    it('renders no badges when neither isRecommended nor authMode meta is present', () => {
+      const a = z
+        .object({ type: z.literal('a'), x: z.string().meta({ label: 'X' }) })
+        .meta({ label: 'Option A' });
+      const b = z
+        .object({ type: z.literal('b'), y: z.string().meta({ label: 'Y' }) })
+        .meta({ label: 'Option B' });
+
+      renderOptions([a, b]);
+
+      expect(screen.queryByText('Recommended')).toBeNull();
+      expect(screen.queryByText('Personal credentials')).toBeNull();
+      expect(screen.queryByText('Service account')).toBeNull();
+    });
+  });
+
+  describe('legacy options', () => {
+    const renderOptions = (
+      options: Array<z.ZodObject<z.ZodRawShape>>,
+      fieldConfig: Record<string, unknown> = {}
+    ) => {
+      const schema = z.discriminatedUnion('type', options as any);
+      render(
+        <TestFormWrapper>
+          <MultiOptionUnionWidget
+            meta={meta}
+            formConfig={{}}
+            path="auth"
+            schema={schema}
+            options={options as any}
+            fieldProps={{ label: 'Authentication', euiFieldProps: {} }}
+            fieldConfig={{ validations: [{ validator: () => undefined }], ...fieldConfig }}
+            discriminatorKey="type"
+          />
+        </TestFormWrapper>,
+        { wrapper }
+      );
+    };
+
+    const ears = () =>
+      z
+        .object({ type: z.literal('ears'), token: z.string().meta({ label: 'Quick Token' }) })
+        .meta({ label: 'Quick Connect' });
+    const legacyBearer = () =>
+      z
+        .object({
+          type: z.literal('bearer'),
+          legacyToken: z.string().meta({ label: 'Legacy Token' }),
+        })
+        .meta({ label: 'Bearer (legacy)', isLegacy: true });
+
+    it('does not render a legacy option that is not selected', () => {
+      renderOptions([ears(), legacyBearer()]);
+
+      expect(screen.getByText('Quick Connect')).toBeInTheDocument();
+      expect(screen.queryByText('Bearer (legacy)')).toBeNull();
+    });
+
+    it('skips legacy options when picking the default (selects first non-legacy)', () => {
+      // legacy option listed FIRST — default selection should still land on the non-legacy option
+      renderOptions([legacyBearer(), ears()]);
+
+      // ears is selected, so its field renders; the legacy option is not rendered at all
+      expect(screen.getByLabelText('Quick Token', { selector: 'input' })).toBeInTheDocument();
+      expect(screen.queryByText('Bearer (legacy)')).toBeNull();
+    });
+
+    it('renders a legacy option when it is the active selection (e.g. existing connector)', () => {
+      renderOptions([ears(), legacyBearer()], {
+        defaultValue: { type: 'bearer', legacyToken: 'existing' },
+      });
+
+      expect(screen.getByText('Bearer (legacy)')).toBeInTheDocument();
+      expect(screen.getByLabelText('Legacy Token', { selector: 'input' })).toBeInTheDocument();
+    });
+  });
+
   it('should work with custom discriminator key names', () => {
     const option1 = z
       .object({

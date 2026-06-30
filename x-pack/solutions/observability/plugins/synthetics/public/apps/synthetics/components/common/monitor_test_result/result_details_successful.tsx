@@ -46,11 +46,13 @@ export const ResultDetailsSuccessful = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timestamp, monitorId, stepIndex, location, step._id, remoteName]);
 
-  const { currentStep } = useJourneySteps(
-    data?.monitor.check_group,
-    0,
-    Number(step.synthetics.step?.index)
-  );
+  const { currentStep } = useJourneySteps({
+    checkGroup: data?.monitor.check_group,
+    lastRefresh: 0,
+    stepIndex: Number(step.synthetics.step?.index),
+    timestamp: data?.['@timestamp'],
+    stepsOnly: true, // this row only needs step timing, never journey details
+  });
 
   return (
     <div>

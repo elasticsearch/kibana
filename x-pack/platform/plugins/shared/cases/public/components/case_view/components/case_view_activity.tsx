@@ -46,8 +46,6 @@ import type {
   UserActivityParams,
   UserActivitySortOrder,
 } from '../../user_actions_activity_bar/types';
-import { CASE_VIEW_PAGE_TABS } from '../../../../common/types';
-import { CaseViewTabs } from '../case_view_tabs';
 import { Description } from '../../description';
 import { EditCategory } from './edit_category';
 import { parseCaseUsers } from '../../utils';
@@ -61,13 +59,7 @@ import { useRefreshCaseViewPage } from '../use_on_refresh_case_view_page';
 
 const LOCALSTORAGE_SORT_ORDER_KEY = 'cases.userActivity.sortOrder';
 
-export const CaseViewActivity = ({
-  caseData,
-  searchTerm,
-}: {
-  caseData: CaseUI;
-  searchTerm?: string;
-}) => {
+export const CaseViewActivity = ({ caseData }: { caseData: CaseUI }) => {
   const [sortOrder, setSortOrder] = useCasesLocalStorage<UserActivitySortOrder>(
     LOCALSTORAGE_SORT_ORDER_KEY,
     'asc'
@@ -225,11 +217,6 @@ export const CaseViewActivity = ({
           max-width: 75%;
         `}
       >
-        <CaseViewTabs
-          caseData={caseData}
-          activeTab={CASE_VIEW_PAGE_TABS.ACTIVITY}
-          searchTerm={searchTerm}
-        />
         <EuiSpacer size="l" />
         <Description
           isLoadingDescription={isLoadingDescription}

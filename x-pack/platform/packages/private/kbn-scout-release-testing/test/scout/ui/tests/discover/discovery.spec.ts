@@ -41,7 +41,7 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
     await uiSettings.set({
       'timepicker:timeDefaults': TIME_DEFAULTS,
     });
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
   });
 
   test.afterEach(async () => {
@@ -141,7 +141,7 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
       from: EMPTY_TIME_RANGE_START,
       to: EMPTY_TIME_RANGE_END,
     });
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
     await expect(page.testSubj.locator('discoverNoResultsTimefilter')).toBeVisible();
   });
 
@@ -154,7 +154,7 @@ test.describe('Discover app', { tag: tags.stateful.classic }, () => {
       from: EMPTY_TIME_RANGE_START,
       to: EMPTY_TIME_RANGE_END,
     });
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
     await pageObjects.discover.expandTimeRangeAsSuggestedInNoResultsMessage();
 
     await expect(page.testSubj.locator('discoverNoResultsTimefilter')).toBeHidden();

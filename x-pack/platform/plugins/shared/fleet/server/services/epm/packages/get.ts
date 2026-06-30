@@ -11,9 +11,11 @@ import type { MMRegExp } from 'minimatch';
 import { minimatch } from 'minimatch';
 import type {
   ElasticsearchClient,
+  SavedObject,
   SavedObjectsClientContract,
   SavedObjectsFindOptions,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import semverGte from 'semver/functions/gte';
 import type { Logger } from '@kbn/core/server';
 import { withSpan } from '@kbn/apm-utils';
@@ -835,7 +837,9 @@ async function getInstallationObjects(options: {
     pkgNames.map((pkgName) => ({ id: pkgName, type: PACKAGES_SAVED_OBJECT_TYPE }))
   );
 
-  const installations = res.saved_objects.filter((so) => so?.attributes);
+  const installations = res.saved_objects.filter(
+    (so): so is SavedObject<Installation> => !isSavedObjectErrorResult(so)
+  );
 
   for (const installation of installations) {
     auditLoggingService.writeCustomSoAuditLog({

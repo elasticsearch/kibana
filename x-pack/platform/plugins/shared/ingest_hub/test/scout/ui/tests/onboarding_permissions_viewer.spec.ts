@@ -10,30 +10,30 @@ import type { ScoutPage } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 import { test } from '../fixtures';
 
-// The IAM permissions viewer renders inside the connect step's static-keys path
+// The IAM permissions viewer renders inside the deploy-settings step's static-keys path
 // (it is injected as `staticKeysContent`) and only when the selected services
-// have provider permissions. ec2_metrics (AWS EC2) and guardduty (AWS GuardDuty)
-// are both agentless and carry provider permissions:
-//   - ec2_metrics  -> includes "ec2:DescribeInstances"
-//   - guardduty    -> includes "guardduty:GetDetector"
+// have provider permissions. ec2_metrics (AWS EC2) and inspector (AWS Inspector)
+// both carry provider permissions and are agentless:
+//   - ec2_metrics -> includes "ec2:DescribeInstances"
+//   - inspector   -> includes "inspector2:ListFindings" (distinct, no overlap with ec2)
 // These distinct actions let us assert both the aggregated and per-integration views.
 const VIEWER = 'awsPermissionsViewer';
 
-// Sets services in session storage then navigates fresh to the deploy-settings step
-// so the component mounts with the correct selectedServiceIds from the start.
+// Navigates to the deploy-settings step with ec2_metrics and inspector pre-selected
+// so the component mounts with provider-permission-bearing services from the start.
 const navigateWithPermissionBearingServices = async (page: ScoutPage) => {
-  // Must be on the app origin before setting session storage
+  await page.gotoApp('onboarding/aws#deploy-settings');
   await page.evaluate(() => {
     sessionStorage.setItem(
       'onboarding.aws.servicesStep',
-      JSON.stringify({ selectedServiceIds: ['ec2_metrics', 'guardduty'] })
+      JSON.stringify({ selectedServiceIds: ['ec2_metrics', 'inspector'] })
     );
   });
-  await page.gotoApp('onboarding/aws#deploy-settings');
+  await page.reload();
 };
 
 test.describe(
-  'Onboarding connect step IAM permissions viewer',
+  'Onboarding deploy settings step IAM permissions viewer',
   { tag: tags.stateful.classic },
   () => {
     test.beforeAll(async ({ apiServices, config }) => {
@@ -73,7 +73,6 @@ test.describe(
       page,
     }) => {
       await browserAuth.loginAsAdmin();
-      await page.gotoApp('onboarding/aws#deploy-settings');
       await navigateWithPermissionBearingServices(page);
       await expect(page.testSubj.locator('onboardingStep-deploy-settings')).toBeVisible();
 
@@ -93,7 +92,7 @@ test.describe(
         await expect(actionsList).toContainText('"Version": "2012-10-17"');
         await expect(actionsList).toContainText('"Sid": "ElasticAWSIntegration"');
         await expect(actionsList).toContainText('ec2:DescribeInstances');
-        await expect(actionsList).toContainText('guardduty:GetDetector');
+        await expect(actionsList).toContainText('inspector2:ListFindings');
       });
     });
 
@@ -102,7 +101,6 @@ test.describe(
       page,
     }) => {
       await browserAuth.loginAsAdmin();
-      await page.gotoApp('onboarding/aws#deploy-settings');
       await navigateWithPermissionBearingServices(page);
       await expect(page.testSubj.locator('onboardingStep-deploy-settings')).toBeVisible();
 
@@ -112,9 +110,9 @@ test.describe(
       await page.testSubj.locator(`${VIEWER}-serviceSelector`).selectOption('ec2_metrics');
 
       const actionsList = page.testSubj.locator(`${VIEWER}-actionsList`);
-      await expect(actionsList).toContainText('"Sid": "ElasticAWSEC2"');
+      await expect(actionsList).toContainText('"Sid": "ElasticEc2Metrics"');
       await expect(actionsList).toContainText('ec2:DescribeInstances');
-      await expect(actionsList).not.toContainText('guardduty:GetDetector');
+      await expect(actionsList).not.toContainText('inspector2:ListFindings');
     });
   }
 );

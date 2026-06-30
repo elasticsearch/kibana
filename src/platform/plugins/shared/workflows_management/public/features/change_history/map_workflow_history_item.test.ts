@@ -8,8 +8,10 @@
  */
 
 import {
+  getWorkflowYamlFromSnapshot,
   mapWorkflowHistoryItemToDetail,
   mapWorkflowHistoryItemToListItem,
+  toWorkflowChangeHistorySnapshot,
 } from './map_workflow_history_item';
 import {
   WORKFLOW_CHANGE_HISTORY_SYSTEM_USER,
@@ -55,17 +57,35 @@ describe('mapWorkflowHistoryItem', () => {
     });
   });
 
+  it('maps restore rows with comment on the timeline', () => {
+    expect(
+      mapWorkflowHistoryItemToListItem({
+        ...currentHistoryItem,
+        action: WorkflowChangeHistoryAction.workflowRestore,
+        comment: 'Restored from v3',
+      })
+    ).toEqual(
+      expect.objectContaining({
+        action: WorkflowChangeHistoryAction.workflowRestore,
+        comment: 'Restored from v3',
+      })
+    );
+  });
+
   it('maps detail with workflow yaml snapshot', () => {
     const detail = mapWorkflowHistoryItemToDetail(currentHistoryItem, {
       isCurrent: true,
     });
 
-    expect(detail.snapshot).toEqual({
-      workflow: {
-        yaml: 'name: current\n',
-      },
-    });
+    expect(detail.snapshot).toEqual(toWorkflowChangeHistorySnapshot('name: current\n'));
+    expect(getWorkflowYamlFromSnapshot(detail.snapshot)).toBe('name: current\n');
     expect(detail.action).toBe(WorkflowChangeHistoryAction.workflowUpdate);
+  });
+
+  it('returns an empty string for invalid workflow snapshots', () => {
+    expect(getWorkflowYamlFromSnapshot(undefined)).toBe('');
+    expect(getWorkflowYamlFromSnapshot({})).toBe('');
+    expect(getWorkflowYamlFromSnapshot({ workflow: { yaml: 42 } })).toBe('');
   });
 
   it('passes through unknown action values', () => {

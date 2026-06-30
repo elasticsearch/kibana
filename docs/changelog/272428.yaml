@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/272428
+issues:
+- https://github.com/elastic/kibana/issues/267748
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Search and data
+title: "Fix Fleet output save timeouts when many agent policies are affected"
+description: "Saving an output used by many agent policies no longer times out. Policy revision bumps run in a background task when more than 100 policies are affected."

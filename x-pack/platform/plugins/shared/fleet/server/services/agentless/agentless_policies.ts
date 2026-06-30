@@ -14,16 +14,24 @@ import {
   type SavedObjectsClientContract,
   SavedObjectsErrorHelpers,
 } from '@kbn/core/server';
-import type { TypeOf } from '@kbn/config-schema';
 import { v4 as uuidv4 } from 'uuid';
 import { omit } from 'lodash';
 import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 
-import type { AgentlessPolicy, CreateAgentlessPolicyRequestSchema } from '../../../common/types';
+import type {
+  NewAgentlessPolicy,
+  AgentlessPolicy,
+  AgentlessAgentPolicyConfig,
+  PackagePolicy,
+} from '../../../common/types';
 
 import { AGENTLESS_AGENT_POLICY_INACTIVITY_TIMEOUT } from '../../../common/constants';
 
-import { simplifiedPackagePolicytoNewPackagePolicy } from '../../../common/services/simplified_package_policy_helper';
+import {
+  formatInputs,
+  formatVars,
+  simplifiedPackagePolicytoNewPackagePolicy,
+} from '../../../common/services/simplified_package_policy_helper';
 
 import type { PackagePolicyClient } from '../package_policy_service';
 
@@ -42,10 +50,10 @@ import { createAndIntegrateCloudConnector } from '../cloud_connectors';
 
 export interface AgentlessPoliciesService {
   createAgentlessPolicy: (
-    data: TypeOf<typeof CreateAgentlessPolicyRequestSchema.body>,
+    data: NewAgentlessPolicy,
     context?: RequestHandlerContext,
     request?: KibanaRequest
-  ) => Promise<any>;
+  ) => Promise<AgentlessPolicy>;
 
   deleteAgentlessPolicy: (
     policyId: string,
@@ -55,7 +63,9 @@ export interface AgentlessPoliciesService {
   ) => Promise<void>;
 }
 
-const getAgentlessPolicy = (packageInfo?: PackageInfo): AgentlessPolicy | undefined => {
+const getAgentlessAgentPolicyConfig = (
+  packageInfo?: PackageInfo
+): AgentlessAgentPolicyConfig | undefined => {
   if (
     !packageInfo?.policy_templates &&
     !packageInfo?.policy_templates?.some((policy) => policy.deployment_modes)
@@ -78,6 +88,38 @@ const getAgentlessPolicy = (packageInfo?: PackageInfo): AgentlessPolicy | undefi
   };
 };
 
+export const packagePolicyToAgentlessPolicy = (packagePolicy: PackagePolicy): AgentlessPolicy => {
+  // PackagePolicy.package is always set for agentless policies created through this service but optional in the general type
+  if (!packagePolicy.package) {
+    throw new Error(`Agentless policy ${packagePolicy.id} is missing a package reference`);
+  }
+
+  const supportsAgentless = true;
+  return {
+    id: packagePolicy.id,
+    name: packagePolicy.name,
+    description: packagePolicy.description,
+    namespace: packagePolicy.namespace,
+    package: {
+      name: packagePolicy.package.name,
+      title: packagePolicy.package.title,
+      version: packagePolicy.package.version,
+    },
+    inputs: formatInputs(packagePolicy.inputs, supportsAgentless) ?? {},
+    vars: formatVars(packagePolicy.vars),
+    var_group_selections: packagePolicy.var_group_selections,
+    additional_datastreams_permissions: packagePolicy.additional_datastreams_permissions,
+    global_data_tags: packagePolicy.global_data_tags,
+    cloud_connector: packagePolicy.cloud_connector_id
+      ? { enabled: true, cloud_connector_id: packagePolicy.cloud_connector_id }
+      : null,
+    created_at: packagePolicy.created_at,
+    created_by: packagePolicy.created_by,
+    updated_at: packagePolicy.updated_at,
+    updated_by: packagePolicy.updated_by,
+  };
+};
+
 export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
   constructor(
     private readonly packagePolicyService: PackagePolicyClient,
@@ -87,7 +129,7 @@ export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
   ) {}
 
   async createAgentlessPolicy(
-    data: TypeOf<typeof CreateAgentlessPolicyRequestSchema.body>,
+    data: NewAgentlessPolicy,
     context?: RequestHandlerContext,
     request?: KibanaRequest
   ) {
@@ -124,7 +166,7 @@ export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
       const agentPolicyName = getAgentlessAgentPolicyNameFromPackagePolicyName(data.name);
 
       // Get base agentless config from package info
-      const baseAgentlessConfig = getAgentlessPolicy(pkgInfo);
+      const baseAgentlessConfig = getAgentlessAgentPolicyConfig(pkgInfo);
 
       // Build agentless config with cloud connectors if provided
       let agentlessConfig = baseAgentlessConfig;
@@ -217,6 +259,7 @@ export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
           bumpRevision: false,
           spaceId,
           user,
+          createDatasetTemplates: data.create_dataset_templates,
         },
         context,
         request
@@ -227,7 +270,7 @@ export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
         throwOnAgentlessError: true,
       });
 
-      return packagePolicy;
+      return packagePolicyToAgentlessPolicy(packagePolicy);
     } catch (err) {
       // Handle cloud connector rollback
       if (createdCloudConnectorId) {

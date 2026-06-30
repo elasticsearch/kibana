@@ -60,8 +60,11 @@ const getDefaultWidgetForSchema = (schema: z.ZodType, { getMeta, setMeta }: Meta
 };
 
 function getWidgetType(schema: z.ZodType, meta: MetaFunctionsParam): WidgetType | undefined {
-  const { widget } = meta.getMeta(schema);
-  return (widget as WidgetType) || getDefaultWidgetForSchema(schema, meta);
+  const schemaMeta = meta.getMeta(schema);
+  if (schemaMeta.hidden) {
+    return WidgetType.Hidden;
+  }
+  return (schemaMeta.widget as WidgetType) || getDefaultWidgetForSchema(schema, meta);
 }
 
 export function getWidgetComponent(

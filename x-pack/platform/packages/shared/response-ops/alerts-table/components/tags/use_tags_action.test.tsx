@@ -75,6 +75,7 @@ describe('useTagsAction', () => {
         "data-test-subj": "alerts-bulk-action-tags",
         "disabled": false,
         "icon": <EuiIcon
+          aria-hidden={true}
           size="m"
           type="tag"
         />,

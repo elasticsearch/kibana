@@ -10,13 +10,13 @@ import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { BuiltinToolDefinition, StaticToolRegistration } from '@kbn/agent-builder-server';
 import type { Logger } from '@kbn/core/server';
 import { i18n } from '@kbn/i18n';
-import { sigEventStatusSchema } from '@kbn/streams-schema';
+import { significantEventStatusSchema } from '@kbn/streams-schema';
 import { z } from '@kbn/zod/v4';
 import dedent from 'dedent';
 import type { GetScopedClients } from '../../../routes/types';
 import { assertSignificantEventsAccess } from '../../../routes/utils/assert_significant_events_access';
 import type { StreamsServer } from '../../../types';
-import { createSigEventsAvailability } from '../sig_events_availability';
+import { createSignificantEventsAvailability } from '../significant_events_availability';
 import { searchEventsToolHandler } from './handler';
 
 export const STREAMS_SEARCH_EVENTS_TOOL_ID = platformStreamsSigEventsTools.searchEvent;
@@ -39,7 +39,7 @@ const searchEventsSchema = z.object({
       })
     ),
   status: z
-    .array(sigEventStatusSchema)
+    .array(significantEventStatusSchema)
     .optional()
     .describe(
       i18n.translate('xpack.streams.agentBuilder.tools.eventSearch.schema.status', {
@@ -74,7 +74,7 @@ export function createSearchEventsTool({
     `,
     schema: searchEventsSchema,
     tags: ['streams', 'significant_events'],
-    availability: createSigEventsAvailability({ server, logger }),
+    availability: createSignificantEventsAvailability({ server, logger }),
     handler: async (toolParams, context) => {
       const { request } = context;
 

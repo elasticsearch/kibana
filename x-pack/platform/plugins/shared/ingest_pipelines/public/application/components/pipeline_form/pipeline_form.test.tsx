@@ -44,6 +44,9 @@ describe('PipelineForm', () => {
         history: {},
         application: { navigateToUrl: jest.fn() },
         http: {},
+        documentation: {
+          getFieldAccessPatternUrl: jest.fn(() => 'https://elastic.co/docs'),
+        },
       },
     });
   });

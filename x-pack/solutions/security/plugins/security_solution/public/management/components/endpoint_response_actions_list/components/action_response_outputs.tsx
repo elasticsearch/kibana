@@ -9,7 +9,9 @@
 
 import React, { memo, useMemo } from 'react';
 import { EuiSpacer } from '@elastic/eui';
+import { CancelActionResults } from '../../cancel_action_results';
 import {
+  isCancelAction,
   isExecuteAction,
   isGetFileAction,
   isMemoryDumpAction,
@@ -113,6 +115,16 @@ export const ActionResponseOutputs = memo<ActionResponseOutputsProps>(
                 );
               }
 
+              if (isCancelAction(action)) {
+                hostOutput = (
+                  <CancelActionResults
+                    action={action}
+                    agentId={agentId}
+                    data-test-subj={getTestId('cancelOutput')}
+                    textSize="xs"
+                  />
+                );
+              }
               if (isProcessesAction(action)) {
                 hostOutput = (
                   <RunningProcessesActionResults

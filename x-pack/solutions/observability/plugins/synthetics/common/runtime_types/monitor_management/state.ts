@@ -30,6 +30,12 @@ const FetchMonitorQueryArgsCommon = {
   sortOrder: t.union([t.literal('desc'), t.literal('asc')]),
   showFromAllSpaces: t.boolean,
   useLogicalAndFor: t.array(t.union(useLogicalAndFileLiteral)),
+  // Date-range window for the overview list. When `[dateRangeStart, dateRangeEnd]`
+  // are present, the server scopes each monitor's status to that window (and
+  // surfaces monitors with no run in the window as `pending`). The range strings
+  // accept datemath (e.g. `now-24h`) or ISO timestamps.
+  dateRangeStart: t.string,
+  dateRangeEnd: t.string,
 };
 
 export const FetchMonitorManagementListQueryArgsCodec = t.partial({

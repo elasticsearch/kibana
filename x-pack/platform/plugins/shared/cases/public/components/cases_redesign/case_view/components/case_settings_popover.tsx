@@ -8,18 +8,8 @@
 import type { FC } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  EuiButton,
-  EuiButtonEmpty,
   EuiComboBox,
-  EuiFieldText,
   EuiFormRow,
-  EuiHorizontalRule,
-  EuiLink,
-  EuiModal,
-  EuiModalBody,
-  EuiModalFooter,
-  EuiModalHeader,
-  EuiModalHeaderTitle,
   EuiPopoverTitle,
   EuiSpacer,
   EuiSwitch,
@@ -35,7 +25,7 @@ import { useGetTemplate } from '../../../templates_v2/hooks/use_get_template';
 import { KibanaServices } from '../../../../common/lib/kibana';
 import * as i18n from '../../../case_view/translations';
 import * as commonI18n from '../../../../common/translations';
-import { SHOW_METRICS, EDIT_CASE_NAME, NEW_CASE_NAME_LABEL } from '../../translations';
+import { SHOW_METRICS } from '../../translations';
 
 interface CaseSettingsPopoverProps {
   caseData: CaseUI;
@@ -43,7 +33,6 @@ interface CaseSettingsPopoverProps {
   onSyncAlertsChange: (enabled: boolean) => void;
   showMetrics: boolean;
   onShowMetricsChange: (enabled: boolean) => void;
-  onCaseNameChange: (newName: string) => void;
   isOpen: boolean;
   onClose: () => void;
   anchorElement: HTMLElement;
@@ -55,7 +44,6 @@ export const CaseSettingsPopover: FC<CaseSettingsPopoverProps> = ({
   onSyncAlertsChange,
   showMetrics,
   onShowMetricsChange,
-  onCaseNameChange,
   isOpen,
   onClose,
   anchorElement,
@@ -64,8 +52,6 @@ export const CaseSettingsPopover: FC<CaseSettingsPopoverProps> = ({
   const { isSyncAlertsEnabled, metricsFeatures } = useCasesFeatures();
   const hasMetrics = metricsFeatures.length > 0;
   const isTemplatesEnabled = KibanaServices.getConfig()?.templates?.enabled ?? false;
-  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [newCaseName, setNewCaseName] = useState(caseData.title);
 
   const { data: templatesData, isLoading: isLoadingTemplates } = useGetTemplates({
     queryParams: { page: 1, perPage: 10000, owner, isEnabled: true },
@@ -119,111 +105,57 @@ export const CaseSettingsPopover: FC<CaseSettingsPopoverProps> = ({
     setSelectedTemplateId(selected[0]?.value ?? '');
   }, []);
 
-  const openRenameModal = useCallback(() => {
-    setNewCaseName(caseData.title);
-    setIsRenameModalOpen(true);
-    onClose();
-  }, [caseData.title, onClose]);
-
-  const closeRenameModal = useCallback(() => {
-    setIsRenameModalOpen(false);
-  }, []);
-
-  const onSubmitRename = useCallback(() => {
-    const trimmed = newCaseName.trim();
-    if (trimmed && trimmed !== caseData.title) {
-      onCaseNameChange(trimmed);
-    }
-    setIsRenameModalOpen(false);
-  }, [newCaseName, caseData.title, onCaseNameChange]);
-
   return (
-    <>
-      <EuiWrappingPopover
-        button={anchorElement}
-        isOpen={isOpen}
-        closePopover={onClose}
-        anchorPosition="downRight"
-        panelPaddingSize="m"
-        aria-label={i18n.CASE_SETTINGS}
-        data-test-subj="case-settings-popover"
-      >
-        <EuiPopoverTitle>{i18n.CASE_SETTINGS}</EuiPopoverTitle>
-        {isTemplatesEnabled && (
-          <>
-            <EuiFormRow label={commonI18n.APPLY_TEMPLATE_MODAL_TEMPLATE_LABEL} fullWidth>
-              <EuiComboBox
-                fullWidth
-                singleSelection={{ asPlainText: true }}
-                options={options}
-                selectedOptions={selectedOptions}
-                onChange={onTemplateChange}
-                isLoading={isLoadingTemplates}
-                placeholder={commonI18n.APPLY_TEMPLATE_MODAL_TEMPLATE_PLACEHOLDER}
-                data-test-subj="case-settings-template-select"
-                compressed
-              />
-            </EuiFormRow>
-            <EuiSpacer size="m" />
-          </>
-        )}
-        {isSyncAlertsEnabled && (
-          <>
-            <EuiSwitch
-              label={i18n.SYNC_ALERTS}
-              checked={syncAlerts}
-              onChange={(e) => onSyncAlertsChange(e.target.checked)}
+    <EuiWrappingPopover
+      button={anchorElement}
+      isOpen={isOpen}
+      closePopover={onClose}
+      anchorPosition="downRight"
+      panelPaddingSize="m"
+      aria-label={i18n.CASE_SETTINGS}
+      data-test-subj="case-settings-popover"
+    >
+      <EuiPopoverTitle>{i18n.CASE_SETTINGS}</EuiPopoverTitle>
+      {isTemplatesEnabled && (
+        <>
+          <EuiFormRow label={commonI18n.APPLY_TEMPLATE_MODAL_TEMPLATE_LABEL} fullWidth>
+            <EuiComboBox
+              fullWidth
+              singleSelection={{ asPlainText: true }}
+              options={options}
+              selectedOptions={selectedOptions}
+              onChange={onTemplateChange}
+              isLoading={isLoadingTemplates}
+              placeholder={commonI18n.APPLY_TEMPLATE_MODAL_TEMPLATE_PLACEHOLDER}
+              data-test-subj="case-settings-template-select"
               compressed
-              data-test-subj="case-settings-sync-alerts-switch"
             />
-            <EuiSpacer size="m" />
-          </>
-        )}
-        {hasMetrics && (
-          <>
-            <EuiSwitch
-              label={SHOW_METRICS}
-              checked={showMetrics}
-              onChange={(e) => onShowMetricsChange(e.target.checked)}
-              compressed
-              data-test-subj="case-settings-show-metrics-switch"
-            />
-            <EuiHorizontalRule margin="m" />
-          </>
-        )}
-        <EuiLink onClick={openRenameModal} data-test-subj="case-settings-change-name">
-          {EDIT_CASE_NAME}
-        </EuiLink>
-      </EuiWrappingPopover>
-      {isRenameModalOpen && (
-        <EuiModal onClose={closeRenameModal} data-test-subj="case-rename-modal">
-          <EuiModalHeader>
-            <EuiModalHeaderTitle>{EDIT_CASE_NAME}</EuiModalHeaderTitle>
-          </EuiModalHeader>
-          <EuiModalBody>
-            <EuiFormRow label={NEW_CASE_NAME_LABEL} fullWidth>
-              <EuiFieldText
-                fullWidth
-                value={newCaseName}
-                onChange={(e) => setNewCaseName(e.target.value)}
-                data-test-subj="case-rename-input"
-              />
-            </EuiFormRow>
-          </EuiModalBody>
-          <EuiModalFooter>
-            <EuiButtonEmpty onClick={closeRenameModal}>{commonI18n.CANCEL}</EuiButtonEmpty>
-            <EuiButton
-              fill
-              onClick={onSubmitRename}
-              isDisabled={!newCaseName.trim() || newCaseName.trim() === caseData.title}
-              data-test-subj="case-rename-submit"
-            >
-              {commonI18n.SAVE}
-            </EuiButton>
-          </EuiModalFooter>
-        </EuiModal>
+          </EuiFormRow>
+          <EuiSpacer size="m" />
+        </>
       )}
-    </>
+      {isSyncAlertsEnabled && (
+        <>
+          <EuiSwitch
+            label={i18n.SYNC_ALERTS}
+            checked={syncAlerts}
+            onChange={(e) => onSyncAlertsChange(e.target.checked)}
+            compressed
+            data-test-subj="case-settings-sync-alerts-switch"
+          />
+          <EuiSpacer size="m" />
+        </>
+      )}
+      {hasMetrics && (
+        <EuiSwitch
+          label={SHOW_METRICS}
+          checked={showMetrics}
+          onChange={(e) => onShowMetricsChange(e.target.checked)}
+          compressed
+          data-test-subj="case-settings-show-metrics-switch"
+        />
+      )}
+    </EuiWrappingPopover>
   );
 };
 

@@ -6,7 +6,16 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { EuiButton, EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiTitle, EuiText } from '@elastic/eui';
+import {
+  EuiButton,
+  EuiButtonEmpty,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiSpacer,
+  EuiTitle,
+  EuiText,
+  type IconType,
+} from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
 import type { AccountType } from '../../../../common/types';
@@ -32,7 +41,11 @@ export interface AwsConnectSetupProps {
   initialTemporaryKeys?: Partial<AwsTemporaryKeyCredentials>;
   showIdentityFederation?: boolean;
   staticKeysContent?: React.ReactNode;
-  onNext?: () => void;
+  onBack?: () => void;
+  onContinue?: () => void;
+  isContinueButtonLoading?: boolean;
+  continueButtonLabel?: React.ReactNode;
+  continueButtonIconType?: IconType;
   onConnectorIdChange?: (connectorId: string | undefined) => void;
   onStaticKeysChange?: (keys: AwsStaticKeyCredentials | undefined) => void;
   onTemporaryKeysChange?: (keys: AwsTemporaryKeyCredentials | undefined) => void;
@@ -48,7 +61,11 @@ export const AwsConnectSetup: React.FC<AwsConnectSetupProps> = ({
   initialTemporaryKeys,
   showIdentityFederation = true,
   staticKeysContent,
-  onNext,
+  onBack,
+  onContinue,
+  isContinueButtonLoading = false,
+  continueButtonLabel,
+  continueButtonIconType,
   onConnectorIdChange,
   onStaticKeysChange,
   onTemporaryKeysChange,
@@ -124,22 +141,43 @@ export const AwsConnectSetup: React.FC<AwsConnectSetupProps> = ({
           onFieldsChange={onTemporaryKeysChange}
         />
       )}
-      {onNext && (
+      {(onBack || onContinue) && (
         <>
           <EuiSpacer size="l" />
-          <EuiFlexGroup justifyContent="flexEnd">
+          <EuiFlexGroup justifyContent="spaceBetween">
             <EuiFlexItem grow={false}>
-              <EuiButton
-                fill
-                isDisabled={!isFormReady}
-                onClick={onNext}
-                data-test-subj="awsConnectSetup-nextButton"
-              >
-                <FormattedMessage
-                  id="xpack.fleet.awsConnectSetup.nextButton"
-                  defaultMessage="Next"
-                />
-              </EuiButton>
+              {onBack && (
+                <EuiButtonEmpty
+                  iconType="arrowLeft"
+                  iconSide="left"
+                  onClick={onBack}
+                  data-test-subj="awsConnectSetup-backButton"
+                >
+                  <FormattedMessage
+                    id="xpack.fleet.awsConnectSetup.backButton"
+                    defaultMessage="Back"
+                  />
+                </EuiButtonEmpty>
+              )}
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              {onContinue && (
+                <EuiButton
+                  fill
+                  isDisabled={!isFormReady || isContinueButtonLoading}
+                  isLoading={isContinueButtonLoading}
+                  onClick={onContinue}
+                  iconType={continueButtonIconType}
+                  data-test-subj="awsConnectSetup-continueButton"
+                >
+                  {continueButtonLabel ?? (
+                    <FormattedMessage
+                      id="xpack.fleet.awsConnectSetup.continueButton"
+                      defaultMessage="Continue"
+                    />
+                  )}
+                </EuiButton>
+              )}
             </EuiFlexItem>
           </EuiFlexGroup>
         </>

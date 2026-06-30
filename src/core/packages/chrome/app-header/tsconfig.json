@@ -10,6 +10,7 @@
     "@kbn/core-chrome-app-menu-components",
     "@kbn/core-chrome-browser",
     "@kbn/core-chrome-browser-context",
+    "@kbn/core-chrome-browser-context-mocks",
     "@kbn/core-http-browser",
     "@kbn/core-mount-utils-browser",
     "@kbn/i18n",

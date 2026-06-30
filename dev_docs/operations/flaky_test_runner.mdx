@@ -4,110 +4,13 @@ slug: /kibana-dev-docs/ops/flaky-test-runner
 title: "Flaky Test Runner"
 description: A tool which runs specific tests many times to spot flakiness
 tags: ['kibana', 'dev', 'contributor', 'operations', 'ci', 'tests', 'flaky']
+redirect_url: https://codex.elastic.dev/r/kibana-team/operations/ci/flaky-test-runner
 ---
 
-The Flaky Test Runner is a tool that can be used to gauge the flakiness of a test. It is triggered using the form at https://ci-stats.kibana.dev/trigger_flaky_test_runner. Follow the instructions in the wizard to pick a PR, then a test which will run and the number of executions for that test, and finally start that job at Buildkite.
+{/* REDIRECT_NOTICE_START */}
 
-After starting the job you will be sent to buildkite to view the progress of the job.
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://codex.elastic.dev/r/kibana-team/operations/ci/flaky-test-runner](https://codex.elastic.dev/r/kibana-team/operations/ci/flaky-test-runner)
+</DocCallOut>
 
-## How many successful runs do I need to know if my test is flaky?
-
-Most of the time flakiness should be resolved by starting with the error that's occurring in CI, then applying the suggestions in <DocLink id="kibDevDocsOpsFlakyTests" section="how-do-i-write-tests-that-arent-flaky" text="Flaky tests: How do I write functional tests that aren't flaky?"/> to find places where flakiness is likely being introduced. When working this way the flaky test runner can be used to debug a failure by running it many times to trigger the flakiness, or used to verify at the end that flakiness isn't increased by the changes.
-
-If you did want to prove that your test wasn't flaky anymore, the number of runs that you would need is based on the flakiness of the test you are dealing with. We execute tests about 300 times a day, on average, so if your test is only failing a few times a week then you might need over 1000 successful test runs to prove that it's no longer flaky. If a test is failing several times a day, then you would need way fewer.
-
-Ultimately, running the flaky test runner enough times to validate that a test isn't flaky just isn't an economically responsible way to fix flakiness so should be a last resort strategy.
-
-If there is reason to believe that a test which was previously flaky is no longer flaky, then the test can just be unskipped. If the test is still flaky then that will be proven shortly enough in CI and Operations will skip the test again.
-
-## Scout: per (arch, domain) execution
-
-When you select a Scout Playwright config in the trigger form, the Flaky Test Runner expands that single request into **one Buildkite step per `(arch, domain)` mode** the config supports (e.g. `--arch stateful --domain classic`, `--arch serverless --domain search`, `--arch serverless --domain security_complete`). Each mode then runs in its own worker with `parallelism` set to the requested run count, so:
-
-- Modes execute in parallel rather than sequentially within a single job, reducing wall-clock time for multi-mode configs.
-- Pass/fail rates are reported per `(arch, domain)` step in the Buildkite UI, making it easy to see which mode is actually flaky.
-- A failure in one mode no longer ties up the worker for the remaining modes.
-
-A single `Discover and plan Scout flaky steps` step bootstraps Kibana, runs Playwright config discovery, and dynamically uploads the per-mode steps. It runs in parallel with `Build Kibana Distribution`, and the per-mode steps it uploads wait for the build to finish before executing.
-
-### Limit per Scout config: 50 runs
-
-Because a single Scout request fans out into multiple Buildkite jobs, the Flaky Test Runner caps the **per-config** run count at **50**. Submitting a higher `count` for a `scoutConfig` entry will fail at pipeline upload with a clear error message.
-
-If you need more repetitions for a specific failure mode, run the Flaky Test Runner multiple times. The Buildkite platform also caps total jobs per build at 500; the planner enforces this limit precisely after fan-out, accounting for FTR/Cypress jobs already in the build, and refuses to upload more steps if the cap would be exceeded.
-
-## FTR config runs (`type: "ftrConfig"`)
-
-Each `ftrConfig` entry runs one FTR config file via `ftr_configs.sh` with Buildkite `parallelism` equal to `count` (repeat the same config N times).
-
-| Field | Required | Description |
-| --- | --- | --- |
-| `type` | yes | Must be `"ftrConfig"`. |
-| `ftrConfig` | yes | Repo-relative path to the FTR config (from `.buildkite/ftr_configs.yml`). |
-| `count` | yes | Number of repetitions (max 50 per entry). |
-| `ftrExtraArgs` | no | Extra args forwarded to `node scripts/functional_tests` (same as `FTR_EXTRA_ARGS` in main CI), e.g. `--grep 'my test'` or `--include path/to/test_file.ts`. |
-
-Example (whole config):
-
-```json
-[{ "type": "ftrConfig", "ftrConfig": "x-pack/test/functional/config.ts", "count": 25 }]
-```
-
-Example (one config, filtered to a test file):
-
-```json
-[
-  {
-    "type": "ftrConfig",
-    "ftrConfig": "x-pack/solutions/security/test/security_solution_api_integration/config.ts",
-    "count": 25,
-    "ftrExtraArgs": "--include test_suites/detection_engine/my_test.ts"
-  }
-]
-```
-
-See `.buildkite/pipelines/flaky_tests/examples/ftr-config-with-extra-args.json`.
-
-## Single-spec runs (`type: "command"`)
-
-The trigger UI at https://ci-stats.kibana.dev/trigger_flaky_test_runner still posts `group`, `ftrConfig`, and `scoutConfig` selections. **`command` is for programmatic triggers** (for example `bk build create` with env vars, or the internal `@elastic/flaky-runner` CLI) once this pipeline change is on the branch Buildkite uses to generate the pipeline.
-
-### Config shape
-
-`KIBANA_FLAKY_TEST_RUNNER_CONFIG` and `KIBANA_FLAKY_TEST_RUNNER_CONFIG_V1` carry the same JSON array. Prefer `_V1` for new triggers; the legacy name remains for older clients. See `.buildkite/pipelines/flaky_tests/pipeline.ts` for validation.
-
-Each `command` entry runs `.buildkite/scripts/steps/flaky/run_command.sh` with Buildkite `parallelism` equal to `count` (repeat the same command N times, not test sharding).
-
-| Field | Required | Description |
-| --- | --- | --- |
-| `type` | yes | Must be `"command"`. |
-| `label` | yes | Buildkite step label (usually the spec file name). |
-| `workingDirectory` | yes | Initial cwd before the command. Use `"."` (repo root); put `cd <package> && …` inside `command` when needed. |
-| `command` | yes | Shell snippet run with `bash -c`. Only set at trigger time by authenticated flaky-runner tooling, not from PR code. |
-| `count` | yes | Number of repetitions (max 50 per entry). |
-| `job` | no | Sets `JOB` for Cypress analytics (for example `kibana-security-solution-chrome`). |
-| `scoutLabel` | no | Optional label passed to `upload_scout_cypress_events` (Scout/Cypress test analytics). Omit when not using that upload path. |
-| `junitMergeWorkingDirectory` | no | Repo-relative package path for `yarn junit:merge` when it differs from `workingDirectory` (common for Security Cypress). |
-| `agentQueue` | no | Override agent queue (`n2-4-spot` default). `n2-4-virt` + 120GB disk apply when the command path references `defend_workflows`, matching Cypress group steps. |
-| `diskSizeGb` | no | Override disk size when using a custom `agentQueue`. |
-
-Example (Cypress single spec):
-
-```json
-[
-  {
-    "type": "command",
-    "label": "watchlists_page.cy.ts",
-    "workingDirectory": ".",
-    "command": "cd x-pack/solutions/security/test/security_solution_cypress && yarn cypress:entity_analytics:run:ess --spec './cypress/e2e/entity_analytics/watchlists/watchlists_page.cy.ts'",
-    "count": 10,
-    "job": "kibana-security-solution-chrome",
-    "scoutLabel": "watchlists_page.cy.ts",
-    "junitMergeWorkingDirectory": "x-pack/solutions/security/test/security_solution_cypress"
-  }
-]
-```
-
-A copy lives at `.buildkite/pipelines/flaky_tests/examples/command-cypress-single-spec.json`.
-
-Scout single-spec commands typically use `workingDirectory: "."` and a repo-root `node scripts/scout run-tests …` command; set `scoutLabel` to the spec basename when you want the same analytics upload as other Scout/Cypress flaky steps.
+{/* REDIRECT_NOTICE_END */}

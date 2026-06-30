@@ -258,7 +258,7 @@ All registered Page Objects are available via the `pageObjects` fixture:
 
 ```ts
 test.beforeEach(async ({ pageObjects }) => {
-  await pageObjects.discover.goto();
+  await pageObjects.discover.goto({ queryMode: 'classic' });
 });
 ```
 

@@ -16,6 +16,7 @@ export const STREAMS_MEMORY_CONSOLIDATION_WORKFLOW = {
   id: STREAMS_MEMORY_CONSOLIDATION_WORKFLOW_ID,
   pluginId: 'streams',
   version: 1,
+  billable: false,
   yaml: MEMORY_CONSOLIDATION_YAML,
   management: {
     lifecycle: 'static',

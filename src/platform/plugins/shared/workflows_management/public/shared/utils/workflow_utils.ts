@@ -23,7 +23,7 @@ export function shouldShowWorkflowsEmptyState(
     (!search.enabled || search.enabled.length === 0) &&
     (!search.createdBy || search.createdBy.length === 0) &&
     (!search.tags || search.tags.length === 0) &&
-    search.managed === undefined;
+    (!search.managed || search.managed === 'unmanaged');
 
   return hasNoWorkflows && hasNoFilters;
 }

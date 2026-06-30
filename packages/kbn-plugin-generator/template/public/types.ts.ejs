@@ -1,11 +1,5 @@
-import type { NavigationPublicPluginStart } from '@kbn/navigation-plugin/public';
-
 export interface <%= upperCamelCase(name) %>PluginSetup {
   getGreeting: () => string;
 }
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface <%= upperCamelCase(name) %>PluginStart {}
-
-export interface AppPluginStartDependencies {
-  navigation: NavigationPublicPluginStart
-};

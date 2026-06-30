@@ -21,15 +21,14 @@ import { CaseViewFilters } from './case_view_filters';
 import { useCaseViewFilters } from '../hooks/use_case_view_filters';
 import { useRefreshCaseViewPage } from '../use_on_refresh_case_view_page';
 import noResultsIllustration from '../../../assets/illustration_product_no_results_magnifying_glass.svg';
-import { CASE_VIEW_PAGE_TABS } from '../../../../common/types';
 import type { CaseUI } from '../../../../common';
 import { FILE_ATTACHMENT_TYPE } from '../../../../common/constants';
 import { resolveUnifiedAttachmentType } from '../../../../common/utils/attachments/migration_utils';
 import { useCasesContext } from '../../cases_context/use_cases_context';
 import { useCasesFeatures } from '../../../common/use_cases_features';
+import { KibanaServices } from '../../../common/lib/kibana';
 import { SEARCH_PLACEHOLDER } from '../../actions/translations';
 import { CaseViewAttachButton } from './case_view_attach_button';
-import { CaseViewTabs } from '../case_view_tabs';
 import { CaseViewObservables, OBSERVABLES_FILTER_ID } from './case_view_observables';
 import { useCaseObservables } from '../use_case_observables';
 import type { OnUpdateFields } from '../types';
@@ -52,6 +51,7 @@ export const CaseViewAttachments = ({
   onUpdateField,
 }: CaseViewAttachmentsProps) => {
   const { euiTheme } = useEuiTheme();
+  const isRedesignEnabled = KibanaServices.getConfig()?.casesRedesign?.details ?? false;
   const { unifiedAttachmentTypeRegistry } = useCasesContext();
   const { observablesAuthorized, isObservablesFeatureEnabled } = useCasesFeatures();
   const { data: fileStats } = useGetCaseFileStats({ caseId: caseData.id, searchTerm });
@@ -154,12 +154,7 @@ export const CaseViewAttachments = ({
 
   return (
     <>
-      <EuiFlexItem grow={6} data-test-subj="case-view-attachments">
-        <CaseViewTabs
-          caseData={caseData}
-          activeTab={CASE_VIEW_PAGE_TABS.ATTACHMENTS}
-          searchTerm={searchTerm}
-        />
+      <EuiFlexItem grow={isRedesignEnabled ? false : 6} data-test-subj="case-view-attachments">
         <EuiSpacer size="s" />
         <EuiFlexGroup gutterSize="s">
           <EuiFlexItem grow>

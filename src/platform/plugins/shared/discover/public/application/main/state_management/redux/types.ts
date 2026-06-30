@@ -204,6 +204,7 @@ export interface TabState extends TabItem {
   dataRequestParams: InternalStateDataRequestParams;
   overriddenVisContextAfterInvalidation: UnifiedHistogramVisContext | {} | undefined; // it will be used during saving of the Discover Session
   defaultProfileState: DefaultProfileState;
+  profileState: Record<string, object | undefined>;
   uiState: {
     esqlEditor?: Partial<ESQLEditorRestorableState>;
     dataGrid?: Partial<UnifiedDataTableRestorableState>;

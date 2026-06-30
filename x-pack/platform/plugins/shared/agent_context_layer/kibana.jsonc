@@ -1,7 +1,7 @@
 {
   "type": "plugin",
   "id": "@kbn/agent-context-layer-plugin",
-  "owner": "@elastic/workchat-eng",
+  "owner": "@elastic/context-eng",
   "group": "platform",
   "visibility": "shared",
   "plugin": {

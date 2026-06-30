@@ -4,7 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { HorizontalAlignment } from '@elastic/eui';
 import { EuiBadge, EuiBasicTable, EuiFlexGroup, EuiFlexItem, EuiLink, EuiText } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -18,9 +18,22 @@ import type {
   InMemoryPackagePolicy,
   PackagePolicy,
 } from '../../../../../../types';
-import { AGENTS_PREFIX, SO_SEARCH_LIMIT } from '../../../../../../../../../common/constants';
+import type { AgentlessPolicyThroughput } from '../../../../../../../../../common/types/rest_spec/agentless_policy';
+import {
+  AGENTS_PREFIX,
+  FLEET_CONNECTORS_PACKAGE,
+  SO_SEARCH_LIMIT,
+} from '../../../../../../../../../common/constants';
 import type { usePagination } from '../../../../../../hooks';
-import { useLink, sendGetAgents, useAuthz, useStartServices } from '../../../../../../hooks';
+import {
+  useLink,
+  sendGetAgents,
+  useAuthz,
+  useStartServices,
+  useBulkGetAgentlessPolicyThroughput,
+  useDiscoverLocator,
+} from '../../../../../../hooks';
+import { getAgentlessThroughputIndexPatterns } from '../../../../../../../../../common/services';
 import {
   Loading,
   PackagePolicyActionsMenu,
@@ -31,8 +44,13 @@ import { Persona } from '../persona';
 import { AgentHealth } from '../../../../../../../fleet/sections/agents/components';
 
 import { PackagePolicyUpgradeCell } from './package_policy_upgrade_cell';
+import { ThroughputCell } from './throughput_cell';
+import { getConnectorsFromPackagePolicy, getSelectedInput } from './agentless_table_adapters';
 
 const REFRESH_INTERVAL_MS = 30000;
+
+const isConnectorPolicy = (packagePolicy: InMemoryPackagePolicy) =>
+  packagePolicy.package?.name === FLEET_CONNECTORS_PACKAGE;
 
 export const AgentlessPackagePoliciesTable = ({
   isLoading,
@@ -60,6 +78,57 @@ export const AgentlessPackagePoliciesTable = ({
   const [isAgentsLoading, setIsAgentsLoading] = useState<boolean>(false);
   const [agentsByPolicyId, setAgentsByPolicyId] = useState<Record<string, Agent>>({});
   const canReadAgents = authz.fleet.readAgents;
+
+  // Collect ids for non-connector policies only; connectors don't ingest via agents
+  const throughputPolicyIds = useMemo(
+    () =>
+      packagePolicies
+        .filter(({ packagePolicy }) => !isConnectorPolicy(packagePolicy))
+        .map(({ packagePolicy }) => packagePolicy.id),
+    [packagePolicies]
+  );
+  const { data: throughputData, isLoading: isThroughputLoading } =
+    useBulkGetAgentlessPolicyThroughput(throughputPolicyIds);
+  const throughputByPolicyId = useMemo(
+    () =>
+      (throughputData?.items ?? []).reduce<Record<string, AgentlessPolicyThroughput>>(
+        (acc, item) => {
+          acc[item.policyId] = item;
+          return acc;
+        },
+        {}
+      ),
+    [throughputData]
+  );
+
+  const hasNonConnectorPolicies = useMemo(
+    () => packagePolicies.some(({ packagePolicy }) => !isConnectorPolicy(packagePolicy)),
+    [packagePolicies]
+  );
+
+  const discoverLocator = useDiscoverLocator();
+  const getThroughputDiscoverParams = useCallback(
+    (packagePolicy: InMemoryPackagePolicy) => {
+      const indexPatterns = getAgentlessThroughputIndexPatterns(packagePolicy);
+      if (!discoverLocator || indexPatterns.length === 0) return undefined;
+      const title = indexPatterns.join(',');
+      const params = {
+        dataViewSpec: {
+          id: `fleet-agentless-throughput-${packagePolicy.id}`,
+          name: title,
+          title,
+          timeFieldName: 'event.ingested',
+        },
+        timeRange: { from: 'now-24h', to: 'now' },
+        query: { language: 'kuery', query: `agent.name: *${packagePolicy.id}*` },
+      };
+      return {
+        href: discoverLocator.getRedirectUrl(params),
+        navigate: () => discoverLocator.navigate(params),
+      };
+    },
+    [discoverLocator]
+  );
 
   // Kuery for all agents enrolled into the agent policies associated with the package policies
   // We use the first agent policy as agentless package policies have a 1:1 relationship with agent policies
@@ -121,13 +190,17 @@ export const AgentlessPackagePoliciesTable = ({
   const [flyoutPackagePolicy, setFlyoutPackagePolicy] = useState<PackagePolicy>();
   const [flyoutAgentPolicy, setFlyoutAgentPolicy] = useState<AgentPolicy>();
   useEffect(() => {
-    const flyoutAgentPolicyIdFromQuery = queryParams.get('openEnrollmentFlyout');
-    if (flyoutAgentPolicyIdFromQuery) {
-      const pp = packagePolicies.find((p) =>
-        p.packagePolicy.policy_ids.includes(flyoutAgentPolicyIdFromQuery)
-      );
+    // The agentless save flow sets openEnrollmentFlyout=<packagePolicyId> via
+    // appendOnSaveQueryParamsToPath (AgentlessPolicy has no policy_ids, so
+    // policy.id is used). Match on packagePolicy.id accordingly.
+    // TODO: the flyout now takes a decoupled AgentlessEnrollmentFlyoutProps contract;
+    // the remaining work is to source this table from the AgentlessPolicy API and map
+    // AgentlessPolicy -> AgentlessEnrollmentFlyoutProps instead of PackagePolicy.
+    const flyoutPolicyIdFromQuery = queryParams.get('openEnrollmentFlyout');
+    if (flyoutPolicyIdFromQuery) {
+      const pp = packagePolicies.find((p) => p.packagePolicy.id === flyoutPolicyIdFromQuery);
       if (pp) {
-        setFlyoutOpenForPolicyId(flyoutAgentPolicyIdFromQuery);
+        setFlyoutOpenForPolicyId(flyoutPolicyIdFromQuery);
         setFlyoutPackagePolicy(pp.packagePolicy);
         setFlyoutAgentPolicy(pp.agentPolicies[0]);
       }
@@ -218,6 +291,27 @@ export const AgentlessPackagePoliciesTable = ({
               );
             },
           },
+          ...(hasNonConnectorPolicies
+            ? [
+                {
+                  field: '',
+                  name: i18n.translate(
+                    'xpack.fleet.epm.packageDetails.integrationList.throughput24h',
+                    { defaultMessage: 'Throughput last 24h' }
+                  ),
+                  align: 'left' as HorizontalAlignment,
+                  render({ packagePolicy }: { packagePolicy: InMemoryPackagePolicy }) {
+                    return (
+                      <ThroughputCell
+                        data={throughputByPolicyId[packagePolicy.id]}
+                        isLoading={isThroughputLoading}
+                        discover={getThroughputDiscoverParams(packagePolicy)}
+                      />
+                    );
+                  },
+                },
+              ]
+            : []),
           ...(canReadAgents
             ? [
                 {
@@ -352,8 +446,17 @@ export const AgentlessPackagePoliciesTable = ({
             setFlyoutPackagePolicy(undefined);
             setFlyoutAgentPolicy(undefined);
           }}
-          packagePolicy={flyoutPackagePolicy}
+          policyId={flyoutPackagePolicy.policy_ids[0]}
+          policyName={flyoutPackagePolicy.name}
+          // package is always set for agentless policies (createAgentlessPolicy);
+          // optional only on the general PackagePolicy type.
+          packageInfo={{
+            name: flyoutPackagePolicy.package!.name,
+            version: flyoutPackagePolicy.package!.version,
+          }}
+          selectedInput={getSelectedInput(flyoutPackagePolicy)}
           agentPolicy={flyoutAgentPolicy}
+          connectors={getConnectorsFromPackagePolicy(flyoutPackagePolicy)}
         />
       )}
     </>

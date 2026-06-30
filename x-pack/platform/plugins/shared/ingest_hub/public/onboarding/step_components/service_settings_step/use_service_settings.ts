@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import useSessionStorage from 'react-use/lib/useSessionStorage';
 
 import { AWS_SERVICES_MAP } from '../../aws_service_matrix';
@@ -24,16 +24,19 @@ interface PersistedState {
   serviceVars: Record<string, ServiceVars>;
 }
 
-const SESSION_KEY = 'onboarding.aws.serviceSettingsStep';
+export const SERVICE_SETTINGS_SESSION_KEY = 'onboarding.aws.serviceSettingsStep';
 
-export function useServiceSettings({ onNext }: { onNext: () => void }) {
+export function useServiceSettings({ onContinue }: { onContinue: () => void }) {
   const { servicesStep } = useOnboardingFlow();
   const { selectedServiceIds } = servicesStep;
 
-  const [persisted, setPersisted] = useSessionStorage<PersistedState>(SESSION_KEY, {
-    globalRegion: '',
-    serviceVars: {},
-  });
+  const [persisted, setPersisted] = useSessionStorage<PersistedState>(
+    SERVICE_SETTINGS_SESSION_KEY,
+    {
+      globalRegion: '',
+      serviceVars: {},
+    }
+  );
 
   const globalRegion = persisted?.globalRegion ?? '';
 
@@ -125,9 +128,15 @@ export function useServiceSettings({ onNext }: { onNext: () => void }) {
     });
   }, [globalRegion, selectedServices, getServiceVars]);
 
+  const [showValidation, setShowValidation] = useState(false);
+
   const handleNext = useCallback(() => {
-    if (isReady) onNext();
-  }, [isReady, onNext]);
+    if (!isReady) {
+      setShowValidation(true);
+      return;
+    }
+    onContinue();
+  }, [isReady, onContinue]);
 
   return {
     globalRegion,
@@ -137,6 +146,7 @@ export function useServiceSettings({ onNext }: { onNext: () => void }) {
     setServiceTransport,
     setServiceField,
     setServiceFields,
+    showValidation,
     isReady,
     handleNext,
   };

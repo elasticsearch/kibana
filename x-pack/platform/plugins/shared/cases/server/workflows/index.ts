@@ -30,6 +30,7 @@ import { updateObservableStepDefinition } from './steps/update_observable';
 import { deleteObservableStepDefinition } from './steps/delete_observable';
 import { setCustomFieldStepDefinition } from './steps/set_custom_field';
 import { getCasesStepDefinition } from './steps/get_cases';
+import { pushCasesStepDefinition } from './steps/push_cases';
 import {
   assignCaseStepDefinition,
   closeCaseStepDefinition,
@@ -76,4 +77,5 @@ export function registerCaseWorkflowSteps(
   workflowsExtensions.registerStepDefinition(updateObservableStepDefinition(getCasesClient));
   workflowsExtensions.registerStepDefinition(deleteObservableStepDefinition(getCasesClient));
   workflowsExtensions.registerStepDefinition(getCasesStepDefinition(getCasesClient));
+  workflowsExtensions.registerStepDefinition(pushCasesStepDefinition(getCasesClient));
 }

@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/273017
+issues:
+- https://github.com/elastic/kibana/issues/273014
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- AI and machine Learning
+title: "Fix attachments leaking between AI assistant conversations"
+description: "Starting a new chat no longer carries attachments from the previous conversation. All New Chat entry points now clear attachments explicitly."

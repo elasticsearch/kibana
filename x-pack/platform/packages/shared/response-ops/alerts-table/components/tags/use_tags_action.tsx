@@ -76,7 +76,7 @@ export const useTagsAction = ({
       onClick: () => openFlyout(alerts),
       disabled: isDisabled,
       'data-test-subj': 'alerts-bulk-action-tags',
-      icon: <EuiIcon type="tag" size="m" />,
+      icon: <EuiIcon type="tag" size="m" aria-hidden={true} />,
       key: 'alerts-bulk-action-tags',
     };
   };

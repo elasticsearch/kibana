@@ -27,6 +27,9 @@ export interface GenAiSettingsRouteHandlerResources
       setup: GenAiSettingsPluginSetupDependencies['inference'];
       start: () => Promise<GenAiSettingsPluginStartDependencies['inference']>;
     };
+    agentBuilder?: {
+      start: () => Promise<NonNullable<GenAiSettingsPluginStartDependencies['agentBuilder']>>;
+    };
   };
 }
 

@@ -20,6 +20,14 @@ import { ChangeHistoryModal } from '../components/modal/change_history_modal';
 import { ChangeHistoryTrigger } from '../components/modal/change_history_trigger';
 import type { ChangeHistoryAdapter } from '../types/change_history_adapter';
 import { ChangeHistoryProvider } from './change_history_provider';
+import {
+  TEST_OBJECT_ID_A,
+  TEST_OBJECT_ID_B,
+  TEST_OBJECT_TITLE,
+} from '../test_utils/change_history_test_fixtures';
+import { createQueryClientWrapper } from '../test_utils/create_query_client_wrapper';
+
+const { wrapper: QueryClientWrapper } = createQueryClientWrapper();
 
 const adapter: ChangeHistoryAdapter = {
   listChanges: jest.fn().mockResolvedValue({ items: [], total: 0 }),
@@ -28,25 +36,28 @@ const adapter: ChangeHistoryAdapter = {
 
 const Harness = ({ objectId }: { objectId: string }) => (
   <I18nProvider>
-    <ChangeHistoryProvider
-      objectId={objectId}
-      adapter={adapter}
-      renderPreview={() => <div data-test-subj="previewPanel" />}
-    >
-      <ChangeHistoryTrigger />
-      <ChangeHistoryModal />
-    </ChangeHistoryProvider>
+    <QueryClientWrapper>
+      <ChangeHistoryProvider
+        objectId={objectId}
+        adapter={adapter}
+        labels={{ previewTitle: TEST_OBJECT_TITLE }}
+        renderPreview={() => <div data-test-subj="previewPanel" />}
+      >
+        <ChangeHistoryTrigger />
+        <ChangeHistoryModal />
+      </ChangeHistoryProvider>
+    </QueryClientWrapper>
   </I18nProvider>
 );
 
 describe('ChangeHistoryProvider', () => {
   it('closes the modal when objectId changes', () => {
-    const { rerender } = render(<Harness objectId="workflow-a" />);
+    const { rerender } = render(<Harness objectId={TEST_OBJECT_ID_A} />);
 
     fireEvent.click(screen.getByTestId('changeHistoryTrigger'));
     expect(screen.getByTestId('changeHistoryModal')).toBeInTheDocument();
 
-    rerender(<Harness objectId="workflow-b" />);
+    rerender(<Harness objectId={TEST_OBJECT_ID_B} />);
     expect(screen.queryByTestId('changeHistoryModal')).not.toBeInTheDocument();
   });
 });

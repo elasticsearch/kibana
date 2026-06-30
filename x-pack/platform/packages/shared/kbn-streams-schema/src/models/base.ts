@@ -7,8 +7,6 @@
 
 import { z } from '@kbn/zod/v4';
 import type { OmitUpsertProps } from './core';
-import type { StreamQuery } from '../queries';
-import { streamQuerySchema } from '../queries';
 
 /* eslint-disable @typescript-eslint/no-namespace */
 export namespace BaseStream {
@@ -21,26 +19,35 @@ export namespace BaseStream {
     description: string;
     updated_at: string;
     /**
-     * Child query streams that belong to this stream.
-     * Names must follow the parent.childname naming convention.
+     * Child query streams (virtual, read-only ES|QL view streams) that belong to this stream.
+     * Names must follow the parent.childname naming convention. These are not significant-event
+     * queries (`StreamQuery`); those live outside the stream payload (see `GetResponse`).
      */
     query_streams?: QueryStreamReference[];
   }
 
   export type Source<TDefinition extends Definition = Definition> = TDefinition;
 
+  /**
+   * Stream read model. Significant-event queries are intentionally not included here; fetch
+   * them via `GET /api/streams/{name}/queries`.
+   */
   export interface GetResponse<TDefinition extends Definition = Definition> {
     dashboards: string[];
     rules: string[];
     stream: TDefinition;
-    queries: StreamQuery[];
   }
 
+  /**
+   * Stream write model. Significant-event queries are intentionally not part of the upsert;
+   * manage them via the `/api/streams/{name}/queries` endpoints. The `PUT` routes validate the
+   * body with `DeepStrict`, so a stray `queries` field is rejected as an unrecognized key (HTTP
+   * 400); the GET→PUT converter (`convertGetResponseIntoUpsertRequest`) never emits one.
+   */
   export interface UpsertRequest<TDefinition extends Definition = Definition> {
     dashboards: string[];
     rules: string[];
     stream: OmitUpsertProps<TDefinition>;
-    queries: StreamQuery[];
   }
 
   export interface Model {
@@ -67,13 +74,11 @@ export const baseStreamDefinitionSchema = z.object({
 export const baseStreamGetResponseSchema = z.object({
   dashboards: z.array(z.string()),
   rules: z.array(z.string()),
-  queries: z.array(streamQuerySchema),
 });
 
 export const baseStreamUpsertRequestSchema = z.object({
   dashboards: z.array(z.string()),
   rules: z.array(z.string()),
-  queries: z.array(streamQuerySchema),
 });
 
 export const baseStreamUpsertDefinitionSchema = baseStreamDefinitionSchema.omit({

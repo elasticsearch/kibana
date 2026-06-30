@@ -10,6 +10,7 @@ import {
   deprecatedRiskScoreEntityCalculationRoute,
   riskScoreEntityCalculationRoute,
 } from './entity_calculation';
+import { riskScoreEntityCalculationRouteV2 } from './entity_calculation_v2';
 
 export const registerRiskScoreRoutes = ({
   router,
@@ -19,4 +20,5 @@ export const registerRiskScoreRoutes = ({
   riskScorePreviewRoute(router, logger);
   riskScoreEntityCalculationRoute(router, getStartServices, logger);
   deprecatedRiskScoreEntityCalculationRoute(router, getStartServices, logger);
+  riskScoreEntityCalculationRouteV2(router, getStartServices, logger);
 };

@@ -55,7 +55,10 @@ class MeteringServiceImpl implements MeteringService {
       return;
     }
 
-    const projectOrDeploymentId = this.cloud.serverless.projectId ?? this.cloud.deploymentId;
+    const projectId = this.cloud.serverless.projectId;
+    const projectOrDeploymentId = projectId ?? this.cloud.deploymentId;
+    const instanceGroupType = projectId ? 'serverless_project' : 'stateful_deployment';
+
     if (!projectOrDeploymentId) {
       this.logger.debug(`[reportExecution] Skipping reporting due to project or deployment ID.`);
       return;
@@ -93,6 +96,22 @@ class MeteringServiceImpl implements MeteringService {
     // one unit per 50k input tokens used during execution
     const usageQuantity = Math.max(1, Math.ceil(round.model_usage.input_tokens / 50_000));
 
+    const source: UsageRecord['source'] = {
+      id: METERING_SOURCE_ID,
+      instance_group_id: projectOrDeploymentId,
+      instance_group_type: instanceGroupType,
+    };
+
+    if (instanceGroupType !== 'serverless_project') {
+      source.provider = this.cloud.csp;
+      source.region = this.cloud.region;
+
+      const clusterId = this.cloud.elasticsearchClusterId;
+      if (clusterId) {
+        source.metadata = { cluster_id: clusterId };
+      }
+    }
+
     const record: UsageRecord = {
       id: `agent-builder-execution-${executionId}`,
       usage_timestamp: new Date().toISOString(),
@@ -103,10 +122,7 @@ class MeteringServiceImpl implements MeteringService {
         period_seconds: Math.ceil(round.time_to_last_token / 1000) || 1,
         metadata: usageMeta,
       },
-      source: {
-        id: METERING_SOURCE_ID,
-        instance_group_id: projectOrDeploymentId,
-      },
+      source,
     };
 
     this.logger.debug(() => {

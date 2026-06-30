@@ -9,6 +9,8 @@ export {
   splitSizeAndUnits,
   serializeAsESLifecycle,
   deserializeESLifecycle,
+  resolveLogisticsLifecycle,
+  HOT_ONLY_INFINITE_DATA_RETENTION,
 } from './data_stream_utils';
 
 export {

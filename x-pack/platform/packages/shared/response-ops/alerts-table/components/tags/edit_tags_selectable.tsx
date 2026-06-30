@@ -83,6 +83,7 @@ const EditTagsSelectableComponent: React.FC<Props> = ({
             type={option.itemIcon}
             data-test-subj={dataTestSubj}
             css={{ flexShrink: 0, marginRight: euiTheme.size.m }}
+            aria-hidden={true}
           />
           <EuiHighlight search={search}>{option.label}</EuiHighlight>
         </>

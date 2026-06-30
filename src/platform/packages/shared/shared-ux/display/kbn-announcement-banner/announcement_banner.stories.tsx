@@ -13,8 +13,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
 import { EuiText, useEuiTheme } from '@elastic/eui';
 
-import { AnnouncementBanner } from './announcement_banner';
-import type { AnnouncementBannerProps } from './types';
+import { AnnouncementBanner, type AnnouncementBannerProps } from './announcement_banner';
 
 import illustrationSmallUrl from './assets/illustration_s.svg';
 import illustrationSmallUrlDark from './assets/illustration_s_dark.svg';
@@ -90,7 +89,6 @@ const meta: Meta<StoryArgs> = {
     primaryAction: true,
     secondaryAction: true,
     onDismiss: true,
-    announceOnMount: false,
   },
   argTypes: {
     size: { control: { type: 'inline-radio' }, options: ['s', 'm'] },

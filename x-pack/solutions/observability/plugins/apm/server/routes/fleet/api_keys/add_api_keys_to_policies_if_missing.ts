@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { omit } from 'lodash';
-import type { PackagePolicy } from '@kbn/fleet-plugin/common';
+import type { NewPackagePolicy, PackagePolicy } from '@kbn/fleet-plugin/common';
 import type { CoreStart, Logger, SavedObjectsClientContract } from '@kbn/core/server';
 import type { FleetStartContract } from '@kbn/fleet-plugin/server';
 import type { LicensingPluginSetup } from '@kbn/licensing-plugin/server';
@@ -69,6 +68,36 @@ export async function addApiKeysToEveryPackagePolicyIfMissing({
   );
 }
 
+export async function createAndInjectApiKeys<T extends NewPackagePolicy>({
+  policy,
+  packagePolicyId,
+  coreStart,
+  logger,
+}: {
+  policy: T;
+  packagePolicyId: string;
+  coreStart: CoreStart;
+  logger: Logger;
+}): Promise<T> {
+  const agentConfigApiKey = await createApmAgentConfigApiKey({
+    coreStart,
+    logger,
+    packagePolicyId,
+  });
+
+  const sourceMapApiKey = await createApmSourceMapApiKey({
+    coreStart,
+    logger,
+    packagePolicyId,
+  });
+
+  return getPackagePolicyWithApiKeys({
+    packagePolicy: policy,
+    agentConfigApiKey,
+    sourceMapApiKey,
+  });
+}
+
 export async function addApiKeysToPackagePolicyIfMissing({
   policy,
   coreStart,
@@ -89,32 +118,24 @@ export async function addApiKeysToPackagePolicyIfMissing({
 
   logger.debug(`Policy (${policy.id}) does not have api key`);
 
-  const agentConfigApiKey = await createApmAgentConfigApiKey({
+  const policyWithApiKeys = await createAndInjectApiKeys({
+    policy,
+    packagePolicyId: policy.id,
     coreStart,
     logger,
-    packagePolicyId: policy.id,
   });
 
-  const sourceMapApiKey = await createApmSourceMapApiKey({
-    coreStart,
-    logger,
-    packagePolicyId: policy.id,
-  });
-
-  const packagePolicyTrimmed = omit(policy, ['id', 'revision', 'updated_at', 'updated_by']);
-  const policyWithApiKeys = getPackagePolicyWithApiKeys({
-    packagePolicy: packagePolicyTrimmed,
-    agentConfigApiKey,
-    sourceMapApiKey,
-  });
+  // Strip PackagePolicy-only fields (id, revision, updated_at, updated_by) before passing to
+  // packagePolicyService.update(), which expects NewPackagePolicy.
+  const { id, revision, updated_at, updated_by, ...policyForUpdate } = policyWithApiKeys;
 
   const internalESClient = coreStart.elasticsearch.client.asInternalUser;
 
   const newPolicy = await fleet.packagePolicyService.update(
     savedObjectsClient,
     internalESClient,
-    policy.id,
-    policyWithApiKeys
+    id,
+    policyForUpdate
   );
 
   logger.debug(`Added api keys to policy ${policy.id}`);

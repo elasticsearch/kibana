@@ -12,14 +12,14 @@ import {
 } from './alert_timeline_summary_query';
 
 const RULE_ID = 'rule-abc';
-const GTE_MS = Date.parse('2026-04-01T00:00:00Z');
-const LTE_MS = Date.parse('2026-04-08T00:00:00Z');
+const WINDOW_START_MS = Date.parse('2026-04-01T00:00:00Z');
+const WINDOW_END_MS = Date.parse('2026-04-08T00:00:00Z');
 
 describe('buildAlertTimelineSummaryQuery', () => {
   const queryString = buildAlertTimelineSummaryQuery({
     ruleId: RULE_ID,
-    gteMs: GTE_MS,
-    lteMs: LTE_MS,
+    windowStartMs: WINDOW_START_MS,
+    windowEndMs: WINDOW_END_MS,
   }).print('basic');
 
   it('scopes to alert type and the given rule id', () => {

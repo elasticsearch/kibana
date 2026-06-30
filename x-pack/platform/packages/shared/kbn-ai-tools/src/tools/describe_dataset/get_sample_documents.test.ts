@@ -6,6 +6,7 @@
  */
 
 import { esql } from '@elastic/esql';
+import objectHash from 'object-hash';
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { getSampleDocumentsEsql } from './get_sample_documents';
 
@@ -105,6 +106,49 @@ describe('getSampleDocumentsEsql', () => {
       hits: [
         { _index: '', _id: 'doc-1', _source: { message: 'first' } },
         { _index: '', _id: 'doc-2', _source: { message: 'second' } },
+      ],
+      total: 2,
+    });
+  });
+
+  it('reconstructs documents from row columns when a view drops _id and _source metadata', async () => {
+    const { esClient, query } = createEsClient();
+    // ES|QL views silently drop outer `METADATA _id, _source`, so the response
+    // only contains the view's projected columns.
+    query.mockResolvedValueOnce(
+      createResponse({
+        columns: [
+          { name: '@timestamp', type: 'date' },
+          { name: 'message', type: 'text' },
+          { name: 'service.name', type: 'keyword' },
+        ],
+        values: [
+          ['2026-04-28T08:00:00.000Z', 'first', 'checkout'],
+          ['2026-04-28T08:01:00.000Z', 'second', null],
+        ],
+      })
+    );
+
+    const result = await getSampleDocumentsEsql({
+      esClient,
+      index: '$.query',
+      start: 100,
+      end: 200,
+      size: 2,
+    });
+
+    // Views expose no `_id`, so a stable content hash of the reconstructed
+    // source is synthesized (enables cross-bucket sample dedup for query streams).
+    const firstSource = {
+      '@timestamp': '2026-04-28T08:00:00.000Z',
+      message: 'first',
+      'service.name': 'checkout',
+    };
+    const secondSource = { '@timestamp': '2026-04-28T08:01:00.000Z', message: 'second' };
+    expect(result).toEqual({
+      hits: [
+        { _index: '', _id: objectHash(firstSource), _source: firstSource },
+        { _index: '', _id: objectHash(secondSource), _source: secondSource },
       ],
       total: 2,
     });
@@ -255,15 +299,15 @@ describe('getSampleDocumentsEsql', () => {
     expect(result).toEqual({ hits: [], total: 0 });
   });
 
-  it('returns an empty result when metadata columns are missing', async () => {
+  it('returns an empty result when a view row has no non-null projected columns', async () => {
     const { esClient, query } = createEsClient();
     query.mockResolvedValueOnce(
-      createResponse({ columns: [{ name: 'message', type: 'keyword' }], values: [['hello']] })
+      createResponse({ columns: [{ name: 'message', type: 'keyword' }], values: [[null]] })
     );
 
     const result = await getSampleDocumentsEsql({
       esClient,
-      index: 'logs-*',
+      index: '$.query',
       start: 100,
       end: 200,
     });

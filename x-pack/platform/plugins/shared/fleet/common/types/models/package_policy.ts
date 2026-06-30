@@ -88,7 +88,7 @@ export interface PackagePolicyInput extends Omit<NewPackagePolicyInput, 'streams
 }
 
 export interface NewPackagePolicy {
-  id?: string | number;
+  id?: string;
   name: string;
   description?: string;
   namespace?: string;
@@ -121,6 +121,10 @@ export interface NewPackagePolicy {
 
 export interface UpdatePackagePolicy extends NewPackagePolicy {
   version?: string;
+}
+
+export interface UpdatePackagePolicyWithId extends UpdatePackagePolicy {
+  id: string;
 }
 
 // SO definition for this type is declared in server/types/interfaces

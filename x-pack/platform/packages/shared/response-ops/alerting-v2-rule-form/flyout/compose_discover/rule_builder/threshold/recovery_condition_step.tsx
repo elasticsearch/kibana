@@ -23,7 +23,7 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { ComposeFormValues } from '../../compose_form_types';
+import type { FormValues } from '../../../../form/types';
 import type { CustomRecoveryRenderProps } from '../../types';
 import { useBuilderState } from '../builder_state_context';
 import type { ThresholdFormValues, RecoveryCondition, RecoveryConfig } from './form_types';
@@ -39,7 +39,7 @@ import { buildRecoveryBlock } from './build_esql';
 export const BuilderRecoveryForm: React.FC<CustomRecoveryRenderProps> = ({ state, dispatch }) => {
   const { state: builderState, setState: onBuilderStateChange } =
     useBuilderState<ThresholdFormValues>();
-  const { setValue, getValues } = useFormContext<ComposeFormValues>();
+  const { setValue, getValues } = useFormContext<FormValues>();
   const initializedRef = useRef(false);
 
   useEffect(() => {

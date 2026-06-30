@@ -10,10 +10,12 @@ import { schema } from '@kbn/config-schema';
 
 import {
   CreateAgentlessPolicyRequestSchema,
-  CreateAgentlessPolicyResponseSchema,
   DeleteAgentlessPolicyRequestSchema,
   DeleteAgentlessPolicyResponseSchema,
+  GetBulkAgentlessPolicyThroughputRequestSchema,
+  GetBulkAgentlessPolicyThroughputResponseSchema,
 } from '../../../common/types/rest_spec/agentless_policy';
+import { AgentlessPolicyResponseSchema } from '../../../common/types/models/agentless_policy_schema';
 import { AGENTLESS_POLICIES_ROUTES, API_VERSIONS } from '../../../common/constants';
 import type { FleetAuthzRouter } from '../../services/security';
 import { FLEET_API_PRIVILEGES } from '../../constants/api_privileges';
@@ -24,6 +26,7 @@ import {
   createAgentlessPolicyHandler,
   deleteAgentlessPolicyHandler,
   syncAgentlessPoliciesHandler,
+  getBulkAgentlessPolicyThroughputHandler,
 } from './handler';
 
 export const registerRoutes = (router: FleetAuthzRouter) => {
@@ -106,7 +109,7 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
           response: {
             200: {
               description: 'OK: A successful request.',
-              body: () => CreateAgentlessPolicyResponseSchema,
+              body: () => AgentlessPolicyResponseSchema,
             },
             400: {
               description: 'A bad request.',
@@ -165,5 +168,45 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
         },
       },
       deleteAgentlessPolicyHandler
+    );
+
+  // Bulk throughput
+  router.versioned
+    .post({
+      path: AGENTLESS_POLICIES_ROUTES.BULK_THROUGHPUT_PATTERN,
+      access: 'internal',
+      summary: 'Get throughput for multiple agentless policies',
+      description: 'Get 24h throughput data for a batch of agentless integration policies.',
+      security: {
+        authz: {
+          requiredPrivileges: [
+            {
+              anyRequired: [
+                FLEET_API_PRIVILEGES.AGENT_POLICIES.READ,
+                FLEET_API_PRIVILEGES.AGENTS.READ,
+              ],
+            },
+          ],
+        },
+      },
+    })
+    .addVersion(
+      {
+        version: API_VERSIONS.internal.v1,
+        validate: {
+          request: GetBulkAgentlessPolicyThroughputRequestSchema,
+          response: {
+            200: {
+              description: 'OK: A successful request.',
+              body: () => GetBulkAgentlessPolicyThroughputResponseSchema,
+            },
+            400: {
+              description: 'A bad request.',
+              body: genericErrorResponse,
+            },
+          },
+        },
+      },
+      getBulkAgentlessPolicyThroughputHandler
     );
 };

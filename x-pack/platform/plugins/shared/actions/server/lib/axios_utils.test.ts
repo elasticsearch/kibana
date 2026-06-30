@@ -21,7 +21,6 @@ import {
 } from './axios_utils';
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 import { actionsConfigMock } from '../actions_config.mock';
-import { getCustomAgents } from './get_custom_agents';
 import { ConnectorUsageCollector } from '../usage/connector_usage_collector';
 import { httpResponseUserErrorCodes } from './create_and_throw_user_error';
 import { HttpProxyAgent } from 'http-proxy-agent';
@@ -198,7 +197,6 @@ describe('request', () => {
       proxyBypassHosts: undefined,
       proxyOnlyHosts: undefined,
     });
-    const { httpAgent, httpsAgent } = getCustomAgents(configurationUtilities, logger, TestUrl);
 
     const res = await request({
       axios,
@@ -206,6 +204,9 @@ describe('request', () => {
       logger,
       configurationUtilities,
     });
+
+    // @ts-expect-error Auto-mocked axios has unknown request config type
+    const { httpAgent, httpsAgent } = axiosMock.mock.calls[0][1];
 
     expect(axiosMock).toHaveBeenCalledWith(TestUrl, {
       method: 'get',
@@ -347,7 +348,8 @@ describe('request', () => {
     // @ts-expect-error Auto-mocked axios has unknown request config type
     const { httpsAgent } = axiosMock.mock.calls[0][1];
     expect(httpsAgent instanceof HttpsProxyAgent).toBe(true);
-    expect(httpsAgent.proxy.auth).toBe('proxyuser:proxypass');
+    expect(httpsAgent.proxy.username).toBe('proxyuser');
+    expect(httpsAgent.proxy.password).toBe('proxypass');
   });
 
   test('it does not set proxy auth on HttpsProxyAgent when proxySettings has no credentials', async () => {

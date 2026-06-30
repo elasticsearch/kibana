@@ -105,6 +105,7 @@ export const Box: ConnectorSpec = {
         .meta({
           widget: 'text',
           placeholder: 'https://mcp.box.com',
+          hidden: true,
           label: i18n.translate('connectorSpecs.box.config.serverUrl.label', {
             defaultMessage: 'MCP Server URL',
           }),

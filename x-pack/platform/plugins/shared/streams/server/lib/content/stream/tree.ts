@@ -7,7 +7,7 @@
 
 import { isEqual } from 'lodash';
 import type { ContentPackIncludedObjects, ContentPackStream } from '@kbn/content-packs-schema';
-import { filterQueries, filterRouting, getFields, includedObjectsFor } from './helpers';
+import { filterRouting, getFields, includedObjectsFor } from './helpers';
 import { ContentPackConflictError } from '../error';
 
 export type StreamTree = ContentPackStream & {
@@ -33,7 +33,6 @@ export function asTree({
     ...stream,
     request: {
       ...stream.request,
-      queries: filterQueries(stream, include),
       stream: {
         ...stream.request.stream,
         ingest: {
@@ -57,9 +56,10 @@ export function asTree({
 }
 
 /**
- * merges the root streams provided.
- * this is not called recursively on the children as we currently
- * fail when trying to merge a child that already exists.
+ * Merges two root stream trees into one: the roots' routing rules and field definitions
+ * are combined (after `assertNoConflicts` rejects conflicting destinations or mappings),
+ * and their child subtrees are concatenated rather than merged recursively, so a child
+ * that exists on both sides surfaces as a conflict.
  */
 export function mergeTrees({
   existing,
@@ -78,7 +78,6 @@ export function mergeTrees({
     ...existing.request.stream.ingest.wired.fields,
     ...incoming.request.stream.ingest.wired.fields,
   };
-  const mergedQueries = [...existing.request.queries, ...incoming.request.queries];
   const mergedChildren = [...existing.children, ...incoming.children];
 
   return {
@@ -86,7 +85,6 @@ export function mergeTrees({
     name: existing.name,
     request: {
       ...existing.request,
-      queries: mergedQueries,
       stream: {
         ...existing.request.stream,
         ingest: {
@@ -119,15 +117,6 @@ function assertNoConflicts(existing: ContentPackStream, incoming: ContentPackStr
     if (existingField && !isEqual(existingField, fieldConfig)) {
       throw new ContentPackConflictError(
         `Cannot change mapping of [${field}] for [${existing.name}]`
-      );
-    }
-  }
-
-  // queries
-  for (const { id, title } of incoming.request.queries) {
-    if (existing.request.queries.some((query) => query.id === id)) {
-      throw new ContentPackConflictError(
-        `Query [${id} | ${title}] already exists on [${existing.name}]`
       );
     }
   }

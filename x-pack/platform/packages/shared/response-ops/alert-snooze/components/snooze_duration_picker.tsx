@@ -17,6 +17,7 @@ import {
   EuiFormRow,
   EuiSelect,
   EuiSpacer,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { CustomDurationState, CustomSnoozeMode, SnoozeUnit } from './types';
 import { SNOOZE_UNIT_OPTIONS, CUSTOM_MODE_BUTTONS } from './constants';
@@ -105,12 +106,14 @@ export const SnoozeDurationPicker = ({
             </EuiFlexItem>
             {dateTime !== null && (
               <EuiFlexItem grow={false}>
-                <EuiButtonIcon
-                  iconType="cross"
-                  onClick={() => onChange({ dateTime: null })}
-                  aria-label={i18n.CLEAR_DATETIME_ARIA_LABEL}
-                  data-test-subj="dateTimeClear"
-                />
+                <EuiToolTip content={i18n.CLEAR_DATETIME_ARIA_LABEL} disableScreenReaderOutput>
+                  <EuiButtonIcon
+                    iconType="cross"
+                    onClick={() => onChange({ dateTime: null })}
+                    aria-label={i18n.CLEAR_DATETIME_ARIA_LABEL}
+                    data-test-subj="dateTimeClear"
+                  />
+                </EuiToolTip>
               </EuiFlexItem>
             )}
           </EuiFlexGroup>

@@ -22,6 +22,7 @@ import {
   EuiHighlight,
   EuiLink,
   EuiButtonIcon,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { AppMountParameters } from '@kbn/core/public';
 import type { RenderingService } from '@kbn/core-rendering-browser';
@@ -89,13 +90,15 @@ function DeveloperExamples({ examples, navigateToApp, getUrlForApp, rendering }:
                         {def.title}
                       </EuiHighlight>
                     </EuiLink>
-                    <EuiButtonIcon
-                      iconType="popout"
-                      aria-label="Open in new tab"
-                      onClick={() =>
-                        window.open(getUrlForApp(def.appId), '_blank', 'noopener, noreferrer')
-                      }
-                    />
+                    <EuiToolTip content="Open in new tab" disableScreenReaderOutput>
+                      <EuiButtonIcon
+                        iconType="popout"
+                        aria-label="Open in new tab"
+                        onClick={() =>
+                          window.open(getUrlForApp(def.appId), '_blank', 'noopener, noreferrer')
+                        }
+                      />
+                    </EuiToolTip>
                   </React.Fragment>
                 }
                 image={def.image}

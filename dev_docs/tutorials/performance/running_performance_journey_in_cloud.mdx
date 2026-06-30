@@ -5,112 +5,13 @@ title: Running Performance Journey In Cloud
 summary: Learn how to run performance journey against Cloud cluster
 date: 2023-05-04
 tags: ['kibana', 'onboarding', 'setup', 'performance', 'development', 'telemetry']
+redirect_url: https://codex.elastic.dev/r/kibana-team/operations/performance/running-performance-journey-in-cloud
 ---
 
-## Overview
-As a way to better understand user experience with Kibana in cloud, we support running performance journeys against
-Cloud deployments.
-The process takes a few steps:
-- Create a cloud deployment (8.11.0+ is supported)
-- Re-configure deployment with APM enabled and reporting metrics to the monitoring cluster
-- Create a user with `superuser` role to run tests with
-- Checkout the branch that matches your cloud deployment version
-- Run the performance journey
+{/* REDIRECT_NOTICE_START */}
 
-### Re-configure deployment for Kibana and Elasticsearch
-We use [kibana-ops-e2e-perf](https://kibana-ops-e2e-perf.kb.us-central1.gcp.cloud.es.io/) cluster to monitor performance testing.
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://codex.elastic.dev/r/kibana-team/operations/performance/running-performance-journey-in-cloud](https://codex.elastic.dev/r/kibana-team/operations/performance/running-performance-journey-in-cloud)
+</DocCallOut>
 
-If you would like to report APM metrics to this cluster, copy `SECRET_TOKEN` and `SERVER_URL` values from [src/platform/packages/private/kbn-journeys/journey/journey_apm_config.ts](https://github.com/elastic/kibana/blob/60c82765779419d356a131e212682b69b035804b/src/platform/packages/private/kbn-journeys/journey/journey_apm_config.ts#L10-L11)
-
-#### Change Elasticsearch configuration
-In the ESS Admin Console, find your deployment and navigate to `Security` page. Click `Add Settings` under `Elasticsearch keystore` and add new entry:
-
-```
-Setting name: tracing.apm.secret_token
-Secret: <SECRET_TOKEN>
-```
-
-Navigate to `Advanced Edit` page and change `Deployment Configuration` by adding the following JSON object to `resources.elasticsearch.plan.elasticsearch`:
-
-```
-"user_settings_override_json": {
-  "tracing.apm.enabled": "true",
-  "tracing.apm.agent.environment": "development",
-  "tracing.apm.agent.service_name": "elasticsearch",
-  "tracing.apm.agent.server_url": "<SERVER_URL>",
-  "tracing.apm.agent.metrics_interval": "120s",
-  "tracing.apm.agent.transaction_sample_rate": "1"
-}
-```
-
-Save changes and make sure cluster is restarted successfully.
-
-#### Change Kibana configuration
-Navigate to `Advanced Edit` page and change `Deployment Configuration` by adding the following JSON object to `resources.kibana.plan.kibana`:
-
-```
-"user_settings_override_json": {
-  "coreApp.allowDynamicConfigOverrides": true,
-  "elastic.apm.active": true,
-  "elastic.apm.breakdownMetrics": false,
-  "elastic.apm.captureBody": "all",
-  "elastic.apm.captureRequestHeaders": "true",
-  "elastic.apm.captureSpanStackTraces": false,
-  "elastic.apm.centralConfig": false,
-  "elastic.apm.contextPropagationOnly": "false",
-  "elastic.apm.environment": "development",
-  "elastic.apm.globalLabels.deploymentId": "<DEPLOYMENT_ID>",
-  "elastic.apm.globalLabels.journeyName": "<YOUR_JOURNEY_NAME>",
-  "elastic.apm.longFieldMaxLength": "300000",
-  "elastic.apm.metricsInterval": "120s",
-  "elastic.apm.propagateTracestate": true,
-  "elastic.apm.sanitizeFieldNames": "password,passwd,pwd,secret,*key,*token*,*session*,*credit*,*card*,*auth*,set-cookie,pw,pass,connect.sid",
-  "elastic.apm.secretToken": "<SECRET_TOKEN>",
-  "elastic.apm.serverUrl": "<SERVER_URL>",
-  "elastic.apm.transactionSampleRate": 1
-}
-```
-
-Note: DEPLOYMENT_ID and YOUR_JOURNEY_NAME values are optional labels to find the APM traces for your run.
-
-Save changes and make sure cluster is restarted successfully.
-
-### Use QAF to prepare the deployment
-The quickest way to prepare ESS deployment is to use [QAF](https://github.com/elastic/qaf):
-
-- Make sure to add `~/.elastic/cloud.json` and ~/.elastic/cloud-admin.json with Cloud API (to create deployment) & Cloud Admin API (to modify it) keys
-```
-{
-  "api_key": {
-    "production": "<PROD KEY>",
-    "staging": "<STAGING KEY>",
-    "qa": "<QA KEY>"
-  }
-}
-```
-- Create deployment and modify it
-```
-export EC_DEPLOYMENT_NAME=kibana-perf-8.11
-qaf elastic-cloud deployments create --stack-version 8.11.0-SNAPSHOT --environment staging --region gcp-us-central1
-qaf elastic-cloud deployments configure-for-performance-journeys
-```
-
-### Run the journey
-Make sure the Kibana repo branch is matching your deployment version.
-Set env variables to run FTR against your cloud deployment:
-
-```
-export TEST_KIBANA_URL=https://<username>:<password>@<kibana_url>
-export TEST_ES_URL=https://<username>:<password>@<elasticsearch_url>:<port>
-export TEST_CLOUD=1
-```
-
-Run your journey with the command:
-
-```
-node scripts/functional_test_runner.js --config x-pack/performance/journeys_e2e/$YOUR_JOURNEY_NAME.ts`
-```
-
-APM & Telemetry labels will be updated on the fly and metrics/traces should be available in Telemetry Staging and kibana-ops-e2e-perf cluster.
-
-
+{/* REDIRECT_NOTICE_END */}

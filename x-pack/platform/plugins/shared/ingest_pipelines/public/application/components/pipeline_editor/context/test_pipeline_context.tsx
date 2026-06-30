@@ -10,6 +10,7 @@ import React, { useCallback, useContext, useReducer } from 'react';
 import { i18n } from '@kbn/i18n';
 
 import { useKibana } from '../../../../shared_imports';
+import type { FieldAccessPattern } from '../../../../../common/types';
 import type { DeserializedProcessorResult, DeserializeResult } from '../deserialize';
 import { deserializeVerboseTestOutput } from '../deserialize';
 import { serialize } from '../serialize';
@@ -62,6 +63,7 @@ export interface TestPipelineContext {
     documents: Document[] | undefined,
     processors: DeserializeResult
   ) => void;
+  fieldAccessPattern?: FieldAccessPattern;
 }
 
 const DEFAULT_TEST_PIPELINE_CONTEXT = {
@@ -131,7 +133,13 @@ export const reducer: Reducer<TestPipelineData, Action> = (state, action) => {
   return state;
 };
 
-export const TestPipelineContextProvider = ({ children }: { children: React.ReactNode }) => {
+export const TestPipelineContextProvider = ({
+  children,
+  fieldAccessPattern,
+}: {
+  children: React.ReactNode;
+  fieldAccessPattern?: FieldAccessPattern;
+}) => {
   const [state, dispatch] = useReducer(reducer, DEFAULT_TEST_PIPELINE_CONTEXT.testPipelineData);
   const { services } = useKibana();
   const isMounted = useIsMounted();
@@ -157,7 +165,7 @@ export const TestPipelineContextProvider = ({ children }: { children: React.Reac
       const { data: verboseResults, error } = await services.api.simulatePipeline({
         documents,
         verbose: true,
-        pipeline: { ...serializedProcessorsWithTag },
+        pipeline: { ...serializedProcessorsWithTag, field_access_pattern: fieldAccessPattern },
       });
 
       if (!isMounted.current) {
@@ -192,7 +200,7 @@ export const TestPipelineContextProvider = ({ children }: { children: React.Reac
         },
       });
     },
-    [isMounted, services.api, services.notifications.toasts]
+    [fieldAccessPattern, isMounted, services.api, services.notifications.toasts]
   );
 
   return (
@@ -201,6 +209,7 @@ export const TestPipelineContextProvider = ({ children }: { children: React.Reac
         testPipelineData: state,
         testPipelineDataDispatch: dispatch,
         updateTestOutputPerProcessor,
+        fieldAccessPattern,
       }}
     >
       {children}

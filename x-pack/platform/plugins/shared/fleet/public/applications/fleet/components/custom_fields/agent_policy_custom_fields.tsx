@@ -47,7 +47,7 @@ export const AgentPolicyCustomFields: React.FunctionComponent<Props> = ({
 
     const found = new Set<string>([]);
     policy.package_policies?.forEach((p: PackagePolicy) => {
-      p.inputs.forEach((input: PackagePolicyInput) => {
+      (p.inputs ?? []).forEach((input: PackagePolicyInput) => {
         if (excludedInputs.has(input.type)) {
           found.add(input.type);
         }

@@ -39,6 +39,7 @@ export { getAgentFromRunContext } from './runner';
 export type {
   ToolHandlerFn,
   ToolHandlerReturn,
+  ToolHandlerStandardReturn,
   ToolHandlerContext,
   ToolHandlerResult,
   BuiltinToolDefinition,
@@ -58,7 +59,13 @@ export type {
   ToolCreateParams,
   ToolUpdateParams,
 } from './tools';
-export { getToolResultId, createErrorResult, createOtherResult, isToolResultId } from './tools';
+export {
+  getToolResultId,
+  createErrorResult,
+  createOtherResult,
+  isToolResultId,
+  isToolHandlerStandardReturn,
+} from './tools';
 export type {
   AgentHandlerParams,
   AgentHandlerContext,

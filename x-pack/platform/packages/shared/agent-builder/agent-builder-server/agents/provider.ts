@@ -103,6 +103,10 @@ export interface ExperimentalFeatures {
   subagents: boolean;
   /** Whether the todo list tool and task-management prompt are enabled */
   todos: boolean;
+  /** Whether external ES|QL datasets are surfaced to data-source tools */
+  datasets: boolean;
+  /** Whether the ask_user_question HITL tool is enabled */
+  askUserQuestion: boolean;
   /** Whether the bash tool (and the just-bash runtime) is enabled */
   bash: boolean;
 }

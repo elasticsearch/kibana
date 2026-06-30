@@ -44,6 +44,12 @@ const badges: AppHeaderBadge[] = [
 const tabs: AppHeaderTab[] = [
   { id: 'overview', label: 'Overview', isSelected: true, onClick: action('tab-overview') },
   { id: 'alerts', label: 'Alerts', badge: 3, onClick: action('tab-alerts') },
+  {
+    id: 'insights',
+    label: 'Insights',
+    badge: { iconType: 'beaker', tooltip: 'Beta feature' },
+    onClick: action('tab-insights'),
+  },
   { id: 'settings', label: 'Settings', onClick: action('tab-settings') },
   {
     id: 'logs',

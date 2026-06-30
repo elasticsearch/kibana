@@ -7,7 +7,7 @@
 
 import { getSampleDocumentsEsql } from '@kbn/ai-tools';
 import { esql } from '@elastic/esql';
-import { ERROR_LOGS_FEATURE_TYPE } from '@kbn/streams-schema';
+import { ERROR_LOGS_FEATURE_TYPE, getStreamSamplingSource } from '@kbn/streams-schema';
 import { compact } from 'lodash';
 import type { ComputedFeatureGenerator } from './types';
 import { formatRawDocument } from '../utils/format_raw_document';
@@ -56,7 +56,7 @@ This is useful for understanding error patterns, identifying recurring issues, a
     // silently no-matches missing fields, so this preserves baseline parity.
     const { hits } = await getSampleDocumentsEsql({
       esClient,
-      index: stream.name,
+      index: getStreamSamplingSource(stream),
       start,
       end,
       sampleSize: SAMPLE_SIZE,

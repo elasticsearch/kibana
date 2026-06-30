@@ -43,6 +43,7 @@ export const STREAMS_KI_FEATURES_IDENTIFICATION_WORKFLOW = {
   id: STREAMS_KI_FEATURES_IDENTIFICATION_WORKFLOW_ID,
   pluginId: 'streams',
   version: 1,
+  billable: false,
   yaml: FEATURES_IDENTIFICATION_YAML,
   management: STREAMS_KI_WORKFLOW_MANAGEMENT,
 } as const satisfies ManagedWorkflowDefinition;
@@ -51,6 +52,7 @@ export const STREAMS_KI_QUERIES_GENERATION_WORKFLOW = {
   id: STREAMS_KI_QUERIES_GENERATION_WORKFLOW_ID,
   pluginId: 'streams',
   version: 1,
+  billable: false,
   yaml: QUERIES_GENERATION_YAML,
   management: STREAMS_KI_WORKFLOW_MANAGEMENT,
 } as const satisfies ManagedWorkflowDefinition;
@@ -59,6 +61,7 @@ export const STREAMS_KI_ONBOARDING_WORKFLOW = {
   id: STREAMS_KI_ONBOARDING_WORKFLOW_ID,
   pluginId: 'streams',
   version: 2,
+  billable: false,
   yaml: ONBOARDING_YAML,
   management: STREAMS_KI_WORKFLOW_MANAGEMENT,
 } as const satisfies ManagedWorkflowDefinition;
@@ -67,6 +70,7 @@ export const STREAMS_KI_CONTINUOUS_ONBOARDING_WORKFLOW = {
   id: STREAMS_KI_CONTINUOUS_ONBOARDING_WORKFLOW_ID,
   pluginId: 'streams',
   version: 1,
+  billable: false,
   yaml: CONTINUOUS_ONBOARDING_YAML,
   management: STREAMS_KI_CONTINUOUS_ONBOARDING_MANAGEMENT,
 } as const satisfies ManagedWorkflowDefinition;

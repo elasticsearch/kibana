@@ -116,9 +116,8 @@ export class OnboardingApp {
   }
 
   async selectKubernetesUseCase() {
-    const kubernetesRadio = this.kubernetesUseCaseTile.getByRole('radio');
-    await kubernetesRadio.click();
-    await this.otelKubernetesCard.waitFor({ state: 'visible' });
+    await this.kubernetesUseCaseTile.getByRole('radio').click();
+    await this.page.waitForURL(/\/kubernetes(\?|$|#)/);
   }
 
   async selectCloudUseCase() {

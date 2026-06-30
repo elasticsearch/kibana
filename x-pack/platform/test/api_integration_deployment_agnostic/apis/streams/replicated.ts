@@ -92,7 +92,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
       // diff and only writes to .kibana_streams.
       await putStream(apiClient, LEADER_STREAM, {
         dashboards: [],
-        queries: [],
         rules: [],
         stream: {
           type: 'classic',

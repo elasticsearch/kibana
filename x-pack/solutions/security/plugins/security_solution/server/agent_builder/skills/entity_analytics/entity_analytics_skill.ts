@@ -170,6 +170,8 @@ When asked to investigate unusual or anomalous behavior by entities, use:
     - entity.lifecycle.last_activity - last time this entity has been active in the entity store
     - risk_score_inputs - the alert inputs that contributed to the risk score calculation for this entity.
     - profile_history - historical snapshot profiles for this entity over a specified time interval
+    - anomalies - unusual or anomalous behaviors detected for this entity, mapped to MITRE ATT&CK tactics and techniques.
+    - vulnerabilities - known vulnerabilities associated with this entity, including CVE identifiers, severity levels, and descriptions.
     This tool may return multiple results if an exact match for the entity ID is not found.
     If multiple results are returned:
       - Provide a summary of the FIRST result.
@@ -290,6 +292,8 @@ Keep prose short and narrative-only:
 
 - For \`security.get_entity\` (single entity) results, write 1–3 sentences covering whether the entity is risky, what is driving the score, and what to investigate next. Do NOT produce an "Entity Overview" / field-by-field markdown block — those fields are already in the card.
   - When the result contains \`risk_score_inputs\`, one sentence on the top alert(s) contributing to the score is enough. Do NOT paste the full list of inputs as markdown.
+  - When the result contains \`anomalies\`, 1-2 bullets summarizing the anomalies with focus on the MITRE ATT&CK tactics is enough. Do NOT paste the full list of anomalies as markdown.
+  - When the result contains \`vulnerabilities\`, 1-2 bullets summarizing the vulnerabilities with focus on CVE identifiers and severity levels is enough. Do NOT paste the full list of vulnerabilities as markdown.
   - When the result contains \`profile_history\`, one sentence on the overall trend (increasing / decreasing / stable) is enough, plus a brief callout of any significant change in risk level, asset criticality, watchlist membership, or behaviors.
 - For \`security.search_entities\` (multi-entity) results, write 2–4 bullets with top-level takeaways: highest-risk row(s), biggest criticality gaps, outliers worth flagging, and recommended follow-ups. Do NOT re-list every row in markdown (columns like \`risk score\`, \`asset criticality\`, \`first_seen\`, \`last_seen\`) — the entities-table Canvas already shows those columns.
 

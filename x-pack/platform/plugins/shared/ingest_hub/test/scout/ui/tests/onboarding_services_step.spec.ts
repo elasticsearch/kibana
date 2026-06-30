@@ -100,17 +100,17 @@ test.describe('Onboarding services step', { tag: tags.stateful.classic }, () => 
     await expect(page.testSubj.locator('servicesStep-toggle-waf_otel')).not.toBeChecked();
   });
 
-  test('Next is disabled when no services are selected', async ({ browserAuth, page }) => {
+  test('Continue is disabled when no services are selected', async ({ browserAuth, page }) => {
     await browserAuth.loginAsAdmin();
     await page.gotoApp('onboarding/aws#services');
     await expect(page.testSubj.locator('onboardingStep-services')).toBeVisible();
 
-    // no services selected on first load — Next is disabled
-    await expect(page.testSubj.locator('servicesStep-nextButton')).toBeDisabled();
+    // no services selected on first load — Continue is disabled
+    await expect(page.testSubj.locator('servicesStep-continueButton')).toBeDisabled();
 
-    // selecting a service enables Next
+    // selecting a service enables Continue
     await page.testSubj.locator('servicesStep-toggle-guardduty').click();
-    await expect(page.testSubj.locator('servicesStep-nextButton')).toBeEnabled();
+    await expect(page.testSubj.locator('servicesStep-continueButton')).toBeEnabled();
   });
 
   test('signal-type filter hides categories with no matching services', async ({

@@ -65,6 +65,7 @@ const createMocks = () => {
       total: 0,
     }),
     countActionPolicyExecutionEventsSince: jest.fn().mockResolvedValue({ count: 0 }),
+    findRuleExecutions: jest.fn().mockResolvedValue({ items: [], total: 0, page: 1, perPage: 20 }),
   };
   const actionPolicyClient = {
     getActionPolicies: jest.fn().mockResolvedValue([]),
@@ -118,7 +119,6 @@ describe('ActionPolicyExecutionHistoryClient', () => {
       await client.listExecutionHistory({ request, page: 2, perPage: 25 });
 
       expect(eventLogService.findActionPolicyExecutionEvents).toHaveBeenCalledWith({
-        request,
         spaceId: 'default',
         startDate: '2026-10-10T11:00:00.000Z',
         page: 2,
@@ -437,6 +437,40 @@ describe('ActionPolicyExecutionHistoryClient', () => {
 
         expect(result.searchMatches).toBeNull();
       });
+
+      it('only emits rows for rule ids that matched the search, not all rules sharing the event', async () => {
+        const { client, eventLogService, actionPolicyClient, rulesClient } = createMocks();
+
+        (actionPolicyClient.findActionPolicies as jest.Mock).mockResolvedValue({
+          items: [],
+          total: 0,
+          page: 1,
+          perPage: 500,
+        });
+        (rulesClient.findRules as jest.Mock)
+          .mockResolvedValueOnce({
+            items: [{ id: 'rule-A' } as any],
+            total: 1,
+            page: 1,
+            perPage: 500,
+          })
+          .mockResolvedValueOnce(
+            buildFindRulesResponse([buildRule('rule-A', 'Rule A'), buildRule('rule-B', 'Rule B')])
+          );
+
+        eventLogService.findActionPolicyExecutionEvents.mockResolvedValue({
+          events: [buildEvent({ policyId: 'policy-1', ruleIds: ['rule-A', 'rule-B'] })],
+          page: 1,
+          perPage: 100,
+          total: 1,
+        } as any);
+
+        const request = httpServerMock.createKibanaRequest();
+        const result = await client.listExecutionHistory({ request, search: 'rule-A' });
+
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0].rule.id).toBe('rule-A');
+      });
     });
 
     describe('partial failures in name resolution', () => {
@@ -543,7 +577,6 @@ describe('ActionPolicyExecutionHistoryClient', () => {
 
       expect(spaces.spacesService.getSpaceId).toHaveBeenCalledWith(request);
       expect(eventLogService.countActionPolicyExecutionEventsSince).toHaveBeenCalledWith({
-        request,
         spaceId: 'my-space',
         since,
         outcome: undefined,

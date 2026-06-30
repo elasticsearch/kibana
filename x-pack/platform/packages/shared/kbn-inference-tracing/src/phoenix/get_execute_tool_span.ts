@@ -26,7 +26,7 @@ export function getExecuteToolSpan(span: tracing.ReadableSpan) {
 
   const toolResult = span.attributes[GenAISemanticConventions.GenAIToolCallResult];
   if (toolResult) {
-    span.attributes[OUTPUT_VALUE] = toolResult;
+    span.attributes[OUTPUT_VALUE] = String(toolResult);
   }
 
   return span;

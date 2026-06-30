@@ -29,6 +29,7 @@ export interface CloudConfigType {
   organization_id?: string;
   cname?: string;
   csp?: string;
+  region?: string;
   base_url?: string;
   profile_url?: string;
   deployments_url?: string;
@@ -79,7 +80,7 @@ export class CloudPlugin implements Plugin<CloudSetup, CloudStart> {
   public setup(core: CoreSetup): CloudSetup {
     registerCloudDeploymentMetadataAnalyticsContext(core.analytics, this.config);
 
-    const { id, cname, is_elastic_staff_owned: isElasticStaffOwned, csp } = this.config;
+    const { id, cname, is_elastic_staff_owned: isElasticStaffOwned, csp, region } = this.config;
 
     let decodedId: DecodedCloudId | undefined;
     if (id) {
@@ -100,6 +101,7 @@ export class CloudPlugin implements Plugin<CloudSetup, CloudStart> {
       deploymentId: parseDeploymentIdFromDeploymentUrl(this.config.deployment_url),
       cname,
       csp,
+      region,
       cloudHost: decodedId?.host,
       cloudDefaultPort: decodedId?.defaultPort,
       trialEndDate: this.config.trial_end_date ? new Date(this.config.trial_end_date) : undefined,

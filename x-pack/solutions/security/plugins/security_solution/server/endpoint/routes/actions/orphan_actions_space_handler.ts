@@ -144,7 +144,7 @@ export const registerOrphanActionsSpaceRoute = (
 
 export const UpdateOrphanActionsSpaceSchema = {
   body: schema.object({
-    spaceId: schema.string({ minLength: 1, defaultValue: '' }),
+    spaceId: schema.string({ minLength: 1, maxLength: 1024, defaultValue: '' }),
   }),
 };
 

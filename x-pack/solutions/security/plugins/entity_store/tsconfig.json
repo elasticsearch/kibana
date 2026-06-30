@@ -44,5 +44,6 @@
     "@kbn/esql-language",
     "@kbn/licensing-plugin",
     "@kbn/licensing-types",
+    "@kbn/es-errors",
   ]
 }

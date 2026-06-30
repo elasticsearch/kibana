@@ -15,7 +15,6 @@ export default createStatefulFeatureFlagTestConfig({
       {
         name: 'logs.ecs',
         dashboards: [],
-        queries: [],
         rules: [],
         stream: {
           type: 'wired',
@@ -55,7 +54,6 @@ export default createStatefulFeatureFlagTestConfig({
       {
         name: 'logs.otel',
         dashboards: [],
-        queries: [],
         rules: [],
         stream: {
           type: 'wired',

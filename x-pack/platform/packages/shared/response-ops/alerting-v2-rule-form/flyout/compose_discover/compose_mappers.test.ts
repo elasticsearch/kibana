@@ -8,7 +8,6 @@
 import type { RuleResponse } from '@kbn/alerting-v2-schemas';
 import { DASHBOARD_ARTIFACT_TYPE, RUNBOOK_ARTIFACT_TYPE } from '@kbn/alerting-v2-constants';
 import type { FormValues } from '../../form/types';
-import type { ComposeFormValues } from './compose_form_types';
 import {
   composeFormToCreateRequest,
   composeFormToUpdateRequest,
@@ -40,7 +39,7 @@ const baseRuleResponse: RuleResponse = {
   updatedAt: '2026-01-01T00:00:00Z',
 };
 
-const baseFormValues: ComposeFormValues = {
+const baseFormValues: FormValues = {
   kind: 'alert',
   metadata: { name: 'Test Rule', enabled: true, owner: 'test-owner', tags: ['tag1'] },
   timeField: '@timestamp',
@@ -71,7 +70,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('includes recovery with recovery_strategy: query when form has recovery segment', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       query: {
         format: 'composed',
@@ -97,7 +96,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('maps standalone form values to standalone request', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       query: {
         format: 'standalone',
@@ -115,7 +114,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('omits tags when empty', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       metadata: { ...baseFormValues.metadata, tags: [] },
     };
@@ -124,7 +123,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('maps grouping when present', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       grouping: { fields: ['host.name'] },
     };
@@ -133,7 +132,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('omits grouping when fields are empty', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       grouping: { fields: [] },
     };
@@ -142,7 +141,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('returns undefined state_transition for signal rules', () => {
-    const values: ComposeFormValues = { ...baseFormValues, kind: 'signal' };
+    const values: FormValues = { ...baseFormValues, kind: 'signal' };
     const result = composeFormToCreateRequest(values);
     expect(result.state_transition).toBeUndefined();
   });
@@ -153,7 +152,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('maps state_transition for breaches delay mode', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       stateTransitionAlertDelayMode: 'breaches',
       stateTransition: { pendingCount: 5 },
@@ -163,7 +162,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('maps state_transition for duration delay mode', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       stateTransitionAlertDelayMode: 'duration',
       stateTransition: { pendingCount: 3, pendingTimeframe: '10m' },
@@ -175,7 +174,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('trims runbook and dashboard artifacts', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       runbookArtifacts: [
         { id: 'runbook-id', type: RUNBOOK_ARTIFACT_TYPE, value: '  Runbook steps  ' },
@@ -194,7 +193,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('removes empty runbook and dashboard artifacts while preserving other artifacts', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       runbookArtifacts: [{ id: 'runbook-id', type: RUNBOOK_ARTIFACT_TYPE, value: '   ' }],
       dashboardArtifacts: [{ id: 'dashboard-id', type: DASHBOARD_ARTIFACT_TYPE, value: '' }],
@@ -207,7 +206,7 @@ describe('composeFormToCreateRequest', () => {
   });
 
   it('generates missing IDs for runbook and dashboard artifacts', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       runbookArtifacts: [{ id: '', type: RUNBOOK_ARTIFACT_TYPE, value: 'Runbook steps' }],
       dashboardArtifacts: [{ id: '', type: DASHBOARD_ARTIFACT_TYPE, value: 'dashboard-123' }],
@@ -247,7 +246,7 @@ describe('composeFormToUpdateRequest', () => {
   });
 
   it('preserves grouping when present', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       grouping: { fields: ['host.name'] },
     };
@@ -256,7 +255,7 @@ describe('composeFormToUpdateRequest', () => {
   });
 
   it('preserves recovery_strategy and no_data_strategy when present', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       recoveryStrategy: 'no_breach',
       noDataStrategy: 'emit',
@@ -267,7 +266,7 @@ describe('composeFormToUpdateRequest', () => {
   });
 
   it('infers recovery_strategy: query when user adds recovery via form (recoveryStrategy undefined)', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       query: {
         format: 'composed',
@@ -281,7 +280,7 @@ describe('composeFormToUpdateRequest', () => {
   });
 
   it('nullifies recovery_strategy when user removes recovery from a loaded rule', () => {
-    const values: ComposeFormValues = {
+    const values: FormValues = {
       ...baseFormValues,
       recoveryStrategy: 'query',
     };

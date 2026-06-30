@@ -24,6 +24,7 @@ describe('useCreateConnector', () => {
 
     expect(result.current).toEqual({
       isLoading: false,
+      createConnectorError: null,
       createConnector: expect.anything(),
     });
   });
@@ -78,6 +79,10 @@ describe('useCreateConnector', () => {
       expect(addErrorMock).toHaveBeenCalledWith(error, {
         title: 'Unable to create a connector.',
         toastMessage: 'Internal server error',
+      });
+      expect(result.current.createConnectorError).toEqual({
+        title: 'Unable to create a connector.',
+        message: 'Internal server error',
       });
     });
   });

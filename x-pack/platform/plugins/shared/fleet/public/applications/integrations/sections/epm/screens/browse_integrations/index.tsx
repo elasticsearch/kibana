@@ -164,6 +164,7 @@ export const BrowseIntegrationsPage: React.FC<{ prereleaseIntegrationsEnabled: b
             : undefined
         }
         hasCreatedIntegrations={hasCreatedIntegrations}
+        createdIntegrationsCount={integrations.length}
         isLoadingCreatedIntegrations={isLoadingCreatedIntegrations}
         manageIntegrationsHref={manageIntegrationsHref}
         onManageIntegrationsClick={onManageIntegrationsClick}

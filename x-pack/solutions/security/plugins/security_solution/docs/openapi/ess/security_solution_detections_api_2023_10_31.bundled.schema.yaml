@@ -8597,7 +8597,9 @@ components:
         by the user through the advanced settings.'
       oneOf:
         - $ref: '#/components/schemas/ReasonEnum'
-        - type: string
+        - maxLength: 1024
+          minLength: 1
+          type: string
     ReasonEnum:
       enum:
         - false_positive

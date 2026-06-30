@@ -8,7 +8,9 @@
 import type { LocatorPublic } from '@kbn/share-plugin/public';
 import type { SerializableRecord } from '@kbn/utility-types';
 import type { AssetDetailsLocator } from '@kbn/observability-shared-plugin/common';
+import { esql } from '@elastic/esql';
 import { isOpenTelemetryAgentName } from '../../../../common/agent_name';
+import { KUBERNETES_POD_UID } from '../../../../common/es_fields/apm';
 
 interface PodMetricsLinkParams {
   podId: string | null | undefined;
@@ -40,20 +42,20 @@ export function getPodMetricsLink({
 
   const isOTelObservedK8sPod = !!agentName && isOpenTelemetryAgentName(agentName);
 
-  // For OTel-observed K8s pods, use Discover link instead of Infra UI
+  // For OTel-observed K8s pods, use Discover link instead of Infra UI.
+  // Metrics live in time series data streams, so build an ES|QL TS query
+  // rather than a classic KQL query for better alignment with product direction.
   if (isOTelObservedK8sPod && discoverLocator && infraMetricsQuery) {
+    const esqlQuery = esql.ts(metricsIndices).where`${esql.col(
+      KUBERNETES_POD_UID
+    )} == ${podId}`.print();
+
     return discoverLocator.getRedirectUrl({
-      dataViewSpec: {
-        title: metricsIndices,
-      },
       timeRange: {
         from: infraMetricsQuery.from,
         to: infraMetricsQuery.to,
       },
-      query: {
-        language: 'kuery',
-        query: `kubernetes.pod.uid: "${podId}"`,
-      },
+      query: { esql: esqlQuery },
     });
   }
 

@@ -426,4 +426,31 @@ describe('WorkflowApi', () => {
       });
     });
   });
+
+  describe('restoreWorkflowVersion', () => {
+    it('should call POST /internal/workflows/workflow/{id}/history/{eventId}/restore', async () => {
+      const signal = new AbortController().signal;
+      await api.restoreWorkflowVersion('wf-1', 'evt-previous', { signal });
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/internal/workflows/workflow/wf-1/history/evt-previous/restore',
+        {
+          version: INTERNAL_VERSION,
+          signal,
+        }
+      );
+    });
+
+    it('should encode workflow id and event id', async () => {
+      await api.restoreWorkflowVersion('id/with/slashes', 'event/with/slashes');
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/internal/workflows/workflow/id%2Fwith%2Fslashes/history/event%2Fwith%2Fslashes/restore',
+        {
+          version: INTERNAL_VERSION,
+          signal: undefined,
+        }
+      );
+    });
+  });
 });

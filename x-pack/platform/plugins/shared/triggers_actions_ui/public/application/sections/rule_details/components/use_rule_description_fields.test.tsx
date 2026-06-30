@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { AsyncField, createPrebuildFields } from './use_rule_description_fields';
-import { screen, render } from '@testing-library/react';
+import { screen, render, waitFor } from '@testing-library/react';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import { useKibana } from '../../../../common/lib/kibana/kibana_react';
@@ -16,6 +16,10 @@ import { createStubDataView } from '@kbn/data-views-plugin/common/data_views/dat
 import { existsFilter } from '@kbn/es-query/src/filters/stubs';
 
 jest.mock('../../../../common/lib/kibana/kibana_react');
+
+jest.mock('@kbn/unified-search-plugin/public', () => ({
+  FilterItems: () => <div data-test-subj="filter-items-mock" />,
+}));
 
 const dataViewGetMock = jest.fn();
 
@@ -128,18 +132,11 @@ describe('use_rule_description_fields', () => {
     });
   });
 
-  // FLAKY: https://github.com/elastic/kibana/issues/253540
-  describe.skip('prebuild fields: query filters', () => {
+  describe('prebuild fields: query filters', () => {
     it('should fetch the index pattern by id', async () => {
       const DATA_VIEW_ID = 'my-data-view-id';
 
-      dataViewGetMock.mockResolvedValueOnce(
-        createStubDataView({
-          spec: {
-            id: DATA_VIEW_ID,
-          },
-        })
-      );
+      dataViewGetMock.mockResolvedValueOnce({ id: DATA_VIEW_ID });
 
       const prebuildFields = createPrebuildFields({
         border: '1px solid red',
@@ -152,8 +149,8 @@ describe('use_rule_description_fields', () => {
 
       render(node.description, { wrapper });
 
-      expect(dataViewGetMock).toHaveBeenCalledWith(DATA_VIEW_ID);
-      expect(await screen.findByTestId('description-detail-query-filter')).toBeInTheDocument();
+      await waitFor(() => expect(dataViewGetMock).toHaveBeenCalledWith(DATA_VIEW_ID));
+      expect(screen.getByTestId('description-detail-query-filter')).toBeInTheDocument();
     });
   });
 });

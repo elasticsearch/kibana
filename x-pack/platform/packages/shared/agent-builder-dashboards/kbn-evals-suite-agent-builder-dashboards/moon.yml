@@ -6,7 +6,7 @@ $schema: https://moonrepo.dev/schemas/project.json
 id: '@kbn/evals-suite-agent-builder-dashboards'
 layer: unknown
 owners:
-  defaultOwner: '@elastic/appex-ai-infra'
+  defaultOwner: '@elastic/kibana-presentation'
 toolchains:
   default: node
 language: typescript
@@ -14,7 +14,7 @@ project:
   title: '@kbn/evals-suite-agent-builder-dashboards'
   description: Moon project for @kbn/evals-suite-agent-builder-dashboards
   channel: ''
-  owner: '@elastic/appex-ai-infra'
+  owner: '@elastic/kibana-presentation'
   sourceRoot: x-pack/platform/packages/shared/agent-builder-dashboards/kbn-evals-suite-agent-builder-dashboards
 dependsOn:
   - '@kbn/evals'

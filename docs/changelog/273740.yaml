@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/273740
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Alerting and reporting
+title: "Add 'Add to chat' action to alert table row actions"
+description: "The 'Add to chat' action is now available from each alert row, in addition to bulk actions and the alert flyout."

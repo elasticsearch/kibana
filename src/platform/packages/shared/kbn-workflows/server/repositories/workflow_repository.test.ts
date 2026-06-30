@@ -242,6 +242,7 @@ describe('WorkflowRepository.getWorkflow', () => {
                 ...baseSource,
                 managed: true,
                 managedBy: 'workflowsExtensionsExample',
+                billable: true,
                 originManagedWorkflowId: 'system-parent',
                 managedVersion: 4,
                 created_at: '2024-01-02T03:04:05.000Z',
@@ -262,6 +263,7 @@ describe('WorkflowRepository.getWorkflow', () => {
     expect(wf).toMatchObject({
       managed: true,
       managedBy: 'workflowsExtensionsExample',
+      billable: true,
       originManagedWorkflowId: 'system-parent',
       managedVersion: 4,
     });

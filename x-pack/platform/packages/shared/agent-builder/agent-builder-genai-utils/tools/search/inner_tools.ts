@@ -105,6 +105,7 @@ export const createNaturalLanguageSearchTool = ({
   rowLimit,
   customInstructions,
   timeRange,
+  includeDatasets = false,
 }: {
   modelProvider: ModelProvider;
   esClient: ElasticsearchClient;
@@ -113,6 +114,7 @@ export const createNaturalLanguageSearchTool = ({
   rowLimit?: number;
   customInstructions?: string;
   timeRange: TimeRange;
+  includeDatasets?: boolean;
 }) => {
   return toTool(
     async ({ query, index }) => {
@@ -131,6 +133,7 @@ export const createNaturalLanguageSearchTool = ({
             rowLimit,
             customInstructions,
             timeRange,
+            includeDatasets,
           });
 
           const results: ToolResult[] = response.esqlData

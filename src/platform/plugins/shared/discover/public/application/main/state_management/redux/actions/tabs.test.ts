@@ -17,6 +17,7 @@ import { createTabItem } from '../utils';
 import {
   createRuntimeStateManager,
   selectAllTabs,
+  selectTab,
   internalStateActions,
   DEFAULT_TAB_STATE,
 } from '..';
@@ -108,6 +109,99 @@ describe('tabs actions', () => {
       );
 
       expect(runtimeStateManager.tabs.byId[newTab.id]).toBeDefined();
+    });
+  });
+
+  describe('updateTabs', () => {
+    it('copies profile state when duplicating a tab', async () => {
+      const { internalState, getCurrentTab } = await setup();
+      const currentTab = getCurrentTab();
+      const allTabs = selectAllTabs(internalState.getState());
+
+      internalState.dispatch(
+        internalStateActions.setProfileState({
+          tabId: currentTab.id,
+          key: 'testProfileState',
+          profileState: { color: 'primary' },
+        })
+      );
+
+      const duplicatedTab = {
+        ...createTabItem(allTabs),
+        duplicatedFromId: currentTab.id,
+      };
+
+      await internalState.dispatch(
+        internalStateActions.updateTabs({
+          items: [...allTabs, duplicatedTab],
+          selectedItem: duplicatedTab,
+        })
+      );
+
+      expect(selectTab(internalState.getState(), duplicatedTab.id).profileState).toEqual({
+        testProfileState: { color: 'primary' },
+      });
+    });
+
+    it('starts fresh tabs with empty profile state', async () => {
+      const { internalState } = await setup();
+      const allTabs = selectAllTabs(internalState.getState());
+      const newTab = createTabItem(allTabs);
+
+      await internalState.dispatch(
+        internalStateActions.updateTabs({
+          items: [...allTabs, newTab],
+          selectedItem: newTab,
+        })
+      );
+
+      expect(selectTab(internalState.getState(), newTab.id).profileState).toEqual({});
+    });
+
+    it('resets profile state when restoring a recently closed tab', async () => {
+      const { internalState, getCurrentTab } = await setup();
+      const currentTab = getCurrentTab();
+      const allTabs = selectAllTabs(internalState.getState());
+      const remainingTab = {
+        ...DEFAULT_TAB_STATE,
+        ...createTabItem(allTabs),
+      };
+
+      internalState.dispatch(
+        internalStateActions.setTabs({
+          allTabs: [...allTabs, remainingTab],
+          selectedTabId: currentTab.id,
+          recentlyClosedTabs: [],
+        })
+      );
+      internalState.dispatch(
+        internalStateActions.setProfileState({
+          tabId: currentTab.id,
+          key: 'testProfileState',
+          profileState: { color: 'primary' },
+        })
+      );
+      internalState.dispatch(
+        internalStateActions.setTabs({
+          allTabs: [remainingTab],
+          selectedTabId: remainingTab.id,
+          recentlyClosedTabs: [],
+        })
+      );
+
+      const restoredTab = {
+        ...createTabItem([remainingTab]),
+        restoredFromId: currentTab.id,
+      };
+
+      await internalState.dispatch(
+        internalStateActions.updateTabs({
+          items: [remainingTab, restoredTab],
+          selectedItem: restoredTab,
+        })
+      );
+
+      expect(selectTab(internalState.getState(), restoredTab.id).profileState).toEqual({});
     });
   });
 });

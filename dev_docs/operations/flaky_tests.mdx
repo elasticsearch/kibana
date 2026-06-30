@@ -4,62 +4,13 @@ slug: /kibana-dev-docs/ops/flaky-tests
 title: "Flaky Tests"
 description: A description of how the operations team helps manage flaky tests in Kibana
 tags: ['kibana', 'dev', 'contributor', 'operations', 'ci', 'tests', 'flaky']
+redirect_url: https://codex.elastic.dev/r/kibana-team/operations/ci/flaky-tests
 ---
 
-The Kibana repository contains hundreds of thousands of test cases, and on every PR and commit to the repository we run every one of those test cases. We need to do this because so many parts of Kibana are interconnected and we don't currently have the ability to only run the tests that are necessary based on the changes in a PR/commit. This has the side effect of running each test hundreds of times a day, which means that tests need to be very reliable.
+{/* REDIRECT_NOTICE_START */}
 
-Because of the high reliability requirements for our tests it is common for tests to become "flaky", meaning that something changes which causes their reliability to drop and causes them to fail when they should be passing. When a test becomes flaky the Operations team will skip that test, meaning it will no longer run until the team owning that test investigates the flakiness, and unskips the test.
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://codex.elastic.dev/r/kibana-team/operations/ci/flaky-tests](https://codex.elastic.dev/r/kibana-team/operations/ci/flaky-tests)
+</DocCallOut>
 
-## How is test ownership determined?
-
-In many cases ownership is relatively obvious based on the location of the test. In cases where it's more ambiguous we will normally trace back to when the test was added, or look at the PRs which edit the functionality of the tests the most (ignoring repo-wide edits like ESLint upgrades, etc). The authors/teams that are labeled on these PRs or the teams of the authors of these PRs are treated as the "owner" of tests.
-
-In the <DocLink id="kibDevDocsOpsPackages" text="IDM project" /> we will be improving this by putting all code, including functional tests, into packages which have a specific and verified owner.
-
-## When is a test flaky enough to skip?
-
-Identifying when tests are flaky enough that they should be skipped is the responsibility of members of the Operations team. When making that decision we consider a few different questions:
-
-### Is this a very new test?
-
-When a test is very new (~ 3-4 business days) and has already started failing, then the test is likely flaky enough to skip. While we don't know how flaky this test really is, we know that it didn't take long for it to start failing. Additionally, we assume that the author of the test is still familiar with the context of the change and not deep in the middle of some other complicated work. In these cases we will assign and ping the author directly and expect the test to not be skipped for long.
-
-This is an ideal case for flaky tests, but isn't very common.
-
-### How often is this test failing?
-
-The frequency of failures is judged uniquely based on the type of test that is failing:
-
-*Jest Unit/Integration tests:* These tests are not retried, and shouldn't be doing anything complicated enough to introduce flakiness. Any number of failures in these tests will lead to them being skipped.
-
-*Functional/API Integration tests:* (aka. FTR configs) These tests involve running full Kibana and Elasticsearch instances and usually require interacting with the product through web browser automation. Because of this 100% stability is really unattainable, so any time there is a failure in an FTR config the tests in that config will be re-run automatically. If the test passes on the second time then the CI succeeds, but is "unstable" and requires that PR authors triage and interpret the failure to make sure their changes didn't cause this instability.
-
-Our goal is to balance reducing this overhead for "innocent" PR authors without creating too much work on teams who need to unskip flaky tests. To achieve this goal, one of these tests is "flaky enough to be skipped" when it is _failing at least four times in the last week or shows a consistent, and recent, historical pattern of failing_.
-
-To understand how many times a test has failed we use a [Kibana dashboard](https://ops.kibana.dev/s/ci/app/dashboards#/view/cb7380fb-67fe-5c41-873d-003d1a407dad) which records all of the failures in Kibana CI. This allows us to see the pattern of failures and investigate if a test which has only failed once on a tracked branch is actually failing regularly in different PRs.
-
-Since PRs don't always contain complete code we don't immediately treat failures in PRs as failures, we try to verify that they're spread out over time and that they aren't all on the same PR or consistently triggered by the same PR author (indications that these failures might be change based, not caused by flakiness).
-
-### Are the owning teams able to fix this source of flakiness?
-
-There are cases where tests will fail because of something that is outside of the test-authors' control.
-
-A recent example of this is issues caused by the way that the <DocLink id="kibDevDocsOpsEsArchiver" /> supported archiving Kibana saved object indices. This was a "best practice" that started failing as we worked to make the migration process more resilient, and caused flakiness that individual test owners couldn't really fix.
-
-To fix this specific example the Operations, Core, and QA teams worked together to find a better solution, and the QA team has been assisting other teams by migrating their tests from the <DocLink id="kibDevDocsOpsEsArchiver" /> to the new `KbnArchiver`
-
-Now the majority of Kibana indexes stored in ES Archives have been migrated and this is no longer a major source of flakiness. When another case pops-up we usually just ping the QA team and ask them to migrate the specific usage rather than skip the test rather than skip the test.
-
-## How do I know when my team's tests are skipped?
-
-Every test that fails on a tracked branch is logged in a Github issue. On subsequent failures of the same test a comment is added to the issue, to help us get an idea of flakiness and help us find instances of the failure on CI. These issues require `team:` labels just like all other issues, and many people work to make sure that all these issues are labels correctly. Following these issues will allow you to see tests which are likely flaky.
-
-When a test is determined to be flaky enough to be skipped the issue will get the `blocker`, `skipped test`, and at least the version label of the first upcoming version that the test was skipped for. The goal here is to highlight that there is functionality in that upcoming version which might be broken because it is untested, and teams should look at them as quickly as possible to deal with the blocker.
-
-## How do I get my tests unskipped?
-
-Unskipping tests is the responsibility of the test owner. To unskip a test the flaky failures should be analyzed in order to determine the cause for the flakiness, or the problematic tests should be scanned for issues described in the section ("How do I write tests that aren't flaky?")[#how-do-i-write-tests-that-arent-flaky]. When the cause of the flakiness has been identified, open a PR with the changes necessary and validate that the flakiness is reduced using the <DocLink id="kibDevDocsOpsFlakyTestRunner" />. See the <DocLink id="kibDevDocsOpsFlakyTestRunner" /> docs for more information about how to use it.
-
-## How do I write functional tests that aren't flaky?
-
-Checkout <DocLink id="kibDevDocsOpsWritingStableFunctionalTests"/>
+{/* REDIRECT_NOTICE_END */}

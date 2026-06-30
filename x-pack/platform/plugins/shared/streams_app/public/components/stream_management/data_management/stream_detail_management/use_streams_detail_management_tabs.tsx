@@ -8,7 +8,7 @@ import { i18n } from '@kbn/i18n';
 import { Streams } from '@kbn/streams-schema';
 import React from 'react';
 import { useStreamsPrivileges } from '../../../../hooks/use_streams_privileges';
-import { StreamDetailSignificantEventsView } from '../../../sig_events/stream_detail_significant_events_view';
+import { StreamDetailSignificantEventsView } from '../../../significant_events/stream_detail_significant_events_view';
 import { StreamDetailEnrichment } from '../stream_detail_enrichment';
 
 export function useStreamsDetailManagementTabs({

@@ -272,7 +272,7 @@ describe('groupSteps', () => {
     ]);
   });
 
-  it('does not flush the tool buffer when an AskUserQuestionStep arrives mid-stream between tool calls', () => {
+  it('flushes the tool buffer when an AskUserQuestionStep arrives and renders it as a step', () => {
     const askUserQuestion: AskUserQuestionStep = {
       type: ConversationRoundStepType.askUserQuestion,
       prompt_id: 'prompt-1',
@@ -284,6 +284,10 @@ describe('groupSteps', () => {
 
     const result = groupSteps([a, b, askUserQuestion, c]);
 
-    expect(result).toEqual([{ kind: 'group', steps: [a, b, c] }]);
+    expect(result).toEqual([
+      { kind: 'group', steps: [a, b] },
+      { kind: 'step', step: askUserQuestion, index: 2 },
+      { kind: 'group', steps: [c] },
+    ]);
   });
 });

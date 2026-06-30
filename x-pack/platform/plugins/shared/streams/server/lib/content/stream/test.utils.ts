@@ -6,29 +6,21 @@
  */
 
 import type { ContentPackStream } from '@kbn/content-packs-schema';
-import {
-  emptyAssets,
-  type FieldDefinition,
-  type RoutingDefinition,
-  type StreamQuery,
-} from '@kbn/streams-schema';
+import { emptyAssets, type FieldDefinition, type RoutingDefinition } from '@kbn/streams-schema';
 
 export const testContentPackEntry = ({
   name,
   fields = {},
   routing = [],
-  queries = [],
 }: {
   name: string;
   fields?: FieldDefinition;
   routing?: RoutingDefinition[];
-  queries?: StreamQuery[];
 }): ContentPackStream => ({
   type: 'stream' as const,
   name,
   request: {
     ...emptyAssets,
-    queries,
     stream: {
       type: 'wired' as const,
       description: '',

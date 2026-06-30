@@ -85,7 +85,7 @@ spaceTest.describe(
     spaceTest(
       `should unselect saved search when navigating to a 'new'`,
       async ({ pageObjects, page }) => {
-        await pageObjects.discover.goto();
+        await pageObjects.discover.goto({ queryMode: 'classic' });
         await expect(pageObjects.discover.getSelectedDataView()).toHaveText(
           testData.DATA_VIEW_NAME.ECOMMERCE
         );

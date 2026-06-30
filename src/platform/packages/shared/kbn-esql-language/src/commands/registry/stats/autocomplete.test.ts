@@ -805,6 +805,21 @@ describe('STATS Autocomplete', () => {
           ),
         ]);
 
+        await statsExpectSuggestions('from a | stats avg(doubleField) by (integerField) ', [
+          '\n',
+          ', ',
+          '| ',
+          ...getFunctionSignaturesByReturnType(
+            Location.STATS_BY,
+            'any',
+            {
+              operators: true,
+              skipAssign: true,
+            },
+            ['integer']
+          ),
+        ]);
+
         await statsExpectSuggestions(
           'from a | stats col0 = AVG(doubleField) BY col1 = BUCKET(dateField, 1 day) ',
           [

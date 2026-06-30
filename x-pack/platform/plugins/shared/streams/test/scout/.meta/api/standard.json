@@ -1,5 +1,5 @@
 {
-  "sha1": "3320bd045a90ca6fb751c1379f6f8cda92025265",
+  "sha1": "94616cae3326965b3fcd4fa5e7330fc50397972a",
   "tests": [
     {
       "id": "4aaafd2a7000640-70ec3e6d9549722",
@@ -104,7 +104,7 @@
       }
     },
     {
-      "id": "504e25785616fe1-1d8b985de6fcd2d",
+      "id": "11b72ca5d443a08-1d8b985de6fcd2d",
       "title": "Onboarding bulk status API returns not_started for every requested stream that has never been onboarded",
       "expectedStatus": "passed",
       "tags": [
@@ -114,13 +114,13 @@
         "@cloud-serverless-observability_complete"
       ],
       "location": {
-        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/sig_events/onboarding_bulk_status.spec.ts",
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/onboarding_bulk_status.spec.ts",
         "line": 29,
         "column": 12
       }
     },
     {
-      "id": "504e25785616fe1-6eae18e8b4c773e",
+      "id": "11b72ca5d443a08-6eae18e8b4c773e",
       "title": "Onboarding bulk status API rejects an empty streamNames array",
       "expectedStatus": "passed",
       "tags": [
@@ -130,13 +130,13 @@
         "@cloud-serverless-observability_complete"
       ],
       "location": {
-        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/sig_events/onboarding_bulk_status.spec.ts",
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/onboarding_bulk_status.spec.ts",
         "line": 55,
         "column": 12
       }
     },
     {
-      "id": "504e25785616fe1-4d182347c2af93f",
+      "id": "11b72ca5d443a08-4d182347c2af93f",
       "title": "Onboarding bulk status API returns 403 when significant events is disabled",
       "expectedStatus": "passed",
       "tags": [
@@ -146,13 +146,13 @@
         "@cloud-serverless-observability_complete"
       ],
       "location": {
-        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/sig_events/onboarding_bulk_status.spec.ts",
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/onboarding_bulk_status.spec.ts",
         "line": 67,
         "column": 12
       }
     },
     {
-      "id": "94c80912f6246f4-094ac08f869a28e",
+      "id": "e0e7435b0fe0092-094ac08f869a28e",
       "title": "Significant Events discovery pipeline API POST _execute (trigger) returns an executionId",
       "expectedStatus": "passed",
       "tags": [
@@ -160,13 +160,13 @@
         "@cloud-stateful-classic"
       ],
       "location": {
-        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/sig_events/significant_event_discovery_run.spec.ts",
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/significant_event_discovery_run.spec.ts",
         "line": 30,
         "column": 12
       }
     },
     {
-      "id": "94c80912f6246f4-b38b60bd6807012",
+      "id": "e0e7435b0fe0092-b38b60bd6807012",
       "title": "Significant Events discovery pipeline API GET _status returns a valid status after trigger",
       "expectedStatus": "passed",
       "tags": [
@@ -174,13 +174,13 @@
         "@cloud-stateful-classic"
       ],
       "location": {
-        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/sig_events/significant_event_discovery_run.spec.ts",
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/significant_event_discovery_run.spec.ts",
         "line": 47,
         "column": 12
       }
     },
     {
-      "id": "94c80912f6246f4-8f29a28b4278864",
+      "id": "e0e7435b0fe0092-8f29a28b4278864",
       "title": "Significant Events discovery pipeline API POST _execute (cancel) returns executionId or null",
       "expectedStatus": "passed",
       "tags": [
@@ -188,7 +188,7 @@
         "@cloud-stateful-classic"
       ],
       "location": {
-        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/sig_events/significant_event_discovery_run.spec.ts",
+        "file": "x-pack/platform/plugins/shared/streams/test/scout/api/tests/significant_events/significant_event_discovery_run.spec.ts",
         "line": 72,
         "column": 12
       }

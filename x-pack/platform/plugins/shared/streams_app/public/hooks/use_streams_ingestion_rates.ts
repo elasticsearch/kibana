@@ -5,84 +5,75 @@
  * 2.0.
  */
 
-import { useState, useRef, useEffect } from 'react';
-import type { UnparsedEsqlResponse } from '@kbn/traced-es-client';
+import { useState, useEffect } from 'react';
+import type { StreamDocsStat } from '@kbn/streams-plugin/common';
 
 interface UseStreamsIngestionRatesProps {
-  streamNames: string[];
+  /**
+   * Range-scoped per-stream document counts (a single batched request resolved by
+   * `useStreamDocCountsFetch`). Resolving one promise for all streams avoids firing one query
+   * per stream, which exhausts the browser's connection pool on large stream sets.
+   */
+  ingestionDocCount: Promise<StreamDocsStat[]>;
   timeStart: number;
   timeEnd: number;
-  getStreamHistogram: (streamName: string) => Promise<UnparsedEsqlResponse>;
 }
 
 interface UseStreamsIngestionRatesResult {
   ingestionByStream: Record<string, number>;
   ingestionLoaded: boolean;
+  ingestionError: boolean;
 }
 
-const sumDocCounts = (result: UnparsedEsqlResponse): number => {
-  const colIdx = result.columns?.findIndex((col) => col.name === 'doc_count') ?? -1;
-  if (colIdx < 0) return 0;
-  return (result.values ?? []).reduce((sum, row) => sum + (Number(row[colIdx]) || 0), 0);
-};
+interface IngestionRatesState {
+  byStream: Record<string, number>;
+  loaded: boolean;
+  error: boolean;
+}
 
 /**
- * Resolves per-stream histogram promises and computes average docs/sec
+ * Resolves the batched per-stream ingested doc counts and computes average docs/sec
  * for the given time range.
  */
 export const useStreamsIngestionRates = ({
-  streamNames,
+  ingestionDocCount,
   timeStart,
   timeEnd,
-  getStreamHistogram,
 }: UseStreamsIngestionRatesProps): UseStreamsIngestionRatesResult => {
-  const [ingestionByStream, setIngestionByStream] = useState<Record<string, number>>({});
-  const [ingestionLoaded, setIngestionLoaded] = useState(false);
-  const cancelledRef = useRef(false);
-  const getStreamHistogramRef = useRef(getStreamHistogram);
-  getStreamHistogramRef.current = getStreamHistogram;
+  const [state, setState] = useState<IngestionRatesState>({
+    byStream: {},
+    loaded: false,
+    error: false,
+  });
 
   useEffect(() => {
-    cancelledRef.current = false;
-    setIngestionLoaded(false);
-
-    if (streamNames.length === 0) {
-      setIngestionByStream({});
-      setIngestionLoaded(true);
-      return;
-    }
+    let cancelled = false;
+    setState((prev) => ({ ...prev, loaded: false, error: false }));
 
     const timeRangeSec = (timeEnd - timeStart) / 1000;
 
-    Promise.all(
-      streamNames.map(async (name) => {
-        try {
-          const totalDocs = sumDocCounts(await getStreamHistogramRef.current(name));
-          return { name, rate: timeRangeSec > 0 ? totalDocs / timeRangeSec : 0 };
-        } catch {
-          return { name, rate: 0 };
+    ingestionDocCount
+      .then((counts) => {
+        if (cancelled) return;
+        const byStream: Record<string, number> = {};
+        for (const { stream, count } of counts) {
+          byStream[stream] = timeRangeSec > 0 ? count / timeRangeSec : 0;
         }
-      })
-    )
-      .then((results) => {
-        if (cancelledRef.current) return;
-        const map: Record<string, number> = {};
-        for (const { name, rate } of results) {
-          map[name] = rate;
-        }
-        setIngestionByStream(map);
-        setIngestionLoaded(true);
+        setState({ byStream, loaded: true, error: false });
       })
       .catch(() => {
-        if (cancelledRef.current) return;
-        setIngestionByStream({});
-        setIngestionLoaded(true);
+        if (cancelled) return;
+        setState({ byStream: {}, loaded: true, error: true });
       });
 
     return () => {
-      cancelledRef.current = true;
+      cancelled = true;
     };
-  }, [streamNames, timeStart, timeEnd]);
+  }, [ingestionDocCount, timeStart, timeEnd]);
 
-  return { ingestionByStream, ingestionLoaded };
+  return {
+    ingestionByStream: state.byStream,
+    ingestionLoaded: state.loaded,
+    ingestionError: state.error,
+  };
 };

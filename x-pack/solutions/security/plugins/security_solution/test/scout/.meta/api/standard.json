@@ -1,5 +1,5 @@
 {
-  "sha1": "5ff520e1049bc35d55fd731ba34af4baad2293b7",
+  "sha1": "f77320d0509973d14afe42ed33012f90020ef871",
   "tests": [
     {
       "id": "0e5fa6a764fdd20-784d92660b25361",
@@ -419,6 +419,118 @@
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/lead_generation/lead_generation_status.spec.ts",
         "line": 89,
         "column": 12
+      }
+    },
+    {
+      "id": "54179e4a5915ec4-c56bc0b985a129f",
+      "title": "Entity Store entity maintainers Should return 403 when user lacks permissions for target index patterns",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/maintainers/entity_maintainers.spec.ts",
+        "line": 104,
+        "column": 10
+      }
+    },
+    {
+      "id": "54179e4a5915ec4-9611dacc0635259",
+      "title": "Entity Store entity maintainers Should return 403 when user lacks permissions for entity store saved object descriptor",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/maintainers/entity_maintainers.spec.ts",
+        "line": 132,
+        "column": 10
+      }
+    },
+    {
+      "id": "54179e4a5915ec4-21c8ba6a65e32ee",
+      "title": "Entity Store entity maintainers Should return 400 when entity store is not installed",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/maintainers/entity_maintainers.spec.ts",
+        "line": 152,
+        "column": 10
+      }
+    },
+    {
+      "id": "a3100c817b03679-bfeaac4f4ce32ce",
+      "title": "Entity Store administers maintainer (raw_identifiers) resolves administers.ids for a freshly-seen actor",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/maintainers/raw_identifiers_maintainer_suite.spec.ts",
+        "line": 145,
+        "column": 14
+      }
+    },
+    {
+      "id": "a3100c817b03679-f31298cbfae2702",
+      "title": "Entity Store administers maintainer (raw_identifiers) skips an actor whose last_seen is older than the watermark, resolves a newer one",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/maintainers/raw_identifiers_maintainer_suite.spec.ts",
+        "line": 174,
+        "column": 14
+      }
+    },
+    {
+      "id": "a3100c817b03679-7e9bfbf2fb713f0",
+      "title": "Entity Store administers maintainer (raw_identifiers) writes only targets that exist as entities, drops phantom raw_identifiers",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/maintainers/raw_identifiers_maintainer_suite.spec.ts",
+        "line": 234,
+        "column": 14
+      }
+    },
+    {
+      "id": "a3100c817b03679-0a49071eea99870",
+      "title": "Entity Store administers maintainer (raw_identifiers) skips an actor whose entity.source is not 'entityanalytics_ad'",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/api/tests/maintainers/raw_identifiers_maintainer_suite.spec.ts",
+        "line": 277,
+        "column": 16
       }
     }
   ]

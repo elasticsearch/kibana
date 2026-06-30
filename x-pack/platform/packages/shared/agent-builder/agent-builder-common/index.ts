@@ -137,9 +137,12 @@ export {
   type AgentDeleteRequest,
 } from './agents';
 export {
+  ConversationAccessControlMode,
+  getDefaultConversationAccessControl,
   type RoundInput,
   type ConverseInput,
   type AssistantResponse,
+  type ConversationAccessControl,
   type ToolCallWithResult,
   type ConversationRound,
   type Conversation,

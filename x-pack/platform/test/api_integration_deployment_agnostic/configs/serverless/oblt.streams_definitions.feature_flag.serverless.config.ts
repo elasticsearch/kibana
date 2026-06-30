@@ -16,7 +16,6 @@ export default createServerlessFeatureFlagTestConfig({
       {
         name: 'logs.ecs',
         dashboards: [],
-        queries: [],
         rules: [],
         stream: {
           type: 'wired',
@@ -56,7 +55,6 @@ export default createServerlessFeatureFlagTestConfig({
       {
         name: 'logs.otel',
         dashboards: [],
-        queries: [],
         rules: [],
         stream: {
           type: 'wired',

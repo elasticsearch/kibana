@@ -19,6 +19,7 @@ import type {
   SimpleSOAssetType,
 } from '../../../../../../../../common';
 import { ElasticsearchAssetType } from '../../../../../../../../common';
+import { KibanaSavedObjectType } from '../../../../../../../../common/types/models';
 import { displayedAssetTypes } from '../../../../../../../../common/constants';
 
 import { Error, ExtensionWrapper, Loading } from '../../../../../components';
@@ -135,7 +136,12 @@ export const AssetsPage = ({ packageInfo, refetchPackageInfo }: AssetsPanelProps
 
       if (pkgAssets.length > 0) {
         const deferredAssets = pkgAssets.filter((asset): asset is EsAssetReference => {
-          return 'deferred' in asset && asset.deferred === true;
+          // Deferred alert refs belong to the Alerting tab, not the Assets tab
+          return (
+            'deferred' in asset &&
+            asset.deferred === true &&
+            asset.type !== KibanaSavedObjectType.alert
+          );
         });
         setDeferredInstallations(deferredAssets);
       }

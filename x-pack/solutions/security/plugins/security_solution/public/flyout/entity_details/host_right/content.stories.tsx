@@ -10,7 +10,7 @@ import type { Meta } from '@storybook/react';
 import { EuiFlyout } from '@elastic/eui';
 import { TestProvider } from '@kbn/expandable-flyout/src/test/provider';
 import { StorybookProviders } from '../../../common/mock/storybook_providers';
-import { mockRiskScoreState } from '../../shared/mocks';
+import { mockRiskScoreState, mockEntityRiskScores } from '../../shared/mocks';
 import { HostPanelContent } from './content';
 import { mockObservedHostData, mockEntityRecord } from '../mocks';
 
@@ -37,6 +37,7 @@ export const Default = {
     <HostPanelContent
       observedHost={mockObservedHostData}
       riskScoreState={riskScoreData}
+      entityRiskScores={mockEntityRiskScores}
       contextID={'test-host-details'}
       scopeId={'test-scopeId'}
       openDetailsPanel={() => {}}
@@ -55,6 +56,7 @@ export const WithGraphVisualization = {
     <HostPanelContent
       observedHost={mockObservedHostData}
       riskScoreState={riskScoreData}
+      entityRiskScores={mockEntityRiskScores}
       contextID={'test-host-details'}
       scopeId={'test-scopeId'}
       openDetailsPanel={() => {}}
@@ -86,6 +88,7 @@ export const NoObservedData = {
         },
       }}
       riskScoreState={riskScoreData}
+      entityRiskScores={mockEntityRiskScores}
       contextID={'test-host-details'}
       scopeId={'test-scopeId'}
       openDetailsPanel={() => {}}
@@ -115,6 +118,7 @@ export const Loading = {
         },
       }}
       riskScoreState={riskScoreData}
+      entityRiskScores={mockEntityRiskScores}
       contextID={'test-host-details'}
       scopeId={'test-scopeId'}
       openDetailsPanel={() => {}}

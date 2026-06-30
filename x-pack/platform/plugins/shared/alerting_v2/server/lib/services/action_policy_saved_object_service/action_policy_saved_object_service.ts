@@ -7,7 +7,7 @@
 
 import { PluginStart } from '@kbn/core-di';
 import type { SavedObjectsClientContract } from '@kbn/core/server';
-import { SavedObjectsUtils } from '@kbn/core/server';
+import { isSavedObjectErrorResult, SavedObjectsUtils } from '@kbn/core/server';
 import type { EncryptedSavedObjectsClient } from '@kbn/encrypted-saved-objects-plugin/server';
 import type { KueryNode } from '@kbn/es-query';
 import type { SpacesPluginStart } from '@kbn/spaces-plugin/server';
@@ -122,7 +122,7 @@ export class ActionPolicySavedObjectService implements ActionPolicySavedObjectSe
     );
 
     return result.saved_objects.map((savedObject) => {
-      if ('error' in savedObject && savedObject.error) {
+      if (isSavedObjectErrorResult(savedObject)) {
         return { id: savedObject.id, error: savedObject.error };
       }
       return { id: savedObject.id, version: savedObject.version };
@@ -144,7 +144,7 @@ export class ActionPolicySavedObjectService implements ActionPolicySavedObjectSe
     );
 
     return result.saved_objects.map((savedObject) => {
-      if ('error' in savedObject && savedObject.error) {
+      if (isSavedObjectErrorResult(savedObject)) {
         return { id: savedObject.id, error: savedObject.error };
       }
 
@@ -178,7 +178,7 @@ export class ActionPolicySavedObjectService implements ActionPolicySavedObjectSe
 
     for await (const response of finder.find()) {
       for (const doc of response.saved_objects) {
-        if (doc.error) {
+        if (isSavedObjectErrorResult(doc)) {
           results.push({ id: doc.id, error: doc.error });
         } else {
           results.push({ id: doc.id, attributes: doc.attributes, namespaces: doc.namespaces });

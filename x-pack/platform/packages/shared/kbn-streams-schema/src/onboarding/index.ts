@@ -8,7 +8,10 @@
 import type { ChatCompletionTokenCount } from '@kbn/inference-common';
 import type { BaseFeature } from '../feature';
 import type { GeneratedSignificantEventQuery } from '../api/significant_events';
-import { SigEventsWorkflowStatus, type SigEventsWorkflowStatusResult } from '../workflows';
+import {
+  SignificantEventsWorkflowStatus,
+  type SignificantEventsWorkflowStatusResult,
+} from '../workflows';
 
 /** Summary of the features identification step of a completed onboarding run. */
 export interface StreamsKIsOnboardingFeaturesResult {
@@ -32,7 +35,7 @@ export interface StreamsKIsOnboardingResult {
 }
 
 export type StreamsKIsOnboardingStatusResult =
-  SigEventsWorkflowStatusResult<StreamsKIsOnboardingResult>;
+  SignificantEventsWorkflowStatusResult<StreamsKIsOnboardingResult>;
 
 export enum StreamsKIsOnboardingStep {
   FeaturesIdentification = 'features_identification',
@@ -40,5 +43,8 @@ export enum StreamsKIsOnboardingStep {
 }
 
 /** Statuses that indicate the onboarding pipeline is still active (running or pending cancel). */
-export const STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES: ReadonlySet<SigEventsWorkflowStatus> =
-  new Set([SigEventsWorkflowStatus.InProgress, SigEventsWorkflowStatus.BeingCanceled]);
+export const STREAMS_KIS_ONBOARDING_IN_PROGRESS_STATUSES: ReadonlySet<SignificantEventsWorkflowStatus> =
+  new Set([
+    SignificantEventsWorkflowStatus.InProgress,
+    SignificantEventsWorkflowStatus.BeingCanceled,
+  ]);

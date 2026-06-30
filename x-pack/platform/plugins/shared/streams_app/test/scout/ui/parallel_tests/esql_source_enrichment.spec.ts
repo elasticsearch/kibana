@@ -37,7 +37,7 @@ test.describe(
       page,
     }) => {
       await browserAuth.loginAsAdmin();
-      await pageObjects.discover.goto();
+      await pageObjects.discover.goto({ queryMode: 'classic' });
 
       const codeEditor = pageObjects.discover.codeEditor;
 

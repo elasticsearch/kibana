@@ -43,18 +43,18 @@ test.describe(
       await browserAuth.loginAsAdmin();
 
       // Navigate to Discover and wait for the page to be ready
-      await pageObjects.discover.goto();
+      await pageObjects.discover.goto({ queryMode: 'classic' });
       await pageObjects.discover.waitUntilSearchingHasFinished();
       await pageObjects.discover.waitForHistogramRendered();
 
       await pageObjects.discover.selectDataView('All logs');
       await pageObjects.discover.waitUntilSearchingHasFinished();
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
-      await pageObjects.discover.openDocumentDetails({ rowIndex: 0 });
+      await pageObjects.dataGrid.openDocumentDetails({ rowIndex: 0 });
 
       // Verify the doc viewer flyout is open
-      await pageObjects.discover.waitForDocViewerFlyoutOpen();
+      await pageObjects.dataGrid.waitForDocViewerFlyoutOpen();
 
       // Click on the Log Overview tab
       const logOverviewTab = page.getByTestId('docViewerTab-doc_view_logs_overview');
@@ -86,7 +86,7 @@ test.describe(
       await browserAuth.loginAsAdmin();
 
       // Navigate to Discover and wait for the page to be ready
-      await pageObjects.discover.goto();
+      await pageObjects.discover.goto({ queryMode: 'classic' });
       await pageObjects.discover.waitUntilSearchingHasFinished();
       await pageObjects.discover.waitForHistogramRendered();
 
@@ -98,12 +98,12 @@ test.describe(
 
       // Wait for ES|QL results to load
       await pageObjects.discover.waitUntilSearchingHasFinished();
-      await pageObjects.discover.waitForDocTableRendered();
+      await pageObjects.dataGrid.waitForDocTableRendered();
 
-      await pageObjects.discover.openDocumentDetails({ rowIndex: 0 });
+      await pageObjects.dataGrid.openDocumentDetails({ rowIndex: 0 });
 
       // Verify the doc viewer flyout is open
-      await pageObjects.discover.waitForDocViewerFlyoutOpen();
+      await pageObjects.dataGrid.waitForDocViewerFlyoutOpen();
 
       // Click on the Log Overview tab
       const logOverviewTab = page.getByTestId('docViewerTab-doc_view_logs_overview');

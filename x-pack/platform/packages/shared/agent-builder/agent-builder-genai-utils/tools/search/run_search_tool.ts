@@ -26,6 +26,7 @@ export const runSearchTool = async ({
   logger,
   events,
   topSnippetsConfig,
+  includeDatasets = false,
 }: {
   nlQuery: string;
   index?: string;
@@ -39,6 +40,7 @@ export const runSearchTool = async ({
   logger: Logger;
   events: ToolEventEmitter;
   topSnippetsConfig?: TopSnippetsConfig;
+  includeDatasets?: boolean;
 }): Promise<ToolHandlerResult[]> => {
   const toolGraph = await createSearchToolGraph({
     modelProvider,
@@ -46,6 +48,7 @@ export const runSearchTool = async ({
     logger,
     events,
     topSnippetsConfig,
+    includeDatasets,
   });
 
   return withActiveInferenceSpan(

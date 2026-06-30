@@ -252,21 +252,29 @@ export const RuleActionsSystemActionsItem = (props: RuleActionsSystemActionsItem
         `,
       }}
       extraAction={
-        <EuiButtonIcon
-          data-test-subj="ruleActionsSystemActionsItemDeleteActionButton"
-          style={{
-            marginRight: euiTheme.size.l,
-          }}
-          aria-label={i18n.translate(
+        <EuiToolTip
+          content={i18n.translate(
             'responseOpsRuleForm.ruleActionsSystemActionsItem.deleteActionAriaLabel',
-            {
-              defaultMessage: 'delete action',
-            }
+            { defaultMessage: 'delete action' }
           )}
-          iconType="trash"
-          color="danger"
-          onClick={() => onDelete(action.uuid!)}
-        />
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            data-test-subj="ruleActionsSystemActionsItemDeleteActionButton"
+            style={{
+              marginRight: euiTheme.size.l,
+            }}
+            aria-label={i18n.translate(
+              'responseOpsRuleForm.ruleActionsSystemActionsItem.deleteActionAriaLabel',
+              {
+                defaultMessage: 'delete action',
+              }
+            )}
+            iconType="trash"
+            color="danger"
+            onClick={() => onDelete(action.uuid!)}
+          />
+        </EuiToolTip>
       }
       buttonContentClassName="eui-fullWidth"
       buttonContent={

@@ -19,7 +19,7 @@ import { i18n } from '@kbn/i18n';
 import {
   ExecutionStatus,
   getWorkflowJsonSchema,
-  pickManagedWorkflowFields,
+  toWorkflowExecutionEngineModel,
   transformWorkflowYamlJsontoEsWorkflow,
 } from '@kbn/workflows';
 import type {
@@ -40,7 +40,10 @@ import type {
   WorkflowYaml,
 } from '@kbn/workflows';
 import { WORKFLOW_SML_TYPE } from '@kbn/workflows/common/constants';
-import { WorkflowNotFoundError } from '@kbn/workflows/common/errors';
+import {
+  WorkflowExecutionInvalidStatusError,
+  WorkflowNotFoundError,
+} from '@kbn/workflows/common/errors';
 import type {
   ChildWorkflowExecutionItem,
   WorkflowPartialDetailDto,
@@ -68,7 +71,15 @@ import type {
   WorkflowsService,
 } from './workflows_management_service';
 import { connectorParamsSchemaResolver } from '../../common/lib/connector_params_schema_resolver';
-import type { WorkflowChangesHistoryResponse } from '../../common/lib/workflow_change_history/types';
+import type {
+  RestoreWorkflowVersionResponseDto,
+  WorkflowChangesHistoryResponse,
+} from '../../common/lib/workflow_change_history/types';
+import type {
+  ProcessedWaitForInputFacets,
+  ProcessedWaitForInputFilters,
+  WaitForInputListResult,
+} from '../services/workflow_execution_query_service';
 
 export type SmlIndexAttachmentFn = (params: SmlIndexAttachmentParams) => Promise<void>;
 
@@ -398,6 +409,31 @@ export class WorkflowsManagementApi {
     return result;
   }
 
+  public async restoreWorkflowVersion(
+    id: string,
+    eventId: string,
+    spaceId: string,
+    request: KibanaRequest
+  ): Promise<RestoreWorkflowVersionResponseDto> {
+    const originalWorkflow = await this.workflowsService.getWorkflow(id, spaceId);
+    if (!originalWorkflow) {
+      throw new WorkflowNotFoundError(id);
+    }
+
+    if (originalWorkflow.managed === true) {
+      throw new ManagedWorkflowUpdateForbiddenError();
+    }
+
+    const result = await this.workflowsService.restoreWorkflowVersion(
+      id,
+      eventId,
+      spaceId,
+      request
+    );
+    this.notifySml(id, 'update', request);
+    return result;
+  }
+
   public async deleteWorkflows(
     workflowIds: string[],
     spaceId: string,
@@ -538,13 +574,7 @@ export class WorkflowsManagementApi {
       throw new Error(`Workflow '${workflowId}' has no definition and cannot be executed.`);
     }
 
-    return {
-      id: workflow.id,
-      name: workflow.name,
-      enabled: workflow.enabled,
-      definition: workflow.definition,
-      yaml: workflow.yaml,
-    };
+    return toWorkflowExecutionEngineModel(workflow);
   }
 
   private async waitForWorkflowExecution({
@@ -682,34 +712,23 @@ export class WorkflowsManagementApi {
       spaceId,
       inputs: manualInputs,
     };
-    const managedVersion =
-      existingWorkflow &&
-      'managedVersion' in existingWorkflow &&
-      typeof existingWorkflow.managedVersion === 'number'
-        ? existingWorkflow.managedVersion
-        : null;
-    const managedWorkflowFields = pickManagedWorkflowFields(
-      existingWorkflow
-        ? {
-            managed: existingWorkflow.managed,
-            managedBy: existingWorkflow.managedBy,
-            originManagedWorkflowId: existingWorkflow.originManagedWorkflowId,
-            managedVersion,
-          }
-        : null
-    );
     const workflowsExecutionEngine = await this.getWorkflowsExecutionEngine();
     const executeResponse = await workflowsExecutionEngine.executeWorkflow(
-      {
-        id: resolvedWorkflowId,
-        name: workflowJson.name,
-        enabled: workflowJson.enabled,
-        definition: workflowJson.definition,
-        yaml: resolvedYaml,
-        isTestRun: true,
-        isEphemeral: true,
-        ...managedWorkflowFields,
-      },
+      toWorkflowExecutionEngineModel(
+        {
+          id: resolvedWorkflowId,
+          name: workflowJson.name,
+          enabled: workflowJson.enabled,
+          definition: workflowJson.definition,
+          yaml: resolvedYaml,
+          version: existingWorkflow?.version,
+          managed: existingWorkflow?.managed,
+          managedBy: existingWorkflow?.managedBy,
+          originManagedWorkflowId: existingWorkflow?.originManagedWorkflowId,
+          managedVersion: existingWorkflow?.managedVersion,
+        },
+        { isTestRun: true, isEphemeral: true }
+      ),
       context,
       request
     );
@@ -869,25 +888,77 @@ export class WorkflowsManagementApi {
     return workflowsExecutionEngine.cancelAllActiveWorkflowExecutions({ spaceId, workflowId });
   }
 
+  /**
+   * Claims the waiting HITL step before scheduling the resume so every resume
+   * channel shares the same audit stamp and first-writer-wins guard.
+   */
   public async resumeWorkflowExecution(
     executionId: string,
     spaceId: string,
     input: Record<string, unknown>,
-    request: KibanaRequest
+    request: KibanaRequest,
+    options?: { channel?: string; stepExecutionId?: string }
   ): Promise<ResumeWorkflowExecutionResponseDto> {
+    const stepExecutionId =
+      options?.stepExecutionId ??
+      (await this.workflowsService.getWaitingStepExecutionId(executionId, spaceId));
+
+    if (stepExecutionId) {
+      const claimed = await this.workflowsService.markStepAsResponded(
+        stepExecutionId,
+        request,
+        options?.channel ?? 'inbox',
+        spaceId
+      );
+      if (!claimed) {
+        throw new WorkflowExecutionInvalidStatusError(
+          executionId,
+          'already responded to or no longer waiting for input',
+          'waiting_for_input'
+        );
+      }
+    }
+
     const workflowsExecutionEngine = await this.getWorkflowsExecutionEngine();
     return workflowsExecutionEngine.resumeWorkflowExecution(executionId, spaceId, input, request);
   }
 
-  /**
-   * Cross-workflow listing of step executions currently blocked on
-   * `waitForInput`. Consumed by the Inbox plugin's workflows provider.
-   */
+  /** Cross-workflow listing of active `waitForInput` step executions. */
   public async listWaitingForInputSteps(
     spaceId: string,
-    params: { page?: number; perPage?: number } = {}
-  ): Promise<{ results: EsWorkflowStepExecution[]; total: number }> {
+    params: { page?: number; perPage?: number; includeReasoning?: boolean } = {}
+  ): Promise<WaitForInputListResult> {
     return this.workflowsService.listWaitingForInputSteps(spaceId, params);
+  }
+
+  /** Cross-workflow listing of processed `waitForInput` step executions. */
+  public async listProcessedWaitForInputSteps(
+    spaceId: string,
+    params: {
+      page?: number;
+      perPage?: number;
+      includeReasoning?: boolean;
+    } & ProcessedWaitForInputFilters = {}
+  ): Promise<WaitForInputListResult> {
+    return this.workflowsService.listProcessedWaitForInputSteps(spaceId, params);
+  }
+
+  /** Facet buckets for processed `waitForInput` step executions. */
+  public async listProcessedWaitForInputFacets(
+    spaceId: string,
+    options: { maxBuckets?: number } = {}
+  ): Promise<ProcessedWaitForInputFacets> {
+    return this.workflowsService.listProcessedWaitForInputFacets(spaceId, options);
+  }
+
+  /** Claims a `waitForInput` step by writing server-derived HITL audit metadata. */
+  public async markStepAsResponded(
+    stepExecutionId: string,
+    request: KibanaRequest,
+    channel: string,
+    spaceId: string
+  ): Promise<boolean> {
+    return this.workflowsService.markStepAsResponded(stepExecutionId, request, channel, spaceId);
   }
 
   public async getWorkflowStats(

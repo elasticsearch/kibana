@@ -5,36 +5,13 @@ title: Local cross cluster search setup
 description: Local cross cluster search setup
 date: 2024-04-29
 tags: ['kibana', 'onboarding', 'dev' ]
+redirect_url: https://www.elastic.co/docs/extend/kibana/getting-started/local-cross-cluster-search-setup
 ---
 
-### Local CCS (cross cluster search) instructions
-* Spin up a "remote" instance of Elasticsearch (this needs to start before the "local" instance for some odd reason):
-```
-yarn es snapshot -E http.port=9500 -E transport.port=9600 -E path.data=../remote
-```
+{/* REDIRECT_NOTICE_START */}
 
-* Spin up the "local" instance of Elasticsearch:
-```
-yarn es snapshot
-```
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://www.elastic.co/docs/extend/kibana/getting-started/local-cross-cluster-search-setup](https://www.elastic.co/docs/extend/kibana/getting-started/local-cross-cluster-search-setup)
+</DocCallOut>
 
-* Load data into both the "remote" and "local" clusters:
-```
-node scripts/makelogs.js -c 100000 -d 100/10 --url elastic:changeme@localhost:9500
-node scripts/makelogs.js -c 100000 -d 100/10 --url elastic:changeme@localhost:9200
-```
-
-* Spin up Kibana:
-```
-yarn start
-```
-
-Once it is running, do the following:
-* Open http://localhost:5601/app/management/data/remote_clusters
-* Click "Add a remote cluster"
-* Choose a name, put "localhost:9600" for "Seed nodes", and save (check "Yes, I have setup trust")
-* Make sure the connection status is "Connected"
-* Open http://localhost:5601/app/management/kibana/dataViews
-* Click "Create data view"
-* For "Index pattern", put "logstash-\*,\*:logstash-\*" (the asterisk indicates all remote clusters) and save
-* Go to Discover and select your data view, and it should be querying using CCS
+{/* REDIRECT_NOTICE_END */}

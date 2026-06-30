@@ -25,7 +25,7 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import { useSearchParams } from 'react-router-dom-v5-compat';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom-v5-compat';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { LazyPackageCard } from '@kbn/fleet-plugin/public';
 import type { IntegrationCardItem } from '@kbn/fleet-plugin/public';
@@ -34,6 +34,7 @@ import { ObservabilityOnboardingPricingFeature } from '../../../common/pricing_f
 import { PackageListSearchForm } from '../package_list_search_form/package_list_search_form';
 import type { Category } from './types';
 import { useCustomCards, AWS_CLOUDWATCH_OTEL_CARD_ID } from './use_custom_cards';
+import { buildKubernetesRoutePath } from '../shared/build_kubernetes_route';
 import type { SupportedLogo } from '../shared/logo_icon';
 import { LogoIcon } from '../shared/logo_icon';
 import type { ObservabilityOnboardingAppServices } from '../..';
@@ -145,6 +146,8 @@ export const OnboardingFlowForm: FunctionComponent = () => {
   const { onPageReady } = usePerformanceContext();
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const suggestedPackagesRef = useRef<HTMLDivElement | null>(null);
   const searchResultsRef = useRef<HTMLDivElement | null>(null);
@@ -215,7 +218,9 @@ export const OnboardingFlowForm: FunctionComponent = () => {
    */
   const searchExcludePackageIdList = isCloud ? ['epr:awsfirehose'] : [];
 
-  let isSelectingCategoryWithKeyboard: boolean = false;
+  // True while a radio is being selected via keyboard, used to tell keyboard
+  // selection apart from a pointer click. A ref so it survives re-renders.
+  const isSelectingCategoryWithKeyboard = useRef(false);
 
   return (
     <EuiPanel hasBorder paddingSize="xl">
@@ -299,14 +304,24 @@ export const OnboardingFlowForm: FunctionComponent = () => {
                * from conflicting with browser's native one to
                * put keyboard-focused item into the view.
                */
-              onKeyDown={() => (isSelectingCategoryWithKeyboard = true)}
-              onKeyUp={() => (isSelectingCategoryWithKeyboard = false)}
+              onKeyDown={() => (isSelectingCategoryWithKeyboard.current = true)}
+              onKeyUp={() => (isSelectingCategoryWithKeyboard.current = false)}
+              // Selecting a tile reveals its featured cards. A pointer click on
+              // Kubernetes navigates instead (handled in onClick), so skip the
+              // category update there to avoid clobbering that route.
               onChange={() => {
                 setIntegrationSearch('');
+                if (option.id === 'kubernetes' && !isSelectingCategoryWithKeyboard.current) {
+                  return;
+                }
                 setSearchParams({ category: option.id }, { replace: true });
               }}
               onClick={() => {
-                if (!isSelectingCategoryWithKeyboard && suggestedPackagesRef.current) {
+                if (option.id === 'kubernetes' && !isSelectingCategoryWithKeyboard.current) {
+                  navigate(buildKubernetesRoutePath(location.search));
+                  return;
+                }
+                if (!isSelectingCategoryWithKeyboard.current && suggestedPackagesRef.current) {
                   setTimeout(
                     scrollIntoViewWithOffset,
                     40, // Adding slight delay to ensure DOM is updated before calculating scroll position

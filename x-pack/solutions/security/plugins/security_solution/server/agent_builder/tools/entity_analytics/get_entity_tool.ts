@@ -16,14 +16,19 @@ import {
   ENTITY_LATEST,
 } from '@kbn/entity-store/server';
 import type { Logger } from '@kbn/logging';
-import type { ElasticsearchClient } from '@kbn/core/server';
+import type { ElasticsearchClient, KibanaRequest } from '@kbn/core/server';
+import { ENTITY_ANOMALY_DEFAULT_LOOKBACK_DAYS } from '../../../../common/constants';
+import type { AnomalyRecord } from '../../../lib/entity_analytics/enriched_entity/service/utils/get_anomaly_data';
+import { EnrichEntityService } from '../../../lib/entity_analytics/enriched_entity';
 import type { ExperimentalFeatures } from '../../../../common';
 import type { EntityRiskScoreRecord } from '../../../../common/api/entity_analytics/common';
 import { IdentifierType } from '../../../../common/api/entity_analytics/common/common.gen';
-import { DEFAULT_ALERTS_INDEX, ESSENTIAL_ALERT_FIELDS } from '../../../../common/constants';
 import { EntityType } from '../../../../common/entity_analytics/types';
 import { getRiskScoreTimeSeriesIndex } from '../../../../common/entity_analytics/risk_engine/indices';
-import type { SecuritySolutionPluginCoreSetupDependencies } from '../../../plugin_contract';
+import type {
+  SecuritySolutionPluginCoreSetupDependencies,
+  SetupPlugins,
+} from '../../../plugin_contract';
 import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
 import { ENTITY_ANALYTICS_AI_TOOL_USAGE_EVENT } from '../../../lib/telemetry/event_based/events';
 import { securityTool } from '../constants';
@@ -40,8 +45,6 @@ import {
   stripRiskRecordForAttachment,
   type EntityAttachmentRiskStats,
 } from './entity_attachment_utils';
-
-const ENTITY_STORE_RISK_SCORE_NORMALIZED_FIELD = 'entity.risk.calculated_score_norm';
 
 const schema = z.object({
   entityType: IdentifierType.describe(
@@ -98,13 +101,6 @@ export const normalizeEntityId = (
   return entityId.startsWith(prefix) ? entityId : `${prefix}${entityId}`;
 };
 
-interface GetAlertIdsFromRiskScoreIndexParams {
-  entityId: string;
-  entityType: string;
-  esClient: ElasticsearchClient;
-  spaceId: string;
-}
-
 const intervalToEsql = (interval: string) => {
   const match = interval.match(/^(\d+)([smhdwM])$/);
   if (match == null) {
@@ -138,40 +134,10 @@ const dateToUtcDayRange = (isoDate: string): { start: string; end: string } => {
   };
 };
 
-/**
- * Queries the risk score index via ES|QL and returns the alert IDs
- * from the entity's risk score inputs. The inputs.id sub-field is returned
- * as a multi-value column when the entity has multiple contributing alerts.
- */
-const getAlertIdsFromRiskScoreIndex = async ({
-  esClient,
-  spaceId,
-  entityId,
-  entityType,
-}: GetAlertIdsFromRiskScoreIndexParams): Promise<string[]> => {
-  const riskIndex = getRiskScoreTimeSeriesIndex(spaceId);
-  const escapedEntityId = escapeEsqlString(entityId);
-  const idValueField = `${entityType}.name`;
-  const inputsIdField = `${entityType}.risk.inputs.id`;
-  const query = `FROM ${riskIndex} | WHERE ${idValueField} == "${escapedEntityId}" | KEEP ${inputsIdField} | LIMIT 1`;
-
-  const { columns, values } = await executeEsql({ query, esClient });
-  if (values.length === 0) {
-    return [];
-  }
-
-  const colIdx = columns.findIndex((col) => col.name === inputsIdField);
-  if (colIdx < 0) {
-    return [];
-  }
-
-  const alertIds = values[0][colIdx];
-  if (!alertIds) {
-    return [];
-  }
-
-  const ids = Array.isArray(alertIds) ? alertIds : [alertIds];
-  return ids.filter((id): id is string => typeof id === 'string');
+const formatAnomaly = ({ source, job }: AnomalyRecord) => {
+  const { jobName: _jobName, ...restSource } = source;
+  const cleanedSource = Object.fromEntries(Object.entries(restSource).filter(([, v]) => v != null));
+  return { source: cleanedSource, ...(job ? { job } : {}) };
 };
 
 /**
@@ -494,8 +460,10 @@ interface EnrichEntityResultParams {
   query: string;
   date?: string;
   interval?: string;
+  logger: Logger;
   spaceId: string;
   esClient: ElasticsearchClient;
+  enrichedEntityService: EnrichEntityService;
 }
 
 const enrichEntityResult = async ({
@@ -504,8 +472,10 @@ const enrichEntityResult = async ({
   query,
   date,
   interval,
+  logger,
   spaceId,
   esClient,
+  enrichedEntityService,
 }: EnrichEntityResultParams) => {
   const rowEntityId = String(getRowValue(columns, row, ENTITY_STORE_ENTITY_ID_FIELD) ?? '');
   const escapedRowEntityId = escapeEsqlString(rowEntityId);
@@ -534,33 +504,45 @@ const enrichEntityResult = async ({
   let resultColumns = columns;
   let resultRow = [...row];
 
-  // Check if entity has a risk score; if so, fetch inputs from the risk score index
-  const riskScoreNorm = getRowValue(columns, row, ENTITY_STORE_RISK_SCORE_NORMALIZED_FIELD);
-  if (riskScoreNorm != null) {
-    const esType = getRowValue(columns, row, ENTITY_STORE_ENTITY_TYPE_FIELD);
-    const esId = getRowValue(columns, row, ENTITY_STORE_ENTITY_ID_FIELD);
-    if (esType != null && esId != null) {
-      const alertIds = await getAlertIdsFromRiskScoreIndex({
-        esClient,
-        spaceId,
-        entityId: String(esId),
-        entityType: String(esType),
-      });
-      if (alertIds.length > 0) {
-        const alertsIndex = `${DEFAULT_ALERTS_INDEX}-${spaceId}`;
-        const escapedIds = alertIds.map((id) => `"${escapeEsqlString(id)}"`).join(', ');
-        const keepFields = Array.from(new Set(['_id', '_index', ...ESSENTIAL_ALERT_FIELDS])).join(
-          ', '
-        );
-        const alertsQuery = `FROM ${alertsIndex} METADATA _id, _index | WHERE _id IN (${escapedIds}) | KEEP ${keepFields} | LIMIT ${alertIds.length}`;
-        const alertsResponse = await executeEsql({ query: alertsQuery, esClient });
-        const riskScoreInputs = alertsResponse.values.map((r) =>
-          Object.fromEntries(alertsResponse.columns.map((col, i) => [col.name, r[i]]))
-        );
+  try {
+    // Get enriched entity
+    const toDate = Date.now();
+    const fromDate = toDate - ENTITY_ANOMALY_DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+    const { entities: enrichedEntities } = await enrichedEntityService.getEnrichedEntities({
+      filter: { term: { 'entity.id': rowEntityId } },
+      size: 1,
+      anomalyFromDate: fromDate,
+      anomalyToDate: toDate,
+    });
+
+    if (enrichedEntities.length > 0) {
+      const enrichedEntity = enrichedEntities[0];
+      const riskScoreInputs = enrichedEntity.alertDocuments ?? [];
+      const anomalies = enrichedEntity.anomalies ?? [];
+      const vulnerabilities = enrichedEntity.vulnerabilities ?? [];
+
+      if (riskScoreInputs.length > 0) {
         resultColumns = [...columns, { name: 'risk_score_inputs', type: 'nested' }];
-        resultRow = [...row, JSON.stringify(riskScoreInputs)];
+        resultRow = [...resultRow, JSON.stringify(riskScoreInputs)];
+      }
+
+      if (anomalies.length > 0) {
+        resultColumns = [...resultColumns, { name: 'anomalies', type: 'nested' }];
+        resultRow = [...resultRow, JSON.stringify(anomalies.map(formatAnomaly))];
+      }
+
+      if (vulnerabilities.length > 0) {
+        resultColumns = [...resultColumns, { name: 'vulnerabilities', type: 'nested' }];
+        resultRow = [...resultRow, JSON.stringify(vulnerabilities)];
       }
     }
+  } catch (errors) {
+    // Swallow enrichment errors and continue to return the base entity data.
+    logger.debug(
+      `Failed to enrich entity ${rowEntityId}: ${
+        errors instanceof Error ? errors.message : String(errors)
+      }`
+    );
   }
 
   if (interval) {
@@ -587,6 +569,7 @@ const enrichEntityResult = async ({
 export const getEntityTool = (
   core: SecuritySolutionPluginCoreSetupDependencies,
   logger: Logger,
+  ml: SetupPlugins['ml'],
   experimentalFeatures: ExperimentalFeatures
 ): BuiltinToolDefinition<typeof schema> => {
   return {
@@ -638,7 +621,7 @@ When exactly one entity is resolved, this tool also stores a \`security.entity\`
         }
       },
     },
-    handler: async (params, { spaceId, esClient, attachments }) => {
+    handler: async (params, { spaceId, esClient, savedObjectsClient, attachments }) => {
       logger.debug(
         `${SECURITY_GET_ENTITY_TOOL_ID} tool called with parameters ${JSON.stringify(params)}`
       );
@@ -650,9 +633,25 @@ When exactly one entity is resolved, this tool also stores a \`security.entity\`
       try {
         const { entityType, entityId, interval, date } = params;
 
+        const [coreStart, { entityStore }] = await core.getStartServices();
         const client = esClient.asCurrentUser;
         const normalizedEntityId = normalizeEntityId(entityId, entityType);
         const entityIndex = getEntitiesAlias(ENTITY_LATEST, spaceId);
+        const entityStoreClient = entityStore.createCRUDClient(client, spaceId);
+        const uiSettingsClient = coreStart.uiSettings.asScopedToClient(savedObjectsClient);
+        const enrichedEntityService = new EnrichEntityService({
+          entityStoreClient,
+          esClient: client,
+          experimentalFeatures,
+          logger,
+          ml,
+          // this is a workaround for a bug in the ML providers where Kibana privileges not read correctly from fake requests
+          // (which is what the tool receives from the agent builder context when running as a background task)
+          request: {} as KibanaRequest,
+          soClient: savedObjectsClient,
+          spaceId,
+          uiSettingsClient,
+        });
 
         const { source, query, columns, values } = await findEntityById({
           entityIndex,
@@ -714,8 +713,6 @@ When exactly one entity is resolved, this tool also stores a \`security.entity\`
                 values[0],
                 ENTITY_STORE_ENTITY_ID_FIELD
               );
-              const [, startPlugins] = await core.getStartServices();
-              const entityStoreStart = startPlugins.entityStore;
               const enrichment = await fetchRiskStatsForAttachment({
                 identifierType: baseDescriptor.identifierType,
                 identifier: baseDescriptor.identifier,
@@ -723,7 +720,7 @@ When exactly one entity is resolved, this tool also stores a \`security.entity\`
                 esClient: client,
                 spaceId,
                 logger,
-                createResolutionClient: entityStoreStart?.createResolutionClient,
+                createResolutionClient: entityStore?.createResolutionClient,
               });
 
               const descriptor = describeAttachmentForRow({
@@ -771,9 +768,20 @@ When exactly one entity is resolved, this tool also stores a \`security.entity\`
         try {
           const enrichedResults = await Promise.all(
             values.map((row) =>
-              enrichEntityResult({ row, columns, query, date, interval, spaceId, esClient: client })
+              enrichEntityResult({
+                row,
+                columns,
+                query,
+                date,
+                interval,
+                spaceId,
+                logger,
+                esClient: client,
+                enrichedEntityService,
+              })
             )
           );
+
           success = true;
           entitiesReturned = enrichedResults.length;
           return { results: [...enrichedResults, ...attachmentSideEffectResults] };

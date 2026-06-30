@@ -13,25 +13,27 @@ import type {
 } from '@kbn/content-packs-schema';
 import { ROOT_STREAM_ID } from '@kbn/content-packs-schema';
 import { getSegments, isChildOf } from '@kbn/streams-schema';
-import { EuiCheckbox, EuiFlexGroup, EuiSpacer } from '@elastic/eui';
+import { EuiCallOut, EuiCheckbox, EuiFlexGroup, EuiSpacer } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { StreamTree } from './tree';
-import { containsAssets, containsMappings } from '../helpers';
+import { containsMappings } from '../helpers';
+import { useStreamsPrivileges } from '../../../../../hooks/use_streams_privileges';
 
 export function ContentPackObjectsList({
   objects,
   onSelectionChange,
-  significantEventsAvailable,
 }: {
   objects: ContentPackEntry[];
   onSelectionChange: (objects: ContentPackIncludedObjects) => void;
-  significantEventsAvailable: boolean;
 }) {
   const streamEntries = objects.filter(
     (entry): entry is ContentPackStream => entry.type === 'stream'
   );
+  const {
+    features: { significantEvents },
+  } = useStreamsPrivileges();
+  const isSignificantEventsEnabled = !!significantEvents?.enabled && !!significantEvents?.available;
   const [includeMappings, setIncludeMappings] = useState<boolean>(containsMappings(streamEntries));
-  const [includeAssets, setIncludeAssets] = useState<boolean>(containsAssets(streamEntries));
   const [selection, setSelection] = useState<Record<string, { selected: boolean }>>({
     ...objects
       .filter((entry): entry is ContentPackStream => entry.type === 'stream')
@@ -46,10 +48,11 @@ export function ContentPackObjectsList({
       return { rootEntry: null, descendants: [] };
     }
 
-    const root = objects.find(
-      (entry): entry is ContentPackStream =>
-        entry.type === 'stream' && entry.name === ROOT_STREAM_ID
-    )!;
+    const root =
+      objects.find(
+        (entry): entry is ContentPackStream =>
+          entry.type === 'stream' && entry.name === ROOT_STREAM_ID
+      ) ?? null;
 
     const others = objects.filter(
       (entry): entry is ContentPackStream =>
@@ -61,13 +64,31 @@ export function ContentPackObjectsList({
 
   return !rootEntry ? null : (
     <>
+      <EuiCallOut
+        size="s"
+        iconType="iInCircle"
+        title={
+          isSignificantEventsEnabled
+            ? i18n.translate('xpack.streams.contentPackObjectsList.structuralOnlyCallout', {
+                defaultMessage:
+                  'Content packs include stream structure only: routing, mappings, and child streams. Significant events and other detections are not included and are managed from the Significant events tab.',
+              })
+            : i18n.translate('xpack.streams.contentPackObjectsList.structuralOnlyCalloutNoTab', {
+                defaultMessage:
+                  'Content packs include stream structure only: routing, mappings, and child streams. Significant events and other detections are not included and are managed separately.',
+              })
+        }
+      />
+
+      <EuiSpacer size="m" />
+
       <EuiFlexGroup alignItems="center" direction="row" gutterSize="s">
         <EuiCheckbox
           id="include-mappings"
           disabled={!containsMappings(streamEntries)}
           checked={includeMappings}
           label={i18n.translate('xpack.streams.contentPackObjectsList.includeMappings', {
-            defaultMessage: 'Include mappings of the root stream and selected streams partitions',
+            defaultMessage: 'Include mappings of the root stream and selected child streams',
           })}
           onChange={() => {
             const include = !includeMappings;
@@ -75,39 +96,11 @@ export function ContentPackObjectsList({
             onSelectionChange(
               toIncludedObjects({
                 selection,
-                objects: [rootEntry, ...descendants],
-                includeAssets,
                 includeMappings: include,
               })
             );
           }}
         />
-      </EuiFlexGroup>
-
-      <EuiFlexGroup alignItems="center" direction="row" gutterSize="s">
-        {significantEventsAvailable ? (
-          <EuiCheckbox
-            id="include-all-assets"
-            disabled={!containsAssets(streamEntries)}
-            checked={includeAssets}
-            label={i18n.translate('xpack.streams.contentPackObjectsList.includeAllAssets', {
-              defaultMessage:
-                'Include significant events of the root stream and selected streams partitions',
-            })}
-            onChange={() => {
-              const include = !includeAssets;
-              setIncludeAssets(include);
-              onSelectionChange(
-                toIncludedObjects({
-                  selection,
-                  objects: [rootEntry, ...descendants],
-                  includeAssets: include,
-                  includeMappings,
-                })
-              );
-            }}
-          />
-        ) : null}
       </EuiFlexGroup>
 
       <EuiSpacer size="m" />
@@ -120,8 +113,6 @@ export function ContentPackObjectsList({
           onSelectionChange(
             toIncludedObjects({
               selection: streamsSelection,
-              objects: [rootEntry, ...descendants],
-              includeAssets,
               includeMappings,
             })
           );
@@ -134,8 +125,6 @@ export function ContentPackObjectsList({
 function buildIncludedObjects(
   parent: string,
   selection: Record<string, { selected: boolean }>,
-  objects: ContentPackStream[],
-  includeAssets: boolean,
   includeMappings: boolean
 ): ContentPackIncludedObjects {
   const children = Object.keys(selection).filter((key) => {
@@ -152,14 +141,9 @@ function buildIncludedObjects(
   return {
     objects: {
       mappings: includeMappings,
-      queries: !includeAssets
-        ? []
-        : objects
-            .find(({ name }) => name === parent)!
-            .request.queries.map((query) => ({ id: query.id })),
       routing: children.map((child) => ({
         destination: child,
-        ...buildIncludedObjects(child, selection, objects, includeAssets, includeMappings),
+        ...buildIncludedObjects(child, selection, includeMappings),
       })),
     },
   };
@@ -167,14 +151,10 @@ function buildIncludedObjects(
 
 function toIncludedObjects({
   selection,
-  objects,
-  includeAssets,
   includeMappings,
 }: {
   selection: Record<string, { selected: boolean }>;
-  objects: ContentPackStream[];
-  includeAssets: boolean;
   includeMappings: boolean;
 }): ContentPackIncludedObjects {
-  return buildIncludedObjects(ROOT_STREAM_ID, selection, objects, includeAssets, includeMappings);
+  return buildIncludedObjects(ROOT_STREAM_ID, selection, includeMappings);
 }

@@ -60,6 +60,7 @@ describe('Email Schema', () => {
       expect(result.host).toBeNull();
       expect(result.port).toBeNull();
       expect(result.secure).toBeNull();
+      expect(result.allowHtml).toBeUndefined();
     });
 
     it('validates with custom SMTP settings', () => {
@@ -95,6 +96,22 @@ describe('Email Schema', () => {
         port: '587',
       });
       expect(result.port).toBe(587);
+    });
+
+    it('validates explicit HTML opt-in values', () => {
+      expect(
+        ConfigSchema.parse({
+          from: 'test@example.com',
+          allowHtml: true,
+        }).allowHtml
+      ).toBe(true);
+
+      expect(
+        ConfigSchema.parse({
+          from: 'test@example.com',
+          allowHtml: false,
+        }).allowHtml
+      ).toBe(false);
     });
   });
 

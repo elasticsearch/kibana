@@ -8,7 +8,10 @@
 import type { HttpApiTestSetupMock } from '../../mocks';
 import { createHttpApiTestSetupMock } from '../../mocks';
 import type { UpdateOrphanActionsSpaceBody } from './orphan_actions_space_handler';
-import { registerOrphanActionsSpaceRoute } from './orphan_actions_space_handler';
+import {
+  registerOrphanActionsSpaceRoute,
+  UpdateOrphanActionsSpaceSchema,
+} from './orphan_actions_space_handler';
 import { ORPHAN_ACTIONS_SPACE_ROUTE } from '../../../../common/endpoint/constants';
 import type { RequestHandler, SavedObjectsClientContract } from '@kbn/core/server';
 import type { DeeplyMockedKeys } from '@kbn/utility-types-jest';
@@ -116,6 +119,24 @@ describe('Orphan response action APIs', () => {
       expect(httpResponseMock.ok).toHaveBeenCalledWith({
         body: { data: { spaceId: 'foo' } },
       });
+    });
+  });
+
+  describe('POST body schema', () => {
+    it('should accept a valid `spaceId`', () => {
+      expect(() => UpdateOrphanActionsSpaceSchema.body.validate({ spaceId: 'foo' })).not.toThrow();
+    });
+
+    it('should accept a `spaceId` of the max allowed length', () => {
+      expect(() =>
+        UpdateOrphanActionsSpaceSchema.body.validate({ spaceId: 'a'.repeat(1024) })
+      ).not.toThrow();
+    });
+
+    it('should error if `spaceId` is longer than 1024 characters', () => {
+      expect(() =>
+        UpdateOrphanActionsSpaceSchema.body.validate({ spaceId: 'a'.repeat(1025) })
+      ).toThrow(/\[spaceId]:/);
     });
   });
 });

@@ -67,7 +67,7 @@ spaceTest.describe('Discover context - back navigation', { tag: tags.deploymentA
 
     await page.goBack();
     await pageObjects.discover.waitUntilSearchingHasFinished();
-    await pageObjects.discover.waitForDocTableRendered();
+    await pageObjects.dataGrid.waitForDocTableRendered();
 
     const hitCount = await pageObjects.discover.getHitCountInt();
     expect(hitCount).toBe(initialHitCount);

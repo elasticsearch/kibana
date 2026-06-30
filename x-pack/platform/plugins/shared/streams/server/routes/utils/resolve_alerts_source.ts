@@ -12,12 +12,12 @@ import {
   type AlertsSource,
   V1_ALERTS_SOURCE,
   V2_ALERTS_SOURCE,
-} from '../../lib/sig_events/read_significant_events_from_alerts_indices';
+} from '../../lib/significant_events/fetch_query_occurrences_from_alerts';
 import {
   isSignificantEventsAlertingV2Active,
   logAlertingV2PluginUnavailable,
   readSignificantEventsAlertingV2UiEnabled,
-} from '../../lib/sig_events/significant_events_alerting_v2';
+} from '../../lib/significant_events/significant_events_alerting_v2';
 
 export async function resolveAlertsSource({
   uiSettingsClient,

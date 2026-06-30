@@ -57,7 +57,8 @@ export function registerResumeExecutionRoute(deps: RouteDependencies) {
             executionId,
             spaceId,
             input,
-            request
+            request,
+            { channel: 'kibana_execution_view' }
           );
 
           audit.logExecutionResumed(request, {

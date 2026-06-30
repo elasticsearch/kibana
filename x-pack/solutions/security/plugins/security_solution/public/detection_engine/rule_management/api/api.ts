@@ -55,6 +55,7 @@ import type {
   ImportRulesResponse,
   BulkManualRuleFillGaps,
   RuleChangesHistoryResponse,
+  RestoreRuleFromHistoryResponse,
 } from '../../../../common/api/detection_engine/rule_management';
 import {
   BulkActionTypeEnum,
@@ -62,6 +63,7 @@ import {
   RULE_MANAGEMENT_COVERAGE_OVERVIEW_URL,
   RULE_MANAGEMENT_FILTERS_URL,
   RULE_MANAGEMENT_RULES_URL_SEARCH,
+  RULE_RESTORE_FROM_HISTORY_URL,
 } from '../../../../common/api/detection_engine/rule_management';
 import {
   DETECTION_ENGINE_RULES_BULK_ACTION,
@@ -95,6 +97,7 @@ import type {
   PatchRuleProps,
   PrePackagedRulesStatusResponse,
   PreviewRulesProps,
+  RestoreRuleFromHistoryProps,
   RulesSnoozeSettingsBatchResponse,
   RulesSnoozeSettingsMap,
   UpdateRulesProps,
@@ -342,6 +345,29 @@ export const fetchRuleChangeHistoryById = async ({
       version: '1',
       query: { page, per_page: perPage },
       signal,
+    }
+  );
+
+/**
+ * Restore a rule to a specific historical revision.
+ *
+ * @param params.ruleId Rule SO id (not `rule_id`)
+ * @param params.changeId The change history entry id to restore to
+ *
+ * @returns Promise<RestoreRuleResponse>
+ */
+export const fetchRestoreRuleRevision = async (
+  params: RestoreRuleFromHistoryProps
+): Promise<RestoreRuleFromHistoryResponse> =>
+  KibanaServices.get().http.fetch<RestoreRuleFromHistoryResponse>(
+    RULE_RESTORE_FROM_HISTORY_URL.replace('{ruleId}', encodeURIComponent(params.ruleId)).replace(
+      '{changeId}',
+      encodeURIComponent(params.changeId)
+    ),
+    {
+      method: 'POST',
+      version: '1',
+      body: JSON.stringify({ revision: params.revision }),
     }
   );
 

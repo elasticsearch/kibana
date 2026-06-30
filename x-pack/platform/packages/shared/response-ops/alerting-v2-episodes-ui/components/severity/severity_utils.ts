@@ -26,6 +26,9 @@ export const EPISODE_SEVERITIES: EpisodeSeverity[] = [
   EpisodeSeverity.Critical,
 ];
 
+/** Just for the episodes list filters — episodes with no aggregated severity. */
+export const EPISODE_SEVERITY_FILTER_NONE = '__no_severity__';
+
 export const EPISODE_SEVERITY_CHART_VALUE: Record<EpisodeSeverity, number> = {
   [EpisodeSeverity.Info]: 0,
   [EpisodeSeverity.Low]: 1,

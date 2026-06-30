@@ -38,6 +38,7 @@ const navigation: NavigationStructure = {
       },
     ]),
   ],
+  overflowItems: [],
   footerItems: [
     createMenuItem('settings', 'Settings', [
       {

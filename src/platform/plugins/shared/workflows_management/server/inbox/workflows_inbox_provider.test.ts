@@ -8,13 +8,16 @@
  */
 
 import { httpServerMock } from '@kbn/core/server/mocks';
-import { isInboxActionConflictError } from '@kbn/inbox-plugin/server';
+import {
+  isInboxActionConflictError,
+  isInvalidInboxActionSourceIdError,
+} from '@kbn/inbox-plugin/server';
 import { loggerMock } from '@kbn/logging-mocks';
 import type { EsWorkflowStepExecution } from '@kbn/workflows';
 import { ExecutionStatus } from '@kbn/workflows';
+import { WorkflowExecutionInvalidStatusError } from '@kbn/workflows/common/errors';
 import {
   createWorkflowsInboxProvider,
-  InvalidWorkflowSourceIdError,
   WORKFLOWS_INBOX_SOURCE_APP,
 } from './workflows_inbox_provider';
 import type { WorkflowManagementAuditLog } from '../api/routes/utils/workflow_audit_logging';
@@ -48,18 +51,36 @@ const buildStep = (overrides: Partial<EsWorkflowStepExecution> = {}): EsWorkflow
   ...overrides,
 });
 
-const ctx = () => ({
+const ctx = (overrides: { channel?: string } = {}) => ({
   request: httpServerMock.createKibanaRequest(),
   spaceId: 'default',
+  ...overrides,
 });
 
 const fakeApi = () => {
   const api: Partial<WorkflowsManagementApi> = {
-    listWaitingForInputSteps: jest.fn(async () => ({ results: [buildStep()], total: 1 })),
+    listWaitingForInputSteps: jest.fn(async () => ({
+      results: [buildStep()],
+      total: 1,
+      reasoningByStepId: new Map(),
+      deletedWorkflowIds: new Set<string>(),
+    })),
+    listProcessedWaitForInputSteps: jest.fn(async () => ({
+      results: [
+        buildStep({
+          id: 'step-exec-2',
+          status: ExecutionStatus.COMPLETED,
+          finishedAt: '2026-04-24T12:30:00.000Z',
+          output: { approved: true, reason: 'looks good' },
+        }),
+      ],
+      total: 1,
+      reasoningByStepId: new Map(),
+      deletedWorkflowIds: new Set<string>(),
+    })),
     resumeWorkflowExecution: jest.fn(async () => ({ resumedBy: 'user' })),
-    // Default to "step is still waiting" so existing happy-path tests
-    // remain unchanged after we added pre-resume verification.
     getStepExecution: jest.fn(async () => buildStep()),
+    markStepAsResponded: jest.fn(async () => true),
   };
   return api as jest.Mocked<WorkflowsManagementApi>;
 };
@@ -87,7 +108,7 @@ describe('createWorkflowsInboxProvider', () => {
 
       expect(api.listWaitingForInputSteps).toHaveBeenCalledWith(
         'default',
-        expect.objectContaining({ page: 1, perPage: 1000 })
+        expect.objectContaining({ page: 1, perPage: 1000, includeReasoning: true })
       );
       expect(result.total).toBe(1);
       expect(result.actions[0]).toMatchObject({
@@ -116,6 +137,90 @@ describe('createWorkflowsInboxProvider', () => {
     });
   });
 
+  describe('listProcessed()', () => {
+    it('delegates to listProcessedWaitForInputSteps and maps results to history InboxActions', async () => {
+      const api = fakeApi();
+      const provider = createWorkflowsInboxProvider({
+        api,
+        logger: loggerMock.create(),
+        audit: createTestAudit(),
+      });
+
+      const result = await provider.listProcessed!({}, ctx());
+
+      expect(api.listProcessedWaitForInputSteps).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({ page: 1, perPage: 1000 })
+      );
+      expect(api.listProcessedWaitForInputSteps).toHaveBeenCalledWith(
+        'default',
+        expect.not.objectContaining({ includeReasoning: true })
+      );
+      expect(result.total).toBe(1);
+      expect(result.actions[0]).toMatchObject({
+        source_app: 'workflows',
+        // v1 placeholder until per-action approve/reject conventions
+        // ride on top of the new respondedBy/At/channel audit fields.
+        status: 'approved',
+        response_mode: 'responded',
+        response_input: { approved: true, reason: 'looks good' },
+      });
+    });
+
+    it('flags history rows whose parent workflow has been deleted via source_deleted', async () => {
+      const api = fakeApi();
+      (api.listProcessedWaitForInputSteps as jest.Mock).mockResolvedValueOnce({
+        results: [
+          buildStep({
+            id: 'step-exec-deleted',
+            workflowId: 'wf-gone',
+            status: ExecutionStatus.COMPLETED,
+            finishedAt: '2026-04-24T12:30:00.000Z',
+            output: { approved: true },
+          }),
+          buildStep({
+            id: 'step-exec-alive',
+            workflowId: 'wf-1',
+            status: ExecutionStatus.COMPLETED,
+            finishedAt: '2026-04-24T12:31:00.000Z',
+            output: { approved: true },
+          }),
+        ],
+        total: 2,
+        reasoningByStepId: new Map(),
+        deletedWorkflowIds: new Set(['wf-gone']),
+      });
+      const provider = createWorkflowsInboxProvider({
+        api,
+        logger: loggerMock.create(),
+        audit: createTestAudit(),
+      });
+
+      const result = await provider.listProcessed!({}, ctx());
+
+      expect(result.actions).toHaveLength(2);
+      expect(result.actions[0]).toMatchObject({ source_deleted: true });
+      expect(result.actions[1]).toMatchObject({ source_deleted: false });
+    });
+
+    it('returns an empty list when there is no processed history', async () => {
+      const api = fakeApi();
+      (api.listProcessedWaitForInputSteps as jest.Mock).mockResolvedValueOnce({
+        results: [],
+        total: 0,
+      });
+      const provider = createWorkflowsInboxProvider({
+        api,
+        logger: loggerMock.create(),
+        audit: createTestAudit(),
+      });
+
+      const result = await provider.listProcessed!({}, ctx());
+
+      expect(result).toEqual({ actions: [], total: 0 });
+    });
+  });
+
   describe('respond()', () => {
     it('calls resumeWorkflowExecution with the parsed executionId and the opaque input', async () => {
       const api = fakeApi();
@@ -129,11 +234,98 @@ describe('createWorkflowsInboxProvider', () => {
         'run-1',
         'default',
         { approved: true, reason: 'contained' },
-        c.request
+        c.request,
+        { channel: 'inbox', stepExecutionId: 'step-exec-1' }
       );
     });
 
+    it('forwards the responder-supplied channel from ctx into the consolidated resume', async () => {
+      const api = fakeApi();
+      const provider = createWorkflowsInboxProvider({
+        api,
+        logger: loggerMock.create(),
+        audit: createTestAudit(),
+      });
+      const c = ctx({ channel: 'example-mcp-app-security' });
+
+      await provider.respond('wf-1:run-1:step-exec-1', { approved: true }, c);
+
+      expect(api.resumeWorkflowExecution).toHaveBeenCalledWith(
+        'run-1',
+        'default',
+        { approved: true },
+        c.request,
+        { channel: 'example-mcp-app-security', stepExecutionId: 'step-exec-1' }
+      );
+    });
+
+    it('falls back to channel="inbox" when ctx.channel is undefined (defence-in-depth)', async () => {
+      const api = fakeApi();
+      const provider = createWorkflowsInboxProvider({
+        api,
+        logger: loggerMock.create(),
+        audit: createTestAudit(),
+      });
+      const c = ctx();
+
+      await provider.respond('wf-1:run-1:step-exec-1', { approved: true }, c);
+
+      expect(api.resumeWorkflowExecution).toHaveBeenCalledWith(
+        'run-1',
+        'default',
+        { approved: true },
+        c.request,
+        { channel: 'inbox', stepExecutionId: 'step-exec-1' }
+      );
+    });
+
+    it('delegates the HITL audit stamp to the consolidated resume (does not stamp directly)', async () => {
+      const api = fakeApi();
+      const provider = createWorkflowsInboxProvider({
+        api,
+        logger: loggerMock.create(),
+        audit: createTestAudit(),
+      });
+      const c = ctx();
+
+      await provider.respond('wf-1:run-1:step-exec-1', { approved: true }, c);
+
+      expect(api.markStepAsResponded).not.toHaveBeenCalled();
+      expect(api.resumeWorkflowExecution).toHaveBeenCalledWith(
+        'run-1',
+        'default',
+        { approved: true },
+        c.request,
+        { channel: 'inbox', stepExecutionId: 'step-exec-1' }
+      );
+    });
+
+    it('maps a lost first-writer-wins claim to InboxActionConflictError without an audit-failure log', async () => {
+      const api = fakeApi();
+      (api.resumeWorkflowExecution as jest.Mock).mockRejectedValueOnce(
+        new WorkflowExecutionInvalidStatusError('run-1', 'already responded', 'waiting_for_input')
+      );
+      const audit = createTestAudit();
+      const provider = createWorkflowsInboxProvider({
+        api,
+        logger: loggerMock.create(),
+        audit,
+      });
+
+      const err = await provider
+        .respond('wf-1:run-1:step-exec-1', { approved: true }, ctx())
+        .catch((e: unknown) => e);
+
+      expect(isInboxActionConflictError(err)).toBe(true);
+      expect((err as Error).message).toContain('already claimed');
+      expect(audit.logExecutionResumed).not.toHaveBeenCalled();
+    });
+
     it('emits the same security audit as the resume HTTP route after a successful inbox resume', async () => {
+      // Parity with the resume HTTP route's security audit (added in
+      // #256603): the inbox path must emit the same `logExecutionResumed`
+      // event with the engine-resolved `resumedBy` so the audit trail is
+      // consistent regardless of which client triggered the resume.
       const api = fakeApi();
       const audit = createTestAudit();
       const provider = createWorkflowsInboxProvider({
@@ -218,11 +410,6 @@ describe('createWorkflowsInboxProvider', () => {
     });
 
     it('throws InboxActionConflictError when the step is no longer in WAITING_FOR_INPUT status', async () => {
-      // This is the dangerous case the check exists to prevent: the
-      // first responder has already advanced the step (status flips off
-      // `waiting_for_input`), but the second responder is racing to
-      // submit input that — without this guard — would silently apply
-      // to a *later* HITL step in the same workflow execution.
       const api = fakeApi();
       (api.getStepExecution as jest.Mock).mockResolvedValueOnce(
         buildStep({ status: ExecutionStatus.COMPLETED })
@@ -243,12 +430,6 @@ describe('createWorkflowsInboxProvider', () => {
     });
 
     it('throws InboxActionConflictError when the step execution is zombie-settled (finishedAt + status=waiting_for_input)', async () => {
-      // Regression: a race between the workflow-level timeout monitor and the
-      // waitForInput step can leave a doc with `status: waiting_for_input` AND
-      // `finishedAt`/`error` set (the step is actually terminal). The
-      // status-only pre-check would let the response through to the engine,
-      // which would return a 500; this translates it to a clean 409 at the
-      // provider boundary so the client sees a refreshable conflict.
       const api = fakeApi();
       (api.getStepExecution as jest.Mock).mockResolvedValueOnce(
         buildStep({
@@ -273,21 +454,20 @@ describe('createWorkflowsInboxProvider', () => {
       expect(api.resumeWorkflowExecution).not.toHaveBeenCalled();
     });
 
-    it('throws InvalidWorkflowSourceIdError when source_id is malformed', async () => {
+    it('throws InvalidInboxActionSourceIdError when source_id is malformed', async () => {
       const provider = createWorkflowsInboxProvider({
         api: fakeApi(),
         logger: loggerMock.create(),
         audit: createTestAudit(),
       });
 
-      await expect(provider.respond('invalid', {}, ctx())).rejects.toBeInstanceOf(
-        InvalidWorkflowSourceIdError
-      );
+      const err = await provider.respond('invalid', {}, ctx()).catch((e: unknown) => e);
+      expect(isInvalidInboxActionSourceIdError(err)).toBe(true);
     });
 
     it('does not perform the step lookup when source_id is malformed', async () => {
       // Defensive: a malformed id has no addressable step, so we must
-      // surface the `InvalidWorkflowSourceIdError` synchronously without
+      // surface the `InvalidInboxActionSourceIdError` synchronously without
       // an extra ES round-trip.
       const api = fakeApi();
       const provider = createWorkflowsInboxProvider({

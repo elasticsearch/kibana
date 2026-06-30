@@ -54,11 +54,10 @@ spaceTest.describe(
     spaceTest.beforeEach(async ({ page, browserAuth, pageObjects }) => {
       await page.setViewportSize({ width: 1200, height: 2000 });
       await browserAuth.loginAsViewer();
-      await pageObjects.discover.setQueryMode('classic');
-      await pageObjects.discover.goto();
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.discover.goto({ queryMode: 'classic' });
+      await pageObjects.dataGrid.waitForLoad();
       await pageObjects.discover.selectDataView(NEWLINE_INDEX);
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.dataGrid.waitForLoad();
       await pageObjects.dataGrid.waitForDocTableRendered();
     });
 
@@ -80,7 +79,7 @@ spaceTest.describe(
       'shows new lines for the "message" column except for the single-line row height',
       async ({ page, pageObjects }) => {
         await pageObjects.dataGrid.addFieldFromSidebar('message');
-        await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+        await pageObjects.dataGrid.waitForLoad();
 
         const messageValue = () =>
           pageObjects.dataGrid.getCell(0, 'message').locator('.unifiedDataTable__cellValue');

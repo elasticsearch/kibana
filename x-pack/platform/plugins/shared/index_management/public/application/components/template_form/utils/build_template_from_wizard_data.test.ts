@@ -67,6 +67,78 @@ describe('buildTemplateFromWizardData', () => {
     });
   });
 
+  test('serializes hot-only infinite lifecycle into template.lifecycle', () => {
+    const initialTemplate: TemplateDeserialized = {
+      name: 'template_hot_only',
+      indexPatterns: ['indexPattern1'],
+      dataStream: {},
+      indexMode: 'standard',
+      template: {},
+      allowAutoCreate: 'NO_OVERWRITE',
+      ignoreMissingComponentTemplates: [],
+      composedOf: [],
+      _kbnMeta: {
+        type: 'default',
+        hasDatastream: true,
+        isLegacy: false,
+      },
+    };
+
+    const { _kbnMeta: _ignoredKbnMeta, template: _ignoredTemplate, ...logistics } = initialTemplate;
+
+    const result = buildTemplateFromWizardData({
+      initialTemplate,
+      wizardData: {
+        logistics: {
+          ...logistics,
+          lifecycle: { enabled: true, infiniteDataRetention: true },
+        },
+        settings: undefined,
+        mappings: undefined,
+        aliases: undefined,
+        components: [],
+      },
+    });
+
+    expect(result.template?.lifecycle).toEqual({ enabled: true });
+  });
+
+  test('defaults to hot-only lifecycle when data stream template has no lifecycle configured', () => {
+    const initialTemplate: TemplateDeserialized = {
+      name: 'template_hot_only_default',
+      indexPatterns: ['indexPattern1'],
+      dataStream: {},
+      indexMode: 'standard',
+      template: {},
+      allowAutoCreate: 'NO_OVERWRITE',
+      ignoreMissingComponentTemplates: [],
+      composedOf: [],
+      _kbnMeta: {
+        type: 'default',
+        hasDatastream: true,
+        isLegacy: false,
+      },
+    };
+
+    const { _kbnMeta: _ignoredKbnMeta, template: _ignoredTemplate, ...logistics } = initialTemplate;
+
+    const result = buildTemplateFromWizardData({
+      initialTemplate,
+      wizardData: {
+        logistics: {
+          ...logistics,
+          lifecycle: undefined,
+        },
+        settings: undefined,
+        mappings: undefined,
+        aliases: undefined,
+        components: [],
+      },
+    });
+
+    expect(result.template?.lifecycle).toEqual({ enabled: true });
+  });
+
   test('includes data stream options when provided', () => {
     const initialTemplate: TemplateDeserialized = {
       name: 'template_with_ds_options',
@@ -338,7 +410,10 @@ describe('buildTemplateFromWizardData', () => {
       _kbnMeta: initialTemplate._kbnMeta,
       deprecated: initialTemplate.deprecated,
       composedOf: initialTemplate.composedOf,
-      template: initialTemplate.template,
+      template: {
+        ...initialTemplate.template,
+        lifecycle: { enabled: true },
+      },
       ignoreMissingComponentTemplates: [],
     });
   });

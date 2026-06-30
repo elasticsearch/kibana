@@ -25,13 +25,15 @@ describe('createResultTransformer', () => {
     results,
   });
 
-  const createMockResultStore = (entries: Map<string, FileEntry>): ToolResultStore =>
+  // Entries are keyed by tool_result_id, matching the store's `getEntryByResultId` lookup.
+  const createMockResultStore = (entriesByResultId: Map<string, FileEntry>): ToolResultStore =>
     ({
       has: jest.fn(),
       get: jest.fn(),
-      getEntry: jest.fn(async (path: string) => entries.get(path)),
+      getEntry: jest.fn(),
+      getEntryByResultId: jest.fn(async (resultId: string) => entriesByResultId.get(resultId)),
       listEntries: jest.fn(async () => []),
-      entryExists: jest.fn(async (path: string) => entries.has(path)),
+      entryExists: jest.fn(),
     } as unknown as ToolResultStore);
 
   const createFileEntry = (
@@ -262,8 +264,8 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/search/call-1/result-1.json',
-        createFileEntry('/search/call-1/result-1.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
+        'result-1',
+        createFileEntry('/search_call-1/result.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
           large: 'data',
         })
       );
@@ -286,7 +288,7 @@ describe('createResultTransformer', () => {
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe(ToolResultType.fileReference);
       expect(result[0].data).toMatchObject({
-        filepath: '/tool_calls/search/call-1/result-1.json',
+        filepath: '/tool_calls/search_call-1/result.json',
         _summary: true,
       });
     });
@@ -296,8 +298,8 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/search/call-1/result-1.json',
-        createFileEntry('/search/call-1/result-1.json', 100, { small: 'data' })
+        'result-1',
+        createFileEntry('/search_call-1/result.json', 100, { small: 'data' })
       );
       const resultStore = createMockResultStore(entries);
 
@@ -347,8 +349,8 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/search/call-1/result-1.json',
-        createFileEntry('/search/call-1/result-1.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
+        'result-1',
+        createFileEntry('/search_call-1/result.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
           large: 'data',
         })
       );
@@ -392,8 +394,8 @@ describe('createResultTransformer', () => {
       // Even if we have large file entries, summarized results should not be substituted
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/search/call-1/summarized.json',
-        createFileEntry('/search/call-1/summarized.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 1000, {
+        'result-1',
+        createFileEntry('/search_call-1/result.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 1000, {
           summary: 'Summarized data',
         })
       );
@@ -510,10 +512,7 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       // Token count of 200 - above custom threshold of 100
-      entries.set(
-        '/search/call-1/result-1.json',
-        createFileEntry('/search/call-1/result-1.json', 200, { some: 'data' })
-      );
+      entries.set('result-1', createFileEntry('/search_call-1/result.json', 200, { some: 'data' }));
       const resultStore = createMockResultStore(entries);
 
       const transformer = createResultTransformer({
@@ -539,8 +538,8 @@ describe('createResultTransformer', () => {
 
       const entries = new Map<string, FileEntry>();
       entries.set(
-        '/search/call-1/result-1.json',
-        createFileEntry('/search/call-1/result-1.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
+        'result-1',
+        createFileEntry('/search_call-1/result.json', FS_TOOL_CALL_TOKEN_THRESHOLD + 100, {
           large: 'data',
         })
       );

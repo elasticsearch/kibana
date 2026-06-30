@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/265091
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+title: Add sample report empty state
+description: Improves the AI Value Report empty state. When there are no attack discoveries in the selected time range, the page now shows a "Run Attack Discovery" call-to-action and a sample report so users can preview the report layout and the kind of insights it surfaces.

@@ -55,13 +55,21 @@ export function ServiceMapSearchBar() {
   const history = useHistory();
   const serviceName = useServiceName();
 
-  const controlsConfig = useMemo(
-    () =>
-      serviceName
-        ? SERVICE_MAP_CONTROLS_CONFIG.filter((c) => c.field_name !== 'service.name')
-        : SERVICE_MAP_CONTROLS_CONFIG,
-    [serviceName]
-  );
+  const controlsConfig = useMemo(() => {
+    const base = serviceName
+      ? SERVICE_MAP_CONTROLS_CONFIG.filter((c) => c.field_name !== 'service.name')
+      : SERVICE_MAP_CONTROLS_CONFIG;
+
+    const visible = dataView
+      ? base.filter((c) => dataView.fields.getByName(c.field_name) !== undefined)
+      : base;
+
+    if (visible.length <= 2) {
+      return visible.map((c) => ({ ...c, width: 'medium' as const, grow: false }));
+    }
+
+    return visible;
+  }, [serviceName, dataView]);
 
   // Persist filter-bar pills and control selections in the URL (_a) so they survive refresh.
   const { initialAppFilters, persistControlSelections, getRestoredControlSelections } =

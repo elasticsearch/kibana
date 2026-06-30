@@ -62,6 +62,7 @@ export const config: PluginConfigDescriptor = {
     prereleaseEnabledByDefault: true,
     hideDashboards: true,
     isAirGapped: true,
+    installIntegrationsKnowledge: true,
   },
   deprecations: ({ renameFromRoot, unused, unusedFromRoot }) => [
     // Unused settings before Fleet server exists
@@ -446,6 +447,7 @@ export const config: PluginConfigDescriptor = {
       integrationsHomeOverride: schema.maybe(schema.string()),
       prereleaseEnabledByDefault: schema.boolean({ defaultValue: false }),
       hideDashboards: schema.boolean({ defaultValue: false }),
+      installIntegrationsKnowledge: schema.maybe(schema.boolean()),
       integrationRollbackTTL: schema.maybe(schema.string()),
     },
     {

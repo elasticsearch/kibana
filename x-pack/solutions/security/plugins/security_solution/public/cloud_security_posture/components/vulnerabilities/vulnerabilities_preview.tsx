@@ -159,7 +159,7 @@ export const VulnerabilitiesPreview = ({
             />
           </EuiTitle>
         ),
-        link,
+        link: hasVulnerabilitiesFindings ? link : undefined,
       }}
       data-test-subj={'securitySolutionFlyoutInsightsVulnerabilities'}
     >

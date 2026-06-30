@@ -11,7 +11,7 @@ import { isBoom } from '@hapi/boom';
 import type { Logger } from '@kbn/core/server';
 import type { RulesClientApi } from '@kbn/alerting-v2-plugin/server';
 import { stripMetadata } from '@kbn/streams-schema';
-import { MATCH_LOOKBACK_MINUTES } from '../../../../sig_events/rules/esql/common';
+import { MATCH_LOOKBACK_MINUTES } from '../../../../significant_events/rules/esql/common';
 import {
   STREAMS_RULE_CONSUMER,
   STREAMS_ESQL_RULE_TYPE_ID,

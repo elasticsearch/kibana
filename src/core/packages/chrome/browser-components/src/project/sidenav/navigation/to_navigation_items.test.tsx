@@ -29,7 +29,7 @@ const createNavigationItems = (
   tree: NavigationTreeDefinitionUI = navigationTree,
   activeNodes: ChromeProjectNavigationNode[][] = []
 ) => {
-  return toNavigationItems(tree, activeNodes, mockPanelStateManager);
+  return toNavigationItems(tree, activeNodes, [], mockPanelStateManager);
 };
 
 beforeEach(() => {
@@ -296,7 +296,7 @@ describe('Chrome Next mode (isNextChrome)', () => {
     tree: NavigationTreeDefinitionUI = navigationTree,
     activeNodes: ChromeProjectNavigationNode[][] = []
   ) => {
-    return toNavigationItems(tree, activeNodes, mockPanelStateManager, true);
+    return toNavigationItems(tree, activeNodes, [], mockPanelStateManager, true);
   };
 
   it('should not extract logoItem when isNextChrome is true', () => {

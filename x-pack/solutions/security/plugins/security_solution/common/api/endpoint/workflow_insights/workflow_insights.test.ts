@@ -170,6 +170,20 @@ describe('Workflow Insights', () => {
       });
     });
 
+    describe('maxLength bounds', () => {
+      it('should not accept an ids element longer than 256 characters', () => {
+        expect(() => validateQuery({ query: { ids: ['a'.repeat(257)] } })).toThrow();
+      });
+
+      it('should not accept a sourceIds element longer than 256 characters', () => {
+        expect(() => validateQuery({ query: { sourceIds: ['a'.repeat(257)] } })).toThrow();
+      });
+
+      it('should not accept a targetIds element longer than 256 characters', () => {
+        expect(() => validateQuery({ query: { targetIds: ['a'.repeat(257)] } })).toThrow();
+      });
+    });
+
     it('should throw an error for unsupported categories or types', () => {
       const invalidQuery = {
         query: {
@@ -505,6 +519,78 @@ describe('Workflow Insights', () => {
       });
     });
 
+    describe('maxLength bounds', () => {
+      const baseRequest = {
+        params: { insightId: 'valid-insight-id' },
+        body: {},
+      };
+
+      it('should reject a message that exceeds the max length', () => {
+        expect(() =>
+          validateRequest({ ...baseRequest, body: { message: 'a'.repeat(10001) } })
+        ).toThrow();
+      });
+
+      it('should reject an @timestamp that exceeds the max length', () => {
+        expect(() =>
+          validateRequest({ ...baseRequest, body: { '@timestamp': 'a'.repeat(65) } })
+        ).toThrow();
+      });
+
+      it('should reject an insightId that exceeds the max length', () => {
+        expect(() =>
+          validateRequest({ params: { insightId: 'a'.repeat(257) }, body: {} })
+        ).toThrow();
+      });
+
+      it('should reject a target id element that exceeds the max length', () => {
+        expect(() =>
+          validateRequest({ ...baseRequest, body: { target: { ids: ['a'.repeat(257)] } } })
+        ).toThrow();
+      });
+
+      it('should reject a metadata.notes key that exceeds the max length', () => {
+        expect(() =>
+          validateRequest({
+            ...baseRequest,
+            body: { metadata: { notes: { ['a'.repeat(257)]: 'value' } } },
+          })
+        ).toThrow();
+      });
+
+      it('should reject a metadata.notes value that exceeds the max length', () => {
+        expect(() =>
+          validateRequest({
+            ...baseRequest,
+            body: { metadata: { notes: { note: 'a'.repeat(1001) } } },
+          })
+        ).toThrow();
+      });
+
+      it('should reject a remediation.link that exceeds the max length', () => {
+        expect(() =>
+          validateRequest({
+            ...baseRequest,
+            body: { remediation: { link: 'a'.repeat(2049) } },
+          })
+        ).toThrow();
+      });
+
+      it('should accept values at the max length', () => {
+        expect(() =>
+          validateRequest({
+            params: { insightId: 'a'.repeat(256) },
+            body: {
+              message: 'a'.repeat(10000),
+              target: { ids: ['a'.repeat(256)] },
+              remediation: { link: 'a'.repeat(2048) },
+              metadata: { notes: { ['a'.repeat(256)]: 'a'.repeat(1000) } },
+            },
+          })
+        ).not.toThrow();
+      });
+    });
+
     it('should throw an error if target ids contain empty strings', () => {
       const invalidRequest = {
         params: {
@@ -655,6 +741,25 @@ describe('Workflow Insights', () => {
         })
       ).toThrow();
     });
+
+    it('should throw when an endpointIds element exceeds the max length', () => {
+      expect(() =>
+        validateBody({
+          insightTypes: ['incompatible_antivirus'],
+          endpointIds: ['a'.repeat(257)],
+        })
+      ).toThrow();
+    });
+
+    it('should throw when connectorId exceeds the max length', () => {
+      expect(() =>
+        validateBody({
+          insightTypes: ['incompatible_antivirus'],
+          endpointIds: ['endpoint-1'],
+          connectorId: 'a'.repeat(257),
+        })
+      ).toThrow();
+    });
   });
 
   describe('GetPendingInsightsRequestSchema', () => {
@@ -696,6 +801,10 @@ describe('Workflow Insights', () => {
     it('should throw when endpointIds exceeds maxSize of 50', () => {
       const tooManyIds = Array(51).fill('endpoint-1');
       expect(() => validateQuery({ endpointIds: tooManyIds })).toThrow();
+    });
+
+    it('should throw when an endpointIds element exceeds the max length', () => {
+      expect(() => validateQuery({ endpointIds: ['a'.repeat(257)] })).toThrow();
     });
 
     it('should validate successfully with both insightTypes and endpointIds', () => {

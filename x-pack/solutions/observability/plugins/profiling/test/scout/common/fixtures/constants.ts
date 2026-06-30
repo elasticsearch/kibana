@@ -18,3 +18,24 @@ export const COLLECTOR_PACKAGE_POLICY_NAME = 'elastic-universal-profiling-collec
 export const SYMBOLIZER_PACKAGE_POLICY_NAME = 'elastic-universal-profiling-symbolizer';
 export const esArchiversPath = Path.join(__dirname, 'es_archiver', 'profiling', 'data.json');
 export const esResourcesEndpoint = 'api/profiling/setup/es_resources';
+
+// Headers required by internal profiling API routes (xsrf + internal origin).
+export const internalApiHeaders = {
+  'kbn-xsrf': 'some-xsrf-token',
+  'x-elastic-internal-origin': 'kibana',
+} as const;
+
+// Internal profiling API endpoints, without a leading slash so they can be passed
+// directly to the Scout `apiClient`. Mirrors `getRoutePaths()` from
+// `@kbn/profiling-plugin/common`; kept local to avoid pulling the plugin into the
+// Scout tsconfig graph (matches the existing suite's hardcoded `esResourcesEndpoint`).
+export const profilingApiEndpoints = {
+  topNContainers: 'internal/profiling/topn/containers',
+  topNDeployments: 'internal/profiling/topn/deployments',
+  topNHosts: 'internal/profiling/topn/hosts',
+  topNTraces: 'internal/profiling/topn/traces',
+  topNThreads: 'internal/profiling/topn/threads',
+  topNFunctions: 'internal/profiling/topn/functions',
+  flamechart: 'internal/profiling/flamechart',
+  setupInstructions: 'internal/profiling/setup/instructions',
+} as const;

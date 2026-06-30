@@ -45,12 +45,12 @@ test.describe('Onboarding Service Settings step', { tag: tags.stateful.classic }
     });
   });
 
-  test('Continue is disabled until global region is set', async ({ browserAuth, page }) => {
+  test('Continue button is always enabled; clicking without global region shows validation error', async ({
+    browserAuth,
+    page,
+  }) => {
     await browserAuth.loginAsAdmin();
     await page.gotoApp('onboarding/aws#service-settings');
-    await expect(page.testSubj.locator('onboardingStep-serviceSettings')).toBeVisible();
-
-    // No global region → button disabled
     await page.evaluate(() => {
       sessionStorage.setItem(
         'onboarding.aws.serviceSettingsStep',
@@ -58,10 +58,18 @@ test.describe('Onboarding Service Settings step', { tag: tags.stateful.classic }
       );
     });
     await page.reload();
-    await expect(page.testSubj.locator('serviceSettingsStep-nextButton')).toBeDisabled();
+    await expect(page.testSubj.locator('onboardingStep-serviceSettings')).toBeVisible();
+
+    // Button is always enabled — validation is shown after clicking, not before
+    await expect(page.testSubj.locator('serviceSettingsStep-continueButton')).toBeEnabled();
+
+    // Clicking without a global region keeps the user on the step and shows an error
+    await page.testSubj.locator('serviceSettingsStep-continueButton').click();
+    await expect(page.testSubj.locator('onboardingStep-serviceSettings')).toBeVisible();
+    await expect(page.testSubj.locator('serviceSettingsStep-globalRegionError')).toBeVisible();
   });
 
-  test('Continue enables once global region is set and no inline fields are required', async ({
+  test('Continue button is always enabled when global region is set and no inline fields are required', async ({
     browserAuth,
     page,
   }) => {
@@ -81,17 +89,17 @@ test.describe('Onboarding Service Settings step', { tag: tags.stateful.classic }
     });
     await page.reload();
     await expect(page.testSubj.locator('onboardingStep-serviceSettings')).toBeVisible();
-    await expect(page.testSubj.locator('serviceSettingsStep-nextButton')).toBeEnabled();
+    await expect(page.testSubj.locator('serviceSettingsStep-continueButton')).toBeEnabled();
   });
 
-  test('Continue is disabled when an inline required field is empty', async ({
+  test('clicking Continue with an empty inline required field shows validation error', async ({
     browserAuth,
     page,
   }) => {
     await browserAuth.loginAsAdmin();
     await page.gotoApp('onboarding/aws#service-settings');
 
-    // cloudtrail with S3 trigger: bucket_arn is inline required and empty → disabled
+    // cloudtrail with S3 trigger: bucket_arn is inline required and empty
     await page.evaluate(() => {
       sessionStorage.setItem(
         'onboarding.aws.servicesStep',
@@ -107,11 +115,15 @@ test.describe('Onboarding Service Settings step', { tag: tags.stateful.classic }
     });
     await page.reload();
     await expect(page.testSubj.locator('onboardingStep-serviceSettings')).toBeVisible();
-    await expect(page.testSubj.locator('serviceSettingsStep-nextButton')).toBeDisabled();
 
-    // Filling the bucket_arn enables Continue
+    // Click Continue — error appears, step stays visible
+    await page.testSubj.locator('serviceSettingsStep-continueButton').click();
+    await expect(page.testSubj.locator('onboardingStep-serviceSettings')).toBeVisible();
+    await expect(page.testSubj.locator('serviceSettingsStep-cardValidationMessage')).toBeVisible();
+
+    // Filling the bucket_arn clears the error message
     await page.getByPlaceholder('arn:aws:s3:::my-bucket').fill('arn:aws:s3:::my-cloudtrail-bucket');
-    await expect(page.testSubj.locator('serviceSettingsStep-nextButton')).toBeEnabled();
+    await expect(page.testSubj.locator('serviceSettingsStep-cardValidationMessage')).toBeHidden();
   });
 
   test('transport toggle swaps the inline required field', async ({ browserAuth, page }) => {

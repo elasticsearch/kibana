@@ -925,7 +925,7 @@ describe('RenderingService', () => {
       expect(await renderAndReadUserStorage(content)).toEqual({ values: {} });
     });
 
-    it('rejects when getForInjection() rejects', async () => {
+    it('throws when getForInjection() rejects', async () => {
       const { render } = await service.setup(mockRenderingSetupDeps);
 
       const getForInjection = jest.fn().mockRejectedValue(new Error('ES exploded'));

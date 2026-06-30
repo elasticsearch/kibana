@@ -1,5 +1,5 @@
 {
-  "sha1": "6250f3a8ce56f80e69920e1d86545a0197f543d2",
+  "sha1": "1c68a0cded7d73d353f5510bd52d0fe13f4e90af",
   "tests": [
     {
       "id": "5f3825f308b4d12-d89fd2ade65d14f",
@@ -32,7 +32,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_context_dashboard.spec.ts",
-        "line": 46,
+        "line": 45,
         "column": 14
       }
     },
@@ -45,7 +45,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_context.spec.ts",
-        "line": 92,
+        "line": 91,
         "column": 12
       }
     },
@@ -58,7 +58,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_copy_to_clipboard.spec.ts",
-        "line": 73,
+        "line": 72,
         "column": 14
       }
     },
@@ -71,7 +71,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_copy_to_clipboard.spec.ts",
-        "line": 95,
+        "line": 94,
         "column": 14
       }
     },
@@ -84,7 +84,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_density_saved_search.spec.ts",
-        "line": 44,
+        "line": 43,
         "column": 14
       }
     },
@@ -97,7 +97,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_navigation.spec.ts",
-        "line": 43,
+        "line": 42,
         "column": 14
       }
     },
@@ -110,7 +110,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_navigation.spec.ts",
-        "line": 55,
+        "line": 54,
         "column": 14
       }
     },
@@ -130,7 +130,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_table.spec.ts",
-        "line": 59,
+        "line": 58,
         "column": 12
       }
     },
@@ -150,7 +150,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_table.spec.ts",
-        "line": 65,
+        "line": 64,
         "column": 12
       }
     },
@@ -170,7 +170,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_table.spec.ts",
-        "line": 78,
+        "line": 77,
         "column": 12
       }
     },
@@ -190,7 +190,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_table.spec.ts",
-        "line": 92,
+        "line": 91,
         "column": 12
       }
     },
@@ -210,7 +210,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_viewer.spec.ts",
-        "line": 52,
+        "line": 51,
         "column": 12
       }
     },
@@ -230,7 +230,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_viewer.spec.ts",
-        "line": 73,
+        "line": 72,
         "column": 12
       }
     },
@@ -250,7 +250,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_viewer.spec.ts",
-        "line": 98,
+        "line": 97,
         "column": 12
       }
     },
@@ -270,7 +270,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_viewer.spec.ts",
-        "line": 103,
+        "line": 102,
         "column": 12
       }
     },
@@ -290,7 +290,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_viewer.spec.ts",
-        "line": 109,
+        "line": 108,
         "column": 12
       }
     },
@@ -310,7 +310,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_doc_viewer.spec.ts",
-        "line": 122,
+        "line": 121,
         "column": 12
       }
     },
@@ -323,7 +323,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_footer_date_nanos.spec.ts",
-        "line": 80,
+        "line": 79,
         "column": 14
       }
     },
@@ -336,7 +336,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_footer.spec.ts",
-        "line": 50,
+        "line": 49,
         "column": 12
       }
     },
@@ -349,7 +349,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_footer.spec.ts",
-        "line": 89,
+        "line": 88,
         "column": 12
       }
     },
@@ -362,7 +362,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_in_table_search.spec.ts",
-        "line": 41,
+        "line": 40,
         "column": 12
       }
     },
@@ -375,7 +375,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_in_table_search.spec.ts",
-        "line": 63,
+        "line": 62,
         "column": 12
       }
     },
@@ -388,7 +388,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_in_table_search.spec.ts",
-        "line": 91,
+        "line": 90,
         "column": 12
       }
     },
@@ -401,7 +401,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_new_line.spec.ts",
-        "line": 71,
+        "line": 70,
         "column": 14
       }
     },
@@ -414,7 +414,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_new_line.spec.ts",
-        "line": 79,
+        "line": 78,
         "column": 14
       }
     },
@@ -453,7 +453,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_height.spec.ts",
-        "line": 41,
+        "line": 40,
         "column": 12
       }
     },
@@ -466,7 +466,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_height.spec.ts",
-        "line": 48,
+        "line": 47,
         "column": 12
       }
     },
@@ -479,7 +479,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_height.spec.ts",
-        "line": 69,
+        "line": 68,
         "column": 12
       }
     },
@@ -492,7 +492,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_height.spec.ts",
-        "line": 89,
+        "line": 88,
         "column": 12
       }
     },
@@ -505,7 +505,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_height.spec.ts",
-        "line": 96,
+        "line": 95,
         "column": 12
       }
     },
@@ -518,7 +518,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_height.spec.ts",
-        "line": 116,
+        "line": 115,
         "column": 12
       }
     },
@@ -531,7 +531,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_navigation.spec.ts",
-        "line": 105,
+        "line": 104,
         "column": 12
       }
     },
@@ -544,7 +544,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 137,
+        "line": 136,
         "column": 14
       }
     },
@@ -557,7 +557,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 157,
+        "line": 156,
         "column": 14
       }
     },
@@ -570,7 +570,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 170,
+        "line": 169,
         "column": 14
       }
     },
@@ -583,7 +583,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 183,
+        "line": 182,
         "column": 14
       }
     },
@@ -596,7 +596,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection_clipboard.spec.ts",
-        "line": 199,
+        "line": 198,
         "column": 14
       }
     },
@@ -609,7 +609,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection.spec.ts",
-        "line": 67,
+        "line": 66,
         "column": 12
       }
     },
@@ -622,7 +622,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection.spec.ts",
-        "line": 89,
+        "line": 88,
         "column": 12
       }
     },
@@ -635,7 +635,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_row_selection.spec.ts",
-        "line": 133,
+        "line": 132,
         "column": 12
       }
     },
@@ -687,7 +687,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_sample_size.spec.ts",
-        "line": 52,
+        "line": 51,
         "column": 12
       }
     },
@@ -700,7 +700,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_sample_size.spec.ts",
-        "line": 60,
+        "line": 59,
         "column": 12
       }
     },
@@ -713,7 +713,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid_sample_size.spec.ts",
-        "line": 73,
+        "line": 72,
         "column": 12
       }
     },
@@ -726,7 +726,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid.spec.ts",
-        "line": 80,
+        "line": 79,
         "column": 12
       }
     },
@@ -739,7 +739,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid.spec.ts",
-        "line": 99,
+        "line": 98,
         "column": 12
       }
     },
@@ -752,7 +752,7 @@
       ],
       "location": {
         "file": "src/platform/plugins/shared/discover/test/scout/ui/parallel_tests/core/data_grid/data_grid.spec.ts",
-        "line": 121,
+        "line": 120,
         "column": 12
       }
     },

@@ -8,7 +8,8 @@
  */
 
 import { EuiButtonIcon, EuiListGroup, EuiPopover, EuiToolTip } from '@elastic/eui';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useChangeHistoryModal } from '@kbn/change-history-ui';
 import { i18n } from '@kbn/i18n';
 
 import {
@@ -16,8 +17,8 @@ import {
   WorkflowChangeHistoryListItem,
 } from '../../../features/change_history';
 
-export const WorkflowDetailActionsMenu = (): JSX.Element | null => {
-  const isChangeHistoryEnabled = useWorkflowChangeHistoryEnabled();
+const WorkflowDetailActionsMenuContent = (): JSX.Element => {
+  const { isOpen: isChangeHistoryOpen } = useChangeHistoryModal();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const closePopover = useCallback(() => {
@@ -28,10 +29,11 @@ export const WorkflowDetailActionsMenu = (): JSX.Element | null => {
     setIsPopoverOpen((isOpen) => !isOpen);
   }, []);
 
-  // Hide until at least one menu item is available.
-  if (!isChangeHistoryEnabled) {
-    return null;
-  }
+  useEffect(() => {
+    if (isChangeHistoryOpen) {
+      closePopover();
+    }
+  }, [closePopover, isChangeHistoryOpen]);
 
   const actionsMenuAriaLabel = i18n.translate(
     'workflows.workflowDetailHeader.actionsMenuButtonAriaLabel',
@@ -63,8 +65,18 @@ export const WorkflowDetailActionsMenu = (): JSX.Element | null => {
       anchorPosition="downRight"
     >
       <EuiListGroup maxWidth={false}>
-        <WorkflowChangeHistoryListItem onClick={closePopover} />
+        <WorkflowChangeHistoryListItem />
       </EuiListGroup>
     </EuiPopover>
   );
+};
+
+export const WorkflowDetailActionsMenu = (): JSX.Element | null => {
+  const isChangeHistoryEnabled = useWorkflowChangeHistoryEnabled();
+
+  if (!isChangeHistoryEnabled) {
+    return null;
+  }
+
+  return <WorkflowDetailActionsMenuContent />;
 };

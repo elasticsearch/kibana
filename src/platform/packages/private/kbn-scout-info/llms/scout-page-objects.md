@@ -17,7 +17,7 @@ test.describe('My test suite', { tag: tags.deploymentAgnostic }, () => {
   test.beforeEach(async ({ pageObjects }) => {
     // Navigate to the Discover screen.
     // The `pageObjects.discover` page object is provided by the core test package.
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
   });
 
   test('sample test', async ({ pageObjects }) => {

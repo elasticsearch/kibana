@@ -31,8 +31,8 @@ describe('getMenuSections', () => {
 
   const mockDiscoverLocator = {
     getRedirectUrl: jest.fn((params: SerializableRecord) => {
-      const query = (params.query as { query?: string })?.query || '';
-      return `/app/discover#/?_a=(query:(language:kuery,query:'${query}'))`;
+      const esql = (params.query as { esql?: string })?.esql || '';
+      return `/app/discover#/?_a=(query:(esql:'${esql}'))`;
     }),
   } as unknown as LocatorPublic<SerializableRecord>;
 
@@ -314,16 +314,17 @@ describe('getMenuSections', () => {
     expect(podMetricsAction?.condition).toBe(true);
     // Should use Discover link, not Infra UI link
     expect(mockAssetDetailsLocator.getRedirectUrl).not.toHaveBeenCalled();
+    // Should use an ES|QL TS (time series) query, not classic KQL
     expect(mockDiscoverLocator.getRedirectUrl).toHaveBeenCalledWith(
       expect.objectContaining({
         query: expect.objectContaining({
-          language: 'kuery',
-          query: 'kubernetes.pod.uid: "pod-123"',
+          esql: 'TS metrics-* | WHERE `kubernetes.pod.uid` == "pod-123"',
         }),
       })
     );
     // Verify the generated URL contains the correct query
     expect(podMetricsAction?.href).toContain('/app/discover');
-    expect(podMetricsAction?.href).toContain('kubernetes.pod.uid: "pod-123"');
+    expect(podMetricsAction?.href).toContain('TS metrics-*');
+    expect(podMetricsAction?.href).toContain('kubernetes.pod.uid');
   });
 });

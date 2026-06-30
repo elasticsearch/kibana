@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/271286
+issues:
+- https://github.com/elastic/security-team/issues/16867
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+title: "Add server-side sorting for the Name and Enabled columns in the workflows table."
+description: "Click column headers in the workflows list to sort by Name (alphabetical) or Enabled (boolean). Sorting runs server-side with `GET /api/workflows`."

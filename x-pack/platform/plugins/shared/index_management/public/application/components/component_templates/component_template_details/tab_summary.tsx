@@ -19,8 +19,9 @@ import {
   EuiLink,
 } from '@elastic/eui';
 
-import { getLifecycleValue } from '../../../lib/data_streams';
+import { formatDlmLifecycleSummary } from '../../../lib/data_streams';
 import type { ComponentTemplateDeserialized } from '../shared_imports';
+import { useAppContext } from '../../../app_context';
 import { useComponentTemplatesContext } from '../component_templates_context';
 
 interface Props {
@@ -28,13 +29,15 @@ interface Props {
   showCallToAction?: boolean;
 }
 
-const INFINITE_AS_ICON = true;
-
 export const TabSummary: React.FunctionComponent<Props> = ({
   componentTemplateDetails,
   showCallToAction,
 }) => {
   const { getUrlForApp } = useComponentTemplatesContext();
+  const {
+    config: { isServerless },
+  } = useAppContext();
+  const dlmTiersLayoutEnabled = !isServerless;
 
   const { version, _meta, _kbnMeta, template } = componentTemplateDetails;
 
@@ -124,14 +127,16 @@ export const TabSummary: React.FunctionComponent<Props> = ({
 
         {template.lifecycle && (
           <>
-            <EuiDescriptionListTitle data-test-subj="dataRetentionTitle">
+            <EuiDescriptionListTitle data-test-subj="dataLifecycleTitle">
               <FormattedMessage
-                id="xpack.idxMgmt.componentTemplateDetails.summaryTab.dataRetentionDescriptionListTitle"
-                defaultMessage="Data retention"
+                id="xpack.idxMgmt.componentTemplateDetails.summaryTab.dataLifecycleDescriptionListTitle"
+                defaultMessage="Data lifecycle"
               />
             </EuiDescriptionListTitle>
             <EuiDescriptionListDescription>
-              {getLifecycleValue(template.lifecycle, INFINITE_AS_ICON)}
+              {formatDlmLifecycleSummary(template.lifecycle, {
+                includePhaseCount: dlmTiersLayoutEnabled,
+              })}
             </EuiDescriptionListDescription>
           </>
         )}

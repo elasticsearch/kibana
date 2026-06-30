@@ -8,10 +8,12 @@
 import { getOr } from 'lodash/fp';
 
 import {
+  type SavedObject,
   type SavedObjectsClientContract,
   SavedObjectsErrorHelpers,
   type SavedObjectsFindOptions,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core-saved-objects-server';
 import type { AuthenticatedUser } from '@kbn/security-plugin/server';
 
 import { UNAUTHENTICATED_USER } from '../../../../../common/constants';
@@ -314,7 +316,10 @@ export const getAllTimelineByIds = async (
 
   const enrichedTimelines = await Promise.all(
     bulkResponse.saved_objects
-      .filter((savedObject) => savedObject.error == null)
+      .filter(
+        (savedObject): savedObject is SavedObject<SavedObjectTimelineWithoutExternalRefs> =>
+          !isSavedObjectErrorResult(savedObject)
+      )
       .map(async (savedObject) => {
         const migratedSO = timelineFieldsMigrator.populateFieldsFromReferences(savedObject);
         const timelineSavedObject = convertSavedObjectToSavedTimeline(migratedSO);
@@ -920,7 +925,7 @@ export const getSelectedTimelines = async (
     errors: ExportTimelineNotFoundError[];
   } = savedObjects.saved_objects.reduce(
     (acc, savedObject) => {
-      if (savedObject.error == null) {
+      if (!isSavedObjectErrorResult(savedObject)) {
         const populatedTimeline = timelineFieldsMigrator.populateFieldsFromReferences(savedObject);
 
         return {

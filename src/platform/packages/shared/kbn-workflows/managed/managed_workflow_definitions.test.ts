@@ -127,6 +127,10 @@ describe('managedWorkflowDefinitions', () => {
     }
   );
 
+  it.each(managedDefinitionsById)('%s declares whether it is billable', (_id, definition) => {
+    expect(typeof definition.billable).toBe('boolean');
+  });
+
   it.each(managedDefinitionsById)(
     '%s defines exactly one source field: yaml xor yamlTemplate',
     (_id, definition) => {

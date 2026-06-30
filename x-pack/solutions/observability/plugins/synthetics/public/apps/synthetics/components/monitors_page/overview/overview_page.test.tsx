@@ -56,6 +56,9 @@ jest.mock('../../../hooks', () => ({
     locationsLoaded: true,
     locations: [],
   })),
+  // `useSyncOverviewDateRange` (mounted by `OverviewPage`) reads the URL params
+  // via this hook, so it must be stubbed here or the render throws.
+  useUrlParams: jest.fn(() => [jest.fn(() => ({})), jest.fn()]),
 }));
 
 jest.mock('../../../hooks/use_synthetics_page_ready', () => ({

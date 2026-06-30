@@ -9,6 +9,7 @@ import React, { useMemo } from 'react';
 import {
   EuiAccordion,
   EuiBadge,
+  EuiCallOut,
   EuiDescriptionList,
   EuiFlexGroup,
   EuiFlexItem,
@@ -24,7 +25,7 @@ import {
 import { i18n } from '@kbn/i18n';
 import { FormattedDate, FormattedMessage, FormattedRelative } from '@kbn/i18n-react';
 
-import type { ComponentHealth, OTelCollectorConfig } from '../../../../../common/types';
+import type { Agent, ComponentHealth, OTelCollectorConfig } from '../../../../../common/types';
 
 import type { OTelComponentType } from '../constants';
 import { COMPONENT_TYPE_LABELS } from '../constants';
@@ -38,9 +39,17 @@ import {
   type ComponentHealthStatus,
 } from '../utils';
 
+const NON_REPORTING_STATUSES: Array<Agent['status']> = [
+  'offline',
+  'inactive',
+  'unenrolled',
+  'uninstalled',
+];
+
 interface CollectorDetailHealthProps {
   health?: ComponentHealth;
   config?: OTelCollectorConfig;
+  agentStatus?: Agent['status'];
   onComponentClick?: (
     componentId: string,
     componentType: OTelComponentType,
@@ -319,6 +328,7 @@ const resolveComponentType = (
 export const CollectorDetailHealth: React.FC<CollectorDetailHealthProps> = ({
   health,
   config,
+  agentStatus,
   onComponentClick,
   selectedComponentId,
 }) => {
@@ -362,6 +372,28 @@ export const CollectorDetailHealth: React.FC<CollectorDetailHealthProps> = ({
   }, [config, health]);
 
   const { euiTheme } = useEuiTheme();
+
+  if (agentStatus && NON_REPORTING_STATUSES.includes(agentStatus)) {
+    return (
+      <EuiCallOut
+        color="warning"
+        iconType="offline"
+        announceOnMount={false}
+        title={i18n.translate('xpack.fleet.otelUi.collectorDetail.health.offlineTitle', {
+          defaultMessage: 'Collector is not active',
+        })}
+        data-test-subj="collectorDetailHealthOffline"
+      >
+        <p>
+          {i18n.translate('xpack.fleet.otelUi.collectorDetail.health.offlineBody', {
+            defaultMessage:
+              'This collector is currently {status}. Health data is only available while the collector is running.',
+            values: { status: agentStatus },
+          })}
+        </p>
+      </EuiCallOut>
+    );
+  }
 
   if (!health) {
     return (

@@ -122,6 +122,7 @@ const handleConversationExecution = async ({
     configurationOverrides,
     action,
     telemetryMetadata,
+    accessControl,
   } = execution.agentParams;
 
   const { logger, runAgent, trackingService, analyticsService, meteringService, agentService } =
@@ -142,6 +143,7 @@ const handleConversationExecution = async ({
     conversationId,
     autoCreateConversationWithId,
     conversationClient,
+    accessControl,
   });
 
   // Emit conversation ID for new conversations (only when persisting)
@@ -182,10 +184,8 @@ const handleConversationExecution = async ({
   // Persist conversation (optional)
   const persistenceEvents$ = storeConversation
     ? buildPersistenceEvents({
-        agentId,
         conversation,
         conversationClient,
-        conversationId,
         title$,
         agentEvents$,
         action,
@@ -388,18 +388,14 @@ const getHttpStatusFromError = (error: unknown): number | undefined => {
 };
 
 const buildPersistenceEvents = ({
-  agentId,
   conversation,
   conversationClient,
-  conversationId,
   title$,
   agentEvents$,
   action,
 }: {
-  agentId: string;
   conversation: ConversationWithOperation;
   conversationClient: ConversationClient;
-  conversationId?: string;
   title$: Observable<string>;
   agentEvents$: Observable<ChatEvent>;
   action?: ConversationAction;
@@ -408,9 +404,8 @@ const buildPersistenceEvents = ({
 
   if (conversation.operation === 'CREATE') {
     return createConversation$({
-      agentId,
+      conversation,
       conversationClient,
-      conversationId: conversationId || conversation.id,
       title$,
       roundCompletedEvents$,
     });

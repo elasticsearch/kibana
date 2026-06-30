@@ -15,6 +15,7 @@ import {
   EuiFlexItem,
   useEuiTheme,
   EuiFormRow,
+  EuiToolTip,
 } from '@elastic/eui';
 import {
   RULE_NAME_ARIA_LABEL_TEXT,
@@ -112,13 +113,15 @@ export const RulePageNameInput = () => {
           </EuiFormRow>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            color="primary"
-            iconType="check"
-            size="m"
-            onClick={onCancelEdit}
-            aria-label={RULE_NAME_INPUT_BUTTON_ARIA_LABEL}
-          />
+          <EuiToolTip content={RULE_NAME_INPUT_BUTTON_ARIA_LABEL} disableScreenReaderOutput>
+            <EuiButtonIcon
+              color="primary"
+              iconType="check"
+              size="m"
+              onClick={onCancelEdit}
+              aria-label={RULE_NAME_INPUT_BUTTON_ARIA_LABEL}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
       </EuiFlexGroup>
     );

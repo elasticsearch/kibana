@@ -8,5 +8,11 @@
 export { ChangeHistoryProvider } from './change_history_provider';
 export type { ChangeHistoryProviderProps } from './change_history_provider';
 export { useChangeHistoryConfig } from './use_change_history_config';
-export { ChangeHistoryContext } from './change_history_context';
-export type { ChangeHistoryContextValue } from './change_history_context';
+export type {
+  ChangeHistoryConfigValue,
+  ChangeHistoryLabels,
+  ChangeHistoryResolvedLabels,
+} from './change_history_config_context';
+export { useChangeHistoryModal } from './use_change_history_modal';
+export type { ChangeHistoryModalContextValue } from './change_history_modal_context';
+export { resolveChangeHistorySupports } from './resolve_change_history_supports';

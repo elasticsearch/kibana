@@ -6,8 +6,7 @@
  */
 
 import { DEFAULT_DETECTIONS_CLOSE_REASONS_KEY } from '../../../../../../common/constants';
-import { AlertStatusEnum } from '../../../../../../common/api/model';
-import type { Reason } from '../../../../../../common/api/detection_engine/signals';
+import { AlertStatusEnum, type Reason } from '../../../../../../common/api/model';
 import type { SecuritySolutionRequestHandlerContext } from '../../../../../types';
 import { DefaultClosingReasonSchema } from '../../../../../../common/types';
 import { ALERT_CLOSING_REASON_VALIDATION_ERROR } from '../../signals/translations';

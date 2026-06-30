@@ -155,7 +155,6 @@ export const getStreamsApiService = ({
               },
               dashboards: current.stream.dashboards ?? [],
               rules: current.stream.rules ?? [],
-              queries: current.stream.queries ?? [],
             },
           });
         } else {

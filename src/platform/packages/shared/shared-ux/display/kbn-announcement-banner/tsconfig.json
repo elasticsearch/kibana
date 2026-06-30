@@ -17,8 +17,6 @@
     "target/**/*"
   ],
   "kbn_references": [
-    "@kbn/i18n",
     "@kbn/test-jest-helpers",
-    "@kbn/css-utils",
   ]
 }

@@ -7,14 +7,18 @@
 
 import type { FC } from 'react';
 import React from 'react';
-import { EuiFlexGroup } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { css } from '@emotion/react';
 import { CASE_VIEW_PAGE_TABS } from '../../../../../common/types';
 import type { CaseUI } from '../../../../../common';
 import { useUrlParams } from '../../../../common/navigation';
 import { ATTACHMENT_TAB_ALIASES } from '../../../case_view/use_case_attachment_tabs';
+import { CaseViewTabs } from '../../../case_view/case_view_tabs';
 import { CaseViewActivity } from './case_view_activity';
 import { CaseViewSimilarCases } from '../../../case_view/components/case_view_similar_cases';
 import { CaseViewAttachments } from '../../../case_view/components/case_view_attachments';
+import { CaseViewSidebar } from './case_view_sidebar';
+import { SavedObjectInAppUrlsProvider } from '../../../attachments/common/saved_object/saved_object_in_app_urls_context';
 import type { OnUpdateFields } from '../../../case_view/types';
 
 interface CaseViewTabContentProps {
@@ -33,7 +37,7 @@ export const CaseViewTabContent: FC<CaseViewTabContentProps> = ({
   const { urlParams } = useUrlParams();
   const rawTabId = urlParams?.tabId ?? CASE_VIEW_PAGE_TABS.ACTIVITY;
 
-  const activeTabId =
+  const activeTabId: CASE_VIEW_PAGE_TABS =
     rawTabId === CASE_VIEW_PAGE_TABS.ACTIVITY ||
     rawTabId === CASE_VIEW_PAGE_TABS.SIMILAR_CASES ||
     ATTACHMENT_TAB_ALIASES.has(rawTabId)
@@ -41,22 +45,31 @@ export const CaseViewTabContent: FC<CaseViewTabContentProps> = ({
       : CASE_VIEW_PAGE_TABS.ACTIVITY;
 
   return (
-    <EuiFlexGroup data-test-subj={`case-view-tab-content-${activeTabId}`} alignItems="baseline">
-      {activeTabId === CASE_VIEW_PAGE_TABS.ACTIVITY && (
-        <CaseViewActivity caseData={caseData} searchTerm={searchTerm} />
-      )}
-      {ATTACHMENT_TAB_ALIASES.has(activeTabId) && (
-        <CaseViewAttachments
-          caseData={caseData}
-          onSearch={onSearch}
-          searchTerm={searchTerm}
-          onUpdateField={onUpdateField}
-        />
-      )}
-      {activeTabId === CASE_VIEW_PAGE_TABS.SIMILAR_CASES && (
-        <CaseViewSimilarCases caseData={caseData} searchTerm={searchTerm} />
-      )}
-    </EuiFlexGroup>
+    <SavedObjectInAppUrlsProvider caseData={caseData}>
+      <CaseViewTabs caseData={caseData} activeTab={activeTabId} searchTerm={searchTerm} />
+      <EuiFlexGroup data-test-subj={`case-view-tab-content-${activeTabId}`}>
+        <EuiFlexItem
+          grow={6}
+          css={css`
+            max-width: 75%;
+          `}
+        >
+          {activeTabId === CASE_VIEW_PAGE_TABS.ACTIVITY && <CaseViewActivity caseData={caseData} />}
+          {ATTACHMENT_TAB_ALIASES.has(activeTabId) && (
+            <CaseViewAttachments
+              caseData={caseData}
+              onSearch={onSearch}
+              searchTerm={searchTerm}
+              onUpdateField={onUpdateField}
+            />
+          )}
+          {activeTabId === CASE_VIEW_PAGE_TABS.SIMILAR_CASES && (
+            <CaseViewSimilarCases caseData={caseData} />
+          )}
+        </EuiFlexItem>
+        <CaseViewSidebar caseData={caseData} />
+      </EuiFlexGroup>
+    </SavedObjectInAppUrlsProvider>
   );
 };
 

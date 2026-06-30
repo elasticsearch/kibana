@@ -57,6 +57,8 @@ Once the user has answered all questions, the execution will resume and the resp
 - Do **NOT** call this tool in parallel (with itself or other tools). The tool pauses the execution, and is meant to be called independently so the interrupt state is clean.
 
 - Using a description (in addition to the label) for each option is optional but recommended.
+
+- The "question" field should contain *only* the question itself. Do **NOT** add instructions such as "Pick as many as you like" or "Pick one" — the UI already indicates whether the question is single or multi-choice.
 `;
 
 export const createAskUserQuestionTool = (): BuiltinToolDefinition<typeof schema> => {

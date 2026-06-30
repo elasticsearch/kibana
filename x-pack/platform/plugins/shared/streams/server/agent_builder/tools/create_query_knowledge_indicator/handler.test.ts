@@ -12,7 +12,7 @@ jest.mock('uuid', () => ({
   v4: jest.fn(() => 'generated-query-id'),
 }));
 
-jest.mock('../../../lib/sig_events/validate_esql_query', () => ({
+jest.mock('../../../lib/significant_events/validate_esql_query', () => ({
   validateEsqlQueryForStreamOrThrow: jest.fn(),
 }));
 

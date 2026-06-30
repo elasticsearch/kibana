@@ -7,7 +7,7 @@
 
 import type { TemplateDeserialized } from '../../../../../common';
 import type { DataStreamOptions } from '../../../../../common/types/data_streams';
-import { serializeAsESLifecycle } from '../../../../../common/lib';
+import { serializeAsESLifecycle, resolveLogisticsLifecycle } from '../../../../../common/lib';
 
 export interface TemplateFormWizardData {
   logistics: Omit<TemplateDeserialized, '_kbnMeta' | 'template'>;
@@ -56,6 +56,8 @@ export const buildTemplateFromWizardData = ({
   wizardData: TemplateFormWizardData;
   dataStreamOptions?: DataStreamOptions;
 }): TemplateDeserialized => {
+  const isDataStreamTemplate = Boolean(wizardData.logistics.dataStream);
+
   const outputTemplate = {
     ...wizardData.logistics,
     _kbnMeta: initialTemplate._kbnMeta,
@@ -65,7 +67,13 @@ export const buildTemplateFromWizardData = ({
       settings: wizardData.settings,
       mappings: wizardData.mappings,
       aliases: wizardData.aliases,
-      lifecycle: wizardData.logistics.lifecycle
+      lifecycle: isDataStreamTemplate
+        ? serializeAsESLifecycle(
+            resolveLogisticsLifecycle(wizardData.logistics.lifecycle, {
+              isDataStreamTemplate: true,
+            })
+          )
+        : wizardData.logistics.lifecycle
         ? serializeAsESLifecycle(wizardData.logistics.lifecycle)
         : undefined,
       ...(dataStreamOptions && { data_stream_options: dataStreamOptions }),

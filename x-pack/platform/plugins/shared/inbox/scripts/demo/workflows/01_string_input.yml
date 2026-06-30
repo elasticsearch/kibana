@@ -6,6 +6,29 @@ enabled: true
 triggers:
   - type: manual
 steps:
+  # Soft-interface reasoning: the inbox surfaces the `reasoning` object from
+  # the output of the step that ran immediately before the `waitForInput`.
+  # No engine/mapping change — `data.set` persists its `with` map as the
+  # step output, and the inbox reads `output.reasoning`.
+  - name: analyze
+    type: data.set
+    with:
+      reasoning:
+        summary: "Detected a recurring login failure spike from a single ASN; recommending a temporary block pending operator justification."
+        sections:
+          - title: "DIAGNOSIS"
+            body: "412 failed logins in 5m from ASN 12345, 38x the trailing-7d baseline. No successful auth from the same range."
+          - title: "DECISION RATIONALE"
+            body: "Pattern matches credential-stuffing. A scoped block contains the attempt without affecting legitimate corp egress."
+          - title: "CHANGES MADE"
+            body: "Proposed firewall rule (not yet applied — awaiting approval):"
+            code: |
+              POST /api/firewall/rules
+              {
+                "action": "deny",
+                "source_asn": 12345,
+                "ttl": "24h"
+              }
   - name: ask_reason
     type: waitForInput
     with:

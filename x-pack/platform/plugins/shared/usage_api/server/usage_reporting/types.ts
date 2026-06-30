@@ -9,9 +9,12 @@
  * Usage Record Schema v2 - matches the Serverless metering pipeline schema.
  *
  * Stage 1 (Kibana) populates: id, usage_timestamp, creation_timestamp, usage.type,
- * usage.quantity, usage.period_seconds, usage.metadata, source.id, source.instance_group_id.
+ * usage.quantity, usage.period_seconds, usage.metadata, source.id, source.instance_group_id,
+ * and source.instance_group_type. Stage 1 may also provide source.provider and source.region
+ * when running in ECH, where the Usage API cannot infer them.
  *
- * Stage 2 (Usage API) enriches with: source.account, source.product, source.provider, source.region.
+ * Stage 2 (Usage API) enriches with: source.account, source.product, and (if not already
+ * provided) source.provider and source.region.
  * Stage 3 (Transform function) adds: usage.pli, usage.count.
  */
 export interface UsageRecord {
@@ -45,8 +48,16 @@ export interface UsageSource {
   id: string;
   /** Serverless project ID or stateful deployment ID. */
   instance_group_id: string;
+  /** Describes the identifier in instance_group_id. */
+  instance_group_type?: 'serverless_project' | 'stateful_deployment' | 'cloud_connect';
+  /** Cloud service provider (e.g., `aws`, `gcp`, `azure`). */
+  provider?: string;
+  /** Cloud region (e.g., `us-east-1`, `europe-west1`). */
+  region?: string;
   /** Optional metadata such as product tier. */
   metadata?: {
+    /** Elasticsearch resource ID from the Cloud ID. */
+    cluster_id?: string;
     tier?: string;
   };
 }

@@ -17,6 +17,7 @@ import type {
   KibanaRequest,
   Logger,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { AuditLogger } from '@kbn/security-plugin/server';
 import type { IEventLogClient } from '@kbn/event-log-plugin/server';
 import type { KueryNode } from '@kbn/es-query';
@@ -345,19 +346,19 @@ export class ActionsClient {
       bulkGetOpts
     );
 
-    bulkGetResult.saved_objects.forEach(({ id, error }) => {
-      if (!error && this.context.auditLogger) {
+    bulkGetResult.saved_objects.forEach((so) => {
+      if (!isSavedObjectErrorResult(so) && this.context.auditLogger) {
         this.context.auditLogger.log(
           connectorAuditEvent({
             action: ConnectorAuditAction.GET,
-            savedObject: { type: 'action', id },
+            savedObject: { type: 'action', id: so.id },
           })
         );
       }
     });
 
     for (const action of bulkGetResult.saved_objects) {
-      if (action.error) {
+      if (isSavedObjectErrorResult(action)) {
         throw Boom.badRequest(
           `Failed to load action ${action.id} (${action.error.statusCode}): ${action.error.message}`
         );

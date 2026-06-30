@@ -17,17 +17,24 @@ type ApiKeyFactory = (esClient: ElasticsearchClient, name: string) => Promise<{ 
 export interface ApiKeyFactoryContext {
   isManagedOtlpServiceAvailable: boolean;
   isServerless: boolean;
+  managedOtlpPrwEndpointEnabled: boolean;
 }
 
 export function resolveApiKeyFactory(
   id: ApiEndpointId,
-  { isManagedOtlpServiceAvailable, isServerless }: ApiKeyFactoryContext
+  {
+    isManagedOtlpServiceAvailable,
+    isServerless,
+    managedOtlpPrwEndpointEnabled,
+  }: ApiKeyFactoryContext
 ): ApiKeyFactory {
   switch (id) {
     case ApiEndpointId.OpenTelemetry:
       return isManagedOtlpServiceAvailable ? createManagedOtlpServiceApiKey : createEsOtlpApiKey;
     case ApiEndpointId.Prometheus:
-      return isServerless ? createManagedOtlpServiceApiKey : createPrometheusApiKey;
+      return isServerless || managedOtlpPrwEndpointEnabled
+        ? createManagedOtlpServiceApiKey
+        : createPrometheusApiKey;
     case ApiEndpointId.Elasticsearch:
       return (esClient, name) => createShipperApiKey(esClient, name, true);
   }

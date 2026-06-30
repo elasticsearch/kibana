@@ -205,7 +205,7 @@
     {
       "id": "pci-compliance",
       "name": "PCI DSS v4.0.1 Compliance",
-      "slackChannel": "#security-defend-workflows-tests",
+      "slackChannel": "#compliance-agent-skill",
       "configPath": "x-pack/solutions/security/packages/kbn-evals-suite-pci-compliance/playwright.config.ts",
       "tags": ["security", "pci-compliance"],
       "ciLabels": ["evals:pci-compliance"],

@@ -20,7 +20,8 @@ const NO_ACCESS_USER_ROLE: KibanaRole = {
   kibana: [],
 };
 
-apiTest.describe(
+// Failing: See https://github.com/elastic/kibana/issues/265767
+apiTest.describe.skip(
   'Observability onboarding GET flow progress',
   { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {

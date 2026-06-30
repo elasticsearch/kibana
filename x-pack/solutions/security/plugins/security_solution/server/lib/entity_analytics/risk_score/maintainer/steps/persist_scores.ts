@@ -17,13 +17,15 @@ export const persistScoresToRiskIndex = async ({
   entityType,
   scores,
   logger,
+  refresh,
 }: {
   writer: RiskEngineDataWriter;
   entityType: EntityType;
   scores: EntityRiskScoreRecord[];
   logger: ScopedLogger;
+  refresh?: Parameters<RiskEngineDataWriter['bulk']>[0]['refresh'];
 }): Promise<number> => {
-  const bulkResponse = await writer.bulk({ [entityType]: scores });
+  const bulkResponse = await writer.bulk({ [entityType]: scores, refresh });
   if (bulkResponse.errors.length > 0) {
     logger.warn(
       `risk score bulk write had ${bulkResponse.errors.length} error(s): ${bulkResponse.errors.join(

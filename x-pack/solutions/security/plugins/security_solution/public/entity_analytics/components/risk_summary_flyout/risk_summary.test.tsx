@@ -8,6 +8,9 @@
 import {
   mockHostRiskScoreState,
   mockUserRiskScoreState,
+  mockHostEntityRiskScores,
+  mockHostEntityRiskScoresWithResolution,
+  mockUserEntityRiskScores,
 } from '../../../flyout/entity_details/mocks';
 import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
@@ -19,7 +22,6 @@ import type {
 } from '../../../common/components/visualization_actions/types';
 import type { Query } from '@kbn/es-query';
 import { EntityType } from '../../../../common/search_strategy';
-import type { RiskScoreState } from '../../api/hooks/use_risk_score';
 import {
   EntityDetailsLeftPanelTab,
   RiskScoreLeftPanelSubTab,
@@ -28,39 +30,15 @@ import {
 const mockVisualizationEmbeddable = jest
   .fn()
   .mockReturnValue(<div data-test-subj="visualization-embeddable" />);
-const mockUseRiskScore = jest.fn();
-const mockUseResolutionGroup = jest.fn();
 
 jest.mock('../../../common/components/visualization_actions/visualization_embeddable', () => ({
   VisualizationEmbeddable: (props: VisualizationEmbeddableProps) =>
     mockVisualizationEmbeddable(props),
 }));
 
-jest.mock('../../api/hooks/use_risk_score', () => {
-  const actual = jest.requireActual('../../api/hooks/use_risk_score');
-  return {
-    ...actual,
-    useRiskScore: (params: unknown) => mockUseRiskScore(params),
-  };
-});
-
-jest.mock('../entity_resolution/hooks/use_resolution_group', () => ({
-  useResolutionGroup: (entityId: string) => mockUseResolutionGroup(entityId),
-}));
-
 describe('FlyoutRiskSummary', () => {
   beforeEach(() => {
     mockVisualizationEmbeddable.mockClear();
-    mockUseResolutionGroup.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: false,
-      isError: false,
-    });
-    mockUseRiskScore.mockReturnValue({
-      ...(mockHostRiskScoreState as RiskScoreState<EntityType.host>),
-      data: undefined,
-    });
   });
 
   it('renders risk summary table with context and totals', () => {
@@ -68,6 +46,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -105,6 +84,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -124,6 +104,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={{ ...mockHostRiskScoreState, data: undefined }}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -140,6 +121,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={{ ...mockHostRiskScoreState, data: undefined, loading: true }}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -157,6 +139,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -174,6 +157,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -191,6 +175,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -222,6 +207,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -246,6 +232,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockUserRiskScoreState}
+          entityRiskScores={mockUserEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -270,6 +257,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockUserRiskScoreState}
+          entityRiskScores={mockUserEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -302,6 +290,7 @@ describe('FlyoutRiskSummary', () => {
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScores}
           queryId={'testQuery'}
           openDetailsPanel={openDetailsPanel}
           recalculatingScore={false}
@@ -321,26 +310,11 @@ describe('FlyoutRiskSummary', () => {
 
   it('resolution risk inputs link calls openDetailsPanel with resolution sub-tab', () => {
     const openDetailsPanel = jest.fn();
-    mockUseResolutionGroup.mockReturnValue({
-      data: {
-        target: { entity: { id: 'host:target-entity' } },
-        aliases: [],
-        group_size: 2,
-      },
-      isLoading: false,
-      isFetching: false,
-      isError: false,
-    });
-    mockUseRiskScore.mockReturnValue({
-      ...(mockHostRiskScoreState as RiskScoreState<EntityType.host>),
-      data: mockHostRiskScoreState.data,
-      loading: false,
-    });
-
     const { getByTestId } = render(
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScoresWithResolution}
           queryId={'testQuery'}
           openDetailsPanel={openDetailsPanel}
           recalculatingScore={false}
@@ -360,26 +334,19 @@ describe('FlyoutRiskSummary', () => {
   });
 
   it('does not render resolution risk inputs link when resolution score is loading', () => {
-    mockUseResolutionGroup.mockReturnValue({
-      data: {
-        target: { entity: { id: 'host:target-entity' } },
-        aliases: [],
-        group_size: 2,
-      },
-      isLoading: false,
-      isFetching: false,
-      isError: false,
-    });
-    mockUseRiskScore.mockReturnValue({
-      ...(mockHostRiskScoreState as RiskScoreState<EntityType.host>),
-      data: mockHostRiskScoreState.data,
-      loading: true,
-    });
-
     const { queryByTestId } = render(
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={{
+            base: { ...mockHostRiskScoreState },
+            resolution: {
+              state: { ...mockHostRiskScoreState, loading: true },
+              hasResolutionGroup: true,
+              resolutionTargetEntityId: 'host:target-entity',
+            },
+            refetch: jest.fn(),
+          }}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -394,30 +361,11 @@ describe('FlyoutRiskSummary', () => {
   });
 
   it('renders resolution risk score block when resolution score exists', () => {
-    mockUseResolutionGroup.mockReturnValue({
-      data: {
-        target: {
-          entity: {
-            id: 'host:target-entity',
-          },
-        },
-        aliases: [],
-        group_size: 2,
-      },
-      isLoading: false,
-      isFetching: false,
-      isError: false,
-    });
-    mockUseRiskScore.mockReturnValue({
-      ...(mockHostRiskScoreState as RiskScoreState<EntityType.host>),
-      data: mockHostRiskScoreState.data,
-      loading: false,
-    });
-
     const { getByTestId, getAllByTestId } = render(
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={mockHostEntityRiskScoresWithResolution}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -430,47 +378,24 @@ describe('FlyoutRiskSummary', () => {
 
     expect(getByTestId('resolution-risk-summary-table')).toBeInTheDocument();
     expect(getAllByTestId('visualization-embeddable')).toHaveLength(2);
-    expect(mockUseRiskScore).toHaveBeenCalledWith(
-      expect.objectContaining({
-        filterQuery: expect.objectContaining({
-          bool: expect.objectContaining({
-            filter: expect.arrayContaining([
-              expect.objectContaining({
-                term: expect.objectContaining({
-                  'host.risk.id_value': 'host:target-entity',
-                }),
-              }),
-              expect.objectContaining({
-                term: expect.objectContaining({
-                  'host.risk.score_type': 'resolution',
-                }),
-              }),
-            ]),
-          }),
-        }),
-      })
-    );
   });
 
   it('falls back to prefetchedResolutionRisk when the inner risk-index lookup returns no data', () => {
-    mockUseResolutionGroup.mockReturnValue({
-      data: {
-        target: { entity: { id: 'host:target-entity' } },
-        aliases: [],
-        group_size: 2,
-      },
-      isLoading: false,
-      isFetching: false,
-      isError: false,
-    });
-    // Default mockUseRiskScore returns data: undefined, so the resolution lookup is empty
-    // and the component must rely on the prefetched value.
     const prefetchedResolutionRisk = mockHostRiskScoreState.data?.[0];
 
     const { getByTestId } = render(
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={{
+            base: { ...mockHostRiskScoreState },
+            resolution: {
+              state: { ...mockHostRiskScoreState, data: undefined },
+              hasResolutionGroup: true,
+              resolutionTargetEntityId: 'host:target-entity',
+            },
+            refetch: jest.fn(),
+          }}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -486,21 +411,19 @@ describe('FlyoutRiskSummary', () => {
   });
 
   it('does not render resolution risk block when neither the lookup nor prefetchedResolutionRisk has data', () => {
-    mockUseResolutionGroup.mockReturnValue({
-      data: {
-        target: { entity: { id: 'host:target-entity' } },
-        aliases: [],
-        group_size: 2,
-      },
-      isLoading: false,
-      isFetching: false,
-      isError: false,
-    });
-
     const { queryByTestId } = render(
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={{
+            base: { ...mockHostRiskScoreState },
+            resolution: {
+              state: { ...mockHostRiskScoreState, data: undefined },
+              hasResolutionGroup: true,
+              resolutionTargetEntityId: 'host:target-entity',
+            },
+            refetch: jest.fn(),
+          }}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}
@@ -515,30 +438,19 @@ describe('FlyoutRiskSummary', () => {
   });
 
   it('does not render resolution risk score block for standalone entities', () => {
-    mockUseResolutionGroup.mockReturnValue({
-      data: {
-        target: {
-          entity: {
-            id: 'host:target-entity',
-          },
-        },
-        aliases: [],
-        group_size: 1,
-      },
-      isLoading: false,
-      isFetching: false,
-      isError: false,
-    });
-    mockUseRiskScore.mockReturnValue({
-      ...(mockHostRiskScoreState as RiskScoreState<EntityType.host>),
-      data: mockHostRiskScoreState.data,
-      loading: false,
-    });
-
     const { queryByTestId } = render(
       <TestProviders>
         <FlyoutRiskSummary
           riskScoreData={mockHostRiskScoreState}
+          entityRiskScores={{
+            base: { ...mockHostRiskScoreState },
+            resolution: {
+              state: { ...mockHostRiskScoreState },
+              hasResolutionGroup: false,
+              resolutionTargetEntityId: 'host:target-entity',
+            },
+            refetch: jest.fn(),
+          }}
           queryId={'testQuery'}
           openDetailsPanel={() => {}}
           recalculatingScore={false}

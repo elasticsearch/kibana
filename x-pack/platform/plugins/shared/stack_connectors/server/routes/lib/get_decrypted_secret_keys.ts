@@ -15,6 +15,7 @@ import type {
   StartServicesAccessor,
 } from '@kbn/core/server';
 import { ACTION_SAVED_OBJECT_TYPE } from '@kbn/actions-plugin/server';
+import { CONNECTOR_ID_MAX_LENGTH } from '@kbn/actions-plugin/common';
 import { isBoom } from '@hapi/boom';
 
 import type { PluginStartContract as ActionsPluginStartContract } from '@kbn/actions-plugin/server';
@@ -60,7 +61,7 @@ export const registerSecretKeysRoute = ({
       },
       validate: {
         params: schema.object({
-          id: schema.string(),
+          id: schema.string({ maxLength: CONNECTOR_ID_MAX_LENGTH }),
         }),
       },
       options: {

@@ -110,6 +110,11 @@ export interface DataRetention {
   infiniteDataRetention?: boolean;
   value?: number;
   unit?: string;
+  frozen?: {
+    enabled: boolean;
+    value?: number;
+    unit?: string;
+  };
 }
 
 export interface DataStreamOptions {

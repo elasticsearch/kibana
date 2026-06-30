@@ -103,6 +103,8 @@ function IngestRateChartContent({ definition }: { definition: Streams.all.GetRes
     groupTotalCountByTimestamp: true,
     getCanReadFailureStore: () => (isDraft ? false : canReadFailureStore),
     numDataPoints: STREAMS_HISTOGRAM_NUM_DATA_POINTS,
+    // This chart only reads the histogram, never the Ingestion column, so skip the ingestion request.
+    fetchIngestionDocCounts: false,
   });
 
   const histogramFetch = getStreamHistogram(esqlSource);

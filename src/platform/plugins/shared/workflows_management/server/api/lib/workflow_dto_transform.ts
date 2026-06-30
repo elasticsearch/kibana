@@ -8,6 +8,7 @@
  */
 
 import type { WorkflowDetailDto } from '@kbn/workflows';
+import { pickWorkflowDocumentVersion } from '@kbn/workflows';
 import type { WorkflowPartialDetailDto } from '@kbn/workflows/types/v1';
 
 import type { WorkflowProperties } from '../../storage/workflow_storage';
@@ -41,6 +42,7 @@ export const transformStorageDocumentToWorkflowDto = (
     valid: source.valid,
     createdAt: source.created_at,
     lastUpdatedAt: source.updated_at,
+    ...pickWorkflowDocumentVersion(source),
   };
 };
 
@@ -82,5 +84,8 @@ export const transformStoragePartialToWorkflowDto = (
   if ('valid' in source) dto.valid = source.valid;
   if ('created_at' in source) dto.createdAt = source.created_at;
   if ('updated_at' in source) dto.lastUpdatedAt = source.updated_at;
+  if ('version' in source) {
+    Object.assign(dto, pickWorkflowDocumentVersion(source));
+  }
   return dto;
 };

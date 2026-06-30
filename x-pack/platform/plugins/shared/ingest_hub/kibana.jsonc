@@ -8,7 +8,7 @@
   "plugin": {
     "id": "ingestHub",
     "browser": true,
-    "server": false,
+    "server": true,
     "configPath": ["xpack", "ingestHub"],
     "requiredPlugins": ["fleet"],
     "optionalPlugins": ["spaces", "cloud"],

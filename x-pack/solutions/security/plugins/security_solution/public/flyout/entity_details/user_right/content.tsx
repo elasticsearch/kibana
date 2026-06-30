@@ -7,13 +7,16 @@
 
 import { EuiHorizontalRule } from '@elastic/eui';
 import React from 'react';
+import { useIsExperimentalFeatureEnabled } from '../../../common/hooks/use_experimental_features';
 import type { Entity } from '../../../../common/api/entity_analytics';
+import { useAnomalyOverview } from '../../../entity_analytics/api/hooks/use_anomaly_overview';
 import { ObservedDataSection } from './components/observed_data_section';
 import { useHasEntityResolutionLicense } from '../../../common/hooks/use_has_entity_resolution_license';
 import { EntityHighlightsAccordion } from '../../../entity_analytics/components/entity_details_flyout/components/entity_highlights';
 import { AssetCriticalityAccordion } from '../../../entity_analytics/components/asset_criticality/asset_criticality_selector';
 import { FlyoutRiskSummary } from '../../../entity_analytics/components/risk_summary_flyout/risk_summary';
 import type { RiskScoreState } from '../../../entity_analytics/api/hooks/use_risk_score';
+import type { EntityRiskScoresState } from '../../../entity_analytics/api/hooks/use_entity_risk_scores';
 import { EntityIdentifierFields, EntityType } from '../../../../common/entity_analytics/types';
 import { USER_PANEL_OBSERVED_USER_QUERY_ID, USER_PANEL_RISK_SCORE_QUERY_ID } from '.';
 import type { EntityDetailsPath } from '../shared/components/left_panel/left_panel_header';
@@ -24,6 +27,7 @@ import type { ObservedEntityData } from '../shared/components/observed_entity/ty
 import type { EntityStoreRecord } from '../shared/hooks/use_entity_from_store';
 import { VisualizationsSection } from '../shared/components/right/visualizations_section';
 import { ResolutionSection } from '../../../entity_analytics/components/entity_resolution/resolution_section';
+import { AnomaliesSection } from '../../../entity_analytics/components/anomalies/anomalies_section';
 
 export type ObservedUserData = Omit<ObservedEntityData<UserItem>, 'anomalies'> & {
   entityRecord?: EntityStoreRecord | null;
@@ -34,6 +38,7 @@ interface UserPanelContentProps {
   identityFields: IdentityFields;
   observedUser: ObservedUserData;
   riskScoreState: RiskScoreState<EntityType.user>;
+  entityRiskScores: EntityRiskScoresState<EntityType.user>;
   recalculatingScore: boolean;
   contextID: string;
   scopeId: string;
@@ -52,6 +57,7 @@ export const UserPanelContent = ({
   identityFields,
   observedUser,
   riskScoreState,
+  entityRiskScores,
   recalculatingScore,
   contextID,
   scopeId,
@@ -64,6 +70,13 @@ export const UserPanelContent = ({
   prefetchedResolutionRisk,
 }: UserPanelContentProps) => {
   const hasEntityResolutionLicense = useHasEntityResolutionLicense();
+  const isAnomalyDetailsEnabled = useIsExperimentalFeatureEnabled('entityAnalyticsAnomalyDetails');
+
+  const anomalyOverview = useAnomalyOverview({
+    entityId: entityStoreEntityId ?? '',
+    entityType: EntityType.user,
+    enabled: isAnomalyDetailsEnabled && !!entityStoreEntityId,
+  });
 
   // Extract userName from identityFields for components that need a string
   // Priority: identityFields['user.name'] > identityFields[first key]
@@ -84,6 +97,7 @@ export const UserPanelContent = ({
           <>
             <FlyoutRiskSummary
               riskScoreData={riskScoreState}
+              entityRiskScores={entityRiskScores}
               recalculatingScore={recalculatingScore}
               queryId={USER_PANEL_RISK_SCORE_QUERY_ID}
               openDetailsPanel={openDetailsPanel}
@@ -93,6 +107,19 @@ export const UserPanelContent = ({
               prefetchedResolutionRisk={prefetchedResolutionRisk}
             />
             <EuiHorizontalRule />
+          </>
+        )}
+      {isAnomalyDetailsEnabled &&
+        entityStoreEntityId &&
+        anomalyOverview.data &&
+        anomalyOverview.data.totalAnomaliesCount > 0 && (
+          <>
+            <AnomaliesSection
+              data={anomalyOverview.data}
+              entityId={entityStoreEntityId}
+              isPreviewMode={isPreviewMode}
+              openDetailsPanel={openDetailsPanel}
+            />
           </>
         )}
       {entityStoreEntityId && (

@@ -4,6 +4,15 @@ enabled: true
 triggers:
   - type: manual
 steps:
+  # Soft-interface reasoning (summary + single section).
+  - name: classify_alert
+    type: data.set
+    with:
+      reasoning:
+        summary: "Alert correlates with a sanctioned internal pentest window; likely a false positive but needs analyst confirmation."
+        sections:
+          - title: "CORRELATION"
+            body: "Source host and timing fall inside the change-ticket CHG-2042 pentest authorization."
   - name: ask_disposition
     type: waitForInput
     with:

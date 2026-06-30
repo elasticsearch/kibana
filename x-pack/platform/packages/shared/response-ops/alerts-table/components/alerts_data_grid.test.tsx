@@ -14,7 +14,7 @@ import { AlertsDataGrid } from './alerts_data_grid';
 import type { AlertsDataGridProps, BulkActionsState } from '../types';
 import type { AdditionalContext, RenderContext } from '../types';
 import type { EuiDataGridColumnCellAction } from '@elastic/eui';
-import { EuiButton, EuiButtonIcon, EuiFlexItem } from '@elastic/eui';
+import { EuiButton, EuiButtonIcon, EuiFlexItem, EuiToolTip } from '@elastic/eui';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import { testQueryClientConfig } from '@kbn/alerts-ui-shared/src/common/test_utils/test_query_client_config';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
@@ -241,24 +241,28 @@ describe('AlertsDataGrid', () => {
               renderActionsCell: () => (
                 <>
                   <EuiFlexItem grow={false}>
-                    <EuiButtonIcon
-                      iconType="analyzeEvent"
-                      color="primary"
-                      onClick={() => {}}
-                      size="s"
-                      data-test-subj="testAction"
-                      aria-label="testActionLabel"
-                    />
+                    <EuiToolTip content="testActionLabel" disableScreenReaderOutput>
+                      <EuiButtonIcon
+                        iconType="analyzeEvent"
+                        color="primary"
+                        onClick={() => {}}
+                        size="s"
+                        data-test-subj="testAction"
+                        aria-label="testActionLabel"
+                      />
+                    </EuiToolTip>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
-                    <EuiButtonIcon
-                      iconType="analyzeEvent"
-                      color="primary"
-                      onClick={() => {}}
-                      size="s"
-                      data-test-subj="testAction2"
-                      aria-label="testActionLabel2"
-                    />
+                    <EuiToolTip content="testActionLabel2" disableScreenReaderOutput>
+                      <EuiButtonIcon
+                        iconType="analyzeEvent"
+                        color="primary"
+                        onClick={() => {}}
+                        size="s"
+                        data-test-subj="testAction2"
+                        aria-label="testActionLabel2"
+                      />
+                    </EuiToolTip>
                   </EuiFlexItem>
                 </>
               ),

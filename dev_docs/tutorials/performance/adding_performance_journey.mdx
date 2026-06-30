@@ -5,122 +5,13 @@ title: Adding Single User Performance Journey
 summary: Learn how to add journey and track Kibana performance
 date: 2023-01-13
 tags: ['kibana', 'onboarding', 'setup', 'performance', 'development']
+redirect_url: https://codex.elastic.dev/r/kibana-team/operations/performance/write-single-user-performance-journey
 ---
 
-## Overview
+{/* REDIRECT_NOTICE_START */}
 
-In order to achieve our goal of creating best user experience in Kibana, it is important to keep track on its features performance.
-To make things easier, we introduced performance journeys, that mimics end-user experience with Kibana.
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://codex.elastic.dev/r/kibana-team/operations/performance/write-single-user-performance-journey](https://codex.elastic.dev/r/kibana-team/operations/performance/write-single-user-performance-journey)
+</DocCallOut>
 
-Journey runs a flow of user interactions with Kibana in a browser and collects APM metrics for both server and client-side.
-It is possible to instrument Kibana with [custom performance metrics](https://docs.elastic.dev/kibana-dev-docs/tutorial/performance/adding_custom_performance_metrics),
-that will provide more detailed information about feature performance.
-
-Journeys core is [kbn-journeys](src/platform/packages/private/kbn-journeys/README.mdx) package. It is a function test by design and is powered
-by [Playwright](https://playwright.dev/) end-to-end testing tool.
-
-### Adding a new performance journey
-
-Let's assume we instrumented dashboard with load time metrics and want to track sample data flights dashboard performance.
-Journey supports loading test data with esArchiver or kbnArchiver. Similar to functional tests, it might require to implement custom wait
-for UI rendering to be completed.
-
-Simply create a new file in `x-pack/performance/journeys_e2e` with the following code:
-
-```
-export const journey = new Journey({
-  esArchives: ['x-pack/performance/es_archives/sample_data_flights_many_fields'],
-  kbnArchives: ['x-pack/performance/kbn_archives/flights_no_map_dashboard'],
-})
-
-  .step('Go to Dashboards Page', async ({ page, kbnUrl }) => {
-    await page.goto(kbnUrl.get(`/app/dashboards`));
-    await page.waitForSelector('#dashboardListingHeading');
-  })
-
-  .step('Go to Flights Dashboard', async ({ page, log }) => {
-    await page.click(subj('dashboardListingTitleLink-[Flights]-Global-Flight-Dashboard'));
-    await waitForVisualizations(page, log, 14);
-  });
-```
-
-Alternative to archives is to use Synthtrace ES client:
-
-```
-export const journey = new Journey({
-  synthtrace: {
-    type: 'apm',
-    generator: generateApmData,
-    options: {
-      from: new Date(Date.now() - 1000 * 60 * 15),
-      to: new Date(Date.now() + 1000 * 60 * 15),
-    },
-  },
-})
-```
-
-In oder to get correct and consistent metrics, it is important to design journey properly:
-
-- use archives or synthtrace to generate test data
-- decouple complex scenarios into multiple simple journeys
-- use waiting for page loading / UI component rendering
-- test locally and check if journey is stable.
-- make sure performance metrics are collected on every run.
-
-### Running performance journey locally for troubleshooting purposes
-
-Use the Node script:
-`node scripts/run_performance.js --journey-path x-pack/performance/journeys_e2e/$YOUR_JOURNEY_NAME.ts`
-
-Scripts steps include:
-
-- start Elasticsearch
-- start Kibana and run journey first time (warmup) only APM metrics being reported
-- start Kibana and run journey second time (test): both EBT and APM metrics being reported
-- stop Elasticsearch
-
-You can skip warmup phase for debug purpose by using `--skip-warmup` flag
-
-Since the tests are run on a local machine, there is also realistic throttling applied to the network to
-simulate real life internet connection. This means that all requests have a fixed latency and limited bandwidth.
-
-### Benchmarking performance on CI
-
-In order to keep track on performance metrics stability, journeys are run on main branch with a scheduled interval.
-Bare metal machine is used to produce results as stable and reproducible as possible.
-
-#### Running subset of journeys for the PR
-
-Some code changes might affect the Kibana performance and it might be benefitial to run relevant journeys against the PR
-and compare performance metrics vs. the ones on main branch.
-
-In oder to trigger the build for Kibana PR, you can follow these steps:
-
-- Create a new kibana-single-user-performance [build](https://buildkite.com/elastic/kibana-single-user-performance#new)
-- Provide the following arguments:
-  - Branch: `refs/pull/<PR_number>/head`
-  - Under Options, set the environment variable: `JOURNEYS_GROUP=<group_name>`
-
-Currently supported journey groups:
-
-- kibanaStartAndLoad
-- crud
-- dashboard
-- discover
-- maps
-- ml
-
-#### Machine specifications
-
-All benchmarks are run on bare-metal machines with the [following specifications](https://www.hetzner.com/dedicated-rootserver/ex100):
-
-CPU: Intel® Core™ i9-9900K 8 cores
-RAM: 128 GB
-SSD: 1.92 TB Data center Gen4 NVMe
-
-#### Track performance results
-
-APM metrics are reported to [kibana-ops-e2e-perf](https://kibana-ops-e2e-perf.kb.us-central1.gcp.cloud.es.io/) cluster.
-You can filter transactions using labels, e.g. `labels.journeyName : "flight_dashboard"`
-
-Custom metrics reported with EBT are available in [Telemetry Staging](https://telemetry-v2-staging.elastic.dev/) cluster, `kibana-performance` space.
+{/* REDIRECT_NOTICE_END */}

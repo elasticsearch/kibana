@@ -12,26 +12,43 @@
  */
 export const ruleOverviewQueryKeys = {
   all: ['alerting-v2', 'rule-overview'] as const,
-  topNSeries: (ruleId: string, gteMs: number, lteMs: number) =>
-    [...ruleOverviewQueryKeys.all, 'top-n-series', ruleId, gteMs, lteMs] as const,
-  ruleEvents: (
+  topNSeries: (ruleId: string, windowStartMs: number, windowEndMs: number) =>
+    [...ruleOverviewQueryKeys.all, 'top-n-series', ruleId, windowStartMs, windowEndMs] as const,
+  episodeSelection: (
     ruleId: string,
-    gteMs: number,
-    lteMs: number,
-    pageSize: number,
+    windowStartMs: number,
+    windowEndMs: number,
+    perLaneLimit: number,
     groupHashes: readonly string[]
   ) =>
     [
       ...ruleOverviewQueryKeys.all,
-      'rule-events',
+      'episode-selection',
       ruleId,
-      gteMs,
-      lteMs,
-      pageSize,
+      windowStartMs,
+      windowEndMs,
+      perLaneLimit,
       [...groupHashes].sort(),
     ] as const,
-  timelineSummary: (ruleId: string, gteMs: number, lteMs: number) =>
-    [...ruleOverviewQueryKeys.all, 'timeline-summary', ruleId, gteMs, lteMs] as const,
+  timelineSummary: (ruleId: string, windowStartMs: number, windowEndMs: number) =>
+    [...ruleOverviewQueryKeys.all, 'timeline-summary', ruleId, windowStartMs, windowEndMs] as const,
+  episodePhases: (
+    ruleId: string,
+    windowStartMs: number,
+    windowEndMs: number,
+    episodeIds: readonly string[]
+  ) =>
+    [
+      ...ruleOverviewQueryKeys.all,
+      'episode-phases',
+      ruleId,
+      windowStartMs,
+      windowEndMs,
+      [...episodeIds].sort(),
+    ] as const,
+  // Untimed: an episode's start is window-independent, so the cache survives time-range changes.
+  episodeStarts: (ruleId: string, episodeIds: readonly string[]) =>
+    [...ruleOverviewQueryKeys.all, 'episode-starts', ruleId, [...episodeIds].sort()] as const,
   seriesGroupingValues: (
     ruleId: string,
     groupHashes: readonly string[],

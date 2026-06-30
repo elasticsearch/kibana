@@ -1,5 +1,5 @@
 {
-  "sha1": "be1a49062fa72ee9380ec9ad2f9ea6c40f384027",
+  "sha1": "65a34fc635241d5ea447ab3a874bc952c2b91189",
   "tests": [
     {
       "id": "a3a9f820a79c452-b8b452a1ef0f11e",
@@ -10,7 +10,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 62,
+        "line": 65,
         "column": 9
       }
     },
@@ -23,7 +23,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 139,
+        "line": 140,
         "column": 9
       }
     },
@@ -36,7 +36,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 204,
+        "line": 205,
         "column": 9
       }
     },
@@ -49,7 +49,7 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 267,
+        "line": 269,
         "column": 9
       }
     },
@@ -62,59 +62,59 @@
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 281,
+        "line": 283,
         "column": 9
       }
     },
     {
-      "id": "a3a9f820a79c452-6c141dc0d4a74ef",
-      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: Apply without typing anything disables Next",
+      "id": "a3a9f820a79c452-43c1efc18e6e617",
+      "title": "ComposeDiscoverFlyout — create and edit flows alert condition validation: Apply without typing anything shows the empty callout and disables Next",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 312,
+        "line": 313,
         "column": 9
       }
     },
     {
-      "id": "a3a9f820a79c452-5767614bd465dd1",
-      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: base-only query shows callout and disables Next",
+      "id": "a3a9f820a79c452-69d20993f3d1ca1",
+      "title": "ComposeDiscoverFlyout — create and edit flows alert condition validation: base-only query shows the no-alert-condition callout and disables Next",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 331,
+        "line": 334,
         "column": 9
       }
     },
     {
-      "id": "a3a9f820a79c452-0bc3e3ef257d7ca",
-      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: no callout when both base and alert condition are provided",
+      "id": "a3a9f820a79c452-1ce1898f97e3c19",
+      "title": "ComposeDiscoverFlyout — create and edit flows alert condition validation: no callout when the query splits into base + alert condition",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 357,
+        "line": 363,
         "column": 9
       }
     },
     {
-      "id": "a3a9f820a79c452-c9d354100b88881",
-      "title": "ComposeDiscoverFlyout — create and edit flows breach query validation: missing breach query keeps user on Alert Condition step",
+      "id": "a3a9f820a79c452-d40f526988a4922",
+      "title": "ComposeDiscoverFlyout — create and edit flows alert condition validation: a base-only query keeps the user on the Alert Condition step",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic"
       ],
       "location": {
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/compose_discover_flyout.spec.ts",
-        "line": 379,
+        "line": 385,
         "column": 9
       }
     },
@@ -183,6 +183,227 @@
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/execution_history_smoke.spec.ts",
         "line": 21,
         "column": 7
+      }
+    },
+    {
+      "id": "7f96a53ae822170-21f687a5b4985b5",
+      "title": "Management pages - required privileges user with full access can view every management page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/management_required_privileges.spec.ts",
+        "line": 171,
+        "column": 7
+      }
+    },
+    {
+      "id": "7f96a53ae822170-b7f047f4a779368",
+      "title": "Management pages - required privileges user with read-only access can view every management page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/management_required_privileges.spec.ts",
+        "line": 179,
+        "column": 7
+      }
+    },
+    {
+      "id": "7f96a53ae822170-db59bb93282ac5a",
+      "title": "Management pages - required privileges user without alerting_v2 access sees the interstitial on every page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/management_required_privileges.spec.ts",
+        "line": 187,
+        "column": 7
+      }
+    },
+    {
+      "id": "7f96a53ae822170-8801b6e0b64b580",
+      "title": "Management pages - required privileges user with rules read-only role can only view the Rules page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/management_required_privileges.spec.ts",
+        "line": 195,
+        "column": 7
+      }
+    },
+    {
+      "id": "7f96a53ae822170-d3a2856980af75e",
+      "title": "Management pages - required privileges user with alerts read-only role can only view the Alerts page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/management_required_privileges.spec.ts",
+        "line": 203,
+        "column": 7
+      }
+    },
+    {
+      "id": "7f96a53ae822170-46516218f3583d8",
+      "title": "Management pages - required privileges user with action policies read-only role can only view the Action Policies page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/management_required_privileges.spec.ts",
+        "line": 211,
+        "column": 7
+      }
+    },
+    {
+      "id": "7f96a53ae822170-870a9a777319880",
+      "title": "Management pages - required privileges user with execution history read-only role can only view the Execution History page",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-search",
+        "@cloud-stateful-search",
+        "@local-stateful-observability_complete",
+        "@cloud-stateful-observability_complete",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/management_required_privileges.spec.ts",
+        "line": 219,
+        "column": 7
+      }
+    },
+    {
+      "id": "5fab9ce5af52ac7-21909d01f6a3e51",
+      "title": "Rule Builder — threshold create and edit flows create flow: configure threshold builder and submit",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/rule_builder_threshold.spec.ts",
+        "line": 59,
+        "column": 9
+      }
+    },
+    {
+      "id": "5fab9ce5af52ac7-241c0182ad4356a",
+      "title": "Rule Builder — threshold create and edit flows edit flow: open builder-created rule and modify",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/rule_builder_threshold.spec.ts",
+        "line": 130,
+        "column": 9
+      }
+    },
+    {
+      "id": "5fab9ce5af52ac7-cb0291d735f9ca6",
+      "title": "Rule Builder — threshold create and edit flows permissions: viewer role cannot access create flow",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/ui/tests/rule_builder_threshold.spec.ts",
+        "line": 189,
+        "column": 9
       }
     },
     {

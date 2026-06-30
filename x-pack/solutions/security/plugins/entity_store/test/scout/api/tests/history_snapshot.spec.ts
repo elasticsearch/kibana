@@ -7,6 +7,7 @@
 
 import { apiTest } from '@kbn/scout-security';
 import { expect } from '@kbn/scout-security/api';
+import { hashEuid } from '../../../../common/domain/euid';
 import {
   PUBLIC_HEADERS,
   INTERNAL_HEADERS,
@@ -72,6 +73,25 @@ apiTest.describe('Entity Store History Snapshot', { tag: ENTITY_STORE_TAGS }, ()
         '2026-01-20T11:00:00Z',
         '2026-01-20T13:00:00Z'
       );
+
+      // Behaviors are managed fields — not populated by log extraction.
+      // Seed them directly to simulate the detection engine writing behaviors.
+      await esClient.update({
+        index: LATEST_ALIAS,
+        id: hashEuid('host:host-123'),
+        refresh: 'wait_for',
+        doc: {
+          entity: { behaviors: { rule_names: ['rule-a', 'rule-b'], anomaly_job_ids: ['job-1'] } },
+        },
+      });
+      await esClient.update({
+        index: LATEST_ALIAS,
+        id: hashEuid('host:server-01'),
+        refresh: 'wait_for',
+        doc: {
+          entity: { behaviors: { rule_names: ['rule-c'], anomaly_job_ids: ['job-2', 'job-3'] } },
+        },
+      });
 
       const snapshotResponse = await apiClient.post(
         ENTITY_STORE_ROUTES.internal.FORCE_HISTORY_SNAPSHOT,

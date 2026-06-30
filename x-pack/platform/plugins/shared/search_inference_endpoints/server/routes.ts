@@ -14,6 +14,7 @@ import { fetchInferenceEndpoints } from './lib/fetch_inference_endpoints';
 import { defineInferenceSettingsRoutes } from './routes/inference_settings';
 import { defineInferenceFeaturesRoutes } from './routes/inference_features';
 import { defineInferenceConnectorsRoute } from './routes/inference_connectors';
+import { defineRegionPolicyRoutes } from './routes/region_policy';
 import type { InferenceFeatureRegistry } from './inference_feature_registry';
 import type { ResolvedInferenceEndpoints } from './types';
 import { APIRoutes } from './types';
@@ -37,6 +38,7 @@ export function defineRoutes({
 }) {
   defineInferenceSettingsRoutes({ logger, router, featureRegistry, getConnectorById });
   defineInferenceFeaturesRoutes({ logger, router, featureRegistry });
+  defineRegionPolicyRoutes({ logger, router });
   defineInferenceConnectorsRoute({
     logger,
     router,

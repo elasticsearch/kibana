@@ -1,7 +1,7 @@
 {
   "type": "plugin",
   "id": "@kbn/agent-builder-dashboards-plugin",
-  "owner": "@elastic/appex-ai-infra",
+  "owner": "@elastic/kibana-presentation",
   "group": "platform",
   "visibility": "shared",
   "plugin": {

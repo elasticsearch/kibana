@@ -135,7 +135,6 @@ export interface StreamCommonResponseFields {
   description?: string;
   dashboards?: string[];
   rules?: string[];
-  queries?: unknown[];
 }
 
 export interface StreamsIngestGetResponse {

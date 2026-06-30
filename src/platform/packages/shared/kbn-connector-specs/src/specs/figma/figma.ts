@@ -32,7 +32,6 @@ export const FigmaConnector: ConnectorSpec = {
 
   auth: {
     types: [
-      { type: 'api_key_header', defaults: { headerField: 'X-Figma-Token' } },
       {
         type: 'oauth_authorization_code',
         overrides: {
@@ -48,6 +47,7 @@ export const FigmaConnector: ConnectorSpec = {
           scope: 'current_user:read file_content:read projects:read',
         },
       },
+      { type: 'api_key_header', defaults: { headerField: 'X-Figma-Token' } },
     ],
   },
 

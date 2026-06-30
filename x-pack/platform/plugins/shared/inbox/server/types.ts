@@ -46,7 +46,10 @@ export type InboxRouter = IRouter;
 
 export type {
   InboxActionProvider,
+  InboxActionProviderFacetBucket,
+  InboxActionProviderFacetsResult,
   InboxActionProviderListParams,
+  InboxActionProviderListProcessedParams,
   InboxActionProviderListResult,
   InboxRequestContext,
 } from './services/inbox_action_provider';

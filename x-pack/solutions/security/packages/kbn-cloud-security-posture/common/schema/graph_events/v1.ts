@@ -6,7 +6,13 @@
  */
 
 import { schema } from '@kbn/config-schema';
-import { INDEX_PATTERN_REGEX } from '../graph/v1';
+import {
+  COUNTRY_CODES_MAX_SIZE,
+  DETAIL_PAGE_SIZE_MAX,
+  INDEX_PATTERN_REGEX,
+  INDEX_PATTERNS_MAX_SIZE,
+  IPS_MAX_SIZE,
+} from '../graph/v1';
 
 // ============================================
 // SHARED AUXILIARY SCHEMAS (not exported)
@@ -30,14 +36,14 @@ export const eventOrAlertItemSchema = schema.object({
   action: schema.maybe(schema.string()),
   actor: schema.maybe(actorOrTargetSchema),
   target: schema.maybe(actorOrTargetSchema),
-  ips: schema.maybe(schema.arrayOf(schema.string())),
-  countryCodes: schema.maybe(schema.arrayOf(schema.string())),
+  ips: schema.maybe(schema.arrayOf(schema.string(), { maxSize: IPS_MAX_SIZE })),
+  countryCodes: schema.maybe(schema.arrayOf(schema.string(), { maxSize: COUNTRY_CODES_MAX_SIZE })),
 });
 
 export const eventsRequestSchema = schema.object({
   page: schema.object({
     index: schema.number({ min: 0 }),
-    size: schema.number({ min: 1, max: 100 }),
+    size: schema.number({ min: 1, max: DETAIL_PAGE_SIZE_MAX }),
   }),
   query: schema.object({
     eventIds: schema.arrayOf(schema.string(), { minSize: 1, maxSize: 5000 }),
@@ -53,7 +59,7 @@ export const eventsRequestSchema = schema.object({
             }
           },
         }),
-        { minSize: 1 }
+        { minSize: 1, maxSize: INDEX_PATTERNS_MAX_SIZE }
       )
     ),
   }),
@@ -61,6 +67,6 @@ export const eventsRequestSchema = schema.object({
 
 export const eventsResponseSchema = () =>
   schema.object({
-    events: schema.arrayOf(eventOrAlertItemSchema),
+    events: schema.arrayOf(eventOrAlertItemSchema, { maxSize: DETAIL_PAGE_SIZE_MAX }),
     totalRecords: schema.number(),
   });

@@ -78,7 +78,9 @@ setup(core, { agentContextLayer }) {
 
 ## Feature gating
 
-SML functionality is gated behind the `agentBuilder:experimentalFeatures` UI setting. The search route, crawler tasks, and Agent Builder SML tools all check this flag.
+SML functionality is gated behind the `contextEngine:enabled` UI setting (the Context Engine feature flag, registered by this plugin). Everything owned by this plugin — the HTTP routes (`withSmlFeatureFlag`), the crawler tasks, and the workflow index step — checks `contextEngine:enabled` alone.
+
+SML surfaces that live in the Agent Builder family of plugins additionally require `agentBuilder:experimentalFeatures`, so they are gated on **both** flags: the `sml_search` / `sml_attach` tools, the internal `_attach` route, and the `@` command menu (in `agent_builder`), plus the connector lifecycle handler that crawls connectors into SML (in `agent_builder_platform`). This keeps SML behind Agent Builder's own experimental gate even if the Context Engine flag graduates independently.
 
 ## Index naming
 

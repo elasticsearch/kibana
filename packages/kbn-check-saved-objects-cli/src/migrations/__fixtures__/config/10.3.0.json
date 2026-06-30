@@ -1,0 +1,20 @@
+{
+  "10.2.0": [
+    {
+      "buildNum": 9007199254740991
+    },
+    {
+      "buildNum": 9007199254740991,
+      "timepicker:quickRanges": "[\n  {\n    \"from\": \"now-1h\",\n    \"to\": \"now\",\n    \"display\": \"Recent hour\"\n  },\n  {\n    \"from\": \"now-3h\",\n    \"to\": \"now\",\n    \"display\": \"Hot 3h window\"\n  },\n  {\n    \"from\": \"now-1d/d\",\n    \"to\": \"now-1d/d\",\n    \"display\": \"Yesterday\"\n  },\n  {\n    \"from\": \"now/w\",\n    \"to\": \"now\",\n    \"display\": \"This week until now\"\n  },\n  {\n    \"from\": \"now/M\",\n    \"to\": \"now/M\",\n    \"display\": \"This month\"\n  },\n  {\n    \"from\": \"now/M\",\n    \"to\": \"now\",\n    \"display\": \"This month until now\"\n  },\n  {\n    \"from\": \"now/y\",\n    \"to\": \"now/y\",\n    \"display\": \"This year\"\n  },\n  {\n    \"from\": \"now/y\",\n    \"to\": \"now\",\n    \"display\": \"This year until now\"\n  },\n  {\n    \"from\": \"now-12h\",\n    \"to\": \"now\",\n    \"display\": \"Last 12 hours\"\n  },\n  {\n    \"from\": \"now-3d/d\",\n    \"to\": \"now\",\n    \"display\": \"Last 3 days\"\n  }\n]"
+    }
+  ],
+  "10.3.0": [
+    {
+      "buildNum": 9007199254740991
+    },
+    {
+      "buildNum": 9007199254740991,
+      "timepicker:quickRanges": "[\n  {\n    \"from\": \"now-1h\",\n    \"to\": \"now\",\n    \"display\": \"Recent hour\"\n  },\n  {\n    \"from\": \"now-3h\",\n    \"to\": \"now\",\n    \"display\": \"Hot 3h window\"\n  },\n  {\n    \"from\": \"now-1d/d\",\n    \"to\": \"now-1d/d\",\n    \"display\": \"Yesterday\"\n  },\n  {\n    \"from\": \"now/w\",\n    \"to\": \"now\",\n    \"display\": \"This week until now\"\n  },\n  {\n    \"from\": \"now/M\",\n    \"to\": \"now/M\",\n    \"display\": \"This month\"\n  },\n  {\n    \"from\": \"now/M\",\n    \"to\": \"now\",\n    \"display\": \"This month until now\"\n  },\n  {\n    \"from\": \"now/y\",\n    \"to\": \"now/y\",\n    \"display\": \"This year\"\n  },\n  {\n    \"from\": \"now/y\",\n    \"to\": \"now\",\n    \"display\": \"This year until now\"\n  },\n  {\n    \"from\": \"now-12h\",\n    \"to\": \"now\",\n    \"display\": \"Last 12 hours\"\n  },\n  {\n    \"from\": \"now-3d/d\",\n    \"to\": \"now\",\n    \"display\": \"Last 3 days\"\n  }\n]"
+    }
+  ]
+}

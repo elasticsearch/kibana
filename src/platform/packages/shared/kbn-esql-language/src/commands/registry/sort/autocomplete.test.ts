@@ -129,6 +129,17 @@ describe('SORT Autocomplete', () => {
         'NULLS LAST',
         ...stringOperatorSuggestions,
       ]);
+
+      await sortExpectSuggestions('from a | sort (keywordField) ', [
+        '\n',
+        ', ',
+        '| ',
+        'ASC',
+        'DESC',
+        'NULLS FIRST',
+        'NULLS LAST',
+        ...stringOperatorSuggestions,
+      ]);
     });
 
     it('suggests within functions', async () => {

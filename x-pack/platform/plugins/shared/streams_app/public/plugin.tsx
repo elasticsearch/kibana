@@ -38,7 +38,7 @@ import {
   createDiscoverFlyoutStreamProcessingLink,
 } from './discover_features';
 import { StreamsTelemetryService } from './telemetry/service';
-import { registerSignificantEventAttachment } from './components/sig_events/significant_event_attachment/significant_event_attachment';
+import { registerSignificantEventAttachment } from './components/significant_events/significant_event_attachment/significant_event_attachment';
 import { FocusedSignificantEventService } from './services/significant_events/focused_significant_event_service';
 import { StreamsAppLocatorDefinition } from '../common/locators';
 

@@ -18,6 +18,7 @@ export {
   type AliasSearchSource,
   type IndexSearchSource,
   type DataStreamSearchSource,
+  type DatasetSearchSource,
   type EsSearchSource,
   type ListSourcesResponse,
 } from './list_search_sources';

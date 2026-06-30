@@ -17,6 +17,7 @@ import {
   type RuleResponse,
   type PolicyExecutionOutcome,
   type PolicyExecutionOutcomeFilter,
+  type SearchMatchCounts,
 } from '@kbn/alerting-v2-schemas';
 import { ActionPolicyClient } from '../action_policy_client';
 import { RulesClient } from '../rules_client';
@@ -27,7 +28,9 @@ import {
   LoggerServiceToken,
   type LoggerServiceContract,
 } from '../services/logger_service/logger_service';
+import { ALERTING_V2_LOG_CODES, type AlertingV2LogCode } from '../errors/error_codes';
 import type { AlertingServerStartDependencies } from '../../types';
+import type { ResolvedSearchIds } from './denormalize_event';
 import { collectIdsFromEvents, denormalizeEvent, type NameMaps } from './denormalize_event';
 
 const TIME_WINDOW_HOURS = 24;
@@ -50,12 +53,6 @@ export interface ListExecutionHistoryParams {
   outcome?: PolicyExecutionOutcomeFilter;
 }
 
-export interface SearchMatchCounts {
-  policies: number;
-  rules: number;
-  cap: number;
-}
-
 export interface ListExecutionHistoryResult {
   items: PolicyExecutionHistoryItem[];
   page: number;
@@ -73,13 +70,6 @@ export interface CountNewEventsSinceParams {
 
 export interface CountNewEventsSinceResult {
   count: number;
-}
-
-interface ResolvedSearchIds {
-  policyIds: string[];
-  ruleIds: string[];
-  hasMatches: boolean;
-  matches: SearchMatchCounts | null;
 }
 
 @injectable()
@@ -104,33 +94,35 @@ export class ActionPolicyExecutionHistoryClient {
   }: ListExecutionHistoryParams): Promise<ListExecutionHistoryResult> {
     const startDate = new Date(Date.now() - TIME_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
     const spaceId = this.spaces.spacesService.getSpaceId(request);
+    const searchIsActive = search !== undefined && search.trim() !== '';
 
-    const searchIds = await this.resolveSearchIds(search);
+    const matchingSearchIds = await this.resolveSearchIds(search);
 
-    if (search !== undefined && !searchIds.hasMatches) {
-      return { items: [], page, perPage, totalEvents: 0, searchMatches: searchIds.matches };
+    if (searchIsActive && !matchingSearchIds.hasMatches) {
+      return { items: [], page, perPage, totalEvents: 0, searchMatches: matchingSearchIds.matches };
     }
 
     const result = await this.eventLogService.findActionPolicyExecutionEvents({
-      request,
       spaceId,
       startDate,
       page,
       perPage,
       outcome: toOutcomeForService(outcome),
-      policyIds: searchIds.policyIds,
-      ruleIds: searchIds.ruleIds,
+      policyIds: matchingSearchIds.policyIds,
+      ruleIds: matchingSearchIds.ruleIds,
     });
 
     const nameMaps = await this.resolveNames(result.events, spaceId);
-    const items = result.events.flatMap((event) => denormalizeEvent(event, nameMaps));
+    const items = result.events.flatMap((event) =>
+      denormalizeEvent(event, nameMaps, searchIsActive ? matchingSearchIds : undefined)
+    );
 
     return {
       items,
       page: result.page,
       perPage: result.perPage,
       totalEvents: result.total,
-      searchMatches: searchIds.matches,
+      searchMatches: matchingSearchIds.matches,
     };
   }
 
@@ -148,7 +140,6 @@ export class ActionPolicyExecutionHistoryClient {
     }
 
     return this.eventLogService.countActionPolicyExecutionEventsSince({
-      request,
       spaceId,
       since,
       outcome: toOutcomeForService(outcome),
@@ -167,9 +158,12 @@ export class ActionPolicyExecutionHistoryClient {
 
     const policies = this.unwrapFindResult(
       policiesRes,
-      'EXECUTION_HISTORY_SEARCH_POLICY_LOOKUP_FAILED'
+      ALERTING_V2_LOG_CODES.EXECUTION_HISTORY_SEARCH_POLICY_LOOKUP_FAILED
     );
-    const rules = this.unwrapFindResult(rulesRes, 'EXECUTION_HISTORY_SEARCH_RULE_LOOKUP_FAILED');
+    const rules = this.unwrapFindResult(
+      rulesRes,
+      ALERTING_V2_LOG_CODES.EXECUTION_HISTORY_SEARCH_RULE_LOOKUP_FAILED
+    );
 
     const policyIds = new Set<string>(policies.items.map((p) => p.id));
     const ruleIds = new Set<string>(rules.items.map((r) => r.id));
@@ -196,9 +190,18 @@ export class ActionPolicyExecutionHistoryClient {
       this.workflowsManagement.getWorkflowsByIds(workflowIds, spaceId),
     ]);
 
-    const policies = this.unwrapArray(policiesRes, 'EXECUTION_HISTORY_POLICY_LOOKUP_FAILED');
-    const rules = this.unwrapArray(rulesRes, 'EXECUTION_HISTORY_RULE_LOOKUP_FAILED');
-    const workflows = this.unwrapArray(workflowsRes, 'EXECUTION_HISTORY_WORKFLOW_LOOKUP_FAILED');
+    const policies = this.unwrapArray(
+      policiesRes,
+      ALERTING_V2_LOG_CODES.EXECUTION_HISTORY_POLICY_LOOKUP_FAILED
+    );
+    const rules = this.unwrapArray(
+      rulesRes,
+      ALERTING_V2_LOG_CODES.EXECUTION_HISTORY_RULE_LOOKUP_FAILED
+    );
+    const workflows = this.unwrapArray(
+      workflowsRes,
+      ALERTING_V2_LOG_CODES.EXECUTION_HISTORY_WORKFLOW_LOOKUP_FAILED
+    );
 
     return {
       policyNames: new Map(policies.map((p) => [p.id, p.name])),
@@ -207,7 +210,7 @@ export class ActionPolicyExecutionHistoryClient {
     };
   }
 
-  private unwrapArray<T>(result: PromiseSettledResult<T[]>, code: string): T[] {
+  private unwrapArray<T>(result: PromiseSettledResult<T[]>, code: AlertingV2LogCode): T[] {
     if (result.status === 'fulfilled') return result.value;
     this.logFailure(result.reason, code);
     return [];
@@ -234,14 +237,14 @@ export class ActionPolicyExecutionHistoryClient {
 
   private unwrapFindResult<T>(
     result: PromiseSettledResult<{ items: T[]; total: number }>,
-    code: string
+    code: AlertingV2LogCode
   ): { items: T[]; total: number } {
     if (result.status === 'fulfilled') return result.value;
     this.logFailure(result.reason, code);
     return { items: [], total: 0 };
   }
 
-  private logFailure(reason: unknown, code: string): void {
+  private logFailure(reason: unknown, code: AlertingV2LogCode): void {
     const error = reason instanceof Error ? reason : new Error(String(reason));
     this.logger.error({ error, code });
   }

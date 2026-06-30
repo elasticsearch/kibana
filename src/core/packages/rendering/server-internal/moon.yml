@@ -54,6 +54,8 @@ dependsOn:
   - '@kbn/core-feature-flags-server'
   - '@kbn/core-user-storage-server'
   - '@kbn/core-user-storage-server-mocks'
+  - '@kbn/core-saved-objects-server'
+  - '@kbn/logging'
   - '@kbn/repo-info'
 tags:
   - shared-server

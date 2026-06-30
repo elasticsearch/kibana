@@ -187,6 +187,11 @@ export interface CloudSetup extends CloudBasicUrls {
    */
   csp?: string;
   /**
+   * The cloud region identifier (e.g., `us-east-1`, `europe-west1`, `eastus2`).
+   * Provider-specific region name without the CSP prefix.
+   */
+  region?: string;
+  /**
    * Method to retrieve privileged URLs for the Cloud plugin.
    */
   getPrivilegedUrls: () => Promise<CloudPrivilegedUrls>;

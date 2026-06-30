@@ -20,6 +20,7 @@ export type {
   PackagePolicyInputStream,
   NewPackagePolicy,
   UpdatePackagePolicy,
+  UpdatePackagePolicyWithId,
   DryRunPackagePolicy,
   FullAgentPolicyInput,
   FullAgentPolicy,

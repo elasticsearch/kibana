@@ -37,3 +37,13 @@ export const mockRiskScoreState = {
   loading: false,
   error: undefined,
 };
+
+export const mockEntityRiskScores = {
+  base: { ...mockRiskScoreState, data: [] },
+  resolution: {
+    state: { ...mockRiskScoreState, data: undefined },
+    hasResolutionGroup: false,
+    resolutionTargetEntityId: undefined,
+  },
+  refetch: () => {},
+};

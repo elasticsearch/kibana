@@ -15,6 +15,15 @@ import type { ProcessReportsParams } from './process_reports_types';
 import { createFailureIssue, updateFailureIssue } from './report_failure';
 import { reportFailuresToEs } from './report_failures_to_es';
 
+// Sidecar file written next to the Scout HTML reports so `generateScoutTestFailureArtifacts`
+// can pick up the GitHub issue link and failure count without re-parsing the HTML report.
+export const SCOUT_GITHUB_ISSUES_FILENAME = 'github-issues.json';
+
+export interface ScoutGithubIssueDetails {
+  githubIssue: string;
+  failureCount: number;
+}
+
 export const updateScoutHtmlReport = ({
   log,
   reportDir,
@@ -95,6 +104,16 @@ export async function processScoutReports(
     }
 
     const reportDir = Path.dirname(reportPath);
+    const githubIssues: Record<string, ScoutGithubIssueDetails> = {};
+
+    const recordGithubIssue = (failure: ScoutTestFailureExtended) => {
+      if (failure.githubIssue) {
+        githubIssues[failure.id] = {
+          githubIssue: failure.githubIssue,
+          failureCount: failure.failureCount ?? 0,
+        };
+      }
+    };
 
     for (const failure of failures) {
       if (failure.likelyIrrelevant) {
@@ -120,6 +139,7 @@ export async function processScoutReports(
           log.info(`Updated existing Scout issue: ${url} (fail count: ${newCount})`);
         }
         updateScoutHtmlReport({ log, reportDir, failure, reportUpdate });
+        recordGithubIssue(failure);
         continue;
       }
 
@@ -138,6 +158,15 @@ export async function processScoutReports(
       }
       failure.failureCount = updateGithub ? 1 : 0;
       updateScoutHtmlReport({ log, reportDir, failure, reportUpdate });
+      recordGithubIssue(failure);
+    }
+
+    if (Object.keys(githubIssues).length > 0) {
+      fs.writeFileSync(
+        Path.join(reportDir, SCOUT_GITHUB_ISSUES_FILENAME),
+        JSON.stringify(githubIssues, null, 2),
+        'utf-8'
+      );
     }
   }
 }

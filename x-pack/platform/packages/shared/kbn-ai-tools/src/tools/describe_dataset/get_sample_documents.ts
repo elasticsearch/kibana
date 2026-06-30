@@ -17,6 +17,10 @@ import type { ElasticsearchClient } from '@kbn/core/server';
 import type { ESQLSearchResponse } from '@kbn/es-types';
 import { kqlQuery, dateRangeQuery } from '@kbn/es-query';
 import { castArray } from 'lodash';
+import {
+  parseEsqlSourceDocuments,
+  getEsqlDocumentId,
+} from '../../utils/parse_esql_source_documents';
 
 const SAMPLE_PROBABILITY_FACTOR = 3;
 const SAMPLE_LIMIT_FACTOR = 10;
@@ -260,25 +264,11 @@ function buildWhereExpression({
 }
 
 function parseHits(response: ESQLSearchResponse): Array<SearchHit<Record<string, unknown>>> {
-  const sourceIndex = response.columns.findIndex((column) => column.name === '_source');
-  const idIndex = response.columns.findIndex((column) => column.name === '_id');
-  if (sourceIndex === -1 || idIndex === -1) {
-    return [];
-  }
-
-  return response.values.flatMap((row) => {
-    const id = row[idIndex];
-    if (typeof id !== 'string') {
-      return [];
-    }
-    return [
-      {
-        _index: '',
-        _id: id,
-        _source: (row[sourceIndex] as Record<string, unknown> | null) ?? {},
-      },
-    ];
-  });
+  return parseEsqlSourceDocuments(response).map((doc) => ({
+    _index: '',
+    _id: getEsqlDocumentId(doc),
+    _source: doc.source,
+  }));
 }
 
 function getCount(response: ESQLSearchResponse): number {

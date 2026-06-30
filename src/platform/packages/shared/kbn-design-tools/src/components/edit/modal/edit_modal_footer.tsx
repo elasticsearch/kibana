@@ -15,6 +15,7 @@ import {
   EuiButton,
   EuiButtonEmpty,
   EuiButtonIcon,
+  EuiToolTip,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { UndoRedoSnapshot } from '../../../lib/history/undo_redo_stack';
@@ -27,6 +28,14 @@ interface Props {
   onSave: () => void;
 }
 
+const undoLabel = i18n.translate('kbnDesignTools.edit.modal.undo.ariaLabel', {
+  defaultMessage: 'Undo',
+});
+
+const redoLabel = i18n.translate('kbnDesignTools.edit.modal.redo.ariaLabel', {
+  defaultMessage: 'Redo',
+});
+
 export const EditModalFooterBar = ({ draftState, onUndo, onRedo, onCancel, onSave }: Props) => {
   return (
     <EuiModalFooter>
@@ -34,26 +43,26 @@ export const EditModalFooterBar = ({ draftState, onUndo, onRedo, onCancel, onSav
         <EuiFlexItem grow={false}>
           <EuiFlexGroup gutterSize="xs" responsive={false}>
             <EuiFlexItem grow={false}>
-              <EuiButtonIcon
-                iconType="editorUndo"
-                aria-label={i18n.translate('kbnDesignTools.edit.modal.undo.ariaLabel', {
-                  defaultMessage: 'Undo',
-                })}
-                onClick={onUndo}
-                isDisabled={!draftState.canUndo}
-                data-test-subj="editModalUndoButton"
-              />
+              <EuiToolTip content={undoLabel} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  iconType="editorUndo"
+                  aria-label={undoLabel}
+                  onClick={onUndo}
+                  isDisabled={!draftState.canUndo}
+                  data-test-subj="editModalUndoButton"
+                />
+              </EuiToolTip>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <EuiButtonIcon
-                iconType="editorRedo"
-                aria-label={i18n.translate('kbnDesignTools.edit.modal.redo.ariaLabel', {
-                  defaultMessage: 'Redo',
-                })}
-                onClick={onRedo}
-                isDisabled={!draftState.canRedo}
-                data-test-subj="editModalRedoButton"
-              />
+              <EuiToolTip content={redoLabel} disableScreenReaderOutput>
+                <EuiButtonIcon
+                  iconType="editorRedo"
+                  aria-label={redoLabel}
+                  onClick={onRedo}
+                  isDisabled={!draftState.canRedo}
+                  data-test-subj="editModalRedoButton"
+                />
+              </EuiToolTip>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>

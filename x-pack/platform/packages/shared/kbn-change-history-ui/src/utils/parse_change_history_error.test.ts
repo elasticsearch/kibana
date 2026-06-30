@@ -12,11 +12,27 @@ describe('parseChangeHistoryError', () => {
     expect(
       parseChangeHistoryError({
         code: 'HISTORY_DISABLED',
-        message: 'Workflow version history is not available.',
+        message: 'Change history is not available.',
       })
     ).toEqual({
       code: 'HISTORY_DISABLED',
-      message: 'Workflow version history is not available.',
+      message: 'Change history is not available.',
+    });
+  });
+
+  it('parses Kibana error responses with attributes.code', () => {
+    expect(
+      parseChangeHistoryError({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Change history is disabled.',
+        attributes: {
+          code: 'HISTORY_DISABLED',
+        },
+      })
+    ).toEqual({
+      code: 'HISTORY_DISABLED',
+      message: 'Change history is disabled.',
     });
   });
 

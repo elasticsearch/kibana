@@ -70,6 +70,84 @@ describe('searchWorkflowExecutions', () => {
         })
       );
     });
+
+    it('should include version in list results when present', async () => {
+      mockEsClient.search.mockResolvedValue({
+        hits: {
+          total: { value: 1 },
+          hits: [
+            {
+              _id: 'exec-1',
+              _source: {
+                spaceId: 'default',
+                status: 'completed',
+                error: null,
+                isTestRun: false,
+                startedAt: '2024-01-01T00:00:00Z',
+                finishedAt: '2024-01-01T00:00:03Z',
+                duration: 3000,
+                workflowId: 'workflow-1',
+                triggeredBy: 'manual',
+                executedBy: 'elastic',
+                version: 3,
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await searchWorkflowExecutions({
+        esClient: mockEsClient,
+        logger: mockLogger,
+        workflowExecutionIndex: '.workflows-executions',
+        query: { term: { workflowId: 'workflow-1' } },
+        page: 1,
+        size: 20,
+      });
+
+      expect(result.results[0]).toEqual(
+        expect.objectContaining({
+          id: 'exec-1',
+          version: 3,
+        })
+      );
+    });
+
+    it('should omit version from list results when absent', async () => {
+      mockEsClient.search.mockResolvedValue({
+        hits: {
+          total: { value: 1 },
+          hits: [
+            {
+              _id: 'exec-legacy',
+              _source: {
+                spaceId: 'default',
+                status: 'completed',
+                error: null,
+                isTestRun: false,
+                startedAt: '2024-01-01T00:00:00Z',
+                finishedAt: '2024-01-01T00:00:03Z',
+                duration: 3000,
+                workflowId: 'workflow-1',
+                triggeredBy: 'manual',
+                executedBy: 'elastic',
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await searchWorkflowExecutions({
+        esClient: mockEsClient,
+        logger: mockLogger,
+        workflowExecutionIndex: '.workflows-executions',
+        query: { term: { workflowId: 'workflow-1' } },
+        page: 1,
+        size: 20,
+      });
+
+      expect(result.results[0]).not.toHaveProperty('version');
+    });
   });
 
   describe('search options', () => {

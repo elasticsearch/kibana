@@ -15,3 +15,5 @@ export {
   isRetentionNonCompliant,
   hasMissingIntegrations,
 } from './status_check_helpers';
+export { getContinuityDataFlowHealth } from './get_pipeline_data_flow_health';
+export type { PipelineDataFlowHealth } from './get_pipeline_data_flow_health';

@@ -219,7 +219,7 @@ describe('WorkflowDetailPage', () => {
 
       fireEvent.click(screen.getByTestId('workflowDetailBackToWorkflowsButton'));
 
-      expect(navigateToApp).toHaveBeenCalledWith(PLUGIN_ID);
+      expect(navigateToApp).toHaveBeenCalledWith(PLUGIN_ID, undefined);
     });
 
     it('should display generic error message for non-not-found failures', () => {

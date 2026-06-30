@@ -17,6 +17,7 @@ export const STREAMS_MEMORY_CONVERSATION_SCRAPER_WORKFLOW = {
   id: STREAMS_MEMORY_CONVERSATION_SCRAPER_WORKFLOW_ID,
   pluginId: 'streams',
   version: 1,
+  billable: false,
   yaml: CONVERSATION_SCRAPER_YAML,
   management: {
     lifecycle: 'static',

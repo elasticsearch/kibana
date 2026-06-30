@@ -40,7 +40,7 @@ export function buildSearchEmbeddingQuery(
   return parts.join('\n');
 }
 
-function computeExpiresAt(timestamp: string, ttlDays: number): string {
+export function computeExpiresAt(timestamp: string, ttlDays: number): string {
   return new Date(new Date(timestamp).getTime() + ttlDays * 24 * 60 * 60 * 1000).toISOString();
 }
 
@@ -48,7 +48,7 @@ export function toStoredFeature(
   streamName: string,
   feature: FeatureUpsert,
   includeEmbedding: boolean,
-  ttlDays: number
+  expiresAt?: string | undefined
 ): StoredFeatureKnowledgeIndicator {
   const embedding = buildSearchEmbeddingFeature(feature, streamName);
   const timestamp = new Date().toISOString();
@@ -64,7 +64,7 @@ export function toStoredFeature(
     'stream.name': streamName,
     excluded: feature.excluded,
     run_id: feature.run_id,
-    expires_at: computeExpiresAt(timestamp, ttlDays),
+    ...(expiresAt ? { expires_at: expiresAt } : {}),
     feature: {
       type: feature.type,
       subtype: feature.subtype,
@@ -83,7 +83,7 @@ export function toStoredQuery(
   streamName: string,
   query: StreamQuery & { rule_backed?: boolean; rule_id?: string },
   includeEmbedding: boolean,
-  ttlDays: number
+  expiresAt?: string
 ): StoredQueryKnowledgeIndicator {
   const embedding = buildSearchEmbeddingQuery(query, streamName);
   const derivedType = deriveQueryType(query.esql.query);
@@ -99,7 +99,7 @@ export function toStoredQuery(
     description: query.description,
     evidence: query.evidence,
     'stream.name': streamName,
-    expires_at: computeExpiresAt(timestamp, ttlDays),
+    ...(expiresAt ? { expires_at: expiresAt } : {}),
     query: {
       esql: query.esql.query,
       query_type: derivedType,
@@ -123,6 +123,10 @@ export function toTombstone(
     'stream.name': streamName,
     deleted: true,
   };
+}
+
+export function queryFromLink(link: QueryLink): StreamQuery {
+  return { ...link.query, expires_at: link.expires_at };
 }
 
 export function fromStoredFeature(doc: StoredFeatureKnowledgeIndicator): Feature {

@@ -18,15 +18,23 @@ export type {
   InboxPluginSetup,
   InboxPluginStart,
   InboxActionProvider,
+  InboxActionProviderFacetBucket,
+  InboxActionProviderFacetsResult,
   InboxActionProviderListParams,
+  InboxActionProviderListProcessedParams,
   InboxActionProviderListResult,
   InboxRequestContext,
 } from './types';
 
-export type { InboxActionConflictError } from './services/inbox_action_registry';
+export type {
+  InboxActionConflictError,
+  InvalidInboxActionSourceIdError,
+} from './services/inbox_action_registry';
 export {
   createInboxActionConflictError,
+  createInvalidInboxActionSourceIdError,
   isInboxActionConflictError,
+  isInvalidInboxActionSourceIdError,
 } from './services/inbox_action_registry';
 
 export const plugin: PluginInitializer<

@@ -590,7 +590,10 @@ describe('AgentlessPoliciesService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.cloud_connector_id).toBe('aws-cloud-connector-123');
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        cloud_connector_id: 'aws-cloud-connector-123',
+      });
       expect(createSpy).toHaveBeenCalledWith(
         soClient,
         expect.objectContaining({
@@ -693,7 +696,10 @@ describe('AgentlessPoliciesService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.cloud_connector_id).toBe('azure-cloud-connector-123');
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        cloud_connector_id: 'azure-cloud-connector-123',
+      });
       expect(createSpy).toHaveBeenCalledWith(
         soClient,
         expect.objectContaining({
@@ -905,7 +911,10 @@ describe('AgentlessPoliciesService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.cloud_connector_id).toBe('aws-cloud-connector-123');
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        cloud_connector_id: 'aws-cloud-connector-123',
+      });
       // Verify that the custom name from API request is used
       expect(createSpy).toHaveBeenCalledWith(
         soClient,
@@ -1004,7 +1013,10 @@ describe('AgentlessPoliciesService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.cloud_connector_id).toBe('aws-cloud-connector-123');
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        cloud_connector_id: 'aws-cloud-connector-123',
+      });
       // Verify that the fallback name (role_arn) is used when no custom name is provided
       expect(createSpy).toHaveBeenCalledWith(
         soClient,

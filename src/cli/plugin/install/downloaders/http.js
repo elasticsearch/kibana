@@ -10,8 +10,8 @@
 import { createWriteStream } from 'fs';
 
 import Wreck from '@hapi/wreck';
-import HttpProxyAgent from 'http-proxy-agent';
-import HttpsProxyAgent from 'https-proxy-agent';
+import { HttpProxyAgent } from 'http-proxy-agent';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxyForUrl } from 'proxy-from-env';
 
 import { Progress } from '../progress';

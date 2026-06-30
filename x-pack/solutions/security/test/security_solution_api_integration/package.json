@@ -372,6 +372,13 @@
     "unified_alerts:basic:server:ess": "npm run initialize-server:de:basic_essentials unified_alerts ess",
     "unified_alerts:basic:runner:ess": "npm run run-tests:de:basic_essentials unified_alerts ess essEnv",
 
+    "attacks:essentials:server:serverless": "npm run initialize-server:de:basic_essentials attacks serverless",
+    "attacks:essentials:runner:serverless": "npm run run-tests:de:basic_essentials attacks serverless serverlessEnv",
+    "attacks:essentials:qa:serverless": "npm run run-tests:de:basic_essentials attacks serverless qaPeriodicEnv",
+    "attacks:essentials:qa:serverless:release": "npm run run-tests:de:basic_essentials attacks serverless qaEnv",
+    "attacks:basic:server:ess": "npm run initialize-server:de:basic_essentials attacks ess",
+    "attacks:basic:runner:ess": "npm run run-tests:de:basic_essentials attacks ess essEnv",
+
     "rule_execution_logic:eql:server:serverless": "npm run initialize-server:de rule_execution_logic/eql serverless",
     "rule_execution_logic:eql:runner:serverless": "npm run run-tests:de rule_execution_logic/eql serverless serverlessEnv",
     "rule_execution_logic:eql:qa:serverless": "npm run run-tests:de rule_execution_logic/eql serverless qaPeriodicEnv",

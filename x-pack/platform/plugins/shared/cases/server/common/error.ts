@@ -9,6 +9,7 @@ import { Boom, isBoom } from '@hapi/boom';
 import type { SavedObjectError } from '@kbn/core-saved-objects-common';
 import type { DecoratedError } from '@kbn/core-saved-objects-server';
 import type { Logger } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { CaseErrorResponse, SOWithErrors } from './types';
 
 export interface HTTPError extends Error {
@@ -86,7 +87,8 @@ export function createCaseError({
   return new CaseError(message, error);
 }
 
-export const isSOError = <T>(so: { error?: unknown }): so is SOWithErrors<T> => so.error != null;
+export const isSOError = <T>(so: { error?: unknown }): so is SOWithErrors<T> =>
+  isSavedObjectErrorResult(so as { error?: SavedObjectError });
 
 export const isSODecoratedError = (
   error: SavedObjectError | DecoratedError

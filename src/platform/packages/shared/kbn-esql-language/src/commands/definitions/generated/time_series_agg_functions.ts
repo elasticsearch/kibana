@@ -576,6 +576,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -594,6 +597,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -612,6 +618,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -641,6 +650,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -659,6 +671,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -677,6 +692,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -706,6 +724,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -724,6 +745,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -742,6 +766,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -771,6 +798,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -789,6 +819,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -807,6 +840,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -836,6 +872,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -854,6 +893,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -872,6 +914,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -901,6 +946,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -919,6 +967,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -937,6 +988,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -966,6 +1020,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -984,6 +1041,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1002,6 +1062,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1031,6 +1094,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1049,6 +1115,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1067,6 +1136,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1096,6 +1168,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1114,6 +1189,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1132,6 +1210,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1161,6 +1242,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1179,6 +1263,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -1197,6 +1284,9 @@ const countDistinctOverTimeDefinition: FunctionDefinition = {
           optional: true,
           description:
             'Precision threshold. Refer to <<esql-agg-count-distinct-approximate>>. The maximum supported value is 40000. Thresholds above this number will have the same effect as a threshold of 40000. The default value is 3000.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'long',
@@ -2902,6 +2992,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -2919,6 +3012,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -2936,6 +3032,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -2953,6 +3052,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -2970,6 +3072,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -2987,6 +3092,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3004,6 +3112,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3021,6 +3132,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3038,6 +3152,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3055,6 +3172,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3072,6 +3192,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3089,6 +3212,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3106,6 +3232,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3123,6 +3252,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',
@@ -3140,6 +3272,9 @@ const percentileOverTimeDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'the percentile value to compute (between 0 and 100)',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',

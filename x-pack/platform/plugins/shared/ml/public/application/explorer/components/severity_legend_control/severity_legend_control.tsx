@@ -17,7 +17,7 @@ import {
   EuiIcon,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { getSeverityRangeDisplay } from '../../../components/controls/select_severity';
+import { getSeverityRangeDisplay } from '../../../../../common/util/severity_threshold';
 import { useSeverityLegendControlStyles } from './severity_legend_control_styles';
 import type { SeverityOption } from '../../hooks/use_severity_options';
 

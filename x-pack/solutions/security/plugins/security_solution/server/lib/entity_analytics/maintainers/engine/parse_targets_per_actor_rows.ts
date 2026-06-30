@@ -9,6 +9,7 @@ import type { Logger } from '@kbn/logging';
 import type { EntityRelationshipKey } from '@kbn/entity-store/common/domain/definitions/common_fields';
 
 import type { EntityRelationshipRecord, BucketTargetByThresholdConfig } from './types';
+import { entityTypeFromEuid } from './types';
 import { ENGINE_COLUMNS } from './columns';
 
 interface EsqlColumn {
@@ -99,7 +100,7 @@ export const parseTargetsPerActorRows = (
       const belowCol = ENGINE_COLUMNS.bucketBelow(below);
       return {
         entityId: actorUserId,
-        entityType: 'user' as const,
+        entityType: entityTypeFromEuid(actorUserId),
         relationships: {
           [above]: toStringArray(record[aboveCol]),
           [below]: toStringArray(record[belowCol]),
@@ -110,7 +111,7 @@ export const parseTargetsPerActorRows = (
     const flatCol = ENGINE_COLUMNS.flat(config.relationshipKey);
     return {
       entityId: actorUserId,
-      entityType: 'user' as const,
+      entityType: entityTypeFromEuid(actorUserId),
       relationships: {
         [config.relationshipKey]: toStringArray(record[flatCol]),
       },

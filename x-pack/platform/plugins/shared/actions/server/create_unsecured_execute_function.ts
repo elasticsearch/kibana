@@ -6,6 +6,7 @@
  */
 
 import type { ISavedObjectsRepository, SavedObjectsBulkResponse } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
 import type {
   ActionTypeRegistryContract as ConnectorTypeRegistryContract,
@@ -141,6 +142,9 @@ export function createBulkUnsecuredExecutionEnqueuerFunction({
       await internalSavedObjectsRepository.bulkCreate(actions);
 
     const taskInstances = actionTaskParamsRecords.saved_objects.map((so) => {
+      if (isSavedObjectErrorResult(so)) {
+        throw so.error;
+      }
       const actionId = so.attributes.actionId;
       return {
         taskType: `actions:${connectorTypeIds[actionId]}`,

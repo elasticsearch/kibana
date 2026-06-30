@@ -17,27 +17,7 @@
 import { z, lazySchema } from '@kbn/zod/v4';
 import { isNonEmptyString } from '@kbn/zod-helpers/v4';
 
-import { AlertStatusExceptClosed } from '../../../model/alert.gen';
-
-export const ReasonEnum = lazySchema(() =>
-  z.enum([
-    'false_positive',
-    'duplicate',
-    'true_positive',
-    'benign_positive',
-    'automated_closure',
-    'other',
-  ])
-);
-export type ReasonEnum = z.infer<typeof ReasonEnum>;
-export type ReasonEnumEnum = typeof ReasonEnum.enum;
-export const ReasonEnumEnum = ReasonEnum.enum;
-
-/**
- * The reason for closing the alerts. Can be one of following predefined reasons: [false_positive, duplicate, true_positive, benign_positive, automated_closure, other] or a custom reason provided by the user through the advanced settings.
- */
-export const Reason = lazySchema(() => z.union([ReasonEnum, z.string()]));
-export type Reason = z.infer<typeof Reason>;
+import { AlertStatusExceptClosed, Reason } from '../../../model/alert.gen';
 
 export const SetAlertsStatusByIdsBase = lazySchema(() =>
   z.object({

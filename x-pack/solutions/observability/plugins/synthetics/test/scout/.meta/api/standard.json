@@ -1,5 +1,5 @@
 {
-  "sha1": "d44fa85a41db589a1f3532e07db138243abba3b4",
+  "sha1": "2639e0a6bee3a529e8b28de7dfd4d5d05f81c093",
   "tests": [
     {
       "id": "0e89de24e8ff3a8-faf07b914e53ca6",
@@ -2036,6 +2036,20 @@
       }
     },
     {
+      "id": "05dd61025210a2c-a56a9338bc80bac",
+      "title": "EditMonitorAPI - Public Location persists deletion of label and header keys instead of deep-merging them",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@local-serverless-observability_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/edit_monitor.spec.ts",
+        "line": 137,
+        "column": 12
+      }
+    },
+    {
       "id": "05dd61025210a2c-1a5a3e9819d72f4",
       "title": "EditMonitorAPI - Public Location strips unknown keys from monitor edits",
       "expectedStatus": "passed",
@@ -2045,7 +2059,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/edit_monitor.spec.ts",
-        "line": 137,
+        "line": 175,
         "column": 12
       }
     },
@@ -2059,7 +2073,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/edit_monitor.spec.ts",
-        "line": 189,
+        "line": 227,
         "column": 12
       }
     },
@@ -2073,7 +2087,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/edit_monitor.spec.ts",
-        "line": 203,
+        "line": 241,
         "column": 12
       }
     },
@@ -2087,7 +2101,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/edit_monitor.spec.ts",
-        "line": 212,
+        "line": 250,
         "column": 12
       }
     },
@@ -2101,7 +2115,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/edit_monitor.spec.ts",
-        "line": 231,
+        "line": 269,
         "column": 12
       }
     },
@@ -2115,7 +2129,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/synthetics/test/scout/api/tests/edit_monitor.spec.ts",
-        "line": 279,
+        "line": 317,
         "column": 12
       }
     },

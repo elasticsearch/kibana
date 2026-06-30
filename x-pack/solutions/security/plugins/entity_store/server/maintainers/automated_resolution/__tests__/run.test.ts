@@ -8,22 +8,20 @@
 import { loggerMock } from '@kbn/logging-mocks';
 import type { ElasticsearchClient } from '@kbn/core/server';
 import type { ResolutionClient } from '../../../domain/resolution';
-import { runAutomatedResolution, selectTarget } from '../run';
-import type { AutomatedResolutionState, EntityHit } from '../types';
+import { runEmailRuleResolution, selectTarget } from '../run';
+import type { EntityHit, PerRuleState } from '../types';
 import type { RunDeps } from '../run';
 
 const NAMESPACE = 'default';
 
-const createInitialState = (
-  overrides: Partial<AutomatedResolutionState> = {}
-): AutomatedResolutionState => ({
+const createInitialState = (overrides: Partial<PerRuleState> = {}): PerRuleState => ({
   lastProcessedTimestamp: null,
   lastRun: null,
   ...overrides,
 });
 
 const createDeps = (
-  state: AutomatedResolutionState,
+  state: PerRuleState,
   esClient: ElasticsearchClient,
   resolutionClient: ResolutionClient,
   overrides: Partial<RunDeps> = {}
@@ -86,7 +84,7 @@ const createFindMatchingGroupsResponse = (
   },
 });
 
-describe('Automated Resolution', () => {
+describe('Email rule resolution', () => {
   let mockEsClient: jest.Mocked<ElasticsearchClient>;
   let mockLinkEntities: jest.Mock;
   let mockResolutionClient: ResolutionClient;
@@ -102,7 +100,7 @@ describe('Automated Resolution', () => {
     } as unknown as jest.Mocked<ElasticsearchClient>;
   });
 
-  describe('runAutomatedResolution', () => {
+  describe('runEmailRuleResolution', () => {
     it('should perform a full scan when watermark is null', async () => {
       const state = createInitialState();
       mockEsClient.search
@@ -122,7 +120,7 @@ describe('Automated Resolution', () => {
           ]) as any
         );
 
-      await runAutomatedResolution(createDeps(state, mockEsClient, mockResolutionClient));
+      await runEmailRuleResolution(createDeps(state, mockEsClient, mockResolutionClient));
 
       const step1Query = mockEsClient.search.mock.calls[0][0] as any;
       const filters = step1Query.query.bool.filter;
@@ -151,7 +149,7 @@ describe('Automated Resolution', () => {
           ]) as any
         );
 
-      await runAutomatedResolution(createDeps(state, mockEsClient, mockResolutionClient));
+      await runEmailRuleResolution(createDeps(state, mockEsClient, mockResolutionClient));
 
       const step1Query = mockEsClient.search.mock.calls[0][0] as any;
       const filters = step1Query.query.bool.filter;
@@ -167,7 +165,7 @@ describe('Automated Resolution', () => {
       const state = createInitialState({ lastProcessedTimestamp: '2026-03-09T00:00:00Z' });
       mockEsClient.search.mockResolvedValueOnce(createCollectNewEmailsResponse([], '') as any);
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient)
       );
 
@@ -202,7 +200,7 @@ describe('Automated Resolution', () => {
         target_id: 'user-okta',
       });
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient)
       );
 
@@ -232,7 +230,7 @@ describe('Automated Resolution', () => {
         target_id: 'user-existing-target',
       });
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient)
       );
 
@@ -257,7 +255,7 @@ describe('Automated Resolution', () => {
           ]) as any
         );
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient, { logger })
       );
 
@@ -272,7 +270,7 @@ describe('Automated Resolution', () => {
       const state = createInitialState();
       mockEsClient.search.mockResolvedValueOnce(createCollectNewEmailsResponse([], '') as any);
 
-      await runAutomatedResolution(createDeps(state, mockEsClient, mockResolutionClient));
+      await runEmailRuleResolution(createDeps(state, mockEsClient, mockResolutionClient));
 
       const step1Query = mockEsClient.search.mock.calls[0][0] as any;
       const scriptFilter = step1Query.query.bool.filter.find((f: any) =>
@@ -289,7 +287,7 @@ describe('Automated Resolution', () => {
         )
         .mockResolvedValueOnce(createFindMatchingGroupsResponse([]) as any);
 
-      await runAutomatedResolution(createDeps(state, mockEsClient, mockResolutionClient));
+      await runEmailRuleResolution(createDeps(state, mockEsClient, mockResolutionClient));
 
       // Step 1
       const step1Query = mockEsClient.search.mock.calls[0][0] as any;
@@ -329,7 +327,7 @@ describe('Automated Resolution', () => {
       const { ChainResolutionError } = jest.requireActual('../../../domain/errors');
       mockLinkEntities.mockRejectedValueOnce(new ChainResolutionError('user-2', 'some-target'));
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient, { logger })
       );
 
@@ -345,7 +343,7 @@ describe('Automated Resolution', () => {
         )
         .mockResolvedValueOnce(createFindMatchingGroupsResponse([]) as any);
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient)
       );
 
@@ -374,7 +372,7 @@ describe('Automated Resolution', () => {
 
       mockLinkEntities.mockRejectedValueOnce(new Error('transient ES failure'));
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient, { logger })
       );
 
@@ -409,7 +407,7 @@ describe('Automated Resolution', () => {
         target_id: 'user-1',
       });
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient)
       );
 
@@ -447,7 +445,7 @@ describe('Automated Resolution', () => {
         target_id: 'user-1',
       });
 
-      await runAutomatedResolution(
+      await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient, { logger })
       );
 
@@ -461,7 +459,7 @@ describe('Automated Resolution', () => {
       const state = createInitialState({ lastProcessedTimestamp: originalTimestamp });
       mockEsClient.search.mockResolvedValueOnce(createCollectNewEmailsResponse([], '') as any);
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient)
       );
 
@@ -477,7 +475,7 @@ describe('Automated Resolution', () => {
         createCollectNewEmailsResponse(['a@test.com'], '2026-03-10T00:00:00Z') as any
       );
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient, {
           abortController: abortCtrl,
         })
@@ -514,7 +512,7 @@ describe('Automated Resolution', () => {
         } as any)
         .mockResolvedValueOnce(createFindMatchingGroupsResponse([]) as any);
 
-      const result = await runAutomatedResolution(
+      const result = await runEmailRuleResolution(
         createDeps(state, mockEsClient, mockResolutionClient)
       );
 

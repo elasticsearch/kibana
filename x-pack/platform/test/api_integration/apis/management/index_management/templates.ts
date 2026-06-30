@@ -262,6 +262,39 @@ export default function ({ getService }: FtrProviderContext) {
         expect(Object.keys(body.template).sort()).to.eql(expectedTemplateKeys);
       });
 
+      describe('with frozen_after lifecycle', () => {
+        const frozenTemplateName = `template-${getRandomString()}`;
+
+        it('should round-trip a data stream template with a frozen_after lifecycle', async () => {
+          const template = getTemplatePayload(frozenTemplateName, [getRandomString()]);
+          const templateWithFrozen = {
+            ...template,
+            dataStream: {},
+            template: {
+              ...template.template,
+              lifecycle: {
+                enabled: true,
+                data_retention: '90d',
+                frozen_after: '30d',
+              },
+            },
+            _kbnMeta: {
+              ...template._kbnMeta,
+              hasDatastream: true,
+            },
+          };
+
+          await createTemplate(templateWithFrozen).expect(200);
+
+          const { body } = await getOneTemplate(frozenTemplateName).expect(200);
+          expect(body.template.lifecycle).to.eql({
+            enabled: true,
+            data_retention: '90d',
+            frozen_after: '30d',
+          });
+        });
+      });
+
       describe('with index mode', () => {
         const indexModeTemplateName = `template-${getRandomString()}`;
 

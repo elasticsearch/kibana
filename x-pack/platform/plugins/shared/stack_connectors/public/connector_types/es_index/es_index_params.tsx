@@ -123,7 +123,7 @@ export const IndexParamsFields = ({
             setAlertHistoryIndexSuffix(defaultAlertHistoryIndexSuffix);
           }}
         >
-          <EuiIcon type="refresh" />
+          <EuiIcon type="refresh" aria-hidden={true} />
           <FormattedMessage
             id="xpack.stackConnectors.components.index.resetDefaultIndexLabel"
             defaultMessage="Reset default index"

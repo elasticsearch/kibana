@@ -11,7 +11,13 @@ import { isConditionComplete } from '@kbn/streamlang';
 import type { StoredFeatureKnowledgeIndicator, StoredKnowledgeIndicator } from '../data_stream';
 import { combineWhere, inPredicate, IS_NOT_DELETED } from '../esql_helpers';
 import { ID, STREAM_NAME } from '../fields';
-import { fromStoredFeature, toStoredFeature, toStoredQuery, toTombstone } from './serializers';
+import {
+  computeExpiresAt,
+  fromStoredFeature,
+  toStoredFeature,
+  toStoredQuery,
+  toTombstone,
+} from './serializers';
 import {
   bulkCreateWithInferenceFallback,
   countRawBulkInferenceErrors,
@@ -37,6 +43,8 @@ export class IndicatorWriter {
     }
 
     this.assertFeatureFiltersComplete(operations);
+
+    const now = new Date().toISOString();
 
     const [
       { excludableLatest, skipped: excludeSkipped },
@@ -65,6 +73,7 @@ export class IndicatorWriter {
           restorableLatest,
           deletableOps,
           includeEmbedding,
+          now,
         }) as Array<StoredKnowledgeIndicator & Record<string, unknown>>,
       })
     );
@@ -223,33 +232,41 @@ export class IndicatorWriter {
       restorableLatest,
       deletableOps,
       includeEmbedding,
+      now,
     }: {
       excludableLatest: StoredFeatureKnowledgeIndicator[];
       restorableLatest: StoredFeatureKnowledgeIndicator[];
       deletableOps: Array<Extract<KIBulkOperation, { delete: unknown }>>;
       includeEmbedding: boolean;
+      now: string;
     }
   ): StoredKnowledgeIndicator[] {
     const docs: StoredKnowledgeIndicator[] = [];
     for (const op of operations) {
       if ('index' in op) {
         if ('feature' in op.index) {
-          docs.push(toStoredFeature(stream, op.index.feature, includeEmbedding, this.ttlDays));
+          docs.push(
+            toStoredFeature(stream, op.index.feature, includeEmbedding, op.index.feature.expires_at)
+          );
         } else {
-          docs.push(toStoredQuery(stream, op.index.query, includeEmbedding, this.ttlDays));
+          docs.push(
+            toStoredQuery(stream, op.index.query, includeEmbedding, op.index.query.expires_at)
+          );
         }
       }
     }
     for (const latest of excludableLatest) {
       const feature = fromStoredFeature(latest);
+      const expiresAt = latest.expires_at ? computeExpiresAt(now, this.ttlDays) : undefined;
       docs.push(
-        toStoredFeature(stream, { ...feature, excluded: true }, includeEmbedding, this.ttlDays)
+        toStoredFeature(stream, { ...feature, excluded: true }, includeEmbedding, expiresAt)
       );
     }
     for (const latest of restorableLatest) {
       const feature = fromStoredFeature(latest);
+      const expiresAt = latest.expires_at ? computeExpiresAt(now, this.ttlDays) : undefined;
       docs.push(
-        toStoredFeature(stream, { ...feature, excluded: undefined }, includeEmbedding, this.ttlDays)
+        toStoredFeature(stream, { ...feature, excluded: undefined }, includeEmbedding, expiresAt)
       );
     }
     for (const op of deletableOps) {

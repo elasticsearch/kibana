@@ -5,6 +5,13 @@ export function defineRoutes(router: IRouter) {
   router.get(
     {
       path: '/api/<%= snakeCase(name) %>/example',
+      security: {
+        authz: {
+          enabled: false,
+          reason:
+            'Example route that returns non-sensitive timestamp data; replace with appropriate authz configuration for real endpoints.',
+        },
+      },
       validate: false,
     },
     async (context, request, response) => {

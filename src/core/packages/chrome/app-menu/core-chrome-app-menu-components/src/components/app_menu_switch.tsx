@@ -12,6 +12,7 @@ import type { EuiSwitchEvent } from '@elastic/eui';
 import { EuiSwitch, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import type { AppMenuSwitch } from '../types';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 interface AppMenuSwitchComponentProps {
   switchConfig: AppMenuSwitch;
@@ -47,7 +48,7 @@ export const AppMenuSwitchComponent = ({ switchConfig }: AppMenuSwitchComponentP
       disabled={disabled}
       compressed
       css={switchCss}
-      data-test-subj={dataTestSubj ?? 'app-menu-switch'}
+      data-test-subj={dataTestSubj ?? APP_MENU_TEST_SUBJECTS.switch}
     />
   );
 };

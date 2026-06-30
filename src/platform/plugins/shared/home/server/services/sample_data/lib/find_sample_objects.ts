@@ -9,6 +9,7 @@
 
 import * as esKuery from '@kbn/es-query';
 import type { Logger, SavedObjectsClientContract } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 
 const MAX_OBJECTS_TO_FIND = 10000; // we only expect up to a few dozen, search for 10k to be safe; anything over this is ignored
 
@@ -41,7 +42,7 @@ export async function findSampleObjects({ client, logger, objects }: FindSampleO
   const objectsToFind: SampleObject[] = [];
   objects.forEach((object, i) => {
     const bulkGetResult = bulkGetResponse.saved_objects[i];
-    if (!bulkGetResult.error) {
+    if (!isSavedObjectErrorResult(bulkGetResult)) {
       const { type, id } = object;
       const key = getObjKey(type, id);
       resultsMap.set(key, id);

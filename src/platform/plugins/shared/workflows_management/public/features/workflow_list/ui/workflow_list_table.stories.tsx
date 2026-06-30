@@ -414,7 +414,7 @@ export const Default: Story = {
     onCloneWorkflow: noop,
     onExportWorkflow: noop,
     onRequestRun: noop,
-    getEditHref: () => '#',
+    onEditWorkflow: noop,
     canCreateWorkflow: true,
     canReadWorkflow: true,
     canReadWorkflowExecution: true,

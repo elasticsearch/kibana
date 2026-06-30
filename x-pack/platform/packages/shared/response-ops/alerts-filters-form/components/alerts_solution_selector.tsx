@@ -44,7 +44,7 @@ export const AlertsSolutionSelector = forwardRef<
       inputDisplay: (
         <EuiFlexGroup gutterSize="s" alignItems="center">
           <EuiFlexItem grow={false}>
-            <EuiIcon type={featuresIcons[sol]} />
+            <EuiIcon type={featuresIcons[sol]} aria-hidden={true} />
           </EuiFlexItem>
           <EuiFlexItem>{capitalize(sol)}</EuiFlexItem>
         </EuiFlexGroup>

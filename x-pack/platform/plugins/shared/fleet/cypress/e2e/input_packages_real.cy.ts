@@ -205,8 +205,8 @@ describe('OTel input package with custom data stream type', () => {
             context: 'log',
             statements: [
               `set(attributes["data_stream.type"], "${dataStreamType}")`,
-              `set(attributes["data_stream.dataset"], "${datasetName}")`,
-              'set(attributes["data_stream.namespace"], "default")',
+              `set(attributes["data_stream.dataset"], "${datasetName}") where attributes["data_stream.dataset"] == nil`,
+              `set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil`,
             ],
           },
         ],

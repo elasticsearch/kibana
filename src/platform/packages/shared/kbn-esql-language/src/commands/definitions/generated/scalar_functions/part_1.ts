@@ -4565,6 +4565,9 @@ const dateTruncDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Interval; [time span](https://www.elastic.co/docs/reference/query-languages/esql/esql-time-spans) (DATE_PERIOD or TIME_DURATION).',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'date',
@@ -4583,6 +4586,9 @@ const dateTruncDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Interval; [time span](https://www.elastic.co/docs/reference/query-languages/esql/esql-time-spans) (DATE_PERIOD or TIME_DURATION).',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'date',
@@ -4601,6 +4607,9 @@ const dateTruncDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Interval; [time span](https://www.elastic.co/docs/reference/query-languages/esql/esql-time-spans) (DATE_PERIOD or TIME_DURATION).',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'date',
@@ -4619,6 +4628,9 @@ const dateTruncDefinition: FunctionDefinition = {
           optional: false,
           description:
             'Interval; [time span](https://www.elastic.co/docs/reference/query-languages/esql/esql-time-spans) (DATE_PERIOD or TIME_DURATION).',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'date',
@@ -4946,12 +4958,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'cartesian_point',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'double',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -4977,12 +4995,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'date',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'time_duration',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -5008,12 +5032,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'date_nanos',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'time_duration',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -5039,12 +5069,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'double',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'double',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -5070,12 +5106,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'geo_point',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'keyword',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -5101,12 +5143,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'geo_point',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'text',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -5132,12 +5180,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'integer',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'integer',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -5163,12 +5217,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'long',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'long',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -5194,12 +5254,18 @@ const decayDefinition: FunctionDefinition = {
           type: 'unsigned_long',
           optional: false,
           description: 'Central point from which the distances are calculated.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'scale',
           type: 'unsigned_long',
           optional: false,
           description: 'Distance from the origin where the function returns the decay value.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -6576,6 +6642,9 @@ const knnDefinition: FunctionDefinition = {
           type: 'dense_vector',
           optional: false,
           description: 'Vector value to find top nearest neighbours for.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -6603,6 +6672,9 @@ const knnDefinition: FunctionDefinition = {
           type: 'dense_vector',
           optional: false,
           description: 'Vector value to find top nearest neighbours for.',
+          hint: {
+            kind: 'constant',
+          },
         },
         {
           name: 'options',
@@ -8663,6 +8735,9 @@ const matchPhraseDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
+          hint: {
+            kind: 'constant',
+          },
           constantOnly: true,
         },
         {
@@ -8692,6 +8767,9 @@ const matchPhraseDefinition: FunctionDefinition = {
           type: 'keyword',
           optional: false,
           description: 'Value to find in the provided field.',
+          hint: {
+            kind: 'constant',
+          },
           constantOnly: true,
         },
         {
@@ -12569,6 +12647,9 @@ const mvPseriesWeightedSumDefinition: FunctionDefinition = {
           optional: false,
           description:
             'It is a constant number that represents the *p* parameter in the P-Series. It impacts every element’s contribution to the weighted sum.',
+          hint: {
+            kind: 'constant',
+          },
         },
       ],
       returnType: 'double',

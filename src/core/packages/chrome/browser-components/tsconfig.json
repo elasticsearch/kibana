@@ -25,6 +25,7 @@
     "@kbn/core-application-common",
     "@kbn/core-chrome-app-menu-components",
     "@kbn/core-chrome-browser",
+    "@kbn/core-chrome-browser-navigation-utils",
     "@kbn/core-chrome-browser-context",
     "@kbn/core-chrome-browser-hooks",
     "@kbn/core-chrome-browser-internal-types",

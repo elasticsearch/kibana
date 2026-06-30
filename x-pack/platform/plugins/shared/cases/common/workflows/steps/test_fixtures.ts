@@ -345,3 +345,11 @@ export const getCasesOutputFixture = {
   cases: [createCaseResponseFixture],
   errors: [],
 };
+
+export const pushCasesInputFixture = {
+  case_ids: [caseIdFixture],
+};
+
+export const pushCasesOutputFixture = {
+  cases: [createCaseResponseFixture],
+};

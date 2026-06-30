@@ -6,12 +6,22 @@
  */
 import React from 'react';
 import { fireEvent, act, waitFor } from '@testing-library/react';
+import { useLocation } from 'react-router-dom';
 
 import { AGENTS_PREFIX } from '../../../../../../../../../common/constants';
 import { sendGetAgents } from '../../../../../../hooks';
+// The flyout imports sendGetAgents directly from the top-level public/hooks barrel,
+// which is a different Jest module instance than the integrations hooks barrel the
+// table uses. Import + mock it separately so we can assert the flyout's own agent lookup.
+import { sendGetAgents as sendGetAgentsFromFlyout } from '../../../../../../../../hooks';
 import { createIntegrationsTestRendererMock } from '../../../../../../../../mock';
 
 import { AgentlessPackagePoliciesTable } from './agentless_table';
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn(),
+}));
 
 jest.mock('../../../../../../hooks', () => ({
   ...jest.requireActual('../../../../../../hooks'),
@@ -19,10 +29,34 @@ jest.mock('../../../../../../hooks', () => ({
   sendGetAgents: jest.fn(),
 }));
 
+jest.mock('../../../../../../../../hooks', () => ({
+  ...jest.requireActual('../../../../../../../../hooks'),
+  sendGetAgents: jest.fn(),
+}));
+
+const mockUseLocation = useLocation as jest.MockedFunction<typeof useLocation>;
+
 describe('AgentlessPackagePoliciesTable', () => {
   const mockSendGetAgents = sendGetAgents as jest.MockedFunction<typeof sendGetAgents>;
+  const mockSendGetAgentsFromFlyout = sendGetAgentsFromFlyout as jest.MockedFunction<
+    typeof sendGetAgentsFromFlyout
+  >;
 
   beforeEach(() => {
+    mockUseLocation.mockReturnValue({
+      pathname: '/',
+      search: '',
+      hash: '',
+      state: undefined,
+    });
+
+    // The flyout polls for its enrolled agent; return an empty result so it keeps
+    // rendering its header without resolving to a healthy agent.
+    mockSendGetAgentsFromFlyout.mockResolvedValue({
+      data: { items: [], total: 0, page: 1, perPage: 20 },
+      error: null,
+    });
+
     mockSendGetAgents.mockResolvedValue({
       data: {
         items: [
@@ -154,5 +188,34 @@ describe('AgentlessPackagePoliciesTable', () => {
       fireEvent.click(await result.findByText('Healthy'));
     });
     expect(result.getByText('Confirm agentless enrollment')).toBeInTheDocument();
+  });
+
+  it('opens flyout when openEnrollmentFlyout query param matches a package policy id', async () => {
+    mockUseLocation.mockReturnValue({
+      pathname: '/',
+      search: '?openEnrollmentFlyout=packagePolicy1',
+      hash: '',
+      state: undefined,
+    });
+    const renderer = createIntegrationsTestRendererMock();
+    const result = renderer.render(<AgentlessPackagePoliciesTable {...defaultProps} />);
+    await waitFor(() => {
+      expect(result.getByText('Confirm agentless enrollment')).toBeInTheDocument();
+    });
+  });
+
+  it('does not open flyout when openEnrollmentFlyout query param does not match any policy', async () => {
+    mockUseLocation.mockReturnValue({
+      pathname: '/',
+      search: '?openEnrollmentFlyout=nonexistent-id',
+      hash: '',
+      state: undefined,
+    });
+    const renderer = createIntegrationsTestRendererMock();
+    const result = renderer.render(<AgentlessPackagePoliciesTable {...defaultProps} />);
+    await waitFor(() => {
+      expect(mockSendGetAgents).toHaveBeenCalled();
+    });
+    expect(result.queryByText('Confirm agentless enrollment')).not.toBeInTheDocument();
   });
 });

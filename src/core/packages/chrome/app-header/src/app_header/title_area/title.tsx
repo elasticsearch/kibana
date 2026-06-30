@@ -19,6 +19,7 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { AppHeaderEditableTitle } from '../../types';
+import { APP_HEADER_TEST_SUBJECTS } from '../test_subjects';
 
 // The bundled lib.dom `FocusOptions` does not yet include `focusVisible`, which lets us
 // force the focus ring on/off when restoring focus programmatically.
@@ -410,7 +411,7 @@ export const Title = React.memo<TitleProps>(({ title, titleOffset, size = 's' })
   return (
     <div
       css={[styles.titleWrapper, titleOffset ? styles.titleOffsetStyle : undefined]}
-      data-test-subj="appHeaderTitle"
+      data-test-subj={APP_HEADER_TEST_SUBJECTS.title}
     >
       <EuiTitle size={size}>
         <h1>
@@ -422,7 +423,7 @@ export const Title = React.memo<TitleProps>(({ title, titleOffset, size = 's' })
                 // `size={1}` keeps the input's intrinsic width from inflating the grid track,
                 // so the sizer span alone determines the frame width.
                 size={1}
-                data-test-subj="appHeaderTitleInput"
+                data-test-subj={APP_HEADER_TEST_SUBJECTS.titleInput}
                 css={styles.input}
                 value={draft}
                 placeholder={placeholder}
@@ -457,7 +458,11 @@ export const Title = React.memo<TitleProps>(({ title, titleOffset, size = 's' })
               />
               {error && (
                 <EuiScreenReaderOnly>
-                  <span id={errorId} role="alert" data-test-subj="appHeaderTitleError">
+                  <span
+                    id={errorId}
+                    role="alert"
+                    data-test-subj={APP_HEADER_TEST_SUBJECTS.titleError}
+                  >
                     {error}
                   </span>
                 </EuiScreenReaderOnly>
@@ -479,7 +484,7 @@ export const Title = React.memo<TitleProps>(({ title, titleOffset, size = 's' })
             <button
               ref={titleRef}
               type="button"
-              data-test-subj="appHeaderTitleButton"
+              data-test-subj={APP_HEADER_TEST_SUBJECTS.titleButton}
               css={styles.readModeTrigger}
               aria-describedby={instructionsId}
               // `event.detail === 0` marks a keyboard activation (Enter/Space) vs a mouse

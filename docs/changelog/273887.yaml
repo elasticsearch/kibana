@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/273887
+issues:
+- https://github.com/elastic/kibana/issues/273798
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- AI and machine Learning
+title: "Fix repeated machine learning capability checks on non-ML Kibana pages"
+description: "Stops the 5-minute poll that re-checked ML capabilities on pages where capabilities rarely change. Users who update ML permissions can refresh the page to pick up changes."

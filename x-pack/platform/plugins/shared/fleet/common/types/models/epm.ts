@@ -256,6 +256,20 @@ export interface DeprecationInfo {
   >;
 }
 
+/**
+ * Cloud provider permission requirement declared in a package manifest.
+ * Introduced in package-spec 3.7.0 (provider_permissions field).
+ * Can appear at package, policy_template, input, and data_stream levels.
+ */
+export interface RegistryProviderPermissions {
+  /** Cloud provider identifier, e.g. 'aws', 'gcp', 'azure', 'kubernetes'. */
+  provider: string;
+  /** Individual permission grants (e.g. 's3:GetObject', 'storage.objects.get'). */
+  permissions?: string[];
+  /** Pre-defined roles or managed policies to attach (e.g. 'SecurityAudit', 'roles/logging.viewer'). */
+  roles?: string[];
+}
+
 export enum RegistryPolicyTemplateKeys {
   categories = 'categories',
   data_streams = 'data_streams',
@@ -280,6 +294,7 @@ export enum RegistryPolicyTemplateKeys {
   var_groups = 'var_groups',
   deprecated = 'deprecated',
   sections = 'sections',
+  provider_permissions = 'provider_permissions',
 }
 interface BaseTemplate {
   [RegistryPolicyTemplateKeys.name]: string;
@@ -292,6 +307,7 @@ interface BaseTemplate {
   [RegistryPolicyTemplateKeys.configuration_links]?: ConfigurationLink[];
   [RegistryPolicyTemplateKeys.fips_compatible]?: boolean | undefined;
   [RegistryPolicyTemplateKeys.deprecated]?: DeprecationInfo;
+  [RegistryPolicyTemplateKeys.provider_permissions]?: RegistryProviderPermissions[];
 }
 export interface RegistryPolicyIntegrationTemplate extends BaseTemplate {
   [RegistryPolicyTemplateKeys.categories]?: Array<PackageSpecCategory | undefined>;
@@ -334,6 +350,7 @@ export enum RegistryInputKeys {
   dynamic_signal_types = 'dynamic_signal_types',
   show_divider = 'show_divider',
   sections = 'sections',
+  provider_permissions = 'provider_permissions',
 }
 
 export type RegistryInputGroup = 'logs' | 'metrics';
@@ -359,6 +376,7 @@ export interface RegistryInput {
   /** When false, suppresses the automatic horizontal divider rendered after the input-level config section. Defaults to true. */
   [RegistryInputKeys.show_divider]?: boolean;
   [RegistryInputKeys.sections]?: RegistrySection[];
+  [RegistryInputKeys.provider_permissions]?: RegistryProviderPermissions[];
 }
 
 export enum RegistryStreamKeys {
@@ -479,6 +497,7 @@ export enum RegistryDataStreamKeys {
   routing_rules = 'routing_rules',
   lifecycle = 'lifecycle',
   agent = 'agent',
+  provider_permissions = 'provider_permissions',
 }
 
 export interface RegistryDataStream {
@@ -499,6 +518,7 @@ export interface RegistryDataStream {
   [RegistryDataStreamKeys.lifecycle]?: RegistryDataStreamLifecycle;
   [RegistryDataStreamKeys.lifecycle]?: RegistryDataStreamLifecycle;
   [RegistryDataStreamKeys.agent]?: RegistryAgent;
+  [RegistryDataStreamKeys.provider_permissions]?: RegistryProviderPermissions[];
 }
 
 export type InputOnlyRegistryDataStream = Omit<

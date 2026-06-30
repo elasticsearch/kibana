@@ -29,9 +29,9 @@ export const RiskScoresEntityCalculationRequest = lazySchema(() =>
      */
     identifier_type: IdentifierType,
     /**
-     * If 'wait_for' the request will wait for the index refresh.
+     * V2-only, the canonical Entity Store EUID.
      */
-    refresh: z.literal('wait_for').optional(),
+    entity_id: z.string().max(1000).optional(),
   })
 );
 export type RiskScoresEntityCalculationRequest = z.infer<typeof RiskScoresEntityCalculationRequest>;

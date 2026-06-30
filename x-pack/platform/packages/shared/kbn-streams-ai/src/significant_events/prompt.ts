@@ -28,7 +28,7 @@ export function createGenerateSignificantEventsPrompt({
   additionalTools?: Record<string, ToolDefinition>;
 }) {
   return createPrompt({
-    name: 'generate_significant_events',
+    name: 'generate_significant_events_ki_queries',
     input: z.object({
       name: z.string(),
       description: z.string(),

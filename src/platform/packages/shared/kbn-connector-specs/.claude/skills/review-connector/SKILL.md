@@ -73,8 +73,12 @@ Use this skill when reviewing or preparing changes to a **connector spec** (spec
 ### Documentation and Icons
 
 - Generator scaffold docs are filled in (no remaining `TODO:` placeholders)
-- `docs/reference/connectors-kibana/_snippets/elastic-connectors-list.md` entry filled in
-- `docs/reference/toc.yml` entry exists in the correct section
+- **Snippets file**: Third-party data connectors (cloud storage, SaaS search, etc.) belong in
+  `docs/reference/connectors-kibana/_snippets/data-context-sources-connectors-list.md`, **not**
+  `elastic-connectors-list.md` (which is reserved for Kibana-native connectors like Cases, Index,
+  ServerLog, and Obs AI Assistant). Order them alphabetically. Flag any third-party connector 
+  entry added to the wrong file.
+- `docs/reference/toc.yml` entry exists in the correct section and matches alphabetical order in that section.
 - **Icon**: Connector has an icon (ConnectorIconsMap entry and icon component or asset). No
   placeholder icons or generated icons. If a brand icon does not exist elsewhere in the repo, prompt the user to provide one.
 
@@ -104,6 +108,10 @@ Report documentation issues alongside code issues.
 
 ### Security
 
+- **Unbounded strings in Zod schemas**: Every `z.string()` in action input schemas should have a `.max(N)`
+  constraint to prevent DoS from oversized inputs. This is flagged by CodeQL. Common limits: 2000 for
+  freeform queries, 1024 for paths/URLs, 200 for IDs/names, 50 for short tokens or enum-like strings.
+  Also applies to strings inside `z.array(z.string())` and `z.record(z.string(), ...)` key types.
 - **SSRF**: Any URL field in connector config or workflow action input (e.g. `base_url`, `endpoint`, `webhook_url`)
   must be validated. URLs should be allowlisted, restricted to HTTPS, or otherwise prevented from being user-controlled
   in a way that could trigger requests to internal/private hosts. Flag any case where a user-supplied URL flows

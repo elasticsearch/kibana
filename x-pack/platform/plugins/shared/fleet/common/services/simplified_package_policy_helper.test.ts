@@ -14,7 +14,13 @@ import {
   simplifiedPackagePolicytoNewPackagePolicy,
   packagePolicyToSimplifiedPackagePolicy,
   generateInputId,
+  toNewAgentlessPolicy,
 } from './simplified_package_policy_helper';
+
+jest.mock('./cloud_connectors', () => ({
+  ...jest.requireActual('./cloud_connectors'),
+  detectTargetCsp: jest.fn(() => undefined),
+}));
 
 /**
  * Minimal multi-template package fixture covering both shapes of the
@@ -582,6 +588,186 @@ describe('toPackagePolicy', () => {
         'nginx-logfile': ['nginx.access', 'nginx.error'],
         'nginx-nginx/metrics': ['nginx.stubstatus'],
       });
+    });
+  });
+});
+
+describe('toNewAgentlessPolicy', () => {
+  const { detectTargetCsp } = jest.requireMock('./cloud_connectors');
+
+  type AgentlessPolicyInput = NewPackagePolicy & {
+    force?: boolean;
+    create_dataset_templates?: boolean;
+  };
+
+  const createPackagePolicy = (
+    overrides: Partial<AgentlessPolicyInput> = {}
+  ): AgentlessPolicyInput => ({
+    name: 'my-agentless-policy',
+    namespace: 'default',
+    description: 'a description',
+    enabled: true,
+    policy_ids: ['agent-policy-1'],
+    package: { name: 'cspm', title: 'CSPM', version: '1.0.0' },
+    inputs: [],
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    detectTargetCsp.mockReturnValue(undefined);
+  });
+
+  it('maps the allowlisted fields and strips the disallowed ones', () => {
+    const result = toNewAgentlessPolicy(
+      createPackagePolicy({
+        global_data_tags: [{ name: 'team', value: 'fleet' }],
+        additional_datastreams_permissions: ['logs-*'],
+        force: true,
+        create_dataset_templates: false,
+      })
+    );
+
+    expect(result).toEqual({
+      name: 'my-agentless-policy',
+      namespace: 'default',
+      description: 'a description',
+      global_data_tags: [{ name: 'team', value: 'fleet' }],
+      additional_datastreams_permissions: ['logs-*'],
+      force: true,
+      create_dataset_templates: false,
+      package: { name: 'cspm', version: '1.0.0' },
+      id: undefined,
+      inputs: {},
+      vars: undefined,
+    });
+  });
+
+  it('disables inputs that are blocked in agentless mode', () => {
+    // 'logfile' is in AGENTLESS_DISABLED_INPUTS — should be forced to enabled=false
+    const result = toNewAgentlessPolicy(
+      createPackagePolicy({
+        inputs: [{ type: 'logfile', enabled: true, streams: [], vars: undefined }],
+      })
+    );
+
+    expect(result.inputs).toMatchObject({ logfile: { enabled: false } });
+  });
+
+  it('strips package.title', () => {
+    const result = toNewAgentlessPolicy(createPackagePolicy());
+
+    expect(result.package).toEqual({ name: 'cspm', version: '1.0.0' });
+    expect(result.package).not.toHaveProperty('title');
+  });
+
+  it('stringifies the id when present', () => {
+    const result = toNewAgentlessPolicy(createPackagePolicy({ id: 123 as unknown as string }));
+
+    expect(result.id).toBe('123');
+  });
+
+  it('does not forward fields that are not part of the agentless contract', () => {
+    const result = toNewAgentlessPolicy(
+      createPackagePolicy({
+        policy_id: 'agent-policy-1',
+        policy_ids: ['agent-policy-1'],
+        supports_agentless: true,
+        output_id: 'output-1',
+        condition: 'true',
+        supports_cloud_connector: false,
+        cloud_connector_id: 'cc-1',
+        cloud_connector_name: 'cc-name',
+      })
+    );
+
+    expect(result).not.toHaveProperty('policy_id');
+    expect(result).not.toHaveProperty('policy_ids');
+    expect(result).not.toHaveProperty('supports_agentless');
+    expect(result).not.toHaveProperty('output_id');
+    expect(result).not.toHaveProperty('condition');
+    expect(result).not.toHaveProperty('enabled');
+    expect(result).not.toHaveProperty('supports_cloud_connector');
+    expect(result).not.toHaveProperty('cloud_connector_id');
+    expect(result).not.toHaveProperty('cloud_connector_name');
+    // supports_cloud_connector is false → no nested cloud_connector
+    expect(result).not.toHaveProperty('cloud_connector');
+  });
+
+  it('drops unknown/new fields not in the allowlist (leak-proof contract)', () => {
+    // These fields exist on NewPackagePolicy (or could be added in the future) and
+    // are NOT part of the agentless contract. A blocklist would silently forward
+    // them; the pick allowlist must drop them.
+    const result = toNewAgentlessPolicy(
+      createPackagePolicy({
+        is_managed: true,
+        overrides: { inputs: { 'some-input': { enabled: false } } },
+        elasticsearch: { privileges: { cluster: ['monitor'] } },
+        var_group_selections: { group: 'selection' },
+      })
+    );
+
+    expect(result).not.toHaveProperty('is_managed');
+    expect(result).not.toHaveProperty('overrides');
+    expect(result).not.toHaveProperty('elasticsearch');
+  });
+
+  describe('cloud_connector', () => {
+    it('reuses an existing connector when cloud_connector_id is set', () => {
+      const result = toNewAgentlessPolicy(
+        createPackagePolicy({
+          supports_cloud_connector: true,
+          cloud_connector_id: 'cc-123',
+          cloud_connector_name: 'ignored-when-id-present',
+        })
+      );
+
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        cloud_connector_id: 'cc-123',
+      });
+    });
+
+    it('creates a new connector with name when no cloud_connector_id', () => {
+      const result = toNewAgentlessPolicy(
+        createPackagePolicy({
+          supports_cloud_connector: true,
+          cloud_connector_name: 'new-connector',
+        })
+      );
+
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        name: 'new-connector',
+      });
+    });
+
+    it('injects target_csp when detected', () => {
+      detectTargetCsp.mockReturnValue('aws');
+
+      const result = toNewAgentlessPolicy(
+        createPackagePolicy({
+          supports_cloud_connector: true,
+          cloud_connector_id: 'cc-123',
+        })
+      );
+
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        target_csp: 'aws',
+        cloud_connector_id: 'cc-123',
+      });
+    });
+
+    it('passes the policy and varGroups to detectTargetCsp', () => {
+      const policy = createPackagePolicy();
+      const varGroups = [
+        { name: 'auth', title: 'Auth', selector_title: 'Select auth', options: [] },
+      ];
+
+      toNewAgentlessPolicy(policy, varGroups);
+
+      expect(detectTargetCsp).toHaveBeenCalledWith(policy, varGroups);
     });
   });
 });

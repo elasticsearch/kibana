@@ -5,4 +5,6 @@
  * 2.0.
  */
 
+export * from './common/attacks.gen';
 export * from './search/search_route.gen';
+export * from './set_workflow_status/set_workflow_status_route.gen';

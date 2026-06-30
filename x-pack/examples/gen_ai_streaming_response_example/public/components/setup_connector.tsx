@@ -20,7 +20,7 @@ export const SetupConnector = ({ setIsConnectorModalVisible }: SetupConnectorPro
       <EuiFlexItem grow={false}>
         <EuiCard
           layout="horizontal"
-          icon={<EuiIcon size="xl" type={OpenAILogo} />}
+          icon={<EuiIcon size="xl" type={OpenAILogo} aria-hidden={true} />}
           title={i18n.translate(
             'genAiStreamingResponseExample.app.component.addConnectorCardTitle',
             {

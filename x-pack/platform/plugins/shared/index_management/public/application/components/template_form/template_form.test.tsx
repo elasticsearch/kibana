@@ -252,6 +252,7 @@ describe('TemplateForm wizard integration', () => {
         settings,
         mappings,
         aliases,
+        lifecycle: { enabled: true },
       });
     });
   });
@@ -355,6 +356,7 @@ describe('TemplateForm wizard integration', () => {
           },
         },
         aliases: { updated_alias: { is_write_index: true } },
+        lifecycle: { enabled: true },
       });
       // dataStream is preserved from logistics
       expect(savedTemplate.dataStream).toEqual({
@@ -426,7 +428,10 @@ describe('TemplateForm wizard integration', () => {
       expect(savedTemplate.name).toBe('original-copy');
       expect(savedTemplate.composedOf).toEqual(['component_1']);
       expect(savedTemplate._kbnMeta).toEqual(originalTemplate._kbnMeta);
-      expect(savedTemplate.template).toEqual(originalTemplate.template);
+      expect(savedTemplate.template).toEqual({
+        ...originalTemplate.template,
+        lifecycle: { enabled: true },
+      });
     });
   });
 

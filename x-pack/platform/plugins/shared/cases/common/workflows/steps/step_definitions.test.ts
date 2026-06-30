@@ -40,6 +40,7 @@ import {
   deleteObservableStepCommonDefinition,
 } from './delete_observable';
 import { GetCasesStepTypeId, getCasesStepCommonDefinition } from './get_cases';
+import { PushCasesStepTypeId, pushCasesStepCommonDefinition } from './push_cases';
 import {
   addAlertsInputFixture,
   addCategoryInputFixture,
@@ -67,6 +68,8 @@ import {
   deleteObservableOutputFixture,
   getCasesInputFixture,
   getCasesOutputFixture,
+  pushCasesInputFixture,
+  pushCasesOutputFixture,
 } from './test_fixtures';
 
 const singleCaseOutput = { case: createCaseResponseFixture };
@@ -191,6 +194,12 @@ const stepDefinitions = [
     definition: getCasesStepCommonDefinition,
     input: getCasesInputFixture,
     output: getCasesOutputFixture,
+  },
+  {
+    typeId: PushCasesStepTypeId,
+    definition: pushCasesStepCommonDefinition,
+    input: pushCasesInputFixture,
+    output: pushCasesOutputFixture,
   },
 ] as const;
 

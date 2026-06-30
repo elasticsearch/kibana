@@ -10,9 +10,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import type { WorkflowListDto, WorkflowListItemDto, WorkflowsSearchParams } from '@kbn/workflows';
 import { createMockWorkflowsCapabilities as mockCreateMockWorkflowsCapabilities } from '@kbn/workflows-ui/mocks';
 import { WorkflowList } from './workflow_list';
+import { PLUGIN_ID } from '../../../../common';
 import { createUseKibanaMockValue } from '../../../mocks';
 import { TestProvider } from '../../../shared/mocks/test_providers';
 
@@ -62,6 +64,10 @@ const mockRunWorkflow = { mutate: jest.fn() };
 const mockCloneWorkflow = { mutate: jest.fn() };
 const mockUpdateWorkflow = { mutate: jest.fn() };
 
+interface WorkflowExecuteModalMockProps {
+  onSubmit: (data: Record<string, unknown>, triggerTab: 'manual') => void;
+}
+
 jest.mock('../../../entities/workflows/model/use_workflow_actions', () => ({
   useWorkflowActions: () => ({
     deleteWorkflows: mockDeleteWorkflows,
@@ -106,7 +112,15 @@ jest.mock('../../../components/workflows_empty_state/workflows_empty_state', () 
 }));
 
 jest.mock('../../run_workflow/ui/workflow_execute_modal', () => ({
-  WorkflowExecuteModal: () => <div data-test-subj="workflow-execute-modal" />,
+  WorkflowExecuteModal: ({ onSubmit }: WorkflowExecuteModalMockProps) => (
+    <button
+      type="button"
+      data-test-subj="workflow-execute-modal"
+      onClick={() => onSubmit({}, 'manual')}
+    >
+      {'Run workflow'}
+    </button>
+  ),
 }));
 
 jest.mock('../../../shared/ui', () => ({
@@ -116,10 +130,6 @@ jest.mock('../../../shared/ui', () => ({
   ),
   StatusBadge: ({ status }: { status: string }) => <span>{status}</span>,
   WorkflowStatus: ({ valid }: { valid: boolean }) => <span>{valid ? 'Valid' : 'Invalid'}</span>,
-}));
-
-jest.mock('../../../shared/ui/next_execution_time', () => ({
-  NextExecutionTime: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 jest.mock('../../../widgets/worflows_triggers_list/worflows_triggers_list', () => ({
@@ -185,9 +195,12 @@ describe('WorkflowList', () => {
     });
   });
 
-  const renderComponent = (overrides: Partial<typeof defaultProps> = {}) => {
+  const renderComponent = (
+    overrides: Partial<typeof defaultProps> = {},
+    initialEntries?: string[]
+  ) => {
     return render(
-      <TestProvider>
+      <TestProvider initialEntries={initialEntries}>
         <WorkflowList {...defaultProps} {...overrides} />
       </TestProvider>
     );
@@ -308,6 +321,70 @@ describe('WorkflowList', () => {
       const nameLink = screen.getByTestId('workflowNameLink');
       expect(nameLink).toBeInTheDocument();
       expect(nameLink).toHaveTextContent('My Test Workflow');
+    });
+
+    it('keeps workflow name links clean while preserving list search params in route state', async () => {
+      const user = userEvent.setup();
+      const RouteStateProbe = () => {
+        const location = useLocation<{ workflowsListSearch?: string } | undefined>();
+        return (
+          <span data-test-subj="workflowListSearchRouteState">
+            {location.state?.workflowsListSearch ?? ''}
+          </span>
+        );
+      };
+
+      render(
+        <TestProvider initialEntries={['/?tags=prod&enabled=true']}>
+          <WorkflowList {...defaultProps} />
+          <RouteStateProbe />
+        </TestProvider>
+      );
+
+      const nameLink = screen.getByTestId('workflowNameLink');
+
+      expect(nameLink).toHaveAttribute('href', '/wf-1');
+
+      await user.click(nameLink);
+
+      expect(screen.getByTestId('workflowListSearchRouteState')).toHaveTextContent(
+        '?tags=prod&enabled=true'
+      );
+    });
+
+    it('preserves list search params in route state when editing from the row action', async () => {
+      const user = userEvent.setup();
+
+      renderComponent({}, ['/?tags=prod&enabled=true']);
+
+      await user.click(screen.getByTestId('editWorkflowAction'));
+
+      expect(mockApplication.navigateToApp).toHaveBeenCalledWith(PLUGIN_ID, {
+        path: '/wf-1',
+        state: { workflowsListSearch: '?tags=prod&enabled=true' },
+      });
+    });
+
+    it('preserves list search params in route state when running a workflow opens executions', async () => {
+      const user = userEvent.setup();
+      mockRunWorkflow.mutate.mockImplementationOnce(
+        (
+          _params: unknown,
+          options: { onSuccess: (response: { workflowExecutionId: string }) => void }
+        ) => {
+          options.onSuccess({ workflowExecutionId: 'exec-1' });
+        }
+      );
+
+      renderComponent({}, ['/?tags=prod&enabled=true']);
+
+      await user.click(screen.getByTestId('runWorkflowAction'));
+      await user.click(await screen.findByTestId('workflow-execute-modal'));
+
+      expect(mockApplication.navigateToApp).toHaveBeenCalledWith(PLUGIN_ID, {
+        path: '/wf-1?tab=executions&executionId=exec-1',
+        state: { workflowsListSearch: '?tags=prod&enabled=true' },
+      });
     });
 
     it('renders workflow description', () => {

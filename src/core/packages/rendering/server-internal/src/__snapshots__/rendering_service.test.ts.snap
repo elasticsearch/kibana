@@ -388,7 +388,9 @@ Object {
 }
 `;
 
-exports[`RenderingService preboot() render() renders "core" page for unauthenticated requests 1`] = `
+exports[
+  `RenderingService preboot() render() renders "core" page for unauthenticated requests 1`
+] = `
 Object {
   "anonymousStatusPage": false,
   "apmConfig": Object {
@@ -582,7 +584,9 @@ Object {
 }
 `;
 
-exports[`RenderingService preboot() render() renders "core" with excluded global user settings 1`] = `
+exports[
+  `RenderingService preboot() render() renders "core" with excluded global user settings 1`
+] = `
 Object {
   "anonymousStatusPage": false,
   "apmConfig": Object {

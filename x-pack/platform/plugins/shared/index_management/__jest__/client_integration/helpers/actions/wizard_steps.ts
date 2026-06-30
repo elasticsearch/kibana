@@ -106,19 +106,18 @@ export const wizardSteps = {
     }
 
     if (lifecycle) {
-      const lifecycleSwitchRow = screen.getByTestId('dataRetentionToggle');
-      const lifecycleSwitch = within(lifecycleSwitchRow).getByRole('switch');
-      const isEnabled = lifecycleSwitch.getAttribute('aria-checked') === 'true';
+      const deletePhaseCard = await screen.findByTestId('dlmPhasesSelectorDeletePhaseCard');
+      const isEnabled = (deletePhaseCard as HTMLInputElement).checked;
 
       // Default to enabled if lifecycle.enabled is undefined
       const targetEnabled = lifecycle.enabled ?? true;
 
       if (isEnabled !== targetEnabled) {
-        fireEvent.click(lifecycleSwitch);
+        fireEvent.click(deletePhaseCard);
       }
 
       if (targetEnabled) {
-        const retentionInput = await screen.findByTestId('valueDataRetentionField');
+        const retentionInput = await screen.findByTestId('deleteDurationValue');
         fireEvent.change(retentionInput, { target: { value: String(lifecycle.value) } });
       }
     }

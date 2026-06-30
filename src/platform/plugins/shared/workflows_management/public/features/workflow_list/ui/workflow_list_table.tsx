@@ -35,7 +35,7 @@ import {
   StatusBadge,
   WorkflowStatus,
 } from '../../../shared/ui';
-import { NextExecutionTime } from '../../../shared/ui/next_execution_time';
+import { getWorkflowDetailRouteState } from '../../../shared/utils/workflow_navigation';
 import { WORKFLOWS_TABLE_PAGE_SIZE_OPTIONS } from '../constants';
 
 const MAX_VISIBLE_TAGS = 2;
@@ -53,13 +53,14 @@ export interface WorkflowListTableProps {
   onCloneWorkflow: (item: WorkflowListItemDto) => void;
   onExportWorkflow: (item: WorkflowListItemDto) => void;
   onRequestRun: (item: WorkflowListItemDto) => void;
-  getEditHref: (item: WorkflowListItemDto) => string;
+  onEditWorkflow: (item: WorkflowListItemDto) => void;
   canCreateWorkflow: boolean;
   canReadWorkflow: boolean;
   canReadWorkflowExecution: boolean;
   canUpdateWorkflow: boolean;
   canDeleteWorkflow: boolean;
   canExecuteWorkflow: boolean;
+  workflowsListSearch?: string;
   sortField?: WorkflowSortField;
   sortOrder?: 'asc' | 'desc';
   onSortChange?: (field: WorkflowSortField, order: 'asc' | 'desc') => void;
@@ -78,13 +79,14 @@ export const WorkflowListTable = ({
   onCloneWorkflow,
   onExportWorkflow,
   onRequestRun,
-  getEditHref,
+  onEditWorkflow,
   canCreateWorkflow,
   canReadWorkflow,
   canReadWorkflowExecution,
   canUpdateWorkflow,
   canDeleteWorkflow,
   canExecuteWorkflow,
+  workflowsListSearch = '',
   sortField,
   sortOrder,
   onSortChange,
@@ -117,7 +119,10 @@ export const WorkflowListTable = ({
                     {canReadWorkflow ? (
                       <EuiLink>
                         <Link
-                          to={`/${item.id}`}
+                          to={{
+                            pathname: `/${item.id}`,
+                            state: getWorkflowDetailRouteState(workflowsListSearch),
+                          }}
                           css={css`
                             white-space: nowrap;
                             overflow: hidden;
@@ -197,16 +202,7 @@ export const WorkflowListTable = ({
           const steps = item.definition?.steps ?? [];
           const history = item.history ?? [];
 
-          const cell = <WorkflowTriggersAndSteps triggers={triggers} steps={steps} />;
-
-          if (history.length > 0 && triggers.length > 0) {
-            return (
-              <NextExecutionTime triggers={triggers} history={history}>
-                {cell}
-              </NextExecutionTime>
-            );
-          }
-          return cell;
+          return <WorkflowTriggersAndSteps triggers={triggers} steps={steps} history={history} />;
         },
       },
       {
@@ -310,7 +306,7 @@ export const WorkflowListTable = ({
             description: i18n.translate('workflows.workflowList.edit', {
               defaultMessage: 'Edit workflow',
             }),
-            href: (item: WorkflowListItemDto) => getEditHref(item),
+            onClick: (item: WorkflowListItemDto) => onEditWorkflow(item),
           },
           {
             enabled: () => canCreateWorkflow && canReadWorkflow,
@@ -363,7 +359,8 @@ export const WorkflowListTable = ({
       canExecuteWorkflow,
       canCreateWorkflow,
       canDeleteWorkflow,
-      getEditHref,
+      onEditWorkflow,
+      workflowsListSearch,
       onToggleWorkflow,
       onCloneWorkflow,
       onExportWorkflow,

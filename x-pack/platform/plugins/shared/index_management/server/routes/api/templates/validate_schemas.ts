@@ -25,6 +25,7 @@ export const templateSchema = schema.object({
         schema.object({
           enabled: schema.boolean(),
           data_retention: schema.maybe(schema.string({ maxLength: 1000 })),
+          frozen_after: schema.maybe(schema.string({ maxLength: 1000 })),
         })
       ),
     })

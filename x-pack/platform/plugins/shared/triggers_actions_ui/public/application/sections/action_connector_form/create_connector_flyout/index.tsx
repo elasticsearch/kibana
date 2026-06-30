@@ -74,7 +74,11 @@ const CreateConnectorFlyoutComponent: React.FC<CreateConnectorFlyoutProps> = ({
     http,
     uiSettings,
   } = useKibana().services;
-  const { isLoading: isSavingConnector, createConnector } = useCreateConnector();
+  const {
+    isLoading: isSavingConnector,
+    createConnector,
+    createConnectorError,
+  } = useCreateConnector();
 
   const isMounted = useRef(false);
   const [allActionTypes, setAllActionTypes] = useState<ActionTypeIndex | undefined>(undefined);
@@ -464,6 +468,22 @@ const CreateConnectorFlyoutComponent: React.FC<CreateConnectorFlyoutProps> = ({
                     }
                   )}
                 />
+                <EuiSpacer size="m" />
+              </>
+            )}
+
+            {createConnectorError && (
+              <>
+                <EuiCallOut
+                  announceOnMount
+                  size="s"
+                  color="danger"
+                  iconType="error"
+                  data-test-subj="create-connector-api-error"
+                  title={createConnectorError.title}
+                >
+                  <p>{createConnectorError.message}</p>
+                </EuiCallOut>
                 <EuiSpacer size="m" />
               </>
             )}

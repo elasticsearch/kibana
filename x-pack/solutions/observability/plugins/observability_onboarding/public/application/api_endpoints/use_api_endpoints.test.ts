@@ -37,6 +37,7 @@ const mockUseKibana = useKibana as jest.MockedFunction<typeof useKibana>;
 interface Options {
   isManagedOtlpServiceAvailable?: boolean;
   isServerless?: boolean;
+  managedOtlpPrwEndpointEnabled?: boolean;
   elasticsearchUrl?: string;
   managedOtlpServiceUrl?: string;
   status?: FETCH_STATUS;
@@ -45,13 +46,19 @@ interface Options {
 const setup = ({
   isManagedOtlpServiceAvailable = false,
   isServerless = false,
+  managedOtlpPrwEndpointEnabled = false,
   elasticsearchUrl = 'https://es.example.com',
   managedOtlpServiceUrl = '',
   status = FETCH_STATUS.SUCCESS,
 }: Options = {}) => {
   mockUseManagedOtlpServiceAvailability.mockReturnValue(isManagedOtlpServiceAvailable);
   mockUseKibana.mockReturnValue({
-    services: { context: { isServerless } },
+    services: {
+      context: { isServerless },
+      featureFlags: {
+        getBooleanValue: jest.fn().mockReturnValue(managedOtlpPrwEndpointEnabled),
+      },
+    },
   } as unknown as ReturnType<typeof useKibana>);
   mockUseFetcher.mockReturnValue({
     data: { elasticsearchUrl, managedOtlpServiceUrl },
@@ -117,16 +124,30 @@ describe('useApiEndpoints', () => {
     );
   });
 
-  it('uses the ES-native Prometheus URL on ECH even when the managed OTLP service is available', () => {
+  it('uses the ES-native Prometheus URL on ECH when the managed OTLP PRW endpoint is disabled', () => {
     const { result } = setup({
       isServerless: false,
       isManagedOtlpServiceAvailable: true,
+      managedOtlpPrwEndpointEnabled: false,
       managedOtlpServiceUrl: 'https://otlp.example.com:443',
       elasticsearchUrl: 'https://es.cloud.example.com',
     });
 
     expect(findEndpoint(result, 'prometheus')?.url).toBe(
       'https://es.cloud.example.com/_prometheus/api/v1/write'
+    );
+  });
+
+  it('builds the managed Prometheus URL on ECH when the managed OTLP PRW endpoint is enabled', () => {
+    const { result } = setup({
+      isServerless: false,
+      managedOtlpPrwEndpointEnabled: true,
+      managedOtlpServiceUrl: 'https://otlp.example.com:443',
+      elasticsearchUrl: 'https://es.cloud.example.com',
+    });
+
+    expect(findEndpoint(result, 'prometheus')?.url).toBe(
+      'https://otlp.example.com:443/api/v1/write'
     );
   });
 

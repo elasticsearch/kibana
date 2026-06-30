@@ -69,7 +69,6 @@ export const createClassicStreamRoute = createServerRoute({
     try {
       const upsertRequest: Streams.ClassicStream.UpsertRequest = {
         dashboards: [],
-        queries: [],
         rules: [],
         stream: {
           type: 'classic',

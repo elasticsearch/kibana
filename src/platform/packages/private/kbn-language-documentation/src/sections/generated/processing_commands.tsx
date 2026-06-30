@@ -397,7 +397,6 @@ FROM books METADATA _score
       label: i18n.translate('languageDocumentation.documentationESQL.fuse', {
         defaultMessage: 'FUSE',
       }),
-      preview: true,
       description: {
         markdownContent: i18n.translate('languageDocumentation.documentationESQL.fuse.markdown', {
           defaultMessage: `### FUSE

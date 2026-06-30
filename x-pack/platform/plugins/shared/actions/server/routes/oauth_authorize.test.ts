@@ -11,6 +11,7 @@ jest.mock('./verify_access_and_context', () => ({
 jest.mock('../lib/oauth_state_client');
 jest.mock('../lib/oauth_authorization_service');
 
+import Boom from '@hapi/boom';
 import { httpServiceMock, httpServerMock, loggingSystemMock } from '@kbn/core/server/mocks';
 import { licenseStateMock } from '../lib/license_state.mock';
 import { verifyAccessAndContext } from './verify_access_and_context';
@@ -18,6 +19,7 @@ import { oauthAuthorizeRoute } from './oauth_authorize';
 import { OAuthStateClient } from '../lib/oauth_state_client';
 import { OAuthAuthorizationService } from '../lib/oauth_authorization_service';
 import { actionsConfigMock } from '../actions_config.mock';
+import { OAUTH_API_TAG } from '../feature';
 
 const MockOAuthStateClient = OAuthStateClient as jest.MockedClass<typeof OAuthStateClient>;
 const MockOAuthAuthorizationService = OAuthAuthorizationService as jest.MockedClass<
@@ -134,14 +136,41 @@ describe('oauthAuthorizeRoute', () => {
       mockRateLimiter as never,
       configUtils
     );
-    return router.post.mock.calls[0];
+    return router.post.mock.calls[0]!;
   };
 
   it('registers a POST route at the correct path', () => {
-    registerRoute();
+    const [postConfig] = registerRoute();
 
-    const [config] = router.post.mock.calls[0];
-    expect(config.path).toBe('/internal/actions/connector/{connectorId}/_start_oauth_flow');
+    expect(postConfig.path).toBe('/internal/actions/connector/{connectorId}/_start_oauth_flow');
+  });
+
+  it('registers a GET route for browser OAuth start redirect', () => {
+    registerRoute();
+    const [getConfig] = router.get.mock.calls[0]!;
+
+    expect(getConfig.path).toBe('/api/actions/connector/{connectorId}/oauth/start');
+  });
+
+  it('POST route requires OAUTH_API_TAG privilege', () => {
+    const [postConfig] = registerRoute();
+
+    expect(postConfig.security).toEqual({
+      authz: {
+        requiredPrivileges: [OAUTH_API_TAG],
+      },
+    });
+  });
+
+  it('GET route requires OAUTH_API_TAG privilege', () => {
+    registerRoute();
+    const [getConfig] = router.get.mock.calls[0]!;
+
+    expect(getConfig.security).toEqual({
+      authz: {
+        requiredPrivileges: [OAUTH_API_TAG],
+      },
+    });
   });
 
   it('returns unauthorized when no current user', async () => {
@@ -534,6 +563,27 @@ describe('oauthAuthorizeRoute', () => {
     );
   });
 
+  it('returns 404 when actionsClient.get throws a Boom notFound error', async () => {
+    mockActionsClient.get.mockRejectedValue(Boom.notFound('Connector not found'));
+
+    const [, handler] = registerRoute();
+    const context = createMockContext();
+    const req = httpServerMock.createKibanaRequest({
+      params: { connectorId: 'unknown-connector-id' },
+      body: {},
+    });
+    const res = httpServerMock.createResponseFactory();
+
+    await handler(context, req, res);
+
+    expect(res.customError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 404,
+      })
+    );
+    expect(mockLogger.error).not.toHaveBeenCalled();
+  });
+
   it('preserves statusCode from errors that have one', async () => {
     const notFoundError = new Error('Connector not found') as Error & { statusCode: number };
     notFoundError.statusCode = 404;
@@ -557,6 +607,47 @@ describe('oauthAuthorizeRoute', () => {
         },
       })
     );
+  });
+
+  it('GET redirects to the IdP authorization URL on success', async () => {
+    mockOAuthServiceInstance.getOAuthConfig.mockResolvedValue({
+      authTypeId: 'oauth_authorization_code',
+      authorizationUrl: 'https://provider.example.com/authorize',
+      tokenUrl: 'https://provider.example.com/token',
+      clientId: 'client-id',
+      scope: 'openid',
+    });
+
+    mockOAuthServiceInstance.buildAuthorizationUrl.mockReturnValue(
+      'https://provider.example.com/authorize?client_id=client-id&response_type=code&state=random-state'
+    );
+    mockOAuthStateClientInstance.create.mockResolvedValue({
+      state: {
+        id: 'state-id',
+        state: 'random-state',
+        connectorId: 'connector-1',
+      },
+      codeChallenge: 'code-challenge-value',
+    });
+
+    registerRoute();
+    const [, getHandler] = router.get.mock.calls[0]!;
+    const context = createMockContext();
+    const req = httpServerMock.createKibanaRequest({
+      params: { connectorId: 'connector-1' },
+      query: {},
+    });
+    const res = httpServerMock.createResponseFactory();
+
+    await getHandler(context, req, res);
+
+    expect(res.redirected).toHaveBeenCalledWith({
+      body: '',
+      headers: {
+        location:
+          'https://provider.example.com/authorize?client_id=client-id&response_type=code&state=random-state',
+      },
+    });
   });
 
   it('calls verifyAccessAndContext with the license state', () => {

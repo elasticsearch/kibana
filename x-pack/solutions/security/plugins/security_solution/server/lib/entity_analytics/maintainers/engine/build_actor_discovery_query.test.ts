@@ -49,6 +49,22 @@ describe('buildActorDiscoveryQuery (actor discovery)', () => {
     expect(hasRange).toBe(true);
   });
 
+  it('omits the timestamp range filter when disableLookbackWindow is true', () => {
+    const config: RelationshipIntegrationConfig = {
+      ...accessesConfig,
+      disableLookbackWindow: true,
+    };
+    const filters = (
+      buildActorDiscoveryQuery(config, undefined) as {
+        query: { bool: { filter: Array<Record<string, unknown>> } };
+      }
+    ).query.bool.filter;
+    const hasRange = filters.some(
+      (f) => (f.range as Record<string, unknown> | undefined)?.['@timestamp']
+    );
+    expect(hasRange).toBe(false);
+  });
+
   it('includes the user-EUID-exists DSL filter (deep-equality, not substring)', () => {
     const filters = (
       buildActorDiscoveryQuery(accessesConfig, undefined) as {

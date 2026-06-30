@@ -20,8 +20,27 @@ import { useDataView } from '../../hooks/use_data_view';
 import { useRootProfile } from '../../context_awareness/hooks/use_root_profile';
 import type { ContextAppProps } from './context_app';
 import { popularizeField } from '@kbn/unified-data-table';
+import {
+  type ContextAwarenessToolkit,
+  type ProfileStateDefinition,
+  ProfileStateType,
+} from '../../context_awareness';
 
 let mockContextAppProps: ContextAppProps | undefined;
+
+interface TestProfileState {
+  color: string;
+}
+
+const TEST_PROFILE_STATE_DEF: ProfileStateDefinition<TestProfileState> = {
+  key: 'contextRouteTestProfileState',
+  descriptor: {
+    color: { type: ProfileStateType.Ui },
+  },
+  defaultState: {
+    color: 'default',
+  },
+};
 
 jest.mock('./context_app', () => ({
   ContextApp: (props: ContextAppProps) => {
@@ -75,6 +94,35 @@ describe('ContextAppRoute', () => {
 
     return { services, props: mockContextAppProps! };
   };
+
+  it('provides an in-memory profile state toolkit', () => {
+    const services = createDiscoverServicesMock();
+    const originalCreateScopedProfilesManager =
+      services.profilesManager.createScopedProfilesManager.bind(services.profilesManager);
+    let capturedToolkit: ContextAwarenessToolkit | undefined;
+
+    services.profileStateRegistry.registerDefinition(TEST_PROFILE_STATE_DEF);
+    jest
+      .spyOn(services.profilesManager, 'createScopedProfilesManager')
+      .mockImplementation((args) => {
+        capturedToolkit = args.toolkit;
+        return originalCreateScopedProfilesManager(args);
+      });
+
+    renderContextAppRoute(services);
+
+    if (!capturedToolkit) {
+      throw new Error('Expected ContextAppRoute to create a scoped profiles manager.');
+    }
+
+    const stateAdapter = capturedToolkit.getStateAdapter(TEST_PROFILE_STATE_DEF);
+    expect(stateAdapter.getState()).toEqual(TEST_PROFILE_STATE_DEF.defaultState);
+
+    stateAdapter.setState({ color: 'primary' });
+    stateAdapter.updateState({ color: 'success' });
+
+    expect(stateAdapter.getState()).toEqual({ color: 'success' });
+  });
 
   it('dispatches addFilter side effects', () => {
     const services = createDiscoverServicesMock();

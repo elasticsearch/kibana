@@ -116,6 +116,26 @@ describe('WHERE Validation', () => {
     whereExpectErrors('from a_index | where textField == "a" or null', []);
   });
 
+  describe('parenthesized expressions', () => {
+    test('validates unknown columns inside parens', () => {
+      whereExpectErrors('from a_index | where (unknownColumn > 0)', [
+        'Unknown column "unknownColumn"',
+      ]);
+    });
+
+    test('validates type errors inside parens', () => {
+      whereExpectErrors('from a_index | where (textField + 1)', [
+        getNoValidCallSignatureError('+', ['text', 'integer']),
+      ]);
+    });
+
+    test('accepts valid boolean expressions inside parens', () => {
+      whereExpectErrors('from a_index | where (doubleField > 0)', []);
+      whereExpectErrors('from a_index | where (doubleField > 0) AND booleanField', []);
+      whereExpectErrors('from a_index | where NOT (doubleField > 0)', []);
+    });
+  });
+
   test('accepts string literals in IN operator for ip and version fields', () => {
     // ip fields accept string literals via implicit casting (same as == operator)
     whereExpectErrors(`from a_index | where ipField IN ("1.1.1.1")`, []);

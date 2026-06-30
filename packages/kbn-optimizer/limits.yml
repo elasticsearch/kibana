@@ -1,7 +1,7 @@
 pageLoadAssetSize:
   actions: 20500
   advancedSettings: 6196
-  agentBuilder: 65830
+  agentBuilder: 52317
   agentBuilderDashboards: 7786
   agentBuilderPlatform: 15544
   agentBuilderWorkflows: 24405
@@ -93,7 +93,7 @@ pageLoadAssetSize:
   inference: 10368
   inferenceWorkflows: 25000
   infra: 56302
-  ingestHub: 14788
+  ingestHub: 12730
   ingestPipelines: 17866
   inputControlVis: 7638
   inspectComponent: 4590
@@ -116,13 +116,13 @@ pageLoadAssetSize:
   logstash: 15882
   maintenanceWindows: 8775
   management: 14304
-  maps: 36281
+  maps: 36005
   mapsEms: 6734
   metricsDataAccess: 44950
   ml: 99842
   mockIdpPlugin: 7463
   monitoring: 28983
-  navigation: 11814
+  navigation: 17399
   newsfeed: 11110
   noDataPage: 1749
   notificationCenter: 1791
@@ -166,7 +166,7 @@ pageLoadAssetSize:
   searchQueryRules: 6689
   searchSynonyms: 6371
   security: 79627
-  securitySolution: 171101
+  securitySolution: 188674
   securitySolutionEss: 42592
   securitySolutionServerless: 57290
   serverless: 7412
@@ -216,3 +216,4 @@ pageLoadAssetSize:
   workflowsExtensions: 43032
   workflowsManagement: 39968
   workplaceAIApp: 6234
+  

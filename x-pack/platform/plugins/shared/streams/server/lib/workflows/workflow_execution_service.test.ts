@@ -6,7 +6,7 @@
  */
 
 import { httpServerMock } from '@kbn/core/server/mocks';
-import { SigEventsWorkflowStatus } from '@kbn/streams-schema';
+import { SignificantEventsWorkflowStatus } from '@kbn/streams-schema';
 import { ExecutionStatus } from '@kbn/workflows';
 import { WorkflowExecutionService } from './workflow_execution_service';
 
@@ -41,16 +41,16 @@ const createService = (overrides: Record<string, jest.Mock> = {}) => {
 describe('WorkflowExecutionService', () => {
   describe('classifyExecutionStatus', () => {
     it.each([
-      [ExecutionStatus.PENDING, SigEventsWorkflowStatus.InProgress],
-      [ExecutionStatus.RUNNING, SigEventsWorkflowStatus.InProgress],
-      [ExecutionStatus.WAITING, SigEventsWorkflowStatus.InProgress],
-      [ExecutionStatus.WAITING_FOR_INPUT, SigEventsWorkflowStatus.InProgress],
-      [ExecutionStatus.WAITING_FOR_CHILD, SigEventsWorkflowStatus.InProgress],
-      [ExecutionStatus.COMPLETED, SigEventsWorkflowStatus.Completed],
-      [ExecutionStatus.FAILED, SigEventsWorkflowStatus.Failed],
-      [ExecutionStatus.TIMED_OUT, SigEventsWorkflowStatus.Failed],
-      [ExecutionStatus.CANCELLED, SigEventsWorkflowStatus.Canceled],
-      [ExecutionStatus.SKIPPED, SigEventsWorkflowStatus.Canceled],
+      [ExecutionStatus.PENDING, SignificantEventsWorkflowStatus.InProgress],
+      [ExecutionStatus.RUNNING, SignificantEventsWorkflowStatus.InProgress],
+      [ExecutionStatus.WAITING, SignificantEventsWorkflowStatus.InProgress],
+      [ExecutionStatus.WAITING_FOR_INPUT, SignificantEventsWorkflowStatus.InProgress],
+      [ExecutionStatus.WAITING_FOR_CHILD, SignificantEventsWorkflowStatus.InProgress],
+      [ExecutionStatus.COMPLETED, SignificantEventsWorkflowStatus.Completed],
+      [ExecutionStatus.FAILED, SignificantEventsWorkflowStatus.Failed],
+      [ExecutionStatus.TIMED_OUT, SignificantEventsWorkflowStatus.Failed],
+      [ExecutionStatus.CANCELLED, SignificantEventsWorkflowStatus.Canceled],
+      [ExecutionStatus.SKIPPED, SignificantEventsWorkflowStatus.Canceled],
     ])('maps %s to %s', (executionStatus, expected) => {
       expect(WorkflowExecutionService.classifyExecutionStatus(executionStatus)).toBe(expected);
     });
@@ -97,7 +97,10 @@ describe('WorkflowExecutionService', () => {
 
       const result = await service.getStatus({ spaceId: 'space-a' });
 
-      expect(result).toEqual({ status: SigEventsWorkflowStatus.NotStarted, executionId: null });
+      expect(result).toEqual({
+        status: SignificantEventsWorkflowStatus.NotStarted,
+        executionId: null,
+      });
     });
 
     it('returns InProgress with executionId for a running execution', async () => {
@@ -110,7 +113,7 @@ describe('WorkflowExecutionService', () => {
       const result = await service.getStatus({ spaceId: 'space-a' });
 
       expect(result).toEqual({
-        status: SigEventsWorkflowStatus.InProgress,
+        status: SignificantEventsWorkflowStatus.InProgress,
         executionId: 'exec-1',
       });
     });
@@ -125,7 +128,7 @@ describe('WorkflowExecutionService', () => {
       const result = await service.getStatus({ spaceId: 'space-a' });
 
       expect(result).toEqual({
-        status: SigEventsWorkflowStatus.Completed,
+        status: SignificantEventsWorkflowStatus.Completed,
         executionId: 'exec-1',
       });
     });
@@ -140,7 +143,7 @@ describe('WorkflowExecutionService', () => {
       const result = await service.getStatus({ spaceId: 'space-a' });
 
       expect(result).toEqual({
-        status: SigEventsWorkflowStatus.Failed,
+        status: SignificantEventsWorkflowStatus.Failed,
         executionId: 'exec-1',
         error: 'boom',
       });
@@ -156,7 +159,7 @@ describe('WorkflowExecutionService', () => {
       const result = await service.getStatus({ spaceId: 'space-a' });
 
       expect(result).toEqual({
-        status: SigEventsWorkflowStatus.Failed,
+        status: SignificantEventsWorkflowStatus.Failed,
         executionId: 'exec-1',
         error: `Workflow ${WORKFLOW_ID} timed out`,
       });

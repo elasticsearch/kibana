@@ -322,4 +322,84 @@ describe('denormalizeEvent', () => {
     expect(rows[0].action_group_count).toBe(0);
     expect(rows[0].workflows).toEqual([]);
   });
+
+  describe('when search is not active', () => {
+    it('returns all rule ids when matchingSearchIds is undefined', () => {
+      const event = buildEvent({
+        kibana: {
+          saved_objects: [
+            { type: ACTION_POLICY_SAVED_OBJECT_TYPE, id: 'policy-1' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-a' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-b' },
+          ],
+          alerting_v2: { dispatcher: {} },
+        },
+      });
+      const rows = denormalizeEvent(event, EMPTY_NAME_MAPS, undefined);
+      expect(rows.map((r) => r.rule.id)).toEqual(['rule-a', 'rule-b']);
+    });
+  });
+
+  describe('when search is active', () => {
+    it('returns [] when search is active but there are no matches', () => {
+      const event = buildEvent({
+        kibana: {
+          saved_objects: [
+            { type: ACTION_POLICY_SAVED_OBJECT_TYPE, id: 'policy-1' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-a' },
+          ],
+          alerting_v2: { dispatcher: {} },
+        },
+      });
+      expect(
+        denormalizeEvent(event, EMPTY_NAME_MAPS, {
+          policyIds: [],
+          ruleIds: [],
+          hasMatches: false,
+          matches: null,
+        })
+      ).toEqual([]);
+    });
+
+    it('returns all rule ids if policy is in search matches', () => {
+      const event = buildEvent({
+        kibana: {
+          saved_objects: [
+            { type: ACTION_POLICY_SAVED_OBJECT_TYPE, id: 'policy-1' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-a' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-b' },
+          ],
+          alerting_v2: { dispatcher: {} },
+        },
+      });
+      const rows = denormalizeEvent(event, EMPTY_NAME_MAPS, {
+        policyIds: ['policy-1'],
+        ruleIds: [],
+        hasMatches: true,
+        matches: null,
+      });
+      expect(rows.map((r) => r.rule.id)).toEqual(['rule-a', 'rule-b']);
+    });
+
+    it('returns only matching rule ids if policy is not in search matches', () => {
+      const event = buildEvent({
+        kibana: {
+          saved_objects: [
+            { type: ACTION_POLICY_SAVED_OBJECT_TYPE, id: 'policy-1' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-a' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-b' },
+            { type: RULE_SAVED_OBJECT_TYPE, id: 'rule-c' },
+          ],
+          alerting_v2: { dispatcher: {} },
+        },
+      });
+      const rows = denormalizeEvent(event, EMPTY_NAME_MAPS, {
+        policyIds: ['policy-2'],
+        ruleIds: ['rule-a', 'rule-c'],
+        hasMatches: true,
+        matches: null,
+      });
+      expect(rows.map((r) => r.rule.id)).toEqual(['rule-a', 'rule-c']);
+    });
+  });
 });

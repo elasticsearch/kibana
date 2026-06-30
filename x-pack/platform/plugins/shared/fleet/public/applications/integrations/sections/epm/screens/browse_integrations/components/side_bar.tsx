@@ -12,6 +12,7 @@ import {
   EuiHorizontalRule,
   EuiIcon,
   EuiLink,
+  EuiNotificationBadge,
   EuiSpacer,
   useEuiTheme,
 } from '@elastic/eui';
@@ -95,6 +96,7 @@ const StickySidebar = styled(EuiFlexItem)`
 export interface SidebarProps extends Props {
   CreateIntegrationCardButton?: React.ComponentType;
   hasCreatedIntegrations?: boolean;
+  createdIntegrationsCount?: number;
   isLoadingCreatedIntegrations?: boolean;
   manageIntegrationsHref?: string;
   onManageIntegrationsClick?: (ev: React.MouseEvent<HTMLAnchorElement>) => void;
@@ -107,6 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCategoryChange,
   CreateIntegrationCardButton,
   hasCreatedIntegrations,
+  createdIntegrationsCount,
   isLoadingCreatedIntegrations,
   manageIntegrationsHref,
   onManageIntegrationsClick,
@@ -124,7 +127,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={onManageIntegrationsClick}
               data-test-subj="manageCreatedIntegrationsLink"
               css={{
-                display: 'inline-flex',
+                display: 'flex',
+                width: '100%',
                 alignItems: 'center',
                 gap: euiTheme.size.s,
                 textDecoration: 'none',
@@ -136,12 +140,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   color: euiTheme.colors.text,
                   fontSize: euiTheme.size.m,
                   fontWeight: euiTheme.font.weight.bold,
+                  flexGrow: 1,
                 }}
               >
                 {i18n.translate('xpack.fleet.epmList.manageCreatedIntegrationsLinkLabel', {
                   defaultMessage: 'Manage my integrations',
                 })}
               </span>
+              {createdIntegrationsCount ? (
+                <EuiNotificationBadge
+                  size="m"
+                  color="accent"
+                  className="euiFacetButton__quantity"
+                  data-test-subj="manageCreatedIntegrationsCount"
+                >
+                  {createdIntegrationsCount}
+                </EuiNotificationBadge>
+              ) : null}
             </EuiLink>
           ) : (
             <CreateIntegrationCardButton />

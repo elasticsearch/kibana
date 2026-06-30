@@ -67,6 +67,16 @@ jest.mock('../../../../../flyout/shared/hooks/use_stable_expandable_flyout_state
   useStableExpandableFlyoutState: () => mockUseStableExpandableFlyoutState(),
 }));
 
+const mockOpenPreviewPanel = jest.fn();
+const mockOnShowAlert = jest.fn();
+
+jest.mock('@kbn/expandable-flyout', () => ({
+  useExpandableFlyoutApi: () => ({ openPreviewPanel: mockOpenPreviewPanel }),
+  useExpandableFlyoutState: () => ({}),
+  useExpandableFlyoutHistory: () => [],
+  ExpandableFlyout: () => null,
+}));
+
 const riskScore = {
   '@timestamp': '2021-08-19T16:00:00.000Z',
   user: {
@@ -153,7 +163,11 @@ describe('RiskInputsTab', () => {
 
     const { getByTestId, queryByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
@@ -166,7 +180,11 @@ describe('RiskInputsTab', () => {
 
     const { queryByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
@@ -204,7 +222,11 @@ describe('RiskInputsTab', () => {
 
     const { queryByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
@@ -225,7 +247,11 @@ describe('RiskInputsTab', () => {
 
     const { getByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
@@ -243,7 +269,11 @@ describe('RiskInputsTab', () => {
 
     const { getByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
     const contextsTable = getByTestId('risk-input-contexts-table');
@@ -262,7 +292,11 @@ describe('RiskInputsTab', () => {
 
     const { getByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
     const contextsTable = getByTestId('risk-input-contexts-table');
@@ -281,7 +315,11 @@ describe('RiskInputsTab', () => {
 
     const { getByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
@@ -310,7 +348,11 @@ describe('RiskInputsTab', () => {
 
     const { queryByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
@@ -323,7 +365,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId={'scopeId'}
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -371,7 +413,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId={'scopeId'}
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -450,7 +492,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId={'scopeId'}
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -517,7 +559,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId={'scopeId'}
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -596,7 +638,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId={'scopeId'}
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -644,7 +686,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId="scopeId"
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -683,7 +725,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId="scopeId"
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -722,7 +764,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId="scopeId"
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -799,7 +841,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId="scopeId"
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -849,7 +891,7 @@ describe('RiskInputsTab', () => {
         <RiskInputsTab
           entityType={EntityType.user}
           entityName="elastic"
-          scopeId="scopeId"
+          onShowAlert={mockOnShowAlert}
           entityId="user:elastic"
         />
       </TestProviders>
@@ -896,7 +938,11 @@ describe('RiskInputsTab', () => {
 
     const { getByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
@@ -937,10 +983,46 @@ describe('RiskInputsTab', () => {
 
     const { getByTestId } = render(
       <TestProviders>
-        <RiskInputsTab entityType={EntityType.user} entityName="elastic" scopeId={'scopeId'} />
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={mockOnShowAlert}
+        />
       </TestProviders>
     );
 
     expect(getByTestId('risk-input-contexts-table')).toHaveTextContent('High Risk Vendors');
+  });
+});
+
+describe('RiskInputsTab - alert preview navigation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseStableExpandableFlyoutState.mockReturnValue({});
+    mockUseGetWatchlists.mockReturnValue({ data: [] });
+    mockUseResolutionGroup.mockReturnValue({ data: undefined });
+    mockUseRiskScore.mockReturnValue({ loading: false, error: false, data: [riskScore] });
+    mockUseRiskContributingAlerts.mockReturnValue({
+      loading: false,
+      error: false,
+      data: [alertInputDataMock],
+    });
+  });
+
+  it('invokes the provided onShowAlert callback with the row identifiers', () => {
+    const onShowAlert = jest.fn();
+    const { getByTestId } = render(
+      <TestProviders>
+        <RiskInputsTab
+          entityType={EntityType.user}
+          entityName="elastic"
+          onShowAlert={onShowAlert}
+        />
+      </TestProviders>
+    );
+
+    fireEvent.click(getByTestId(EXPAND_ALERT_TEST_ID));
+
+    expect(onShowAlert).toHaveBeenCalledWith('test-id', 'test-index');
   });
 });

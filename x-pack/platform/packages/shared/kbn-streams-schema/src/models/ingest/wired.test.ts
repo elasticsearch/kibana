@@ -175,7 +175,6 @@ describe('WiredStream', () => {
         },
         dashboards: [],
         rules: [],
-        queries: [],
       },
     ])('is not valid', (val) => {
       expect(
@@ -213,7 +212,6 @@ describe('WiredStream', () => {
     it.each([
       {
         dashboards: [],
-        queries: [],
         stream: {
           name: 'my-name',
           description: '',

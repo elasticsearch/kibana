@@ -16,6 +16,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiSpacer,
+  EuiToolTip,
 } from '@elastic/eui';
 import React, { useState } from 'react';
 import {
@@ -41,12 +42,14 @@ export const RuleFlyoutShowRequest = ({ onClose }: RuleFlyoutShowRequestProps) =
       <EuiFlyoutHeader hasBorder>
         <EuiFlexGroup>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="chevronSingleLeft"
-              onClick={onClose}
-              aria-label={RULE_FLYOUT_HEADER_BACK_TEXT}
-              color="text"
-            />
+            <EuiToolTip content={RULE_FLYOUT_HEADER_BACK_TEXT} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="chevronSingleLeft"
+                onClick={onClose}
+                aria-label={RULE_FLYOUT_HEADER_BACK_TEXT}
+                color="text"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
           <EuiFlexItem>
             <EuiTitle size="xs" data-test-subj="ruleFlyoutShowRequestTitle">

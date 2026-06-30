@@ -10,18 +10,16 @@ import {
   EuiText,
 } from '@elastic/eui';
 import type { CoreStart } from '@kbn/core/public';
-import type { NavigationPublicPluginStart } from '@kbn/navigation-plugin/public';
 
-import { PLUGIN_ID, PLUGIN_NAME } from '../../common';
+import { PLUGIN_NAME } from '../../common';
 
 interface <%= upperCamelCase(name) %>AppDeps {
   basename: string;
   notifications: CoreStart['notifications'];
   http: CoreStart['http'];
-  navigation: NavigationPublicPluginStart;
 }
 
-export const <%= upperCamelCase(name) %>App = ({ basename, notifications, http, navigation }: <%= upperCamelCase(name) %>AppDeps) => {
+export const <%= upperCamelCase(name) %>App = ({ basename, notifications, http }: <%= upperCamelCase(name) %>AppDeps) => {
   // Use React hooks to manage state.
   const [timestamp, setTimestamp] = useState<string | undefined>();
 
@@ -42,12 +40,10 @@ export const <%= upperCamelCase(name) %>App = ({ basename, notifications, http, 
   };
 
   // Render the application DOM.
-  // Note that `navigation.ui.TopNavMenu` is a stateful component exported on the `navigation` plugin's start contract.
   return (
     <Router basename={basename}>
       <I18nProvider>
         <>
-          <navigation.ui.TopNavMenu appName={ PLUGIN_ID } showSearchBar={true} useDefaultBehaviors={true}/>
           <EuiPageTemplate restrictWidth="1000px">
             <EuiPageTemplate.Header>
               <EuiTitle size="l">
@@ -84,7 +80,7 @@ export const <%= upperCamelCase(name) %>App = ({ basename, notifications, http, 
                     values={{ time: timestamp ? timestamp : 'Unknown' }}
                   />
                 </p>
-                <EuiButton type="primary" size="s" onClick={onClickHandler}>
+                <EuiButton size="s" onClick={onClickHandler}>
                   <FormattedMessage
                     id="<%= camelCase(name) %>.buttonText"
                     defaultMessage="<%= hasServer ? 'Get data' : 'Click me' %>"

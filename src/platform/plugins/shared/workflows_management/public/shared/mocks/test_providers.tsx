@@ -24,6 +24,7 @@ interface TestProviderProps {
   store?: ReturnType<typeof createMockStore>;
   queryClient?: QueryClient;
   services?: StartServicesMock;
+  initialEntries?: React.ComponentProps<typeof MemoryRouter>['initialEntries'];
 }
 
 export const TestProvider: React.FC<PropsWithChildren<TestProviderProps>> = ({
@@ -31,6 +32,7 @@ export const TestProvider: React.FC<PropsWithChildren<TestProviderProps>> = ({
   store,
   queryClient,
   services,
+  initialEntries,
 }) => {
   const testStore = store ?? createMockStore();
   const testQueryClient = queryClient ?? createTestQueryClient();
@@ -40,7 +42,7 @@ export const TestProvider: React.FC<PropsWithChildren<TestProviderProps>> = ({
       <KibanaContextProvider services={mockServices}>
         <QueryClientProvider client={testQueryClient}>
           <WorkflowsContextProvider>
-            <MemoryRouter>
+            <MemoryRouter initialEntries={initialEntries}>
               <I18nProviderMock>
                 <Provider store={testStore}>{children}</Provider>
               </I18nProviderMock>

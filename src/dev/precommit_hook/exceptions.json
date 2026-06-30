@@ -87,6 +87,7 @@
     "x-pack/solutions/security/plugins/entity_store/public/hooks/useInstallEntityStoreV2.tsx": "'useInstallEntityStoreV2.tsx' should be snake_case"
   },
   "@elastic/experience-docs": {
+    "docs/extend/key-concepts/ui/lens-config-api/_snippets": "'_snippets' should be kebab-case",
     "docs/reference/connectors-kibana/_snippets": "'_snippets' should be kebab-case",
     "docs/reference/user-activity/_snippets": "'_snippets' should be kebab-case"
   },

@@ -31,4 +31,40 @@ export class Navigation {
   getBreadcrumbByText(text: string) {
     return this.page.locator('.euiBreadcrumb', { hasText: text });
   }
+
+  async openUserMenu() {
+    await this.page.testSubj.click('userMenuButton');
+    await this.page.testSubj.locator('userMenu').waitFor({ state: 'visible' });
+  }
+
+  getCustomizeNavLink() {
+    return this.page.testSubj.locator('customizeNavigationUserMenuLink');
+  }
+
+  private getCustomizeNavModal() {
+    return this.page.testSubj.locator('customizeNavigationModal');
+  }
+
+  async openCustomizeNavModal() {
+    await this.openUserMenu();
+    await this.page.testSubj.click('customizeNavigationUserMenuLink');
+    await this.getCustomizeNavModal().waitFor({ state: 'visible' });
+  }
+
+  async toggleItemVisibility(id: string) {
+    await this.page.testSubj.click(`customizeNavigationItemToggle-${id}`);
+  }
+
+  async applyCustomization() {
+    // Set up the response waiter before clicking so we don't miss the request.
+    // We don't assert on status: the PUT can succeed (200) or fail (e.g. a
+    // read-only user lacks user-storage write access), and callers assert the
+    // resulting UI state (persisted nav, or an error toast) afterwards.
+    const saved = this.page.waitForResponse(
+      (resp) => resp.url().includes('/internal/user_storage/') && resp.request().method() === 'PUT'
+    );
+    await this.page.testSubj.click('customizeNavigationSaveButton');
+    await saved;
+    await this.getCustomizeNavModal().waitFor({ state: 'hidden' });
+  }
 }

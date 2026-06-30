@@ -7,7 +7,7 @@
 
 import { useMemo } from 'react';
 import type { QueryClient } from '@kbn/react-query';
-import produce from 'immer';
+import produce, { type Draft } from 'immer';
 import type {
   ConversationRound,
   ReasoningStep,
@@ -27,7 +27,15 @@ import {
   carriedOverTodos,
 } from '@kbn/agent-builder-common';
 import type { TodoItem } from '@kbn/agent-builder-common/chat/conversation';
-import type { PromptRequest } from '@kbn/agent-builder-common/agents';
+import {
+  createAskUserQuestionStep,
+  isAskUserQuestionStep,
+} from '@kbn/agent-builder-common/chat/conversation';
+import type { PromptRequest, PromptResponse } from '@kbn/agent-builder-common/agents';
+import {
+  isAskUserQuestionPrompt,
+  isAskUserQuestionPromptResponse,
+} from '@kbn/agent-builder-common/agents';
 import type { ToolResult } from '@kbn/agent-builder-common/tools/tool_result';
 import type { AttachmentInput, VersionedAttachment } from '@kbn/agent-builder-common/attachments';
 import type { ConversationsService } from '../../../services/conversations';
@@ -71,6 +79,7 @@ export interface ConversationActions {
   setTimeToFirstToken: ({ timeToFirstToken }: { timeToFirstToken: number }) => void;
   addPendingPrompt: ({ prompt }: { prompt: PromptRequest }) => void;
   clearPendingPrompts: () => void;
+  setAskUserQuestionAnswers: (prompts: Record<string, PromptResponse>) => void;
   onConversationCreated: ({ title }: { title: string }) => void;
   addBackgroundExecutionCompleteStep: ({ step }: { step: BackgroundAgentCompleteStep }) => void;
   addOrUpdateTodosStep: ({ todos }: { todos: TodoItem[] }) => void;
@@ -105,7 +114,7 @@ export const createConversationActions = ({
   const setConversation = (updater: (conversation?: Conversation) => Conversation) => {
     queryClient.setQueryData<Conversation>(queryKey, updater);
   };
-  const setCurrentRound = (updater: (conversationRound: ConversationRound) => void) => {
+  const setCurrentRound = (updater: (conversationRound: Draft<ConversationRound>) => void) => {
     setConversation(
       produce((draft) => {
         const round = draft?.rounds?.at(-1);
@@ -318,6 +327,32 @@ export const createConversationActions = ({
       setCurrentRound((round) => {
         round.pending_prompts = undefined;
         round.status = ConversationRoundStatus.inProgress;
+      });
+    },
+    setAskUserQuestionAnswers: (prompts: Record<string, PromptResponse>) => {
+      setCurrentRound((round) => {
+        for (const [promptId, response] of Object.entries(prompts)) {
+          if (!isAskUserQuestionPromptResponse(response)) continue;
+          const existing = round.steps.find(
+            (s) => isAskUserQuestionStep(s) && s.prompt_id === promptId
+          );
+          if (existing && isAskUserQuestionStep(existing)) {
+            existing.answers = response.answers;
+          } else {
+            const pendingPrompt = round.pending_prompts?.find(
+              (p) => isAskUserQuestionPrompt(p) && p.id === promptId
+            );
+            if (pendingPrompt && isAskUserQuestionPrompt(pendingPrompt)) {
+              round.steps.push(
+                createAskUserQuestionStep({
+                  prompt_id: promptId,
+                  questions: pendingPrompt.questions,
+                  answers: response.answers,
+                })
+              );
+            }
+          }
+        }
       });
     },
     onConversationCreated: ({ title }: { title: string }) => {

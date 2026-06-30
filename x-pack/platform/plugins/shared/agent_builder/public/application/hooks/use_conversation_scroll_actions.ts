@@ -5,130 +5,156 @@
  * 2.0.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-const DISTANCE_FROM_BOTTOM_THRESHOLD = 50; // pixels
-const SCROLL_POSITION_CHECK_INTERVAL = 1500; // milliseconds
-const DEBOUNCE_DELAY = 20; // milliseconds
+const AT_BOTTOM_THRESHOLD = 50;
+const SMOOTH_SCROLL_TIMEOUT_MS = 2000;
 
-const scrollToMostRecentRound = ({
-  scrollContainer,
-  position,
-  scrollBehavior = 'smooth',
-}: {
-  scrollContainer: HTMLDivElement;
-  position: ScrollLogicalPosition;
-  scrollBehavior?: ScrollBehavior;
-}) => {
-  requestAnimationFrame(() => {
-    // Find the rounds container within the specific scroll container
-    const conversationRoundsElement = scrollContainer.querySelector(
-      '[id="agentBuilderConversationRoundsContainer"]'
-    );
-    if (conversationRoundsElement) {
-      const rounds = conversationRoundsElement.children;
-      if (rounds.length >= 1) {
-        // Get the last round (the user's last message)
-        const lastRound = rounds[rounds.length - 1] as HTMLElement;
-        lastRound.scrollIntoView({
-          behavior: scrollBehavior,
-          block: position,
-        });
-      }
-    }
-  });
-};
-
-const checkScrollPosition = (
-  scrollContainer: HTMLDivElement,
-  setShowScrollButton: (show: boolean) => void
-) => {
-  const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-  const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-  setShowScrollButton(distanceFromBottom > DISTANCE_FROM_BOTTOM_THRESHOLD);
-};
-
-const createDebouncedCheckScrollPosition = (
-  scrollContainer: HTMLDivElement,
-  setShowScrollButton: (show: boolean) => void
-) => {
-  let debounceTimeout: NodeJS.Timeout;
-
-  return () => {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(
-      () => checkScrollPosition(scrollContainer, setShowScrollButton),
-      DEBOUNCE_DELAY
-    );
-  };
-};
+const isAtBottom = (el: HTMLElement) =>
+  el.scrollHeight - el.scrollTop - el.clientHeight <= AT_BOTTOM_THRESHOLD;
 
 export const useConversationScrollActions = ({
-  isResponseLoading,
   conversationId,
   scrollContainer,
 }: {
-  isResponseLoading: boolean;
   conversationId: string;
   scrollContainer: HTMLDivElement | null;
 }) => {
+  const stuckToBottomRef = useRef(true);
+  const smoothScrollingRef = useRef(false);
+  const pendingSmoothScrollRef = useRef(false);
+  const smoothScrollFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollGenRef = useRef(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
+
+  const cancelSmoothScroll = useCallback(() => {
+    scrollGenRef.current++;
+    if (smoothScrollFallbackTimerRef.current !== null) {
+      clearTimeout(smoothScrollFallbackTimerRef.current);
+      smoothScrollFallbackTimerRef.current = null;
+    }
+    smoothScrollingRef.current = false;
+  }, []);
+
+  const stickToBottom = useCallback(() => {
+    if (!scrollContainer) return;
+    cancelSmoothScroll();
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    stuckToBottomRef.current = true;
+    setShowScrollButton(false);
+  }, [scrollContainer, cancelSmoothScroll]);
+
+  const doSmoothScroll = useCallback(() => {
+    if (!scrollContainer) return;
+
+    if (smoothScrollFallbackTimerRef.current !== null) {
+      clearTimeout(smoothScrollFallbackTimerRef.current);
+    }
+
+    smoothScrollingRef.current = true;
+    const gen = ++scrollGenRef.current;
+    const scrollTarget = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+    const onComplete = () => {
+      smoothScrollingRef.current = false;
+      const reachedTarget =
+        Math.abs(scrollContainer.scrollTop - scrollTarget) <= AT_BOTTOM_THRESHOLD;
+      if (isAtBottom(scrollContainer) || reachedTarget) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        stuckToBottomRef.current = true;
+        setShowScrollButton(false);
+      } else {
+        stuckToBottomRef.current = false;
+        setShowScrollButton(true);
+      }
+    };
+
+    scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+
+    scrollContainer.addEventListener(
+      'scrollend',
+      () => {
+        if (gen !== scrollGenRef.current) return;
+        if (smoothScrollFallbackTimerRef.current !== null) {
+          clearTimeout(smoothScrollFallbackTimerRef.current);
+          smoothScrollFallbackTimerRef.current = null;
+        }
+        onComplete();
+      },
+      { once: true }
+    );
+
+    smoothScrollFallbackTimerRef.current = setTimeout(() => {
+      smoothScrollFallbackTimerRef.current = null;
+      if (gen !== scrollGenRef.current) return;
+      onComplete();
+    }, SMOOTH_SCROLL_TIMEOUT_MS);
+  }, [scrollContainer]);
+
+  useEffect(() => {
+    cancelSmoothScroll();
+    pendingSmoothScrollRef.current = false;
+    stuckToBottomRef.current = true;
+    if (!scrollContainer) return;
+    const onScroll = () => {
+      if (smoothScrollingRef.current) return;
+      const atBottom = isAtBottom(scrollContainer);
+      stuckToBottomRef.current = atBottom;
+      setShowScrollButton(!atBottom);
+    };
+    scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', onScroll);
+  }, [scrollContainer, cancelSmoothScroll]);
 
   useEffect(() => {
     if (!scrollContainer) return;
-
-    const debouncedCheckScrollPosition = createDebouncedCheckScrollPosition(
-      scrollContainer,
-      setShowScrollButton
-    );
-
-    scrollContainer.addEventListener('scroll', debouncedCheckScrollPosition);
-
-    // Set up interval for streaming check (only when response is loading)
-    let interval: NodeJS.Timeout | undefined;
-    if (isResponseLoading) {
-      interval = setInterval(
-        () => checkScrollPosition(scrollContainer, setShowScrollButton),
-        SCROLL_POSITION_CHECK_INTERVAL
-      );
-    } else {
-      // when the content stops streaming, check the scroll position
-      checkScrollPosition(scrollContainer, setShowScrollButton);
-    }
-
-    return () => {
-      scrollContainer.removeEventListener('scroll', debouncedCheckScrollPosition);
-      if (interval) clearInterval(interval);
-    };
-  }, [isResponseLoading, conversationId, scrollContainer]);
-
-  const stickToBottom = useCallback(() => {
-    if (!scrollContainer) {
-      return;
-    }
-    scrollContainer.scrollTop = scrollContainer.scrollHeight;
-  }, [scrollContainer]);
-
-  // Scrolls the most recent round to the top of it's parent scroll container
-  const scrollToMostRecentRoundTop = useCallback(() => {
-    if (!scrollContainer) return;
-    requestAnimationFrame(() => {
-      scrollToMostRecentRound({ scrollContainer, position: 'start' });
+    const observer = new ResizeObserver(() => {
+      if (!stuckToBottomRef.current) return;
+      if (smoothScrollingRef.current) {
+        pendingSmoothScrollRef.current = false;
+        return;
+      }
+      if (pendingSmoothScrollRef.current) {
+        pendingSmoothScrollRef.current = false;
+        if (!isAtBottom(scrollContainer)) {
+          doSmoothScroll();
+        }
+      } else {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
     });
-  }, [scrollContainer]);
+    const inner = scrollContainer.firstElementChild;
+    if (inner) observer.observe(inner);
+    return () => observer.disconnect();
+  }, [scrollContainer, doSmoothScroll]);
 
-  // Smoothly scrolls to the bottom of the scroll container
+  useEffect(() => {
+    if (!scrollContainer || !conversationId) return;
+    stickToBottom();
+  }, [conversationId, scrollContainer, stickToBottom]);
+
   const smoothScrollToBottom = useCallback(() => {
     if (!scrollContainer) return;
-    scrollContainer.scrollTo({
-      top: scrollContainer.scrollHeight,
-      behavior: 'smooth',
-    });
+    if (smoothScrollingRef.current) return;
+    if (isAtBottom(scrollContainer)) {
+      stuckToBottomRef.current = true;
+      setShowScrollButton(false);
+      return;
+    }
+    setShowScrollButton(false);
+    doSmoothScroll();
+  }, [scrollContainer, doSmoothScroll]);
+
+  const onMessageSent = useCallback(() => {
+    if (!scrollContainer) return;
+    stuckToBottomRef.current = true;
+    pendingSmoothScrollRef.current = true;
+    setShowScrollButton(false);
   }, [scrollContainer]);
 
   return {
     showScrollButton,
-    scrollToMostRecentRoundTop,
+    onMessageSent,
     smoothScrollToBottom,
     stickToBottom,
   };

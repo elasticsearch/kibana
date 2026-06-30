@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { EuiBetaBadge, EuiDelayRender, EuiEmptyPrompt, EuiSkeletonText } from '@elastic/eui';
+import { EuiDelayRender, EuiEmptyPrompt, EuiSkeletonText } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { ChartSectionTemplate } from '@kbn/unified-histogram';
 import { getChangePointSeriesColumns } from '@kbn/esql-utils';
@@ -73,23 +73,6 @@ export const ChangePointExperienceGrid: React.FC<UnifiedChangePointGridProps> = 
         toolbarCss={chartToolbarCss}
         toolbar={{
           toggleActions: toolbarToggleActions,
-          // Empty leftSide creates a growing flex spacer that pushes the badge to the far right.
-          leftSide: <></>,
-          additionalControls: {
-            prependRight: (
-              <EuiBetaBadge
-                label={i18n.translate('changePointChartViewer.technicalPreviewLabel', {
-                  defaultMessage: 'Technical preview',
-                })}
-                size="s"
-                alignment="middle"
-                tooltipContent={i18n.translate('changePointChartViewer.technicalPreviewTooltip', {
-                  defaultMessage:
-                    'This functionality is in technical preview and may change or be removed in a future release.',
-                })}
-              />
-            ),
-          },
         }}
       >
         {showLoading ? (

@@ -5,58 +5,13 @@ title: Lens Config Builder API - Mosaic
 description: Lens Config Builder API - Mosaic
 date: 2024-03-04
 tags: ['kibana', 'dev', 'lens', 'mosaic']
+redirect_url: https://www.elastic.co/docs/extend/kibana/key-concepts/ui/lens-config-api/lens-config-builder-api-mosaic
 ---
 
-import Dataset from './dataset.mdx';
-import Breakdown from './breakdown.mdx';
+{/* REDIRECT_NOTICE_START */}
 
-Understanding `LensMosaicConfig` in detail
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://www.elastic.co/docs/extend/kibana/key-concepts/ui/lens-config-api/lens-config-builder-api-mosaic](https://www.elastic.co/docs/extend/kibana/key-concepts/ui/lens-config-api/lens-config-builder-api-mosaic)
+</DocCallOut>
 
-## Required Properties
-
-### `chartType`
-
-- **Type:** Fixed value `'mosaic'`
-- **Description:** Sets the chart type to mosaic, a variation of a stacked bar chart that displays the distribution of data across two categories.
-
-### `title`
-
-- **Type:** `string`
-- **Description:** The title of the visualization.
-
-<Dataset />
-
-### `breakdown`
-
-- **Type:** `LensBreakdownConfig`
-- **Description:** Configures the primary categorization of data for the mosaic chart. This breakdown specifies the main grouping of data, typically represented along one of the chart's axes. Check breakdown configuration details below.
-
-### `xAxis`
-
-- **Type:** `LensBreakdownConfig`
-- **Description:** Defines the configuration for the X-axis categorization in the mosaic chart. It determines how data points are grouped along the horizontal axis, influencing the chart's layout and the distribution of stacked segments. Check breakdown configuration details below.
-
-## Optional Properties
-
-<Breakdown />
-
-## Example
-
-```
-const mosaicConfig: LensConfig = {
-  chartType: 'mosaic',
-  title: 'Mosaic Chart',
-  dataset: {
-    esql: 'from kibana_sample_data_logs | stats bytes = sum(bytes) by geo.src, geo.dest',
-  },
-  breakdown: 'geo.src',
-  xAxis: 'geo.dest',
-};
-const configBuilder = new LensConfigBuilder(dataViewsAPI, lensFormulaAPI);
-const lensConfig = configBuilder.build(mosaicConfig, {
-  timeRange: { from: 'now-1y', to: 'now', type: 'relative' },
-  embeddable: true,
-});
-```
-
-This example demonstrates configuring a mosaic chart to visualize the distribution of product sales across different regions and categories. The `breakdown` is set to segment data by the top 5 regions, while the `xAxis` config segments further by the top 10 product categories. An ESQL query aggregates sales within the specified groupings, enabling the mosaic chart to display the proportional distribution of sales across these dimensions. This type of visualization is particularly useful for identifying patterns or disparities in sales performance across different market segments.
+{/* REDIRECT_NOTICE_END */}

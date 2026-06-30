@@ -23,6 +23,7 @@ import type {
   AskUserQuestionAnswer,
 } from '../agents/prompts';
 import type { RuntimeAgentConfigurationOverrides } from '../agents/definition';
+import type { ConversationAccessControl } from './access_control/types';
 import type { RoundState } from './round_state';
 
 /**
@@ -410,6 +411,8 @@ export interface Conversation {
    * Identifier of the bash/VFS workspace for this conversation.
    */
   workspace_id?: string;
+  /** Access mode for the conversation. Missing values are treated as private. */
+  access_control?: ConversationAccessControl;
 }
 
 export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';

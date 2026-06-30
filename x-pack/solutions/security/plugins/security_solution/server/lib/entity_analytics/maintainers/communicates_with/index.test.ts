@@ -63,6 +63,7 @@ describe('communicatesWithMaintainer', () => {
           totalWritten: 6,
           totalNotFound: 0,
           totalWriteErrors: 0,
+          totalDroppedTargets: 0,
           totalIterations: 8,
           truncated: false,
           lastRunTimestamp: '2026-05-21T00:00:00.000Z',

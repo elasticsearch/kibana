@@ -21,11 +21,13 @@ const tooltipAnchorStyle = css({
   lineHeight: 0,
 });
 
-export const withTooltip = (content: React.ReactElement, title?: string): React.ReactElement =>
-  title ? (
+export const withTooltip = (
+  content: React.ReactElement,
+  tooltip?: string | React.ReactNode
+): React.ReactElement => {
+  return tooltip ? (
     <EuiToolTip
-      id={title}
-      content={title}
+      content={tooltip}
       anchorProps={{
         css: css`
           display: inline-flex;
@@ -39,3 +41,4 @@ export const withTooltip = (content: React.ReactElement, title?: string): React.
   ) : (
     content
   );
+};

@@ -21,6 +21,7 @@ import { getRuleManagementFilters } from './rules/filters/route';
 import { patchRuleRoute } from './rules/patch_rule/route';
 import { readRuleRoute } from './rules/read_rule/route';
 import { ruleHistoryRoute } from './rules/rule_history/route';
+import { restoreRuleFromHistoryRoute } from './rules/restore_rule_from_history/route';
 import { updateRuleRoute } from './rules/update_rule/route';
 import { readTagsRoute } from './tags/read_tags/route';
 import { getCoverageOverviewRoute } from './rules/coverage_overview/route';
@@ -63,5 +64,6 @@ export const registerRuleManagementRoutes = (
   // alerting framework to actually produce history records).
   if (config.experimentalFeatures.ruleChangesHistoryEnabled) {
     ruleHistoryRoute(router);
+    restoreRuleFromHistoryRoute(router);
   }
 };

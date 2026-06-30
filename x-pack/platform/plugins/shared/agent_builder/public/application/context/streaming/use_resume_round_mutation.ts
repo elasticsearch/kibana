@@ -75,6 +75,9 @@ export const useResumeRoundMutation = ({
       const executionId = uuidv4();
       controllersRef.current.set(vars.conversationId, { controller, executionId });
 
+      // Optimistically populate ask_user_question step answers before clearing the prompt —
+      // pending_prompts is needed to reconstruct the step, so this must come first.
+      streamActions.setAskUserQuestionAnswers(vars.prompts);
       // Drop pending prompts from the round — the user has answered, the round is back in progress.
       streamActions.clearPendingPrompts();
 

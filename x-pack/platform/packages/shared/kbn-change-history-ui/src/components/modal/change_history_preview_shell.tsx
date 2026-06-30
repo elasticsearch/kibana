@@ -20,7 +20,7 @@ export interface ChangeHistoryPreviewShellProps {
   backLabel: string;
   title?: string;
   onBack: () => void;
-  footer?: ReactNode;
+  headerActions?: ReactNode;
   children: ReactNode;
 }
 
@@ -28,7 +28,7 @@ export function ChangeHistoryPreviewShell({
   backLabel,
   title,
   onBack,
-  footer,
+  headerActions,
   children,
 }: ChangeHistoryPreviewShellProps): JSX.Element {
   const euiThemeContext = useEuiTheme();
@@ -56,10 +56,8 @@ export function ChangeHistoryPreviewShell({
         flex: 1 1 auto;
         min-height: 0;
         overflow: hidden;
-      `,
-      footer: css`
-        flex-shrink: 0;
-        border-top: ${euiTheme.border.thin};
+        display: flex;
+        flex-direction: column;
       `,
     }),
     [euiTheme, euiThemeContext]
@@ -68,35 +66,39 @@ export function ChangeHistoryPreviewShell({
   return (
     <div css={styles.shell} data-test-subj="changeHistoryPreviewShell">
       <div css={styles.header}>
-        <EuiFlexGroup direction="column" gutterSize="xs" alignItems="flexStart" responsive={false}>
-          <EuiFlexItem grow={false}>
-            <EuiButtonEmpty
-              size="xs"
-              iconType="arrowLeft"
-              flush="left"
-              onClick={onBack}
-              data-test-subj="changeHistoryPreviewBack"
+        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false}>
+          <EuiFlexItem>
+            <EuiFlexGroup
+              direction="column"
+              gutterSize="xs"
+              alignItems="flexStart"
+              responsive={false}
             >
-              {backLabel}
-            </EuiButtonEmpty>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="arrowLeft"
+                  flush="left"
+                  onClick={onBack}
+                  data-test-subj="changeHistoryPreviewBack"
+                >
+                  {backLabel}
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              {title ? (
+                <EuiFlexItem grow={false}>
+                  <EuiTitle size="m">
+                    <h1>{title}</h1>
+                  </EuiTitle>
+                </EuiFlexItem>
+              ) : null}
+            </EuiFlexGroup>
           </EuiFlexItem>
-          {title ? (
-            <EuiFlexItem grow={false}>
-              <EuiTitle size="m">
-                <h1>{title}</h1>
-              </EuiTitle>
-            </EuiFlexItem>
-          ) : null}
+          {headerActions ? <EuiFlexItem grow={false}>{headerActions}</EuiFlexItem> : null}
         </EuiFlexGroup>
       </div>
 
       <div css={styles.body}>{children}</div>
-
-      {footer ? (
-        <div css={styles.footer} data-test-subj="changeHistoryPreviewFooter">
-          {footer}
-        </div>
-      ) : null}
     </div>
   );
 }

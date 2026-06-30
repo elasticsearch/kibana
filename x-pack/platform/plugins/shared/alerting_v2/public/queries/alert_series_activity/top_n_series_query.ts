@@ -7,6 +7,7 @@
 
 import { esql } from '@elastic/esql';
 import { ALERT_EVENTS_DATA_STREAM } from '@kbn/alerting-v2-episodes-ui/constants';
+import { ALERT_TIMELINE_TOP_N_DEFAULT } from '@kbn/alerting-v2-episodes-ui/alert_timeline';
 
 export interface TopNSeriesRow {
   group_hash: string;
@@ -14,25 +15,30 @@ export interface TopNSeriesRow {
 
 export interface BuildTopNSeriesQueryOptions {
   ruleId: string;
-  gteMs: number;
-  lteMs: number;
+  windowStartMs: number;
+  windowEndMs: number;
 }
 
 const toIsoUtc = (ms: number) => new Date(ms).toISOString();
 
-const MAX_SERIES_LIMIT = 10_000;
+/**
+ * Returns the `group_hash`es of the most-recently-active series in the window,
+ * capped to the number of lanes the chart renders
+ * (`SORT last_event_ts DESC | LIMIT ALERT_TIMELINE_TOP_N_DEFAULT`) — there's no
+ * value in pulling more series than are shown.
+ */
+export const buildTopNSeriesQuery = ({
+  ruleId,
+  windowStartMs,
+  windowEndMs,
+}: BuildTopNSeriesQueryOptions) => {
+  const fromIso = toIsoUtc(windowStartMs);
+  const toIso = toIsoUtc(windowEndMs);
 
-export const buildTopNSeriesQuery = ({ ruleId, gteMs, lteMs }: BuildTopNSeriesQueryOptions) => {
-  const fromIso = toIsoUtc(gteMs);
-  const toIso = toIsoUtc(lteMs);
-
-  // prettier-ignore
-  return esql.from(ALERT_EVENTS_DATA_STREAM)
-    .where`type == "alert"`
-    .where`rule.id == ${ruleId}`
+  return esql.from(ALERT_EVENTS_DATA_STREAM).where`type == "alert"`.where`rule.id == ${ruleId}`
     .where`@timestamp >= ${fromIso}::DATETIME AND @timestamp <= ${toIso}::DATETIME`
     .pipe`STATS last_event_ts = MAX(@timestamp) BY group_hash`
     .sort(['last_event_ts', 'DESC'])
-    .limit(MAX_SERIES_LIMIT)
+    .limit(ALERT_TIMELINE_TOP_N_DEFAULT)
     .keep('group_hash');
 };

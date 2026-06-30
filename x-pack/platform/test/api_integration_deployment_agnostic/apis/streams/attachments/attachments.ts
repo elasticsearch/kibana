@@ -220,7 +220,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           await putStream(apiClient, 'logs.otel.child', {
             dashboards: [],
             rules: [],
-            queries: [],
             stream: {
               type: 'wired',
               description: '',
@@ -1253,7 +1252,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
       const wiredChildStreamBody = {
         dashboards: [],
         rules: [],
-        queries: [],
         stream: {
           type: 'wired' as const,
           description: '',

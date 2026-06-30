@@ -52,7 +52,7 @@ describe('OpenAI with proxy config', () => {
 
   const configurationUtilities = actionsConfigMock.create();
   const PROXY_HOST = 'proxy.custom.elastic.co';
-  const PROXY_URL = `http://${PROXY_HOST}`;
+  const PROXY_URL = `http://${PROXY_HOST}:1234`;
 
   configurationUtilities.getProxySettings.mockReturnValue({
     proxyUrl: PROXY_URL,
@@ -110,8 +110,9 @@ describe('OpenAI with proxy config', () => {
     expect(openAIClient).toBeDefined();
     expect(openAIClient.httpAgent).toBeDefined();
     expect(openAIClient.httpAgent.proxy).toBeDefined();
-    expect(openAIClient.httpAgent.proxy.host).toBe(PROXY_HOST);
-    expect(openAIClient.httpAgent.proxy.port).toBe(80);
+    expect(openAIClient.httpAgent.proxy.host).toBe(`${PROXY_HOST}:1234`);
+    expect(openAIClient.httpAgent.proxy.hostname).toBe(PROXY_HOST);
+    expect(openAIClient.httpAgent.proxy.port).toBe('1234');
   });
 
   it('verifies that requests use the configured HTTP agent', async () => {

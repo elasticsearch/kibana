@@ -428,4 +428,88 @@ describe('listSearchSources', () => {
 
     expect(results.warnings).toEqual(['No sources found.']);
   });
+
+  describe('datasets', () => {
+    const datasetResponse = {
+      datasets: [
+        { name: 'employees', data_source: 'local_minio', resource: 's3://my-bucket/emp/*.csv' },
+        { name: 'customers', data_source: 'local_minio', resource: 's3://my-bucket/cust/*.csv' },
+      ],
+    };
+
+    it('does not fetch datasets when includeDatasets is not set', async () => {
+      esClient.transport.request.mockResolvedValue(datasetResponse);
+
+      const results = await listSearchSources({ pattern: '*', esClient });
+
+      expect(esClient.transport.request).not.toHaveBeenCalled();
+      expect(results.datasets).toEqual([]);
+    });
+
+    it('returns external ES|QL datasets from the `_query/dataset` API', async () => {
+      esClient.transport.request.mockResolvedValue(datasetResponse);
+
+      const results = await listSearchSources({ pattern: '*', includeDatasets: true, esClient });
+
+      expect(results.datasets).toEqual([
+        {
+          type: EsResourceType.dataset,
+          name: 'employees',
+          data_source: 'local_minio',
+          resource: 's3://my-bucket/emp/*.csv',
+        },
+        {
+          type: EsResourceType.dataset,
+          name: 'customers',
+          data_source: 'local_minio',
+          resource: 's3://my-bucket/cust/*.csv',
+        },
+      ]);
+    });
+
+    it('filters datasets by the provided pattern', async () => {
+      esClient.transport.request.mockResolvedValue(datasetResponse);
+
+      const results = await listSearchSources({ pattern: 'emp*', includeDatasets: true, esClient });
+
+      expect(results.datasets.map((d) => d.name)).toEqual(['employees']);
+    });
+
+    it('honors `-`-prefixed exclusion patterns for datasets', async () => {
+      esClient.transport.request.mockResolvedValue(datasetResponse);
+
+      const results = await listSearchSources({
+        pattern: '*,-employees',
+        includeDatasets: true,
+        esClient,
+      });
+
+      expect(results.datasets.map((d) => d.name)).toEqual(['customers']);
+    });
+
+    it('degrades gracefully to no datasets when the `_query/dataset` API is unavailable', async () => {
+      esClient.transport.request.mockRejectedValue(new Error('no handler found for uri'));
+
+      const results = await listSearchSources({ pattern: '*', includeDatasets: true, esClient });
+
+      expect(results.datasets).toEqual([]);
+    });
+
+    it('still returns matching datasets when resolveIndex throws not_found (exact dataset name)', async () => {
+      esClient.transport.request.mockResolvedValue(datasetResponse);
+      esClient.indices.resolveIndex.mockImplementation(async () => {
+        throw new esErrors.ResponseError({ statusCode: 404 } as any);
+      });
+
+      const results = await listSearchSources({
+        pattern: 'employees',
+        includeDatasets: true,
+        esClient,
+      });
+
+      expect(results.indices.length).toBe(0);
+      expect(results.datasets.map((d) => d.name)).toEqual(['employees']);
+      expect(results.warnings).toEqual([]);
+    });
+  });
 });

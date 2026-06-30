@@ -60,6 +60,15 @@ export const pipelineFormSchema: FormSchema = {
     }),
     formatters: [toInt],
   },
+  field_access_pattern: {
+    type: FIELD_TYPES.TOGGLE,
+    label: i18n.translate('xpack.ingestPipelines.form.fieldAccessPatternFieldLabel', {
+      defaultMessage: 'Use the flexible field access pattern',
+    }),
+    defaultValue: false,
+    serializer: (value) => (value ? 'flexible' : 'classic'),
+    deserializer: (value) => value === 'flexible',
+  },
   _meta: {
     label: i18n.translate('xpack.ingestPipelines.form.metaFieldLabel', {
       defaultMessage: '_meta field data (optional)',

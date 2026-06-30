@@ -18,32 +18,33 @@ export interface AlertTimelineSummaryEsqlRow {
 
 export interface BuildAlertTimelineSummaryQueryOptions {
   ruleId: string;
-  gteMs: number;
-  lteMs: number;
+  windowStartMs: number;
+  windowEndMs: number;
 }
 
 const toIsoUtc = (ms: number) => new Date(ms).toISOString();
 
 export const buildAlertTimelineSummaryQuery = ({
   ruleId,
-  gteMs,
-  lteMs,
+  windowStartMs,
+  windowEndMs,
 }: BuildAlertTimelineSummaryQueryOptions) => {
-  const fromIso = toIsoUtc(gteMs);
-  const toIso = toIsoUtc(lteMs);
+  const fromIso = toIsoUtc(windowStartMs);
+  const toIso = toIsoUtc(windowEndMs);
 
-  // prettier-ignore
-  return esql.from(ALERT_EVENTS_DATA_STREAM)
-    .where`type == "alert"`
-    .where`rule.id == ${ruleId}`
+  return esql.from(ALERT_EVENTS_DATA_STREAM).where`type == "alert"`.where`rule.id == ${ruleId}`
     .where`@timestamp >= ${fromIso}::DATETIME AND @timestamp <= ${toIso}::DATETIME`
     .pipe`STATS first_ts = MIN(@timestamp), last_ts = MAX(@timestamp), last_status = LAST(episode.status, @timestamp) BY episode.id`
     .pipe`EVAL duration_ms = DATE_DIFF("millisecond", first_ts, last_ts)`
     .pipe`EVAL is_recovered_int = CASE(last_status == "inactive", 1, 0)`
     .pipe`EVAL recovered_duration_ms = CASE(last_status == "inactive", duration_ms, NULL)`
     .pipe`STATS episodes_started = COUNT(*), recovered = SUM(is_recovered_int), median_duration_ms = PERCENTILE(recovered_duration_ms, 50)`
-    .pipe`EVAL still_open = episodes_started - recovered`
-    .keep('episodes_started', 'recovered', 'still_open', 'median_duration_ms');
+    .pipe`EVAL still_open = episodes_started - recovered`.keep(
+    'episodes_started',
+    'recovered',
+    'still_open',
+    'median_duration_ms'
+  );
 };
 
 const EMPTY_SUMMARY: AlertTimelineSummary = {

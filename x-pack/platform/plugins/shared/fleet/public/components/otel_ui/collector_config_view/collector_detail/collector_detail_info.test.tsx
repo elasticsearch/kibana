@@ -32,6 +32,7 @@ const makeAgent = (overrides?: Partial<Agent>): Agent =>
       'elastic.display.name': 'prod-west-gateway',
       'host.arch': 'x86_64',
       'os.type': 'linux',
+      'os.description': 'Ubuntu 22.04.4 LTS',
       'elastic.collector.group': 'production-west',
     },
     capabilities: ['logs', 'metrics', 'traces'],
@@ -65,6 +66,7 @@ describe('CollectorDetailInfo', () => {
     expect(panel.textContent).toContain('collector-prod-west-1');
     expect(panel.textContent).toContain('x86_64');
     expect(panel.textContent).toContain('linux');
+    expect(panel.textContent).toContain('Ubuntu 22.04.4 LTS');
     expect(panel.textContent).toContain('production-west');
     expect(panel.textContent).toContain('logs, metrics, traces');
   });

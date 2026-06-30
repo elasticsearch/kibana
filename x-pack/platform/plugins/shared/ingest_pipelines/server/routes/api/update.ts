@@ -38,7 +38,8 @@ export const registerUpdateRoute = ({
     async (ctx, req, res) => {
       const { client: clusterClient } = (await ctx.core).elasticsearch;
       const { name } = req.params;
-      const { description, processors, version, on_failure, _meta } = req.body;
+      const { description, processors, version, on_failure, _meta, field_access_pattern } =
+        req.body;
 
       try {
         // Verify pipeline exists; ES will throw 404 if it doesn't
@@ -51,6 +52,7 @@ export const registerUpdateRoute = ({
           version,
           on_failure,
           _meta,
+          field_access_pattern,
         });
 
         return res.ok({ body: response });

@@ -290,6 +290,41 @@ const initNavNode = <
   return navNode;
 };
 
+/**
+ * Returns the top-level body nodes that the sidebar will actually render, in
+ * order. Specifically it prunes:
+ *
+ * - The home/logo node (`renderAs === 'home'`)
+ * - Nodes explicitly hidden from the side nav (`sideNavStatus === 'hidden'`)
+ * - Panel-opener nodes whose every descendant leaf has been removed or hidden
+ *   (i.e. the user has no access to any item inside them)
+ *
+ * The result is the authoritative list for the customization modal so it shows
+ * exactly the items the user can actually see and reorder.
+ *
+ * TODO: Once this is the established source of truth, `toNavigationItems` in
+ * `@kbn/core-chrome-browser-components` can be simplified to consume this
+ * pre-pruned list rather than re-filtering inside `toMenuItem`.
+ *
+ * Icon resolution for the same nodes lives in `@kbn/core-chrome-browser-navigation-utils`.
+ */
+export const getRenderableNodes = (
+  nodes: ChromeProjectNavigationNode[]
+): ChromeProjectNavigationNode[] => {
+  const hasVisibleLeaf = (node: ChromeProjectNavigationNode): boolean => {
+    if (node.sideNavStatus === 'hidden') return false;
+    if (!node.children?.length) return Boolean(node.href);
+    return node.children.some(hasVisibleLeaf);
+  };
+
+  return nodes.filter((node) => {
+    if (node.renderAs === 'home') return false;
+    if (node.sideNavStatus === 'hidden') return false;
+    if (!hasVisibleLeaf(node)) return false;
+    return true;
+  });
+};
+
 export const parseNavigationTree = (
   id: SolutionId,
   navigationTreeDef: NavigationTreeDefinition,

@@ -21,8 +21,8 @@ import type {
   WiredIngestStreamEffectiveFailureStore,
 } from '@kbn/streams-schema/src/models/ingest/failure_store';
 import type { AttachmentClient } from '../../../lib/streams/attachments/attachment_client';
-import type { KnowledgeIndicatorClient } from '../../../lib/streams/ki';
 import type { StreamsClient } from '../../../lib/streams/client';
+import { getStreamAttachmentIds } from '../../../lib/streams/helpers/ingest_upsert';
 import {
   getDataStreamLifecycle,
   getFailureStore,
@@ -34,40 +34,21 @@ import { getEsqlView } from '../../../lib/streams/esql_views/manage_esql_views';
 
 export async function readStream({
   name,
-  queryClient,
   attachmentClient,
   streamsClient,
   scopedClusterClient,
   logger,
 }: {
   name: string;
-  queryClient: KnowledgeIndicatorClient;
   attachmentClient: AttachmentClient;
   streamsClient: StreamsClient;
   scopedClusterClient: IScopedClusterClient;
   logger: Logger;
 }): Promise<Streams.all.GetResponse> {
-  const [streamDefinition, { [name]: queryLinks }, attachments] = await Promise.all([
+  const [streamDefinition, { dashboards, rules }] = await Promise.all([
     streamsClient.getStream(name),
-    queryClient.getStreamToQueryLinksMap([name]),
-    attachmentClient.getAttachments(name),
+    getStreamAttachmentIds({ name, attachmentClient }),
   ]);
-
-  const { dashboards, rules } = attachments.reduce(
-    (acc, attachment) => {
-      if (attachment.type === 'dashboard') {
-        acc.dashboards.push(attachment.id);
-      } else if (attachment.type === 'rule') {
-        acc.rules.push(attachment.id);
-      }
-      return acc;
-    },
-    { dashboards: [] as string[], rules: [] as string[] }
-  );
-
-  const queries = queryLinks.map((query) => {
-    return query.query;
-  });
 
   if (Streams.QueryStream.Definition.is(streamDefinition)) {
     // Fetch the actual ES|QL from the view (source of truth)
@@ -89,7 +70,6 @@ export async function readStream({
       },
       dashboards,
       rules,
-      queries,
       inherited_fields: {},
     };
 
@@ -98,7 +78,7 @@ export async function readStream({
 
   const privileges = await streamsClient.getPrivileges(name);
 
-  // These queries are only relavant for IngestStreams
+  // Ancestors and data stream metadata are only relevant for ingest streams
   const [ancestors, dataStream] = await Promise.all([
     streamsClient.getAncestors(name),
     privileges.view_index_metadata
@@ -143,7 +123,6 @@ export async function readStream({
       effective_settings: getDataStreamSettings(dataStreamSettings?.data_streams[0]),
       dashboards,
       rules,
-      queries,
       effective_failure_store: getFailureStore({
         dataStream: dataStream as DataStreamWithFailureStore,
       }),
@@ -173,7 +152,6 @@ export async function readStream({
     dashboards,
     rules,
     privileges,
-    queries,
     index_mode: dataStream?.index_mode,
     replicated: dataStream?.replicated ?? false,
     data_stream_exists: !!dataStream,

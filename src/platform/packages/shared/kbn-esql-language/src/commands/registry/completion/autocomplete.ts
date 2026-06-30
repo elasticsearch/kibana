@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import { i18n } from '@kbn/i18n';
-import { uniqBy } from 'lodash';
+import { ESQLVariableType } from '@kbn/esql-types';
 import { isFunctionExpression, isLiteral } from '@elastic/esql';
 import type {
   ESQLAstCompletionCommand,
@@ -27,14 +27,8 @@ import {
   withMapCompleteItem,
 } from '../complete_items';
 import {
-  getFieldsSuggestions,
-  getFunctionsSuggestions,
-  getLiteralsSuggestions,
-} from '../../definitions/utils';
-import {
   columnExists,
   createInferenceEndpointToCompletionItem,
-  withAutoSuggest,
   withinQuotes,
 } from '../../definitions/utils/autocomplete/helpers';
 import { buildConstantsDefinitions } from '../../definitions/utils/literals';
@@ -125,46 +119,23 @@ export async function autocomplete(
   switch (position) {
     case CompletionPosition.AFTER_COMPLETION:
     case CompletionPosition.AFTER_TARGET_ASSIGNMENT: {
-      const types = ['text', 'keyword', 'unknown'];
-      const allSuggestions: ISuggestionItem[] = [];
+      const { suggestions: expressionSuggestions } = await suggestForExpression({
+        query,
+        command,
+        cursorPosition,
+        location: Location.COMPLETION,
+        context,
+        callbacks,
+        options: {
+          preferredExpressionType: ['text', 'keyword', 'unknown'],
+          controlType: ESQLVariableType.VALUES,
+        },
+      });
 
-      // Fields
-      allSuggestions.push(
-        ...(await getFieldsSuggestions(types, callbacks?.getByType, {
-          ignoreColumns: [],
-          values: false,
-          addSpaceAfterField: false,
-          openSuggestions: false,
-        }))
-      );
-
-      // Date literals (policy-gated in helpers) with explicit UI options
-      allSuggestions.push(
-        ...getLiteralsSuggestions(types, Location.COMPLETION, {
-          includeDateLiterals: true,
-          includeCompatibleLiterals: false,
-          addComma: false,
-          advanceCursorAndOpenSuggestions: false,
-        })
-      );
-
-      // Functions
-      allSuggestions.push(
-        ...getFunctionsSuggestions({
-          location: Location.COMPLETION,
-          types,
-          options: { ignored: [] },
-          context,
-          callbacks,
-        })
-      );
-
-      const fieldsAndFunctionsSuggestions = uniqBy(allSuggestions, 'label');
-      const suggestions = fieldsAndFunctionsSuggestions.map((suggestion) =>
-        withAutoSuggest({
-          ...suggestion,
-          text: `${suggestion.text} `,
-        })
+      const suggestions = expressionSuggestions.map((suggestion) =>
+        suggestion.kind !== 'Issue' && suggestion.text && !suggestion.text.endsWith(' ')
+          ? { ...suggestion, text: `${suggestion.text} ` }
+          : suggestion
       );
 
       if (!hasTypedFragment) {

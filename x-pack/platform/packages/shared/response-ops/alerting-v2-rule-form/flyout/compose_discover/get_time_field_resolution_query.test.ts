@@ -6,7 +6,7 @@
  */
 
 import { getTimeFieldResolutionQuery } from './get_time_field_resolution_query';
-import type { RuleQuery } from './compose_form_types';
+import type { RuleQuery } from '../../form/types';
 
 const composedQuery: RuleQuery = {
   format: 'composed',

@@ -7,8 +7,18 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { SavedObjectUnsanitizedDoc } from '@kbn/core-saved-objects-server';
-import { migrations } from './migrations';
+import type {
+  SavedObjectModelTransformationContext,
+  SavedObjectUnsanitizedDoc,
+} from '@kbn/core-saved-objects-server';
+import {
+  migrations,
+  mergeTimepickerQuickRangesV3,
+  modelVersions,
+  TIMEPICKER_QUICK_RANGES_V3_PRESETS,
+} from './migrations';
+
+const transformContext = {} as SavedObjectModelTransformationContext;
 
 describe('ui_settings 7.9.0 migrations', () => {
   const migration = migrations['7.9.0'];
@@ -379,6 +389,118 @@ describe('ui_settings 8.7.0 migrations', () => {
       updated_at: '2020-06-09T20:18:20.349Z',
       migrationVersion: {},
     });
+  });
+});
+
+describe('ui_settings model version 3 — mergeTimepickerQuickRangesV3', () => {
+  const makeDoc = (raw: unknown): SavedObjectUnsanitizedDoc<any> => ({
+    type: 'config',
+    id: '9.x.x',
+    attributes: {
+      buildNum: 9007199254740991,
+      'timepicker:quickRanges': raw,
+    },
+    references: [],
+  });
+
+  test('is a no-op when attribute is missing', () => {
+    const doc: SavedObjectUnsanitizedDoc<any> = {
+      type: 'config',
+      id: '9.x.x',
+      attributes: { buildNum: 9007199254740991 },
+      references: [],
+    };
+    expect(mergeTimepickerQuickRangesV3(doc, transformContext).document).toEqual(doc);
+  });
+
+  test('is a no-op when attribute is null', () => {
+    const doc = makeDoc(null);
+    expect(mergeTimepickerQuickRangesV3(doc, transformContext).document).toEqual(doc);
+  });
+
+  test('is a no-op when attribute is not valid JSON', () => {
+    const doc = makeDoc('not json');
+    expect(mergeTimepickerQuickRangesV3(doc, transformContext).document).toEqual(doc);
+  });
+
+  test('is a no-op when attribute parses to a non-array', () => {
+    const doc = makeDoc(JSON.stringify({ from: 'now-1h', to: 'now', display: 'oops' }));
+    expect(mergeTimepickerQuickRangesV3(doc, transformContext).document).toEqual(doc);
+  });
+
+  test('appends all new presets to an empty custom list', () => {
+    const doc = makeDoc(JSON.stringify([]));
+    const result = mergeTimepickerQuickRangesV3(doc, transformContext);
+    const out = JSON.parse(result.document.attributes!['timepicker:quickRanges']);
+    expect(out).toEqual([...TIMEPICKER_QUICK_RANGES_V3_PRESETS]);
+  });
+
+  test('appends new presets after the user’s existing entries, preserving order', () => {
+    const userEntries = [
+      { from: 'now-1h', to: 'now', display: 'Recent hour' },
+      { from: 'now-1d', to: 'now', display: 'Past day' },
+    ];
+    const doc = makeDoc(JSON.stringify(userEntries));
+    const result = mergeTimepickerQuickRangesV3(doc, transformContext);
+    const out = JSON.parse(result.document.attributes!['timepicker:quickRanges']);
+    expect(out).toEqual([...userEntries, ...TIMEPICKER_QUICK_RANGES_V3_PRESETS]);
+  });
+
+  test('dedupes by from|to (preserves the user’s custom display label)', () => {
+    const userEntries = [
+      { from: 'now-1h', to: 'now', display: 'Recent hour' },
+      // Same from/to as the new "Last 3 hours" preset but with a user-chosen label.
+      { from: 'now-3h', to: 'now', display: 'Hot 3h window' },
+    ];
+    const doc = makeDoc(JSON.stringify(userEntries));
+    const result = mergeTimepickerQuickRangesV3(doc, transformContext);
+    const out = JSON.parse(result.document.attributes!['timepicker:quickRanges']);
+
+    // The user's custom label survives, the duplicate from V3 presets is dropped.
+    expect(out).toContainEqual({ from: 'now-3h', to: 'now', display: 'Hot 3h window' });
+    expect(out.filter((r: any) => r.from === 'now-3h' && r.to === 'now')).toHaveLength(1);
+
+    // All other V3 presets are still added.
+    const expectedAdded = TIMEPICKER_QUICK_RANGES_V3_PRESETS.filter(
+      (p) => !(p.from === 'now-3h' && p.to === 'now')
+    );
+    expect(out).toEqual([...userEntries, ...expectedAdded]);
+  });
+
+  test('distinguishes between presets with same `from` but different `to` (e.g. "This year" vs "This year until now")', () => {
+    const userEntries = [
+      // Matches "This year" (now/y → now/y) — should be deduped against that one only.
+      { from: 'now/y', to: 'now/y', display: 'Current year' },
+    ];
+    const doc = makeDoc(JSON.stringify(userEntries));
+    const result = mergeTimepickerQuickRangesV3(doc, transformContext);
+    const out = JSON.parse(result.document.attributes!['timepicker:quickRanges']);
+
+    // User's "This year" label is preserved.
+    expect(out).toContainEqual({ from: 'now/y', to: 'now/y', display: 'Current year' });
+    // "This year until now" (now/y → now) is a different entry — still added.
+    expect(out).toContainEqual({ from: 'now/y', to: 'now', display: 'This year until now' });
+  });
+
+  test('is a no-op when the user already has every new preset', () => {
+    const userEntries = [...TIMEPICKER_QUICK_RANGES_V3_PRESETS];
+    const doc = makeDoc(JSON.stringify(userEntries));
+    const result = mergeTimepickerQuickRangesV3(doc, transformContext);
+    expect(result.document).toEqual(doc);
+  });
+
+  test('produces pretty-printed JSON consistent with the default registration', () => {
+    const doc = makeDoc(JSON.stringify([]));
+    const result = mergeTimepickerQuickRangesV3(doc, transformContext);
+    const raw = result.document.attributes!['timepicker:quickRanges'] as string;
+    expect(raw).toBe(JSON.stringify(TIMEPICKER_QUICK_RANGES_V3_PRESETS, null, 2));
+  });
+
+  test('defines forwardCompatibility and create schemas (required by the SO check)', () => {
+    const mv3 = modelVersions[3];
+    expect(mv3).toBeDefined();
+    expect(mv3?.schemas?.forwardCompatibility).toBeDefined();
+    expect(mv3?.schemas?.create).toBeDefined();
   });
 });
 

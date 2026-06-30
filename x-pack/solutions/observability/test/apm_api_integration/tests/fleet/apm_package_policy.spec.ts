@@ -29,6 +29,7 @@ import {
   deletePackagePolicy,
   getPackagePolicy,
   setupFleet,
+  updatePackagePolicy,
 } from './helpers';
 import { getBettertest } from '../../common/bettertest';
 import { expectToReject } from '../../common/utils/expect_to_reject';
@@ -109,9 +110,7 @@ export default function ApiTest(ftrProviderContext: FtrProviderContext) {
     return res.total as number;
   }
 
-  // Failing: See https://github.com/elastic/kibana/issues/229299
-  // Failing: See https://github.com/elastic/kibana/issues/228131
-  registry.when.skip('APM package policy', { config: 'basic', archives: [] }, () => {
+  registry.when('APM package policy', { config: 'basic', archives: [] }, () => {
     let apmPackagePolicy: PackagePolicy;
     let agentPolicyId: string;
     let packagePolicyId: string;
@@ -237,6 +236,39 @@ export default function ApiTest(ftrProviderContext: FtrProviderContext) {
             },
           ]);
         });
+      });
+    });
+
+    describe('APM package policy update - API key preservation', () => {
+      // Simulates a client (e.g. Terraform provider) that only round-trips declared
+      // package vars and drops the runtime-injected api key paths from the config.
+      const keylessInputOverride = {
+        inputs: [
+          { type: 'apm', policy_template: 'apmserver', enabled: true, streams: [], vars: {} },
+        ],
+      };
+
+      it('preserves existing api keys when an update omits them', async () => {
+        const storedAgentKey = get(apmPackagePolicy, AGENT_CONFIG_API_KEY_PATH);
+        const storedSourceMapKey = get(apmPackagePolicy, SOURCE_MAP_API_KEY_PATH);
+
+        expect(storedAgentKey).to.not.be.empty();
+        expect(storedSourceMapKey).to.not.be.empty();
+
+        await updatePackagePolicy(bettertest, packagePolicyId, keylessInputOverride);
+
+        const updatedPolicy = await getPackagePolicy(bettertest, packagePolicyId);
+
+        expect(get(updatedPolicy, AGENT_CONFIG_API_KEY_PATH)).to.eql(storedAgentKey);
+        expect(get(updatedPolicy, SOURCE_MAP_API_KEY_PATH)).to.eql(storedSourceMapKey);
+      });
+
+      it('does not accumulate new api keys when an update omits them', async () => {
+        const activeKeysBefore = await getActiveApiKeysCount(packagePolicyId);
+
+        await updatePackagePolicy(bettertest, packagePolicyId, keylessInputOverride);
+
+        expect(await getActiveApiKeysCount(packagePolicyId)).to.eql(activeKeysBefore);
       });
     });
   });

@@ -11,6 +11,7 @@ import { EuiCallOut, EuiSpacer, EuiSplitButton, EuiText } from '@elastic/eui';
 
 export interface FrozenDefaultRepositoryRequiredCalloutProps {
   onCreateDefaultRepository?: () => void;
+  createDefaultRepositoryHref?: string;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   calloutTestSubj?: string;
@@ -20,6 +21,7 @@ export interface FrozenDefaultRepositoryRequiredCalloutProps {
 
 export const FrozenDefaultRepositoryRequiredCallout = ({
   onCreateDefaultRepository,
+  createDefaultRepositoryHref,
   onRefresh,
   isRefreshing,
   calloutTestSubj,
@@ -46,14 +48,16 @@ export const FrozenDefaultRepositoryRequiredCallout = ({
         })}
       </EuiText>
 
-      {(onCreateDefaultRepository || onRefresh) && (
+      {(onCreateDefaultRepository || createDefaultRepositoryHref || onRefresh) && (
         <>
           <EuiSpacer size="m" />
           <EuiSplitButton size="s" color="warning">
             <EuiSplitButton.ActionPrimary
               data-test-subj={createButtonTestSubj}
-              isDisabled={!onCreateDefaultRepository}
-              onClick={onCreateDefaultRepository}
+              isDisabled={!onCreateDefaultRepository && !createDefaultRepositoryHref}
+              href={createDefaultRepositoryHref}
+              target={createDefaultRepositoryHref ? '_blank' : undefined}
+              onClick={createDefaultRepositoryHref ? undefined : onCreateDefaultRepository}
             >
               {i18n.translate(
                 'xpack.dataLifecyclePhases.frozen.defaultRepositoryRequiredCallout.createButton',

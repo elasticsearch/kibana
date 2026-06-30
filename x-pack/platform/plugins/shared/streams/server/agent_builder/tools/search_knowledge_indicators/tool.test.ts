@@ -35,7 +35,7 @@ describe('ki_search tool', () => {
     });
 
     expect(tool.id).toBe(STREAMS_SEARCH_KNOWLEDGE_INDICATORS_TOOL_ID);
-    expect(tool.id).toBe('platform.streams.sig_events.ki_search');
+    expect(tool.id).toBe('platform.sig_events.ki_search');
   });
 
   it('availability returns available when access check succeeds', async () => {

@@ -7,14 +7,52 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ISuggestionItem } from '../../../../registry/types';
-import type { FunctionParameterType, FunctionDefinitionTypes } from '../../../types';
-import { getFieldsSuggestions, getFunctionsSuggestions, getLiteralsSuggestions } from '../helpers';
+import type { ESQLControlVariable } from '@kbn/esql-types';
+import type {
+  ICommandCallbacks,
+  ICommandContext,
+  ISuggestionItem,
+} from '../../../../registry/types';
+import { Location } from '../../../../registry/types';
+import type {
+  FunctionParameterType,
+  FunctionDefinitionTypes,
+  SupportedDataType,
+} from '../../../types';
+import { getFieldsSuggestions, withAutoSuggest } from '../helpers';
 import { getOperatorSuggestions } from '../../operators';
+import { getCompatibleLiterals, getDateLiterals } from '../../literals';
+import { filterFunctionDefinitions, getAllFunctions, getFunctionSuggestion } from '../../functions';
 import type { ExpressionContext } from './types';
 import type { PreferredExpressionType } from './types';
 import { commaCompleteItem } from '../../../../registry/complete_items';
 import { shouldSuggestComma, type CommaContext } from './comma_decision_engine';
+
+interface FunctionSuggestionOptions {
+  ignored?: string[];
+  addComma?: boolean;
+  addSpaceAfterFunction?: boolean;
+  constantGeneratingOnly?: boolean;
+  suggestOnlyName?: boolean;
+  functionTypes?: FunctionDefinitionTypes[];
+}
+
+interface GetFunctionsSuggestionsParams {
+  location: Location;
+  types: (SupportedDataType | 'unknown' | 'any')[];
+  options?: FunctionSuggestionOptions;
+  context?: ICommandContext;
+  callbacks?: ICommandCallbacks;
+}
+
+interface LiteralSuggestionsOptions {
+  includeDateLiterals?: boolean;
+  includeCompatibleLiterals?: boolean;
+  addComma?: boolean;
+  advanceCursorAndOpenSuggestions?: boolean;
+  supportsControls?: boolean;
+  variables?: ESQLControlVariable[];
+}
 
 /** Builder pattern to eliminate duplicated field/function/literal suggestion code. */
 export class SuggestionBuilder {
@@ -187,4 +225,103 @@ export class SuggestionBuilder {
 
     return [...new Set([...commandIgnored, ...parentFunctionNames])];
   }
+}
+
+function getFunctionsSuggestions({
+  location,
+  types,
+  options = {},
+  context,
+  callbacks,
+}: GetFunctionsSuggestionsParams): ISuggestionItem[] {
+  const {
+    ignored = [],
+    addComma = false,
+    suggestOnlyName = false,
+    addSpaceAfterFunction = false,
+    constantGeneratingOnly = false,
+    functionTypes,
+  } = options;
+
+  const predicates = {
+    location,
+    returnTypes: types,
+    ignored,
+    isTimeseriesSource: context?.isTimeseriesSource,
+  };
+
+  const hasMinimumLicenseRequired = callbacks?.hasMinimumLicenseRequired;
+  const activeProduct = context?.activeProduct;
+
+  let filteredFunctions = filterFunctionDefinitions(
+    getAllFunctions({ includeOperators: false, type: functionTypes }),
+    predicates,
+    hasMinimumLicenseRequired,
+    activeProduct
+  );
+
+  if (constantGeneratingOnly) {
+    const typeSet = new Set(types);
+    filteredFunctions = filteredFunctions.filter((fn) =>
+      fn.signatures.some((sig) => sig.params.length === 0 && typeSet.has(sig.returnType))
+    );
+  }
+
+  const textSuffix = (addComma ? ',' : '') + (addSpaceAfterFunction ? ' ' : '');
+
+  return filteredFunctions.map((fn) => {
+    const suggestion = getFunctionSuggestion(fn);
+
+    if (suggestOnlyName) {
+      suggestion.text = fn.name.toUpperCase();
+      return suggestion;
+    }
+
+    if (textSuffix) {
+      suggestion.text += textSuffix;
+    }
+
+    return withAutoSuggest(suggestion);
+  });
+}
+
+function getLiteralsSuggestions(
+  types: (SupportedDataType | 'unknown' | 'any')[],
+  location: Location,
+  options: LiteralSuggestionsOptions = {}
+): ISuggestionItem[] {
+  const { includeDateLiterals = true, includeCompatibleLiterals = true } = options;
+
+  const suggestions: ISuggestionItem[] = [];
+
+  if (
+    includeDateLiterals &&
+    (location === Location.WHERE ||
+      location === Location.EVAL ||
+      location === Location.STATS_WHERE) &&
+    types.includes('date')
+  ) {
+    suggestions.push(
+      ...getDateLiterals({
+        addComma: options.addComma,
+        advanceCursorAndOpenSuggestions: options.advanceCursorAndOpenSuggestions,
+      })
+    );
+  }
+
+  if (includeCompatibleLiterals) {
+    suggestions.push(
+      ...getCompatibleLiterals(
+        types,
+        {
+          addComma: options.addComma,
+          advanceCursorAndOpenSuggestions: options.advanceCursorAndOpenSuggestions,
+          supportsControls: options.supportsControls,
+        },
+        options.variables
+      )
+    );
+  }
+
+  return suggestions;
 }

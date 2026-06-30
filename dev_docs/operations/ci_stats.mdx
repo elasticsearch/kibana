@@ -4,12 +4,13 @@ slug: /kibana-dev-docs/ops/ci-stats
 title: "Kibana CI Stats"
 description: A service that we run to track little bits of data about CI runs.
 tags: ['kibana', 'dev', 'contributor', 'operations', 'ci']
+redirect_url: https://codex.elastic.dev/r/kibana-team/operations/ci/kibana-ci-stats
 ---
 
-Kibana CI Stats (sometimes written "ci-stats") is a service run at https://ci-stats.kibana.dev. This service runs a series of APIs in front of an Elasticsearch Cluster which allows us to record data about each run of CI. This data includes metrics, times, test results, and more. We are working on storing performance data in there too, and eventually will spend time to write good UIs on top of this data.
+{/* REDIRECT_NOTICE_START */}
 
-The service implementation is available at https://github.com/elastic/kibana-ci-stats/ (private because there doesn't seem to be a good reason to make it public).
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://codex.elastic.dev/r/kibana-team/operations/ci/kibana-ci-stats](https://codex.elastic.dev/r/kibana-team/operations/ci/kibana-ci-stats)
+</DocCallOut>
 
-The service is run on Google Cloud Run, which allows us to build a container, push it to GCR, define a memory limit, vCPU count, and concurrent request limit per container, and Google will automatically scale the container for us. It works pretty well and hides a lot of the complexity of running the service. The repo uses Buildkite CI to build and deploy the container when pushing to the main branch. All changes to the main branch must come from PRs, but at this time we don't require review for PRs.
-
-The website at https://ci-stats.kibana.dev uses EUI and Elastic Charts, and currently has users powered by Github OAuth. When someone authenticates with ci-stats they are first redirected to Github for authentication, then their membership in the Elastic org is checked. Users in the Elastic org will be able to do things that other users can't, like trigger the <DocLink id="kibDevDocsOpsFlakyTestRunner"/>.
+{/* REDIRECT_NOTICE_END */}

@@ -53,11 +53,10 @@ describe('logPatternsGenerator', () => {
     });
     expect(getSigEventsLogPatternsEsqlMock).toHaveBeenCalledWith({
       esClient: tracedClient,
-      index: stream.name,
+      samplingSource: stream.name,
       start: 100,
       end: 200,
       fields: ['message', 'body.text'],
-      logger,
     });
     expect(result).toEqual({
       patterns: [{ field: 'message', pattern: 'common', count: 10, sample: 'common sample' }],

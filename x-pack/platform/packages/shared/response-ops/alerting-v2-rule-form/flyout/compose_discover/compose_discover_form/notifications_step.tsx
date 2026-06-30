@@ -10,7 +10,7 @@ import { useFormContext } from 'react-hook-form';
 import { i18n } from '@kbn/i18n';
 import { EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
 import { ActionForm, createInitialActionFormValue, isActionValid } from '../../../actions_form';
-import type { ComposeFormValues } from '../compose_form_types';
+import type { FormValues } from '../../../form/types';
 
 const notificationsTitle = i18n.translate(
   'xpack.responseOps.alertingV2RuleForm.composeDiscover.notifications.title',
@@ -26,7 +26,7 @@ const notificationsSubtext = i18n.translate(
 );
 
 export const NotificationsStep = () => {
-  const { watch, setValue } = useFormContext<ComposeFormValues>();
+  const { watch, setValue } = useFormContext<FormValues>();
   const notifications = watch('notifications');
   const [touched, setTouched] = useState(false);
 

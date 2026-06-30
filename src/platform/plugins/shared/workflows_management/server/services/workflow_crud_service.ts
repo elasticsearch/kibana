@@ -28,7 +28,7 @@ import type {
 import { buildWorkflowFilters } from '@kbn/workflows/server';
 import type { WorkflowPartialDetailDto } from '@kbn/workflows/types/v1';
 
-import { WorkflowConflictError } from '@kbn/workflows-yaml';
+import { InvalidYamlSchemaError, WorkflowConflictError } from '@kbn/workflows-yaml';
 import type { z } from '@kbn/zod/v4';
 import type { WorkflowCrudDeps } from './types';
 import type {
@@ -39,9 +39,14 @@ import type {
   WriteWorkflowDocumentWithOccParams,
 } from './workflow_occ_types';
 import {
+  WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE,
   WorkflowChangeHistoryAction,
   type WorkflowChangeHistoryActionType,
 } from '../../common/lib/workflow_change_history/constants';
+import type {
+  RestoreWorkflowVersionResponseDto,
+  WorkflowRestoreMetadata,
+} from '../../common/lib/workflow_change_history/types';
 import { getWorkflowZodSchema } from '../../common/schema';
 import { extractBulkItemError } from '../api/lib/bulk_response_helpers';
 import { deleteWorkflows } from '../api/lib/workflow_deletion';
@@ -65,8 +70,10 @@ import {
   removeConflictingIds,
 } from '../lib/bulk_id_helpers';
 import { getAuthenticatedUser } from '../lib/get_user';
+import { assertWorkflowChangeHistoryEnabled } from '../lib/get_workflow_change_history';
 import { logWorkflowChanges } from '../lib/log_workflow_changes';
 import { hasScheduledTriggers } from '../lib/schedule_utils';
+import { WorkflowHistoryEventNotFoundError } from '../lib/workflow_history_event_not_found_error';
 import { resolveUniqueWorkflowIds, validateWorkflowId } from '../lib/workflow_id_resolver';
 import { maybeApplyWorkflowVersion } from '../lib/workflow_version';
 import type { WorkflowProperties } from '../storage/workflow_storage';
@@ -79,11 +86,28 @@ import { syncSchedulerAfterSave } from '../task_defs/sync_scheduler_after_save';
 // this only bounds repeated round-trips when many concurrent writers share a base ID.
 const TOCTOU_MAX_RETRIES = 5;
 
+const extractRestoreSnapshotYaml = (
+  snapshot: Record<string, unknown> | undefined
+): string | null => {
+  const yaml = snapshot?.yaml;
+  if (typeof yaml !== 'string') {
+    return null;
+  }
+  const trimmed = yaml.trim();
+  return trimmed.length > 0 ? yaml : null;
+};
+
 export type {
   ReadModifyWriteWorkflowDocumentParams,
   VersionedWorkflowDocument,
   WriteWorkflowDocumentWithOccParams,
 } from './workflow_occ_types';
+
+interface ApplyWorkflowUpdateResult {
+  response: UpdatedWorkflowResponseDto;
+  finalData: WorkflowProperties;
+  timestamp: Date;
+}
 
 export class WorkflowCrudService {
   private indexOccWriter?: OccWriter<WorkflowProperties>;
@@ -101,6 +125,7 @@ export class WorkflowCrudService {
     timestamp: string | Date;
     request?: KibanaRequest;
     correlationId?: string;
+    restoreMetadata?: WorkflowRestoreMetadata;
   }): Promise<void> {
     if (!this.deps.workflowVersioningEnabled) {
       return;
@@ -120,6 +145,7 @@ export class WorkflowCrudService {
       spaceId: params.spaceId,
       timestamp: params.timestamp,
       correlationId: params.correlationId,
+      restoreMetadata: params.restoreMetadata,
       logger: this.deps.logger,
     });
   }
@@ -748,6 +774,108 @@ export class WorkflowCrudService {
     return { created, failed };
   }
 
+  private async applyWorkflowUpdate(
+    id: string,
+    workflow: Partial<EsWorkflow>,
+    spaceId: string,
+    request: KibanaRequest
+  ): Promise<ApplyWorkflowUpdateResult> {
+    const authenticatedUser = getAuthenticatedUser(request, this.deps.getSecurity());
+    const now = new Date();
+    const validationErrors: string[] = [];
+    let shouldUpdateScheduler = false;
+
+    const workflowYaml = workflow.yaml;
+    const zodSchema = workflowYaml
+      ? await this.deps.validationService.getWorkflowZodSchema({ loose: false }, spaceId, request)
+      : undefined;
+    const triggerDefinitions = workflowYaml
+      ? this.deps.workflowsExtensions?.getAllTriggerDefinitions() ?? []
+      : undefined;
+    const yamlResult =
+      workflowYaml && zodSchema && triggerDefinitions
+        ? {
+            workflowYaml,
+            ...applyYamlUpdate({
+              workflowYaml,
+              zodSchema,
+              triggerDefinitions,
+            }),
+          }
+        : undefined;
+
+    const finalData = await this.readModifyWriteWorkflowDocument(id, spaceId, {
+      getOptions: { includeDeleted: true, includeGlobal: true },
+      mutate: (existingSource: WorkflowProperties) => {
+        let updatedData: Partial<WorkflowProperties> = {
+          lastUpdatedBy: authenticatedUser,
+          updated_at: now.toISOString(),
+        };
+
+        shouldUpdateScheduler =
+          workflow.enabled !== undefined && workflow.enabled !== existingSource.enabled;
+
+        if (yamlResult) {
+          updatedData = {
+            ...updatedData,
+            yaml: yamlResult.workflowYaml,
+            ...yamlResult.updatedDataPatch,
+          };
+          validationErrors.length = 0;
+          validationErrors.push(...yamlResult.validationErrors);
+          shouldUpdateScheduler = shouldUpdateScheduler || yamlResult.shouldUpdateScheduler;
+
+          if (
+            yamlResult.validationErrors.length === 0 &&
+            yamlResult.updatedDataPatch.valid &&
+            updatedData.definition &&
+            !workflowYamlDeclaresTopLevelEnabled(yamlResult.workflowYaml)
+          ) {
+            const resolvedEnabled =
+              workflow.enabled !== undefined ? workflow.enabled : existingSource.enabled;
+            updatedData.enabled = resolvedEnabled;
+            const currentDefinition = updatedData.definition;
+            if (currentDefinition) {
+              updatedData.definition = { ...currentDefinition, enabled: resolvedEnabled };
+            }
+          }
+        } else if (!workflowYaml) {
+          const fieldResult = applyFieldUpdates(workflow, existingSource);
+          updatedData = { ...updatedData, ...fieldResult.patch };
+          validationErrors.length = 0;
+          validationErrors.push(...fieldResult.validationErrors);
+        }
+
+        const merged: WorkflowProperties = { ...existingSource, ...updatedData };
+        if (merged.triggerTypes === undefined) {
+          merged.triggerTypes = getTriggerTypesFromDefinition(merged.definition) ?? [];
+        }
+        return merged;
+      },
+    });
+
+    await this.syncSchedulerAfterWorkflowUpdate({
+      id,
+      spaceId,
+      request,
+      finalData,
+      shouldUpdateScheduler,
+    });
+
+    return {
+      response: {
+        id,
+        lastUpdatedAt: finalData.updated_at,
+        lastUpdatedBy: finalData.lastUpdatedBy,
+        enabled: finalData.enabled,
+        validationErrors,
+        valid: finalData.valid,
+      },
+      finalData,
+      timestamp: now,
+    };
+  }
+
   async updateWorkflow(
     id: string,
     workflow: Partial<EsWorkflow>,
@@ -755,110 +883,89 @@ export class WorkflowCrudService {
     request: KibanaRequest
   ): Promise<UpdatedWorkflowResponseDto> {
     try {
-      const authenticatedUser = getAuthenticatedUser(request, this.deps.getSecurity());
-      const now = new Date();
-      const validationErrors: string[] = [];
-      let shouldUpdateScheduler = false;
-
-      const workflowYaml = workflow.yaml;
-      const zodSchema = workflowYaml
-        ? await this.deps.validationService.getWorkflowZodSchema({ loose: false }, spaceId, request)
-        : undefined;
-      const triggerDefinitions = workflowYaml
-        ? this.deps.workflowsExtensions?.getAllTriggerDefinitions() ?? []
-        : undefined;
-      const yamlResult =
-        workflowYaml && zodSchema && triggerDefinitions
-          ? {
-              workflowYaml,
-              ...applyYamlUpdate({
-                workflowYaml,
-                zodSchema,
-                triggerDefinitions,
-              }),
-            }
-          : undefined;
-
-      const finalData = await this.readModifyWriteWorkflowDocument(id, spaceId, {
-        getOptions: { includeDeleted: true, includeGlobal: true },
-        mutate: (existingSource: WorkflowProperties) => {
-          let updatedData: Partial<WorkflowProperties> = {
-            lastUpdatedBy: authenticatedUser,
-            updated_at: now.toISOString(),
-          };
-
-          shouldUpdateScheduler =
-            workflow.enabled !== undefined && workflow.enabled !== existingSource.enabled;
-
-          if (yamlResult) {
-            updatedData = {
-              ...updatedData,
-              yaml: yamlResult.workflowYaml,
-              ...yamlResult.updatedDataPatch,
-            };
-            validationErrors.length = 0;
-            validationErrors.push(...yamlResult.validationErrors);
-            shouldUpdateScheduler = shouldUpdateScheduler || yamlResult.shouldUpdateScheduler;
-
-            if (
-              yamlResult.validationErrors.length === 0 &&
-              yamlResult.updatedDataPatch.valid &&
-              updatedData.definition &&
-              !workflowYamlDeclaresTopLevelEnabled(yamlResult.workflowYaml)
-            ) {
-              const resolvedEnabled =
-                workflow.enabled !== undefined ? workflow.enabled : existingSource.enabled;
-              updatedData.enabled = resolvedEnabled;
-              const currentDefinition = updatedData.definition;
-              if (currentDefinition) {
-                updatedData.definition = { ...currentDefinition, enabled: resolvedEnabled };
-              }
-            }
-          } else if (!workflowYaml) {
-            const fieldResult = applyFieldUpdates(workflow, existingSource);
-            updatedData = { ...updatedData, ...fieldResult.patch };
-            validationErrors.length = 0;
-            validationErrors.push(...fieldResult.validationErrors);
-          }
-
-          const merged: WorkflowProperties = { ...existingSource, ...updatedData };
-          if (merged.triggerTypes === undefined) {
-            merged.triggerTypes = getTriggerTypesFromDefinition(merged.definition) ?? [];
-          }
-          return merged;
-        },
-      });
-
-      await this.syncSchedulerAfterWorkflowUpdate({
+      const { response, finalData, timestamp } = await this.applyWorkflowUpdate(
         id,
+        workflow,
         spaceId,
-        request,
-        finalData,
-        shouldUpdateScheduler,
-      });
+        request
+      );
 
       await this.logWorkflowChangesAfterWrite({
         workflows: [{ id, document: finalData }],
         action: WorkflowChangeHistoryAction.workflowUpdate,
         spaceId,
-        timestamp: now,
+        timestamp,
         request,
       });
 
-      return {
-        id,
-        lastUpdatedAt: finalData.updated_at,
-        lastUpdatedBy: finalData.lastUpdatedBy,
-        enabled: finalData.enabled,
-        validationErrors,
-        valid: finalData.valid,
-      };
+      return response;
     } catch (error) {
       if (isNotFoundError(error)) {
         throw new Error(`Workflow with id ${id} not found`);
       }
       throw error;
     }
+  }
+
+  async restoreWorkflowVersion(
+    workflowId: string,
+    eventId: string,
+    spaceId: string,
+    request: KibanaRequest
+  ): Promise<RestoreWorkflowVersionResponseDto> {
+    assertWorkflowChangeHistoryEnabled(
+      this.deps.changeHistoryService,
+      this.deps.workflowVersioningEnabled
+    );
+
+    const history = await this.deps.changeHistoryService.getHistory(spaceId, workflowId, {
+      additionalFilters: [{ term: { 'event.id': eventId } }],
+      size: 1,
+    });
+
+    if (history.total !== 1 || history.items.length !== 1) {
+      throw new WorkflowHistoryEventNotFoundError(workflowId, eventId);
+    }
+
+    const historyEvent = history.items[0];
+    if (historyEvent.object.type !== WORKFLOW_CHANGE_HISTORY_OBJECT_TYPE) {
+      throw new WorkflowHistoryEventNotFoundError(workflowId, eventId);
+    }
+
+    const yaml = extractRestoreSnapshotYaml(historyEvent.object.snapshot);
+    if (!yaml) {
+      throw new InvalidYamlSchemaError('Historical snapshot has no YAML to restore.');
+    }
+
+    const sequence = historyEvent.object.sequence;
+
+    const { response, finalData, timestamp } = await this.applyWorkflowUpdate(
+      workflowId,
+      { yaml },
+      spaceId,
+      request
+    );
+
+    await this.logWorkflowChangesAfterWrite({
+      workflows: [{ id: workflowId, document: finalData }],
+      action: WorkflowChangeHistoryAction.workflowRestore,
+      spaceId,
+      timestamp,
+      request,
+      restoreMetadata: {
+        eventId,
+        ...(sequence != null ? { sequence } : {}),
+      },
+    });
+
+    if (finalData.version == null) {
+      throw new Error(`Workflow '${workflowId}' is missing version after restore.`);
+    }
+
+    return {
+      ...response,
+      version: finalData.version,
+    };
   }
 
   async deleteWorkflows(

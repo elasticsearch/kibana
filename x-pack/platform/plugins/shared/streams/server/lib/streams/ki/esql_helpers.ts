@@ -6,7 +6,7 @@
  */
 
 import { esql, BasicPrettyPrinter } from '@elastic/esql';
-import type { LatestSourceWhereCondition } from '../../sig_events/latest_source_query';
+import type { LatestSourceWhereCondition } from '../../significant_events/latest_source_query';
 export const andWhere = (
   current: LatestSourceWhereCondition | undefined,
   next: LatestSourceWhereCondition

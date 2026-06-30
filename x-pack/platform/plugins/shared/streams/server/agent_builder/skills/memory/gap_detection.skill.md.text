@@ -19,7 +19,7 @@ Evaluate the memory knowledge base against each of these dimensions:
 ## Workflow
 
 1. Call `platform_streams_memory_list` to enumerate all existing memory pages and their categories.
-2. Call `platform_streams_sig_events_ki_search` (no filters) to review all available knowledge indicators.
+2. Call `platform_sig_events_ki_search` (no filters) to review all available knowledge indicators.
 3. Call `platform.streams.inspect_streams` to get the list of streams — this reveals what data sources are connected to Elastic and what is likely missing.
 4. Call `platform.workflows.get_connectors` to see which connectors are configured — use this to assess dimension 11 (access points and connectors).
 5. Read relevant memory pages using `platform_streams_memory_read` or `platform_streams_memory_search` to understand what is already known.

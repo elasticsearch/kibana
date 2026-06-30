@@ -21,10 +21,7 @@ import type { CspFindingResult } from '@kbn/cloud-security-posture-common';
 import { MISCONFIGURATION_STATUS } from '@kbn/cloud-security-posture-common';
 import { DistributionBar } from '@kbn/security-solution-distribution-bar';
 import type { CspBenchmarkRuleMetadata } from '@kbn/cloud-security-posture-common/schema/rules/latest';
-import type {
-  FindingsMisconfigurationPanelExpandableFlyoutPropsPreview,
-  MisconfigurationFindingDetailFields,
-} from '@kbn/cloud-security-posture';
+import type { MisconfigurationFindingDetailFields } from '@kbn/cloud-security-posture';
 import {
   CspEvaluationBadge,
   MISCONFIGURATION,
@@ -43,11 +40,9 @@ import {
 import { METRIC_TYPE } from '@kbn/analytics';
 import { SecurityPageName } from '@kbn/deeplinks-security';
 import type { QueryDslQueryContainer } from '@kbn/data-views-plugin/common/types';
-import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import type { EntityType } from '@kbn/entity-store/public';
 import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import type { UseCspOptions } from '@kbn/cloud-security-posture-common/types/findings';
-import { MisconfigurationFindingsPreviewPanelKey } from '../../../flyout/csp_details/findings_flyout/constants';
 import { SecuritySolutionLinkAnchor } from '../../../common/components/links';
 import { useUiSetting } from '../../../common/lib/kibana';
 import { useEntityFromStore } from '../../../flyout/entity_details/shared/hooks/use_entity_from_store';
@@ -178,16 +173,17 @@ export const MisconfigurationFindingsDetailsTable = memo(
   ({
     field,
     value,
-    scopeId,
     entityId,
     entityType,
+    onShowFinding,
   }: {
     field: CloudPostureEntityIdentifier;
     value: string;
-    scopeId: string;
     /** Canonical entity store id (`host.entity.id` / `user.entity.id`); when set with v2 FF, identity fields are loaded from the store for EUID DSL. */
     entityId?: string;
     entityType?: string;
+    /** Callback executed after expanding a misconfiguration finding. */
+    onShowFinding: (resourceId: string, ruleId: string) => void;
   }) => {
     useEffect(() => {
       uiMetricService.trackUiMetric(
@@ -326,8 +322,6 @@ export const MisconfigurationFindingsDetailsTable = memo(
       currentFilter
     );
 
-    const { openPreviewPanel } = useExpandableFlyoutApi();
-
     const columns: Array<EuiBasicTableColumn<MisconfigurationFindingDetailFields>> = [
       {
         field: 'rule',
@@ -357,28 +351,7 @@ export const MisconfigurationFindingsDetailsTable = memo(
                   NAV_TO_FINDINGS_BY_RULE_NAME_FROM_ENTITY_FLYOUT
                 );
 
-                const previewPanelProps: FindingsMisconfigurationPanelExpandableFlyoutPropsPreview =
-                  {
-                    id: MisconfigurationFindingsPreviewPanelKey,
-                    params: {
-                      resourceId: finding.resource.id,
-                      ruleId: finding.rule.id,
-                      scopeId,
-                      isPreviewMode: true,
-                      banner: {
-                        title: i18n.translate(
-                          'xpack.securitySolution.flyout.right.misconfigurationFinding.PreviewTitle',
-                          {
-                            defaultMessage: 'Preview finding details',
-                          }
-                        ),
-                        backgroundColor: 'warning',
-                        textColor: 'warning',
-                      },
-                    },
-                  };
-
-                openPreviewPanel(previewPanelProps);
+                onShowFinding(finding.resource.id, finding.rule.id);
               }}
             />
           </EuiToolTip>

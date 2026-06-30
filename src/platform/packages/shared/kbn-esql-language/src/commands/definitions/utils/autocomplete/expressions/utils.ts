@@ -12,7 +12,7 @@ import type { ESQLAstItem, ESQLFunction } from '@elastic/esql/types';
 import { nullCheckOperators, inOperators } from '../../../all_operators';
 import type { ExpressionContext, FunctionParameterContext } from './types';
 import type { ICommandContext, ISuggestionItem } from '../../../../registry/types';
-import { getFunctionDefinition } from '../..';
+import { getFunctionDefinition } from '../../functions';
 import { resolveArgumentTypes } from '../../expressions';
 import type { SupportedDataType } from '../../../types';
 import {

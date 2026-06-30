@@ -103,6 +103,7 @@ export function RuleActions({
                   data-test-subj={`ruleActionIcon${
                     typeof iconType === 'string' ? `-${iconType}` : ''
                   }`}
+                  aria-hidden={true}
                 />
               </EuiFlexItem>
               <EuiFlexItem>
@@ -115,7 +116,7 @@ export function RuleActions({
                 <EuiFlexGroup alignItems="center" gutterSize="xs" component="span">
                   <EuiSpacer size="xs" />
                   <EuiFlexItem grow={false}>
-                    <EuiIcon size="s" type="bell" />
+                    <EuiIcon size="s" type="bell" aria-hidden={true} />
                   </EuiFlexItem>
                   <EuiFlexItem>
                     <EuiText

@@ -121,6 +121,7 @@ export interface EsWorkflowExecution {
   workflowId: string;
   managed?: boolean;
   managedBy?: string | null;
+  billable?: boolean | null;
   originManagedWorkflowId?: string | null;
   managedVersion?: number | null;
   isTestRun: boolean;
@@ -171,6 +172,11 @@ export interface EsWorkflowExecution {
    * step reported usage. See {@link WorkflowTokenUsage}.
    */
   usage?: WorkflowTokenUsage;
+  /**
+   * Workflow document version (`_source.version`) captured when the execution was
+   * created.
+   */
+  version?: number;
 }
 
 export interface ProviderInput {
@@ -286,6 +292,8 @@ export interface WorkflowExecutionDto {
   concurrencyGroupKey?: string; // Evaluated concurrency group key for grouping executions
   /** Aggregated LLM token usage across all `ai.*` steps in this execution. */
   usage?: WorkflowTokenUsage;
+  /** Workflow document version captured at execution start. See {@link EsWorkflowExecution.version}. */
+  version?: number;
 }
 
 export type WorkflowExecutionListItemDto = Omit<
@@ -316,6 +324,7 @@ export const EsWorkflowSchema = z.object({
   enabled: z.boolean(),
   managed: z.boolean().optional(),
   managedBy: z.string().nullable().optional(),
+  billable: z.boolean().nullable().optional(),
   originManagedWorkflowId: z.string().nullable().optional(),
   managedVersion: z.number().nullable().optional(),
   tags: z.array(z.string()),
@@ -327,6 +336,8 @@ export const EsWorkflowSchema = z.object({
   deleted_at: z.date().nullable().default(null),
   yaml: z.string(),
   valid: z.boolean().readonly(),
+  /** Monotonic workflow document version counter (`_source.version`). */
+  version: z.number().optional(),
 });
 
 export type EsWorkflow = z.infer<typeof EsWorkflowSchema>;
@@ -441,6 +452,7 @@ export interface WorkflowDetailDto {
   definition: WorkflowYaml | null;
   yaml: string;
   valid: boolean;
+  version?: number;
 }
 
 export interface WorkflowPartialDetailDto extends Partial<WorkflowDetailDto> {
@@ -478,8 +490,10 @@ export interface WorkflowExecutionEngineModel
     | 'yaml'
     | 'managed'
     | 'managedBy'
+    | 'billable'
     | 'originManagedWorkflowId'
     | 'managedVersion'
+    | 'version'
   > {
   isTestRun?: boolean;
   isEphemeral?: boolean;

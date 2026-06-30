@@ -19,4 +19,5 @@ export const DIFFABLE_CHANGE_ACTIONS: ReadonlyArray<string> = [
   SecurityRuleChangeTrackingAction.ruleDuplicate,
   SecurityRuleChangeTrackingAction.ruleImport,
   SecurityRuleChangeTrackingAction.ruleRevert,
+  SecurityRuleChangeTrackingAction.ruleRestore,
 ];

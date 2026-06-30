@@ -130,8 +130,8 @@ export const searchEntityAnomalies = async ({
               {
                 range: {
                   record_score: {
-                    gte: minScore ?? 1,
-                    ...(maxScore !== undefined ? { lte: maxScore } : {}),
+                    gte: minScore || 1,
+                    ...(maxScore !== undefined ? { lt: maxScore } : {}),
                   },
                 },
               },

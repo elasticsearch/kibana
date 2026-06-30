@@ -35,6 +35,8 @@ describe('Agent status api route schema', () => {
       'more than 50 agentIds',
       { agentIds: Array.from({ length: 51 }, () => Math.random().toString(32)) },
     ],
+    ['an agentId longer than 256 characters', { agentIds: 'a'.repeat(257) }],
+    ['an array with an agentId longer than 256 characters', { agentIds: ['a'.repeat(257)] }],
   ])('should error if %s are used for `agentIds`', (_, validateOptions) => {
     expect(() => EndpointAgentStatusRequestSchema.query.validate(validateOptions)).toThrow(
       /\[agentIds]:/
@@ -44,6 +46,8 @@ describe('Agent status api route schema', () => {
   it.each([
     ['single string value', 'one'],
     ['array of strings', ['one', 'two']],
+    ['a 256 character string value', 'a'.repeat(256)],
+    ['an array with a 256 character agentId', ['a'.repeat(256)]],
   ])('should accept %s of `agentIds`', (_, agentIdsValue) => {
     expect(() =>
       EndpointAgentStatusRequestSchema.query.validate({

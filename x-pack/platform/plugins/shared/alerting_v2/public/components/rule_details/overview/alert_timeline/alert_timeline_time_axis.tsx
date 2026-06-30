@@ -81,10 +81,20 @@ const snapForward = (ms: number, step: StepDef): number => {
   return cursor;
 };
 
-const buildTicks = (gteMs: number, lteMs: number, locale: string, timeZone?: string): Tick[] => {
-  if (!Number.isFinite(gteMs) || !Number.isFinite(lteMs) || lteMs <= gteMs) return [];
+const buildTicks = (
+  windowStartMs: number,
+  windowEndMs: number,
+  locale: string,
+  timeZone?: string
+): Tick[] => {
+  if (
+    !Number.isFinite(windowStartMs) ||
+    !Number.isFinite(windowEndMs) ||
+    windowEndMs <= windowStartMs
+  )
+    return [];
 
-  const span = lteMs - gteMs;
+  const span = windowEndMs - windowStartMs;
   const step = pickStep(span);
 
   const showDate = step.unit === 'day' || span > DAY_MS;
@@ -104,9 +114,9 @@ const buildTicks = (gteMs: number, lteMs: number, locale: string, timeZone?: str
   const stepDays = step.unit === 'day' ? Math.round(step.ms / DAY_MS) : 0;
 
   const ticks: Tick[] = [];
-  let cursor = snapForward(gteMs, step);
+  let cursor = snapForward(windowStartMs, step);
   let idx = 0;
-  while (cursor <= lteMs && idx++ < 200) {
+  while (cursor <= windowEndMs && idx++ < 200) {
     ticks.push({ ms: cursor, label: formatter.format(new Date(cursor)) });
     if (step.unit === 'day') {
       const next = new Date(cursor);
@@ -120,8 +130,8 @@ const buildTicks = (gteMs: number, lteMs: number, locale: string, timeZone?: str
 };
 
 export interface AlertTimelineTimeAxisProps {
-  gteMs: number;
-  lteMs: number;
+  windowStartMs: number;
+  windowEndMs: number;
   /** Kibana `dateFormat:tz` setting. Pass `'Browser'` or omit to use the browser's local timezone. */
   timeZone?: string;
 }
@@ -132,16 +142,16 @@ export interface AlertTimelineTimeAxisProps {
  * shared with the bars below.
  */
 export const AlertTimelineTimeAxis: React.FC<AlertTimelineTimeAxisProps> = ({
-  gteMs,
-  lteMs,
+  windowStartMs,
+  windowEndMs,
   timeZone,
 }) => {
   const { euiTheme } = useEuiTheme();
   const ticks = useMemo(
-    () => buildTicks(gteMs, lteMs, i18n.getLocale(), timeZone),
-    [gteMs, lteMs, timeZone]
+    () => buildTicks(windowStartMs, windowEndMs, i18n.getLocale(), timeZone),
+    [windowStartMs, windowEndMs, timeZone]
   );
-  const span = lteMs - gteMs;
+  const span = windowEndMs - windowStartMs;
 
   return (
     <div
@@ -154,7 +164,7 @@ export const AlertTimelineTimeAxis: React.FC<AlertTimelineTimeAxisProps> = ({
       data-test-subj="alertTimelineTimeAxis"
     >
       {ticks.map((tick) => {
-        const pct = ((tick.ms - gteMs) / span) * 100;
+        const pct = ((tick.ms - windowStartMs) / span) * 100;
         if (pct > 90) return null;
         return (
           <div

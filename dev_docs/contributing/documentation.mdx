@@ -5,69 +5,13 @@ title: Documentation
 description: Writing documentation during development
 date: 2022-03-01
 tags: ['kibana', 'onboarding', 'dev']
+redirect_url: https://www.elastic.co/docs/extend/kibana/contributing/codebase/documentation
 ---
 
-Docs should be written during development and accompany PRs when relevant. There are multiple types of documentation, and different places to add each.
+{/* REDIRECT_NOTICE_START */}
 
-## End-user documentation
-
-User-facing features should be documented in [asciidoc](http://asciidoc.org/) at [https://github.com/elastic/kibana/tree/main/docs](https://github.com/elastic/kibana/tree/main/docs)
-
-To build the docs, you must clone the [elastic/docs](https://github.com/elastic/docs) repo as a sibling of your Kibana repo. Follow the instructions in that project’s [README](https://github.com/elastic/docs#readme) for getting the docs tooling set up.
-
-To build the docs:
-
-```bash
-node scripts/docs.js --open
-```
-
-## REST APIs
-REST APIs should be documented using the following formats:
-
-- [API doc template](https://raw.githubusercontent.com/elastic/docs/master/shared/api-ref-ex.asciidoc)
-- [API object definition template](https://raw.githubusercontent.com/elastic/docs/master/shared/api-definitions-ex.asciidoc)
-
-## Developer documentation
-
-Developer documentation can be segmented into two types: internal plugin details, and information on extending Kibana. Our [Kibana Developer Guide](https://docs.elastic.dev/kibana-dev-docs/getting-started/welcome) is meant to serve the latter. The guide can only be accessed internally at the moment, though the raw content is public in our [public repository]((https://github.com/elastic/kibana/tree/main/dev_docs)).
-
-Internal plugin details can be kept alongside the code it describes. Information about extending Kibana may go in the root of your plugin folder, or inside the top-level [dev_docs](https://github.com/elastic/kibana/tree/main/dev_docs) folder. 
-
-<DocCallOut title="Internal only">
-
-Only `mdx` files with the appropriate <DocLink id="docsSyntax" section="frontmatter" text="frontmatter"/> are rendered inside the Developer Guide. Read about the syntax <DocLink id="docsSyntax" text="here"/>. Edit [kibana/nav-kibana-dev.docnav.json](https://github.com/elastic/kibana/blob/main/dev_docs/nav-kibana-dev.docnav.json) to have a link to your document appear in the navigation menu. Read <DocLink id="kibDevDocsBestPractices" text="these instructions" /> for more details on how to add new content and test locally.
-
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://www.elastic.co/docs/extend/kibana/contributing/codebase/documentation](https://www.elastic.co/docs/extend/kibana/contributing/codebase/documentation)
 </DocCallOut>
 
-### Structure
-
-The high-level developer documentation located in the [dev_docs](https://github.com/elastic/kibana/tree/main/dev_docs) folder attempts to follow [divio documentation](https://documentation.divio.com/) guidance. <DocLink id="kibDevDocsWelcome" text="Getting started" /> and <DocLink id="kibPlatformIntro" text="Key concepts" /> sections are _explanation_ oriented, while
-<DocLink id="kibDevTutorialDebugging" text="Tutorials" /> falls under both _tutorials_ and _how to_.
-
-Developers may choose to keep information that is specific to a particular plugin along side the code.
-
-### Best practices
-
-#### Keep content fresh
-
-A fresh pair of eyes are invaluable. Recruit new hires to read, review and update documentation. Leads should also periodically review documentation to ensure it stays up to date. File issues any time you notice documentation is outdated.
-
-#### Consider your target audience
-
-Documentation in the Kibana Developer Guide is targeted towards developers building Kibana plugins. Keep implementation details about internal plugin code out of these docs.
-
-#### High to low level
-
-When a developer first lands in our docs, think about their journey. Introduce basic concepts before diving into details. The left navigation should be set up so documents on top are higher level than documents near the bottom.
-
-#### Think outside-in
-
-It's easy to forget what it felt like to first write code in Kibana, but do your best to frame these docs "outside-in". Don't use esoteric, internal language unless a definition is documented and linked. The fresh eyes of a new hire can be a great asset.
-
-
-## Example plugins
-
-Running Kibana with `yarn start --run-examples` will include all [example plugins](https://github.com/elastic/kibana/tree/main/examples). These are tested examples of platform services in use. We strongly encourage anyone providing a platform level service or <DocLink id="kibBuildingBlocks" text="building block"/> to include a tutorial that links to a tested example plugin. This is better than relying on copied code snippets, which can quickly get out of date.
-
-You can also visit these [examples plugins hosted online](https://demo.kibana.dev/8.2/app/home). Note that because anonymous access is enabled, some
-of the demos are currently not working. 
+{/* REDIRECT_NOTICE_END */}

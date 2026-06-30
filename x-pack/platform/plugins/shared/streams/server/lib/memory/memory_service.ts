@@ -18,7 +18,7 @@ import { createMemoryHistoryStorage } from './history_storage';
 import { memoriesDataStream, type memoriesMappings, type StoredMemoryPage } from './data_stream';
 import { MEMORIES_DATA_STREAM } from '../../../common/constants';
 import { resolveSearchMode, type SearchMode } from '../../../common/queries';
-import { DEFAULT_SIG_EVENTS_TUNING_CONFIG } from '../../../common/sig_events_tuning_config';
+import { DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG } from '../../../common/significant_events_tuning_config';
 import { bulkCreateWithInferenceFallback } from '../streams/ki/knowledge_indicator_client/bulk_with_inference_fallback';
 import type {
   MemoryEntry,
@@ -453,8 +453,17 @@ export class MemoryServiceImpl implements MemoryService {
     return Array.from(categorySet).sort();
   }
 
-  async getCategoryTree(): Promise<MemoryCategoryNode[]> {
-    return buildCategoryTree(await this.listAll());
+  async getCategoryTree(): Promise<{
+    tree: MemoryCategoryNode[];
+    uncategorized: Array<{ id: string; name: string; title: string }>;
+  }> {
+    const all = await this.listAll();
+    return {
+      tree: buildCategoryTree(all),
+      uncategorized: all
+        .filter((e) => e.categories.length === 0)
+        .map((e) => ({ id: e.id, name: e.name, title: e.title })),
+    };
   }
 
   // ── References ──
@@ -584,7 +593,7 @@ export class MemoryServiceImpl implements MemoryService {
     size: number
   ) {
     const { semantic_min_score: minScore, rrf_rank_constant: rankConstant } =
-      DEFAULT_SIG_EVENTS_TUNING_CONFIG;
+      DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG;
     const idsFilter: QueryDslQueryContainer = { ids: { values: latestLiveIds } };
     const allFilters = [idsFilter, ...structuredFilters];
 
@@ -816,6 +825,8 @@ export class MemoryServiceImpl implements MemoryService {
       name: entry.name,
       title: entry.title,
       content: entry.content,
+      tags: entry.tags,
+      categories: entry.categories,
       change_type: changeType,
       change_summary: changeSummary,
       created_at: entry.updated_at,

@@ -11,11 +11,11 @@ import { EuiBadge, EuiButton, EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText } fr
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { CustomRecoveryRenderProps } from '../types';
-import type { ComposeFormValues } from '../compose_form_types';
+import type { FormValues } from '../../../form/types';
 import { QuerySummary } from '../query_summary';
 
 export const EsqlRecoveryContent: React.FC<CustomRecoveryRenderProps> = ({ state, dispatch }) => {
-  const query = useWatch<ComposeFormValues, 'query'>({ name: 'query' });
+  const query = useWatch<FormValues, 'query'>({ name: 'query' });
   const baseQuery = query?.format === 'composed' ? query.base : '';
   const recoveryBlock = query?.format === 'composed' ? query.recovery?.segment ?? '' : '';
   const hasValidRecoveryBlock = Boolean(recoveryBlock.trim());

@@ -9,6 +9,7 @@
 
 import { i18n } from '@kbn/i18n';
 import type { ESQLAstAllCommands, ESQLAstField, ESQLAstMmrCommand } from '@elastic/esql/types';
+import { suggestForExpression } from '../../definitions/utils';
 import type { MapParameters } from '../../definitions/utils/autocomplete/map_expression';
 import { getCommandMapExpressionSuggestions } from '../../definitions/utils/autocomplete/map_expression';
 import { suggestFieldsList } from '../../definitions/utils/autocomplete/fields_list';
@@ -24,12 +25,7 @@ import {
 } from '../complete_items';
 import type { ICommandCallbacks, ICommandContext, ISuggestionItem } from '../types';
 import { Location } from '../types';
-import {
-  getMmrVectorValueSuggestions,
-  getPosition,
-  getVectorFieldSuggestions,
-  MmrPosition,
-} from './utils';
+import { getPosition, getVectorFieldSuggestions, MMR_VECTOR_TYPES, MmrPosition } from './utils';
 
 export async function autocomplete(
   query: string,
@@ -51,11 +47,21 @@ export async function autocomplete(
       const queryVectorExpression = mmrCommand.queryVector;
 
       if (command.args.length === 0) {
-        return [
-          onCompleteItem,
-          mmrQueryVectorSuggestion,
-          ...getMmrVectorValueSuggestions(callbacks, context),
-        ];
+        const { suggestions: queryVectorSuggestions } = await suggestForExpression({
+          query,
+          command,
+          cursorPosition,
+          location: Location.MMR,
+          context,
+          callbacks,
+          options: {
+            preferredExpressionType: MMR_VECTOR_TYPES,
+            suggestFields: false,
+            suggestFunctions: true,
+          },
+        });
+
+        return [onCompleteItem, mmrQueryVectorSuggestion, ...queryVectorSuggestions];
       }
 
       const suggestions = await suggestFieldsList(
@@ -70,7 +76,7 @@ export async function autocomplete(
           afterCompleteSuggestions: [onCompleteItem],
           includePipeAndCommaSuggestions: false,
           allowSingleColumnFields: true,
-          preferredExpressionType: 'dense_vector',
+          preferredExpressionType: MMR_VECTOR_TYPES,
         }
       );
 

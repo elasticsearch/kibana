@@ -382,10 +382,10 @@ export function getUiSettings(
             }),
           },
           {
-            from: 'now/w',
-            to: 'now/w',
-            display: i18n.translate('data.advancedSettings.timepicker.thisWeek', {
-              defaultMessage: 'This week',
+            from: 'now-1d/d',
+            to: 'now-1d/d',
+            display: i18n.translate('data.advancedSettings.timepicker.yesterday', {
+              defaultMessage: 'Yesterday',
             }),
           },
           {
@@ -417,10 +417,31 @@ export function getUiSettings(
             }),
           },
           {
+            from: 'now-3h',
+            to: 'now',
+            display: i18n.translate('data.advancedSettings.timepicker.last3Hours', {
+              defaultMessage: 'Last 3 hours',
+            }),
+          },
+          {
+            from: 'now-12h',
+            to: 'now',
+            display: i18n.translate('data.advancedSettings.timepicker.last12Hours', {
+              defaultMessage: 'Last 12 hours',
+            }),
+          },
+          {
             from: 'now-24h/h',
             to: 'now',
             display: i18n.translate('data.advancedSettings.timepicker.last24Hours', {
               defaultMessage: 'Last 24 hours',
+            }),
+          },
+          {
+            from: 'now-3d/d',
+            to: 'now',
+            display: i18n.translate('data.advancedSettings.timepicker.last3Days', {
+              defaultMessage: 'Last 3 days',
             }),
           },
           {
@@ -449,6 +470,48 @@ export function getUiSettings(
             to: 'now',
             display: i18n.translate('data.advancedSettings.timepicker.last1Year', {
               defaultMessage: 'Last 1 year',
+            }),
+          },
+          {
+            from: 'now/w',
+            to: 'now/w',
+            display: i18n.translate('data.advancedSettings.timepicker.thisWeek', {
+              defaultMessage: 'This week',
+            }),
+          },
+          {
+            from: 'now/w',
+            to: 'now',
+            display: i18n.translate('data.advancedSettings.timepicker.weekToDate', {
+              defaultMessage: 'This week until now',
+            }),
+          },
+          {
+            from: 'now/M',
+            to: 'now/M',
+            display: i18n.translate('data.advancedSettings.timepicker.thisMonth', {
+              defaultMessage: 'This month',
+            }),
+          },
+          {
+            from: 'now/M',
+            to: 'now',
+            display: i18n.translate('data.advancedSettings.timepicker.monthToDate', {
+              defaultMessage: 'This month until now',
+            }),
+          },
+          {
+            from: 'now/y',
+            to: 'now/y',
+            display: i18n.translate('data.advancedSettings.timepicker.thisYear', {
+              defaultMessage: 'This year',
+            }),
+          },
+          {
+            from: 'now/y',
+            to: 'now',
+            display: i18n.translate('data.advancedSettings.timepicker.yearToDate', {
+              defaultMessage: 'This year until now',
             }),
           },
         ],
@@ -482,7 +545,7 @@ export function getUiSettings(
               to: schema.string(),
               display: schema.string(),
             }),
-            { maxSize: 12 }
+            { maxSize: 24 }
           )
         : schema.arrayOf(
             schema.object({

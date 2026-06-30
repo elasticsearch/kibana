@@ -46,7 +46,7 @@ test.describe('Tags - discover integration', { tag: tags.stateful.classic }, () 
 
   test.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsPrivilegedUser();
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
     await pageObjects.discover.waitUntilSearchingHasFinished();
   });
 

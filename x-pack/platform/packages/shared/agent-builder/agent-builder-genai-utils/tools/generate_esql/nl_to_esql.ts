@@ -96,6 +96,10 @@ export interface GenerateEsqlOptions {
    * for time range filtering in generated queries.
    */
   disableNamedParams?: boolean;
+  /**
+   * If true, external ES|QL datasets are considered when discovering and resolving the target.
+   */
+  includeDatasets?: boolean;
 }
 
 export type GenerateEsqlParams = GenerateEsqlOptions & GenerateEsqlDeps;
@@ -110,6 +114,7 @@ export const generateEsql = async ({
   rowLimit,
   timeRange: inputTimeRange,
   disableNamedParams,
+  includeDatasets = false,
   model: inputModel,
   modelProvider,
   esClient,
@@ -130,6 +135,7 @@ export const generateEsql = async ({
     docBase,
     documentation,
     esqlCallbacks,
+    includeDatasets,
   });
 
   return withActiveInferenceSpan(
@@ -156,6 +162,7 @@ export const generateEsql = async ({
             nlQuery: nlQueryWithContext,
             esClient,
             limit: 1,
+            includeDatasets,
             model,
             logger,
           });

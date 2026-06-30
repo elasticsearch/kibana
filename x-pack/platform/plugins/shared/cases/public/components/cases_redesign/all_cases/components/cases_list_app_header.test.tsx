@@ -7,48 +7,27 @@
 
 import React from 'react';
 import { screen } from '@testing-library/react';
+import { APP_HEADER_TEST_SUBJECTS, APP_MENU_TEST_SUBJECTS } from '@kbn/app-header';
+import { openAppMenuOverflow } from '@kbn/app-header/test_helpers';
 
 import { buildCasesPermissions, renderWithTestingProviders } from '../../../../common/mock';
 import { CasesListAppHeader } from './cases_list_app_header';
 
 jest.mock('../../../../common/navigation/hooks');
 
-jest.mock('@kbn/app-header', () => ({
-  AppHeader: ({
-    title,
-    menu,
-  }: {
-    title: string;
-    menu: {
-      items: Array<{ testId: string }>;
-      primaryActionItem?: { testId: string };
-    };
-  }) => (
-    <div data-test-subj="app-header">
-      <span data-test-subj="app-header-title">{title}</span>
-      <div data-test-subj="app-header-menu">
-        {menu?.items?.map((item) => (
-          <span key={item.testId} data-test-subj={item.testId} />
-        ))}
-        {menu?.primaryActionItem && <span data-test-subj={menu.primaryActionItem.testId} />}
-      </div>
-    </div>
-  ),
-}));
-
 describe('CasesListAppHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders the app header with the Cases title and analytics test IDs', () => {
+  it('renders the app header with the Cases title', () => {
     renderWithTestingProviders(<CasesListAppHeader />);
 
-    expect(screen.getByTestId('app-header')).toBeInTheDocument();
-    expect(screen.getByTestId('app-header-title')).toHaveTextContent('Cases');
+    expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.root)).toBeInTheDocument();
+    expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent('Cases');
   });
 
-  it('displays the create new case menu item when the user has create privileges', () => {
+  it('displays the create new case action when the user has create privileges', () => {
     renderWithTestingProviders(<CasesListAppHeader />, {
       wrapperProps: { permissions: buildCasesPermissions({ create: true }) },
     });
@@ -56,7 +35,7 @@ describe('CasesListAppHeader', () => {
     expect(screen.getByTestId('createNewCaseBtn')).toBeInTheDocument();
   });
 
-  it('does not display the create new case menu item when the user does not have create privileges', () => {
+  it('does not display the create new case action when the user does not have create privileges', () => {
     renderWithTestingProviders(<CasesListAppHeader />, {
       wrapperProps: { permissions: buildCasesPermissions({ create: false }) },
     });
@@ -64,12 +43,14 @@ describe('CasesListAppHeader', () => {
     expect(screen.queryByTestId('createNewCaseBtn')).not.toBeInTheDocument();
   });
 
-  it('displays the configure button when the user has settings privileges', () => {
+  it('displays the configure button when the user has settings privileges', async () => {
     renderWithTestingProviders(<CasesListAppHeader />, {
       wrapperProps: { permissions: buildCasesPermissions({ settings: true }) },
     });
 
-    expect(screen.getByTestId('configure-case-button')).toBeInTheDocument();
+    await openAppMenuOverflow();
+
+    expect(await screen.findByTestId('configure-case-button')).toBeInTheDocument();
   });
 
   it('does not display the configure button when the user does not have settings privileges', () => {
@@ -77,16 +58,20 @@ describe('CasesListAppHeader', () => {
       wrapperProps: { permissions: buildCasesPermissions({ settings: false }) },
     });
 
+    expect(screen.queryByTestId(APP_MENU_TEST_SUBJECTS.overflowButton)).not.toBeInTheDocument();
     expect(screen.queryByTestId('configure-case-button')).not.toBeInTheDocument();
   });
 
-  it('displays both menu items when the user has create and settings privileges', () => {
+  it('displays both the create action and configure button with create and settings privileges', async () => {
     renderWithTestingProviders(<CasesListAppHeader />, {
       wrapperProps: { permissions: buildCasesPermissions({ create: true, settings: true }) },
     });
 
     expect(screen.getByTestId('createNewCaseBtn')).toBeInTheDocument();
-    expect(screen.getByTestId('configure-case-button')).toBeInTheDocument();
+
+    await openAppMenuOverflow();
+
+    expect(await screen.findByTestId('configure-case-button')).toBeInTheDocument();
   });
 
   it('does not display any menu items when the user has no create or settings privileges', () => {
@@ -95,6 +80,6 @@ describe('CasesListAppHeader', () => {
     });
 
     expect(screen.queryByTestId('createNewCaseBtn')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('configure-case-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(APP_MENU_TEST_SUBJECTS.overflowButton)).not.toBeInTheDocument();
   });
 });

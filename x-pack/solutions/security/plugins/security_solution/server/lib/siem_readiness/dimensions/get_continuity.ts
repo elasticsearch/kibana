@@ -8,11 +8,7 @@
 import type { ElasticsearchClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
 import type { ActionableFinding, CategoriesResponse, ContinuityPayload } from '@kbn/siem-readiness';
-import {
-  isCriticalFailureRate,
-  VOLUME_DROP_WARNING_PCT,
-  VOLUME_DROP_CRITICAL_PCT,
-} from '@kbn/siem-readiness';
+import { getContinuityDataFlowHealth, isCriticalFailureRate } from '@kbn/siem-readiness';
 import { fetchPipelines } from '../fetchers';
 
 export const getContinuity = async ({
@@ -43,17 +39,16 @@ export const getContinuity = async ({
       })
     );
 
-  // silence and volume-drop findings — merged when both apply to the same pipeline
+  // silence and volume-drop findings — merged when both apply to the same pipeline.
+  // getContinuityDataFlowHealth is the shared classifier (from @kbn/siem-readiness) that enforces
+  // the canonical precedence: silent > volume_drop_critical > volume_drop_warning > healthy.
+  // The UI badge column uses the same function so both surfaces always agree.
   pipelines.forEach((p) => {
-    const hasSilence = p.isSilent;
+    const health = getContinuityDataFlowHealth(p);
     const volumeDropPct = p.volumeDropPct ?? null;
-    const isVolumeCritical = volumeDropPct !== null && volumeDropPct >= VOLUME_DROP_CRITICAL_PCT;
-    const isVolumeWarning =
-      volumeDropPct !== null && !isVolumeCritical && volumeDropPct >= VOLUME_DROP_WARNING_PCT;
 
-    if (hasSilence) {
-      // Silence is the primary signal. Include volume context when a baseline exists
-      // so the operator sees both facts in one finding rather than two separate bullets.
+    if (health === 'silent') {
+      // Include volume context when a baseline exists so the operator sees both facts in one finding.
       const volumeContext =
         volumeDropPct !== null && p.baseline7dAvg != null
           ? ` (${volumeDropPct}% volume drop vs ~${Math.round(p.baseline7dAvg)} docs/day baseline)`
@@ -64,7 +59,7 @@ export const getContinuity = async ({
         message: `Data stream serving pipeline ${p.name} has gone silent${volumeContext}`,
         resource: p.name,
       });
-    } else if (isVolumeCritical) {
+    } else if (health === 'volume_drop_critical') {
       const baseline =
         p.baseline7dAvg != null
           ? `~${Math.round(p.baseline7dAvg)} docs/day baseline`
@@ -75,7 +70,7 @@ export const getContinuity = async ({
         message: `Pipeline ${p.name} volume dropped ${volumeDropPct}% vs 7-day (${baseline})`,
         resource: p.name,
       });
-    } else if (isVolumeWarning) {
+    } else if (health === 'volume_drop_warning') {
       const baseline =
         p.baseline7dAvg != null
           ? `~${Math.round(p.baseline7dAvg)} docs/day baseline`

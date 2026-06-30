@@ -15,11 +15,16 @@ import {
   EuiText,
   EuiButtonEmpty,
   EuiCallOut,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import type { MainCategories, PipelineStats } from '@kbn/siem-readiness';
-import { CATEGORY_ORDER, filterPipelinesByCategories } from '@kbn/siem-readiness';
+import type { MainCategories, PipelineDataFlowHealth, PipelineStats } from '@kbn/siem-readiness';
+import {
+  CATEGORY_ORDER,
+  filterPipelinesByCategories,
+  getContinuityDataFlowHealth,
+} from '@kbn/siem-readiness';
 import { useSiemReadinessApi } from '../../../hooks/use_siem_readiness_api';
 import {
   CategoryAccordionTable,
@@ -46,6 +51,7 @@ const DATA_CONTINUITY_CASE_TAGS = ['siem-readiness', 'data-continuity', 'ingest-
 export interface PipelineInfoWithStatus extends PipelineStats, Record<string, unknown> {
   failureRate: string;
   status: 'healthy' | 'critical';
+  continuityDataFlowHealth: PipelineDataFlowHealth;
 }
 
 const getDocInjectionStatus = (failureRate: string): 'healthy' | 'critical' => {
@@ -105,6 +111,7 @@ export const ContinuityTab: React.FC<SiemReadinessTabActiveCategoriesProps> = ({
         ...pipeline,
         failureRate,
         status: getDocInjectionStatus(failureRate),
+        continuityDataFlowHealth: getContinuityDataFlowHealth(pipeline),
       };
 
       const pipelineCategories = new Set<MainCategories>();
@@ -163,7 +170,7 @@ export const ContinuityTab: React.FC<SiemReadinessTabActiveCategoriesProps> = ({
         }),
         sortable: true,
         truncateText: true,
-        width: statsAvailable ? '30%' : '70%',
+        width: statsAvailable ? '25%' : '70%',
       },
       ...(statsAvailable
         ? [
@@ -175,7 +182,7 @@ export const ContinuityTab: React.FC<SiemReadinessTabActiveCategoriesProps> = ({
               ),
               sortable: true,
               render: (docsCount: number) => docsCount.toLocaleString(),
-              width: '20%',
+              width: '15%',
             } as EuiBasicTableColumn<PipelineInfoWithStatus>,
             {
               field: 'failedDocsCount',
@@ -185,7 +192,7 @@ export const ContinuityTab: React.FC<SiemReadinessTabActiveCategoriesProps> = ({
               ),
               sortable: true,
               render: (failedDocsCount: number) => failedDocsCount.toLocaleString(),
-              width: '15%',
+              width: '12%',
             } as EuiBasicTableColumn<PipelineInfoWithStatus>,
             {
               field: 'failureRate',
@@ -195,7 +202,7 @@ export const ContinuityTab: React.FC<SiemReadinessTabActiveCategoriesProps> = ({
               ),
               sortable: true,
               render: (failureRate: string) => `${failureRate}%`,
-              width: '15%',
+              width: '13%',
             } as EuiBasicTableColumn<PipelineInfoWithStatus>,
             {
               field: 'failureRate',
@@ -216,6 +223,68 @@ export const ContinuityTab: React.FC<SiemReadinessTabActiveCategoriesProps> = ({
                           'xpack.securitySolution.siemReadiness.continuity.status.healthy',
                           { defaultMessage: 'Healthy' }
                         )}
+                  </EuiBadge>
+                );
+              },
+              width: '15%',
+            } as EuiBasicTableColumn<PipelineInfoWithStatus>,
+            {
+              field: 'continuityDataFlowHealth',
+              name: i18n.translate('xpack.securitySolution.siemReadiness.continuity.column.issue', {
+                defaultMessage: 'Issue',
+              }),
+              sortable: true,
+              render: (
+                continuityDataFlowHealth: PipelineDataFlowHealth,
+                item: PipelineInfoWithStatus
+              ) => {
+                if (continuityDataFlowHealth === 'silent') {
+                  const tooltip =
+                    item.silenceMs != null
+                      ? i18n.translate(
+                          'xpack.securitySolution.siemReadiness.continuity.health.silentTooltip',
+                          {
+                            defaultMessage: 'No events received for {hours}h',
+                            values: { hours: Math.round(item.silenceMs / (60 * 60 * 1000)) },
+                          }
+                        )
+                      : undefined;
+                  const badge = (
+                    <EuiBadge color="danger">
+                      {i18n.translate(
+                        'xpack.securitySolution.siemReadiness.continuity.health.silent',
+                        { defaultMessage: 'Silent' }
+                      )}
+                    </EuiBadge>
+                  );
+                  return tooltip ? <EuiToolTip content={tooltip}>{badge}</EuiToolTip> : badge;
+                }
+                if (continuityDataFlowHealth === 'volume_drop_critical') {
+                  return (
+                    <EuiBadge color="danger">
+                      {i18n.translate(
+                        'xpack.securitySolution.siemReadiness.continuity.health.volumeDropCritical',
+                        { defaultMessage: 'Volume drop (critical)' }
+                      )}
+                    </EuiBadge>
+                  );
+                }
+                if (continuityDataFlowHealth === 'volume_drop_warning') {
+                  return (
+                    <EuiBadge color="warning">
+                      {i18n.translate(
+                        'xpack.securitySolution.siemReadiness.continuity.health.volumeDrop',
+                        { defaultMessage: 'Volume drop' }
+                      )}
+                    </EuiBadge>
+                  );
+                }
+                return (
+                  <EuiBadge color="success">
+                    {i18n.translate(
+                      'xpack.securitySolution.siemReadiness.continuity.health.healthy',
+                      { defaultMessage: 'Healthy' }
+                    )}
                   </EuiBadge>
                 );
               },

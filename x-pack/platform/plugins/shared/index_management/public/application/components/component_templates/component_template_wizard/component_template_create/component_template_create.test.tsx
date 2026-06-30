@@ -16,6 +16,8 @@ import { runPendingTimersUntil } from '../../../../../../__jest__/helpers/fake_t
 import type { ComponentTemplateDeserialized } from '../../../../../../common';
 import { serializeAsESLifecycle } from '../../../../../../common/lib';
 import { StepReview } from '../component_template_form/steps/step_review';
+import type { AppDependencies } from '../../../../app_context';
+import { AppContextProvider } from '../../../../app_context';
 
 jest.mock('@kbn/code-editor');
 
@@ -68,15 +70,14 @@ describe('<ComponentTemplateCreate />', () => {
         expect(screen.getByTestId('metaEditor')).toBeInTheDocument();
       });
 
-      test('should toggle the data retention field', async () => {
-        expect(screen.queryByTestId('valueDataRetentionField')).not.toBeInTheDocument();
+      test('should toggle the delete phase of the data lifecycle field', async () => {
+        expect(screen.queryByTestId('deleteDurationValue')).not.toBeInTheDocument();
 
-        const lifecycleSwitchRow = screen.getByTestId('dataRetentionToggle');
-        const lifecycleSwitch = within(lifecycleSwitchRow).getByRole('switch');
-        fireEvent.click(lifecycleSwitch);
+        const deleteCheckbox = screen.getByTestId('dlmPhasesSelectorDeletePhaseCard');
+        fireEvent.click(deleteCheckbox);
 
-        await runPendingTimersUntil(() => screen.queryByTestId('valueDataRetentionField') !== null);
-        expect(screen.getByTestId('valueDataRetentionField')).toBeInTheDocument();
+        await runPendingTimersUntil(() => screen.queryByTestId('deleteDurationValue') !== null);
+        expect(screen.getByTestId('deleteDurationValue')).toBeInTheDocument();
       });
 
       describe('Validation', () => {
@@ -86,6 +87,25 @@ describe('<ComponentTemplateCreate />', () => {
 
           await screen.findByText('A component template name is required.');
           expect(screen.getByTestId('nextButton')).toBeDisabled();
+        });
+
+        test('should prevent proceeding when data lifecycle configuration is invalid', async () => {
+          const nameRow = screen.getByTestId('nameField');
+          const nameInput = within(nameRow).getByRole('textbox');
+          fireEvent.change(nameInput, { target: { value: 'my-component-template' } });
+
+          fireEvent.click(screen.getByTestId('dlmPhasesSelectorDeletePhaseCard'));
+
+          await runPendingTimersUntil(() => screen.queryByTestId('deleteDurationValue') !== null);
+          fireEvent.change(screen.getByTestId('deleteDurationValue'), { target: { value: '0' } });
+
+          await screen.findByText('Enter a whole number greater than 0.');
+
+          fireEvent.click(screen.getByTestId('nextButton'));
+
+          await waitFor(() => {
+            expect(screen.getByTestId('nextButton')).toBeDisabled();
+          });
         });
       });
     });
@@ -106,7 +126,15 @@ describe('<ComponentTemplateCreate />', () => {
 
       render(
         <I18nProvider>
-          <StepReview componentTemplate={componentTemplate} />
+          <AppContextProvider
+            value={
+              {
+                config: { isServerless: false },
+              } as unknown as AppDependencies
+            }
+          >
+            <StepReview componentTemplate={componentTemplate} />
+          </AppContextProvider>
         </I18nProvider>
       );
 

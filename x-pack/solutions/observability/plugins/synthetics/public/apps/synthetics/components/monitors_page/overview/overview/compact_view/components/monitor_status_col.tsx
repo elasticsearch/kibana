@@ -6,10 +6,18 @@
  */
 
 import React, { useMemo } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiHorizontalRule, EuiText, EuiToolTip } from '@elastic/eui';
+import {
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiHorizontalRule,
+  EuiIconTip,
+  EuiText,
+  EuiToolTip,
+} from '@elastic/eui';
 import moment from 'moment';
 import type { Moment } from 'moment';
 import { i18n } from '@kbn/i18n';
+import { useSelector } from 'react-redux';
 import {
   getShortTimeStamp,
   parseTimestamp,
@@ -18,6 +26,9 @@ import type { OverviewStatusMetaData } from '../../../../../../../../../common/r
 import { MonitorTypeEnum } from '../../../../../../../../../common/runtime_types';
 import { MONITOR_STATUS_ENUM } from '../../../../../../../../../common/constants/monitor_management';
 import { BadgeStatus } from '../../../../../common/components/monitor_status';
+import { selectOverviewShowLastRun } from '../../../../../../state';
+import { resolveDisplayStatus } from '../../../../../../state/overview_status';
+import { useOverviewDisplayOptions } from '../../../../common/use_overview_display_options';
 import { getLatestDownSummary } from '../get_latest_down_summary';
 
 export const MonitorStatusCol = ({
@@ -28,7 +39,18 @@ export const MonitorStatusCol = ({
   openFlyout: (monitor: OverviewStatusMetaData) => void;
 }) => {
   const timestamp = monitor.timestamp ? parseTimestamp(monitor.timestamp) : null;
-  const absoluteTimestamps = false;
+  // Per-user, per-space display preference set from the overview's display
+  // options popover; controls whether the "Checked …" label (and its tooltip)
+  // render an absolute timestamp or a relative "5m ago".
+  const { options } = useOverviewDisplayOptions();
+  const absoluteTimestamps = options.absoluteTimestamps;
+
+  const showLastRun = useSelector(selectOverviewShowLastRun);
+  // Keep the monitor in its `stale` bucket; only surface the last-known
+  // up/down on the badge when "Show last run" is on, with a stale marker so the
+  // row is still identifiable as a monitor that stopped reporting.
+  const isStaleLastRun = monitor.overallStatus === MONITOR_STATUS_ENUM.STALE && showLastRun;
+  const displayStatus = resolveDisplayStatus(monitor, showLastRun);
 
   // The most recent down-since across this monitor's currently-down locations.
   // The error message itself lives in its own column now; here we only need
@@ -51,11 +73,27 @@ export const MonitorStatusCol = ({
   return (
     <EuiFlexGroup direction="column" gutterSize="xs" responsive={false} alignItems="flexStart">
       <EuiFlexItem grow={false}>
-        <BadgeStatus
-          monitor={monitor}
-          isBrowserType={monitor.type === MonitorTypeEnum.BROWSER}
-          onClickBadge={() => openFlyout(monitor)}
-        />
+        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+          <EuiFlexItem grow={false}>
+            <BadgeStatus
+              monitor={monitor}
+              status={displayStatus}
+              isBrowserType={monitor.type === MonitorTypeEnum.BROWSER}
+              onClickBadge={() => openFlyout(monitor)}
+            />
+          </EuiFlexItem>
+          {isStaleLastRun ? (
+            <EuiFlexItem grow={false}>
+              <EuiIconTip
+                type="warning"
+                color="warning"
+                content={STALE_LAST_RUN_TOOLTIP}
+                position="top"
+                iconProps={{ 'data-test-subj': 'syntheticsStatusColStaleIcon' }}
+              />
+            </EuiFlexItem>
+          ) : null}
+        </EuiFlexGroup>
       </EuiFlexItem>
 
       {showAuxLine ? (
@@ -142,6 +180,14 @@ export const MonitorStatusCol = ({
     </EuiFlexGroup>
   );
 };
+
+const STALE_LAST_RUN_TOOLTIP = i18n.translate(
+  'xpack.synthetics.monitorList.statusColumn.staleLastRunTooltip',
+  {
+    defaultMessage:
+      'This monitor stopped reporting; showing its last known status, which may be stale.',
+  }
+);
 
 const getCheckedLabel = (timestamp: Moment, absolute: boolean) => {
   // Absolute mode shows a clean compact stamp ("3:45:23 PM" today,

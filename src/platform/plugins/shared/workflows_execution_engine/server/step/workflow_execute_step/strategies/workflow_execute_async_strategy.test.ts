@@ -97,6 +97,16 @@ describe('WorkflowExecuteAsyncStrategy', () => {
     );
   });
 
+  it('forwards document version from repository-loaded workflow', async () => {
+    await strategy.execute(createMockWorkflow({ version: 5 }), {}, 'default', mockRequest, 0);
+
+    expect(mockEngine.executeWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'child-workflow-id', version: 5 }),
+      expect.any(Object),
+      mockRequest
+    );
+  });
+
   it('should return completed status with execution metadata', async () => {
     const result = await strategy.execute(createMockWorkflow(), {}, 'default', mockRequest, 0);
 

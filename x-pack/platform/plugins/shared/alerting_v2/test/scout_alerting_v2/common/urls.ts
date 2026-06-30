@@ -5,9 +5,11 @@
  * 2.0.
  */
 
+import type { z } from '@kbn/zod/v4';
 import type {
   CountPolicyExecutionEventsParams,
   ListPolicyExecutionHistoryParams,
+  getRuleExecutionsQuerySchema,
 } from '@kbn/alerting-v2-schemas';
 import {
   ALERT_API_PATH,
@@ -15,7 +17,16 @@ import {
   RULE_API_PATH,
   EXECUTION_HISTORY_API_PATH,
   EXECUTION_HISTORY_COUNT_API_PATH,
+  RULE_EXECUTIONS_API_PATH,
 } from './constants';
+
+/**
+ * Pre-parse input shape for {@link getRuleExecutionsUrl}. Kept local because
+ * it only matters for tests that build query strings: fields with a Zod
+ * `.default(...)` are optional here, and array-like fields accept either a
+ * single value or an array (the schema normalizes them at parse time).
+ */
+type GetRuleExecutionsQueryInput = z.input<typeof getRuleExecutionsQuerySchema>;
 
 /**
  * URL for a single rule resource: `${RULE_API_PATH}/${encodedId}`.
@@ -106,4 +117,18 @@ export const getCountNewExecutionHistoryEventsUrl = (
 ): string => {
   const params = new URLSearchParams({ since: query.since });
   return `${EXECUTION_HISTORY_COUNT_API_PATH}?${params.toString()}`;
+};
+
+export const getRuleExecutionsUrl = (query?: GetRuleExecutionsQueryInput): string => {
+  if (!query) return RULE_EXECUTIONS_API_PATH;
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      value.forEach((v) => params.append(key, String(v)));
+    } else {
+      params.set(key, String(value));
+    }
+  }
+  return `${RULE_EXECUTIONS_API_PATH}?${params.toString()}`;
 };

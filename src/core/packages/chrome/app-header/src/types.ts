@@ -19,6 +19,8 @@ import type {
   AppHeaderMetadataItems as CoreAppHeaderMetadataItems,
   AppHeaderMetadataTextItem as CoreAppHeaderMetadataTextItem,
   AppHeaderTab as CoreAppHeaderTab,
+  AppHeaderTabBadge as CoreAppHeaderTabBadge,
+  AppHeaderTabIconBadge as CoreAppHeaderTabIconBadge,
   AppHeaderTitle as CoreAppHeaderTitle,
   AppHeaderTitleSaveResult as CoreAppHeaderTitleSaveResult,
 } from '@kbn/core-chrome-browser';
@@ -35,6 +37,8 @@ export type AppHeaderMetadataItem = CoreAppHeaderMetadataItem;
 export type AppHeaderMetadataItems = CoreAppHeaderMetadataItems;
 export type AppHeaderMetadataTextItem = CoreAppHeaderMetadataTextItem;
 export type AppHeaderTab = CoreAppHeaderTab;
+export type AppHeaderTabBadge = CoreAppHeaderTabBadge;
+export type AppHeaderTabIconBadge = CoreAppHeaderTabIconBadge;
 export type AppHeaderTitle = CoreAppHeaderTitle;
 export type AppHeaderTitleSaveResult = CoreAppHeaderTitleSaveResult;
 

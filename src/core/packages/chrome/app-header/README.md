@@ -77,6 +77,58 @@ button is present.
   and its content is auto re-inset by the same amount to stay aligned with the page gutter. (The
   single value applies to both the sides and the top because the section's padding is symmetric.)
 
+## Testing
+
+`AppHeader` reads chrome from context, so rendering it without a `ChromeServiceProvider` throws
+`"useChromeService must be used within a ChromeServiceProvider"`.
+
+**If your harness renders through `KibanaRenderContextProvider {...coreStart}`, you need nothing.** That
+provider forwards `chrome.withProvider`, and the chrome mock (`chromeServiceMock.createStartContract()`)
+implements it just like production — wrapping children in `ChromeServiceProvider`. So any test using the
+standard core-mock render harness already has chrome context, exactly as the app does at runtime.
+
+**For components rendered in isolation** (a bare `render(<Component />)` with no core-mock render
+context), wrap with `MockAppHeaderProvider`, which supplies everything an `AppHeader` needs in tests
+(today just the chrome context):
+
+```tsx
+import { MockAppHeaderProvider } from '@kbn/app-header/mocks';
+
+render(
+  <MockAppHeaderProvider>
+    <MyComponentThatRendersAnAppHeader />
+  </MockAppHeaderProvider>
+);
+```
+
+Pass `chrome` to override the default mock chrome service when a test needs custom chrome behavior:
+
+```tsx
+<MockAppHeaderProvider chrome={myChromeMock}>{children}</MockAppHeaderProvider>
+```
+
+`MockChromeContextProvider` (the generic chrome-only provider it wraps) is also re-exported here, and
+lives in `@kbn/core-chrome-browser-context-mocks` for non-header code.
+
+Assert against `APP_HEADER_TEST_SUBJECTS` (from the package root) so component and test can't drift:
+
+```ts
+import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
+
+expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent('My app');
+```
+
+Menu items — including the header's own documentation/feedback/integrations — collapse into the app
+menu overflow popover at narrow widths (the default in jsdom). Open it with the helper from
+`@kbn/app-header/test_helpers` before querying those items:
+
+```ts
+import { openAppMenuOverflow } from '@kbn/app-header/test_helpers';
+
+await openAppMenuOverflow();
+expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.menuDocumentation)).toBeInTheDocument();
+```
+
 ## Chrome Next flag and runtime checks
 
 Chrome layout code should use `isNextChrome(featureFlags)` from `@kbn/core-chrome-feature-flags` to

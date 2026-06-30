@@ -7,6 +7,7 @@
 
 export * from './use_request';
 export * from './agent_policy';
+export * from './agentless_policy';
 export * from './package_policy';
 export * from './data_stream';
 export * from './agents';

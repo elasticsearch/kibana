@@ -65,7 +65,6 @@ describe('content pack stream helpers', () => {
       include: {
         objects: {
           mappings: true,
-          queries: [],
           routing: [
             {
               destination: 'bar',
@@ -75,7 +74,6 @@ describe('content pack stream helpers', () => {
               destination: 'baz',
               objects: {
                 mappings: true,
-                queries: [],
                 routing: [
                   {
                     destination: 'baz.foo',
@@ -92,7 +90,6 @@ describe('content pack stream helpers', () => {
     expect(scoped).toEqual({
       objects: {
         mappings: true,
-        queries: [],
         routing: [
           {
             destination: 'logs.foo.bar',
@@ -102,7 +99,6 @@ describe('content pack stream helpers', () => {
             destination: 'logs.foo.baz',
             objects: {
               mappings: true,
-              queries: [],
               routing: [
                 {
                   destination: 'logs.foo.baz.foo',

@@ -8,11 +8,7 @@
 import type { KibanaRequest, KibanaResponseFactory, Logger } from '@kbn/core/server';
 import type { AggregationsAggregationContainer } from '@elastic/elasticsearch/lib/api/types';
 import { transformError } from '@kbn/securitysolution-es-utils';
-import type {
-  PrebuiltRuleAssetsFacetCategory,
-  PrebuiltRuleAssetsSort,
-} from '../../../../../../common/api/detection_engine/prebuilt_rules/review_rule_installation/review_rule_installation_route.gen';
-import type { RuleResponse } from '../../../../../../common/api/detection_engine';
+import type { PrebuiltRuleAssetsFacetCategory } from '../../../../../../common/api/detection_engine/prebuilt_rules/review_rule_installation/review_rule_installation_route.gen';
 import type { RuleSummary } from '../../logic/rule_objects/prebuilt_rule_objects_client';
 import type {
   ReviewRuleInstallationRequestBody,
@@ -20,18 +16,17 @@ import type {
 } from '../../../../../../common/api/detection_engine/prebuilt_rules';
 import type { SecuritySolutionRequestHandlerContext } from '../../../../../types';
 import { buildSiemResponse } from '../../../routes/utils';
-import { convertPrebuiltRuleAssetToRuleResponse } from '../../../rule_management/logic/detection_rules_client/converters/convert_prebuilt_rule_asset_to_rule_response';
 import type { IPrebuiltRuleAssetsClient } from '../../logic/rule_assets/prebuilt_rule_assets_client';
 import { createPrebuiltRuleAssetsClient } from '../../logic/rule_assets/prebuilt_rule_assets_client';
-import { createPrebuiltRuleObjectsClient } from '../../logic/rule_objects/prebuilt_rule_objects_client';
-import { excludeLicenseRestrictedRules } from '../../logic/utils';
-import type { BasicRuleInfo } from '../../logic/basic_rule_info';
 import type { MlAuthz } from '../../../../machine_learning/authz';
 import { buildPrebuiltRuleInstallationKql } from '../../logic/build_prebuilt_rule_installation_kql';
 import { expandRawAggregationResult } from '../../../rule_management/logic/search/granular_facet_aggregations';
-import { prepareQueryDslSort } from '../../logic/rule_assets/prebuilt_rule_assets_client/utils';
 import { PREBUILT_RULE_ASSETS_SO_TYPE } from '../../logic/rule_assets/prebuilt_rule_assets_type';
-import { narrowRuleResponseFields } from '../narrow_rule_response_fields';
+import {
+  getInstallableRulesForReview,
+  getInstallableRuleVersions,
+} from '../../logic/get_installable_rules_for_review';
+import { createPrebuiltRuleObjectsClient } from '../../logic/rule_objects/prebuilt_rule_objects_client';
 
 const PREBUILT_RULE_INSTALLATION_FACET_AGG_SIZE = 200;
 
@@ -74,9 +69,10 @@ export const reviewRuleInstallationHandler = async (
     const ctx = await context.resolve(['core', 'alerting', 'securitySolution']);
     const soClient = ctx.core.savedObjects.client;
     const rulesClient = await ctx.alerting.getRulesClient();
+    const mlAuthz = ctx.securitySolution.getMlAuthz();
+
     const ruleAssetsClient = createPrebuiltRuleAssetsClient(soClient);
     const ruleObjectsClient = createPrebuiltRuleObjectsClient(rulesClient);
-    const mlAuthz = ctx.securitySolution.getMlAuthz();
 
     const installedRuleVersions = await ruleObjectsClient.fetchInstalledRuleVersions();
     logger.debug(
@@ -98,7 +94,7 @@ export const reviewRuleInstallationHandler = async (
         : undefined;
 
     // Run sequentially rather than concurrently to avoid memory spikes on small clusters.
-    const rulesResult = await fetchRules({
+    const rulesResult = await getInstallableRulesForReview({
       ruleAssetsClient,
       logger,
       mlAuthz,
@@ -143,66 +139,6 @@ export const reviewRuleInstallationHandler = async (
   }
 };
 
-async function fetchRules({
-  ruleAssetsClient,
-  logger,
-  mlAuthz,
-  installedRuleVersionsMap,
-  filter,
-  sort,
-  page,
-  perPage,
-  aggs,
-  fields,
-}: {
-  ruleAssetsClient: IPrebuiltRuleAssetsClient;
-  logger: Logger;
-  mlAuthz: MlAuthz;
-  installedRuleVersionsMap: Map<string, RuleSummary>;
-  filter: string | undefined;
-  sort?: PrebuiltRuleAssetsSort;
-  page: number;
-  perPage: number;
-  aggs?: Record<string, AggregationsAggregationContainer>;
-  fields?: string[];
-}) {
-  const installableVersions = await getInstallableRuleVersions(
-    ruleAssetsClient,
-    logger,
-    mlAuthz,
-    installedRuleVersionsMap,
-    sort,
-    filter
-  );
-
-  // All installable SO IDs are passed so ES handles paging/sorting in one round trip.
-  // If aggregations are never needed, this could be optimised to pass only the page IDs.
-  const installableRuleAssetsPage = await ruleAssetsClient.fetchAssetsByVersion(
-    installableVersions,
-    {
-      page,
-      perPage,
-      sort: prepareQueryDslSort(sort),
-      aggs,
-      fields,
-    }
-  );
-
-  const convertedRules = installableRuleAssetsPage.assets.map((prebuiltRuleAsset) =>
-    convertPrebuiltRuleAssetToRuleResponse(prebuiltRuleAsset)
-  );
-
-  return {
-    // Cast is safe: the response is immediately serialised to JSON; the OpenAPI
-    // schema types this as RuleResponse but the `fields` parameter makes it a
-    // projection — only the requested fields plus REVIEW_RULE_BASELINE_FIELDS
-    // are guaranteed to be present.
-    rules: convertedRules.map((rule) => narrowRuleResponseFields(rule, fields) as RuleResponse),
-    total: installableVersions.length,
-    aggregations: installableRuleAssetsPage.aggregations,
-  };
-}
-
 async function fetchStats({
   ruleAssetsClient,
   logger,
@@ -227,41 +163,4 @@ async function fetchStats({
     tags,
     numRulesToInstall: installableVersionsWithoutFilter.length,
   };
-}
-
-async function getInstallableRuleVersions(
-  ruleAssetsClient: IPrebuiltRuleAssetsClient,
-  logger: Logger,
-  mlAuthz: MlAuthz,
-  installedRuleVersionsMap: Map<string, RuleSummary>,
-  sort?: PrebuiltRuleAssetsSort,
-  filter?: string
-): Promise<BasicRuleInfo[]> {
-  const latestRuleVersions = await ruleAssetsClient.fetchLatestVersions({
-    sort,
-    filter,
-  });
-
-  logger.debug(
-    `reviewRuleInstallationHandler: Fetched ${latestRuleVersions.length} latest rule versions from assets`
-  );
-
-  const nonInstalledLatestRuleVersions = latestRuleVersions.filter(
-    (latestVersion) => !installedRuleVersionsMap.has(latestVersion.rule_id)
-  );
-
-  logger.debug(
-    `reviewRuleInstallationHandler: ${nonInstalledLatestRuleVersions.length} rules remaining after filtering installed rules`
-  );
-
-  const installableRuleVersions = await excludeLicenseRestrictedRules(
-    nonInstalledLatestRuleVersions,
-    mlAuthz
-  );
-
-  logger.debug(
-    `reviewRuleInstallationHandler: ${installableRuleVersions.length} rules remaining after checking license restrictions`
-  );
-
-  return installableRuleVersions;
 }

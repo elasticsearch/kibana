@@ -7,11 +7,14 @@
 
 import { createHash } from 'crypto';
 
+import type { ElasticsearchClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
 import type { EntityUpdateClient, BulkObject } from '@kbn/entity-store/server';
 import type { Entity } from '@kbn/entity-store/common/domain/definitions/entity.gen';
+import { getLatestEntityIndexPattern } from '@kbn/entity-store/common/domain/entity_index';
 
 import type { EntityRelationshipRecord } from './types';
+import { entityTypeFromEuid } from './types';
 
 // Must stay in sync with hashEuid in entity_store/common/domain/euid/hash_euid.ts.
 // Avoids a cross-plugin import of a private module.
@@ -52,6 +55,45 @@ function mergeRecords(records: ValidRecord[]): Map<string, MergedRelationships> 
 }
 
 /**
+ * Queries the entity index for a batch of candidate target EUIDs and returns
+ * only those that exist as entity documents. Uses a `terms` query on
+ * `entity.id` with `_source: false` — fetches nothing but the matched doc IDs.
+ *
+ * This is the target-validation step (Step 3.5) between mergeRecords and
+ * bulkUpdateEntity. Without it, raw_identifiers-based maintainers would write
+ * EUIDs derived from `host.name` values that have never been indexed as
+ * entities, producing dangling IDs in `entity.relationships.*.ids`.
+ *
+ * Uses `getLatestEntityIndexPattern` (wildcard) so it tolerates version
+ * rollovers on the concrete index — same pattern the raw_identifiers query
+ * itself uses in Step 2.
+ */
+export const matchExistingTargetIds = async (
+  esClient: ElasticsearchClient,
+  namespace: string,
+  candidateIds: Set<string>
+): Promise<Set<string>> => {
+  if (candidateIds.size === 0) return new Set();
+
+  const index = getLatestEntityIndexPattern(namespace);
+  const result = await esClient.search({
+    index,
+    size: candidateIds.size,
+    _source: false,
+    query: { terms: { 'entity.id': Array.from(candidateIds) } },
+    fields: ['entity.id'],
+  });
+
+  const existing = new Set<string>();
+  for (const hit of result.hits.hits) {
+    const fieldVal = (hit.fields as Record<string, unknown> | undefined)?.['entity.id'];
+    const id = Array.isArray(fieldVal) ? (fieldVal[0] as string) : (fieldVal as string | undefined);
+    if (id) existing.add(id);
+  }
+  return existing;
+};
+
+/**
  * Result of a `writeEntityIds` call. Surfaces the three buckets that the
  * `bulkUpdateEntity` response distinguishes so the engine can include them
  * in its run summary instead of swallowing them in a debug log.
@@ -63,11 +105,15 @@ function mergeRecords(records: ValidRecord[]): Map<string, MergedRelationships> 
  *   so we surface the count.
  * - `errors`: non-404 failures (5xx, 4xx other than 404) — these always
  *   warrant an investigation.
+ * - `droppedTargets`: target EUIDs removed because they had no matching entity
+ *   document in the store at write time (dangling-ID prevention).
  */
 export interface WriteEntityIdsResult {
   updated: number;
   notFound: number;
   errors: number;
+  /** Count of target EUIDs filtered out because they don't exist in the entity store. */
+  droppedTargets: number;
   /**
    * Applied writes per relationship type, keyed by rel-type string
    * (e.g. `{ accesses_frequently: 40, accesses_infrequently: 25 }`).
@@ -78,19 +124,80 @@ export interface WriteEntityIdsResult {
   relationshipTypeApplied: Record<string, number>;
 }
 
+/**
+ * Removes target EUIDs not present in `existingIds` from every actor's
+ * relationship sets. Deletes empty rel-type entries so downstream code can
+ * skip actors whose all targets were pruned. Returns the count of removed IDs.
+ */
+function pruneNonExistingTargets(
+  merged: Map<string, MergedRelationships>,
+  existingIds: Set<string>
+): number {
+  let dropped = 0;
+  for (const mergedRels of merged.values()) {
+    for (const [relType, idSet] of Object.entries(mergedRels)) {
+      for (const id of idSet) {
+        if (!existingIds.has(id)) {
+          idSet.delete(id);
+          dropped++;
+        }
+      }
+      if (idSet.size === 0) {
+        delete mergedRels[relType];
+      }
+    }
+  }
+  return dropped;
+}
+
+const EMPTY_RESULT: WriteEntityIdsResult = {
+  updated: 0,
+  notFound: 0,
+  errors: 0,
+  droppedTargets: 0,
+  relationshipTypeApplied: {},
+};
+
 export const writeEntityIds = async (
   crudClient: EntityUpdateClient,
   logger: Logger,
-  records: EntityRelationshipRecord[]
+  records: EntityRelationshipRecord[],
+  esClient: ElasticsearchClient,
+  namespace: string,
+  validateTargetIds = false
 ): Promise<WriteEntityIdsResult> => {
-  if (records.length === 0)
-    return { updated: 0, notFound: 0, errors: 0, relationshipTypeApplied: {} };
+  if (records.length === 0) return EMPTY_RESULT;
 
   const valid = filterValid(records);
-  if (valid.length === 0)
-    return { updated: 0, notFound: 0, errors: 0, relationshipTypeApplied: {} };
+  if (valid.length === 0) return EMPTY_RESULT;
 
   const merged = mergeRecords(valid);
+
+  // Step 3.5 — target validation (opt-in): collect all unique candidate target
+  // EUIDs, query the entity index to find which exist, then prune the rest so
+  // we never write dangling IDs into `*.relationships.*.ids`. Only enabled for
+  // raw_identifiers-based maintainers whose targets are derived from free-text
+  // fields — log-based maintainers derive targets from real ECS identity fields
+  // that extraction already indexed, so the round-trip is unnecessary there.
+  let droppedTargets = 0;
+  if (validateTargetIds) {
+    const allCandidateIds = new Set<string>();
+    for (const mergedRels of merged.values()) {
+      for (const idSet of Object.values(mergedRels)) {
+        for (const id of idSet) {
+          allCandidateIds.add(id);
+        }
+      }
+    }
+
+    const existingIds = await matchExistingTargetIds(esClient, namespace, allCandidateIds);
+    droppedTargets = pruneNonExistingTargets(merged, existingIds);
+    if (droppedTargets > 0) {
+      logger.info(
+        `Dropped ${droppedTargets} target EUIDs that have no entity document in the store`
+      );
+    }
+  }
 
   const objects: BulkObject[] = [];
   for (const [entityId, mergedRels] of merged) {
@@ -101,16 +208,20 @@ export const writeEntityIds = async (
       }
     }
     if (Object.keys(relationships).length > 0) {
-      // TODO(#266748): entity type hardcoded to 'user' — use actorEntityType from config.
       objects.push({
-        type: 'user',
-        doc: { entity: { id: entityId, relationships } } as unknown as Entity,
+        type: entityTypeFromEuid(entityId),
+        doc: {
+          entity: {
+            id: entityId,
+            relationships,
+          },
+        } as unknown as Entity,
       });
     }
   }
 
   if (objects.length === 0)
-    return { updated: 0, notFound: 0, errors: 0, relationshipTypeApplied: {} };
+    return { updated: 0, notFound: 0, errors: 0, droppedTargets, relationshipTypeApplied: {} };
 
   logger.info(`Writing relationship ids for ${objects.length} entity records`);
   const responseErrors = await crudClient.bulkUpdateEntity({ objects, force: true });
@@ -152,6 +263,7 @@ export const writeEntityIds = async (
     updated,
     notFound: missingErrors.length,
     errors: realErrors.length,
+    droppedTargets,
     relationshipTypeApplied,
   };
 };

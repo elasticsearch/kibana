@@ -8,22 +8,26 @@
  */
 
 import React from 'react';
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
 interface Props {
   onClick: () => void;
 }
 
+const editLabel = i18n.translate('kbnDesignTools.edit.outline.controls.editElement', {
+  defaultMessage: 'Edit element',
+});
+
 export const EditButton = ({ onClick }: Props) => (
-  <EuiButtonIcon
-    iconType="pencil"
-    color="text"
-    size="xs"
-    aria-label={i18n.translate('kbnDesignTools.edit.outline.controls.editElement', {
-      defaultMessage: 'Edit element',
-    })}
-    onClick={onClick}
-    data-test-subj="editOutlineEditButton"
-  />
+  <EuiToolTip content={editLabel} disableScreenReaderOutput>
+    <EuiButtonIcon
+      iconType="pencil"
+      color="text"
+      size="xs"
+      aria-label={editLabel}
+      onClick={onClick}
+      data-test-subj="editOutlineEditButton"
+    />
+  </EuiToolTip>
 );

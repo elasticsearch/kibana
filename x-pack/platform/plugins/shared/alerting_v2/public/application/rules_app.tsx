@@ -6,19 +6,26 @@
  */
 
 import React from 'react';
+import { i18n } from '@kbn/i18n';
 import { Route, Routes } from '@kbn/shared-ux-router';
 import { RulesListPage } from '../pages/rules_list_page/rules_list_page';
 import { RuleDetailsRoute } from '../routes/rule_details_route';
+import { RequireAlertingPrivilege } from '../components/require_alerting_privilege';
 
 export const RulesApp = () => {
   return (
-    <Routes>
-      <Route exact path="/:ruleId">
-        <RuleDetailsRoute />
-      </Route>
-      <Route exact path="/">
-        <RulesListPage />
-      </Route>
-    </Routes>
+    <RequireAlertingPrivilege
+      features={['rules']}
+      pageName={i18n.translate('xpack.alertingV2.rulesApp.pageName', { defaultMessage: 'Rules' })}
+    >
+      <Routes>
+        <Route exact path="/:ruleId">
+          <RuleDetailsRoute />
+        </Route>
+        <Route exact path="/">
+          <RulesListPage />
+        </Route>
+      </Routes>
+    </RequireAlertingPrivilege>
   );
 };

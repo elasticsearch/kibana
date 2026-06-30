@@ -17,9 +17,7 @@ project:
   owner: '@elastic/appex-sharedux'
   sourceRoot: src/platform/packages/shared/shared-ux/display/kbn-announcement-banner
 dependsOn:
-  - '@kbn/i18n'
   - '@kbn/test-jest-helpers'
-  - '@kbn/css-utils'
 tags:
   - shared-browser
   - package

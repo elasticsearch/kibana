@@ -8,6 +8,8 @@ import React, { memo, useCallback, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { EuiFlexGroup, EuiFlexItem, EuiProgress, EuiSpacer } from '@elastic/eui';
 import { ShowAllSpaces } from '../../common/show_all_spaces';
+import { ShowLastRunToggle } from '../../common/show_last_run_toggle';
+import { DisplayOptionsPopover } from '../../common/display_options_popover';
 import type { OverviewStatusMetaData } from '../../../../../../../common/runtime_types';
 import { SYNTHETICS_MONITORS_EMBEDDABLE } from '../../../../../../../common/embeddables/monitors_overview/constants';
 import { AddToDashboard } from '../../../common/components/add_to_dashboard';
@@ -64,8 +66,18 @@ export const OverviewGrid = memo(
           wrap={true}
         >
           <EuiFlexItem grow={true}>
-            <OverviewPaginationInfo total={status ? monitorsSortedByStatus.length : undefined} />
+            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <OverviewPaginationInfo
+                  total={status ? monitorsSortedByStatus.length : undefined}
+                />
+              </EuiFlexItem>
+            </EuiFlexGroup>
           </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <ShowLastRunToggle />
+          </EuiFlexItem>
+
           <EuiFlexItem grow={false}>
             <ShowAllSpaces />
           </EuiFlexItem>
@@ -85,6 +97,9 @@ export const OverviewGrid = memo(
               <ViewButtons />
             </EuiFlexItem>
           ) : null}
+          <EuiFlexItem grow={false}>
+            <DisplayOptionsPopover />
+          </EuiFlexItem>
         </EuiFlexGroup>
         {/*
           Card view has no built-in refresh indicator, so we surface a thin

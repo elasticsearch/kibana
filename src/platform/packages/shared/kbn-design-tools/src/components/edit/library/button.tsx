@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { EuiButton, EuiButtonEmpty, EuiButtonIcon } from '@elastic/eui';
+import { EuiButton, EuiButtonEmpty, EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 
 interface Props {
   fill?: boolean;
@@ -55,5 +55,7 @@ export const ButtonEmptyWithIcon = () => (
 );
 
 export const ButtonIconRegular = () => (
-  <EuiButtonIcon iconType="discoverApp" aria-label="Open in Discover" />
+  <EuiToolTip content="Open in Discover" disableScreenReaderOutput>
+    <EuiButtonIcon iconType="discoverApp" aria-label="Open in Discover" />
+  </EuiToolTip>
 );

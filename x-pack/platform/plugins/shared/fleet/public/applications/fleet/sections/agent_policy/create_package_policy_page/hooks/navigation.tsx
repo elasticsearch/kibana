@@ -12,12 +12,8 @@ import { splitPkgKey } from '../../../../../../../common/services';
 import { PLUGIN_ID, INTEGRATIONS_PLUGIN_ID } from '../../../../constants';
 import { pkgKeyFromPackageInfo } from '../../../../services';
 import { useStartServices, useLink, useIntraAppState } from '../../../../hooks';
-import type {
-  CreatePackagePolicyRouteState,
-  PackagePolicy,
-  OnSaveQueryParamKeys,
-} from '../../../../types';
-import type { EditPackagePolicyFrom } from '../types';
+import type { CreatePackagePolicyRouteState, OnSaveQueryParamKeys } from '../../../../types';
+import type { EditPackagePolicyFrom, SavedPolicyResult } from '../types';
 
 import { appendOnSaveQueryParamsToPath } from '../utils';
 
@@ -86,11 +82,13 @@ export const useOnSaveNavigate = (params: UseOnSaveNavigateParams) => {
   }, []);
 
   const onSaveNavigate = useCallback(
-    (policy: PackagePolicy, paramsToApply: OnSaveQueryParamKeys[] = []) => {
+    (savedPolicyResult: SavedPolicyResult, paramsToApply: OnSaveQueryParamKeys[] = []) => {
       if (!doOnSaveNavigation.current) {
         return;
       }
-      const hasNoAgentPolicies = policy.policy_ids.length === 0;
+      const isAgentless = savedPolicyResult.type === 'agentless';
+      const policyIds = isAgentless ? [] : savedPolicyResult.policy.policy_ids;
+      const hasNoAgentPolicies = policyIds.length === 0;
       let onSaveNavigateTo: Parameters<ApplicationStart['navigateToApp']>;
       let onSaveQueryParams: CreatePackagePolicyRouteState['onSaveQueryParams'];
 
@@ -99,17 +97,17 @@ export const useOnSaveNavigate = (params: UseOnSaveNavigateParams) => {
         onSaveQueryParams = routeState?.onSaveQueryParams;
       } else {
         // If agentless or no agent policies, navigate to the integration's policies table
-        if ((policy.supports_agentless || hasNoAgentPolicies) && !queryParamsPolicyId) {
+        if ((isAgentless || hasNoAgentPolicies) && !queryParamsPolicyId) {
           onSaveNavigateTo = [
             INTEGRATIONS_PLUGIN_ID,
             {
               path: getPath('integration_details_policies', {
-                pkgkey: pkgKeyFromPackageInfo(policy.package!),
+                pkgkey: pkgKeyFromPackageInfo(savedPolicyResult.policy.package!),
               }),
             },
           ];
 
-          if (policy.supports_agentless) {
+          if (isAgentless) {
             onSaveQueryParams = {
               openEnrollmentFlyout: { policyIdAsValue: true },
             };
@@ -125,7 +123,7 @@ export const useOnSaveNavigate = (params: UseOnSaveNavigateParams) => {
             PLUGIN_ID,
             {
               path: getPath('policy_details', {
-                policyId: queryParamsPolicyId || policy.policy_ids[0],
+                policyId: queryParamsPolicyId || policyIds[0],
               }),
             },
           ];
@@ -141,7 +139,7 @@ export const useOnSaveNavigate = (params: UseOnSaveNavigateParams) => {
       if (options?.path) {
         const pathWithQueryString = appendOnSaveQueryParamsToPath({
           path: options.path,
-          policy,
+          savedPolicyResult,
           mappingOptions: onSaveQueryParams,
           paramsToApply,
         });

@@ -6,31 +6,35 @@
  */
 
 import React from 'react';
-import { EuiEmptyPrompt, EuiText } from '@elastic/eui';
+import { EuiEmptyPrompt, EuiFlexGroup, EuiFlexItem, EuiText } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { NightshiftIcon } from './nightshift_icon';
+import { NightshiftIllustration } from './nightshift_illustration';
 
 export function NightshiftApp() {
   return (
-    <EuiEmptyPrompt
-      data-test-subj="nightshiftEmptyState"
-      icon={<NightshiftIcon size="xxl" />}
-      title={
-        <h2>
-          {i18n.translate('xpack.nightshift.emptyState.title', {
-            defaultMessage: 'Nightshift',
-          })}
-        </h2>
-      }
-      body={
-        <EuiText color="subdued" size="s">
-          <p>
-            {i18n.translate('xpack.nightshift.emptyState.comingSoon', {
-              defaultMessage: 'Coming soon',
-            })}
-          </p>
-        </EuiText>
-      }
-    />
+    <EuiFlexGroup justifyContent="center" alignItems="center" style={{ minHeight: '60vh' }}>
+      <EuiFlexItem grow={false}>
+        <EuiEmptyPrompt
+          data-test-subj="nightshiftEmptyState"
+          icon={<NightshiftIllustration />}
+          title={
+            <h2>
+              {i18n.translate('xpack.nightshift.emptyState.title', {
+                defaultMessage: 'Nightshift',
+              })}
+            </h2>
+          }
+          body={
+            <EuiText color="subdued" size="s">
+              <p>
+                {i18n.translate('xpack.nightshift.emptyState.comingSoon', {
+                  defaultMessage: 'Coming soon',
+                })}
+              </p>
+            </EuiText>
+          }
+        />
+      </EuiFlexItem>
+    </EuiFlexGroup>
   );
 }

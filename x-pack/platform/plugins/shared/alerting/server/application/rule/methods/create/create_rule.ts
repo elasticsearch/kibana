@@ -51,6 +51,7 @@ import { logRuleChanges } from '../common_utils/log_rule_changes';
 
 export interface CreateRuleOptions {
   id?: string;
+  initialRevision?: number;
 }
 
 export interface CreateRuleParams<Params extends RuleParams = never> {
@@ -229,7 +230,7 @@ export async function createRule<Params extends RuleParams = never>(
       throttle,
       executionStatus: getRuleExecutionStatusPending(lastRunTimestamp.toISOString()),
       monitoring: getDefaultMonitoringRuleDomainProperties(lastRunTimestamp.toISOString()),
-      revision: 0,
+      revision: options?.initialRevision ?? 0,
       running: false,
     },
     params: {
@@ -265,6 +266,7 @@ export async function createRule<Params extends RuleParams = never>(
       action: changeTracking?.action ?? RuleChangeTrackingAction.ruleCreate,
       timestamp: createTime,
       metadata: changeTracking?.metadata,
+      refresh: changeTracking?.refresh,
     },
   });
 

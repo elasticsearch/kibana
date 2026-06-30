@@ -29,9 +29,8 @@ spaceTest.describe(
 
     spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
       await browserAuth.loginAsViewer();
-      await pageObjects.discover.setQueryMode('classic');
-      await pageObjects.discover.goto();
-      await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+      await pageObjects.discover.goto({ queryMode: 'classic' });
+      await pageObjects.dataGrid.waitForLoad();
       await pageObjects.dataGrid.waitForDocTableRendered();
     });
 
@@ -60,7 +59,7 @@ spaceTest.describe(
           '@timestamp',
           'addExistsFilterButton'
         );
-        await pageObjects.dataGrid.waitUntilSearchingHasFinished();
+        await pageObjects.dataGrid.waitForLoad();
 
         expect(
           await pageObjects.filterBar.hasFilter({

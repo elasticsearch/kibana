@@ -53,7 +53,6 @@ import type { PluginStart as DataPluginStart } from '@kbn/data-plugin/server';
 import type { MonitoringCollectionSetup } from '@kbn/monitoring-collection-plugin/server';
 import type { SharePluginStart } from '@kbn/share-plugin/server';
 import type { MaintenanceWindowsServerStart } from '@kbn/maintenance-windows-plugin/server';
-import type { CloudSetup } from '@kbn/cloud-plugin/server';
 import { ApiKeyType } from './task_runner/types';
 import { RuleTypeRegistry } from './rule_type_registry';
 import { TaskRunnerFactory } from './task_runner';
@@ -120,7 +119,6 @@ import { registerGapAutoFillSchedulerTask } from './lib/rule_gaps/task/gap_auto_
 import { ChangeTrackingService } from './rules_client/lib/change_tracking';
 import { UiamApiKeyProvisioningTask } from './provisioning';
 import { uiamProvisioningEvents } from './provisioning/event_based_telemetry';
-import { ClearStaleUiamApiKeysTask } from './clear_stale_uiam_api_keys';
 
 export const EVENT_LOG_PROVIDER = 'alerting';
 export const EVENT_LOG_ACTIONS = {
@@ -213,7 +211,6 @@ export interface AlertingPluginsSetup {
   data: DataPluginSetup;
   features: FeaturesPluginSetup;
   kql: KQLPluginSetup;
-  cloud?: CloudSetup;
 }
 
 export interface AlertingPluginsStart {
@@ -262,7 +259,6 @@ export class AlertingPlugin {
   private getRulesClientWithRequest?: (request: KibanaRequest) => Promise<RulesClientApi>;
   private changeTrackingService?: ChangeTrackingService;
   private uiamApiKeyProvisioningTask?: UiamApiKeyProvisioningTask;
-  private clearStaleUiamApiKeysTask?: ClearStaleUiamApiKeysTask;
 
   constructor(initializerContext: PluginInitializerContext) {
     this.config = initializerContext.config.get();
@@ -440,13 +436,6 @@ export class AlertingPlugin {
       analytics: core.analytics,
     });
     this.uiamApiKeyProvisioningTask.register({ core, taskManager: plugins.taskManager });
-
-    this.clearStaleUiamApiKeysTask = new ClearStaleUiamApiKeysTask({
-      logger: this.logger,
-      isServerless: this.isServerless,
-      cloud: plugins.cloud,
-    });
-    this.clearStaleUiamApiKeysTask.register({ core, taskManager: plugins.taskManager });
 
     const serviceStatus$ = new BehaviorSubject<ServiceStatus>({
       level: ServiceStatusLevels.available,
@@ -847,8 +836,6 @@ export class AlertingPlugin {
       ?.start({ core, taskManager: plugins.taskManager })
       .catch(() => {});
 
-    this.clearStaleUiamApiKeysTask?.start({ taskManager: plugins.taskManager }).catch(() => {});
-
     return {
       listTypes: ruleTypeRegistry!.list.bind(this.ruleTypeRegistry!),
       getType: ruleTypeRegistry!.get.bind(this.ruleTypeRegistry),
@@ -906,7 +893,6 @@ export class AlertingPlugin {
       this.licenseState.clean();
     }
     this.uiamApiKeyProvisioningTask?.stop();
-    this.clearStaleUiamApiKeysTask?.stop();
     this.pluginStop$.next();
     this.pluginStop$.complete();
   }

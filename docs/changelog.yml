@@ -57,7 +57,7 @@ pivot:
     #     security: ">security-breaking"
     #     other:
     # Simple string form: labels as comma-separated string
-    bug-fix: "release_note:fix, release_note:bug"
+    bug-fix: "release_note:fix"
     deprecation: "release_note:deprecation"
     feature: "release_note:feature"
     enhancement: "release_note:enhancement"
@@ -312,7 +312,7 @@ bundle:
     - elastic/kibana
     - elastic/elasticsearch
     - elastic/roadmap
-  release_dates: false
+  release_dates: true
   # Optional: default description text for bundles. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
   # Use YAML literal block scalar (|) for multiline descriptions. See docs/contribute/changelog.md for examples.
   # description: |

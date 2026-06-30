@@ -5,10 +5,10 @@
  * 2.0.
  */
 
-import type { SigEvent } from '@kbn/streams-schema';
+import type { SignificantEvent } from '@kbn/streams-schema';
 import { FocusedSignificantEventService } from './focused_significant_event_service';
 
-const createEvent = (discoverySlug: string): SigEvent => ({
+const createEvent = (discoverySlug: string): SignificantEvent => ({
   '@timestamp': '2026-01-01T00:00:00.000Z',
   created_at: '2026-01-01T00:00:00.000Z',
   event_id: `event-${discoverySlug}`,

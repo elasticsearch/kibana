@@ -50,10 +50,12 @@ export const LastTestRun = () => {
   const { latestPing, loading: pingsLoading } = useMonitorLatestPing();
   const { lastRefresh } = useSyntheticsRefreshContext();
 
-  const { data: stepsData, loading: stepsLoading } = useJourneySteps(
-    latestPing?.monitor?.check_group,
-    lastRefresh
-  );
+  const { data: stepsData, loading: stepsLoading } = useJourneySteps({
+    checkGroup: latestPing?.monitor?.check_group,
+    lastRefresh,
+    timestamp: latestPing?.['@timestamp'],
+    stepsOnly: true, // this panel only renders steps, never journey details
+  });
 
   const loading = stepsLoading || pingsLoading;
 

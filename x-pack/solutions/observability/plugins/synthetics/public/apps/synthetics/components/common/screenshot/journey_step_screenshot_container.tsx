@@ -49,7 +49,13 @@ export const JourneyStepScreenshotContainer = ({
   const { remoteName } = useGetUrlParams();
 
   const imgPath = checkGroup
-    ? getScreenshotUrl({ basePath, checkGroup, stepNumber: initialStepNumber, remoteName })
+    ? getScreenshotUrl({
+        basePath,
+        checkGroup,
+        stepNumber: initialStepNumber,
+        remoteName,
+        timestamp,
+      })
     : '';
 
   const intersection = useIntersection(intersectionRef, {

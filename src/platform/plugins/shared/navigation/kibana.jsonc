@@ -15,7 +15,8 @@
     ],
     "optionalPlugins": [
       "cloud",
-      "spaces"
+      "spaces",
+      "security"
     ],
     "requiredBundles": []
   }

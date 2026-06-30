@@ -47,7 +47,7 @@ test.describe('Kibana navigation', { tag: tags.stateful.classic }, () => {
     await pageObjects.home.goto();
     const homeUrl = page.url();
 
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
     const discoverUrl = page.url();
 
     // Mutate Discover URL by setting a time range

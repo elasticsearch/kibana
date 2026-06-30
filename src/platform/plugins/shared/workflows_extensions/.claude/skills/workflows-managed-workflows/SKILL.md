@@ -13,14 +13,14 @@ description: Register and roll out managed workflows from a Kibana plugin using 
 
 ## Source files
 
-| What | Path |
-|---|---|
-| Definition types | `src/platform/packages/shared/kbn-workflows/managed/types.ts` |
-| Registry | `src/platform/packages/shared/kbn-workflows/managed/definitions/index.ts` |
-| Plugin-scoped client | `src/platform/plugins/shared/workflows_extensions/server/types.ts` |
-| Runtime API types | `src/platform/packages/shared/kbn-workflows/server/types.ts` |
-| Global space constant | `GLOBAL_WORKFLOW_SPACE_ID` from `@kbn/workflows/server` |
-| Registry tests | `src/platform/packages/shared/kbn-workflows/managed/managed_workflow_definitions.test.ts` |
+| What                  | Path                                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| Definition types      | `src/platform/packages/shared/kbn-workflows/managed/types.ts`                             |
+| Registry              | `src/platform/packages/shared/kbn-workflows/managed/definitions/index.ts`                 |
+| Plugin-scoped client  | `src/platform/plugins/shared/workflows_extensions/server/types.ts`                        |
+| Runtime API types     | `src/platform/packages/shared/kbn-workflows/server/types.ts`                              |
+| Global space constant | `GLOBAL_WORKFLOW_SPACE_ID` from `@kbn/workflows/server`                                   |
+| Registry tests        | `src/platform/packages/shared/kbn-workflows/managed/managed_workflow_definitions.test.ts` |
 
 Read [MANAGED_WORKFLOWS.md](../../dev_docs/MANAGED_WORKFLOWS.md) for the full walkthrough. Use the sections below only for agent workflow and review gates.
 
@@ -44,42 +44,44 @@ Read that `kibana.jsonc` to confirm `workflowsExtensions` is in `requiredPlugins
 
 ### Choose file locations
 
-| Location | Purpose |
-|---|---|
-| `src/platform/packages/shared/kbn-workflows/managed/definitions/<plugin>.ts` | Definition + exported id const(s) |
-| `src/platform/packages/shared/kbn-workflows/managed/definitions/index.ts` | Add to `managedWorkflowDefinitions`; re-export id(s) |
-| `your-plugin/server/managed_workflows/` | Optional: re-export ids + `PLUGIN_ID` const for install code |
-| `your-plugin/server/plugin.ts` | `registerManagedWorkflowOwner` (setup), client + installs (start) |
+| Location                                                                     | Purpose                                                           |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `src/platform/packages/shared/kbn-workflows/managed/definitions/<plugin>.ts` | Definition + exported id const(s)                                 |
+| `src/platform/packages/shared/kbn-workflows/managed/definitions/index.ts`    | Add to `managedWorkflowDefinitions`; re-export id(s)              |
+| `your-plugin/server/managed_workflows/`                                      | Optional: re-export ids + `PLUGIN_ID` const for install code      |
+| `your-plugin/server/plugin.ts`                                               | `registerManagedWorkflowOwner` (setup), client + installs (start) |
 
-Inspect existing plugins for conventions already in use (flat file vs subdirectory, e.g. `streams_ki/`, `sig_events/`).
+Inspect existing plugins for conventions already in use (flat file vs subdirectory, e.g. `streams_ki/`, `significant_events/`).
 
 ## Quick rule reference
 
 See [MANAGED_WORKFLOWS.md](../../dev_docs/MANAGED_WORKFLOWS.md) for rationale and examples. High-signal rules:
 
-| Concern | Rule |
-|---|---|
-| Definition id | Must start with `system-`; stable once shipped — import id const at call sites |
-| `pluginId` | Same id in definition, `registerManagedWorkflowOwner`, and client init |
-| Registry | Definition in `managedWorkflowDefinitions` + id re-exported from `definitions/index.ts` |
-| `management` | Explicit `lifecycle`, `versionStrategy`, `enablement` — no runtime default |
-| `yaml` / `yamlTemplate` | Exactly one; bump `version` on content changes |
-| `setup()` | `registerManagedWorkflowOwner` only — never `install` |
-| `start()` | `initManagedWorkflowsClient` → static `install`s → `ready()` |
-| `spaceId` | Required on every operation; use `GLOBAL_WORKFLOW_SPACE_ID` explicitly for global |
-| Multi-instance | Use `workflowIdSuffix` or full `workflowId` — bare id overwrites |
-| `execute` | Real request + requesting user's space in options (not `'*'`) |
-| Templates | Add representative `values` to `templateRepresentativeValuesById` in registry tests |
+| Concern                 | Rule                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| Definition id           | Must start with `system-`; stable once shipped — import id const at call sites          |
+| `pluginId`              | Same id in definition, `registerManagedWorkflowOwner`, and client init                  |
+| Registry                | Definition in `managedWorkflowDefinitions` + id re-exported from `definitions/index.ts` |
+| `management`            | Explicit `lifecycle`, `versionStrategy`, `enablement` — no runtime default              |
+| `yaml` / `yamlTemplate` | Exactly one; bump `version` on content changes                                          |
+| `setup()`               | `registerManagedWorkflowOwner` only — never `install`                                   |
+| `start()`               | `initManagedWorkflowsClient` → static `install`s → `ready()`                            |
+| `spaceId`               | Required on every operation; use `GLOBAL_WORKFLOW_SPACE_ID` explicitly for global       |
+| Multi-instance          | Use `workflowIdSuffix` or full `workflowId` — bare id overwrites                        |
+| `execute`               | Real request + requesting user's space in options (not `'*'`)                           |
+| Templates               | Add representative `values` to `templateRepresentativeValuesById` in registry tests     |
 
 ## Author checklist
 
 When adding a managed workflow:
 
 1. **Plugin id**
+
    - [ ] User's `plugin.id` confirmed from `kibana.jsonc`
    - [ ] Same id on definition, `registerManagedWorkflowOwner`, and `initManagedWorkflowsClient`
 
 2. **Definition** (`kbn-workflows/managed/definitions/`) — see [§7–§8 in MANAGED_WORKFLOWS.md](../../dev_docs/MANAGED_WORKFLOWS.md)
+
    - [ ] Id starts with `system-`; exported as a `const`
    - [ ] `pluginId` matches owning plugin
    - [ ] `version: 1` (bump on YAML changes)
@@ -90,9 +92,11 @@ When adding a managed workflow:
    - [ ] Id re-exported from `definitions/index.ts`
 
 3. **Tests** (`managed_workflow_definitions.test.ts`)
+
    - [ ] Representative `values` added for new `yamlTemplate` definitions
 
 4. **Owner plugin** — see [§1–§3 in MANAGED_WORKFLOWS.md](../../dev_docs/MANAGED_WORKFLOWS.md)
+
    - [ ] `workflowsExtensions` in `requiredPlugins`
    - [ ] `registerManagedWorkflowOwner` in `setup()` only
    - [ ] `initManagedWorkflowsClient` in `start()`
@@ -124,11 +128,11 @@ When reviewing a PR that adds or modifies managed workflows:
 
 ## Reference implementations
 
-| Plugin / package | Path | Notable pattern |
-|---|---|---|
-| Workflows example | `kbn-workflows/managed/definitions/workflows_extensions_example.ts` + `examples/workflows_extensions_example/server/plugin.ts` | `yamlTemplate` + static install at global space + `ready()` |
-| Streams | `kbn-workflows/managed/definitions/streams_ki/` + `x-pack/platform/plugins/shared/streams/server/plugin.ts` | Multiple workflows; YAML in separate files; `static` + `auto` + `enforced`; dedicated install helper |
-| SigEvents | `kbn-workflows/managed/definitions/sig_events/` | Multi-workflow subdirectory registry |
+| Plugin / package  | Path                                                                                                                           | Notable pattern                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Workflows example | `kbn-workflows/managed/definitions/workflows_extensions_example.ts` + `examples/workflows_extensions_example/server/plugin.ts` | `yamlTemplate` + static install at global space + `ready()`                                          |
+| Streams           | `kbn-workflows/managed/definitions/streams_ki/` + `x-pack/platform/plugins/shared/streams/server/plugin.ts`                    | Multiple workflows; YAML in separate files; `static` + `auto` + `enforced`; dedicated install helper |
+| SigEvents         | `kbn-workflows/managed/definitions/significant_events/`                                                                        | Multi-workflow subdirectory registry                                                                 |
 
 ## Before finishing
 

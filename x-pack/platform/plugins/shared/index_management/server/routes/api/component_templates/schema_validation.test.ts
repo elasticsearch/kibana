@@ -70,6 +70,21 @@ describe('componentTemplateSchema', () => {
     expect(value).toBeTruthy();
   });
 
+  it('SHOULD accept lifecycle with frozen_after', () => {
+    const value = componentTemplateSchema.validate({
+      name: 'n',
+      template: {
+        lifecycle: {
+          enabled: true,
+          data_retention: '90d',
+          frozen_after: '30d',
+        },
+      },
+      _kbnMeta: { usedBy: [], isManaged: false },
+    });
+    expect(value).toBeTruthy();
+  });
+
   it('SHOULD reject invalid lifecycle types', () => {
     expect(() =>
       componentTemplateSchema.validate({

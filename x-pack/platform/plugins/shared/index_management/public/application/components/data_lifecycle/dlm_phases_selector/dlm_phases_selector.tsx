@@ -30,14 +30,14 @@ export type {
 
 export const DlmPhasesSelector = ({
   defaultValue,
-  hasEnterpriseLicense,
-  hasDefaultSnapshotRepository,
+  hasEnterpriseLicense = false,
+  hasDefaultSnapshotRepository = false,
   isDisabled = false,
   defaultSnapshotRepository,
   serverless = false,
   manageRepositoriesUrl,
   createDefaultRepositoryUrl,
-  canCreateDefaultSnapshotRepository,
+  canCreateDefaultSnapshotRepository = false,
   enterprise,
   onRefreshDefaultSnapshotRepository,
   onChange,
@@ -52,11 +52,15 @@ export const DlmPhasesSelector = ({
   const frozenInitiallyActiveRef = useRef(value.frozen.enabled);
 
   const isFrozenStillActiveFromExisting = frozenInitiallyActiveRef.current && value.frozen.enabled;
+  const hasFrozenRepositoryAccessOrAlreadyActive =
+    hasDefaultSnapshotRepository ||
+    canCreateDefaultSnapshotRepository ||
+    isFrozenStillActiveFromExisting;
   const shouldShowFrozenPhase =
     !serverless &&
-    (hasDefaultSnapshotRepository ||
-      canCreateDefaultSnapshotRepository ||
-      isFrozenStillActiveFromExisting);
+    enterprise &&
+    createDefaultRepositoryUrl &&
+    hasFrozenRepositoryAccessOrAlreadyActive;
   const validation = validateDurations(value);
 
   const updateValue = useCallback(

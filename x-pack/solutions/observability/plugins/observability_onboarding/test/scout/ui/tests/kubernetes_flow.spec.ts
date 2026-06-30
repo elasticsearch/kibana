@@ -17,13 +17,15 @@ test.describe.serial(
       await browserAuth.loginAsAdmin();
     });
 
-    test('Kubernetes card navigates to the OTel Kubernetes flow', async ({ pageObjects, page }) => {
+    test('Kubernetes tile navigates directly to the OTel Kubernetes flow', async ({
+      pageObjects,
+      page,
+    }) => {
       await pageObjects.onboarding.goto();
       await pageObjects.onboarding.selectKubernetesUseCase();
-      await pageObjects.onboarding.clickIntegrationCard('integration-card:otel-kubernetes');
 
-      await expect(pageObjects.kubernetes.layout('otel')).toBeVisible();
       await expect(page).toHaveURL(/\/kubernetes(\?|$|#)/);
+      await expect(pageObjects.kubernetes.layout('otel')).toBeVisible();
       await expect(pageObjects.kubernetes.collectionMethodSelector()).toHaveCount(0);
     });
 

@@ -11,7 +11,7 @@ import type {
 } from '@kbn/agent-builder-server/attachments';
 import { getLatestVersion, type VersionedAttachment } from '@kbn/agent-builder-common/attachments';
 import type { Logger } from '@kbn/core/server';
-import { sigEventSchema, type SigEvent } from '@kbn/streams-schema';
+import { significantEventSchema, type SignificantEvent } from '@kbn/streams-schema';
 import { SIGNIFICANT_EVENT_ATTACHMENT_TYPE } from '../../../common';
 import type { GetScopedClients } from '../../routes/types';
 
@@ -27,7 +27,7 @@ const formatList = (values: string[] | undefined): string => {
   return values.join(', ');
 };
 
-export const formatSignificantEventAsText = (event: SigEvent): string => {
+export const formatSignificantEventAsText = (event: SignificantEvent): string => {
   const recommendations = event.recommendations
     .map((recommendation, index) => `${index + 1}. ${recommendation}`)
     .join('\n');
@@ -53,12 +53,12 @@ export const createSignificantEventAttachmentType = ({
   getScopedClients,
 }: CreateSignificantEventAttachmentTypeOptions): AttachmentTypeDefinition<
   typeof SIGNIFICANT_EVENT_ATTACHMENT_TYPE,
-  SigEvent
+  SignificantEvent
 > => {
   const fetchByDiscoverySlug = async (
     discoverySlug: string,
     context: AttachmentResolveContext
-  ): Promise<SigEvent | undefined> => {
+  ): Promise<SignificantEvent | undefined> => {
     const { getEventClient } = await getScopedClients({ request: context.request });
     const { hits } = await getEventClient().findByDiscoverySlug(discoverySlug);
 
@@ -69,13 +69,13 @@ export const createSignificantEventAttachmentType = ({
     id: SIGNIFICANT_EVENT_ATTACHMENT_TYPE,
     isReadonly: true,
     validate: (input) => {
-      const parseResult = sigEventSchema.safeParse(input);
+      const parseResult = significantEventSchema.safeParse(input);
       if (parseResult.success) {
         return { valid: true, data: parseResult.data };
       }
       return { valid: false, error: parseResult.error.message };
     },
-    resolve: async (origin, context): Promise<SigEvent | undefined> => {
+    resolve: async (origin, context): Promise<SignificantEvent | undefined> => {
       try {
         return await fetchByDiscoverySlug(origin, context);
       } catch (error) {
@@ -86,7 +86,7 @@ export const createSignificantEventAttachmentType = ({
       }
     },
     isStale: async (
-      attachment: VersionedAttachment<typeof SIGNIFICANT_EVENT_ATTACHMENT_TYPE, SigEvent>,
+      attachment: VersionedAttachment<typeof SIGNIFICANT_EVENT_ATTACHMENT_TYPE, SignificantEvent>,
       context
     ): Promise<boolean> => {
       if (!attachment.origin) {

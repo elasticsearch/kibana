@@ -93,7 +93,6 @@ export function AboutPanel() {
         await updateStream(
           Streams.all.UpsertRequest.parse({
             dashboards: definition.dashboards,
-            queries: definition.queries,
             rules: definition.rules,
             stream: { ...stream, description: newDescription },
           })

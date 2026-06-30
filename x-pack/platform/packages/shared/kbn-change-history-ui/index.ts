@@ -10,33 +10,53 @@ export { createChangeHistoryHttpAdapter } from './src/adapters';
 export type { ChangeHistoryHttpAdapterConfig } from './src/adapters';
 export { DEFAULT_CHANGE_HISTORY_PAGE_SIZE } from './src/types';
 export {
-  ChangeHistoryTimeline,
-  ChangeHistoryItem,
-  ChangeHistoryFooter,
-  ChangeHistoryActionBadge,
-  ChangeHistoryEmptyPrompt,
-} from './src/components/timeline';
-export type {
-  ChangeHistoryTimelineProps,
-  ChangeHistoryItemProps,
-  ChangeHistoryFooterProps,
-} from './src/components/timeline';
-export {
   ChangeHistoryModal,
   ChangeHistoryTrigger,
   ChangeHistoryListGroupItem,
   ChangeHistoryPreviewPanel,
+  ChangeHistoryRestoreButton,
+  ChangeHistoryDefaultPreviewHeaderActions,
 } from './src/components/modal';
 export type {
-  ChangeHistoryTriggerProps,
-  ChangeHistoryListGroupItemProps,
+  ChangeHistoryRestoreButtonProps,
+  ChangeHistoryDefaultPreviewHeaderActionsProps,
+  ChangeHistoryPreviewPanelProps,
 } from './src/components/modal';
-export { ChangeHistoryProvider, useChangeHistoryConfig } from './src/provider';
-export type { ChangeHistoryProviderProps } from './src/provider';
-export { useChangeHistoryList, useChangeHistoryDetail } from './src/hooks';
+export {
+  ChangeHistoryProvider,
+  useChangeHistoryConfig,
+  useChangeHistoryModal,
+} from './src/provider';
+export type {
+  ChangeHistoryProviderProps,
+  ChangeHistoryConfigValue,
+  ChangeHistoryModalContextValue,
+} from './src/provider';
+export {
+  useChangeHistoryList,
+  useChangeHistoryDetail,
+  useChangeHistoryRestore,
+  useInvalidateChangeHistory,
+  useChangeHistoryAutoSelection,
+  CHANGE_HISTORY_QUERY_KEY,
+  CHANGE_HISTORY_LIST_QUERY_KEY,
+  changeHistoryObjectQueryKeyPrefix,
+  changeHistoryListQueryKey,
+  changeHistoryDetailQueryKey,
+  changeHistoryListQueryKeyPrefix,
+} from './src/hooks';
+export {
+  getChangeHistoryErrorCode,
+  getChangeHistoryErrorCodeFromBody,
+} from './src/utils/get_change_history_error_code';
+export { isChangeHistoryErrorCode } from './src/utils/change_history_error_codes';
 export type {
   UseChangeHistoryListArgs,
   UseChangeHistoryListResult,
   UseChangeHistoryDetailArgs,
   UseChangeHistoryDetailResult,
+  UseChangeHistoryRestoreArgs,
+  UseChangeHistoryRestoreResult,
+  UseChangeHistoryAutoSelectionArgs,
+  UseChangeHistoryAutoSelectionResult,
 } from './src/hooks';

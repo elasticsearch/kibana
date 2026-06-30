@@ -189,6 +189,7 @@ export default function ({ getService }: FtrProviderContext) {
         'entity_store:health',
         'entity_store:snapshot',
         'entity_store:v2:entity_maintainer_task:accesses_frequently_and_infrequently',
+        'entity_store:v2:entity_maintainer_task:administers',
         'entity_store:v2:entity_maintainer_task:automated-resolution',
         'entity_store:v2:entity_maintainer_task:communicates_with',
         'entity_store:v2:entity_maintainer_task:risk-score',

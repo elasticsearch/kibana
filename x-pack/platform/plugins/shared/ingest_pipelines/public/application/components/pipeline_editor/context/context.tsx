@@ -8,12 +8,14 @@
 import type { FunctionComponent } from 'react';
 import React from 'react';
 
+import type { FieldAccessPattern } from '../../../../../common/types';
 import type { Props as ProcessorsContextProps } from './processors_context';
 import { PipelineProcessorsContextProvider } from './processors_context';
 import { TestPipelineContextProvider } from './test_pipeline_context';
 
 interface Props extends ProcessorsContextProps {
   children: React.ReactNode;
+  fieldAccessPattern?: FieldAccessPattern;
 }
 
 export const ProcessorsEditorContextProvider: FunctionComponent<Props> = ({
@@ -21,9 +23,10 @@ export const ProcessorsEditorContextProvider: FunctionComponent<Props> = ({
   onUpdate,
   value,
   onFlyoutOpen,
+  fieldAccessPattern,
 }: Props) => {
   return (
-    <TestPipelineContextProvider>
+    <TestPipelineContextProvider fieldAccessPattern={fieldAccessPattern}>
       <PipelineProcessorsContextProvider
         onFlyoutOpen={onFlyoutOpen}
         onUpdate={onUpdate}

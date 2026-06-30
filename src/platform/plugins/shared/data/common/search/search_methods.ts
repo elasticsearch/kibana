@@ -345,6 +345,7 @@ export class SearchMethodsService implements ISearchMethods {
       sessionId: options.sessionId,
       executionContext: options.executionContext,
       projectRouting: options.projectRouting,
+      approximation: options.approximation,
     };
   }
 }

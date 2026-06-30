@@ -16,6 +16,7 @@ export const WorkflowChangeHistoryAction = {
   workflowCreate: 'create',
   workflowUpdate: 'update',
   workflowInstall: 'install',
+  workflowRestore: 'restore',
 } as const;
 
 export type WorkflowChangeHistoryActionType =

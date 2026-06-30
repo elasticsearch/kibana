@@ -7,5 +7,5 @@
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["target/**/*"],
-  "kbn_references": ["@kbn/i18n", "@kbn/i18n-react"]
+  "kbn_references": ["@kbn/i18n", "@kbn/i18n-react", "@kbn/react-query"]
 }

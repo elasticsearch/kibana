@@ -37,3 +37,12 @@ export {
   type ManagedWorkflowFieldsSource,
   type ManagedWorkflowTelemetryFields,
 } from './pick_managed_workflow_fields/pick_managed_workflow_fields';
+export {
+  isValidWorkflowDocumentVersion,
+  pickWorkflowDocumentVersion,
+} from './pick_workflow_document_version/pick_workflow_document_version';
+export {
+  toWorkflowExecutionEngineModel,
+  type ToWorkflowExecutionEngineModelOptions,
+  type WorkflowExecutionEngineModelSource,
+} from './to_workflow_execution_engine_model/to_workflow_execution_engine_model';

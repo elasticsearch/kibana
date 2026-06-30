@@ -16,6 +16,7 @@ import {
   EuiPanel,
   EuiSpacer,
   EuiText,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { CustomDurationState, SnoozeUnit } from './types';
 import { SnoozeDurationPicker } from './snooze_duration_picker';
@@ -68,21 +69,25 @@ export const TimeConditionPanel = ({
             <EuiBadge color="hollow">{chipLabel}</EuiBadge>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="pencil"
-              aria-label={i18n.EDIT_TIME_CONDITION_ARIA_LABEL}
-              onClick={() => onChange({ ...value, status: 'editing' })}
-              data-test-subj="editTimeCondition"
-            />
+            <EuiToolTip content={i18n.EDIT_TIME_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="pencil"
+                aria-label={i18n.EDIT_TIME_CONDITION_ARIA_LABEL}
+                onClick={() => onChange({ ...value, status: 'editing' })}
+                data-test-subj="editTimeCondition"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="trash"
-              color="danger"
-              aria-label={i18n.REMOVE_TIME_CONDITION_ARIA_LABEL}
-              onClick={() => onChange(null)}
-              data-test-subj="removeTimeCondition"
-            />
+            <EuiToolTip content={i18n.REMOVE_TIME_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="trash"
+                color="danger"
+                aria-label={i18n.REMOVE_TIME_CONDITION_ARIA_LABEL}
+                onClick={() => onChange(null)}
+                data-test-subj="removeTimeCondition"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiPanel>
@@ -102,23 +107,27 @@ export const TimeConditionPanel = ({
             </EuiText>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="check"
-              color="success"
-              display="base"
-              aria-label={i18n.CONFIRM_CONDITION_ARIA_LABEL}
-              onClick={() => onChange({ ...value, status: 'confirmed' })}
-              isDisabled={isConditionInvalid}
-              data-test-subj="confirmTimeCondition"
-            />
+            <EuiToolTip content={i18n.CONFIRM_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="check"
+                color="success"
+                display="base"
+                aria-label={i18n.CONFIRM_CONDITION_ARIA_LABEL}
+                onClick={() => onChange({ ...value, status: 'confirmed' })}
+                isDisabled={isConditionInvalid}
+                data-test-subj="confirmTimeCondition"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="cross"
-              aria-label={i18n.REMOVE_TIME_CONDITION_ARIA_LABEL}
-              onClick={() => onChange(null)}
-              data-test-subj="removeTimeCondition"
-            />
+            <EuiToolTip content={i18n.REMOVE_TIME_CONDITION_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="cross"
+                aria-label={i18n.REMOVE_TIME_CONDITION_ARIA_LABEL}
+                onClick={() => onChange(null)}
+                data-test-subj="removeTimeCondition"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
         </EuiFlexGroup>
         <EuiSpacer size="s" />

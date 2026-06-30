@@ -12,6 +12,7 @@ import { EuiFlexGroup, EuiFlexItem, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { AppMenuActionButton } from './app_menu_action_button';
 import type { AppMenuPrimaryActionItem } from '../types';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 interface AppMenuPopoverActionButtonsProps {
   primaryActionItem?: AppMenuPrimaryActionItem;
@@ -59,7 +60,7 @@ export const AppMenuPopoverActionButtons = ({
       gutterSize="m"
       alignItems="stretch"
       css={containerCss}
-      data-test-subj="app-menu-popover-action-buttons-container"
+      data-test-subj={APP_MENU_TEST_SUBJECTS.popoverActionButtonsContainer}
     >
       <EuiFlexItem>
         {hasRun ? (

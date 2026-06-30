@@ -152,7 +152,6 @@ describe('LifecycleSummary', () => {
       inherited_fields: {},
       data_stream_exists: true,
       dashboards: [],
-      queries: [],
       rules: [],
     } as unknown as Streams.WiredStream.GetResponse);
 

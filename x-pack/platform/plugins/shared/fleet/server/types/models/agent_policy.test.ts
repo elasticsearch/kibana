@@ -7,7 +7,7 @@
 
 import { set } from '@kbn/safer-lodash-set';
 
-import type { AgentlessPolicy, GlobalDataTag } from '../../../common/types';
+import type { AgentlessAgentPolicyConfig, GlobalDataTag } from '../../../common/types';
 import { getSettings } from '../../services/form_settings';
 
 import { AgentPolicyBaseSchema, FullAgentPolicyResponseSchema } from './agent_policy';
@@ -97,7 +97,7 @@ describe('AgentPolicyBaseSchema', () => {
     });
 
     it('should not throw an error if provided with empty agentless resources', () => {
-      const agentless: AgentlessPolicy = {};
+      const agentless: AgentlessAgentPolicyConfig = {};
 
       expect(() => {
         AgentPolicyBaseSchema.agentless.validate(agentless);
@@ -105,7 +105,7 @@ describe('AgentPolicyBaseSchema', () => {
     });
 
     it('should not throw an error if provided with valid agentless resources', () => {
-      const agentless: AgentlessPolicy = {
+      const agentless: AgentlessAgentPolicyConfig = {
         resources: {
           requests: {
             memory: '1Gi',
@@ -120,7 +120,7 @@ describe('AgentPolicyBaseSchema', () => {
     });
 
     it('should throw an error if provided with invalid agentless memory', () => {
-      const agentless: AgentlessPolicy = {
+      const agentless: AgentlessAgentPolicyConfig = {
         resources: {
           requests: {
             memory: '1',
@@ -134,7 +134,7 @@ describe('AgentPolicyBaseSchema', () => {
     });
 
     it('should throw an error if provided with invalid agentless CPU', () => {
-      const agentless: AgentlessPolicy = {
+      const agentless: AgentlessAgentPolicyConfig = {
         resources: {
           requests: {
             cpu: '1CPU',

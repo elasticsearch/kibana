@@ -10,6 +10,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { AppMenuPopoverActionButtons } from './app_menu_popover_action_buttons';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 describe('AppMenuPopoverActionButtons', () => {
   const primaryActionItem = {
@@ -32,7 +33,9 @@ describe('AppMenuPopoverActionButtons', () => {
   it('should render container when primary action item is provided', () => {
     render(<AppMenuPopoverActionButtons primaryActionItem={primaryActionItem} />);
 
-    expect(screen.getByTestId('app-menu-popover-action-buttons-container')).toBeInTheDocument();
+    expect(
+      screen.getByTestId(APP_MENU_TEST_SUBJECTS.popoverActionButtonsContainer)
+    ).toBeInTheDocument();
   });
 
   it('should render primary action button', () => {

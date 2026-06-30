@@ -43,6 +43,7 @@ import type {
   Index,
   IndexSettingsResponse,
   MappingsResponse,
+  SnapshotRepositoriesInfo,
 } from '../../../common';
 import { useRequest, sendRequest } from './use_request';
 import { httpService } from './http';
@@ -68,6 +69,13 @@ export const setReindexService = (_reindexService: ReindexService) => {
   reindexService = _reindexService;
 };
 // End hack
+
+export function useLoadSnapshotRepositories() {
+  return useRequest<SnapshotRepositoriesInfo>({
+    path: `${API_BASE_PATH}/snapshot_repositories`,
+    method: 'get',
+  });
+}
 
 export function useLoadDataStreams({ includeStats }: { includeStats: boolean }) {
   return useRequest<DataStream[]>({

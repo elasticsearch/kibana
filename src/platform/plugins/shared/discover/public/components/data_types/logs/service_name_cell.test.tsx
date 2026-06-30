@@ -15,7 +15,10 @@ import { fieldFormatsMock } from '@kbn/field-formats-plugin/common/mocks';
 import { render, screen } from '@testing-library/react';
 import type { FieldFormatsStart } from '@kbn/field-formats-plugin/public';
 import { getServiceNameCell } from './service_name_cell';
-import type { ContextAwarenessToolkit } from '../../../context_awareness';
+import {
+  EMPTY_CONTEXT_AWARENESS_TOOLKIT,
+  type ContextAwarenessToolkit,
+} from '../../../context_awareness';
 
 const core = {
   application: {
@@ -44,7 +47,9 @@ const renderCell = (
   fieldFormats: FieldFormatsStart = fieldFormatsMock
 ) => {
   const toolkit: ContextAwarenessToolkit = {
+    ...EMPTY_CONTEXT_AWARENESS_TOOLKIT,
     actions: {
+      ...EMPTY_CONTEXT_AWARENESS_TOOLKIT.actions,
       addFilter: jest.fn(),
     },
   };

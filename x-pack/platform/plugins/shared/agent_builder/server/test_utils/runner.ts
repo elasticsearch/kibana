@@ -102,10 +102,10 @@ export const createToolResultStoreMock = (): ToolResultStoreMock => {
     has: jest.fn(),
     get: jest.fn(),
     add: jest.fn(),
-    delete: jest.fn(),
     asReadonly: jest.fn(),
     getVolume: jest.fn().mockReturnValue(createEmptyVolumeMock()),
     getEntry: jest.fn().mockResolvedValue(undefined),
+    getEntryByResultId: jest.fn().mockResolvedValue(undefined),
     listEntries: jest.fn().mockResolvedValue([]),
     entryExists: jest.fn().mockResolvedValue(false),
   } as unknown as ToolResultStoreMock;
@@ -327,6 +327,8 @@ export const createAgentHandlerContextMock = (): AgentHandlerContextMock => {
       skills: false,
       subagents: false,
       todos: false,
+      datasets: false,
+      askUserQuestion: false,
       bash: false,
     },
     subAgentExecutor: {
@@ -378,6 +380,14 @@ export const createToolHandlerContextMock = (): ToolHandlerContextMock => {
     toolManager: createToolManagerMock(),
     savedObjectsClient: savedObjectsServiceMock.createStartContract().getScopedClient({} as any),
     runContext: { runId: 'mock-run-id', stack: [] },
+    experimentalFeatures: {
+      skills: false,
+      subagents: false,
+      todos: false,
+      datasets: false,
+      askUserQuestion: false,
+      bash: false,
+    },
   };
 };
 
@@ -419,6 +429,14 @@ export const createScopedRunnerDepsMock = (): CreateScopedRunnerDepsMock => {
     skillServiceStart: createSkillServiceStartMock(),
     pluginsServiceStart: createPluginsServiceStartMock(),
     toolManager: createToolManagerMock(),
+    experimentalFeatures: {
+      skills: false,
+      subagents: false,
+      todos: false,
+      datasets: false,
+      askUserQuestion: false,
+      bash: false,
+    },
     subAgentExecutor: {
       executeSubAgent: jest.fn(),
       getExecution: jest.fn(),

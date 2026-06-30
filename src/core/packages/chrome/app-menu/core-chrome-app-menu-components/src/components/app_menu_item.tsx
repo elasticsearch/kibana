@@ -15,6 +15,7 @@ import { getRouterLinkProps } from '@kbn/router-utils';
 import { createReturnFocus, getIsSelectedColor, getTooltip, isDisabled } from '../utils';
 import { AppMenuPopover } from './app_menu_popover';
 import type { AppMenuItemType } from '../types';
+import { getAppMenuItemTestSubj } from '../test_subjects';
 
 type AppMenuItemProps = AppMenuItemType & {
   isPopoverOpen: boolean;
@@ -84,7 +85,7 @@ export const AppMenuItem = ({
     <EuiHideFor sizes={hidden ?? 'none'}>
       <EuiHeaderLink
         id={htmlId}
-        data-test-subj={testId || `app-menu-item-${id}`}
+        data-test-subj={testId || getAppMenuItemTestSubj(id)}
         iconType={iconType}
         isDisabled={isDisabled(disableButton)}
         href={href}

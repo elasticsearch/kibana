@@ -36,6 +36,9 @@ export const REMOVED_TYPES: string[] = [
 
   // removed in https://github.com/elastic/kibana/pull/250218
   'logs-data-telemetry',
+
+  // one-off cleanup task removed after completing in its target project (added in #273285)
+  'alerting:clear_stale_uiam_api_keys',
 ];
 
 export const SHARED_CONCURRENCY_TASKS: string[][] = [

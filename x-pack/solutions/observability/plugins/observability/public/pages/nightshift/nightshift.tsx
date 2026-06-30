@@ -48,7 +48,7 @@ export function NightshiftPage() {
   }
 
   return (
-    <ObservabilityPageTemplate data-test-subj="nightshiftPage">
+    <ObservabilityPageTemplate data-test-subj="nightshiftPage" isEmptyState>
       <NightshiftApp />
     </ObservabilityPageTemplate>
   );

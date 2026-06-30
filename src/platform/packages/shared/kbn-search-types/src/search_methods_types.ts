@@ -37,6 +37,11 @@ export interface IBaseSearchOptions {
    * Project routing configuration for cross-project search (CPS).
    */
   projectRouting?: ProjectRouting;
+
+  /**
+   * When true, ES|QL queries use approximate execution for faster, estimated results.
+   */
+  approximation?: boolean;
 }
 
 // ============================================================================

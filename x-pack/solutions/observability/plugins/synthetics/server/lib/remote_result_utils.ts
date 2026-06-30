@@ -9,9 +9,10 @@ import { isNonLocalIndexName } from '@kbn/es-query';
 import type { RemoteMonitorInfo } from '../../common/runtime_types';
 import type { SyntheticsServerSetup } from '../types';
 
-export const isCCSEnabled = (
-  server: Pick<SyntheticsServerSetup, 'isElasticsearchServerless' | 'config'>
-) => !server.isElasticsearchServerless && Boolean(server.config.experimental?.ccs?.enabled);
+// CCS is supported on stateful Kibana but not on Elasticsearch Serverless,
+// which doesn't expose remote-cluster wiring.
+export const isCCSEnabled = (server: Pick<SyntheticsServerSetup, 'isElasticsearchServerless'>) =>
+  !server.isElasticsearchServerless;
 
 /**
  * Extracts the remote cluster name from an ES `_index` field.

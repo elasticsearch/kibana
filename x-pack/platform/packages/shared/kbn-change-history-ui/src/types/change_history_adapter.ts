@@ -11,9 +11,11 @@ import type {
   ListChangeHistoryParams,
   ListChangeHistoryResult,
 } from './list_change_history_params';
+import type { RestoreChangeParams } from './restore_change_params';
 
 /** Integration surface between a domain plugin and the shared UI. */
 export interface ChangeHistoryAdapter {
   listChanges: (params: ListChangeHistoryParams) => Promise<ListChangeHistoryResult>;
   getChange: (params: GetChangeParams) => Promise<ChangeHistoryDetail>;
+  restoreChange?: (params: RestoreChangeParams) => Promise<void>;
 }

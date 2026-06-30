@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272604
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Search and data
+title: "Fix slow Fleet setup with large numbers of agent policies"
+description: "Fleet setup now reconciles enrollment keys and policy revisions with bulk aggregations instead of issuing two Elasticsearch searches per agent policy."

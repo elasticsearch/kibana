@@ -50,6 +50,8 @@ export interface MemoryVersionRecord {
   name: string;
   title: string;
   content: string;
+  tags: string[];
+  categories: string[];
   change_type: MemoryChangeType;
   change_summary: string;
   created_at: string;
@@ -145,7 +147,10 @@ export interface MemoryService {
   addCategory(params: { id: string; category: string; user: string }): Promise<MemoryEntry>;
   removeCategory(params: { id: string; category: string; user: string }): Promise<MemoryEntry>;
   listCategories(): Promise<string[]>;
-  getCategoryTree(): Promise<MemoryCategoryNode[]>;
+  getCategoryTree(): Promise<{
+    tree: MemoryCategoryNode[];
+    uncategorized: Array<{ id: string; name: string; title: string }>;
+  }>;
 
   // References
   getBacklinks(params: { id: string }): Promise<MemoryEntry[]>;

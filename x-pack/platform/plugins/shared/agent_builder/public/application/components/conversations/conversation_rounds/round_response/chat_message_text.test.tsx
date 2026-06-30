@@ -133,6 +133,7 @@ describe('chat_message_text', () => {
         setTimeToFirstToken: jest.fn(),
         addPendingPrompt: jest.fn(),
         clearPendingPrompts: jest.fn(),
+        setAskUserQuestionAnswers: jest.fn(),
         clearLastRoundResponse: jest.fn(),
         addBackgroundExecutionCompleteStep: jest.fn(),
         addCompactionStep: jest.fn(),

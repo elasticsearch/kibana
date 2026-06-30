@@ -41,6 +41,7 @@ export interface StreamDocCountsFetch {
   docCount: Promise<StreamDocsStat[]>;
   failedDocCount: Promise<StreamDocsStat[]>;
   degradedDocCount: Promise<StreamDocsStat[]>;
+  ingestionDocCount: Promise<StreamDocsStat[]>;
 }
 
 interface UseDocCountFetchProps {
@@ -48,12 +49,14 @@ interface UseDocCountFetchProps {
   /** When `streamName` is omitted (streams listing), this decides whether to fetch failed-doc counts for all streams. */
   getCanReadFailureStore: (streamName?: string) => boolean;
   numDataPoints: number;
+  fetchIngestionDocCounts: boolean;
 }
 
 export function useStreamDocCountsFetch({
   groupTotalCountByTimestamp: _groupTotalCountByTimestamp,
   getCanReadFailureStore,
   numDataPoints,
+  fetchIngestionDocCounts,
 }: UseDocCountFetchProps): {
   getStreamDocCounts(streamName?: string): StreamDocCountsFetch;
   getStreamHistogram(streamName: string): Promise<UnparsedEsqlResponse>;
@@ -160,10 +163,26 @@ export function useStreamDocCountsFetch({
         }
       );
 
+      const ingestionCountPromise = fetchIngestionDocCounts
+        ? streamsRepositoryClient.fetch('GET /internal/streams/doc_counts/ingestion', {
+            signal: abortController.signal,
+            params: {
+              query: {
+                start: timeState.start,
+                end: timeState.end,
+                ...(streamName ? { stream: streamName } : {}),
+              },
+            },
+          })
+        : Promise.reject(new Error('Ingestion doc counts not requested'));
+
+      void ingestionCountPromise.catch(() => {});
+
       const docCountsFetch: StreamDocCountsFetch = {
         docCount: countPromise,
         failedDocCount: failedCountPromise,
         degradedDocCount: degradedCountPromise,
+        ingestionDocCount: ingestionCountPromise,
       };
 
       docCountsPromiseCache.current = docCountsFetch;

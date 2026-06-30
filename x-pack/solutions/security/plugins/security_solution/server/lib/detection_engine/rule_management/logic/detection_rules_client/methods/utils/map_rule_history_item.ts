@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { mapKeys, snakeCase } from 'lodash';
 import type { RuleChangeHistoryDocument } from '@kbn/alerting-plugin/server';
 import type { SanitizedRule } from '@kbn/alerting-types';
 import type { RuleHistoryItem } from '../../../../../../../../common/api/detection_engine/rule_management';
@@ -35,8 +36,9 @@ export function mapRuleHistoryItem(
 function normalizeMetadata(
   metadata: RuleChangeHistoryDocument['metadata']
 ): Record<string, unknown> | undefined {
-  if (metadata == null) return undefined;
-  const { bulkCount, ...rest } = metadata;
+  if (metadata == null) {
+    return undefined;
+  }
 
-  return bulkCount !== undefined ? { ...rest, bulk_count: bulkCount } : rest;
+  return mapKeys(metadata, (_, key) => snakeCase(key));
 }

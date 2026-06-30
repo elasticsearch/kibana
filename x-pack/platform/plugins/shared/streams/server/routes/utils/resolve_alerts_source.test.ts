@@ -10,7 +10,7 @@ import { loggerMock } from '@kbn/logging-mocks';
 import {
   V1_ALERTS_SOURCE,
   V2_ALERTS_SOURCE,
-} from '../../lib/sig_events/read_significant_events_from_alerts_indices';
+} from '../../lib/significant_events/fetch_query_occurrences_from_alerts';
 import { resolveAlertsSource } from './resolve_alerts_source';
 
 describe('resolveAlertsSource', () => {

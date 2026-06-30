@@ -9,9 +9,12 @@ import React from 'react';
 import { css } from '@emotion/react';
 import { FormattedMessage } from '@kbn/i18n-react';
 import {
+  EuiCode,
   EuiSpacer,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiLink,
+  EuiPanel,
   EuiText,
   useIsWithinBreakpoints,
 } from '@elastic/eui';
@@ -22,7 +25,15 @@ import type { CollapsiblePanelRenderProps } from './collapsible_panel';
 import { CollapsiblePanel } from './collapsible_panel';
 import type { Processor } from '../../../../common/types';
 
-import { getFormRow, getUseField, Field, JsonEditorField } from '../../../shared_imports';
+import {
+  getFormRow,
+  getUseField,
+  Field,
+  JsonEditorField,
+  ToggleField,
+  useFormData,
+  useKibana,
+} from '../../../shared_imports';
 
 import type { OnUpdateHandler, OnDoneLoadJsonHandler } from '../pipeline_editor';
 import { ProcessorsEditorContextProvider, PipelineEditor } from '../pipeline_editor';
@@ -68,6 +79,10 @@ export const PipelineFormFields: React.FunctionComponent<Props> = ({
   isEditing,
 }) => {
   const styles = useStyles();
+  const { services } = useKibana();
+  const [{ field_access_pattern: isFlexibleFieldAccessPattern }] = useFormData<{
+    field_access_pattern?: boolean;
+  }>({ watch: 'field_access_pattern' });
 
   return (
     <>
@@ -127,6 +142,7 @@ export const PipelineFormFields: React.FunctionComponent<Props> = ({
             onFlyoutOpen={onEditorFlyoutOpen}
             onUpdate={onProcessorsUpdate}
             value={{ processors, onFailure }}
+            fieldAccessPattern={isFlexibleFieldAccessPattern ? 'flexible' : 'classic'}
           >
             <PipelineEditor onLoadJson={onLoadJson} />
           </ProcessorsEditorContextProvider>
@@ -224,6 +240,64 @@ export const PipelineFormFields: React.FunctionComponent<Props> = ({
               </>
             )}
           </CollapsiblePanel>
+
+          <EuiSpacer size="l" />
+
+          <EuiPanel hasShadow={false} hasBorder grow={false}>
+            <EuiFlexGroup
+              alignItems="center"
+              justifyContent="spaceBetween"
+              gutterSize="m"
+              responsive={false}
+            >
+              <EuiFlexItem>
+                <EuiText size="s">
+                  <strong>
+                    <FormattedMessage
+                      id="xpack.ingestPipelines.form.fieldAccessPatternCardTitle"
+                      defaultMessage="Use the flexible field access pattern"
+                    />
+                  </strong>
+                </EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <UseField
+                  path="field_access_pattern"
+                  component={ToggleField}
+                  componentProps={{
+                    euiFieldProps: {
+                      'data-test-subj': 'fieldAccessPatternToggle',
+                      showLabel: false,
+                    },
+                  }}
+                />
+              </EuiFlexItem>
+            </EuiFlexGroup>
+
+            <EuiSpacer size="m" />
+
+            <EuiText size="s" color="subdued">
+              <FormattedMessage
+                id="xpack.ingestPipelines.form.fieldAccessPatternDescription"
+                defaultMessage="Lets processors access fields with dotted names (such as {dottedName}) without requiring nested objects in the source document. When disabled, the classic field access pattern is used. {learnMoreLink}"
+                values={{
+                  dottedName: <EuiCode>a.b.c</EuiCode>,
+                  learnMoreLink: (
+                    <EuiLink
+                      href={services.documentation.getFieldAccessPatternUrl()}
+                      target="_blank"
+                      external
+                    >
+                      <FormattedMessage
+                        id="xpack.ingestPipelines.form.fieldAccessPatternDocumentationLink"
+                        defaultMessage="Learn more."
+                      />
+                    </EuiLink>
+                  ),
+                }}
+              />
+            </EuiText>
+          </EuiPanel>
 
           <EuiSpacer size="l" />
 

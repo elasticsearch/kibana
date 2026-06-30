@@ -19,14 +19,15 @@ const retentionOperationSchema = z.discriminatedUnion('operation', [
   z.object({ operation: z.literal('collect_values') }),
   z.object({ operation: z.literal('prefer_newest_value') }),
   z.object({ operation: z.literal('prefer_oldest_value') }),
+  z.object({ operation: z.literal('managed') }),
 ]);
 
 const fieldSchema = z.object({
   allowAPIUpdate: z.optional(z.boolean()),
-  mapping: z.optional(mappingSchema),
-  source: z.string(),
   destination: z.string(),
+  mapping: z.optional(mappingSchema),
   retention: retentionOperationSchema,
+  source: z.string(),
 });
 
 const euidFieldSchema = z.object({

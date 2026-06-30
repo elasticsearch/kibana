@@ -23,7 +23,8 @@ import {
 } from '@elastic/eui';
 import type { Theme } from '@emotion/react';
 import { css } from '@emotion/react';
-import { i18n, getAvailableLocales } from '@kbn/i18n';
+import type { AnalyticsServiceStart } from '@kbn/core/public';
+import { i18n, getAvailableLocales, getBrowserPreferredLocale } from '@kbn/i18n';
 import type { LocaleValue } from '@kbn/user-profile-components';
 
 import { useLanguage } from './use_language_hook';
@@ -36,9 +37,10 @@ const betaBadgeStyle = ({ euiTheme }: Theme) => css`
 
 interface Props {
   closeModal: () => void;
+  analytics: AnalyticsServiceStart;
 }
 
-export const LanguageModal: FC<Props> = ({ closeModal }) => {
+export const LanguageModal: FC<Props> = ({ closeModal, analytics }) => {
   const modalTitleId = useGeneratedHtmlId();
   const selectId = useGeneratedHtmlId();
 
@@ -113,9 +115,19 @@ export const LanguageModal: FC<Props> = ({ closeModal }) => {
 
         <EuiButton
           data-test-subj="languageModalSaveButton"
-          onClick={() => {
+          onClick={async () => {
             if (locale !== initialLocaleValue) {
-              onChange(locale, true);
+              try {
+                await onChange(locale, true);
+              } catch (_) {
+                return;
+              }
+              const preferredLocale = getBrowserPreferredLocale();
+              analytics.reportEvent('display_language_changed', {
+                from: initialLocaleValue,
+                to: locale,
+                ...(preferredLocale ? { preferred_language_kibana_locale: preferredLocale } : {}),
+              });
             }
             closeModal();
           }}

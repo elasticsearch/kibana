@@ -5,47 +5,42 @@
  * 2.0.
  */
 
-import type { Conversation, ToolResult } from '@kbn/agent-builder-common';
+import type { Conversation, ToolCallWithResult, ToolResult } from '@kbn/agent-builder-common';
 import type {
   ToolResultStore,
   WritableToolResultStore,
   ToolResultWithMeta,
 } from '@kbn/agent-builder-server/runner';
 import { MemoryVolume } from '../../memory_volume';
-import { extractConversationToolResults, createToolCallEntry, getToolCallEntryPath } from './utils';
+import { extractConversationToolResults, buildToolCallEntries } from './utils';
 
 export const createResultStore = ({ conversation }: { conversation?: Conversation }) => {
-  const toolResults = extractConversationToolResults(conversation?.rounds ?? []);
-  return new ToolResultStoreImpl({ toolResults });
+  const toolCalls = extractConversationToolResults(conversation?.rounds ?? []);
+  return new ToolResultStoreImpl({ toolCalls });
 };
 
 export class ToolResultStoreImpl implements WritableToolResultStore {
   private readonly results: Map<string, ToolResultWithMeta> = new Map();
+  private readonly resultIdToPath: Map<string, string> = new Map();
   private readonly volume: MemoryVolume;
 
-  constructor({ toolResults = [] }: { toolResults?: ToolResultWithMeta[] }) {
+  constructor({ toolCalls = [] }: { toolCalls?: ToolCallWithResult[] }) {
     this.volume = new MemoryVolume();
-    toolResults.forEach((result) => this.add(result));
+    toolCalls.forEach((toolCall) => this.add(toolCall));
   }
 
-  add(result: ToolResultWithMeta): void {
-    this.results.set(result.result.tool_result_id, result);
-    // Also add to the volume for filesystem access
-    const entry = createToolCallEntry(result);
-    this.volume.add(entry);
-  }
-
-  delete(resultId: string): boolean {
-    const result = this.results.get(resultId);
-    if (result) {
-      const path = getToolCallEntryPath({
-        toolId: result.tool_id,
-        toolCallId: result.tool_call_id,
-        toolResultId: result.result.tool_result_id,
+  add(toolCall: ToolCallWithResult): void {
+    const { metaEntry, resultEntries } = buildToolCallEntries(toolCall);
+    this.volume.add(metaEntry);
+    for (const { entry, result, relativePath } of resultEntries) {
+      this.results.set(result.tool_result_id, {
+        tool_call_id: toolCall.tool_call_id,
+        tool_id: toolCall.tool_id,
+        result,
       });
-      this.volume.remove(path);
+      this.resultIdToPath.set(result.tool_result_id, relativePath);
+      this.volume.add(entry);
     }
-    return this.results.delete(resultId);
   }
 
   has(resultId: string): boolean {
@@ -62,9 +57,19 @@ export class ToolResultStoreImpl implements WritableToolResultStore {
   async getEntry(path: string) {
     return this.volume.get(path);
   }
+
+  async getEntryByResultId(toolResultId: string) {
+    const relativePath = this.resultIdToPath.get(toolResultId);
+    if (!relativePath) {
+      return undefined;
+    }
+    return this.volume.get(relativePath);
+  }
+
   async listEntries(dirPath: string) {
     return this.volume.list(dirPath);
   }
+
   async entryExists(path: string) {
     return this.volume.exists(path);
   }
@@ -74,6 +79,7 @@ export class ToolResultStoreImpl implements WritableToolResultStore {
       has: (resultId) => this.has(resultId),
       get: (resultId) => this.get(resultId),
       getEntry: (path) => this.getEntry(path),
+      getEntryByResultId: (resultId) => this.getEntryByResultId(resultId),
       listEntries: (dirPath) => this.listEntries(dirPath),
       entryExists: (path) => this.entryExists(path),
     };

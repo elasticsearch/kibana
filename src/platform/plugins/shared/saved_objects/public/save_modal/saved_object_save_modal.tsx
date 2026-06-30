@@ -192,7 +192,7 @@ class SavedObjectSaveModalComponent<T = void> extends React.Component<
         <EuiModalBody>
           {this.renderDuplicateTitleCallout(duplicateWarningId)}
 
-          <EuiForm component="form" onSubmit={this.onFormSubmit} id={this.formId}>
+          <EuiForm component="form" onSubmit={this.onFormSubmit} id={this.formId} noValidate>
             {!this.props.showDescription && this.props.description && (
               <EuiText size="s" color="subdued">
                 {this.props.description}

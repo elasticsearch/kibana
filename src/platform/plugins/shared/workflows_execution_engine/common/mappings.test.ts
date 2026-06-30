@@ -86,6 +86,7 @@ describe('WORKFLOWS_EXECUTIONS_INDEX_MAPPINGS', () => {
     expect(properties.executedBy).toEqual({ type: 'keyword' });
     expect(properties.triggeredBy).toEqual({ type: 'keyword' });
     expect(properties.workflowDefinition).toEqual({ type: 'object', enabled: false });
+    expect(properties.version).toEqual({ type: 'long' });
   });
 
   it('does not carry an `hitl` envelope — HITL audit lives on the step doc', () => {

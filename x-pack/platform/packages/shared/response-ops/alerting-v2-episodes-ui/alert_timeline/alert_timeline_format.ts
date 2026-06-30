@@ -6,6 +6,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
+import { ALERT_EPISODE_STATUS, type AlertEpisodeStatus } from '@kbn/alerting-v2-schemas';
 
 export const formatTimestamp = (ms: number, timeZone?: string): string =>
   new Date(ms).toLocaleString(
@@ -26,3 +27,31 @@ export const formatDuration = (ms: number, fallback = '0m'): string => {
   if (minutes === 0) return `${hours}h`;
   return `${hours}h ${minutes}m`;
 };
+
+export interface SegmentSpanFlags {
+  /**
+   * The span runs to the window's right edge and the episode has not recovered
+   * (status is not inactive), i.e. it is still open. The tooltip should say
+   * "Ongoing" rather than show the window edge as a (false) end.
+   */
+  isOngoing: boolean;
+}
+
+/**
+ * Classify a rendered segment's right edge so the tooltip can avoid presenting a
+ * clipped window edge as a real end time. The open tail's `x1Ms` is set to
+ * `windowEndMs`, so right-edge equality is a reliable "ongoing" signal. (The left edge
+ * needs no such treatment: the segment's `trueStartMs` is the real start,
+ * resolved by the untimed starts query independent of the display window.)
+ */
+export const describeSegmentSpan = ({
+  x1Ms,
+  status,
+  windowEndMs,
+}: {
+  x1Ms: number;
+  status: AlertEpisodeStatus;
+  windowEndMs: number;
+}): SegmentSpanFlags => ({
+  isOngoing: x1Ms >= windowEndMs && status !== ALERT_EPISODE_STATUS.INACTIVE,
+});

@@ -6,7 +6,7 @@
  */
 
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
-import type { UpdatePackagePolicy } from '@kbn/fleet-plugin/common';
+import type { UpdatePackagePolicyWithId } from '@kbn/fleet-plugin/common';
 import type { AuthenticatedUser } from '@kbn/security-plugin/common';
 import { ProductFeatureSecurityKey } from '@kbn/security-solution-features/keys';
 import { merge } from 'lodash';
@@ -50,7 +50,7 @@ export const turnOffPolicyProtectionsIfNotSupported = async (
 
   const { packagePolicy, savedObjects, endpointPolicyKuery } = fleetServices;
   const internalSoClient = savedObjects.createInternalScopedSoClient({ readonly: false });
-  const updates: UpdatePackagePolicy[] = [];
+  const updates: UpdatePackagePolicyWithId[] = [];
   const messages: string[] = [];
   const perPage = 1000;
   let hasMoreData = true;

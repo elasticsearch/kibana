@@ -11,12 +11,13 @@ import type { EsWorkflowExecution } from '../../../types/v1';
 
 export type ManagedWorkflowFieldsSource = Pick<
   EsWorkflowExecution,
-  'managed' | 'managedBy' | 'originManagedWorkflowId' | 'managedVersion'
+  'managed' | 'managedBy' | 'billable' | 'originManagedWorkflowId' | 'managedVersion'
 >;
 
 export interface ManagedWorkflowFields {
   managed?: true;
   managedBy?: string;
+  billable?: boolean;
   originManagedWorkflowId?: string;
   managedVersion?: number;
 }
@@ -34,6 +35,7 @@ export const pickManagedWorkflowFields = (
   return {
     ...(source.managed === true ? { managed: true } : {}),
     ...(source.managedBy != null ? { managedBy: source.managedBy } : {}),
+    ...(source.billable != null ? { billable: source.billable } : {}),
     ...(source.originManagedWorkflowId != null
       ? { originManagedWorkflowId: source.originManagedWorkflowId }
       : {}),

@@ -9,7 +9,6 @@ import type { EuiContextMenuPanelItemDescriptor } from '@elastic/eui';
 import {
   EuiContextMenu,
   EuiContextMenuItem,
-  EuiContextMenuPanel,
   EuiHeaderSectionItemButton,
   EuiIcon,
   EuiLoadingSpinner,
@@ -41,28 +40,26 @@ interface ContextMenuProps {
 const ContextMenuContent = ({ items, closePopover }: ContextMenuProps) => {
   return (
     <>
-      <EuiContextMenuPanel>
-        {items.map((item, i) => {
-          if (item.content) {
-            return (
-              <Fragment key={i}>
-                {typeof item.content === 'function' ? item.content({ closePopover }) : item.content}
-              </Fragment>
-            );
-          }
+      {items.map((item, i) => {
+        if (item.content) {
           return (
-            <EuiContextMenuItem
-              key={i}
-              icon={item.icon}
-              href={item.href}
-              onClick={item.onClick}
-              data-test-subj={item['data-test-subj']}
-            >
-              {item.name}
-            </EuiContextMenuItem>
+            <Fragment key={i}>
+              {typeof item.content === 'function' ? item.content({ closePopover }) : item.content}
+            </Fragment>
           );
-        })}
-      </EuiContextMenuPanel>
+        }
+        return (
+          <EuiContextMenuItem
+            key={i}
+            icon={item.icon}
+            href={item.href}
+            onClick={item.onClick}
+            data-test-subj={item['data-test-subj']}
+          >
+            {item.name}
+          </EuiContextMenuItem>
+        );
+      })}
     </>
   );
 };

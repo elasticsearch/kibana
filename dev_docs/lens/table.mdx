@@ -5,64 +5,13 @@ title: Lens Config Builder API - Table
 description: Lens Config Builder API - Table
 date: 2024-03-04
 tags: ['kibana', 'dev', 'lens', 'table']
+redirect_url: https://www.elastic.co/docs/extend/kibana/key-concepts/ui/lens-config-api/lens-config-builder-api-table
 ---
 
-import Dataset from './dataset.mdx';
-import Breakdown from './breakdown.mdx';
+{/* REDIRECT_NOTICE_START */}
 
-Understanding `LensTableConfig` in detail
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://www.elastic.co/docs/extend/kibana/key-concepts/ui/lens-config-api/lens-config-builder-api-table](https://www.elastic.co/docs/extend/kibana/key-concepts/ui/lens-config-api/lens-config-builder-api-table)
+</DocCallOut>
 
-## Required Properties
-
-### `chartType`
-
-- **Type:** Fixed value `'table'`
-- **Description:** Sets the chart type to table, allowing for the display of data in a tabular format. Tables are versatile for detailed data analysis, enabling the display of multiple dimensions and metrics side by side.
-
-### `title`
-
-- **Type:** `string`
-- **Description:** The title of the visualization.
-
-<Dataset />
-
-## Optional Properties
-
-### `splitBy`
-
-- **Type:** `LensBreakdownConfig[]`
-- **Optional**
-- **Description:** An array of breakdown configurations to segment the data into different sections within the table. Each breakdown can create a new column or row based on the field specified, allowing for complex data organization and grouping. Check breakdown configuration details below.
-
-### `breakdown`
-
-- **Type:** `LensBreakdownConfig[]`
-- **Optional**
-- **Description:** Similar to `splitBy`, but specifically used for creating additional columns based on the breakdown of a particular field. It's useful for comparing metrics across different categories directly within the table. Check breakdown configuration details below.
-
-
-<Breakdown />
-
-## Example
-
-```
-const tableConfig: LensConfig = {
-  chartType: 'table',
-  title: 'Table chart',
-  dataset: {
-    esql: 'from kibana_sample_data_logs | stats bytes=sum(bytes) by geo.dest, geo.src',
-  },
-  splitBy: [
-    'geo.src'
-  ],
-  breakdown: [
-    'geo.dest'
-  ],
-  value: 'bytes',
-};
-const configBuilder = new LensConfigBuilder(dataViewsAPI, lensFormulaAPI);
-const lensConfig = configBuilder.build(tableConfig, {
-  timeRange: { from: 'now-1y', to: 'now', type: 'relative' },
-  embeddable: true,
-});
-```
+{/* REDIRECT_NOTICE_END */}

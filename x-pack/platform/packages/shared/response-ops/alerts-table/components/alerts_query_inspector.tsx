@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import React, { useState, memo, useCallback } from 'react';
 
 import type { EsQuerySnapshot } from '@kbn/alerting-types';
@@ -53,15 +53,16 @@ const AlertsQueryInspectorComponent: React.FC<InspectButtonProps> = ({
 
   return (
     <>
-      <EuiButtonIcon
-        className={BUTTON_CLASS}
-        aria-label={i18n.INSPECT}
-        data-test-subj="inspect-icon-button"
-        iconSize="m"
-        iconType="inspect"
-        title={i18n.INSPECT}
-        onClick={onOpenModal}
-      />
+      <EuiToolTip content={i18n.INSPECT} disableScreenReaderOutput>
+        <EuiButtonIcon
+          className={BUTTON_CLASS}
+          aria-label={i18n.INSPECT}
+          data-test-subj="inspect-icon-button"
+          iconSize="m"
+          iconType="inspect"
+          onClick={onOpenModal}
+        />
+      </EuiToolTip>
       {isShowingModal && (
         <AlertsQueryInspectorModal
           closeModal={onCloseModal}

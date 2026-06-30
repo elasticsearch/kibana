@@ -11,6 +11,7 @@ import type { DataTableRecord } from '@kbn/discover-utils';
 import { dataViewMock } from '@kbn/discover-utils/src/__mocks__';
 import { ALERT_RULE_TYPE_ID, ATTACK_DISCOVERY_SCHEDULES_ALERT_TYPE_ID } from '@kbn/rule-data-utils';
 import type { ProfileProviderServices } from '../profile_provider_services';
+import { EMPTY_CONTEXT_AWARENESS_TOOLKIT } from '../../toolkit';
 import { DocumentType } from '../../profiles';
 import { createSecurityDocumentProfileProviders } from './security_profile_providers';
 
@@ -40,7 +41,13 @@ const getDocViewerResult = (
   const prev = jest.fn().mockReturnValue(prevDocViewer);
   const getDocViewer = enhancedProvider.profile.getDocViewer!(prev, {
     context: { type: DocumentType.Default },
-    toolkit: { actions: toolkitActions },
+    toolkit: {
+      ...EMPTY_CONTEXT_AWARENESS_TOOLKIT,
+      actions: {
+        ...EMPTY_CONTEXT_AWARENESS_TOOLKIT.actions,
+        ...toolkitActions,
+      },
+    },
   });
   const result = getDocViewer({ record } as Parameters<typeof getDocViewer>[0]);
   return { result, prevRenderHeader, prevRenderFooter };

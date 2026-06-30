@@ -161,7 +161,6 @@ describe('PluginsService', () => {
         githubBaseUrl: 'https://github.com',
         topSnippets: { numSnippets: 2, numWords: 750 },
         tracing: {
-          send_to_self: true,
           exporters: [],
           scheduledDelay: 1000,
           opik_distributed_tracing: false,
@@ -563,7 +562,6 @@ describe('PluginsService', () => {
               githubBaseUrl: 'https://github.com',
               topSnippets: { numSnippets: 2, numWords: 750 },
               tracing: {
-                send_to_self: true,
                 exporters: [],
                 scheduledDelay: 1000,
                 opik_distributed_tracing: false,

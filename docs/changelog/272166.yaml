@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/272166
+issues:
+- https://github.com/elastic/search-team/issues/14712
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- AI and machine Learning
+title: "Add embeddable Agent Builder conversation input for solution plugins"
+description: "Solution plugins can embed Agent Builder's rich chat input (editor, attachments, connector picker). Sending a message opens the Agent Builder app and auto-sends the message with attachments preserved."

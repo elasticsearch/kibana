@@ -21,6 +21,8 @@ dependsOn:
   - '@kbn/core-chrome-browser'
   - '@kbn/core-chrome-browser-internal-types'
   - '@kbn/lazy-object'
+  - '@kbn/core-chrome-browser-context'
+  - '@kbn/core-chrome-sidebar-context'
   - '@kbn/core-chrome-sidebar-mocks'
   - '@kbn/core-mount-utils-browser'
 tags:

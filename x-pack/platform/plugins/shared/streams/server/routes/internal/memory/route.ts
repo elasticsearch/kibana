@@ -318,15 +318,17 @@ const getCategoryTreeRoute = createServerRoute({
     server,
     logger,
     getScopedClients,
-  }): Promise<{ tree: MemoryCategoryNode[] }> => {
+  }): Promise<{
+    tree: MemoryCategoryNode[];
+    uncategorized: Array<{ id: string; name: string; title: string }>;
+  }> => {
     const { licensing, uiSettingsClient, scopedClusterClient } = await getScopedClients({
       request,
     });
     await assertMemoryEnabled({ server, licensing, uiSettingsClient });
     const memory = createMemoryService(scopedClusterClient.asCurrentUser, logger);
 
-    const tree = await memory.getCategoryTree();
-    return { tree };
+    return memory.getCategoryTree();
   },
 });
 

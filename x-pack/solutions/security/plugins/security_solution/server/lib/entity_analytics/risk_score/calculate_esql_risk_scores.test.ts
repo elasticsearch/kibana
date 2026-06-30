@@ -53,6 +53,30 @@ describe('Calculate risk scores with ESQL', () => {
       });
     });
 
+    it('scopes query to targetEntityIds when they are provided', () => {
+      const query = getResolutionCompositeQuery(
+        '.entity_analytics.risk_score.lookup-default',
+        1000,
+        undefined,
+        ['user:target-1', 'user:target-2']
+      );
+
+      expect(query.query).toEqual({
+        terms: { resolution_target_id: ['user:target-1', 'user:target-2'] },
+      });
+    });
+
+    it('falls back to relationship_type term query when targetEntityIds is undefined', () => {
+      const query = getResolutionCompositeQuery(
+        '.entity_analytics.risk_score.lookup-default',
+        1000
+      );
+
+      expect(query.query).toEqual({
+        term: { relationship_type: 'entity.relationships.resolution.resolved_to' },
+      });
+    });
+
     it('builds resolution ESQL query for explicit resolution target ids', () => {
       const query = getResolutionScoreESQLByIds(
         EntityType.user,

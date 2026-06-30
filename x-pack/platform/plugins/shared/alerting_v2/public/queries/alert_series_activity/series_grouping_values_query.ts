@@ -54,14 +54,13 @@ export const buildSeriesGroupingValuesEsqlQuery = ({
 }: BuildSeriesGroupingValuesQueryOptions) => {
   const hashLiterals = groupHashes.map((h) => esql.str(h));
 
-  // prettier-ignore
-  return esql.from([ALERT_EVENTS_DATA_STREAM], ['_source'])
-    .where`type == "alert"`
-    .where`rule.id == ${ruleId}`
-    .where`group_hash IN (${hashLiterals})`
+  return esql.from([ALERT_EVENTS_DATA_STREAM], ['_source']).where`type == "alert"`
+    .where`rule.id == ${ruleId}`.where`group_hash IN (${hashLiterals})`
     .pipe`EVAL extracted_data = JSON_EXTRACT(_source, "data")`
-    .pipe`STATS episode_data = LAST(extracted_data, @timestamp) WHERE extracted_data != "{}" BY group_hash`
-    .keep('group_hash', 'episode_data');
+    .pipe`STATS episode_data = LAST(extracted_data, @timestamp) WHERE extracted_data != "{}" BY group_hash`.keep(
+    'group_hash',
+    'episode_data'
+  );
 };
 
 /**

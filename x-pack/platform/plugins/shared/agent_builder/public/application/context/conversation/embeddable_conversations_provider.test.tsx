@@ -62,6 +62,7 @@ jest.mock('./use_conversation_actions', () => ({
     setTimeToFirstToken: jest.fn(),
     addPendingPrompt: jest.fn(),
     clearPendingPrompts: jest.fn(),
+    setAskUserQuestionAnswers: jest.fn(),
     onConversationCreated: jest.fn(),
     addBackgroundExecutionCompleteStep: jest.fn(),
     addOrUpdateTodosStep: jest.fn(),

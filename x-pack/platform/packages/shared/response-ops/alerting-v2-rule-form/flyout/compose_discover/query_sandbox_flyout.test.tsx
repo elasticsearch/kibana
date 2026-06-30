@@ -10,7 +10,7 @@ import { render, act } from '@testing-library/react';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import type { DataViewFieldMap } from '@kbn/data-views-plugin/common';
-import type { RuleQuery } from './compose_form_types';
+import type { RuleQuery } from '../../form/types';
 import { QuerySandboxFlyout, type QuerySandboxFlyoutProps } from './query_sandbox_flyout';
 
 jest.mock('@kbn/esql-utils', () => ({

@@ -79,6 +79,11 @@ export function createChromeApi({
       projectNavigation.setProjectBreadcrumbs(breadcrumbs, params),
     getBreadcrumbs$: () => projectNavigation.getProjectBreadcrumbs$(),
     getProjectHome$: () => projectNavigation.getProjectHome$(),
+    setNavigationCustomization: (customization) =>
+      projectNavigation.setNavigationCustomization(customization),
+    getCustomizeNavigationHandler$: () => projectNavigation.getCustomizeNavigationHandler$(),
+    registerCustomizeNavigationHandler: (handler) =>
+      projectNavigation.registerCustomizeNavigationHandler(handler),
   };
 
   let appHeaderRegistrationId = 0;

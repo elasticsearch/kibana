@@ -10,7 +10,7 @@ import { SIGEVENTS_ORCHESTRATOR_WORKFLOW_ID } from '@kbn/workflows/managed';
 import { GLOBAL_WORKFLOW_SPACE_ID } from '@kbn/workflows/server';
 import { isTerminalStatus } from '@kbn/workflows';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
-import { type SigEventsWorkflowStatusResult } from '@kbn/streams-schema';
+import { type SignificantEventsWorkflowStatusResult } from '@kbn/streams-schema';
 import { WorkflowExecutionService } from './workflow_execution_service';
 
 export interface SignificantEventsDiscoveryRunParams {
@@ -60,7 +60,11 @@ export class SignificantEventsDiscoveryClient {
     return this.workflowExecutionService.cancelLatest({ spaceId, request });
   }
 
-  async getStatus({ spaceId }: { spaceId: string }): Promise<SigEventsWorkflowStatusResult> {
+  async getStatus({
+    spaceId,
+  }: {
+    spaceId: string;
+  }): Promise<SignificantEventsWorkflowStatusResult> {
     return this.workflowExecutionService.getStatus({ spaceId });
   }
 }

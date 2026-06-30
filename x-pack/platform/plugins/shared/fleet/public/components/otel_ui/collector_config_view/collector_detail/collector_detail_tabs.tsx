@@ -129,6 +129,7 @@ export const CollectorDetailTabs: React.FC<CollectorDetailTabsProps> = ({
             <CollectorDetailHealth
               health={health}
               config={config}
+              agentStatus={agent.status}
               onComponentClick={handleComponentClick}
               selectedComponentId={selectedComponent?.componentId}
             />

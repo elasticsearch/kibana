@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/273418
+issues:
+- https://github.com/elastic/kibana/issues/273086
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+title: "Improve Synthetics search performance by honoring excluded data tiers setting"
+description: "Synthetics searches now respect the `observability:searchExcludedDataTiers` advanced setting, so you can exclude slow tiers such as `data_frozen` and reduce latency and search thread pool pressure."

@@ -25,7 +25,7 @@ export interface UseUserProfileSettingResult<T> {
   initialValue: T;
   isVisible: boolean;
   isLoading: boolean;
-  onChange: (newValue: T, persist: boolean) => void;
+  onChange: (newValue: T, persist: boolean) => Promise<unknown> | void;
 }
 
 /**

@@ -10,6 +10,7 @@ import { AgentTypeSchemaLiteral } from '..';
 
 const AgentStatusAgentIdSchema = schema.string({
   minLength: 1,
+  maxLength: 256,
   validate: (id) => {
     if (id.trim() === '') {
       return 'actionIds can not be empty strings';

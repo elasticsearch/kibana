@@ -17,6 +17,7 @@ import {
   EuiText,
   EuiFormRow,
   EuiButtonIcon,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { SidebarComponentProps } from '@kbn/core-chrome-sidebar';
 import { SidebarHeader, SidebarBody, useSidebarApp } from '@kbn/core-chrome-sidebar-components';
@@ -45,12 +46,9 @@ export function CounterApp({ onClose }: SidebarComponentProps) {
         title="Counter Example"
         onClose={onClose}
         actions={
-          <EuiButtonIcon
-            iconType="refresh"
-            aria-label="Reset counter"
-            onClick={reset}
-            title="Reset counter"
-          />
+          <EuiToolTip content="Reset counter" disableScreenReaderOutput>
+            <EuiButtonIcon iconType="refresh" aria-label="Reset counter" onClick={reset} />
+          </EuiToolTip>
         }
       />
       <SidebarBody>

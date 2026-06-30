@@ -33,3 +33,5 @@ export const trendStatsBatch = createAsyncAction<TrendRequest[], GetTrendPayload
 );
 export const setOverviewViewAction =
   createAction<MonitorOverviewState['view']>('setOverviewViewAction');
+
+export const setOverviewShowLastRunAction = createAction<boolean>('setOverviewShowLastRunAction');

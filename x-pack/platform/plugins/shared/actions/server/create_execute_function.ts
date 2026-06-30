@@ -10,6 +10,7 @@ import type {
   SavedObjectsClientContract,
   Logger,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { TaskPriority, TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
 import type { RawAction, ActionTypeRegistryContract, InMemoryConnector } from './types';
 import { ACTION_TASK_PARAMS_SAVED_OBJECT_TYPE } from './constants/saved_objects';
@@ -183,6 +184,9 @@ export function createBulkExecutionEnqueuerFunction({
       await unsecuredSavedObjectsClient.bulkCreate(actions, { refresh: false });
 
     const taskInstances = actionTaskParamsRecords.saved_objects.map((so, index) => {
+      if (isSavedObjectErrorResult(so)) {
+        throw so.error;
+      }
       const actionId = so.attributes.actionId;
       return {
         taskType: `actions:${actionTypeIds[actionId]}`,
@@ -281,7 +285,7 @@ async function getConnectors(
     );
 
     for (const item of bulkGetResult.saved_objects) {
-      if (item.error) throw item.error;
+      if (isSavedObjectErrorResult(item)) throw item.error;
       result.push({
         isInMemory: false,
         connector: item.attributes,

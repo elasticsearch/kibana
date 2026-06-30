@@ -22,7 +22,7 @@ import { LoadingIndicator } from '../../components/common/loading_indicator';
 import { useDataView } from '../../hooks/use_data_view';
 import type { ContextHistoryLocationState } from './services/locator';
 import { useDiscoverServices } from '../../hooks/use_discover_services';
-import { useRootProfile } from '../../context_awareness';
+import { createInMemoryContextAwarenessToolkit, useRootProfile } from '../../context_awareness';
 import { ScopedServicesProvider } from '../../components/scoped_services_provider';
 
 export interface ContextUrlParams {
@@ -39,6 +39,7 @@ export function ContextAppRoute() {
     dataViews,
     capabilities,
     fieldsMetadata,
+    profileStateRegistry,
   } = useDiscoverServices();
   const scopedHistory = getScopedHistory<ContextHistoryLocationState>();
   const locationState = useMemo(
@@ -103,12 +104,13 @@ export function ContextAppRoute() {
   const [scopedProfilesManager] = useState(() =>
     profilesManager.createScopedProfilesManager({
       scopedEbtManager,
-      toolkit: {
+      toolkit: createInMemoryContextAwarenessToolkit({
+        profileStateRegistry,
         actions: {
           addFilter,
           setExpandedDoc,
         },
-      },
+      }),
     })
   );
 

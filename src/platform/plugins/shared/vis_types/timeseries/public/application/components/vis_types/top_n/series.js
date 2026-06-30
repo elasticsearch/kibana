@@ -17,6 +17,7 @@ import {
   EuiFlexItem,
   EuiFieldText,
   EuiButtonIcon,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { ColorPicker } from '../../color_picker';
@@ -50,6 +51,11 @@ export const TopNSeries = injectI18n(function (props) {
   const seriesBodyStyles = useSeriesBodyStyles();
 
   const handleChange = createTextHandler(onChange);
+
+  const toggleEditorLabel = intl.formatMessage({
+    id: 'visTypeTimeseries.topN.toggleSeriesEditorAriaLabel',
+    defaultMessage: 'Toggle series editor',
+  });
 
   let caretIcon = 'chevronSingleDown';
   if (!visible) caretIcon = 'chevronSingleRight';
@@ -124,16 +130,15 @@ export const TopNSeries = injectI18n(function (props) {
     <div className={`${props.className}`} style={props.style}>
       <EuiFlexGroup responsive={false} gutterSize="s" alignItems="center">
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            iconType={caretIcon}
-            color="text"
-            onClick={props.toggleVisible}
-            aria-label={intl.formatMessage({
-              id: 'visTypeTimeseries.topN.toggleSeriesEditorAriaLabel',
-              defaultMessage: 'Toggle series editor',
-            })}
-            aria-expanded={props.visible}
-          />
+          <EuiToolTip content={toggleEditorLabel} disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType={caretIcon}
+              color="text"
+              onClick={props.toggleVisible}
+              aria-label={toggleEditorLabel}
+              aria-expanded={props.visible}
+            />
+          </EuiToolTip>
         </EuiFlexItem>
 
         <EuiFlexItem grow={false}>{colorPicker}</EuiFlexItem>

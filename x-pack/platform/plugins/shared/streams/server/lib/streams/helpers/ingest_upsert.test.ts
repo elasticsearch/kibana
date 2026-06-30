@@ -6,7 +6,7 @@
  */
 
 import type { Streams } from '@kbn/streams-schema';
-import { updateClassicIngest, updateWiredIngest } from './ingest_upsert';
+import { getStreamAttachmentIds, updateClassicIngest, updateWiredIngest } from './ingest_upsert';
 
 const now = '2026-06-15T12:14:50.416Z';
 const queryStreams = [{ name: 'logs.ecs.android.pixel1qs' }];
@@ -18,9 +18,6 @@ const createMockClients = (definition: Streams.ingest.all.Definition) => {
     streamsClient: {
       getStream: jest.fn().mockResolvedValue(definition),
       upsertStream,
-    },
-    kiClient: {
-      getStreamToQueryLinksMap: jest.fn().mockResolvedValue({}),
     },
     attachmentClient: {
       getAttachments: jest.fn().mockResolvedValue([]),
@@ -48,12 +45,10 @@ describe('ingest_upsert', () => {
         failure_store: { inherit: {} },
       },
     };
-    const { streamsClient, kiClient, attachmentClient, upsertStream } =
-      createMockClients(definition);
+    const { streamsClient, attachmentClient, upsertStream } = createMockClients(definition);
 
     await updateWiredIngest({
       streamsClient: streamsClient as never,
-      kiClient: kiClient as never,
       attachmentClient: attachmentClient as never,
       name: definition.name,
       ingest: {
@@ -87,12 +82,10 @@ describe('ingest_upsert', () => {
         failure_store: { inherit: {} },
       },
     };
-    const { streamsClient, kiClient, attachmentClient, upsertStream } =
-      createMockClients(definition);
+    const { streamsClient, attachmentClient, upsertStream } = createMockClients(definition);
 
     await updateClassicIngest({
       streamsClient: streamsClient as never,
-      kiClient: kiClient as never,
       attachmentClient: attachmentClient as never,
       name: definition.name,
       ingest: {
@@ -108,6 +101,41 @@ describe('ingest_upsert', () => {
           query_streams: queryStreams,
         }),
       }),
+    });
+  });
+
+  describe('getStreamAttachmentIds', () => {
+    it('partitions attachments into dashboard and rule ids', async () => {
+      const attachmentClient = {
+        getAttachments: jest.fn().mockResolvedValue([
+          { type: 'dashboard', id: 'dashboard-1' },
+          { type: 'rule', id: 'rule-1' },
+          { type: 'dashboard', id: 'dashboard-2' },
+          { type: 'rule', id: 'rule-2' },
+        ]),
+      };
+
+      const result = await getStreamAttachmentIds({
+        name: 'logs.otel',
+        attachmentClient: attachmentClient as never,
+      });
+
+      expect(attachmentClient.getAttachments).toHaveBeenCalledWith('logs.otel');
+      expect(result).toEqual({
+        dashboards: ['dashboard-1', 'dashboard-2'],
+        rules: ['rule-1', 'rule-2'],
+      });
+    });
+
+    it('returns empty arrays when the stream has no attachments', async () => {
+      const attachmentClient = { getAttachments: jest.fn().mockResolvedValue([]) };
+
+      const result = await getStreamAttachmentIds({
+        name: 'logs.otel',
+        attachmentClient: attachmentClient as never,
+      });
+
+      expect(result).toEqual({ dashboards: [], rules: [] });
     });
   });
 });

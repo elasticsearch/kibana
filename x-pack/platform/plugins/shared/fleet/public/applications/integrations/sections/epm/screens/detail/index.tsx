@@ -28,6 +28,7 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import semverLt from 'semver/functions/lt';
 
 import { getDeferredInstallationsCnt } from '../../../../../../services/has_deferred_installations';
+import { KibanaSavedObjectType } from '../../../../../../../common/types/models';
 
 import {
   isPackagePrerelease,
@@ -51,6 +52,7 @@ import {
   usePermissionCheckQuery,
   useIntegrationsStateContext,
   useGetSettingsQuery,
+  useFleetStatus,
 } from '../../../../hooks';
 import { useAgentless } from '../../../../../fleet/sections/agent_policy/create_package_policy_page/single_page_layout/hooks/setup_technology';
 import { INTEGRATIONS_ROUTING_PATHS } from '../../../../constants';
@@ -166,6 +168,7 @@ export function Detail() {
   const userCanInstallPackages = canInstallPackages && permissionCheck?.success;
 
   const services = useStartServices();
+  const { spaceId } = useFleetStatus();
   const agentPolicyIdFromContext = getAgentPolicyId();
   // edit readme state
 
@@ -395,6 +398,21 @@ export function Detail() {
     () => getDeferredInstallationsCnt(packageInfo),
     [packageInfo]
   );
+
+  // Space-aware deferred count for the Alerting tab badge. Unlike getDeferredInstallationsCnt
+  // (which is space-agnostic and covers the primary installation only), this reads from
+  // additional_spaces_installed_kibana when the current space is not the primary installation
+  // space. If a future space-scoped deferred asset type is added, extend this memo rather than
+  // getDeferredInstallationsCnt.
+  const numOfDeferredAlerts = useMemo(() => {
+    const installedSpaceId = pkgInstallationInfo?.installed_kibana_space_id;
+    const kibanaAssets =
+      !installedSpaceId || installedSpaceId === spaceId
+        ? pkgInstallationInfo?.installed_kibana ?? []
+        : pkgInstallationInfo?.additional_spaces_installed_kibana?.[spaceId ?? 'default'] ?? [];
+    return kibanaAssets.filter((a) => a.type === KibanaSavedObjectType.alert && a.deferred === true)
+      .length;
+  }, [pkgInstallationInfo, spaceId]);
 
   const integrationName = integration ?? undefined;
 
@@ -781,10 +799,16 @@ export function Detail() {
       tabs.push({
         id: 'alerting',
         name: (
-          <FormattedMessage
-            id="xpack.fleet.epm.packageDetailsNav.packageAlertingLinkText"
-            defaultMessage="Alerting"
-          />
+          <div style={{ display: 'flex', textAlign: 'center' }}>
+            <FormattedMessage
+              id="xpack.fleet.epm.packageDetailsNav.packageAlertingLinkText"
+              defaultMessage="Alerting"
+            />
+            &nbsp;
+            {numOfDeferredAlerts > 0 ? (
+              <DeferredAssetsWarning numOfDeferredInstallations={numOfDeferredAlerts} />
+            ) : null}
+          </div>
         ),
         isSelected: panel === 'alerting',
         'data-test-subj': `tab-alerting`,
@@ -868,6 +892,7 @@ export function Detail() {
     showCustomTab,
     showDocumentationTab,
     numOfDeferredInstallations,
+    numOfDeferredAlerts,
     showAlertingTab,
   ]);
 

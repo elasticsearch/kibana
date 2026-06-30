@@ -97,6 +97,38 @@ export async function getPackagePolicy(
   return res.body.item;
 }
 
+export async function updatePackagePolicy(
+  bettertest: BetterTest,
+  packagePolicyId: string,
+  body: Partial<NewPackagePolicy>
+) {
+  const current = await getPackagePolicy(bettertest, packagePolicyId);
+
+  // Strip PackagePolicy-only fields that the PUT endpoint rejects.
+  const {
+    id: _id,
+    revision: _revision,
+    updated_at: _updatedAt,
+    updated_by: _updatedBy,
+    created_at: _createdAt,
+    created_by: _createdBy,
+    elasticsearch: _elasticsearch,
+    ...base
+  } = current as any;
+
+  // Strip compiled_input / compiled_stream from inputs.
+  const cleanInputs = base.inputs.map(({ compiled_input: _ci, ...input }: any) => ({
+    ...input,
+    streams: (input.streams ?? []).map(({ compiled_stream: _cs, ...stream }: any) => stream),
+  }));
+
+  return bettertest({
+    pathname: `/api/fleet/package_policies/${packagePolicyId}`,
+    method: 'put',
+    body: { ...base, inputs: cleanInputs, ...body },
+  });
+}
+
 async function getAgentPolicyByName(bettertest: BetterTest, name: string): Promise<PackagePolicy> {
   const res = await bettertest<{ items: PackagePolicy[] }>({
     pathname: `/api/fleet/agent_policies`,

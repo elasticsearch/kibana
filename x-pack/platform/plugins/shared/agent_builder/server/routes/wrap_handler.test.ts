@@ -15,9 +15,11 @@ describe('getHandlerWrapper', () => {
   const logger = loggingSystemMock.createLogger();
   const wrapHandler = getHandlerWrapper({ logger });
 
-  const createCtx = () =>
+  const createCtx = (uiSettingValues: Record<string, boolean> = {}) =>
     ({
-      core: Promise.resolve({}),
+      core: Promise.resolve({
+        uiSettings: { client: { get: jest.fn(async (key: string) => uiSettingValues[key]) } },
+      }),
       licensing: Promise.resolve({
         license: { status: 'active', hasAtLeast: jest.fn().mockReturnValue(true) },
       }),
@@ -27,6 +29,56 @@ describe('getHandlerWrapper', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('feature flag gating', () => {
+    it('runs the handler when a single feature flag is enabled', async () => {
+      const handler = wrapHandler(async (_ctx, _req, res) => res.ok({ body: { ok: true } }), {
+        featureFlag: 'flag-a',
+      });
+
+      const result: any = await handler(createCtx({ 'flag-a': true }), req, kibanaResponseFactory);
+
+      expect(result.status).toBe(200);
+    });
+
+    it('returns 404 when a single feature flag is disabled', async () => {
+      const handler = wrapHandler(async (_ctx, _req, res) => res.ok({ body: { ok: true } }), {
+        featureFlag: 'flag-a',
+      });
+
+      const result: any = await handler(createCtx({ 'flag-a': false }), req, kibanaResponseFactory);
+
+      expect(result.status).toBe(404);
+    });
+
+    it('runs the handler only when every flag in an array is enabled (AND)', async () => {
+      const handler = wrapHandler(async (_ctx, _req, res) => res.ok({ body: { ok: true } }), {
+        featureFlag: ['flag-a', 'flag-b'],
+      });
+
+      const result: any = await handler(
+        createCtx({ 'flag-a': true, 'flag-b': true }),
+        req,
+        kibanaResponseFactory
+      );
+
+      expect(result.status).toBe(200);
+    });
+
+    it('returns 404 when any flag in an array is disabled', async () => {
+      const handler = wrapHandler(async (_ctx, _req, res) => res.ok({ body: { ok: true } }), {
+        featureFlag: ['flag-a', 'flag-b'],
+      });
+
+      const result: any = await handler(
+        createCtx({ 'flag-a': true, 'flag-b': false }),
+        req,
+        kibanaResponseFactory
+      );
+
+      expect(result.status).toBe(404);
+    });
   });
 
   it('uses the AgentBuilderError statusCode when available', async () => {

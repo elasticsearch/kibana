@@ -56,22 +56,6 @@ export const JiraConnector: ConnectorSpec = {
   auth: {
     types: [
       {
-        type: 'basic',
-        defaults: {},
-        overrides: {
-          meta: {
-            password: {
-              label: i18n.translate('core.kibanaConnectorSpecs.jira.auth.password.label', {
-                defaultMessage: 'API key',
-              }),
-              helpText: i18n.translate('core.kibanaConnectorSpecs.jira.auth.password.helpText', {
-                defaultMessage: 'Your Jira API token',
-              }),
-            },
-          },
-        },
-      },
-      {
         type: 'oauth_authorization_code',
         overrides: {
           meta: {
@@ -84,6 +68,25 @@ export const JiraConnector: ConnectorSpec = {
           authorizationUrl: 'https://auth.atlassian.com/authorize',
           tokenUrl: 'https://auth.atlassian.com/oauth/token',
           scope: 'read:jira-work read:jira-user offline_access',
+        },
+      },
+      {
+        type: 'basic',
+        defaults: {},
+        overrides: {
+          label: i18n.translate('core.kibanaConnectorSpecs.jira.auth.basic.label', {
+            defaultMessage: 'Shared API key',
+          }),
+          meta: {
+            password: {
+              label: i18n.translate('core.kibanaConnectorSpecs.jira.auth.password.label', {
+                defaultMessage: 'API key',
+              }),
+              helpText: i18n.translate('core.kibanaConnectorSpecs.jira.auth.password.helpText', {
+                defaultMessage: 'Your Jira API token',
+              }),
+            },
+          },
         },
       },
     ],

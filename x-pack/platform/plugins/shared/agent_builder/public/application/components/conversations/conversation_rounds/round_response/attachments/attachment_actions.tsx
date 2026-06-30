@@ -86,7 +86,7 @@ export const AttachmentActions: React.FC<AttachmentActionsProps> = ({
             maybeWrapWithTooltip(
               button,
               <EuiButtonEmpty
-                color="text"
+                color={button.color ?? 'text'}
                 size="s"
                 iconType={button.icon}
                 isDisabled={button.disabled}
@@ -117,7 +117,7 @@ export const AttachmentActions: React.FC<AttachmentActionsProps> = ({
             maybeWrapWithTooltip(
               button,
               <EuiButton
-                color="text"
+                color={button.color ?? 'text'}
                 size="s"
                 iconType={button.icon}
                 isDisabled={button.disabled}

@@ -7,6 +7,7 @@
 
 export * from './agent';
 export * from './agent_policy';
+export type * from './agentless_policy';
 export type * from './package_policy';
 export type * from './data_stream';
 export type * from './output';

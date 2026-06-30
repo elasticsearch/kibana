@@ -274,8 +274,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -329,8 +329,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -382,8 +382,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -435,8 +435,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "default")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -485,8 +485,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -497,8 +497,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "otherdataset")',
-                'set(attributes["data_stream.namespace"], "default")',
+                'set(attributes["data_stream.dataset"], "otherdataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -565,8 +565,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "default")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -1196,16 +1196,16 @@ describe('generateOtelcolConfig', () => {
               context: 'span',
               statements: [
                 'set(attributes["data_stream.type"], "traces")',
-                'set(attributes["data_stream.dataset"], "zipkinreceiver")',
-                'set(attributes["data_stream.namespace"], "apmtest")',
+                'set(attributes["data_stream.dataset"], "zipkinreceiver") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "apmtest") where attributes["data_stream.namespace"] == nil',
               ],
             },
             {
               context: 'spanevent',
               statements: [
                 'set(attributes["data_stream.type"], "logs")',
-                'set(attributes["data_stream.dataset"], "zipkinreceiver")',
-                'set(attributes["data_stream.namespace"], "apmtest")',
+                'set(attributes["data_stream.dataset"], "zipkinreceiver") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "apmtest") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -1272,19 +1272,56 @@ describe('generateOtelcolConfig', () => {
         context: 'span',
         statements: [
           'set(attributes["data_stream.type"], "traces")',
-          'set(attributes["data_stream.dataset"], "zipkinreceiver")',
-          'set(attributes["data_stream.namespace"], "apmtest")',
+          'set(attributes["data_stream.dataset"], "zipkinreceiver") where attributes["data_stream.dataset"] == nil',
+          'set(attributes["data_stream.namespace"], "apmtest") where attributes["data_stream.namespace"] == nil',
         ],
       },
       {
         context: 'spanevent',
         statements: [
           'set(attributes["data_stream.type"], "logs")',
-          'set(attributes["data_stream.dataset"], "zipkinreceiver")',
-          'set(attributes["data_stream.namespace"], "apmtest")',
+          'set(attributes["data_stream.dataset"], "zipkinreceiver") where attributes["data_stream.dataset"] == nil',
+          'set(attributes["data_stream.namespace"], "apmtest") where attributes["data_stream.namespace"] == nil',
         ],
       },
     ]);
+  });
+
+  it('should emit data_stream.type unconditionally but dataset and namespace only when not already set', () => {
+    // data_stream.type is always overwritten (span→traces, spanevent→logs is intentional Fleet routing).
+    // data_stream.dataset and data_stream.namespace carry a `where ... == nil` guard so that an upstream
+    // OTel processor that already set these attributes (e.g. in a Gateway collector) is not overwritten.
+    // See: https://github.com/elastic/ingest-dev/issues/7716
+    const otelTracesInputNoAPM: FullAgentPolicyInput = {
+      ...otelTracesInputWithAPM,
+      streams: otelTracesInputWithAPM.streams?.map((stream) => {
+        const { use_apm: _useApm, ...rest } = stream as any;
+        return rest;
+      }),
+    };
+    const result = generateOtelcolConfig({
+      inputs: [otelTracesInputNoAPM],
+      dataOutput: defaultOutput,
+    });
+
+    const traceStatements =
+      result.processors?.['transform/test-traces-stream-id-1-routing']?.trace_statements;
+
+    for (const block of traceStatements ?? []) {
+      const [typeStmt, datasetStmt, namespaceStmt] = block.statements as string[];
+
+      // type: no guard — always set
+      expect(typeStmt).toMatch(/^set\(attributes\["data_stream\.type"\]/);
+      expect(typeStmt).not.toContain('where');
+
+      // dataset: guard present — only set when nil
+      expect(datasetStmt).toContain('where');
+      expect(datasetStmt).toContain('attributes["data_stream.dataset"] == nil');
+
+      // namespace: guard present — only set when nil
+      expect(namespaceStmt).toContain('where');
+      expect(namespaceStmt).toContain('attributes["data_stream.namespace"] == nil');
+    }
   });
 
   it('should produce separate aggregated-apm-metrics pipelines for two APM package policies with different namespaces', () => {
@@ -1589,8 +1626,8 @@ describe('generateOtelcolConfig', () => {
             context: 'log',
             statements: [
               'set(attributes["data_stream.type"], "logs")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1599,8 +1636,8 @@ describe('generateOtelcolConfig', () => {
             context: 'datapoint',
             statements: [
               'set(attributes["data_stream.type"], "metrics")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1609,16 +1646,16 @@ describe('generateOtelcolConfig', () => {
             context: 'span',
             statements: [
               'set(attributes["data_stream.type"], "traces")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
           {
             context: 'spanevent',
             statements: [
               'set(attributes["data_stream.type"], "logs")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1635,8 +1672,8 @@ describe('generateOtelcolConfig', () => {
             context: 'log',
             statements: [
               'set(attributes["data_stream.type"], "logs")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1645,8 +1682,8 @@ describe('generateOtelcolConfig', () => {
             context: 'datapoint',
             statements: [
               'set(attributes["data_stream.type"], "metrics")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1655,16 +1692,16 @@ describe('generateOtelcolConfig', () => {
             context: 'span',
             statements: [
               'set(attributes["data_stream.type"], "traces")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
           {
             context: 'spanevent',
             statements: [
               'set(attributes["data_stream.type"], "logs")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1760,8 +1797,8 @@ describe('generateOtelcolConfig', () => {
             context: 'log',
             statements: [
               'set(attributes["data_stream.type"], "logs")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1770,8 +1807,8 @@ describe('generateOtelcolConfig', () => {
             context: 'datapoint',
             statements: [
               'set(attributes["data_stream.type"], "metrics")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1818,8 +1855,8 @@ describe('generateOtelcolConfig', () => {
             context: 'log',
             statements: [
               'set(attributes["data_stream.type"], "logs")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -1884,8 +1921,8 @@ describe('generateOtelcolConfig', () => {
             context: 'datapoint',
             statements: [
               'set(attributes["data_stream.type"], "metrics")',
-              'set(attributes["data_stream.dataset"], "multidataset")',
-              'set(attributes["data_stream.namespace"], "default")',
+              'set(attributes["data_stream.dataset"], "multidataset") where attributes["data_stream.dataset"] == nil',
+              'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
             ],
           },
         ],
@@ -3065,8 +3102,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -3133,8 +3170,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -3213,8 +3250,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -3228,8 +3265,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "otherdataset")',
-                'set(attributes["data_stream.namespace"], "default")',
+                'set(attributes["data_stream.dataset"], "otherdataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -3318,8 +3355,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "somedataset")',
-                'set(attributes["data_stream.namespace"], "testing")',
+                'set(attributes["data_stream.dataset"], "somedataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "testing") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -3333,8 +3370,8 @@ describe('generateOtelcolConfig', () => {
               context: 'datapoint',
               statements: [
                 'set(attributes["data_stream.type"], "metrics")',
-                'set(attributes["data_stream.dataset"], "otherdataset")',
-                'set(attributes["data_stream.namespace"], "default")',
+                'set(attributes["data_stream.dataset"], "otherdataset") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "default") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],
@@ -3434,16 +3471,16 @@ describe('generateOtelcolConfig', () => {
               context: 'span',
               statements: [
                 'set(attributes["data_stream.type"], "traces")',
-                'set(attributes["data_stream.dataset"], "zipkinreceiver")',
-                'set(attributes["data_stream.namespace"], "apmtest")',
+                'set(attributes["data_stream.dataset"], "zipkinreceiver") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "apmtest") where attributes["data_stream.namespace"] == nil',
               ],
             },
             {
               context: 'spanevent',
               statements: [
                 'set(attributes["data_stream.type"], "logs")',
-                'set(attributes["data_stream.dataset"], "zipkinreceiver")',
-                'set(attributes["data_stream.namespace"], "apmtest")',
+                'set(attributes["data_stream.dataset"], "zipkinreceiver") where attributes["data_stream.dataset"] == nil',
+                'set(attributes["data_stream.namespace"], "apmtest") where attributes["data_stream.namespace"] == nil',
               ],
             },
           ],

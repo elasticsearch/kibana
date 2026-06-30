@@ -15,6 +15,7 @@ import {
   EuiFlexItem,
   EuiHorizontalRule,
   EuiPopoverTitle,
+  EuiToolTip,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
@@ -57,15 +58,17 @@ export const ContextSubmenuView = ({
       >
         <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="arrowLeft"
-              aria-label={BACK_BUTTON_ARIA_LABEL}
-              color="text"
-              display="empty"
-              size="s"
-              onClick={onBack}
-              data-test-subj="contextSwitcherSubmenuBackButton"
-            />
+            <EuiToolTip content={BACK_BUTTON_ARIA_LABEL} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="arrowLeft"
+                aria-label={BACK_BUTTON_ARIA_LABEL}
+                color="text"
+                display="empty"
+                size="s"
+                onClick={onBack}
+                data-test-subj="contextSwitcherSubmenuBackButton"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>{title}</EuiFlexItem>
         </EuiFlexGroup>

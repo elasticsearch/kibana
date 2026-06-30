@@ -20,6 +20,10 @@ import { DispatcherServiceInternalToken } from '../lib/dispatcher/tokens';
 import { ActionPolicyClient } from '../lib/action_policy_client';
 import { ActionPolicyNamespaceToken } from '../lib/action_policy_client/tokens';
 import { ActionPolicyExecutionHistoryClient } from '../lib/action_policy_execution_history_client';
+import {
+  ExecutionHistoryClient,
+  ExecutionHistoryClientToken,
+} from '../lib/execution_history_client';
 import { RulesClient } from '../lib/rules_client';
 import { RequestSpaceIdToken } from '../lib/services/spaces_service/tokens';
 import { ApiKeyService } from '../lib/services/api_key_service/api_key_service';
@@ -107,6 +111,8 @@ export function bindServices({ bind }: ContainerModuleLoadOptions) {
     .inRequestScope();
   bind(ActionPolicyClient).toSelf().inRequestScope();
   bind(ActionPolicyExecutionHistoryClient).toSelf().inRequestScope();
+  bind(ExecutionHistoryClient).toSelf().inRequestScope();
+  bind(ExecutionHistoryClientToken).toService(ExecutionHistoryClient);
   bind(UserService).toSelf().inRequestScope();
   bind(ApiKeyService).toSelf().inRequestScope();
   bind(AlertingRetryService).toSelf().inSingletonScope();

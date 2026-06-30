@@ -29,13 +29,6 @@ jest.mock('../../../../common/hooks/use_app_toasts', () => ({
   }),
 }));
 
-jest.mock('../../../../common/containers/use_global_time', () => ({
-  useGlobalTime: () => ({
-    from: '2023-01-01T00:00:00.000Z',
-    to: '2023-01-02T00:00:00.000Z',
-  }),
-}));
-
 jest.mock('../../../../common/lib/kibana/kibana_react', () => ({
   useKibana: jest.fn(),
 }));
@@ -111,8 +104,8 @@ describe('useFetchEntityDetailsHighlights', () => {
       entityType: 'user',
       entityIdentifier: 'test-user',
       anonymizationFields: mockProps.anonymizationFields,
-      from: new Date('2023-01-01T00:00:00.000Z').getTime(),
-      to: new Date('2023-01-02T00:00:00.000Z').getTime(),
+      from: expect.any(Number),
+      to: expect.any(Number),
       connectorId: 'test-connector-id',
     });
 

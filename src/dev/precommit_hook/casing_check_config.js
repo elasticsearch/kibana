@@ -44,6 +44,8 @@ export const IGNORE_PATTERNS = [
 
   // Required to match the name in the docs.elastic.dev repo.
   'dev_docs/nav-kibana-dev.docnav.json',
+  'dev_docs/url-mapping.json',
+  'dev_docs/url-mapping-full.json',
 
   // ecs templates
   '**/ecs/fields/**/*',
@@ -61,6 +63,9 @@ export const IGNORE_PATTERNS = [
 
   // filename must match upstream filenames from lodash
   'src/platform/packages/shared/kbn-safer-lodash-set/**/*',
+
+  // patch-package files must use package+version naming convention
+  'patches/*.patch',
 
   // ES|QL antlr tools
   `**/*.g4`,

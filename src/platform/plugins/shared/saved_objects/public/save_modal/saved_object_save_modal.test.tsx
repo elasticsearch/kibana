@@ -169,6 +169,24 @@ describe('SavedObjectSaveModal', () => {
     });
   });
 
+  it('renders the form with noValidate to suppress native browser validation', () => {
+    render(
+      <I18nProvider>
+        <SavedObjectSaveModal
+          hasLibraryItemWithTitle={mockHasLibraryItemWithTitle}
+          onSave={mockSave}
+          onClose={mockClose}
+          lastSavedTitle={''}
+          title={'Saved Object title'}
+          showCopyOnSave={false}
+          objectType="visualization"
+          showDescription={true}
+        />
+      </I18nProvider>
+    );
+    expect(document.querySelector('form')).toHaveAttribute('novalidate');
+  });
+
   describe('handle title duplication logic', () => {
     it('should append "[1]" to title if no number is present', async () => {
       const onSave = jest.fn();

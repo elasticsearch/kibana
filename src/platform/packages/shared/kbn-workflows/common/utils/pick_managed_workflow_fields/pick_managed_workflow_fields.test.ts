@@ -18,12 +18,14 @@ describe('pickManagedWorkflowFields', () => {
       pickManagedWorkflowFields({
         managed: true,
         managedBy: 'security',
+        billable: true,
         originManagedWorkflowId: 'system-parent',
         managedVersion: 2,
       })
     ).toEqual({
       managed: true,
       managedBy: 'security',
+      billable: true,
       originManagedWorkflowId: 'system-parent',
       managedVersion: 2,
     });
@@ -34,6 +36,7 @@ describe('pickManagedWorkflowFields', () => {
       pickManagedWorkflowFields({
         managed: false,
         managedBy: null,
+        billable: null,
         originManagedWorkflowId: undefined,
         managedVersion: null,
       })
@@ -51,6 +54,7 @@ describe('toManagedWorkflowTelemetryFields', () => {
       toManagedWorkflowTelemetryFields({
         managed: true,
         managedBy: 'security',
+        billable: false,
         originManagedWorkflowId: 'system-parent',
         managedVersion: 2,
       })

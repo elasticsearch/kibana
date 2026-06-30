@@ -9,6 +9,7 @@ import { take } from 'lodash';
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { EsResourceType, isVisibleSearchSource } from '@kbn/agent-builder-common';
 import { isNotFoundError } from '@kbn/es-errors';
+import { listDatasets } from '../utils/datasets';
 
 export interface DataStreamSearchSource {
   type: EsResourceType.dataStream;
@@ -28,18 +29,58 @@ export interface IndexSearchSource {
   name: string;
 }
 
-export type EsSearchSource = DataStreamSearchSource | AliasSearchSource | IndexSearchSource;
+export interface DatasetSearchSource {
+  type: EsResourceType.dataset;
+  name: string;
+  data_source: string;
+  resource: string;
+}
+
+export type EsSearchSource =
+  | DataStreamSearchSource
+  | AliasSearchSource
+  | IndexSearchSource
+  | DatasetSearchSource;
 
 export interface ListSourcesResponse {
   indices: IndexSearchSource[];
   aliases: AliasSearchSource[];
   data_streams: DataStreamSearchSource[];
+  datasets: DatasetSearchSource[];
   warnings?: string[];
 }
 
 /**
+ * Matches an external dataset name against an Elasticsearch-style index pattern.
+ * Supports comma-separated globs with `*` wildcards and `-`-prefixed exclusions
+ * (e.g. `*`, `emp*`, `a,b-*`, `logs-*,-logs-old`), mirroring how `_resolve/index`
+ * honors exclusions for indices, aliases and data streams.
+ */
+const matchesPattern = (name: string, pattern: string): boolean => {
+  const toRegExp = (glob: string) =>
+    new RegExp(`^${glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
+
+  const parts = pattern
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const includes = parts.filter((part) => !part.startsWith('-'));
+  const excludes = parts.filter((part) => part.startsWith('-')).map((part) => part.slice(1));
+
+  const included =
+    includes.length === 0 || includes.some((part) => part === '*' || toRegExp(part).test(name));
+  const excluded = excludes.some((part) => part === '*' || toRegExp(part).test(name));
+  return included && !excluded;
+};
+
+/**
  * List the search sources (indices, aliases and datastreams) matching a given index pattern,
  * using the `_resolve_index` API.
+ *
+ * When `includeDatasets` is true, external ES|QL datasets (registered via `_query/dataset`) are
+ * additionally fetched and returned. This is opt-in because datasets are only queryable via ES|QL,
+ * so callers backing a `_search` flow (or that only need index/alias/datastream classification)
+ * should leave it off to avoid an extra request.
  */
 export const listSearchSources = async ({
   pattern,
@@ -47,6 +88,7 @@ export const listSearchSources = async ({
   includeHidden = false,
   excludeIndicesRepresentedAsAlias = true,
   excludeIndicesRepresentedAsDatastream = true,
+  includeDatasets = false,
   esClient,
 }: {
   pattern: string;
@@ -54,8 +96,26 @@ export const listSearchSources = async ({
   includeHidden?: boolean;
   excludeIndicesRepresentedAsAlias?: boolean;
   excludeIndicesRepresentedAsDatastream?: boolean;
+  includeDatasets?: boolean;
   esClient: ElasticsearchClient;
 }): Promise<ListSourcesResponse> => {
+  // external ES|QL datasets — not returned by `_resolve/index`, so fetch and filter by name
+  // separately. Resolved outside the try below so a `NotFound` from `resolveIndex` (e.g. when
+  // `pattern` is an exact dataset name) doesn't discard matching datasets.
+  const datasetSources = includeDatasets
+    ? (await listDatasets({ esClient }))
+        .filter((dataset) => isVisibleSearchSource(dataset.name))
+        .filter((dataset) => matchesPattern(dataset.name, pattern))
+        .map<DatasetSearchSource>((dataset) => {
+          return {
+            type: EsResourceType.dataset,
+            name: dataset.name,
+            data_source: dataset.data_source,
+            resource: dataset.resource,
+          };
+        })
+    : [];
+
   try {
     const resolveRes = await esClient.indices.resolveIndex({
       name: [pattern],
@@ -138,12 +198,18 @@ export const listSearchSources = async ({
         `Indices results truncated to ${perTypeLimit} elements - Total result count was ${indexSources.length}`
       );
     }
+    if (datasetSources.length > perTypeLimit) {
+      warnings.push(
+        `Datasets results truncated to ${perTypeLimit} elements - Total result count was ${datasetSources.length}`
+      );
+    }
 
     return {
       warnings,
       data_streams: take(dataStreamSources, perTypeLimit),
       aliases: take(aliasSources, perTypeLimit),
       indices: take(indexSources, perTypeLimit),
+      datasets: take(datasetSources, perTypeLimit),
     };
   } catch (e) {
     if (isNotFoundError(e)) {
@@ -151,7 +217,8 @@ export const listSearchSources = async ({
         data_streams: [],
         aliases: [],
         indices: [],
-        warnings: ['No sources found.'],
+        datasets: take(datasetSources, perTypeLimit),
+        warnings: datasetSources.length > 0 ? [] : ['No sources found.'],
       };
     }
     throw e;

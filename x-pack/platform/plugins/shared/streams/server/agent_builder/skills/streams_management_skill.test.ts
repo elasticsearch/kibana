@@ -32,7 +32,7 @@ describe('streamsManagementSkill', () => {
 
   it('does not include sig events tools in getRegistryTools', async () => {
     const toolIds = await streamsManagementSkill.getRegistryTools!();
-    expect(toolIds.every((id: string) => !id.includes('sig_events'))).toBe(true);
+    expect(toolIds.every((id: string) => !id.includes('significant_events'))).toBe(true);
     expect(toolIds.every((id: string) => !id.includes('ki_search'))).toBe(true);
   });
 

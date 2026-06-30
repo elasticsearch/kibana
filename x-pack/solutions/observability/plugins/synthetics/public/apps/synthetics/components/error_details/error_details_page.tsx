@@ -28,7 +28,12 @@ export function ErrorDetailsPage() {
 
   const checkGroupId = failedTests?.[0]?.monitor.check_group ?? '';
 
-  const { data, isFailedStep, failedStep, loading: stepsLoading } = useJourneySteps(checkGroupId);
+  const {
+    data,
+    isFailedStep,
+    failedStep,
+    loading: stepsLoading,
+  } = useJourneySteps({ checkGroup: checkGroupId });
 
   const lastTestRun = failedTests?.[0];
 

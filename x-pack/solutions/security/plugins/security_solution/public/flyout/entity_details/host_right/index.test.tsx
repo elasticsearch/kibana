@@ -8,7 +8,7 @@
 import { render } from '@testing-library/react';
 import React from 'react';
 import { TestProviders } from '../../../common/mock';
-import { mockHostRiskScoreState, mockObservedHostData } from '../mocks';
+import { mockHostRiskScoreState, mockObservedHostData, mockHostEntityRiskScores } from '../mocks';
 import type {
   ExpandableFlyoutApi,
   ExpandableFlyoutState,
@@ -36,6 +36,11 @@ jest.mock('../../../entity_analytics/api/hooks/use_risk_score', () => ({
   useRiskScore: () => mockedHostRiskScore(),
 }));
 
+const mockedUseEntityRiskScores = jest.fn();
+jest.mock('../../../entity_analytics/api/hooks/use_entity_risk_scores', () => ({
+  useEntityRiskScores: () => mockedUseEntityRiskScores(),
+}));
+
 const mockedUseObservedHost = jest.fn().mockReturnValue(mockObservedHostData);
 
 jest.mock('./hooks/use_observed_host', () => ({
@@ -59,6 +64,7 @@ describe('HostPanel', () => {
   beforeEach(() => {
     mockedHostRiskScore.mockReturnValue(mockHostRiskScoreState);
     mockedUseObservedHost.mockReturnValue(mockObservedHostData);
+    mockedUseEntityRiskScores.mockReturnValue(mockHostEntityRiskScores);
     jest.mocked(useExpandableFlyoutHistory).mockReturnValue(flyoutHistory);
     jest.mocked(useExpandableFlyoutState).mockReturnValue({} as unknown as ExpandableFlyoutState);
     jest.mocked(useExpandableFlyoutApi).mockReturnValue(flyoutContextValue);

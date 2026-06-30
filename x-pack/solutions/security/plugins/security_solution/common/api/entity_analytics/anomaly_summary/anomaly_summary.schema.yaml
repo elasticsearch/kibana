@@ -195,7 +195,7 @@ components:
           type: number
           minimum: 0
           maximum: 100
-          description: Maximum record_score (inclusive); omit to return all scores up to 100
+          description: Maximum record_score (exclusive); omit to return all scores up to 100
         job_ids:
           type: array
           maxItems: 200
@@ -377,7 +377,7 @@ components:
           type: number
           minimum: 0
           maximum: 100
-          description: Maximum record_score (inclusive); omit to return all scores up to 100
+          description: Maximum record_score (exclusive); omit to return all scores up to 100
         threat_tactics:
           type: array
           maxItems: 100

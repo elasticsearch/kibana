@@ -30,6 +30,7 @@ export interface ChromeNavigationProps {
 export const Navigation = (props: ChromeNavigationProps) => {
   const state = useNavigationItems();
   const isNextChrome = useIsNextChrome();
+  const onCustomizeNavigation = useCustomizeNavigation();
 
   if (!state) {
     return null;
@@ -45,6 +46,7 @@ export const Navigation = (props: ChromeNavigationProps) => {
         isCollapsed={props.isCollapsed}
         setWidth={props.setWidth}
         onToggleCollapsed={props.onToggleCollapsed}
+        onCustomizeNavigation={onCustomizeNavigation}
         activeItemId={activeItemId}
         showTopSeparator={isNextChrome}
         data-test-subj={classnames(`${solutionId}SideNav`, 'projectSideNav', 'projectSideNavV2')}
@@ -66,11 +68,24 @@ const useNavigationItems = (): (NavigationItems & { solutionId: SolutionId }) | 
     const panelStateManager = new PanelStateManager(basePath.get());
     return chrome.project.getNavigation$().pipe(
       map((nav) => ({
-        ...toNavigationItems(nav.navigationTree, nav.activeNodes, panelStateManager, isNextChrome),
+        ...toNavigationItems(
+          nav.navigationTree,
+          nav.activeNodes,
+          nav.overflowItemIds,
+          panelStateManager,
+          isNextChrome
+        ),
         solutionId: nav.solutionId,
       }))
     );
   }, [chrome, basePath, isNextChrome]);
 
   return useObservable(items$, null);
+};
+
+const useCustomizeNavigation = (): (() => void) | undefined => {
+  const chrome = useChromeService();
+  const handler$ = useMemo(() => chrome.project.getCustomizeNavigationHandler$(), [chrome]);
+  const handler = useObservable(handler$, null);
+  return handler ?? undefined;
 };

@@ -202,6 +202,7 @@ export const createAppContextStartContractMock = (
     autoInstallContentPackagesTask: {} as any,
     alertingStart: {
       getRulesClientWithRequest: jest.fn(),
+      getRulesClientWithRequestInSpace: jest.fn(),
     } as any,
     reportingStart: reportingMock.createStart(),
     lockManagerService: {

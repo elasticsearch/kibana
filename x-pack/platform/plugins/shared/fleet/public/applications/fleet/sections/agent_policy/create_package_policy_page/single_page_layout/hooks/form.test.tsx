@@ -182,6 +182,57 @@ describe('useOnSubmit', () => {
     });
   });
 
+  describe('submitAttempted', () => {
+    // Regression test for validation errors being shown on initial load. The UI
+    // gates forced validation errors behind `submitAttempted`, so the flag must
+    // stay `false` on load even when the form already has errors, and only flip
+    // to `true` once a save is attempted.
+    it('should not set submitAttempted on load with validation errors, only after submit', async () => {
+      // agentCount > 0 makes onSubmit short-circuit on the confirm step, so it
+      // never reaches the real save path regardless of the (timing-dependent)
+      // form state set during init.
+      renderResult = testRenderer.renderHook(() =>
+        useOnSubmit({
+          agentCount: 1,
+          packageInfo,
+          withSysMonitoring: false,
+          selectedPolicyTab: SelectedPolicyTab.NEW,
+          newAgentPolicy: { name: 'test', namespace: '' },
+          queryParamsPolicyId: undefined,
+          hasFleetAddAgentsPrivileges: true,
+          setNewAgentPolicy: jest.fn(),
+          setSelectedPolicyTab: jest.fn(),
+        })
+      );
+      await waitFor(() => new Promise((resolve) => resolve(null)));
+
+      // Give the form validation errors (e.g. an empty required var) as if they
+      // existed as soon as the form loaded.
+      act(() => {
+        renderResult.result.current.setValidationResults({
+          name: null,
+          description: null,
+          namespace: null,
+          additional_datastreams_permissions: null,
+          condition: null,
+          inputs: null,
+          vars: { 'Required var': ['Required var is required'] },
+        });
+      });
+
+      // Errors are present, but until a save is attempted the flag stays false.
+      expect(renderResult.result.current.hasErrors).toBe(true);
+      expect(renderResult.result.current.submitAttempted).toBe(false);
+
+      await act(async () => {
+        await renderResult.result.current.onSubmit();
+      });
+
+      // Only after attempting to save does submitAttempted flip to true.
+      expect(renderResult.result.current.submitAttempted).toBe(true);
+    });
+  });
+
   it('should set incremented name if other package policies exist', async () => {
     (sendGetPackagePolicies as jest.MockedFunction<any>).mockReturnValue({
       data: {

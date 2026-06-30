@@ -87,7 +87,6 @@
     "@kbn/core-analytics-server-mocks",
     "@kbn/cps-server-utils",
     "@kbn/cps-utils",
-    "@kbn/cloud-plugin",
   ],
   "exclude": ["target/**/*"]
 }

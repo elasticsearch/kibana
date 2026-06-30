@@ -10,6 +10,9 @@
 import { FtrService } from '../ftr_provider_context';
 import type { Cookie } from '../cookie_auth';
 
+const HOME_WELCOME_LOCAL_STORAGE_KEY = 'home:welcome:show';
+const HOME_WELCOME_INTERSTITIAL_TEST_SUBJ = 'homeWelcomeInterstitial';
+
 export interface LoginByCookieOptions {
   /** When provided, verifies GET /internal/security/me returns this username. */
   expectedUsername?: string;
@@ -106,7 +109,7 @@ export class BrowserAuthService extends FtrService {
 
     // cleanBrowserState() wipes localStorage. Restore the flag that suppresses the
     // welcome screen so it does not overlay the UI after the first navigation.
-    await this.browser.setLocalStorageItem('home:welcome:show', 'false');
+    await this.browser.setLocalStorageItem(HOME_WELCOME_LOCAL_STORAGE_KEY, 'false');
 
     this.log.debug(`[browserAuth] injecting 'sid' cookie`);
     await this.browser.setCookie('sid', cookie.value);
@@ -114,6 +117,8 @@ export class BrowserAuthService extends FtrService {
     const destination = targetUrl ?? this.deployment.getHostPort();
     this.log.debug(`[browserAuth] navigating to ${destination}`);
     await this.browser.get(destination);
+
+    await this.skipHomeWelcomeInterstitial();
 
     if (options.expectedUsername) {
       const cookies = await this.browser.getCookies();
@@ -141,5 +146,24 @@ export class BrowserAuthService extends FtrService {
       await this.testSubjects.existOrFail('userMenuButton', { timeout: 10_000 });
       this.log.debug('[browserAuth] login confirmed via userMenuButton');
     }
+  }
+
+  private async skipHomeWelcomeInterstitial(): Promise<void> {
+    const currentUrl: string = await this.browser.getCurrentUrl();
+    if (!currentUrl.includes('/app/home')) {
+      return;
+    }
+
+    if (
+      !(await this.testSubjects.exists(HOME_WELCOME_INTERSTITIAL_TEST_SUBJ, {
+        timeout: 2_500,
+      }))
+    ) {
+      return;
+    }
+
+    this.log.debug('[browserAuth] skipping home welcome interstitial after cookie login');
+    await this.browser.setLocalStorageItem(HOME_WELCOME_LOCAL_STORAGE_KEY, 'false');
+    await this.browser.refresh();
   }
 }

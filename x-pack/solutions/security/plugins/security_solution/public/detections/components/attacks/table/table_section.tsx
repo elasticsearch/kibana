@@ -99,6 +99,13 @@ export interface TableSectionProps {
    * Callback to open the schedules flyout
    */
   openSchedulesFlyout: () => void;
+
+  /**
+   * Optional callback invoked with the attack id group keys whenever the grouped
+   * table results change (`undefined` until the first aggregation resolves).
+   * Used by the page tour to know whether any attacks match the active filters.
+   */
+  onAttackIdsChange?: (attackIds: string[] | undefined) => void;
 }
 
 /**
@@ -113,6 +120,7 @@ export const TableSection = React.memo(
     selectedConnectorNames,
     selectedTypes,
     openSchedulesFlyout,
+    onAttackIdsChange,
   }: TableSectionProps) => {
     const getGlobalFiltersQuerySelector = useMemo(
       () => inputsSelectors.globalFiltersQuerySelector(),
@@ -240,8 +248,9 @@ export const TableSection = React.memo(
         );
         const groupKeys = attackIdsGroupBuckets?.flatMap(({ key }) => key);
         setAttackIds(groupKeys);
+        onAttackIdsChange?.(groupKeys);
       },
-      []
+      [onAttackIdsChange]
     );
 
     // AlertsTable manages global filters itself, so not including `filters`

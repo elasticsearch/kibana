@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/273303
+issues:
+- https://github.com/elastic/kibana/issues/273146
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Discover and ES|QL
+title: "Fix object field editing in the index editor"
+description: "Editing cells in object fields now creates or updates object mappings correctly when you use dot notation in column names, instead of creating multi-valued fields on nested objects."

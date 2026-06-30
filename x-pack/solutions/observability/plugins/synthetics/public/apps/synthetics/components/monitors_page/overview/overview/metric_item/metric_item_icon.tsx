@@ -115,6 +115,21 @@ export const MetricItemIcon = ({
     dispatch(toggleErrorPopoverOpen(null));
   };
 
+  if (status === 'stale') {
+    return (
+      <Container>
+        <EuiIconTip
+          content={STALE_TOOLTIP}
+          type="warning"
+          color="warning"
+          iconProps={{
+            'data-test-subj': 'syntheticsMetricItemStaleIcon',
+          }}
+        />
+      </Container>
+    );
+  }
+
   if (status === 'down') {
     return (
       <Container>
@@ -231,4 +246,9 @@ const ERROR_DETAILS = i18n.translate('xpack.synthetics.errorDetails.label', {
 
 const TEST_IN_PROGRESS = i18n.translate('xpack.synthetics.inProgress.label', {
   defaultMessage: 'Manual test run is in progress.',
+});
+
+const STALE_TOOLTIP = i18n.translate('xpack.synthetics.metricItemIcon.staleTooltip', {
+  defaultMessage:
+    'This monitor has stopped reporting. Its last known status may be stale — worth investigating.',
 });

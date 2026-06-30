@@ -56,7 +56,7 @@ const handler: (logger: Logger) => Handler = (logger) => async (context, request
 
   const riskScoreService = buildRiskScoreServiceForRequest(securityContext, coreContext, logger);
 
-  const { identifier_type: identifierType, identifier, refresh } = request.body;
+  const { identifier_type: identifierType, identifier } = request.body;
 
   try {
     const entityAnalyticsConfig = await riskScoreService.getConfigurationWithDefaults(
@@ -121,7 +121,7 @@ const handler: (logger: Logger) => Handler = (logger) => async (context, request
       excludeAlertTags,
       afterKeys,
       returnScores: true,
-      refresh,
+      refresh: 'wait_for',
     });
 
     if (result.errors.length) {

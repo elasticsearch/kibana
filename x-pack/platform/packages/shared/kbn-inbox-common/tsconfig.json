@@ -15,6 +15,7 @@
     "target/**/*"
   ],
   "kbn_references": [
-    "@kbn/zod"
+    "@kbn/zod",
+    "@kbn/zod-helpers"
   ]
 }

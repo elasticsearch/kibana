@@ -13,7 +13,7 @@ import type {
   SavedObjectsClientContract,
   SavedObject,
 } from '@kbn/core/server';
-import { SavedObjectsErrorHelpers } from '@kbn/core/server';
+import { SavedObjectsErrorHelpers, isSavedObjectErrorResult } from '@kbn/core/server';
 
 import { normalizeHostsForAgents, validateFleetSavedObjectId } from '../../common/services';
 import {
@@ -229,7 +229,7 @@ class FleetServerHostService {
 
     const logger = appContextService.getLogger();
     for (const so of res.saved_objects) {
-      if (so.error) {
+      if (isSavedObjectErrorResult(so)) {
         throw so.error;
       }
       logger.debug(`Created fleet server host ${so.id}`);

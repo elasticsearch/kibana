@@ -6,7 +6,7 @@
  */
 
 import { getSigEventsLogPatternsEsql, type LogPatternEsqlEntry } from '@kbn/ai-tools';
-import { LOG_PATTERNS_FEATURE_TYPE } from '@kbn/streams-schema';
+import { LOG_PATTERNS_FEATURE_TYPE, getStreamSamplingSource } from '@kbn/streams-schema';
 import { createTracedEsClient } from '@kbn/traced-es-client';
 import type { ComputedFeatureGenerator } from './types';
 
@@ -53,11 +53,10 @@ This is useful for understanding the types of logs in the stream and identifying
 
     const patterns = await getSigEventsLogPatternsEsql({
       esClient: tracedClient,
-      index: stream.name,
+      samplingSource: getStreamSamplingSource(stream),
       start,
       end,
       fields: LOG_MESSAGE_FIELDS,
-      logger,
     });
 
     return { patterns: selectLogPatternsForLlm(patterns) };

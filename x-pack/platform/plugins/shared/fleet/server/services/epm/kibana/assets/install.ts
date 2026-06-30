@@ -91,6 +91,10 @@ const AssetFilters: Record<string, (kibanaAssets: ArchiveAsset[]) => ArchiveAsse
   [KibanaAssetType.indexPattern]: removeReservedIndexPatterns,
 };
 
+export function getSpaceScopedAssetId(originalId: string, spaceId: string): string {
+  return v5(`$${spaceId}:${originalId}`, v5.DNS);
+}
+
 export function createSavedObjectKibanaAsset(
   asset: ArchiveAsset,
   options?: {
@@ -107,7 +111,9 @@ export function createSavedObjectKibanaAsset(
   // convert that to an object
   const so: Partial<SavedObjectToBe> = {
     type: asset.type,
-    id: rewriteId ? v5(`$${options?.spaceId ?? DEFAULT_SPACE_ID}:${asset.id}`, v5.DNS) : asset.id,
+    id: rewriteId
+      ? getSpaceScopedAssetId(asset.id, options?.spaceId ?? DEFAULT_SPACE_ID)
+      : asset.id,
     ...(rewriteId ? { originId: asset.id } : {}),
     attributes: asset.attributes,
     references: asset.references || [],

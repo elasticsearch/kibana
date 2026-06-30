@@ -16,7 +16,10 @@ import type {
   RuleToImport,
   RuleSource,
 } from '../../../../../../common/api/detection_engine';
-import type { RuleChangesHistoryResponse } from '../../../../../../common/api/detection_engine/rule_management';
+import type {
+  RuleChangesHistoryResponse,
+  RestoreRuleFromHistoryResponse,
+} from '../../../../../../common/api/detection_engine/rule_management';
 import type { IRuleSourceImporter } from '../import/rule_source_importer';
 import type { RuleImportErrorObject } from '../import/errors';
 import type { PrebuiltRuleAsset } from '../../../prebuilt_rules';
@@ -36,6 +39,9 @@ export interface IDetectionRulesClient {
   importRule: (args: ImportRuleArgs) => Promise<RuleResponse>;
   importRules: (args: ImportRulesArgs) => Promise<Array<RuleResponse | RuleImportErrorObject>>;
   getHistoryForRule: (args: GetHistoryForRuleArgs) => Promise<RuleChangesHistoryResponse>;
+  restoreRuleFromHistory: (
+    args: RestoreRuleFromHistoryArgs
+  ) => Promise<RestoreRuleFromHistoryResponse>;
 }
 
 export interface CreateCustomRuleArgs {
@@ -103,4 +109,14 @@ export interface GetHistoryForRuleArgs {
   ruleId: RuleObjectId;
   page?: number;
   perPage?: number;
+}
+
+export interface RestoreRuleFromHistoryArgs {
+  ruleId: RuleObjectId;
+  changeId: string;
+  /**
+   * Current rule's revision for concurrency control.
+   * It has to be omitted for restoring a deleted rule.
+   */
+  currentRuleRevision?: number;
 }

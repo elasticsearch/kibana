@@ -47,6 +47,8 @@ Examples: "find information about our Q3 earnings report", "search for documents
 Use for filtering by specific values, aggregations, calculations, sorting, counting, entity lookups by ID, or any structured data analysis. If the resource's field metadata explicitly shows it has no text or semantic_text fields, always use this tool. If field metadata is missing or unknown (e.g. for aliases), use your best judgment based on the query intent.
 Examples: "what is the average order value?", "find the customer with ID 914255", "how many errors were logged in the past hour?"
 
+IMPORTANT: Resources of type \`dataset\` are external ES|QL datasets that can ONLY be queried with ES|QL. You MUST use '${nlTool}' for them — never '${relevanceTool}', which does not support datasets.
+
 ### '${noMatchTool}' (escape hatch)
 Use ONLY when none of the listed resources can plausibly answer the query. Call with no arguments.
 

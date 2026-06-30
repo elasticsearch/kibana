@@ -681,3 +681,22 @@ export const GET_CASES_STEP_DOCUMENTATION_DETAILS = i18n.translate(
       'This step retrieves up to 1000 cases in a single request. Any IDs that could not be fetched are reported in the errors array. Use this to avoid N sequential get operations in fan-out workflows.',
   }
 );
+
+export const PUSH_CASE_STEP_LABEL = i18n.translate('xpack.cases.workflowSteps.pushCases.label', {
+  defaultMessage: 'Cases - Push cases',
+});
+
+export const PUSH_CASE_STEP_DESCRIPTION = i18n.translate(
+  'xpack.cases.workflowSteps.pushCases.description',
+  {
+    defaultMessage: 'Pushes a case or multiple cases to their configured external connector',
+  }
+);
+
+export const PUSH_CASE_STEP_DOCUMENTATION_DETAILS = i18n.translate(
+  'xpack.cases.workflowSteps.pushCases.documentation.details',
+  {
+    defaultMessage:
+      'This step pushes a case or multiple cases to their external connector. If no connector is configured on a case, the step will fail. The step returns the updated case objects after the push.',
+  }
+);

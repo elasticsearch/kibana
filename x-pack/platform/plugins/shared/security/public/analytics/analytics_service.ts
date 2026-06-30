@@ -49,6 +49,27 @@ export class AnalyticsService {
     if (http.anonymousPaths.isAnonymous(window.location.pathname) === false) {
       registerUserContext(analytics, authc, cloudId);
     }
+    analytics.registerEventType({
+      eventType: 'display_language_changed',
+      schema: {
+        from: {
+          type: 'keyword',
+          _meta: { description: 'The previous display language locale code.' },
+        },
+        to: {
+          type: 'keyword',
+          _meta: { description: 'The new display language locale code.' },
+        },
+        preferred_language_kibana_locale: {
+          type: 'keyword',
+          _meta: {
+            optional: true,
+            description:
+              "The browser's most-preferred language (from navigator.languages) resolved to a Kibana locale id — exact match first, then primary language-subtag fallback (e.g. en-US resolves to en). Omitted when no browser preference can be served. Directly comparable to `from` and `to`.",
+          },
+        },
+      },
+    });
   }
 
   public start({ http }: AnalyticsServiceStartParams) {

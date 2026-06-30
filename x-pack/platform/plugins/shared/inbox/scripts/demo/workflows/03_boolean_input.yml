@@ -4,6 +4,17 @@ enabled: true
 triggers:
   - type: manual
 steps:
+  # Soft-interface reasoning (summary + sections, no code block).
+  - name: assess_host
+    type: data.set
+    with:
+      reasoning:
+        summary: "host-42 shows beaconing to a known-bad C2 domain; isolation recommended to stop exfiltration."
+        sections:
+          - title: "EVIDENCE"
+            body: "Periodic 60s callbacks to bad-domain.example over the last 20m; 4.2 GB outbound since first contact."
+          - title: "BLAST RADIUS"
+            body: "host-42 is a developer workstation, not a production dependency — isolation is low-risk to availability."
   - name: ask_approval
     type: waitForInput
     with:

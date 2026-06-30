@@ -5,8 +5,9 @@
  * 2.0.
  */
 
-import { memo, useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
+import { CancelActionResults } from '../../cancel_action_results';
 import { useSendCancelRequest } from '../../../hooks/response_actions/use_send_cancel_request';
 import type { CancelActionRequestBody } from '../../../../../common/api/endpoint';
 import { useConsoleActionSubmitter } from '../hooks/use_console_action_submitter';
@@ -19,9 +20,9 @@ export const CancelActionResult = memo<
   }>
 >(({ command, setStore, store, status, setStatus, ResultComponent }) => {
   const actionCreator = useSendCancelRequest();
+  const endpointId = command.commandDefinition?.meta?.endpointId;
 
   const actionRequestBody = useMemo<undefined | CancelActionRequestBody>(() => {
-    const endpointId = command.commandDefinition?.meta?.endpointId;
     const { action, comment, force } = command.args.args;
     const agentType = command.commandDefinition?.meta?.agentType;
 
@@ -36,13 +37,9 @@ export const CancelActionResult = memo<
           },
         }
       : undefined;
-  }, [
-    command.args.args,
-    command.commandDefinition?.meta?.agentType,
-    command.commandDefinition?.meta?.endpointId,
-  ]);
+  }, [command.args.args, command.commandDefinition?.meta?.agentType, endpointId]);
 
-  return useConsoleActionSubmitter<CancelActionRequestBody>({
+  const { result, actionDetails } = useConsoleActionSubmitter<CancelActionRequestBody>({
     ResultComponent,
     setStore,
     store,
@@ -54,7 +51,21 @@ export const CancelActionResult = memo<
     pendingMessage: i18n.translate('xpack.securitySolution.cancelAction.pendingMessage', {
       defaultMessage: 'Cancel action in progress.',
     }),
-  }).result;
+  });
+
+  if (actionDetails?.isCompleted) {
+    return (
+      <ResultComponent>
+        <CancelActionResults
+          action={actionDetails}
+          agentId={endpointId}
+          data-test-subj="cancelActionResult"
+        />
+      </ResultComponent>
+    );
+  }
+
+  return result;
 });
 
 CancelActionResult.displayName = 'CancelActionResult';

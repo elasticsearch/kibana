@@ -11,6 +11,13 @@ import { I18nProvider } from '@kbn/i18n-react';
 
 import type { TemplateDeserialized } from '../../../../../common';
 import { StepReview } from './step_review';
+import { useAppContext } from '../../../app_context';
+
+jest.mock('../../../app_context', () => ({
+  useAppContext: jest.fn(),
+}));
+
+const mockUseAppContext = useAppContext as jest.MockedFunction<typeof useAppContext>;
 
 const mockSimulateTemplatePropsSpy = jest.fn();
 jest.mock('../../index_templates', () => ({
@@ -25,6 +32,9 @@ describe('StepReview', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSimulateTemplatePropsSpy.mockClear();
+    mockUseAppContext.mockReturnValue({
+      config: { isServerless: false },
+    } as ReturnType<typeof useAppContext>);
   });
 
   const makeTemplate = (overrides: Partial<TemplateDeserialized> = {}): TemplateDeserialized => ({
@@ -93,6 +103,48 @@ describe('StepReview', () => {
 
       fireEvent.click(screen.getByText('Edit index patterns.'));
       expect(navigateToStep).toHaveBeenCalledWith('logistics', expect.any(Object));
+    });
+  });
+
+  describe('WHEN lifecycle is configured', () => {
+    it('SHOULD render hot-only infinite lifecycle in the summary', () => {
+      render(
+        <I18nProvider>
+          <StepReview
+            template={makeTemplate({
+              template: {
+                settings: { index: { number_of_shards: 1 } },
+                mappings: { properties: { field_1: { type: 'keyword' } } },
+                aliases: { my_alias: { is_write_index: true } },
+                lifecycle: { enabled: true },
+              },
+            })}
+            navigateToStep={jest.fn()}
+          />
+        </I18nProvider>
+      );
+
+      expect(screen.getByTestId('lifecycleValue')).toHaveTextContent('∞ · 1 data phase');
+    });
+
+    it('SHOULD render tiers layout with phase count on stateful', () => {
+      render(
+        <I18nProvider>
+          <StepReview
+            template={makeTemplate({
+              template: {
+                settings: { index: { number_of_shards: 1 } },
+                mappings: { properties: { field_1: { type: 'keyword' } } },
+                aliases: { my_alias: { is_write_index: true } },
+                lifecycle: { enabled: true, frozen_after: '30d' },
+              },
+            })}
+            navigateToStep={jest.fn()}
+          />
+        </I18nProvider>
+      );
+
+      expect(screen.getByTestId('lifecycleValue')).toHaveTextContent('∞ · 2 data phases');
     });
   });
 

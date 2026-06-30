@@ -88,6 +88,7 @@ class ConversationClientImpl implements ConversationClient {
         'updated_at',
         'status',
         'read',
+        'access_control',
       ],
       query: {
         bool: {

@@ -26,20 +26,19 @@ import { registerSuggestFixRoute } from './suggest_fix_route';
 export const registerRoutes = (
   setup: CoreSetup<EsqlServerPluginStart>,
   extensionsRegistry: ESQLExtensionsRegistry,
-  initContext: PluginInitializerContext,
-  isServerless: boolean
+  initContext: PluginInitializerContext
 ) => {
   const router = setup.http.createRouter();
 
   registerGetJoinIndicesRoute(router, initContext);
   registerGetTimeseriesIndicesRoute(router, initContext);
-  registerGetViewsRoute(router, initContext, isServerless);
+  registerGetViewsRoute(router, initContext);
   registerGetDatasetsRoute(router, initContext);
   registerESQLExtensionsRoute(router, extensionsRegistry, initContext);
   registerGetInferenceEndpointsRoute(router, initContext);
   registerLookupIndexRoutes(router, initContext);
   registerGetSourcesRoute(router, initContext);
-  registerGetTimeFieldRoute(router, initContext, isServerless);
+  registerGetTimeFieldRoute(router, initContext);
   registerNLtoESQLRoute(router, setup.getStartServices, initContext);
   registerSuggestFixRoute(router, setup.getStartServices, initContext);
 };

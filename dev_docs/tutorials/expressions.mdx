@@ -5,113 +5,13 @@ title: Kibana Expressions Service
 description: Kibana Expressions Service
 date: 2021-06-01
 tags: ['kibana', 'onboarding', 'dev', 'architecture']
+redirect_url: https://www.elastic.co/docs/extend/kibana/tutorials/kibana-expressions-service
 ---
 
-## Expressions service
+{/* REDIRECT_NOTICE_START */}
 
-Expression service exposes a registry of reusable functions primary used for fetching and transposing data and a registry of renderer functions that can render data into a DOM element.
-Adding functions is easy and so is reusing them.
- 
-An expression is a chain of functions with provided arguments, which given a single input translates to a single output.
-Each expression is representable by a human friendly string which a user can type.
-
-### Creating expressions
-
-Here is a very simple expression string:
-
-```
-essql 'select column1, column2 from myindex' | mapColumn name=column3 fn='{ column1 + 3 }' | table
-```
-
-It consists of 3 functions:
-
- - `essql` which runs given sql query against elasticsearch and returns the results
- - `mapColumn`, which computes a new column from existing ones;
- - `table`, which prepares the data for rendering in a tabular format.
-
-The same expression could also be constructed in the code:
-
-```ts
-import { buildExpression, buildExpressionFunction } from 'src/plugins/expressions';
-
-const expression = buildExpression([
-  buildExpressionFunction<ExpressionFunctionEssql>('essql', [ q: 'select column1, column2 from myindex' ]),
-  buildExpressionFunction<ExpressionFunctionMapColumn>('mapColumn', [ name: 'column3', expression: 'column1 + 3' ]),
-  buildExpressionFunction<ExpressionFunctionTable>('table'),
-]
-```
-
-Note: Consumers need to be aware which plugin registers specific functions with expressions function registry and import correct type definitions from there.
-
-<DocCallOut>
-  The `expressions` service is available on both server and client, with similar APIs.
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://www.elastic.co/docs/extend/kibana/tutorials/kibana-expressions-service](https://www.elastic.co/docs/extend/kibana/tutorials/kibana-expressions-service)
 </DocCallOut>
 
-### Running expressions
-
-Expression service exposes `execute` method which allows you to execute an expression:
-
-```ts
-const executionContract = expressions.execute(expression, input);
-const result = await executionContract.getData();
-```
-
-
-In addition, on the browser side, there are two additional ways to run expressions and render the results.
-
-#### React expression renderer component
-
-This is the easiest way to get expressions rendered inside your application.
-
-```ts
-<ReactExpressionRenderer expression={expression} />
-```
-
-
-#### Expression loader
-
-If you are not using React, you can use the loader expression service provides to achieve the same:
-
-```ts
-const handler = loader(domElement, expression, params);
-```
-
-
-### Creating new expression functions
-
-Creating a new expression function is easy, just call `registerFunction` method on expressions service setup contract with your function definition:
-
-```ts
-const functionDefinition = {
-   name: 'clog',
-   args: {},
-   help: 'Outputs the context to the console',
-   fn: (input: unknown) => {
-     // eslint-disable-next-line no-console
-     console.log(input);
-     return input;
-   },
-};
-
-expressions.registerFunction(functionDefinition);
-```
-
-
-### Creating new expression renderers
-
-Adding new renderers is just as easy as adding functions:
-
-```ts
-const rendererDefinition = {
-   name: 'debug',
-   help: 'Outputs the context to the dom element',
-   render: (domElement, input, handlers) => {
-     // eslint-disable-next-line no-console
-     domElement.innerText = JSON.strinfigy(input);
-     handlers.done();
-   },
-};
-
-expressions.registerRenderer(rendererDefinition);
-```
-
+{/* REDIRECT_NOTICE_END */}

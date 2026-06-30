@@ -241,7 +241,7 @@ export const BaseSnoozePanel: React.FunctionComponent<BaseSnoozePanelProps> = ({
                             {scheduleSummary(schedule as SnoozeSchedule)}
                           </EuiFlexItem>
                           <EuiFlexItem grow={false}>
-                            <EuiIcon type="chevronSingleRight" />
+                            <EuiIcon type="chevronSingleRight" aria-hidden={true} />
                           </EuiFlexItem>
                         </EuiFlexGroup>
                       </EuiButton>
@@ -303,7 +303,7 @@ export const BaseSnoozePanel: React.FunctionComponent<BaseSnoozePanelProps> = ({
         <EuiPopoverTitle data-test-subj="snoozePanelTitle">
           <EuiFlexGroup alignItems="center" justifyContent="flexStart" gutterSize="s">
             <EuiFlexItem grow={false}>
-              <EuiIcon type="bellSlash" />
+              <EuiIcon type="bellSlash" aria-hidden={true} />
             </EuiFlexItem>
             <EuiFlexItem>
               {i18n.translate('xpack.triggersActionsUI.sections.rulesList.snoozePanelTitle', {

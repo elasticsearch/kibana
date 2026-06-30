@@ -1,0 +1,155 @@
+## Streams Investigation Management
+
+You can trigger an automated root-cause analysis (RCA) for an observability issue using the Streams investigation workflow.
+
+### When to use
+
+Load this skill when the user wants to:
+- Investigate the root cause of an incident, error spike, anomaly, or degradation
+- Investigate a **significant event** (attached to the conversation or referenced by the user)
+- Investigate an **alert** (attached, mentioned, or found via a tool)
+- Run an investigation scoped to one or more data streams (e.g. `logs-*`, `metrics-host.*`)
+- Check the status of an investigation that is already running
+- View or summarise the results of a completed investigation
+
+### Triggering an investigation
+
+Use `platform.core.execute_workflow` with the following parameters:
+
+```
+workflowId: "system-streams-investigation"
+inputs:
+  message: "<required – describe the issue or event to investigate>"
+  stream_names: ["<optional – data stream names to scope the investigation>"]
+  context: { <optional – any structured context, e.g. sig event or alert metadata> }
+  concurrency_key: "<optional – stable key to de-duplicate repeated investigations>"
+waitForCompletion: true
+```
+
+**Always set `waitForCompletion: true`.** The call waits synchronously for up to ~120s (a fixed wait window in the `execute_workflow` tool — not configurable from here) and then returns the execution. If the investigation finishes within that window, the result includes the full structured root-cause findings; since investigations may take a few minutes, longer runs return a still-running execution, so treat **Checking investigation status** as the expected next step rather than a rare fallback. Present the results in the same turn once they're available (see **Presenting results**).
+
+- Before triggering, briefly tell the user you're starting the investigation and that it may take a few minutes — the agent gathers and correlates logs, traces, and metrics before reaching a conclusion.
+- Stay on the tool call until it returns; do not ask the user to come back later, and do not start polling in a loop — call `get_workflow_execution_status` once if needed.
+- If `execute_workflow` returns with a non-terminal execution (it exceeded the ~120s wait window), continue to **Checking investigation status**.
+
+**Input schema:**
+- `message` (string, required) — a clear description of the issue to investigate. Include symptoms, time range, and any relevant context. Be specific.
+- `stream_names` (string array, optional) — data stream names to scope observability queries. Leave empty to let the investigation agent discover relevant streams.
+- `context` (object, optional) — structured context such as sig event metadata, alert payload, or environment info. Passed verbatim to the investigation agent.
+- `concurrency_key` (string, optional) — a stable key (e.g. a sig event's discovery slug or an alert id). Investigations sharing a key are de-duplicated: starting a new one cancels any in-progress investigation with the same key.
+
+**Example call (free-form issue):**
+```
+execute_workflow({
+  workflowId: "system-streams-investigation",
+  inputs: {
+    message: "Error rate on the checkout service spiked by 400% starting at 14:30 UTC. HTTP 503 errors are dominating.",
+    stream_names: ["logs-checkout-service.default", "metrics-checkout-service.default"]
+  },
+  waitForCompletion: true
+})
+```
+
+### Investigating a Significant Event
+
+When the user wants to investigate a Significant Event, gather the event's metadata first, then trigger the investigation with that context.
+
+**1. Source the event.**
+- **If a SignificantEvent is already attached to the conversation**, read its fields directly from the attachment — it renders as text with `Event ID`, `Discovery slug`, `Status`, `Impact`, `Criticality`, `Confidence`, `Streams`, `Summary`, `Root cause`, and `Recommendations`. Use those values directly; do not re-fetch.
+- **If no SignificantEvent is attached**, load the `significant-events-management` skill (via the `load_skill` tool) and use its `event_search` tool to find the relevant event, then attach it and render the attachment inline per that skill's rules. Read its metadata from the attachment.
+
+**2. Build the workflow inputs from the event:**
+- `message`: `"{title}\n\n{summary}\n\nProbable cause: {root_cause}"`
+- `stream_names`: the event's `Streams`
+- `concurrency_key`: the event's `Discovery slug` — this de-duplicates with the investigation that the significant-events triage automatically launches for promoted events (so a chat-initiated investigation supersedes an in-flight automatic one rather than running twice).
+- `context`: a structured object with the event metadata you can read from the attachment.
+
+**Example call (sig event context):**
+```
+execute_workflow({
+  workflowId: "system-streams-investigation",
+  inputs: {
+    message: "Checkout latency p99 breached SLO\n\nP99 latency on checkout climbed above 2s for 20 minutes during peak traffic.\n\nProbable cause: connection pool exhaustion against the orders database.",
+    stream_names: ["logs-checkout-service.default", "metrics-checkout-service.default"],
+    concurrency_key: "checkout-latency-slo-breach",
+    context: {
+      source: "significant_event",
+      event_id: "8f1c...",
+      discovery_slug: "checkout-latency-slo-breach",
+      status: "promoted",
+      impact: "high",
+      criticality: 78,
+      confidence: 0.82,
+      root_cause: "Connection pool exhaustion against the orders database.",
+      recommendations: ["Increase pool size", "Add backpressure on checkout"]
+    }
+  },
+  waitForCompletion: true
+})
+```
+
+### Investigating an Alert
+
+When the user wants to investigate an alert, load the alert's data first, then trigger the investigation anchored on the alert.
+
+**1. Source the alert context (in order of preference):**
+- **If a dedicated alerts tool is available in your current toolset**, use it. In Observability spaces this is typically `observability.get_alerts`; in Security spaces, `security.alerts`. These are solution-specific and may not be present — you can load the relevant solution skill (e.g. `observability.investigation`) to gain them.
+- **Otherwise, query the alerts-as-data indices directly** with `platform.core.generate_esql` + `platform.core.execute_esql` against `.alerts-*`. Filter on `kibana.alert.status == "active"` and a time range on `kibana.alert.start`, and project the key fields: `kibana.alert.uuid`, `kibana.alert.rule.name`, `kibana.alert.reason`, `kibana.alert.status`, `kibana.alert.start`, `service.name`, `host.name`.
+
+**2. Anchor on the alert.** Use `kibana.alert.start` as the time anchor for the issue (not "now"), and use `kibana.alert.reason` / `kibana.alert.rule.name` to describe what fired.
+
+**3. Build the workflow inputs from the alert:**
+- `message`: composed from the rule name, the alert reason, and the start time.
+- `stream_names`: derive from `service.name` / `host.name` when they map to known data streams; otherwise omit and let the investigation agent discover relevant streams.
+- `concurrency_key`: the alert id (`kibana.alert.uuid`), to de-duplicate repeated requests for the same alert.
+- `context`: a structured `alert` object with the key fields above.
+
+**Example call (alert context):**
+```
+execute_workflow({
+  workflowId: "system-streams-investigation",
+  inputs: {
+    message: "Alert \"High error rate - checkout\" fired at 2024-05-21T14:30:00Z. Reason: error rate is 38% (above the 5% threshold) for service checkout in environment production.",
+    stream_names: ["logs-checkout-service.default"],
+    concurrency_key: "a1b2c3d4-0000-1111-2222-333344445555",
+    context: {
+      source: "alert",
+      alert: {
+        uuid: "a1b2c3d4-0000-1111-2222-333344445555",
+        rule_name: "High error rate - checkout",
+        reason: "error rate is 38% (above the 5% threshold) for service checkout in environment production",
+        status: "active",
+        start: "2024-05-21T14:30:00Z",
+        service_name: "checkout",
+        host_name: null
+      }
+    }
+  },
+  waitForCompletion: true
+})
+```
+
+### Checking investigation status
+
+Use this when `execute_workflow` returned before the investigation reached a terminal state (which is expected for investigations that take longer than ~120s).
+
+Use `platform.core.get_workflow_execution_status` with the `executionId` from the returned execution.
+
+- Status `running` — investigation is still in progress; let the user know it's still running and share the `executionId` so they can ask for an update later.
+- Status `completed` — the execution output contains the RCA findings.
+- Status `failed` — the output contains error details.
+
+### Presenting results
+
+When the investigation completes, summarise the structured output for the user:
+
+| Field | Description |
+|---|---|
+| `contributing_factors` | The root cause narrative |
+| `confidence` | Confidence score 0–1 (higher is more certain) |
+| `evidence_summary` | Key evidence supporting the conclusion |
+| `mechanism` | How the root cause led to the observed symptoms |
+| `alternatives_ruled_out` | Other hypotheses that were considered and eliminated |
+| `gaps_found` | Data or signal gaps that limited the investigation |
+
+Present the findings in plain language. Highlight `contributing_factors` and `evidence_summary` first, then surface `alternatives_ruled_out` and `gaps_found` if they add useful context.

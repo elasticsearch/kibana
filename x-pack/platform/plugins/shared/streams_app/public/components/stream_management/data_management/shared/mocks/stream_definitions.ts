@@ -48,7 +48,6 @@ export const createMockClassicStreamDefinition = (
   effective_settings: {},
   dashboards: [],
   rules: [],
-  queries: [],
   ...overrides,
 });
 
@@ -104,7 +103,6 @@ export const createMockWiredStreamDefinition = (
   effective_settings: {},
   dashboards: [],
   rules: [],
-  queries: [],
   ...overrides,
 });
 

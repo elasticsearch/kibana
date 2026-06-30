@@ -39,6 +39,12 @@ export const QuickFilters = () => {
       label: PENDING_LABEL,
     });
   }
+  if (status?.stale && status?.stale > 0) {
+    statusButtons.push({
+      id: 'stale',
+      label: STALE_LABEL,
+    });
+  }
   return (
     <EuiButtonGroup
       buttonSize="m"
@@ -66,4 +72,8 @@ const DISABLED_LABEL = i18n.translate('xpack.synthetics.overview.status.filters.
 
 const PENDING_LABEL = i18n.translate('xpack.synthetics.overview.status.filters.pending', {
   defaultMessage: 'Pending',
+});
+
+const STALE_LABEL = i18n.translate('xpack.synthetics.overview.status.filters.stale', {
+  defaultMessage: 'Stale',
 });

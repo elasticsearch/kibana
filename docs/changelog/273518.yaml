@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/273518
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- AI and machine Learning
+title: "Fix unbounded string length validation in machine learning API schemas"

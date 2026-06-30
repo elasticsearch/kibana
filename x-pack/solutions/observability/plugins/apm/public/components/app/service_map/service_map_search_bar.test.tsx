@@ -16,6 +16,8 @@ let mockOnFiltersChange: (filters: Filter[]) => void;
 let mockHistoryReplace: jest.Mock;
 let mockLocationSearch: string;
 let mockInitialAppFilters: Filter[];
+// Field names that should be reported as absent from the data view.
+let mockMissingFields: string[];
 const filterUpdates$ = new Subject<void>();
 
 jest.mock('../../../hooks/use_apm_params', () => ({
@@ -38,8 +40,10 @@ jest.mock('../../../hooks/use_adhoc_apm_data_view', () => ({
     dataView: {
       id: 'apm-data-view',
       title: 'apm-*',
-      fields: [],
-      getFieldByName: () => undefined,
+      fields: {
+        getByName: (name: string) => (mockMissingFields.includes(name) ? undefined : { name }),
+      },
+      getFieldByName: (name: string) => (mockMissingFields.includes(name) ? undefined : { name }),
     },
   }),
 }));
@@ -95,13 +99,15 @@ jest.mock('./service_map_controls', () => ({
     controlsConfig,
   }: {
     onFiltersChange: (filters: Filter[]) => void;
-    controlsConfig: Array<{ field_name: string }>;
+    controlsConfig: Array<{ field_name: string; width: string; grow: boolean }>;
   }) => {
     mockOnFiltersChange = onFiltersChange;
     return (
       <div
         data-testid="service-map-controls"
         data-fields={controlsConfig.map((c) => c.field_name).join(',')}
+        data-widths={controlsConfig.map((c) => c.width).join(',')}
+        data-grows={controlsConfig.map((c) => String(c.grow)).join(',')}
       />
     );
   },
@@ -136,6 +142,7 @@ describe('ServiceMapSearchBar', () => {
     mockHistoryReplace = jest.fn();
     mockLocationSearch = '?environment=production&kuery=service.name%3A%22opbeans-go%22';
     mockInitialAppFilters = [];
+    mockMissingFields = [];
     mockFilterManager.getAppFilters.mockReturnValue([]);
     mockFilterManager.getGlobalFilters.mockReturnValue([]);
   });
@@ -151,6 +158,75 @@ describe('ServiceMapSearchBar', () => {
     // buildEsQuery was called with [{ query: '', language: 'kuery' }] so the mock
     // only includes filters, not the kuery content.
     expect(esQuery.bool.filter).toEqual([]);
+  });
+
+  it('excludes controls whose field is missing from the data view', async () => {
+    mockMissingFields = ['cloud.region'];
+
+    const { container } = render(<ServiceMapSearchBar />);
+
+    let controls: Element | null = null;
+    await waitFor(() => {
+      controls = container.querySelector('[data-testid="service-map-controls"]');
+      expect(controls).not.toBeNull();
+    });
+
+    const fields = controls!.getAttribute('data-fields') ?? '';
+    expect(fields.split(',')).toEqual([
+      'service.environment',
+      'service.name',
+      'cloud.availability_zone',
+    ]);
+  });
+
+  it('renders a single remaining control at a fixed medium width', async () => {
+    mockMissingFields = ['service.name', 'cloud.region', 'cloud.availability_zone'];
+
+    const { container } = render(<ServiceMapSearchBar />);
+
+    let controls: Element | null = null;
+    await waitFor(() => {
+      controls = container.querySelector('[data-testid="service-map-controls"]');
+      expect(controls).not.toBeNull();
+    });
+
+    expect(controls!.getAttribute('data-fields')).toBe('service.environment');
+    expect(controls!.getAttribute('data-widths')).toBe('medium');
+    expect(controls!.getAttribute('data-grows')).toBe('false');
+  });
+
+  it('renders two remaining controls at a fixed medium width', async () => {
+    mockMissingFields = ['cloud.region', 'cloud.availability_zone'];
+
+    const { container } = render(<ServiceMapSearchBar />);
+
+    let controls: Element | null = null;
+    await waitFor(() => {
+      controls = container.querySelector('[data-testid="service-map-controls"]');
+      expect(controls).not.toBeNull();
+    });
+
+    expect(controls!.getAttribute('data-fields')).toBe('service.environment,service.name');
+    expect(controls!.getAttribute('data-widths')).toBe('medium,medium');
+    expect(controls!.getAttribute('data-grows')).toBe('false,false');
+  });
+
+  it('keeps small growing controls when three or more remain', async () => {
+    mockMissingFields = ['cloud.availability_zone'];
+
+    const { container } = render(<ServiceMapSearchBar />);
+
+    let controls: Element | null = null;
+    await waitFor(() => {
+      controls = container.querySelector('[data-testid="service-map-controls"]');
+      expect(controls).not.toBeNull();
+    });
+
+    expect(controls!.getAttribute('data-fields')).toBe(
+      'service.environment,service.name,cloud.region'
+    );
+    expect(controls!.getAttribute('data-widths')).toBe('small,small,small');
+    expect(controls!.getAttribute('data-grows')).toBe('true,true,true');
   });
 
   it('does not include inherited app filters from another app on initial render', async () => {

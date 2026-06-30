@@ -14,7 +14,7 @@ import { FLAGS } from '../src/constants';
 import { ChangeHistoryClient, ILM_POLICY_NAME } from '..';
 import { DATA_STREAM_NAME } from '../src/client';
 import type { ObjectChange } from '..';
-import { sha256 } from '../src/utils';
+import { sha256, REDACTED } from '../src/utils';
 
 const KIBANA_SPACE = 'default';
 const TEST_MODULE = 'test-module';
@@ -370,7 +370,7 @@ describe('ChangeHistoryClient', () => {
     });
   });
 
-  describe('hashing selected fields', () => {
+  describe('masking selected fields', () => {
     let client: ChangeHistoryClient;
 
     beforeEach(async () => {
@@ -378,24 +378,27 @@ describe('ChangeHistoryClient', () => {
       await client.initialize(esServer.getClient());
     });
 
-    it('should hash sensitive fields in snapshot and list paths in object.fields.hashed', async () => {
+    it('should hash and redact sensitive fields and list paths in object.fields', async () => {
       const change: ObjectChange = {
         objectType: 'rule',
         objectId: 'masked-id',
         snapshot: {
           name: 'My Rule',
-          user: { email: 'secret@example.com', name: 'Alice' },
+          user: { name: 'Alice' },
           apiKey: 'sk-secret-key-12345',
         },
       };
       const fieldsToHash = {
-        user: { email: true },
         apiKey: true,
+      };
+      const fieldsToRedact = {
+        user: { name: true },
       };
       await client.log(change, {
         ...defaultLogOpts,
         spaceId: 'default',
         fieldsToHash,
+        fieldsToRedact,
       });
 
       const result = await client.getHistory(KIBANA_SPACE, 'rule', 'masked-id');
@@ -406,16 +409,16 @@ describe('ChangeHistoryClient', () => {
       const hash = sha256(JSON.stringify(change.snapshot));
       expect(doc.object.hash).toEqual(hash);
 
-      // Check hashed field paths
-      expect(doc.object.fields.hashed.sort()).toEqual(['apiKey', 'user.email'].sort());
+      // Check hashed and redacted field paths
+      expect(doc.object.fields.hashed).toEqual(['apiKey']);
+      expect(doc.object.fields.redacted).toEqual(['user.name']);
       const snapshot = doc.object.snapshot as Record<string, unknown>;
       expect(snapshot).toEqual({
         name: 'My Rule',
         user: {
-          email: sha256('secret@example.com'),
-          name: 'Alice',
+          name: REDACTED,
         },
-        apiKey: sha256('sk-secret-key-12345'),
+        apiKey: sha256('masked-id' + 'sk-secret-key-12345').slice(-12),
       });
     });
   });

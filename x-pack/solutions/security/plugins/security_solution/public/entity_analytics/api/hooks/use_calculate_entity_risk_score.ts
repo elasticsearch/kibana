@@ -17,14 +17,21 @@ import { useEntityAnalyticsRoutes } from '../api';
 import { useAppToasts } from '../../../common/hooks/use_app_toasts';
 import { useRiskEngineStatus } from './use_risk_engine_status';
 
-export const useCalculateEntityRiskScore = (
-  identifierType: EntityType,
-  identifier: string,
-  { onSuccess }: { onSuccess: () => void }
-) => {
+export const useCalculateEntityRiskScore = ({
+  identifierType,
+  identifier,
+  entityId,
+  onSuccess,
+}: {
+  identifierType: EntityType;
+  identifier: string;
+  // V2-only: the canonical EUID for the entity being scored
+  entityId?: string;
+  onSuccess: () => void;
+}) => {
   const { addError } = useAppToasts();
   const { data: riskEngineStatus } = useRiskEngineStatus();
-  const { calculateEntityRiskScore } = useEntityAnalyticsRoutes();
+  const { calculateEntityRiskScore, calculateEntityRiskScoreV2 } = useEntityAnalyticsRoutes();
   const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
 
   const onError = useCallback(
@@ -39,15 +46,23 @@ export const useCalculateEntityRiskScore = (
     [addError, identifierType]
   );
 
-  const { mutate, isLoading, data } = useMutation(calculateEntityRiskScore, {
+  const { mutate, isLoading } = useMutation(calculateEntityRiskScore, {
+    onSuccess,
+    onError,
+  });
+
+  const { mutate: mutateV2, isLoading: isLoadingV2 } = useMutation(calculateEntityRiskScoreV2, {
     onSuccess,
     onError,
   });
 
   const calculateEntityRiskScoreCb = useCallback(async () => {
     if (entityStoreV2Enabled) {
-      // do nothing if entity store v2 is enabled
-      // until https://github.com/elastic/security-team/issues/16756 is resolved
+      mutateV2({
+        identifier_type: identifierType,
+        identifier,
+        entity_id: entityId,
+      });
       return;
     }
 
@@ -55,20 +70,20 @@ export const useCalculateEntityRiskScore = (
       mutate({
         identifier_type: identifierType,
         identifier,
-        refresh: 'wait_for',
       });
     }
   }, [
     riskEngineStatus?.risk_engine_status,
     mutate,
+    mutateV2,
     identifierType,
     identifier,
+    entityId,
     entityStoreV2Enabled,
   ]);
 
   return {
-    isLoading,
+    isLoading: entityStoreV2Enabled ? isLoadingV2 : isLoading,
     calculateEntityRiskScore: calculateEntityRiskScoreCb,
-    data,
   };
 };

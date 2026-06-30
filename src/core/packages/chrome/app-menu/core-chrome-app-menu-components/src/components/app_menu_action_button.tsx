@@ -16,6 +16,7 @@ import { createReturnFocus, getIsSelectedColor, getTooltip, isDisabled } from '.
 import { AppMenuPopover } from './app_menu_popover';
 import { SplitButtonWithNotification } from './split_button_with_notification';
 import type { AppMenuPrimaryActionItem, AppMenuSplitButtonProps } from '../types';
+import { getAppMenuActionButtonTestSubj } from '../test_subjects';
 
 type AppMenuActionButtonProps = AppMenuPrimaryActionItem & {
   isPopoverOpen: boolean;
@@ -106,7 +107,7 @@ export const AppMenuActionButton = (props: AppMenuActionButtonProps) => {
   const commonProps = {
     ...routerLinkProps,
     id: htmlId,
-    'data-test-subj': testId || `app-menu-action-button-${id}`,
+    'data-test-subj': testId || getAppMenuActionButtonTestSubj(id),
     iconType,
     isDisabled: isDisabled(disableButton),
     href,

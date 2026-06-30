@@ -23,8 +23,8 @@ const ALERT_TIMELINE_VISIBLE_ROW_COUNT = 6;
 
 export interface AlertTimelineChartProps {
   rows: AlertTimelineSeries[];
-  gteMs: number;
-  lteMs: number;
+  windowStartMs: number;
+  windowEndMs: number;
   timeZone?: string;
   /** Render the per-series label column. Omitted for ungrouped rules, whose hashes carry no useful label. */
   showLabelColumn: boolean;
@@ -34,8 +34,8 @@ export interface AlertTimelineChartProps {
 
 export const AlertTimelineChart: React.FC<AlertTimelineChartProps> = ({
   rows,
-  gteMs,
-  lteMs,
+  windowStartMs,
+  windowEndMs,
   timeZone,
   showLabelColumn,
   onEpisodeClick,
@@ -105,8 +105,8 @@ export const AlertTimelineChart: React.FC<AlertTimelineChartProps> = ({
               <AlertTimelineRow
                 key={row.groupHash}
                 row={row}
-                gteMs={gteMs}
-                lteMs={lteMs}
+                windowStartMs={windowStartMs}
+                windowEndMs={windowEndMs}
                 height={ROW_HEIGHT_PX}
                 baseTheme={baseTheme}
                 timeZone={timeZone}
@@ -137,11 +137,19 @@ export const AlertTimelineChart: React.FC<AlertTimelineChartProps> = ({
               min-width: 0;
             `}
           >
-            <AlertTimelineTimeAxis gteMs={gteMs} lteMs={lteMs} timeZone={timeZone} />
+            <AlertTimelineTimeAxis
+              windowStartMs={windowStartMs}
+              windowEndMs={windowEndMs}
+              timeZone={timeZone}
+            />
           </div>
         </div>
       ) : (
-        <AlertTimelineTimeAxis gteMs={gteMs} lteMs={lteMs} timeZone={timeZone} />
+        <AlertTimelineTimeAxis
+          windowStartMs={windowStartMs}
+          windowEndMs={windowEndMs}
+          timeZone={timeZone}
+        />
       )}
     </div>
   );

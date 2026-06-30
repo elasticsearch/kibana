@@ -12,6 +12,7 @@ export {
   interpolateEsqlQuery,
   validateEsqlQuery,
 } from './esql';
+export { listDatasets, getDatasetFields, type DatasetInfo } from './datasets';
 export {
   flattenMapping,
   cleanupMapping,

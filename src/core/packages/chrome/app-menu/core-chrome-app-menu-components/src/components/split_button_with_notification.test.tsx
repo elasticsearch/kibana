@@ -11,6 +11,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SplitButtonWithNotification } from './split_button_with_notification';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 const setup = (props: Partial<React.ComponentProps<typeof SplitButtonWithNotification>> = {}) => {
   const onMainButtonClick = jest.fn();
@@ -57,12 +58,14 @@ describe('<SplitButtonWithNotification />', () => {
 
   it('should not show the notification indicator by default', () => {
     setup();
-    expect(screen.queryByTestId('split-button-notification-indicator')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(APP_MENU_TEST_SUBJECTS.notificationIndicator)
+    ).not.toBeInTheDocument();
   });
 
   it('should show the notification indicator when showNotificationIndicator is true', () => {
     setup({ showNotificationIndicator: true, iconType: 'save' });
-    expect(screen.getByTestId('split-button-notification-indicator')).toBeVisible();
+    expect(screen.getByTestId(APP_MENU_TEST_SUBJECTS.notificationIndicator)).toBeVisible();
   });
 
   it('should not trigger onClick via the indicator when disabled', async () => {
@@ -82,7 +85,7 @@ describe('<SplitButtonWithNotification />', () => {
       />
     );
 
-    const indicator = screen.getByTestId('split-button-notification-indicator');
+    const indicator = screen.getByTestId(APP_MENU_TEST_SUBJECTS.notificationIndicator);
     await user.click(indicator);
     expect(onMainButtonClick).not.toHaveBeenCalled();
   });

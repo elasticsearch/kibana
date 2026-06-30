@@ -238,6 +238,181 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
       });
     });
 
+    describe('GET /internal/streams/doc_counts/ingestion', () => {
+      it('returns range-scoped document counts for all streams', async () => {
+        const now = Date.now();
+        const start = now - 3600000;
+        const end = now + 60000;
+
+        const response = await viewerApiClient.fetch('GET /internal/streams/doc_counts/ingestion', {
+          params: {
+            query: {
+              start,
+              end,
+            },
+          },
+        });
+
+        expect(response.status).to.eql(200);
+        expect(response.body).to.be.an('array');
+
+        const stream1Count = response.body.find(
+          (stat) => stat.stream === 'logs.otel.test-stream-1'
+        );
+        const stream2Count = response.body.find(
+          (stat) => stat.stream === 'logs.otel.test-stream-2'
+        );
+
+        expect(stream1Count).to.not.be(undefined);
+        expect(stream1Count?.count).to.eql(2);
+        expect(stream2Count).to.not.be(undefined);
+        expect(stream2Count?.count).to.eql(1);
+      });
+
+      it('excludes documents outside the requested time range', async () => {
+        // A range far in the past should match none of the just-indexed documents.
+        const response = await viewerApiClient.fetch('GET /internal/streams/doc_counts/ingestion', {
+          params: {
+            query: {
+              start: 0,
+              end: 1,
+            },
+          },
+        });
+
+        expect(response.status).to.eql(200);
+        expect(response.body).to.be.an('array');
+        expect(response.body).to.have.length(0);
+      });
+
+      it('supports querying ingestion counts for a single stream', async () => {
+        const now = Date.now();
+        const start = now - 3600000;
+        const end = now + 60000;
+
+        const response = await viewerApiClient.fetch('GET /internal/streams/doc_counts/ingestion', {
+          params: {
+            query: {
+              start,
+              end,
+              stream: 'logs.otel.test-stream-1',
+            },
+          },
+        });
+
+        expect(response.status).to.eql(200);
+        expect(response.body).to.be.an('array');
+        expect(response.body.length).to.be.greaterThan(0);
+
+        const entry = response.body.find((stat) => stat.stream === 'logs.otel.test-stream-1');
+
+        expect(entry).to.not.be(undefined);
+        expect(entry?.count).to.eql(2);
+      });
+
+      describe('failure-store documents', () => {
+        after(async () => {
+          try {
+            await apiClient.fetch('DELETE /api/streams/{name} 2023-10-31', {
+              params: { path: { name: 'logs-ingestion-failing-stream' } },
+            });
+          } catch (e) {
+            // Ignore errors if stream doesn't exist
+          }
+        });
+
+        it('folds failure-store documents into the ingestion rate for privileged users', async function () {
+          this.timeout(120000);
+
+          await esClient.indices.createDataStream({
+            name: 'logs-ingestion-failing-stream',
+          });
+
+          const putResponse = await putStream(apiClient, 'logs-ingestion-failing-stream', {
+            ...emptyAssets,
+            stream: {
+              type: 'classic',
+              description: '',
+              ingest: {
+                lifecycle: { inherit: {} },
+                settings: {},
+                processing: {
+                  steps: [
+                    {
+                      action: 'grok',
+                      where: { always: {} },
+                      from: 'message',
+                      ignore_failure: false,
+                      patterns: ['non-matching-pattern'],
+                    },
+                  ],
+                },
+                classic: {},
+                failure_store: { lifecycle: { enabled: {} } },
+              },
+            },
+          });
+          expect(putResponse).to.have.property('acknowledged', true);
+
+          const now = Date.now();
+          const start = now - 3600000;
+          const end = now + 60000;
+          const timestamp = new Date(now).toISOString();
+
+          const doc = {
+            '@timestamp': timestamp,
+            message: 'failing document',
+          };
+          const indexResponse = await indexDocument(
+            esClient,
+            'logs-ingestion-failing-stream',
+            doc,
+            false
+          );
+          expect(indexResponse.result).to.eql('created');
+
+          await sleep(35000);
+
+          const privilegedResponse = await apiClient.fetch(
+            'GET /internal/streams/doc_counts/ingestion',
+            {
+              params: {
+                query: {
+                  start,
+                  end,
+                  stream: 'logs-ingestion-failing-stream',
+                },
+              },
+            }
+          );
+          expect(privilegedResponse.status).to.eql(200);
+          const privilegedEntry = privilegedResponse.body.find(
+            (stat) => stat.stream === 'logs-ingestion-failing-stream'
+          );
+          expect(privilegedEntry).to.not.be(undefined);
+          expect(privilegedEntry?.count).to.eql(1);
+
+          const viewerResponse = await viewerApiClient.fetch(
+            'GET /internal/streams/doc_counts/ingestion',
+            {
+              params: {
+                query: {
+                  start,
+                  end,
+                  stream: 'logs-ingestion-failing-stream',
+                },
+              },
+            }
+          );
+          expect(viewerResponse.status).to.eql(200);
+          const viewerEntry = viewerResponse.body.find(
+            (stat) => stat.stream === 'logs-ingestion-failing-stream'
+          );
+          expect(viewerEntry?.count ?? 0).to.eql(0);
+        });
+      });
+    });
+
     describe('GET /internal/streams/doc_counts/degraded', () => {
       it('returns empty array when no degraded documents exist', async () => {
         const response = await viewerApiClient.fetch('GET /internal/streams/doc_counts/degraded');

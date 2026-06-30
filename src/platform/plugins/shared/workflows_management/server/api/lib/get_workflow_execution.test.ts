@@ -26,6 +26,7 @@ describe('getWorkflowExecution', () => {
     spaceId: 'default',
     workflowId: 'workflow-1',
     status: 'completed',
+    billable: true,
     startedAt: '2024-01-01T00:00:00Z',
     stepExecutionIds: ['step-doc-1', 'step-doc-2'],
     workflowDefinition: { version: '1', name: 'test', enabled: true, triggers: [], steps: [] },
@@ -239,6 +240,37 @@ describe('getWorkflowExecution', () => {
       expect(result?.id).toBe('exec-1');
       expect(result?.stepExecutions).toHaveLength(2);
       expect(result?.concurrencyGroupKey).toBe('streams-ki-onboarding-my-stream');
+      expect(result).not.toHaveProperty('billable');
+    });
+
+    it('should include workflow document version when present on the execution', async () => {
+      mockEsClient.get.mockResolvedValue({
+        _source: { ...baseExecutionDoc, version: 7 },
+      } as any);
+      mockEsClient.mget.mockResolvedValue({ docs: [] } as any);
+
+      const result = await getWorkflowExecution({
+        ...baseParams,
+        esClient: mockEsClient,
+        logger: mockLogger,
+      });
+
+      expect(result?.version).toBe(7);
+    });
+
+    it('should omit workflow document version when absent on legacy executions', async () => {
+      mockEsClient.get.mockResolvedValue({
+        _source: baseExecutionDoc,
+      } as any);
+      mockEsClient.mget.mockResolvedValue({ docs: [] } as any);
+
+      const result = await getWorkflowExecution({
+        ...baseParams,
+        esClient: mockEsClient,
+        logger: mockLogger,
+      });
+
+      expect(result?.version).toBeUndefined();
     });
   });
 });

@@ -14,14 +14,8 @@ import type {
   ESQLCommandOption,
 } from '@elastic/esql/types';
 import { isMap, isOptionNode } from '@elastic/esql';
-import {
-  columnExists,
-  getFieldsSuggestions,
-  getFunctionsSuggestions,
-  getLiteralsSuggestions,
-} from '../../definitions/utils/autocomplete/helpers';
+import { columnExists, getFieldsSuggestions } from '../../definitions/utils/autocomplete/helpers';
 import type { ICommandCallbacks, ICommandContext, ISuggestionItem } from '../types';
-import { Location } from '../types';
 
 export enum MmrPosition {
   AFTER_MMR_KEYWORD = 'after_mmr_keyword',
@@ -53,29 +47,6 @@ export const getItemLocation = (
 
   return item.location;
 };
-
-export function getMmrVectorValueSuggestions(
-  callbacks?: ICommandCallbacks,
-  context?: ICommandContext
-): ISuggestionItem[] {
-  return [
-    ...getLiteralsSuggestions(MMR_VECTOR_TYPES, Location.MMR, {
-      includeDateLiterals: false,
-      includeCompatibleLiterals: true,
-      addComma: false,
-      advanceCursorAndOpenSuggestions: false,
-      supportsControls: true,
-      variables: context?.variables,
-    }),
-    ...getFunctionsSuggestions({
-      location: Location.MMR,
-      types: MMR_VECTOR_TYPES,
-      options: {},
-      context,
-      callbacks,
-    }),
-  ];
-}
 
 export async function getVectorFieldSuggestions(
   innerText: string,

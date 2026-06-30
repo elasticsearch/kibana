@@ -65,15 +65,15 @@ export function getPackagePolicyWithSourceMap({
 /*
  * Will decorate the package policy with api keys for source maps and agent configurations
  */
-export function getPackagePolicyWithApiKeys({
+export function getPackagePolicyWithApiKeys<T extends NewPackagePolicy>({
   packagePolicy,
   agentConfigApiKey,
   sourceMapApiKey,
 }: {
-  packagePolicy: NewPackagePolicy;
+  packagePolicy: T;
   agentConfigApiKey: string;
   sourceMapApiKey: string;
-}) {
+}): T {
   const packagePolicyClone = cloneDeep(packagePolicy);
   set(packagePolicyClone, SOURCE_MAP_API_KEY_PATH, sourceMapApiKey);
   set(packagePolicyClone, AGENT_CONFIG_API_KEY_PATH, agentConfigApiKey);

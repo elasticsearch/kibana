@@ -8,6 +8,13 @@ requestBody:
             input: "Hello"
             agent_id: "elastic-ai-agent"
             conversation_id: "c250305b-1929-4248-b568-b9e3f065fda5"
+        converseAsyncPublicRequestExample:
+          description: "Example request to create a public conversation"
+          value:
+            input: "Hello"
+            agent_id: "elastic-ai-agent"
+            access_control:
+              access_mode: "public"
         converseAsyncRequestInferenceExample:
           description: "Example using inference_id (mutually exclusive with connector_id)"
           value:
@@ -37,6 +44,9 @@ responses:
               
               - event: round_complete
                 data: {"data":{"round":{"id":"a5692d54-bc06-4a6e-aea1-412779c73f66","input":{"message":"Hello"},"response":{"message":"Hello! How can I help you today?"}}}}
+
+              - event: conversation_created
+                data: {"data":{"conversation_id":"c250305b-1929-4248-b568-b9e3f065fda5","title":"Hello","access_control":{"access_mode":"private"}}}
 x-codeSamples:
 - lang: curl
   source: |

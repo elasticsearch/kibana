@@ -28,6 +28,12 @@ const config: OTelCollectorConfig = {
   },
 };
 
+const onlineHealth: ComponentHealth = {
+  healthy: true,
+  status: 'StatusOK',
+  status_time_unix_nano: 1777926000000000000,
+};
+
 describe('CollectorDetailHealth', () => {
   let testRenderer: TestRenderer;
 
@@ -38,6 +44,26 @@ describe('CollectorDetailHealth', () => {
   it('renders no-data message when health is undefined', () => {
     const result = testRenderer.render(<CollectorDetailHealth />);
     expect(result.getByTestId('collectorDetailHealthNoData')).toBeInTheDocument();
+  });
+
+  it.each(['offline', 'inactive', 'unenrolled', 'uninstalled'] as const)(
+    'shows offline callout and hides health data when agentStatus is %s',
+    (status) => {
+      const result = testRenderer.render(
+        <CollectorDetailHealth health={onlineHealth} agentStatus={status} />
+      );
+      expect(result.getByTestId('collectorDetailHealthOffline')).toBeInTheDocument();
+      expect(result.queryByTestId('collectorDetailHealth')).not.toBeInTheDocument();
+      expect(result.queryByText('Healthy')).not.toBeInTheDocument();
+    }
+  );
+
+  it('does not show offline callout when agentStatus is online', () => {
+    const result = testRenderer.render(
+      <CollectorDetailHealth health={onlineHealth} agentStatus="online" />
+    );
+    expect(result.queryByTestId('collectorDetailHealthOffline')).not.toBeInTheDocument();
+    expect(result.getByTestId('collectorDetailHealth')).toBeInTheDocument();
   });
 
   it('renders healthy status', () => {

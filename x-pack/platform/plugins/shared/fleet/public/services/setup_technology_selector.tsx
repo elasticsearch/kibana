@@ -81,7 +81,7 @@ export const SetupTechnologySelector = ({
               <strong>
                 <FormattedMessage
                   id="xpack.fleet.setupTechnology.agentlessInputDisplay"
-                  defaultMessage="Agentless"
+                  defaultMessage="Elastic Managed Integration"
                 />{' '}
                 {isAgentlessDefault && (
                   <EuiBadge>
@@ -112,7 +112,7 @@ export const SetupTechnologySelector = ({
                 <p>
                   <FormattedMessage
                     id="xpack.fleet.setupTechnology.agentlessInputDescription"
-                    defaultMessage="Set up the integration without an agent"
+                    defaultMessage="Best for simple setup and faster onboarding"
                   />
                 </p>
               </EuiText>
@@ -167,7 +167,7 @@ export const SetupTechnologySelector = ({
               <strong>
                 <FormattedMessage
                   id="xpack.fleet.setupTechnology.radioCardAgentlessInputDisplay"
-                  defaultMessage="Agentless"
+                  defaultMessage="Elastic Managed Integration"
                 />{' '}
                 {isAgentlessDefault && (
                   <EuiBadge>
@@ -198,8 +198,7 @@ export const SetupTechnologySelector = ({
                 <p>
                   <FormattedMessage
                     id="xpack.fleet.setupTechnology.radioCardAgentlessInputDescription"
-                    defaultMessage="Collect the selected {integrationName} directly without deploying any infrastructure. Best for simple setup and faster onboarding."
-                    values={{ integrationName: packageInfo.title }}
+                    defaultMessage="Best for simple setup and faster onboarding."
                   />
                 </p>
               </EuiText>

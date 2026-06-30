@@ -12,7 +12,19 @@ import {
   type OtherResult,
 } from '@kbn/agent-builder-common/tools/tool_result';
 import type { ToolHandlerContext } from '@kbn/agent-builder-server/tools/handler';
+import type { ToolAvailabilityContext } from '@kbn/agent-builder-server';
+import {
+  AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+  CONTEXT_ENGINE_ENABLED_SETTING_ID,
+} from '@kbn/management-settings-ids';
 import { createSmlAttachTool } from './sml_attach';
+
+const buildAvailabilityContext = (flags: Record<string, boolean>) =>
+  ({
+    uiSettings: {
+      get: jest.fn(async (key: string) => flags[key]),
+    },
+  } as unknown as ToolAvailabilityContext);
 
 const mockResolveSmlAttachItems = jest.fn();
 const mockAttachmentsAdd = jest.fn();
@@ -47,6 +59,41 @@ describe('createSmlAttachTool', () => {
     expect(tool.id).toBe(platformCoreTools.smlAttach);
     expect(tool.type).toBe(ToolType.builtin);
     expect(tool.tags).toEqual(['sml', 'attachment']);
+  });
+
+  describe('availability', () => {
+    it('is available only when both experimental features and the Context Engine are enabled', async () => {
+      const tool = createSmlAttachTool({ getAgentContextLayer });
+      const result = await tool.availability!.handler(
+        buildAvailabilityContext({
+          [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: true,
+          [CONTEXT_ENGINE_ENABLED_SETTING_ID]: true,
+        })
+      );
+      expect(result.status).toBe('available');
+    });
+
+    it('is unavailable when experimental features are disabled', async () => {
+      const tool = createSmlAttachTool({ getAgentContextLayer });
+      const result = await tool.availability!.handler(
+        buildAvailabilityContext({
+          [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: false,
+          [CONTEXT_ENGINE_ENABLED_SETTING_ID]: true,
+        })
+      );
+      expect(result.status).toBe('unavailable');
+    });
+
+    it('is unavailable when the Context Engine is disabled', async () => {
+      const tool = createSmlAttachTool({ getAgentContextLayer });
+      const result = await tool.availability!.handler(
+        buildAvailabilityContext({
+          [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: true,
+          [CONTEXT_ENGINE_ENABLED_SETTING_ID]: false,
+        })
+      );
+      expect(result.status).toBe('unavailable');
+    });
   });
 
   it('returns error result when resolveSmlAttachItems reports access denied', async () => {

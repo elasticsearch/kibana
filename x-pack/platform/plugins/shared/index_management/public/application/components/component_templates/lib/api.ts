@@ -7,6 +7,7 @@
 
 import type { UiCounterMetricType } from '@kbn/analytics';
 import { METRIC_TYPE } from '@kbn/analytics';
+import type { SnapshotRepositoriesInfo } from '../../../../../common';
 import type {
   ComponentTemplateListItem,
   ComponentTemplateDeserialized,
@@ -111,6 +112,13 @@ export const getApi = (
     });
   }
 
+  function useLoadSnapshotRepositories() {
+    return useRequest<SnapshotRepositoriesInfo>({
+      path: `${apiBasePath}/snapshot_repositories`,
+      method: 'get',
+    });
+  }
+
   function useLoadReferencedIndexTemplateMeta(name: string) {
     return useRequest<ComponentTemplateMeta>({
       path: `${apiBasePath}/component_templates/${encodeURIComponent(
@@ -135,6 +143,7 @@ export const getApi = (
     useLoadComponentTemplate,
     createComponentTemplate,
     updateComponentTemplate,
+    useLoadSnapshotRepositories,
     useLoadReferencedIndexTemplateMeta,
     useLoadComponentTemplatesDatastream,
     getReferencedIndexTemplateMeta,

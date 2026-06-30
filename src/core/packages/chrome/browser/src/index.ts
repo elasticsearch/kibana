@@ -24,6 +24,8 @@ export type {
   AppHeaderMetadataItems,
   AppHeaderMetadataTextItem,
   AppHeaderTab,
+  AppHeaderTabBadge,
+  AppHeaderTabIconBadge,
   AppHeaderTitle,
   AppHeaderTitleSaveResult,
   ChromeNext,
@@ -64,6 +66,8 @@ export type {
   NavigationTreeDefinitionUI,
   SolutionNavigationDefinition,
   SolutionNavigationDefinitions,
+  NavigationCustomization,
+  NavigationCustomizationMove,
   EuiSideNavItemTypeEnhanced,
   RenderAs,
 } from './project_navigation';

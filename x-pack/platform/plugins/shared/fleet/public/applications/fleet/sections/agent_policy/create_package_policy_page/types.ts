@@ -9,7 +9,21 @@ import type { EuiStepProps } from '@elastic/eui';
 
 import type React from 'react';
 
-import type { AgentPolicy, NewPackagePolicy } from '../../../../../../common';
+import type {
+  AgentPolicy,
+  NewPackagePolicy,
+  PackagePolicy,
+  AgentlessPolicy,
+} from '../../../../../../common';
+
+/**
+ * Result of saving a policy from the create flow, tagged by the API that produced it.
+ * The `type` tag lets callers branch on the policy shape without probing fields.
+ */
+export type SavedPolicyResult =
+  | { type: 'packagePolicy'; policy: PackagePolicy }
+  | { type: 'agentless'; policy: AgentlessPolicy };
+
 export type EditPackagePolicyFrom =
   | 'package'
   | 'package-edit'

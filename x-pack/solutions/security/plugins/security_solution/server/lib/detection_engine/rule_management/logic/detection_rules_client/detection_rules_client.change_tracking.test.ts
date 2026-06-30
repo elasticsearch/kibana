@@ -7,8 +7,10 @@
 
 import { rulesClientMock } from '@kbn/alerting-plugin/server/mocks';
 import type { ActionsClient } from '@kbn/actions-plugin/server';
+import type { RuleChangeHistoryDocument } from '@kbn/alerting-plugin/server';
 import { savedObjectsClientMock } from '@kbn/core/server/mocks';
 import { licenseMock } from '@kbn/licensing-plugin/common/licensing.mock';
+import { generateChangeHistoryDocument } from '@kbn/change-history/test_utils';
 
 import { SecurityRuleChangeTrackingAction } from '../../../../../../common/detection_engine/rule_management/rule_change_tracking';
 import {
@@ -22,7 +24,8 @@ import {
   getValidatedRuleToImportMock,
 } from '../../../../../../common/api/detection_engine/rule_management/mocks';
 import type { PrebuiltRuleAsset } from '../../../prebuilt_rules';
-import { getRuleMock } from '../../../routes/__mocks__/request_responses';
+import { getRuleMock, resolveRuleMock } from '../../../routes/__mocks__/request_responses';
+import type { RuleParams } from '../../../rule_schema';
 import { getQueryRuleParams, getEqlRuleParams } from '../../../rule_schema/mocks';
 import { buildMlAuthz } from '../../../../machine_learning/authz';
 import { createProductFeaturesServiceMock } from '../../../../product_features_service/mocks';
@@ -226,6 +229,45 @@ describe('DetectionRulesClient change tracking', () => {
         expect.objectContaining({
           changeTracking: expect.objectContaining({
             action: SecurityRuleChangeTrackingAction.ruleRevert,
+          }),
+        })
+      );
+    });
+
+    it('restoreRuleFromHistory records ruleRestore action with restoredFromChangeId metadata', async () => {
+      const CHANGE_ID = 'restore-change-abc-123';
+      const RULE_ID = '04128c15-0d1b-4716-a4c5-46997ac7f3bd';
+
+      const liveRule = resolveRuleMock(getQueryRuleParams());
+      const snapshotRule = getRuleMock(getQueryRuleParams({ description: 'snapshot description' }));
+
+      const historyItem = {
+        ...generateChangeHistoryDocument({
+          event: {
+            id: CHANGE_ID,
+            action: 'rule_update',
+            type: 'change',
+            module: 'security',
+            dataset: 'alerting-rules',
+          },
+        }),
+        rule: snapshotRule,
+      } as unknown as RuleChangeHistoryDocument<RuleParams>;
+
+      rulesClient.resolve.mockResolvedValue(liveRule);
+      rulesClient.getHistory.mockResolvedValue({ total: 1, items: [historyItem] });
+
+      await detectionRulesClient.restoreRuleFromHistory({
+        ruleId: RULE_ID,
+        changeId: CHANGE_ID,
+        currentRuleRevision: 0,
+      });
+
+      expect(rulesClient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeTracking: expect.objectContaining({
+            action: SecurityRuleChangeTrackingAction.ruleRestore,
+            metadata: expect.objectContaining({ restoredFromChangeId: CHANGE_ID }),
           }),
         })
       );

@@ -45,6 +45,10 @@ import type {
   ReadRuleExecutionResultsRequestParamsInput,
   ReadRuleExecutionResultsRequestBodyInput,
 } from '@kbn/security-solution-plugin/common/api/detection_engine/rule_monitoring/rule_execution_logs/get_rule_execution_results/read_rule_execution_results_route.gen';
+import type {
+  RestoreRuleFromHistoryRequestParamsInput,
+  RestoreRuleFromHistoryRequestBodyInput,
+} from '@kbn/security-solution-plugin/common/api/detection_engine/rule_management/restore_rule_from_history/restore_rule_from_history_route.gen';
 import type { ReviewRuleInstallationRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/prebuilt_rules/review_rule_installation/review_rule_installation_route.gen';
 import type { ReviewRuleUpgradeRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/prebuilt_rules/review_rule_upgrade/review_rule_upgrade_route.gen';
 import type {
@@ -62,6 +66,7 @@ import type { SearchUnifiedAlertsRequestBodyInput } from '@kbn/security-solution
 import type { SetAlertAssigneesRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/alert_assignees/set_alert_assignees_route.gen';
 import type { SetAlertsStatusRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
 import type { SetAlertTagsRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/alert_tags/set_alert_tags/set_alert_tags.gen';
+import type { SetAttacksStatusRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/attacks/set_workflow_status/set_workflow_status_route.gen';
 import type { SetUnifiedAlertsAssigneesRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/unified_alerts/set_alert_assignees/set_alert_assignees_route.gen';
 import type { SetUnifiedAlertsTagsRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/unified_alerts/set_alert_tags/set_alert_tags_route.gen';
 import type { SetUnifiedAlertsWorkflowStatusRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/unified_alerts/set_workflow_status/set_workflow_status_route.gen';
@@ -458,6 +463,26 @@ The difference between the `id` and `rule_id` is that the `id` is a unique rule 
       .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana');
   },
   /**
+      * Restore a detection rule to a specific historical snapshot.
+
+      */
+  restoreRuleFromHistory(props: RestoreRuleFromHistoryProps, kibanaSpace: string = 'default') {
+    return supertest
+      .post(
+        getRouteUrlForSpace(
+          replaceParams(
+            '/internal/detection_engine/rules/{ruleId}/history/{changeId}/_restore',
+            props.params
+          ),
+          kibanaSpace
+        )
+      )
+      .set('kbn-xsrf', 'true')
+      .set(ELASTIC_HTTP_VERSION_HEADER, '1')
+      .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana')
+      .send(props.body as object);
+  },
+  /**
    * Lists prebuilt detection rules that can be installed
    */
   reviewRuleInstallation(props: ReviewRuleInstallationProps, kibanaSpace: string = 'default') {
@@ -607,6 +632,17 @@ matching documents, and inspect execution logs. Pair `invocationCount` and `time
       .send(props.body as object);
   },
   /**
+   * Set the workflow status of one or more attack discovery alerts by IDs, optionally cascading the status to their related detection alerts.
+   */
+  setAttacksStatus(props: SetAttacksStatusProps, kibanaSpace: string = 'default') {
+    return supertest
+      .post(getRouteUrlForSpace('/api/detection_engine/attacks/status', kibanaSpace))
+      .set('kbn-xsrf', 'true')
+      .set(ELASTIC_HTTP_VERSION_HEADER, '2023-10-31')
+      .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana')
+      .send(props.body as object);
+  },
+  /**
       * Assign users to detection and attack alerts, and unassign them from alerts.
 > info
 > You cannot add and remove the same assignee in the same request.
@@ -745,6 +781,10 @@ export interface ReadRuleExecutionResultsProps {
   params: ReadRuleExecutionResultsRequestParamsInput;
   body: ReadRuleExecutionResultsRequestBodyInput;
 }
+export interface RestoreRuleFromHistoryProps {
+  params: RestoreRuleFromHistoryRequestParamsInput;
+  body: RestoreRuleFromHistoryRequestBodyInput;
+}
 export interface ReviewRuleInstallationProps {
   body: ReviewRuleInstallationRequestBodyInput;
 }
@@ -779,6 +819,9 @@ export interface SetAlertsStatusProps {
 }
 export interface SetAlertTagsProps {
   body: SetAlertTagsRequestBodyInput;
+}
+export interface SetAttacksStatusProps {
+  body: SetAttacksStatusRequestBodyInput;
 }
 export interface SetUnifiedAlertsAssigneesProps {
   body: SetUnifiedAlertsAssigneesRequestBodyInput;

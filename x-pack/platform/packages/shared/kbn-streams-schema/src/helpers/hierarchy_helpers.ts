@@ -32,3 +32,7 @@ export function getSourcesForStream(stream: Streams.all.Definition): string[] {
 
   return getIndexPatternsForStream(stream);
 }
+
+export function getStreamSamplingSource(stream: Streams.all.Definition): string {
+  return Streams.QueryStream.Definition.is(stream) ? stream.query.view : stream.name;
+}

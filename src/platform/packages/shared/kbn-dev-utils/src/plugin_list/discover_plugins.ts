@@ -22,7 +22,6 @@ export interface Plugin {
   relativeDir: string;
   relativeReadmePath?: string;
   readmeSnippet?: string;
-  readmeAsciidocAnchor?: string;
 }
 
 export type Plugins = Plugin[];
@@ -46,7 +45,6 @@ export const discoverPlugins = (pluginDir: string): Plugins =>
 
       let relativeReadmePath: string | undefined;
       let readmeSnippet: string | undefined;
-      let readmeAsciidocAnchor: string | undefined;
 
       if (readmeAsciidocName) {
         const readmePath = Path.resolve(directory, readmeAsciidocName);
@@ -54,9 +52,8 @@ export const discoverPlugins = (pluginDir: string): Plugins =>
 
         const readmeText = Fs.readFileSync(relativeReadmePath).toString();
 
-        const { firstParagraph, anchor } = extractAsciidocInfo(readmeText);
+        const { firstParagraph } = extractAsciidocInfo(readmeText);
         readmeSnippet = firstParagraph;
-        readmeAsciidocAnchor = anchor;
       } else if (readmeName) {
         const readmePath = Path.resolve(directory, readmeName);
         relativeReadmePath = Path.relative(REPO_ROOT, readmePath);
@@ -76,6 +73,5 @@ export const discoverPlugins = (pluginDir: string): Plugins =>
         relativeReadmePath,
         relativeDir: relativeReadmePath || Path.relative(REPO_ROOT, directory),
         readmeSnippet,
-        readmeAsciidocAnchor,
       };
     });

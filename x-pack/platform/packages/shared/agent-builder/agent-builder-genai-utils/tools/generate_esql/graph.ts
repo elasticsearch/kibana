@@ -73,18 +73,20 @@ export const createNlToEsqlGraph = ({
   docBase,
   documentation,
   esqlCallbacks,
+  includeDatasets = false,
 }: {
   model: ScopedModel;
   esClient: ElasticsearchClient;
   docBase: EsqlDocumentBase;
   documentation: EsqlLoadedDocumentation;
   esqlCallbacks?: ValidateEsqlQueryCallbacks;
+  includeDatasets?: boolean;
 }) => {
-  // resolve the search target / generate sampling data
   const resolveTarget = async (state: StateType) => {
     const resolvedResource = await resolveResourceForEsqlWithSamplingStats({
       resourceName: state.target,
       samplingSize: 100,
+      includeDatasets,
       esClient,
     });
 

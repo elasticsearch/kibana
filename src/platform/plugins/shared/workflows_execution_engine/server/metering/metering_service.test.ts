@@ -102,6 +102,8 @@ describe('WorkflowsMeteringService', () => {
       expect(record.usage.quantity).toBe(1);
       expect(record.source.id).toBe(METERING_SOURCE_ID);
       expect(record.source.instance_group_id).toBe('test-project-id');
+      expect(record.source.instance_group_type).toBe('serverless_project');
+      expect(record.source.metadata).toBeUndefined();
     });
 
     it('should use deploymentId when projectId is not available (ECH)', async () => {
@@ -115,6 +117,8 @@ describe('WorkflowsMeteringService', () => {
 
       const sentRecords: UsageRecord[] = mockUsageReportingService.reportUsage.mock.calls[0][0];
       expect(sentRecords[0].source.instance_group_id).toBe('deploy-789');
+      expect(sentRecords[0].source.instance_group_type).toBe('stateful_deployment');
+      expect(sentRecords[0].source.metadata).toBeUndefined();
     });
 
     it('should not send usage record when no instanceGroupId (self-managed)', async () => {
@@ -206,6 +210,7 @@ describe('WorkflowsMeteringService', () => {
       expect(metadata!.triggered_by).toBe('scheduled');
       expect(metadata!.is_test_run).toBe('true');
       expect(metadata!.is_managed).toBe('false');
+      expect(metadata!.is_billable).toBe('true');
       expect(metadata!.workflow_id).toBe('wf-456');
       expect(metadata!.space_id).toBe('default');
       expect(metadata!.managed_by).toBeUndefined();
@@ -227,9 +232,25 @@ describe('WorkflowsMeteringService', () => {
       const { metadata } = record.usage;
 
       expect(metadata!.is_managed).toBe('true');
+      expect(metadata!.is_billable).toBe('false');
       expect(metadata!.is_test_run).toBe('true');
       expect(metadata!.managed_by).toBe('workflowsExtensionsExample');
       expect(metadata!.origin_managed_workflow_id).toBe('system-example-greeting');
+    });
+
+    it('should mark billable managed workflows as billable', async () => {
+      const execution = createMockExecution({
+        managed: true,
+        billable: true,
+        managedBy: 'workflowsExtensionsExample',
+        originManagedWorkflowId: 'system-example-greeting',
+      });
+      const cloudSetup = createMockCloudSetup();
+
+      await meteringService.reportWorkflowExecution(execution, cloudSetup);
+
+      const record: UsageRecord = mockUsageReportingService.reportUsage.mock.calls[0][0][0];
+      expect(record.usage.metadata!.is_billable).toBe('true');
     });
 
     it('should calculate normalized_quantity correctly for 5-min buckets', async () => {
@@ -344,6 +365,55 @@ describe('WorkflowsMeteringService', () => {
 
       const record: UsageRecord = mockUsageReportingService.reportUsage.mock.calls[0][0][0];
       expect(record.source.instance_group_id).toBe('proj-123');
+      expect(record.source.instance_group_type).toBe('serverless_project');
+    });
+  });
+
+  describe('provider and region in source', () => {
+    it('should omit provider and region for serverless projects', async () => {
+      const execution = createMockExecution();
+      const cloudSetup = createMockCloudSetup({
+        csp: 'aws',
+        region: 'us-east-1',
+      });
+
+      await meteringService.reportWorkflowExecution(execution, cloudSetup);
+
+      const record: UsageRecord = mockUsageReportingService.reportUsage.mock.calls[0][0][0];
+      expect(record.source).not.toHaveProperty('provider');
+      expect(record.source).not.toHaveProperty('region');
+    });
+
+    it('should include provider and region for ECH deployments', async () => {
+      const execution = createMockExecution();
+      const cloudSetup = createMockCloudSetup({
+        serverless: undefined,
+        deploymentId: 'deploy-789',
+        csp: 'gcp',
+        region: 'europe-west1',
+      } as Partial<CloudSetup>);
+
+      await meteringService.reportWorkflowExecution(execution, cloudSetup);
+
+      const record: UsageRecord = mockUsageReportingService.reportUsage.mock.calls[0][0][0];
+      expect(record.source.instance_group_id).toBe('deploy-789');
+      expect(record.source.instance_group_type).toBe('stateful_deployment');
+      expect(record.source.provider).toBe('gcp');
+      expect(record.source.region).toBe('europe-west1');
+    });
+
+    it('should include the Elasticsearch cluster ID for ECH deployments', async () => {
+      const execution = createMockExecution();
+      const cloudSetup = createMockCloudSetup({
+        serverless: undefined,
+        deploymentId: 'deploy-789',
+        elasticsearchClusterId: 'es-cluster-123',
+      } as Partial<CloudSetup>);
+
+      await meteringService.reportWorkflowExecution(execution, cloudSetup);
+
+      const record: UsageRecord = mockUsageReportingService.reportUsage.mock.calls[0][0][0];
+      expect(record.source.metadata).toEqual({ cluster_id: 'es-cluster-123' });
     });
   });
 });

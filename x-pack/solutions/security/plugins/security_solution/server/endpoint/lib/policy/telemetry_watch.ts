@@ -8,7 +8,7 @@
 import type { Subscription } from 'rxjs';
 
 import type { ElasticsearchClient, ElasticsearchServiceStart, Logger } from '@kbn/core/server';
-import type { PackagePolicy, UpdatePackagePolicy } from '@kbn/fleet-plugin/common';
+import type { PackagePolicy, UpdatePackagePolicyWithId } from '@kbn/fleet-plugin/common';
 import { PACKAGE_POLICY_SAVED_OBJECT_TYPE } from '@kbn/fleet-plugin/common';
 import type { PackagePolicyClient } from '@kbn/fleet-plugin/server';
 import pRetry from 'p-retry';
@@ -119,7 +119,7 @@ export class TelemetryConfigWatcher {
         () => `Processing page [${response.page}] with [${response.items.length}] policy(s)`
       );
 
-      const updatesBySpace: Record<string, UpdatePackagePolicy[]> = {};
+      const updatesBySpace: Record<string, UpdatePackagePolicyWithId[]> = {};
 
       for (const policy of response.items as PolicyData[]) {
         const updatePolicy = getPolicyDataForUpdate(policy);

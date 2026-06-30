@@ -9,6 +9,7 @@
 
 import { createCoreSetupMock } from '@kbn/core-lifecycle-server-mocks/src/core_setup.mock';
 import {
+  WORKFLOWS_EXPERIMENTAL_FEATURES_SETTING_ID,
   WORKFLOWS_UI_SETTING_ID,
   WORKFLOWS_UI_SHOW_MANAGED_WORKFLOWS_SETTING_ID,
   WORKFLOWS_VERSIONING_SETTING_ID,
@@ -42,6 +43,16 @@ describe('Workflows Management UI Settings', () => {
           name: expect.any(String),
           schema: expect.any(Object),
           value: false,
+          readonly: false,
+          category: ['workflows'],
+        },
+        [WORKFLOWS_EXPERIMENTAL_FEATURES_SETTING_ID]: {
+          description: expect.any(String),
+          name: expect.any(String),
+          schema: expect.any(Object),
+          value: false,
+          experimental: true,
+          requiresPageReload: true,
           readonly: false,
           category: ['workflows'],
         },

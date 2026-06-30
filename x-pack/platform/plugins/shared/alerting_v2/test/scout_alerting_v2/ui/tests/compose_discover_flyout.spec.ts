@@ -18,6 +18,9 @@ const TEST_INDEX = 'test-compose-discover';
 const TEST_QUERY = `FROM ${TEST_INDEX} | LIMIT 10`;
 const BASE_QUERY = `FROM ${TEST_INDEX} | STATS count = COUNT(*)`;
 const ALERT_SEGMENT = '| WHERE count > 0';
+// Create uses a single unified editor; the heuristic split separates base + alert
+// condition on Apply. Tests type the whole pipeline as one query.
+const UNIFIED_QUERY = `${BASE_QUERY} ${ALERT_SEGMENT}`;
 const RULE_NAME = 'scout-compose-discover-create';
 const EDIT_RULE_NAME = 'scout-compose-discover-edit';
 const EDITED_RULE_NAME = 'scout-compose-discover-edited';
@@ -73,17 +76,15 @@ test.describe(
         await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeVisible();
       });
 
-      await test.step('type query and apply', async () => {
-        await pageObjects.composeDiscover.setSandboxQuery(
-          `FROM ${TEST_INDEX} | STATS count = COUNT(*)`
-        );
-        await pageObjects.composeDiscover.setSandboxAlertCondition('| WHERE count > 0');
+      await test.step('type a unified query and apply', async () => {
+        await pageObjects.composeDiscover.setSandboxQuery(UNIFIED_QUERY);
         await pageObjects.composeDiscover.clickApply();
         await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
       });
 
-      await test.step('alert is the default mode (base + alert condition split shown)', async () => {
-        await expect(pageObjects.composeDiscover.editQueriesButton).toBeVisible();
+      await test.step('alert is the default mode (heuristic split succeeds)', async () => {
+        await expect(pageObjects.composeDiscover.summarySection('success')).toBeVisible();
+        await expect(pageObjects.composeDiscover.alertSummaryEditorButton).toBeVisible();
       });
 
       await test.step('Next is enabled after query is committed', async () => {
@@ -219,10 +220,11 @@ test.describe(
         await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
       });
 
-      await test.step('open sandbox, type query, and apply', async () => {
-        await pageObjects.composeDiscover.openEditorButton.click();
-        await pageObjects.composeDiscover.setSandboxQuery(`FROM ${TEST_INDEX}`);
-        await pageObjects.composeDiscover.setSandboxAlertCondition('| WHERE message != ""');
+      await test.step('open sandbox, type a unified query, and apply', async () => {
+        await pageObjects.composeDiscover.alertSummaryEditorButton.click();
+        await pageObjects.composeDiscover.setSandboxQuery(
+          `FROM ${TEST_INDEX} | WHERE message != ""`
+        );
         await pageObjects.composeDiscover.clickApply();
       });
 
@@ -257,9 +259,9 @@ test.describe(
       await test.step('Back returns through Recovery to the Alert Condition step', async () => {
         await pageObjects.composeDiscover.backButton.click(); // Recovery Condition
         await pageObjects.composeDiscover.backButton.click(); // Alert Condition
-        // Query was committed in alert mode (default), so the base + alert split
-        // summary with "Edit queries" is shown.
-        await expect(pageObjects.composeDiscover.editQueriesButton).toBeVisible();
+        // Query was committed in alert mode (default) and split successfully, so the
+        // read-only base + alert condition summary is shown.
+        await expect(pageObjects.composeDiscover.summarySection('success')).toBeVisible();
         await expect(page.testSubj.locator('ruleNameInput')).toBeHidden();
       });
     });
@@ -296,10 +298,9 @@ test.describe(
         await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
       });
 
-      await test.step('reopen sandbox, type query with alert condition, and click Apply', async () => {
-        await pageObjects.composeDiscover.openEditorButton.click();
-        await pageObjects.composeDiscover.setSandboxQuery(BASE_QUERY);
-        await pageObjects.composeDiscover.setSandboxAlertCondition(ALERT_SEGMENT);
+      await test.step('reopen sandbox, type a unified query, and click Apply', async () => {
+        await pageObjects.composeDiscover.alertSummaryEditorButton.click();
+        await pageObjects.composeDiscover.setSandboxQuery(UNIFIED_QUERY);
         await pageObjects.composeDiscover.clickApply();
       });
 
@@ -309,7 +310,7 @@ test.describe(
       });
     });
 
-    test('breach query validation: Apply without typing anything disables Next', async ({
+    test('alert condition validation: Apply without typing anything shows the empty callout and disables Next', async ({
       pageObjects,
     }) => {
       await test.step('open create flyout (sandbox opens automatically)', async () => {
@@ -323,12 +324,14 @@ test.describe(
         await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
       });
 
-      await test.step('Next button is disabled', async () => {
+      await test.step('empty callout is visible and Next button is disabled', async () => {
+        await expect(pageObjects.composeDiscover.summarySection('empty')).toBeVisible();
+        await expect(pageObjects.composeDiscover.emptyQueryCallout).toBeVisible();
         await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
       });
     });
 
-    test('breach query validation: base-only query shows callout and disables Next', async ({
+    test('alert condition validation: base-only query shows the no-alert-condition callout and disables Next', async ({
       pageObjects,
     }) => {
       await test.step('open create flyout', async () => {
@@ -342,10 +345,13 @@ test.describe(
         await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
       });
 
-      await test.step('breach query missing callout is visible', async () => {
-        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toBeVisible();
-        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toContainText(
-          'Alert condition required'
+      await test.step('no-alert-condition callout is visible', async () => {
+        await expect(
+          pageObjects.composeDiscover.summarySection('no_alert_condition')
+        ).toBeVisible();
+        await expect(pageObjects.composeDiscover.noAlertConditionCallout).toBeVisible();
+        await expect(pageObjects.composeDiscover.noAlertConditionCallout).toContainText(
+          'No alert condition'
         );
       });
 
@@ -354,7 +360,7 @@ test.describe(
       });
     });
 
-    test('breach query validation: no callout when both base and alert condition are provided', async ({
+    test('alert condition validation: no callout when the query splits into base + alert condition', async ({
       pageObjects,
     }) => {
       await test.step('open create flyout', async () => {
@@ -363,20 +369,20 @@ test.describe(
         await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeVisible();
       });
 
-      await test.step('apply base query and alert condition', async () => {
-        await pageObjects.composeDiscover.setSandboxQuery(BASE_QUERY);
-        await pageObjects.composeDiscover.setSandboxAlertCondition(ALERT_SEGMENT);
+      await test.step('apply a unified query with a base and alert condition', async () => {
+        await pageObjects.composeDiscover.setSandboxQuery(UNIFIED_QUERY);
         await pageObjects.composeDiscover.clickApply();
         await expect(pageObjects.composeDiscover.sandboxApplyButton).toBeHidden();
       });
 
-      await test.step('no callout is shown and Next is enabled', async () => {
-        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toBeHidden();
+      await test.step('split succeeds, no callout is shown and Next is enabled', async () => {
+        await expect(pageObjects.composeDiscover.summarySection('success')).toBeVisible();
+        await expect(pageObjects.composeDiscover.noAlertConditionCallout).toBeHidden();
         await expect(pageObjects.composeDiscover.nextButton).toBeEnabled();
       });
     });
 
-    test('breach query validation: missing breach query keeps user on Alert Condition step', async ({
+    test('alert condition validation: a base-only query keeps the user on the Alert Condition step', async ({
       page,
       pageObjects,
     }) => {
@@ -388,7 +394,7 @@ test.describe(
 
       await test.step('Next is disabled — verify we stay on Alert Condition step', async () => {
         await expect(pageObjects.composeDiscover.nextButton).toBeDisabled();
-        await expect(pageObjects.composeDiscover.breachQueryMissingCallout).toBeVisible();
+        await expect(pageObjects.composeDiscover.noAlertConditionCallout).toBeVisible();
         await expect(page.testSubj.locator('ruleNameInput')).toBeHidden();
       });
     });

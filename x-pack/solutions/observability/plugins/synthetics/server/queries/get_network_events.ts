@@ -6,6 +6,7 @@
  */
 
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import { getCheckGroupTimeRangeFilter } from '../../common/constants/client_defaults';
 import { getSyntheticsCcsIndex } from '../../common/get_synthetics_indices';
 import type { SyntheticsEsClient } from '../lib';
 import type { NetworkEvent } from '../../common/runtime_types';
@@ -14,6 +15,7 @@ export interface GetNetworkEventsParams {
   checkGroup: string;
   stepIndex: string;
   remoteName?: string;
+  timestamp?: string;
 }
 
 export const secondsToMillis = (seconds: number) =>
@@ -25,6 +27,7 @@ export const getNetworkEvents = async ({
   checkGroup,
   stepIndex,
   remoteName,
+  timestamp,
 }: GetNetworkEventsParams & {
   syntheticsEsClient: SyntheticsEsClient;
 }): Promise<{
@@ -42,6 +45,7 @@ export const getNetworkEvents = async ({
           { term: { 'synthetics.type': 'journey/network_info' } },
           { term: { 'monitor.check_group': checkGroup } },
           { term: { 'synthetics.step.index': Number(stepIndex) } },
+          ...(timestamp ? [getCheckGroupTimeRangeFilter(timestamp)] : []),
         ] as QueryDslQueryContainer[],
       },
     },

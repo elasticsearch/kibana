@@ -27,7 +27,7 @@ export const CATEGORY_ORDER: ServiceCategory[] = [
   'Containers',
 ];
 
-export function useServicesStep({ onNext }: { onNext: () => void }) {
+export function useServicesStep({ onContinue }: { onContinue: () => void }) {
   const { servicesStep, setSelectedServiceIds } = useOnboardingFlow();
   const { selectedServiceIds } = servicesStep;
 
@@ -101,8 +101,8 @@ export function useServicesStep({ onNext }: { onNext: () => void }) {
 
   const handleNext = useCallback(() => {
     if (!isReady) return;
-    onNext();
-  }, [isReady, onNext]);
+    onContinue();
+  }, [isReady, onContinue]);
 
   return {
     signalFilter,

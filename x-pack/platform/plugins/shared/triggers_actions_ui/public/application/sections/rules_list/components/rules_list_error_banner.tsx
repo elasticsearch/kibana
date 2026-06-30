@@ -37,7 +37,7 @@ export const RulesListErrorBanner = (props: RulesListErrorBannerProps) => {
     <>
       <EuiCallOut color="danger" size="s" data-test-subj="rulesErrorBanner">
         <p>
-          <EuiIcon color="danger" type="warning" />
+          <EuiIcon color="danger" type="warning" aria-hidden={true} />
           &nbsp;
           <FormattedMessage
             id="xpack.triggersActionsUI.sections.rulesList.attentionBannerTitle"

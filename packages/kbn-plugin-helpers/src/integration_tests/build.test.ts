@@ -125,9 +125,7 @@ describe('scripts/generate_plugin', () => {
         "githubTeam": "",
         "name": "",
       },
-      "requiredPlugins": Array [
-        "navigation",
-      ],
+      "requiredPlugins": Array [],
       "server": true,
       "ui": true,
       "version": "1.0.0",

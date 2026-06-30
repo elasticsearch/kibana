@@ -6,3 +6,4 @@
  */
 
 export { registerAnomalySummaryRoutes } from './route';
+export { getEntityAnomalies } from './get_anomaly_details';

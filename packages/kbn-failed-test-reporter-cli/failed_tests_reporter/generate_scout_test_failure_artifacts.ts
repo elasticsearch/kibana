@@ -14,9 +14,24 @@ import { createHash } from 'crypto';
 import fs from 'fs';
 import globby from 'globby';
 import type { BuildkiteMetadata } from './buildkite_metadata';
+import {
+  SCOUT_GITHUB_ISSUES_FILENAME,
+  type ScoutGithubIssueDetails,
+} from './process_scout_reports';
 
 const SCOUT_TEST_FAILURE_DIR_PATTERN = '.scout/reports/scout-playwright-test-failures-*';
 const SUMMARY_REPORT_FILENAME = 'test-failures-summary.json';
+
+// `processScoutReports` persists the GitHub issue link and failure count per failure id in
+// `SCOUT_GITHUB_ISSUES_FILENAME`. Load it so the Buildkite/Slack failure summary can render
+// the `[N failures]` link the same way it does for FTR failures.
+const loadGithubIssues = (dirPath: string): Record<string, ScoutGithubIssueDetails> => {
+  const filePath = Path.join(dirPath, SCOUT_GITHUB_ISSUES_FILENAME);
+  if (!fs.existsSync(filePath)) {
+    return {};
+  }
+  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+};
 
 export async function generateScoutTestFailureArtifacts({
   log,
@@ -48,11 +63,14 @@ export async function generateScoutTestFailureArtifacts({
     const summaryData: Array<{ name: string; htmlReportFilename: string }> = JSON.parse(
       fs.readFileSync(summaryFilePath, 'utf-8')
     );
+    const githubIssues = loadGithubIssues(dirPath);
 
     log.info(`Creating failure artifacts for report in ${dirPath}`);
     for (const { name, htmlReportFilename } of summaryData) {
       const htmlFilePath = Path.join(dirPath, htmlReportFilename);
       const failureHTML = fs.readFileSync(htmlFilePath, 'utf-8');
+      const failureId = Path.basename(htmlReportFilename, '.html');
+      const { githubIssue, failureCount } = githubIssues[failureId] ?? {};
 
       const hash = createHash('sha256').update(name).digest('hex');
       const filenameBase = `${
@@ -68,6 +86,8 @@ export async function generateScoutTestFailureArtifacts({
           url: bkMeta.url,
           jobUrl: bkMeta.jobUrl,
           jobName: bkMeta.jobName,
+          ...(githubIssue ? { githubIssue } : {}),
+          ...(failureCount !== undefined ? { failureCount } : {}),
         },
         null,
         2

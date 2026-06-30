@@ -1,5 +1,5 @@
 {
-  "sha1": "d98fc77cb3db1776614e88734d860bec89cbee06",
+  "sha1": "f0067f37d06f24cde6ad2981b061c934789f0723",
   "tests": [
     {
       "id": "bd41f0240dfdfcb-9b0e8252d0034ea",
@@ -27,7 +27,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/profiling/test/scout/api/tests/global.setup.ts",
-        "line": 13,
+        "line": 20,
         "column": 1
       }
     },
@@ -140,6 +140,62 @@
       "location": {
         "file": "x-pack/solutions/observability/plugins/profiling/test/scout/api/tests/03_has_setup_with_integrations.spec.ts",
         "line": 92,
+        "column": 10
+      }
+    },
+    {
+      "id": "ac88fdc6d61217d-bdd8504ca872a6d",
+      "title": "Profiling TopN functions API with data returns correct result",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/profiling/test/scout/api/tests/04_functions.spec.ts",
+        "line": 42,
+        "column": 10
+      }
+    },
+    {
+      "id": "d69552c11db4341-b790722478a360a",
+      "title": "Profiling flamegraph API with data returns correct result",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/profiling/test/scout/api/tests/05_flamegraph.spec.ts",
+        "line": 57,
+        "column": 10
+      }
+    },
+    {
+      "id": "5e7120133ce4c20-b09383ffb89948f",
+      "title": "Profiling feature controls returns forbidden for users with no access to profiling APIs",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/profiling/test/scout/api/tests/06_feature_controls.spec.ts",
+        "line": 83,
+        "column": 10
+      }
+    },
+    {
+      "id": "5e7120133ce4c20-972f6ad8443292d",
+      "title": "Profiling feature controls returns ok for users with access to profiling APIs",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/solutions/observability/plugins/profiling/test/scout/api/tests/06_feature_controls.spec.ts",
+        "line": 104,
         "column": 10
       }
     }

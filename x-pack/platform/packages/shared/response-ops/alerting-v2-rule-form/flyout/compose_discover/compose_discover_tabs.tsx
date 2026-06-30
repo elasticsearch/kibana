@@ -10,7 +10,7 @@ import { EuiTab, EuiTabs, EuiSpacer, EuiPanel, EuiText, EuiToolTip } from '@elas
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { CodeEditor, ESQL_LANG_ID, type monaco } from '@kbn/code-editor';
-import type { RuleQuery } from './compose_form_types';
+import type { RuleQuery } from '../../form/types';
 import type { QueryTab } from './types';
 
 type IStandaloneCodeEditor = monaco.editor.IStandaloneCodeEditor;

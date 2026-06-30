@@ -6,16 +6,32 @@
  */
 
 import React from 'react';
-import { EuiI18nNumber, EuiLoadingSpinner } from '@elastic/eui';
+import { EuiI18nNumber, EuiLoadingSpinner, EuiIconTip } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
 interface IngestionColumnProps {
   rate: number;
   isLoading: boolean;
+  hasError?: boolean;
 }
 
-export function IngestionColumn({ rate, isLoading }: IngestionColumnProps) {
+export function IngestionColumn({ rate, isLoading, hasError }: IngestionColumnProps) {
   if (isLoading) return <EuiLoadingSpinner size="s" />;
+
+  if (hasError) {
+    return (
+      <EuiIconTip
+        type="warning"
+        color="warning"
+        content={
+          <FormattedMessage
+            id="xpack.streams.ingestionColumn.errorTooltip"
+            defaultMessage="Unable to load the ingestion rate"
+          />
+        }
+      />
+    );
+  }
 
   return (
     <FormattedMessage

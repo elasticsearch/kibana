@@ -13,13 +13,14 @@ import { MemoryRouter } from 'react-router-dom';
 import type { Store } from 'redux';
 import { I18nProvider } from '@kbn/i18n-react';
 import { type QueryClient, QueryClientProvider } from '@kbn/react-query';
+import { createTestQueryClient } from './query_client_wrapper';
 import { createMockStore } from '../../entities/workflows/store/__mocks__/store.mock';
 
 interface TestWrapperProps {
   children: React.ReactNode;
   store?: Store;
   queryClient?: QueryClient;
-  routerHistory?: string[];
+  routerHistory?: React.ComponentProps<typeof MemoryRouter>['initialEntries'];
 }
 
 /**
@@ -33,17 +34,15 @@ interface TestWrapperProps {
  */
 export function TestWrapper({ store, queryClient, routerHistory, children }: TestWrapperProps) {
   const reduxStore = store ?? createMockStore();
-  const content = (
-    <MemoryRouter initialEntries={routerHistory}>
-      <I18nProvider>
-        <ReduxProvider store={reduxStore}>{children}</ReduxProvider>
-      </I18nProvider>
-    </MemoryRouter>
+  const client = queryClient ?? createTestQueryClient();
+
+  return (
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={routerHistory}>
+        <I18nProvider>
+          <ReduxProvider store={reduxStore}>{children}</ReduxProvider>
+        </I18nProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
-
-  if (queryClient) {
-    return <QueryClientProvider client={queryClient}>{content}</QueryClientProvider>;
-  }
-
-  return content;
 }

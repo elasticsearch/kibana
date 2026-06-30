@@ -27,12 +27,13 @@ import type { SecurityApiClients } from '../components';
 import { AuthenticationProvider, SecurityApiClientsProvider } from '../components';
 import type { BreadcrumbsChangeHandler } from '../components/breadcrumb';
 import { BreadcrumbsProvider } from '../components/breadcrumb';
+import type { PluginStartDependencies } from '../plugin';
 
 interface CreateDeps {
   application: ApplicationSetup;
   authc: AuthenticationServiceSetup;
   securityApiClients: SecurityApiClients;
-  getStartServices: StartServicesAccessor;
+  getStartServices: StartServicesAccessor<PluginStartDependencies>;
 }
 
 export const accountManagementApp = Object.freeze({

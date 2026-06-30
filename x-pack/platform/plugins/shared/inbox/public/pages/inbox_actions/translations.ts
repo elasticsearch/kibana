@@ -143,3 +143,262 @@ export const getTimedOutBannerText = (timestamp: string) =>
       'This action timed out on {timestamp}. The default response was applied automatically.',
     values: { timestamp },
   });
+
+export const PENDING_SECTION_TITLE = i18n.translate(
+  'xpack.inbox.actionsPage.pendingSection.title',
+  {
+    defaultMessage: 'Awaiting response',
+  }
+);
+
+export const HISTORY_SECTION_TITLE = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.title',
+  {
+    defaultMessage: 'History',
+  }
+);
+
+export const HISTORY_SECTION_DESCRIPTION = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.description',
+  {
+    defaultMessage: 'Audit trail of inbox actions that have already been processed.',
+  }
+);
+
+export const HISTORY_EMPTY_TITLE = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.empty.title',
+  {
+    defaultMessage: 'No processed actions yet',
+  }
+);
+
+export const HISTORY_EMPTY_BODY = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.empty.body',
+  {
+    defaultMessage: 'Once a responder approves or rejects an inbox action, it will show up here.',
+  }
+);
+
+export const HISTORY_FILTERED_EMPTY_TITLE = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filteredEmpty.title',
+  {
+    defaultMessage: 'No history matches your filters',
+  }
+);
+
+export const HISTORY_FILTERED_EMPTY_BODY = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filteredEmpty.body',
+  {
+    defaultMessage: 'Try changing your search, responder, or channel filters.',
+  }
+);
+
+export const HISTORY_LOAD_ERROR_TITLE = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.loadError.title',
+  {
+    defaultMessage: 'Unable to load inbox history',
+  }
+);
+
+export const getHistoryLoadErrorBody = (error: string) =>
+  i18n.translate('xpack.inbox.actionsPage.historySection.loadError.body', {
+    defaultMessage: 'Something went wrong while fetching the inbox history: {error}',
+    values: { error },
+  });
+
+export const HISTORY_SYSTEM_RESPONDER = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.systemResponder',
+  {
+    defaultMessage: 'system',
+  }
+);
+
+export const HISTORY_CHANNEL_INBOX = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.channel.inbox',
+  {
+    defaultMessage: 'Inbox',
+  }
+);
+
+export const HISTORY_CHANNEL_KIBANA_EXECUTION_VIEW = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.channel.kibanaExecutionView',
+  {
+    defaultMessage: 'Workflow execution',
+  }
+);
+
+export const HISTORY_CHANNEL_AGENT_BUILDER = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.channel.agentBuilder',
+  {
+    defaultMessage: 'Agent Builder',
+  }
+);
+
+export const HISTORY_CHANNEL_SLACK = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.channel.slack',
+  {
+    defaultMessage: 'Slack',
+  }
+);
+
+export const HISTORY_CHANNEL_EXAMPLE_MCP_APP_SECURITY = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.channel.exampleMcpAppSecurity',
+  {
+    defaultMessage: 'Security MCP example',
+  }
+);
+
+export const getHistoryChannelTooltip = (channel: string) =>
+  i18n.translate('xpack.inbox.actionsPage.historySection.channelTooltip', {
+    defaultMessage: 'Response submitted via {channel}',
+    values: { channel },
+  });
+
+export const HISTORY_PROCESSING_BADGE = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.processingBadge',
+  {
+    defaultMessage: 'Processing…',
+  }
+);
+
+export const HISTORY_TIMED_OUT_BADGE = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.timedOutBadge',
+  {
+    defaultMessage: 'Timed out',
+  }
+);
+
+export const HISTORY_SOURCE_DELETED_BADGE = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.sourceDeletedBadge',
+  {
+    defaultMessage: 'Workflow deleted',
+  }
+);
+
+export const HISTORY_SOURCE_DELETED_TOOLTIP = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.sourceDeletedTooltip',
+  {
+    defaultMessage:
+      'The workflow that produced this action has been deleted. This audit record is retained.',
+  }
+);
+
+export const HISTORY_PROMPT_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.promptLabel',
+  {
+    defaultMessage: 'Prompt',
+  }
+);
+
+export const HISTORY_RESPONSE_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.responseLabel',
+  {
+    defaultMessage: 'Response',
+  }
+);
+
+export const HISTORY_NO_RESPONSE_PAYLOAD = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.noResponsePayload',
+  {
+    defaultMessage: 'No response payload was recorded.',
+  }
+);
+
+export const HISTORY_RESPONSE_PROCESSING_BODY = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.responseProcessingBody',
+  {
+    defaultMessage: 'Response payload is still being recorded.',
+  }
+);
+
+export const HISTORY_FILTERS_SEARCH_PLACEHOLDER = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filters.searchPlaceholder',
+  {
+    defaultMessage: 'Search responder, workflow id, or step id…',
+  }
+);
+
+export const HISTORY_FILTERS_SEARCH_ARIA_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filters.searchAriaLabel',
+  {
+    defaultMessage: 'Search inbox history',
+  }
+);
+
+export const HISTORY_FILTERS_CHANNEL_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filters.channelLabel',
+  {
+    defaultMessage: 'Channel',
+  }
+);
+
+export const HISTORY_FILTERS_CHANNEL_SEARCH_PLACEHOLDER = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filters.channelSearchPlaceholder',
+  {
+    defaultMessage: 'Search channels',
+  }
+);
+
+export const HISTORY_FILTERS_RESPONDER_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filters.responderLabel',
+  {
+    defaultMessage: 'Responder',
+  }
+);
+
+export const HISTORY_FILTERS_RESPONDER_SEARCH_PLACEHOLDER = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filters.responderSearchPlaceholder',
+  {
+    defaultMessage: 'Search responders',
+  }
+);
+
+export const HISTORY_FILTERS_NO_OPTIONS = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.filters.noOptions',
+  {
+    defaultMessage: 'No options available yet.',
+  }
+);
+
+export const HISTORY_SORT_NEWEST = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.sort.newest',
+  {
+    defaultMessage: 'Newest first',
+  }
+);
+
+export const HISTORY_SORT_OLDEST = i18n.translate(
+  'xpack.inbox.actionsPage.historySection.sort.oldest',
+  {
+    defaultMessage: 'Oldest first',
+  }
+);
+
+export const REASONING_LABEL = i18n.translate('xpack.inbox.actionsPage.reasoning.label', {
+  defaultMessage: 'Reasoning',
+});
+
+export const REASONING_FULL_LABEL = i18n.translate('xpack.inbox.actionsPage.reasoning.fullLabel', {
+  defaultMessage: 'Full reasoning',
+});
+
+export const REASONING_EXPAND_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.reasoning.expandLabel',
+  {
+    defaultMessage: 'Show reasoning',
+  }
+);
+
+export const REASONING_COLLAPSE_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.reasoning.collapseLabel',
+  {
+    defaultMessage: 'Hide reasoning',
+  }
+);
+
+export const REASONING_COLUMN_SR_LABEL = i18n.translate(
+  'xpack.inbox.actionsPage.reasoning.columnScreenReaderLabel',
+  {
+    defaultMessage: 'Expand row to show reasoning',
+  }
+);

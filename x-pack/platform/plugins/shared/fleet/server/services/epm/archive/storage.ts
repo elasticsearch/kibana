@@ -10,8 +10,12 @@ import { extname } from 'path';
 import { isBinaryFile } from 'isbinaryfile';
 import mime from 'mime-types';
 import { v5 as uuidv5 } from 'uuid';
-import type { SavedObjectsClientContract, SavedObjectsBulkCreateObject } from '@kbn/core/server';
-import { SavedObjectsErrorHelpers } from '@kbn/core/server';
+import type {
+  SavedObject,
+  SavedObjectsClientContract,
+  SavedObjectsBulkCreateObject,
+} from '@kbn/core/server';
+import { SavedObjectsErrorHelpers, isSavedObjectErrorResult } from '@kbn/core/server';
 
 import { ASSETS_SAVED_OBJECT_TYPE } from '../../../../common';
 import type {
@@ -202,12 +206,18 @@ export const getEsPackage = async (
           : ['asset_path'],
     }))
   );
-  const errors = bulkRes.saved_objects.filter((so) => so.error || !so.attributes);
-  const assets = bulkRes.saved_objects.map((so) => so.attributes);
+  const errors = bulkRes.saved_objects.filter(
+    (so) => isSavedObjectErrorResult(so) || !so.attributes
+  );
+  const assets = bulkRes.saved_objects
+    .filter(
+      (so): so is SavedObject<PackageAsset> => !isSavedObjectErrorResult(so) && !!so.attributes
+    )
+    .map((so) => so.attributes);
 
   if (errors.length) {
     const resolvedErrors = errors.map((so) =>
-      so.error
+      isSavedObjectErrorResult(so)
         ? { type: so.type, id: so.id, error: so.error }
         : !so.attributes
         ? { type: so.type, id: so.id, error: `No attributes retrieved` }

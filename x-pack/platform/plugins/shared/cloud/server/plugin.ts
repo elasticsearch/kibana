@@ -55,6 +55,11 @@ export interface CloudSetup {
    */
   csp?: string;
   /**
+   * The cloud region identifier (e.g., `us-east-1`, `europe-west1`, `eastus2`).
+   * Provider-specific region name without the CSP prefix.
+   */
+  region?: string;
+  /**
    * The Elastic Cloud Organization that owns this deployment/project.
    */
   organizationId?: string;
@@ -62,6 +67,10 @@ export interface CloudSetup {
    * The deployment's ID. Only available when running on Elastic Cloud.
    */
   deploymentId?: string;
+  /**
+   * The Elasticsearch resource ID within the Cloud deployment. Only available when running on Elastic Cloud.
+   */
+  elasticsearchClusterId?: string;
   /**
    * The full URL to the elasticsearch cluster.
    */
@@ -400,9 +409,11 @@ export class CloudPlugin implements Plugin<CloudSetup, CloudStart> {
       ...this.getCloudUrls(),
       cloudId: this.config.id,
       csp: this.config.csp,
+      region: this.config.region,
       organizationId,
       instanceSizeMb: readInstanceSizeMb(),
       deploymentId,
+      elasticsearchClusterId: decodedId?.elasticsearchClusterId,
       elasticsearchUrl,
       kibanaUrl: decodedId?.kibanaUrl,
       cloudHost: decodedId?.host,

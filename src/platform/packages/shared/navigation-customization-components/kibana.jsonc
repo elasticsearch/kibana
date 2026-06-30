@@ -1,0 +1,9 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/navigation-customization-components",
+  "owner": [
+    "@elastic/appex-sharedux"
+  ],
+  "group": "platform",
+  "visibility": "shared"
+}

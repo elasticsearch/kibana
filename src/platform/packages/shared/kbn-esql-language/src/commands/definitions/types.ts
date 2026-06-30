@@ -103,13 +103,14 @@ export const isReturnType = (str: string | FunctionParameterType): str is Functi
 export const parameterHintEntityTypes = ['inference_endpoint'] as const;
 export type ParameterHintEntityType = (typeof parameterHintEntityTypes)[number];
 
-export const parameterHintKinds = ['entity', 'aggregation'] as const;
+export const parameterHintKinds = ['entity', 'aggregation', 'constant'] as const;
 export type ParameterHintKind = (typeof parameterHintKinds)[number];
 
 export interface ParameterHint {
   entityType?: ParameterHintEntityType;
   constraints?: Record<string, string>;
   kind?: ParameterHintKind;
+  allowedValues?: string[];
 }
 
 export interface FunctionParameter {

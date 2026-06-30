@@ -10,6 +10,7 @@
  */
 export enum FileEntryType {
   toolResult = 'tool_result',
+  toolCallMeta = 'tool_call_meta',
   attachment = 'attachment',
   skill = 'skill',
   skillReferenceContent = 'skill_reference_content',

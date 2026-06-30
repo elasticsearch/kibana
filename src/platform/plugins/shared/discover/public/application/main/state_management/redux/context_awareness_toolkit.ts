@@ -7,15 +7,26 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { isEqual } from 'lodash';
+import { distinctUntilChanged, from, map, shareReplay } from 'rxjs';
 import type { ContextAwarenessToolkit } from '../../../../context_awareness/toolkit';
+import {
+  createProfileStateAdapterFactory,
+  type ProfileStateAdapter,
+  type ProfileStateDefinition,
+  type ProfileStateRegistry,
+} from '../../../../context_awareness';
 import type { InternalStateStore } from './internal_state';
 import { internalStateActions } from '.';
+import { selectTab } from './selectors';
 
 export const createContextAwarenessToolkit = ({
   internalState,
+  profileStateRegistry,
   tabId,
 }: {
   internalState: InternalStateStore;
+  profileStateRegistry: ProfileStateRegistry;
   tabId: string;
 }): ContextAwarenessToolkit => {
   return {
@@ -45,5 +56,46 @@ export const createContextAwarenessToolkit = ({
         );
       },
     },
+    getStateAdapter: createProfileStateAdapterFactory({
+      profileStateRegistry,
+      createAdapter: <TState extends object>(
+        definition: ProfileStateDefinition<TState>
+      ): ProfileStateAdapter<TState> => {
+        const getState = () => {
+          const tabState = selectTab(internalState.getState(), tabId);
+
+          return (tabState.profileState[definition.key] ?? definition.defaultState) as TState;
+        };
+
+        const state$ = from(internalState).pipe(
+          map(getState),
+          distinctUntilChanged(isEqual),
+          shareReplay({ bufferSize: 1, refCount: true })
+        );
+
+        return {
+          getState,
+          getState$: () => state$,
+          setState: (profileState) => {
+            internalState.dispatch(
+              internalStateActions.setProfileState({
+                tabId,
+                key: definition.key,
+                profileState,
+              })
+            );
+          },
+          updateState: (stateUpdate) => {
+            internalState.dispatch(
+              internalStateActions.setProfileState({
+                tabId,
+                key: definition.key,
+                profileState: { ...getState(), ...stateUpdate },
+              })
+            );
+          },
+        };
+      },
+    }),
   };
 };

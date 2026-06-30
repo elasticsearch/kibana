@@ -37,16 +37,18 @@ export const ConfirmButtonIcon: FunctionComponent<Props> = ({
       />
     </EuiToolTip>
   ) : (
-    <EuiButtonIcon
-      aria-label={label}
-      disabled={disabled}
-      color="danger"
-      iconType="trash"
-      onClick={(e: { stopPropagation: () => void }) => {
-        e.stopPropagation();
-        setShowConfirm(true);
-        setTimeout(() => setShowConfirm(false), 3000);
-      }}
-    />
+    <EuiToolTip content={label} disableScreenReaderOutput>
+      <EuiButtonIcon
+        aria-label={label}
+        disabled={disabled}
+        color="danger"
+        iconType="trash"
+        onClick={(e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          setShowConfirm(true);
+          setTimeout(() => setShowConfirm(false), 3000);
+        }}
+      />
+    </EuiToolTip>
   );
 };

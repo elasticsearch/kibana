@@ -10,6 +10,7 @@ import moment from 'moment';
 import { unflattenObject } from '@kbn/object-utils';
 import { get } from 'lodash';
 import { set } from '@kbn/safer-lodash-set';
+import { isResponseError, type ElasticsearchErrorDetails } from '@kbn/es-errors';
 import { entityStoreMetrics } from '../../../monitor/metrics';
 import type { Entity } from '../../../../common/domain/definitions/entity.gen';
 import {
@@ -42,6 +43,7 @@ import {
 } from '../extraction_window';
 import { capAtMaxLogsPerWindow } from '../effective_page_limits';
 import type { RemoteExtractionStrategy } from './strategies';
+import { getErrorMessage } from '../../../../common';
 
 interface RemoteExtractToUpdatesParams {
   type: EntityType;
@@ -69,6 +71,20 @@ interface RemoteExtractToUpdatesResult {
   logsCapApplied?: boolean;
 }
 
+const getEsErrorType = (error: unknown): string | undefined =>
+  isResponseError(error) ? (error.body as ElasticsearchErrorDetails)?.error?.type : undefined;
+
+// CPS is not enabled, so '_origin' can't be resolved
+const isNoSuchRemoteClusterError = (type?: string) => type === 'no_such_remote_cluster_exception';
+
+// no linked projects, so '-_origin:*' resolves to an empty scope, ESQL throws 500
+const isNoSuchElementError = (type?: string) => type === 'no_such_element_exception';
+
+const isRemoteUnavailableError = (error: unknown): boolean => {
+  const type = getEsErrorType(error);
+  return isNoSuchElementError(type) || isNoSuchRemoteClusterError(type);
+};
+
 export class RemoteLogsExtractionClient {
   private readonly logger: Logger;
 
@@ -86,8 +102,15 @@ export class RemoteLogsExtractionClient {
     try {
       return await this.doExtractToUpdates(params);
     } catch (error) {
+      const message = getErrorMessage(error);
+      if (this.strategy.id === 'cps' && isRemoteUnavailableError(error)) {
+        this.logger.warn(
+          `remote extraction unavailable (no linked projects or CPS disabled): ${message}. Returning empty result.`
+        );
+        return { count: 0, pages: 0 };
+      }
       const wrappedError = new Error(
-        `Failed to extract to updates from remote indices: ${error.message}`
+        `Failed to extract to updates from remote indices: ${message}`
       );
       this.logger.error(wrappedError);
       return { count: 0, pages: 0, error: wrappedError };

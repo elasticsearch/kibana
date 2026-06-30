@@ -195,6 +195,7 @@ export const updateTabs: InternalStateThunkActionCreator<
         tab.attributes = cloneDeep(existingTabToDuplicateFrom.attributes);
         tab.appState = cloneDeep(existingTabToDuplicateFrom.appState);
         tab.globalState = cloneDeep(existingTabToDuplicateFrom.globalState);
+        tab.profileState = cloneDeep(existingTabToDuplicateFrom.profileState);
         tab.uiState = cloneDeep(existingTabToDuplicateFrom.uiState);
       } else if (item.restoredFromId) {
         // the new tab was created by restoring a recently closed tab

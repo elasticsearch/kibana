@@ -170,7 +170,6 @@ describe('ClassicStream', () => {
         data_stream_exists: true,
         dashboards: [],
         rules: [],
-        queries: [],
       },
     ])('is not valid', (val) => {
       expect(
@@ -205,7 +204,6 @@ describe('ClassicStream', () => {
     it.each([
       {
         dashboards: [],
-        queries: [],
         stream: {
           name: 'my-name',
           description: '',

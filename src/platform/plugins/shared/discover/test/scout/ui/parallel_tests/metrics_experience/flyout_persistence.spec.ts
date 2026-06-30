@@ -40,7 +40,7 @@ spaceTest.describe(
     spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
       const { discover, metricsExperience } = pageObjects;
       await browserAuth.loginAsViewer();
-      await discover.goto();
+      await discover.goto({ queryMode: 'classic' });
       await discover.writeAndSubmitEsqlQuery(testData.ESQL_QUERIES.TS);
       await expect(metricsExperience.grid).toBeVisible();
       await expect(metricsExperience.getCardByIndex(0)).toBeVisible();

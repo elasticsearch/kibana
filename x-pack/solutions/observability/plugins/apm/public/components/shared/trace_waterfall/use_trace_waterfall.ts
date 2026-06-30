@@ -302,7 +302,48 @@ function reparentOrphansToRoot(
   // map.
   const children = (parentChildMap[rootItem.id] ??= []);
 
-  children.push(...orphans.map((orphan) => ({ ...orphan, parentId: rootItem.id, isOrphan: true })));
+  children.push(
+    ...orphans
+      .filter((orphan) => {
+        // A partial trace can choose a descendant transaction as the visible root.
+        // Reparenting an orphan ancestor below that root would create a cycle in
+        // the waterfall traversal.
+        return !hasPathToTarget(parentChildMap, orphan.id, rootItem.id);
+      })
+      .map((orphan) => ({ ...orphan, parentId: rootItem.id, isOrphan: true }))
+  );
+}
+
+function hasPathToTarget(
+  parentChildMap: Record<string, TraceItem[]>,
+  startId: string,
+  targetId: string
+) {
+  const stack = (parentChildMap[startId] ?? []).map(({ id }) => id);
+  const visited = new Set<string>();
+
+  while (stack.length > 0) {
+    const currentId = stack.pop();
+    if (!currentId) {
+      continue;
+    }
+
+    if (currentId === targetId) {
+      return true;
+    }
+
+    if (visited.has(currentId)) {
+      continue;
+    }
+
+    visited.add(currentId);
+
+    for (const child of parentChildMap[currentId] ?? []) {
+      stack.push(child.id);
+    }
+  }
+
+  return false;
 }
 
 type RawTraceWaterfallItem = Omit<TraceWaterfallItem, 'color'>;

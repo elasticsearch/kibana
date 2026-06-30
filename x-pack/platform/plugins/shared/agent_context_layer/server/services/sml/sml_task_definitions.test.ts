@@ -116,7 +116,7 @@ describe('sml_task_definitions', () => {
       expect(mockGetCrawlerDeps).not.toHaveBeenCalled();
     });
 
-    it('skips crawl when experimental features are disabled', async () => {
+    it('skips crawl when the Context Engine is disabled', async () => {
       mockUiSettingsClient.get.mockResolvedValue(false);
       const definition = createMockDefinition({ id: 'visualization' });
       mockSmlService.getTypeDefinition.mockReturnValue(definition);
@@ -126,7 +126,7 @@ describe('sml_task_definitions', () => {
 
       expect(result).toEqual({ state: {} });
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        "SML crawler: experimental features disabled — skipping crawl for type 'visualization'"
+        "SML crawler: Context Engine disabled — skipping crawl for type 'visualization'"
       );
       expect(mockCrawler.crawl).not.toHaveBeenCalled();
     });

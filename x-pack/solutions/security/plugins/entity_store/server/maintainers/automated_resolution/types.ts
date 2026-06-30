@@ -7,12 +7,25 @@
 
 import type { EntityMaintainerState } from '../../tasks/entity_maintainers/types';
 
-export interface AutomatedResolutionState extends EntityMaintainerState {
+// These extend `EntityMaintainerState` (the framework's JSON-serializable task-state
+// type) so the maintainer can hand them to task-manager directly, without casting at
+// the persistence boundary.
+export interface PerRuleLastRunStats extends EntityMaintainerState {
+  resolutionsCreated: number;
+  skippedAmbiguousBuckets: number;
+}
+
+export interface PerRuleState extends EntityMaintainerState {
   lastProcessedTimestamp: string | null;
-  lastRun: {
-    resolutionsCreated: number;
-    skippedAmbiguousBuckets: number;
-  } | null;
+  lastRun: PerRuleLastRunStats | null;
+}
+
+// `rules` is an open map keyed by rule id rather than a fixed set: a rule with no
+// entry backfills (null watermark → full scan) on its first run, so new rules can be
+// added without a state migration, and watermarks for rules this version doesn't know
+// (e.g. written by a newer node during a rolling upgrade) pass through untouched.
+export interface AutomatedResolutionState extends EntityMaintainerState {
+  rules: Record<string, PerRuleState>;
 }
 
 export interface EntityHit {

@@ -8,10 +8,11 @@
 import type { Severity } from '@kbn/securitysolution-io-ts-alerting-types';
 import { QradarRulesXmlParser } from '../../../../../../../../../../common/siem_migrations/parsers/qradar/rules_xml';
 import type { OriginalRule } from '../../../../../../../../../../common/siem_migrations/model/rule_migration.gen';
-import type { SplunkSeverity } from '../../../../../../types';
+import type { MicrosoftSentinelSeverity, SplunkSeverity } from '../../../../../../types';
 import {
   DEFAULT_TRANSLATION_SEVERITY,
   ELASTIC_SEVERITY_TO_RISK_SCORE_MAP,
+  MICROSOFT_SENTINEL_ELASTIC_SEVERITY_MAP,
   SPLUNK_ELASTIC_ALERT_SEVERITY_MAP,
 } from '../../../../../../constants';
 
@@ -20,6 +21,22 @@ export const mapSplunkSeverityToElasticSeverity = (splunkSeverity?: SplunkSeveri
     return DEFAULT_TRANSLATION_SEVERITY;
   }
   return SPLUNK_ELASTIC_ALERT_SEVERITY_MAP[splunkSeverity] || DEFAULT_TRANSLATION_SEVERITY;
+};
+
+export const mapMicrosoftSentinelSeverityToElasticSeverity = (
+  sentinelSeverity?: string
+): Severity => {
+  if (!sentinelSeverity) {
+    return DEFAULT_TRANSLATION_SEVERITY;
+  }
+
+  const normalizedSeverity = sentinelSeverity.toLowerCase();
+
+  if (Object.hasOwn(MICROSOFT_SENTINEL_ELASTIC_SEVERITY_MAP, normalizedSeverity)) {
+    return MICROSOFT_SENTINEL_ELASTIC_SEVERITY_MAP[normalizedSeverity as MicrosoftSentinelSeverity];
+  }
+
+  return DEFAULT_TRANSLATION_SEVERITY;
 };
 
 export const mapRangedSeverityToElasticSeverity = (
@@ -74,6 +91,8 @@ export const getElasticSeverityFromOriginalRule = async (originalRule: OriginalR
     } catch (e) {
       return DEFAULT_TRANSLATION_SEVERITY;
     }
+  } else if (originalRule.vendor === 'microsoft-sentinel') {
+    return mapMicrosoftSentinelSeverityToElasticSeverity(originalRule.severity);
   } else {
     return DEFAULT_TRANSLATION_SEVERITY;
   }

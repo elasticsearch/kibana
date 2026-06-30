@@ -14,6 +14,7 @@ import {
   EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiToolTip,
 } from '@elastic/eui';
 import React from 'react';
 import {
@@ -32,12 +33,14 @@ export const RuleFlyoutSelectConnector = ({ onClose }: RuleFlyoutSelectConnector
       <EuiFlyoutHeader hasBorder>
         <EuiFlexGroup>
           <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType="chevronSingleLeft"
-              onClick={onClose}
-              aria-label={RULE_FLYOUT_HEADER_BACK_TEXT}
-              color="text"
-            />
+            <EuiToolTip content={RULE_FLYOUT_HEADER_BACK_TEXT} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="chevronSingleLeft"
+                onClick={onClose}
+                aria-label={RULE_FLYOUT_HEADER_BACK_TEXT}
+                color="text"
+              />
+            </EuiToolTip>
           </EuiFlexItem>
           <EuiFlexItem>
             <EuiTitle size="xs" data-test-subj="ruleFlyoutSelectConnectorTitle">

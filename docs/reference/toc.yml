@@ -84,6 +84,7 @@ toc:
           - file: connectors-kibana/box-action-type.md
           - file: connectors-kibana/brave-search-action-type.md
           - file: connectors-kibana/confluence-cloud-action-type.md
+          - file: connectors-kibana/dropbox-action-type.md
           - file: connectors-kibana/gmail-action-type.md
           - file: connectors-kibana/firecrawl-action-type.md
           - file: connectors-kibana/github-action-type.md

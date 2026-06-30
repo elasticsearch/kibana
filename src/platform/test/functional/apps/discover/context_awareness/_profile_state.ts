@@ -19,12 +19,19 @@ interface ModeDefinition {
 }
 
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
-  const { common, discover, unifiedTabs } = getPageObjects(['common', 'discover', 'unifiedTabs']);
+  const { common, discover, unifiedFieldList, unifiedTabs } = getPageObjects([
+    'common',
+    'discover',
+    'unifiedFieldList',
+    'unifiedTabs',
+  ]);
   const browser = getService('browser');
   const dataGrid = getService('dataGrid');
   const dataViews = getService('dataViews');
   const esql = getService('esql');
   const retry = getService('retry');
+  const testSubjects = getService('testSubjects');
+  const timestampColorSelectTestSubj = 'exampleProfileStateTimestampColorSelect';
 
   const expectRowHeight = async (expectedValue: string, expectedCustomHeight?: number) => {
     await discover.waitUntilTabIsLoaded();
@@ -70,6 +77,24 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     await esql.setEsqlEditorQuery(query);
     await esql.submitEsqlEditorQuery();
     await discover.waitUntilTabIsLoaded();
+  };
+
+  const getTimestampColor = async () => {
+    return await testSubjects.getAttribute(timestampColorSelectTestSubj, 'value');
+  };
+
+  const expectTimestampColor = async (expectedValue: string) => {
+    await retry.try(async () => {
+      expect(await getTimestampColor()).to.be(expectedValue);
+      expect(await testSubjects.getAttribute('exampleRootProfileTimestamp', 'data-color')).to.be(
+        expectedValue
+      );
+    });
+  };
+
+  const changeTimestampColor = async (nextValue: string) => {
+    await testSubjects.selectValue(timestampColorSelectTestSubj, nextValue);
+    await expectTimestampColor(nextValue);
   };
 
   const modeDefinitions: ModeDefinition[] = [
@@ -155,6 +180,26 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
           await mode.switchToNoDefaultProfile();
           await expectRowHeight('Custom', 2);
+        });
+
+        it('updates profile state from the example doc viewer', async () => {
+          await mode.loadDefaultProfile();
+          await unifiedFieldList.clickFieldListItemAdd('@timestamp');
+          await discover.waitUntilTabIsLoaded();
+          await dataGrid.clickRowToggle({
+            rowIndex: 0,
+            defaultTabId: 'doc_view_profile_state_example',
+          });
+          await expectTimestampColor('hollow');
+
+          await changeTimestampColor('danger');
+
+          await dataGrid.closeFlyout();
+          await dataGrid.clickRowToggle({
+            rowIndex: 0,
+            defaultTabId: 'doc_view_profile_state_example',
+          });
+          await expectTimestampColor('danger');
         });
       });
     }

@@ -9,13 +9,12 @@
 
 import type { DataView } from '@kbn/data-views-plugin/common';
 import type { DiscoverGridSettings } from '@kbn/saved-search-plugin/common';
-import { pick, uniqBy } from 'lodash';
+import { uniqBy } from 'lodash';
 import {
   type DiscoverAppState,
   DEFAULT_PROFILE_STATE_FIELDS,
   type DefaultProfileStateField,
   type DefaultProfileStateFields,
-  type ProfileStateSnapshot,
   type TabState,
 } from '../redux';
 import type { DefaultAppStateColumn, ScopedProfilesManager } from '../../../../context_awareness';
@@ -115,19 +114,6 @@ export const getDefaultProfileState = ({
       return Object.keys(stateUpdate).length ? stateUpdate : undefined;
     },
   };
-};
-
-export const getProfileStateSnapshot = (
-  appState: TabState['appState'],
-  fieldsToReset: TabState['defaultProfileState']['fieldsToReset']
-): ProfileStateSnapshot | undefined => {
-  if (fieldsToReset === 'none') {
-    return undefined;
-  }
-
-  const profileStateFields = fieldsToReset === 'all' ? DEFAULT_PROFILE_STATE_FIELDS : fieldsToReset;
-
-  return pick(appState, profileStateFields);
 };
 
 export const getFieldsToReset = (

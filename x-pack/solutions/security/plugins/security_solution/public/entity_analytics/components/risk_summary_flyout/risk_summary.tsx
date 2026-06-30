@@ -36,12 +36,10 @@ import { FormattedRelativePreferenceDate } from '../../../common/components/form
 import { VisualizationEmbeddable } from '../../../common/components/visualization_actions/visualization_embeddable';
 import { ExpandablePanel } from '../../../flyout_v2/shared/components/expandable_panel';
 import type { RiskScoreState } from '../../api/hooks/use_risk_score';
-import { useRiskScore } from '../../api/hooks/use_risk_score';
+import type { EntityRiskScoresState } from '../../api/hooks/use_entity_risk_scores';
 import type { EntityRiskScore } from '../../../../common/search_strategy';
 import { getRiskScoreSummaryAttributes } from '../../lens_attributes/risk_score_summary';
 import { useSpaceId } from '../../../common/hooks/use_space_id';
-import { useResolutionGroup } from '../entity_resolution/hooks/use_resolution_group';
-import { getEntityId } from '../entity_resolution/helpers';
 
 import {
   columnsArray,
@@ -54,13 +52,20 @@ import {
 } from './common';
 import { EntityEventTypes } from '../../../common/lib/telemetry';
 
-const FIRST_RECORD_PAGINATION = {
-  cursorStart: 0,
-  querySize: 1,
-};
-
 export interface RiskSummaryProps<T extends EntityType> {
+  /**
+   * General risk score source. In V1 this is name-filtered records from the
+   * risk-score index. In V2 it is a minimal state built from the entity store
+   * record's `entity.risk.*` summary (category counts zeroed) via
+   * `buildRiskScoreStateFromEntityRecord` in the parent panel. Used as a
+   * fallback when {@link entityRiskScores}.base has no data.
+   */
   riskScoreData: RiskScoreState<T>;
+  /**
+   * V2: the entity's base + resolution-group risk scores from the
+   * risk-score index, keyed by EUID.
+   */
+  entityRiskScores: EntityRiskScoresState<T>;
   entityType: T;
   recalculatingScore: boolean;
   queryId: string;
@@ -73,6 +78,7 @@ export interface RiskSummaryProps<T extends EntityType> {
 
 const FlyoutRiskSummaryComponent = <T extends EntityType>({
   riskScoreData,
+  entityRiskScores,
   entityType,
   entityId,
   recalculatingScore,
@@ -86,30 +92,15 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
   const fallbackRiskData = data && data.length > 0 ? data[0] : undefined;
   const { euiTheme } = useEuiTheme();
   const spaceId = useSpaceId();
-  const entityRiskFilterQueryDsl = useMemo(
-    () =>
-      entityId
-        ? {
-            bool: {
-              filter: [{ term: { [`${entityType}.risk.id_value`]: entityId } }],
-              must_not: [{ term: { [`${entityType}.risk.score_type`]: 'resolution' } }],
-            },
-          }
-        : undefined,
-    [entityId, entityType]
-  );
-  const nonResolutionRiskScoreData = useRiskScore({
-    riskEntity: entityType,
-    filterQuery: entityRiskFilterQueryDsl,
-    onlyLatest: false,
-    pagination: FIRST_RECORD_PAGINATION,
-    skip: !entityId,
-  });
-  const nonResolutionRiskData =
-    nonResolutionRiskScoreData.data && nonResolutionRiskScoreData.data.length > 0
-      ? nonResolutionRiskScoreData.data[0]
+
+  const entityBaseRiskScore = entityRiskScores?.base;
+  const entityResolutionRiskScore = entityRiskScores?.resolution.state;
+
+  const baseRiskData =
+    entityBaseRiskScore?.data && entityBaseRiskScore.data.length > 0
+      ? entityBaseRiskScore.data[0]
       : undefined;
-  const riskData = nonResolutionRiskData ?? fallbackRiskData;
+  const riskData = baseRiskData ?? fallbackRiskData;
   const entityData = getEntityData<T>(entityType, riskData);
   const lensAttributes = useMemo(() => {
     const entityName = entityData?.name ?? '';
@@ -209,47 +200,18 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
     [goToEntityInsightsTab]
   );
 
-  const { data: resolutionGroup } = useResolutionGroup(entityId ?? '', {
-    enabled: Boolean(entityId),
-  });
-  const hasRealResolutionGroup = (resolutionGroup?.group_size ?? 0) > 1;
-  const resolutionTargetEntityId = useMemo(
-    () => (resolutionGroup?.target ? getEntityId(resolutionGroup.target) : undefined),
-    [resolutionGroup?.target]
-  );
-  const shouldFetchResolutionRiskScore =
-    hasRealResolutionGroup && Boolean(resolutionTargetEntityId);
-  const resolutionRiskFilterQueryDsl = useMemo(
-    () =>
-      shouldFetchResolutionRiskScore && resolutionTargetEntityId
-        ? {
-            bool: {
-              filter: [
-                { term: { [`${entityType}.risk.id_value`]: resolutionTargetEntityId } },
-                { term: { [`${entityType}.risk.score_type`]: 'resolution' } },
-              ],
-            },
-          }
-        : undefined,
-    [entityType, resolutionTargetEntityId, shouldFetchResolutionRiskScore]
-  );
-  const resolutionRiskScoreData = useRiskScore({
-    riskEntity: entityType,
-    filterQuery: resolutionRiskFilterQueryDsl,
-    onlyLatest: false,
-    pagination: FIRST_RECORD_PAGINATION,
-    skip: !shouldFetchResolutionRiskScore,
-  });
+  const hasResolutionGroup = entityRiskScores?.resolution.hasResolutionGroup ?? false;
+  const resolutionTargetEntityId = entityRiskScores?.resolution.resolutionTargetEntityId;
   const resolutionRiskData =
-    (resolutionRiskScoreData.data && resolutionRiskScoreData.data.length > 0
-      ? resolutionRiskScoreData.data[0]
+    (entityResolutionRiskScore?.data && entityResolutionRiskScore.data.length > 0
+      ? entityResolutionRiskScore.data[0]
       : undefined) ?? prefetchedResolutionRisk;
   const resolutionEntityData = getEntityData<T>(entityType, resolutionRiskData);
   const resolutionRows = useMemo(
     () => getItems(resolutionEntityData, isPrivmonModifierEnabled, isWatchlistEnabled),
     [resolutionEntityData, isPrivmonModifierEnabled, isWatchlistEnabled]
   );
-  const showResolutionRiskSummary = hasRealResolutionGroup && Boolean(resolutionEntityData?.risk);
+  const showResolutionRiskSummary = hasResolutionGroup && Boolean(resolutionEntityData?.risk);
   const resolutionLensAttributes = useMemo(() => {
     if (!resolutionTargetEntityId) {
       return undefined;
@@ -434,7 +396,7 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
                   compressed
                   loading={
                     riskScoreData.loading ||
-                    nonResolutionRiskScoreData.loading ||
+                    (entityBaseRiskScore?.loading ?? false) ||
                     recalculatingScore
                   }
                 />
@@ -455,7 +417,7 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
                   defaultMessage="Resolution group risk contributions"
                 />
               ),
-              link: resolutionRiskScoreData.loading ? undefined : resolutionTabLink,
+              link: entityResolutionRiskScore?.loading ?? false ? undefined : resolutionTabLink,
               iconType: !isPreviewMode ? 'chevronLimitLeft' : undefined,
             }}
             expand={{
@@ -514,7 +476,7 @@ const FlyoutRiskSummaryComponent = <T extends EntityType>({
                   columns={columnsArray}
                   items={resolutionRows}
                   compressed
-                  loading={resolutionRiskScoreData.loading || recalculatingScore}
+                  loading={(entityResolutionRiskScore?.loading ?? false) || recalculatingScore}
                 />
               </EuiFlexItem>
             </EuiFlexGroup>

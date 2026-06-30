@@ -31,11 +31,10 @@ import { serializeLegacyTemplate, serializeTemplate } from '../../../../../commo
 import type { TemplateDeserialized, Aliases } from '../../../../../common';
 import { getTemplateParameter } from '../../../../../common';
 import { SimulateTemplate } from '../../index_templates';
-import { getLifecycleValue } from '../../../lib/data_streams';
 import type { WizardSection } from '../template_form';
-
+import { formatDlmLifecycleSummary, resolveLifecycleForSummary } from '../../../lib/data_streams';
+import { useAppContext } from '../../../app_context';
 const { stripEmptyFields } = serializers;
-const INFINITE_AS_ICON = true;
 
 const NoneDescriptionText = () => (
   <FormattedMessage
@@ -90,6 +89,10 @@ const PreviewTab = ({ template }: { template: { [key: string]: any } }) => {
 export const StepReview: React.FunctionComponent<Props> = React.memo(
   ({ template, navigateToStep, dataStreamOptions }) => {
     const {
+      config: { isServerless },
+    } = useAppContext();
+    const dlmTiersLayoutEnabled = !isServerless;
+    const {
       name,
       indexPatterns,
       indexMode,
@@ -100,7 +103,7 @@ export const StepReview: React.FunctionComponent<Props> = React.memo(
       allowAutoCreate,
       composedOf,
       _meta,
-      _kbnMeta: { isLegacy },
+      _kbnMeta: { isLegacy, hasDatastream },
     } = template!;
 
     const serializedTemplate = isLegacy
@@ -119,7 +122,11 @@ export const StepReview: React.FunctionComponent<Props> = React.memo(
     const serializedMappings = getTemplateParameter(serializedTemplate, 'mappings');
     const serializedSettings = getTemplateParameter(serializedTemplate, 'settings');
     const serializedAliases = getTemplateParameter(serializedTemplate, 'aliases');
-    const serializedLifecycle = (indexTemplate as TemplateDeserialized)?.lifecycle;
+    const serializedLifecycle = isLegacy
+      ? undefined
+      : resolveLifecycleForSummary(indexTemplate?.lifecycle, {
+          hasDataStream: hasDatastream ?? Boolean(template?.dataStream),
+        });
 
     const numIndexPatterns = indexPatterns!.length;
 
@@ -316,11 +323,13 @@ export const StepReview: React.FunctionComponent<Props> = React.memo(
                   <EuiDescriptionListTitle data-test-subj="lifecycleTitle">
                     <FormattedMessage
                       id="xpack.idxMgmt.templateForm.stepReview.summaryTab.lifecycleLabel"
-                      defaultMessage="Data retention"
+                      defaultMessage="Data lifecycle"
                     />
                   </EuiDescriptionListTitle>
                   <EuiDescriptionListDescription data-test-subj="lifecycleValue">
-                    {getLifecycleValue(serializedLifecycle, INFINITE_AS_ICON)}
+                    {formatDlmLifecycleSummary(serializedLifecycle, {
+                      includePhaseCount: dlmTiersLayoutEnabled,
+                    })}
                   </EuiDescriptionListDescription>
                 </>
               )}

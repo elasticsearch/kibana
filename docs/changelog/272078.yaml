@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272078
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Search and data
+title: Add output filtering in the Console
+description: The Console now lets you filter and transform Elasticsearch API responses without leaving the editor. After running a request, click `Filter response` to expand a filter bar beneath the output. Choose between JQ expression mode for structured queries (such as extracting specific fields, iterating over results, or finding index names by mapping type) and regular expression mode for line-by-line text matching.

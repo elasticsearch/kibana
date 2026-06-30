@@ -16,4 +16,9 @@ export {
   WorkflowChangeHistoryAction,
 } from './constants';
 export type { WorkflowChangeHistoryActionType } from './constants';
-export type { WorkflowChangesHistoryResponse, WorkflowHistoryItem } from './types';
+export type {
+  RestoreWorkflowVersionResponseDto,
+  WorkflowChangesHistoryResponse,
+  WorkflowHistoryItem,
+  WorkflowRestoreMetadata,
+} from './types';

@@ -32,7 +32,7 @@ import {
   alertTimelineStatusColor,
   alertTimelineStatusLabel,
 } from './alert_timeline_status_palette';
-import { formatDuration, formatTimestamp } from './alert_timeline_format';
+import { describeSegmentSpan, formatDuration, formatTimestamp } from './alert_timeline_format';
 
 // Paint order: later entries paint on top.
 const STATUS_ORDER: readonly AlertEpisodeStatus[] = [
@@ -55,6 +55,7 @@ interface SegmentDetails {
   status: AlertEpisodeStatus;
   x0Ms: number;
   x1Ms: number;
+  trueStartMs: number;
 }
 
 interface TransitionDatum {
@@ -133,8 +134,8 @@ const TooltipPanel: React.FC<TooltipPanelProps> = ({ euiTheme, status, episodeId
 
 export interface AlertTimelineRowProps {
   row: AlertTimelineSeries;
-  gteMs: number;
-  lteMs: number;
+  windowStartMs: number;
+  windowEndMs: number;
   height: number;
   baseTheme: Theme;
   timeZone?: string;
@@ -144,8 +145,8 @@ export interface AlertTimelineRowProps {
 
 export const AlertTimelineRow: React.FC<AlertTimelineRowProps> = ({
   row,
-  gteMs,
-  lteMs,
+  windowStartMs,
+  windowEndMs,
   height,
   baseTheme,
   timeZone,
@@ -216,7 +217,7 @@ export const AlertTimelineRow: React.FC<AlertTimelineRowProps> = ({
           showLegend={false}
           baseTheme={baseTheme}
           locale={i18n.getLocale()}
-          xDomain={{ min: gteMs, max: lteMs }}
+          xDomain={{ min: windowStartMs, max: windowEndMs }}
           onAnnotationClick={onEpisodeClick ? handleAnnotationClick : undefined}
           onElementClick={onEpisodeClick ? handleElementClick : undefined}
           theme={{
@@ -264,38 +265,53 @@ export const AlertTimelineRow: React.FC<AlertTimelineRowProps> = ({
                   status: s.status,
                   x0Ms: s.x0Ms,
                   x1Ms: s.x1Ms,
+                  trueStartMs: s.trueStartMs,
                 } as unknown as string,
               }))}
               style={{ fill, strokeWidth: 0, opacity: 1 }}
               customTooltip={({ details }) => {
                 const d = details as SegmentDetails | undefined;
                 if (!d) return null;
+                const { isOngoing } = describeSegmentSpan({
+                  x1Ms: d.x1Ms,
+                  status: d.status,
+                  windowEndMs,
+                });
+                const listItems = [
+                  {
+                    title: i18n.translate('xpack.alertingV2.alertTimeline.tooltip.fromLabel', {
+                      defaultMessage: 'From',
+                    }),
+                    description: formatTimestamp(d.trueStartMs, timeZone),
+                  },
+                  {
+                    title: i18n.translate('xpack.alertingV2.alertTimeline.tooltip.toLabel', {
+                      defaultMessage: 'To',
+                    }),
+                    description: isOngoing
+                      ? i18n.translate('xpack.alertingV2.alertTimeline.tooltip.ongoing', {
+                          defaultMessage: 'Ongoing',
+                        })
+                      : formatTimestamp(d.x1Ms, timeZone),
+                  },
+                ];
+                // Only show a duration when the episode has ended; an open end
+                // would make the span the in-view portion, not the true duration.
+                // Measure from the true start, not the clamped render edge.
+                if (!isOngoing) {
+                  listItems.push({
+                    title: i18n.translate('xpack.alertingV2.alertTimeline.tooltip.durationLabel', {
+                      defaultMessage: 'Duration',
+                    }),
+                    description: formatDuration(d.x1Ms - d.trueStartMs),
+                  });
+                }
                 return (
                   <TooltipPanel
                     euiTheme={euiTheme}
                     status={d.status}
                     episodeId={d.episodeId}
-                    listItems={[
-                      {
-                        title: i18n.translate('xpack.alertingV2.alertTimeline.tooltip.fromLabel', {
-                          defaultMessage: 'From',
-                        }),
-                        description: formatTimestamp(d.x0Ms, timeZone),
-                      },
-                      {
-                        title: i18n.translate('xpack.alertingV2.alertTimeline.tooltip.toLabel', {
-                          defaultMessage: 'To',
-                        }),
-                        description: formatTimestamp(d.x1Ms, timeZone),
-                      },
-                      {
-                        title: i18n.translate(
-                          'xpack.alertingV2.alertTimeline.tooltip.durationLabel',
-                          { defaultMessage: 'Duration' }
-                        ),
-                        description: formatDuration(d.x1Ms - d.x0Ms),
-                      },
-                    ]}
+                    listItems={listItems}
                   />
                 );
               }}
@@ -309,8 +325,8 @@ export const AlertTimelineRow: React.FC<AlertTimelineRowProps> = ({
           xAccessor="x"
           yAccessors={['y']}
           data={[
-            { x: gteMs, y: 0 },
-            { x: lteMs, y: 1 },
+            { x: windowStartMs, y: 0 },
+            { x: windowEndMs, y: 1 },
           ]}
           hideInLegend
           filterSeriesInTooltip={() => false}

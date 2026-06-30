@@ -33,4 +33,26 @@ const optionalWithDescription = <T extends z.ZodType>(schema: T) => {
   return schema.description ? optional.describe(schema.description) : optional;
 };
 
-export { durationSchema, tagsSchema, optionalWithDescription };
+/**
+ * Builds a schema that accepts either a single value or an array of values
+ * and normalises both shapes to an array of length `1..max`.
+ *
+ * Intended for HTTP query parameters that can be delivered either as a single
+ * value (`?key=a`) or as multiple occurrences (`?key=a&key=b`). The helper
+ * absorbs the union/transform boilerplate at the parsing layer.
+ *
+ * The transform's explicit return type recovers `Array<z.output<T>>` for the
+ * compiler. We intentionally skip the `.pipe(z.array(...))` re-validation
+ * step: the single-value branch always produces a one-element array, which
+ * trivially satisfies `min: 1`, and the array branch is already bounded by
+ * `min`/`max` inside the union.
+ *
+ * @example
+ *   const tagsQuerySchema = arrayOrSingleSchema(z.string().min(1).max(128), 20);
+ */
+const arrayOrSingleSchema = <T extends z.ZodType>(item: T, max: number) =>
+  z
+    .union([item, z.array(item).min(1).max(max)])
+    .transform((value): Array<z.output<T>> => (Array.isArray(value) ? value : [value]));
+
+export { durationSchema, tagsSchema, optionalWithDescription, arrayOrSingleSchema };

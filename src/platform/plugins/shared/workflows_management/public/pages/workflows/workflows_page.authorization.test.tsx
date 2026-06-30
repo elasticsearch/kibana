@@ -14,6 +14,7 @@ import { I18nProvider } from '@kbn/i18n-react';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { useShowManagedWorkflowsSetting, useWorkflows } from '@kbn/workflows-ui';
 import { WorkflowsPage } from '.';
+import { PLUGIN_ID } from '../../../common';
 import { useWorkflowFiltersOptions } from '../../entities/workflows/model/use_workflow_stats';
 import { TestWrapper } from '../../shared/test_utils/test_wrapper';
 
@@ -44,6 +45,14 @@ jest.mock('../../features/workflow_list', () => ({
   WorkflowList: () => <div data-test-subj="mockWorkflowListForAuthzTest" />,
 }));
 
+jest.mock('../../widgets/workflow_search_field/ui/workflow_search_field', () => ({
+  WorkflowSearchField: ({ onSearch }: { onSearch: (query: string) => void }) => (
+    <button type="button" data-test-subj="workflowSearchField" onClick={() => onSearch('security')}>
+      {'Search workflows'}
+    </button>
+  ),
+}));
+
 const mockUseWorkflows = useWorkflows as jest.MockedFunction<typeof useWorkflows>;
 const mockUseShowManagedWorkflowsSetting = useShowManagedWorkflowsSetting as jest.MockedFunction<
   typeof useShowManagedWorkflowsSetting
@@ -51,6 +60,7 @@ const mockUseShowManagedWorkflowsSetting = useShowManagedWorkflowsSetting as jes
 const mockUseWorkflowFiltersOptions = useWorkflowFiltersOptions as jest.MockedFunction<
   typeof useWorkflowFiltersOptions
 >;
+let mockNavigateToApp: jest.Mock;
 
 const emptyWorkflowsResult = {
   data: { results: [], total: 0 },
@@ -59,9 +69,15 @@ const emptyWorkflowsResult = {
   refetch: jest.fn(),
 };
 
-const renderPage = () =>
+const filtersData = {
+  enabled: [{ label: 'false', key: 'false' }],
+  createdBy: [{ label: 'alice', key: 'alice' }],
+  tags: [{ label: 'prod', key: 'prod' }],
+};
+
+const renderPage = (routerHistory?: React.ComponentProps<typeof TestWrapper>['routerHistory']) =>
   render(
-    <TestWrapper>
+    <TestWrapper routerHistory={routerHistory}>
       <I18nProvider>
         <EuiProvider colorMode="light">
           <WorkflowsPage />
@@ -81,6 +97,7 @@ function mockCapabilities(
     readManagedWorkflow?: boolean;
   } = {}
 ): void {
+  mockNavigateToApp = jest.fn();
   mockUseKibana.mockReturnValue({
     services: {
       application: {
@@ -92,7 +109,7 @@ function mockCapabilities(
             updateWorkflow,
           },
         },
-        navigateToApp: jest.fn(),
+        navigateToApp: mockNavigateToApp,
       },
       featureFlags: {
         getBooleanValue: () => false,
@@ -107,11 +124,7 @@ describe('WorkflowsPage authorization', () => {
     mockUseWorkflows.mockReturnValue(emptyWorkflowsResult as any);
     mockUseShowManagedWorkflowsSetting.mockReturnValue(false);
     mockUseWorkflowFiltersOptions.mockReturnValue({
-      data: {
-        enabled: [],
-        createdBy: [],
-        tags: [],
-      },
+      data: filtersData,
     } as unknown as ReturnType<typeof useWorkflowFiltersOptions>);
   });
 
@@ -164,6 +177,23 @@ describe('WorkflowsPage authorization', () => {
       }
     }
   );
+
+  it('resets page to 1 when the query changes', () => {
+    mockCapabilities(true, true);
+    mockUseWorkflows.mockReturnValue({
+      ...emptyWorkflowsResult,
+      data: { results: [{}], total: 1 },
+    } as any);
+
+    renderPage(['/?page=3']);
+
+    fireEvent.click(screen.getByTestId('workflowSearchField'));
+
+    expect(mockNavigateToApp).toHaveBeenCalledWith(PLUGIN_ID, {
+      path: '?query=security',
+      replace: true,
+    });
+  });
 
   it('hides the managed filter when the setting is disabled', () => {
     mockCapabilities(true, true);
@@ -230,7 +260,7 @@ describe('WorkflowsPage authorization', () => {
     expect(screen.getByTestId('managed-filter-popover-button')).toBeInTheDocument();
   });
 
-  it('requests all workflows when custom and managed workflow types are selected', async () => {
+  it('updates the URL to request all workflows when custom and managed workflow types are selected', () => {
     mockCapabilities(true, true);
     mockUseShowManagedWorkflowsSetting.mockReturnValue(true);
     mockUseWorkflows.mockReturnValue({
@@ -243,10 +273,9 @@ describe('WorkflowsPage authorization', () => {
     fireEvent.click(screen.getByTestId('managed-filter-popover-button'));
     fireEvent.click(screen.getByText('Managed'));
 
-    await waitFor(() => {
-      expect(mockUseWorkflows).toHaveBeenLastCalledWith(
-        expect.objectContaining({ managed: 'all' })
-      );
+    expect(mockNavigateToApp).toHaveBeenCalledWith(PLUGIN_ID, {
+      path: '?managed=all',
+      replace: true,
     });
   });
 

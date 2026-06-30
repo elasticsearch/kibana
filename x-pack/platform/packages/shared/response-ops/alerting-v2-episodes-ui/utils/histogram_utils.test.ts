@@ -10,6 +10,7 @@ import {
   generateTimeBuckets,
   computeOverlapCounts,
   formatHistogramDatatable,
+  intervalToMs,
   type HistogramEpisodeRow,
   type TimeBucket,
 } from './histogram_utils';
@@ -36,6 +37,20 @@ describe('computeBucketInterval', () => {
   });
   it('returns 1w for ranges > 30 days', () => {
     expect(computeBucketInterval(0, 31 * DAY)).toBe('1w');
+  });
+});
+
+describe('intervalToMs', () => {
+  it('converts numeric-prefixed intervals', () => {
+    expect(intervalToMs('1m')).toBe(MIN);
+    expect(intervalToMs('1h')).toBe(HOUR);
+    expect(intervalToMs('6h')).toBe(6 * HOUR);
+    expect(intervalToMs('1d')).toBe(DAY);
+  });
+
+  it('converts bare single-letter intervals', () => {
+    expect(intervalToMs('h')).toBe(HOUR);
+    expect(intervalToMs('d')).toBe(DAY);
   });
 });
 

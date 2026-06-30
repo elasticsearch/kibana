@@ -14,12 +14,23 @@ import {
   createContextAwarenessMocks,
   createProfileProviderSharedServicesMock,
 } from '../__mocks__';
+import { createInMemoryContextAwarenessToolkit } from '../in_memory_toolkit';
+import { ProfileStateRegistry } from '../profile_state';
 import { EMPTY_CONTEXT_AWARENESS_TOOLKIT } from '../toolkit';
 import { createExampleRootProfileProvider } from './example/example_root_profile';
+import { EXAMPLE_PROFILE_STATE_DEF } from './example/profile_state';
 import { registerEnabledProfileProviders } from './register_enabled_profile_providers';
 import type { CellRenderersExtensionParams } from '../types';
 
 const exampleRootProfileProvider = createExampleRootProfileProvider();
+
+const createExampleProfileToolkit = () => {
+  const profileStateRegistry = new ProfileStateRegistry();
+  profileStateRegistry.registerDefinition(EXAMPLE_PROFILE_STATE_DEF);
+
+  return createInMemoryContextAwarenessToolkit({ profileStateRegistry });
+};
+
 describe('registerEnabledProfileProviders', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -87,16 +98,17 @@ describe('registerEnabledProfileProviders', () => {
       services: profileProviderServices,
     });
     const context = await rootProfileServiceMock.resolve({ solutionNavId: null });
+    const toolkit = createExampleProfileToolkit();
     const profile = rootProfileServiceMock.getProfile({
       context,
-      toolkit: EMPTY_CONTEXT_AWARENESS_TOOLKIT,
+      toolkit,
     });
     const baseImpl = () => ({});
     profile.getCellRenderers?.(baseImpl)({} as unknown as CellRenderersExtensionParams);
     expect(exampleRootProfileProvider.profile.getCellRenderers).toHaveBeenCalledTimes(1);
     expect(exampleRootProfileProvider.profile.getCellRenderers).toHaveBeenCalledWith(baseImpl, {
       context,
-      toolkit: EMPTY_CONTEXT_AWARENESS_TOOLKIT,
+      toolkit,
     });
     expect(rootProfileProviderMock.profile.getCellRenderers).not.toHaveBeenCalled();
   });

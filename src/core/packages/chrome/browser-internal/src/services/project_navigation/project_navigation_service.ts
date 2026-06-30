@@ -12,11 +12,10 @@ import type {
   ChromeNavLinks,
   ChromeBreadcrumb,
   ChromeSetProjectBreadcrumbsParams,
-  ChromeProjectNavigationNode,
   ChromeNavLink,
   CloudURLs,
+  NavigationCustomization,
   NavigationTreeDefinition,
-  NavigationTreeDefinitionUI,
   CloudLinks,
   SolutionId,
 } from '@kbn/core-chrome-browser';
@@ -40,9 +39,10 @@ import type { Location, History } from 'history';
 import deepEqual from 'react-fast-compare';
 import type { Logger } from '@kbn/logging';
 
-import { findActiveNodes, flattenNav, parseNavigationTree, stripQueryParams } from './utils';
+import { findActiveNodes, stripQueryParams } from './utils';
 import { buildBreadcrumbs } from './breadcrumbs';
 import { getCloudLinks } from './cloud_links';
+import { applyCustomization, type ParsedNavigation } from './apply_customization';
 
 interface StartDeps {
   history: History;
@@ -53,15 +53,12 @@ interface StartDeps {
   chromeBreadcrumbs$: Observable<ChromeBreadcrumb[]>;
 }
 
-interface ParsedNavigation {
-  id: SolutionId;
-  tree: ChromeProjectNavigationNode[];
-  treeUI: NavigationTreeDefinitionUI;
-  flattened: Record<string, ChromeProjectNavigationNode>;
-}
-
 export class ProjectNavigationService {
   private readonly stop$ = new ReplaySubject<void>(1);
+  private readonly customization$ = new BehaviorSubject<NavigationCustomization | undefined>(
+    undefined
+  );
+  private readonly customizeNavigationHandler$ = new BehaviorSubject<(() => void) | null>(null);
 
   constructor(private isServerless: boolean) {}
 
@@ -104,19 +101,15 @@ export class ProjectNavigationService {
     const parsedNavigation$: Observable<ParsedNavigation | null> = currentNavSource$.pipe(
       switchMap((source) => {
         if (!source) return of(null);
-        return combineLatest([source.navTreeDefinition$, deepLinksMap$, cloudLinks$]).pipe(
-          map(([def, deepLinks, links]) => {
-            const { navigationTree, navigationTreeUI } = parseNavigationTree(source.id, def, {
-              deepLinks,
-              cloudLinks: links,
-            });
-            return {
-              id: source.id,
-              treeUI: navigationTreeUI,
-              tree: navigationTree,
-              flattened: flattenNav(navigationTree),
-            };
-          }),
+        return combineLatest([
+          source.navTreeDefinition$,
+          deepLinksMap$,
+          cloudLinks$,
+          this.customization$,
+        ]).pipe(
+          map(([def, deepLinks, links, customization]) =>
+            applyCustomization(source.id, def, deepLinks, links, customization)
+          ),
           catchError((err) => {
             logger.error(err);
             return of(null);
@@ -135,6 +128,9 @@ export class ProjectNavigationService {
           solutionId: parsed.id,
           navigationTree: parsed.treeUI,
           activeNodes: findActiveNodes(pathname, parsed.flattened, location, prependBasePath),
+          overflowItemIds: parsed.overflowItemIds,
+          defaultItemIds: parsed.defaultItemIds,
+          renderableNodes: parsed.renderableNodes,
         };
       }),
       distinctUntilChanged(deepEqual),
@@ -191,6 +187,8 @@ export class ProjectNavigationService {
         navTreeDefinition$: Observable<NavigationTreeDefinition<LinkId>>
       ) => {
         if (currentNavSource$.getValue()?.id === id) return;
+        // Customization has a single writer: the navigation plugin, which seeds
+        // `customization$` from user-storage via setNavigationCustomization().
         currentNavSource$.next({
           id,
           navTreeDefinition$: navTreeDefinition$ as Observable<NavigationTreeDefinition>,
@@ -228,6 +226,12 @@ export class ProjectNavigationService {
       },
       getActiveSolutionNavId$: () => activeSolutionNavId$,
       getActiveSolutionNavId: () => currentNavSource$.getValue()?.id ?? null,
+      setNavigationCustomization: (customization: NavigationCustomization | undefined) =>
+        this.customization$.next(customization),
+      getCustomizeNavigationHandler$: () => this.customizeNavigationHandler$.asObservable(),
+      registerCustomizeNavigationHandler: (handler: () => void) => {
+        this.customizeNavigationHandler$.next(handler);
+      },
     };
   }
 

@@ -9,6 +9,10 @@ import { renderHook, act } from '@testing-library/react';
 import { useCommandMenu } from './use_command_menu';
 import { getTextBeforeCursor } from './utils/get_text_before_cursor';
 
+jest.mock('../../../../../hooks/use_context_engine_enabled', () => ({
+  useContextEngineEnabled: () => true,
+}));
+
 jest.mock('../../../../../hooks/use_experimental_features', () => ({
   useExperimentalFeatures: () => true,
 }));

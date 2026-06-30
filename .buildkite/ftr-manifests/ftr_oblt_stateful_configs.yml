@@ -27,7 +27,6 @@ enabled:
   - x-pack/solutions/observability/test/apm_api_integration/trial/config.ts
   - x-pack/solutions/observability/test/functional/apps/dataset_quality/config.ts
   - x-pack/solutions/observability/test/observability_ai_assistant_functional/enterprise/config.ts
-  - x-pack/solutions/observability/test/api_integration/profiling/cloud/config.ts
   - x-pack/solutions/observability/test/functional/apps/apm/config.ts
   - x-pack/solutions/observability/test/api_integration/apis/cases/config.ts
   - x-pack/solutions/observability/test/accessibility/config.ts

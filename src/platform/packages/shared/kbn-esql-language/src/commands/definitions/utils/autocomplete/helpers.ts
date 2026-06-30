@@ -14,18 +14,10 @@ import type {
 import { ESQLVariableType } from '@kbn/esql-types';
 import { i18n } from '@kbn/i18n';
 import { uniqBy } from 'lodash';
-import type {
-  GetColumnsByTypeFn,
-  ICommandCallbacks,
-  ICommandContext,
-  ISuggestionItem,
-} from '../../../registry/types';
-import { Location } from '../../../registry/types';
+import type { GetColumnsByTypeFn, ICommandContext, ISuggestionItem } from '../../../registry/types';
 import type { SupportedDataType } from '../../types';
-import type { FunctionDefinitionTypes } from '../../types';
-import { filterFunctionDefinitions, getAllFunctions, getFunctionSuggestion } from '../functions';
 import { SuggestionCategory } from '../../../../language/autocomplete/utils/sorting/types';
-import { buildConstantsDefinitions, getCompatibleLiterals, getDateLiterals } from '../literals';
+import { buildConstantsDefinitions } from '../literals';
 import { getColumnByName } from '../shared';
 
 export const shouldBeQuotedText = (
@@ -102,134 +94,6 @@ export async function getFieldsSuggestions(
     addComma,
     variableType,
   })) as ISuggestionItem[];
-}
-
-interface FunctionSuggestionOptions {
-  ignored?: string[];
-  addComma?: boolean;
-  addSpaceAfterFunction?: boolean;
-  constantGeneratingOnly?: boolean;
-  suggestOnlyName?: boolean;
-  functionTypes?: FunctionDefinitionTypes[];
-}
-
-interface GetFunctionsSuggestionsParams {
-  location: Location;
-  types: (SupportedDataType | 'unknown' | 'any')[];
-  options?: FunctionSuggestionOptions;
-  context?: ICommandContext;
-  callbacks?: ICommandCallbacks;
-}
-
-export function getFunctionsSuggestions({
-  location,
-  types,
-  options = {},
-  context,
-  callbacks,
-}: GetFunctionsSuggestionsParams): ISuggestionItem[] {
-  const {
-    ignored = [],
-    addComma = false,
-    suggestOnlyName = false,
-    addSpaceAfterFunction = false,
-    constantGeneratingOnly = false,
-    functionTypes,
-  } = options;
-
-  const predicates = {
-    location,
-    returnTypes: types,
-    ignored,
-    isTimeseriesSource: context?.isTimeseriesSource,
-  };
-
-  const hasMinimumLicenseRequired = callbacks?.hasMinimumLicenseRequired;
-  const activeProduct = context?.activeProduct;
-
-  let filteredFunctions = filterFunctionDefinitions(
-    getAllFunctions({ includeOperators: false, type: functionTypes }),
-    predicates,
-    hasMinimumLicenseRequired,
-    activeProduct
-  );
-
-  // Filter for constant-generating functions (functions without parameters)
-  if (constantGeneratingOnly) {
-    const typeSet = new Set(types);
-    filteredFunctions = filteredFunctions.filter((fn) =>
-      fn.signatures.some((sig) => sig.params.length === 0 && typeSet.has(sig.returnType))
-    );
-  }
-
-  const textSuffix = (addComma ? ',' : '') + (addSpaceAfterFunction ? ' ' : '');
-
-  return filteredFunctions.map((fn) => {
-    const suggestion = getFunctionSuggestion(fn);
-
-    if (suggestOnlyName) {
-      suggestion.text = fn.name.toUpperCase();
-      return suggestion;
-    }
-
-    if (textSuffix) {
-      suggestion.text += textSuffix;
-    }
-
-    return withAutoSuggest(suggestion);
-  });
-}
-
-interface LiteralSuggestionsOptions {
-  includeDateLiterals?: boolean;
-  includeCompatibleLiterals?: boolean;
-  // Pass-through options for literal builders
-  addComma?: boolean;
-  advanceCursorAndOpenSuggestions?: boolean;
-  supportsControls?: boolean;
-  variables?: ESQLControlVariable[];
-}
-
-export function getLiteralsSuggestions(
-  types: (SupportedDataType | 'unknown' | 'any')[],
-  location: Location,
-  options: LiteralSuggestionsOptions = {}
-): ISuggestionItem[] {
-  const { includeDateLiterals = true, includeCompatibleLiterals = true } = options;
-
-  const suggestions: ISuggestionItem[] = [];
-
-  // Date literals gated by policy: only WHERE/EVAL/STATS_WHERE and only if types include 'date'
-  if (
-    includeDateLiterals &&
-    (location === Location.WHERE ||
-      location === Location.EVAL ||
-      location === Location.STATS_WHERE) &&
-    types.includes('date')
-  ) {
-    suggestions.push(
-      ...getDateLiterals({
-        addComma: options.addComma,
-        advanceCursorAndOpenSuggestions: options.advanceCursorAndOpenSuggestions,
-      })
-    );
-  }
-
-  if (includeCompatibleLiterals) {
-    suggestions.push(
-      ...getCompatibleLiterals(
-        types,
-        {
-          addComma: options.addComma,
-          advanceCursorAndOpenSuggestions: options.advanceCursorAndOpenSuggestions,
-          supportsControls: options.supportsControls,
-        },
-        options.variables
-      )
-    );
-  }
-
-  return suggestions;
 }
 
 export function getLastNonWhitespaceChar(text: string) {

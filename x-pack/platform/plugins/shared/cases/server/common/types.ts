@@ -51,7 +51,11 @@ export type FileAttachmentRequest = Omit<
 
 export type AttachmentSavedObject = SavedObject<AttachmentAttributes>;
 
-export type SOWithErrors<T> = Omit<SavedObject<T>, 'attributes' | 'error'> & {
+export type SOWithErrors<T> = Partial<
+  Omit<SavedObject<T>, 'attributes' | 'error' | 'id' | 'type'>
+> & {
+  id: string;
+  type: string;
   error: SavedObjectError | DecoratedError;
 };
 

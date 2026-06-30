@@ -13,6 +13,7 @@ import type {
   KibanaRequest,
   SavedObjectsBulkGetObject,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { SecurityPluginSetup } from '@kbn/security-plugin/server';
 import type {
   AssignableObject,
@@ -131,7 +132,7 @@ export class AssignmentService {
     ]);
 
     // if we failed to fetch any object, just halt and throw an error
-    const firstObjWithError = objects.find((obj) => !!obj.error);
+    const firstObjWithError = objects.find(isSavedObjectErrorResult);
     if (firstObjWithError) {
       const firstError = firstObjWithError.error!;
       throw new AssignmentError(firstError.message, firstError.statusCode);

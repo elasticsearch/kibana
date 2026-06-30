@@ -97,7 +97,12 @@ interface AppMenuItemBase {
    */
   iconType: IconType;
   /**
-   * A unique identifier for the item, used for testing purposes. Maps to `data-test-subj` attribute.
+   * Sets the `data-test-subj` attribute for the item, used for testing purposes.
+   *
+   * When provided, it fully replaces the element's default subject. When omitted, the element falls
+   * back to a structural subject derived from `id` (`app-menu-item-<id>` for menu items,
+   * `app-menu-action-button-<id>` for primary action buttons). Either way, derived sub-elements use
+   * the resolved value as a prefix (e.g. the label badge is `<resolved>-badge`).
    */
   testId?: string;
   /**

@@ -16,13 +16,14 @@ import type { WorkflowsService } from '../../workflows_management_service';
 
 async function createAuditHarness() {
   const log = jest.fn();
+  const systemLog = jest.fn();
   const audit = new WorkflowManagementAuditLog({
     service: {
       getCoreStart: jest.fn().mockResolvedValue({
         security: {
           audit: {
             asScoped: jest.fn().mockReturnValue({ log }),
-            withoutRequest: jest.fn(),
+            withoutRequest: { log: systemLog },
           },
           authc: { getCurrentUser: jest.fn() },
         },
@@ -30,7 +31,7 @@ async function createAuditHarness() {
     } as unknown as WorkflowsService,
   });
   const request = {} as KibanaRequest;
-  return { audit, request, log };
+  return { audit, request, log, systemLog };
 }
 
 describe('WorkflowManagementAuditLog', () => {
@@ -114,6 +115,66 @@ describe('WorkflowManagementAuditLog', () => {
           error: { code: 'Error', message: 'boom' },
         })
       );
+    });
+
+    it('logWorkflowRestored (success and failure)', async () => {
+      const { audit, request, log } = await createAuditHarness();
+      audit.logWorkflowRestored(request, {
+        id: 'wf-1',
+        eventId: 'event-v3',
+        version: 8,
+        sequence: 3,
+      });
+      expect(log.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          message:
+            'User restored workflow from history [id=wf-1] [eventId=event-v3] [sequence=3] [version=8]',
+          event: expect.objectContaining({
+            action: WorkflowManagementAuditActions.RESTORE,
+            outcome: 'success',
+            type: ['change'],
+          }),
+        })
+      );
+
+      const { audit: a2, request: r2, log: l2 } = await createAuditHarness();
+      a2.logWorkflowRestored(r2, {
+        id: 'wf-1',
+        eventId: 'missing-event',
+        error: err,
+      });
+      expect(l2.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          message: 'User failed to restore workflow from history [id=wf-1] [eventId=missing-event]',
+          event: expect.objectContaining({
+            action: WorkflowManagementAuditActions.RESTORE,
+            outcome: 'failure',
+          }),
+          error: { code: 'Error', message: 'boom' },
+        })
+      );
+    });
+
+    it('logs managed workflow fields and uses the system logger without a request', async () => {
+      const { audit, systemLog } = await createAuditHarness();
+      audit.logWorkflowUpdated(undefined, {
+        id: 'managed-doc',
+        managed: true,
+        originalWorkflowId: 'registry-id',
+        ownerPlugin: 'ownerPlugin',
+        spaceId: 'default',
+        reason: 'reinstall',
+      });
+
+      expect(systemLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            'System updated workflow [id=managed-doc] [managed=true] ' +
+            '[originalWorkflowId=registry-id] [ownerPlugin=ownerPlugin] [space=default] ' +
+            '[reason=reinstall]',
+        })
+      );
+      expect(systemLog.mock.calls[0][0]).not.toHaveProperty('labels');
     });
 
     it('logWorkflowDeleted (success and failure)', async () => {

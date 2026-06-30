@@ -95,7 +95,6 @@ function createWiredDefinition({
   return {
     dashboards: [],
     rules: [],
-    queries: [],
     privileges,
     inherited_fields: {},
     data_stream_exists: true,

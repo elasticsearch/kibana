@@ -18,7 +18,11 @@ import {
   StepMappingsContainer,
   StepAliasesContainer,
 } from '../../shared_imports';
-import { serializeAsESLifecycle, deserializeESLifecycle } from '../../../../../../common/lib';
+import {
+  serializeAsESLifecycle,
+  deserializeESLifecycle,
+  resolveLogisticsLifecycle,
+} from '../../../../../../common/lib';
 import { useComponentTemplatesContext } from '../../component_templates_context';
 import { StepLogisticsContainer, StepReviewContainer } from './steps';
 
@@ -210,9 +214,11 @@ export const ComponentTemplateForm = ({
             settings: wizardData.settings,
             mappings: wizardData.mappings,
             aliases: wizardData.aliases,
-            lifecycle: wizardData.logistics.lifecycle
-              ? serializeAsESLifecycle(wizardData.logistics.lifecycle)
-              : undefined,
+            lifecycle: serializeAsESLifecycle(
+              resolveLogisticsLifecycle(wizardData.logistics.lifecycle, {
+                isDataStreamTemplate: true,
+              })
+            ),
           },
         };
         return cleanupComponentTemplateObject(

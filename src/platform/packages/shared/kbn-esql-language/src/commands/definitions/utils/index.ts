@@ -9,8 +9,6 @@
 
 export {
   getFieldsSuggestions,
-  getFunctionsSuggestions,
-  getLiteralsSuggestions,
   getControlSuggestionIfSupported,
   getControlSuggestion,
   getSafeInsertText,

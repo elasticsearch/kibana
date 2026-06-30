@@ -7,10 +7,15 @@
 import { parse } from 'query-string';
 
 import type { PackagePolicy, OnSaveQueryParamKeys } from '../../../../types';
+import type { AgentlessPolicy } from '../../../../../../../common';
+import type { SavedPolicyResult } from '../types';
 
 import { appendOnSaveQueryParamsToPath } from '.';
 
-const mockPolicy: PackagePolicy = { policy_id: '1234', policy_ids: ['1234'] } as PackagePolicy;
+const mockPolicy: SavedPolicyResult = {
+  type: 'packagePolicy',
+  policy: { policy_id: '1234', policy_ids: ['1234'] } as PackagePolicy,
+};
 
 function parseHref(href: string) {
   const [basePath, queryString] = href.split('?');
@@ -21,13 +26,17 @@ function parseHref(href: string) {
 describe('appendOnSaveQueryParamsToPath', () => {
   it('should do nothing if no paramsToApply provided', () => {
     expect(
-      appendOnSaveQueryParamsToPath({ path: '/hello', policy: mockPolicy, paramsToApply: [] })
+      appendOnSaveQueryParamsToPath({
+        path: '/hello',
+        savedPolicyResult: mockPolicy,
+        paramsToApply: [],
+      })
     ).toEqual('/hello');
   });
   it('should do nothing if all params set to false', () => {
     const options = {
       path: '/hello',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: false,
         openEnrollmentFlyout: false,
@@ -40,7 +49,7 @@ describe('appendOnSaveQueryParamsToPath', () => {
   it('should append query params if set to true', () => {
     const options = {
       path: '/hello',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: true,
         openEnrollmentFlyout: true,
@@ -56,7 +65,7 @@ describe('appendOnSaveQueryParamsToPath', () => {
   it('should append query params if set to true (existing query string)', () => {
     const options = {
       path: '/hello?world=1',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: true,
         openEnrollmentFlyout: true,
@@ -73,7 +82,7 @@ describe('appendOnSaveQueryParamsToPath', () => {
   it('should append renamed param', () => {
     const options = {
       path: '/hello',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: { renameKey: 'renamedKey' },
       },
@@ -89,7 +98,7 @@ describe('appendOnSaveQueryParamsToPath', () => {
   it('should append renamed param (existing param)', () => {
     const options = {
       path: '/hello?world=1',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: { renameKey: 'renamedKey' },
       },
@@ -105,7 +114,7 @@ describe('appendOnSaveQueryParamsToPath', () => {
   it('should append renamed param and policyId', () => {
     const options = {
       path: '/hello',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: { renameKey: 'renamedKey', policyIdAsValue: true },
       },
@@ -115,13 +124,13 @@ describe('appendOnSaveQueryParamsToPath', () => {
     const hrefOut = appendOnSaveQueryParamsToPath(options);
     const [basePath, qs] = parseHref(hrefOut);
     expect(basePath).toEqual('/hello');
-    expect(qs).toEqual({ renamedKey: mockPolicy.policy_id });
+    expect(qs).toEqual({ renamedKey: '1234' });
   });
 
   it('should append renamed param and policyId (existing param)', () => {
     const options = {
       path: '/hello?world=1',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: { renameKey: 'renamedKey', policyIdAsValue: true },
       },
@@ -131,13 +140,13 @@ describe('appendOnSaveQueryParamsToPath', () => {
     const hrefOut = appendOnSaveQueryParamsToPath(options);
     const [basePath, qs] = parseHref(hrefOut);
     expect(basePath).toEqual('/hello');
-    expect(qs).toEqual({ renamedKey: mockPolicy.policy_id, world: '1' });
+    expect(qs).toEqual({ renamedKey: '1234', world: '1' });
   });
 
   it('should append renamed params and policyIds (existing param)', () => {
     const options = {
       path: '/hello?world=1',
-      policy: mockPolicy,
+      savedPolicyResult: mockPolicy,
       mappingOptions: {
         showAddAgentHelp: { renameKey: 'renamedKey', policyIdAsValue: true },
         openEnrollmentFlyout: { renameKey: 'renamedKey2', policyIdAsValue: true },
@@ -149,9 +158,29 @@ describe('appendOnSaveQueryParamsToPath', () => {
     const [basePath, qs] = parseHref(hrefOut);
     expect(basePath).toEqual('/hello');
     expect(qs).toEqual({
-      renamedKey: mockPolicy.policy_id,
-      renamedKey2: mockPolicy.policy_id,
+      renamedKey: '1234',
+      renamedKey2: '1234',
       world: '1',
     });
+  });
+
+  it('should use the agentless policy id when the result is agentless', () => {
+    const agentlessPolicy: SavedPolicyResult = {
+      type: 'agentless',
+      policy: { id: 'agentless-policy-1' } as AgentlessPolicy,
+    };
+    const options = {
+      path: '/hello',
+      savedPolicyResult: agentlessPolicy,
+      mappingOptions: {
+        openEnrollmentFlyout: { policyIdAsValue: true },
+      },
+      paramsToApply: ['openEnrollmentFlyout'] as OnSaveQueryParamKeys[],
+    };
+
+    const hrefOut = appendOnSaveQueryParamsToPath(options);
+    const [basePath, qs] = parseHref(hrefOut);
+    expect(basePath).toEqual('/hello');
+    expect(qs).toEqual({ openEnrollmentFlyout: 'agentless-policy-1' });
   });
 });

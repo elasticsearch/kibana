@@ -97,7 +97,7 @@ describe('Case View Attachments tab', () => {
     jest.clearAllMocks();
   });
 
-  it('renders the tabs and the search field', async () => {
+  it('renders the search field', async () => {
     renderWithTestingProviders(
       <CaseViewAttachments
         caseData={caseData}
@@ -106,7 +106,6 @@ describe('Case View Attachments tab', () => {
       />
     );
 
-    expect(screen.getByTestId('case-view-tabs')).toBeInTheDocument();
     expect(screen.getByTestId('cases-files-search')).toBeInTheDocument();
   });
 

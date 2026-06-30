@@ -15,7 +15,7 @@ export const headerTypeOptions = [
     inputDisplay: (
       <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
         <EuiFlexItem grow={false}>
-          <EuiIcon type="controls" size="s" />
+          <EuiIcon type="controls" size="s" aria-hidden={true} />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <span>{i18n.CONFIG_OPTION}</span>
@@ -29,7 +29,7 @@ export const headerTypeOptions = [
     inputDisplay: (
       <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
         <EuiFlexItem grow={false}>
-          <EuiIcon type="lock" size="s" />
+          <EuiIcon type="lock" size="s" aria-hidden={true} />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <span>{i18n.SECRET_OPTION}</span>

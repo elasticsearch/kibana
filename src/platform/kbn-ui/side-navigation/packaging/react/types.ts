@@ -77,11 +77,13 @@ export interface MenuItem {
 }
 
 /**
- * The complete navigation structure containing primary and footer items.
+ * The complete navigation structure containing primary, overflow, and footer items.
  */
 export interface NavigationStructure {
   /** Items displayed in the footer area of the navigation. */
   footerItems: MenuItem[];
+  /** Items that are always placed in the overflow ("More") menu. */
+  overflowItems?: MenuItem[];
   /** Items displayed in the primary/main area of the navigation. */
   primaryItems: MenuItem[];
 }

@@ -11,6 +11,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { AppMenuComponent } from './app_menu';
 import type { AppMenuConfig } from '../types';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 // Mock useIsWithinBreakpoints to control responsive behavior
 const mockUseIsWithinBreakpoints = jest.fn();
@@ -63,7 +64,7 @@ describe('AppMenu', () => {
     it('should render the top nav menu when config has items', () => {
       render(<AppMenuComponent config={defaultConfig} />);
 
-      expect(screen.getByTestId('app-menu')).toBeInTheDocument();
+      expect(screen.getByTestId(APP_MENU_TEST_SUBJECTS.root)).toBeInTheDocument();
     });
 
     it('should render menu items at xl breakpoint', () => {
@@ -100,7 +101,7 @@ describe('AppMenu', () => {
 
       render(<AppMenuComponent config={defaultConfig} />);
 
-      expect(screen.getByTestId('app-menu-overflow-button')).toBeInTheDocument();
+      expect(screen.getByTestId(APP_MENU_TEST_SUBJECTS.overflowButton)).toBeInTheDocument();
     });
 
     it('should render overflow button with all items at small breakpoint', () => {
@@ -108,7 +109,7 @@ describe('AppMenu', () => {
 
       render(<AppMenuComponent config={defaultConfig} />);
 
-      expect(screen.getByTestId('app-menu-overflow-button')).toBeInTheDocument();
+      expect(screen.getByTestId(APP_MENU_TEST_SUBJECTS.overflowButton)).toBeInTheDocument();
     });
 
     it('should render individual menu items at xl breakpoint', () => {
@@ -144,7 +145,7 @@ describe('AppMenu', () => {
 
       render(<AppMenuComponent config={forcedOverflowConfig} />);
 
-      expect(screen.getByTestId('app-menu-overflow-button')).toBeInTheDocument();
+      expect(screen.getByTestId(APP_MENU_TEST_SUBJECTS.overflowButton)).toBeInTheDocument();
       expect(screen.queryByText('Single overflow item')).not.toBeInTheDocument();
     });
   });
@@ -162,7 +163,7 @@ describe('AppMenu', () => {
     it('should render the app menu with only a switch (standalone)', () => {
       render(<AppMenuComponent config={{ switch: switchConfig }} />);
 
-      expect(screen.getByTestId('app-menu')).toBeInTheDocument();
+      expect(screen.getByTestId(APP_MENU_TEST_SUBJECTS.root)).toBeInTheDocument();
       expect(screen.getByTestId('test-switch')).toBeInTheDocument();
     });
 
@@ -190,7 +191,7 @@ describe('AppMenu', () => {
 
       render(<AppMenuComponent config={{ switch: switchConfig }} />);
 
-      expect(screen.getByTestId('app-menu-overflow-button')).toBeInTheDocument();
+      expect(screen.getByTestId(APP_MENU_TEST_SUBJECTS.overflowButton)).toBeInTheDocument();
       expect(screen.queryByTestId('test-switch')).not.toBeInTheDocument();
     });
   });

@@ -12,7 +12,7 @@ import {
   type VersionedAttachmentWithOrigin,
 } from '@kbn/agent-builder-common/attachments';
 import type { AttachmentResolveContext } from '@kbn/agent-builder-server/attachments';
-import type { SigEvent } from '@kbn/streams-schema';
+import type { SignificantEvent } from '@kbn/streams-schema';
 import { SIGNIFICANT_EVENT_ATTACHMENT_TYPE } from '../../../common';
 import type { GetScopedClients, RouteHandlerScopedClients } from '../../routes/types';
 import {
@@ -20,7 +20,7 @@ import {
   formatSignificantEventAsText,
 } from './significant_event_attachment_type';
 
-const event: SigEvent = {
+const event: SignificantEvent = {
   '@timestamp': '2026-01-01T00:00:00.000Z',
   created_at: '2026-01-01T00:00:00.000Z',
   event_id: 'event-1',
@@ -43,7 +43,9 @@ const createContext = (): AttachmentResolveContext => ({
   spaceId: 'default',
 });
 
-const createGetScopedClients = (events: SigEvent[]): jest.MockedFunction<GetScopedClients> => {
+const createGetScopedClients = (
+  events: SignificantEvent[]
+): jest.MockedFunction<GetScopedClients> => {
   const getEventClient = jest.fn(() => ({
     findByDiscoverySlug: jest.fn().mockResolvedValue({ hits: events }),
   }));
@@ -54,8 +56,8 @@ const createGetScopedClients = (events: SigEvent[]): jest.MockedFunction<GetScop
 };
 
 const createVersionedAttachment = (
-  data: SigEvent
-): VersionedAttachmentWithOrigin<typeof SIGNIFICANT_EVENT_ATTACHMENT_TYPE, SigEvent> => ({
+  data: SignificantEvent
+): VersionedAttachmentWithOrigin<typeof SIGNIFICANT_EVENT_ATTACHMENT_TYPE, SignificantEvent> => ({
   id: 'attachment-1',
   type: SIGNIFICANT_EVENT_ATTACHMENT_TYPE,
   origin: data.discovery_slug,

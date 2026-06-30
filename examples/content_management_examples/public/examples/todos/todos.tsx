@@ -15,6 +15,7 @@ import {
   EuiFieldText,
   EuiSpacer,
   EuiLoadingSpinner,
+  EuiToolTip,
 } from '@elastic/eui';
 import {
   useCreateContentMutation,
@@ -118,16 +119,18 @@ export const Todos = () => {
                   data-test-subj={`todoCheckbox todoCheckbox-${todo.id}`}
                 />
 
-                <EuiButtonIcon
-                  style={{ marginLeft: '8px' }}
-                  display="base"
-                  iconType="trash"
-                  aria-label="Delete"
-                  color="danger"
-                  onClick={() => {
-                    deleteTodoMutation.mutate({ contentTypeId: TODO_CONTENT_ID, id: todo.id });
-                  }}
-                />
+                <EuiToolTip content="Delete" disableScreenReaderOutput>
+                  <EuiButtonIcon
+                    style={{ marginLeft: '8px' }}
+                    display="base"
+                    iconType="trash"
+                    aria-label="Delete"
+                    color="danger"
+                    onClick={() => {
+                      deleteTodoMutation.mutate({ contentTypeId: TODO_CONTENT_ID, id: todo.id });
+                    }}
+                  />
+                </EuiToolTip>
               </li>
               <EuiSpacer size={'xs'} />
             </React.Fragment>

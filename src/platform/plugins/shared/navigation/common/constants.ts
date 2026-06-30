@@ -9,6 +9,8 @@
 
 export const DEFAULT_ROUTE_UI_SETTING_ID = 'defaultRoute';
 
+export const NAV_CUSTOMIZATION_STORAGE_KEY = 'navigation:customization';
+
 export const AGENT_BUILDER_NAV_AT_TOP_FLAG = 'navigation.agentBuilderAtTop';
 
 export const DEFAULT_ROUTES = {

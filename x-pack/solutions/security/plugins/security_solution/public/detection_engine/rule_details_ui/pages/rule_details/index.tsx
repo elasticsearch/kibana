@@ -763,6 +763,7 @@ export const RuleDetailsPage = connector(
                         <EuiFlexItem grow={false}>
                           <RuleActionsOverflow
                             rule={rule}
+                            ruleId={ruleId}
                             isDisabled={!isExistingRule}
                             canDuplicateRuleWithActions={canEditRuleWithActions(
                               rule,

@@ -8,6 +8,7 @@
  */
 
 import type { SavedObjectsClientContract } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import { injectMetaAttributes } from './inject_meta_attributes';
 import type { ISavedObjectsManagement } from '../services';
 import type { v1 } from '../../common';
@@ -49,7 +50,7 @@ export async function findRelationships({
   ]);
 
   const invalidRelations: SavedObjectInvalidRelation[] = childReferencesResponse.saved_objects
-    .filter((obj) => Boolean(obj.error))
+    .filter(isSavedObjectErrorResult)
     .map((obj) => ({
       id: obj.id,
       type: obj.type,
@@ -59,7 +60,7 @@ export async function findRelationships({
 
   const relations = [
     ...childReferencesResponse.saved_objects
-      .filter((obj) => !obj.error)
+      .filter((obj) => !isSavedObjectErrorResult(obj))
       .map((obj) => injectMetaAttributes(obj, savedObjectsManagement))
       .map(extractCommonProperties)
       .map((obj) => ({

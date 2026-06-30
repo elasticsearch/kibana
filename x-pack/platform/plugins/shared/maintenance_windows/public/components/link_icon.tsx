@@ -72,6 +72,7 @@ export const LinkIcon = React.memo<LinkIconProps>(
           data-test-subj="link-icon"
           size={iconSize}
           type={iconType}
+          aria-hidden={true}
         />
         <span data-test-subj="link-icon-label">{children}</span>
       </EuiLink>

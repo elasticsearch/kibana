@@ -11,7 +11,10 @@ import { euid } from '@kbn/entity-store/common/euid_helpers';
 import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import { compact } from 'lodash';
 import { ENTITY_ANOMALY_DEFAULT_LOOKBACK_DAYS } from '../../../../common/constants';
-import { deriveBucketInterval } from '../../../../common/entity_analytics/anomalies/derive_bucket_interval';
+import {
+  deriveBucketInterval,
+  formatAnomalousValue,
+} from '../../../../common/entity_analytics/anomalies';
 import type {
   AnomalyOverviewEntry,
   AnomalyOverviewHit,
@@ -133,8 +136,8 @@ export const getEntityAnomalyOverview = async ({
               {
                 range: {
                   record_score: {
-                    gte: minScore ?? 1,
-                    ...(maxScore !== undefined ? { lte: maxScore } : {}),
+                    gte: minScore || 1,
+                    ...(maxScore !== undefined ? { lt: maxScore } : {}),
                   },
                 },
               },
@@ -198,19 +201,24 @@ export const getEntityAnomalyOverview = async ({
   const recentAnomalies: AnomalyOverviewHit[] = rawHits.map((anomaly) => {
     const jobConfig = allJobConfigs.get(anomaly.job_id);
     const detector = jobConfig?.detectors[anomaly.detector_index];
+    const detectorFunction = detector?.function ?? anomaly.function;
 
-    let anomalousValue: string | undefined;
+    const anomalousValue = detectorFunction
+      ? formatAnomalousValue({
+          detectorFunction,
+          fieldName: detector?.field_name ?? anomaly.field_name,
+          actual: anomaly.actual,
+          byFieldValue: anomaly.by_field_value ?? undefined,
+        })
+      : anomaly.actual?.[0] != null
+      ? String(anomaly.actual[0])
+      : null;
 
-    if (detector?.function === 'rare') {
-      anomalousValue = anomaly.by_field_value;
-    } else {
-      anomalousValue = anomaly.actual?.[0] != null ? String(anomaly.actual[0]) : undefined;
-    }
     return {
       jobId: anomaly.job_id,
       jobName: jobConfig?.jobName ?? anomaly.job_id,
       timestamp: new Date(anomaly.timestamp).toISOString(),
-      anomalousValue: anomalousValue ?? null,
+      anomalousValue,
     };
   });
 

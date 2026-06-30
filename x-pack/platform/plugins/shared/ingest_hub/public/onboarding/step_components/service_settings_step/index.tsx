@@ -27,11 +27,11 @@ import { CollectionSettingsFlyout } from './collection_settings_flyout';
 import type { TransportType } from './field_config';
 
 interface ServiceSettingsStepProps {
-  onNext: () => void;
+  onContinue: () => void;
   onBack?: () => void;
 }
 
-export function ServiceSettingsStep({ onNext, onBack }: ServiceSettingsStepProps) {
+export function ServiceSettingsStep({ onContinue, onBack }: ServiceSettingsStepProps) {
   const {
     globalRegion,
     setGlobalRegion,
@@ -40,9 +40,9 @@ export function ServiceSettingsStep({ onNext, onBack }: ServiceSettingsStepProps
     setServiceTransport,
     setServiceField,
     setServiceFields,
-    isReady,
+    showValidation,
     handleNext,
-  } = useServiceSettings({ onNext });
+  } = useServiceSettings({ onContinue });
 
   const [activeFlyoutServiceId, setActiveFlyoutServiceId] = useState<string | null>(null);
 
@@ -96,7 +96,16 @@ export function ServiceSettingsStep({ onNext, onBack }: ServiceSettingsStepProps
               defaultMessage:
                 'Global AWS Region — can be overridden per service in Collection settings',
             })}
-            isInvalid={!globalRegion.trim()}
+            isInvalid={showValidation && !globalRegion.trim()}
+            error={
+              showValidation && !globalRegion.trim() ? (
+                <span data-test-subj="serviceSettingsStep-globalRegionError">
+                  {i18n.translate('xpack.ingestHub.serviceSettingsStep.globalRegion.error', {
+                    defaultMessage: 'A global region is required.',
+                  })}
+                </span>
+              ) : undefined
+            }
           >
             <EuiComboBox
               compressed
@@ -105,7 +114,7 @@ export function ServiceSettingsStep({ onNext, onBack }: ServiceSettingsStepProps
               selectedOptions={selectedGlobalRegionOption}
               onChange={(selected) => setGlobalRegion(selected[0]?.label ?? '')}
               onCreateOption={(searchValue) => setGlobalRegion(searchValue)}
-              isInvalid={!globalRegion.trim()}
+              isInvalid={showValidation && !globalRegion.trim()}
               customOptionText='Use "{searchValue}" as region'
               placeholder={i18n.translate(
                 'xpack.ingestHub.serviceSettingsStep.globalRegion.placeholder',
@@ -125,6 +134,7 @@ export function ServiceSettingsStep({ onNext, onBack }: ServiceSettingsStepProps
             <ServiceSettingsCard
               service={service}
               config={config}
+              showValidation={showValidation}
               onTransportChange={handleTransportChange(service.id)}
               onFieldChange={handleFieldChange(service.id)}
               onOpenFlyout={() => setActiveFlyoutServiceId(service.id)}
@@ -148,14 +158,9 @@ export function ServiceSettingsStep({ onNext, onBack }: ServiceSettingsStepProps
           )}
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButton
-            fill
-            onClick={handleNext}
-            isDisabled={!isReady}
-            data-test-subj="serviceSettingsStep-nextButton"
-          >
+          <EuiButton fill onClick={handleNext} data-test-subj="serviceSettingsStep-continueButton">
             <FormattedMessage
-              id="xpack.ingestHub.serviceSettingsStep.nextButton"
+              id="xpack.ingestHub.serviceSettingsStep.continueButton"
               defaultMessage="Continue"
             />
           </EuiButton>

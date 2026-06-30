@@ -8,6 +8,7 @@
  */
 
 import type {
+  ChangeHistoryDocument,
   GetChangeHistoryOptions,
   GetHistoryResult,
   LogChangeHistoryOptions,
@@ -42,8 +43,14 @@ export interface IWorkflowChangeHistoryService {
  */
 export type ScopedLogChangeHistoryOptions = Omit<
   LogChangeHistoryOptions,
-  'username' | 'userProfileId'
->;
+  'username' | 'userProfileId' | 'data'
+> & {
+  data?: {
+    event?: Partial<NonNullable<ChangeHistoryDocument['event']>>;
+    tags?: ChangeHistoryDocument['tags'];
+    metadata?: ChangeHistoryDocument['metadata'];
+  };
+};
 
 export interface IScopedWorkflowChangeHistoryService {
   log(change: ObjectChange, opts: ScopedLogChangeHistoryOptions): Promise<void>;

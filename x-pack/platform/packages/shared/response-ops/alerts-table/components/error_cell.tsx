@@ -29,7 +29,7 @@ export const ErrorCell = ({ error }: { error: Error }) => (
       data-test-subj="errorCell"
     >
       <EuiFlexItem grow={false}>
-        <EuiIcon type="error" color="danger" />
+        <EuiIcon type="error" color="danger" aria-hidden={true} />
       </EuiFlexItem>
       <EuiFlexItem>
         <EuiText

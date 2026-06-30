@@ -176,6 +176,9 @@ const registerHttpRequestMockHelpers = (
   const setLoadComponentTemplatesResponse = (response?: HttpResponse, error?: ResponseError) =>
     mockResponse('GET', `${API_BASE_PATH}/component_templates`, response, error);
 
+  const setLoadSnapshotRepositoriesResponse = (response?: HttpResponse, error?: ResponseError) =>
+    mockResponse('GET', `${API_BASE_PATH}/snapshot_repositories`, response, error);
+
   const setLoadNodesPluginsResponse = (response?: HttpResponse, error?: ResponseError) =>
     mockResponse('GET', `${API_BASE_PATH}/nodes/plugins`, response, error);
 
@@ -290,6 +293,7 @@ const registerHttpRequestMockHelpers = (
     setSimulateTemplateResponse,
     setSimulateTemplateByNameResponse,
     setLoadComponentTemplatesResponse,
+    setLoadSnapshotRepositoriesResponse,
     setLoadNodesPluginsResponse,
     setLoadTelemetryResponse,
     setLoadEnrichPoliciesResponse,

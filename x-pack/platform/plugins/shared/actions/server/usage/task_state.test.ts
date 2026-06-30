@@ -28,12 +28,17 @@ describe('telemetry task state', () => {
           "count_active_total": 0,
           "count_by_type": Object {},
           "count_connector_types_by_action_run_outcome_per_day": Object {},
+          "count_gen_ai_provider_types": Object {},
           "count_total": 0,
           "error_messages": undefined,
           "has_errors": false,
           "runs": 0,
         }
       `);
+    });
+
+    it('should produce a state that validates against the v1 schema', () => {
+      expect(() => v1.schema.validate(v1.up({}))).not.toThrow();
     });
 
     it(`shouldn't overwrite properties when running the up migration`, () => {
@@ -51,6 +56,7 @@ describe('telemetry task state', () => {
         count_active_total: 11,
         count_by_type: { '.server-log': 12 },
         count_connector_types_by_action_run_outcome_per_day: { '.server-log': 13 },
+        count_gen_ai_provider_types: { '.gen-ai': 16 },
         count_total: 14,
         error_messages: ['foo'],
         has_errors: true,
@@ -89,12 +95,18 @@ describe('telemetry task state', () => {
           "count_active_total": 0,
           "count_by_type": Object {},
           "count_connector_types_by_action_run_outcome_per_day": Object {},
+          "count_gen_ai_provider_types": Object {},
           "count_total": 0,
           "error_messages": undefined,
           "has_errors": false,
           "runs": 0,
         }
       `);
+    });
+
+    it('should produce a state that validates against the v2 schema starting from v1', () => {
+      const v1Object = v1.up({});
+      expect(() => v2.schema.validate(v2.up(v1Object))).not.toThrow();
     });
 
     it('shouldnt overwrite properties when running the up migration', () => {
@@ -112,6 +124,7 @@ describe('telemetry task state', () => {
         count_active_total: 11,
         count_by_type: { '.server-log': 12 },
         count_connector_types_by_action_run_outcome_per_day: { '.server-log': 13 },
+        count_gen_ai_provider_types: { '.gen-ai': 16 },
         count_total: 14,
         error_messages: ['foo'],
         has_errors: true,

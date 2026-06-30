@@ -28,7 +28,7 @@ test.describe.skip(
 
     test.beforeEach(async ({ browserAuth, pageObjects }) => {
       await browserAuth.loginAsAlertingV2Viewer();
-      await pageObjects.discover.goto();
+      await pageObjects.discover.goto({ queryMode: 'classic' });
       await pageObjects.discover.writeAndSubmitEsqlQuery(
         'FROM kibana_sample_data_ecommerce | LIMIT 10'
       );

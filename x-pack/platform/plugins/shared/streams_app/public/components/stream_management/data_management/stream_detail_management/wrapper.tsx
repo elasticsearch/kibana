@@ -126,6 +126,8 @@ export function Wrapper({
         ? definition.privileges.read_failure_store
         : false,
     numDataPoints: STREAMS_HISTOGRAM_NUM_DATA_POINTS,
+    // Detail view never renders the Ingestion column, so skip the unused ingestion request.
+    fetchIngestionDocCounts: false,
   });
 
   // Draft streams have no backing data stream so doc_counts endpoints return 404.

@@ -8,8 +8,9 @@
  */
 
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { WorkflowsTriggersList } from './worflows_triggers_list';
+import { TriggerIcon, WorkflowsTriggersList } from './worflows_triggers_list';
 
 jest.mock('@kbn/workflows', () => ({
   isTriggerType: jest.fn((type: string) => ['alert', 'manual', 'scheduled'].includes(type)),
@@ -69,5 +70,44 @@ describe('WorkflowsTriggersList', () => {
       render(<WorkflowsTriggersList triggers={[]} />);
       expect(screen.getByText('No triggers')).toBeInTheDocument();
     });
+  });
+});
+
+describe('TriggerIcon', () => {
+  it('should render the scheduled label as tooltip when next execution is unavailable', () => {
+    render(<TriggerIcon triggerType="scheduled" />);
+    expect(document.querySelector('[title="Scheduled"]')).toBeInTheDocument();
+  });
+
+  it('should render scheduled label and next execution in tooltip when data is available', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <TriggerIcon triggerType="scheduled" nextExecution="Jan 15, 2025 11:00 AM" />
+    );
+
+    expect(container.querySelector('.euiToolTipAnchor')).toBeInTheDocument();
+
+    const anchor = container.querySelector('.euiToolTipAnchor');
+    await user.hover(anchor!);
+
+    expect(await screen.findByText('Scheduled')).toBeInTheDocument();
+    expect(screen.getByText('Next execution: Jan 15, 2025 11:00 AM')).toBeInTheDocument();
+  });
+
+  it('should render only next execution in tooltip when showLabelInTooltip is false', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <TriggerIcon
+        triggerType="scheduled"
+        nextExecution="Jan 15, 2025 11:00 AM"
+        showLabelInTooltip={false}
+      />
+    );
+
+    const anchor = container.querySelector('.euiToolTipAnchor');
+    await user.hover(anchor!);
+
+    expect(await screen.findByText('Next execution: Jan 15, 2025 11:00 AM')).toBeInTheDocument();
+    expect(screen.queryByText('Scheduled')).not.toBeInTheDocument();
   });
 });

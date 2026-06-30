@@ -109,6 +109,26 @@ describe('WHERE Autocomplete', () => {
       }
     );
 
+    test('after a field name inside parens', async () => {
+      await whereExpectSuggestions('from a | where (keywordField ', [
+        '!= $0',
+        '< $0',
+        '<= $0',
+        '== $0',
+        '> $0',
+        '>= $0',
+        ...getOperatorSuggestions([
+          ...patternMatchOperators,
+          ...inOperators,
+          ...nullCheckOperators,
+        ]),
+      ]);
+    });
+
+    test('at the start of a parenthesized expression', async () => {
+      await whereExpectSuggestions('from a | where (', EMPTY_WHERE_SUGGESTIONS);
+    });
+
     test('suggests dates after a comparison with a date', async () => {
       const expectedFields = getFieldNamesByType(['date', 'date_nanos']);
       mockFieldsWithTypes(mockCallbacks, expectedFields);
@@ -256,7 +276,7 @@ describe('WHERE Autocomplete', () => {
     });
 
     test('suggests boolean and numeric operators after a numeric function result', async () => {
-      await whereExpectSuggestions('from a | where log10(doubleField) ', [
+      const expectedSuggestions = [
         ...getFunctionSignaturesByReturnType(
           Location.WHERE,
           'double',
@@ -269,7 +289,10 @@ describe('WHERE Autocomplete', () => {
           { operators: true, skipAssign: true },
           ['double']
         ),
-      ]);
+      ];
+
+      await whereExpectSuggestions('from a | where log10(doubleField) ', expectedSuggestions);
+      await whereExpectSuggestions('from a | where ROUND((doubleField)) ', expectedSuggestions);
     });
 
     test('suggestions after IS', async () => {
@@ -343,6 +366,14 @@ describe('WHERE Autocomplete', () => {
       );
       await whereExpectSuggestions(
         'from index | WHERE doubleField in ( textField, ',
+        [
+          ...getFieldNamesByType('double'),
+          ...getFunctionSignaturesByReturnType(Location.WHERE, 'double', { scalar: true }),
+        ],
+        mockCallbacks
+      );
+      await whereExpectSuggestions(
+        'from index | WHERE (doubleField) in ( textField, ',
         [
           ...getFieldNamesByType('double'),
           ...getFunctionSignaturesByReturnType(Location.WHERE, 'double', { scalar: true }),

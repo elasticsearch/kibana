@@ -39,4 +39,5 @@ export type {
   FieldItem,
   IndexWithFields,
   FieldFromIndicesRequest,
+  SnapshotRepositoriesInfo,
 } from './types';

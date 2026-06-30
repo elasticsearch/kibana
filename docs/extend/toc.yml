@@ -1,30 +1,74 @@
 toc:
   - file: index.md
-  - file: development-getting-started.md
+  - folder: ./getting-started
     children:
-      - file: running-kibana-advanced.md
-      - file: sample-data.md
-      - file: kibana-debugging.md
-      - file: building-kibana.md
-      - file: development-plugin-resources.md
-      - file: monorepo-packages.md
-  - file: development-best-practices.md
+      - file: index.md
+      - file: set-up-a-development-environment.md
+      - file: hello-world.md
+      - file: add-data.md
+      - file: running-elasticsearch.md
+      - file: wsl-on-windows-development.md
+      - file: local-cross-cluster-search-setup.md
+      - file: troubleshooting.md
+  - folder: contributing
     children:
-      - file: plugin-performance.md
-      - file: kibana-navigation.md
-      - file: stability.md
-      - file: security-best-practices.md
-      - file: typescript.md
-  - file: kibana-architecture.md
+      - file: index.md
+      - folder: principles
+        children:
+          - file: developer-principles.md
+          - file: security.md
+          - file: accessibility.md
+          - file: internationalization.md
+          - file: performance.md
+          - file: standards-and-guidelines.md
+      - folder: workflow
+        children:
+          - file: how-we-use-github.md
+          - file: development-pull-request.md
+          - file: pr-review.md
+          - file: kibana-issue-reporting.md
+          - file: feature-development.md
+      - folder: codebase
+        children:
+          - file: repository-structure.md
+          - file: typescript-project-references.md
+          - file: kibana-linting.md
+          - file: documentation.md
+          - file: managing-third-party-dependencies.md
+          - file: upgrading-nodejs.md
+          - file: logging.md
+          - file: saved-objects-and-migrations.md
+          - file: runtime-constraints.md
+          - file: package-design.md
+      - folder: api-design
+        children:
+          - file: guidelines-for-http-api-design-in-kibana.md
+          - file: guidelines-for-terraform-friendly-http-apis.md
+      - folder: ci-and-build
+        children:
+          - file: ci.md
+          - file: building-a-kibana-distributable.md
+          - file: debugging-in-development.md
+          - file: debugging-fips-test-failures.md
+  - folder: key-concepts
     children:
-      - file: kibana-platform-plugin-api.md
-      - file: kibana-platform-api.md
-      - file: application-service.md
-      - file: configuration-service.md
-      - file: elasticsearch-service.md
-      - file: http-service.md
-      - file: logging-service.md
-      - file: logging-config-changes.md
+      - file: index.md
+      - folder: platform-architecture
+        children:
+          - file: plugins-packages-and-the-platform.md
+          - file: anatomy-of-a-plugin.md
+          - file: scoped-services.md
+          - file: routing-navigation-and-url.md
+          - file: api-documentation.md
+      - folder: security
+        children:
+          - file: overview.md
+          - file: api-authorization.md
+          - file: feature-privileges.md
+          - file: rbac-and-saved-objects.md
+          - file: system-user.md
+          - file: encrypted-saved-objects.md
+          - file: audit-logging.md
       - file: saved-objects.md
         children:
           - file: saved-objects/structure.md
@@ -34,73 +78,109 @@ toc:
           - file: saved-objects/troubleshooting.md
           - file: saved-objects/delete.md
           - file: saved-objects/use.md
+          - file: saved-objects/esql.md
           - file: saved-objects/export.md
           - file: saved-objects/share.md
           - file: saved-objects/migrations.md
-      - file: ui-settings-service.md
-      - file: patterns.md
-      - file: core-packages.md
-      - file: development-security.md
-      - file: add-data-tutorials.md
-      - file: development-visualize-index.md
+          - file: saved-objects/legacy-url-aliases.md
+          - file: saved-objects/persistable-state.md
+      - folder: data
+        children:
+          - file: data-views.md
+      - folder: ui
+        children:
+          - file: building-blocks.md
+          - file: embeddables.md
+          - file: ui-actions.md
+          - file: lens.md
+            children:
+              - folder: lens-config-api
+                children:
+                  - file: lens-config-builder-api-documentation.md
+                  - file: lens-config-builder-api-metric.md
+                  - file: lens-config-builder-api-gauge.md
+                  - file: lens-config-builder-api-pie.md
+                  - file: lens-config-builder-api-mosaic.md
+                  - file: lens-config-builder-api-treemap.md
+                  - file: lens-config-builder-api-tag-cloud.md
+                  - file: lens-config-builder-api-region-map.md
+                  - file: lens-config-builder-api-table.md
+                  - file: lens-config-builder-api-heatmap.md
+                  - file: lens-config-builder-api-xy-chart.md
+      - folder: performance
+        children:
+          - file: plugin-performance-and-optimization.md
+          - file: client-performance.md
+          - file: server-performance.md
+          - folder: case-studies
+            children:
+              - file: performance-case-studies.md
+              - file: case-study-async-too-early.md
+              - file: case-study-top-level-imports.md
+              - file: case-study-uncommon-code-in-common.md
+  - folder: tutorials
+    children:
+      - file: index.md
+      - file: access-the-elasticsearch-client-in-a-plugin.md
+      - file: saved-object-search-method.md
+      - file: data-views-api.md
+      - file: kibana-data-search-services.md
+      - file: registering-and-accessing-an-endpoint.md
+      - file: versioning-http-apis.md
+      - file: versioning-interfaces.md
+      - file: generating-oas-for-http-apis.md
+      - file: registering-an-application.md
+      - file: kibana-page-template.md
+      - file: chrome-recently-viewed.md
+      - file: kibana-expressions-service.md
+      - file: lens-config-builder-api-examples.md
+      - file: home-tutorials.md
+      - file: configuring-your-plugin.md
+      - file: ui-settings.md
+      - file: i18n.md
+      - file: logging-service.md
       - file: reporting-integration.md
-  - file: contributing.md
-    children:
-      - file: development-github.md
-      - file: development-tests.md
-      - file: interpreting-ci-failures.md
-      - file: ci-metrics.md
-      - file: development-pull-request.md
-      - file: kibana-issue-reporting.md
-      - file: pr-review.md
-      - file: kibana-linting.md
-  - file: scout.md
-    children:
-      - file: scout/getting-started.md
+      - file: development-telemetry.md
+      - folder: screenshotting
         children:
-          - file: scout/setup-plugin.md
-          - file: scout/run-tests.md
-          - file: scout/debugging.md
-          - file: scout/best-practices.md
-          - file: scout/migrate-tests.md
-      - file: scout/core-concepts.md
+          - file: kibana-screenshotting-service.md
+      - file: external-plugin-development.md
         children:
-          - file: scout/fixtures.md
-          - file: scout/page-objects.md
-          - file: scout/api-services.md
-          - file: scout/parallelism.md
-          - file: scout/global-setup-hook.md
-          - file: scout/deployment-tags.md
-          - file: scout/skip-tests.md
-          - file: scout/feature-flags.md
-      - file: scout/ui-testing.md
-        children:
-          - file: scout/write-ui-tests.md
-          - file: scout/ui-best-practices.md
-          - file: scout/browser-auth.md
-          - file: scout/a11y-checks.md
-      - file: scout/api-testing.md
-        children:
-          - file: scout/write-api-tests.md
-          - file: scout/api-best-practices.md
-          - file: scout/api-auth.md
-  - file: external-plugin-development.md
+          - file: plugin-tooling.md
+          - file: external-plugin-functional-tests.md
+          - file: testing-kibana-plugin.md
+  - folder: testing
     children:
-      - file: plugin-tooling.md
-      - file: external-plugin-functional-tests.md
-      - file: external-plugin-localization.md
-      - file: testing-kibana-plugin.md
-  - file: advanced.md
-    children:
-      - file: running-elasticsearch.md
-      - file: development-basepath.md
-      - file: upgrading-nodejs.md
-      - file: legacy-url-aliases.md
+      - file: index.md
+      - file: unit-tests.md
+      - file: integration-tests.md
+      - file: test-coverage-checklist.md
+      - file: scout.md
+        children:
+          - file: setup-scout.md
+          - file: run-scout-tests.md
+          - file: debugging.md
+          - file: scout-best-practices.md
+          - file: fixtures.md
+          - file: page-objects.md
+          - file: api-services.md
+          - file: parallelism.md
+          - file: global-setup-hook.md
+          - file: deployment-tags.md
+          - file: skip-tests.md
+          - file: feature-flags.md
+          - file: ui-testing.md
+            children:
+              - file: write-ui-tests.md
+              - file: ui-best-practices.md
+              - file: browser-auth.md
+              - file: a11y-checks.md
+          - file: api-testing.md
+            children:
+              - file: write-api-tests.md
+              - file: api-best-practices.md
+              - file: api-auth.md
+          - file: migrate-tests.md
+      - file: ftr.md
   - file: plugin-list.md
-    children:
-      - file: kibana-dashboard-plugin.md
-      - file: kibana-expressions-plugin.md
-      - file: uiactions-plugin.md
-      - file: translations-plugin.md
   - file: dependencies-versions.md
-  - file: development-telemetry.md

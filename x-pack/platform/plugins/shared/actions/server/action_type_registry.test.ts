@@ -144,6 +144,19 @@ describe('actionTypeRegistry', () => {
       );
     });
 
+    test('throws if a supported feature id exceeds the max length', () => {
+      const actionTypeRegistry = new ActionTypeRegistry(actionTypeRegistryParams);
+      expect(() =>
+        actionTypeRegistry.register(
+          getConnectorType({
+            supportedFeatureIds: ['a'.repeat(101)],
+          })
+        )
+      ).toThrowErrorMatchingInlineSnapshot(
+        `"Feature IDs for connector type \\"my-connector-type\\" must not exceed 100 characters."`
+      );
+    });
+
     test('registers gold+ connector types to the licensing feature usage API', () => {
       const actionTypeRegistry = new ActionTypeRegistry(actionTypeRegistryParams);
       actionTypeRegistry.register(

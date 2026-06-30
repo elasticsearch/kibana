@@ -25,6 +25,7 @@
     "@kbn/core-application-browser",
     "@kbn/core-application-browser-internal",
     "@kbn/core-chrome-browser",
+    "@kbn/core-chrome-navigation-customization",
     "@kbn/core-injected-metadata-browser-mocks",
     "@kbn/core-doc-links-browser-mocks",
     "@kbn/core-http-browser-mocks",

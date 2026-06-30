@@ -35,7 +35,7 @@ import {
 const DEPLOY_SETTINGS_STEP_INDEX = ONBOARDING_STEPS.findIndex((s) => s.id === 'deploy-settings');
 
 export interface StepComponentProps {
-  onNext: () => void;
+  onContinue: () => void;
   onBack?: () => void;
 }
 
@@ -95,7 +95,7 @@ export function OnboardingShell() {
 
   const currentStepIndex = ONBOARDING_STEPS.findIndex((s) => s.id === currentStepId);
 
-  const onNext = useMemo(() => {
+  const onContinue = useMemo(() => {
     const nextStep = ONBOARDING_STEPS[currentStepIndex + 1];
     return () => {
       markStepComplete(currentStepId);
@@ -188,7 +188,7 @@ export function OnboardingShell() {
       <EuiPageTemplate.Section paddingSize="xl" restrictWidth>
         <EuiStepsHorizontal steps={horizontalStepsConfig} />
         <EuiSpacer size="xl" />
-        {CurrentStepComponent && <CurrentStepComponent onNext={onNext} onBack={onBack} />}
+        {CurrentStepComponent && <CurrentStepComponent onContinue={onContinue} onBack={onBack} />}
       </EuiPageTemplate.Section>
     </EuiPageTemplate>
   );

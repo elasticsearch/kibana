@@ -10,12 +10,12 @@
 import type { KibanaRequest } from '@kbn/core/server';
 import type { JsonObject } from '@kbn/utility-types';
 import type { EsWorkflow } from '@kbn/workflows';
+import { toWorkflowExecutionEngineModel } from '@kbn/workflows';
 import type { WorkflowExecutionRepository } from '../../../repositories/workflow_execution_repository';
 import type { WorkflowsExecutionEnginePluginStart } from '../../../types';
 import type { StepExecutionRuntime } from '../../../workflow_context_manager/step_execution_runtime';
 import type { IWorkflowEventLogger } from '../../../workflow_event_logger';
 import type { StrategyResult } from '../types';
-import { toExecutionModel } from '../utils';
 
 export class WorkflowExecuteAsyncStrategy {
   constructor(
@@ -37,7 +37,7 @@ export class WorkflowExecuteAsyncStrategy {
       const workflowExecution = this.stepExecutionRuntime.workflowExecution;
       const isTestRun = !!workflowExecution.isTestRun;
       const { workflowExecutionId } = await this.workflowsExecutionEngine.executeWorkflow(
-        toExecutionModel(workflow, isTestRun),
+        toWorkflowExecutionEngineModel(workflow, { isTestRun }),
         {
           spaceId,
           inputs,

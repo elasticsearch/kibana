@@ -6,12 +6,12 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import type { IntegrationCardItem } from '@kbn/fleet-plugin/public';
 import { OnboardingFlowForm } from './onboarding_flow_form';
 import { usePricingFeature } from '../quickstart_flows/shared/use_pricing_feature';
-import { MemoryRouter } from 'react-router-dom-v5-compat';
+import { MemoryRouter, useLocation } from 'react-router-dom-v5-compat';
 import { I18nProvider } from '@kbn/i18n-react';
 import { ObservabilityOnboardingPricingFeature } from '../../../common/pricing_features';
 import type { ObservabilityOnboardingAppServices } from '../..';
@@ -69,6 +69,11 @@ const renderWithProviders = (children: React.ReactNode, initialEntries: string[]
       <I18nProvider>{children}</I18nProvider>
     </MemoryRouter>
   );
+};
+
+const LocationDisplay = () => {
+  const location = useLocation();
+  return <div data-test-subj="location-display">{`${location.pathname}${location.search}`}</div>;
 };
 
 describe('OnboardingFlowForm', () => {
@@ -130,13 +135,77 @@ describe('OnboardingFlowForm', () => {
       expect(grid).toBeInTheDocument();
     });
 
-    it('should show only OpenTelemetry as the Kubernetes featured quickstart', () => {
+    it('shows the OpenTelemetry quickstart card on the ?category=kubernetes deep-link instead of redirecting', () => {
       mockUseCustomCards.mockReturnValue([
         { id: 'otel-kubernetes', title: 'OpenTelemetry Kubernetes' } as IntegrationCardItem,
       ]);
 
-      renderWithProviders(<OnboardingFlowForm />, ['/?category=kubernetes']);
+      renderWithProviders(
+        <>
+          <OnboardingFlowForm />
+          <LocationDisplay />
+        </>,
+        ['/?category=kubernetes']
+      );
 
+      // Deep-link stays on the landing page and reveals the card, no auto-route.
+      expect(screen.getByTestId('location-display')).toHaveTextContent('/?category=kubernetes');
+      expect(screen.getByTestId('location-display')).not.toHaveTextContent('/kubernetes?');
+      expect(screen.getByTestId('package-item-otel-kubernetes')).toBeInTheDocument();
+    });
+
+    it('navigates to the Kubernetes OTel flow when the Kubernetes tile is clicked, preserving non-landing query params', () => {
+      renderWithProviders(
+        <>
+          <OnboardingFlowForm />
+          <LocationDisplay />
+        </>,
+        ['/?foo=bar']
+      );
+
+      const kubernetesTile = screen.getByTestId('observabilityOnboardingUseCaseCard-kubernetes');
+      fireEvent.click(within(kubernetesTile).getByRole('radio'));
+
+      expect(screen.getByTestId('location-display')).toHaveTextContent('/kubernetes?foo=bar');
+    });
+
+    it('strips landing-only params (category, search) when routing to the Kubernetes OTel flow', () => {
+      renderWithProviders(
+        <>
+          <OnboardingFlowForm />
+          <LocationDisplay />
+        </>,
+        ['/?category=host&search=nginx&foo=bar']
+      );
+
+      const kubernetesTile = screen.getByTestId('observabilityOnboardingUseCaseCard-kubernetes');
+      fireEvent.click(within(kubernetesTile).getByRole('radio'));
+
+      expect(screen.getByTestId('location-display')).toHaveTextContent('/kubernetes?foo=bar');
+    });
+
+    it('reveals the card without navigating when the Kubernetes tile is selected via keyboard', () => {
+      mockUseCustomCards.mockReturnValue([
+        { id: 'otel-kubernetes', title: 'OpenTelemetry Kubernetes' } as IntegrationCardItem,
+      ]);
+
+      renderWithProviders(
+        <>
+          <OnboardingFlowForm />
+          <LocationDisplay />
+        </>,
+        ['/?foo=bar']
+      );
+
+      const radio = within(
+        screen.getByTestId('observabilityOnboardingUseCaseCard-kubernetes')
+      ).getByRole('radio');
+
+      // keydown flag + the click Chromium fires on arrow-select: reveals card, no nav.
+      fireEvent.keyDown(radio, { key: 'ArrowRight' });
+      fireEvent.click(radio);
+
+      expect(screen.getByTestId('location-display')).not.toHaveTextContent('/kubernetes?');
       expect(screen.getByTestId('package-item-otel-kubernetes')).toBeInTheDocument();
     });
 

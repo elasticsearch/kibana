@@ -30,12 +30,18 @@ interface ResponsiveMenuState {
  *
  * @param isCollapsed - whether the side nav is currently collapsed (affects layout recalculation).
  * @param items - all primary navigation items, in priority order.
+ * @param hasForcedMoreButton - whether a "More" button is rendered regardless of responsive overflow
+ * (e.g. because items were explicitly hidden by the user). When true, space is reserved for it.
  * @returns an object containing:
  * - `primaryMenuRef` - a ref to the primary menu.
  * - `visibleMenuItems` - the visible menu items.
  * - `overflowMenuItems` - the overflow menu items.
  */
-export function useResponsiveMenu(isCollapsed: boolean, items: MenuItem[]): ResponsiveMenuState {
+export function useResponsiveMenu(
+  isCollapsed: boolean,
+  items: MenuItem[],
+  hasForcedMoreButton: boolean = false
+): ResponsiveMenuState {
   const primaryMenuRef = useRef<HTMLElement | null>(null);
   const heightsCacheRef = useRef<number[]>([]);
 
@@ -62,11 +68,16 @@ export function useResponsiveMenu(isCollapsed: boolean, items: MenuItem[]): Resp
     const childrenGap = getStyleProperty(menu, 'gap');
 
     // 2. Calculate the number of visible menu items
-    const nextVisibleCount = countVisibleMenuItems(childrenHeights, childrenGap, menuHeight);
+    const nextVisibleCount = countVisibleMenuItems(
+      childrenHeights,
+      childrenGap,
+      menuHeight,
+      hasForcedMoreButton
+    );
 
     // 3. Update the visible count if needed
     setVisibleCount(nextVisibleCount);
-  }, [stableItemsReference]);
+  }, [stableItemsReference, hasForcedMoreButton]);
 
   const [scheduleRecalculation, cancelRecalculation] =
     useRafDebouncedCallback(recalculateMenuLayout);
@@ -91,7 +102,13 @@ export function useResponsiveMenu(isCollapsed: boolean, items: MenuItem[]): Resp
       observer.disconnect();
       cancelRecalculation();
     };
-  }, [isCollapsed, stableItemsReference, scheduleRecalculation, cancelRecalculation]);
+  }, [
+    isCollapsed,
+    stableItemsReference,
+    hasForcedMoreButton,
+    scheduleRecalculation,
+    cancelRecalculation,
+  ]);
 
   return {
     primaryMenuRef,

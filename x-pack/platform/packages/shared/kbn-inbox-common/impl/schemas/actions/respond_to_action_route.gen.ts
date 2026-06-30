@@ -39,6 +39,15 @@ export const RespondToInboxActionRequestBody = lazySchema(() =>
      * Response payload. Shape must conform to the inbox action's `input_schema`.
      */
     input: z.object({}).catchall(z.unknown()),
+    /**
+     * Surface the response was submitted through. Recorded as audit metadata on the action so downstream history feeds can render "via …" tags. Defaults to `inbox` when omitted. Free-form slug (lowercase + digits + `_-`, max 64 chars) so per-client identifiers like `example-mcp-app-security` work without a Kibana code change. Well-known core surfaces are exported from `@kbn/inbox-common` as `INBOX_CHANNELS` (`inbox`, `kibana_execution_view`, `agent_builder`, `slack`); MCP apps and other API responders should pass their own stable client id. The value is client-supplied; `responded_by` remains the trustworthy identity field, derived server-side from the request auth context.
+     */
+    channel: z
+      .string()
+      .min(1)
+      .max(64)
+      .regex(/^[a-z0-9][a-z0-9_-]*$/)
+      .optional(),
   })
 );
 export type RespondToInboxActionRequestBody = z.infer<typeof RespondToInboxActionRequestBody>;

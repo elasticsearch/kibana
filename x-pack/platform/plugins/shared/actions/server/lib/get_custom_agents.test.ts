@@ -89,9 +89,13 @@ describe('getCustomAgents', () => {
 
     // Accessing private property via any to test the proxy settings
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((httpAgent as any)?.proxy?.host).toBe('connector-proxy');
+    expect((httpAgent as any)?.proxy?.host).toBe('connector-proxy:3128');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((httpsAgent as any)?.proxy?.host).toBe('connector-proxy');
+    expect((httpAgent as any)?.proxy?.hostname).toBe('connector-proxy');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((httpsAgent as any)?.proxy?.host).toBe('connector-proxy:3128');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((httpsAgent as any)?.proxy?.hostname).toBe('connector-proxy');
   });
 
   test('returns non-proxy agents for matching proxyBypassHosts', () => {

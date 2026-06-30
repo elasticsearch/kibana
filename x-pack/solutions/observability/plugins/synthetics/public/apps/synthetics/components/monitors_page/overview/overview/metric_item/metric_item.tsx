@@ -21,9 +21,11 @@ import type { ClientPluginsStart } from '../../../../../../../plugin';
 import { useLocationName, useStatusByLocationOverview } from '../../../../../hooks';
 import {
   selectErrorPopoverState,
+  selectOverviewShowLastRun,
   selectOverviewTrends,
   toggleErrorPopoverOpen,
 } from '../../../../../state';
+import { resolveDisplayStatus } from '../../../../../state/overview_status';
 import {
   hideTestNowFlyoutAction,
   manualTestRunInProgressSelector,
@@ -53,6 +55,10 @@ export const getColor = (euiTheme: EuiThemeComputed, isEnabled: boolean, status?
       return euiTheme.colors.backgroundBasePlain;
     case 'pending':
       return euiTheme.colors.backgroundBasePlain;
+    case 'stale':
+      // Amber, not neutral grey: a monitor that stopped reporting is a signal
+      // worth investigating (it may be masking an incident).
+      return euiTheme.colors.backgroundBaseWarning;
     default:
       return euiTheme.colors.backgroundBaseSuccess;
   }
@@ -122,6 +128,11 @@ export const MetricItem = ({
   onClick: (params: FlyoutParamProps) => void;
 }) => {
   const status = monitor.overallStatus;
+  const showLastRun = useSelector(selectOverviewShowLastRun);
+  // `stale` monitors stay in their bucket (count + filter intact); when the
+  // user enables "Show last run" we only change what colour the card paints
+  // with — surfacing the last-known up/down instead of the neutral amber.
+  const displayStatus = resolveDisplayStatus(monitor, showLastRun);
   const locationId = monitor.locations[0]?.id ?? '';
   const { euiTheme } = useEuiTheme();
   const trendData = useSelector(selectOverviewTrends)[monitor.configId + locationId];
@@ -290,7 +301,7 @@ export const MetricItem = ({
                       />
                     </div>
                   ),
-                  color: getColor(euiTheme, monitor.isEnabled, status),
+                  color: getColor(euiTheme, monitor.isEnabled, displayStatus),
                   trendShape: MetricTrendShape.Area,
                   trend: trendData !== 'loading' && !!trendData?.data ? trendData.data : [],
                   ...getMetricValueProps(trendData),

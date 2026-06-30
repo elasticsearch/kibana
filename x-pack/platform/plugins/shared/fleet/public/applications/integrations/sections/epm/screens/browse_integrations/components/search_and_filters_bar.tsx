@@ -180,7 +180,7 @@ const SetupMethodFilter: React.FC<{
       {
         label: i18n.translate(
           'xpack.fleet.epm.browseIntegrations.searchAndFilterBar.setupMethodAgentlessOption',
-          { defaultMessage: 'Agentless' }
+          { defaultMessage: 'Managed Integration' }
         ),
         key: SETUP_METHOD_AGENTLESS,
         checked: selectedMethods.includes(SETUP_METHOD_AGENTLESS) ? 'on' : undefined,

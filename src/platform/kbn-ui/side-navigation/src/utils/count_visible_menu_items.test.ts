@@ -35,4 +35,24 @@ describe('countVisibleMenuItems', () => {
 
     expect(countVisibleMenuItems(heights, gap, menuHeight)).toBe(MAX_MENU_ITEMS - 1);
   });
+
+  it('reserves space for a forced "More" button even when every item fits', () => {
+    const heights = Array.from({ length: 4 }, () => 40);
+    const gap = 8;
+    const menuHeight = 4 * 40 + 3 * gap; // All four items fit exactly, with no room for "More"
+
+    // Without a forced "More" button all four are visible
+    expect(countVisibleMenuItems(heights, gap, menuHeight)).toBe(4);
+
+    // A forced "More" button (e.g. items explicitly hidden) must reserve a slot, pushing one item out
+    expect(countVisibleMenuItems(heights, gap, menuHeight, true)).toBe(3);
+  });
+
+  it('keeps all items visible when the forced "More" button also fits', () => {
+    const heights = Array.from({ length: 4 }, () => 40);
+    const gap = 8;
+    const menuHeight = 5 * 40 + 4 * gap; // Room for the four items plus the "More" button
+
+    expect(countVisibleMenuItems(heights, gap, menuHeight, true)).toBe(4);
+  });
 });

@@ -77,6 +77,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -92,11 +93,12 @@ describe('RuleActionsOverflow', () => {
       expect(getByTestId('rules-details-menu-panel')).not.toHaveTextContent('Revert rule'); // Don't show revert rule action when rule is custom
     });
 
-    test('menu is empty when no rule is passed to the component', () => {
-      const { getByTestId } = render(
+    test('rule-specific items are not rendered when no rule is passed to the component', () => {
+      const { getByTestId, queryByTestId } = render(
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={null}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -105,7 +107,10 @@ describe('RuleActionsOverflow', () => {
         { wrapper: TestProviders }
       );
       fireEvent.click(getByTestId('rules-details-popover-button-icon'));
-      expect(getByTestId('rules-details-menu-panel')).not.toHaveTextContent(/.+/);
+      expect(queryByTestId('rules-details-duplicate-rule')).not.toBeInTheDocument();
+      expect(queryByTestId('rules-details-export-rule')).not.toBeInTheDocument();
+      expect(queryByTestId('rules-details-manual-rule-run')).not.toBeInTheDocument();
+      expect(queryByTestId('rules-details-delete-rule')).not.toBeInTheDocument();
     });
   });
 
@@ -115,6 +120,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={true}
           canDuplicateRuleWithActions={true}
@@ -134,6 +140,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -157,6 +164,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -175,6 +183,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -203,6 +212,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -221,6 +231,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -243,6 +254,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -267,6 +279,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={rule}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -290,6 +303,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -309,6 +323,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -343,6 +358,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={mockRule('id')}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -365,6 +381,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={customizedMockRule}
           isDisabled={false}
           canDuplicateRuleWithActions={true}
@@ -391,6 +408,7 @@ describe('RuleActionsOverflow', () => {
         <RuleActionsOverflow
           showBulkDuplicateExceptionsConfirmation={showBulkDuplicateExceptionsConfirmation}
           showManualRuleRunConfirmation={showManualRuleRunConfirmation}
+          ruleId="id"
           rule={customizedMockRule}
           isDisabled={false}
           canDuplicateRuleWithActions={true}

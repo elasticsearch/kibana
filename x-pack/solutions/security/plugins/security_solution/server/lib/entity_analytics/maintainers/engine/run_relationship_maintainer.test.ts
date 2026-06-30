@@ -850,6 +850,29 @@ describe('runRelationshipMaintainer', () => {
       expect(filterStr).toContain('alice');
       expect(esqlArg.query).toContain('FROM logs-endpoint.events.security-default');
     });
+
+    it('omits the @timestamp range from the esql.query filter when disableLookbackWindow is true', async () => {
+      const { esClient, search, esql } = makeEsClient();
+      const { crudClient } = makeCrudClient();
+      search.mockResolvedValueOnce(
+        successResponse([{ key: { 'user.name': 'alice' }, doc_count: 1 }])
+      );
+      esql.mockResolvedValueOnce({ columns: [], values: [] });
+      await runRelationshipMaintainer({
+        esClient,
+        logger: loggerMock.create(),
+        namespace: 'default',
+        crudClient,
+        integrations: [{ ...baseConfig, disableLookbackWindow: true }],
+      });
+      const [esqlArg] = esql.mock.calls[0] as [
+        { query: string; filter: { bool: { filter: unknown[] } } }
+      ];
+      const filterStr = JSON.stringify(esqlArg.filter);
+      // No lookback range, but the bucket-derived actor terms filter remains.
+      expect(filterStr).not.toContain('@timestamp');
+      expect(filterStr).toContain('alice');
+    });
   });
 
   describe('telemetryCollector', () => {

@@ -9,7 +9,9 @@ import { loggingSystemMock } from '@kbn/core/server/mocks';
 import { elasticsearchServiceMock } from '@kbn/core/server/mocks';
 import {
   ALERT_CASE_IDS,
+  ALERT_INSTANCE_ID,
   ALERT_STATUS,
+  ALERT_UUID,
   ALERT_WORKFLOW_STATUS,
   ALERT_WORKFLOW_TAGS,
   EVENT_ACTION,
@@ -38,6 +40,8 @@ const alertDoc = {
   [ALERT_WORKFLOW_STATUS]: 'a-ok!',
   [ALERT_WORKFLOW_TAGS]: ['fee', 'fi', 'fo', 'fum'],
   [ALERT_CASE_IDS]: ['123', '456', '789'],
+  [ALERT_UUID]: 'alert-uuid-from-doc',
+  [ALERT_INSTANCE_ID]: 'instance-from-doc',
 };
 
 describe('alert_conflict_resolver', () => {
@@ -151,6 +155,11 @@ describe('alert_conflict_resolver', () => {
         `Error writing alerts ${ruleInfo}: 0 successful, 1 conflicts, 0 errors: `,
         logTags
       );
+      expect(logger.warn).toHaveBeenNthCalledWith(
+        1,
+        `Alert bulk write conflict ${ruleInfo}: alert UUID 'id-1', instance ID 'instance-from-doc'`,
+        logTags
+      );
       expect(logger.info).toHaveBeenNthCalledWith(
         1,
         `Retrying bulk update of 1 conflicted alerts ${ruleInfo}`,
@@ -191,6 +200,11 @@ describe('alert_conflict_resolver', () => {
         `Error writing alerts ${ruleInfo}: 2 successful, 1 conflicts, 1 errors: hallo`,
         logTags
       );
+      expect(logger.warn).toHaveBeenNthCalledWith(
+        1,
+        `Alert bulk write conflict ${ruleInfo}: alert UUID 'id-3', instance ID 'instance-from-doc'`,
+        logTags
+      );
       expect(logger.info).toHaveBeenNthCalledWith(
         1,
         `Retrying bulk update of 1 conflicted alerts ${ruleInfo}`,
@@ -229,6 +243,21 @@ describe('alert_conflict_resolver', () => {
       expect(logger.error).toHaveBeenNthCalledWith(
         1,
         `Error writing alerts ${ruleInfo}: 2 successful, 3 conflicts, 1 errors: hallo`,
+        logTags
+      );
+      expect(logger.warn).toHaveBeenNthCalledWith(
+        1,
+        `Alert bulk write conflict ${ruleInfo}: alert UUID 'id-3', instance ID 'instance-from-doc'`,
+        logTags
+      );
+      expect(logger.warn).toHaveBeenNthCalledWith(
+        2,
+        `Alert bulk write conflict ${ruleInfo}: alert UUID 'id-4', instance ID 'instance-from-doc'`,
+        logTags
+      );
+      expect(logger.warn).toHaveBeenNthCalledWith(
+        3,
+        `Alert bulk write conflict ${ruleInfo}: alert UUID 'id-6', instance ID 'instance-from-doc'`,
         logTags
       );
       expect(logger.info).toHaveBeenNthCalledWith(

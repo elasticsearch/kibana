@@ -6,6 +6,7 @@
  */
 
 import type { ISavedObjectsRepository, Logger } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import {
   UiamApiKeyProvisioningEntityType,
   UiamApiKeyProvisioningStatus,
@@ -142,7 +143,7 @@ export const writeTaskUiamProvisioningObservabilityStatus = async (
   try {
     const result = await savedObjectsClient.bulkCreate(docs, { overwrite: true });
     result.saved_objects.forEach((so) => {
-      if (so.error) {
+      if (isSavedObjectErrorResult(so)) {
         logger.warn(
           `Error writing task provisioning status for ${so.id}: ${so.error.message ?? so.error}`,
           { tags: TAGS }

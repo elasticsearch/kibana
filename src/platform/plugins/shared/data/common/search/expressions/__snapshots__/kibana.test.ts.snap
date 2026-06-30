@@ -28,5 +28,6 @@ Object {
     "to": "3",
   },
   "type": "kibana_context",
+  "useApproximation": undefined,
 }
 `;

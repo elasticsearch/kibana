@@ -42,6 +42,8 @@ import type {
   GetWorkflowExecutionsParams,
   GetWorkflowStepExecutionsParams,
   MgetWorkflowsParams,
+  RestoreWorkflowVersionParams,
+  RestoreWorkflowVersionResponseDto,
   ResumeExecutionParams,
   RunWorkflowOptions,
   SearchTriggerEventLogParams,
@@ -302,5 +304,21 @@ export class WorkflowApi {
       body: JSON.stringify(params),
       version: INTERNAL_API_VERSION,
     });
+  }
+
+  async restoreWorkflowVersion(
+    workflowId: string,
+    eventId: string,
+    { signal }: RestoreWorkflowVersionParams = {}
+  ): Promise<RestoreWorkflowVersionResponseDto> {
+    return this.http.post(
+      `${INTERNAL_BASE}/workflow/${encodeURIComponent(workflowId)}/history/${encodeURIComponent(
+        eventId
+      )}/restore`,
+      {
+        version: INTERNAL_API_VERSION,
+        signal,
+      }
+    );
   }
 }

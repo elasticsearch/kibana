@@ -211,4 +211,9 @@ export const ConnectorIconsMap: Map<
   ],
 
   ['.box', lazy(() => import(/* webpackChunkName: "connectorIconbox" */ './specs/box/icon'))],
+
+  [
+    '.dropbox',
+    lazy(() => import(/* webpackChunkName: "connectorIcondropbox" */ './specs/dropbox/icon')),
+  ],
 ]);

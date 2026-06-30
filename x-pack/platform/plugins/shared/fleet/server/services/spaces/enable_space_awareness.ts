@@ -6,7 +6,7 @@
  */
 
 import type { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
-import { SavedObjectsErrorHelpers, type Logger } from '@kbn/core/server';
+import { SavedObjectsErrorHelpers, isSavedObjectErrorResult, type Logger } from '@kbn/core/server';
 
 import { LEGACY_AGENT_POLICY_SAVED_OBJECT_TYPE } from '../../../common';
 import {
@@ -117,7 +117,7 @@ async function batchMigration(
         }
       );
       for (const res of createRes.saved_objects) {
-        if (res.error) {
+        if (isSavedObjectErrorResult(res)) {
           throw res.error;
         }
       }

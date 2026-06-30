@@ -1,0 +1,429 @@
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+  lifecycle: preview
+  repo: kibana
+  owner: elastic
+release-date: 2026-06-26
+entries:
+- file:
+    name: 271306.yaml
+    checksum: 421e884b2e42595d599a5f0b13e33741bbbb1ee3
+  type: feature
+  title: Add Box data source
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Adds a Box connector so you can chat to your files stored there.
+  prs:
+  - https://github.com/elastic/kibana/pull/271306
+  issues:
+  - '# PRIVATE: https://github.com/elastic/search-team/issues/13234'
+- file:
+    name: 268961.yaml
+    checksum: c56ac546e9fd04de213c741f7dde263853090035
+  type: enhancement
+  title: Improve default Y axis sort order for numeric heatmap buckets
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Heatmaps with numeric Y axis values now default to descending sort so buckets appear in natural numeric order instead of alphabetical order.
+  areas:
+  - Dashboards and visualizations
+  prs:
+  - https://github.com/elastic/kibana/pull/268961
+- file:
+    name: 272418.yaml
+    checksum: 3bff54d93012a04d2eb063249d5fa21902326e2e
+  type: bug-fix
+  title: Fix incorrect Kibana version on alerts CSV report info panel
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Alerts table CSV exports now include the running Kibana version instead of defaulting to 7.14.0 in Stack Management > Reporting.
+  areas:
+  - Alerting and reporting
+  prs:
+  - https://github.com/elastic/kibana/pull/272418
+  issues:
+  - https://github.com/elastic/kibana/issues/272275
+- file:
+    name: 273931.yaml
+    checksum: c775ec993a295629da7fd005a5f553e3a4587191
+  type: bug-fix
+  title: Fix KQL suggestions in autocomplete
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  areas:
+  - Discover and ES|QL
+  prs:
+  - https://github.com/elastic/kibana/pull/273931
+- file:
+    name: 273418.yaml
+    checksum: 403ba6ab50bd196b92a24a1b83299c1ca6dd234d
+  type: enhancement
+  title: Improve Synthetics search performance by honoring excluded data tiers setting
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Synthetics searches now respect the `observability:searchExcludedDataTiers` advanced setting, so you can exclude slow tiers such as `data_frozen` and reduce latency and search thread pool pressure.
+  prs:
+  - https://github.com/elastic/kibana/pull/273418
+  issues:
+  - https://github.com/elastic/kibana/issues/273086
+- file:
+    name: 273736.yaml
+    checksum: 7188abf8c75acdea7fcdfb0f884dbdb6b022d508
+  type: enhancement
+  title: Add Amazon CloudWatch (OTel) quickstart tile to the Cloud category on the Add data page
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  prs:
+  - https://github.com/elastic/kibana/pull/273736
+- file:
+    name: 273848.yaml
+    checksum: 125a9f92d9d2247ed7b73338fce73088e5cdf056
+  type: bug-fix
+  title: Fix slow Fleet setup when many outputs are configured
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: '`POST /api/fleet/setup` no longer decrypts every output on each call, so setup stays responsive on deployments with many configured outputs.'
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/273848
+  issues:
+  - https://github.com/elastic/kibana/issues/273373
+- file:
+    name: 272166.yaml
+    checksum: 6ad1195ed3695a6d7ddd9f5bbd9c5cb7ddc51cff
+  type: feature
+  title: Add embeddable Agent Builder conversation input for solution plugins
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Solution plugins can embed Agent Builder's rich chat input (editor, attachments, connector picker). Sending a message opens the Agent Builder app and auto-sends the message with attachments preserved.
+  areas:
+  - AI and machine Learning
+  prs:
+  - https://github.com/elastic/kibana/pull/272166
+  issues:
+  - '# PRIVATE: https://github.com/elastic/search-team/issues/14712'
+- file:
+    name: 273887.yaml
+    checksum: 2b94a9937f0b7ccad2e65de859f64ae5d0077ebe
+  type: bug-fix
+  title: Fix repeated machine learning capability checks on non-ML Kibana pages
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Stops the 5-minute poll that re-checked ML capabilities on pages where capabilities rarely change. Users who update ML permissions can refresh the page to pick up changes.
+  areas:
+  - AI and machine Learning
+  prs:
+  - https://github.com/elastic/kibana/pull/273887
+  issues:
+  - https://github.com/elastic/kibana/issues/273798
+- file:
+    name: 271286.yaml
+    checksum: 07c50ee633cb816a995e990bf288153a10ea6b83
+  type: enhancement
+  title: Add server-side sorting for the Name and Enabled columns in the workflows table.
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Click column headers in the workflows list to sort by Name (alphabetical) or Enabled (boolean). Sorting runs server-side with `GET /api/workflows`.
+  prs:
+  - https://github.com/elastic/kibana/pull/271286
+  issues:
+  - '# PRIVATE: https://github.com/elastic/security-team/issues/16867'
+- file:
+    name: 272428.yaml
+    checksum: d97725af224454c00d9a627027751200fc8291a0
+  type: bug-fix
+  title: Fix Fleet output save timeouts when many agent policies are affected
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Saving an output used by many agent policies no longer times out. Policy revision bumps run in a background task when more than 100 policies are affected.
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/272428
+  issues:
+  - https://github.com/elastic/kibana/issues/267748
+- file:
+    name: 272078.yaml
+    checksum: bf38da214b1d18622d13dc508324e1695a623c7c
+  type: feature
+  title: Add output filtering in the Console
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: The Console now lets you filter and transform Elasticsearch API responses without leaving the editor. After running a request, click `Filter response` to expand a filter bar beneath the output. Choose between JQ expression mode for structured queries (such as extracting specific fields, iterating over results, or finding index names by mapping type) and regular expression mode for line-by-line text matching.
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/272078
+- file:
+    name: 272604.yaml
+    checksum: 48a1025636dc36ac217b2b51890ce0a79c108e07
+  type: bug-fix
+  title: Fix slow Fleet setup with large numbers of agent policies
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Fleet setup now reconciles enrollment keys and policy revisions with bulk aggregations instead of issuing two Elasticsearch searches per agent policy.
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/272604
+- file:
+    name: 273740.yaml
+    checksum: a5f5c3113c28734fe3cc3b83b0cfbafca6f0c478
+  type: enhancement
+  title: Add 'Add to chat' action to alert table row actions
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: The 'Add to chat' action is now available from each alert row, in addition to bulk actions and the alert flyout.
+  areas:
+  - Alerting and reporting
+  prs:
+  - https://github.com/elastic/kibana/pull/273740
+- file:
+    name: 272669.yaml
+    checksum: b4feb20db82402a0d1db50ebab5ab278f8e2f95d
+  type: bug-fix
+  title: Fix inability to insert newlines in the ES|QL editor
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Pressing Enter in the ES|QL editor now inserts a newline instead of accepting the highlighted autocomplete suggestion.
+  areas:
+  - Discover and ES|QL
+  prs:
+  - https://github.com/elastic/kibana/pull/272669
+  issues:
+  - https://github.com/elastic/kibana/issues/269421
+- file:
+    name: 273221.yaml
+    checksum: 4d9fca32cc8b1503a6f70335faaea3520a75a7b4
+  type: bug-fix
+  title: Fix unreadable wrapped log messages in Logs Anomalies example table
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  prs:
+  - https://github.com/elastic/kibana/pull/273221
+- file:
+    name: 265091.yaml
+    checksum: 1a40bf7d396383a4f48071bfbe2e06e0bc586422
+  type: enhancement
+  title: Add sample report empty state
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Improves the AI Value Report empty state. When there are no attack discoveries in the selected time range, the page now shows a "Run Attack Discovery" call-to-action and a sample report so users can preview the report layout and the kind of insights it surfaces.
+  prs:
+  - https://github.com/elastic/kibana/pull/265091
+- file:
+    name: 273610.yaml
+    checksum: 0593e8269e76bb968521e87ef38e13c6358cb2ca
+  type: bug-fix
+  title: Fix issue displaying null values in ES|QL summary column
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  areas:
+  - Discover and ES|QL
+  prs:
+  - https://github.com/elastic/kibana/pull/273610
+  issues:
+  - https://github.com/elastic/kibana/issues/273562
+- file:
+    name: 273017.yaml
+    checksum: 174abd10dd3026e587eabb04086a64e433f9bf43
+  type: bug-fix
+  title: Fix attachments leaking between AI assistant conversations
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Starting a new chat no longer carries attachments from the previous conversation. All New Chat entry points now clear attachments explicitly.
+  areas:
+  - AI and machine Learning
+  prs:
+  - https://github.com/elastic/kibana/pull/273017
+  issues:
+  - https://github.com/elastic/kibana/issues/273014
+- file:
+    name: 270292.yaml
+    checksum: ede4a4733671454c6dcaf77bf8ceb7794e3b202b
+  type: bug-fix
+  title: Fix Entity Analytics watchlist sync to use the watchlist creator's credentials
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Watchlist index sync operations now run with the watchlist creator's read privileges instead of the Entity Store installer's credentials.
+  prs:
+  - https://github.com/elastic/kibana/pull/270292
+- file:
+    name: 274033.yaml
+    checksum: 467cf7ea2e69774067ae7e62c1e1837ae7850295
+  type: bug-fix
+  title: Fix an issue where all Security AI Assistant conversations were deleted after selecting all conversations and saving one.
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Selecting all conversations in Stack Management and then saving a visibility change on one conversation no longer deletes every conversation. Only the edited conversation is updated.
+  prs:
+  - https://github.com/elastic/kibana/pull/274033
+  issues:
+  - https://github.com/elastic/kibana/issues/243315
+- file:
+    name: 273518.yaml
+    checksum: de24d8e8b5b0e7bb8617873d4f535f032b4454ed
+  type: bug-fix
+  title: Fix unbounded string length validation in machine learning API schemas
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  areas:
+  - AI and machine Learning
+  prs:
+  - https://github.com/elastic/kibana/pull/273518
+- file:
+    name: 274002.yaml
+    checksum: 400a146637bb79b18254f0551c48a58b01ca296f
+  type: bug-fix
+  title: Fix save and return for maps opened from the Visualize library
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  areas:
+  - Dashboards and visualizations
+  prs:
+  - https://github.com/elastic/kibana/pull/274002
+  issues:
+  - https://github.com/elastic/kibana/issues/273690
+- file:
+    name: 269722.yaml
+    checksum: ec2885490f523017f90aca257e8f93a32250fd6c
+  type: enhancement
+  title: Add feedback when filters and drilldowns cannot apply to computed values on ES|QL charts
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: XY, heatmap, and partition charts now explain when legend actions, filters, or drilldowns are unavailable because the underlying value is computed rather than stored.
+  areas:
+  - Dashboards and visualizations
+  prs:
+  - https://github.com/elastic/kibana/pull/269722
+  issues:
+  - https://github.com/elastic/kibana/issues/260185
+- file:
+    name: 273801.yaml
+    checksum: 87e7999be22f66c5bf29478d4986b134f955d53d
+  type: bug-fix
+  title: Fix alert flyout showing only the first assignee
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: The alert flyout now shows all assignees instead of only the first value from multi-value assignee fields.
+  areas:
+  - Alerting and reporting
+  prs:
+  - https://github.com/elastic/kibana/pull/273801
+- file:
+    name: 272768.yaml
+    checksum: 6190c529f61fa6c0d01e55e9bcbf05645fa9108c
+  type: feature
+  title: Add timelines table to cases
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  areas:
+  - Alerting and reporting
+  prs:
+  - https://github.com/elastic/kibana/pull/272768
+- file:
+    name: 273641.yaml
+    checksum: c651ca88232b04d70ea39aee4aa00234600191b6
+  type: enhancement
+  title: Remove feedback button from Fleet
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  areas:
+  - Search and data
+  prs:
+  - https://github.com/elastic/kibana/pull/273641
+  issues:
+  - '# PRIVATE: https://github.com/elastic/kibana-team/issues/2854'
+- file:
+    name: 273303.yaml
+    checksum: b61c5aaf62231b23f4d4b6e7d71be2906df438ae
+  type: bug-fix
+  title: Fix object field editing in the index editor
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Editing cells in object fields now creates or updates object mappings correctly when you use dot notation in column names, instead of creating multi-valued fields on nested objects.
+  areas:
+  - Discover and ES|QL
+  prs:
+  - https://github.com/elastic/kibana/pull/273303
+  issues:
+  - https://github.com/elastic/kibana/issues/273146
+- file:
+    name: 270563.yaml
+    checksum: 27e804f7717cd78abd905ce02ff00df44aa0e7b4
+  type: bug-fix
+  title: Fix dashboard panel column type inference
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Fixes an issue where migrated Splunk dashboard panels would fail to render in Lens with a "wrong data type" error because column types were incorrectly inferred as "unknown".
+  prs:
+  - https://github.com/elastic/kibana/pull/270563
+- file:
+    name: 273898.yaml
+    checksum: 1024979be1faea864d2213cb9bbcf56941f1eb88
+  type: bug-fix
+  title: Fix error toast when viewing memory usage on the machine learning overview page without ML node permissions
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: Users without permission to view ML nodes no longer see an error when opening the memory usage section on the ML overview page. Read-only users can also access 'Manage jobs' buttons that were previously hidden.
+  areas:
+  - AI and machine Learning
+  prs:
+  - https://github.com/elastic/kibana/pull/273898
+- file:
+    name: 271387.yaml
+    checksum: 48dd3f842ae7a148f36abb1d57bb63f809315359
+  type: enhancement
+  title: Add OpenTelemetry-first Kubernetes onboarding flow
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  description: The Kubernetes tile and add-data card now open a single OpenTelemetry onboarding flow at `/kubernetes`. The Elastic Agent Kubernetes flow remains available at `/kubernetes/elastic-agent`.
+  prs:
+  - https://github.com/elastic/kibana/pull/271387
+- file:
+    name: 273292.yaml
+    checksum: b4fd53429765f73f082761230dd8b5397a9fcc93
+  type: enhancement
+  title: Add recommended ES|QL queries for remote cluster sources
+  products:
+  - product: cloud-serverless
+    target: 2026-06-25
+  areas:
+  - Discover and ES|QL
+  prs:
+  - https://github.com/elastic/kibana/pull/273292
+  issues:
+  - https://github.com/elastic/kibana/issues/257704

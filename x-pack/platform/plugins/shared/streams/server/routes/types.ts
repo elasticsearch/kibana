@@ -21,7 +21,7 @@ import type { StreamsClient } from '../lib/streams/client';
 import type { EbtTelemetryClient } from '../lib/telemetry';
 import type { StreamsServer } from '../types';
 import type { KnowledgeIndicatorClient } from '../lib/streams/ki';
-import type { SignificantEventsClients } from '../lib/sig_events/significant_events_clients';
+import type { SignificantEventsClients } from '../lib/significant_events/significant_events_clients';
 import type { ProcessorSuggestionsService } from '../lib/streams/ingest_pipelines/processor_suggestions_service';
 import type { IPatternExtractionService } from '../lib/pattern_extraction/pattern_extraction_service';
 import type { TaskClient } from '../lib/tasks/task_client';
@@ -29,7 +29,7 @@ import type { StreamsTaskType } from '../lib/tasks/task_definitions';
 import type { StreamsSettingsStorageClient } from '../lib/streams/storage/streams_settings_storage_client';
 import type { ContinuousKiOnboardingWorkflowService } from '../lib/workflows/continuous_onboarding_workflow';
 import type { WorkflowClients } from '../lib/workflows/create_workflow_clients';
-import type { SigEventsTuningConfig } from '../../common/sig_events_tuning_config';
+import type { SignificantEventsTuningConfig } from '../../common/significant_events_tuning_config';
 
 export type GetScopedClients = (params: {
   request: KibanaRequest;
@@ -52,7 +52,7 @@ export interface RouteHandlerScopedClients extends SignificantEventsClients {
   taskClient: TaskClient<StreamsTaskType>;
   streamsSettingsStorageClient: StreamsSettingsStorageClient;
   isSecurityEnabled: boolean;
-  tuningConfig: SigEventsTuningConfig;
+  tuningConfig: SignificantEventsTuningConfig;
 }
 
 export interface RouteDependencies {

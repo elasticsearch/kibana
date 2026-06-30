@@ -355,7 +355,7 @@ describe('createModelProvider', () => {
 
     it('uses the provided telemetryMetadata for the chat model and binds it on the inference client', async () => {
       const telemetryMetadata = {
-        pluginId: 'streams_sig_events_discovery',
+        pluginId: 'streams_significant_events_discovery',
         aggregateBy: 'streams_significant_events',
       };
       const deps = setupDeps();

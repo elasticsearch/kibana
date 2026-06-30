@@ -10,6 +10,7 @@ import type {
   ISavedObjectTypeRegistry,
   SavedObjectsType,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 
 import type { AssetSOObject, KibanaSavedObjectType, SimpleSOAssetType } from '../../../../common';
 import { ElasticsearchAssetType } from '../../../../common';
@@ -60,7 +61,8 @@ export async function getBulkAssets(
     .map(({ saved_object: savedObject }) => savedObject)
     .filter(
       (savedObject) =>
-        savedObject?.error?.statusCode !== 404 && displayedAssetTypesLookup.has(savedObject.type)
+        (!isSavedObjectErrorResult(savedObject) || savedObject.error.statusCode !== 404) &&
+        displayedAssetTypesLookup.has(savedObject.type)
     )
     .map((obj) => {
       // Kibana SOs are registered with an app URL getter, so try to use that

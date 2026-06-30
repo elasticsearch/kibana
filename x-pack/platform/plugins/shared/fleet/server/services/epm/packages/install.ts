@@ -1380,7 +1380,8 @@ export const saveKibanaAssetsRefs = async (
   assetRefs: KibanaAssetReference[] | null,
   spaceId: string,
   saveAsAdditionnalSpace = false,
-  append = false
+  append = false,
+  typesToReplace: string[] = []
 ) => {
   auditLoggingService.writeCustomSoAuditLog({
     action: 'update',
@@ -1423,8 +1424,9 @@ export const saveKibanaAssetsRefs = async (
 
         let spaceAssetRefs = assetRefs !== null ? assetRefs : [];
         if (append && installation) {
-          const existingSpaceRefs =
-            installation.attributes?.additional_spaces_installed_kibana?.[spaceId] ?? [];
+          const existingSpaceRefs = (
+            installation.attributes?.additional_spaces_installed_kibana?.[spaceId] ?? []
+          ).filter((r) => !typesToReplace.includes(r.type));
           spaceAssetRefs = uniqBy(
             [...spaceAssetRefs, ...existingSpaceRefs],
             (asset) => asset.id + asset.type
@@ -1448,10 +1450,10 @@ export const saveKibanaAssetsRefs = async (
 
       let newAssetRefs = assetRefs !== null ? assetRefs : [];
       if (append && installation) {
-        newAssetRefs = uniqBy(
-          [...newAssetRefs, ...(installation.attributes.installed_kibana ?? [])],
-          (asset) => asset.id + asset.type
+        const existingRefs = (installation.attributes.installed_kibana ?? []).filter(
+          (r) => !typesToReplace.includes(r.type)
         );
+        newAssetRefs = uniqBy([...newAssetRefs, ...existingRefs], (asset) => asset.id + asset.type);
       }
 
       return savedObjectsClient.update<Installation>(

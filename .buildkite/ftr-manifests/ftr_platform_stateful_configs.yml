@@ -177,11 +177,7 @@ enabled:
   - x-pack/platform/test/alerting_api_integration/security_and_spaces/group16/config.ts
   - x-pack/platform/test/alerting_api_integration/security_and_spaces/group17/config.ts
   - x-pack/platform/test/alerting_api_integration/security_and_spaces/group3/config_with_schedule_circuit_breaker.ts
-  - x-pack/platform/test/alerting_api_integration/security_and_spaces/group2/config_non_dedicated_task_runner.ts
-  - x-pack/platform/test/alerting_api_integration/security_and_spaces/group4/config_non_dedicated_task_runner.ts
-  - x-pack/platform/test/alerting_api_integration/security_and_spaces/group11/config_non_dedicated_task_runner.ts
-  - x-pack/platform/test/alerting_api_integration/security_and_spaces/group12/config_non_dedicated_task_runner.ts
-  - x-pack/platform/test/alerting_api_integration/security_and_spaces/group13/config_non_dedicated_task_runner.ts
+  - x-pack/platform/test/alerting_api_integration/security_and_spaces/non_dedicated_task_runner_smoke/config.ts
   - x-pack/platform/test/alerting_api_integration/spaces_only/tests/alerting/group1/config.ts
   - x-pack/platform/test/alerting_api_integration/spaces_only/tests/alerting/group2/config.ts
   - x-pack/platform/test/alerting_api_integration/spaces_only/tests/alerting/group3/config.ts

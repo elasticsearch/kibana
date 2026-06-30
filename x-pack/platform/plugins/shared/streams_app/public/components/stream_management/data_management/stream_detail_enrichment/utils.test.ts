@@ -224,7 +224,6 @@ describe('utils', () => {
     const createWiredDefinition = (): Streams.WiredStream.GetResponse => ({
       dashboards: [],
       rules: [],
-      queries: [],
       privileges: createPrivileges(),
       inherited_fields: {},
       effective_lifecycle: { dsl: { data_retention: '1d' }, from: 'ancestor' },
@@ -252,7 +251,6 @@ describe('utils', () => {
     const createClassicDefinition = (): Streams.ClassicStream.GetResponse => ({
       dashboards: [],
       rules: [],
-      queries: [],
       privileges: createPrivileges(),
       data_stream_exists: true,
       effective_lifecycle: { inherit: {} },

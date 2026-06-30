@@ -12,6 +12,7 @@ This guide covers:
 - space-scoped vs global installs
 - workflow identity (custom id, suffix, the reserved `system-` prefix)
 - lifecycle policies (`lifecycle`, `versionStrategy`, `enablement`)
+- billing declaration (`billable`)
 - `yaml` vs `yamlTemplate`
 - checking managed workflow status
 - executing managed workflows
@@ -20,7 +21,7 @@ This guide covers:
 
 | Concept | Meaning |
 |---|---|
-| **Definition** | Code-owned descriptor: `id`, `pluginId`, `version`, `yaml` or `yamlTemplate`, `management` policy. Lives in `@kbn/workflows/managed`. |
+| **Definition** | Code-owned descriptor: `id`, `pluginId`, `version`, `billable`, `yaml` or `yamlTemplate`, `management` policy. Lives in `@kbn/workflows/managed`. |
 | **Owner plugin** | Plugin that owns a definition (`pluginId`). Drives reconciliation and orphan cleanup. |
 | **Installed document** | Persisted workflow in `.workflows-*` indices, identified by `workflowId` + `spaceId`. |
 | **Reserved namespace** | All managed definition ids start with `system-`. The platform rejects this prefix for user-defined workflows. |
@@ -296,6 +297,7 @@ export const MY_WORKFLOW: ManagedWorkflowDefinition = {
   id: MY_WORKFLOW_ID,
   pluginId: 'myPlugin',
   version: 1,
+  billable: false,
   yaml: '...',
   management: { lifecycle: 'static', versionStrategy: 'auto', enablement: 'enforced' },
 };
@@ -345,6 +347,7 @@ export const HEALTH_CHECK_WORKFLOW: ManagedWorkflowDefinition = {
   id: HEALTH_CHECK_WORKFLOW_ID,
   pluginId: 'workflowsManagement',
   version: 1,
+  billable: false,
   yaml: `name: Workflows Management Health Check
 enabled: true
 triggers:
@@ -386,6 +389,7 @@ export const MY_TEMPLATE_WORKFLOW = {
   id: MY_TEMPLATE_WORKFLOW_ID,
   pluginId: 'myPlugin',
   version: 1,
+  billable: false,
   yamlTemplate: ({ entityId }) => `name: Monitor ${entityId}
 enabled: true
 triggers:
@@ -423,6 +427,12 @@ Every managed definition declares a `version: number` (positive integer, startin
 - **`version` is metadata, not a reconciliation trigger.** The `definitionHash` (SHA-256 of the YAML content) remains the source of truth for whether an update is needed. The `version` provides a human-readable label persisted as `managedVersion` on the workflow document.
 - Consumers (and future APIs) can compare the installed `managedVersion` on a document against the registry definition's `version` to answer "is this workflow up to date?" without inspecting hashes.
 - `version` is not auto-derived from the hash — it is an explicit declaration that the owner controls.
+
+### `billable` — execution metering
+
+Every managed definition must declare `billable: boolean`. Set it to `true` only when executions of this managed workflow should be billed; otherwise set it to `false`.
+
+This value is persisted with the managed workflow and included in metering metadata for directly executed managed workflows. If you are not sure whether your workflow should be billable, ask the Workflows team before adding or changing the definition.
 
 ## 9) Checking managed workflow status
 
@@ -522,7 +532,7 @@ Because there is a **single persisted document** for a global workflow, any edit
 
 ## 12) Rollout checklist
 
-1. Add the definition in `@kbn/workflows/managed` with the correct `pluginId`, a `system-` id, and `version: 1`; export the id as a const.
+1. Add the definition in `@kbn/workflows/managed` with the correct `pluginId`, a `system-` id, `version: 1`, and an explicit `billable` value; export the id as a const.
 2. Add the definition to `managedWorkflowDefinitions` in `managed/definitions/index.ts`, and re-export the id from that definitions barrel.
 3. Register the owner plugin id in `setup()`.
 4. Initialize the plugin-scoped client in `start()`.
@@ -532,6 +542,7 @@ Because there is a **single persisted document** for a global workflow, any edit
 8. For multiple instances, always pass `workflowIdSuffix` (or `workflowId`) — never rely on the definition id alone.
 9. Pick lifecycle policy intentionally (`static`/`dynamic`, `auto`/`on_adopt`, `enforced`/`restorable`).
 10. Use `yamlTemplate` only when install-time values are required.
-11. Bump `version` on the definition whenever you change the `yaml` or `yamlTemplate`.
-12. Use `managed.getWorkflowStatus(...)` for read-only pre-flight checks before execution.
-13. Execute via `managed.execute(request, ...)`; for dynamic instances, pass the deterministic `workflowId`.
+11. Ask the Workflows team if you are unsure whether the workflow should be billable.
+12. Bump `version` on the definition whenever you change the `yaml` or `yamlTemplate`.
+13. Use `managed.getWorkflowStatus(...)` for read-only pre-flight checks before execution.
+14. Execute via `managed.execute(request, ...)`; for dynamic instances, pass the deterministic `workflowId`.

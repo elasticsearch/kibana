@@ -19,6 +19,7 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { BackNavigation } from './hooks';
+import { APP_HEADER_TEST_SUBJECTS } from './test_subjects';
 
 const backLabel = i18n.translate('core.ui.chrome.appHeader.backButtonAriaLabel', {
   defaultMessage: 'Back',
@@ -75,7 +76,7 @@ export const BackButton = React.memo<BackButtonProps>(({ targets }) => {
       size="xs"
       css={styles.button}
       aria-label={buttonLabel}
-      data-test-subj="appHeaderBack"
+      data-test-subj={APP_HEADER_TEST_SUBJECTS.back}
       {...(targets.length > 1
         ? {
             onClick: togglePopover,

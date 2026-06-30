@@ -100,7 +100,7 @@ export function StreamDetailContextProvider({
         .then((response): Streams.all.GetResponse => {
           if (Streams.ingest.all.GetResponse.is(response)) {
             // Replicated streams (via CCR) can still have Kibana-side metadata edited
-            // (description, dashboards, queries, rules) but not ingest-level settings.
+            // (description, dashboards, rules) but not ingest-level settings.
             const isReplicated = response.replicated === true;
             return {
               ...response,

@@ -14,20 +14,22 @@ export class ComposeDiscoverPage {
   public readonly backButton: Locator;
   public readonly submitButton: Locator;
   /**
-   * "Open query editor" — visible on the Alert Condition step when no query has
-   * been committed yet (queryCommitted === false).
+   * "Open query editor" — visible on the Alert Condition step in signal
+   * (non-alert) mode when no query has been committed yet.
    */
   public readonly openEditorButton: Locator;
   /**
    * "Edit query" — visible on the Alert Condition step when a query is committed
-   * in signal (non-tracking) mode.
+   * in signal (non-alert) mode.
    */
   public readonly editQueryButton: Locator;
   /**
-   * "Edit queries" — visible on the Alert Condition step when a query is committed
-   * in tracking (alert kind) mode, where base + breach blocks are shown separately.
+   * Edit CTA in the alert-mode query summary on the Alert Condition step. Labeled
+   * "Open query editor" before a query is applied and "Edit query" afterwards; both
+   * render the same test subject. Replaces the legacy base/alert "Edit queries" button —
+   * create now uses a single unified editor and the heuristic split runs on Apply.
    */
-  public readonly editQueriesButton: Locator;
+  public readonly alertSummaryEditorButton: Locator;
   public readonly sandboxCloseButton: Locator;
   public readonly sandboxSearchButton: Locator;
   public readonly sandboxApplyButton: Locator;
@@ -40,12 +42,15 @@ export class ComposeDiscoverPage {
   public readonly createEsqlRuleButton: Locator;
   /** "Create ES|QL rule" card in the empty-state panel (shown when no rules exist). */
   public readonly createEsqlRuleCard: Locator;
+  public readonly modeSelect: Locator;
   public readonly cancelButton: Locator;
   /**
-   * Warning callout shown when the base query is applied but the breach
-   * (alert condition) segment is missing.
+   * Callout shown after Apply when the query has a base but no alert condition
+   * (no WHERE) — the whole query is treated as the breach query (every row breaches).
    */
-  public readonly breachQueryMissingCallout: Locator;
+  public readonly noAlertConditionCallout: Locator;
+  /** Callout shown after Apply when the query is empty. */
+  public readonly emptyQueryCallout: Locator;
 
   private readonly codeEditor: KibanaCodeEditorWrapper;
 
@@ -58,7 +63,7 @@ export class ComposeDiscoverPage {
     this.submitButton = this.page.testSubj.locator('composeDiscoverSubmit');
     this.openEditorButton = this.page.testSubj.locator('composeDiscoverOpenEditor');
     this.editQueryButton = this.page.testSubj.locator('composeDiscoverEditQuery');
-    this.editQueriesButton = this.page.testSubj.locator('composeDiscoverEditQueries');
+    this.alertSummaryEditorButton = this.page.testSubj.locator('esqlSummaryOpenEditor');
     this.sandboxCloseButton = this.page.testSubj.locator('querySandboxClose');
     this.sandboxSearchButton = this.page.testSubj.locator('composeDiscoverRunQuery');
     this.sandboxApplyButton = this.page.testSubj.locator('querySandboxApply');
@@ -69,11 +74,23 @@ export class ComposeDiscoverPage {
     this.relatedDashboardsInput = this.flyout.locator(
       'input[placeholder="Link related dashboards for investigation"]'
     );
+    this.modeSelect = this.page.testSubj.locator('composeDiscoverModeSelect');
     this.createRulePopoverButton = this.page.testSubj.locator('createRulePopoverButton');
     this.createEsqlRuleButton = this.page.testSubj.locator('createEsqlRuleButton');
     this.createEsqlRuleCard = this.page.testSubj.locator('createEsqlRuleCard');
     this.cancelButton = this.page.testSubj.locator('composeDiscoverCancel');
-    this.breachQueryMissingCallout = this.page.testSubj.locator('composeDiscoverAlertQueryMissing');
+    this.noAlertConditionCallout = this.page.testSubj.locator('esqlSummaryNoAlertConditionCallout');
+    this.emptyQueryCallout = this.page.testSubj.locator('esqlSummaryEmptyCallout');
+  }
+
+  /**
+   * Locates the read-only query summary section for a given state. The section
+   * renders `esqlQuerySummarySection-{state}` on the Alert Condition step.
+   */
+  summarySection(
+    state: 'before_apply' | 'success' | 'no_alert_condition' | 'split_failed' | 'empty'
+  ) {
+    return this.page.testSubj.locator(`esqlQuerySummarySection-${state}`);
   }
 
   editRuleButton(ruleId: string) {
@@ -97,20 +114,12 @@ export class ComposeDiscoverPage {
   }
 
   /**
-   * Types an ES|QL query into the sandbox base-tab code editor (Monaco index 0).
+   * Types an ES|QL query into the sandbox's single unified code editor (Monaco
+   * index 0). In the create flow the editor holds the whole pipeline (base +
+   * alert condition); the heuristic split runs on Apply.
    */
   async setSandboxQuery(query: string) {
     await this.codeEditor.setCodeEditorValue(query, 0);
-  }
-
-  /**
-   * Switches the sandbox to the "Alert condition" tab and types the given
-   * segment into the alert-condition editor (Monaco index 1, because the
-   * locked base preview occupies index 0 on that tab).
-   */
-  async setSandboxAlertCondition(segment: string) {
-    await this.page.testSubj.locator('querySandboxTab-alert').click();
-    await this.codeEditor.setCodeEditorValue(segment, 1);
   }
 
   async clickNext() {

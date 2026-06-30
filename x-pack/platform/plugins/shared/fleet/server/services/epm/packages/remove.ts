@@ -11,7 +11,12 @@ import { differenceBy, chunk } from 'lodash';
 import type { SavedObject } from '@kbn/core/server';
 
 import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
-import { SavedObjectsUtils, SavedObjectsErrorHelpers, SPACES_EXTENSION_ID } from '@kbn/core/server';
+import {
+  SavedObjectsUtils,
+  SavedObjectsErrorHelpers,
+  isSavedObjectErrorResult,
+  SPACES_EXTENSION_ID,
+} from '@kbn/core/server';
 import minVersion from 'semver/ranges/min-version';
 
 import pMap from 'p-map';
@@ -270,7 +275,8 @@ export async function deleteKibanaAssets({
     }
 
     const foundObjects = resolvedObjects.filter(
-      ({ saved_object: savedObject }) => savedObject?.error?.statusCode !== 404
+      ({ saved_object: savedObject }) =>
+        !isSavedObjectErrorResult(savedObject) || savedObject.error.statusCode !== 404
     );
 
     // in the case of a partial install, it is expected that some assets will be not found

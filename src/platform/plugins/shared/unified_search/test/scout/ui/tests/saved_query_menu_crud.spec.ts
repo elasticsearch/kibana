@@ -25,7 +25,7 @@ spaceTest.describe('Saved query menu — CRUD (Discover)', { tag: testData.SQM_U
 
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginWithCustomRole(testData.DISCOVER_ALL_SQM_ALL_ROLE);
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
   });
 
   spaceTest.afterAll(async ({ scoutSpace }) => {

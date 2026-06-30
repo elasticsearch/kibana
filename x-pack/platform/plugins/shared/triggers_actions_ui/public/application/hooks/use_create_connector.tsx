@@ -17,8 +17,14 @@ type CreateConnectorSchema = Pick<
   'actionTypeId' | 'name' | 'config' | 'secrets' | 'id'
 >;
 
+export interface CreateConnectorError {
+  title: string;
+  message: string;
+}
+
 interface UseCreateConnectorReturnValue {
   isLoading: boolean;
+  createConnectorError: CreateConnectorError | null;
   createConnector: (connector: CreateConnectorSchema) => Promise<ActionConnector | undefined>;
 }
 
@@ -29,10 +35,14 @@ export const useCreateConnector = (): UseCreateConnectorReturnValue => {
   } = useKibana().services;
 
   const [isLoading, setIsLoading] = useState(false);
+  const [createConnectorError, setCreateConnectorError] = useState<CreateConnectorError | null>(
+    null
+  );
   const abortCtrlRef = useRef(new AbortController());
   const isMounted = useRef(false);
 
   async function createConnector(connector: CreateConnectorSchema) {
+    setCreateConnectorError(null);
     setIsLoading(true);
     isMounted.current = true;
     abortCtrlRef.current.abort();
@@ -64,17 +74,21 @@ export const useCreateConnector = (): UseCreateConnectorReturnValue => {
         setIsLoading(false);
 
         if (error.name !== 'AbortError') {
+          const title = i18n.translate(
+            'xpack.triggersActionsUI.sections.useCreateConnector.updateErrorNotificationTitle',
+            { defaultMessage: 'Unable to create a connector.' }
+          );
+          const message =
+            error.body?.message ??
+            i18n.translate(
+              'xpack.triggersActionsUI.sections.useCreateConnector.updateErrorNotificationText',
+              { defaultMessage: 'Check the Kibana logs for more information.' }
+            );
+
+          setCreateConnectorError({ title, message });
           toasts.addError(error, {
-            title: i18n.translate(
-              'xpack.triggersActionsUI.sections.useCreateConnector.updateErrorNotificationTitle',
-              { defaultMessage: 'Unable to create a connector.' }
-            ),
-            toastMessage:
-              error.body?.message ??
-              i18n.translate(
-                'xpack.triggersActionsUI.sections.useCreateConnector.updateErrorNotificationText',
-                { defaultMessage: 'Check the Kibana logs for more information.' }
-              ),
+            title,
+            toastMessage: message,
           });
         }
       }
@@ -89,5 +103,5 @@ export const useCreateConnector = (): UseCreateConnectorReturnValue => {
     };
   }, []);
 
-  return { isLoading, createConnector };
+  return { isLoading, createConnectorError, createConnector };
 };

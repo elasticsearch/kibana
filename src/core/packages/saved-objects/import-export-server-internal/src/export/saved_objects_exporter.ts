@@ -23,6 +23,7 @@ import type {
   SavedObjectsExportByTypeOptions,
   SavedObject,
 } from '@kbn/core-saved-objects-server';
+import { isSavedObjectErrorResult } from '@kbn/core-saved-objects-server';
 import { sortObjects } from './sort_objects';
 import { SavedObjectsExportError } from './errors';
 import { collectExportedObjects } from './collect_exported_objects';
@@ -139,7 +140,9 @@ export class SavedObjectsExporter implements ISavedObjectsExporter {
 
   private async fetchByObjects({ objects, namespace }: SavedObjectsExportByObjectOptions) {
     const bulkGetResult = await this.#savedObjectsClient.bulkGet(objects, { namespace });
-    const erroredObjects = bulkGetResult.saved_objects.filter((obj) => !!obj.error);
+    const erroredObjects = bulkGetResult.saved_objects.filter((obj) =>
+      isSavedObjectErrorResult(obj)
+    );
     if (erroredObjects.length) {
       throw SavedObjectsExportError.objectFetchError(erroredObjects);
     }

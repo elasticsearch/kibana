@@ -56,7 +56,50 @@ describe('getIntegrationKnowledgeSetting', () => {
     expect(result).toBe(false);
   });
 
-  it('should return true if config is disabled and user setting is enabled', async () => {
+  it('should return false if experimental feature flag is disabled and user setting is enabled', async () => {
+    (appContextService.getConfig as jest.Mock).mockReturnValue(null);
+    (appContextService.getExperimentalFeatures as jest.Mock).mockReturnValue({
+      installIntegrationsKnowledge: false,
+    });
+    (getSettings as jest.Mock).mockResolvedValue({
+      integration_knowledge_enabled: true,
+    });
+
+    const result = await getIntegrationKnowledgeSetting(mockSoClient);
+    expect(result).toBe(false);
+  });
+
+  it('should return false if top-level installIntegrationsKnowledge is false and user setting is enabled', async () => {
+    (appContextService.getConfig as jest.Mock).mockReturnValue({
+      installIntegrationsKnowledge: false,
+    });
+    (appContextService.getExperimentalFeatures as jest.Mock).mockReturnValue({
+      installIntegrationsKnowledge: true,
+    });
+    (getSettings as jest.Mock).mockResolvedValue({
+      integration_knowledge_enabled: true,
+    });
+
+    const result = await getIntegrationKnowledgeSetting(mockSoClient);
+    expect(result).toBe(false);
+  });
+
+  it('should return true if top-level installIntegrationsKnowledge is true and user setting is enabled', async () => {
+    (appContextService.getConfig as jest.Mock).mockReturnValue({
+      installIntegrationsKnowledge: true,
+    });
+    (appContextService.getExperimentalFeatures as jest.Mock).mockReturnValue({
+      installIntegrationsKnowledge: true,
+    });
+    (getSettings as jest.Mock).mockResolvedValue({
+      integration_knowledge_enabled: true,
+    });
+
+    const result = await getIntegrationKnowledgeSetting(mockSoClient);
+    expect(result).toBe(true);
+  });
+
+  it('should return false if config is disabled and user setting is enabled', async () => {
     (appContextService.getConfig as jest.Mock).mockReturnValue({
       experimentalFeatures: {
         integrationKnowledge: false,
@@ -70,6 +113,6 @@ describe('getIntegrationKnowledgeSetting', () => {
     });
 
     const result = await getIntegrationKnowledgeSetting(mockSoClient);
-    expect(result).toBe(true);
+    expect(result).toBe(false);
   });
 });

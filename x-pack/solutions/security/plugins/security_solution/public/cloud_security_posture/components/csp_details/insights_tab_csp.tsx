@@ -5,14 +5,24 @@
  * 2.0.
  */
 
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { EuiButtonGroupOptionProps } from '@elastic/eui';
 import { EuiButtonGroup, EuiSpacer } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { FlyoutPanelProps, PanelPath } from '@kbn/expandable-flyout';
+import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import { i18n } from '@kbn/i18n';
+import { TableId } from '@kbn/securitysolution-data-table';
+import type {
+  FindingsMisconfigurationPanelExpandableFlyoutPropsPreview,
+  FindingsVulnerabilityPanelExpandableFlyoutPropsPreview,
+} from '@kbn/cloud-security-posture';
 import { useStableExpandableFlyoutState } from '../../../flyout/shared/hooks/use_stable_expandable_flyout_state';
 import { CspInsightLeftPanelSubTab } from '../../../flyout/entity_details/shared/components/left_panel/left_panel_header';
+import { DocumentDetailsPreviewPanelKey } from '../../../flyout/document_details/shared/constants/panel_keys';
+import { ALERT_PREVIEW_BANNER } from '../../../flyout/document_details/preview/constants';
+import { MisconfigurationFindingsPreviewPanelKey } from '../../../flyout/csp_details/findings_flyout/constants';
+import { VulnerabilityFindingsPreviewPanelKey } from '../../../flyout/csp_details/vulnerabilities_flyout/constants';
 import { MisconfigurationFindingsDetailsTable } from './misconfiguration_findings_details_table';
 import { VulnerabilitiesFindingsDetailsTable } from './vulnerabilities_findings_details_table';
 import { AlertsDetailsTable } from './alerts_findings_details_table';
@@ -57,6 +67,80 @@ export const InsightsTabCsp = memo(
     entityType?: string;
   }) => {
     const panels = useStableExpandableFlyoutState();
+    const { openPreviewPanel } = useExpandableFlyoutApi();
+
+    const onShowAlert = useCallback(
+      (eventId: string, indexName: string) => {
+        openPreviewPanel({
+          id: DocumentDetailsPreviewPanelKey,
+          params: {
+            id: eventId,
+            indexName,
+            scopeId: TableId.alertsOnRuleDetailsPage,
+            isPreviewMode: true,
+            banner: ALERT_PREVIEW_BANNER,
+          },
+        });
+      },
+      [openPreviewPanel]
+    );
+
+    const onShowFinding = useCallback(
+      (resourceId: string, ruleId: string) => {
+        const previewPanelProps: FindingsMisconfigurationPanelExpandableFlyoutPropsPreview = {
+          id: MisconfigurationFindingsPreviewPanelKey,
+          params: {
+            resourceId,
+            ruleId,
+            scopeId,
+            isPreviewMode: true,
+            banner: {
+              title: i18n.translate(
+                'xpack.securitySolution.flyout.right.misconfigurationFinding.PreviewTitle',
+                {
+                  defaultMessage: 'Preview finding details',
+                }
+              ),
+              backgroundColor: 'warning',
+              textColor: 'warning',
+            },
+          },
+        };
+        openPreviewPanel(previewPanelProps);
+      },
+      [openPreviewPanel, scopeId]
+    );
+
+    const onShowVulnerability = useCallback(
+      (params: {
+        vulnerabilityId: string;
+        resourceId: string;
+        packageName: string;
+        packageVersion: string;
+        eventId: string;
+      }) => {
+        const previewPanelProps: FindingsVulnerabilityPanelExpandableFlyoutPropsPreview = {
+          id: VulnerabilityFindingsPreviewPanelKey,
+          params: {
+            ...params,
+            scopeId,
+            isPreviewMode: true,
+            banner: {
+              title: i18n.translate(
+                'xpack.securitySolution.flyout.right.vulnerabilityFinding.PreviewTitle',
+                {
+                  defaultMessage: 'Preview vulnerability details',
+                }
+              ),
+              backgroundColor: 'warning',
+              textColor: 'warning',
+            },
+          },
+        };
+        openPreviewPanel(previewPanelProps);
+      },
+      [openPreviewPanel, scopeId]
+    );
 
     let hasMisconfigurationFindings = false;
     let hasVulnerabilitiesFindings = false;
@@ -176,20 +260,25 @@ export const InsightsTabCsp = memo(
           <MisconfigurationFindingsDetailsTable
             field={field}
             value={value}
-            scopeId={scopeId}
             entityId={entityId}
             entityType={entityType}
+            onShowFinding={onShowFinding}
           />
         ) : activeInsightsId === CspInsightLeftPanelSubTab.VULNERABILITIES ? (
           <VulnerabilitiesFindingsDetailsTable
             identityField={field}
             value={value}
-            scopeId={scopeId}
             entityId={entityId}
             entityType={entityType}
+            onShowVulnerability={onShowVulnerability}
           />
         ) : (
-          <AlertsDetailsTable field={field} value={value} entityId={entityId} />
+          <AlertsDetailsTable
+            field={field}
+            value={value}
+            entityId={entityId}
+            onShowAlert={onShowAlert}
+          />
         )}
       </>
     );

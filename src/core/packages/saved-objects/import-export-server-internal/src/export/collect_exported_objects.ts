@@ -16,6 +16,7 @@ import type {
   SavedObjectsExportTransform,
   SavedObject,
 } from '@kbn/core-saved-objects-server';
+import { isSavedObjectErrorResult } from '@kbn/core-saved-objects-server';
 import { applyExportTransforms } from './apply_export_transforms';
 
 interface CollectExportedObjectOptions {
@@ -166,9 +167,9 @@ const fetchReferences = async ({
 }): Promise<FetchReferencesResult> => {
   const { saved_objects: savedObjects } = await client.bulkGet(references, { namespace });
   return {
-    objects: savedObjects.filter((obj) => !obj.error),
+    objects: savedObjects.filter((obj) => !isSavedObjectErrorResult(obj)),
     missingRefs: savedObjects
-      .filter((obj) => obj.error)
+      .filter((obj) => isSavedObjectErrorResult(obj))
       .map((obj) => ({ type: obj.type, id: obj.id })),
   };
 };

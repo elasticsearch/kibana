@@ -35,9 +35,9 @@ const mockAssetDetailsLocator = {
 } as unknown as jest.Mocked<AssetDetailsLocator>;
 
 const mockDiscoverLocator = {
-  getRedirectUrl: jest.fn((params: { query?: { query?: string } }) => {
-    const query = params.query?.query || '';
-    return `/app/discover#/?_a=(query:(language:kuery,query:'${query}'))`;
+  getRedirectUrl: jest.fn((params: { query?: { esql?: string } }) => {
+    const esql = params.query?.esql || '';
+    return `/app/discover#/?_a=(query:(esql:'${esql}'))`;
   }),
 } as unknown as ReturnType<typeof sharePluginMock.createLocator>;
 
@@ -230,17 +230,18 @@ describe('Transaction action menu', () => {
     expect(podMetricsAction?.condition).toBe(true);
     // Should use Discover link, not Infra UI link
     expect(mockAssetDetailsLocator.getRedirectUrl).not.toHaveBeenCalled();
+    // Should use an ES|QL TS (time series) query, not classic KQL
     expect(mockDiscoverLocator.getRedirectUrl).toHaveBeenCalledWith(
       expect.objectContaining({
         query: expect.objectContaining({
-          language: 'kuery',
-          query: 'kubernetes.pod.uid: "123"',
+          esql: 'TS metrics-* | WHERE `kubernetes.pod.uid` == "123"',
         }),
       })
     );
     // Verify the generated URL contains the correct query
     expect(podMetricsAction?.href).toContain('/app/discover');
-    expect(podMetricsAction?.href).toContain('kubernetes.pod.uid: "123"');
+    expect(podMetricsAction?.href).toContain('TS metrics-*');
+    expect(podMetricsAction?.href).toContain('kubernetes.pod.uid');
   });
 
   it('shows host and required sections only', () => {

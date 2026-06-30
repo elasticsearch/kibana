@@ -11,8 +11,8 @@ import type { WorkflowExecutionListItemDto } from '@kbn/workflows';
 import { STREAMS_KI_ONBOARDING_WORKFLOW_ID } from '@kbn/workflows/managed';
 import type { ChatCompletionTokenCount } from '@kbn/inference-common';
 import {
-  SigEventsWorkflowStatus,
-  type SigEventsWorkflowStatusResult,
+  SignificantEventsWorkflowStatus,
+  type SignificantEventsWorkflowStatusResult,
   type StreamsKIsOnboardingFeaturesResult,
   type StreamsKIsOnboardingQueriesResult,
   type StreamsKIsOnboardingStatusResult,
@@ -258,7 +258,7 @@ export class StreamsKIsOnboardingClient {
       queryParams: { concurrencyGroupKey: buildConcurrencyKey(streamName) },
     });
 
-    if (result.status !== SigEventsWorkflowStatus.Completed) {
+    if (result.status !== SignificantEventsWorkflowStatus.Completed) {
       return result;
     }
 
@@ -287,15 +287,18 @@ export class StreamsKIsOnboardingClient {
     streamNames,
   }: {
     streamNames: string[];
-  }): Promise<Record<string, SigEventsWorkflowStatusResult>> {
+  }): Promise<Record<string, SignificantEventsWorkflowStatusResult>> {
     if (streamNames.length === 0) {
       return {};
     }
 
-    const statuses: Record<string, SigEventsWorkflowStatusResult> = {};
+    const statuses: Record<string, SignificantEventsWorkflowStatusResult> = {};
 
     for (const streamName of streamNames) {
-      statuses[streamName] = { status: SigEventsWorkflowStatus.NotStarted, executionId: null };
+      statuses[streamName] = {
+        status: SignificantEventsWorkflowStatus.NotStarted,
+        executionId: null,
+      };
     }
 
     const requested = new Set(streamNames);

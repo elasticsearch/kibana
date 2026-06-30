@@ -137,6 +137,7 @@ export const Description = ({
       paddingSize="none"
       hasBorder={false}
       hasShadow={false}
+      grow={false}
       color="transparent"
       data-test-subj="description"
     >

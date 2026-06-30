@@ -14,7 +14,8 @@ import { test, CUSTOM_ROLES } from '../fixtures';
 const DATA_STREAM_NAME = 'test_data_stream';
 const INDEX_TEMPLATE_NAME = 'generic-logs-scout';
 
-test.describe('Create Data View wizard', { tag: tags.stateful.classic }, () => {
+// Failing: See https://github.com/elastic/kibana/issues/272031
+test.describe.skip('Create Data View wizard', { tag: tags.stateful.classic }, () => {
   test.beforeAll(async ({ esClient }) => {
     await esClient.indices.putIndexTemplate({
       name: INDEX_TEMPLATE_NAME,

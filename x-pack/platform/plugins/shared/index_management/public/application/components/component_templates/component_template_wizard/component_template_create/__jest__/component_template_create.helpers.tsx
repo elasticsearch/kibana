@@ -64,16 +64,14 @@ export const completeStep = {
     }
 
     if (lifecycle && lifecycle.enabled) {
-      const lifecycleSwitchRow = screen.getByTestId('dataRetentionToggle');
-      const lifecycleSwitch = within(lifecycleSwitchRow).getByRole('switch');
-      const isEnabled = lifecycleSwitch.getAttribute('aria-checked') === 'true';
-      if (!isEnabled) {
-        fireEvent.click(lifecycleSwitch);
+      const deleteCheckbox = screen.getByTestId('dlmPhasesSelectorDeletePhaseCard');
+      if (!(deleteCheckbox as HTMLInputElement).checked) {
+        fireEvent.click(deleteCheckbox);
       }
 
-      await runPendingTimersUntil(() => screen.queryByTestId('valueDataRetentionField') !== null);
+      await runPendingTimersUntil(() => screen.queryByTestId('deleteDurationValue') !== null);
 
-      const retentionInput = screen.getByTestId('valueDataRetentionField');
+      const retentionInput = screen.getByTestId('deleteDurationValue');
       fireEvent.change(retentionInput, { target: { value: String(lifecycle.value) } });
     }
 

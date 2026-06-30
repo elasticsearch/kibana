@@ -133,6 +133,7 @@ export {
   getUpdateActionPolicyApiKeyUrl,
   getListExecutionHistoryUrl,
   getCountNewExecutionHistoryEventsUrl,
+  getRuleExecutionsUrl,
 } from '../../common/urls';
 export { expectNoBulkTruncationMetadata } from '../../common/assertions';
 export {

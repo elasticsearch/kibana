@@ -10,13 +10,19 @@ import type {
   PluginStartContract as ActionsPluginStart,
 } from '@kbn/actions-plugin/server';
 import type { InferenceServerSetup, InferenceServerStart } from '@kbn/inference-plugin/server';
+import type {
+  AgentBuilderPluginSetup,
+  AgentBuilderPluginStart,
+} from '@kbn/agent-builder-plugin/server';
 
 export interface GenAiSettingsPluginSetupDependencies {
   actions: ActionsPluginSetup;
   inference: InferenceServerSetup;
+  agentBuilder?: AgentBuilderPluginSetup;
 }
 
 export interface GenAiSettingsPluginStartDependencies {
   actions: ActionsPluginStart;
   inference: InferenceServerStart;
+  agentBuilder?: AgentBuilderPluginStart;
 }

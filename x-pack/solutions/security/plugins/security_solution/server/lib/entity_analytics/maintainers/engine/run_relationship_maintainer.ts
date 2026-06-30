@@ -17,11 +17,15 @@ import type {
   CompositeBucket,
   EntityRelationshipRecord,
 } from './types';
-import { buildActorDiscoveryQuery, buildActorPageFilter } from './build_actor_discovery_query';
+import {
+  buildActorDiscoveryQuery,
+  buildActorPageFilter,
+  buildLookbackFilter,
+} from './build_actor_discovery_query';
 import { buildTargetsPerActorQuery } from './build_targets_per_actor_query';
 import { parseTargetsPerActorRows } from './parse_targets_per_actor_rows';
 import { writeEntityIds, type WriteEntityIdsResult } from './update_entities';
-import { LOOKBACK_WINDOW, MAX_ITERATIONS } from './constants';
+import { MAX_ITERATIONS } from './constants';
 import { assertValidNamespace } from './validate_namespace';
 import type {
   RelationshipMaintainerSourceResult,
@@ -109,10 +113,7 @@ async function fetchTargetsForActors(
 ): Promise<EsqlQueryResult | null> {
   const esqlFilter = {
     bool: {
-      filter: [
-        { range: { '@timestamp': { gte: LOOKBACK_WINDOW, lt: 'now' } } },
-        buildActorPageFilter(config, buckets),
-      ],
+      filter: [...buildLookbackFilter(config), buildActorPageFilter(config, buckets)],
     },
   };
   try {
@@ -131,6 +132,7 @@ async function fetchTargetsForActors(
       );
       return null;
     }
+
     return { columns: typed.columns, values: typed.values };
   } catch (err) {
     if (abortController?.signal.aborted) {
@@ -251,7 +253,14 @@ async function runIntegration(
 
     // Stream per-integration: write this integration's records before
     // returning so memory does not accumulate across the outer loop.
-    const write = await writeEntityIds(crudClient, logger, records);
+    const write = await writeEntityIds(
+      crudClient,
+      logger,
+      records,
+      esClient,
+      namespace,
+      config.validateTargetIds
+    );
     // When truncated, the final loop pass incremented `iterations` before breaking
     // without fetching a page — clamp to the actual number of pages completed.
     const completedIterations = truncated ? MAX_ITERATIONS : iterations;
@@ -268,7 +277,7 @@ async function runIntegration(
     return {
       buckets: totalBuckets,
       recordsCount: records.length,
-      write: { updated: 0, notFound: 0, errors: 0, relationshipTypeApplied: {} },
+      write: { updated: 0, notFound: 0, errors: 0, droppedTargets: 0, relationshipTypeApplied: {} },
       outcome: 'error',
       iterations,
       truncated: false,
@@ -328,6 +337,8 @@ export const runRelationshipMaintainer = async ({
   totalNotFound: number;
   /** Count of non-404 errors returned by `bulkUpdateEntity` (5xx, etc.). */
   totalWriteErrors: number;
+  /** Count of target EUIDs pruned because they don't exist in the entity store. */
+  totalDroppedTargets: number;
   /** Total composite-agg pagination passes across all integrations. */
   totalIterations: number;
   /** True if any integration hit MAX_ITERATIONS and stopped early. */
@@ -339,6 +350,11 @@ export const runRelationshipMaintainer = async ({
   // is cheaper and stronger than trusting all callers.
   assertValidNamespace(namespace);
 
+  // Capture run-start time as the watermark. Using end-of-run would exclude any
+  // entity whose last_seen advanced between query execution and run completion —
+  // a silent permanent gap on busy stores with long paginated runs.
+  const runStartTimestamp = new Date().toISOString();
+
   const readClient = cpsEsClient ?? esClient;
 
   let totalBuckets = 0;
@@ -346,6 +362,7 @@ export const runRelationshipMaintainer = async ({
   let totalWritten = 0;
   let totalNotFound = 0;
   let totalWriteErrors = 0;
+  let totalDroppedTargets = 0;
   let totalIterations = 0;
   let truncated = false;
 
@@ -375,6 +392,7 @@ export const runRelationshipMaintainer = async ({
       totalWritten += write.updated;
       totalNotFound += write.notFound;
       totalWriteErrors += write.errors;
+      totalDroppedTargets += write.droppedTargets;
     }
 
     if (telemetryCollector) {
@@ -397,8 +415,9 @@ export const runRelationshipMaintainer = async ({
     totalWritten,
     totalNotFound,
     totalWriteErrors,
+    totalDroppedTargets,
     totalIterations,
     truncated,
-    lastRunTimestamp: new Date().toISOString(),
+    lastRunTimestamp: runStartTimestamp,
   };
 };

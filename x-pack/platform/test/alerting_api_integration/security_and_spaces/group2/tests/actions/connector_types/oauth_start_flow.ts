@@ -69,54 +69,106 @@ export default function oAuthStartFlowTest({ getService }: FtrProviderContext) {
       await objectRemover.removeAll();
     });
 
-    describe('user with actions "all" privilege', () => {
-      const { user } = Space1AllAtSpace1;
+    describe('POST _start_oauth_flow', () => {
+      describe('user with actions "all" privilege', () => {
+        const { user } = Space1AllAtSpace1;
 
-      it('should return authorizationUrl and state', async () => {
-        const { body } = await supertestWithoutAuth
-          .post(
-            `${getUrlPrefix(space.id)}/internal/actions/connector/${connectorId}/_start_oauth_flow`
-          )
-          .set('Cookie', sessionCookies[user.username])
-          .set('kbn-xsrf', 'foo')
-          .send({ returnUrl: RETURN_URL })
-          .expect(200);
+        it('should return authorizationUrl and state', async () => {
+          const { body } = await supertestWithoutAuth
+            .post(
+              `${getUrlPrefix(
+                space.id
+              )}/internal/actions/connector/${connectorId}/_start_oauth_flow`
+            )
+            .set('Cookie', sessionCookies[user.username])
+            .set('kbn-xsrf', 'foo')
+            .send({ returnUrl: RETURN_URL })
+            .expect(200);
 
-        expect(body.authorizationUrl).to.be.a('string');
-        expect(body.state).to.be.a('string');
+          expect(body.authorizationUrl).to.be.a('string');
+          expect(body.state).to.be.a('string');
+        });
+      });
+
+      describe('user with actions "read" privilege', () => {
+        const { user } = GlobalReadAtSpace1;
+
+        it('should return authorizationUrl and state', async () => {
+          const { body } = await supertestWithoutAuth
+            .post(
+              `${getUrlPrefix(
+                space.id
+              )}/internal/actions/connector/${connectorId}/_start_oauth_flow`
+            )
+            .set('Cookie', sessionCookies[user.username])
+            .set('kbn-xsrf', 'foo')
+            .send({ returnUrl: RETURN_URL })
+            .expect(200);
+
+          expect(body.authorizationUrl).to.be.a('string');
+          expect(body.state).to.be.a('string');
+        });
+      });
+
+      describe('user without actions feature privilege', () => {
+        const { user: unprivilegedUser } = Space1AllAlertingNoneActionsAtSpace1;
+
+        it('should return 403 because the user lacks the required API privilege', async () => {
+          await supertestWithoutAuth
+            .post(
+              `${getUrlPrefix(
+                space.id
+              )}/internal/actions/connector/${connectorId}/_start_oauth_flow`
+            )
+            .set('Cookie', sessionCookies[unprivilegedUser.username])
+            .set('kbn-xsrf', 'foo')
+            .send({ returnUrl: RETURN_URL })
+            .expect(403);
+        });
       });
     });
 
-    describe('user with actions "read" privilege', () => {
-      const { user } = GlobalReadAtSpace1;
+    describe('GET /oauth/start (direct link)', () => {
+      describe('user with actions "all" privilege', () => {
+        const { user } = Space1AllAtSpace1;
 
-      it('should return authorizationUrl and state', async () => {
-        const { body } = await supertestWithoutAuth
-          .post(
-            `${getUrlPrefix(space.id)}/internal/actions/connector/${connectorId}/_start_oauth_flow`
-          )
-          .set('Cookie', sessionCookies[user.username])
-          .set('kbn-xsrf', 'foo')
-          .send({ returnUrl: RETURN_URL })
-          .expect(200);
+        it('should redirect (302) to the authorization URL', async () => {
+          const response = await supertestWithoutAuth
+            .get(`${getUrlPrefix(space.id)}/api/actions/connector/${connectorId}/oauth/start`)
+            .set('Cookie', sessionCookies[user.username])
+            .redirects(0)
+            .expect(302);
 
-        expect(body.authorizationUrl).to.be.a('string');
-        expect(body.state).to.be.a('string');
+          expect(response.headers.location).to.be.a('string');
+          expect(response.headers.location).to.contain('https://localhost:5601/oauth/authorize');
+        });
       });
-    });
 
-    describe('user without actions feature privilege', () => {
-      const { user: unprivilegedUser } = Space1AllAlertingNoneActionsAtSpace1;
+      describe('user with actions "read" privilege', () => {
+        const { user } = GlobalReadAtSpace1;
 
-      it('should return 403 because the user lacks the required API privilege', async () => {
-        await supertestWithoutAuth
-          .post(
-            `${getUrlPrefix(space.id)}/internal/actions/connector/${connectorId}/_start_oauth_flow`
-          )
-          .set('Cookie', sessionCookies[unprivilegedUser.username])
-          .set('kbn-xsrf', 'foo')
-          .send({ returnUrl: RETURN_URL })
-          .expect(403);
+        it('should redirect (302) to the authorization URL', async () => {
+          const response = await supertestWithoutAuth
+            .get(`${getUrlPrefix(space.id)}/api/actions/connector/${connectorId}/oauth/start`)
+            .set('Cookie', sessionCookies[user.username])
+            .redirects(0)
+            .expect(302);
+
+          expect(response.headers.location).to.be.a('string');
+          expect(response.headers.location).to.contain('https://localhost:5601/oauth/authorize');
+        });
+      });
+
+      describe('user without actions feature privilege', () => {
+        const { user: unprivilegedUser } = Space1AllAlertingNoneActionsAtSpace1;
+
+        it('should return 403 because the user lacks the required API privilege', async () => {
+          await supertestWithoutAuth
+            .get(`${getUrlPrefix(space.id)}/api/actions/connector/${connectorId}/oauth/start`)
+            .set('Cookie', sessionCookies[unprivilegedUser.username])
+            .redirects(0)
+            .expect(403);
+        });
       });
     });
   });

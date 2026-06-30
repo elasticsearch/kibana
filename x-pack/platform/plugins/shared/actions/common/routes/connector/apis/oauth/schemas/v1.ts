@@ -6,23 +6,24 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { CONNECTOR_ID_MAX_LENGTH } from '../../../../..';
 
 export const startOAuthFlowRequestBodySchema = schema.object({
   returnUrl: schema.maybe(schema.uri({ scheme: ['http', 'https'] })),
 });
 
 export const startOAuthFlowPathParamsSchema = schema.object({
-  connectorId: schema.string(),
+  connectorId: schema.string({ maxLength: CONNECTOR_ID_MAX_LENGTH }),
 });
 
 export const disconnectOAuthPathParamsSchema = schema.object({
-  connectorId: schema.string(),
+  connectorId: schema.string({ maxLength: CONNECTOR_ID_MAX_LENGTH }),
 });
 
 export const cancelOAuthPathParamsSchema = schema.object({
-  connectorId: schema.string(),
+  connectorId: schema.string({ maxLength: CONNECTOR_ID_MAX_LENGTH }),
 });
 
 export const cancelOAuthBodySchema = schema.object({
-  state: schema.string(),
+  state: schema.string({ maxLength: 256 }),
 });

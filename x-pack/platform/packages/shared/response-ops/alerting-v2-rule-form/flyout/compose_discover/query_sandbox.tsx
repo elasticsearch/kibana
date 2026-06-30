@@ -72,6 +72,12 @@ export interface QuerySandboxProps {
   /** Required with `timeFieldOptions` when the parent gates autoRun on resolution. */
   isTimeFieldResolved?: boolean;
   /**
+   * Optional help text rendered above the editor. The caller is responsible for
+   * content and styling (e.g. `<EuiText size="s">`). A spacer is added automatically
+   * below it. Absent or `undefined` → nothing is rendered.
+   */
+  helpText?: React.ReactNode;
+  /**
    * When provided, the editor panel renders `ComposeDiscoverTabs` with a tab
    * bar instead of a single `CodeEditor`. Absent or `[]` → single editor.
    */
@@ -109,6 +115,7 @@ export const QuerySandbox: React.FC<QuerySandboxProps> = ({
   autoRun = false,
   timeFieldOptions: timeFieldOptionsProp,
   isTimeFieldResolved: isTimeFieldResolvedProp,
+  helpText,
   tabProps,
 }) => {
   const services = useRuleFormServices();
@@ -236,6 +243,12 @@ export const QuerySandbox: React.FC<QuerySandboxProps> = ({
 
   return (
     <div data-test-subj="querySandbox">
+      {helpText && (
+        <>
+          {helpText}
+          <EuiSpacer size="s" />
+        </>
+      )}
       <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap={false}>
         <CpsPicker />
         <EuiFlexItem grow={false} style={{ width: 200, minWidth: 0 }}>

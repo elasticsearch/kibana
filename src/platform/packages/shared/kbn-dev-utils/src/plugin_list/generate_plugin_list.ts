@@ -19,9 +19,7 @@ function markdownEscape(snippet: string): string {
 
 function getLinkAndDescription(plugin: Plugin): { link: string; description: string } {
   const path = normalizePath(plugin.relativeReadmePath || plugin.relativeDir);
-  const link = plugin.readmeAsciidocAnchor
-    ? `[${plugin.id}](${plugin.readmeAsciidocAnchor}.md)`
-    : `[${plugin.id}](https://github.com/elastic/kibana/blob/main/${path})`;
+  const link = `[${plugin.id}](https://github.com/elastic/kibana/blob/main/${path})`;
 
   const description =
     plugin.relativeReadmePath && plugin.readmeSnippet

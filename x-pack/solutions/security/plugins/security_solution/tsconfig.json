@@ -306,5 +306,6 @@
     "@kbn/core-overlays-browser",
     "@kbn/workflows-management-plugin",
     "@kbn/core-application-browser-mocks",
+    "@kbn/date-range-picker",
   ]
 }

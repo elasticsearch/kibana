@@ -60,6 +60,17 @@ describe('Package Policy Utils', () => {
         version: 'abc',
       });
     });
+
+    it('should return inputs as empty array when SO attributes has undefined inputs', () => {
+      const attributes = PackagePolicyMocks.generatePackagePolicySOAttributes({
+        inputs: undefined,
+      });
+      const soItem = PackagePolicyMocks.generatePackagePolicySavedObjectFindResponse([
+        attributes,
+      ]).saved_objects.at(0)!;
+
+      expect(mapPackagePolicySavedObjectToPackagePolicy(soItem).inputs).toEqual([]);
+    });
   });
 
   describe('preflightCheckPackagePolicy', () => {

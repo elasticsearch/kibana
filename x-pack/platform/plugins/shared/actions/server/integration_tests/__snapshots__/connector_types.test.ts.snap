@@ -637,6 +637,9 @@ exports[`Connector type config checks detect connector type changes for: .email 
 Object {
   "additionalProperties": false,
   "properties": Object {
+    "allowHtml": Object {
+      "type": "boolean",
+    },
     "clientId": Object {
       "anyOf": Array [
         Object {

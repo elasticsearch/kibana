@@ -10,6 +10,7 @@
 import React, { type MouseEventHandler } from 'react';
 import { EuiSplitButton, EuiIcon, EuiIconTip, useEuiTheme, type IconType } from '@elastic/eui';
 import { css } from '@emotion/react';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 export interface SplitButtonWithNotificationProps {
   label: string;
@@ -92,7 +93,7 @@ export const SplitButtonWithNotification = ({
             <EuiIcon type={iconType} size="m" aria-hidden={true} />
             {showNotificationIndicator && (
               <div
-                data-test-subj="split-button-notification-indicator"
+                data-test-subj={APP_MENU_TEST_SUBJECTS.notificationIndicator}
                 css={{
                   position: 'absolute',
                   top: 0,

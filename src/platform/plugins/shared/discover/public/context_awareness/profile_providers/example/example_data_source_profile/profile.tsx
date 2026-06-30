@@ -7,10 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { EuiBadge, EuiFlyout } from '@elastic/eui';
+import { EuiBadge, EuiFlyout, EuiFormRow, EuiSelect, EuiSpacer } from '@elastic/eui';
 import type { DataViewField } from '@kbn/data-views-plugin/common';
 import type { RowControlColumn } from '@kbn/discover-utils';
 import { AppMenuActionId, getFieldValue } from '@kbn/discover-utils';
+import { i18n } from '@kbn/i18n';
+import { FormattedMessage } from '@kbn/i18n-react';
+import { useObservable } from '@kbn/use-observable';
 import { capitalize } from 'lodash';
 import React from 'react';
 import type { DataSourceProfileProvider } from '../../../profiles';
@@ -19,6 +22,64 @@ import { extractIndexPatternFrom } from '../../extract_index_pattern_from';
 import { ChartWithCustomButtons, CustomDocViewerFooter, CustomDocViewerHeader } from './components';
 import { CustomDocView } from './components/custom_doc_view';
 import { RestorableStateDocView } from './components/restorable_state_doc_view';
+import { EXAMPLE_PROFILE_STATE_DEF } from '../profile_state';
+
+const timestampColorOptions = [
+  {
+    value: 'hollow',
+    text: i18n.translate(
+      'discover.exampleProfile.profileStateTimestampColorNoneDropDownOptionLabel',
+      {
+        defaultMessage: 'None',
+      }
+    ),
+  },
+  {
+    value: 'primary',
+    text: i18n.translate(
+      'discover.exampleProfile.profileStateTimestampColorPrimaryDropDownOptionLabel',
+      {
+        defaultMessage: 'Primary',
+      }
+    ),
+  },
+  {
+    value: 'accent',
+    text: i18n.translate(
+      'discover.exampleProfile.profileStateTimestampColorAccentDropDownOptionLabel',
+      {
+        defaultMessage: 'Accent',
+      }
+    ),
+  },
+  {
+    value: 'success',
+    text: i18n.translate(
+      'discover.exampleProfile.profileStateTimestampColorSuccessDropDownOptionLabel',
+      {
+        defaultMessage: 'Success',
+      }
+    ),
+  },
+  {
+    value: 'warning',
+    text: i18n.translate(
+      'discover.exampleProfile.profileStateTimestampColorWarningDropDownOptionLabel',
+      {
+        defaultMessage: 'Warning',
+      }
+    ),
+  },
+  {
+    value: 'danger',
+    text: i18n.translate(
+      'discover.exampleProfile.profileStateTimestampColorDangerDropDownOptionLabel',
+      {
+        defaultMessage: 'Danger',
+      }
+    ),
+  },
+];
 
 export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvider<{
   formatRecord: (flattenedRecord: Record<string, unknown>) => string;
@@ -61,9 +122,11 @@ export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvi
         );
       },
     }),
-    getDocViewer:
-      (prev, { context, toolkit }) =>
-      (params) => {
+    getDocViewer: (prev, { context, toolkit }) => {
+      const stateAdapter = toolkit.getStateAdapter(EXAMPLE_PROFILE_STATE_DEF);
+      const profileState$ = stateAdapter.getState$();
+
+      return (params) => {
         const { openInNewTab, updateESQLQuery } = toolkit.actions;
         const recordId = params.record.id;
         const prevValue = prev(params);
@@ -91,12 +154,56 @@ export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvi
               render: (props) => <RestorableStateDocView {...props} />,
             });
 
+            function ProfileStateExample() {
+              const profileState = useObservable(profileState$, stateAdapter.getState());
+              const timestampColor = profileState.timestampColor;
+
+              return (
+                <>
+                  <EuiSpacer size="s" />
+                  <EuiFormRow
+                    label={
+                      <FormattedMessage
+                        id="discover.exampleProfile.timestampColorLabel"
+                        defaultMessage="Timestamp color"
+                      />
+                    }
+                  >
+                    <EuiSelect
+                      data-test-subj="exampleProfileStateTimestampColorSelect"
+                      aria-label={i18n.translate(
+                        'discover.exampleProfile.timestampColorAriaLabel',
+                        {
+                          defaultMessage: 'Select timestamp color',
+                        }
+                      )}
+                      options={timestampColorOptions}
+                      value={timestampColor}
+                      onChange={(event) => {
+                        stateAdapter.updateState({ timestampColor: event.target.value });
+                      }}
+                    />
+                  </EuiFormRow>
+                </>
+              );
+            }
+
+            registry.add({
+              id: 'doc_view_profile_state_example',
+              title: i18n.translate('discover.exampleProfile.profileStateDocViewTitle', {
+                defaultMessage: 'Profile state',
+              }),
+              order: 2,
+              render: () => <ProfileStateExample />,
+            });
+
             return prevValue.docViewsRegistry(registry);
           },
           renderHeader: (props) => <CustomDocViewerHeader {...props} />,
           renderFooter: (props) => <CustomDocViewerFooter {...props} />,
         };
-      },
+      };
+    },
     /**
      * The `getAppMenu` extension point gives access to AppMenuRegistry with methods like `registerCustomItem` and
      * `registerPopoverItem`.

@@ -27,24 +27,30 @@ export const listIndicesTool = (): BuiltinToolDefinition<typeof listIndicesSchem
   return {
     id: platformCoreTools.listIndices,
     type: ToolType.builtin,
-    description: `List the indices, aliases and datastreams from the Elasticsearch cluster.
+    description: `List the indices, aliases, datastreams and external ES|QL datasets from the Elasticsearch cluster.
 
 The 'pattern' optional parameter is an index pattern which can be used to filter resources.
 This parameter should only be used when you already know of a specific pattern to filter on,
-e.g. if the user provided one. Otherwise, do not try to invent or guess a pattern.`,
+e.g. if the user provided one. Otherwise, do not try to invent or guess a pattern.
+
+Datasets are external sources (e.g. CSV files on object storage) that can only be queried with
+ES|QL ("FROM <dataset_name>"); they do not support _search.`,
     schema: listIndicesSchema,
-    handler: async ({ pattern }, { esClient, logger }) => {
+    handler: async ({ pattern }, { esClient, experimentalFeatures, logger }) => {
       logger.debug(`list indices tool called with pattern: ${pattern}`);
+      const includeDatasets = experimentalFeatures.datasets;
       const {
         indices,
         data_streams: dataStreams,
         aliases,
+        datasets,
         warnings,
       } = await listSearchSources({
         pattern,
         includeHidden: false,
         excludeIndicesRepresentedAsAlias: false,
         excludeIndicesRepresentedAsDatastream: true,
+        includeDatasets,
         esClient: esClient.asCurrentUser,
       });
 
@@ -56,6 +62,11 @@ e.g. if the user provided one. Otherwise, do not try to invent or guess a patter
               indices: indices.map((index) => ({ name: index.name })),
               aliases: aliases.map((alias) => ({ name: alias.name, indices: alias.indices })),
               data_streams: dataStreams.map((ds) => ({ name: ds.name, indices: ds.indices })),
+              datasets: datasets.map((dataset) => ({
+                name: dataset.name,
+                data_source: dataset.data_source,
+                resource: dataset.resource,
+              })),
               warnings,
             },
           },

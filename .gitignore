@@ -1,3 +1,5 @@
+.artifacts
+docs/**/.artifacts
 .aws-config.json
 .bk.yaml
 .signing-config.json

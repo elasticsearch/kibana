@@ -100,6 +100,9 @@ export const WORKFLOWS_EXECUTIONS_INDEX_MAPPINGS: MappingTypeMapping = {
     // Aggregated token usage across all token-consuming steps, accumulated
     // incrementally as each step finishes.
     usage: TOKEN_USAGE_MAPPING,
+    version: {
+      type: 'long',
+    },
   },
 };
 

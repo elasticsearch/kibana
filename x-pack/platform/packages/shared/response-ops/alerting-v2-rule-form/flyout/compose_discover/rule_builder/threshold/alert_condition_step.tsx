@@ -27,7 +27,7 @@ import {
   EuiTitle,
   EuiToolTip,
 } from '@elastic/eui';
-import type { ComposeFormValues } from '../../compose_form_types';
+import type { FormValues } from '../../../../form/types';
 import { useDataFields } from '../../../../form/hooks/use_data_fields';
 import { useIndexSources } from '../../../../form/hooks/use_index_sources';
 import type { RuleBuilderStepProps } from '../types';
@@ -71,7 +71,7 @@ export const RuleBuilderAlertConditionStep: React.FC<RuleBuilderStepProps> = ({
 }) => {
   const { state: thresholdValues, setState: onThresholdValuesChange } =
     useBuilderState<ThresholdFormValues>();
-  const { setValue, watch } = useFormContext<ComposeFormValues>();
+  const { setValue, watch } = useFormContext<FormValues>();
   const isAlert = watch('kind') === 'alert';
 
   const { data: indexOptions, isLoading: isLoadingIndices } = useIndexSources({

@@ -14,6 +14,7 @@ import type {
 
 import type { Logger, ElasticsearchClient } from '@kbn/core/server';
 import {
+  ALERT_INSTANCE_ID,
   ALERT_STATUS,
   ALERT_STATUS_ACTIVE,
   ALERT_STATUS_RECOVERED,
@@ -82,6 +83,8 @@ async function resolveAlertConflicts_(params: ResolveAlertConflictsParams): Prom
   const conflictRequest = getConflictRequest(bulkRequest, bulkResponse);
   if (conflictRequest.length === 0) return;
 
+  logBulkWriteConflicts(logger, logTags, ruleInfoMessage, conflictRequest);
+
   // get the fresh versions of those docs
   const freshDocs = await getFreshDocs(esClient, conflictRequest);
 
@@ -122,6 +125,23 @@ async function resolveAlertConflicts_(params: ResolveAlertConflictsParams): Prom
   } else {
     logger.error(
       `Retried bulk update of ${conflictRequest.length} conflicted alerts still had ${mbrResponse.errors} conflicts ${ruleInfoMessage}`,
+      logTags
+    );
+  }
+}
+
+// log a warning for each alert write conflict
+function logBulkWriteConflicts(
+  logger: Logger,
+  logTags: { tags: string[] },
+  ruleInfoMessage: string,
+  conflictRequest: NormalizedBulkRequest[]
+): void {
+  for (const req of conflictRequest) {
+    const alertUuid = req.op?.index?._id || 'unknown';
+    const instanceId = get(req.doc, ALERT_INSTANCE_ID) || 'unknown';
+    logger.warn(
+      `Alert bulk write conflict ${ruleInfoMessage}: alert UUID '${alertUuid}', instance ID '${instanceId}'`,
       logTags
     );
   }

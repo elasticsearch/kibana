@@ -23,6 +23,7 @@ export const mapWorkflowHistoryItem = (document: ChangeHistoryDocument): Workflo
     : { name: WORKFLOW_CHANGE_HISTORY_SYSTEM_USER },
   action: document.event.action as WorkflowHistoryItem['action'],
   ...(document.object.sequence != null ? { version: document.object.sequence } : {}),
+  ...(document.event.reason ? { comment: document.event.reason } : {}),
   workflow: {
     yaml: typeof document.object.snapshot.yaml === 'string' ? document.object.snapshot.yaml : '',
   },

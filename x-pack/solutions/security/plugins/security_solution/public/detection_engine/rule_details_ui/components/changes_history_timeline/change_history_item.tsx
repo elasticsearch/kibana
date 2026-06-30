@@ -7,9 +7,11 @@
 
 import React, { memo, useCallback, useMemo } from 'react';
 import {
+  EuiBadge,
   EuiFlexGroup,
   EuiFlexItem,
   EuiIcon,
+  EuiLoadingSpinner,
   EuiPanel,
   EuiText,
   EuiToolTip,
@@ -27,30 +29,40 @@ import {
 } from './constants';
 import { RuleChangeActionBadge } from './rule_change_action_badge';
 import * as i18n from './translations';
+import { ChangeHistoryItemPopover } from './change_history_item_popover';
 
-interface ChangeHistoryTimelineItemProps {
+interface ChangeHistoryItemProps {
   item: RuleHistoryItem;
   selected?: boolean;
-  onClick: () => void;
+  restoringItemId?: string;
+  onClick?: (item: RuleHistoryItem) => void;
+  onRestore?: (item: RuleHistoryItem) => void;
 }
 
 export const ChangeHistoryItem = memo(function ChangeHistoryItem({
   item,
   selected,
+  restoringItemId,
   onClick,
-}: ChangeHistoryTimelineItemProps): JSX.Element {
+  onRestore,
+}: ChangeHistoryItemProps): JSX.Element {
   const { euiTheme } = useEuiTheme();
   const username = item.user?.name ?? i18n.SYSTEM_USER_LABEL;
   const changedFields = useMemo(() => extractChangedFieldNames(item), [item]);
   const isActive = useMemo(() => DIFFABLE_CHANGE_ACTIONS.includes(item.action), [item.action]);
+  const isRestoring = restoringItemId === item.id;
+  const isRestoringAny = restoringItemId !== undefined;
+  const handleClick = useCallback(() => onClick?.(item), [onClick, item]);
+  const handleRestore = useCallback(() => onRestore?.(item), [onRestore, item]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        onClick();
+        handleClick();
       }
     },
-    [onClick]
+    [handleClick]
   );
 
   const date = useMemo(
@@ -72,10 +84,10 @@ export const ChangeHistoryItem = memo(function ChangeHistoryItem({
     <EuiPanel
       hasBorder
       color={selected ? 'primary' : isActive ? undefined : 'subdued'}
-      role={isActive ? 'button' : undefined}
+      role={isActive && !isRestoringAny ? 'button' : undefined}
       tabIndex={isActive ? 0 : undefined}
-      onClick={isActive ? onClick : undefined}
-      onKeyDown={isActive ? handleKeyDown : undefined}
+      onClick={isActive && !isRestoringAny ? handleClick : undefined}
+      onKeyDown={isActive && !isRestoringAny ? handleKeyDown : undefined}
       data-test-subj={`ruleChangeHistoryItem-${item.id}`}
       css={css`
         margin-bottom: ${euiTheme.size.m};
@@ -90,9 +102,26 @@ export const ChangeHistoryItem = memo(function ChangeHistoryItem({
       <EuiFlexGroup direction="row" gutterSize="xs" alignItems="center">
         <EuiFlexGroup direction="column" gutterSize="xs">
           <EuiFlexItem>
-            <EuiText size="xs">
-              <strong>{date}</strong>
-            </EuiText>
+            <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiText size="xs">
+                  <strong>{date}</strong>
+                </EuiText>
+              </EuiFlexItem>
+
+              {isRestoring && (
+                <EuiFlexItem grow={false}>
+                  <EuiBadge color="hollow">
+                    <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
+                      <EuiFlexItem grow={false}>
+                        <EuiLoadingSpinner size="s" />
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>{i18n.RESTORING_LABEL}</EuiFlexItem>
+                    </EuiFlexGroup>
+                  </EuiBadge>
+                </EuiFlexItem>
+              )}
+            </EuiFlexGroup>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             <EuiFlexGroup alignItems="center" gutterSize="xs">
@@ -119,6 +148,12 @@ export const ChangeHistoryItem = memo(function ChangeHistoryItem({
         <EuiFlexItem grow={false}>
           <RuleChangeActionBadge item={item} />
         </EuiFlexItem>
+
+        <ChangeHistoryItemPopover
+          onRestore={onRestore ? handleRestore : undefined}
+          onClick={isActive ? handleClick : undefined}
+          isRestoring={isRestoring}
+        />
       </EuiFlexGroup>
     </EuiPanel>
   );

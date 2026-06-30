@@ -18,6 +18,7 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
   const retry = getService('retry');
 
   const INDEX_TEMPLATE_NAME = 'index-template-test-name';
+  const DEFAULT_SNAPSHOT_REPOSITORY_NAME = 'index-template-test-default-repo';
 
   describe('Index template tab', function () {
     before(async () => {
@@ -43,6 +44,47 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
     });
 
     describe('index template creation', () => {
+      before(async () => {
+        await es.snapshot.createRepository({
+          name: DEFAULT_SNAPSHOT_REPOSITORY_NAME,
+          repository: {
+            type: 'fs',
+            settings: {
+              location: '/tmp/',
+            },
+          },
+          verify: false,
+        });
+        await es.cluster.putSettings({
+          persistent: { 'repositories.default_repository': DEFAULT_SNAPSHOT_REPOSITORY_NAME },
+        });
+      });
+
+      after(async () => {
+        await es.cluster.putSettings({
+          persistent: { 'repositories.default_repository': null },
+        });
+        await es.snapshot.deleteRepository(
+          { name: DEFAULT_SNAPSHOT_REPOSITORY_NAME },
+          { ignore: [404] }
+        );
+      });
+
+      // Enabling the "Create data stream" toggle reveals the data lifecycle section. Toggle based
+      // on the switch's actual checked state (not the rendered section) to avoid flipping it back
+      // off while waiting for the section to render.
+      const enableDataStream = async () => {
+        await retry.try(async () => {
+          if (!(await testSubjects.isEuiSwitchChecked('dataStreamField > input'))) {
+            await testSubjects.click('dataStreamField > input');
+          }
+          expect(await testSubjects.isEuiSwitchChecked('dataStreamField > input')).to.be(true);
+        });
+        // The delete phase card is always rendered once the data lifecycle section is shown.
+        // It can be below the fold, so scroll it into view (this also waits for it to exist).
+        await testSubjects.scrollIntoView('dlmPhasesSelectorDeletePhaseCard');
+      };
+
       beforeEach(async () => {
         if (await testSubjects.exists('closeDetailsButton', { timeout: 1000 })) {
           await testSubjects.click('closeDetailsButton');
@@ -61,17 +103,45 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
       });
 
       it('can create an index template with data retention', async () => {
-        // Enable data retention
-        await testSubjects.click('dataRetentionToggle > input');
+        // Data lifecycle is only available for data stream templates, so enable it first
+        await enableDataStream();
+
+        // Enable the delete (data retention) phase
+        await testSubjects.click('dlmPhasesSelectorDeletePhaseCard');
         // Set the retention to 7 hours
-        await testSubjects.setValue('valueDataRetentionField', '7');
-        await testSubjects.click('show-filters-button');
-        await testSubjects.click('filter-option-h');
+        await testSubjects.setValue('deleteDurationValue', '7');
+        await testSubjects.selectValue('deleteDurationUnit', 'h');
+
+        expect(await testSubjects.getVisibleText('totalRetentionBadge')).to.be('7h');
+
         // Navigate to the last step of the wizard
         await testSubjects.click('formWizardStep-5');
         await pageObjects.header.waitUntilLoadingHasFinished();
 
-        expect(await testSubjects.getVisibleText('lifecycleValue')).to.be('7 hours');
+        expect(await testSubjects.getVisibleText('lifecycleValue')).to.be(
+          '7 hours · 2 data phases'
+        );
+      });
+
+      it('can create a data stream index template with a frozen phase', async () => {
+        await enableDataStream();
+
+        await testSubjects.scrollIntoView('dlmPhasesSelectorFrozenPhaseCard');
+        await testSubjects.click('dlmPhasesSelectorFrozenPhaseCard');
+
+        // Move data to the frozen phase after 30 days
+        await testSubjects.setValue('frozenDurationValue', '30');
+        await testSubjects.selectValue('frozenDurationUnit', 'd');
+
+        // Navigate to the last step of the wizard and inspect the request that would be sent
+        await testSubjects.click('formWizardStep-5');
+        await pageObjects.header.waitUntilLoadingHasFinished();
+
+        await testSubjects.click('stepReviewRequestTab');
+        await pageObjects.header.waitUntilLoadingHasFinished();
+
+        const request = await testSubjects.getVisibleText('requestTab');
+        expect(request).to.contain('"frozen_after": "30d"');
       });
 
       it('can create an index template with logsdb index mode', async () => {

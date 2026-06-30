@@ -24,7 +24,7 @@ test.describe('ES|QL rule flyout — ?param validation', { tag: tags.stateful.cl
 
   test.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsAlertingV2Editor();
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
   });
 
   test.afterAll(async ({ apiServices }) => {

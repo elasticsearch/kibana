@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import HttpProxyAgent from 'http-proxy-agent';
+import { HttpProxyAgent } from 'http-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
 import { getProxyAgent, getProxyAgentOptions } from './proxy';
@@ -77,7 +77,8 @@ describe('getProxyAgentOptions', () => {
           targetUrl: 'https://epr.elastic.co/',
         };
         expect(getProxyAgentOptions(httpProxyWithAuth)).toEqual({
-          auth: 'user:pass',
+          username: 'user',
+          password: 'pass',
           headers: { Host: 'epr.elastic.co' },
           host: 'example.com',
           port: 8080,
@@ -91,7 +92,8 @@ describe('getProxyAgentOptions', () => {
           targetUrl: 'https://epr.elastic.co/',
         };
         expect(getProxyAgentOptions(httpsProxyWithAuth)).toEqual({
-          auth: 'user:pass',
+          username: 'user',
+          password: 'pass',
           headers: { Host: 'epr.elastic.co' },
           host: 'example.com',
           port: 8080,

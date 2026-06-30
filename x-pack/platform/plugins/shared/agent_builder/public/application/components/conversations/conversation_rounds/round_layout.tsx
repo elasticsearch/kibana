@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 import { css } from '@emotion/react';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
@@ -40,9 +40,6 @@ interface RoundLayoutProps {
 const labels = {
   container: i18n.translate('xpack.agentBuilder.round.container', {
     defaultMessage: 'Conversation round',
-  }),
-  askUserQuestionPreamble: i18n.translate('xpack.agentBuilder.round.askUserQuestionPreamble', {
-    defaultMessage: 'I need to clarify a few things first.',
   }),
 };
 
@@ -268,9 +265,6 @@ export const RoundLayout: React.FC<RoundLayoutProps> = ({
             case AgentPromptType.ask_user_question:
               return (
                 <React.Fragment key={prompt.id}>
-                  <EuiFlexItem grow={false}>
-                    <EuiText size="m">{labels.askUserQuestionPreamble}</EuiText>
-                  </EuiFlexItem>
                   <EuiFlexItem grow={false}>
                     <AskUserQuestionPrompt
                       promptId={prompt.id}

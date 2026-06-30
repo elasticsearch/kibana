@@ -9,8 +9,8 @@ import type { AnonymizationFieldResponse, Replacements } from '@kbn/elastic-assi
 import type { ToolSchema } from '@kbn/inference-common';
 import { isInferenceRequestAbortedError } from '@kbn/inference-common';
 import { i18n } from '@kbn/i18n';
+import { ENTITY_ANOMALY_DEFAULT_LOOKBACK_DAYS } from '../../../../../common/constants';
 import { useKibana } from '../../../../common/lib/kibana/kibana_react';
-import { useGlobalTime } from '../../../../common/containers/use_global_time';
 import { useAppToasts } from '../../../../common/hooks/use_app_toasts';
 import { useEntityAnalyticsRoutes } from '../../../api/api';
 import { getAnonymizedEntityIdentifier } from '../utils/helpers';
@@ -64,7 +64,6 @@ export const useFetchEntityDetailsHighlights = ({
   const { inference } = useKibana().services;
   const { fetchEntityDetailsHighlights } = useEntityAnalyticsRoutes();
   const { addError } = useAppToasts();
-  const { from, to } = useGlobalTime();
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -86,12 +85,14 @@ export const useFetchEntityDetailsHighlights = ({
     // Clear any previously shown error while a new generation attempt is in progress
     setError(null);
 
+    const toDate = Date.now();
+    const fromDate = toDate - ENTITY_ANOMALY_DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
     const { summary, replacements, prompt } = await fetchEntityDetailsHighlights({
       entityType,
       entityIdentifier,
       anonymizationFields,
-      from: new Date(from).getTime(),
-      to: new Date(to).getTime(),
+      from: fromDate,
+      to: toDate,
       connectorId,
     }).catch((e: Error) => {
       const caughtError = e instanceof Error ? e : new Error(String(e));
@@ -150,8 +151,6 @@ export const useFetchEntityDetailsHighlights = ({
     entityType,
     entityIdentifier,
     anonymizationFields,
-    from,
-    to,
     connectorId,
     inference,
     addError,

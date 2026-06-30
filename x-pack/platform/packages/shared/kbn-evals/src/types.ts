@@ -16,6 +16,7 @@ import type {
   EvaluatorDisplayGroup,
 } from './utils/reporting/report_table';
 import type { EvalsClient, EvaluatorStats } from './utils/evals_client';
+import type { AgentBuilderClient } from './utils/agent_builder_client';
 
 export interface EvaluationDataset<TExample extends Example = Example> {
   name: string;
@@ -253,6 +254,7 @@ export interface WorkerExecutionIdRef {
 
 export interface EvaluationSpecificWorkerFixtures {
   inferenceClient: BoundInferenceClient;
+  agentBuilderClient: AgentBuilderClient;
   evalsClient: EvalsClient;
   /**
    * Executor client used to run experiments.
@@ -280,6 +282,7 @@ export interface EvaluationSpecificWorkerFixtures {
 
 export interface EvaluationWorkerFixtures extends ScoutWorkerFixtures {
   inferenceClient: BoundInferenceClient;
+  agentBuilderClient: AgentBuilderClient;
   /**
    * Executor client used to run experiments.
    */

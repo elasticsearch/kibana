@@ -338,6 +338,11 @@ export const internalStateSlice = createSlice({
         syncProfileStateSnapshot(tab, action.payload.profileId, action.payload.appState);
       }),
 
+    setProfileState: (state, action: TabAction<{ key: string; profileState: object }>) =>
+      withTab(state, action.payload, (tab) => {
+        tab.profileState[action.payload.key] = action.payload.profileState;
+      }),
+
     /**
      * Set the tab app state and previous app state, overwriting existing state and pushing to URL history
      */
@@ -758,6 +763,7 @@ export const createInternalStateStore = (
     getContextAwarenessToolkit: (tabId: string) => {
       return createContextAwarenessToolkit({
         internalState,
+        profileStateRegistry: options.services.profileStateRegistry,
         tabId,
       });
     },

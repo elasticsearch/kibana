@@ -319,8 +319,12 @@ function resolveOutputsById({
 function buildDataStreamStatements(type: string, dataset: string, namespace: string): string[] {
   return [
     `set(attributes["data_stream.type"], "${type}")`,
-    `set(attributes["data_stream.dataset"], "${dataset}")`,
-    `set(attributes["data_stream.namespace"], "${namespace}")`,
+    // Only set dataset/namespace when not already provided upstream (e.g. by an OTel receiver
+    // in a Gateway collector feeding this Fleet-managed agent). This preserves upstream routing
+    // so content-pack dashboards resolve to the correct data stream.
+    // See: https://github.com/elastic/ingest-dev/issues/7716
+    `set(attributes["data_stream.dataset"], "${dataset}") where attributes["data_stream.dataset"] == nil`,
+    `set(attributes["data_stream.namespace"], "${namespace}") where attributes["data_stream.namespace"] == nil`,
   ];
 }
 

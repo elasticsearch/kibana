@@ -51,6 +51,7 @@ export const mapPackagePolicySavedObjectToPackagePolicy = ({
     version,
     ...(namespaces ? { spaceIds: namespaces } : {}),
     ...restAttributes,
+    inputs: restAttributes.inputs ?? [],
   };
 };
 

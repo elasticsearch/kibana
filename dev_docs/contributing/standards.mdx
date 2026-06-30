@@ -5,83 +5,13 @@ title: Standards and guidelines
 description: Standards and guidelines we expect every Kibana developer to abide by
 date: 2021-09-28
 tags: ['contributor', 'dev', 'github', 'getting started', 'onboarding', 'kibana']
+redirect_url: https://www.elastic.co/docs/extend/kibana/contributing/principles/standards-and-guidelines
 ---
 
-## Developer principles
+{/* REDIRECT_NOTICE_START */}
 
-We expect all developers to read and abide by our overarching <DocLink id="kibDevPrinciples" />.
+<DocCallOut color="danger">
+**!!! THIS PAGE HAS MOVED:** [https://www.elastic.co/docs/extend/kibana/contributing/principles/standards-and-guidelines](https://www.elastic.co/docs/extend/kibana/contributing/principles/standards-and-guidelines)
+</DocCallOut>
 
-## Style guide
-
-Please read and abide by our <DocLink id="kibStyleGuide" text="Style guide" />. The majority of these items are linted against but some are not.
-
-## Adding dependencies
-
-Please read and abide by our <DocLink id="kibThirdPartyDependencies" text="third-party dependencies guide" />.
-
-## RESTful HTTP APIs
-
-### Terminology
-
-**REST APIs**
-Technically, REST does not specify a protocol, but for readability, we’ll be calling RESTful HTTP APIs as REST APIs for short for the remainder of the section. HTTP APIs that serve HTML, CSS and images are not REST APIs.
-
-**End user**
-Anywhere we refer to “end user” in this section, we are referring to someone who is using the REST APIs. The distinction between Product breaking changes and plugin breaking changes can also be found in this [Make it Minor strawman proposal doc](https://docs.google.com/document/d/12R0w75dSNR-VDQLGl2vxFyEHhzxNT38iamYhven9uvw/edit). This can be a tricky distinction, as some folks may consider end user to only be folks that use the Kibana UI.
-
-### Privacy
-
-| Type     | Description                                                                                                                                          | Guarantees                                                                      |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Internal | An API with “internal” in the route. Specifically it should be `/internal/{pluginname}/{...}`. It should only be used by the plugin that created it. | None                                                                            |
-| Public   | Any API that is not internal based on above definition                                                                                               | Based on <DocLink id="kibStandards" section="release-tags" text="release tag"/> |
-
-### Do not access directly from plugins
-
-Plugins should not attempt to directly access the REST APIs created by another plugin. The plugin author who registered the public REST API should provide access to it via functionality on the plugin lifecycle contract. Accessing functionality through a client side plugin contract provides more type-safety compared to calling the REST API directly. Never attempt to call a server-side REST API if you are already on the server-side. It will not work. This should also be avoided in any code provided within a common folder.
-
-### Path names
-
-All public API path names should start with `/api/`.
-All internal APIs should start with `/internal/{pluginname}/{...}`.
-
-### Backward compatibility and breaking changes
-
-Every public API should have a release tag specified at the top of it’s documentation page. Release tags are not applicable to internal APIs, as we make no guarantees on those.
-
-#### Release tags
-
-| Type | Description | Documentation | Asciidoc Tag |
-| -----| ------------| ------------- | ------------ |
-| Undocumented | Every public API should be documented, but if it isn’t, we make no guarantees about it. These need to be eliminated and should become internal or documented. | | |
-| Experimental | A public API that may break or be removed at any time. | experimental[] | |
-| Beta | A public API that we make a best effort not to break or remove. However, there are no guarantees. | beta[] | |
-| Stable | No breaking changes outside of a Major\* | stable[] | |
-| Deprecated | Do not use, will be removed. | deprecated[] | |
-
-\*This is likely to change with Make it Minor as we move towards a calendar based rolling deprecation and removal policy.
-
-#### What constitutes a breaking change?
-
-- A path change
-- A request payload change that adds a new required variable, or changes an existing one (new optional parameters are not breaking).
-- A response payload change that removes data or changes existing data (returning additional data is not breaking).
-- Status code changes
-
-### Telemetry
-
-Every team should be collecting telemetry metrics on it’s public API usage. This will be important for knowing when it’s safe to make breaking changes. The Core team will be looking into ways to make this easier and an automatic part of registration (see [#112291](https://github.com/elastic/kibana/issues/112291)).
-
-### APM
-
-Kibana server and client are instrumented with APM node and APM RUM clients respectively, tracking several types of transactions by default, such as `page-load`, `request`, etc.
-You may introduce custom transactions. Please refer to the [APM documentation](https://www.elastic.co/guide/en/apm/get-started/current/index.html) and follow these guidelines when doing so:
-
-- Use dashed syntax for transaction types and names: `my-transaction-type` and `my-transaction-name`
-- [Refrain from adding too many custom labels](https://www.elastic.co/guide/en/apm/get-started/current/metadata.html)
-
-### Documentation
-
-Every public API should be documented inside the [docs/api](https://github.com/elastic/kibana/tree/main/docs/api) folder in asciidoc (this content will eventually be migrated to mdx to support the new docs system). If a public REST API is undocumented, you should either document it, or make it internal.
-
-Every public API should have a release tag specified using the appropriate documentation release tag above. If you do this, the docs system will provide a pop up explaining the conditions. If an API is not marked, it should be considered experimental.
+{/* REDIRECT_NOTICE_END */}

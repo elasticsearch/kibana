@@ -512,6 +512,13 @@ const CODES = Object.freeze({
     'xpack.securitySolution.endpointActionResponseCodes.cancel.notFound',
     { defaultMessage: 'Action to be canceled was not found (it may no longer be pending)' }
   ),
+  ra_cancel_success_canceling: i18n.translate(
+    'xpack.securitySolution.endpointActionResponseCodes.cancel.canceling',
+    {
+      defaultMessage:
+        "The action is being cancelled - the remaining processing will terminate at the next safe point. Use '--force' to terminate it abruptly.",
+    }
+  ),
 });
 
 /**

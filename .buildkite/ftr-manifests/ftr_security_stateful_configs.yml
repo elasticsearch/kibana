@@ -155,7 +155,6 @@ enabled:
   - x-pack/platform/test/spaces_api_integration/deployment_agnostic/security_and_spaces/stateful.copy_to_space.config_trial.ts
   - x-pack/platform/test/spaces_api_integration/deployment_agnostic/security_and_spaces/stateful.copy_to_space.config_basic.ts
   - x-pack/solutions/security/test/alerting_api_integration/security_and_spaces/group2/config.ts
-  - x-pack/solutions/security/test/alerting_api_integration/security_and_spaces/group2/config_non_dedicated_task_runner.ts
   - x-pack/solutions/security/test/cases_api_integration/security_and_spaces/config_trial.ts
   - x-pack/solutions/security/test/cases_api_integration/security_and_spaces/config_trial_common.ts
   - x-pack/solutions/security/test/api_integration_basic/config.ts

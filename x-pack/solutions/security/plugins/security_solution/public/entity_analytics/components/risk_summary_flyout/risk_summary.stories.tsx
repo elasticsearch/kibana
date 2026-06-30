@@ -10,7 +10,7 @@ import type { StoryFn } from '@storybook/react';
 import { TestProvider } from '@kbn/expandable-flyout/src/test/provider';
 import { EntityType } from '../../../../common/search_strategy';
 import { StorybookProviders } from '../../../common/mock/storybook_providers';
-import { mockRiskScoreState } from '../../../flyout/shared/mocks';
+import { mockRiskScoreState, mockEntityRiskScores } from '../../../flyout/shared/mocks';
 import { FlyoutRiskSummary } from './risk_summary';
 
 export default {
@@ -26,6 +26,7 @@ export const Default: StoryFn = () => {
           <FlyoutRiskSummary
             openDetailsPanel={() => {}}
             riskScoreData={{ ...mockRiskScoreState, data: [] }}
+            entityRiskScores={mockEntityRiskScores}
             queryId={'testQuery'}
             recalculatingScore={false}
             isPreviewMode={false}
@@ -44,6 +45,7 @@ export const InPreviewMode: StoryFn = () => {
         <div css={{ maxWidth: '300px' }}>
           <FlyoutRiskSummary
             riskScoreData={{ ...mockRiskScoreState, data: [] }}
+            entityRiskScores={mockEntityRiskScores}
             queryId={'testQuery'}
             recalculatingScore={false}
             openDetailsPanel={() => {}}

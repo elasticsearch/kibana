@@ -12,12 +12,19 @@ import { FormattedMessage } from '@kbn/i18n-react';
 
 import { ErrorsTab } from './errors/errors_tab';
 import { RefreshButton } from '../common/components/refresh_button';
+import { SyntheticsDatePicker } from '../common/date_picker/synthetics_date_picker';
 import { OverviewPage } from './overview/overview_page';
 import { MonitorsPageHeader } from './management/page_header/monitors_page_header';
 import { CreateMonitorButton } from './create_monitor_button';
 import { MonitorManagementPage } from './monitors_page';
 import type { RouteProps } from '../../routes';
 import { ERRORS_ROUTE, MONITORS_ROUTE, OVERVIEW_ROUTE } from '../../../../../common/constants';
+import { CLIENT_DEFAULTS_SYNTHETICS } from '../../../../../common/constants/synthetics/client_defaults';
+
+const OVERVIEW_DEFAULT_DATE_RANGE = {
+  from: CLIENT_DEFAULTS_SYNTHETICS.OVERVIEW_DATE_RANGE_START,
+  to: CLIENT_DEFAULTS_SYNTHETICS.DATE_RANGE_END,
+};
 
 export const getMonitorsRoute = (
   history: ReturnType<typeof useHistory>,
@@ -40,6 +47,15 @@ export const getMonitorsRoute = (
       dataTestSubj: 'syntheticsOverviewPage',
       pageHeader: {
         ...sharedProps,
+        // The overview always scopes status by the page-level date range, so it
+        // gets a <SyntheticsDatePicker /> in the header. The picker's built-in
+        // refresh replaces the shared <RefreshButton />, which we drop here to
+        // avoid two refresh controls. `rightSideItems` render right-to-left, so
+        // the picker (last) sits to the left of Create Monitor.
+        rightSideItems: [
+          <CreateMonitorButton />,
+          <SyntheticsDatePicker defaultDateRange={OVERVIEW_DEFAULT_DATE_RANGE} />,
+        ],
         tabs: getMonitorsTabs(syntheticsPath, 'overview', location),
       },
     },

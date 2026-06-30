@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/272418
+issues:
+- https://github.com/elastic/kibana/issues/272275
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Alerting and reporting
+title: "Fix incorrect Kibana version on alerts CSV report info panel"
+description: "Alerts table CSV exports now include the running Kibana version instead of defaulting to 7.14.0 in Stack Management > Reporting."

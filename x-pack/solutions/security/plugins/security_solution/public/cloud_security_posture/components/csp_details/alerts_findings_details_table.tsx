@@ -28,8 +28,6 @@ import { METRIC_TYPE } from '@kbn/analytics';
 import { buildEntityAlertsQuery } from '@kbn/cloud-security-posture-common/utils/helpers';
 import type { QueryDslQueryContainer } from '@kbn/data-views-plugin/common/types';
 import { FF_ENABLE_ENTITY_STORE_V2, useEntityStoreEuidApi } from '@kbn/entity-store/public';
-import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
-import { TableId } from '@kbn/securitysolution-data-table';
 import type { AlertsByStatus } from '../../../overview/components/detection_response/alerts_by_status/types';
 import { DETECTION_RESPONSE_ALERTS_BY_STATUS_ID } from '../../../overview/components/detection_response/alerts_by_status/types';
 import {
@@ -39,7 +37,6 @@ import {
 } from '../../../overview/components/detection_response/translations';
 import { URL_PARAM_KEY } from '../../../common/hooks/use_url_state';
 import { useNavigateToAlertsPageWithFilters } from '../../../common/hooks/use_navigate_to_alerts_page_with_filters';
-import { DocumentDetailsPreviewPanelKey } from '../../../flyout/document_details/shared/constants/panel_keys';
 import type { ESBoolQuery } from '../../../../common/typed_json';
 import { useGlobalTime } from '../../../common/containers/use_global_time';
 import { useUiSetting } from '../../../common/lib/kibana';
@@ -48,7 +45,6 @@ import { ALERTS_QUERY_NAMES } from '../../../detections/containers/detection_eng
 import { useSignalIndex } from '../../../detections/containers/detection_engine/alerts/use_signal_index';
 import { getSeverityColor } from '../../../detections/components/alerts_kpis/severity_level_panel/helpers';
 import { SeverityBadge } from '../../../common/components/severity_badge';
-import { ALERT_PREVIEW_BANNER } from '../../../flyout/document_details/preview/constants';
 import { FILTER_OPEN, FILTER_ACKNOWLEDGED } from '../../../../common/types';
 import { useNonClosedAlerts } from '../../hooks/use_non_closed_alerts';
 import { useEntityFromStore } from '../../../flyout/entity_details/shared/hooks/use_entity_from_store';
@@ -95,12 +91,15 @@ export const AlertsDetailsTable = memo(
     value,
     entityId,
     entityType,
+    onShowAlert,
   }: {
     field: CloudPostureEntityIdentifier;
     value: string;
     /** Canonical entity store id (`host.entity.id` / `user.entity.id`); when set with Entity Store v2, identity is loaded from the store for EUID DSL. */
     entityId?: string;
     entityType?: 'host' | 'user';
+    /** Callback executed after opening the alert details for a row. */
+    onShowAlert: (eventId: string, indexName: string) => void;
   }) => {
     const { euiTheme } = useEuiTheme();
 
@@ -328,33 +327,13 @@ export const AlertsDetailsTable = memo(
       [buildAlertsListQuery, currentFilter, setQuery]
     );
 
-    const { openPreviewPanel } = useExpandableFlyoutApi();
-
-    const handleOnEventAlertDetailPanelOpened = useCallback(
-      (eventId: string, indexName: string, tableId: string) => {
-        openPreviewPanel({
-          id: DocumentDetailsPreviewPanelKey,
-          params: {
-            id: eventId,
-            indexName,
-            scopeId: tableId,
-            isPreviewMode: true,
-            banner: ALERT_PREVIEW_BANNER,
-          },
-        });
-      },
-      [openPreviewPanel]
-    );
-
-    const tableId = TableId.alertsOnRuleDetailsPage;
-
     const columns: Array<EuiBasicTableColumn<ContextualFlyoutAlertsField>> = [
       {
         field: 'id',
         name: '',
         width: '5%',
         render: (id: string, alert: ContextualFlyoutAlertsField) => (
-          <EuiLink onClick={() => handleOnEventAlertDetailPanelOpened(id, alert.index, tableId)}>
+          <EuiLink onClick={() => onShowAlert(id, alert.index)}>
             <EuiIcon type={'expand'} aria-hidden={true} />
           </EuiLink>
         ),
@@ -448,7 +427,7 @@ export const AlertsDetailsTable = memo(
             columns={columns}
             pagination={pagination}
             onChange={onTableChange}
-            data-test-subj={'securitySolutionFlyoutMisconfigurationFindingsTable'}
+            data-test-subj={'securitySolutionFlyoutAlertsFindingsTable'}
             sorting={sorting}
             tableCaption={i18n.translate(
               'xpack.securitySolution.flyout.left.insights.alerts.tableCaption',

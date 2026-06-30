@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/271306
+issues:
+- https://github.com/elastic/search-team/issues/13234
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+title: Add Box data source
+description: Adds a Box connector so you can chat to your files stored there.

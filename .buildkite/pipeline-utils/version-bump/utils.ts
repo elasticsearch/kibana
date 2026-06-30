@@ -12,6 +12,7 @@ import { getPrChangesCached } from '../github';
 
 const VERSION_BUMP_BRANCH_RE = /^bump-versions(-json)?-\d{4}-\d{2}-\d{2}/;
 const KIBANAMACHINE_LOGIN = 'kibanamachine';
+
 const VERSION_BUMP_FILE_MATCHERS = [
   /^versions\.json$/,
   /^\.backportrc\.json$/,
@@ -26,10 +27,10 @@ const VERSION_BUMP_FILE_MATCHERS = [
 export const isAutomatedVersionBumpPR = async (
   changes: null | RestEndpointMethodTypes['pulls']['listFiles']['response']['data'] = null
 ) => {
-  const branch = process.env.BUILDKITE_BRANCH ?? '';
-  const prHeadUser = process.env.GITHUB_PR_HEAD_USER ?? '';
+  const branch = process.env.GITHUB_PR_BRANCH ?? '';
+  const prUser = process.env.GITHUB_PR_USER ?? '';
 
-  if (!VERSION_BUMP_BRANCH_RE.test(branch) || prHeadUser !== KIBANAMACHINE_LOGIN) {
+  if (!VERSION_BUMP_BRANCH_RE.test(branch) || prUser !== KIBANAMACHINE_LOGIN) {
     return false;
   }
 

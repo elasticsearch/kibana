@@ -204,7 +204,8 @@ export class NodesFactory {
           node as EnterWhileNode,
           this.workflowRuntime,
           stepExecutionRuntime,
-          stepLogger
+          stepLogger,
+          this.stepIoService
         );
       case 'exit-while':
         return new ExitWhileNodeImpl(

@@ -8,12 +8,37 @@
  */
 
 import React from 'react';
-import { EuiNotificationBadge, EuiTab, EuiTabs, EuiToolTip } from '@elastic/eui';
+import {
+  EuiIcon,
+  EuiIconTip,
+  EuiNotificationBadge,
+  EuiTab,
+  EuiTabs,
+  EuiToolTip,
+} from '@elastic/eui';
 import type { AppHeaderTab } from '../types';
 
 export interface AppTabsProps {
   tabs?: AppHeaderTab[];
 }
+
+const renderTabBadge = (badge: AppHeaderTab['badge']) => {
+  if (badge === undefined) return undefined;
+
+  if (typeof badge === 'number') {
+    return (
+      <EuiNotificationBadge color="subdued" size="m">
+        {badge}
+      </EuiNotificationBadge>
+    );
+  }
+
+  return badge.tooltip !== undefined ? (
+    <EuiIconTip type={badge.iconType} content={badge.tooltip} position="bottom" />
+  ) : (
+    <EuiIcon type={badge.iconType} aria-hidden />
+  );
+};
 
 export const AppTabs = React.memo<AppTabsProps>(({ tabs }) => {
   if (!tabs?.length) return null;
@@ -28,13 +53,7 @@ export const AppTabs = React.memo<AppTabsProps>(({ tabs }) => {
           href={tab.href}
           data-test-subj={tab['data-test-subj']}
           disabled={tab.disabled}
-          append={
-            tab.badge !== undefined ? (
-              <EuiNotificationBadge color="subdued" size="m">
-                {tab.badge}
-              </EuiNotificationBadge>
-            ) : undefined
-          }
+          append={renderTabBadge(tab.badge)}
         >
           {tab.toolTipContent !== undefined ? (
             <EuiToolTip content={tab.toolTipContent} position="bottom">

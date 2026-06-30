@@ -69,10 +69,11 @@ Additionally, extension point implementations are passed an `accessorParams` arg
 `prev`, which includes:
 
 - `context`: the resolved `context` object for the current profile level. This is useful when consumers want to
-  [customize the `context` object](#custom-context-objects) with profile-specific properties such as state stores and
-  asynchronously initialized services.
-- `toolkit`: a host-provided object exposing optional host capabilities through `toolkit.actions`. Availability depends
-  on the current host surface, such as the main Discover app, the embeddable, or the surrounding documents page.
+  [customize the `context` object](#custom-context-objects) with profile-specific properties such as asynchronously
+  initialized services.
+- `toolkit`: a host-provided object exposing optional host capabilities through `toolkit.actions` and shared profile
+  state through `toolkit.getStateAdapter`. Actions availability depends on the current host surface, such as the main
+  Discover app, the embeddable, or the surrounding documents page.
 
 Definitions for composable profiles and the merging routine are located in the [
 `composable_profile.ts`](./composable_profile.ts) file. Toolkit definitions are located in the [
@@ -295,6 +296,75 @@ const getCellRenderers = (prev) => (params) => {
 };
 ```
 
+### Profile state
+
+When state needs to be shared across multiple extension point implementations, or across multiple profiles, use profile
+state. Profile state is accessed through the host-provided toolkit and is scoped to the current host surface. In the
+main Discover app it is scoped to the current tab; in simplified hosts like the document route, surrounding documents
+page, and embeddables it is kept in memory for the lifetime of that host instance.
+
+Define a `ProfileStateDefinition<TState>` near the profile provider that uses it:
+
+```ts
+/**
+ * profile_providers/common/example_data_source_profile/profile_state.ts
+ */
+
+import type { ProfileStateDefinition, ProfileStateRegistry } from '../../profile_state';
+import { ProfileStateType } from '../../profile_state';
+
+// Define the state shape shared across profiles and extension point implementations
+interface ExampleProfileState {
+  timestampColor: string;
+}
+
+// Define a unique state key, field lifetime metadata, and the default typed state
+const EXAMPLE_PROFILE_STATE_DEF: ProfileStateDefinition<ExampleProfileState> = {
+  key: 'exampleProfileState',
+  descriptor: {
+    timestampColor: { type: ProfileStateType.Ui },
+  },
+  defaultState: {
+    timestampColor: 'hollow',
+  },
+};
+
+export const registerExampleProfileStateDefinitions = (registry: ProfileStateRegistry) => {
+  // Register the profile state definition to the shared registry
+  registry.registerDefinition(EXAMPLE_PROFILE_STATE_DEF);
+};
+```
+
+Register the definition from [`register_profile_state_definitions.ts`](./profile_providers/register_profile_state_definitions.ts)
+before using it in profile code. The `key` must be unique, the `descriptor` describes the intended lifetime of each
+field, and `defaultState` is returned until state has been written.
+
+Use `toolkit.getStateAdapter()` inside extension point implementations to read, observe, and update the state:
+
+```tsx
+const getCellRenderers = (prev, { toolkit }) => {
+  // Retrieve the state adapter from the host-provided toolkit
+  const stateAdapter = toolkit.getStateAdapter(EXAMPLE_PROFILE_STATE_DEF);
+  const profileState$ = stateAdapter.getState$();
+
+  return (params) => ({
+    ...prev(params),
+    '@timestamp': function TimestampCell(props) {
+      // Subscribe to state changes and use the typed default before state is written
+      const { timestampColor } = useObservable(profileState$, stateAdapter.getState());
+
+      // State from one profile extension point can affect another extension point result
+      return <EuiBadge color={timestampColor}>{props.row.raw._source['@timestamp']}</EuiBadge>;
+    },
+  });
+};
+```
+
+`ProfileStateAdapter<TState>` provides `getState()`, `getState$()`, `setState()`, and shallow `updateState()`. Treat the
+state as immutable: replace it with `setState()` or update it with `updateState()` rather than mutating returned objects
+in place. Host lifetime details should stay out of profile code; the adapter decides whether the state is tab-backed or
+in-memory for the current host.
+
 ### Custom `context` objects
 
 By default the `context` object returned from each profile provider's `resolve` method conforms to a standard interface
@@ -303,8 +373,7 @@ object with properties specific to their profile implementation. To support this
 strongly typed `context` interface that extends the default interface, and allows passing properties through to their
 profile's extension point implementations.
 
-This can be useful for cases such as async service initialization, creating profile-scoped services, or sharing profile
-state across extension point implementations:
+This can be useful for cases such as async service initialization or creating profile-scoped services:
 
 ```tsx
 // The profile provider interfaces accept a custom context object type param

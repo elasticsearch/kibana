@@ -9,6 +9,7 @@ import { type DeepPartial } from '@kbn/utility-types';
 
 import type {
   AgentPolicy,
+  AgentlessPolicy,
   InstallSource,
   NewPackagePolicy,
   PackageInfo,
@@ -145,6 +146,28 @@ export const createAgentPolicyMock = (overrideProps?: Partial<AgentPolicy>): Age
     revision: 1,
     is_managed: false,
     is_protected: false,
+    ...overrideProps,
+  };
+};
+
+export const createAgentlessPolicyMock = (
+  overrideProps?: Partial<AgentlessPolicy>
+): AgentlessPolicy => {
+  return {
+    id: 'agentless-policy-1',
+    name: 'agentless-policy-1',
+    description: 'an agentless policy',
+    namespace: 'default',
+    package: {
+      name: 'agentless_hello_world',
+      title: 'Elastic Hello World',
+      version: '0.5.0',
+    },
+    inputs: {},
+    created_at: '2023-06-30T16:03:38.159292',
+    created_by: 'user-1',
+    updated_at: '2023-06-30T16:03:38.159292',
+    updated_by: 'user-1',
     ...overrideProps,
   };
 };

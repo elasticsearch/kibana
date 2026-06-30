@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/272768
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Alerting and reporting
+title: Add timelines table to cases

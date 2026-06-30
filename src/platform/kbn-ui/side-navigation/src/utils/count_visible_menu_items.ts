@@ -15,20 +15,30 @@ import { MAX_MENU_ITEMS } from '../constants';
  * @param heights - The heights of the menu items.
  * @param gap - The gap between the menu items.
  * @param menuHeight - The height of the menu.
+ * @param hasForcedMoreButton - When true, a "More" button is rendered regardless of responsive
+ * overflow (e.g. because items were explicitly hidden by the user). Its height is added to the list
+ * to fit so space is reserved for it; otherwise the button has no reserved space and overlaps the
+ * footer.
  *
  * @returns The number of visible menu items.
  */
 export const countVisibleMenuItems = (
   heights: number[],
   gap: number,
-  menuHeight: number
+  menuHeight: number,
+  hasForcedMoreButton: boolean = false
 ): number => {
+  // The "More" button takes roughly the same vertical space as any other item. When it is forced
+  // in, the button is always rendered, so include its height in the fitting math.
+  const itemHeights =
+    hasForcedMoreButton && heights.length > 0 ? [...heights, heights[0]] : heights;
+
   const countItemsToFit = (availableHeight: number, limit: number) => {
     let itemCount = 0;
     let totalHeight = 0;
 
-    for (let i = 0; i < heights.length && itemCount < limit; i++) {
-      const itemHeight = heights[i];
+    for (let i = 0; i < itemHeights.length && itemCount < limit; i++) {
+      const itemHeight = itemHeights[i];
       const nextTotalHeight = totalHeight + itemHeight + (itemCount > 0 ? gap : 0);
 
       if (nextTotalHeight <= availableHeight) {
@@ -46,12 +56,14 @@ export const countVisibleMenuItems = (
   const initialVisibleCount = countItemsToFit(menuHeight, MAX_MENU_ITEMS);
 
   // 2. If not all items are visible, we need the "More" button
-  if (heights.length > initialVisibleCount) {
-    const moreItemHeight = heights[0]; // Approximately the same height as any other item
+  if (itemHeights.length > initialVisibleCount) {
+    const moreItemHeight = itemHeights[0]; // Approximately the same height as any other item
     const availableHeight = menuHeight - moreItemHeight - gap;
 
     return countItemsToFit(availableHeight, MAX_MENU_ITEMS - 1);
   }
 
-  return initialVisibleCount;
+  // Never report more than the real number of items: the synthetic "More" button height does not
+  // correspond to an actual menu item, so it must not inflate the visible count.
+  return Math.min(initialVisibleCount, heights.length);
 };

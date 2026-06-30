@@ -34,8 +34,8 @@ const imageSets = {
     }),
   },
   significantEventsEmptyState: {
-    light: () => import('./sig_events_empty_state_light.svg'),
-    dark: () => import('./sig_events_empty_state_dark.svg'),
+    light: () => import('./significant_events_empty_state_light.svg'),
+    dark: () => import('./significant_events_empty_state_dark.svg'),
     alt: i18n.translate('xpack.streams.significantEvents.emptyStateImage', {
       defaultMessage: 'Empty state illustration for the Significant events view',
     }),

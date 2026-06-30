@@ -6,4 +6,9 @@
  */
 
 export { createResultStore } from './tool_result_store';
-export type { ToolCallFileEntry, ToolCallEntryMeta } from './types';
+export type {
+  ToolCallFileEntry,
+  ToolCallMetaFileEntry,
+  ToolCallMetaContent,
+  ToolCallResultManifestEntry,
+} from './types';

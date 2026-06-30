@@ -43,7 +43,7 @@ export const CreateAlert = ({
     <EuiFlexGroup>
       <EuiFlexItem grow={false}>
         <EuiCard
-          icon={<EuiIcon size="xxl" type={`bell`} />}
+          icon={<EuiIcon size="xxl" type={`bell`} aria-hidden={true} />}
           title={`Create Rule`}
           description="Create a new Rule based on one of our example Rule Types ."
           onClick={() => setRuleFlyoutVisibility(true)}

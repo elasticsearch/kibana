@@ -1,10 +1,10 @@
 {
-  "sha1": "76843779d2b0b762923c8f3298fe284a3aae64fb",
+  "sha1": "075b74ef45ecd6c81851c4f77f5fbcb36f1272ab",
   "tests": [
     {
       "id": "080cf4b5224e163-fcfad600a32652d",
       "title": "Observability onboarding GET flow progress returns 404 when onboardingId does not exist",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -13,14 +13,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/api/tests/onboarding_flow_progress.spec.ts",
-        "line": 50,
+        "line": 51,
         "column": 12
       }
     },
     {
       "id": "080cf4b5224e163-31970d2d16833ca",
       "title": "Observability onboarding GET flow progress returns 404 for user without access to the onboarding session",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -29,14 +29,14 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/api/tests/onboarding_flow_progress.spec.ts",
-        "line": 64,
+        "line": 65,
         "column": 12
       }
     },
     {
       "id": "080cf4b5224e163-864a078fde699f4",
       "title": "Observability onboarding GET flow progress logs-ingest progress after ea-status complete",
-      "expectedStatus": "passed",
+      "expectedStatus": "skipped",
       "tags": [
         "@local-stateful-classic",
         "@cloud-stateful-classic",
@@ -45,7 +45,7 @@
       ],
       "location": {
         "file": "x-pack/solutions/observability/plugins/observability_onboarding/test/scout/api/tests/onboarding_flow_progress.spec.ts",
-        "line": 85,
+        "line": 86,
         "column": 12
       }
     },

@@ -449,7 +449,6 @@ function buildBatchedContentPackEntries(batchStart: number, batchEnd: number): C
           },
         },
         ...emptyAssets,
-        queries: [] as never[],
       },
     });
   }
@@ -470,7 +469,6 @@ function buildBatchedContentPackEntries(batchStart: number, batchEnd: number): C
         },
       },
       ...emptyAssets,
-      queries: [] as never[],
     },
   };
 

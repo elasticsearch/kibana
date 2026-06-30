@@ -12,6 +12,7 @@ import type { SearchHit } from '@elastic/elasticsearch/lib/api/types';
 import { basename } from 'path';
 import { encode } from '@kbn/cbor';
 import { AGENT_ACTIONS_INDEX, AGENT_ACTIONS_RESULTS_INDEX } from '@kbn/fleet-plugin/common';
+import { endpointActionResponseCodes } from '../../../public/management/components/endpoint_responder/lib/endpoint_action_response_codes';
 import { isCancelAction } from '../../../common/endpoint/service/response_actions/type_guards';
 import { catchAxiosErrorFormatAndThrow } from '../../../common/endpoint/format_axios_error';
 import { FleetActionGenerator } from '../../../common/endpoint/data_generators/fleet_action_generator';
@@ -408,15 +409,20 @@ const getOutputDataIfNeeded = (action: ActionDetails): ResponseOutput => {
         }),
       } as unknown as ResponseOutput<ResponseActionExecuteOutputContent>;
 
-    case 'cancel':
+    case 'cancel': {
+      const successCodes = Object.keys(endpointActionResponseCodes).filter((key) =>
+        key.startsWith('ra_cancel_success')
+      );
+
       return {
         output: {
           type: 'json',
           content: {
-            code: 'ra_cancel_success_done',
+            code: endpointActionGenerator.randomChoice(successCodes) ?? 'ra_cancel_success_done',
           },
         },
       } as unknown as ResponseOutput;
+    }
 
     case 'memory-dump':
       return {

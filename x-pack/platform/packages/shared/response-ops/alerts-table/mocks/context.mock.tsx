@@ -11,7 +11,7 @@ import { AlertsField } from '../types';
 import type { AdditionalContext, RenderContext } from '../types';
 import { createCasesServiceMock, getCasesMapMock } from './cases.mock';
 import { getMaintenanceWindowsMock } from './maintenance_windows.mock';
-import { EuiButtonIcon, EuiFlexItem } from '@elastic/eui';
+import { EuiButtonIcon, EuiFlexItem, EuiToolTip } from '@elastic/eui';
 import React from 'react';
 import { identity } from 'lodash';
 import type { FieldFormatsRegistry } from '@kbn/field-formats-plugin/common';
@@ -159,14 +159,16 @@ export const mockRenderContext = createPartialObjectMock<RenderContext<Additiona
   }),
   renderActionsCell: () => (
     <EuiFlexItem grow={false}>
-      <EuiButtonIcon
-        iconType="analyzeEvent"
-        color="primary"
-        onClick={() => {}}
-        size="s"
-        data-test-subj="testAction"
-        aria-label="Test action"
-      />
+      <EuiToolTip content="Test action" disableScreenReaderOutput>
+        <EuiButtonIcon
+          iconType="analyzeEvent"
+          color="primary"
+          onClick={() => {}}
+          size="s"
+          data-test-subj="testAction"
+          aria-label="Test action"
+        />
+      </EuiToolTip>
     </EuiFlexItem>
   ),
   services: {

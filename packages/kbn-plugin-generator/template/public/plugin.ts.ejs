@@ -1,6 +1,6 @@
 import { i18n } from '@kbn/i18n';
 import type { AppMountParameters, CoreSetup, CoreStart, Plugin } from '@kbn/core/public';
-import type { <%= upperCamelCase(name) %>PluginSetup, <%= upperCamelCase(name) %>PluginStart, AppPluginStartDependencies } from './types';
+import type { <%= upperCamelCase(name) %>PluginSetup, <%= upperCamelCase(name) %>PluginStart } from './types';
 import { PLUGIN_NAME } from '../common';
 
 export class <%= upperCamelCase(name) %>Plugin
@@ -15,9 +15,9 @@ export class <%= upperCamelCase(name) %>Plugin
         // Load application bundle
         const { renderApp } = await import('./application');
         // Get start services as specified in kibana.json
-        const [coreStart, depsStart] = await core.getStartServices();
+        const [coreStart] = await core.getStartServices();
         // Render the application
-        return renderApp(coreStart, depsStart as AppPluginStartDependencies, params);
+        return renderApp(coreStart, params);
       },
     });
 

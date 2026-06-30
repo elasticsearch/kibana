@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/273801
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Alerting and reporting
+title: "Fix alert flyout showing only the first assignee"
+description: "The alert flyout now shows all assignees instead of only the first value from multi-value assignee fields."

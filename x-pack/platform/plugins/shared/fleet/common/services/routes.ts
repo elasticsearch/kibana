@@ -231,6 +231,9 @@ export const agentlessPolicyRouteService = {
   getDeletePath: (policyId: string) => {
     return AGENTLESS_POLICIES_ROUTES.DELETE_PATTERN.replace('{policyId}', policyId);
   },
+  getBulkThroughputPath: () => {
+    return AGENTLESS_POLICIES_ROUTES.BULK_THROUGHPUT_PATTERN;
+  },
 };
 
 export const agentPolicyRouteService = {

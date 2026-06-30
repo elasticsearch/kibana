@@ -39,7 +39,7 @@ export const AnomalySummaryRequestBody = lazySchema(() =>
      */
     min_score: z.number().min(0).max(100).optional(),
     /**
-     * Maximum record_score (inclusive); omit to return all scores up to 100
+     * Maximum record_score (exclusive); omit to return all scores up to 100
      */
     max_score: z.number().min(0).max(100).optional(),
     /**
@@ -145,7 +145,7 @@ export const AnomalyOverviewRequestBody = lazySchema(() =>
      */
     min_score: z.number().min(0).max(100).optional(),
     /**
-     * Maximum record_score (inclusive); omit to return all scores up to 100
+     * Maximum record_score (exclusive); omit to return all scores up to 100
      */
     max_score: z.number().min(0).max(100).optional(),
     /**

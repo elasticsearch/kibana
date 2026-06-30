@@ -98,7 +98,8 @@ function assertLegacyPerPluginSizes(
   return { ok: true };
 }
 
-test.describe(
+// Failing: See https://github.com/elastic/kibana/issues/242678
+test.describe.skip(
   'Discover App - Performance Metrics & Bundle Analysis',
   { tag: [...tags.deploymentAgnostic, ...tags.performance] },
   () => {

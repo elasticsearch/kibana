@@ -13,12 +13,10 @@ import { useAppToasts } from '../../../common/hooks/use_app_toasts';
 import { useAppToastsMock } from '../../../common/hooks/use_app_toasts.mock';
 import { EntityType } from '../../../../common/search_strategy';
 import { useRiskEngineStatus } from './use_risk_engine_status';
-import { useMlCapabilities } from '../../../common/components/ml/hooks/use_ml_capabilities';
+import { useLicense } from '../../../common/hooks/use_license';
 import type { RiskEngineStatusResponse } from '../../../../common/api/entity_analytics';
 import { EntityRiskQueries } from '../../../../common/api/search_strategy';
-jest.mock('../../../common/components/ml/hooks/use_ml_capabilities', () => ({
-  useMlCapabilities: jest.fn(),
-}));
+jest.mock('../../../common/hooks/use_license');
 
 jest.mock('../../../helper_hooks', () => ({
   useHasSecurityCapability: jest.fn().mockReturnValue(true),
@@ -37,7 +35,7 @@ jest.mock('./use_risk_engine_status', () => ({
   useRiskEngineStatus: jest.fn(),
 }));
 
-const mockUseMlCapabilities = useMlCapabilities as jest.Mock;
+const mockUseLicense = useLicense as jest.Mock;
 const mockUseSearchStrategy = useSearchStrategy as jest.Mock;
 const mockUseRiskEngineStatus = useRiskEngineStatus as jest.Mock;
 const mockSearch = jest.fn();
@@ -67,9 +65,9 @@ const defaultSearchResponse = {
 };
 
 const makeLicenseInvalid = () => {
-  mockUseMlCapabilities.mockClear();
-  mockUseMlCapabilities.mockReturnValue({
-    isPlatinumOrTrialLicense: false,
+  mockUseLicense.mockClear();
+  mockUseLicense.mockReturnValue({
+    isPlatinumPlus: () => false,
   });
 };
 
@@ -90,8 +88,8 @@ describe.each([EntityType.host, EntityType.user])('useRiskScore entityType: %s',
     appToastsMock = useAppToastsMock.create();
     (useAppToasts as jest.Mock).mockReturnValue(appToastsMock);
     mockUseSearchStrategy.mockReturnValue(defaultSearchResponse);
-    mockUseMlCapabilities.mockReturnValue({
-      isPlatinumOrTrialLicense: true,
+    mockUseLicense.mockReturnValue({
+      isPlatinumPlus: () => true,
     });
   });
 

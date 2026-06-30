@@ -14,6 +14,7 @@ import { css } from '@emotion/react';
 import { getIsSelectedColor } from '../utils';
 import { AppMenuPopover } from './app_menu_popover';
 import type { AppMenuItemType, AppMenuPrimaryActionItem, AppMenuSwitch } from '../types';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 
 interface AppMenuShowMoreButtonProps {
   items: AppMenuItemType[];
@@ -72,7 +73,7 @@ export const AppMenuOverflowButton = ({
         onClick={handleClick}
         isSelected={isPopoverOpen}
         css={buttonCss}
-        data-test-subj="app-menu-overflow-button"
+        data-test-subj={APP_MENU_TEST_SUBJECTS.overflowButton}
       />
     </EuiToolTip>
   );

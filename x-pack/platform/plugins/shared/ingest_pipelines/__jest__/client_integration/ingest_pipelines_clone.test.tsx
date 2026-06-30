@@ -24,6 +24,7 @@ describe('<PipelinesClone />', () => {
   const PIPELINE_TO_CLONE = {
     name: 'my_pipeline',
     description: 'pipeline description',
+    field_access_pattern: 'classic',
     processors: [
       {
         set: {

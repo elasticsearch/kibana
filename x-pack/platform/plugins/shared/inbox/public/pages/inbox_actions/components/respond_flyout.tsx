@@ -24,6 +24,7 @@ import type { InboxAction } from '@kbn/inbox-common';
 import { useRespondToInboxAction } from '../../../hooks/use_respond_to_inbox_action';
 import { useActionDetailRenderer } from '../../../hooks/use_action_detail_renderer';
 import * as i18n from '../translations';
+import { InboxReasoning } from './inbox_reasoning';
 import {
   SchemaForm,
   extractSchemaDefaults,
@@ -31,6 +32,12 @@ import {
   type InboxJsonSchema,
 } from './schema_form';
 import { TimeoutChip } from './timeout_chip';
+
+const formatTimestamp = (iso?: string | null): string => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
+};
 
 export interface RespondFlyoutProps {
   action: InboxAction;
@@ -111,9 +118,21 @@ export const RespondFlyout: React.FC<RespondFlyoutProps> = ({ action, onClose, o
       </EuiFlyoutHeader>
 
       <EuiFlyoutBody>
+        {action.reasoning ? (
+          <>
+            <EuiFlexGroup direction="column" gutterSize="s">
+              <InboxReasoning reasoning={action.reasoning} />
+            </EuiFlexGroup>
+            <EuiSpacer size="l" />
+          </>
+        ) : null}
         {isTimedOut ? (
-          <EuiCallOut color="warning" iconType="clock">
-            <p>{i18n.getTimedOutBannerText(action.responded_at ?? action.timeout_at ?? '')}</p>
+          <EuiCallOut announceOnMount color="warning" iconType="clock">
+            <p>
+              {i18n.getTimedOutBannerText(
+                formatTimestamp(action.responded_at ?? action.timeout_at)
+              )}
+            </p>
           </EuiCallOut>
         ) : (
           <>
@@ -127,7 +146,7 @@ export const RespondFlyout: React.FC<RespondFlyoutProps> = ({ action, onClose, o
             {mutation.isError ? (
               <>
                 <EuiSpacer size="m" />
-                <EuiCallOut color="danger" iconType="warning">
+                <EuiCallOut announceOnMount color="danger" iconType="warning">
                   <p>{i18n.getFlyoutSubmitErrorMessage(String(mutation.error))}</p>
                 </EuiCallOut>
               </>

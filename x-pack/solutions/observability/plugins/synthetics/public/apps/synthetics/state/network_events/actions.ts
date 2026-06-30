@@ -12,6 +12,7 @@ export interface FetchNetworkEventsParams {
   checkGroup: string;
   stepIndex: number;
   remoteName?: string;
+  timestamp?: string;
 }
 
 export interface FetchNetworkEventsFailPayload {

@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/270563
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+title: Fix dashboard panel column type inference
+description: Fixes an issue where migrated Splunk dashboard panels would fail to render in Lens with a "wrong data type" error because column types were incorrectly inferred as "unknown".

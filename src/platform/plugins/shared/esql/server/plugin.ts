@@ -47,8 +47,7 @@ export class EsqlServerPlugin
       }),
     });
 
-    const isServerless = initContext.env.packageInfo.buildFlavor === 'serverless';
-    registerRoutes(core, this.extensionsRegistry, initContext, isServerless);
+    registerRoutes(core, this.extensionsRegistry, initContext);
 
     return {
       getExtensionsRegistry: () => this.extensionsRegistry,

@@ -1,6 +1,34 @@
 {
-  "sha1": "9eac97629518887e59bfbca9edcb7234eae45b65",
+  "sha1": "d62b32859e63f0c6d89ee80380da8edc830c8f49",
   "tests": [
+    {
+      "id": "56a87b3c042792d-0f151a046a326da",
+      "title": "Scenario B — Customize navigation link is hidden in the default (classic) space hides the \"Customize navigation\" link in the user menu",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/navigation/test/scout/ui/tests/customize_nav_link_disabled_in_classic.spec.ts",
+        "line": 33,
+        "column": 9
+      }
+    },
+    {
+      "id": "4a943ba82f2f824-4b58f437f875564",
+      "title": "Scenario A — Customize navigation link is visible in an es-solution space persists navigation customizations across reloads for a read-only user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/navigation/test/scout/ui/tests/customize_nav_link_with_access.spec.ts",
+        "line": 87,
+        "column": 9
+      }
+    },
     {
       "id": "9d36407f6b29998-c5ea838e311eff6",
       "title": "navigation has security serverless side nav",

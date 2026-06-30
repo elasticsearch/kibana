@@ -55,7 +55,8 @@ describe('resumeWorkflowExecutionTool', () => {
       'exec-1',
       'default',
       { approved: true },
-      mockContext.request
+      mockContext.request,
+      { channel: 'agent_builder' }
     );
   });
 

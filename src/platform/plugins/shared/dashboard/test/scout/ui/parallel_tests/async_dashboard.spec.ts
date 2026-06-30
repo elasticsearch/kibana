@@ -52,7 +52,7 @@ spaceTest.describe.skip('Flights dashboard (sample data)', { tag: tags.deploymen
   spaceTest('loads dashboard and renders panels', async ({ browserAuth, page, pageObjects }) => {
     await spaceTest.step('login and prepare Discover', async () => {
       await browserAuth.loginAsAdmin();
-      await pageObjects.discover.goto();
+      await pageObjects.discover.goto({ queryMode: 'classic' });
       await pageObjects.discover.selectDataView(SAMPLE_DATA_VIEW);
       await pageObjects.datePicker.setCommonlyUsedTime(SAMPLE_DATA_TIME_RANGE);
       await pageObjects.discover.waitUntilSearchingHasFinished();

@@ -25,7 +25,7 @@ spaceTest.describe('Saved query menu — read-only (Discover)', { tag: testData.
 
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginWithCustomRole(testData.DISCOVER_READ_SQM_READ_ROLE);
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
   });
 
   spaceTest.afterAll(async ({ scoutSpace }) => {

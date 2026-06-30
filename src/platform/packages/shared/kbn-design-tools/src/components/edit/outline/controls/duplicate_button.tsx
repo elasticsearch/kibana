@@ -8,22 +8,26 @@
  */
 
 import React from 'react';
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 
 interface Props {
   onClick: () => void;
 }
 
+const duplicateLabel = i18n.translate('kbnDesignTools.edit.outline.controls.duplicateElement', {
+  defaultMessage: 'Duplicate element',
+});
+
 export const DuplicateButton = ({ onClick }: Props) => (
-  <EuiButtonIcon
-    iconType="copy"
-    color="text"
-    size="xs"
-    aria-label={i18n.translate('kbnDesignTools.edit.outline.controls.duplicateElement', {
-      defaultMessage: 'Duplicate element',
-    })}
-    onClick={onClick}
-    data-test-subj="editOutlineDuplicateButton"
-  />
+  <EuiToolTip content={duplicateLabel} disableScreenReaderOutput>
+    <EuiButtonIcon
+      iconType="copy"
+      color="text"
+      size="xs"
+      aria-label={duplicateLabel}
+      onClick={onClick}
+      data-test-subj="editOutlineDuplicateButton"
+    />
+  </EuiToolTip>
 );

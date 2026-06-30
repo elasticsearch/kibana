@@ -17,6 +17,7 @@ import {
   EuiHorizontalRule,
   EuiPopoverTitle,
   EuiSpacer,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
@@ -100,15 +101,17 @@ export const SpacesListView = ({
                   <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                     {onBack && (
                       <EuiFlexItem grow={false}>
-                        <EuiButtonIcon
-                          iconType="arrowLeft"
-                          aria-label={BACK_BUTTON_ARIA_LABEL}
-                          color="text"
-                          display="empty"
-                          size="s"
-                          onClick={onBack}
-                          data-test-subj="contextSwitcherSpacesBackButton"
-                        />
+                        <EuiToolTip content={BACK_BUTTON_ARIA_LABEL} disableScreenReaderOutput>
+                          <EuiButtonIcon
+                            iconType="arrowLeft"
+                            aria-label={BACK_BUTTON_ARIA_LABEL}
+                            color="text"
+                            display="empty"
+                            size="s"
+                            onClick={onBack}
+                            data-test-subj="contextSwitcherSpacesBackButton"
+                          />
+                        </EuiToolTip>
                       </EuiFlexItem>
                     )}
                     <EuiFlexItem

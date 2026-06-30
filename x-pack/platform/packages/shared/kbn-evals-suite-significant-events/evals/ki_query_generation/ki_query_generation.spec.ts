@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { generateSignificantEvents } from '@kbn/streams-ai';
+import { identifyKIQueries } from '@kbn/streams-ai';
 import { significantEventsPrompt } from '@kbn/streams-ai/src/significant_events/prompt';
 import { tags } from '@kbn/scout';
 
@@ -323,7 +323,7 @@ evaluate.describe('KI query generation', { tag: tags.serverless.observability.co
                     `ki_types=${JSON.stringify(kiTypeCounts)}, sample_logs=${sampleLogs.length}`
                 );
 
-                const { queries, toolUsage } = await generateSignificantEvents({
+                const { queries, toolUsage } = await identifyKIQueries({
                   stream,
                   esClient,
                   inferenceClient,
@@ -428,7 +428,7 @@ evaluate.describe('KI query generation', { tag: tags.serverless.observability.co
                 emptyDataStreamTestIndex!
               );
 
-              const { queries } = await generateSignificantEvents({
+              const { queries } = await identifyKIQueries({
                 stream: streamFromApi as Streams.all.Definition,
                 esClient,
                 inferenceClient,

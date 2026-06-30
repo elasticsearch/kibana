@@ -8,7 +8,7 @@
 import pMap from 'p-map';
 import type { ElasticsearchClient, SavedObjectsClientContract, Logger } from '@kbn/core/server';
 import { escapeQuotes } from '@kbn/es-query';
-import { SavedObjectsErrorHelpers } from '@kbn/core/server';
+import { SavedObjectsErrorHelpers, isSavedObjectErrorResult } from '@kbn/core/server';
 
 import { appContextService } from '../app_context';
 import { setupFleet } from '../setup';
@@ -66,7 +66,7 @@ async function _deleteGhostPackagePolicies(
 
   const objects = policyIds.map((id) => ({ id, type: AGENT_POLICY_SAVED_OBJECT_TYPE }));
   const agentPolicyExistsMap = (await soClient.bulkGet(objects)).saved_objects.reduce((acc, so) => {
-    if (so.error && so.error.statusCode === 404) {
+    if (isSavedObjectErrorResult(so) && so.error.statusCode === 404) {
       acc.set(so.id, false);
     } else {
       acc.set(so.id, true);

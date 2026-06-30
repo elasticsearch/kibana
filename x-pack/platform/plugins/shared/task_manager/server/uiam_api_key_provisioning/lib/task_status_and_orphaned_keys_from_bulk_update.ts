@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { isSavedObjectErrorResult } from '@kbn/core/server';
+import type { SavedObjectErrorResult } from '@kbn/core/server';
 import type { InvalidationTarget } from '../../api_key_strategy';
 import type { UiamKeyResult } from '../types';
 import {
@@ -30,7 +32,7 @@ const invalidationTargetFromUiamKeyResult = (
  */
 export interface TaskBulkUpdateResultItem {
   id: string;
-  error?: { message?: string };
+  error?: SavedObjectErrorResult['error'];
 }
 
 /**
@@ -51,7 +53,7 @@ export const statusDocsAndOrphanedUiamKeysFromTaskBulkUpdate = (
   const orphanedInvalidationTargets: InvalidationTarget[] = [];
   for (const so of savedObjects) {
     const statusDoc = createTaskProvisioningStatusFromBulkUpdateResult(so);
-    if (so.error) {
+    if (isSavedObjectErrorResult(so)) {
       provisioningStatusForFailedTasks.push(statusDoc);
       const target = invalidationTargetFromUiamKeyResult(uiamKeyByTaskId.get(so.id));
       if (target) {

@@ -10,6 +10,7 @@
 import React, { useMemo, type ReactElement } from 'react';
 import { EuiContextMenu, EuiPopover, EuiToolTip, type PopoverAnchorPosition } from '@elastic/eui';
 import { getPopoverPanels, getTooltip } from '../utils';
+import { APP_MENU_TEST_SUBJECTS } from '../test_subjects';
 import type {
   AppMenuItemType,
   AppMenuPopoverItem,
@@ -46,7 +47,7 @@ export const AppMenuPopover = ({
   popoverWidth,
   primaryActionItem,
   switchConfig,
-  popoverTestId = 'app-menu-popover',
+  popoverTestId = APP_MENU_TEST_SUBJECTS.popover,
   anchorPosition = 'downLeft',
   repositionToCrossAxis,
   onClose,

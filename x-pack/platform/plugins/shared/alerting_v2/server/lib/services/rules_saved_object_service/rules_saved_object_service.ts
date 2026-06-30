@@ -9,7 +9,7 @@ import { PluginStart } from '@kbn/core-di';
 import type { SpacesPluginStart } from '@kbn/spaces-plugin/server';
 import { inject, injectable } from 'inversify';
 import type { SavedObjectsClientContract } from '@kbn/core/server';
-import { SavedObjectsUtils } from '@kbn/core/server';
+import { isSavedObjectErrorResult, SavedObjectsUtils } from '@kbn/core/server';
 import type { SavedObjectError } from '@kbn/core/types';
 import { RULE_SAVED_OBJECT_TYPE } from '../../../saved_objects';
 import type { RuleSavedObjectAttributes } from '../../../saved_objects';
@@ -150,7 +150,7 @@ export class RulesSavedObjectService implements RulesSavedObjectServiceContract 
     );
 
     return result.saved_objects.map((doc) => {
-      if ('error' in doc && doc.error) {
+      if (isSavedObjectErrorResult(doc)) {
         return { id: doc.id, error: doc.error };
       }
       return { id: doc.id, attributes: doc.attributes, version: doc.version };
@@ -177,7 +177,7 @@ export class RulesSavedObjectService implements RulesSavedObjectServiceContract 
     const results: RulesFindAllResultItem[] = [];
     for await (const response of finder.find()) {
       for (const doc of response.saved_objects) {
-        if (!('error' in doc && doc.error)) {
+        if (!isSavedObjectErrorResult(doc)) {
           results.push({ id: doc.id, attributes: doc.attributes, namespaces: doc.namespaces });
         }
       }
@@ -224,7 +224,7 @@ export class RulesSavedObjectService implements RulesSavedObjectServiceContract 
     );
 
     return result.saved_objects.map((doc) => {
-      if ('error' in doc && doc.error) {
+      if (isSavedObjectErrorResult(doc)) {
         return { id: doc.id, success: false as const, error: doc.error };
       }
       return { id: doc.id, success: true as const };

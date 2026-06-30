@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { DEFAULT_SIG_EVENTS_TUNING_CONFIG } from '@kbn/streams-plugin/common/sig_events_tuning_config';
+import { DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG } from '@kbn/streams-plugin/common/significant_events_tuning_config';
 import {
   BANK_OF_ANTHOS_GCS_BASE_PATH_PREFIX,
   BANK_OF_ANTHOS_NAMESPACE,
@@ -455,7 +455,7 @@ export const bankOfAnthosDataset: DatasetConfig = {
     {
       input: {
         scenario_id: 'healthy-baseline',
-        iterations: DEFAULT_SIG_EVENTS_TUNING_CONFIG.max_iterations,
+        iterations: DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG.max_iterations,
       },
     },
   ],

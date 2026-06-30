@@ -16,10 +16,17 @@ import * as UserProfileImports from './user_profile/user_profile';
 import { UserProfileAPIClient } from './user_profile/user_profile_api_client';
 import type { UserProfileData } from '../../common';
 import { mockAuthenticatedUser } from '../../common/model/authenticated_user.mock';
+import { Breadcrumb } from '../components/breadcrumb';
 import { UserAPIClient } from '../management';
 import { securityMock } from '../mocks';
 
-const UserProfileMock = jest.spyOn(UserProfileImports, 'UserProfile');
+const UserProfileMock = jest
+  .spyOn(UserProfileImports, 'UserProfile')
+  .mockImplementation(({ user }) => (
+    <Breadcrumb text={user.username}>
+      <form aria-label="user profile" />
+    </Breadcrumb>
+  ));
 
 describe('<AccountManagementPage>', () => {
   const coreStart = coreMock.createStart();
@@ -39,10 +46,6 @@ describe('<AccountManagementPage>', () => {
     authc.getCurrentUser.mockClear();
     coreStart.http.delete.mockClear();
     coreStart.http.get.mockClear();
-    // The User Profile page triggers a silent "prime locale" save via usePrimeUserLocale,
-    // which posts to /internal/security/user_profile/_data. Ensure the mocked post
-    // returns a resolved promise so the chained .then() doesn't throw.
-    coreStart.http.post.mockReset().mockResolvedValue(undefined);
     coreStart.notifications.toasts.addDanger.mockClear();
     coreStart.notifications.toasts.addSuccess.mockClear();
   });

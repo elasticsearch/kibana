@@ -21,7 +21,6 @@ import type { RoutingStatus } from '@kbn/streams-schema';
 import {
   Streams,
   convertUpsertRequestIntoDefinition,
-  deriveQueryType,
   getAncestors,
   getParentId,
   LOGS_ROOT_STREAM_NAME,
@@ -58,6 +57,11 @@ export type SyncStreamResponse = AcknowledgeResponse<'updated' | 'created'>;
 export type ForkStreamResponse = AcknowledgeResponse<'created'>;
 export type ResyncStreamsResponse = AcknowledgeResponse<'updated'>;
 export type UpsertStreamResponse = AcknowledgeResponse<'updated' | 'created'>;
+
+export interface BulkUpsertStreamsResponse {
+  acknowledged: true;
+  result: { created: string[]; updated: string[] };
+}
 
 /*
  * When calling into Elasticsearch, the stack trace is lost.
@@ -444,10 +448,13 @@ export class StreamsClient {
     };
   }
 
-  async bulkUpsert(streams: Array<{ name: string; request: Streams.all.UpsertRequest }>) {
-    const definitions = streams.map(({ name, request }) => {
-      return { request, definition: convertUpsertRequestIntoDefinition(name, request) };
-    });
+  async bulkUpsert(
+    streams: Array<{ name: string; request: Streams.all.UpsertRequest }>
+  ): Promise<BulkUpsertStreamsResponse> {
+    const definitions = streams.map(({ name, request }) => ({
+      request,
+      definition: convertUpsertRequestIntoDefinition(name, request),
+    }));
 
     const result = await State.attemptChanges(
       definitions.map(({ definition }) => ({
@@ -1088,9 +1095,9 @@ export class StreamsClient {
   }
 
   private async syncAssets(definition: Streams.all.Definition, request: Streams.all.UpsertRequest) {
-    const { dashboards, queries, rules } = request;
+    const { dashboards, rules } = request;
 
-    const ops: Array<Promise<unknown>> = [
+    await Promise.all([
       this.dependencies.attachmentClient.syncAttachmentList(
         definition.name,
         dashboards.map((dashboard) => ({
@@ -1107,18 +1114,6 @@ export class StreamsClient {
         })),
         'rule'
       ),
-    ];
-
-    if (this.dependencies.getKnowledgeIndicatorClient) {
-      const kiClient = await this.dependencies.getKnowledgeIndicatorClient();
-      ops.push(
-        kiClient.syncQueries(
-          definition,
-          queries.map((q) => ({ ...q, type: deriveQueryType(q.esql.query) }))
-        )
-      );
-    }
-
-    await Promise.all(ops);
+    ]);
   }
 }

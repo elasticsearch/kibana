@@ -6,7 +6,12 @@
  */
 
 import type { CoreSetup, CoreStart, Plugin, PluginInitializerContext } from '@kbn/core/server';
+import { SavedObjectsClient } from '@kbn/core/server';
 import type { Logger } from '@kbn/logging';
+import {
+  AGENT_BUILDER_TRACING_ENABLED_SETTING_ID,
+  AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
+} from '@kbn/management-settings-ids';
 import type { UsageCounter } from '@kbn/usage-collection-plugin/server';
 import type { HomeServerPluginSetup } from '@kbn/home-plugin/server';
 import type { AgentBuilderConfig } from './config';
@@ -36,7 +41,10 @@ import { createModelProviderFactory } from './services/execution/runner/model_pr
 import { createSmlTools } from './services/tools/builtin/sml';
 import { createConnectorTools } from './services/tools/builtin/connectors';
 import { createAdminPrivilegeSwitcher } from './capabilities/admin_privilege_switcher';
-import { syncAgentBuilderOverviewDashboard } from './dashboard';
+import {
+  syncAgentBuilderOverviewDashboard,
+  syncAgentBuilderOverviewDashboardForSpace,
+} from './dashboard';
 import { registerInferenceFeatures } from './inference_features';
 
 export class AgentBuilderPlugin
@@ -250,15 +258,28 @@ export class AgentBuilderPlugin
       registerSampleData(this.home, this.logger);
     }
 
-    void syncAgentBuilderOverviewDashboard(
-      coreStart,
-      this.config.tracing.send_to_self,
-      this.logger
-    ).catch((error) => {
-      this.logger.error(
-        `Failed to sync Agent Builder overview dashboard: ${(error as Error).message}`
-      );
-    });
+    void (async () => {
+      try {
+        const internalClient = new SavedObjectsClient(
+          coreStart.savedObjects.createInternalRepository()
+        );
+        const tracingEnabled = await coreStart.uiSettings
+          .asScopedToClient(internalClient)
+          .get<boolean>(AGENT_BUILDER_TRACING_ENABLED_SETTING_ID);
+        const experimentalFeaturesEnabled = await coreStart.uiSettings
+          .asScopedToClient(internalClient)
+          .get<boolean>(AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID);
+        await syncAgentBuilderOverviewDashboard(
+          coreStart,
+          tracingEnabled && experimentalFeaturesEnabled,
+          this.logger
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to sync Agent Builder overview dashboard: ${(error as Error).message}`
+        );
+      }
+    })();
 
     const modelProviderFactory = createModelProviderFactory({
       inference,
@@ -301,6 +322,17 @@ export class AgentBuilderPlugin
             list: client.list.bind(client),
           };
         },
+      },
+      dashboard: {
+        syncOverview: (tracingEnabled: boolean) =>
+          syncAgentBuilderOverviewDashboard(coreStart, tracingEnabled, this.logger),
+        syncOverviewForSpace: (tracingEnabled: boolean, spaceId: string) =>
+          syncAgentBuilderOverviewDashboardForSpace(
+            coreStart,
+            tracingEnabled,
+            spaceId,
+            this.logger
+          ),
       },
     };
   }

@@ -39,7 +39,6 @@ test('Otel Kubernetes', async ({ page, onboardingHomePage, otelKubernetesFlowPag
   const outputPath = path.join(__dirname, '..', process.env.ARTIFACTS_FOLDER, fileName);
 
   await onboardingHomePage.selectKubernetesUseCase();
-  await onboardingHomePage.selectOtelKubernetesQuickstart();
 
   const helmRepoSnippet = (await otelKubernetesFlowPage.getHelmRepositorySnippet()) ?? '';
 

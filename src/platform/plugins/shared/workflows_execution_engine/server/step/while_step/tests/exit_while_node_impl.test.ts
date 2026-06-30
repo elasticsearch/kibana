@@ -49,6 +49,8 @@ describe('ExitWhileNodeImpl', () => {
 
     stepIoService = {
       evictStaleLoopOutputs: jest.fn(),
+      unpinLoopScope: jest.fn(),
+      pinLoopSource: jest.fn(),
     } as unknown as StepIoService;
 
     workflowGraph = {
@@ -99,6 +101,12 @@ describe('ExitWhileNodeImpl', () => {
 
       expect(stepExecutionRuntime.finishStep).not.toHaveBeenCalled();
     });
+
+    it('should not unpin the loop scope (loop continues)', () => {
+      underTest.run();
+
+      expect(stepIoService.unpinLoopScope).not.toHaveBeenCalled();
+    });
   });
 
   describe('when condition evaluates to false', () => {
@@ -115,6 +123,12 @@ describe('ExitWhileNodeImpl', () => {
       underTest.run();
 
       expect(stepExecutionRuntime.finishStep).toHaveBeenCalled();
+    });
+
+    it('should unpin the loop scope on exit', () => {
+      underTest.run();
+
+      expect(stepIoService.unpinLoopScope).toHaveBeenCalledWith(node.stepId);
     });
 
     it('should navigate to the next node', () => {
@@ -190,6 +204,16 @@ describe('ExitWhileNodeImpl', () => {
 
         expect(stepExecutionRuntime.finishStep).not.toHaveBeenCalled();
       });
+
+      it('should unpin the loop scope before throwing', () => {
+        try {
+          underTest.run();
+        } catch {
+          // expected
+        }
+
+        expect(stepIoService.unpinLoopScope).toHaveBeenCalledWith(node.stepId);
+      });
     });
   });
 
@@ -230,6 +254,72 @@ describe('ExitWhileNodeImpl', () => {
 
       expect(stepExecutionRuntime.finishStep).toHaveBeenCalled();
       expect(wfExecutionRuntimeManager.navigateToNextNode).toHaveBeenCalled();
+    });
+  });
+
+  describe('condition source pinning (source produced inside the loop body)', () => {
+    // The enter-while pin cannot protect a condition source that is produced
+    // *inside* the loop — at enter-while that inner step has no execution yet,
+    // so nothing is pinned for it. exit-while must re-pin the (now-existing)
+    // latest execution right before evaluating, otherwise a concurrent flush
+    // can evict it between prepareForRead and the synchronous re-evaluation.
+    it('should pin the condition source before evaluating when the loop continues', () => {
+      (stepExecutionRuntime.getCurrentStepState as jest.Mock).mockReturnValue({
+        iteration: 1,
+      });
+      (stepExecutionRuntime.contextManager.renderValueWithContext as jest.Mock).mockReturnValue(
+        true
+      );
+
+      underTest.run();
+
+      expect(stepIoService.pinLoopSource).toHaveBeenCalledWith(node.stepId, node.condition);
+    });
+
+    it('should pin the condition source before rendering the condition', () => {
+      (stepExecutionRuntime.getCurrentStepState as jest.Mock).mockReturnValue({
+        iteration: 1,
+      });
+      const callOrder: string[] = [];
+      (stepIoService.pinLoopSource as jest.Mock).mockImplementation(() => callOrder.push('pin'));
+      (stepExecutionRuntime.contextManager.renderValueWithContext as jest.Mock).mockImplementation(
+        () => {
+          callOrder.push('render');
+          return true;
+        }
+      );
+
+      underTest.run();
+
+      expect(callOrder).toEqual(['pin', 'render']);
+    });
+
+    it('should pin the condition source even on the iteration that exits the loop', () => {
+      (stepExecutionRuntime.getCurrentStepState as jest.Mock).mockReturnValue({
+        iteration: 2,
+      });
+      (stepExecutionRuntime.contextManager.renderValueWithContext as jest.Mock).mockReturnValue(
+        false
+      );
+
+      underTest.run();
+
+      // The pin happens before evaluation, so it is taken regardless of the
+      // condition outcome; the scope is then released by unpinLoopScope.
+      expect(stepIoService.pinLoopSource).toHaveBeenCalledWith(node.stepId, node.condition);
+      expect(stepIoService.unpinLoopScope).toHaveBeenCalledWith(node.stepId);
+    });
+
+    it('should not pin the condition source when max-iterations short-circuits evaluation', () => {
+      (stepExecutionRuntime.getCurrentStepState as jest.Mock).mockReturnValue({
+        iteration: 1,
+      });
+      node.maxIterations = 2;
+
+      underTest.run();
+
+      // max-iterations reached -> condition is never evaluated -> no pin needed.
+      expect(stepIoService.pinLoopSource).not.toHaveBeenCalled();
     });
   });
 

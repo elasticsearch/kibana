@@ -41,18 +41,21 @@ export const EmptyConnectorsPrompt = ({
             size="xl"
             className="actEmptyConnectorsPrompt__logo"
             css={emptyConnectorsLogoCss}
+            aria-hidden={true}
           />
           <EuiIcon
             type="logoGmail"
             size="xl"
             className="actEmptyConnectorsPrompt__logo"
             css={emptyConnectorsLogoCss}
+            aria-hidden={true}
           />
           <EuiIcon
             type="logoWebhook"
             size="xl"
             className="actEmptyConnectorsPrompt__logo"
             css={emptyConnectorsLogoCss}
+            aria-hidden={true}
           />
           <EuiSpacer size="s" />
           <EuiTitle size="m">

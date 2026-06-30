@@ -13,6 +13,7 @@ import {
   EuiFormRow,
   EuiButton,
   EuiButtonIcon,
+  EuiToolTip,
   EuiSpacer,
   EuiBasicTable,
   EuiCallOut,
@@ -203,12 +204,14 @@ const PatternExpression: React.FunctionComponent<RuleTypeParamsExpressionProps<P
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <EuiFormRow hasEmptyLabelSpace display="rowCompressed">
-                <EuiButtonIcon
-                  iconType="trash"
-                  color="danger"
-                  aria-label={`Remove ${instanceName}`}
-                  onClick={() => removeInstance(instanceName)}
-                />
+                <EuiToolTip content={`Remove ${instanceName}`} disableScreenReaderOutput>
+                  <EuiButtonIcon
+                    iconType="trash"
+                    color="danger"
+                    aria-label={`Remove ${instanceName}`}
+                    onClick={() => removeInstance(instanceName)}
+                  />
+                </EuiToolTip>
               </EuiFormRow>
             </EuiFlexItem>
           </EuiFlexGroup>

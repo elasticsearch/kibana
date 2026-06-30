@@ -53,6 +53,11 @@ interface LogRuleChanges {
      * Change metadata object to be written to the each change history item
      */
     metadata?: RuleChangeTrackingMetadata;
+    /**
+     * Controls ES index refresh behavior. Pass `'wait_for'` when the history
+     * entry must be immediately searchable after the write.
+     */
+    refresh?: boolean | 'wait_for';
   };
 }
 
@@ -60,7 +65,7 @@ export async function logRuleChanges({
   ruleSOs,
   encryptedFieldsMap,
   rulesClientContext: { changeTrackingService, ruleTypeRegistry, logger, spaceId, isSystemAction },
-  changesContext: { action, timestamp, metadata },
+  changesContext: { action, timestamp, metadata, refresh },
 }: LogRuleChanges): Promise<void> {
   if (!changeTrackingService) {
     return;
@@ -141,6 +146,7 @@ export async function logRuleChanges({
       action,
       spaceId,
       data,
+      refresh,
     });
   } catch (e) {
     logger.warn(`Unable to log bulk rule changes for action "${action}": ${e}`);

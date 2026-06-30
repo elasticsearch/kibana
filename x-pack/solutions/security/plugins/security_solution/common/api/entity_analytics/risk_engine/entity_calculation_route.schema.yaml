@@ -70,10 +70,11 @@ components:
         identifier_type:
           description: Used to define the type of entity.
           $ref: '../common/common.schema.yaml#/components/schemas/IdentifierType'
-        refresh:
+        entity_id:
+          description: V2-only, the canonical Entity Store EUID.
           type: string
-          enum: [wait_for]
-          description: If 'wait_for' the request will wait for the index refresh.
+          maxLength: 1000
+          example: 'host:HW-UUID-ABC'
 
     RiskScoresEntityCalculationResponse:
       type: object

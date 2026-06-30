@@ -21,7 +21,7 @@ spaceTest.describe('Discover app - errors', { tag: tags.stateful.all }, () => {
 
   spaceTest.beforeEach(async ({ browserAuth, pageObjects }) => {
     await browserAuth.loginAsViewer();
-    await pageObjects.discover.goto();
+    await pageObjects.discover.goto({ queryMode: 'classic' });
   });
 
   spaceTest.afterAll(async ({ scoutSpace }) => {

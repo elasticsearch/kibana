@@ -19,6 +19,7 @@ import { useObservable } from '@kbn/use-observable';
 import { i18n } from '@kbn/i18n';
 
 import { useBasePath } from './chrome';
+import { APP_HEADER_TEST_SUBJECTS } from '../test_subjects';
 
 const createIntegrationsMenuItem = (href: string): AppMenuStaticItem => ({
   label: i18n.translate('core.chrome.appHeader.addIntegrationsMenuItemLabel', {
@@ -28,6 +29,7 @@ const createIntegrationsMenuItem = (href: string): AppMenuStaticItem => ({
   iconType: 'indexOpen',
   order: 0,
   href,
+  testId: APP_HEADER_TEST_SUBJECTS.menuAddIntegrations,
 });
 
 const createFeedbackMenuItem = (feedbackHandler: () => void): AppMenuStaticItem => ({
@@ -39,6 +41,7 @@ const createFeedbackMenuItem = (feedbackHandler: () => void): AppMenuStaticItem 
   order: 1,
   run: feedbackHandler,
   global: true,
+  testId: APP_HEADER_TEST_SUBJECTS.menuFeedback,
 });
 
 const createDocumentationMenuItem = (href: string): AppMenuStaticItem => ({
@@ -50,6 +53,7 @@ const createDocumentationMenuItem = (href: string): AppMenuStaticItem => ({
   order: 2,
   href,
   target: '_blank',
+  testId: APP_HEADER_TEST_SUBJECTS.menuDocumentation,
 });
 
 interface ResolvedAppMenu {

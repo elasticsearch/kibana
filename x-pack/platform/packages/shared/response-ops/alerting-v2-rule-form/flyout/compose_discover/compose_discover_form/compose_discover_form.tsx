@@ -18,8 +18,9 @@ import type {
 } from '../types';
 import { isAlertConditionStepId } from '../types';
 import { getStepIds, getBuilderStepIds } from '../use_compose_discover_state';
-import type { ComposeFormValues } from '../compose_form_types';
-import { getBreachQuery } from '../compose_form_types';
+import type { FormValues } from '../../../form/types';
+import { getBreachQuery } from '../../../form/utils/query_helpers';
+import { getEsqlSummaryState } from './esql_query_summary_section';
 import type { RuleFormServices } from '../../../form/contexts/rule_form_context';
 import { RULE_BUILDER_REGISTRY } from '../rule_builder';
 import { isActionValid } from '../../../actions_form';
@@ -64,10 +65,14 @@ const STEP_REGISTRY: Record<StepDefinition['id'], StepDefinition> = {
       if (!s.queryCommitted) {
         return false;
       }
-      const kind = methods.getValues('kind');
       const query = methods.getValues('query');
-      if (kind === 'alert' && query.format === 'composed') {
-        return query.base.trim().length > 0 && query.breach.segment.trim().length > 0;
+      /*
+       * Alert rules require a valid alert condition to advance (#621/#623): the
+       * heuristic split must succeed (composed base + alert segment). no_where,
+       * split-failed and empty all block Next.
+       */
+      if (methods.getValues('kind') === 'alert') {
+        return getEsqlSummaryState(s.queryCommitted, query) === 'success';
       }
       return getBreachQuery(query).trim().length > 0;
     },
@@ -173,7 +178,7 @@ export const ComposeDiscoverForm = ({
   ruleId,
   builderType,
 }: Props) => {
-  const isAlert = useWatch<ComposeFormValues, 'kind'>({ name: 'kind' }) === 'alert';
+  const isAlert = useWatch<FormValues, 'kind'>({ name: 'kind' }) === 'alert';
   const { steps, renderCustomRecovery } = useMemo(
     () => getSteps(isAlert, builderType),
     [isAlert, builderType]

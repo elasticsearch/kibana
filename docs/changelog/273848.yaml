@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/273848
+issues:
+- https://github.com/elastic/kibana/issues/273373
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-25
+areas:
+- Search and data
+title: "Fix slow Fleet setup when many outputs are configured"
+description: "`POST /api/fleet/setup` no longer decrypts every output on each call, so setup stays responsive on deployments with many configured outputs."

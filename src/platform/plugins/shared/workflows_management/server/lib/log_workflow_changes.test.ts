@@ -208,6 +208,32 @@ describe('logWorkflowChanges', () => {
     });
   });
 
+  it('passes restore reason and metadata when restoring a workflow version', async () => {
+    await logChanges({
+      action: WorkflowChangeHistoryAction.workflowRestore,
+      restoreMetadata: {
+        eventId: 'event-v3',
+        sequence: 3,
+      },
+    });
+
+    expect(scopedChangeHistory.logBulk).toHaveBeenCalledWith(expect.any(Array), {
+      action: WorkflowChangeHistoryAction.workflowRestore,
+      spaceId: 'default',
+      refresh: 'wait_for',
+      data: {
+        event: {
+          reason: 'Restored from v3',
+        },
+        metadata: {
+          restore: {
+            eventId: 'event-v3',
+          },
+        },
+      },
+    });
+  });
+
   it('logs without sequence when document.version is missing', async () => {
     const { version: _version, ...withoutVersion } = makeDocument({ version: 5 });
 

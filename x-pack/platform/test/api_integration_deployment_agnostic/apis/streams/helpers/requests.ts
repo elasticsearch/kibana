@@ -308,6 +308,10 @@ export async function getFailureStoreStats(
     .then((response) => response.body);
 }
 
+/**
+ * Lists the significant-event queries attached to a stream via the dedicated queries API.
+ * Queries are no longer part of the stream GET response, so tests read them through here.
+ */
 export async function getQueries(
   apiClient: StreamsSupertestRepositoryClient,
   name: string,
@@ -317,6 +321,30 @@ export async function getQueries(
     .fetch('GET /api/streams/{name}/queries 2023-10-31', {
       params: {
         path: { name },
+      },
+    })
+    .expect(expectStatusCode)
+    .then((response) => response.body);
+}
+
+/**
+ * Bulk-applies significant-event query operations (index/delete) to a stream via the dedicated
+ * queries API. Queries are no longer part of the stream upsert, so tests seed them through here.
+ */
+export async function bulkQueries(
+  apiClient: StreamsSupertestRepositoryClient,
+  name: string,
+  operations: ClientRequestParamsOf<
+    StreamsRouteRepository,
+    'POST /api/streams/{name}/queries/_bulk 2023-10-31'
+  >['params']['body']['operations'],
+  expectStatusCode: number = 200
+) {
+  return await apiClient
+    .fetch('POST /api/streams/{name}/queries/_bulk 2023-10-31', {
+      params: {
+        path: { name },
+        body: { operations },
       },
     })
     .expect(expectStatusCode)
@@ -535,6 +563,29 @@ export async function importContent(
         path: { name },
         body: {
           include: JSON.stringify(body.include),
+          content: body.content,
+        },
+      },
+      file: { key: 'content', filename: body.filename },
+    })
+    .expect(expectStatusCode)
+    .then((response) => response.body);
+}
+
+export async function previewContent(
+  apiClient: StreamsSupertestRepositoryClient,
+  name: string,
+  body: {
+    content: Readable;
+    filename: string;
+  },
+  expectStatusCode: number = 200
+) {
+  return await apiClient
+    .sendFile('POST /internal/streams/{name}/content/preview', {
+      params: {
+        path: { name },
+        body: {
           content: body.content,
         },
       },

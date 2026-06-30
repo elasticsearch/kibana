@@ -41,7 +41,7 @@ spaceTest.describe(
       spaceTest(matrixCase.label, async ({ browserAuth, pageObjects }) => {
         const role = testData.buildDiscoverV2Role(matrixCase.featurePriv, matrixCase.sqmPriv);
         await browserAuth.loginWithCustomRole(role);
-        await pageObjects.discover.goto();
+        await pageObjects.discover.goto({ queryMode: 'classic' });
 
         const affordances =
           await pageObjects.savedQueryManagementMenu.inspectSavedQueryAffordances();

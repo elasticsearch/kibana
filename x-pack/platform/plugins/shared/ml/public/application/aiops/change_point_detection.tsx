@@ -14,7 +14,6 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { ChangePointDetection } from '@kbn/aiops-plugin/public';
 import { AIOPS_EMBEDDABLE_ORIGIN } from '@kbn/aiops-common/constants';
 import { useFieldStatsTrigger, FieldStatsFlyoutProvider } from '@kbn/ml-field-stats-flyout';
-import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 
 import { MlDataSourcePicker } from '@kbn/aiops-components';
 import { DataViewPicker } from '@kbn/unified-search-plugin/public';
@@ -25,7 +24,6 @@ import { useMlKibana } from '../contexts/kibana';
 import { HelpMenu } from '../components/help_menu';
 import { MlPageHeader } from '../components/page_header';
 import { PageTitle } from '../components/page_title';
-import { TechnicalPreviewBadge } from '../components/technical_preview_badge';
 import { useEnabledFeatures } from '../contexts/ml/serverless_context';
 
 export const ChangePointDetectionPage: FC = () => {
@@ -44,14 +42,7 @@ export const ChangePointDetectionPage: FC = () => {
   return (
     <>
       <MlPageHeader>
-        <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
-          <EuiFlexItem grow={false}>
-            <PageTitle title={pageTitle} />
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <TechnicalPreviewBadge />
-          </EuiFlexItem>
-        </EuiFlexGroup>
+        <PageTitle title={pageTitle} />
       </MlPageHeader>
       {!dataView ? (
         <>

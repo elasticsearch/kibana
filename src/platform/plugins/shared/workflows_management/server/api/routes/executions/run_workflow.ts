@@ -10,7 +10,7 @@
 import path from 'path';
 import { schema } from '@kbn/config-schema';
 import type { WorkflowExecutionEngineModel } from '@kbn/workflows';
-import { pickManagedWorkflowFields } from '@kbn/workflows';
+import { toWorkflowExecutionEngineModel } from '@kbn/workflows';
 import { preprocessAlertInputs } from './utils/preprocess_alert_inputs';
 import type { RouteDependencies } from '../types';
 import { API_VERSION, AVAILABILITY, OAS_TAG } from '../utils/route_constants';
@@ -89,14 +89,8 @@ export function registerRunWorkflowRoute(deps: RouteDependencies) {
             processedInputs = await preprocessAlertInputs(inputs, context, spaceId, logger);
           }
 
-          const workflowForExecution: WorkflowExecutionEngineModel = {
-            id: workflow.id,
-            name: workflow.name,
-            enabled: workflow.enabled,
-            definition: workflow.definition,
-            yaml: workflow.yaml,
-            ...pickManagedWorkflowFields(workflow),
-          };
+          const workflowForExecution: WorkflowExecutionEngineModel =
+            toWorkflowExecutionEngineModel(workflow);
           const workflowExecutionId = await api.runWorkflow(
             workflowForExecution,
             spaceId,

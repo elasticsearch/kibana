@@ -49,7 +49,7 @@ import { initializeInlineEditingApi } from './initialize_inline_editing_api';
 import { initializeSearchEmbeddableApi } from './initialize_search_embeddable_api';
 import type { SearchEmbeddableApi, SearchEmbeddablePanelApiState } from './types';
 import { deserializeState, serializeState } from './utils/serialization_utils';
-import { type ContextAwarenessToolkit } from '../context_awareness';
+import { createInMemoryContextAwarenessToolkit } from '../context_awareness';
 import { ScopedServicesProvider } from '../components/scoped_services_provider';
 import { isFieldStatsMode } from './utils/is_field_stats_mode';
 import { isTabDeleted } from './utils/is_tab_deleted';
@@ -315,13 +315,14 @@ export const getSearchEmbeddableFactory = ({
         initialDocViewerTabId$.next(options?.initialTabId);
       };
 
-      const toolkit: ContextAwarenessToolkit = {
+      const toolkit = createInMemoryContextAwarenessToolkit({
+        profileStateRegistry: discoverServices.profileStateRegistry,
         actions: {
           addFilter: enableFilters ? addFilter : undefined,
           refreshData: () => refreshTrigger$.next(undefined),
           setExpandedDoc: enableDocumentViewer ? setExpandedDoc : undefined,
         },
-      };
+      });
 
       const scopedEbtManager = discoverServices.ebtManager.createScopedEBTManager();
       const scopedProfilesManager = discoverServices.profilesManager.createScopedProfilesManager({

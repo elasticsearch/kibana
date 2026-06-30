@@ -19,7 +19,10 @@ import { pciFieldMapperTool } from './pci_field_mapper_tool';
 import { registerSiemReadinessTools } from './siem_readiness';
 import { runRulePreviewTool } from './run_rule_preview_tool';
 import type { RunRulePreviewDeps } from '../../lib/detection_engine/rule_preview/api/preview_rules/run_rule_preview';
-import type { SecuritySolutionPluginCoreSetupDependencies } from '../../plugin_contract';
+import type {
+  SecuritySolutionPluginCoreSetupDependencies,
+  SetupPlugins,
+} from '../../plugin_contract';
 
 /**
  * Registers all security agent builder tools with the agentBuilder plugin.
@@ -33,6 +36,7 @@ export const registerTools = async (
   core: SecuritySolutionPluginCoreSetupDependencies,
   logger: Logger,
   experimentalFeatures: ExperimentalFeatures,
+  ml: SetupPlugins['ml'],
   rulePreviewDeps: RunRulePreviewDeps,
   isServerless: boolean = false
 ) => {
@@ -41,7 +45,7 @@ export const registerTools = async (
   agentBuilder.tools.register(securityLabsSearchTool(core));
   agentBuilder.tools.register(createDetectionRuleTool(core, logger, experimentalFeatures));
   agentBuilder.tools.register(alertsTool(core, logger));
-  agentBuilder.tools.register(getEntityTool(core, logger, experimentalFeatures));
+  agentBuilder.tools.register(getEntityTool(core, logger, ml, experimentalFeatures));
   agentBuilder.tools.register(searchEntitiesTool(core, logger, experimentalFeatures));
 
   if (experimentalFeatures.rulePreviewAttachmentEnabled) {
