@@ -143,6 +143,29 @@ const SettingsSchema = schema.object({
   }),
 });
 
+/**
+ * When enabled, screenshot-backed exports (PDFv2 / PNGv2) run inside a standalone HTTP executor.
+ * Kibana forwards decrypted authentication headers over TLS to that service — restrict network path accordingly.
+ */
+const RemoteExecutionSchema = schema.object({
+  enabled: schema.boolean({ defaultValue: false }),
+  url: schema.maybe(
+    schema.string({
+      validate(value) {
+        try {
+          const parsed = new URL(value);
+          if (!/^https?:$/.test(parsed.protocol)) {
+            return 'must use http or https';
+          }
+        } catch {
+          return 'must be a valid absolute URL';
+        }
+      },
+    })
+  ),
+  apiKey: schema.maybe(schema.string()),
+});
+
 export const ConfigSchema = schema.object({
   enabled: schema.boolean({ defaultValue: true }),
   kibanaServer: KibanaServerSchema,
@@ -153,5 +176,6 @@ export const ConfigSchema = schema.object({
   roles: RolesSchema,
   poll: PollSchema,
   export_types: ExportTypeSchema,
+  remoteExecution: RemoteExecutionSchema,
   statefulSettings: SettingsSchema,
 });

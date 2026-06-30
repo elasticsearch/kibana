@@ -1,0 +1,11 @@
+{
+  "type": "shared-common",
+  "id": "@kbn/reporting-remote-executor",
+  "owner": [
+    "@elastic/response-ops"
+  ],
+  "group": "platform",
+  "visibility": "private",
+  "description": "Standalone HTTP stub for executing screenshot-backed reporting jobs when xpack.reporting.remoteExecution is enabled.",
+  "devOnly": true
+}

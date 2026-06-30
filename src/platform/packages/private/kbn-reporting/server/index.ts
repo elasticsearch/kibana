@@ -18,3 +18,6 @@ export { ConfigSchema } from './config_schema';
 
 export * from './constants';
 export type * from './types';
+
+export { REPORTING_REMOTE_EXECUTE_METADATA_SEPARATOR } from './remote_execution/constants';
+export { executeReportingRemoteExport } from './remote_execution/execute_remote_export';

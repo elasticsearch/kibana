@@ -51,6 +51,9 @@ Object {
     "pollIntervalErrorMultiplier": 10,
     "timeout": "PT4M",
   },
+  "remoteExecution": Object {
+    "enabled": false,
+  },
   "statefulSettings": Object {
     "enabled": true,
   },
@@ -106,6 +109,9 @@ Object {
     "pollInterval": "PT3S",
     "pollIntervalErrorMultiplier": 10,
     "timeout": "PT4M",
+  },
+  "remoteExecution": Object {
+    "enabled": false,
   },
   "statefulSettings": Object {
     "enabled": true,

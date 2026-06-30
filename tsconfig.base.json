@@ -2010,6 +2010,8 @@
       "@kbn/reporting-plugin/*": ["x-pack/platform/plugins/private/reporting/*"],
       "@kbn/reporting-public": ["src/platform/packages/private/kbn-reporting/public"],
       "@kbn/reporting-public/*": ["src/platform/packages/private/kbn-reporting/public/*"],
+      "@kbn/reporting-remote-executor": ["src/platform/packages/private/kbn-reporting-remote-executor"],
+      "@kbn/reporting-remote-executor/*": ["src/platform/packages/private/kbn-reporting-remote-executor/*"],
       "@kbn/reporting-server": ["src/platform/packages/private/kbn-reporting/server"],
       "@kbn/reporting-server/*": ["src/platform/packages/private/kbn-reporting/server/*"],
       "@kbn/reporting-test-routes": ["x-pack/platform/test/reporting_api_integration/plugins/reporting_test_routes"],

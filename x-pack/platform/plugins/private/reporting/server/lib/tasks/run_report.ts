@@ -26,7 +26,12 @@ import type {
   TaskInstanceFields,
   TaskRunResult,
 } from '@kbn/reporting-common/types';
-import { ScheduleType, decryptJobHeaders, type ReportingConfigType } from '@kbn/reporting-server';
+import {
+  ScheduleType,
+  decryptJobHeaders,
+  executeReportingRemoteExport,
+  type ReportingConfigType,
+} from '@kbn/reporting-server';
 import {
   throwRetryableError,
   type ConcreteTaskInstance,
@@ -53,6 +58,8 @@ import { finishedWithNoPendingCallbacks, getContentStream } from '../content_str
 import type { EmailNotificationService } from '../../services/notifications/email_notification_service';
 import type { ScheduledReportType } from '../../types';
 import { retryOnError } from '../retry_on_error';
+import { buildReportingRemoteExecutionPayload } from '../remote_execution/build_remote_execution_payload';
+import { extractReportingForwardHeaders } from '../remote_execution/extract_forward_headers';
 
 type CompletedReportOutput = Omit<ReportOutput, 'content'>;
 
@@ -378,6 +385,46 @@ export abstract class RunReportTask<TaskParams extends ReportTaskParamsType>
     }
     // notify usage
     exportType.notifyUsage(this.exportType);
+
+    const remoteExecution = this.opts.config.remoteExecution;
+    if (remoteExecution?.enabled) {
+      if (!remoteExecution.url) {
+        throw new Error(
+          'xpack.reporting.remoteExecution.enabled is true but remoteExecution.url is not set.'
+        );
+      }
+
+      const request = await this.getRequestToUse({
+        requestFromTask: fakeRequest,
+        spaceId: task.payload.spaceId,
+        encryptedHeaders: task.payload.headers,
+      });
+
+      const forwardHeaders = extractReportingForwardHeaders(request);
+      const executionPayload = buildReportingRemoteExecutionPayload(
+        task.jobtype,
+        task.payload as Record<string, unknown>,
+        this.opts.config,
+        this.opts.reporting.getServerInfo()
+      );
+
+      const abortController = new AbortController();
+      cancellationToken.on(() => abortController.abort());
+
+      return Rx.lastValueFrom(
+        Rx.from(
+          executeReportingRemoteExport({
+            remoteExecution,
+            jobId: task.id,
+            jobtype: task.jobtype,
+            executionPayload,
+            forwardHeaders,
+            stream,
+            signal: abortController.signal,
+          })
+        ).pipe(timeout(this.queueTimeout))
+      );
+    }
 
     // run the report
     // if workerFn doesn't finish before timeout, call the cancellationToken and throw an error
