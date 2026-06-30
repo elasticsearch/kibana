@@ -186,25 +186,4 @@ describe('cancelWorkflow', () => {
 
     expect(workflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledTimes(1);
   });
-
-  it('forwards an undefined schedulingRequest to forceRunIdleTasks', async () => {
-    const workflowExecutionRepository = buildRepository(
-      buildExecution({ status: ExecutionStatus.RUNNING })
-    );
-    const workflowTaskManager = buildTaskManager();
-
-    await cancelWorkflow({
-      workflowExecutionId,
-      spaceId,
-      schedulingRequest: undefined,
-      workflowExecutionRepository:
-        workflowExecutionRepository as unknown as WorkflowExecutionRepository,
-      workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
-    });
-
-    expect(workflowTaskManager.forceRunIdleTasks).toHaveBeenCalledWith(workflowExecutionId, {
-      spaceId,
-      fakeRequest: undefined,
-    });
-  });
 });

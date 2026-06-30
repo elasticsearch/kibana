@@ -870,7 +870,7 @@ export class WorkflowsManagementApi {
   public async cancelWorkflowExecution(
     workflowExecutionId: string,
     spaceId: string,
-    request?: KibanaRequest
+    request: KibanaRequest
   ): Promise<void> {
     const workflowsExecutionEngine = await this.getWorkflowsExecutionEngine();
     return workflowsExecutionEngine.cancelWorkflowExecution(workflowExecutionId, spaceId, request);
@@ -878,14 +878,19 @@ export class WorkflowsManagementApi {
 
   public async cancelAllActiveWorkflowExecutions(
     workflowId: string,
-    spaceId: string
+    spaceId: string,
+    request: KibanaRequest
   ): Promise<void> {
     const workflow = await this.getWorkflow(workflowId, spaceId);
     if (!workflow) {
       throw new WorkflowNotFoundError(workflowId);
     }
     const workflowsExecutionEngine = await this.getWorkflowsExecutionEngine();
-    return workflowsExecutionEngine.cancelAllActiveWorkflowExecutions({ spaceId, workflowId });
+    return workflowsExecutionEngine.cancelAllActiveWorkflowExecutions({
+      spaceId,
+      workflowId,
+      schedulingRequest: request,
+    });
   }
 
   /**

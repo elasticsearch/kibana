@@ -143,7 +143,7 @@ export class WorkflowTaskManager {
 
   async forceRunIdleTasks(
     workflowExecutionId: string,
-    options?: { spaceId: string; fakeRequest?: KibanaRequest }
+    options?: { spaceId: string; fakeRequest: KibanaRequest }
   ): Promise<void> {
     const scopeTerm = {
       term: {

@@ -34,7 +34,7 @@ export const cancelWorkflow = async ({
 }: {
   workflowExecutionId: string;
   spaceId: string;
-  schedulingRequest?: KibanaRequest;
+  schedulingRequest: KibanaRequest;
   workflowExecutionRepository: WorkflowExecutionRepository;
   workflowTaskManager: WorkflowTaskManager;
 }): Promise<void> => {

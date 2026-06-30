@@ -46,7 +46,7 @@ export function registerCancelWorkflowExecutionsRoute({ router, api, spaces }: R
         try {
           const { workflowId } = request.params;
           const spaceId = spaces.getSpaceId(request);
-          await api.cancelAllActiveWorkflowExecutions(workflowId, spaceId);
+          await api.cancelAllActiveWorkflowExecutions(workflowId, spaceId, request);
           return response.ok();
         } catch (error) {
           return handleRouteError(response, error);

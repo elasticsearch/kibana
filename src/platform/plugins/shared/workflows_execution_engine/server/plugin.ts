@@ -1126,6 +1126,7 @@ export class WorkflowsExecutionEnginePlugin
     const cancelAllActiveWorkflowExecutions: CancelAllActiveWorkflowExecutions = async ({
       spaceId,
       workflowId,
+      schedulingRequest,
     }) => {
       await checkLicense(plugins.licensing);
       await this.initialize(coreStart);
@@ -1145,7 +1146,7 @@ export class WorkflowsExecutionEnginePlugin
         }
 
         const outcomes = await Promise.allSettled(
-          page.results.map((id) => cancelWorkflowExecution(id, spaceId))
+          page.results.map((id) => cancelWorkflowExecution(id, spaceId, schedulingRequest))
         );
 
         outcomes.forEach((outcome, index) => {
