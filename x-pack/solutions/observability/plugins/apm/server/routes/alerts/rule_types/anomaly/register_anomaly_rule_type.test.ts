@@ -129,6 +129,60 @@ describe('Transaction duration anomaly alert', () => {
     });
   });
 
+  describe('anomaly query time filter', () => {
+    function runWith(previousStartedAt?: Date | null) {
+      jest
+        .spyOn(GetServiceAnomalies, 'getMLJobs')
+        .mockReturnValue(
+          Promise.resolve([{ jobId: '1', environment: 'production' }] as unknown as ApmMlJob[])
+        );
+
+      const mlAnomalySearch = jest
+        .fn()
+        .mockReturnValue({ aggregations: { anomaly_groups: { buckets: [] } } });
+
+      const { dependencies, executor } = createRuleTypeMocks();
+
+      const ml = {
+        mlSystemProvider: () => ({ mlAnomalySearch }),
+        anomalyDetectorsProvider: jest.fn(),
+      } as unknown as MlPluginSetup;
+
+      registerAnomalyRuleType({ ...dependencies, ml });
+
+      const params = {
+        anomalySeverityType: ML_ANOMALY_SEVERITY.MINOR,
+        anomalyDetectorTypes: [AnomalyDetectorType.txLatency],
+        windowSize: 5,
+        windowUnit: 'm',
+      };
+
+      return executor({ params, previousStartedAt }).then(() => {
+        const { filter } = mlAnomalySearch.mock.calls[0][0].query.bool;
+        const dualRange = filter.find((f: any) => f.bool?.should);
+        const ingested = dualRange.bool.should.find((s: any) =>
+          s.bool.filter?.some((x: any) => x.exists?.field === 'event.ingested')
+        );
+        const legacy = dualRange.bool.should.find((s: any) => s.bool.must_not);
+        return {
+          ingestedGte: ingested.bool.filter.find((x: any) => x.range)?.range['event.ingested'].gte,
+          timestampGte: legacy.bool.filter[0].range.timestamp.gte,
+        };
+      });
+    }
+
+    it('filters event.ingested by the previous run time', async () => {
+      const previousStartedAt = new Date('2024-01-01T00:00:00.000Z');
+      const { ingestedGte } = await runWith(previousStartedAt);
+      expect(ingestedGte).toBe('2024-01-01T00:00:00.000Z');
+    });
+
+    it('falls back to the lookback window start on the first run', async () => {
+      const { ingestedGte, timestampGte } = await runWith(null);
+      expect(ingestedGte).toBe(timestampGte);
+    });
+  });
+
   describe('sends alert', () => {
     it('for all services that exceeded the threshold', async () => {
       jest.spyOn(GetServiceAnomalies, 'getMLJobs').mockReturnValue(

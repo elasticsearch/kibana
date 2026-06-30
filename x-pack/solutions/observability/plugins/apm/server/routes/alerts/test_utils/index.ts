@@ -86,7 +86,13 @@ export const createRuleTypeMocks = () => {
     dependencies,
     services,
     scheduleActions,
-    executor: async ({ params }: { params: Record<string, any> }) => {
+    executor: async ({
+      params,
+      previousStartedAt = null,
+    }: {
+      params: Record<string, any>;
+      previousStartedAt?: Date | null;
+    }) => {
       return alertExecutor({
         services,
         params,
@@ -98,6 +104,7 @@ export const createRuleTypeMocks = () => {
           ruleTypeName: 'ruleTypeName',
         },
         startedAt: new Date(),
+        previousStartedAt,
         flappingSettings: DEFAULT_FLAPPING_SETTINGS,
         getTimeRange: () => {
           const date = new Date(Date.now()).toISOString();
