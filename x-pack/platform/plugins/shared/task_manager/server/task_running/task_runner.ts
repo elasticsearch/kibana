@@ -855,7 +855,7 @@ export class TaskManagerRunner implements TaskRunner {
       let shouldUpdateTask: boolean = false;
       let partialTask: PartialConcreteTaskInstance = {
         id: this.instance.task.id,
-        version: this.instance.task.version,
+        // version: this.instance.task.version,
       };
 
       if (this.isExpired) {
