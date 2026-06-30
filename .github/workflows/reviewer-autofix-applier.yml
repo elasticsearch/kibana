@@ -1,0 +1,79 @@
+name: Reviewer Autofix Applier
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to update
+        required: true
+        type: string
+      reviewer_run_id:
+        description: Reviewer workflow run id containing the agent artifact
+        required: true
+        type: string
+      artifact_name:
+        description: Reviewer artifact name
+        required: true
+        default: agent
+        type: string
+      expected_head_sha:
+        description: PR head SHA reviewed by the agent
+        required: true
+        type: string
+      patch_sha256:
+        description: Optional SHA-256 checksum for the expected patch
+        required: false
+        type: string
+      reviewer_id:
+        description: Reviewer id that produced the patch
+        required: true
+        type: choice
+        options:
+          - codex
+          - claude
+      requester_login:
+        description: Maintainer who requested the autofix
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: reviewer-autofix-${{ github.event.inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply reviewer autofix
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout workflow scripts
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download reviewer artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ github.event.inputs.artifact_name }}
+          run-id: ${{ github.event.inputs.reviewer_run_id }}
+          github-token: ${{ github.token }}
+          path: /tmp/reviewer-autofix/agent
+
+      - name: Apply patch
+        env:
+          ARTIFACT_DIR: /tmp/reviewer-autofix/agent
+          EXPECTED_HEAD_SHA: ${{ github.event.inputs.expected_head_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          PATCH_SHA256: ${{ github.event.inputs.patch_sha256 }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          REQUESTER_LOGIN: ${{ github.event.inputs.requester_login }}
+          REVIEWER_ID: ${{ github.event.inputs.reviewer_id }}
+          REVIEWER_RUN_ID: ${{ github.event.inputs.reviewer_run_id }}
+        run: node .github/scripts/reviewer_autofix_applier.js

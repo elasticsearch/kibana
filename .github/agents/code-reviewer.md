@@ -61,6 +61,25 @@ Use review mode when the importing workflow is triggered by a pull request event
 - If there are no findings, do not call `submit-pull-request-review`; call `noop` with exactly `No issues found`.
 - Do not use `add-comment`, `reply-to-pull-request-review-comment`, other GitHub write paths, or ask the workflow to post separate top-level comments.
 
+## Autofix mode output
+
+Autofix mode is only available in review mode when the PR has the `ai:auto-commit` label. If the label is absent, do not edit files and follow the normal review mode output rules.
+
+When `ai:auto-commit` is present and a finding has a small, directly applicable fix:
+
+- Edit the working tree with the minimal fix, but do not commit or push.
+- Do not modify protected paths such as `.github/`, `.buildkite/`, `scripts/`, `config/`, package manifests, lockfiles, `CODEOWNERS`, or agent instruction files.
+- Dispatch `reviewer-autofix-applier` with the `reviewer_autofix_applier` safe-output tool after the edit. Use these workflow inputs:
+  - `pr_number`: the reviewed PR number
+  - `reviewer_run_id`: the reviewer run id supplied by the importing workflow
+  - `artifact_name`: `agent`
+  - `expected_head_sha`: the reviewed PR head SHA; use the value supplied by the importing workflow when present, otherwise fetch the live PR metadata
+  - `patch_sha256`: omit or pass an empty string unless you explicitly computed a checksum for the final patch artifact
+  - `reviewer_id`: `codex` or `claude`, matching the importing workflow
+  - `requester_login`: the requester login supplied by the importing workflow
+- Do not create inline review comments for the issue that was fixed by the autofix patch; the applier workflow posts the final result comment.
+- If the fix is broad, risky, touches protected paths, or cannot be made confidently, do not edit files. Use the normal review comment flow instead.
+
 ## Review Re-runs
 
 On subsequent review mode runs, skip unchanged lines already covered by earlier feedback that is still applicable. Review only the new changes, stay high-signal, and do not restate findings on unchanged lines.

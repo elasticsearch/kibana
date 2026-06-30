@@ -94,6 +94,10 @@ safe-outputs:
   report-failure-as-issue: false
   noop:
     report-as-issue: false
+  dispatch-workflow:
+    workflows:
+      - reviewer-autofix-applier
+    max: 1
   create-pull-request-review-comment:
     max: 10
     target: ${{ env.PR_NUMBER }}
@@ -119,3 +123,8 @@ Using the imported reviewer instructions:
 - Run in review mode for `pull_request_target` and manual `workflow_dispatch` events without a comment id.
 - Run in follow-up response mode when `workflow_dispatch` includes a comment id from the Reviewer Comment Dispatcher.
 - This reviewer's own gh-aw workflow id is `reviewer-claude`. Use it as "this reviewer's own workflow id" when matching review threads to resolve.
+
+For reviewer autofix dispatches, use this context:
+- Reviewer run id: `${{ github.run_id }}`
+- Requester login: `${{ github.actor }}`
+- PR head SHA from event, when available: `${{ github.event.pull_request.head.sha }}`

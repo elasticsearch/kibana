@@ -113,6 +113,10 @@ safe-outputs:
   report-failure-as-issue: false
   noop:
     report-as-issue: false
+  dispatch-workflow:
+    workflows:
+      - reviewer-autofix-applier
+    max: 1
   create-pull-request-review-comment:
     max: 10
     target: ${{ env.PR_NUMBER }}
@@ -143,3 +147,8 @@ Using the imported reviewer instructions:
 For dispatched follow-up runs, use this context:
 - PR number: `${{ github.event.inputs.pr_number }}`
 - Comment id: `${{ github.event.inputs.comment_id }}`
+
+For reviewer autofix dispatches, use this context:
+- Reviewer run id: `${{ github.run_id }}`
+- Requester login: `${{ github.actor }}`
+- PR head SHA from event, when available: `${{ github.event.pull_request.head.sha }}`
