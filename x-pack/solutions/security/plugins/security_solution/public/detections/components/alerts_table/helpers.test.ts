@@ -161,7 +161,25 @@ describe('helpers', () => {
           mockTimelineDetails,
           TimelineTypeEnum.default
         );
-        expect(replacement).toEqual('host.name: apache');
+        expect(replacement).toEqual('host.name: "apache"');
+      });
+
+      test('it should quote substituted template values that contain reserved KQL characters', () => {
+        const url =
+          'https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png';
+        const replacement = replaceTemplateFieldFromQuery(
+          'host.name: placeholdertext',
+          [
+            {
+              field: 'host.name',
+              values: [url],
+              originalValue: url,
+              isObjectArray: false,
+            },
+          ],
+          TimelineTypeEnum.default
+        );
+        expect(replacement).toEqual(`host.name: "${url}"`);
       });
 
       test('it should replace a template field with an ECS value that is not an array', () => {

@@ -6,8 +6,10 @@
  */
 
 import expect from '@kbn/expect';
+import { fromKueryExpression } from '@kbn/es-query';
 import type { DataProvider } from '../../../../common/types/timeline';
 import { buildGlobalQuery, convertToBuildEsQuery } from '.';
+import { mockBrowserFields } from '../../containers/source/mock';
 import { createStubDataView } from '@kbn/data-views-plugin/common/data_views/data_view.stub';
 
 describe('convertToBuildEsQuery', () => {
@@ -354,6 +356,60 @@ describe('buildGlobalQuery', () => {
 
     const query = buildGlobalQuery(providers, {});
 
-    expect(query).to.equal('host.name : (p1 OR p2)');
+    expect(query).to.equal('host.name : ("p1" OR "p2")');
+  });
+
+  it('should quote array values that contain reserved KQL characters', () => {
+    const url =
+      'https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png';
+    const providers = [
+      {
+        and: [],
+        enabled: true,
+        id: 'timeline-url-includes',
+        name: url,
+        excluded: false,
+        kqlQuery: '',
+        queryMatch: {
+          field: 'url.full',
+          value: [url],
+          operator: 'includes',
+          displayField: 'url.full',
+          displayValue: url,
+        },
+      } as DataProvider,
+    ];
+
+    const query = buildGlobalQuery(providers, {});
+
+    expect(query).to.equal(`url.full : ("${url}")`);
+    expect(() => fromKueryExpression(query)).not.to.throwError();
+  });
+
+  it('should quote nested field values that contain reserved KQL characters', () => {
+    const url =
+      'https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png';
+    const providers = [
+      {
+        and: [],
+        enabled: true,
+        id: 'timeline-nested-url',
+        name: url,
+        excluded: false,
+        kqlQuery: '',
+        queryMatch: {
+          field: 'nestedField.firstAttributes',
+          value: url,
+          operator: ':',
+          displayField: 'nestedField.firstAttributes',
+          displayValue: url,
+        },
+      } as DataProvider,
+    ];
+
+    const query = buildGlobalQuery(providers, mockBrowserFields);
+
+    expect(query).to.equal(`nestedField: { firstAttributes: "${url}" }`);
+    expect(() => fromKueryExpression(query)).not.to.throwError();
   });
 });

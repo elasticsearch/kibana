@@ -91,6 +91,19 @@ export const checkIfFieldTypeIsDate = (field: string, browserFields: BrowserFiel
   return false;
 };
 
+const formatNestedFieldValue = (
+  value: PrimitiveOrArrayOfPrimitives,
+  browserField: { type?: string }
+): string => {
+  if (browserField.type === 'date') {
+    return `"${value}"`;
+  }
+  if (Array.isArray(value)) {
+    return `(${value.map((item) => prepareKQLParam(item)).join(' OR ')})`;
+  }
+  return prepareKQLParam(value);
+};
+
 export const convertNestedFieldToQuery = (
   field: string,
   value: PrimitiveOrArrayOfPrimitives,
@@ -100,7 +113,7 @@ export const convertNestedFieldToQuery = (
   const browserField = get(pathBrowserField, browserFields);
   const nestedPath = browserField.subType.nested.path;
   const key = field.replace(`${nestedPath}.`, '');
-  return `${nestedPath}: { ${key}: ${browserField.type === 'date' ? `"${value}"` : value} }`;
+  return `${nestedPath}: { ${key}: ${formatNestedFieldValue(value, browserField)} }`;
 };
 
 export const convertNestedFieldToExistQuery = (field: string, browserFields: BrowserFields) => {
@@ -137,7 +150,9 @@ const buildQueryMatch = (
         ? convertDateFieldToQuery(dataProvider.queryMatch.field, dataProvider.queryMatch.value)
         : `${dataProvider.queryMatch.field} : ${
             Array.isArray(dataProvider.queryMatch.value)
-              ? `(${dataProvider.queryMatch.value.join(' OR ')})`
+              ? `(${dataProvider.queryMatch.value
+                  .map((item) => prepareKQLParam(item))
+                  .join(' OR ')})`
               : prepareKQLParam(dataProvider.queryMatch.value)
           }`
       : checkIfFieldTypeIsNested(dataProvider.queryMatch.field, browserFields)
