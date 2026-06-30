@@ -42,7 +42,7 @@ export const getActiveItems = (
     if (!primary.sections) continue;
 
     for (const section of primary.sections) {
-      const secondaryItem = section.items.find((item) => item.id === activeItemId);
+      const secondaryItem = section.items?.find((item) => item.id === activeItemId);
       if (secondaryItem) {
         return { primaryItem: primary, secondaryItem, isLogoActive: false };
       }
@@ -54,7 +54,7 @@ export const getActiveItems = (
     if (!footer.sections) continue;
 
     for (const section of footer.sections) {
-      const secondaryItem = section.items.find((item) => item.id === activeItemId);
+      const secondaryItem = section.items?.find((item) => item.id === activeItemId);
       if (secondaryItem) {
         return { primaryItem: footer, secondaryItem, isLogoActive: false };
       }

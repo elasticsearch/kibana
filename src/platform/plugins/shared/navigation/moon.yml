@@ -41,6 +41,7 @@ dependsOn:
   - '@kbn/core-chrome-navigation-customization'
   - '@kbn/zod'
   - '@kbn/core-chrome-browser-navigation-utils'
+  - '@kbn/shared-ux-navigation-extension-templates'
 tags:
   - plugin
   - prod

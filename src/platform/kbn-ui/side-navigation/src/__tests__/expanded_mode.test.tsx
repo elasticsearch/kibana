@@ -25,7 +25,7 @@ const mockMenuItemHeight = 51;
 const appsItemId = basicMock.navItems.primaryItems[2].id;
 
 // Security mock reusable IDs
-const resultExplorerItemId = securityMock.navItems.primaryItems[11].sections?.[2].items[0].id;
+const resultExplorerItemId = securityMock.navItems.primaryItems[11].sections?.[2]?.items?.[0]?.id;
 
 // Test ID helpers
 const logoId = `kbnChromeNav-logo`;
@@ -546,7 +546,7 @@ describe('Expanded mode', () => {
         );
 
         const expectedSubItemHref =
-          securityMock.navItems.primaryItems[11].sections?.[2].items[0].href;
+          securityMock.navItems.primaryItems[11].sections?.[2]?.items?.[0]?.href;
 
         expect(resultExplorerLink).toHaveAttribute('href', expectedSubItemHref);
         expect(resultExplorerLink).toHaveAttribute('aria-current', 'page');

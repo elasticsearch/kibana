@@ -472,7 +472,7 @@ function createNavTree({
               description:
                 'The heading of a section in a navigation tree dedicated to data collection',
             }),
-            renderAs: 'panelOpener',
+            // renderAs: 'panelOpener',
             children: [
               {
                 link: 'integrations',
@@ -498,7 +498,7 @@ function createNavTree({
               description:
                 'Heading in a nav tree dedicated to UIs for leveraging various Elasticsearch features for data management',
             }),
-            renderAs: 'panelOpener',
+            // renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:index_management',
@@ -534,7 +534,6 @@ function createNavTree({
           {
             id: 'stack_management_home',
             title: '',
-            renderAs: 'panelOpener',
             children: [
               {
                 // We include this link here to ensure that the settings icon does not land on Stack Monitoring by default
@@ -564,7 +563,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.alertsAndInsights', {
               defaultMessage: 'Alerts and Insights',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:triggersActions',
@@ -636,7 +634,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.security', {
               defaultMessage: 'Security',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:users',
@@ -657,7 +654,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.data', {
               defaultMessage: 'Data',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:cross_cluster_replication',
@@ -672,7 +668,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.kibana', {
               defaultMessage: 'Kibana',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:filesManagement',

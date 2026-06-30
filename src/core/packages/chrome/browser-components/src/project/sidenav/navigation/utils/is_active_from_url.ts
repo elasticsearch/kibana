@@ -7,7 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ChromeProjectNavigationNode } from '@kbn/core-chrome-browser';
+import type {
+  ChromeProjectNavigationNode,
+  ChromeExtensionPointNavigationNode,
+} from '@kbn/core-chrome-browser';
+
+type NavigationActiveNode = ChromeProjectNavigationNode | ChromeExtensionPointNavigationNode;
 
 /**
  * Predicate to check if a nodePath is active
@@ -19,7 +24,7 @@ import type { ChromeProjectNavigationNode } from '@kbn/core-chrome-browser';
  */
 export function isActiveFromUrl(
   nodePath: string,
-  activeNodes: ChromeProjectNavigationNode[][],
+  activeNodes: NavigationActiveNode[][],
   onlyIfHighestMatch = false
 ) {
   return activeNodes.reduce((acc, nodesBranch) => {

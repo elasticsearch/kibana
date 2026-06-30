@@ -1,0 +1,27 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": [
+      "jest",
+      "react",
+      "@testing-library/jest-dom",
+      "@testing-library/react",
+      "@kbn/ambient-ui-types",
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "target/**/*"
+  ],
+  "kbn_references": [
+    "@kbn/i18n",
+    "@kbn/utility-types",
+    "@kbn/ui-side-navigation",
+    "@kbn/core-chrome-browser",
+    "@kbn/test-jest-helpers",
+  ]
+}

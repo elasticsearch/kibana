@@ -9,6 +9,7 @@
 
 import type {
   ChromeProjectNavigationNode,
+  ChromeExtensionPointNavigationNode,
   NavigationTreeDefinitionUI,
 } from '@kbn/core-chrome-browser';
 import {
@@ -41,6 +42,336 @@ export interface NavigationItems {
   activeItemId?: string;
 }
 
+type PanelOpenerChild = ChromeProjectNavigationNode | ChromeExtensionPointNavigationNode;
+
+interface NavigationConversionContext {
+  panelStateManager: PanelStateManager;
+  deepestActiveItemId?: string;
+  currentActiveItemIdLevel: number;
+  isActive: (navNode: PanelOpenerChild) => boolean;
+  maybeMarkActive: (
+    navNode: PanelOpenerChild,
+    level: number,
+    parentNode?: ChromeProjectNavigationNode
+  ) => void;
+  getTestSubj: (navNode: ChromeProjectNavigationNode, append?: string[]) => string;
+}
+
+const createNavigationConversionContext = (
+  activeNodes: PanelOpenerChild[][],
+  panelStateManager: PanelStateManager
+): NavigationConversionContext => {
+  const ctx: NavigationConversionContext = {
+    panelStateManager,
+    currentActiveItemIdLevel: -1,
+    isActive: (navNode) => isActiveFromUrl(navNode.path, activeNodes, false),
+    maybeMarkActive: (navNode, level, parentNode) => {
+      if (ctx.deepestActiveItemId == null || ctx.currentActiveItemIdLevel < level) {
+        if (ctx.isActive(navNode)) {
+          ctx.deepestActiveItemId = navNode.id;
+          ctx.currentActiveItemIdLevel = level;
+
+          if (parentNode?.id) {
+            panelStateManager.setPanelLastActive(parentNode.id, navNode.id);
+          }
+        }
+      }
+    },
+    getTestSubj: (navNode, append = []) => {
+      const { id, path, deepLink } = navNode;
+      return classnames(
+        `nav-item`,
+        `nav-item-${path}`,
+        {
+          [`nav-item-deepLinkId-${deepLink?.id}`]: !!deepLink,
+          [`nav-item-id-${id}`]: id,
+          [`nav-item-isActive`]: ctx.isActive(navNode),
+        },
+        ...append
+      );
+    },
+  };
+
+  return ctx;
+};
+
+const sectionHasContent = (section: SecondaryMenuSection): boolean =>
+  !!section.slotId || !!(section.items && section.items.length > 0);
+
+const createSecondaryMenuItem = (
+  child: ChromeProjectNavigationNode,
+  panelNode: ChromeProjectNavigationNode,
+  ctx: NavigationConversionContext
+): SecondaryMenuItem => {
+  ctx.maybeMarkActive(child, 2, panelNode);
+  return {
+    id: child.id,
+    label: toSentenceCase(warnIfMissing(child, 'title', 'Missing Title 😭')),
+    href: warnIfMissing(child, 'href', 'Missing Href 😭'),
+    isExternal: child.isExternalLink,
+    'data-test-subj': ctx.getTestSubj(child),
+    badgeType: child.badgeType,
+  };
+};
+
+const createExtensionPointSection = (
+  child: ChromeExtensionPointNavigationNode
+): SecondaryMenuSection | null => {
+  if (!child.slotId || !child.extensionId) {
+    warnOnce(`Extension node "${child.id}" is missing slotId/extensionId. Ignoring this section.`);
+    return null;
+  }
+
+  return {
+    id: child.id,
+    label: child.title ? toSentenceCase(child.title) : undefined,
+    slotId: child.slotId,
+    extensionId: child.extensionId,
+    popoverOnly: child.popoverOnly,
+  };
+};
+
+const createNamedSection = (
+  child: ChromeProjectNavigationNode,
+  panelNode: ChromeProjectNavigationNode,
+  ctx: NavigationConversionContext
+): SecondaryMenuSection | null => {
+  const validChildren =
+    child.children?.filter(
+      (c): c is ChromeProjectNavigationNode =>
+        c.renderAs !== 'extension' && c.sideNavStatus !== 'hidden'
+    ) ?? [];
+  const secondaryItems = validChildren.map((c) => createSecondaryMenuItem(c, panelNode, ctx));
+
+  if (child.href) {
+    warnOnce(
+      `Secondary menu item node "${child.id}" has a href "${child.href}", but it should not. We're using it as a section title that doesn't have a link.`
+    );
+  }
+
+  return {
+    id: child.id,
+    label: child.title && toSentenceCase(child.title),
+    items: secondaryItems,
+  };
+};
+
+const convertPanelOpenerSections = (
+  panelNode: ChromeProjectNavigationNode,
+  children: PanelOpenerChild[],
+  ctx: NavigationConversionContext
+): SecondaryMenuSection[] => {
+  const visibleChildren = children.filter((child) => child.sideNavStatus !== 'hidden');
+  const noSubSections = visibleChildren.every(
+    (child) => child.renderAs === 'extension' || !!child.href
+  );
+  const hasNonExtensionLinks = visibleChildren.some((child) => child.renderAs !== 'extension');
+  const useLegacyDirectLinkCoalescing = noSubSections && hasNonExtensionLinks;
+
+  if (useLegacyDirectLinkCoalescing) {
+    warnOnce(
+      `Panel opener node "${
+        panelNode.id
+      }" should contain panel sections, not direct links. Flattening links "${visibleChildren
+        .filter((child) => child.renderAs !== 'extension' && child.href)
+        .map((child) => child.id)
+        .join(', ')}" into secondary items and creating a placeholder section for these links.`
+    );
+  }
+
+  const sections: SecondaryMenuSection[] = [];
+  let directLinkBuffer: ChromeProjectNavigationNode[] = [];
+  let coalescedSectionIndex = 0;
+
+  const flushDirectLinkBuffer = () => {
+    if (directLinkBuffer.length === 0) {
+      return;
+    }
+
+    sections.push({
+      id:
+        coalescedSectionIndex === 0
+          ? `${panelNode.id}-section`
+          : `${panelNode.id}-section-${coalescedSectionIndex}`,
+      items: directLinkBuffer.map((child) => createSecondaryMenuItem(child, panelNode, ctx)),
+    });
+    coalescedSectionIndex += 1;
+    directLinkBuffer = [];
+  };
+
+  for (const child of children) {
+    if (child.sideNavStatus === 'hidden') {
+      continue;
+    }
+
+    if (child.renderAs === 'extension') {
+      if (useLegacyDirectLinkCoalescing) {
+        flushDirectLinkBuffer();
+      }
+
+      const extensionSection = createExtensionPointSection(child);
+      if (extensionSection) {
+        sections.push(extensionSection);
+      }
+      continue;
+    }
+
+    if (useLegacyDirectLinkCoalescing && child.href) {
+      directLinkBuffer.push(child);
+      continue;
+    }
+
+    if (child.href && !child.children?.length) {
+      sections.push({
+        id: child.id,
+        items: [createSecondaryMenuItem(child, panelNode, ctx)],
+      });
+      continue;
+    }
+
+    if (child.children?.length) {
+      const namedSection = createNamedSection(child, panelNode, ctx);
+      if (namedSection && sectionHasContent(namedSection)) {
+        sections.push(namedSection);
+      }
+    }
+  }
+
+  if (useLegacyDirectLinkCoalescing) {
+    flushDirectLinkBuffer();
+  }
+
+  return sections.filter(sectionHasContent);
+};
+
+const convertPanelOpener = (
+  navNode: ChromeProjectNavigationNode,
+  ctx: NavigationConversionContext
+): MenuItem | null => {
+  if (!navNode.children?.length) {
+    warnOnce(`Panel opener node "${navNode.id}" has no children. Ignoring it.`);
+    return null;
+  }
+
+  const secondarySections = convertPanelOpenerSections(navNode, navNode.children, ctx);
+
+  if (secondarySections.length === 0) {
+    return null;
+  }
+
+  ctx.maybeMarkActive(navNode, 1);
+
+  return {
+    id: navNode.id,
+    label: toSentenceCase(warnIfMissing(navNode, 'title', 'Missing Title 😭')),
+    iconType: getNavigationNodeIcon(navNode),
+    href: getPanelOpenerHref(navNode, secondarySections, ctx.panelStateManager),
+    sections: secondarySections,
+    'data-test-subj': ctx.getTestSubj(navNode),
+    badgeType: navNode.badgeType,
+    popoverOnly:
+      secondarySections.length > 0 && secondarySections.every((section) => section.popoverOnly),
+  };
+};
+
+const convertPrimaryLink = (
+  navNode: ChromeProjectNavigationNode,
+  ctx: NavigationConversionContext
+): MenuItem => {
+  ctx.maybeMarkActive(navNode, 1);
+
+  return {
+    id: navNode.id,
+    label: toSentenceCase(warnIfMissing(navNode, 'title', 'Missing Title 😭')),
+    iconType: getNavigationNodeIcon(navNode),
+    href: warnIfMissing(navNode, 'href', 'missing-href-😭'),
+    'data-test-subj': ctx.getTestSubj(navNode),
+    badgeType: navNode.badgeType,
+    popoverOnly: false,
+  };
+};
+
+const convertRootNodes = (
+  nodes: ChromeProjectNavigationNode[],
+  ctx: NavigationConversionContext
+): MenuItem[] => {
+  const items: MenuItem[] = [];
+
+  for (const navNode of nodes) {
+    if (navNode.sideNavStatus === 'hidden') {
+      continue;
+    }
+
+    if (navNode.renderAs === 'panelOpener') {
+      const panelItem = convertPanelOpener(navNode, ctx);
+      if (panelItem) {
+        items.push(panelItem);
+      }
+      continue;
+    }
+
+    if (!navNode.href) {
+      warnOnce(
+        `Navigation node "${navNode.id}${
+          navNode.title ? ` (${navNode.title})` : ''
+        }" is missing href and is not a panel opener. This node was likely used as a sub-section. Ignoring this node and flattening its children: ${navNode.children
+          ?.map((c) => c.id)
+          .join(', ')}.`
+      );
+
+      if (navNode.children?.length) {
+        const flattenableChildren = navNode.children.filter(
+          (child): child is ChromeProjectNavigationNode => child.renderAs !== 'extension'
+        );
+        items.push(...convertRootNodes(flattenableChildren, ctx));
+      }
+      continue;
+    }
+
+    items.push(convertPrimaryLink(navNode, ctx));
+  }
+
+  return items;
+};
+
+const extractHomeNode = (
+  primaryNodes: ChromeProjectNavigationNode[],
+  isNextChrome: boolean,
+  ctx: NavigationConversionContext
+): { logoItem?: SideNavLogo; primaryNodes: ChromeProjectNavigationNode[] } => {
+  const homeNodeIndex = primaryNodes.findIndex((node) => node.renderAs === 'home');
+
+  if (homeNodeIndex === -1) {
+    warnOnce(
+      `No "home" node found in primary nodes. There should be a logo node with solution logo, name and home page href. renderAs: "home" is expected.`
+    );
+    return { primaryNodes };
+  }
+
+  const homeNode = primaryNodes[homeNodeIndex];
+  ctx.maybeMarkActive(homeNode, 0);
+
+  if (isNextChrome) {
+    // TODO: https://github.com/elastic/kibana/issues/272291
+    return {
+      primaryNodes: primaryNodes.map((node, i) =>
+        i === homeNodeIndex ? { ...node, title: HOME_TITLE, icon: 'home' } : node
+      ),
+    };
+  }
+
+  return {
+    logoItem: {
+      href: warnIfMissing(homeNode, 'href', '/missing-href-😭'),
+      iconType: getNavigationNodeIcon(homeNode),
+      id: warnIfMissing(homeNode, 'id', 'kibana'),
+      label: warnIfMissing(homeNode, 'title', 'Kibana'),
+      'data-test-subj': ctx.getTestSubj(homeNode, ['nav-item-home']),
+    },
+    primaryNodes: primaryNodes.filter((_, i) => i !== homeNodeIndex),
+  };
+};
+
 /**
  * Converts the navigation tree definition and nav links into a format for new navigation.
  *
@@ -53,221 +384,33 @@ export interface NavigationItems {
  *   - Accordion nodes are flattened (not supported) - their children become primary items
  *   - Nodes without links that aren't panel openers are treated as section dividers and not supported in new nav - their children are flattened
  *   - panelOpener nodes create flyout secondary navigation panels, they can't have links directly, but can have sections with links
- * - 3rd level is used for secondary navigation (children of panelOpener):
- *   - If all 3rd level items have links, they're treated as menu items and wrapped in a single section
- *   - If some don't have links, they're treated as section headers with their children becoming menu items
+ * - 3rd level is used for secondary navigation (children of panelOpener), processed in tree order:
+ *   - `renderAs: 'extension'` nodes become dynamic extension slot sections (`slotId` / `extensionId`)
+ *   - Nodes with children become named section headers; their children (L4) become menu items
+ *   - Direct links (href, no children) are coalesced into anonymous sections when the panel has no section headers; otherwise each direct link becomes its own single-item section
  * - Footer is limited to 5 items maximum (extras are dropped with warning)
  *
  * @param navigationTree
- * @param navLinks
  * @param activeNodes
+ * @param overflowItemIds - Primary item ids moved into the overflow menu
  * @param panelStateManager - Manager for panel opener state
  * @param isNextChrome - Whether the navigation is in the next chrome
  */
 export const toNavigationItems = (
   navigationTree: NavigationTreeDefinitionUI,
-  activeNodes: ChromeProjectNavigationNode[][],
+  activeNodes: PanelOpenerChild[][],
   overflowItemIds: string[] = [],
   panelStateManager: PanelStateManager,
   isNextChrome: boolean = false
 ): NavigationItems => {
-  let primaryNodes: ChromeProjectNavigationNode[] = navigationTree.body;
-  const footerNodes: ChromeProjectNavigationNode[] = navigationTree.footer ?? [];
+  const ctx = createNavigationConversionContext(activeNodes, panelStateManager);
+  const { logoItem, primaryNodes } = extractHomeNode(navigationTree.body, isNextChrome, ctx);
 
-  let deepestActiveItemId: string | undefined;
-  let currentActiveItemIdLevel = -1;
-
-  const isActive = (navNode: ChromeProjectNavigationNode) =>
-    isActiveFromUrl(navNode.path, activeNodes, false);
-
-  const maybeMarkActive = (
-    navNode: ChromeProjectNavigationNode,
-    level: number,
-    parentNode?: ChromeProjectNavigationNode
-  ) => {
-    if (deepestActiveItemId == null || currentActiveItemIdLevel < level) {
-      if (isActive(navNode)) {
-        deepestActiveItemId = navNode.id;
-        currentActiveItemIdLevel = level;
-
-        if (parentNode?.id) {
-          panelStateManager.setPanelLastActive(parentNode.id, navNode.id);
-        }
-      }
-    }
-  };
-
-  const getTestSubj = (navNode: ChromeProjectNavigationNode, append: string[] = []): string => {
-    const { id, path, deepLink } = navNode;
-    return classnames(
-      `nav-item`,
-      `nav-item-${path}`,
-      {
-        [`nav-item-deepLinkId-${deepLink?.id}`]: !!deepLink,
-        [`nav-item-id-${id}`]: id,
-        [`nav-item-isActive`]: isActive(navNode),
-      },
-      ...append
-    );
-  };
-
-  let logoItem: SideNavLogo | undefined;
-
-  const homeNodeIndex = primaryNodes.findIndex((node) => node.renderAs === 'home');
-  if (homeNodeIndex !== -1) {
-    const homeNode = primaryNodes[homeNodeIndex];
-    maybeMarkActive(homeNode, 0);
-
-    if (isNextChrome) {
-      // TODO: https://github.com/elastic/kibana/issues/272291
-      primaryNodes = primaryNodes.map((node, i) =>
-        i === homeNodeIndex ? { ...node, title: HOME_TITLE, icon: 'home' } : node
-      );
-    } else {
-      primaryNodes = primaryNodes.filter((_, i) => i !== homeNodeIndex);
-      logoItem = {
-        href: warnIfMissing(homeNode, 'href', '/missing-href-😭'),
-        iconType: getNavigationNodeIcon(homeNode),
-        id: warnIfMissing(homeNode, 'id', 'kibana'),
-        label: warnIfMissing(homeNode, 'title', 'Kibana'),
-        'data-test-subj': getTestSubj(homeNode, ['nav-item-home']),
-      };
-    }
-  } else {
-    warnOnce(
-      `No "home" node found in primary nodes. There should be a logo node with solution logo, name and home page href. renderAs: "home" is expected.`
-    );
-  }
-
-  // TODO: The visibility checks below (sideNavStatus === 'hidden', empty panel-opener pruning,
-  // section-header flattening) duplicate logic already handled by `getRenderableNodes` in
-  // `@kbn/core-chrome-browser-internal`. Once `getNavigation$()` passes a pre-pruned tree, this
-  // function can be simplified to a pure shape-transformer with no visibility decisions.
-  const toMenuItem = (navNode: ChromeProjectNavigationNode): MenuItem[] | MenuItem | null => {
-    if (!navNode) return null;
-
-    if (navNode.sideNavStatus === 'hidden') {
-      return null;
-    }
-
-    // This was like a sub-section title without a link in the old navigation.
-    // In the new navigation, just flatten it into its children, since we must have links in the primary items.
-    if (navNode.renderAs !== 'panelOpener' && !navNode.href) {
-      warnOnce(
-        `Navigation node "${navNode.id}${
-          navNode.title ? ` (${navNode.title})` : ''
-        }" is missing href and is not a panel opener. This node was likely used as a sub-section. Ignoring this node and flattening its children: ${navNode.children
-          ?.map((c) => c.id)
-          .join(', ')}.`
-      );
-
-      if (!navNode.children?.length) return null;
-      return filterEmpty(navNode.children.flatMap(toMenuItem));
-    }
-
-    let secondarySections: SecondaryMenuSection[] | undefined;
-
-    // Helper function to filter out hidden and custom render items
-    const filterValidSecondaryChildren = (
-      children: ChromeProjectNavigationNode[]
-    ): ChromeProjectNavigationNode[] => {
-      return children.filter((child) => child.sideNavStatus !== 'hidden');
-    };
-
-    // Helper function to convert a node to a secondary menu item
-    const createSecondaryMenuItem = (child: ChromeProjectNavigationNode): SecondaryMenuItem => {
-      maybeMarkActive(child, 2, navNode);
-      return {
-        id: child.id,
-        label: toSentenceCase(warnIfMissing(child, 'title', 'Missing Title 😭')),
-        href: warnIfMissing(child, 'href', 'Missing Href 😭'),
-        isExternal: child.isExternalLink,
-        'data-test-subj': getTestSubj(child),
-        badgeType: child.badgeType,
-      };
-    };
-
-    if (navNode.renderAs === 'panelOpener') {
-      if (!navNode.children?.length) {
-        warnOnce(`Panel opener node "${navNode.id}" has no children. Ignoring it.`);
-        return null;
-      }
-
-      const noSubSections = navNode.children.every((l) => l.href);
-
-      if (noSubSections) {
-        warnOnce(
-          `Panel opener node "${
-            navNode.id
-          }" should contain panel sections, not direct links. Flattening links "${navNode.children
-            ?.map((c) => c.id)
-            .join(', ')}" into secondary items and creating a placeholder section for these links.`
-        );
-
-        // If all children have hrefs, we can treat them as secondary items
-        const validChildren = filterValidSecondaryChildren(navNode.children);
-        secondarySections = [
-          {
-            id: `${navNode.id}-section`,
-            items: validChildren.map(createSecondaryMenuItem),
-          },
-        ];
-      } else {
-        // Otherwise, we need to create sections for each child
-        secondarySections = filterEmpty(
-          navNode.children.map((child) => {
-            if (child.sideNavStatus === 'hidden') return null;
-            if (!child.children?.length) return null;
-
-            const validChildren = filterValidSecondaryChildren(child.children);
-            const secondaryItems = validChildren.map(createSecondaryMenuItem);
-
-            if (child.href) {
-              warnOnce(
-                `Secondary menu item node "${child.id}" has a href "${child.href}", but it should not. We're using it as a section title that doesn't have a link.`
-              );
-            }
-
-            return {
-              id: child.id,
-              label: child.title && toSentenceCase(child.title),
-              items: secondaryItems,
-            };
-          })
-        ).filter((section) => section.items.length > 0); // Filter out empty sections;
-      }
-
-      // If after all filtering there are no sections, we skip this menu item
-      if (secondarySections.length === 0) {
-        return null;
-      }
-    }
-
-    // for primary menu items there should always be a href
-    // if it's a panel opener, we use the last opened panel or the first link inside the section as the href
-    // if there are no sections, we use the href directly
-    const itemHref = secondarySections?.length
-      ? getPanelOpenerHref(navNode, secondarySections, panelStateManager)
-      : warnIfMissing(navNode, 'href', 'missing-href-😭');
-
-    maybeMarkActive(navNode, 1);
-
-    return {
-      id: navNode.id,
-      label: toSentenceCase(warnIfMissing(navNode, 'title', 'Missing Title 😭')),
-      iconType: getNavigationNodeIcon(navNode),
-      href: itemHref,
-      sections: secondarySections,
-      'data-test-subj': getTestSubj(navNode),
-      badgeType: navNode.badgeType,
-    } as MenuItem;
-  };
-
+  const allPrimaryItems = convertRootNodes(primaryNodes, ctx);
   const overflowIdSet = new Set(overflowItemIds);
-  const allPrimaryItems = filterEmpty(primaryNodes.flatMap(toMenuItem));
   const primaryItems = allPrimaryItems.filter((item) => !overflowIdSet.has(item.id));
   const overflowItems = allPrimaryItems.filter((item) => overflowIdSet.has(item.id));
-  const footerItems = filterEmpty(footerNodes.flatMap(toMenuItem));
+  const footerItems = convertRootNodes(navigationTree.footer ?? [], ctx);
 
   if (footerItems.length > 5) {
     warnOnce(
@@ -289,7 +432,7 @@ export const toNavigationItems = (
   return {
     logoItem,
     navItems: { primaryItems, overflowItems, footerItems },
-    activeItemId: deepestActiveItemId,
+    activeItemId: ctx.deepestActiveItemId,
   };
 };
 
@@ -355,9 +498,6 @@ function warnOnce(message: string) {
   }, 0);
 }
 
-const filterEmpty = <T,>(arr: Array<T | null | undefined>): T[] =>
-  arr.filter((item) => item !== null && item !== undefined) as T[];
-
 /**
  * Generic function to detect and warn about duplicate values in navigation items.
  * @param values - Array of values to check for duplicates
@@ -416,7 +556,7 @@ function warnAboutDuplicateIds(
       if (item.sections) {
         item.sections.forEach((section) => {
           allIds.push(section.id);
-          section.items.forEach((secondaryItem) => {
+          section.items?.forEach((secondaryItem) => {
             allIds.push(secondaryItem.id);
           });
         });
@@ -452,7 +592,7 @@ function warnAboutTooManyNewItems(primaryItems: MenuItem[], footerItems: MenuIte
 
   allMenuItems.forEach((item) => {
     const isNewPrimaryItem = isNew(item);
-    const hasNewSecondaryItems = item.sections?.some((section) => section.items.some(isNew));
+    const hasNewSecondaryItems = item.sections?.some((section) => section.items?.some(isNew));
 
     if (isNewPrimaryItem || hasNewSecondaryItems) {
       newPrimaryItems.push(item);
@@ -469,7 +609,7 @@ function warnAboutTooManyNewItems(primaryItems: MenuItem[], footerItems: MenuIte
 
   newPrimaryItems.slice(0, maxNewItemsPerLevel).forEach((item) => {
     const isNewPrimaryItem = isNew(item);
-    const hasNewSecondaryItems = item.sections?.some((section) => section.items.some(isNew));
+    const hasNewSecondaryItems = item.sections?.some((section) => section.items?.some(isNew));
 
     // Warn if primary is new AND has new secondary children items in submenu
     if (isNewPrimaryItem && hasNewSecondaryItems) {
@@ -480,7 +620,7 @@ function warnAboutTooManyNewItems(primaryItems: MenuItem[], footerItems: MenuIte
 
     // Warn if too many new secondary items per parent
     const newSecondaryItems =
-      item.sections?.flatMap((section) => section.items.filter(isNew)) ?? [];
+      item.sections?.flatMap((section) => section.items?.filter(isNew) ?? []) ?? [];
     if (newSecondaryItems.length > maxNewItemsPerLevel) {
       const hiddenItems = getHiddenItems(newSecondaryItems);
       warnOnce(
@@ -506,6 +646,7 @@ const findItemByLastActive = (
   if (!lastActiveItemId) return undefined;
 
   for (const section of sections) {
+    if (!section.items) continue;
     const foundItem = section.items.find((item) => item.id === lastActiveItemId);
     if (foundItem?.href) return foundItem.href;
   }
@@ -520,6 +661,7 @@ const findItemByLastActive = (
  */
 const findFirstAvailableHref = (sections: SecondaryMenuSection[]): string | undefined => {
   for (const section of sections) {
+    if (!section.items) continue;
     for (const item of section.items) {
       if (item.href && !item.isExternal) {
         return item.href;
@@ -541,23 +683,32 @@ const getPanelOpenerHref = (
   secondarySections: SecondaryMenuSection[],
   panelStateManager: PanelStateManager
 ): string => {
-  // Try to use last active item first
   const lastActiveHref = findItemByLastActive(navNode.id, secondarySections, panelStateManager);
-  if (lastActiveHref) return lastActiveHref;
 
-  // Fall back to first available href
-  const firstAvailableHref = findFirstAvailableHref(secondarySections);
-
-  // Warn if panel opener has its own href (which it shouldn't)
-  if (navNode.href) {
-    warnOnce(
-      `Panel opener node "${navNode.id}" has a href "${
-        navNode.href
-      }", but it should not. We're using it as a panel opener that contains sections with links and we use the first link inside the section as the href ${
-        firstAvailableHref ?? 'missing-href-😭'
-      }.`
-    );
+  if (lastActiveHref) {
+    if (navNode.href) {
+      warnOnce(
+        `Panel opener node "${navNode.id}" has a href "${navNode.href}", but it should not. Using last-active section href "${lastActiveHref}" instead.`
+      );
+    }
+    return lastActiveHref;
   }
 
-  return firstAvailableHref ?? 'missing-href-😭';
+  const firstAvailableHref = findFirstAvailableHref(secondarySections);
+  if (firstAvailableHref) {
+    if (navNode.href) {
+      warnOnce(
+        `Panel opener node "${navNode.id}" has a href "${navNode.href}", but it should not. Using first available section href "${firstAvailableHref}" instead.`
+      );
+    }
+    return firstAvailableHref;
+  }
+
+  // No section provides a static link (likely sections are extension points only).
+  // Fall back to the panel opener's own resolved href.
+  if (navNode.href) {
+    return navNode.href;
+  }
+
+  return 'missing-href-😭';
 };

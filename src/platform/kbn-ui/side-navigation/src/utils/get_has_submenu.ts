@@ -8,6 +8,7 @@
  */
 
 import type { MenuItem } from '../../types';
+import { sectionHasContent } from './section_has_content';
 
 /**
  * Utility function for checking whether the menu item has a submenu.
@@ -16,5 +17,5 @@ import type { MenuItem } from '../../types';
  * @returns `true` if the menu item has a submenu, `false` otherwise.
  */
 export const getHasSubmenu = (item: MenuItem): boolean => {
-  return !!item.sections && item.sections.length > 0;
+  return !!item.sections?.some(sectionHasContent);
 };

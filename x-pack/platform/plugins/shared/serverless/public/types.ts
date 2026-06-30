@@ -10,6 +10,7 @@ import type {
   ChromeSetProjectBreadcrumbsParams,
   NavigationTreeDefinition,
   SolutionId,
+  NavTreeExtensionSlotDataSources,
 } from '@kbn/core-chrome-browser';
 import type { CloudSetup, CloudStart } from '@kbn/cloud-plugin/public';
 import type { Observable } from 'rxjs';
@@ -23,7 +24,11 @@ export interface ServerlessPluginStart {
     breadcrumbs: ChromeBreadcrumb | ChromeBreadcrumb[],
     params?: Partial<ChromeSetProjectBreadcrumbsParams>
   ) => void;
-  initNavigation(id: SolutionId, navigationTree$: Observable<NavigationTreeDefinition>): void;
+  initNavigation<TServerlessNavTree extends NavigationTreeDefinition>(
+    id: SolutionId,
+    navigationTree$: Observable<TServerlessNavTree>,
+    slotDataSources?: NavTreeExtensionSlotDataSources<TServerlessNavTree>
+  ): void;
   getNavigationCards$(
     roleManagementEnabled?: boolean,
     extendCardNavDefinitions?: Record<string, CardNavExtensionDefinition>
