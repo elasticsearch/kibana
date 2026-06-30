@@ -18,9 +18,11 @@ jest.mock('react-router-dom', () => ({
   useParams: () => ({ packId: 'test-pack-id' }),
 }));
 
+const mockUseKibana = jest.fn();
 jest.mock('../../../common/lib/kibana', () => ({
   ...jest.requireActual('../../../common/lib/kibana'),
   useRouterNavigate: (path: string) => ({ onClick: jest.fn(), href: path }),
+  useKibana: () => mockUseKibana(),
 }));
 
 jest.mock('../../../common/hooks/use_breadcrumbs', () => ({
@@ -35,10 +37,22 @@ jest.mock('../../../common/experimental_features_context', () => ({
 }));
 
 let capturedOnDirtyStateChange: ((isDirty: boolean) => void) | undefined;
+let capturedIsReadOnly: boolean | undefined;
+let capturedIsPrebuilt: boolean | undefined;
 
 jest.mock('../../../packs/form', () => ({
-  PackForm: ({ onDirtyStateChange }: { onDirtyStateChange?: (isDirty: boolean) => void }) => {
+  PackForm: ({
+    onDirtyStateChange,
+    isReadOnly,
+    isPrebuilt,
+  }: {
+    onDirtyStateChange?: (isDirty: boolean) => void;
+    isReadOnly?: boolean;
+    isPrebuilt?: boolean;
+  }) => {
     capturedOnDirtyStateChange = onDirtyStateChange;
+    capturedIsReadOnly = isReadOnly;
+    capturedIsPrebuilt = isPrebuilt;
 
     return <div data-testid="pack-form">Mock PackForm</div>;
   },
@@ -106,17 +120,26 @@ const renderPage = () => {
   );
 };
 
+const setPermissions = (osquery: Record<string, boolean>) => {
+  mockUseKibana.mockReturnValue({
+    services: { application: { capabilities: { osquery } } },
+  });
+};
+
 const setupDefaultMocks = () => {
   mockUseIsExperimentalFeatureEnabled.mockReturnValue(true);
   mockUsePack.mockReturnValue({ isLoading: false, data: mockPackData, error: null });
   mockUseDeletePack.mockReturnValue({ mutateAsync: mockDeleteMutateAsync, isLoading: false });
   mockUseCopyPack.mockReturnValue({ mutateAsync: mockCopyMutateAsync, isLoading: false });
+  setPermissions({ readPacks: true, writePacks: true });
 };
 
 describe('EditPackPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     capturedOnDirtyStateChange = undefined;
+    capturedIsReadOnly = undefined;
+    capturedIsPrebuilt = undefined;
     setupDefaultMocks();
   });
 
@@ -201,6 +224,106 @@ describe('EditPackPage', () => {
       renderPage();
 
       expect(screen.queryByText('Duplicate pack')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('back navigation', () => {
+    it('renders a "View all packs" back link that targets the packs list', () => {
+      renderPage();
+
+      const backLink = screen.getByText('View all packs').closest('a');
+      expect(backLink).toHaveAttribute('href', 'packs');
+    });
+  });
+
+  describe('read-only access (readPacks without writePacks)', () => {
+    beforeEach(() => {
+      setPermissions({ readPacks: true, writePacks: false });
+    });
+
+    it('renders the page (does not block readPacks-only users)', () => {
+      renderPage();
+
+      expect(screen.getByText('Mock PackForm')).toBeInTheDocument();
+    });
+
+    it('passes isReadOnly to the PackForm', () => {
+      renderPage();
+
+      expect(capturedIsReadOnly).toBe(true);
+    });
+
+    it('hides the Delete and Duplicate write actions', () => {
+      renderPage();
+
+      expect(screen.queryByText('Delete pack')).not.toBeInTheDocument();
+      expect(screen.queryByText('Duplicate pack')).not.toBeInTheDocument();
+    });
+
+    it('shows the read-only access callout', () => {
+      renderPage();
+
+      expect(
+        screen.getByText(
+          'You have read-only access to packs. You can view this pack but cannot make changes.'
+        )
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('write access (writePacks)', () => {
+    it('does not pass isReadOnly to the PackForm for an editable pack', () => {
+      renderPage();
+
+      expect(capturedIsReadOnly).toBe(false);
+    });
+
+    it('does not flag an editable pack as prebuilt', () => {
+      renderPage();
+
+      expect(capturedIsPrebuilt).toBe(false);
+    });
+
+    it('renders the Delete and Duplicate write actions', () => {
+      renderPage();
+
+      expect(screen.getByText('Delete pack')).toBeInTheDocument();
+      expect(screen.getByText('Duplicate pack')).toBeInTheDocument();
+    });
+  });
+
+  describe('prebuilt pack with write access (read_only pack, writePacks)', () => {
+    beforeEach(() => {
+      mockUsePack.mockReturnValue({
+        isLoading: false,
+        data: { ...mockPackData, read_only: true },
+        error: null,
+      });
+      setPermissions({ readPacks: true, writePacks: true });
+    });
+
+    it('passes isPrebuilt but not isReadOnly to the PackForm', () => {
+      renderPage();
+
+      // A writePacks user editing a prebuilt pack may still re-target its
+      // scheduled agent policies, so the form is not fully read-only.
+      expect(capturedIsReadOnly).toBe(false);
+      expect(capturedIsPrebuilt).toBe(true);
+    });
+
+    it('shows the prebuilt callout, not the read-only access callout', () => {
+      renderPage();
+
+      expect(
+        screen.getByText(
+          'This is a prebuilt Elastic pack. You can modify the scheduled agent policies, but you cannot edit queries in the pack.'
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(
+          'You have read-only access to packs. You can view this pack but cannot make changes.'
+        )
+      ).not.toBeInTheDocument();
     });
   });
 

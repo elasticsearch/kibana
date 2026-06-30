@@ -40,7 +40,7 @@ const updatedAtCss = {
 const EMPTY_ARRAY: PackSavedObject[] = [];
 
 const ScheduledQueryNameComponent = ({ id, name }: { id: string; name: string }) => (
-  <EuiLink {...useRouterNavigate(`packs/${id}`)}>{name}</EuiLink>
+  <EuiLink {...useRouterNavigate(`packs/${id}/edit`)}>{name}</EuiLink>
 );
 
 const ScheduledQueryName = React.memo(ScheduledQueryNameComponent);

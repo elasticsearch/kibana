@@ -114,7 +114,7 @@ const updatedAtCss = {
 };
 
 const PackName = ({ id, name }: { id: string; name: string }) => (
-  <EuiLink {...useRouterNavigate(`packs/${id}`)}>{name}</EuiLink>
+  <EuiLink {...useRouterNavigate(`packs/${id}/edit`)}>{name}</EuiLink>
 );
 
 const PacksTableComponent = ({ hasAssetsToInstall }: { hasAssetsToInstall?: boolean }) => {

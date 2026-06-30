@@ -6,7 +6,6 @@
  */
 
 export const ADD_PACK_HEADER_BUTTON = 'add-pack-button';
-export const EDIT_PACK_HEADER_BUTTON = 'edit-pack-button';
 export const SAVE_PACK_BUTTON = 'save-pack-button';
 export const UPDATE_PACK_BUTTON = 'update-pack-button';
 

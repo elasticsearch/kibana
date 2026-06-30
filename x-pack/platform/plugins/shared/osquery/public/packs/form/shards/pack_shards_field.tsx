@@ -28,9 +28,10 @@ export const defaultShardData = {
 
 interface PackShardsFieldProps {
   options: Array<EuiComboBoxOptionOption<string>>;
+  isDisabled?: boolean;
 }
 
-const PackShardsFieldComponent = ({ options }: PackShardsFieldProps) => {
+const PackShardsFieldComponent = ({ options, isDisabled = false }: PackShardsFieldProps) => {
   const {
     watch: watchRoot,
     register: registerRoot,
@@ -131,6 +132,7 @@ const PackShardsFieldComponent = ({ options }: PackShardsFieldProps) => {
             isLastItem={index === array.length - 1}
             control={control}
             options={options}
+            isDisabled={isDisabled}
           />
           <EuiSpacer size="xs" />
         </EuiFlexItem>

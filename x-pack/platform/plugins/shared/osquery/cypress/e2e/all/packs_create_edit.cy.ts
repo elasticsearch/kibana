@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { recurse } from 'cypress-recurse';
 import type { PackagePolicy } from '@kbn/fleet-plugin/common';
 import { API_VERSIONS } from '@kbn/osquery-plugin/common/constants';
 import {
@@ -15,15 +14,18 @@ import {
   FLYOUT_SAVED_QUERY_SAVE_BUTTON,
   customActionEditSavedQuerySelector,
   POLICY_SELECT_COMBOBOX,
-  EDIT_PACK_HEADER_BUTTON,
   SAVED_QUERY_DROPDOWN_SELECT,
   UPDATE_PACK_BUTTON,
   TABLE_ROWS,
   formFieldInputSelector,
 } from '../../screens/packs';
 import { navigateTo } from '../../tasks/navigation';
-import { deleteAndConfirm, inputQuery } from '../../tasks/live_query';
-import { changePackActiveStatus, preparePack } from '../../tasks/packs';
+import { checkResults, deleteAndConfirm, inputQuery } from '../../tasks/live_query';
+import {
+  changePackActiveStatus,
+  preparePack,
+  openScheduledPackExecutionDetails,
+} from '../../tasks/packs';
 import {
   closeModalIfVisible,
   closeToastIfVisible,
@@ -160,7 +162,7 @@ describe(
         cy.getBySel('tablePagination-50-rows').click();
         cy.contains(packName).click();
 
-        cy.getBySel('edit-pack-button').click();
+        cy.contains(`Edit ${packName}`);
 
         cy.contains('Query1');
         cy.contains('Query2');
@@ -315,8 +317,6 @@ describe(
 
       it('', () => {
         preparePack(packName);
-        cy.getBySel('edit-pack-button').click();
-
         cy.contains(`Edit ${packName}`);
         cy.getBySel(ADD_QUERY_BUTTON).click();
 
@@ -376,6 +376,10 @@ describe(
 
       it('', { tags: ['@ess', '@brokenInServerless'] }, () => {
         let lensUrl = '';
+        openScheduledPackExecutionDetails(packName);
+        // Stub window.open AFTER navigation. openScheduledPackExecutionDetails
+        // reloads the page while polling History, which would discard a stub
+        // installed on the earlier window object.
         cy.window().then((win) => {
           cy.stub(win, 'open')
             .as('windowOpen')
@@ -383,9 +387,6 @@ describe(
               lensUrl = url;
             });
         });
-        preparePack(packName);
-        cy.getBySel('docsLoading').should('exist');
-        cy.getBySel('docsLoading').should('not.exist');
         cy.get(`[aria-label="View in Lens"]`).eq(0).click();
         cy.window()
           .its('open')
@@ -431,9 +432,7 @@ describe(
       });
 
       it('', () => {
-        preparePack(packName);
-        cy.getBySel('docsLoading').should('exist');
-        cy.getBySel('docsLoading').should('not.exist');
+        openScheduledPackExecutionDetails(packName);
         cy.get(`[aria-label="View in Discover"]`)
           .eq(0)
           .should('have.attr', 'href')
@@ -517,30 +516,11 @@ describe(
       });
 
       it('', () => {
-        preparePack(packName);
-        cy.contains(`${packName} details`).should('exist');
+        openScheduledPackExecutionDetails(packName);
 
-        recurse<string>(
-          () => {
-            cy.getBySel('docsLoading').should('exist');
-            cy.getBySel('docsLoading').should('not.exist');
-
-            return cy
-              .get('tbody .euiTableRow > td:nth-child(5) > .euiTableCellContent')
-              .invoke('text');
-          },
-          (response) => response !== '-',
-          {
-            timeout: 300000,
-            post: () => {
-              cy.reload();
-            },
-          }
-        );
-        cy.getBySel('last-results-date').should('exist');
-        cy.getBySel('docs-count-badge').contains('1');
-        cy.getBySel('agent-count-badge').contains('1');
-        cy.getBySel('packResultsErrorsEmpty').should('have.length', 1);
+        // The details page auto-expands the single query row into ResultTabs,
+        // surfacing the osqueryResultsTable with at least one result row.
+        checkResults();
       });
     });
 
@@ -579,7 +559,7 @@ describe(
 
       it('', () => {
         preparePack(packName);
-        cy.contains(/^Edit$/).click();
+        cy.contains(`Edit ${packName}`);
 
         cy.getBySel('checkboxSelectAll').click();
 
@@ -589,8 +569,14 @@ describe(
         closeModalIfVisible();
 
         cy.get('a').contains(packName).click();
-        cy.contains(`${packName} details`).should('exist');
-        cy.contains(/^No items found/).should('exist');
+        cy.contains(`Edit ${packName}`).should('exist');
+        // The read-only "Pack details" page (which rendered a status table with
+        // a "No items found" empty prompt) was removed. The Edit page's queries
+        // field renders no table at all when the pack has no queries, so assert
+        // emptiness via the deleted query being gone while the "Add query"
+        // affordance remains.
+        cy.getBySel(ADD_QUERY_BUTTON).should('exist');
+        cy.contains(savedQueryName).should('not.exist');
       });
     });
 
@@ -632,8 +618,8 @@ describe(
 
       it('', { tags: ['@ess', '@serverless'] }, () => {
         preparePack(packName);
+        cy.contains(`Edit ${packName}`);
 
-        cy.getBySel(EDIT_PACK_HEADER_BUTTON).click();
         deleteAndConfirm('pack');
       });
     });

@@ -6,16 +6,25 @@
  */
 
 import React from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useRouteMatch, useParams, Redirect } from 'react-router-dom';
 import { Routes, Route } from '@kbn/shared-ux-router';
 
 import { PacksPage } from './list';
 import { AddPackPage } from './add';
 import { EditPackPage } from './edit';
-import { PackDetailsPage } from './details';
 import { useBreadcrumbs } from '../../common/hooks/use_breadcrumbs';
 import { useKibana } from '../../common/lib/kibana';
 import { MissingPrivileges } from '../components';
+import { pagePathGetters } from '../../common/page_paths';
+
+// The read-only Pack details page was removed. Redirect the legacy
+// `/packs/:packId` route to the pack's Edit page so existing bookmarks and
+// deep links still resolve to that pack.
+const PackDetailsRedirect = () => {
+  const { packId } = useParams<{ packId: string }>();
+
+  return <Redirect to={pagePathGetters.pack_edit({ packId })} />;
+};
 
 const PacksComponent = () => {
   const permissions = useKibana().services.application.capabilities.osquery;
@@ -32,10 +41,10 @@ const PacksComponent = () => {
         {permissions.writePacks ? <AddPackPage /> : <MissingPrivileges />}
       </Route>
       <Route path={`${match.url}/:packId/edit`}>
-        {permissions.writePacks ? <EditPackPage /> : <MissingPrivileges />}
+        <EditPackPage />
       </Route>
       <Route path={`${match.url}/:packId`}>
-        <PackDetailsPage />
+        <PackDetailsRedirect />
       </Route>
       <Route path={`${match.url}`}>
         <PacksPage />

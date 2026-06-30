@@ -23,7 +23,6 @@ export type DynamicPage =
   | 'live_query_details'
   | 'history_details'
   | 'history_scheduled_details'
-  | 'pack_details'
   | 'pack_edit'
   | 'saved_query_edit';
 
@@ -46,7 +45,6 @@ export const PAGE_ROUTING_PATHS = {
   new_query: '/new',
   packs: '/packs',
   pack_add: '/packs/add',
-  pack_details: '/packs/:packId',
   pack_edit: '/packs/:packId/edit',
   saved_queries: '/saved_queries',
   saved_query_new: '/saved_queries/new',
@@ -74,6 +72,5 @@ export const pagePathGetters: {
   saved_query_edit: ({ savedQueryId }) => `/saved_queries/${savedQueryId}`,
   packs: () => '/packs',
   pack_add: () => '/packs/add',
-  pack_details: ({ packId }) => `/packs/${packId}`,
   pack_edit: ({ packId }) => `/packs/${packId}/edit`,
 };

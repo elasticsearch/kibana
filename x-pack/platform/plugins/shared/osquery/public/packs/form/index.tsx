@@ -64,7 +64,7 @@ interface PackFormProps {
   defaultValue?: PackItem;
   editMode?: boolean;
   isReadOnly?: boolean;
-  packId?: string;
+  isPrebuilt?: boolean;
   onDirtyStateChange?: (isDirty: boolean) => void;
 }
 
@@ -72,7 +72,7 @@ const PackFormComponent: React.FC<PackFormProps> = ({
   defaultValue,
   editMode = false,
   isReadOnly = false,
-  packId,
+  isPrebuilt = false,
   onDirtyStateChange,
 }) => {
   const [shardsToggleState, setShardsToggleState] =
@@ -90,9 +90,9 @@ const PackFormComponent: React.FC<PackFormProps> = ({
 
   const { data: { agentPoliciesById } = {} } = useAgentPolicies();
 
-  const cancelButtonProps = useRouterNavigate(
-    `packs/${editMode ? packId ?? defaultValue?.id : ''}`
-  );
+  // Cancel returns to the Packs list. The read-only Pack details page was
+  // removed, so edit mode no longer navigates back to `packs/:packId`.
+  const cancelButtonProps = useRouterNavigate('packs');
 
   const { mutateAsync: createAsync } = useCreatePack({
     withRedirect: true,
@@ -345,7 +345,14 @@ const PackFormComponent: React.FC<PackFormProps> = ({
     await handleSubmitForm();
   }, [handleSubmitForm]);
 
-  const euiFieldProps = useMemo(() => ({ isDisabled: isReadOnly }), [isReadOnly]);
+  // Pack content (name, description, queries) is immutable for both read-only
+  // (readPacks-only) users and prebuilt Elastic packs.
+  const isContentDisabled = isReadOnly || isPrebuilt;
+  const euiFieldProps = useMemo(() => ({ isDisabled: isContentDisabled }), [isContentDisabled]);
+  // Scheduled agent policies / shards / Type stay editable for prebuilt packs
+  // (a writePacks user may re-target them) — only a fully read-only user is
+  // blocked. Matches the prebuiltPackModeDescription callout.
+  const policyFieldProps = useMemo(() => ({ isDisabled: isReadOnly }), [isReadOnly]);
 
   const changePackType = useCallback(
     (type: 'global' | 'policy' | 'shards') => {
@@ -390,7 +397,11 @@ const PackFormComponent: React.FC<PackFormProps> = ({
         <EuiSpacer size="m" />
 
         <EuiFlexGroup>
-          <PackTypeSelectable packType={packType} setPackType={changePackType} />
+          <PackTypeSelectable
+            packType={packType}
+            setPackType={changePackType}
+            isDisabled={isReadOnly}
+          />
         </EuiFlexGroup>
         <EuiSpacer size="m" />
 
@@ -398,7 +409,10 @@ const PackFormComponent: React.FC<PackFormProps> = ({
           <>
             <EuiFlexGroup>
               <EuiFlexItem css={overflowCss}>
-                <PolicyIdComboBoxField options={availableOptions} />
+                <PolicyIdComboBoxField
+                  options={availableOptions}
+                  euiFieldProps={policyFieldProps}
+                />
               </EuiFlexItem>
             </EuiFlexGroup>
             <EuiSpacer size="m" />
@@ -413,7 +427,7 @@ const PackFormComponent: React.FC<PackFormProps> = ({
                   buttonContent="Partial deployment (shards)"
                 >
                   <EuiSpacer size="xs" />
-                  <PackShardsField options={availableOptions} />
+                  <PackShardsField options={availableOptions} isDisabled={isReadOnly} />
                 </EuiAccordion>
               </EuiFlexItem>
             </EuiFlexGroup>
@@ -428,7 +442,7 @@ const PackFormComponent: React.FC<PackFormProps> = ({
                 <ScheduleSection
                   value={schedule}
                   onChange={handleScheduleChange}
-                  disabled={isReadOnly}
+                  disabled={isContentDisabled}
                   showErrors={showScheduleErrors || scheduleErrors.length > 0}
                 />
               </EuiFlexItem>
@@ -461,6 +475,9 @@ const PackFormComponent: React.FC<PackFormProps> = ({
               <EuiFlexItem grow={false}>
                 <EuiButton
                   isLoading={isSubmitting}
+                  // Prebuilt packs keep an enabled save so writePacks users can
+                  // persist scheduled-policy/shards changes; only a read-only
+                  // (readPacks-only) user has saving disabled.
                   isDisabled={isReadOnly}
                   color="primary"
                   fill

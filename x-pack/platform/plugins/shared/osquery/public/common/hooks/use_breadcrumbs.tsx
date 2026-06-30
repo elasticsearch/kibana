@@ -176,7 +176,7 @@ const breadcrumbGetters: {
       }),
     },
   ],
-  pack_details: ({ packName }) => [
+  pack_edit: ({ packName }) => [
     BASE_BREADCRUMB,
     {
       href: pagePathGetters.packs(),
@@ -185,19 +185,6 @@ const breadcrumbGetters: {
       }),
     },
     {
-      text: packName,
-    },
-  ],
-  pack_edit: ({ packName, packId }) => [
-    BASE_BREADCRUMB,
-    {
-      href: pagePathGetters.packs(),
-      text: i18n.translate('xpack.osquery.breadcrumbs.packsPageTitle', {
-        defaultMessage: 'Packs',
-      }),
-    },
-    {
-      href: pagePathGetters.pack_details({ packId }),
       text: packName,
     },
     {

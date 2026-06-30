@@ -221,7 +221,10 @@ export const packType: SavedObjectsType = {
     getTitle: (savedObject) => `Pack: ${savedObject.attributes.name}`,
     getEditUrl: (savedObject) => `/packs/${savedObject.id}/edit`,
     getInAppUrl: (savedObject) => ({
-      path: `/app/osquery/packs/${savedObject.id}`,
+      // The read-only Pack details page was removed; link straight to the Edit
+      // page (read-only for readPacks-only users) instead of relying on the
+      // legacy `/packs/:id` -> `/packs/:id/edit` client-side redirect.
+      path: `/app/osquery/packs/${savedObject.id}/edit`,
       uiCapabilitiesPath: 'osquery.read',
     }),
     onExport: (context, objects) =>

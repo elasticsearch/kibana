@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
 import type { EuiComboBoxOptionOption } from '@elastic/eui';
 import { EuiButtonIcon, EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiToolTip } from '@elastic/eui';
@@ -23,6 +23,7 @@ interface ShardsFormProps {
   control: ShardsFormReturn['control'];
   onDelete?: UseFieldArrayRemove;
   options: Array<EuiComboBoxOptionOption<string>>;
+  isDisabled?: boolean;
 }
 
 const ShardsFormComponent = ({
@@ -31,6 +32,7 @@ const ShardsFormComponent = ({
   isLastItem,
   control,
   options,
+  isDisabled = false,
 }: ShardsFormProps) => {
   const handleDeleteClick = useCallback(() => {
     if (onDelete) {
@@ -42,6 +44,10 @@ const ShardsFormComponent = ({
     ({ euiTheme }: any) => (index === 0 ? { marginTop: euiTheme.size.base } : {}),
     [index]
   );
+
+  // EuiComboBox uses `isDisabled`; EuiRange uses `disabled`.
+  const comboBoxProps = useMemo(() => ({ isDisabled }), [isDisabled]);
+  const rangeProps = useMemo(() => ({ disabled: isDisabled }), [isDisabled]);
 
   return (
     <>
@@ -56,12 +62,18 @@ const ShardsFormComponent = ({
             control={control}
             hideLabel={index !== 0}
             options={options}
+            euiFieldProps={comboBoxProps}
           />
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiFlexGroup alignItems="center" gutterSize="s">
             <EuiFlexItem grow={true}>
-              <ShardsPercentageField index={index} control={control} hideLabel={index !== 0} />
+              <ShardsPercentageField
+                index={index}
+                control={control}
+                hideLabel={index !== 0}
+                euiFieldProps={rangeProps}
+              />
             </EuiFlexItem>
 
             <EuiFlexItem grow={false}>
@@ -84,7 +96,7 @@ const ShardsFormComponent = ({
                     )}
                     iconType="trash"
                     color="text"
-                    disabled={isLastItem}
+                    disabled={isLastItem || isDisabled}
                     onClick={handleDeleteClick}
                   />
                 </EuiToolTip>

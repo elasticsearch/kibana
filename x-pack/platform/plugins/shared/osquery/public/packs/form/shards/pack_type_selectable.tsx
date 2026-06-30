@@ -20,12 +20,14 @@ interface PackTypeSelectableProps {
   packType: string;
   setPackType: (type: 'global' | 'policy') => void;
   resetFormFields?: () => void;
+  isDisabled?: boolean;
 }
 
 const PackTypeSelectableComponent = ({
   packType,
   setPackType,
   resetFormFields,
+  isDisabled = false,
 }: PackTypeSelectableProps) => {
   const idPrefix = useGeneratedHtmlId({ prefix: 'osqueryPackType' });
 
@@ -63,6 +65,7 @@ const PackTypeSelectableComponent = ({
               }
               checked={packType === 'policy'}
               onChange={handleSelectPolicy}
+              disabled={isDisabled}
               data-test-subj="osqueryPackTypePolicy"
             >
               {i18n.translate('xpack.osquery.pack.form.policyDescription', {
@@ -84,6 +87,7 @@ const PackTypeSelectableComponent = ({
               }
               checked={packType === 'global'}
               onChange={handleSelectGlobal}
+              disabled={isDisabled}
               data-test-subj="osqueryPackTypeGlobal"
             >
               {i18n.translate('xpack.osquery.pack.form.globalDescription', {

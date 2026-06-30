@@ -23,6 +23,7 @@ interface ShardsPolicyFieldComponent {
 const ShardsPolicyFieldComponent = ({
   index,
   control,
+  euiFieldProps,
   hideLabel,
   options,
 }: ShardsPolicyFieldComponent) => {
@@ -96,6 +97,7 @@ const ShardsPolicyFieldComponent = ({
         data-test-subj="shards-field-policy"
         rowHeight={32}
         isClearable
+        {...euiFieldProps}
       />
     </EuiFormRow>
   );

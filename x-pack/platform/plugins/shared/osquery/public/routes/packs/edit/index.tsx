@@ -23,7 +23,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { WithHeaderLayout, fullWidthFormContentCss } from '../../../components/layouts';
-import { useRouterNavigate } from '../../../common/lib/kibana';
+import { useKibana, useRouterNavigate } from '../../../common/lib/kibana';
 import { PackForm } from '../../../packs/form';
 import { usePack } from '../../../packs/use_pack';
 import { useDeletePack } from '../../../packs/use_delete_pack';
@@ -37,14 +37,22 @@ const EditPackPageComponent = () => {
   const confirmModalTitleId = useGeneratedHtmlId();
   const queryHistoryRework = useIsExperimentalFeatureEnabled('queryHistoryRework');
 
+  const permissions = useKibana().services.application.capabilities.osquery;
+  const canWritePacks = !!permissions.writePacks;
+
   const { packId } = useParams<{ packId: string }>();
-  const queryDetailsLinkProps = useRouterNavigate(`packs/${packId}`);
+  const packsListLinkProps = useRouterNavigate('packs');
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
   const { isLoading, data, error } = usePack({ packId });
   const deletePackMutation = useDeletePack({ packId, withRedirect: true });
   const copyPackMutation = useCopyPack({ packId });
-  const isReadOnly = useMemo(() => !!data?.read_only, [data]);
+  // Full lockdown: a readPacks-only user can view but not edit anything.
+  const isReadOnly = !canWritePacks;
+  // Prebuilt (Elastic-managed) pack: queries/name/description are immutable, but
+  // a writePacks user may still re-target its scheduled agent policies/shards
+  // (see the prebuiltPackModeDescription callout below).
+  const isPrebuilt = !!data?.read_only;
 
   const { handleDuplicateClick, handleDirtyStateChange, duplicateModal } = useDuplicateGuard({
     copyMutation: copyPackMutation,
@@ -72,21 +80,14 @@ const EditPackPageComponent = () => {
 
   const backLink = useMemo(
     () => (
-      <EuiButtonEmpty
-        iconType="chevronSingleLeft"
-        {...queryDetailsLinkProps}
-        flush="left"
-        size="xs"
-      >
+      <EuiButtonEmpty iconType="chevronSingleLeft" {...packsListLinkProps} flush="left" size="xs">
         <FormattedMessage
           id="xpack.osquery.editPack.viewPackListTitle"
-          defaultMessage="View {queryName} details"
-          // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
-          values={{ queryName: data?.name }}
+          defaultMessage="View all packs"
         />
       </EuiButtonEmpty>
     ),
-    [data?.name, queryDetailsLinkProps]
+    [packsListLinkProps]
   );
 
   const LeftColumn = useMemo(
@@ -112,50 +113,71 @@ const EditPackPageComponent = () => {
     [backLink, data?.name]
   );
 
+  // Write actions (duplicate, delete) are only available to users with
+  // writePacks. readPacks-only users see a fully read-only view.
   const RightColumn = useMemo(
-    () => (
-      <EuiFlexGroup gutterSize="s">
-        {queryHistoryRework && (
+    () =>
+      canWritePacks ? (
+        <EuiFlexGroup gutterSize="s">
+          {queryHistoryRework && (
+            <EuiFlexItem grow={false}>
+              <EuiButton
+                onClick={handleDuplicateClick}
+                iconType="copy"
+                isLoading={copyPackMutation.isLoading}
+              >
+                {i18n.translate('xpack.osquery.editPack.duplicatePackButtonLabel', {
+                  defaultMessage: 'Duplicate pack',
+                })}
+              </EuiButton>
+            </EuiFlexItem>
+          )}
           <EuiFlexItem grow={false}>
-            <EuiButton
-              onClick={handleDuplicateClick}
-              iconType="copy"
-              isLoading={copyPackMutation.isLoading}
-            >
-              {i18n.translate('xpack.osquery.editPack.duplicatePackButtonLabel', {
-                defaultMessage: 'Duplicate pack',
-              })}
+            <EuiButton color="danger" onClick={handleDeleteClick} iconType="trash">
+              <FormattedMessage
+                id="xpack.osquery.editPack.deletePackButtonLabel"
+                defaultMessage="Delete pack"
+              />
             </EuiButton>
           </EuiFlexItem>
-        )}
-        <EuiFlexItem grow={false}>
-          <EuiButton color="danger" onClick={handleDeleteClick} iconType="trash">
-            <FormattedMessage
-              id="xpack.osquery.editPack.deletePackButtonLabel"
-              defaultMessage="Delete pack"
-            />
-          </EuiButton>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    ),
-    [queryHistoryRework, handleDuplicateClick, copyPackMutation.isLoading, handleDeleteClick]
+        </EuiFlexGroup>
+      ) : null,
+    [
+      canWritePacks,
+      queryHistoryRework,
+      handleDuplicateClick,
+      copyPackMutation.isLoading,
+      handleDeleteClick,
+    ]
   );
 
-  const HeaderContent = useMemo(
-    () =>
-      isReadOnly ? (
+  const HeaderContent = useMemo(() => {
+    if (!canWritePacks) {
+      return (
         <>
           <EuiSpacer />
           <EuiCallOut announceOnMount>
             <FormattedMessage
-              id="xpack.osquery.editPack.prebuiltPackModeDescription"
-              defaultMessage="This is a prebuilt Elastic pack. You can modify the scheduled agent policies, but you cannot edit queries in the pack."
+              id="xpack.osquery.editPack.readOnlyModeDescription"
+              defaultMessage="You have read-only access to packs. You can view this pack but cannot make changes."
             />
           </EuiCallOut>
         </>
-      ) : null,
-    [isReadOnly]
-  );
+      );
+    }
+
+    return data?.read_only ? (
+      <>
+        <EuiSpacer />
+        <EuiCallOut announceOnMount>
+          <FormattedMessage
+            id="xpack.osquery.editPack.prebuiltPackModeDescription"
+            defaultMessage="This is a prebuilt Elastic pack. You can modify the scheduled agent policies, but you cannot edit queries in the pack."
+          />
+        </EuiCallOut>
+      </>
+    ) : null;
+  }, [canWritePacks, data?.read_only]);
 
   const titleProps = useMemo(() => ({ id: confirmModalTitleId }), [confirmModalTitleId]);
 
@@ -168,7 +190,7 @@ const EditPackPageComponent = () => {
         editMode={true}
         defaultValue={data}
         isReadOnly={isReadOnly}
-        packId={packId}
+        isPrebuilt={isPrebuilt}
         onDirtyStateChange={handleDirtyStateChange}
       />
     );
@@ -286,7 +308,7 @@ const EditPackPageComponent = () => {
   return (
     <WithHeaderLayout
       leftColumn={LeftColumn}
-      rightColumn={RightColumn}
+      rightColumn={RightColumn ?? undefined}
       rightColumnGrow={false}
       headerChildren={HeaderContent}
     >

@@ -160,6 +160,16 @@ describe('PacksTable', () => {
       expect(screen.getByText('pack-alpha')).toBeInTheDocument();
       expect(screen.getByText('pack-beta')).toBeInTheDocument();
     });
+
+    it('should link each pack name directly to its edit page', () => {
+      renderComponent();
+
+      expect(screen.getByText('pack-alpha').closest('a')).toHaveAttribute(
+        'href',
+        'packs/so-1/edit'
+      );
+      expect(screen.getByText('pack-beta').closest('a')).toHaveAttribute('href', 'packs/so-2/edit');
+    });
   });
 
   describe('active/inactive toggle', () => {
