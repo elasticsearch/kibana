@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kibanaVersion": "9.5.0",
+  "generatedAt": "2026-06-01T00:00:00Z",
+  "templates": [
+    {
+      "slug": "ip-reputation-check",
+      "version": "1.0.0",
+      "availability": ">=9.5.0 <9.6.0",
+      "name": "IP Reputation Check (AbuseIPDB)",
+      "description": "Assess the reputation of an IP address using AbuseIPDB.",
+      "solutions": ["security"],
+      "categories": ["enrichment", "threat-intel"],
+      "definitionUrl": "templates/ip-reputation-check/1.0.0.yaml",
+      "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "stepTypes": ["abuseipdb.checkIp"],
+      "triggerTypes": ["manual"]
+    }
+  ]
+}

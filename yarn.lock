@@ -10033,6 +10033,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/workflows-library@link:src/platform/packages/shared/kbn-workflows-library":
+  version "0.0.0"
+  uid ""
+
 "@kbn/workflows-management-plugin@link:src/platform/plugins/shared/workflows_management":
   version "0.0.0"
   uid ""

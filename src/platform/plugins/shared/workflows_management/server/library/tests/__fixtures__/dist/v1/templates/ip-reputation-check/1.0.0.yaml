@@ -1,0 +1,29 @@
+template-metadata:
+  slug: ip-reputation-check
+  version: "1.0.0"
+  availability: ">=9.5.0 <9.6.0"
+  name: "IP Reputation Check (AbuseIPDB)"
+  description: "Assess the reputation of an IP address using AbuseIPDB."
+  solutions: [security]
+  categories: [enrichment, threat-intel]
+  install:
+    form:
+      - name: abuseipdb-connector
+        label: "AbuseIPDB connector"
+        inputType: connector
+        connectorType: .abuseipdb
+
+consts:
+  abuseipdb_api_key: ""
+inputs:
+  - name: ip_address
+    type: string
+    required: true
+triggers:
+  - type: manual
+steps:
+  - name: query_abuseipdb
+    type: abuseipdb.checkIp
+    connector-id: __install__.abuseipdb-connector
+    with:
+      ipAddress: "{{ inputs.ip_address }}"

@@ -17,6 +17,11 @@ import {
   isWhileStep,
 } from '../types/utils';
 
+/**
+ * IMPORTANT: This file is used to collect all steps from a workflow definition.
+ * This implementation is replicated in `elastic/workflows/build-catalog.mjs`, and must be kept in sync.
+ * Any changes to this file must be reflected in the `build-catalog.mjs` file on the `elastic/workflows` repository.
+ */
 const getChildStepArrays = (step: Step): ReadonlyArray<WorkflowYaml['steps']> => {
   if (isForeachStep(step) && Array.isArray(step.steps)) {
     return [step.steps];

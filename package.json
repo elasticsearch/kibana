@@ -1295,6 +1295,7 @@
     "@kbn/workflows-execution-engine": "link:src/platform/plugins/shared/workflows_execution_engine",
     "@kbn/workflows-extensions": "link:src/platform/plugins/shared/workflows_extensions",
     "@kbn/workflows-extensions-example": "link:examples/workflows_extensions_example",
+    "@kbn/workflows-library": "link:src/platform/packages/shared/kbn-workflows-library",
     "@kbn/workflows-management-plugin": "link:src/platform/plugins/shared/workflows_management",
     "@kbn/workflows-ui": "link:src/platform/packages/shared/kbn-workflows-ui",
     "@kbn/workflows-yaml": "link:src/platform/packages/shared/kbn-workflows-yaml",

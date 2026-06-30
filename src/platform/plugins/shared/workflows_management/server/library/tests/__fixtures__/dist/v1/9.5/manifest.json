@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kibanaVersion": "9.5.0",
+  "generatedAt": "2026-06-01T00:00:00Z",
+  "hashes": {
+    "catalogs/templates.json": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

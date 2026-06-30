@@ -232,6 +232,9 @@ These routes use `access: internal` and are **not** included in the public OpenA
 | GET | `/internal/workflows/config` | Execution engine feature flags for the plugin. |
 | POST | `/internal/workflows/disable` | Disable all workflows (administrative). |
 | POST | `/api/workflows/validate` | Validate a workflow YAML definition without saving. |
+| GET | `/internal/workflows/library/templates` | List Workflow Template Library catalog rows (optional `solution` / `category` / `search` filters). Gated by the `workflowsManagement:library:enabled` global uiSetting; returns `503` when off. |
+| GET | `/internal/workflows/library/templates/{slug}` | Get the parsed template body (metadata + workflow body + raw YAML) for a catalog slug. `404` when the slug is missing, `503` when the library is disabled. |
+| GET | `/internal/workflows/library/health` | Diagnostic — returns the cache's `sourceMode`, `lastRefreshAt`, and `lastError`. Not gated by the library toggle so admins can reach it while the feature is off. |
 
 ---
 
@@ -312,6 +315,109 @@ workflows_management/
 2. Start Elasticsearch: `yarn es snapshot`
 3. Start Kibana: `yarn start`
 4. Navigate to `/app/workflows`
+
+### Workflow Template Library (tech preview)
+
+The Library is a curated catalog the server fetches from the Elastic-hosted CDN.
+At tech-preview stage it is gated by a global Advanced Setting
+(`workflowsManagement:library:enabled`, default `false`).
+
+**Enable it in dev** by overriding the global uiSetting in `kibana.dev.yml`. The
+library toggle is registered with `scope: 'global'`, so the override key is
+`uiSettings.globalOverrides` — `uiSettings.overrides` only targets per-space
+settings and is silently ignored for global ones:
+
+```yaml
+uiSettings.globalOverrides:
+  "workflowsManagement:library:enabled": true
+```
+
+The toggle also surfaces in the **Global Settings** page
+(`/app/management/kibana/globalSettings`), not the regular Advanced Settings
+page.
+
+**Point the server at a local catalog** when the production CDN is unavailable
+(e.g. while Phase 1 staging is still being provisioned). Run the Phase 1
+generator (`scripts/build-catalog.mjs` in `elastic/workflows`) to produce a
+`dist/v1/` tree, then serve it over plain HTTP:
+
+```sh
+cd ~/Workspace/workflows/dist
+python3 -m http.server 8000
+```
+
+…and override the registry URL in `kibana.dev.yml`:
+
+```yaml
+workflowsManagement:
+  library:
+    registryUrl: "http://localhost:8000/v1"
+```
+
+A minimal hand-crafted `dist/v1/` lives next to the integration test for
+illustration:
+[`server/library/tests/__fixtures__/dist/v1/`](./server/library/tests/__fixtures__/dist/v1).
+Pointing the server at that directory is a useful smoke test until the Phase 1
+generator output is on disk.
+
+**Air-gapped deployments (local bundle mode).** Instead of fetching from a URL,
+the server can read the catalog from an extracted release tarball on the Kibana
+host's filesystem. The bundle is a faithful mirror of the CDN `/v1` tree, so
+`bundlePath` is simply a local equivalent of `registryUrl` (mutually exclusive
+with it):
+
+```yaml
+workflowsManagement:
+  library:
+    bundlePath: "/usr/share/kibana/workflows-library/v1"
+```
+
+The bundle has the same layout the CDN serves — `kibana-versions.json`, a
+per-version `<version>/catalogs/templates.json`, and shared bodies at
+`templates/<slug>/<version>.yaml` — so version selection and `definitionUrl`
+resolution are identical to HTTP mode. `bundlePath` may point either at that
+`/v1` root (the directory holding `kibana-versions.json`) or at its parent that
+contains a single `v1/` directory, which is what extracting the release tarball
+produces. The running Kibana version selects its catalog from
+`kibana-versions.json` exactly as over HTTP. Bundle mode has no TTL/refresh: the
+catalog is read once at first request and cached for the process lifetime —
+replace the directory and restart Kibana to update.
+
+To produce a bundle locally from the Phase 1 generator output (`dist/v1/` in
+`elastic/workflows`), just archive that tree and extract it on the host:
+
+```sh
+# in elastic/workflows, after `node scripts/build-catalog.mjs`
+tar -czf workflows-library.tar.gz -C dist v1
+# on the (air-gapped) Kibana host
+tar -xzf workflows-library.tar.gz -C /usr/share/kibana/workflows-library
+# → bundlePath: /usr/share/kibana/workflows-library/v1
+```
+
+Because the bundle is a mirror of the `/v1` tree, both source modes share one
+test fixture — the HTTP fetcher serves it over HTTP and the bundle reader reads
+it from disk:
+[`server/library/tests/__fixtures__/dist/v1/`](./server/library/tests/__fixtures__/dist/v1).
+`GET /internal/workflows/library/health` reports `sourceMode: "bundle"` when
+this mode is active.
+
+**Exercise the API once enabled:**
+
+```sh
+curl -u elastic:changeme \
+  -H 'kbn-xsrf: x' \
+  -H 'elastic-api-version: 1' \
+  http://localhost:5601/internal/workflows/library/health
+
+curl -u elastic:changeme \
+  -H 'kbn-xsrf: x' \
+  -H 'elastic-api-version: 1' \
+  'http://localhost:5601/internal/workflows/library/templates?category=enrichment'
+```
+
+The server-side library implementation lives under
+[`server/library/`](./server/library); the catalog data types and YAML parser
+are shared via [`@kbn/workflows-library`](../../../packages/shared/kbn-workflows-library).
 
 ### Event-driven custom trigger `on` options
 

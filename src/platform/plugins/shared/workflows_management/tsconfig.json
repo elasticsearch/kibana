@@ -28,6 +28,7 @@
     "@kbn/navigation-plugin",
     "@kbn/config-schema",
     "@kbn/workflows",
+    "@kbn/workflows-library",
     "@kbn/human-readable-id",
     "@kbn/workflows-ui",
     "@kbn/workflows-yaml",

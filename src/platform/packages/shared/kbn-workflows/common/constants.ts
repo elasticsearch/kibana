@@ -33,6 +33,16 @@ export const WORKFLOW_EXECUTION_STATS_BAR_SETTING_ID = 'workflows:executionStats
 export const WORKFLOWS_VERSIONING_SETTING_ID = 'workflows:versioning:enabled';
 
 /**
+ * Global Advanced Setting gating the Workflow Template Library tech preview.
+ *
+ * Registered as a global uiSetting (not per-space) so the same toggle is
+ * readable from both the server runtime (cache refresh + route handlers) and
+ * any browser plugin that consumes `@kbn/workflows-library` without taking a
+ * runtime dep on `workflows_management`.
+ */
+export const WORKFLOWS_LIBRARY_ENABLED_SETTING_ID = 'workflowsManagement:library:enabled';
+
+/**
  * Map of regular (saved object) connector types -> their system connector equivalents.
  * Use this map to make the `connector-id` step config property optional for a given connector step type, allowing it to be executed via its linked system connector.
  * Pre-requisite for this to work:

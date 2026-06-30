@@ -2786,6 +2786,8 @@
       "@kbn/workflows-extensions/*": ["src/platform/plugins/shared/workflows_extensions/*"],
       "@kbn/workflows-extensions-example": ["examples/workflows_extensions_example"],
       "@kbn/workflows-extensions-example/*": ["examples/workflows_extensions_example/*"],
+      "@kbn/workflows-library": ["src/platform/packages/shared/kbn-workflows-library"],
+      "@kbn/workflows-library/*": ["src/platform/packages/shared/kbn-workflows-library/*"],
       "@kbn/workflows-management-plugin": ["src/platform/plugins/shared/workflows_management"],
       "@kbn/workflows-management-plugin/*": ["src/platform/plugins/shared/workflows_management/*"],
       "@kbn/workflows-ui": ["src/platform/packages/shared/kbn-workflows-ui"],
