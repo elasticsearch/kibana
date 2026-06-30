@@ -1,0 +1,19 @@
+{
+  "slug": "entity-relationship-maintainer",
+  "name": "Entity Relationship Maintainer",
+  "owners": ["@elastic/contextual-security-apps", "@elastic/security-entity-analytics", "@elastic/core-analysis"],
+  "paths": [
+    "x-pack/solutions/security/plugins/security_solution/server/lib/entity_analytics/maintainers/**",
+    "x-pack/solutions/security/plugins/entity_store/server/domain/entity_maintainers/**",
+    "x-pack/solutions/security/plugins/entity_store/server/tasks/entity_maintainers/**",
+    "x-pack/solutions/security/plugins/entity_store/server/routes/apis/entity_maintainers/**",
+    "x-pack/solutions/security/plugins/entity_store/server/maintainers/**",
+    "x-pack/solutions/security/plugins/entity_store/common/entity_maintainers.ts"
+  ],
+  "files": [
+    {
+      "path": "entity-relationship-maintainer.md",
+      "description": "Primary domain knowledge"
+    }
+  ]
+}
