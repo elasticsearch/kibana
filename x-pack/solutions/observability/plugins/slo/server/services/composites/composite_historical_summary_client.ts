@@ -32,10 +32,11 @@ export class CompositeHistoricalSummaryClient {
     esClient: ElasticsearchClient,
     private compositeSloRepository: CompositeSLORepository,
     private sloDefinitionRepository: SLODefinitionRepository,
+    spaceId: string,
     historicalSummaryProvider?: HistoricalSummaryProvider
   ) {
     this.historicalSummaryProvider =
-      historicalSummaryProvider ?? new HistoricalSummaryClient(esClient);
+      historicalSummaryProvider ?? new HistoricalSummaryClient(esClient, spaceId);
   }
 
   async fetch(

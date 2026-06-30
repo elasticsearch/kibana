@@ -41,6 +41,7 @@ describe('CompositeHistoricalSummaryClient', () => {
       esClient,
       mockCompositeRepo,
       mockSloRepo,
+      'default',
       mockHistoricalProvider
     );
 

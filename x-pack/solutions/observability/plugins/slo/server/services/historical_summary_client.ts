@@ -49,7 +49,7 @@ interface DailyAggBucket {
 }
 
 export class HistoricalSummaryClient {
-  constructor(private esClient: ElasticsearchClient) {}
+  constructor(private esClient: ElasticsearchClient, private spaceId: string) {}
 
   async fetch(params: FetchHistoricalSummaryParams): Promise<FetchHistoricalSummaryResponse> {
     const dateRangeBySlo = params.list.reduce<
@@ -74,6 +74,7 @@ export class HistoricalSummaryClient {
           timeWindow,
           budgetingMethod,
           dateRange: dateRangeBySlo[sloId],
+          spaceId: this.spaceId,
         }),
       ]
     );
@@ -273,6 +274,7 @@ function generateSearchQuery({
   dateRange,
   timeWindow,
   budgetingMethod,
+  spaceId,
 }: {
   instanceId: string;
   sloId: string;
@@ -281,6 +283,7 @@ function generateSearchQuery({
   dateRange: { range: DateRange; queryRange: DateRange };
   timeWindow: TimeWindow;
   budgetingMethod: BudgetingMethod;
+  spaceId: string;
 }): SearchSearchRequestBody {
   const unit = toMomentUnitOfTime(timeWindow.duration.unit);
   const timeWindowDurationInDays = moment.duration(timeWindow.duration.value, unit).asDays();
@@ -302,6 +305,7 @@ function generateSearchQuery({
     query: {
       bool: {
         filter: [
+          { term: { spaceId } },
           { term: { 'slo.id': sloId } },
           { term: { 'slo.revision': revision } },
           {
