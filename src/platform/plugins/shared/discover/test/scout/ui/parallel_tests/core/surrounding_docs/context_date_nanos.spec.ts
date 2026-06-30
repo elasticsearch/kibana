@@ -8,13 +8,12 @@
  */
 
 import { expect } from '@kbn/scout/ui';
-import { tags } from '@kbn/scout';
 import { spaceTest, testData, resolveDataViewId } from '../../../fixtures/surrounding_docs';
 
 const TEST_DEFAULT_CONTEXT_SIZE = 1;
 const TEST_STEP_SIZE = 3;
 
-spaceTest.describe('Discover context - date_nanos', { tag: tags.stateful.classic }, () => {
+spaceTest.describe('Discover context - date_nanos', { tag: '@local-stateful-classic' }, () => {
   let dataViewId: string;
 
   spaceTest.beforeAll(async ({ scoutSpace }) => {

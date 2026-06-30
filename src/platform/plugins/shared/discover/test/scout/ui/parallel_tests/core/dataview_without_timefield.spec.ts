@@ -11,10 +11,10 @@
  * Tests for timepicker and data view switching behavior.
  */
 
-import { spaceTest, tags } from '@kbn/scout';
+import { spaceTest } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 
-spaceTest.describe('Data view without timefield', { tag: tags.stateful.classic }, () => {
+spaceTest.describe('Data view without timefield', { tag: '@local-stateful-classic' }, () => {
   spaceTest.beforeAll(async ({ scoutSpace }) => {
     // Load Kibana saved objects (3 data views: with and without time fields)
     await scoutSpace.savedObjects.load(

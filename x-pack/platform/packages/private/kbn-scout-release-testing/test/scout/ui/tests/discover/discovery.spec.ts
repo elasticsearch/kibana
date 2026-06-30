@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { test, tags } from '@kbn/scout';
+import { test } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 import fs from 'fs';
 import os from 'os';
@@ -31,7 +31,7 @@ const queryName2 = 'Query # 2';
 const queryName3 = 'CSV Export Test';
 let downloadedFilePath: string | null = null;
 
-test.describe('Discover app', { tag: tags.stateful.classic }, () => {
+test.describe('Discover app', { tag: '@local-stateful-classic' }, () => {
   test.beforeAll(async ({ kbnClient }) => {
     await kbnClient.uiSettings.update(defaultSettings);
   });

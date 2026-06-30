@@ -8,7 +8,6 @@
  */
 
 import { expect } from '@kbn/scout/ui';
-import { tags } from '@kbn/scout';
 import {
   spaceTest,
   testData,
@@ -16,7 +15,7 @@ import {
   navigateToFirstDocContext,
 } from '../../../fixtures/surrounding_docs';
 
-spaceTest.describe('Discover context - accessibility', { tag: tags.stateful.classic }, () => {
+spaceTest.describe('Discover context - accessibility', { tag: '@local-stateful-classic' }, () => {
   spaceTest.beforeAll(async ({ scoutSpace }) => {
     await scoutSpace.savedObjects.load(testData.KBN_ARCHIVE_VISUALIZE);
     await scoutSpace.uiSettings.setDefaultIndex(testData.LOGSTASH_DATA_VIEW);
