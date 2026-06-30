@@ -13,14 +13,15 @@ import { ToolType } from '@kbn/agent-builder-common';
 import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import { OBSERVABILITY_SLO_ATTACHMENT_TYPE_ID } from '../../common';
 import type { ObservabilityAgentBuilderDataRegistry } from '../data_registry/data_registry';
+import { MAX_SHORT_STRING_LENGTH } from '../utils/schema_limits';
 import { observabilityAttachmentDataSchema } from './observability_attachment_data_schema';
 
 const GET_SLO_DETAILS_TOOL_ID = 'get_slo_details';
 
 const sloDataSchema = observabilityAttachmentDataSchema.extend({
-  sloId: z.string(),
-  sloInstanceId: z.string().optional(),
-  remoteName: z.string().optional(),
+  sloId: z.string().max(MAX_SHORT_STRING_LENGTH),
+  sloInstanceId: z.string().max(MAX_SHORT_STRING_LENGTH).optional(),
+  remoteName: z.string().max(MAX_SHORT_STRING_LENGTH).optional(),
 });
 
 export type SloAttachmentData = z.infer<typeof sloDataSchema>;

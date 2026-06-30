@@ -12,14 +12,15 @@ import { ToolResultType, ToolType } from '@kbn/agent-builder-common';
 import type { AttachmentTypeDefinition } from '@kbn/agent-builder-server/attachments';
 import { OBSERVABILITY_HOST_ATTACHMENT_TYPE_ID } from '../../common';
 import type { ObservabilityAgentBuilderDataRegistry } from '../data_registry/data_registry';
+import { MAX_SHORT_STRING_LENGTH } from '../utils/schema_limits';
 import { observabilityAttachmentDataSchema } from './observability_attachment_data_schema';
 
 const GET_HOST_DETAILS_TOOL_ID = 'get_host_details';
 
 const hostDataSchema = observabilityAttachmentDataSchema.extend({
-  hostName: z.string(),
-  start: z.string(),
-  end: z.string(),
+  hostName: z.string().max(MAX_SHORT_STRING_LENGTH),
+  start: z.string().max(MAX_SHORT_STRING_LENGTH),
+  end: z.string().max(MAX_SHORT_STRING_LENGTH),
 });
 
 export type HostAttachmentData = z.infer<typeof hostDataSchema>;

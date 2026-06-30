@@ -10,11 +10,12 @@ import dedent from 'dedent';
 import type { Attachment } from '@kbn/agent-builder-common/attachments';
 import type { AttachmentTypeDefinition } from '@kbn/agent-builder-server/attachments';
 import { OBSERVABILITY_AI_INSIGHT_ATTACHMENT_TYPE_ID } from '../../common';
+import { MAX_TEXT_LENGTH } from '../utils/schema_limits';
 import { observabilityAttachmentDataSchema } from './observability_attachment_data_schema';
 
 const aiInsightAttachmentDataSchema = observabilityAttachmentDataSchema.extend({
-  summary: z.string(),
-  context: z.string(),
+  summary: z.string().max(MAX_TEXT_LENGTH),
+  context: z.string().max(MAX_TEXT_LENGTH),
 });
 
 type AiInsightAttachmentData = z.infer<typeof aiInsightAttachmentDataSchema>;

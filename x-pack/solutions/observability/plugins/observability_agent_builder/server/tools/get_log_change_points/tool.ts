@@ -16,6 +16,11 @@ import type {
 } from '../../types';
 import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
 import { timeRangeSchemaRequired } from '../../utils/tool_schemas';
+import {
+  MAX_INDEX_PATTERN_LENGTH,
+  MAX_KQL_FILTER_LENGTH,
+  MAX_SHORT_STRING_LENGTH,
+} from '../../utils/schema_limits';
 import { getLogsIndices } from '../../utils/get_logs_indices';
 import { getToolHandler } from './handler';
 
@@ -23,15 +28,21 @@ export const OBSERVABILITY_GET_LOG_CHANGE_POINTS_TOOL_ID = 'observability.get_lo
 
 const getLogChangePointsSchema = z.object({
   ...timeRangeSchemaRequired,
-  index: z.string().describe('The index or index pattern to find the logs').optional(),
+  index: z
+    .string()
+    .max(MAX_INDEX_PATTERN_LENGTH)
+    .describe('The index or index pattern to find the logs')
+    .optional(),
   kqlFilter: z
     .string()
+    .max(MAX_KQL_FILTER_LENGTH)
     .describe(
       "A KQL query to filter the log documents. Examples: 'log.level: error', 'service.name: \"my-service\"'."
     )
     .optional(),
   messageField: z
     .string()
+    .max(MAX_SHORT_STRING_LENGTH)
     .default('message')
     .describe(
       'The unstructured text field to run the categorize_text aggregation on. This groups similar logs into patterns.'

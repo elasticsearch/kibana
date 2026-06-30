@@ -16,6 +16,11 @@ import type {
   ObservabilityAgentBuilderPluginSetupDependencies,
 } from '../../types';
 import { timeRangeSchemaOptional, indexDescription } from '../../utils/tool_schemas';
+import {
+  MAX_INDEX_PATTERN_LENGTH,
+  MAX_KQL_FILTER_LENGTH,
+  MAX_SHORT_STRING_LENGTH,
+} from '../../utils/schema_limits';
 import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
 import { getToolHandler } from './handler';
 import { OBSERVABILITY_GET_TRACES_TOOL_ID } from '../get_traces/tool';
@@ -34,9 +39,10 @@ export const OBSERVABILITY_GET_LOG_GROUPS_TOOL_ID = 'observability.get_log_group
 
 const getLogsSchema = z.object({
   ...timeRangeSchemaOptional(DEFAULT_TIME_RANGE),
-  index: z.string().describe(indexDescription).optional(),
+  index: z.string().max(MAX_INDEX_PATTERN_LENGTH).describe(indexDescription).optional(),
   kqlFilter: z
     .string()
+    .max(MAX_KQL_FILTER_LENGTH)
     .optional()
     .describe(
       dedent`A KQL query to filter logs and exceptions. Examples:
@@ -46,7 +52,7 @@ const getLogsSchema = z.object({
         - 'service.environment: "production" AND error.exception.handled: false'`
     ),
   fields: z
-    .array(z.string())
+    .array(z.string().max(MAX_SHORT_STRING_LENGTH))
     .default([])
     .describe(
       'Additional fields to return for each log group sample. Common fields like @timestamp, message, service.name, trace.id, and error fields are included by default.'

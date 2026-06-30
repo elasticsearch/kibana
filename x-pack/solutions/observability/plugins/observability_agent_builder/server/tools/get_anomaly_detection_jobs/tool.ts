@@ -17,6 +17,7 @@ import type {
   ObservabilityAgentBuilderPluginSetupDependencies,
 } from '../../types';
 import { timeRangeSchemaOptional } from '../../utils/tool_schemas';
+import { MAX_KQL_FILTER_LENGTH, MAX_SHORT_STRING_LENGTH } from '../../utils/schema_limits';
 import { getToolHandler } from './handler';
 
 export const OBSERVABILITY_GET_ANOMALY_DETECTION_JOBS_TOOL_ID =
@@ -42,10 +43,11 @@ export interface GetAnomalyDetectionJobsToolResult {
 const getAnomalyDetectionJobsSchema = z.object({
   group: z
     .string()
+    .max(MAX_SHORT_STRING_LENGTH)
     .optional()
     .describe('Filter jobs by ML job group name (e.g., "apm", "network").'),
   jobIds: z
-    .array(z.string().min(1))
+    .array(z.string().min(1).max(MAX_SHORT_STRING_LENGTH))
     .min(1)
     .max(20)
     .optional()
@@ -82,6 +84,7 @@ const getAnomalyDetectionJobsSchema = z.object({
     ),
   influencerFilter: z
     .string()
+    .max(MAX_KQL_FILTER_LENGTH)
     .optional()
     .describe(
       'Filter anomalies by influencer fields using KQL syntax. Influencer fields are entity fields like service.name, host.name, kubernetes.pod.name, etc. Examples: \'service.name: "frontend"\', \'service.name: "frontend" AND host.name: "server-1"\', \'NOT host.name: "server-3"\'.'

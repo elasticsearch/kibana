@@ -13,14 +13,15 @@ import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { AttachmentTypeDefinition } from '@kbn/agent-builder-server/attachments';
 import { OBSERVABILITY_MONITOR_ATTACHMENT_TYPE_ID } from '../../common';
 import type { ObservabilityAgentBuilderDataRegistry } from '../data_registry/data_registry';
+import { MAX_SHORT_STRING_LENGTH } from '../utils/schema_limits';
 import { observabilityAttachmentDataSchema } from './observability_attachment_data_schema';
 
 const GET_MONITOR_DETAILS_TOOL_ID = 'get_monitor_details';
 
 const monitorDataSchema = observabilityAttachmentDataSchema.extend({
-  configId: z.string(),
-  monitorName: z.string(),
-  monitorType: z.string(),
+  configId: z.string().max(MAX_SHORT_STRING_LENGTH),
+  monitorName: z.string().max(MAX_SHORT_STRING_LENGTH),
+  monitorType: z.string().max(MAX_SHORT_STRING_LENGTH),
 });
 
 export type MonitorAttachmentData = z.infer<typeof monitorDataSchema>;

@@ -13,6 +13,11 @@ import type { CoreSetup, Logger } from '@kbn/core/server';
 import dedent from 'dedent';
 import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
 import { timeRangeSchemaOptional } from '../../utils/tool_schemas';
+import {
+  MAX_INDEX_PATTERN_LENGTH,
+  MAX_KQL_FILTER_LENGTH,
+  MAX_SHORT_STRING_LENGTH,
+} from '../../utils/schema_limits';
 import type {
   ObservabilityAgentBuilderPluginSetupDependencies,
   ObservabilityAgentBuilderPluginStart,
@@ -33,12 +38,13 @@ const getIndexInfoSchema = z.object({
   ),
   index: z
     .string()
+    .max(MAX_INDEX_PATTERN_LENGTH)
     .optional()
     .describe(
       'Index pattern. Examples: "logs-*", "metrics-*". Required for "list-fields" and "get-field-values".'
     ),
   fields: z
-    .array(z.string())
+    .array(z.string().max(MAX_SHORT_STRING_LENGTH))
     .max(10)
     .optional()
     .describe(
@@ -47,10 +53,12 @@ const getIndexInfoSchema = z.object({
   ...timeRangeSchemaOptional({ start: 'now-24h', end: 'now' }),
   kqlFilter: z
     .string()
+    .max(MAX_KQL_FILTER_LENGTH)
     .optional()
     .describe('KQL filter to scope field discovery. Examples: \'service.name: "checkout"\'.'),
   intent: z
     .string()
+    .max(MAX_SHORT_STRING_LENGTH)
     .optional()
     .describe(
       'Investigation focus to filter relevant fields. Examples: "memory issues", "high latency".'

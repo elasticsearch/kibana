@@ -12,18 +12,19 @@ import { ToolResultType, ToolType } from '@kbn/agent-builder-common';
 import type { AttachmentTypeDefinition } from '@kbn/agent-builder-server/attachments';
 import { OBSERVABILITY_TRANSACTION_ATTACHMENT_TYPE_ID } from '../../common';
 import type { ObservabilityAgentBuilderDataRegistry } from '../data_registry/data_registry';
+import { MAX_SHORT_STRING_LENGTH } from '../utils/schema_limits';
 import { observabilityAttachmentDataSchema } from './observability_attachment_data_schema';
 
 const GET_TRANSACTION_DETAILS_TOOL_ID = 'get_transaction_details';
 
 const transactionDataSchema = observabilityAttachmentDataSchema.extend({
-  serviceName: z.string(),
-  transactionName: z.string(),
-  transactionType: z.string(),
-  traceId: z.string().optional(),
-  transactionId: z.string().optional(),
-  start: z.string(),
-  end: z.string(),
+  serviceName: z.string().max(MAX_SHORT_STRING_LENGTH),
+  transactionName: z.string().max(MAX_SHORT_STRING_LENGTH),
+  transactionType: z.string().max(MAX_SHORT_STRING_LENGTH),
+  traceId: z.string().max(MAX_SHORT_STRING_LENGTH).optional(),
+  transactionId: z.string().max(MAX_SHORT_STRING_LENGTH).optional(),
+  start: z.string().max(MAX_SHORT_STRING_LENGTH),
+  end: z.string().max(MAX_SHORT_STRING_LENGTH),
 });
 
 export type TransactionAttachmentData = z.infer<typeof transactionDataSchema>;

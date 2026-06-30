@@ -13,6 +13,7 @@ import type { Logger } from '@kbn/core/server';
 import type { ObservabilityAgentBuilderCoreSetup } from '../../types';
 import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
 import { timeRangeSchemaOptional } from '../../utils/tool_schemas';
+import { MAX_KQL_FILTER_LENGTH, MAX_SHORT_STRING_LENGTH } from '../../utils/schema_limits';
 import { getToolHandler } from './handler';
 
 export const OBSERVABILITY_GET_ALERTS_TOOL_ID = 'observability.get_alerts';
@@ -55,6 +56,7 @@ const getAlertsSchema = z.object({
   ...timeRangeSchemaOptional(DEFAULT_TIME_RANGE),
   kqlFilter: z
     .string()
+    .max(MAX_KQL_FILTER_LENGTH)
     .optional()
     .describe(
       'KQL filter to narrow down alerts. Examples: \'service.name: "frontend"\', \'kibana.alert.rule.name: "High CPU"\'.'
@@ -64,7 +66,7 @@ const getAlertsSchema = z.object({
     .default(false)
     .describe('Whether to include recovered/closed alerts alongside active ones.'),
   fields: z
-    .array(z.string())
+    .array(z.string().max(MAX_SHORT_STRING_LENGTH))
     .optional()
     .describe(
       'Fields to include in the alert documents. Use to request specific fields like "error.message" or "url.full".'

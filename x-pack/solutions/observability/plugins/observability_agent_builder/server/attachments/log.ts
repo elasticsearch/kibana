@@ -14,13 +14,14 @@ import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { ObservabilityAgentBuilderCoreSetup } from '../types';
 import { OBSERVABILITY_LOG_ATTACHMENT_TYPE_ID } from '../../common';
 import { getLogDocumentById } from '../routes/ai_insights/get_log_document_by_id';
+import { MAX_INDEX_PATTERN_LENGTH, MAX_SHORT_STRING_LENGTH } from '../utils/schema_limits';
 import { observabilityAttachmentDataSchema } from './observability_attachment_data_schema';
 
 const GET_LOG_DOCUMENT_TOOL_ID = 'get_log_document';
 
 const logDataSchema = observabilityAttachmentDataSchema.extend({
-  id: z.string(),
-  index: z.string(),
+  id: z.string().max(MAX_SHORT_STRING_LENGTH),
+  index: z.string().max(MAX_INDEX_PATTERN_LENGTH),
 });
 
 export type LogAttachmentData = z.infer<typeof logDataSchema>;

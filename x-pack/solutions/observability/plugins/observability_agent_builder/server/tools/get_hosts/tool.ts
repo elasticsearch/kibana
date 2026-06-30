@@ -17,6 +17,7 @@ import type {
 import type { Logger } from '@kbn/core/server';
 import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
 import { timeRangeSchemaOptional } from '../../utils/tool_schemas';
+import { MAX_KQL_FILTER_LENGTH } from '../../utils/schema_limits';
 import type { ObservabilityAgentBuilderCoreSetup } from '../../types';
 import type { ObservabilityAgentBuilderDataRegistry } from '../../data_registry/data_registry';
 import { getToolHandler } from './handler';
@@ -42,6 +43,7 @@ const getHostsSchema = z.object({
   limit: z.number().int().min(1).max(100).default(20).describe(`Maximum number of hosts to return`),
   kqlFilter: z
     .string()
+    .max(MAX_KQL_FILTER_LENGTH)
     .optional()
     .describe(
       'KQL filter to narrow down results. Examples: "service.name: frontend", "host.name: web-*", "cloud.provider: aws".'

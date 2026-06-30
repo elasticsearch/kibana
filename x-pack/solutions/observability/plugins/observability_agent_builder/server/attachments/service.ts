@@ -12,15 +12,16 @@ import { ToolResultType, ToolType } from '@kbn/agent-builder-common';
 import type { AttachmentTypeDefinition } from '@kbn/agent-builder-server/attachments';
 import { OBSERVABILITY_SERVICE_ATTACHMENT_TYPE_ID } from '../../common';
 import type { ObservabilityAgentBuilderDataRegistry } from '../data_registry/data_registry';
+import { MAX_SHORT_STRING_LENGTH } from '../utils/schema_limits';
 import { observabilityAttachmentDataSchema } from './observability_attachment_data_schema';
 
 const GET_SERVICE_DETAILS_TOOL_ID = 'get_service_details';
 
 const serviceDataSchema = observabilityAttachmentDataSchema.extend({
-  serviceName: z.string(),
-  environment: z.string(),
-  start: z.string(),
-  end: z.string(),
+  serviceName: z.string().max(MAX_SHORT_STRING_LENGTH),
+  environment: z.string().max(MAX_SHORT_STRING_LENGTH),
+  start: z.string().max(MAX_SHORT_STRING_LENGTH),
+  end: z.string().max(MAX_SHORT_STRING_LENGTH),
 });
 
 export type ServiceAttachmentData = z.infer<typeof serviceDataSchema>;
