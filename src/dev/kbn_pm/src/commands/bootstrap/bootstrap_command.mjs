@@ -119,6 +119,20 @@ export const command = {
       log.info('skipping pre-built webpack bundles (--no-prebuilt)');
     }
 
+    if (await areNodeModulesPresent()) {
+      await time('apply node_modules patches', async () => {
+        log.info('applying node_modules patches via patch-package');
+        // The patch-package command is used to apply patches to the node_modules directory.
+        // Add patch files under ./patches using patch-package's package+version naming convention.
+        // Example: patches/example-package+1.2.3.patch
+        await run('node', ['node_modules/.bin/patch-package', '--error-on-fail'], {
+          pipe: !quiet,
+          description: 'patch-package',
+        });
+        log.success('node_modules patches applied');
+      });
+    }
+
     await Promise.all([
       skipPrebuilt
         ? undefined
@@ -136,20 +150,6 @@ export const command = {
       shouldInstall
         ? time('run install scripts', async () => {
             await runInstallScripts(log, { quiet });
-          })
-        : undefined,
-      shouldInstall
-        ? time('apply node_modules patches', async () => {
-            log.info('applying node_modules patches via patch-package');
-            // The patch-package command is used to apply patches to the node_modules directory.
-            // At the time of writing, the following packages are patched:
-            // - zod@4.3.6 => memory regression introduced in 4.x (see https://github.com/colinhacks/zod/issues/5760)
-            // The libraries above should not be updated, as doing so would break the patches.
-            await run('node', ['node_modules/.bin/patch-package', '--error-on-fail'], {
-              pipe: !quiet,
-              description: 'patch-package',
-            });
-            log.success('node_modules patches applied');
           })
         : undefined,
     ]);

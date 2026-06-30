@@ -62,6 +62,9 @@ export const IGNORE_PATTERNS = [
   // filename must match upstream filenames from lodash
   'src/platform/packages/shared/kbn-safer-lodash-set/**/*',
 
+  // patch-package files must use package+version naming convention
+  'patches/*.patch',
+
   // ES|QL antlr tools
   `**/*.g4`,
 

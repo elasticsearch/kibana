@@ -1,0 +1,20 @@
+diff --git a/node_modules/node-fetch/lib/index.js b/node_modules/node-fetch/lib/index.js
+index 567ff5d..c05f76e 100644
+--- a/node_modules/node-fetch/lib/index.js
++++ b/node_modules/node-fetch/lib/index.js
+@@ -1738,13 +1738,9 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
+ 
+ 		if (headers['transfer-encoding'] === 'chunked' && !headers['content-length']) {
+ 			response.once('close', function (hadError) {
+-				// tests for socket presence, as in some situations the
+-				// the 'socket' event is not triggered for the request
+-				// (happens in deno), avoids `TypeError`
+-				// if a data listener is still present we didn't end cleanly
+-				const hasDataListener = socket && socket.listenerCount('data') > 0;
++				const didNotComplete = response.complete === false;
+ 
+-				if (hasDataListener && !hadError) {
++				if (didNotComplete && !hadError) {
+ 					const err = new Error('Premature close');
+ 					err.code = 'ERR_STREAM_PREMATURE_CLOSE';
+ 					errorCallback(err);
