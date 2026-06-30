@@ -7,8 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import path from 'path';
 import { parse as yamlLoad } from 'yaml';
 import { FIPS_GH_LABELS, FIPS_VERSION } from '#pipeline-utils/pr_labels';
+
+const REPO_ROOT = path.resolve(__dirname, '../../../..');
+const ORIGINAL_CWD = process.cwd();
 
 const mockAreChangesSkippable = jest.fn();
 const mockDoAnyChangesMatch = jest.fn();
@@ -69,6 +73,7 @@ describe('pull_request pipeline generation', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     jest.resetModules();
+    process.chdir(REPO_ROOT);
     process.env = { ...ORIGINAL_ENV };
 
     delete process.env.GITHUB_PR_LABELS;
@@ -84,6 +89,7 @@ describe('pull_request pipeline generation', () => {
   });
 
   afterEach(() => {
+    process.chdir(ORIGINAL_CWD);
     jest.restoreAllMocks();
   });
 
@@ -119,6 +125,19 @@ describe('pull_request pipeline generation', () => {
     const parsed = yamlLoad(output) as Record<string, unknown>;
     expect(parsed).toHaveProperty('steps');
     expect(output).toContain('renovate.sh');
+  });
+
+  it('includes the warm-start memory bench step for non-skipped PRs', async () => {
+    const emitted = waitForEmission();
+
+    await importPipelineModule();
+    const output = await emitted;
+
+    expect(output).toContain('warm_start_memory_bench');
+    expect(output).toContain('warm_start_memory_bench.sh');
+    expect(output).toContain('soft_fail: true');
+    expect(output).toContain('depends_on');
+    expect(output).toContain('build');
   });
 
   it('waits for pre-build then emits valid YAML with base pipeline structure', async () => {

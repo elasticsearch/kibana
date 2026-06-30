@@ -1,0 +1,13 @@
+steps:
+  - command: .buildkite/scripts/steps/warm_start_memory_bench.sh
+    label: 'Warm-start memory bench'
+    key: warm_start_memory_bench
+    agents:
+      machineType: c4d-standard-16
+      diskType: hyperdisk-balanced
+      zones: us-central1-c,us-central1-a
+      diskSizeGb: 200
+    depends_on:
+      - build
+    timeout_in_minutes: 120
+    soft_fail: true
