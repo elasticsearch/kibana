@@ -12,3 +12,17 @@ steps:
         SERVICE: kibana
         CHECK_SYNTHETICS: true
         CHECK_SYNTHETICS_TAG: serverless-platform-core-validation
+
+  - label: ':lock: Entity Store serverless synthetic monitor'
+    trigger: 'serverless-quality-gates'
+    build:
+      message: '${BUILDKITE_MESSAGE} (triggered by pipeline.tests-qa.yaml)'
+      env:
+        TARGET_ENV: qa
+        CHECK_SYNTHETICS: true
+        CHECK_SYNTHETICS_TAG: 'entity-store-serverless'
+        CHECK_SYNTHETICS_MINIMUM_RUNS: 1
+        MAX_FAILURES: 1
+        CHECK_SYNTHETICS_MAX_POLL: 50
+        DEPLOYMENT_SLICES: ${DEPLOYMENT_SLICES:-""}
+    soft_fail: true
