@@ -50,18 +50,26 @@ export default ({ getService }: FtrProviderContext) => {
         });
       });
 
-      // TODO: see https://github.com/elastic/kibana/pull/243499
-      it.skip('should return correct schedules for the specified page', async () => {
+      it('should return correct schedules for the specified page', async () => {
         const schedulesCount = 5;
         await createAttackDiscoverySchedules({ count: schedulesCount, supertest });
 
         const apis = getAttackDiscoverySchedulesApis({ supertest });
-        const allSchedules = await apis.find({ query: {} });
 
-        const results = await apis.find({ query: { page: 1, per_page: 2 } });
+        // Fetch all schedules with a stable sort to establish expected order
+        const allSchedules = await apis.find({
+          query: { sort_field: 'name', sort_direction: 'asc' },
+        });
+
+        // page: 1 (0-based) with per_page: 2 returns the second page (indices 2-3)
+        const results = await apis.find({
+          query: { page: 1, per_page: 2, sort_field: 'name', sort_direction: 'asc' },
+        });
         expect(results).toEqual({
-          data: expect.arrayContaining(allSchedules.data.slice(2, 4)),
+          data: allSchedules.data.slice(2, 4),
           total: schedulesCount,
+          page: 1,
+          per_page: 2,
         });
       });
 
