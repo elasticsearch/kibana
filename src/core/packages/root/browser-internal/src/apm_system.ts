@@ -134,7 +134,7 @@ export class ApmSystem {
      */
     start.application.currentAppId$.subscribe((appId) => {
       if (appId && this.apm) {
-        this.closePageLoadTransaction();
+        this.closePageLoadTransaction(appId);
         this.apm.startTransaction(appId, 'app-change', {
           managed: true,
           canReuse: true,
@@ -157,7 +157,7 @@ export class ApmSystem {
   }
 
   /* Close and clear the page load transaction */
-  private closePageLoadTransaction() {
+  private closePageLoadTransaction(appId: string) {
     if (this.pageLoadTransaction) {
       const loadCounts = this.resourceObserver.getCounts();
       this.pageLoadTransaction.addLabels({
@@ -165,6 +165,7 @@ export class ApmSystem {
         'cached-resources': loadCounts.memory,
       });
       this.resourceObserver.destroy();
+      this.pageLoadTransaction.name = `/app/${appId}`;
       this.pageLoadTransaction.end();
       this.pageLoadTransaction = undefined;
     }
@@ -225,15 +226,15 @@ export class ApmSystem {
   }
 
   /**
-   * Set route-change transaction name to the destination page name taken from
-   * the execution context. Otherwise, all route change transactions would have
-   * default names, like 'Click - span' or 'Click - a' instead of more
+   * Set route-change and page-load transaction names to the destination page name
+   * taken from the execution context. Otherwise, these transactions would have
+   * default names, like 'Click - span' or a raw URL path, instead of more
    * descriptive '/security/rules/:id/edit'.
    */
   private addRouteChangeNormalization(apm: ApmBase) {
     apm.observe('transaction:end', (t) => {
       const executionContext = this.executionContext?.get();
-      if (executionContext && t.type === 'route-change') {
+      if (executionContext && (t.type === 'route-change' || t.type === 'page-load')) {
         const { name, page } = executionContext;
         t.name = `${name} ${page || 'unknown'}`;
       }
