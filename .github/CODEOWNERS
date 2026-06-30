@@ -3649,6 +3649,7 @@ x-pack/solutions/observability/plugins/synthetics/server/saved_objects/synthetic
 /.claude/ @elastic/kibana-tech-leads
 /.agents/skills/ @elastic/kibana-tech-leads
 /.github/agents/ @elastic/kibana-tech-leads @elastic/kibana-operations
+/.github/agents/scout-best-practices-reviewer.md @elastic/kibana-tech-leads @elastic/kibana-operations @elastic/security-engineering-productivity
 
 # Delegate day-to-day edits of currently-existing skills to the QA team without requiring tech lead
 # codeowner review. Any new skill directory will fall back to the `/.agent/skills/` rule above.
@@ -3688,6 +3689,7 @@ x-pack/solutions/observability/plugins/synthetics/server/saved_objects/synthetic
 /.github/workflows/ @elastic/kibana-operations
 /.github/workflows/failed-test-investigator.* @elastic/kibana-operations @elastic/appex-qa
 /.github/workflows/flaky-test-fixer.* @elastic/kibana-operations @elastic/appex-qa
+/.github/workflows/reviewer-scout-security.* @elastic/kibana-operations @elastic/security-engineering-productivity
 /.github/aw/ @elastic/kibana-operations
 /.buildkite/ @elastic/kibana-operations
 /moon.yml @elastic/kibana-operations
