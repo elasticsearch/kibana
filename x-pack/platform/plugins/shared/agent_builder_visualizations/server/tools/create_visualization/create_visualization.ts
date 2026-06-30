@@ -17,11 +17,11 @@ import {
 import { ToolResultType, SupportedChartType } from '@kbn/agent-builder-common/tools/tool_result';
 import {
   buildVisualizationConfig,
+  buildVegaConfig,
   decideVisualizationApproach,
   type VisualizationConfig,
   type VisualizationRenderer,
 } from '@kbn/agent-builder-visualizations-server';
-import { buildVegaConfig } from '@kbn/agent-builder-vega';
 
 /**
  * Pull the prior Lens config out of an existing attachment, when it is a Lens

@@ -4537,10 +4537,6 @@
   version "0.0.0"
   uid ""
 
-"@kbn/agent-builder-vega@link:x-pack/platform/packages/shared/agent-builder/agent-builder-vega":
-  version "0.0.0"
-  uid ""
-
 "@kbn/agent-builder-visualizations-common@link:x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common":
   version "0.0.0"
   uid ""

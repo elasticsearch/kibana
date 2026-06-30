@@ -1,7 +1,0 @@
-{
-  "type": "shared-server",
-  "id": "@kbn/agent-builder-vega",
-  "owner": "@elastic/kibana-presentation",
-  "group": "platform",
-  "visibility": "shared"
-}

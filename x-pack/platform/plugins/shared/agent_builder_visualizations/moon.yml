@@ -22,7 +22,6 @@ dependsOn:
   - '@kbn/agent-builder-browser'
   - '@kbn/agent-builder-common'
   - '@kbn/agent-builder-visualizations-server'
-  - '@kbn/agent-builder-vega'
   - '@kbn/agent-builder-visualizations'
   - '@kbn/agent-builder-visualizations-common'
   - '@kbn/agent-context-layer-plugin'

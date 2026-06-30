@@ -36,8 +36,6 @@
       "@kbn/agent-builder-server/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-server/*"],
       "@kbn/agent-builder-tools-base": ["x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base"],
       "@kbn/agent-builder-tools-base/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base/*"],
-      "@kbn/agent-builder-vega": ["x-pack/platform/packages/shared/agent-builder/agent-builder-vega"],
-      "@kbn/agent-builder-vega/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-vega/*"],
       "@kbn/agent-builder-visualizations": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations"],
       "@kbn/agent-builder-visualizations/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations/*"],
       "@kbn/agent-builder-visualizations-common": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common"],

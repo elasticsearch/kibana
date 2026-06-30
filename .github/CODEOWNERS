@@ -1010,7 +1010,6 @@ x-pack/platform/packages/shared/agent-builder/agent-builder-common @elastic/work
 x-pack/platform/packages/shared/agent-builder/agent-builder-genai-utils @elastic/workchat-eng
 x-pack/platform/packages/shared/agent-builder/agent-builder-server @elastic/workchat-eng
 x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base @elastic/workchat-eng
-x-pack/platform/packages/shared/agent-builder/agent-builder-vega @elastic/kibana-presentation
 x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations @elastic/kibana-presentation
 x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common @elastic/kibana-presentation
 x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-server @elastic/kibana-presentation

@@ -18,3 +18,14 @@ export type {
 } from './visualization/decide_visualization_approach';
 export type { VisualizationConfig } from './visualization/types';
 export { extractTextFromMessage } from './utils/extract_text_from_message';
+
+export {
+  buildVegaConfig,
+  createVegaGraph,
+  normalizeVegaSpec,
+  VEGA_LITE_SCHEMA,
+  escapeVegaFieldReferences,
+  createAuthorVegaSpecPrompt,
+  validateVegaSpec,
+} from './vega';
+export type { BuildVegaConfigParams, BuildVegaConfigResult, VegaValidationResult } from './vega';
