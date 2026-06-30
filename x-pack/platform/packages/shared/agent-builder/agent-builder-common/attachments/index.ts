@@ -28,8 +28,6 @@ export {
   esqlAttachmentDataSchema,
   screenContextAttachmentDataSchema,
   visualizationAttachmentDataSchema,
-  lensVisualizationAttachmentDataSchema,
-  vegaVisualizationAttachmentDataSchema,
   connectorAttachmentDataSchema,
   CONNECTOR_TAG_PREFIX,
   type TextAttachmentData,

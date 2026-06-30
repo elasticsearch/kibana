@@ -106,29 +106,6 @@ export const visualizationTimeRangeSchema = z.object({
   to: z.string(),
 });
 
-export const lensVisualizationAttachmentDataSchema = z.object({
-  // Optional for backwards compatibility: attachments created before the Vega
-  // renderer existed have no `renderer` field and are implicitly Lens.
-  renderer: z.literal('lens').optional(),
-  query: z.string(),
-  visualization: z.record(z.string(), z.unknown()),
-  chart_type: z.string().optional(),
-  esql: z.string(),
-  time_range: visualizationTimeRangeSchema.optional(),
-});
-
-export const vegaVisualizationAttachmentDataSchema = z.object({
-  renderer: z.literal('vega'),
-  query: z.string(),
-  visualization: z.object({
-    /** Serialized, render-ready Vega or Vega-Lite specification. */
-    spec: z.string(),
-  }),
-  chart_type: z.string().optional(),
-  esql: z.string(),
-  time_range: visualizationTimeRangeSchema.optional(),
-});
-
 export const visualizationAttachmentDataSchema = z
   .object({
     // Optional for backwards compatibility: attachments created before the Vega
