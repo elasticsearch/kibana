@@ -54,14 +54,15 @@ export type {
 export {
   discoverSessionApiRequestBodySchema,
   discoverSessionApiResponseSchema,
-  discoverSessionDataSchema,
+  discoverSessionApiDataSchema,
 } from './api/schema';
+export { transformDiscoverSessionIn, transformDiscoverSessionOut } from './api/transforms';
 export type {
   DiscoverSessionApiClassicTab,
   DiscoverSessionApiEsqlTab,
   DiscoverSessionApiResponse,
   DiscoverSessionApiTab,
-  DiscoverSessionData,
+  DiscoverSessionApiData,
 } from './api/schema';
 
 export const plugin = async (context: PluginInitializerContext) => {

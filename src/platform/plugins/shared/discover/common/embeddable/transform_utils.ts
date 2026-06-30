@@ -228,7 +228,10 @@ export function fromStoredTab(
       };
 }
 
-export function toStoredTab(apiTab: DiscoverSessionTab): {
+export function toStoredTab(
+  apiTab: DiscoverSessionTab,
+  options?: { refNamePrefix?: string }
+): {
   state: DiscoverSessionTabAttributes;
   references: SavedObjectReference[];
 } {
@@ -241,7 +244,7 @@ export function toStoredTab(apiTab: DiscoverSessionTab): {
     ...('filters' in apiTab && { filter: toStoredFilters(apiTab.filters) }),
     ...(!isDiscoverSessionEsqlTab(apiTab) && { index: toStoredDataView(apiTab.data_source) }),
   };
-  const [searchSourceFields, references] = extractReferences(searchSourceValues);
+  const [searchSourceFields, references] = extractReferences(searchSourceValues, options);
   const state: DiscoverSessionTabAttributes = {
     ...fromDiscoverSessionPanelOverrides(apiTab),
     sort: toStoredSort(sort),

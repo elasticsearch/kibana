@@ -126,7 +126,7 @@ const discoverSessionApiTabSchema = schema.oneOf([
   discoverSessionEsqlTabSchema,
 ]);
 
-export const discoverSessionDataSchema = schema.object(
+export const discoverSessionApiDataSchema = schema.object(
   {
     title: schema.string({
       minLength: 1,
@@ -157,15 +157,15 @@ export const discoverSessionDataSchema = schema.object(
 
 export const discoverSessionApiResponseSchema = schema.object({
   id: asCodeIdSchema,
-  data: discoverSessionDataSchema,
+  data: discoverSessionApiDataSchema,
   meta: asCodeMetaSchema,
 });
 
 export const discoverSessionApiRequestBodySchema = schema.object({
-  data: discoverSessionDataSchema,
+  data: discoverSessionApiDataSchema,
 });
 
-export type DiscoverSessionData = TypeOf<typeof discoverSessionDataSchema>;
+export type DiscoverSessionApiData = TypeOf<typeof discoverSessionApiDataSchema>;
 export type DiscoverSessionApiResponse = TypeOf<typeof discoverSessionApiResponseSchema>;
 export type DiscoverSessionApiClassicTab = TypeOf<typeof discoverSessionClassicTabSchema>;
 export type DiscoverSessionApiEsqlTab = TypeOf<typeof discoverSessionEsqlTabSchema>;

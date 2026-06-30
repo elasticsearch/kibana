@@ -15,7 +15,7 @@ import { UnifiedHistogramSuggestionType } from '@kbn/discover-utils';
 import {
   discoverSessionApiRequestBodySchema,
   discoverSessionApiResponseSchema,
-  discoverSessionDataSchema,
+  discoverSessionApiDataSchema,
   MAX_BREAKDOWN_FIELD_LENGTH,
   MAX_SESSION_DESCRIPTION_LENGTH,
   MAX_SESSION_TITLE_LENGTH,
@@ -59,9 +59,9 @@ const multiTabSessionData = {
   tabs: [classicTab, esqlTab],
 };
 
-describe('discoverSessionDataSchema', () => {
+describe('discoverSessionApiDataSchema', () => {
   it('validates a classic data view tab', () => {
-    const validated = discoverSessionDataSchema.validate({
+    const validated = discoverSessionApiDataSchema.validate({
       title: 'Classic only',
       tabs: [classicTab],
     });
@@ -75,7 +75,7 @@ describe('discoverSessionDataSchema', () => {
   });
 
   it('validates an ES|QL tab', () => {
-    const validated = discoverSessionDataSchema.validate({
+    const validated = discoverSessionApiDataSchema.validate({
       title: 'ES|QL only',
       tabs: [esqlTab],
     });
@@ -87,14 +87,14 @@ describe('discoverSessionDataSchema', () => {
   });
 
   it('validates a multi-tab session', () => {
-    const validated = discoverSessionDataSchema.validate(multiTabSessionData);
+    const validated = discoverSessionApiDataSchema.validate(multiTabSessionData);
 
     expect(validated.tabs).toHaveLength(2);
     expect(validated.description).toBe('');
   });
 
   it('applies schema defaults for a fully qualified representation', () => {
-    const validated = discoverSessionDataSchema.validate({
+    const validated = discoverSessionApiDataSchema.validate({
       title: 'Defaults',
       tabs: [classicTab],
     });
@@ -110,7 +110,7 @@ describe('discoverSessionDataSchema', () => {
   });
 
   it('validates vis_context with opaque Lens attributes', () => {
-    const validated = discoverSessionDataSchema.validate({
+    const validated = discoverSessionApiDataSchema.validate({
       title: 'With chart',
       tabs: [
         {
@@ -137,7 +137,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects an invalid vis_context suggestion_type', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'Invalid suggestion type',
         tabs: [
           {
@@ -157,7 +157,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects an empty vis_context object (use omission to indicate a cleared chart)', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'Empty vis context',
         tabs: [
           {
@@ -171,7 +171,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects vis_context request_data (inferred from tab fields at runtime)', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'With request_data',
         tabs: [
           {
@@ -199,7 +199,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects legacy stringified control group JSON', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'Invalid controls',
         tabs: [
           {
@@ -213,7 +213,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects legacy flattened control panels map shape', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'Invalid controls map',
         tabs: [
           {
@@ -234,7 +234,7 @@ describe('discoverSessionDataSchema', () => {
   });
 
   it('validates control_panels using the controls group array schema', () => {
-    const validated = discoverSessionDataSchema.validate({
+    const validated = discoverSessionApiDataSchema.validate({
       title: 'With controls',
       tabs: [
         {
@@ -277,7 +277,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects an invalid data source type', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'Bad data source',
         tabs: [
           {
@@ -294,7 +294,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects an unsupported nested data_source shape', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'Nested data source',
         tabs: [
           {
@@ -312,7 +312,7 @@ describe('discoverSessionDataSchema', () => {
 
   it('rejects sessions with no tabs', () => {
     expect(() =>
-      discoverSessionDataSchema.validate({
+      discoverSessionApiDataSchema.validate({
         title: 'Empty',
         tabs: [],
       })
@@ -324,7 +324,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('rejects an empty title', () => {
       expect(() =>
-        discoverSessionDataSchema.validate({
+        discoverSessionApiDataSchema.validate({
           title: '',
           tabs: [classicTab],
         })
@@ -333,7 +333,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('rejects a title that exceeds the max length', () => {
       expect(() =>
-        discoverSessionDataSchema.validate({
+        discoverSessionApiDataSchema.validate({
           title: repeat('a', MAX_SESSION_TITLE_LENGTH + 1),
           tabs: [classicTab],
         })
@@ -341,7 +341,7 @@ describe('discoverSessionDataSchema', () => {
     });
 
     it('accepts a title at the max length', () => {
-      const validated = discoverSessionDataSchema.validate({
+      const validated = discoverSessionApiDataSchema.validate({
         title: repeat('a', MAX_SESSION_TITLE_LENGTH),
         tabs: [classicTab],
       });
@@ -351,7 +351,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('rejects a description that exceeds the max length', () => {
       expect(() =>
-        discoverSessionDataSchema.validate({
+        discoverSessionApiDataSchema.validate({
           title: 'Valid title',
           description: repeat('a', MAX_SESSION_DESCRIPTION_LENGTH + 1),
           tabs: [classicTab],
@@ -360,7 +360,7 @@ describe('discoverSessionDataSchema', () => {
     });
 
     it('accepts a description at the max length', () => {
-      const validated = discoverSessionDataSchema.validate({
+      const validated = discoverSessionApiDataSchema.validate({
         title: 'Valid title',
         description: repeat('a', MAX_SESSION_DESCRIPTION_LENGTH),
         tabs: [classicTab],
@@ -371,7 +371,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('rejects a tab label that exceeds the max length', () => {
       expect(() =>
-        discoverSessionDataSchema.validate({
+        discoverSessionApiDataSchema.validate({
           title: 'Valid title',
           tabs: [
             {
@@ -385,7 +385,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('rejects an unsupported chart_interval option', () => {
       expect(() =>
-        discoverSessionDataSchema.validate({
+        discoverSessionApiDataSchema.validate({
           title: 'Valid title',
           tabs: [
             {
@@ -399,7 +399,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('accepts supported chart_interval options', () => {
       for (const chartInterval of ['auto', 'ms', 's', 'm', 'h', 'd', 'w', 'M', 'y']) {
-        const validated = discoverSessionDataSchema.validate({
+        const validated = discoverSessionApiDataSchema.validate({
           title: 'Valid title',
           tabs: [
             {
@@ -415,7 +415,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('rejects a breakdown_field that exceeds the max length', () => {
       expect(() =>
-        discoverSessionDataSchema.validate({
+        discoverSessionApiDataSchema.validate({
           title: 'Valid title',
           tabs: [
             {
@@ -429,7 +429,7 @@ describe('discoverSessionDataSchema', () => {
 
     it('rejects a vis_context attribute key that exceeds the max length', () => {
       expect(() =>
-        discoverSessionDataSchema.validate({
+        discoverSessionApiDataSchema.validate({
           title: 'Valid title',
           tabs: [
             {
