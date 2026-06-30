@@ -58,7 +58,7 @@ NODE="${DIR}/node/pointer-compression/bin/node"
 {{/forcePointerCompression}}
 test_node
 
-BASE_NODE_OPTIONS="--no-warnings --max-http-header-size=65536"
+BASE_NODE_OPTIONS="--no-warnings --max-http-header-size=65536 --disable-proto=delete"
 if [ "$KBN_DISALLOW_CODE_GEN_FROM_STRINGS" = 'true' ]; then
   BASE_NODE_OPTIONS="$BASE_NODE_OPTIONS --disallow-code-generation-from-strings"
 fi
