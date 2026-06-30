@@ -23,6 +23,7 @@ import { disableRuleRoute } from './rule/apis/disable/disable_rule_route';
 import { enableRuleRoute } from './rule/apis/enable/enable_rule_route';
 import { findRulesRoute } from './rule/apis/find/external/find_rules_route';
 import { findInternalRulesRoute } from './rule/apis/find/internal/find_internal_rules_route';
+import { findMutedAlertInstancesRoute } from './rule/apis/find_muted_alert_instances/find_muted_alert_instances_route';
 import { getRuleAlertSummaryRoute } from './get_rule_alert_summary';
 import { getRuleExecutionLogRoute } from './get_rule_execution_log';
 import { getGlobalExecutionLogRoute } from './get_global_execution_logs';
@@ -136,6 +137,7 @@ export function defineRoutes(opts: RouteOptions) {
   enableRuleRoute(router, licenseState);
   findRulesRoute(router, licenseState, usageCounter);
   findInternalRulesRoute(router, licenseState, usageCounter);
+  findMutedAlertInstancesRoute(router, licenseState);
   getRuleAlertSummaryRoute(router, licenseState);
   getRuleExecutionLogRoute(router, licenseState);
   getRuleExecutionKPIRoute(router, licenseState);

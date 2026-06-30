@@ -8,26 +8,12 @@
 import { apiTest, tags } from '@kbn/scout';
 import { expect } from '@kbn/scout/api';
 import type { EsClient, RoleApiCredentials, ScoutTestConfig } from '@kbn/scout';
-import { COMMON_HEADERS } from '../fixtures/constants';
+import {
+  COMMON_HEADERS,
+  ES_QUERY_RULE_PARAMS,
+  ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED,
+} from '../fixtures/constants';
 import { waitForSuccessfulEventLogEntry } from '../lib/wait_for_successful_event_log';
-
-const ES_QUERY_PARAMS = {
-  index: ['.kibana-event-log-*'],
-  timeField: '@timestamp',
-  esQuery: '{\n  "query":{\n    "match_all" : {}\n  }\n}',
-  size: 100,
-  timeWindowSize: 5,
-  timeWindowUnit: 'm',
-  thresholdComparator: '>',
-  threshold: [0],
-  searchType: 'esQuery',
-  excludeHitsFromPreviousRun: true,
-  aggType: 'count',
-  groupBy: 'all',
-};
-
-// .es-query rule type uses instance ID 'query matched' to identify the alert instance when group by is 'all'
-const ENCODED_ALERT_INSTANCE_ID = 'query%20matched';
 
 /**
  * Returns the feature privilege and rule consumer appropriate for the current
@@ -107,7 +93,7 @@ apiTest.describe(
           consumer,
           schedule: { interval: '1m' },
           enabled: true,
-          params: ES_QUERY_PARAMS,
+          params: ES_QUERY_RULE_PARAMS,
           actions: [
             {
               group: 'query matched',
@@ -147,7 +133,7 @@ apiTest.describe(
       'restricted user (alerting all, no actions) can mute an alert instance',
       async ({ apiClient }) => {
         const response = await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_mute`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_mute`,
           { headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader } }
         );
         expect(response).toHaveStatusCode(204);
@@ -158,7 +144,7 @@ apiTest.describe(
       'restricted user (alerting all, no actions) can unmute an alert instance',
       async ({ apiClient }) => {
         const response = await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_unmute`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_unmute`,
           { headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader } }
         );
         expect(response).toHaveStatusCode(204);
@@ -167,13 +153,13 @@ apiTest.describe(
 
     apiTest('admin can still mute an alert instance (regression)', async ({ apiClient }) => {
       const muteResponse = await apiClient.post(
-        `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_mute`,
+        `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_mute`,
         { headers: { ...COMMON_HEADERS, ...adminCreds.apiKeyHeader } }
       );
       expect(muteResponse).toHaveStatusCode(204);
 
       const unmuteResponse = await apiClient.post(
-        `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_unmute`,
+        `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_unmute`,
         { headers: { ...COMMON_HEADERS, ...adminCreds.apiKeyHeader } }
       );
       expect(unmuteResponse).toHaveStatusCode(204);
@@ -187,11 +173,11 @@ apiTest.describe(
         expect(before.apiKeyOwner).toBeDefined();
 
         await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_mute`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_mute`,
           { headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader } }
         );
         await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_unmute`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_unmute`,
           { headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader } }
         );
 
@@ -328,7 +314,7 @@ apiTest.describe(
       'restricted user (alerting all, no actions) can snooze an alert instance',
       async ({ apiClient }) => {
         const response = await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_snooze`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_snooze`,
           {
             headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader },
             body: { expires_at: '2099-12-31T23:59:59.000Z' },
@@ -343,7 +329,7 @@ apiTest.describe(
       'restricted user (alerting all, no actions) can unsnooze an alert instance',
       async ({ apiClient }) => {
         const response = await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_unsnooze`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_unsnooze`,
           { headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader } }
         );
         expect(response).toHaveStatusCode(204);
@@ -358,7 +344,7 @@ apiTest.describe(
         expect(before.apiKeyOwner).toBeDefined();
 
         await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_snooze`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_snooze`,
           {
             headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader },
             body: { expires_at: '2099-12-31T23:59:59.000Z' },
@@ -366,7 +352,7 @@ apiTest.describe(
           }
         );
         await apiClient.post(
-          `api/alerting/rule/${ruleId}/alert/${ENCODED_ALERT_INSTANCE_ID}/_unsnooze`,
+          `api/alerting/rule/${ruleId}/alert/${ES_QUERY_DEFAULT_INSTANCE_ID_ENCODED}/_unsnooze`,
           { headers: { ...COMMON_HEADERS, ...restrictedCreds.apiKeyHeader } }
         );
 

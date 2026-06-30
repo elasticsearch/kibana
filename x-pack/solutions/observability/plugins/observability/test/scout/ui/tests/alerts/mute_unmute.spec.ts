@@ -158,6 +158,13 @@ test.describe(
           .toBe(0);
       });
 
+      await test.step('renders the muted indicator icon on the muted alert rows', async () => {
+        await alertsTablePage.countForQuery(ruleQuery);
+        await expect
+          .poll(() => alertsTablePage.getVisibleSnoozedBadgeCount(), ASYNC_POLL)
+          .toBe(totalAlerts);
+      });
+
       await test.step('bulk unmutes all selected alerts and shows a success toast', async () => {
         await alertsTablePage.countForQuery(ruleQuery);
         await alertsTablePage.selectAllVisibleAlerts();
@@ -181,6 +188,11 @@ test.describe(
             ASYNC_POLL
           )
           .toBe(0);
+      });
+
+      await test.step('removes the muted indicator icon from the alert rows', async () => {
+        await alertsTablePage.countForQuery(ruleQuery);
+        await expect.poll(() => alertsTablePage.getVisibleSnoozedBadgeCount(), ASYNC_POLL).toBe(0);
       });
     });
   }

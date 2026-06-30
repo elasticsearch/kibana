@@ -54,6 +54,8 @@ import type {
 import { getGlobalExecutionKpiWithAuth, getRuleExecutionKPI } from './methods/get_execution_kpi';
 import type { FindRulesParams } from '../application/rule/methods/find';
 import { findRules } from '../application/rule/methods/find';
+import type { FindMutedAlertsParams } from '../application/rule/methods/find_muted_alerts';
+import { findMutedAlerts } from '../application/rule/methods/find_muted_alerts';
 import type { AggregateParams } from '../application/rule/methods/aggregate/types';
 import { aggregateRules } from '../application/rule/methods/aggregate';
 import type { DeleteRuleParams } from '../application/rule/methods/delete';
@@ -176,6 +178,8 @@ export class RulesClient {
   public delete = (params: DeleteRuleParams) => deleteRule(this.context, params);
   public find = <Params extends RuleTypeParams = never>(params?: FindRulesParams) =>
     findRules<Params>(this.context, params);
+  public findMutedAlerts = (params?: FindMutedAlertsParams) =>
+    findMutedAlerts(this.context, params);
   public get = <Params extends RuleTypeParams = never>(params: GetRuleParams) =>
     getRule<Params>(this.context, params);
   public resolve = <Params extends RuleTypeParams = never>(params: ResolveParams) =>

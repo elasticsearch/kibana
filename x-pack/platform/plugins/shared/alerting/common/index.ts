@@ -207,6 +207,8 @@ export const INTERNAL_ALERTING_SNOOZE_RULE =
   `${INTERNAL_BASE_ALERTING_API_PATH}/rule/{id}/_snooze` as const;
 export const INTERNAL_ALERTING_API_FIND_RULES_PATH =
   `${INTERNAL_BASE_ALERTING_API_PATH}/rules/_find` as const;
+export const INTERNAL_ALERTING_API_FIND_MUTED_ALERT_INSTANCES_PATH =
+  `${INTERNAL_BASE_ALERTING_API_PATH}/rules/_find_muted_alerts` as const;
 
 export const INTERNAL_ALERTING_BACKFILL_API_PATH =
   `${INTERNAL_BASE_ALERTING_API_PATH}/rules/backfill` as const;

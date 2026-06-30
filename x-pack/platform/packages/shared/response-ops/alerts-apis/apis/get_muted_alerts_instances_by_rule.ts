@@ -9,7 +9,7 @@ import type { HttpStart } from '@kbn/core-http-browser';
 import { nodeBuilder } from '@kbn/es-query';
 import type { SnoozedInstance, SnoozeCondition } from '../types';
 
-const INTERNAL_FIND_RULES_URL = '/internal/alerting/rules/_find';
+const INTERNAL_FIND_MUTED_ALERT_INSTANCES_URL = '/internal/alerting/rules/_find_muted_alerts';
 
 interface SnoozedAlertInstanceApiResponse {
   instance_id: string;
@@ -20,14 +20,14 @@ interface SnoozedAlertInstanceApiResponse {
   snoozed_by: string;
 }
 
-export interface Rule {
+export interface MutedAlertRecord {
   id: string;
-  muted_alert_ids: string[];
+  muted_alert_instance_ids: string[];
   snoozed_alert_instances?: SnoozedAlertInstanceApiResponse[];
 }
 
-export interface FindRulesResponse {
-  data: Rule[];
+export interface FindMutedAlertsResponse {
+  data: MutedAlertRecord[];
 }
 
 export interface GetAlertSnoozeStateByRuleParams {
@@ -51,20 +51,22 @@ export const getAlertSnoozeStateByRule = async ({
   signal,
 }: GetAlertSnoozeStateByRuleParams) => {
   const filterNode = nodeBuilder.or(ruleIds.map((id) => nodeBuilder.is('alert.id', `alert:${id}`)));
-  const { data } = await http.post<FindRulesResponse>(INTERNAL_FIND_RULES_URL, {
-    body: JSON.stringify({
-      filter: JSON.stringify(filterNode),
-      fields: ['id', 'mutedInstanceIds', 'snoozedInstances'],
-      page: 1,
-      per_page: ruleIds.length,
-    }),
-    signal,
-  });
+  const { data } = await http.post<FindMutedAlertsResponse>(
+    INTERNAL_FIND_MUTED_ALERT_INSTANCES_URL,
+    {
+      body: JSON.stringify({
+        filter: JSON.stringify(filterNode),
+        page: 1,
+        per_page: ruleIds.length,
+      }),
+      signal,
+    }
+  );
 
   return {
     data: data.map((rule) => ({
       id: rule.id,
-      mutedAlertIds: rule.muted_alert_ids,
+      mutedAlertIds: rule.muted_alert_instance_ids,
       snoozedInstances: (rule.snoozed_alert_instances ?? []).map(transformSnoozedInstance),
     })),
   };

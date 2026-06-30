@@ -262,6 +262,17 @@ export class AlertsTablePage {
   }
 
   /**
+   * Counts the muted/snoozed indicator badges (`bellSlash`) currently rendered
+   * in the table. The badge is shown by the alert status cell for every alert
+   * whose instance id is in the rule's muted/snoozed list, so it reflects the
+   * UI treatment of the muted state rather than the raw `kibana.alert.muted`
+   * field.
+   */
+  async getVisibleSnoozedBadgeCount(): Promise<number> {
+    return this.page.testSubj.locator('alertSnoozedBadge').count();
+  }
+
+  /**
    * Re-runs the query bar with `query` and returns the resulting total alert
    * count. Used to poll for server-side updates that the table only reflects on
    * a fresh search (e.g. the muted field, written via a fire-and-forget
