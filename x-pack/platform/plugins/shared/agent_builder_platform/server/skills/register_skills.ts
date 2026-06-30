@@ -8,12 +8,10 @@
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
 import { agentBuilderTracesSkill } from './agent_builder_traces/agent_builder_traces_skill';
 import { graphCreationSkill } from './graph_creation_skill';
-import { visualizationCreationSkill } from './visualization_creation_skill';
 import { skillAuthoringSkill } from './skill_authoring';
 import { connectorAuthoringSkill } from './connector_authoring';
 
 export const registerSkills = (agentBuilder: AgentBuilderPluginSetup) => {
-  agentBuilder.skills.register(visualizationCreationSkill);
   agentBuilder.skills.register(graphCreationSkill);
   agentBuilder.skills.register(skillAuthoringSkill);
   agentBuilder.skills.register(agentBuilderTracesSkill);

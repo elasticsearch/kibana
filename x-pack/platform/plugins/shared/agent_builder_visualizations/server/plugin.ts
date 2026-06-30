@@ -13,6 +13,9 @@ import type {
   AgentBuilderVisualizationsPluginStart,
 } from './types';
 import { createVisualizationAttachmentType } from './attachment_types';
+import { createVisualizationTool } from './tools/create_visualization';
+import { visualizationCreationSkill } from './skills/visualization_creation_skill';
+import { visualizationSmlType } from './sml_types/visualization';
 
 export class AgentBuilderVisualizationsPlugin
   implements
@@ -37,6 +40,9 @@ export class AgentBuilderVisualizationsPlugin
         typeof setupDeps.agentBuilder.attachments.registerType
       >[0]
     );
+    setupDeps.agentBuilder.tools.register(createVisualizationTool());
+    setupDeps.agentBuilder.skills.register(visualizationCreationSkill);
+    setupDeps.agentContextLayer.registerType(visualizationSmlType);
     return {};
   }
 

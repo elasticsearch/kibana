@@ -22,7 +22,6 @@ import { indexExplorerTool } from './index_explorer';
 import { generateEsqlTool } from './generate_esql';
 import { executeEsqlTool } from './execute_esql';
 import { searchTool } from './search';
-import { createVisualizationTool } from './create_visualization';
 
 export const registerTools = ({
   coreSetup,
@@ -41,7 +40,6 @@ export const registerTools = ({
     getIndexMappingsTool(),
     listIndicesTool(),
     indexExplorerTool(),
-    createVisualizationTool(),
     productDocumentationTool(coreSetup),
     integrationKnowledgeTool(coreSetup),
     casesTool(coreSetup),

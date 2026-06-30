@@ -10,6 +10,7 @@
     "browser": true,
     "requiredPlugins": [
       "agentBuilder",
+      "agentContextLayer",
       "lens",
       "dataViews",
       "uiActions",
