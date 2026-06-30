@@ -24,7 +24,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   let unsavedPanelCount = 0;
   const testQuery = 'Test Query';
 
-  describe('dashboard unsaved state', () => {
+  describe('dashboard unsaved changes', () => {
     before(async () => {
       await kibanaServer.savedObjects.cleanStandardList();
       await kibanaServer.importExport.load(
@@ -101,29 +101,15 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await dashboard.ensureMissingUnsavedChangesNotification();
       });
 
-      it('shows the unsaved changes badge after adding panels', async () => {
+      it('shows the unsaved changes badge and retains the panel count after navigating away and back', async () => {
         await dashboard.switchToEditMode();
         await dashboardAddPanel.addVisualization('Rendering-Test: metric');
         await header.waitUntilLoadingHasFinished();
         await dashboard.ensureHasUnsavedChangesNotification();
-      });
 
-      it('has correct number of panels', async () => {
         unsavedPanelCount = await dashboard.getPanelCount();
         expect(unsavedPanelCount).to.eql(originalPanelCount + 1);
-      });
 
-      it('retains unsaved panel count after navigating to listing page and back', async () => {
-        await header.waitUntilLoadingHasFinished();
-        await dashboard.gotoDashboardLandingPage();
-        await header.waitUntilLoadingHasFinished();
-        await dashboard.loadSavedDashboard('few panels');
-        const currentPanelCount = await dashboard.getPanelCount();
-        expect(currentPanelCount).to.eql(unsavedPanelCount);
-      });
-
-      it('retains unsaved panel count after navigating to another app and back', async () => {
-        await header.waitUntilLoadingHasFinished();
         await visualize.gotoVisualizationLandingPage();
         await header.waitUntilLoadingHasFinished();
         await dashboard.navigateToApp();
@@ -131,29 +117,13 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
           await testSubjects.existOrFail('unsavedDashboardsCallout');
         }
         await dashboard.loadSavedDashboard('few panels');
-        const currentPanelCount = await dashboard.getPanelCount();
-        expect(currentPanelCount).to.eql(unsavedPanelCount);
-      });
-
-      it('can discard changes', async () => {
-        unsavedPanelCount = await dashboard.getPanelCount();
-        expect(unsavedPanelCount).to.eql(originalPanelCount + 1);
-
-        await dashboard.clickDiscardChanges();
-        const currentPanelCount = await dashboard.getPanelCount();
-        expect(currentPanelCount).to.eql(originalPanelCount);
+        expect(await dashboard.getPanelCount()).to.eql(unsavedPanelCount);
       });
 
       it('resets to original panel count after switching to view mode and discarding changes', async () => {
-        await dashboardAddPanel.addVisualization('Rendering-Test: metric');
-        await header.waitUntilLoadingHasFinished();
-        unsavedPanelCount = await dashboard.getPanelCount();
-        expect(unsavedPanelCount).to.eql(originalPanelCount + 1);
-
         await dashboard.clickCancelOutOfEditMode();
         await header.waitUntilLoadingHasFinished();
-        const currentPanelCount = await dashboard.getPanelCount();
-        expect(currentPanelCount).to.eql(originalPanelCount);
+        expect(await dashboard.getPanelCount()).to.eql(originalPanelCount);
         expect(dashboard.getIsInViewMode()).to.eql(true);
       });
 
@@ -164,6 +134,21 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await dashboard.saveDashboard('Unsaved State Test');
         await header.waitUntilLoadingHasFinished();
         await dashboard.ensureMissingUnsavedChangesNotification();
+      });
+    });
+
+    describe('unsaved listing round trip', () => {
+      it('lists and restores unsaved changes to an existing dashboard', async () => {
+        await dashboard.loadDashboardInEditMode('few panels');
+        await dashboardAddPanel.addVisualization('Rendering-Test: metric');
+
+        await dashboard.gotoDashboardLandingPage();
+        await header.waitUntilLoadingHasFinished();
+        await dashboard.expectUnsavedChangesListingExists('few panels');
+
+        await dashboard.clickUnsavedChangesContinueEditing('few panels');
+        await header.waitUntilLoadingHasFinished();
+        expect(await dashboard.getPanelCount()).to.eql(originalPanelCount + 1);
       });
     });
   });

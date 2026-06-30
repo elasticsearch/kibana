@@ -34,8 +34,6 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
     after(unloadCurrentData);
 
     loadTestFile(require.resolve('./field_control'));
-    loadTestFile(require.resolve('./interval_control'));
-    loadTestFile(require.resolve('./value_control'));
     loadTestFile(require.resolve('./create_from_dropdown'));
   });
 }

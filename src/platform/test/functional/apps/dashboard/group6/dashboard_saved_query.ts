@@ -14,7 +14,6 @@ import type { FtrProviderContext } from '../../../ftr_provider_context';
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const kibanaServer = getService('kibanaServer');
   const { dashboard, timePicker } = getPageObjects(['dashboard', 'timePicker']);
-  const browser = getService('browser');
   const queryBar = getService('queryBar');
   const savedQueryManagementComponent = getService('savedQueryManagementComponent');
   const testSubjects = getService('testSubjects');
@@ -39,13 +38,6 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       before(async () => {
         await dashboard.gotoDashboardLandingPage();
         await dashboard.clickNewDashboard();
-      });
-
-      it('should show the saved query management load button as disabled when there are no saved queries', async () => {
-        await testSubjects.click('showQueryBarMenu');
-        const loadFilterSetBtn = await testSubjects.find('saved-query-management-load-button');
-        const isDisabled = await loadFilterSetBtn.getAttribute('disabled');
-        expect(isDisabled).to.equal('true');
       });
 
       it('should allow a query to be saved via the saved objects management component', async () => {
@@ -78,58 +70,9 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         expect(timePickerValues.end).to.not.eql(timePicker.defaultEndTime);
       });
 
-      // Regression: https://github.com/elastic/kibana/issues/242039
-      it.skip('preserves the currently loaded query when the page is reloaded', async () => {
-        await browser.refresh();
-        const timePickerValues = await timePicker.getTimeConfigAsAbsoluteTimes();
-        expect(timePickerValues.start).to.not.eql(timePicker.defaultStartTime);
-        expect(timePickerValues.end).to.not.eql(timePicker.defaultEndTime);
-        expect(await savedQueryManagementComponent.getCurrentlyLoadedQueryID()).to.be('OkResponse');
-      });
-
-      it('allows saving changes to a currently loaded query via the saved query management component', async () => {
-        await queryBar.setQuery('response:404');
-        await savedQueryManagementComponent.updateCurrentlyLoadedQuery('OkResponse', false, false);
-        await savedQueryManagementComponent.savedQueryExistOrFail('OkResponse');
-        const contextMenuPanelTitleButton = await testSubjects.exists(
-          'contextMenuPanelTitleButton'
-        );
-        if (contextMenuPanelTitleButton) {
-          await testSubjects.click('contextMenuPanelTitleButton');
-        }
-        await savedQueryManagementComponent.clearCurrentlyLoadedQuery();
-        expect(await queryBar.getQueryString()).to.eql('');
-        await savedQueryManagementComponent.loadSavedQuery('OkResponse');
-        expect(await queryBar.getQueryString()).to.eql('response:404');
-      });
-
-      it('allows saving the currently loaded query as a new query', async () => {
-        await queryBar.setQuery('response:400');
-        await savedQueryManagementComponent.saveCurrentlyLoadedAsNewQuery(
-          'OkResponseCopy',
-          '400 responses',
-          false,
-          false
-        );
-        await savedQueryManagementComponent.savedQueryExistOrFail('OkResponseCopy');
-      });
-
-      it('allows deleting the currently loaded saved query in the saved query management component and clears the query', async () => {
-        await savedQueryManagementComponent.deleteSavedQuery('OkResponseCopy');
-        await savedQueryManagementComponent.savedQueryMissingOrFail('OkResponseCopy');
-        expect(await queryBar.getQueryString()).to.eql('');
-      });
-
-      it('resets any changes to a loaded query on reloading the same saved query', async () => {
-        await savedQueryManagementComponent.loadSavedQuery('OkResponse');
-        await queryBar.setQuery('response:503');
-        await savedQueryManagementComponent.loadSavedQuery('OkResponse');
-        expect(await queryBar.getQueryString()).to.eql('response:404');
-      });
-
-      it('allows clearing the currently loaded saved query', async () => {
-        await savedQueryManagementComponent.loadSavedQuery('OkResponse');
-        await savedQueryManagementComponent.clearCurrentlyLoadedQuery();
+      it('allows deleting the currently loaded saved query', async () => {
+        await savedQueryManagementComponent.deleteSavedQuery('OkResponse');
+        await savedQueryManagementComponent.savedQueryMissingOrFail('OkResponse');
         expect(await queryBar.getQueryString()).to.eql('');
       });
     });

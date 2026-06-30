@@ -37,8 +37,7 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
     // a fresh index.
     loadTestFile(require.resolve('./embeddable_rendering'));
     loadTestFile(require.resolve('./edit_embeddable_redirects'));
-    loadTestFile(require.resolve('./dashboard_unsaved_state'));
-    loadTestFile(require.resolve('./dashboard_unsaved_listing'));
+    loadTestFile(require.resolve('./dashboard_unsaved_changes'));
     loadTestFile(require.resolve('./edit_visualizations'));
   });
 }

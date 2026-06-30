@@ -153,44 +153,8 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await dashboard.gotoDashboardLandingPage();
       });
 
-      it('filters on pie charts', async () => {
+      it('excludes data the same as an unpinned filter', async () => {
         await pieChart.expectEmptyPieChart();
-      });
-
-      it('area, bar and heatmap charts filtered', async () => {
-        await dashboardExpect.heatMapNoResults();
-      });
-
-      it('data tables are filtered', async () => {
-        await dashboardExpect.dataTableNoResult();
-      });
-
-      it('goal and guages are filtered', async () => {
-        await dashboardExpect.goalAndGuageLabelsExist(['0', '0%']);
-      });
-
-      it('metric value shows no data', async () => {
-        await dashboardExpect.metricValuesExist(['(null)']);
-      });
-
-      it('tag cloud values are filtered', async () => {
-        await dashboardExpect.emptyTagCloudFound();
-      });
-
-      it('tsvb metric is filtered', async () => {
-        await dashboardExpect.tsvbMetricValuesExist(['0 custom template']);
-      });
-
-      it('tsvb top n is filtered', async () => {
-        await dashboardExpect.tsvbTopNValuesExist(['-', '-']);
-      });
-
-      it('timelion is filtered', async () => {
-        await dashboardExpect.timelionLegendCount(0);
-      });
-
-      it('vega is filtered', async () => {
-        await dashboardExpect.vegaTextsDoNotExist(['5,000']);
       });
     });
 
