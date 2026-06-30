@@ -38,13 +38,17 @@ describe('SignificantEventsDiscoveryClient', () => {
       const { client, managementApi } = createClient();
       const request = httpServerMock.createKibanaRequest();
 
-      const result = await client.run({ request, spaceId: 'space-a' });
+      const result = await client.run({
+        request,
+        spaceId: 'space-a',
+        inputs: { agentConnectorId: 'connector-1' },
+      });
 
       expect(result).toEqual({ executionId: 'execution-id', isNew: true });
       expect(managementApi.runWorkflow).toHaveBeenCalledWith(
         expect.objectContaining({ id: SIGEVENTS_ORCHESTRATOR_WORKFLOW_ID }),
         'space-a',
-        {},
+        { agentConnectorId: 'connector-1' },
         request
       );
     });
@@ -59,6 +63,7 @@ describe('SignificantEventsDiscoveryClient', () => {
       const result = await client.run({
         request: httpServerMock.createKibanaRequest(),
         spaceId: 'space-a',
+        inputs: { agentConnectorId: 'connector-1' },
       });
 
       expect(result).toEqual({ executionId: 'execution-id', isNew: true });
@@ -75,6 +80,7 @@ describe('SignificantEventsDiscoveryClient', () => {
       const result = await client.run({
         request: httpServerMock.createKibanaRequest(),
         spaceId: 'space-a',
+        inputs: { agentConnectorId: 'connector-1' },
       });
 
       expect(result).toEqual({ executionId: 'in-flight', isNew: false });

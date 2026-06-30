@@ -7,7 +7,7 @@
 
 import { run } from '@kbn/dev-cli-runner';
 import { Client } from '@elastic/elasticsearch';
-import type { Feature } from '@kbn/significant-events-schema';
+import type { Discovery, Feature } from '@kbn/significant-events-schema';
 import {
   SIGEVENTS_SNAPSHOT_RUN,
   replaySignificantEventsSnapshot,
@@ -73,6 +73,44 @@ const formatFeature = (feature: Feature): string[] => {
   if (feature.filter) {
     lines.push(`    filter: ${JSON.stringify(feature.filter)}`);
   }
+  return lines;
+};
+
+const formatDiscovery = (discovery: Discovery): string[] => {
+  const lines: string[] = [];
+  lines.push(
+    `  [${discovery.kind}] ${discovery.discovery_slug} — ${discovery.title ?? '(untitled)'}`
+  );
+  lines.push(`    summary: ${discovery.summary}`);
+  lines.push(`    root cause: ${discovery.root_cause}`);
+
+  if (discovery.evidences?.length) {
+    lines.push(`    evidence (${discovery.evidences.length}):`);
+    for (const e of discovery.evidences.slice(0, 5)) {
+      lines.push(`      - rule: ${e.rule_name} `);
+      lines.push(`      - query: ${e.esql_query}`);
+      lines.push(`      - description: ${e.description}`);
+      lines.push(`      - result: ${e.result}`);
+    }
+    if (discovery.evidences.length > 5) {
+      lines.push(`      ... and ${discovery.evidences.length - 5} more`);
+    }
+  }
+
+  if (discovery.cause_kis?.length) {
+    lines.push(`    cause kis: (${discovery.cause_kis.length}):`);
+    for (const ki of discovery.cause_kis.slice(0, 5)) {
+      lines.push(`      - ${ki.name}`);
+    }
+  }
+
+  if (discovery.dependency_edges?.length) {
+    lines.push(`    dependency edges: (${discovery.dependency_edges.length}):`);
+    for (const edge of discovery.dependency_edges.slice(0, 5)) {
+      lines.push(`      - ${edge.source} -> ${edge.target}: ${edge.exposure}`);
+    }
+  }
+
   return lines;
 };
 
@@ -230,9 +268,9 @@ run(
     log.info(`\nSnapshot discoveries (${discoveries.length}):`);
     if (discoveries.length > 0) {
       for (const discovery of discoveries) {
-        log.info(
-          `  [${discovery.kind}] ${discovery.discovery_slug} — ${discovery.title ?? '(untitled)'}`
-        );
+        for (const line of formatDiscovery(discovery)) {
+          log.info(line);
+        }
       }
     } else {
       log.info('  (none — snapshot taken without --discovery)');

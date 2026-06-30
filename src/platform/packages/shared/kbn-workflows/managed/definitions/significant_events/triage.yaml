@@ -23,9 +23,14 @@ triggers:
         description: 'Lookback window for active discoveries. Should match .significant_events-discoveries retention.'
       - name: discoveryBatchMax
         type: number
-        default: 5
+        default: 10
         required: false
-        description: 'Max discoveries per judge invocation. Caps agent message size; remaining discoveries are picked up on the next cycle.'
+        description: "Max discoveries per judge invocation. Caps agent message size; remaining discoveries are picked up on the next cycle."
+      - name: agentConnectorId
+        type: string
+        default: ".anthropic-claude-4.6-sonnet-chat_completion"
+        required: false
+        description: "Connector ID for the judge agent."
 
 consts:
   DISCOVERIES_INDEX: '.significant_events-discoveries'
@@ -120,12 +125,9 @@ steps:
   # Step 4: Judge — evaluate unreviewed discoveries and quiet docs.
   # -----------------------------------------------------------------------
   - name: run_judge_agent
-    # TODO: agent-id and connector-id are config fields and are NOT rendered through Liquid by the
-    # workflow engine (CustomStepImpl passes context.config raw). Use static values until the engine
-    # supports template rendering for config fields.
     type: ai.agent
-    agent-id: 'platform.streams.significant-events.discovery.judge'
-    connector-id: '.anthropic-claude-4.6-sonnet-chat_completion'
+    agent-id: "platform.streams.significant-events.discovery.judge"
+    connector-id: "${{ inputs.agentConnectorId }}"
     # Keep plugin-id/aggregate-by in sync with @kbn/streams-schema inference_feature_ids.ts
     # (STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID / SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
     plugin-id: 'streams_significant_events_discovery'
@@ -177,9 +179,35 @@ steps:
                   description: '3 candidate stop-the-bleeding actions ranked by likelihood of stopping user impact. These are operational attempts — not a guaranteed fix sequence. Order from most reversible and most targeted to broader interventions. Each must name the specific service or error code observed in evidences and include the exact operational command (kubectl, helm, systemctl, CLI). No ES|QL or diagnostic queries — investigation is complete. Required for promoted and acknowledged.'
                 assessment_note:
                   type: string
-                  description: 'Adversarial reasoning trace: what was independently verified, what signals confirmed or contradicted the discovery, and how criticality and status were calibrated. Not operator-facing. Required for promoted and acknowledged; brief for demoted and resolved.'
-              required:
-                [discovery_id, discovery_slug, status, criticality, confidence, assessment_note]
+                  description: "Adversarial reasoning trace: what was independently verified, what signals confirmed or contradicted the discovery, and how criticality and status were calibrated. Not operator-facing. Required for promoted and acknowledged; brief for demoted and resolved."
+                evidences:
+                  type: array
+                  description: "Merged evidence trail — input discovery evidences updated with judge verification. Apply Step 8 merge protocol. Required on every output; echo input verbatim when no tool calls were made."
+                  items:
+                    type: object
+                    properties:
+                      rule_name:
+                        type: string
+                      rule_uuid:
+                        type: string
+                      stream_name:
+                        type: string
+                      result:
+                        type: string
+                        enum: [found, empty, error]
+                      row_count:
+                        type: integer
+                      esql_query:
+                        type: string
+                        nullable: true
+                      description:
+                        type: string
+                      collected_at:
+                        type: string
+                      confirmed:
+                        type: boolean
+                        description: "true only on entries verified by judge execute_esql this cycle. Omit when not verified."
+              required: [discovery_id, discovery_slug, status, criticality, confidence, assessment_note, evidences]
         required: [significant_events]
     on-failure:
       continue: false
@@ -257,25 +285,25 @@ steps:
             '@timestamp': '{{ "now" | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
             kibana:
               space_ids:
-                - '{{ variables.spaceId }}'
-            event_id: '{{ steps.compute_write_gate.output.event_id }}'
-            created_at: '{{ steps.compute_write_gate.output.created_at }}'
-            previous_event_id: '{{ steps.compute_write_gate.output.previous_event_id }}'
-            discovery_id: '{{ foreach.item.discovery_id }}'
-            discovery_slug: '{{ foreach.item.discovery_slug }}'
-            status: '${{ foreach.item.status }}'
-            criticality: '${{ foreach.item.criticality }}'
-            confidence: '${{ foreach.item.confidence }}'
-            summary: '{{ foreach.item.summary | default: steps.resolve_discovery.output.discovery.summary }}'
-            title: '{{ steps.resolve_discovery.output.discovery.title }}'
-            root_cause: '{{ foreach.item.root_cause | default: steps.resolve_discovery.output.discovery.root_cause }}'
-            cause_kis: '${{ steps.resolve_discovery.output.discovery.cause_kis | default: [] }}'
-            dependency_edges: '${{ steps.resolve_discovery.output.discovery.dependency_edges | default: [] }}'
-            infra_components: '${{ steps.resolve_discovery.output.discovery.infra_components | default: [] }}'
-            evidences: '${{ steps.resolve_discovery.output.discovery.evidences | default: [] }}'
-            stream_names: '${{ steps.resolve_discovery.output.discovery.stream_names | default: [] }}'
-            recommendations: '${{ foreach.item.recommendations | default: [] }}'
-            assessment_note: '{{ foreach.item.assessment_note }}'
+                - "{{ variables.spaceId }}"
+            event_id: "{{ steps.compute_write_gate.output.event_id }}"
+            created_at: "{{ steps.compute_write_gate.output.created_at }}"
+            previous_event_id: "{{ steps.compute_write_gate.output.previous_event_id }}"
+            discovery_id: "{{ foreach.item.discovery_id }}"
+            discovery_slug: "{{ foreach.item.discovery_slug }}"
+            status: "${{ foreach.item.status }}"
+            criticality: "${{ foreach.item.criticality }}"
+            confidence: "${{ foreach.item.confidence }}"
+            summary: "{{ foreach.item.summary | default: steps.resolve_discovery.output.discovery.summary }}"
+            title: "{{ steps.resolve_discovery.output.discovery.title }}"
+            root_cause: "{{ foreach.item.root_cause | default: steps.resolve_discovery.output.discovery.root_cause }}"
+            cause_kis: "${{ steps.resolve_discovery.output.discovery.cause_kis | default: [] }}"
+            dependency_edges: "${{ steps.resolve_discovery.output.discovery.dependency_edges | default: [] }}"
+            infra_components: "${{ steps.resolve_discovery.output.discovery.infra_components | default: [] }}"
+            evidences: "${{ foreach.item.evidences | default: steps.resolve_discovery.output.discovery.evidences | default: [] }}"
+            stream_names: "${{ steps.resolve_discovery.output.discovery.stream_names | default: [] }}"
+            recommendations: "${{ foreach.item.recommendations | default: [] }}"
+            assessment_note: "{{ foreach.item.assessment_note }}"
             analysis_source: judge_agent
             conversation_id: '{{ steps.store_significant_events.output.conversation_id }}'
             workflow_execution_id: '{{ execution.id }}'
@@ -295,23 +323,23 @@ steps:
             '@timestamp': '{{ "now" | date: "%Y-%m-%dT%H:%M:%S%:z" }}'
             kibana:
               space_ids:
-                - '{{ variables.spaceId }}'
-            kind: '{{ consts.KIND_HANDLED }}'
-            workflow_execution_id: '{{ execution.id }}'
-            discovery_id: '{{ steps.resolve_discovery.output.discovery.discovery_id }}'
-            discovery_slug: '{{ steps.resolve_discovery.output.discovery.discovery_slug }}'
-            title: '{{ steps.resolve_discovery.output.discovery.title }}'
-            summary: '{{ steps.resolve_discovery.output.discovery.summary }}'
-            root_cause: '{{ steps.resolve_discovery.output.discovery.root_cause }}'
-            criticality: '${{ steps.resolve_discovery.output.discovery.criticality }}'
-            confidence: '${{ steps.resolve_discovery.output.discovery.confidence }}'
-            rule_names: '${{ steps.resolve_discovery.output.discovery.rule_names | default: [] }}'
-            stream_names: '${{ steps.resolve_discovery.output.discovery.stream_names | default: [] }}'
-            cause_kis: '${{ steps.resolve_discovery.output.discovery.cause_kis | default: [] }}'
-            evidences: '${{ steps.resolve_discovery.output.discovery.evidences | default: [] }}'
-            detections: '${{ steps.resolve_discovery.output.discovery.detections | default: [] }}'
-            dependency_edges: '${{ steps.resolve_discovery.output.discovery.dependency_edges | default: [] }}'
-            infra_components: '${{ steps.resolve_discovery.output.discovery.infra_components | default: [] }}'
+                - "{{ variables.spaceId }}"
+            kind: "{{ consts.KIND_HANDLED }}"
+            workflow_execution_id: "{{ execution.id }}"
+            discovery_id: "{{ steps.resolve_discovery.output.discovery.discovery_id }}"
+            discovery_slug: "{{ steps.resolve_discovery.output.discovery.discovery_slug }}"
+            title: "{{ steps.resolve_discovery.output.discovery.title }}"
+            summary: "{{ steps.resolve_discovery.output.discovery.summary }}"
+            root_cause: "{{ steps.resolve_discovery.output.discovery.root_cause }}"
+            criticality: "${{ steps.resolve_discovery.output.discovery.criticality }}"
+            confidence: "${{ steps.resolve_discovery.output.discovery.confidence }}"
+            rule_names: "${{ steps.resolve_discovery.output.discovery.rule_names | default: [] }}"
+            stream_names: "${{ steps.resolve_discovery.output.discovery.stream_names | default: [] }}"
+            cause_kis: "${{ steps.resolve_discovery.output.discovery.cause_kis | default: [] }}"
+            evidences: "${{ foreach.item.evidences | default: steps.resolve_discovery.output.discovery.evidences | default: [] }}"
+            detections: "${{ steps.resolve_discovery.output.discovery.detections | default: [] }}"
+            dependency_edges: "${{ steps.resolve_discovery.output.discovery.dependency_edges | default: [] }}"
+            infra_components: "${{ steps.resolve_discovery.output.discovery.infra_components | default: [] }}"
         on-failure:
           continue: true
 

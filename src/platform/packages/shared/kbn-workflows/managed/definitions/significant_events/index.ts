@@ -39,7 +39,7 @@ export const SIGNIFICANT_EVENTS_DETECTION_WORKFLOW = {
 export const SIGNIFICANT_EVENTS_DISCOVERY_WORKFLOW = {
   id: SIGNIFICANT_EVENTS_DISCOVERY_WORKFLOW_ID,
   pluginId: 'streams',
-  version: 3,
+  version: 4,
   billable: false,
   yaml: DISCOVERY_YAML,
   management: SIGNIFICANT_EVENTS_WORKFLOW_MANAGEMENT,
@@ -48,7 +48,7 @@ export const SIGNIFICANT_EVENTS_DISCOVERY_WORKFLOW = {
 export const SIGNIFICANT_EVENTS_ORCHESTRATOR_WORKFLOW = {
   id: SIGNIFICANT_EVENTS_ORCHESTRATOR_WORKFLOW_ID,
   pluginId: 'streams',
-  version: 1,
+  version: 2,
   billable: false,
   yaml: ORCHESTRATOR_YAML,
   management: SIGNIFICANT_EVENTS_WORKFLOW_MANAGEMENT,
@@ -57,7 +57,7 @@ export const SIGNIFICANT_EVENTS_ORCHESTRATOR_WORKFLOW = {
 export const SIGNIFICANT_EVENTS_TRIAGE_WORKFLOW = {
   id: SIGNIFICANT_EVENTS_TRIAGE_WORKFLOW_ID,
   pluginId: 'streams',
-  version: 4,
+  version: 5,
   billable: false,
   yaml: TRIAGE_YAML,
   management: SIGNIFICANT_EVENTS_WORKFLOW_MANAGEMENT,

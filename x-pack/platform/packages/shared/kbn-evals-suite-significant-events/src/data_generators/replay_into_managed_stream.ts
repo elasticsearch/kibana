@@ -82,8 +82,12 @@ const getLogsIndicesFromSnapshot = async ({
     throw new Error(`Snapshot "${snapshotName}" not found in repository "${repoName}"`);
   }
 
+  // Restrict to the `logs` data stream's own backing indices (`.ds-logs-<date>-<gen>`). The hyphen
+  // matters: `.startsWith('.ds-logs')` would also match sibling streams like `logs.ecs`
+  // (`.ds-logs.ecs-…`), which the discovery eval does not target — and restoring those extra backing
+  // indices is what trips `index_not_found` at reindex. The agent reads `FROM logs`, so only `logs`.
   const logsIndices = (snapshot.indices ?? []).filter(
-    (indexName) => indexName.startsWith('.ds-logs') || indexName === LOGS_STREAM_NAME
+    (indexName) => indexName.startsWith('.ds-logs-') || indexName === LOGS_STREAM_NAME
   );
   if (logsIndices.length === 0) {
     throw new Error(`No logs indices found in snapshot "${snapshotName}"`);
@@ -117,6 +121,11 @@ const restoreLogsIndicesToTemp = async ({
     include_global_state: false,
     rename_pattern: '(.+)',
     rename_replacement: `${tempPrefix}$1`,
+    // The snapshot's backing indices carry `index.lifecycle.*`; if restored intact, the cluster's
+    // lifecycle sweep reaps the temp index (its origination date is already past the delete age)
+    // before we can reindex from it — surfacing as `index_not_found` mid-replay on serverless.
+    // Strip lifecycle so the temp index stays inert until cleanup deletes it.
+    ignore_index_settings: ['index.lifecycle.name', 'index.lifecycle.prefer_ilm'],
   });
 
   return logsIndices.map((indexName) => `${tempPrefix}${indexName}`);

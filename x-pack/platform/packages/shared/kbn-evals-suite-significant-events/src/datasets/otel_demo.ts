@@ -600,6 +600,8 @@ export const otelDemoDataset: DatasetConfig = {
       },
     },
   ],
+  discoveryInvestigator: [],
+  discoveryJudge: [],
   kiQueryGeneration: [
     {
       input: {

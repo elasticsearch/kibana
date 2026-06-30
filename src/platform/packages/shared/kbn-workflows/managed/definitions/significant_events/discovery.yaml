@@ -28,14 +28,19 @@ triggers:
         description: 'Lookback window for active discoveries, events, and groups. Should match .significant_events-discoveries retention.'
       - name: detectionBatchMax
         type: number
-        default: 3
+        default: 10
         required: false
         description: 'Max rules per investigator invocation. Caps agent message size; remaining detections are picked up on the next cycle.'
       - name: discoveryDedupWindow
         type: string
         default: 'now-1h'
         required: false
-        description: 'ES date math expression controlling the minimum time between discovery re-writes for the same slug. Longer windows reduce LLM cost for stable incidents; shorter windows surface escalations faster. Must be a valid ES date math value (e.g. now-30m, now-2h, now-24h). Default 1h.'
+        description: "ES date math expression controlling the minimum time between discovery re-writes for the same slug. Longer windows reduce LLM cost for stable incidents; shorter windows surface escalations faster. Must be a valid ES date math value (e.g. now-30m, now-2h, now-24h). Default 1h."
+      - name: agentConnectorId
+        type: string
+        default: ".openai-gpt-5.2-chat_completion"
+        required: false
+        description: "Connector ID for the investigator agent."
 consts:
   CONTINUATION_BATCH_MAX: 20
   DETECTIONS_INDEX: '.significant_events-detections'
@@ -212,12 +217,9 @@ steps:
   # Step 4: Correlate detections into discoveries.
   # -----------------------------------------------------------------------
   - name: run_investigator_agent
-    # TODO: agent-id and connector-id are config fields and are NOT rendered through Liquid by the
-    # workflow engine (CustomStepImpl passes context.config raw). Use static values until the engine
-    # supports template rendering for config fields.
     type: ai.agent
-    agent-id: 'platform.streams.significant-events.discovery.investigator'
-    connector-id: '.openai-gpt-5.2-chat_completion'
+    agent-id: "platform.streams.significant-events.discovery.investigator"
+    connector-id: "${{ inputs.agentConnectorId }}"
     # Keep plugin-id/aggregate-by in sync with @kbn/streams-schema inference_feature_ids.ts
     # (STREAMS_SIGNIFICANT_EVENTS_DISCOVERY_INFERENCE_FEATURE_ID / SIGNIFICANT_EVENTS_INFERENCE_PARENT_FEATURE_ID).
     plugin-id: 'streams_significant_events_discovery'

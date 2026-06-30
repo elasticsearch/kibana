@@ -19,6 +19,12 @@ settings:
     continue: true
 triggers:
   - type: manual
+    inputs:
+      - name: agentConnectorId
+        type: string
+        default: ".openai-gpt-5.2-chat_completion"
+        required: false
+        description: "Connector ID forwarded as agentConnectorId to both the discovery (investigator) and triage (judge) sub-workflows, pinning the whole pipeline to a single model. The _execute route resolves this from the discovery inference feature; the default preserves prior behavior for input-less manual runs."
 steps:
   - name: detect
     type: workflow.execute
@@ -29,8 +35,12 @@ steps:
     type: workflow.execute
     with:
       workflow-id: "system-significant-events-discovery"
+      inputs:
+        agentConnectorId: "${{ inputs.agentConnectorId }}"
 
   - name: triage
     type: workflow.execute
     with:
       workflow-id: "system-significant-events-triage"
+      inputs:
+        agentConnectorId: "${{ inputs.agentConnectorId }}"
