@@ -171,9 +171,15 @@ export const AddCollectorFlyout: React.FunctionComponent<AddCollectorFlyoutProps
   const { spaceId } = useFleetStatus();
   const { output: defaultOutput } = useDefaultOutput();
   const defaultEsHost = defaultOutput?.hosts?.[0] ?? DEFAULT_ES_HOST;
+  // The active space resolves asynchronously (see useFleetStatus), starting as `undefined`.
+  // Until it's known we must not resolve the OpAMP policy/token, otherwise getOpAMPPolicyId
+  // falls back to the unprefixed default-space id and the collector enrolls into the Default
+  // space instead of the current one. See https://github.com/elastic/kibana/issues/275528
+  const isSpaceResolved = spaceId !== undefined;
   const { enrolledAgentIds } = usePollingAgentCount(getOpAMPPolicyId(spaceId), {
     noLowerTimeLimit: true,
     pollImmediately: true,
+    enabled: isSpaceResolved,
   });
 
   const {
@@ -183,6 +189,7 @@ export const AddCollectorFlyout: React.FunctionComponent<AddCollectorFlyoutProps
   } = useQuery<string | undefined, Error>({
     queryKey: ['opampPolicyAndToken', spaceId],
     queryFn: () => ensurePolicyAndFetchToken(spaceId),
+    enabled: isSpaceResolved,
   });
 
   const error = queryError?.message ?? null;

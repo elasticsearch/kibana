@@ -32,6 +32,8 @@ interface Props {
 interface UsePollingAgentCountOptions {
   noLowerTimeLimit?: boolean;
   pollImmediately?: boolean;
+  // When false, polling is suspended (e.g. while the active space is still resolving).
+  enabled?: boolean;
 }
 
 const POLLING_INTERVAL_MS = 5 * 1000; // 5 sec
@@ -50,12 +52,17 @@ export const usePollingAgentCount = (
   const [didPollInitially, setDidPollInitially] = useState(false);
   const timeout = useRef<number | undefined>(undefined);
 
+  const enabled = opts?.enabled ?? true;
+
   const lowerTimeLimitKuery = opts?.noLowerTimeLimit
     ? ''
     : `and ${AGENTS_PREFIX}.enrolled_at >= now-10m`;
   const kuery = `${AGENTS_PREFIX}.policy_id:"${policyId}" and not (_exists_:"${AGENTS_PREFIX}.unenrolled_at") ${lowerTimeLimitKuery}`;
 
   const getNewAgentIds = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
     const request = await sendGetAgents({
       kuery,
       showInactive: false,
@@ -65,10 +72,10 @@ export const usePollingAgentCount = (
     if (newAgentIds.some((id) => !agentIds.includes(id))) {
       setAgentIds(newAgentIds);
     }
-  }, [agentIds, kuery]);
+  }, [agentIds, kuery, enabled]);
 
   // optionally poll once on first render
-  if (!didPollInitially && opts?.pollImmediately) {
+  if (!didPollInitially && opts?.pollImmediately && enabled) {
     getNewAgentIds();
     setDidPollInitially(true);
   }

@@ -215,6 +215,28 @@ describe('AddCollectorFlyout', () => {
     expect(configYaml).toContain('Authorization: "ApiKey space-created-token"');
   });
 
+  it('does not fetch OpAMP policy/token until spaceId is resolved (prevents Default-space mis-enrollment)', async () => {
+    // Start with spaceId undefined (simulates the async resolution race on first render)
+    mockedUseFleetStatus.mockReturnValue({ spaceId: undefined } as any);
+
+    mockedSendGetOneAgentPolicy.mockResolvedValue({
+      data: { item: { id: 'my-space-opamp' } },
+    } as any);
+    mockedSendGetEnrollmentAPIKeys.mockResolvedValue({
+      data: { items: [{ api_key: 'space-token' }] },
+    } as any);
+
+    renderFlyout();
+
+    // Give React a tick to flush any immediate effects
+    await new Promise((r) => setTimeout(r, 50));
+
+    // Neither the lookup nor the create should have fired while space is unknown
+    expect(mockedSendGetOneAgentPolicy).not.toHaveBeenCalled();
+    expect(mockedSendCreateAgentPolicyForRq).not.toHaveBeenCalled();
+    expect(mockedSendGetEnrollmentAPIKeys).not.toHaveBeenCalled();
+  });
+
   it('renders a user-facing error when policy/token setup fails', async () => {
     mockedSendGetOneAgentPolicy.mockRejectedValue(new Error('setup failed'));
 
