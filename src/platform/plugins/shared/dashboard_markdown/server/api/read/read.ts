@@ -11,14 +11,14 @@ import type { RequestHandlerContext } from '@kbn/core/server';
 import { MARKDOWN_SAVED_OBJECT_TYPE } from '../../../common/constants';
 import { getMarkdownCRUResponseBody } from '../get_cru_response_body';
 import type { MarkdownReadResponseBody } from './types';
-import type { MarkdownAttributes } from '../../markdown_saved_object';
+import type { StoredMarkdownState } from '../../markdown_saved_object';
 
 export async function read(
   requestCtx: RequestHandlerContext,
   id: string
 ): Promise<MarkdownReadResponseBody> {
   const { core } = await requestCtx.resolve(['core']);
-  const { saved_object: savedObject } = await core.savedObjects.client.resolve<MarkdownAttributes>(
+  const { saved_object: savedObject } = await core.savedObjects.client.resolve<StoredMarkdownState>(
     MARKDOWN_SAVED_OBJECT_TYPE,
     id
   );

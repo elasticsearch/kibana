@@ -9,10 +9,11 @@
 
 import type { VersionedRouter } from '@kbn/core-http-server';
 import type { RequestHandlerContext } from '@kbn/core/server';
-import { commonRouteConfig, INTERNAL_API_VERSION } from '../constants';
+import { commonRouteConfig, PUBLIC_API_VERSION } from '../constants';
 import { searchRequestQuerySchema, searchResponseBodySchema } from './schemas';
 import { search } from './search';
 import { MARKDOWN_API_PATH } from '../../../common/constants';
+import { searchMarkdownOASOperationObject } from '../oas_examples';
 
 export function registerSearchRoute(router: VersionedRouter<RequestHandlerContext>) {
   const searchRoute = router.get({
@@ -20,12 +21,15 @@ export function registerSearchRoute(router: VersionedRouter<RequestHandlerContex
     summary: `Search markdown library items`,
     ...commonRouteConfig,
     description:
-      'Returns a paginated list of markdown library items. Each result includes title, description, and metadata, but not the content. Use `GET /api/markdown/{id}` to retrieve the complete state.',
+      'Returns a paginated list of markdown library items. Each result includes title, description, and metadata, but not the content. Use `GET /api/markdowns/{id}` to retrieve the complete state.',
   });
 
   searchRoute.addVersion(
     {
-      version: INTERNAL_API_VERSION,
+      version: PUBLIC_API_VERSION,
+      options: {
+        oasOperationObject: () => searchMarkdownOASOperationObject,
+      },
       validate: {
         request: {
           query: searchRequestQuerySchema,

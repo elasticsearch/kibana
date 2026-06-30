@@ -8,5 +8,4 @@
  */
 
 export { markdownSavedObjectType } from './markdown_saved_object';
-export type { MarkdownAttributes } from './schema';
-export { markdownAttributesSchema } from './schema';
+export type { StoredMarkdownState } from './types';

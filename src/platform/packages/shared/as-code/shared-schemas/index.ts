@@ -18,4 +18,4 @@ export {
   type AsCodeQuery,
 } from './src/schemas';
 
-export { PAGINATION_DEFAULT_PER_PAGE, PAGINATION_MAX_SIZE } from './src/constants';
+export { PAGINATION_DEFAULT_PER_PAGE, PAGINATION_MAX_SIZE, ID_MAX_LENGTH } from './src/constants';

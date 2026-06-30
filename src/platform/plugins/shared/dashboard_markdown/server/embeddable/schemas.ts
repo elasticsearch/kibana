@@ -12,35 +12,44 @@ import { schema } from '@kbn/config-schema';
 import { serializedTitlesSchema } from '@kbn/presentation-publishing-schemas';
 import { BY_REF_SCHEMA_META, BY_VALUE_SCHEMA_META } from '@kbn/presentation-publishing-schemas';
 
-export const markdownByValueStateSchema = schema.object({
-  content: schema.string(),
-  settings: schema.object({
-    open_links_in_new_tab: schema.boolean({ defaultValue: true }),
-  }),
-});
-
-const markdownByReferenceStateSchema = schema.object({
-  ref_id: schema.string({
-    meta: { description: 'The unique identifier of the markdown library item.' },
-  }),
-});
-
-export const markdownByValueEmbeddableSchema = schema.allOf(
-  [markdownByValueStateSchema, serializedTitlesSchema],
+export const markdownByValueStateSchema = serializedTitlesSchema.extends(
+  {
+    content: schema.string({
+      meta: {
+        description:
+          'The Markdown text rendered by the panel. Supports GitHub-flavored Markdown, including headings, paragraphs, lists, links, images, tables, blockquotes, and code blocks. Use `\\n` for line breaks within JSON strings.',
+      },
+    }),
+    settings: schema.object(
+      {
+        open_links_in_new_tab: schema.boolean({
+          defaultValue: true,
+          meta: { description: 'Open links in a new browser tab.' },
+        }),
+      },
+      {
+        meta: { description: 'Display settings for the markdown panel.' },
+      }
+    ),
+  },
   {
     meta: BY_VALUE_SCHEMA_META,
   }
 );
 
-const markdownByReferenceEmbeddableSchema = schema.allOf(
-  [markdownByReferenceStateSchema, serializedTitlesSchema],
+const markdownByReferenceStateSchema = serializedTitlesSchema.extends(
+  {
+    ref_id: schema.string({
+      meta: { description: 'The unique identifier of the markdown library item.' },
+    }),
+  },
   {
     meta: BY_REF_SCHEMA_META,
   }
 );
 
 export const markdownEmbeddableSchema = schema.oneOf(
-  [markdownByValueEmbeddableSchema, markdownByReferenceEmbeddableSchema],
+  [markdownByValueStateSchema, markdownByReferenceStateSchema],
   {
     meta: {
       description: 'Markdown panel config',

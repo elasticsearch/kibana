@@ -14,7 +14,12 @@ import { markdownLibraryItemSchema } from '../schema';
 export const createRequestBodySchema = markdownLibraryItemSchema;
 
 export const createResponseBodySchema = schema.object({
-  id: schema.string(),
+  id: schema.string({
+    meta: {
+      description:
+        'The unique ID of the markdown library item, as returned by the create or search endpoints.',
+    },
+  }),
   data: markdownLibraryItemSchema,
   meta: asCodeMetaSchema,
 });

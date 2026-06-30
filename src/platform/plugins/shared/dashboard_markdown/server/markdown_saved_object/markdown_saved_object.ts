@@ -11,13 +11,13 @@ import type { SavedObjectsType } from '@kbn/core/server';
 import type { SavedObjectsFullModelVersion } from '@kbn/core-saved-objects-server';
 import { ANALYTICS_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-server';
 import { APP_ICON, MARKDOWN_SAVED_OBJECT_TYPE } from '../../common/constants';
-import { markdownAttributesSchema } from './schema/v1';
+import { markdownByValueStateSchema } from '../embeddable/schemas';
 
 const modelVersion1: SavedObjectsFullModelVersion = {
   changes: [],
   schemas: {
-    forwardCompatibility: markdownAttributesSchema.extends({}, { unknowns: 'ignore' }),
-    create: markdownAttributesSchema,
+    forwardCompatibility: markdownByValueStateSchema.extends({}, { unknowns: 'ignore' }),
+    create: markdownByValueStateSchema,
   },
 };
 

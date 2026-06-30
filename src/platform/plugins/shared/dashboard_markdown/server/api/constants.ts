@@ -7,29 +7,17 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-/**
- * INTERNAL_API_VERSION is the temporary version for the internal API until the
- * public API is fully implemented and stable. When the public API is ready, this
- * const will be removed and a PUBLIC_API_VERSION (ex. 2023-10-31) will be introduced.
- */
-export const INTERNAL_API_VERSION = '1';
+export const PUBLIC_API_VERSION = '2023-10-31';
 
 export const commonRouteConfig = {
-  // This route is in development and not yet intended for public use.
-  access: 'internal',
-  /**
-   * `enableQueryVersion` is a temporary solution for testing internal endpoints.
-   * Requests to these internal endpoints from Kibana Dev Tools or external clients
-   * should include the ?apiVersion=1 query parameter.
-   * This will be removed when the API is finalized and moved to a stable version.
-   */
-  enableQueryVersion: true,
+  access: 'public',
   description:
     'This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.',
   options: {
-    tags: ['oas-tag:markdown'],
+    tags: ['oas-tag:Markdowns'],
     availability: {
       stability: 'experimental',
+      since: '9.5.0',
     },
   },
   security: {

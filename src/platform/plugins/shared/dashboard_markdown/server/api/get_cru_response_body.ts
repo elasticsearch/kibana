@@ -7,14 +7,14 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { SavedObject, SavedObjectsUpdateResponse } from '@kbn/core/server';
 import { getMeta } from '@kbn/as-code-shared-schemas';
-import type { MarkdownAttributes } from '../markdown_saved_object';
+import type { SavedObject, SavedObjectsUpdateResponse } from '@kbn/core/server';
+import type { StoredMarkdownState } from '../markdown_saved_object';
 import { markdownLibraryItemSchema } from './schema';
 
 // CRU is Create, Read, Update
 export function getMarkdownCRUResponseBody(
-  savedObject: SavedObject<MarkdownAttributes> | SavedObjectsUpdateResponse<MarkdownAttributes>
+  savedObject: SavedObject<StoredMarkdownState> | SavedObjectsUpdateResponse<StoredMarkdownState>
 ) {
   return {
     id: savedObject.id,

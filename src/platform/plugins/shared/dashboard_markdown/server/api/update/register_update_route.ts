@@ -11,21 +11,29 @@ import type { VersionedRouter } from '@kbn/core-http-server';
 import type { RequestHandlerContext } from '@kbn/core/server';
 import { schema } from '@kbn/config-schema';
 import { asCodeIdSchema } from '@kbn/as-code-shared-schemas';
-import { INTERNAL_API_VERSION, commonRouteConfig } from '../constants';
+import { PUBLIC_API_VERSION, commonRouteConfig } from '../constants';
 import { updateRequestBodySchema, updateResponseBodySchema } from './schemas';
 import { update } from './update';
 import { MARKDOWN_API_PATH } from '../../../common/constants';
+import { updateMarkdownOASOperationObject } from '../oas_examples';
 
 export function registerUpdateRoute(router: VersionedRouter<RequestHandlerContext>) {
   const updateRoute = router.put({
     path: `${MARKDOWN_API_PATH}/{id}`,
     summary: `Upsert markdown library item`,
     ...commonRouteConfig,
+    description: `Replaces the full state of a markdown library item. Partial updates are not supported.
+To make incremental changes, retrieve the item first, modify the fields you need, then send the complete object back.
+
+If no item exists with the specified ID, a new one is created.`,
   });
 
   updateRoute.addVersion(
     {
-      version: INTERNAL_API_VERSION,
+      version: PUBLIC_API_VERSION,
+      options: {
+        oasOperationObject: () => updateMarkdownOASOperationObject,
+      },
       validate: {
         request: {
           params: schema.object({
