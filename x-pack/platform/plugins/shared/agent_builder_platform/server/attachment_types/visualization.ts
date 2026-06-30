@@ -5,11 +5,11 @@
  * 2.0.
  */
 
-import type { VisualizationAttachmentData } from '@kbn/agent-builder-common/attachments';
 import {
-  AttachmentType,
+  VISUALIZATION_ATTACHMENT_TYPE,
   visualizationAttachmentDataSchema,
-} from '@kbn/agent-builder-common/attachments';
+  type VisualizationAttachmentData,
+} from '@kbn/agent-builder-visualizations-common';
 import type {
   AttachmentResolveContext,
   AttachmentTypeDefinition,
@@ -32,11 +32,11 @@ import {
  * whether something was originally by-reference.
  */
 export const createVisualizationAttachmentType = (): AttachmentTypeDefinition<
-  AttachmentType.visualization,
+  typeof VISUALIZATION_ATTACHMENT_TYPE,
   VisualizationAttachmentData
 > => {
   return {
-    id: AttachmentType.visualization,
+    id: VISUALIZATION_ATTACHMENT_TYPE,
 
     validate: (input) => {
       const parseResult = visualizationAttachmentDataSchema.safeParse(input);

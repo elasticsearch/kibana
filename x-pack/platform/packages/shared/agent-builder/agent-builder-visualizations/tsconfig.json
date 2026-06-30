@@ -19,6 +19,7 @@
   "kbn_references": [
     "@kbn/agent-builder-browser",
     "@kbn/agent-builder-common",
+    "@kbn/agent-builder-visualizations-common",
     "@kbn/core-application-browser",
     "@kbn/data-views-plugin",
     "@kbn/embeddable-plugin",

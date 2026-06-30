@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { i18n } from '@kbn/i18n';
-import type { VisualizationAttachment } from '@kbn/agent-builder-common/attachments';
+import type { VisualizationAttachment } from '@kbn/agent-builder-visualizations-common';
 import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
 import { getVisualizationDimensionsFromConfig } from './shared/get_visualization_dimensions';
 import { InlineVisualization } from './inline_visualization';

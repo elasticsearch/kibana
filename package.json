@@ -196,6 +196,7 @@
     "@kbn/agent-builder-tools-base": "link:x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base",
     "@kbn/agent-builder-vega": "link:x-pack/platform/packages/shared/agent-builder/agent-builder-vega",
     "@kbn/agent-builder-visualizations": "link:x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations",
+    "@kbn/agent-builder-visualizations-common": "link:x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common",
     "@kbn/agent-builder-workflow-gen": "link:x-pack/platform/packages/shared/agent-builder/agent-builder-workflow-gen",
     "@kbn/agent-builder-workflows-plugin": "link:x-pack/platform/plugins/shared/agent_builder_workflows",
     "@kbn/agent-context-layer-plugin": "link:x-pack/platform/plugins/shared/agent_context_layer",

@@ -15,6 +15,7 @@
     "@kbn/agent-builder-tools-base",
     "@kbn/agent-builder-vega",
     "@kbn/agent-builder-common",
+    "@kbn/agent-builder-visualizations-common",
     "@kbn/zod",
     "@kbn/agent-builder-plugin",
     "@kbn/core-lifecycle-server",

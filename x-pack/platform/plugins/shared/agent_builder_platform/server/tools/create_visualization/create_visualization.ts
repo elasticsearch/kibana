@@ -9,10 +9,11 @@ import { z } from '@kbn/zod/v4';
 import { platformCoreTools, ToolType } from '@kbn/agent-builder-common';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { getToolResultId } from '@kbn/agent-builder-server';
+import { getLatestVersion } from '@kbn/agent-builder-common/attachments';
 import {
-  getLatestVersion,
+  VISUALIZATION_ATTACHMENT_TYPE,
   type VisualizationAttachmentData,
-} from '@kbn/agent-builder-common/attachments';
+} from '@kbn/agent-builder-visualizations-common';
 import { ToolResultType, SupportedChartType } from '@kbn/agent-builder-common/tools/tool_result';
 import {
   buildVisualizationConfig,
@@ -21,9 +22,6 @@ import {
   type VisualizationRenderer,
 } from '@kbn/agent-builder-tools-base';
 import { buildVegaConfig } from '@kbn/agent-builder-vega';
-
-/** Attachment type for visualization configurations */
-const VISUALIZATION_ATTACHMENT_TYPE = 'visualization';
 
 /**
  * Pull the prior Lens config out of an existing attachment, when it is a Lens
