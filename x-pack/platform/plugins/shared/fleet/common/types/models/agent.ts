@@ -48,7 +48,8 @@ export type AgentActionType =
   | 'POLICY_CHANGE'
   | 'INPUT_ACTION'
   | 'MIGRATE'
-  | 'PRIVILEGE_LEVEL_CHANGE';
+  | 'PRIVILEGE_LEVEL_CHANGE'
+  | 'REMOVE_COLLECTOR';
 
 export type AgentUpgradeStateType =
   | 'UPG_REQUESTED'

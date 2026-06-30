@@ -17,6 +17,7 @@ import { getCurrentNamespace } from '../spaces/get_current_namespace';
 
 import { bulkUpdateAgents, getAgentById, getAgents, getAgentsByKuery, updateAgent } from './crud';
 import type { GetAgentsOptions } from './crud';
+import { bulkCreateAgentActionResults, createAgentAction } from './actions';
 
 export class CollectorRemovalError extends AgentRequestInvalidError {}
 
@@ -32,10 +33,23 @@ export async function removeCollector(
     );
   }
 
+  const now = new Date().toISOString();
   await updateAgent(esClient, agentId, {
     active: false,
-    unenrolled_at: new Date().toISOString(),
+    unenrolled_at: now,
   });
+
+  const actionId = uuidv4();
+  const currentSpaceId = getCurrentNamespace(soClient);
+  await createAgentAction(esClient, soClient, {
+    id: actionId,
+    agents: [agentId],
+    created_at: now,
+    type: 'REMOVE_COLLECTOR',
+    total: 1,
+    namespaces: [currentSpaceId],
+  });
+  await bulkCreateAgentActionResults(esClient, [{ agentId, actionId }]);
 }
 
 export async function removeCollectors(
@@ -75,5 +89,23 @@ export async function removeCollectors(
     {}
   );
 
-  return { actionId: uuidv4() };
+  const actionId = uuidv4();
+
+  if (collectors.length > 0) {
+    const collectorIds = collectors.map((a) => a.id);
+    await createAgentAction(esClient, soClient, {
+      id: actionId,
+      agents: collectorIds,
+      created_at: now,
+      type: 'REMOVE_COLLECTOR',
+      total: collectorIds.length,
+      namespaces: [spaceId],
+    });
+    await bulkCreateAgentActionResults(
+      esClient,
+      collectorIds.map((id) => ({ agentId: id, actionId }))
+    );
+  }
+
+  return { actionId };
 }
