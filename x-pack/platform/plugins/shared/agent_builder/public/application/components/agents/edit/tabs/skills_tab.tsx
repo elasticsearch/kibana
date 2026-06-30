@@ -27,6 +27,7 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import type { PublicSkillSummary } from '@kbn/agent-builder-common';
+import { isBuiltinSkillAutoIncludedForElasticCapabilities } from '@kbn/agent-builder-common';
 import { AGENT_BUILDER_UI_EBT } from '@kbn/agent-builder-common';
 import { getEbtProps } from '@kbn/ebt-click';
 import { Controller } from 'react-hook-form';
@@ -107,7 +108,8 @@ const SkillsSelection: React.FC<SkillsSelectionProps> = ({
   const selectedIdSet = useMemo(() => new Set(selectedSkills ?? []), [selectedSkills]);
 
   const isSkillAutoIncluded = useCallback(
-    (skill: PublicSkillSummary) => areElasticCapabilitiesEnabled && skill.readonly,
+    (skill: PublicSkillSummary) =>
+      isBuiltinSkillAutoIncludedForElasticCapabilities(skill, areElasticCapabilitiesEnabled),
     [areElasticCapabilitiesEnabled]
   );
 

@@ -10,7 +10,11 @@ import type {
   ToolSelectionRelevantFields,
   ToolDefinition,
 } from '@kbn/agent-builder-common';
-import { ToolType, allToolsSelectionWildcard } from '@kbn/agent-builder-common';
+import {
+  ToolType,
+  allToolsSelectionWildcard,
+  elasticCapabilitiesExcludedBuiltinSkillIds,
+} from '@kbn/agent-builder-common';
 import {
   toggleToolSelection,
   isToolSelected,
@@ -165,6 +169,26 @@ describe('tool_selection_utils', () => {
       const result = getActiveSkills(mockSkills, undefined, true);
 
       expect(result.map((s) => s.id)).toEqual(['skill1', 'skill3']);
+    });
+
+    it('should not auto-include elastic-capabilities-excluded built-in skills', () => {
+      const skillsWithExcluded = [
+        ...mockSkills,
+        { id: elasticCapabilitiesExcludedBuiltinSkillIds[0], readonly: true },
+      ];
+
+      const result = getActiveSkills(skillsWithExcluded, undefined, true);
+
+      expect(result.map((s) => s.id)).toEqual(['skill1', 'skill3']);
+    });
+
+    it('should include excluded built-in skills when explicitly selected', () => {
+      const excludedId = elasticCapabilitiesExcludedBuiltinSkillIds[0];
+      const skillsWithExcluded = [...mockSkills, { id: excludedId, readonly: true }];
+
+      const result = getActiveSkills(skillsWithExcluded, [excludedId], true);
+
+      expect(result.map((s) => s.id)).toEqual([excludedId, 'skill1', 'skill3']);
     });
 
     it('should return empty array when explicit ids is empty and capabilities are disabled', () => {

@@ -1,0 +1,315 @@
+# Elastic ML Anomaly Detection
+
+Single skill covering all anomaly detection work. Use the **Mode Selector** below to pick the right approach for the user's question — modes share the same tool surface and concepts.
+
+## Platform
+
+- Read path: `platform.core.execute_esql` against `.ml-anomalies-*`, `.ml-config`, `.ml-notifications-*`, `.ml-annotations-*`
+- ES|QL query templates are in the referenced content files (`esql-read-queries`, `esql-metadata-queries`, `esql-score-queries`)
+- ML API write/state operations: `ml.ad_get_job_info`, `ml.ad_create_job`, `ml.ad_manage_job_state`, `ml.ad_update_job_config`
+- **Run `ml.ad_get_job_info` with `operation=validate_permissions` first** when tools return empty/misleading results — missing privileges are the most common cause of false negatives.
+
+## Mode Selector
+
+| User intent                                                                   | Mode                 |
+| ----------------------------------------------------------------------------- | -------------------- |
+| "What broke?" / RCA / cross-job / blast radius / influencers / log categories | **Investigate**      |
+| "Why score high/low?" / renormalization / model bounds / forecasts            | **Explain**          |
+| Missing docs / memory limit / datafeed stopped / CCS / lifecycle / calendars  | **Troubleshoot**     |
+| Create a job / configure a datafeed / start analysis / retrieve results       | **Manage**           |
+
+When a question spans modes: **Investigate → Explain → Troubleshoot**. Don't blend mode logic — finish one before moving on.
+
+---
+
+## Score Quick Reference
+
+- `record_score` bands: **>75** critical · **50–75** warning · **25–50** minor · **<25** informational
+- `multi_bucket_impact ≥ 3` → sustained shift (not a transient spike)
+- `initial_record_score >> record_score` → renormalization (model saw worse anomalies later)
+- `actual << typical` with `count`/`low_count`/`low_mean` → absence/outage, not just low value
+- Low scores across many jobs > one high score — composite cross-job signal often beats single-detector severity
+
+> Full score definitions, renormalization mechanics, and `anomaly_score_explanation` components: see `score-reference` referenced content.
+
+## Core concepts
+
+Treat `.ml-anomalies-*` as three layers, accessed via `result_type`:
+
+- **`bucket`** — bucket-level unusualness per `bucket_span`. `anomaly_score` is the aggregate across all detectors.
+- **`record`** — finest-grained rows with `actual` vs `typical`, `probability`, `record_score`, `anomaly_score_explanation`.
+- **`influencer`** — entity contributions ranked within a bucket (`influencer_score`).
+
+Read scores this way:
+
+- `anomaly_score` / `record_score` = **current normalized** values (move as the model sees new extremes).
+- `initial_anomaly_score` / `initial_record_score` = **immutable snapshots** from detection time.
+- Compare `actual` to `typical`; use `probability` for raw likelihood.
+- Map entities via `partition_field_value` / `by_field_value` / `over_field_value`.
+- Read `multi_bucket_impact` (-5 to +5) to separate single-bucket spikes from sustained trends.
+
+---
+
+## Mode: Investigate — RCA
+
+**When:** "what broke?", "which entity caused this?", cross-job correlation, blast radius, attack/cascade chains.
+
+### Tool chain
+
+| Phase                 | Tool                              | ES|QL template (from `esql-read-queries` or `esql-metadata-queries`)      |
+| --------------------- | --------------------------------- | ------------------------------------------------------------------------- |
+| Discovery             | `ml.ad_get_job_info`              | `operation=get_available_metadata`                                        |
+| Job detail            | `platform.core.execute_esql`      | `ad_get_jobs`, `ad_discover_related_jobs`                                 |
+| Timeline / scope      | `platform.core.execute_esql`      | `ad_query_anomaly_timeline`                                               |
+| Cross-job / entities  | `platform.core.execute_esql`      | `ad_rca_cross_job_entity_match`, `ad_rca_multi_job_entities`, `ad_rca_entity_profile` |
+| Records / influencers | `platform.core.execute_esql`      | `ad_query_anomaly_records`, `ad_query_influencers`                        |
+| RCA depth             | `platform.core.execute_esql`      | `ad_rca_detector_fingerprint`, `ad_rca_correlation`, `ad_rca_blast_radius`, `ad_rca_score_reassessment` |
+| Evidence / categories | `platform.core.execute_esql`      | `ad_rca_source_evidence`, `ad_get_categories`, `ad_search_log_category_examples` |
+| Job config            | `ml.ad_get_job_info`                 | `operation=get_datafeed_config`                                           |
+
+### Protocol
+
+High level: `ml.ad_get_job_info` (`operation=get_available_metadata`) → `ad_query_anomaly_timeline` (via `platform.core.execute_esql`) → rank with `ad_rca_multi_job_entities` (`min_job_count=2`) → `ad_rca_detector_fingerprint` → drill with `ad_query_anomaly_records` + `ad_query_influencers` (low `min_score=25`) → profile with `ad_rca_entity_profile` → order with `ad_rca_correlation` → confirm with `ad_rca_source_evidence`.
+
+When `by_field_name == "mlcategory"`, compare with `ad_get_categories` + `ad_search_log_category_examples` (baseline vs. anomaly window).
+
+Finish with a written RCA: **root cause entity · affected jobs · temporal progression · fault class (resource/network/application) · severity · recommended actions**.
+
+See `esql-read-queries` and `esql-metadata-queries` referenced content for all ES|QL query templates and parameters. Worked example in `job-creation-recipes` referenced content.
+
+### Rules
+
+1. **Multi-job entities are prime suspects; single-job entities are usually victims.** Use `min_job_count=2`.
+2. **Earliest anomaly timestamp wins** — sort `ad_rca_correlation` by timestamp; first-appearing entity = origin.
+3. **`multi_bucket_impact ≥ 3` = sustained behavioral shift**, weight higher than transient spikes.
+4. **Never close an RCA without `ad_rca_source_evidence`** — raw source documents are ground truth.
+5. **Use low `min_score` (25 or lower) for influencer queries** — high thresholds miss correlated entities.
+
+---
+
+## Mode: Explain — Score / model behavior
+
+**When:** "why is my score 30/90?", "score dropped overnight", "what is renormalization?", "why wasn't this detected?".
+
+### Score types
+
+| Field                  | Scope           | Meaning                                                                 |
+| ---------------------- | --------------- | ----------------------------------------------------------------------- |
+| `record_score`         | Single record   | Normalized severity after renormalization.                              |
+| `initial_record_score` | Single record   | Score at detection time. Gap vs `record_score` = renormalization drift. |
+| `anomaly_score`        | Bucket          | Aggregate severity across all detectors in a bucket.                    |
+| `influencer_score`     | Entity × bucket | How anomalous a specific entity is in that bucket.                      |
+
+### `anomaly_score_explanation` components
+
+| Component                        | Effect  | What it means                                                |
+| -------------------------------- | ------- | ------------------------------------------------------------ |
+| `anomaly_length`                 | ↑ score | More consecutive anomalous buckets                           |
+| `single_bucket_impact`           | ↑ score | Lower probability → higher impact                            |
+| `multi_bucket_impact`            | ↑ score | Sustained pattern contribution                               |
+| `anomaly_characteristics_impact` | ↑ score | Mean shift vs. variance change                               |
+| `high_variance_penalty`          | ↓ score | Noisy data → wide bounds → anomaly less surprising           |
+| `incomplete_bucket_penalty`      | ↓ score | Bucket has less data than expected (ingest lag, sparse data) |
+
+### Why a score looks wrong
+
+- **Unexpectedly low:** `high_variance_penalty`, renormalization, <3 weeks training for weekly seasonality, `bucket_span` too large, wrong detector function (`mean` vs `high_mean`), `incomplete_bucket_penalty`, suppression by `custom_rules`.
+- **Unexpectedly high:** insufficient history (early training over-flags), high-cardinality split (too few points per entity), `use_null: true` on a sparse field.
+
+### Tool chain
+
+| Purpose                | Tool                         | ES|QL template / operation                             |
+| ---------------------- | ---------------------------- | ------------------------------------------------------ |
+| Records + explanation  | `platform.core.execute_esql` | `ad_query_anomaly_records` (exact `job_id_pattern`)    |
+| Renormalization drift  | `platform.core.execute_esql` | `ad_rca_score_reassessment`                            |
+| Model bounds (visual)  | `platform.core.execute_esql` | `ad_get_model_plot`                                    |
+| Forecast overlap       | `platform.core.execute_esql` | `ad_get_forecast_results`                              |
+| Influencer attribution | `platform.core.execute_esql` | `ad_query_influencers`                                 |
+| Config & detector      | `ml.ad_get_job_info`            | `operation=get_jobs` — `bucket_span`, function, `use_null` |
+| Model snapshots        | `ml.ad_get_job_info`            | `operation=get_model_snapshots`                        |
+| Categorization         | `platform.core.execute_esql` | `ad_get_categories`                                    |
+
+### Decision tree — score troubleshooting
+
+1. `ml.ad_get_job_info` (`operation=get_jobs`) — ≥3 weeks data for weekly seasonality?
+2. `platform.core.execute_esql` (`ad_ts_model_memory_health`) — `memory_status` healthy?
+3. `platform.core.execute_esql` (`ad_ts_delayed_data_annotations`) — no incomplete buckets?
+4. `platform.core.execute_esql` (`ad_query_anomaly_records`) — compare `record_score` vs `initial_record_score`.
+5. `ml.ad_get_job_info` (`operation=get_jobs`) — `bucket_span`, detector function, `custom_rules`, `use_null`.
+6. `platform.core.execute_esql` (`ad_get_model_plot`) — wide bounds → `high_variance_penalty`.
+7. `platform.core.execute_esql` (`ad_rca_score_reassessment`) — renormalization drift across history.
+8. Explain `anomaly_score_explanation` factors.
+
+See `esql-score-queries` referenced content for model_plot, forecast, and score reassessment templates.
+
+### Rules
+
+1. **Always show both `initial_record_score` and `record_score`** — the gap is the renormalization story.
+2. **Explain renormalization before diagnosing config** — score drift is the most common "score dropped" cause and needs no config change.
+3. **`actual << typical` with `count`/`low_count` is an absence anomaly** — distinguish outages from value spikes.
+4. **`high_variance_penalty` and `incomplete_bucket_penalty` explain most "low score" surprises** without remediation.
+5. **Weekly seasonality needs ≥3 weeks of training data** — flag young jobs as the cause.
+
+---
+
+## Mode: Troubleshoot — Job ops
+
+**When:** "missing documents", "datafeed stopped", "hard_limit", "results look wrong", lifecycle changes, calendars, CCS.
+
+### Common issues → fast paths
+
+| Issue                                | Fast path                                                                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Missing docs / `query_delay` warning | `ad_ts_delayed_data_annotations` → `ad_ts_bucket_event_gaps` → `ad_ts_ingest_latency_estimate` → `ml.ad_update_job_config` (`update_query_delay`) |
+| Memory `soft_limit` / `hard_limit`   | `ad_ts_model_memory_health` → `ml.ad_get_job_info` cardinality → `ml.ad_create_job` estimate → `ml.ad_update_job_config` (`update_memory_limit`) |
+| Datafeed not running / job state     | `ml.ad_get_job_info` (`get_jobs`) state → `ml.ad_get_job_info` (`get_job_messages`) → `ml.ad_manage_job_state`                          |
+
+> `hard_limit` corrupts model state and causes downstream missing-doc false alarms. **Fix memory before fixing `query_delay`.**
+
+### Memory concepts
+
+| Field                               | Meaning                                                 |
+| ----------------------------------- | ------------------------------------------------------- |
+| `model_bytes`                       | Current memory used                                     |
+| `peak_model_bytes`                  | High-water mark since job opened                        |
+| `model_bytes_memory_limit`          | Configured `model_memory_limit`                         |
+| `memory_status`                     | `ok` / `soft_limit` (pruning) / `hard_limit` (critical) |
+| `total_by_field_count > 100k`       | `by_field` cardinality too high — dominant driver       |
+| `total_partition_field_count > 10k` | Partition explosion                                     |
+| `total_category_count > 10k`        | Too many distinct log patterns                          |
+
+Use `ml.ad_create_job` (`operation=estimate_memory`) to sample cardinality from source before raising the limit.
+
+### Datafeed & timing concepts
+
+- **`query_delay`** — how far behind real time the datafeed queries. Too small → missing docs; too large → slower alerts. Set to **P95 ingest latency + buffer** (default `60s`–`120s`).
+- **`delayed_data_check_config`** — how aggressively the datafeed checks for late data.
+- **`bucket_span`** — analysis interval. Align with data granularity and detection window.
+
+### Lifecycle for config changes (memory limit, query_delay)
+
+1. Stop datafeed: `ml.ad_manage_job_state` (`operation=stop_datafeed`)
+2. Close job: `ml.ad_manage_job_state` (`operation=close_job`)
+3. Update config: `ml.ad_update_job_config` (`update_memory_limit`, `update_query_delay`, or `update_delayed_data_check`)
+4. Open job: `ml.ad_manage_job_state` (`operation=open_job`)
+5. Start datafeed: `ml.ad_manage_job_state` (`operation=start_datafeed`)
+
+Recover a corrupted period without resetting the whole model: `ml.ad_manage_job_state` (`operation=revert_model_snapshot`). Get snapshot list first via `ml.ad_get_job_info` (`operation=get_model_snapshots`).
+
+### Tool surface
+
+| Category               | Tool / operation                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Permissions / metadata | `ml.ad_get_job_info` (`validate_permissions`, `get_available_metadata`, `get_jobs`)                              |
+| Job + datafeed state   | `ml.ad_get_job_info` (`get_jobs`, `get_datafeed_config`, `get_job_messages`)                                     |
+| Timing / missing docs  | `platform.core.execute_esql` (`ad_ts_delayed_data_annotations`, `ad_ts_bucket_event_gaps`, `ad_ts_ingest_latency_estimate`) + `ml.ad_update_job_config` (`update_query_delay`, `update_delayed_data_check`) |
+| Memory                 | `platform.core.execute_esql` (`ad_ts_model_memory_health`) + `ml.ad_create_job` (`estimate_memory`) + `ml.ad_update_job_config` (`update_memory_limit`) |
+| Model / lifecycle      | `ml.ad_get_job_info` (`get_model_snapshots`) + `ml.ad_manage_job_state` (`open_job`, `close_job`, `start_datafeed`, `stop_datafeed`, `revert_model_snapshot`) |
+| Calendars              | `ml.ad_get_job_info` (`get_calendar_events`) + `ml.ad_update_job_config` (`create_calendar_event`)                  |
+
+See `esql-metadata-queries` referenced content for delayed data annotation and memory health ES|QL templates.
+
+### Rules
+
+1. **`ml.ad_get_job_info` with `validate_permissions` first** — missing privileges produce misleading empty results.
+2. **Fix memory before `query_delay`** — `hard_limit` corrupts state; `query_delay` fixes on a memory-limited job are wasted.
+3. **Stop the datafeed before updating it.** Updating a running datafeed is rejected.
+4. **Close the job before updating memory limit.** Sequence above.
+5. **`ml.ad_manage_job_state` with `preview_datafeed` before starting** — confirm the datafeed returns data after config changes.
+
+---
+
+## Mode: Manage — Create / configure jobs
+
+**When:** "set up a job", "create an ML detector", "monitor X over time", "detect rare/unusual/anomalous values".
+
+### 4-step workflow
+
+```text
+PUT  _ml/anomaly_detectors/<job_id>          # 1. Define job        (ml.ad_create_job operation=create_job)
+PUT  _ml/datafeeds/datafeed-<job_id>         # 2. Define datafeed   (ml.ad_create_job operation=create_datafeed)
+POST _ml/anomaly_detectors/<job_id>/_open    # 3a. Open job         (ml.ad_manage_job_state operation=open_job)
+POST _ml/datafeeds/datafeed-<job_id>/_start  # 3b. Start datafeed   (ml.ad_manage_job_state operation=start_datafeed)
+GET  _ml/anomaly_detectors/<job_id>/results  # 4. Read results      (platform.core.execute_esql ad_query_anomaly_records)
+```
+
+### Process
+
+1. **Build configs.** Parse the user request into job + datafeed JSON with no null fields.
+2. **Apply smart defaults:**
+
+   | Field            | Default                                 | Override when                                     |
+   | ---------------- | --------------------------------------- | ------------------------------------------------- |
+   | `bucket_span`    | `"15m"`                                 | User specifies a different span                   |
+   | `time_field`     | `"@timestamp"`                          | User names a different timestamp field            |
+   | `index`          | `"logs-*"`                              | User specifies an index or pattern                |
+   | `datafeed_query` | `{"match_all": {}}`                     | User mentions filters, processes, or time windows |
+   | `influencers`    | by/over/partition fields from detectors | User adds extra influencer fields                 |
+   | `job_id`         | Generated from user description         | User provides an explicit ID                      |
+   | `query_delay`    | `"60s"`                                 | P95 ingest latency is higher                      |
+
+3. **Choose detector function** from user intent:
+   - "high CPU" / "unusually large" → `high_mean` or `high_sum`
+   - "rare logins" / "unusual values" → `rare` (variants below)
+   - "too many requests" / "spike in count" → `high_count`
+
+   `rare` variants:
+   - Infrequent globally → `rare by_field_name: X`
+   - Infrequent vs peers → `rare by_field_name: X over_field_name: Y`
+   - Infrequent per segment → `rare by_field_name: X partition_field_name: Y`
+   - Infrequent per segment vs peers → `rare by_field_name: X over_field_name: Y partition_field_name: Z`
+
+4. **Validate.** `ml.ad_create_job` (`operation=validate_spec`) to check the job spec. If errors, fix and re-validate (max 3 attempts).
+
+5. **Present and confirm.** Show the **complete** job + datafeed bodies formatted as the exact API calls. Ask for approval **once**. If feedback, incorporate and re-present (up to 3 rounds).
+
+6. **Deploy.** After confirmation: `ml.ad_create_job` (`create_job`) → `ml.ad_create_job` (`create_datafeed`) → `ml.ad_manage_job_state` (`open_job`) → `ml.ad_manage_job_state` (`start_datafeed`). Report final `job_id` and `datafeed_id`.
+
+For **batch analysis on historical data**, pass `start` and `end` to `ml.ad_manage_job_state` (`start_datafeed`).
+
+> Worked examples (rare-username, DNS exfil, large-downloads) with full JSON bodies and datafeed filters: see `job-creation-recipes` referenced content.
+
+### Rules
+
+1. **Create job before datafeed.** Datafeed references job by ID.
+2. **Open job before starting datafeed.** Start on a closed job is rejected.
+3. **`query_delay` = P95 ingest latency + buffer** (60s–120s safe default).
+4. **Forecasts require non-population jobs** — `over_field_name` jobs cannot be forecasted; warn before attempting.
+5. **`by_field_name` vs `over_field_name`:** `by` compares entity to its own history; `over` compares to peer group in the same bucket. `partition_field_name` = fully independent sub-model with its own normalization.
+6. **`bucket_span` matches detection granularity** — 15m for high-frequency, 1h for operational metrics, 1d for daily patterns.
+
+---
+
+## Key system indices
+
+| Index                 | Relevant content                                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `.ml-anomalies-*`     | `record`, `bucket`, `influencer`, `model_plot`, `model_forecast`, `model_snapshot`, `category_definition`, `model_size_stats` |
+| `.ml-config`          | job/datafeed documents (visible even for never-run jobs)                                                                      |
+| `.ml-annotations-*`   | delayed data (`event == "delayed_data"`)                                                                                      |
+| `.ml-notifications-*` | job messages (`level`: info/warning/error)                                                                                    |
+
+---
+
+## Examples
+
+**RCA:** "Something caused a spike in our error rate at 2pm — what broke?" → Investigate → `ml.ad_get_job_info` (`operation=get_available_metadata`) → `ad_query_anomaly_timeline` (via `platform.core.execute_esql`) → `ad_rca_multi_job_entities` → RCA report.
+
+**Score drop:** "My anomaly score went from 90 to 55 — did the model change?" → Explain → `ad_rca_score_reassessment` via `platform.core.execute_esql` for drift → explain renormalization.
+
+**Memory limit:** "Job status shows `hard_limit` and results look wrong." → Troubleshoot → `ad_ts_model_memory_health` via `platform.core.execute_esql` → `ml.ad_create_job` (`estimate_memory`) → `ml.ad_update_job_config` (`update_memory_limit`) — lifecycle: stop datafeed → close → update → open → start.
+
+**New job:** "Detect unusual error rates per host on nginx access logs." → Manage → `high_count` detector with `by_field_name: "host.keyword"` → validate → present → deploy.
+
+---
+
+## Guidelines
+
+1. **Pick a mode first.** Don't blend RCA logic with score-explanation logic in one response.
+2. **`ml.ad_get_job_info` with `validate_permissions` first** on empty results — privileges are the most common false-negative cause.
+3. **Score bands are absolute thresholds**: `>75` critical, `50–75` warning, `25–50` minor, `<25` informational.
+4. **Multi-job entities are prime suspects.** Use `min_job_count=2` in `ad_rca_multi_job_entities`.
+5. **Show `initial_record_score` alongside `record_score`** — the gap tells the renormalization story.
+6. **Fix memory before `query_delay`.** `hard_limit` invalidates downstream diagnostics.
+7. **Stop datafeed → close job → update config → open job → start datafeed** for any config change to memory or query delay.
+8. **Confirm RCAs with `ad_rca_source_evidence`.** Raw source documents are ground truth.

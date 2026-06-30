@@ -35,6 +35,9 @@ export type SkillsDirectoryStructure = Directory<{
       workflows: FileDirectory;
     }>;
     observability: FileDirectory<{}>;
+    ml: FileDirectory<{
+      anomaly_detection: FileDirectory;
+    }>;
     security: FileDirectory<{
       alerts: FileDirectory<{
         rules: FileDirectory;

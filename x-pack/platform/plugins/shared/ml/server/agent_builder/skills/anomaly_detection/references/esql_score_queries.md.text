@@ -1,0 +1,83 @@
+# ES|QL Score Query Templates — Model Plot, Forecasts, Score Reassessment, Snapshots
+
+Use `platform.core.execute_esql` with the query text below. Replace `?param` placeholders with actual values.
+
+---
+
+## ad_get_model_plot
+
+Get model bounds (upper/lower/median) to explain why something was or was not flagged as anomalous. If `actual` is within bounds, no anomaly; if outside, anomaly score depends on distance.
+
+**Parameters:** `job_id` (string), `start_time` (ISO 8601), `end_time` (ISO 8601)
+
+```esql
+FROM .ml-anomalies-*
+| WHERE result_type == "model_plot"
+  AND job_id == ?job_id
+  AND timestamp >= ?start_time
+  AND timestamp <= ?end_time
+| SORT timestamp ASC
+| KEEP job_id, timestamp, model_lower, model_upper, model_median,
+       actual, partition_field_value, by_field_value
+| LIMIT 500
+```
+
+---
+
+## ad_get_forecast_results
+
+Retrieve forecast predictions with upper/lower bounds for capacity planning.
+
+**Parameters:** `job_id` (string)
+
+```esql
+FROM .ml-anomalies-*
+| WHERE result_type == "model_forecast"
+  AND job_id == ?job_id
+| SORT timestamp ASC
+| KEEP job_id, timestamp, forecast_prediction, forecast_upper, forecast_lower, bucket_span
+| LIMIT 200
+```
+
+---
+
+## ad_rca_score_reassessment
+
+Find anomalies where the model has significantly changed its assessment due to renormalization. Defines `score_drift = initial_record_score - record_score`.
+
+- Large positive drift (initial >> current): renormalization lowered the score
+- Large negative drift: upward reconsideration
+- Persistent high scores: anomalies the model never explained away
+
+**Parameters:** `job_id_pattern` (LIKE wildcards), `min_drift` (number, default 20), `start_time`, `end_time`
+
+```esql
+FROM .ml-anomalies-*
+| WHERE result_type == "record"
+  AND job_id LIKE ?job_id_pattern
+  AND timestamp >= ?start_time
+  AND timestamp <= ?end_time
+| EVAL score_drift = initial_record_score - record_score
+| WHERE ABS(score_drift) >= ?min_drift
+| SORT ABS(score_drift) DESC
+| LIMIT 30
+| KEEP job_id, timestamp, initial_record_score, record_score, score_drift,
+       function, field_name, by_field_value, partition_field_value
+```
+
+---
+
+## ad_get_model_snapshots
+
+List available model snapshots for a job. Used for model revert operations.
+
+**Parameters:** `job_id` (string)
+
+```esql
+FROM .ml-anomalies-*
+| WHERE result_type == "model_snapshot"
+  AND job_id == ?job_id
+| SORT timestamp DESC
+| KEEP job_id, timestamp, description, snapshot_doc_count
+| LIMIT 20
+```

@@ -6,6 +6,7 @@
  */
 
 import type { KibanaRequest } from '@kbn/core/server';
+import type { SecurityPluginSetup } from '@kbn/security-plugin/server';
 import { once } from 'lodash';
 import type {
   MlCapabilities,
@@ -13,7 +14,11 @@ import type {
   ResolveMlCapabilities,
   MlCapabilitiesKey,
 } from '@kbn/ml-common-types/capabilities';
-import { adminMlCapabilities } from '@kbn/ml-common-types/capabilities';
+import {
+  adminMlCapabilities,
+  basicLicenseMlCapabilities,
+  featureCapabilities,
+} from '@kbn/ml-common-types/capabilities';
 import type { MlClient } from '../ml_client';
 import { mlLog } from '../log';
 import { upgradeCheckProvider } from './upgrade';
@@ -61,9 +66,53 @@ function disableAdminPrivileges(capabilities: MlCapabilities) {
 
 export type HasMlCapabilities = (capabilities: MlCapabilitiesKey[]) => Promise<void>;
 
+export type MlAuthorizationService = SecurityPluginSetup['authz'];
+
+async function checkMlCapabilitiesViaPrivileges(
+  authorization: MlAuthorizationService,
+  request: KibanaRequest,
+  capabilities: MlCapabilitiesKey[]
+): Promise<boolean> {
+  const kibanaPrivileges = capabilities.map((cap) => authorization.actions.ui.get('ml', cap));
+  const { hasAllRequested } = await authorization
+    .checkPrivilegesWithRequest(request)
+    .globally({ kibana: kibanaPrivileges });
+  return hasAllRequested;
+}
+
+export function areCapabilitiesAllowedByLicenseAndFeatures(
+  mlCapabilities: MlCapabilities,
+  requestedCapabilities: MlCapabilitiesKey[],
+  mlLicense: MlLicense
+): boolean {
+  if (!mlLicense.isMlEnabled()) {
+    return false;
+  }
+
+  return requestedCapabilities.every((cap) => {
+    if (featureCapabilities.ad.includes(cap) && !mlCapabilities.isADEnabled) {
+      return false;
+    }
+    if (featureCapabilities.dfa.includes(cap) && !mlCapabilities.isDFAEnabled) {
+      return false;
+    }
+    if (featureCapabilities.nlp.includes(cap) && !mlCapabilities.isNLPEnabled) {
+      return false;
+    }
+
+    if (!basicLicenseMlCapabilities.includes(cap) && !mlLicense.isFullLicense()) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
 export function hasMlCapabilitiesProvider(
   resolveMlCapabilities: ResolveMlCapabilities,
-  request: KibanaRequest
+  request: KibanaRequest,
+  authorization?: MlAuthorizationService,
+  mlLicense?: MlLicense
 ) {
   let mlCapabilities: MlCapabilities | null = null;
 
@@ -82,6 +131,20 @@ export function hasMlCapabilitiesProvider(
     }
 
     if (capabilities.every((c) => mlCapabilities![c] === true) === false) {
+      if (request.isFakeRequest && authorization && mlLicense) {
+        const hasPrivileges = await checkMlCapabilitiesViaPrivileges(
+          authorization,
+          request,
+          capabilities
+        );
+        if (
+          hasPrivileges &&
+          areCapabilitiesAllowedByLicenseAndFeatures(mlCapabilities, capabilities, mlLicense)
+        ) {
+          return;
+        }
+      }
+
       throw new InsufficientMLCapabilities('Insufficient privileges to access feature');
     }
   };

@@ -109,8 +109,9 @@ export function normalizeSkillIdForTelemetry(skill: {
  *   it's a read-only built-in skill, otherwise `custom`.
  * - `solution_area`: derived from `basePath` for built-ins
  *   (`skills/security/...` → `security`, `skills/observability/...` →
- *   `observability`, `skills/search/...` → `search`, `skills/platform/...` →
- *   `platform`); literal `custom` for user-created; `plugin` for plugin-backed.
+ *   `observability`, `skills/ml/...` → `ml`, `skills/search/...` → `search`,
+ *   `skills/platform/...` → `platform`); literal `custom` for user-created;
+ *   `plugin` for plugin-backed.
  */
 export function classifySkill(
   skill: Pick<InternalSkillDefinition, 'readonly' | 'plugin_id' | 'basePath'>
@@ -134,6 +135,9 @@ function solutionAreaFromBasePath(basePath: string): SkillSolutionArea {
   }
   if (normalized.startsWith('skills/observability')) {
     return 'observability';
+  }
+  if (normalized.startsWith('skills/ml')) {
+    return 'ml';
   }
   if (normalized.startsWith('skills/search')) {
     return 'search';

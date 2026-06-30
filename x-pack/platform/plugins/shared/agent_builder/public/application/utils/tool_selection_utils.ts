@@ -10,7 +10,11 @@ import type {
   ToolSelection,
   ToolSelectionRelevantFields,
 } from '@kbn/agent-builder-common';
-import { allToolsSelectionWildcard, toolMatchSelection } from '@kbn/agent-builder-common';
+import {
+  allToolsSelectionWildcard,
+  isElasticCapabilitiesExcludedBuiltinSkill,
+  toolMatchSelection,
+} from '@kbn/agent-builder-common';
 import type { AgentEditState } from '../hooks/agents/use_agent_edit';
 
 /**
@@ -128,7 +132,9 @@ export const getActiveSkills = <T extends { id: string; readonly: boolean }>(
   const explicitIds = new Set(agentSkillIds ?? []);
   const explicitSkills = allSkills.filter((s) => explicitIds.has(s.id));
   if (!enableElasticCapabilities) return explicitSkills;
-  const builtinNotExplicit = allSkills.filter((s) => s.readonly && !explicitIds.has(s.id));
+  const builtinNotExplicit = allSkills.filter(
+    (s) => s.readonly && !explicitIds.has(s.id) && !isElasticCapabilitiesExcludedBuiltinSkill(s.id)
+  );
   return [...explicitSkills, ...builtinNotExplicit];
 };
 

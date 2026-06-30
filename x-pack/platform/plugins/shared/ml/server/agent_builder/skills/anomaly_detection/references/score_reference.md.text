@@ -1,0 +1,107 @@
+# Anomaly Score Reference
+
+Canonical definitions for all score and impact fields in Elastic ML anomaly detection.
+
+---
+
+## Score Types
+
+| Field                   | Scope                 | Range | Description                                                                            |
+| ----------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------- |
+| `record_score`          | Single anomaly record | 0–100 | Current normalized severity. May change over time as the model sees more extreme data. |
+| `initial_record_score`  | Single anomaly record | 0–100 | Score at detection time — never changes. Use for alerting on fresh anomalies.          |
+| `anomaly_score`         | Bucket (time window)  | 0–100 | Aggregate severity across all detectors in a bucket.                                   |
+| `initial_anomaly_score` | Bucket                | 0–100 | Bucket score at detection time — never changes.                                        |
+| `influencer_score`      | Entity × bucket       | 0–100 | How anomalous a specific entity (host, user, service) is within that bucket.           |
+
+---
+
+## `record_score` Severity Bands
+
+| Band          | Range | Interpretation                                             |
+| ------------- | ----- | ---------------------------------------------------------- |
+| Critical      | > 75  | High-confidence anomaly; warrants immediate investigation  |
+| Warning       | 50–75 | Notable deviation; triage and correlate with other signals |
+| Minor         | 25–50 | Potentially interesting; aggregate with cross-job signals  |
+| Informational | < 25  | Weak signal; useful for context, not standalone action     |
+
+> **Cross-job composite signal**: Low scores (25–50) across many jobs simultaneously are often more significant than a single high score. Five jobs each scoring 30 = composite signal 150, pointing to a systemic root cause.
+
+---
+
+## `multi_bucket_impact`
+
+Scale from -5 to +5 indicating whether the anomaly spans multiple consecutive time buckets.
+
+| Value    | Meaning                                              |
+| -------- | ---------------------------------------------------- |
+| 0        | One-off event, no sustained pattern                  |
+| 1–2      | Mild persistence across a few buckets                |
+| ≥ 3      | Genuine behavioral shift — not a transient spike     |
+| Negative | Anomaly is suppressed by surrounding normal behavior |
+
+Values ≥ 3 strongly suggest a real system change rather than a momentary blip.
+
+---
+
+## `initial_record_score` vs `record_score`
+
+Elasticsearch continuously renormalizes scores relative to the most extreme anomaly ever seen by the job. A score of 90 today may become 60 if a more extreme event appears later — by design, so the "worst ever" event always scores near 100.
+
+**When to use each:**
+
+| Use case                                                     | Field                                                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Alerting on newly detected anomalies                         | `initial_record_score` — captures severity at detection time                         |
+| Ranking historical anomalies by current importance           | `record_score` — reflects how bad this was relative to all history                   |
+| Detecting renormalization (model calibrated away an anomaly) | Compare: if `initial_record_score >> record_score`, the model saw worse events later |
+
+**Quantify drift:** `score_drift = initial_record_score - record_score`
+
+- Large positive drift = renormalized away (model calibrated)
+- Small drift = score is stable and genuine
+
+Use `ad_rca_score_reassessment` ES|QL template from `esql-score-queries` referenced content to find high-drift anomalies.
+
+---
+
+## `anomaly_score_explanation` Components
+
+| Component                        | Effect on score | What it means                                                       |
+| -------------------------------- | --------------- | ------------------------------------------------------------------- |
+| `anomaly_length`                 | ↑ increases     | More consecutive anomalous buckets — sustained deviation            |
+| `single_bucket_impact`           | ↑ increases     | Lower statistical probability → more surprising → higher impact     |
+| `multi_bucket_impact`            | ↑ increases     | Contribution from sustained pattern across multiple buckets         |
+| `anomaly_characteristics_impact` | ↑ increases     | Mean shift (value moved) vs. variance change (volatility increased) |
+| `high_variance_penalty`          | ↓ decreases     | Historically noisy data; wide confidence bounds absorb the spike    |
+| `incomplete_bucket_penalty`      | ↓ decreases     | Bucket has less data than expected (ingest lag, sparse events)      |
+
+---
+
+## Absence Anomalies
+
+When `actual << typical` with `count`, `low_count`, `low_mean`, or `low_sum` functions, a low or zero value indicates a real-world absence — not just a numerically low observation:
+
+- Zero `count` when traffic is normally constant → pipeline stopped, service unavailable
+- `low_mean(response_time)` → requests completing too fast (cache hit storm, bypassed processing)
+- Very low `sum(bytes_sent)` → network partition or data source failure
+
+**Key insight:** A `record_score` of 80 with `actual = 0` and `typical = 5000` is an outage signal, not just a low number.
+
+---
+
+## Why a Score Is Unexpectedly Low
+
+1. **`high_variance_penalty`** — Metric is historically noisy; wide model bounds absorb the spike.
+2. **Renormalization** — A more extreme anomaly appeared later, pushing this score down.
+3. **Insufficient training** — Model needs ≥ 3 weeks for weekly seasonality, ≥ 2 full cycles for any period.
+4. **`bucket_span` too large** — Long span smooths short-duration spikes.
+5. **Detector function mismatch** — `mean` vs `high_mean`, `count` vs `high_count`. Wrong function = missed direction.
+6. **`incomplete_bucket_penalty`** — Ingest latency or sparse events reduced bucket data volume.
+7. **`custom_rules`** — A detector filter may be suppressing or conditioning the anomaly.
+
+## Why a Score Is Unexpectedly High
+
+1. **Insufficient training history** — Early training: moderate deviations flag as extreme.
+2. **High-cardinality split** — Too few data points per entity per bucket → unreliable probabilities.
+3. **`use_null: true`** — Missing entities produce "null" anomalies that may not be operationally meaningful.

@@ -48,6 +48,7 @@ export interface ConfigSchema {
   compatibleModuleType?: CompatibleModule;
   experimental?: {
     ruleFormV2?: { enabled: boolean };
+    anomalyDetectionSkill?: { enabled: boolean };
   };
 }
 

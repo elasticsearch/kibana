@@ -49,6 +49,7 @@ export const configSchema = schema.object({
   experimental: schema.maybe(
     schema.object({
       ruleFormV2: enabledSchema,
+      anomalyDetectionSkill: enabledSchema,
     })
   ),
 });

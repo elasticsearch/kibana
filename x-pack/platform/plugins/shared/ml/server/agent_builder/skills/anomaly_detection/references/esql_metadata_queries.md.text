@@ -1,0 +1,195 @@
+# ES|QL Metadata Query Templates — Jobs, Config, Annotations, Memory, Gaps
+
+Use `platform.core.execute_esql` with the query text below. Replace `?param` placeholders with actual values.
+
+---
+
+## ad_get_available_metadata
+
+Discover all anomaly detection jobs and their configured metadata. Call this FIRST before other queries to learn valid parameter values.
+
+**Parameters:** none
+
+```esql
+FROM .ml-config
+| WHERE job_type == "anomaly_detector"
+| STATS job_count = COUNT(*),
+        job_ids = VALUES(job_id),
+        functions = VALUES(`analysis_config.detectors.function`),
+        fields = VALUES(`analysis_config.detectors.field_name`),
+        by_fields = VALUES(`analysis_config.detectors.by_field_name`),
+        over_fields = VALUES(`analysis_config.detectors.over_field_name`),
+        partition_fields = VALUES(`analysis_config.detectors.partition_field_name`),
+        influencers = VALUES(`analysis_config.influencers`),
+        bucket_spans = VALUES(`analysis_config.bucket_span`)
+```
+
+---
+
+## ad_get_jobs
+
+List all anomaly detection jobs with full configuration. Reads from `.ml-config` so ALL jobs appear regardless of whether they have run.
+
+**Parameters:** none
+
+```esql
+FROM .ml-config
+| WHERE job_type == "anomaly_detector"
+| KEEP job_id,
+       `analysis_config.bucket_span`,
+       `analysis_config.detectors.function`,
+       `analysis_config.detectors.field_name`,
+       `analysis_config.detectors.partition_field_name`,
+       `analysis_config.detectors.by_field_name`,
+       `analysis_config.detectors.over_field_name`,
+       `analysis_config.influencers`,
+       `analysis_limits.model_memory_limit`,
+       groups,
+       description
+| SORT job_id ASC
+| LIMIT 100
+```
+
+---
+
+## ad_discover_related_jobs
+
+Given a job of interest, find all other jobs that share the same entity field name.
+
+**Parameters:** `job_id` (string, exact job ID)
+
+```esql
+FROM .ml-config
+| WHERE job_type == "anomaly_detector"
+| EVAL entity_field = COALESCE(
+    `analysis_config.detectors.partition_field_name`,
+    `analysis_config.detectors.by_field_name`,
+    `analysis_config.detectors.over_field_name`
+  )
+| MV_EXPAND entity_field
+| WHERE entity_field IS NOT NULL
+| STATS job_count = COUNT_DISTINCT(job_id),
+        jobs = VALUES(job_id),
+        influencers = VALUES(`analysis_config.influencers`)
+  BY entity_field
+| WHERE MV_CONTAINS(jobs, ?job_id)
+| SORT job_count DESC
+| LIMIT 50
+```
+
+---
+
+## ad_get_categories
+
+Get log categories for categorization jobs: category definitions, regex patterns, and examples.
+
+**Parameters:** `job_id` (string)
+
+```esql
+FROM .ml-anomalies-*
+| WHERE result_type == "category_definition"
+  AND job_id == ?job_id
+| SORT category_id ASC
+| KEEP job_id, category_id, terms, regex, max_matching_length, examples
+| LIMIT 100
+```
+
+---
+
+## ad_get_job_messages
+
+Retrieve all notifications for a job from `.ml-notifications-*`, including info, warning, and error levels.
+
+**Parameters:** `job_id` (string)
+
+```esql
+FROM .ml-notifications-*
+| WHERE job_id == ?job_id
+| SORT timestamp DESC
+| KEEP timestamp, level, message, node_name, job_id
+| LIMIT 50
+```
+
+---
+
+## ad_ts_model_memory_health
+
+Get memory health and growth trend for a job. Use `limit=1` for a fast current-state snapshot; `limit=500` for full growth trend analysis.
+
+**Parameters:** `job_id` (string), `limit` (number: 1 for snapshot, 500 for trend)
+
+**Interpretation:**
+- `memory_status == "hard_limit"` → CRITICAL (job blind to new entities)
+- `memory_status == "soft_limit"` → WARNING (aggressive pruning)
+- `model_bytes / model_bytes_memory_limit > 0.8` → APPROACHING LIMIT
+
+```esql
+FROM .ml-anomalies-*
+| WHERE result_type == "model_size_stats"
+  AND job_id == ?job_id
+| SORT timestamp DESC
+| KEEP job_id, timestamp, model_bytes, peak_model_bytes,
+       model_bytes_memory_limit, model_bytes_exceeded, memory_status,
+       total_by_field_count, total_over_field_count, total_partition_field_count,
+       bucket_allocation_failures_count
+| LIMIT ?limit
+```
+
+---
+
+## ad_ts_delayed_data_annotations
+
+Retrieve all delayed data annotations for a job. Frequent annotations indicate chronic ingest latency. Starting point for any "missing documents" investigation.
+
+**Parameters:** `job_id` (string)
+
+```esql
+FROM .ml-annotations-*
+| WHERE job_id == ?job_id
+  AND event == "delayed_data"
+| SORT timestamp DESC
+| KEEP job_id, timestamp, end_timestamp, annotation
+| LIMIT 100
+```
+
+---
+
+## ad_ts_bucket_event_gaps
+
+Find buckets with zero or suspiciously low event counts. Compare `event_count` across buckets to identify time ranges where data was lost.
+
+**Parameters:** `job_id` (string), `start_time` (ISO 8601), `end_time` (ISO 8601)
+
+```esql
+FROM .ml-anomalies-*
+| WHERE result_type == "bucket"
+  AND job_id == ?job_id
+  AND timestamp >= ?start_time
+  AND timestamp <= ?end_time
+| SORT timestamp ASC
+| KEEP timestamp, event_count, anomaly_score, bucket_span, is_interim
+| LIMIT 500
+```
+
+---
+
+## ad_ts_ingest_latency_estimate
+
+Measure actual ingest latency by comparing event timestamps with ingestion timestamps in source data. Requires `event.ingested` field.
+
+**Parameters:** `source_index` (LIKE pattern), `start_time`, `end_time`
+
+```esql
+FROM * METADATA _index
+| WHERE _index LIKE ?source_index
+  AND @timestamp >= ?start_time
+  AND @timestamp <= ?end_time
+  AND event.ingested IS NOT NULL
+| EVAL latency_seconds = DATE_DIFF("second", @timestamp, event.ingested)
+| STATS p50_latency = PERCENTILE(latency_seconds, 50),
+        p95_latency = PERCENTILE(latency_seconds, 95),
+        p99_latency = PERCENTILE(latency_seconds, 99),
+        max_latency = MAX(latency_seconds),
+        doc_count = COUNT(*)
+| LIMIT 1
+```

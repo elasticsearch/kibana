@@ -50,7 +50,8 @@
       "observabilityAIAssistant",
       "usageCollection",
       "cases",
-      "cps"
+      "cps",
+      "agentBuilder"
     ],
     "requiredBundles": [
       "cases",

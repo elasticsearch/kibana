@@ -39,6 +39,12 @@ export const AGENT_BUILDER_BUILTIN_TOOLS = [
   `${internalNamespaces.observability}.get_logs`,
   `${internalNamespaces.observability}.get_apm_correlations`,
 
+  // ML anomaly detection (Agent Builder skill tools)
+  `${internalNamespaces.ml}.ad_get_job_info`,
+  `${internalNamespaces.ml}.ad_create_job`,
+  `${internalNamespaces.ml}.ad_manage_job_state`,
+  `${internalNamespaces.ml}.ad_update_job_config`,
+
   // Security Solution
   `${internalNamespaces.security}.entity_risk_score`,
   `${internalNamespaces.security}.create_detection_rule`,
@@ -152,6 +158,9 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   'observability.rca',
   'observability.investigation',
   'observability.service-map',
+
+  // ML
+  `${internalNamespaces.ml}.anomaly-detection`,
 
   // Search
   `${internalNamespaces.search}.keyword-search`,

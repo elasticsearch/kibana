@@ -122,6 +122,10 @@ describe('classifySkill', () => {
       origin: 'builtin',
       solution_area: 'observability',
     });
+    expect(classifySkill({ readonly: true, basePath: 'skills/ml/anomaly_detection' })).toEqual({
+      origin: 'builtin',
+      solution_area: 'ml',
+    });
     expect(classifySkill({ readonly: true, basePath: 'skills/search/baz' })).toEqual({
       origin: 'builtin',
       solution_area: 'search',
