@@ -41,7 +41,7 @@ export const ModelDeployed = ({
         <EuiFlexItem grow>
           <EuiFlexGroup direction="row" gutterSize="s" alignItems="center">
             <EuiFlexItem grow={false}>
-              <EuiIcon color="success" type="checkCircleFill" />
+              <EuiIcon color="success" type="checkCircleFill" aria-hidden />
             </EuiFlexItem>
             <EuiFlexItem grow>
               <EuiText color="success" size="xs">

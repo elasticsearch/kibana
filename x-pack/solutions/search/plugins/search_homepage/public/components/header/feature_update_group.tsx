@@ -19,7 +19,7 @@ export const FeatureUpdateGroup: React.FC<FeatureUpdateGroupProps> = ({ updates 
         <EuiFlexItem grow={false} key={index}>
           <EuiFlexGroup alignItems="center" gutterSize="s">
             <EuiFlexItem grow={false}>
-              <EuiIcon type="checkCircleFill" color="primary" />
+              <EuiIcon type="checkCircleFill" color="primary" aria-hidden={true} />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>{update}</EuiFlexItem>
           </EuiFlexGroup>

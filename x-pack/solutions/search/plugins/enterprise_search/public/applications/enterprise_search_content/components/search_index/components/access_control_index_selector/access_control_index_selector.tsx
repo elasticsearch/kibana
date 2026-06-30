@@ -91,7 +91,13 @@ export const AccessControlIndexSelector: React.FC<IndexSelectorProps> = ({
             <EuiFlexGroup direction="row" alignItems="center" gutterSize="m">
               {option.error ? (
                 <EuiFlexItem grow={false} align>
-                  <EuiIcon type={'warning'} />{' '}
+                  <EuiIcon
+                    type={'warning'}
+                    aria-label={i18n.translate(
+                      'xpack.enterpriseSearch.content.index.accessControl.selector.optionWarning',
+                      { defaultMessage: 'Warning' }
+                    )}
+                  />{' '}
                 </EuiFlexItem>
               ) : null}
               <EuiFlexGroup direction="column" gutterSize="none">

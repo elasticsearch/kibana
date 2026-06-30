@@ -28,7 +28,7 @@ export const PipelineSelectOptionDisabled: React.FC<{ disabledReason?: string }>
   return (
     <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
       <EuiFlexItem grow={false}>
-        <EuiIcon type="warning" color="warning" />
+        <EuiIcon type="warning" color="warning" aria-hidden />
       </EuiFlexItem>
       <EuiFlexItem>
         <EuiTextColor color="warning">

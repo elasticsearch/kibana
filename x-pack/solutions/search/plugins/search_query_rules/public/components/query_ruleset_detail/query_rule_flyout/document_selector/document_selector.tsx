@@ -62,7 +62,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
             <EuiPanel color="transparent" paddingSize="s" aria-label="Drag Handle">
               <EuiFlexGroup alignItems="center" gutterSize="s" direction="row" responsive={false}>
                 <EuiFlexItem grow={false}>
-                  <EuiIcon type="dragVertical" />
+                  <EuiIcon type="dragVertical" aria-hidden={true} />
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
                   <EuiNotificationBadge color="subdued">{(indexDoc ?? 0) + 1}</EuiNotificationBadge>

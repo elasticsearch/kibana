@@ -64,7 +64,7 @@ export const DraggableBodyRow = <Item extends object>({
                       { defaultMessage: 'Drag handle' }
                     )}
                   >
-                    <EuiIcon type="dragVertical" />
+                    <EuiIcon type="dragVertical" aria-hidden />
                   </div>
                 )}
               </EuiFlexItem>

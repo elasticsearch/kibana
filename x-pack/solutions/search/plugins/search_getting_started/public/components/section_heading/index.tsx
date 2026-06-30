@@ -20,7 +20,7 @@ export const SearchGettingStartedSectionHeading = ({ title, icon, description }:
         <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
           <EuiFlexItem grow={false}>
             <EuiPanel color="subdued" paddingSize="s" grow={false}>
-              <EuiIcon type={icon} size="m" color="subdued" />
+              <EuiIcon type={icon} size="m" color="subdued" aria-hidden={true} />
             </EuiPanel>
           </EuiFlexItem>
           <EuiFlexItem>

@@ -27,7 +27,7 @@ export const QueryRuleTypeSelector: React.FC<QueryRuleTypeSelectorProps> = ({
         id: 'pinned',
         label: (
           <>
-            <EuiIcon type="pin" size="m" />
+            <EuiIcon type="pin" size="m" aria-hidden={true} />
             &nbsp;
             <FormattedMessage
               id="xpack.search.queryRulesetDetail.queryRuleFlyout.actionType.pinned"
@@ -41,7 +41,7 @@ export const QueryRuleTypeSelector: React.FC<QueryRuleTypeSelectorProps> = ({
         id: 'exclude',
         label: (
           <>
-            <EuiIcon type="eyeSlash" size="m" />
+            <EuiIcon type="eyeSlash" size="m" aria-hidden={true} />
             &nbsp;
             <FormattedMessage
               id="xpack.search.queryRulesetDetail.queryRuleFlyout.actionType.exclude"

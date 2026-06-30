@@ -22,7 +22,7 @@ export const ModelDeploymentInProgress = ({
       <EuiFlexItem grow>
         <EuiFlexGroup direction="row" gutterSize="s" alignItems="center">
           <EuiFlexItem grow={false}>
-            <EuiIcon color="success" type="clock" />
+            <EuiIcon color="success" type="clock" aria-hidden />
           </EuiFlexItem>
           <EuiFlexItem grow>
             <EuiText color="success" size="xs">

@@ -97,7 +97,16 @@ export const useEnterpriseSearchApplicationNav = (
                   {i18n.translate('xpack.enterpriseSearch.nav.searchApplication.contentTitle', {
                     defaultMessage: 'Content',
                   })}
-                  {hasSchemaConflicts && <EuiIcon type="warning" color="danger" />}
+                  {hasSchemaConflicts && (
+                    <EuiIcon
+                      type="warning"
+                      color="danger"
+                      aria-label={i18n.translate(
+                        'xpack.enterpriseSearch.nav.schemaConflictsWarning',
+                        { defaultMessage: 'Schema conflicts' }
+                      )}
+                    />
+                  )}
                 </EuiFlexGroup>
               ),
               // Required for the new side nav

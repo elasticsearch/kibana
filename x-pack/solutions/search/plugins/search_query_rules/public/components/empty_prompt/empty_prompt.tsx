@@ -127,7 +127,7 @@ export const EmptyPrompt: React.FC<EmptyPromptProps> = ({ getStartedAction }) =>
                 <EuiFlexGroup gutterSize="m" direction="column">
                   <EuiFlexGroup responsive={false} gutterSize="s" direction="row">
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="check" />
+                      <EuiIcon type="check" aria-hidden={true} />
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
                       <EuiFlexGroup responsive={false} gutterSize="xs" direction="column">
@@ -156,7 +156,7 @@ export const EmptyPrompt: React.FC<EmptyPromptProps> = ({ getStartedAction }) =>
                   </EuiFlexGroup>
                   <EuiFlexGroup responsive={false} gutterSize="s" direction="row">
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="check" />
+                      <EuiIcon type="check" aria-hidden={true} />
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
                       <EuiFlexGroup responsive={false} gutterSize="xs" direction="column">
@@ -185,7 +185,7 @@ export const EmptyPrompt: React.FC<EmptyPromptProps> = ({ getStartedAction }) =>
                   </EuiFlexGroup>
                   <EuiFlexGroup responsive={false} gutterSize="s" direction="row">
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="check" />
+                      <EuiIcon type="check" aria-hidden={true} />
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
                       <EuiFlexGroup responsive={false} gutterSize="xs" direction="column">

@@ -146,7 +146,7 @@ export const EditServiceType: React.FC<EditServiceTypeProps> = ({ connector, isD
         label: conn.name,
         value: {
           _icon,
-          _badges: <EuiIcon size="l" type={conn.iconPath} />,
+          _badges: <EuiIcon size="l" type={conn.iconPath} aria-hidden={true} />,
           serviceType: conn.serviceType,
         },
         'aria-label': conn.name + _ariaLabelAppend,
