@@ -10,7 +10,7 @@ import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/type
 import { NonEmptyString } from '@kbn/zod-helpers/v4';
 import { primitive } from '../shared/record_types';
 import type { Feature } from '../feature';
-import type { SignificantEventsResponse } from '../api/significant_events';
+import type { QueryOccurrenceSeries } from '../api/significant_events';
 
 export interface EsqlQuery {
   query: string;
@@ -108,7 +108,7 @@ export const bulkStreamQueryInputSchema = upsertStreamQueryRequestSchema.extend(
 });
 
 export interface QueriesGetResponse {
-  queries: SignificantEventsResponse[];
+  queries: QueryOccurrenceSeries[];
   page: number;
   perPage: number;
   total: number;

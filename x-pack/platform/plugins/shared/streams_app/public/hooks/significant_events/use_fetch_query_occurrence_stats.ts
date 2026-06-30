@@ -7,7 +7,7 @@
 
 import { calculateAuto } from '@kbn/calculate-auto';
 import { type QueryFunctionContext, useQuery } from '@kbn/react-query';
-import type { SignificantEventsResponse, StreamQuery } from '@kbn/streams-schema';
+import type { QueryOccurrenceSeries, StreamQuery } from '@kbn/streams-schema';
 import moment from 'moment';
 import { useKibana } from '../use_kibana';
 import { useTimefilter } from '../use_timefilter';
@@ -17,7 +17,7 @@ export interface StreamQueryStats {
   query: StreamQuery;
   stream_name: string;
   occurrences: Array<{ x: number; y: number }>;
-  change_points: SignificantEventsResponse['change_points'];
+  change_points: QueryOccurrenceSeries['change_points'];
   rule_backed: boolean;
 }
 
@@ -69,7 +69,7 @@ export const useFetchQueryOccurrenceStats = (
     const intervalString = `${bucketSize.asSeconds()}s`;
 
     const requestPromise = streamsRepositoryClient.fetch(
-      'GET /internal/streams/_significant_events',
+      'GET /internal/streams/_query_occurrence_stats',
       {
         params: {
           query: {
@@ -85,12 +85,9 @@ export const useFetchQueryOccurrenceStats = (
     );
 
     return await requestPromise.then(
-      ({
-        significant_events: significantEvents,
-        aggregated_occurrences: aggregatedOccurrences,
-      }) => {
+      ({ queries: queryOccurrenceSeries, aggregated_occurrences: aggregatedOccurrences }) => {
         return {
-          queries: significantEvents.map((series) => {
+          queries: queryOccurrenceSeries.map((series) => {
             const { occurrences, change_points, stream_name, rule_backed, ...rest } = series;
             return {
               query: rest,

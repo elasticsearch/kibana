@@ -24,7 +24,7 @@ import {
   computeOccurrences,
   fetchQueryLinks,
   getQueryOccurrences,
-  toSignificantEventResponse,
+  toQueryOccurrenceSeries,
   type QueryOccurrences,
 } from '../../../../lib/significant_events/fetch_query_occurrences_from_alerts';
 import { resolveAlertsSource } from '../../../utils/resolve_alerts_source';
@@ -372,7 +372,7 @@ const getDiscoveryQueriesRoute = createServerRoute({
     );
     const queryOccurrences: QueryOccurrences = { queryLinks: pageLinks, ...occurrences };
     const queriesPage = pageLinks.map((queryLink) =>
-      toSignificantEventResponse({ queryLink, queryOccurrences })
+      toQueryOccurrenceSeries({ queryLink, queryOccurrences })
     );
 
     return { queries: queriesPage, page, perPage, total };

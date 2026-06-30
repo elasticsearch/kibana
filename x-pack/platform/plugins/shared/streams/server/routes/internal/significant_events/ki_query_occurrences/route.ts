@@ -5,7 +5,7 @@
  * 2.0.
  */
 import type {
-  SignificantEventsGetResponse,
+  QueryOccurrenceStatsResponse,
   SignificantEventsWorkflowStatusResult,
   SignificantEventsQueriesGenerationResult,
   SignificantEventsQueriesGenerationTaskResult,
@@ -163,8 +163,8 @@ const significantEventsQueriesGenerationTaskRoute = createServerRoute({
   },
 });
 
-const readAllSignificantEventsRoute = createServerRoute({
-  endpoint: 'GET /internal/streams/_significant_events',
+const readQueryOccurrenceStatsRoute = createServerRoute({
+  endpoint: 'GET /internal/streams/_query_occurrence_stats',
   params: z.object({
     query: z.object({
       from: dateFromString.describe('Start of the time range'),
@@ -173,18 +173,18 @@ const readAllSignificantEventsRoute = createServerRoute({
         .string()
         .regex(BUCKET_SIZE_PATTERN)
         .describe('Size of time buckets for aggregation'),
-      query: z.string().optional().describe('Query string to filter significant events queries'),
+      query: z.string().max(4096).optional().describe('Query string to filter stream queries'),
       streamNames: z
         .union([z.string().transform((val) => [val]), z.array(z.string())])
         .optional()
-        .describe('Stream names to filter significant events'),
+        .describe('Stream names to filter results by'),
       searchMode: searchModeSchema,
     }),
   }),
   options: {
     access: 'internal',
-    summary: 'Read all significant events',
-    description: 'Read all significant events',
+    summary: 'Read query occurrence stats',
+    description: 'Read query occurrence stats',
   },
   security: {
     authz: {
@@ -196,7 +196,7 @@ const readAllSignificantEventsRoute = createServerRoute({
     request,
     getScopedClients,
     server,
-  }): Promise<SignificantEventsGetResponse> => {
+  }): Promise<QueryOccurrenceStatsResponse> => {
     const {
       getKnowledgeIndicatorClient,
       getAlertingV2RulesClient,
@@ -328,7 +328,7 @@ const significantEventsDiscoveryStatusRoute = createServerRoute({
 export const internalSignificantEventsRoutes = {
   ...significantEventsQueriesGenerationStatusRoute,
   ...significantEventsQueriesGenerationTaskRoute,
-  ...readAllSignificantEventsRoute,
+  ...readQueryOccurrenceStatsRoute,
   ...significantEventsDiscoveryExecuteRoute,
   ...significantEventsDiscoveryStatusRoute,
 };
