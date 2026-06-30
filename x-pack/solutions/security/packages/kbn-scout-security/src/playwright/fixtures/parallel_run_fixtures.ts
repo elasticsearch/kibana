@@ -78,6 +78,7 @@ export const spaceTest = securityParallelFixtures.extend<
         kbnClient,
         log,
         scoutSpace,
+        esClient,
       });
       extendedApiServices.cloudConnectorApi = getCloudConnectorApiService({
         kbnClient,
