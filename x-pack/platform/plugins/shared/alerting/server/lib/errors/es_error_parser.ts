@@ -13,6 +13,11 @@ const getEsCause = (
 ): string[] => {
   const updated = [...causes];
 
+  const authMessage = obj.additional_unsuccessful_credentials;
+  if (typeof authMessage === 'string') {
+    updated.push(authMessage);
+  }
+
   if (obj.caused_by) {
     if (obj.caused_by?.reason) {
       updated.push(obj.caused_by?.reason);
