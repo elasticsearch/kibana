@@ -9,14 +9,23 @@
 
 type ProcMetricType =
   | 'heapUsage'
+  | 'heapUsed'
+  | 'heapTotal'
+  | 'external'
+  | 'arrayBuffers'
   | 'cpuUsage'
+  | 'rss'
   | 'rssMax'
+  | 'tailRss'
+  | 'tailHeapUsed'
+  | 'tailHeapTotal'
+  | 'tailExternal'
+  | 'tailArrayBuffers'
   | 'gcTotal'
   | 'gcMajor'
   | 'gcMinor'
   | 'gcIncremental'
-  | 'gcWeakCb'
-  | 'gcTotal';
+  | 'gcWeakCb';
 
 export interface ProcStatsMeta {
   pid: number;

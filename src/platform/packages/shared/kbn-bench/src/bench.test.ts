@@ -39,6 +39,15 @@ describe('bench E2E', () => {
   let log: ToolingLog;
   let capturedOutput: string[] = [];
   let fastBenchmarkConfigPath: string;
+  let createMockWorkspace: (displayName?: string) => {
+    getDisplayName: () => string;
+    getCommitLine: () => Promise<string>;
+    getDir: () => string;
+    ensureCheckout: () => Promise<void>;
+    ensureBootstrap: () => Promise<void>;
+    ensureBuild: jest.Mock<Promise<void>, []>;
+    exec: jest.Mock;
+  };
 
   beforeAll(() => {
     // Create a temporary directory for test data
@@ -110,18 +119,17 @@ describe('bench E2E', () => {
     `
     );
 
-    // Mock workspace operations
-    const mockWorkspace = {
-      getDisplayName: () => 'test-workspace',
+    createMockWorkspace = (displayName = 'test-workspace') => ({
+      getDisplayName: () => displayName,
       getCommitLine: async () => 'test-commit',
       getDir: () => tempDir,
       ensureCheckout: async () => {},
       ensureBootstrap: async () => {},
-      ensureBuild: async () => {},
+      ensureBuild: jest.fn(async () => {}),
       exec: jest.fn(),
-    };
+    });
 
-    (activateWorktreeOrUseSourceRepo as jest.Mock).mockResolvedValue(mockWorkspace);
+    (activateWorktreeOrUseSourceRepo as jest.Mock).mockResolvedValue(createMockWorkspace());
 
     // Create a log that captures output
     log = new ToolingLog({
@@ -138,13 +146,16 @@ describe('bench E2E', () => {
     // Clean up temp directory
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch (e) {
+    } catch {
       // Ignore cleanup errors
     }
   });
 
   beforeEach(() => {
     capturedOutput = [];
+    (activateWorktreeOrUseSourceRepo as jest.Mock).mockReset();
+    (activateWorktreeOrUseSourceRepo as jest.Mock).mockResolvedValue(createMockWorkspace());
+    mockedCollectConfigPaths.mockReset();
 
     // Mock collectConfigPaths to return the fast config file
     mockedCollectConfigPaths.mockResolvedValue([fastBenchmarkConfigPath]);
@@ -172,6 +183,46 @@ describe('bench E2E', () => {
     expect(result).toBeUndefined(); // bench() returns void
   }, 10000);
 
+  it('should reject when benchmark setup fails', async () => {
+    const failingModulePath = path.join(tempDir, 'failing_before_all_benchmark.js');
+    fs.writeFileSync(
+      failingModulePath,
+      `
+      exports.beforeAll = async function beforeAll() {
+        throw new Error('benchmark setup failed');
+      };
+
+      exports.run = async function run() {};
+    `
+    );
+
+    const failingConfigPath = path.join(tempDir, 'failing_before_all.config.js');
+    fs.writeFileSync(
+      failingConfigPath,
+      `
+      module.exports = {
+        name: 'failing-before-all-test',
+        runs: 1,
+        benchmarks: [{
+          kind: 'module',
+          name: 'failing_before_all',
+          module: ${JSON.stringify(failingModulePath)},
+        }],
+      };
+    `
+    );
+
+    mockedCollectConfigPaths.mockResolvedValue([failingConfigPath]);
+
+    await expect(
+      bench({
+        log,
+        config: failingConfigPath,
+        runs: 1,
+      })
+    ).rejects.toThrow('benchmark setup failed');
+  }, 10000);
+
   it('should run comparison between left and right when both are provided', async () => {
     // For this test, we'll compare mocked refs using fast benchmarks
     const leftRef = 'mock-left';
@@ -184,6 +235,15 @@ describe('bench E2E', () => {
       right: rightRef,
       runs: 1, // Single run for faster test
     });
+
+    expect(mockedCollectConfigPaths).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ patterns: [fastBenchmarkConfigPath] })
+    );
+    expect(mockedCollectConfigPaths).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ patterns: [fastBenchmarkConfigPath] })
+    );
 
     const output = capturedOutput.join('\n');
 
@@ -241,4 +301,215 @@ describe('bench E2E', () => {
 
     expect(output).toContain('Completed benchmarks');
   }, 15000);
+
+  it('should propagate side-specific build directory overrides to comparison runs', async () => {
+    const recordsPath = path.join(tempDir, 'build_dir_records.txt');
+    const buildDirBenchmarkPath = path.join(tempDir, 'build_dir_benchmark.js');
+    const leftBuildDir = path.join(tempDir, 'left_build');
+    const rightBuildDir = path.join(tempDir, 'right_build');
+
+    fs.mkdirSync(leftBuildDir);
+    fs.mkdirSync(rightBuildDir);
+    fs.writeFileSync(
+      buildDirBenchmarkPath,
+      `
+      const fs = require('fs');
+
+      exports.run = function buildDirBenchmark(ctx) {
+        fs.appendFileSync(
+          ${JSON.stringify(recordsPath)},
+          ctx.workspace.getDisplayName() + '=' + (ctx.buildDir || '<none>') + '\\n'
+        );
+      };
+    `
+    );
+
+    const buildDirConfigPath = path.join(tempDir, 'build_dir.config.js');
+    fs.writeFileSync(
+      buildDirConfigPath,
+      `
+      module.exports = {
+        name: 'build-dir-test',
+        runs: 1,
+        benchmarks: [{
+          kind: 'module',
+          name: 'records_build_dir',
+          module: ${JSON.stringify(buildDirBenchmarkPath)},
+          compare: { missing: 'skip' },
+        }],
+      };
+    `
+    );
+
+    mockedCollectConfigPaths.mockResolvedValue([buildDirConfigPath]);
+    await bench({
+      log,
+      config: buildDirConfigPath,
+      leftBuildDir,
+      rightBuildDir,
+      runs: 1,
+    });
+
+    const records = fs.readFileSync(recordsPath, 'utf8');
+    const output = capturedOutput.join('\n');
+
+    expect(records).toContain(`left build-dir=${leftBuildDir}`);
+    expect(records).toContain(`right build-dir=${rightBuildDir}`);
+    expect(output).toContain('Benchmark diff: left build-dir -> right build-dir');
+  }, 10000);
+
+  it('should fail clearly when git refs and build directory overrides are combined', async () => {
+    const leftBuildDir = path.join(tempDir, 'exclusive_left_build');
+    const rightBuildDir = path.join(tempDir, 'exclusive_right_build');
+    fs.mkdirSync(leftBuildDir);
+    fs.mkdirSync(rightBuildDir);
+
+    await expect(
+      bench({
+        log,
+        config: fastBenchmarkConfigPath,
+        left: 'base-ref',
+        right: 'target-ref',
+        leftBuildDir,
+        rightBuildDir,
+        runs: 1,
+      })
+    ).rejects.toThrow(
+      '--left/--right git refs cannot be combined with --left-build-dir/--right-build-dir'
+    );
+  });
+
+  it('should preserve undefined build directory context when no override is provided', async () => {
+    const recordsPath = path.join(tempDir, 'no_build_dir_records.txt');
+    const buildDirBenchmarkPath = path.join(tempDir, 'no_build_dir_benchmark.js');
+
+    fs.writeFileSync(
+      buildDirBenchmarkPath,
+      `
+      const fs = require('fs');
+
+      exports.run = function buildDirBenchmark(ctx) {
+        fs.appendFileSync(
+          ${JSON.stringify(recordsPath)},
+          ctx.workspace.getDisplayName() + '=' + (ctx.buildDir || '<none>') + '\\n'
+        );
+      };
+    `
+    );
+
+    const buildDirConfigPath = path.join(tempDir, 'no_build_dir.config.js');
+    fs.writeFileSync(
+      buildDirConfigPath,
+      `
+      module.exports = {
+        name: 'no-build-dir-test',
+        runs: 1,
+        benchmarks: [{
+          kind: 'module',
+          name: 'records_no_build_dir',
+          module: ${JSON.stringify(buildDirBenchmarkPath)},
+          compare: { missing: 'skip' },
+        }],
+      };
+    `
+    );
+
+    mockedCollectConfigPaths.mockResolvedValue([buildDirConfigPath]);
+    (activateWorktreeOrUseSourceRepo as jest.Mock)
+      .mockResolvedValueOnce(createMockWorkspace('left-workspace'))
+      .mockResolvedValueOnce(createMockWorkspace('right-workspace'));
+
+    await bench({
+      log,
+      config: buildDirConfigPath,
+      right: 'mock-right',
+      runs: 1,
+    });
+
+    const records = fs.readFileSync(recordsPath, 'utf8');
+
+    expect(records).toContain('left-workspace=<none>');
+    expect(records).toContain('right-workspace=<none>');
+  }, 10000);
+
+  it('should fail clearly when a build directory override does not exist', async () => {
+    const rightBuildDir = path.join(tempDir, 'existing_right_build');
+    fs.mkdirSync(rightBuildDir);
+
+    await expect(
+      bench({
+        log,
+        config: fastBenchmarkConfigPath,
+        leftBuildDir: path.join(tempDir, 'missing_left_build'),
+        rightBuildDir,
+        runs: 1,
+      })
+    ).rejects.toThrow('left build directory override does not exist');
+  });
+
+  it('should print the diff before a thrown onCompare callback fails the run', async () => {
+    const leftBuildDir = path.join(tempDir, 'on_compare_left_build');
+    const rightBuildDir = path.join(tempDir, 'on_compare_right_build');
+    fs.mkdirSync(leftBuildDir);
+    fs.mkdirSync(rightBuildDir);
+
+    const onCompareConfigPath = path.join(tempDir, 'on_compare.config.js');
+    fs.writeFileSync(
+      onCompareConfigPath,
+      `
+      module.exports = {
+        name: 'on-compare-test',
+        runs: 1,
+        onCompare() {
+          throw new Error('comparison policy failed');
+        },
+        benchmarks: [{
+          kind: 'module',
+          name: 'fast.module',
+          module: ${JSON.stringify(path.join(tempDir, 'fast_benchmark.js'))},
+          compare: { missing: 'skip' },
+        }],
+      };
+    `
+    );
+
+    mockedCollectConfigPaths.mockResolvedValue([onCompareConfigPath]);
+
+    let rejection: Error | undefined;
+    try {
+      await bench({
+        log,
+        config: onCompareConfigPath,
+        leftBuildDir,
+        rightBuildDir,
+        runs: 1,
+      });
+    } catch (error) {
+      rejection = error as Error;
+    }
+
+    expect(rejection?.message).toContain('comparison policy failed');
+
+    const output = capturedOutput.join('\n');
+
+    expect(output).toContain('Benchmark diff:');
+    expect(output).toContain('fast.module');
+  }, 10000);
+
+  it('should fail clearly when a build directory override is not a directory', async () => {
+    const leftBuildPath = path.join(tempDir, 'left_build_file');
+    const rightBuildDir = path.join(tempDir, 'existing_right_build_for_file_check');
+    fs.writeFileSync(leftBuildPath, 'not a directory');
+    fs.mkdirSync(rightBuildDir);
+
+    await expect(
+      bench({
+        log,
+        config: fastBenchmarkConfigPath,
+        leftBuildDir: leftBuildPath,
+        rightBuildDir,
+        runs: 1,
+      })
+    ).rejects.toThrow('left build directory override is not a directory');
+  });
 });

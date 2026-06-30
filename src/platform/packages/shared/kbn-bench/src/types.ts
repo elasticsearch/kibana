@@ -14,6 +14,7 @@ import type { GlobalBenchConfig } from './config/types';
 export interface GlobalRunContext {
   log: ToolingLog;
   dataDir: string;
+  buildDir?: string;
   globalConfig: GlobalBenchConfig;
   runtimeOverrides: Partial<GlobalBenchConfig>;
   workspace: IWorkspace;

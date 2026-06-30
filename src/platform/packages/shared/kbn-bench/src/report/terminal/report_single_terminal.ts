@@ -15,6 +15,8 @@ import { formatMetric } from '../format';
 import { toBenchmarkSummary } from '../to_benchmark_summary';
 import type { ConfigResult } from '../../runner/types';
 
+const trimTableTrailingWhitespace = (output: string): string => output.replace(/[ \t]+$/gm, '');
+
 export function reportSingleTerminal(results: ConfigResult[]): string {
   const header = ['', 'Avg', 'Min', 'Max', 'Std dev'];
 
@@ -54,12 +56,16 @@ export function reportSingleTerminal(results: ConfigResult[]): string {
           formatMetric(metricResult.format ?? 'number', metricResult.summary.max),
           formatMetric(
             'percentage',
-            100 * (metricResult.summary.stdDev / metricResult.summary.avg)
+            metricResult.summary.avg === 0
+              ? 0
+              : 100 * (metricResult.summary.stdDev / metricResult.summary.avg)
           ),
         ];
       });
 
-      lines.push(table([header, ...rows], getTableConfig(header.length)));
+      lines.push(
+        trimTableTrailingWhitespace(table([header, ...rows], getTableConfig(header.length)))
+      );
     }
   }
 

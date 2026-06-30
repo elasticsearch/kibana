@@ -55,6 +55,7 @@ export interface ConfigResult {
 export interface BenchmarkRunContext {
   log: ToolingLog;
   workspace: IWorkspace;
+  buildDir?: string;
 }
 
 export interface BenchmarkRunnable {

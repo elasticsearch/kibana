@@ -89,6 +89,7 @@ async function startEs({
 
 async function startKibana({
   cwd,
+  buildDir,
   log: parentLog,
   port,
   esPort,
@@ -97,6 +98,7 @@ async function startKibana({
   args = [],
 }: {
   cwd: string;
+  buildDir?: string;
   log: ToolingLog;
   port: number; // desired kibana server.port
   esPort: number; // actual es http port discovered from startEs
@@ -111,7 +113,9 @@ async function startKibana({
 
   const defaultBuildRoot = Path.join(cwd, 'build', 'default');
 
-  const distDir = await getBuildDir(defaultBuildRoot);
+  const distDir = buildDir
+    ? await resolveBuildDirOverride(buildDir)
+    : await getBuildDir(defaultBuildRoot);
 
   const binFile = Path.join(distDir, 'bin', 'kibana');
 
@@ -135,12 +139,12 @@ async function startKibana({
   log.info(`Starting Kibana via --config ./config/kibana.yml (port ${port}, ES port ${esPort})`);
 
   log.debug(
-    `Spawning "${file} ${cmdArgs.join(' ')}" in ${cwd}, NODE_OPTIONS=${
+    `Spawning "${file} ${cmdArgs.join(' ')}" in ${distDir}, NODE_OPTIONS=${
       process.env.NODE_OPTIONS ?? '(not set)'
     }, pid=${process.pid}`
   );
 
-  const proc: ExecaChildProcess = execa(file, cmdArgs, { cwd });
+  const proc: ExecaChildProcess = execa(file, cmdArgs, { cwd: distDir });
 
   await waitForStdout({
     proc,
@@ -213,3 +217,20 @@ export async function stopGracefully(
 }
 
 export { startEs, startKibana };
+
+async function resolveBuildDirOverride(buildDir: string): Promise<string> {
+  const binFile = Path.join(buildDir, 'bin', 'kibana');
+
+  try {
+    await Fs.access(binFile);
+    return buildDir;
+  } catch {
+    try {
+      return await getBuildDir(buildDir);
+    } catch {
+      throw new Error(
+        `Invalid Kibana build directory override "${buildDir}". Expected a distributable directory containing bin/kibana or a directory containing a platform-specific kibana-* distributable.`
+      );
+    }
+  }
+}

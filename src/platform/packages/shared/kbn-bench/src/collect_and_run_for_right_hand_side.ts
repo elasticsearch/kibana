@@ -6,20 +6,23 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+import { castArray } from 'lodash';
 import { collectConfigPaths } from './config/collect_config_paths';
 import { loadConfigs } from './config/load_configs';
 import { parseConfigs } from './config/parse_configs';
+import type { Benchmark, Script } from './config/types';
 import { runConfig } from './run_config';
 import type { ConfigResult } from './runner/types';
 import type { GlobalRunContext } from './types';
-import type { Benchmark, Script } from './config/types';
 
 export async function collectAndRunForRightHandSide({
   context,
+  configGlob,
   leftResults,
   configFromCwd,
 }: {
   context: GlobalRunContext;
+  configGlob?: string | string[];
   leftResults: ConfigResult[];
   configFromCwd?: boolean;
 }): Promise<ConfigResult[]> {
@@ -29,8 +32,10 @@ export async function collectAndRunForRightHandSide({
 
   log.debug('Collecting benchmark configs');
 
+  const patterns = castArray(configGlob ?? []);
+
   const configPaths = await collectConfigPaths({
-    patterns: [],
+    patterns,
     cwd: configFromCwd ? process.cwd() : workspace.getDir(),
   });
 
@@ -50,6 +55,7 @@ export async function collectAndRunForRightHandSide({
   });
 
   const results: ConfigResult[] = [];
+  const errors: Error[] = [];
 
   for (const { config, benchmarks: benchmarkResults } of leftResults) {
     const startConfig = performance.now();
@@ -101,9 +107,11 @@ export async function collectAndRunForRightHandSide({
       log.info(
         `Finished config ${config.name} in ${Math.round((performance.now() - startConfig) / 1000)}s`
       );
-    } catch (err: any) {
-      log.error(`Config ${config.name} failed: ${err.message}`);
-      log.error(err);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      log.error(`Config ${config.name} failed: ${error.message}`);
+      log.error(error);
+      errors.push(error);
     }
   }
 
@@ -112,6 +120,19 @@ export async function collectAndRunForRightHandSide({
       (performance.now() - startAll) / 1000
     )}s (total configs=${loadedConfigs.length})`
   );
+
+  if (errors.length === 1) {
+    throw errors[0];
+  }
+
+  if (errors.length > 1) {
+    throw new Error(
+      `${errors.length} benchmark configs failed: ${errors
+        .map((error) => error.message)
+        .join('; ')}`
+    );
+  }
+
   return results;
 }
 

@@ -64,6 +64,7 @@ async function runAll({
   hooks,
   log,
   dir,
+  monitorInterval,
 }: {
   config: LoadedBenchConfig;
   benchmark: Benchmark;
@@ -74,6 +75,7 @@ async function runAll({
   };
   log: ToolingLog;
   dir: string;
+  monitorInterval: number;
 }) {
   const results: BenchmarkRunResult[] = [];
 
@@ -82,7 +84,7 @@ async function runAll({
 
   const run = async () => {
     const stopMonitoring = shouldMonitor
-      ? await startMonitoring({ log, dir })
+      ? await startMonitoring({ log, dir, procStatsRefreshInterval: monitorInterval })
       : async (...args: any[]) => [];
 
     await hooks.before?.();
@@ -137,6 +139,7 @@ export async function runBenchmark({
   const benchmarkContext: BenchmarkRunContext = {
     log: context.log,
     workspace,
+    buildDir: context.buildDir,
   };
 
   const wrapInTimeout = createCallbackWrapper(benchmarkContext, config.timeout);
@@ -168,6 +171,7 @@ export async function runBenchmark({
         },
         log: context.log,
         dir: testResultsBaseDir,
+        monitorInterval: config.monitorInterval,
       });
 
     const resultsFromRun = config.profile

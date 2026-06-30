@@ -21,8 +21,10 @@ export default async (): Promise<BenchmarkRunnable> => {
   let kbnProc: ExecaChildProcess | undefined;
 
   return {
-    async beforeAll({ workspace, log }) {
-      await workspace.ensureBuild();
+    async beforeAll({ workspace, buildDir }) {
+      if (!buildDir) {
+        await workspace.ensureBuild();
+      }
     },
     async before({ workspace, log }) {
       const { proc, port } = await startEs({
@@ -33,9 +35,10 @@ export default async (): Promise<BenchmarkRunnable> => {
       esPort = port;
       esProc = proc;
     },
-    async run({ workspace, log }) {
+    async run({ workspace, log, buildDir }) {
       const { proc } = await startKibana({
         cwd: workspace.getDir(),
+        buildDir,
         log,
         port: kbnPort,
         esPort: esPort!,

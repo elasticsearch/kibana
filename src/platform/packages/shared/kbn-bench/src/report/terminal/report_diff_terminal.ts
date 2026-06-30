@@ -24,6 +24,8 @@ interface ResultSet {
   results: ConfigResult[];
 }
 
+const trimTableTrailingWhitespace = (output: string): string => output.replace(/[ \t]+$/gm, '');
+
 function getStatus(left?: BenchmarkSummary, right?: BenchmarkSummary) {
   if (!left) return chalk.green('added');
   if (!right) return chalk.red('removed');
@@ -89,7 +91,9 @@ function getConfigDiff({
       ];
     });
 
-    innerLines.push(table([header, ...rows], getTableConfig(header.length)));
+    innerLines.push(
+      trimTableTrailingWhitespace(table([header, ...rows], getTableConfig(header.length)))
+    );
 
     return innerLines.join('\n');
   });

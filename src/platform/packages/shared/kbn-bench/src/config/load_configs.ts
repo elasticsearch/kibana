@@ -23,6 +23,7 @@ function loadConfig(
   const mergedConfig = {
     runs: 5,
     timeout: 30_000,
+    monitorInterval: 250,
     profile: false,
     openProfile: false,
     tracing: false,

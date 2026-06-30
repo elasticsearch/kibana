@@ -38,6 +38,12 @@ const scriptSchema = z.union([
 
 const scriptBenchmarkSchema = benchmarkSchemaBase.extend({
   kind: z.literal('script'),
+  ensure: z
+    .object({
+      bootstrap: z.boolean().optional(),
+      build: z.boolean().optional(),
+    })
+    .optional(),
   beforeAll: scriptSchema.optional(),
   afterAll: scriptSchema.optional(),
   before: scriptSchema.optional(),
@@ -51,6 +57,7 @@ const configSchema = z.object({
   name: z.string(),
   runs: z.number().optional(),
   timeout: z.number().optional(),
+  monitorInterval: z.number().positive().optional(),
   profile: z.boolean().optional(),
   openProfile: z.boolean().optional(),
   benchmarks: z.array(benchmarkSchema),

@@ -7,6 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { ToolingLog } from '@kbn/tooling-log';
+import type { ConfigComparison } from '../report/to_config_comparison';
+import type { ConfigSummary } from '../report/to_config_summary';
+import type { ConfigResult } from '../runner/types';
+
 export type CompareExists = 'lhs' | 'virtual' | 'rhs';
 export type CompareMissing = 'skip' | 'lhs' | 'virtual';
 
@@ -46,14 +51,27 @@ export interface ScriptBenchmark extends BenchmarkBase {
 
 export type Benchmark = ModuleBenchmark | ScriptBenchmark;
 
+export interface OnCompareContext {
+  log: ToolingLog;
+  left: ConfigResult;
+  right: ConfigResult;
+  leftSummary: ConfigSummary;
+  rightSummary: ConfigSummary;
+  comparison: ConfigComparison;
+}
+
+export type OnCompareCallback = (context: OnCompareContext) => void | Promise<void>;
+
 export interface InitialBenchConfig {
   name: string;
   benchmarks: Benchmark[];
   runs?: number;
   tags?: string[];
   timeout?: number;
+  monitorInterval?: number;
   profile?: boolean;
   openProfile?: boolean;
+  onCompare?: OnCompareCallback;
 }
 
 export interface InitialBenchConfigWithPath extends InitialBenchConfig {
@@ -64,6 +82,7 @@ export interface LoadedBenchConfig extends InitialBenchConfigWithPath {
   runs: number;
   tags: string[];
   timeout: number;
+  monitorInterval: number;
   profile: boolean;
   openProfile: boolean;
   tracing: boolean;
@@ -77,4 +96,5 @@ export interface GlobalBenchConfig {
   openProfile?: boolean;
   tracing?: boolean;
   grep?: string[];
+  monitorInterval?: number;
 }

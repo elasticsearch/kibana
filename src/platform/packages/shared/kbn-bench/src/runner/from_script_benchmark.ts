@@ -42,7 +42,7 @@ export function fromScriptBenchmark(benchmark: ScriptBenchmark): BenchmarkRunnab
       if (benchmark.ensure?.bootstrap) {
         await context.workspace.ensureBootstrap();
       }
-      if (benchmark.ensure?.build) {
+      if (benchmark.ensure?.build && !context.buildDir) {
         await context.workspace.ensureBuild();
       }
       await beforeAll?.(context);

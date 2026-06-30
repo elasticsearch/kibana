@@ -58,6 +58,7 @@ export async function collectAndRun({
   log.info(`Loaded ${loadedConfigs.length} config(s)`);
 
   const results: ConfigResult[] = [];
+  const errors: Error[] = [];
 
   const configsWithBenchmarks = loadedConfigs.filter((config) =>
     config.benchmarks.some((benchmark) => !benchmark.skip)
@@ -85,9 +86,11 @@ export async function collectAndRun({
       log.info(
         `Finished config ${config.name} in ${Math.round((performance.now() - startConfig) / 1000)}s`
       );
-    } catch (err: any) {
-      log.error(`Config ${config.name} failed: ${err.message}`);
-      log.error(err.stack);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      log.error(`Config ${config.name} failed: ${error.message}`);
+      log.error(error.stack ?? error.message);
+      errors.push(error);
     }
   }
 
@@ -96,5 +99,18 @@ export async function collectAndRun({
       (performance.now() - startAll) / 1000
     )}s (total configs=${loadedConfigs.length})`
   );
+
+  if (errors.length === 1) {
+    throw errors[0];
+  }
+
+  if (errors.length > 1) {
+    throw new Error(
+      `${errors.length} benchmark configs failed: ${errors
+        .map((error) => error.message)
+        .join('; ')}`
+    );
+  }
+
   return results;
 }

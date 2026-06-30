@@ -7,7 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export type { ModuleBenchmark, ScriptBenchmark, InitialBenchConfig } from './src/config/types';
+export type {
+  ModuleBenchmark,
+  ScriptBenchmark,
+  InitialBenchConfig,
+  OnCompareCallback,
+  OnCompareContext,
+} from './src/config/types';
 export type { BenchmarkRunContext, BenchmarkRunnable } from './src/runner/types';
 
 export { cli } from './src/cli';

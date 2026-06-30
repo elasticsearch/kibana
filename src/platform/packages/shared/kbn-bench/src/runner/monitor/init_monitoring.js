@@ -77,9 +77,13 @@ const MONITOR_KEY = '__KBN_BENCH_MONITOR';
 
     const mem = process.memoryUsage();
 
-    // Heap stats
+    const rss = mem.rss;
+
+    // Heap and native memory stats
     const heapUsed = mem.heapUsed;
     const heapTotal = mem.heapTotal;
+    const external = mem.external;
+    const arrayBuffers = mem.arrayBuffers;
 
     // GC pause time since start by kind (milliseconds)
     const gcMajor = gcDurations[constants.NODE_PERFORMANCE_GC_MAJOR] || 0;
@@ -95,7 +99,12 @@ const MONITOR_KEY = '__KBN_BENCH_MONITOR';
         argv,
         time: now,
         cpuUsage: cpuUsage / 1000,
+        rss: rss,
         rssMax: rssMax,
+        heapUsed: heapUsed,
+        heapTotal: heapTotal,
+        external: external,
+        arrayBuffers: arrayBuffers,
         heapUsage: heapUsed / heapTotal,
         gcMajor: gcMajor,
         gcMinor: gcMinor,

@@ -116,6 +116,10 @@ export function formatDelta(
 
   const formattedDiff = formatMetric(format, absolute);
 
+  if (!Number.isFinite(relative)) {
+    return `${formattedDiff} ${chalk.dim('(n/a)')}`;
+  }
+
   const pctSign = relative >= 0 ? '+' : '';
   const pctString = `(${pctSign}${(relative * 100).toFixed(1)}%)`;
 

@@ -16,5 +16,6 @@ export function getGlobalConfig(): GlobalBenchConfig {
     openProfile: false,
     tracing: false,
     runs: 5,
+    monitorInterval: 250,
   };
 }

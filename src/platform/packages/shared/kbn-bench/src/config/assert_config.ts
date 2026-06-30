@@ -14,6 +14,16 @@ import type { InitialBenchConfig } from './types';
 export function assertConfig(
   config: unknown
 ): asserts config is Omit<InitialBenchConfig, 'configPath'> {
+  if (typeof config !== 'object' || config === null) {
+    throw new Error('Benchmark config must be an object');
+  }
+
+  const { onCompare } = config as InitialBenchConfig;
+
+  if (onCompare !== undefined && typeof onCompare !== 'function') {
+    throw new Error('onCompare must be a function when provided');
+  }
+
   const { error } = configSchema.safeParse(config);
 
   if (error) {
