@@ -197,3 +197,28 @@ xpack.actions.preconfigured:
       inferenceId: ".google-gemini-3.0-flash-chat_completion"
       providerConfig:
         model_id: "google-gemini-3.0-flash"
+
+xpack.fleet.internal.registry.excludePackages: [
+  # Oblt integrations
+  'apm',
+  'synthetics',
+  'synthetics_dashboards',
+
+  # Deprecated security integrations
+  'bluecoat',
+  'cisco',
+  'cyberark',
+  'cylance',
+  'f5',
+  'fortinet_forticlient',
+  'juniper_junos',
+  'juniper_netscreen',
+  'microsoft',
+  'netscout',
+  'radware',
+  'symantec',
+  'tomcat',
+
+  # ML integrations
+  'dga',
+]

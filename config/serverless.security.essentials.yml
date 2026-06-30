@@ -12,3 +12,28 @@ workflowsManagement.available: false
 xpack.features.overrides:
   ### The following features are Security features hidden in Role management UI for this specific tier.
   workflowsManagement.hidden: true
+
+xpack.fleet.internal.registry.excludePackages: [
+  # Oblt integrations
+  'apm',
+  'synthetics',
+  'synthetics_dashboards',
+
+  # Deprecated security integrations
+  'bluecoat',
+  'cisco',
+  'cyberark',
+  'cylance',
+  'f5',
+  'fortinet_forticlient',
+  'juniper_junos',
+  'juniper_netscreen',
+  'microsoft',
+  'netscout',
+  'radware',
+  'symantec',
+  'tomcat',
+
+  # ML integrations
+  'dga',
+]

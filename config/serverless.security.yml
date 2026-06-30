@@ -187,6 +187,8 @@ telemetry.labels.serverless: security
 
 # Fleet specific configuration
 xpack.fleet.internal.registry.capabilities: ['security']
+
+# Note, serverless.security.complete and serverless.security.essentials have different configurations for this key
 xpack.fleet.internal.registry.excludePackages: [
     # Oblt integrations
     'apm',
@@ -211,7 +213,7 @@ xpack.fleet.internal.registry.excludePackages: [
     # ML integrations
     'dga',
 
-    # Unsupported in serverless
+    # Unsupported in serverless.security.search_ai_lake only
     'cloud_defend',
   ]
 # fleet_server package installed to publish agent metrics
