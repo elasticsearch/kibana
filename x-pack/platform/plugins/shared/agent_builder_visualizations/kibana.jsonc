@@ -1,0 +1,13 @@
+{
+  "type": "plugin",
+  "id": "@kbn/agent-builder-visualizations-plugin",
+  "owner": "@elastic/kibana-presentation",
+  "group": "platform",
+  "visibility": "shared",
+  "plugin": {
+    "id": "agentBuilderVisualizations",
+    "server": true,
+    "browser": false,
+    "requiredPlugins": ["agentBuilder"]
+  }
+}

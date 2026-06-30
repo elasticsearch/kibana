@@ -1,0 +1,14 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types"
+  },
+  "include": ["common/**/*", "server/**/*"],
+  "kbn_references": [
+    "@kbn/core",
+    "@kbn/agent-builder-server",
+    "@kbn/agent-builder-visualizations-common",
+    "@kbn/lens-embeddable-utils"
+  ],
+  "exclude": ["target/**/*"]
+}

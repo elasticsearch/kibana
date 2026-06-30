@@ -42,6 +42,8 @@
       "@kbn/agent-builder-visualizations/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations/*"],
       "@kbn/agent-builder-visualizations-common": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common"],
       "@kbn/agent-builder-visualizations-common/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common/*"],
+      "@kbn/agent-builder-visualizations-plugin": ["x-pack/platform/plugins/shared/agent_builder_visualizations"],
+      "@kbn/agent-builder-visualizations-plugin/*": ["x-pack/platform/plugins/shared/agent_builder_visualizations/*"],
       "@kbn/agent-builder-workflow-gen": ["x-pack/platform/packages/shared/agent-builder/agent-builder-workflow-gen"],
       "@kbn/agent-builder-workflow-gen/*": ["x-pack/platform/packages/shared/agent-builder/agent-builder-workflow-gen/*"],
       "@kbn/agent-builder-workflows-plugin": ["x-pack/platform/plugins/shared/agent_builder_workflows"],
