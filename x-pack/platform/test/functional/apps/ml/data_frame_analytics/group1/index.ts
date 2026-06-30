@@ -18,9 +18,6 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
       await ml.securityCommon.createMlUsers();
     });
 
-    loadTestFile(require.resolve('./outlier_detection_creation'));
-    loadTestFile(require.resolve('./regression_creation'));
-    loadTestFile(require.resolve('./classification_creation'));
     loadTestFile(require.resolve('./cloning'));
     loadTestFile(require.resolve('./results_view_content'));
     loadTestFile(require.resolve('./custom_urls'));
