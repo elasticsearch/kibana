@@ -7,7 +7,6 @@
 
 import {
   VISUALIZATION_ATTACHMENT_TYPE,
-  visualizationAttachmentDataSchema,
   type VisualizationAttachmentData,
 } from '@kbn/agent-builder-visualizations-common';
 import type {
@@ -19,6 +18,7 @@ import {
   type LensApiConfig,
   type LensAttributes,
 } from '@kbn/lens-embeddable-utils';
+import { visualizationAttachmentDataSchema } from './visualization_schema';
 
 /**
  * Creates the definition for the unified `visualization` attachment type.

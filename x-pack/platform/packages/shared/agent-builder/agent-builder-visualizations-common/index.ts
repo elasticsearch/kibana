@@ -7,10 +7,6 @@
 
 export { VISUALIZATION_ATTACHMENT_TYPE } from './constants';
 
-export {
-  visualizationAttachmentDataSchema,
-  visualizationTimeRangeSchema,
-  type VisualizationAttachmentData,
-} from './visualization_schema_types';
+export type { VisualizationAttachmentData } from './visualization_types';
 
-export type { VisualizationAttachment, PendingVisualizationAttachment } from './types';
+export type { VisualizationAttachment } from './types';

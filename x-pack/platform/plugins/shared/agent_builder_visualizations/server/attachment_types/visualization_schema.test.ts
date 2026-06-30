@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { visualizationAttachmentDataSchema } from './visualization_schema_types';
+import { visualizationAttachmentDataSchema } from './visualization_schema';
 
 describe('visualizationAttachmentDataSchema', () => {
   it('accepts a Lens attachment with an explicit renderer', () => {

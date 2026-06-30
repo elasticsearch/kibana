@@ -18,7 +18,6 @@ project:
   sourceRoot: x-pack/platform/packages/shared/agent-builder/agent-builder-visualizations-common
 dependsOn:
   - '@kbn/agent-builder-common'
-  - '@kbn/zod'
 tags:
   - shared-common
   - package

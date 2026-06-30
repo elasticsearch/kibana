@@ -7,11 +7,12 @@
 
 import { z } from '@kbn/zod/v4';
 
-export const visualizationTimeRangeSchema = z.object({
-  from: z.string(),
-  to: z.string(),
-});
-
+/**
+ * Runtime validation for visualization attachment data. The matching type
+ * contract (`VisualizationAttachmentData`) lives in
+ * `@kbn/agent-builder-visualizations-common` because it is shared across the
+ * browser and server; this schema is server-only (attachment validation).
+ */
 export const visualizationAttachmentDataSchema = z
   .object({
     // Optional for backwards compatibility: attachments created before the Vega
@@ -21,7 +22,12 @@ export const visualizationAttachmentDataSchema = z
     visualization: z.record(z.string(), z.unknown()),
     chart_type: z.string().optional(),
     esql: z.string(),
-    time_range: visualizationTimeRangeSchema.optional(),
+    time_range: z
+      .object({
+        from: z.string(),
+        to: z.string(),
+      })
+      .optional(),
   })
   .check((ctx) => {
     if (ctx.value.renderer === 'vega') {
@@ -35,21 +41,3 @@ export const visualizationAttachmentDataSchema = z
       }
     }
   });
-
-/**
- * Data for a visualization attachment, discriminated by `renderer`.
- */
-export interface VisualizationAttachmentData {
-  /** Renderer discriminator. Omitted defaults to Lens for legacy attachments. */
-  renderer?: 'lens' | 'vega';
-  /** The display query */
-  query: string;
-  /** Visualization configuration payload. For Vega, includes a serialized spec. */
-  visualization: Record<string, unknown> & { spec?: string };
-  /** Optional chart type identifier (primarily used by Lens). */
-  chart_type?: string;
-  /** The ES|QL query backing the visualization. */
-  esql: string;
-  /** Optional time range for the visualization (e.g., { from: 'now-24h', to: 'now' }) */
-  time_range?: { from: string; to: string };
-}
