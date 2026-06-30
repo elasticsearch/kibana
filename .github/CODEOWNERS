@@ -1414,6 +1414,45 @@ x-pack/solutions/workplaceai/test @elastic/workchat-eng
 ##  https://help.github.com/articles/about-codeowners/
 ####
 
+# Per-rule-type ownership inside @kbn/response-ops-rule-params.
+# The package-level entry (@elastic/response-ops) is auto-generated above;
+# these overrides narrow ownership to the team responsible for each rule type.
+x-pack/platform/packages/shared/response-ops/rule_params/anomaly_detection @elastic/ml-ui
+x-pack/platform/packages/shared/response-ops/rule_params/anomaly_detection_jobs_health @elastic/ml-ui
+x-pack/platform/packages/shared/response-ops/rule_params/apm_anomaly @elastic/obs-presentation-team @elastic/obs-exploration-team
+x-pack/platform/packages/shared/response-ops/rule_params/ccr_read_exceptions @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/cluster_health @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/cpu_usage @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/custom_threshold @elastic/actionable-obs-team
+x-pack/platform/packages/shared/response-ops/rule_params/degraded_docs @elastic/kibana-management
+x-pack/platform/packages/shared/response-ops/rule_params/disk_usage @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/error_count @elastic/obs-presentation-team @elastic/obs-exploration-team
+x-pack/platform/packages/shared/response-ops/rule_params/es_query @elastic/response-ops
+x-pack/platform/packages/shared/response-ops/rule_params/es_version_mismatch @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/geo_containment @elastic/kibana-presentation
+x-pack/platform/packages/shared/response-ops/rule_params/index_threshold @elastic/response-ops
+x-pack/platform/packages/shared/response-ops/rule_params/kibana_version_mismatch @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/large_shard_size @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/license_expiration @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/log_threshold @elastic/obs-exploration-team
+x-pack/platform/packages/shared/response-ops/rule_params/logstash_version_mismatch @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/memory_usage @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/metric_inventory_threshold @elastic/obs-presentation-team @elastic/obs-exploration-team
+x-pack/platform/packages/shared/response-ops/rule_params/metric_threshold @elastic/obs-presentation-team @elastic/obs-exploration-team
+x-pack/platform/packages/shared/response-ops/rule_params/missing_monitoring_data @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/nodes_changed @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/slo_burn_rate @elastic/actionable-obs-team
+x-pack/platform/packages/shared/response-ops/rule_params/synthetics_monitor_status @elastic/actionable-obs-team
+x-pack/platform/packages/shared/response-ops/rule_params/synthetics_tls @elastic/actionable-obs-team
+x-pack/platform/packages/shared/response-ops/rule_params/thread_pool_search_rejections @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/thread_pool_write_rejections @elastic/stack-monitoring
+x-pack/platform/packages/shared/response-ops/rule_params/transaction_duration @elastic/obs-presentation-team @elastic/obs-exploration-team
+x-pack/platform/packages/shared/response-ops/rule_params/transaction_error_rate @elastic/obs-presentation-team @elastic/obs-exploration-team
+x-pack/platform/packages/shared/response-ops/rule_params/transform_health @elastic/kibana-management
+x-pack/platform/packages/shared/response-ops/rule_params/uptime_duration_anomaly @elastic/actionable-obs-team
+x-pack/platform/packages/shared/response-ops/rule_params/uptime_monitor_status @elastic/actionable-obs-team
+x-pack/platform/packages/shared/response-ops/rule_params/uptime_tls @elastic/actionable-obs-team
+
 # limits.yml changes frequently as bundle sizes shift; no owner means the ops
 # team isn't auto-requested as reviewer on every bump. A GitHub Actions workflow
 # (bundle-size-limits-comment.yml) flags increases ≥15% instead.
