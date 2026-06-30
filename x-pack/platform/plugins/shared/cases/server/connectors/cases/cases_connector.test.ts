@@ -50,6 +50,7 @@ describe('CasesConnector', () => {
   const reopenClosedCases = false;
   const maximumCasesToOpen = 5;
   const templateId = null;
+  const templateVersion = null;
   const autoPushCase = null;
 
   const mockExecute = jest.fn();
@@ -119,6 +120,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
 
@@ -144,6 +146,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
 
@@ -158,6 +161,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
   });
@@ -174,6 +178,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
 
@@ -195,6 +200,7 @@ describe('CasesConnector', () => {
         reopenClosedCases,
         maximumCasesToOpen: 11,
         templateId,
+        templateVersion,
         autoPushCase,
       })
     ).rejects.toMatchObject({
@@ -221,6 +227,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
 
@@ -247,6 +254,7 @@ describe('CasesConnector', () => {
         reopenClosedCases,
         maximumCasesToOpen: 10,
         templateId,
+        templateVersion,
         autoPushCase,
       })
     ).rejects.toMatchObject({
@@ -266,6 +274,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
 
@@ -286,6 +295,7 @@ describe('CasesConnector', () => {
         reopenClosedCases,
         maximumCasesToOpen,
         templateId,
+        templateVersion,
         autoPushCase,
       });
     } catch (error) {
@@ -314,6 +324,7 @@ describe('CasesConnector', () => {
         reopenClosedCases,
         maximumCasesToOpen,
         templateId,
+        templateVersion,
         autoPushCase,
       });
     } catch (error) {
@@ -342,6 +353,7 @@ describe('CasesConnector', () => {
         reopenClosedCases,
         maximumCasesToOpen,
         templateId,
+        templateVersion,
         autoPushCase,
       })
     ).rejects.toThrowErrorMatchingInlineSnapshot(`"Server error"`);
@@ -368,6 +380,7 @@ describe('CasesConnector', () => {
         reopenClosedCases,
         maximumCasesToOpen,
         templateId,
+        templateVersion,
         autoPushCase,
       });
     } catch (err) {
@@ -399,6 +412,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
 
@@ -423,6 +437,7 @@ describe('CasesConnector', () => {
         reopenClosedCases,
         maximumCasesToOpen,
         templateId,
+        templateVersion,
         autoPushCase,
       });
     } catch (err) {
@@ -452,6 +467,7 @@ describe('CasesConnector', () => {
       reopenClosedCases,
       maximumCasesToOpen,
       templateId,
+      templateVersion,
       autoPushCase,
     });
 

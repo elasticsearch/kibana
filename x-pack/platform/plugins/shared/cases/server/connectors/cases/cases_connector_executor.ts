@@ -17,6 +17,7 @@ import type {
   TemplatesConfiguration,
 } from '../../../common/types/domain';
 import {
+  CASE_EXTENDED_FIELDS,
   MAX_ALERTS_PER_CASE,
   MAX_LENGTH_PER_TAG,
   MAX_TAGS_PER_CASE,
@@ -27,7 +28,7 @@ import {
 import { COMMENT_ATTACHMENT_TYPE } from '../../../common/constants/attachments';
 import { hasOwnerUnifiedPrefix, toUnifiedAttachmentType } from '../../../common/utils/attachments';
 import type { AttachmentRequestV2, BulkCreateCasesRequest } from '../../../common/types/api';
-import type { Case } from '../../../common';
+import type { Case, CaseSeverity } from '../../../common';
 import { ConnectorTypes, AttachmentType } from '../../../common';
 import { INITIAL_ORACLE_RECORD_COUNTER, MAX_CONCURRENT_ES_REQUEST } from './constants';
 import type {
@@ -54,6 +55,8 @@ import {
   GROUPED_BY_TITLE,
 } from './translations';
 import { toStringArray } from '../../../common/utils/attachments/string_utils';
+import { buildExtendedFieldsFromTemplate, resolveV2Template } from './v2_template_utils';
+import type { ParsedTemplateDefinition } from './v2_template_utils';
 
 interface CasesConnectorExecutorParams {
   logger: Logger;
@@ -743,6 +746,8 @@ export class CasesConnectorExecutor {
     const { customFieldsConfigurationMap, templatesConfigurationMap } =
       await this.getCustomFieldsAndTemplatesConfiguration();
 
+    const { v2Template, extendedFields } = await this.resolveV2TemplateWithFields(params);
+
     for (const error of nonFoundErrors) {
       if (groupedAlertsWithCaseId.has(error.caseId)) {
         const data = groupedAlertsWithCaseId.get(error.caseId) as GroupedAlertsWithCaseId;
@@ -752,7 +757,9 @@ export class CasesConnectorExecutor {
             params,
             data,
             customFieldsConfigurationMap.get(params.owner),
-            templatesConfigurationMap.get(params.owner)
+            templatesConfigurationMap.get(params.owner),
+            v2Template ?? undefined,
+            extendedFields
           )
         );
       }
@@ -792,14 +799,75 @@ export class CasesConnectorExecutor {
     return casesMap;
   }
 
+  private getCreateCaseRequestFromV2Template(
+    params: CasesConnectorRunParams,
+    groupingData: GroupedAlertsWithCaseId,
+    v2Template: ParsedTemplateDefinition,
+    customFieldsConfigurations?: CustomFieldsConfiguration,
+    extendedFields?: Record<string, string>
+  ): Omit<BulkCreateCasesRequest['cases'][number], 'id'> & { id: string } {
+    const { grouping, caseId, oracleRecord, title } = groupingData;
+    const flattenGrouping = getFlattenedObject(grouping);
+
+    const builtCustomFields = buildCustomFieldsForRequest(customFieldsConfigurations);
+
+    const baseRequest: Omit<BulkCreateCasesRequest['cases'][number], 'id'> & { id: string } = {
+      id: caseId,
+      description: v2Template.description ?? this.getCaseDescription(params, flattenGrouping),
+      tags: this.getCaseTags(params, flattenGrouping, v2Template.tags),
+      title:
+        title ??
+        v2Template.name ??
+        this.getCasesTitle(params, flattenGrouping, oracleRecord.counter),
+      connector: {
+        id: 'none',
+        name: 'none',
+        type: ConnectorTypes.none,
+        fields: null,
+      },
+      settings: {
+        syncAlerts: false,
+        extractObservables: false,
+      },
+      owner: params.owner,
+      customFields: builtCustomFields,
+    };
+
+    if (extendedFields && Object.keys(extendedFields).length > 0) {
+      baseRequest[CASE_EXTENDED_FIELDS] = extendedFields;
+    }
+
+    if (v2Template.severity) {
+      baseRequest.severity = v2Template.severity as CaseSeverity;
+    }
+
+    if (v2Template.category) {
+      baseRequest.category = v2Template.category;
+    }
+
+    return baseRequest;
+  }
+
   private getCreateCaseRequest(
     params: CasesConnectorRunParams,
     groupingData: GroupedAlertsWithCaseId,
     customFieldsConfigurations?: CustomFieldsConfiguration,
-    templatesConfigurations?: TemplatesConfiguration
+    templatesConfigurations?: TemplatesConfiguration,
+    v2Template?: ParsedTemplateDefinition,
+    extendedFields?: Record<string, string>
   ): Omit<BulkCreateCasesRequest['cases'][number], 'id'> & { id: string } {
     const { grouping, caseId, oracleRecord, title } = groupingData;
     const flattenGrouping = getFlattenedObject(grouping);
+
+    if (v2Template) {
+      return this.getCreateCaseRequestFromV2Template(
+        params,
+        groupingData,
+        v2Template,
+        customFieldsConfigurations,
+        extendedFields
+      );
+    }
 
     const selectedTemplate = templatesConfigurations?.find(
       (template) => template.key === params.templateId
@@ -1097,15 +1165,22 @@ export class CasesConnectorExecutor {
 
     const groupedAlertsWithCaseId = this.generateCaseIds(params, groupedAlertsWithOracleRecords);
 
-    const { customFieldsConfigurationMap, templatesConfigurationMap } =
-      await this.getCustomFieldsAndTemplatesConfiguration();
+    const {
+      customFieldsConfigurationMap: customFieldsConfigurationMapForReopened,
+      templatesConfigurationMap: templatesConfigurationMapForReopened,
+    } = await this.getCustomFieldsAndTemplatesConfiguration();
+
+    const { v2Template: v2TemplateForReopened, extendedFields: extendedFieldsForReopened } =
+      await this.resolveV2TemplateWithFields(params);
 
     const bulkCreateReq = Array.from(groupedAlertsWithCaseId.values()).map((record) =>
       this.getCreateCaseRequest(
         params,
         record,
-        customFieldsConfigurationMap.get(params.owner),
-        templatesConfigurationMap.get(params.owner)
+        customFieldsConfigurationMapForReopened.get(params.owner),
+        templatesConfigurationMapForReopened.get(params.owner),
+        v2TemplateForReopened ?? undefined,
+        extendedFieldsForReopened
       )
     );
 
@@ -1307,6 +1382,29 @@ export class CasesConnectorExecutor {
     { tags = [], labels = {} }: { tags?: string[]; labels?: Record<string, unknown> } = {}
   ) {
     return { tags: ['cases-connector', `rule:${params.rule.id}`, ...tags], labels };
+  }
+
+  private async resolveV2TemplateWithFields(params: CasesConnectorRunParams): Promise<{
+    v2Template: ParsedTemplateDefinition | null;
+    extendedFields: Record<string, string> | undefined;
+  }> {
+    if (!params.templateVersion || !params.templateId) {
+      return { v2Template: null, extendedFields: undefined };
+    }
+
+    const v2Template = await resolveV2Template(
+      this.casesClient,
+      params.templateId,
+      params.templateVersion,
+      params.owner,
+      this.logger
+    );
+
+    const extendedFields = v2Template
+      ? await buildExtendedFieldsFromTemplate(this.casesClient, v2Template, params.owner)
+      : undefined;
+
+    return { v2Template, extendedFields };
   }
 
   private async getCustomFieldsAndTemplatesConfiguration(): Promise<{

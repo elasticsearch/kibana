@@ -1766,6 +1766,7 @@ const getRequest = (params: Partial<CasesConnectorRunParams> = {}) => {
       reopenClosedCases,
       maximumCasesToOpen: 5,
       templateId: null,
+      templateVersion: null,
       internallyManagedAlerts: null,
       autoPushCase: null,
       ...params,

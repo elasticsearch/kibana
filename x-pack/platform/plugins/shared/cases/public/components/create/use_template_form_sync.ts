@@ -7,19 +7,14 @@
 
 import { useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { parse as parseYaml } from 'yaml';
 import { useFormContext, useFormData } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
 import type { ParsedTemplate } from '../../../common/types/domain/template/v1';
 import { CASE_EXTENDED_FIELDS } from '../../../common/constants';
 import { useGetTemplate } from '../templates_v2/hooks/use_get_template';
-import { getFieldSnakeKey } from '../../../common/utils';
-import { getYamlDefaultAsString } from '../templates_v2/utils';
 import {
-  FieldSchema,
-  isInlineField,
-  isRefField,
-} from '../../../common/types/domain/template/fields';
-import type { InlineField } from '../../../common/types/domain/template/fields';
+  buildExtendedFieldsDefaults,
+  resolveTemplateFields,
+} from '../../../common/utils/template_fields';
 import { useGetFieldDefinitions } from '../field_library/hooks/use_get_field_definitions';
 
 interface UseTemplateFormSyncReturn {
@@ -105,31 +100,8 @@ export const useTemplateFormSync = (
 
     // Resolve all fields — inline fields pass through, ref fields are looked up in the library
     const libraryDefs = fieldDefsData?.fieldDefinitions ?? [];
-    const resolvedFields = (definition.fields ?? []).flatMap((field): InlineField[] => {
-      if (isInlineField(field)) return [field];
-      const fd = libraryDefs.find((d) => d.name === field.$ref);
-      if (!fd) return [];
-      try {
-        const parsed = parseYaml(fd.definition);
-        const result = FieldSchema.safeParse(parsed);
-        if (!result.success || isRefField(result.data)) return [];
-        const inlineField = result.data as InlineField;
-        return [
-          field.name && field.name !== inlineField.name
-            ? { ...inlineField, name: field.name }
-            : inlineField,
-        ];
-      } catch {
-        return [];
-      }
-    });
-
-    const nextExtended: Record<string, string> = {};
-    for (const field of resolvedFields) {
-      nextExtended[getFieldSnakeKey(field.name, field.type)] = getYamlDefaultAsString(
-        field.metadata?.default
-      );
-    }
+    const resolvedFields = resolveTemplateFields(definition.fields ?? [], libraryDefs);
+    const nextExtended = buildExtendedFieldsDefaults(resolvedFields);
     // Preserve current values for global fields when template changes.
     const current =
       (innerForm.getValues() as Record<string, Record<string, unknown>>)?.[CASE_EXTENDED_FIELDS] ??

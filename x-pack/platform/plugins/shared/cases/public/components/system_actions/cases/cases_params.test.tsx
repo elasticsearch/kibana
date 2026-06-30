@@ -22,11 +22,43 @@ import * as utils from '../../../containers/configure/utils';
 import { ATTACK_DISCOVERY_SCHEDULES_ALERT_TYPE_ID } from '@kbn/elastic-assistant-common';
 import { createMockActionConnector } from '@kbn/alerts-ui-shared/src/common/test_utils/connector.mock';
 import { MAX_OPEN_CASES_DEFAULT_MAXIMUM } from '../../../../common/constants';
+import { KibanaServices } from '../../../common/lib/kibana/services';
 
 jest.mock('@kbn/alerts-ui-shared/src/common/hooks/use_alerts_data_view');
 jest.mock('../../../common/lib/kibana/use_application');
 jest.mock('../../../common/lib/kibana/kibana_react');
 jest.mock('../../../containers/configure/use_get_all_case_configurations');
+jest.mock('../../templates_v2/hooks/use_get_templates', () => ({
+  useGetTemplates: (...args: unknown[]) => mockUseGetTemplates(...args),
+}));
+
+// Mock the entire TemplateSelectorV2 to control its onChange callback in isolation tests
+jest.mock('./template_selector_v2', () => ({
+  TemplateSelectorV2: ({
+    onChange,
+    owner,
+    isDisabled,
+    templateId,
+  }: {
+    onChange: (p: { templateId: string | null; templateVersion: string | null }) => void;
+    owner: string;
+    isDisabled?: boolean;
+    templateId: string | null;
+  }) => (
+    <button
+      type="button"
+      data-test-subj="cases-connector-template-v2-select"
+      disabled={isDisabled}
+      onClick={() => onChange({ templateId: 'tmpl-v2', templateVersion: '1' })}
+    >
+      {`V2 Selector owner=${owner} templateId=${templateId}`}
+    </button>
+  ),
+}));
+
+const mockUseGetTemplates = jest
+  .fn()
+  .mockReturnValue({ data: { templates: [] }, isLoading: false });
 
 const useKibanaMock = jest.mocked(useKibana);
 const useAlertsDataViewMock = jest.mocked(useAlertsDataView);
@@ -162,6 +194,7 @@ describe('CasesParamsFields renders', () => {
       reopenClosedCases: false,
       groupingBy: [],
       templateId: null,
+      templateVersion: null,
     });
   });
 
@@ -590,6 +623,58 @@ describe('CasesParamsFields renders', () => {
           'Attack Discovery Schedules fully manage Case actions, automatically filling in all fields for new Cases.'
         )
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('Templates v2 (templates.enabled=true)', () => {
+    const enableTemplatesV2 = () =>
+      jest
+        .spyOn(KibanaServices, 'getConfig')
+        .mockReturnValue({ templates: { enabled: true } } as ReturnType<
+          typeof KibanaServices.getConfig
+        >);
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('renders the v2 template selector when templates.enabled is true', async () => {
+      enableTemplatesV2();
+      render(<CasesParamsFields {...defaultProps} />);
+
+      expect(await screen.findByTestId('cases-connector-template-v2-select')).toBeInTheDocument();
+      expect(screen.queryByTestId('create-case-template-select')).not.toBeInTheDocument();
+    });
+
+    it('does not render auto-push checkbox on v2 path', async () => {
+      enableTemplatesV2();
+      render(<CasesParamsFields {...defaultProps} />);
+
+      expect(screen.queryByTestId('auto-push-case')).not.toBeInTheDocument();
+    });
+
+    it('writes templateId and templateVersion when onChange fires on v2 selector', async () => {
+      enableTemplatesV2();
+      render(<CasesParamsFields {...defaultProps} />);
+
+      await user.click(await screen.findByTestId('cases-connector-template-v2-select'));
+
+      const lastCall = editAction.mock.calls[editAction.mock.calls.length - 1];
+      expect(lastCall[1].templateId).toBe('tmpl-v2');
+      expect(lastCall[1].templateVersion).toBe('1');
+    });
+
+    it('shows v2 selector (disabled) for attack discovery rules when templates.enabled is true', async () => {
+      enableTemplatesV2();
+      const newProps = {
+        ...defaultProps,
+        ruleTypeId: ATTACK_DISCOVERY_SCHEDULES_ALERT_TYPE_ID,
+      };
+      render(<CasesParamsFields {...newProps} />);
+
+      const templateSelect = await screen.findByTestId('cases-connector-template-v2-select');
+      expect(templateSelect).toBeInTheDocument();
+      expect(templateSelect).toBeDisabled();
     });
   });
 });

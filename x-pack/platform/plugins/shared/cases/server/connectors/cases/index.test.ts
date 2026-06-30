@@ -93,6 +93,7 @@ describe('getCasesConnectorType', () => {
         reopenClosedCases: false,
         timeWindow: '7d',
         templateId: null,
+        templateVersion: null,
         autoPushCase: null,
         maximumCasesToOpen: null,
         ...overrides,
@@ -198,6 +199,7 @@ describe('getCasesConnectorType', () => {
                 ],
               },
               "templateId": null,
+              "templateVersion": null,
               "timeWindow": "7d",
             },
           }
@@ -246,6 +248,7 @@ describe('getCasesConnectorType', () => {
                 ],
               },
               "templateId": null,
+              "templateVersion": null,
               "timeWindow": "7d",
             },
           }
@@ -294,6 +297,7 @@ describe('getCasesConnectorType', () => {
                 ],
               },
               "templateId": "template_key_1",
+              "templateVersion": null,
               "timeWindow": "7d",
             },
           }
@@ -340,6 +344,7 @@ describe('getCasesConnectorType', () => {
                 ],
               },
               "templateId": null,
+              "templateVersion": null,
               "timeWindow": "7d",
             },
           }

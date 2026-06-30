@@ -19,10 +19,13 @@ import { useCasesContext } from '../cases_context/use_cases_context';
 import { useTemplateFormSync } from './use_template_form_sync';
 import * as i18n from './translations';
 import { FieldsRenderer } from '../templates_v2/field_types/field_renderer';
-import { getYamlDefaultAsString } from '../templates_v2/utils';
 import { useResolvedFields } from '../field_library/hooks/use_resolved_fields';
 import { useGetFieldDefinitions } from '../field_library/hooks/use_get_field_definitions';
-import { parseFieldDefinitionsToInlineFields, getFieldSnakeKey } from '../../../common/utils';
+import {
+  buildExtendedFieldsDefaults,
+  parseFieldDefinitionsToInlineFields,
+  getFieldSnakeKey,
+} from '../../../common/utils';
 import { isRefField } from '../../../common/types/domain/template/fields';
 import { TemplateFieldsValidationContext } from './template_fields_validation_context';
 
@@ -81,12 +84,7 @@ export const CreateCaseTemplateFields: React.FC = () => {
     if (!globalInlineFields.length) return;
     globalDefaultsAppliedRef.current = true;
 
-    const defaults: Record<string, string> = {};
-    for (const field of globalInlineFields) {
-      defaults[getFieldSnakeKey(field.name, field.type)] = getYamlDefaultAsString(
-        field.metadata?.default
-      );
-    }
+    const defaults = buildExtendedFieldsDefaults(globalInlineFields);
 
     // Merge with any values already in the form (e.g. from template sync that ran
     // before global defs finished loading) so neither overwrites the other.

@@ -46,6 +46,7 @@ describe('CasesConnectorRunParamsSchema', () => {
           "tags": Array [],
         },
         "templateId": null,
+        "templateVersion": null,
         "timeWindow": "7d",
       }
     `);
@@ -223,6 +224,24 @@ describe('CasesConnectorRunParamsSchema', () => {
         CasesConnectorRunParamsSchema.validate(getParams({ templateId: 'case_template_key' }))
           .templateId
       ).toBe('case_template_key');
+    });
+  });
+
+  describe('templateVersion', () => {
+    it('defaults the templateVersion to null', () => {
+      expect(CasesConnectorRunParamsSchema.validate(getParams()).templateVersion).toBe(null);
+    });
+
+    it('accepts templateVersion as a string', () => {
+      expect(
+        CasesConnectorRunParamsSchema.validate(getParams({ templateVersion: '1' })).templateVersion
+      ).toBe('1');
+    });
+
+    it('accepts templateVersion as null', () => {
+      expect(
+        CasesConnectorRunParamsSchema.validate(getParams({ templateVersion: null })).templateVersion
+      ).toBe(null);
     });
   });
 

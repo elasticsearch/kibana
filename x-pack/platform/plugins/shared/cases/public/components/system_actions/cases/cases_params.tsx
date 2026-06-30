@@ -36,7 +36,9 @@ import {
 import { DEFAULT_TIME_WINDOW, TIME_UNITS } from './constants';
 import { getTimeUnitOptions } from './utils';
 import { useKibana } from '../../../common/lib/kibana';
+import { KibanaServices } from '../../../common/lib/kibana/services';
 import { TemplateSelector } from '../../create/templates';
+import { TemplateSelectorV2 } from './template_selector_v2';
 import type { CasesConfigurationUITemplate } from '../../../containers/types';
 import { getOwnerFromRuleConsumerProducer } from '../../../../common/utils/owner';
 import { getConfigurationByOwner } from '../../../containers/configure/utils';
@@ -96,6 +98,8 @@ export const CasesParamsFieldsComponent: React.FunctionComponent<
     }
   }, [uiSettings]);
 
+  const isTemplatesV2Enabled = KibanaServices.getConfig()?.templates?.enabled ?? false;
+
   const { timeWindow, reopenClosedCases, groupingBy, templateId } = useMemo(
     () =>
       actionParams.subActionParams ?? {
@@ -103,6 +107,7 @@ export const CasesParamsFieldsComponent: React.FunctionComponent<
         reopenClosedCases: false,
         groupingBy: [],
         templateId: null,
+        templateVersion: null,
       },
     [actionParams.subActionParams]
   );
@@ -136,6 +141,7 @@ export const CasesParamsFieldsComponent: React.FunctionComponent<
           reopenClosedCases: false,
           groupingBy: [],
           templateId: null,
+          templateVersion: null,
         },
         index
       );
@@ -217,6 +223,27 @@ export const CasesParamsFieldsComponent: React.FunctionComponent<
     [editSubActionProperty]
   );
 
+  const onV2TemplateChange = useCallback(
+    ({
+      templateId: newTemplateId,
+      templateVersion: newTemplateVersion,
+    }: {
+      templateId: string | null;
+      templateVersion: string | null;
+    }) => {
+      editAction(
+        'subActionParams',
+        {
+          ...actionParams.subActionParams,
+          templateId: newTemplateId,
+          templateVersion: newTemplateVersion,
+        },
+        index
+      );
+    },
+    [actionParams.subActionParams, editAction, index]
+  );
+
   const onAutoPushChange: React.EventHandler<React.ChangeEvent<HTMLInputElement>> = useCallback(
     (event) => {
       editSubActionProperty('autoPushCase', event.target.checked);
@@ -230,14 +257,24 @@ export const CasesParamsFieldsComponent: React.FunctionComponent<
         data-test-subj="case-action-attack-discovery-tooltip"
         content={i18n.ATTACK_DISCOVERY_TEMPLATE_TOOLTIP}
       >
-        <TemplateSelector
-          key={currentConfiguration.id}
-          isLoading={isLoadingCaseConfiguration}
-          templates={[defaultTemplate, ...currentConfiguration.templates]}
-          onTemplateChange={onTemplateChange}
-          initialTemplate={selectedTemplate}
-          isDisabled={true}
-        />
+        {isTemplatesV2Enabled ? (
+          <TemplateSelectorV2
+            owner={owner}
+            templateId={templateId ?? null}
+            isLoading={isLoadingCaseConfiguration}
+            isDisabled={true}
+            onChange={onV2TemplateChange}
+          />
+        ) : (
+          <TemplateSelector
+            key={currentConfiguration.id}
+            isLoading={isLoadingCaseConfiguration}
+            templates={[defaultTemplate, ...currentConfiguration.templates]}
+            onTemplateChange={onTemplateChange}
+            initialTemplate={selectedTemplate}
+            isDisabled={true}
+          />
+        )}
       </EuiToolTip>
     );
   }
@@ -314,15 +351,24 @@ export const CasesParamsFieldsComponent: React.FunctionComponent<
       <EuiSpacer size="m" />
       <EuiFlexGroup direction="column" gutterSize="m">
         <EuiFlexItem grow={true}>
-          <TemplateSelector
-            key={currentConfiguration.id}
-            isLoading={isLoadingCaseConfiguration}
-            templates={[defaultTemplate, ...currentConfiguration.templates]}
-            onTemplateChange={onTemplateChange}
-            initialTemplate={selectedTemplate}
-          />
+          {isTemplatesV2Enabled ? (
+            <TemplateSelectorV2
+              owner={owner}
+              templateId={templateId ?? null}
+              isLoading={isLoadingCaseConfiguration}
+              onChange={onV2TemplateChange}
+            />
+          ) : (
+            <TemplateSelector
+              key={currentConfiguration.id}
+              isLoading={isLoadingCaseConfiguration}
+              templates={[defaultTemplate, ...currentConfiguration.templates]}
+              onTemplateChange={onTemplateChange}
+              initialTemplate={selectedTemplate}
+            />
+          )}
         </EuiFlexItem>
-        {selectedTemplateHasConnector ? (
+        {!isTemplatesV2Enabled && selectedTemplateHasConnector ? (
           <EuiFlexItem grow={true}>
             <EuiCheckbox
               id={`auto-push-case-${index}`}

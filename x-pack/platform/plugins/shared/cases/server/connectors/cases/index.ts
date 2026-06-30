@@ -158,6 +158,7 @@ export const getCasesConnectorAdapter = ({
         timeWindow: params.subActionParams.timeWindow,
         maximumCasesToOpen,
         templateId: params.subActionParams.templateId,
+        templateVersion: params.subActionParams.templateVersion,
         internallyManagedAlerts,
       };
 
