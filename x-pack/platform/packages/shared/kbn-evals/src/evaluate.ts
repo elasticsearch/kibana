@@ -18,6 +18,7 @@ import { wrapKbnClientWithRetries } from './utils/kbn_client_with_retries';
 import { getEvaluationsKbnClient } from './utils/evaluations_kbn_client';
 import { createCriteriaEvaluator } from './evaluators/criteria';
 import { getGitMetadata } from './utils/git_metadata';
+import { buildExecutionId } from './utils/build_execution_id';
 import { createDefaultTerminalReporter } from './utils/reporting/evaluation_reporter';
 import { createConnectorFixture, resolveConnectorId } from './utils/create_connector_fixture';
 import { wrapInferenceClientWithEisConnectorTelemetry } from './utils/wrap_inference_client_with_connector_telemetry';
@@ -295,9 +296,11 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
       const suiteId = process.env.EVAL_SUITE_ID;
       const buildkiteMetadata = getBuildkiteCiMetadataFromEnv();
 
-      const baseExecutionId = process.env.TEST_RUN_ID;
-      const executionId =
-        baseExecutionId && model.id ? `${baseExecutionId}::${model.id}` : baseExecutionId;
+      const executionId = buildExecutionId({
+        baseExecutionId: process.env.TEST_RUN_ID,
+        suiteId,
+        modelId: model.id,
+      });
 
       workerExecutionId.current = executionId;
 
