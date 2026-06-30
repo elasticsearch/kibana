@@ -122,7 +122,15 @@ export class EntityStorePlugin
 
     const logger = this.logger;
     return {
-      createCRUDClient: (esClient, namespace) => new CRUDClient({ logger, esClient, namespace }),
+      createCRUDClient: (esClient, namespace, getWorkflowsClient) => {
+        const emitWorkflowTriggerEvent = getWorkflowsClient
+          ? async (triggerId: string, payload: Record<string, unknown>) => {
+              const client = await getWorkflowsClient();
+              await client.emitEvent(triggerId, payload);
+            }
+          : undefined;
+        return new CRUDClient({ logger, esClient, namespace, emitWorkflowTriggerEvent });
+      },
       createResolutionClient: (esClient, namespace) =>
         new ResolutionClient({ logger, esClient, namespace }),
     };

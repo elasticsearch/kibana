@@ -68,6 +68,10 @@ export const APPROVED_TRIGGER_DEFINITIONS: Array<{ id: string; schemaHash: strin
     schemaHash: '0cac291f4c8f260c3484052be503985d84419a55978afc487aeafbf32353c87f',
   },
   {
+    id: 'entityStore.entityRiskScoreChanged',
+    schemaHash: '0a9ffcd4c85b3a1e6ae2ce38f969abd9b07adeaaea650d0b88ac670b1b083d58',
+  },
+  {
     id: 'cases.caseCreated',
     schemaHash: '616f3b574681800b6ee48d4809ea220bd2179ddc97a08c72f77171c0844de98b',
   },

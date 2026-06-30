@@ -86,7 +86,13 @@ export type RegisterEntityMaintainer = (config: RegisterEntityMaintainerConfig) 
 export type EntityStoreCRUDClient = Omit<CRUDClient, 'createEntity'>;
 
 export interface EntityStoreStartContract {
-  createCRUDClient: (esClient: ElasticsearchClient, namespace: string) => EntityStoreCRUDClient;
+  createCRUDClient: (
+    esClient: ElasticsearchClient,
+    namespace: string,
+    getWorkflowsClient?: () => Promise<{
+      emitEvent: (triggerId: string, payload: Record<string, unknown>) => Promise<void>;
+    }>
+  ) => EntityStoreCRUDClient;
   createResolutionClient: (esClient: ElasticsearchClient, namespace: string) => ResolutionClient;
 }
 
