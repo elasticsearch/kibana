@@ -292,6 +292,13 @@ export const allowedExperimentalValues = Object.freeze({
   publicAttacksApiEnabled: false,
 
   /**
+   * Enables v2 (alerting v2) rule type cards in the v1 rule creation flow.
+   * When enabled, users see additional ES|QL v2 and Threshold v2 cards in
+   * the rule type selector that redirect to the v2 rule creation page.
+   */
+  alertingV2RuleCreationEnabled: true,
+
+  /**
    * Enables the agent builder `run_rule_preview` tool and the `security.rule.preview`
    * attachment (server type + client renderer). Gates registration so the feature can
    * ship dark and be enabled per environment.

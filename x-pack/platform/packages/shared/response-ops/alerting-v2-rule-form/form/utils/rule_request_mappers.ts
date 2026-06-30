@@ -63,8 +63,13 @@ const mapSchedule = (schedule: FormValues['schedule']) => ({
   lookback: schedule.lookback,
 });
 
-const mapGrouping = (grouping: FormValues['grouping']) =>
-  grouping?.fields?.length ? { fields: grouping.fields } : undefined;
+const mapGrouping = (grouping: FormValues['grouping']) => {
+  if (!grouping?.fields?.length) return undefined;
+  return {
+    fields: grouping.fields,
+    ...(grouping.duration ? { duration: grouping.duration } : {}),
+  };
+};
 
 const mapStateTransition = (formValues: FormValues) => {
   const { kind, stateTransition } = formValues;
@@ -120,7 +125,7 @@ export interface RuleRequestCommon {
   query: Query;
   recovery_strategy?: RecoveryStrategy;
   no_data_strategy?: NoDataStrategy;
-  grouping?: { fields: string[] };
+  grouping?: { fields: string[]; duration?: string };
   state_transition?: {
     pending_count?: number;
     pending_timeframe?: string;
@@ -196,7 +201,14 @@ export const mapRuleResponseToFormValues = (rule: RuleResponse): Partial<FormVal
     query: apiQueryToFormQuery(rule.query, rule.recovery_strategy),
     recoveryStrategy: rule.recovery_strategy ?? undefined,
     noDataStrategy: rule.no_data_strategy ?? undefined,
-    ...(rule.grouping ? { grouping: { fields: rule.grouping.fields } } : {}),
+    ...(rule.grouping
+      ? {
+          grouping: {
+            fields: rule.grouping.fields,
+            ...(rule.grouping.duration ? { duration: rule.grouping.duration } : {}),
+          },
+        }
+      : {}),
     stateTransition,
     stateTransitionAlertDelayMode: deriveAlertDelayModeFromStateTransition(stateTransition),
     stateTransitionRecoveryDelayMode: deriveRecoveryDelayModeFromStateTransition(stateTransition),

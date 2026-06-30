@@ -1,0 +1,33 @@
+import type { KueryNode } from '@kbn/es-query';
+import React from 'react';
+import type { RuleTableItem, BulkEditActions, UpdateRulesToBulkEditProps } from '../../../../types';
+import type { ComponentOpts as BulkOperationsComponentOpts } from './with_bulk_rule_api_operations';
+export type ComponentOpts = {
+    selectedItems: RuleTableItem[];
+    isAllSelected?: boolean;
+    getFilter: () => KueryNode | null;
+    onPerformingAction?: () => void;
+    onActionPerformed?: () => void;
+    bulkEditAction?: BulkEditActions;
+    isEnablingRules?: boolean;
+    isDisablingRules?: boolean;
+    isBulkEditing?: boolean;
+    onDisable: (untrack: boolean) => Promise<void>;
+    onEnable: () => Promise<void>;
+    updateRulesToBulkEdit: (props: UpdateRulesToBulkEditProps) => void;
+} & BulkOperationsComponentOpts;
+export declare const RuleQuickEditButtons: React.FunctionComponent<ComponentOpts>;
+export declare const RuleQuickEditButtonsWithApi: React.FunctionComponent<import("./with_bulk_rule_api_operations").PropsWithOptionalApiHandlers<{
+    selectedItems: RuleTableItem[];
+    isAllSelected?: boolean;
+    getFilter: () => KueryNode | null;
+    onPerformingAction?: () => void;
+    onActionPerformed?: () => void;
+    bulkEditAction?: BulkEditActions;
+    isEnablingRules?: boolean;
+    isDisablingRules?: boolean;
+    isBulkEditing?: boolean;
+    onDisable: (untrack: boolean) => Promise<void>;
+    onEnable: () => Promise<void>;
+    updateRulesToBulkEdit: (props: UpdateRulesToBulkEditProps) => void;
+}>>;

@@ -158,3 +158,8 @@ export const WATCHLISTS_PANEL_ARIA_LABEL = i18n.translate(
   'xpack.securitySolution.flyout.panelAriaLabel.watchlists',
   { defaultMessage: 'Watchlists' }
 );
+
+export const ALERTS_V2_DETAILS_PANEL_ARIA_LABEL = i18n.translate(
+  'xpack.securitySolution.flyout.panelAriaLabel.alertsV2Details',
+  { defaultMessage: 'Alerts v2 details' }
+);

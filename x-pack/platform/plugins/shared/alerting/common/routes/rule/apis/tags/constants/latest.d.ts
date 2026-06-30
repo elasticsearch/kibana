@@ -1,0 +1,1 @@
+export { DEFAULT_TAGS_PER_PAGEV1 as DEFAULT_TAGS_PER_PAGE } from './v1';

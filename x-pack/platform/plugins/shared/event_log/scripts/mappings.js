@@ -509,6 +509,46 @@ exports.EcsCustomPropertyMappings = {
               },
             },
           },
+          rule_executor: {
+            properties: {
+              execution: {
+                properties: {
+                  uuid: {
+                    type: 'keyword',
+                    ignore_above: 1024,
+                  },
+                  status: {
+                    type: 'keyword',
+                    ignore_above: 1024,
+                  },
+                  metrics: {
+                    properties: {
+                      query: {
+                        properties: {
+                          total_search_duration_ms: {
+                            type: 'long',
+                          },
+                          number_of_rows_returned: {
+                            type: 'long',
+                          },
+                        },
+                      },
+                      events_written: {
+                        properties: {
+                          breached: {
+                            type: 'long',
+                          },
+                          recovered: {
+                            type: 'long',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },

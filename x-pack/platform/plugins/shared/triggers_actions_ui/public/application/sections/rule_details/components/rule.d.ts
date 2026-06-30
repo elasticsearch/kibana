@@ -1,0 +1,30 @@
+import React from 'react';
+import type { Rule, RuleSummary, AlertStatus, RuleType } from '../../../../types';
+import type { ComponentOpts as RuleApis } from '../../common/components/with_bulk_rule_api_operations';
+import type { AlertListItem, RefreshToken } from './types';
+export type RuleComponentProps = {
+    rule: Rule;
+    ruleType: RuleType;
+    readOnly: boolean;
+    ruleSummary: RuleSummary;
+    requestRefresh: () => Promise<void>;
+    refreshToken?: RefreshToken;
+    numberOfExecutions: number;
+    onChangeDuration: (length: number) => void;
+    durationEpoch?: number;
+    isLoadingChart?: boolean;
+} & Pick<RuleApis, 'muteAlertInstance' | 'unmuteAlertInstance'>;
+export declare function RuleComponent({ rule, ruleType, readOnly, ruleSummary, requestRefresh, refreshToken, numberOfExecutions, onChangeDuration, durationEpoch, isLoadingChart, }: RuleComponentProps): React.JSX.Element;
+export declare const RuleWithApi: React.FunctionComponent<import("../../common/components/with_bulk_rule_api_operations").PropsWithOptionalApiHandlers<{
+    rule: Rule;
+    ruleType: RuleType;
+    readOnly: boolean;
+    ruleSummary: RuleSummary;
+    requestRefresh: () => Promise<void>;
+    refreshToken?: RefreshToken;
+    numberOfExecutions: number;
+    onChangeDuration: (length: number) => void;
+    durationEpoch?: number;
+    isLoadingChart?: boolean;
+} & Pick<RuleApis, "muteAlertInstance" | "unmuteAlertInstance">>>;
+export declare function alertToListItem(durationEpoch: number, alertId: string, alert: AlertStatus): AlertListItem;

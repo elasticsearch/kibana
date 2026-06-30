@@ -88,6 +88,8 @@ import type { CloudSecurityPosture } from './cloud_security_posture';
 import type { CloudDefend } from './cloud_defend';
 import type { ThreatIntelligence } from './threat_intelligence';
 import type { SecuritySolutionTemplateWrapper } from './app/home/template_wrapper';
+import type { AlertsV2 } from './alerts_v2';
+import type { RulesV2 } from './rules_v2';
 import type { AssetInventory } from './asset_inventory';
 import type { SiemReadiness } from './siem_readiness';
 import type { AttackDiscovery } from './attack_discovery';
@@ -258,6 +260,8 @@ export const CASES_SUB_PLUGIN_KEY = 'cases';
 export interface SubPlugins {
   [CASES_SUB_PLUGIN_KEY]: Cases;
   alerts: Detections;
+  alertsV2: AlertsV2;
+  rulesV2: RulesV2;
   assetInventory: AssetInventory;
   attackDiscovery: AttackDiscovery;
   cloudDefend: CloudDefend;
@@ -283,6 +287,8 @@ export interface SubPlugins {
 export interface StartedSubPlugins {
   [CASES_SUB_PLUGIN_KEY]: ReturnType<Cases['start']>;
   alerts: Awaited<ReturnType<Detections['start']>>;
+  alertsV2: ReturnType<AlertsV2['start']>;
+  rulesV2: ReturnType<RulesV2['start']>;
   assetInventory: Awaited<ReturnType<AssetInventory['start']>>;
   attackDiscovery: ReturnType<AttackDiscovery['start']>;
   cloudDefend: ReturnType<CloudDefend['start']>;

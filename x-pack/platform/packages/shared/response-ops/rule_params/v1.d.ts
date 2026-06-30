@@ -1,0 +1,11 @@
+import type { Type, TypeOf, ObjectType } from '@kbn/config-schema';
+export declare const RULE_TYPE_ID = "rule_type_id";
+export declare const ruleParamsSchema: Type<Record<string, any>>;
+export declare const ruleParamsSchemaWithDefaultValue: Type<Record<string, any>>;
+export declare const ruleParamsSchemasForCreate: (baseFields: Record<string, Type<unknown>>) => Array<ObjectType<any>>;
+export declare const ruleParamsSchemaForUpdate: Type<Record<string, any>>;
+export declare const createRuleParamsExamples: () => string;
+export type RuleParams = TypeOf<typeof ruleParamsSchema>;
+export type RuleParamsWithDefaultValue = TypeOf<typeof ruleParamsSchemaWithDefaultValue>;
+export type RuleParamsForUpdate = TypeOf<typeof ruleParamsSchemaForUpdate>;
+export type RuleParamsForCreate = ReturnType<typeof ruleParamsSchemasForCreate>;

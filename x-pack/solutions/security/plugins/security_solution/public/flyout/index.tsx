@@ -98,6 +98,7 @@ import {
   VULNERABILITY_FINDINGS_PANEL_ARIA_LABEL,
   VULNERABILITY_FINDINGS_PREVIEW_PANEL_ARIA_LABEL,
   WATCHLISTS_PANEL_ARIA_LABEL,
+  ALERTS_V2_DETAILS_PANEL_ARIA_LABEL,
 } from './panel_aria_labels';
 import type { WatchlistsFlyoutExpandableFlyoutProps } from './entity_details/watchlists_right';
 import { WatchlistsFlyoutPanel } from './entity_details/watchlists_right';
@@ -125,6 +126,9 @@ import type { IOCDetailsProps } from './ioc_details/types';
 import { IOCDetailsProvider } from './ioc_details/context';
 import { IOCPanel } from './ioc_details';
 import { IOCRightPanelKey } from './ioc_details/constants/panel_keys';
+import { AlertsV2DetailsPanelKey } from '../alerts_v2/constants';
+import type { AlertsV2DetailsPanelProps } from '../alerts_v2/pages/alerts_v2_flyout_panel';
+import { AlertsV2DetailsPanel } from '../alerts_v2/pages/alerts_v2_flyout_panel';
 
 const GraphGroupedNodePreviewPanel = React.lazy(() =>
   import('@kbn/cloud-security-posture-graph').then((module) => ({
@@ -365,6 +369,13 @@ export const expandableFlyoutDocumentsPanels: ExpandableFlyoutProps['registeredP
       <WatchlistsFlyoutPanel {...(props as WatchlistsFlyoutExpandableFlyoutProps).params} />
     ),
     'aria-label': WATCHLISTS_PANEL_ARIA_LABEL,
+  },
+  {
+    key: AlertsV2DetailsPanelKey,
+    component: (props) => (
+      <AlertsV2DetailsPanel {...(props as unknown as AlertsV2DetailsPanelProps)} />
+    ),
+    'aria-label': ALERTS_V2_DETAILS_PANEL_ARIA_LABEL,
   },
 ];
 

@@ -49,6 +49,20 @@ export const createAiNavigationTree = (
       link: securityLink(SecurityPageName.alertSummary),
       icon: 'warning',
     },
+    ...(showAlertingV2
+      ? [
+          {
+            id: SecurityPageName.alertsV2,
+            icon: 'warning',
+            link: securityLink(SecurityPageName.alertsV2),
+          },
+          {
+            id: SecurityPageName.rulesV2,
+            icon: 'document',
+            link: securityLink(SecurityPageName.rulesV2),
+          },
+        ]
+      : []),
     {
       id: SecurityPageName.attackDiscovery,
       link: securityLink(SecurityPageName.attackDiscovery),

@@ -59,6 +59,8 @@ export interface RuleSchedule {
 
 export interface RuleGrouping {
   fields: string[];
+  /** Suppression window (duration string, e.g. "5m"). */
+  duration?: string;
 }
 
 export interface RuleArtifact {

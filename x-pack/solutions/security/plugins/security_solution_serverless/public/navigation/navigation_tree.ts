@@ -66,6 +66,20 @@ export const createNavigationTree = async (
             icon: 'warning',
             link: securityLink(SecurityPageName.alerts),
           },
+      ...(showAlertingV2
+        ? [
+            {
+              id: SecurityPageName.alertsV2,
+              icon: 'warning',
+              link: securityLink(SecurityPageName.alertsV2),
+            },
+            {
+              id: SecurityPageName.rulesV2,
+              icon: 'document',
+              link: securityLink(SecurityPageName.rulesV2),
+            },
+          ]
+        : []),
       {
         link: 'workflows',
       },

@@ -1,0 +1,41 @@
+import { z } from '@kbn/zod/v4';
+export declare const AttackDiscoveryFindInternalResponse: z.ZodObject<{
+    connector_names: z.ZodArray<z.ZodString>;
+    data: z.ZodArray<z.ZodObject<{
+        alertIds: z.ZodArray<z.ZodString>;
+        alertRuleUuid: z.ZodOptional<z.ZodString>;
+        alertWorkflowStatus: z.ZodOptional<z.ZodString>;
+        connectorId: z.ZodString;
+        connectorName: z.ZodString;
+        alertStart: z.ZodOptional<z.ZodString>;
+        alertUpdatedAt: z.ZodOptional<z.ZodString>;
+        alertUpdatedByUserId: z.ZodOptional<z.ZodString>;
+        alertUpdatedByUserName: z.ZodOptional<z.ZodString>;
+        alertWorkflowStatusUpdatedAt: z.ZodOptional<z.ZodString>;
+        detailsMarkdown: z.ZodString;
+        entitySummaryMarkdown: z.ZodOptional<z.ZodString>;
+        generationUuid: z.ZodString;
+        id: z.ZodString;
+        mitreAttackTactics: z.ZodOptional<z.ZodArray<z.ZodString>>;
+        replacements: z.ZodOptional<z.ZodObject<{}, z.core.$catchall<z.ZodString>>>;
+        riskScore: z.ZodOptional<z.ZodNumber>;
+        summaryMarkdown: z.ZodString;
+        timestamp: z.ZodString;
+        title: z.ZodString;
+        userId: z.ZodOptional<z.ZodString>;
+        userName: z.ZodOptional<z.ZodString>;
+        users: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            id: z.ZodOptional<z.ZodString>;
+            name: z.ZodOptional<z.ZodString>;
+        }, z.core.$strip>>>;
+        assignees: z.ZodOptional<z.ZodArray<z.ZodString>>;
+        tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+        index: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>>;
+    page: z.ZodNumber;
+    per_page: z.ZodOptional<z.ZodNumber>;
+    total: z.ZodNumber;
+    unique_alert_ids_count: z.ZodNumber;
+    unique_alert_ids: z.ZodOptional<z.ZodArray<z.ZodString>>;
+}, z.core.$strip>;
+export type AttackDiscoveryFindInternalResponse = z.infer<typeof AttackDiscoveryFindInternalResponse>;

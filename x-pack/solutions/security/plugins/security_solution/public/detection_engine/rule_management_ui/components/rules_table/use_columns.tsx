@@ -80,6 +80,7 @@ interface ActionColumnsProps {
   showExceptionsDuplicateConfirmation: () => Promise<string | null>;
   showManualRuleRunConfirmation: () => Promise<TimeRange | null>;
   confirmDeletion: () => Promise<boolean>;
+  onConvertToV2?: (rule: Rule) => void;
 }
 
 const loadingActionsSet = new Set(['disable', 'enable', 'edit', 'delete', 'run', 'fill_gaps']);
@@ -315,11 +316,13 @@ const useActionsColumn = ({
   showExceptionsDuplicateConfirmation,
   showManualRuleRunConfirmation,
   confirmDeletion,
+  onConvertToV2,
 }: ActionColumnsProps): EuiTableActionsColumnType<Rule> => {
   const actions = useRulesTableActions({
     showExceptionsDuplicateConfirmation,
     showManualRuleRunConfirmation,
     confirmDeletion,
+    onConvertToV2,
   });
 
   return useMemo(() => ({ ...columnPresetActions({}), actions, sticky: true }), [actions]);
@@ -334,11 +337,13 @@ export const useRulesColumns = ({
   showExceptionsDuplicateConfirmation,
   showManualRuleRunConfirmation,
   confirmDeletion,
+  onConvertToV2,
 }: UseColumnsProps): TableColumn[] => {
   const actionsColumn = useActionsColumn({
     showExceptionsDuplicateConfirmation,
     showManualRuleRunConfirmation,
     confirmDeletion,
+    onConvertToV2,
   });
   const [showRelatedIntegrations] = useUiSetting$<boolean>(SHOW_RELATED_INTEGRATIONS_SETTING);
 

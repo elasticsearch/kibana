@@ -114,3 +114,55 @@ export const NEW_TERMS_TYPE_DESCRIPTION = i18n.translate(
     defaultMessage: 'Find documents with values appearing for the first time.',
   }
 );
+
+export const V2_SECTION_TITLE = i18n.translate(
+  'xpack.securitySolution.detectionEngine.createRule.stepDefineRule.ruleTypeField.v2SectionTitle',
+  {
+    defaultMessage: 'Next-gen Alerting',
+  }
+);
+
+export const V2_SECTION_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.detectionEngine.createRule.stepDefineRule.ruleTypeField.v2SectionDescription',
+  {
+    defaultMessage:
+      'Try more performant ES|QL next generation rules.',
+  }
+);
+
+export const V2_CLASSIC_SECTION_TITLE = i18n.translate(
+  'xpack.securitySolution.detectionEngine.createRule.stepDefineRule.ruleTypeField.v2ClassicSectionTitle',
+  {
+    defaultMessage: 'Classic rule types',
+  }
+);
+
+export const V2_ESQL_TYPE_TITLE = i18n.translate(
+  'xpack.securitySolution.detectionEngine.createRule.stepDefineRule.ruleTypeField.v2EsqlTypeTitle',
+  {
+    defaultMessage: 'ES|QL',
+  }
+);
+
+export const V2_ESQL_TYPE_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.detectionEngine.createRule.stepDefineRule.ruleTypeField.v2EsqlTypeDescription',
+  {
+    defaultMessage:
+      'Write ES|QL queries with episode-based alerts and automatic recovery.',
+  }
+);
+
+export const V2_THRESHOLD_TYPE_TITLE = i18n.translate(
+  'xpack.securitySolution.detectionEngine.createRule.stepDefineRule.ruleTypeField.v2ThresholdTypeTitle',
+  {
+    defaultMessage: 'Threshold',
+  }
+);
+
+export const V2_THRESHOLD_TYPE_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.detectionEngine.createRule.stepDefineRule.ruleTypeField.v2ThresholdTypeDescription',
+  {
+    defaultMessage:
+      'Aggregate metrics and alert on thresholds with episode tracking and recovery.',
+  }
+);

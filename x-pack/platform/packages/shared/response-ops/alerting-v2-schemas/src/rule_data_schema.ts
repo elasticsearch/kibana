@@ -321,6 +321,11 @@ export const groupingSchema = z
       .describe(
         'Fields to group alerts by, e.g. ["host.name", "service.name"]. Should match ES|QL GROUP BY fields.'
       ),
+    duration: durationSchema
+      .optional()
+      .describe(
+        'Suppression window anchored to the first event in an episode. When the window elapses, subsequent matches start a new episode.'
+      ),
   })
   .strict()
   .describe('Grouping configuration.');
@@ -345,6 +350,86 @@ const artifactSchema = z
       });
     }
   });
+
+/** Consumer-defined params (optional) */
+
+const threatSubtechniqueSchema = z.object({
+  id: z.string().min(1).max(256),
+  name: z.string().min(1).max(256),
+  reference: z.string().max(1024),
+});
+
+const threatTechniqueSchema = z.object({
+  id: z.string().min(1).max(256),
+  name: z.string().min(1).max(256),
+  reference: z.string().max(1024),
+  subtechnique: z.array(threatSubtechniqueSchema).optional(),
+});
+
+const threatTacticSchema = z.object({
+  id: z.string().min(1).max(256),
+  name: z.string().min(1).max(256),
+  reference: z.string().max(1024),
+});
+
+const threatEntrySchema = z.object({
+  framework: z.string().min(1).max(256),
+  tactic: threatTacticSchema,
+  technique: z.array(threatTechniqueSchema).optional(),
+});
+
+const relatedIntegrationSchema = z.object({
+  package: z.string().min(1).max(256),
+  version: z.string().min(1).max(64),
+  integration: z.string().max(256).optional(),
+});
+
+const investigationFieldsSchema = z.object({
+  field_names: z.array(z.string().min(1).max(MAX_FIELD_NAME_LENGTH)),
+});
+
+export const ruleParamsSchema = z
+  .object({
+    threat: z
+      .array(threatEntrySchema)
+      .optional()
+      .describe('MITRE ATT&CK tactic/technique/subtechnique mappings.'),
+    note: z.string().max(10000).optional().describe('Investigation guide markdown for analysts.'),
+    setup: z.string().max(10000).optional().describe('Setup/prerequisite guide markdown.'),
+    related_integrations: z
+      .array(relatedIntegrationSchema)
+      .optional()
+      .describe('Elastic integrations that provide required data.'),
+    investigation_fields: investigationFieldsSchema
+      .optional()
+      .describe('Fields highlighted in alert flyout for investigation.'),
+    references: z
+      .array(z.string().max(2048))
+      .optional()
+      .describe('External URLs (docs, blogs, threat intel).'),
+  })
+  .strict()
+  .describe('Consumer-defined rule parameters.');
+
+export type RuleParams = z.infer<typeof ruleParamsSchema>;
+
+/** Exception list references (optional) */
+
+const exceptionListNamespaceTypeSchema = z.enum(['agnostic', 'single']);
+const exceptionListTypeSchema = z.enum(['detection', 'rule_default', 'endpoint']);
+
+export const exceptionListReferenceSchema = z
+  .object({
+    id: z.string().min(1).max(256).describe('Exception list saved object ID.'),
+    list_id: z.string().min(1).max(256).describe('Exception list logical ID.'),
+    type: exceptionListTypeSchema.describe('Exception list type.'),
+    namespace_type: exceptionListNamespaceTypeSchema.describe(
+      'Namespace type: "agnostic" for shared across spaces, "single" for space-scoped.'
+    ),
+  })
+  .strict();
+
+export type ExceptionListReference = z.infer<typeof exceptionListReferenceSchema>;
 
 /** Create rule API schema */
 
@@ -378,6 +463,12 @@ export const createRuleDataBaseSchema = z
     state_transition: stateTransitionSchema,
     grouping: groupingSchema.optional(),
     artifacts: z.array(artifactSchema).max(100).optional(),
+    exceptions: z
+      .array(exceptionListReferenceSchema)
+      .max(100)
+      .optional()
+      .describe('Exception list references applied to this rule.'),
+    params: ruleParamsSchema.optional(),
   })
   .strip();
 
@@ -481,6 +572,8 @@ export const updateRuleDataSchema = z
     state_transition: stateTransitionSchema.nullable(),
     grouping: groupingSchema.optional().nullable(),
     artifacts: z.array(artifactSchema).max(100).optional().nullable(),
+    exceptions: z.array(exceptionListReferenceSchema).max(100).optional().nullable(),
+    params: ruleParamsSchema.optional().nullable(),
     enabled: z.boolean().optional().describe('Whether the rule is enabled.'),
   })
   .strip();

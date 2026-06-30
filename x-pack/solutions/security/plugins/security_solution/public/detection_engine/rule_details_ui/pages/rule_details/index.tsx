@@ -150,6 +150,10 @@ import { ManualRuleRunModal } from '../../../rule_gaps/components/manual_rule_ru
 import { AddRuleAttachmentToChatButton } from '../../../rule_creation_ui/components/add_rule_attachment_to_chat_button';
 import { useAgentBuilderAvailability } from '../../../../agent_builder/hooks/use_agent_builder_availability';
 import { useManualRuleRunConfirmation } from '../../../rule_gaps/components/manual_rule_run/use_manual_rule_run_confirmation';
+import { useConvertToV2 } from '../../../../rules_v2/hooks/use_convert_to_v2';
+import { useBuildV2Payload } from '../../../../rules_v2/hooks/use_build_v2_payload';
+import { ConvertToV2Confirmation } from '../../../rule_management_ui/components/rules_table/convert_to_v2_confirmation';
+import type { Rule } from '../../../rule_management/logic';
 // eslint-disable-next-line no-restricted-imports
 import { useLegacyUrlRedirect } from './use_redirect_legacy_url';
 import { RuleDetailTabs, useRuleDetailsTabs } from './use_rule_details_tabs';
@@ -610,6 +614,29 @@ export const RuleDetailsPage = connector(
       confirmManualRuleRun,
     } = useManualRuleRunConfirmation();
 
+    const isAlertingV2Enabled = useIsExperimentalFeatureEnabled('alertingV2RuleCreationEnabled');
+    const { convertRule, isConverting } = useConvertToV2();
+    const [ruleToConvert, setRuleToConvert] = useState<RuleResponse | null>(null);
+    const {
+      payload: v2Payload,
+      isLoading: isPayloadLoading,
+      error: payloadError,
+      buildPayload,
+    } = useBuildV2Payload(ruleToConvert as unknown as Rule | null);
+
+    const handleConvertToV2 = useCallback((r: Rule) => setRuleToConvert(r as RuleResponse), []);
+    const handleConvertConfirm = useCallback(
+      async (disableOriginal: boolean) => {
+        if (ruleToConvert) {
+          const resolvedPayload = v2Payload ?? (await buildPayload());
+          await convertRule(ruleToConvert as unknown as Rule, disableOriginal, resolvedPayload);
+        }
+        setRuleToConvert(null);
+      },
+      [ruleToConvert, v2Payload, buildPayload, convertRule]
+    );
+    const handleConvertCancel = useCallback(() => setRuleToConvert(null), []);
+
     const groupTakeActionItems = useGroupTakeActionsItems({
       currentStatus: currentAlertStatusFilterValue,
       showAlertStatusActions: Boolean(hasIndexWrite) && Boolean(hasIndexMaintenance),
@@ -683,6 +710,18 @@ export const RuleDetailsPage = connector(
         )}
         {isManualRuleRunConfirmationVisible && (
           <ManualRuleRunModal onCancel={cancelManualRuleRun} onConfirm={confirmManualRuleRun} />
+        )}
+        {ruleToConvert && (
+          <ConvertToV2Confirmation
+            rule={ruleToConvert as unknown as Rule}
+            onConfirm={handleConvertConfirm}
+            onCancel={handleConvertCancel}
+            isLoading={isConverting}
+            v2Payload={v2Payload}
+            isPayloadLoading={isPayloadLoading}
+            payloadError={payloadError}
+            onBuildPayload={buildPayload}
+          />
         )}
         <StyledFullHeightContainer onKeyDown={onKeyDown} ref={containerElement}>
           <EuiWindowEvent event="resize" handler={noop} />
@@ -772,6 +811,7 @@ export const RuleDetailsPage = connector(
                             showBulkDuplicateExceptionsConfirmation={showBulkDuplicateConfirmation}
                             showManualRuleRunConfirmation={showManualRuleRunConfirmation}
                             confirmDeletion={confirmDeletion}
+                            onConvertToV2={isAlertingV2Enabled ? handleConvertToV2 : undefined}
                           />
                         </EuiFlexItem>
                       </EuiFlexGroup>

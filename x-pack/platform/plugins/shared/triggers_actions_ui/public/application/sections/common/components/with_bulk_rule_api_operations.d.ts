@@ -1,0 +1,34 @@
+import React from 'react';
+import type { IExecutionLogResult, IExecutionErrorsResult, IExecutionKPIResult } from '@kbn/alerting-plugin/common';
+import type { AlertingFrameworkHealth } from '@kbn/alerting-types';
+import type { Rule, RuleType, RuleTaskState, RuleSummary, ResolvedRule, SnoozeSchedule, BulkEditResponse, BulkOperationResponse, BulkOperationAttributesWithoutHttp, BulkDisableParamsWithoutHttp } from '../../../../types';
+import type { LoadExecutionLogAggregationsProps, LoadGlobalExecutionLogAggregationsProps, LoadActionErrorLogProps, BulkSnoozeRulesProps, LoadExecutionKPIAggregationsProps, LoadGlobalExecutionKPIAggregationsProps, BulkUnsnoozeRulesProps } from '../../../lib/rule_api';
+export interface ComponentOpts {
+    muteRules: (rules: Rule[]) => Promise<void>;
+    unmuteRules: (rules: Rule[]) => Promise<void>;
+    muteRule: (rule: Rule) => Promise<void>;
+    unmuteRule: (rule: Rule) => Promise<void>;
+    muteAlertInstance: (rule: Rule, alertInstanceId: string) => Promise<void>;
+    unmuteAlertInstance: (rule: Rule, alertInstanceId: string) => Promise<void>;
+    loadRule: (id: Rule['id']) => Promise<Rule>;
+    loadRuleState: (id: Rule['id']) => Promise<RuleTaskState>;
+    loadRuleSummary: (id: Rule['id'], numberOfExecutions?: number) => Promise<RuleSummary>;
+    loadRuleTypes: () => Promise<RuleType[]>;
+    loadExecutionKPIAggregations: (props: LoadExecutionKPIAggregationsProps) => Promise<IExecutionKPIResult>;
+    loadExecutionLogAggregations: (props: LoadExecutionLogAggregationsProps) => Promise<IExecutionLogResult>;
+    loadGlobalExecutionLogAggregations: (props: LoadGlobalExecutionLogAggregationsProps) => Promise<IExecutionLogResult>;
+    loadGlobalExecutionKPIAggregations: (props: LoadGlobalExecutionKPIAggregationsProps) => Promise<IExecutionKPIResult>;
+    loadActionErrorLog: (props: LoadActionErrorLogProps) => Promise<IExecutionErrorsResult>;
+    getHealth: () => Promise<AlertingFrameworkHealth>;
+    resolveRule: (id: Rule['id']) => Promise<ResolvedRule>;
+    snoozeRule: (rule: Rule, snoozeSchedule: SnoozeSchedule) => Promise<void>;
+    bulkSnoozeRules: (props: BulkSnoozeRulesProps) => Promise<BulkEditResponse>;
+    unsnoozeRule: (rule: Rule, scheduleIds?: string[]) => Promise<void>;
+    bulkUnsnoozeRules: (props: BulkUnsnoozeRulesProps) => Promise<BulkEditResponse>;
+    cloneRule: (ruleId: string) => Promise<Rule>;
+    bulkDeleteRules: (props: BulkOperationAttributesWithoutHttp) => Promise<BulkOperationResponse>;
+    bulkEnableRules: (props: BulkOperationAttributesWithoutHttp) => Promise<BulkOperationResponse>;
+    bulkDisableRules: (props: BulkDisableParamsWithoutHttp) => Promise<BulkOperationResponse>;
+}
+export type PropsWithOptionalApiHandlers<T> = Omit<T, keyof ComponentOpts> & Partial<ComponentOpts>;
+export declare function withBulkRuleOperations<T>(WrappedComponent: React.ComponentType<T & ComponentOpts>): React.FunctionComponent<PropsWithOptionalApiHandlers<T>>;

@@ -16,6 +16,14 @@ import type {
 } from '../../../../../../common/api/detection_engine/model/alerts';
 import type { SecurityRuleServices } from '../../types';
 import type { IRuleExecutionLogForExecutors } from '../../../rule_monitoring';
+
+/** Narrow ES surface used by alert enrichment (legacy rules and alerting v2 rows). */
+export type AlertEnrichmentElasticsearchServices = Pick<
+  SecurityRuleServices,
+  'scopedClusterClient'
+>;
+
+export type AlertEnrichmentLogger = Pick<IRuleExecutionLogForExecutors, 'debug' | 'error' | 'info'>;
 import type { ExperimentalFeatures } from '../../../../../../common/experimental_features';
 
 export type EnrichmentType = estypes.SearchHit<unknown>;
@@ -40,12 +48,12 @@ export type MergeEnrichments = <T extends DetectionAlertLatest>(
 export type ApplyEnrichmentsToEvents = <T extends DetectionAlertLatest>(params: {
   events: Array<EventsForEnrichment<T>>;
   enrichmentsList: EventsMapByEnrichments[];
-  logger: IRuleExecutionLogForExecutors;
+  logger: AlertEnrichmentLogger;
 }) => Array<EventsForEnrichment<T>>;
 
 export interface BasedEnrichParameters<T extends DetectionAlertLatest> {
-  services: SecurityRuleServices;
-  logger: IRuleExecutionLogForExecutors;
+  services: AlertEnrichmentElasticsearchServices;
+  logger: AlertEnrichmentLogger;
   events: Array<EventsForEnrichment<T>>;
   entityStoreCrudClient?: EntityStoreCRUDClient;
 }
@@ -69,19 +77,19 @@ export type MakeSingleFieldMatchQuery = (params: {
 
 export type SearchEnrichments = (params: {
   index: string[];
-  services: SecurityRuleServices;
-  logger: IRuleExecutionLogForExecutors;
+  services: AlertEnrichmentElasticsearchServices;
+  logger: AlertEnrichmentLogger;
   query: Filter;
   fields: string[];
 }) => Promise<EnrichmentType[]>;
 
 export type GetIsRiskScoreAvailable = (params: {
   spaceId: string;
-  services: SecurityRuleServices;
+  services: AlertEnrichmentElasticsearchServices;
 }) => Promise<boolean>;
 
 export type IsIndexExist = (params: {
-  services: SecurityRuleServices;
+  services: AlertEnrichmentElasticsearchServices;
   index: string;
 }) => Promise<boolean>;
 

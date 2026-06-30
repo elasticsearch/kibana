@@ -1,0 +1,14 @@
+export declare const COLLECTION: string;
+export declare const COMMAND_AND_CONTROL: string;
+export declare const CREDENTIAL_ACCESS: string;
+export declare const DEFENSE_EVASION: string;
+export declare const DISCOVERY: string;
+export declare const EXECUTION: string;
+export declare const EXFILTRATION: string;
+export declare const LATERAL_MOVEMENT: string;
+export declare const IMPACT: string;
+export declare const INITIAL_ACCESS: string;
+export declare const PERSISTENCE: string;
+export declare const PRIVILEGE_ESCALATION: string;
+export declare const RECONNAISSANCE: string;
+export declare const RESOURCE_DEVELOPMENT: string;

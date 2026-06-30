@@ -1,0 +1,18 @@
+import type { Logger, SavedObjectsServiceSetup } from '@kbn/core/server';
+import type { EncryptedSavedObjectsPluginSetup } from '@kbn/encrypted-saved-objects-plugin/server';
+import type { MigrateFunctionsObject } from '@kbn/kibana-utils-plugin/common';
+import type { RuleTypeRegistry } from '../rule_type_registry';
+export { partiallyUpdateRule, partiallyUpdateRuleWithEs } from './partially_update_rule';
+export declare const RULE_SAVED_OBJECT_TYPE = "alert";
+export declare const RULE_TEMPLATE_SAVED_OBJECT_TYPE = "alerting_rule_template";
+export declare const AD_HOC_RUN_SAVED_OBJECT_TYPE = "ad_hoc_run_params";
+export declare const API_KEY_PENDING_INVALIDATION_TYPE = "api_key_pending_invalidation";
+export declare const GAP_AUTO_FILL_SCHEDULER_SAVED_OBJECT_TYPE = "gap_auto_fill_scheduler";
+export declare const UIAM_API_KEYS_PROVISIONING_STATUS_SAVED_OBJECT_TYPE = "uiam_api_keys_provisioning_status";
+export declare const RuleAttributesToEncrypt: string[];
+export declare const RuleAttributesIncludedInAAD: string[];
+export type RuleAttributesNotPartiallyUpdatable = 'apiKey' | 'enabled' | 'name' | 'tags' | 'alertTypeId' | 'consumer' | 'legacyId' | 'schedule' | 'actions' | 'params' | 'mapped_params' | 'createdBy' | 'createdAt' | 'apiKeyOwner' | 'apiKeyCreatedByUser' | 'throttle' | 'notifyWhen' | 'meta' | 'alertDelay';
+export declare const AdHocRunAttributesToEncrypt: string[];
+export declare const AdHocRunAttributesIncludedInAAD: string[];
+export type AdHocRunAttributesNotPartiallyUpdatable = 'rule' | 'spaceId' | 'apiKeyToUse';
+export declare function setupSavedObjects(savedObjects: SavedObjectsServiceSetup, encryptedSavedObjects: EncryptedSavedObjectsPluginSetup, ruleTypeRegistry: RuleTypeRegistry, logger: Logger, isPreconfigured: (connectorId: string) => boolean, getSearchSourceMigrations: () => MigrateFunctionsObject): void;

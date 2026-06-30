@@ -1,0 +1,12 @@
+import type { SearchRequest, MsearchRequestItem } from '@elastic/elasticsearch/lib/api/types';
+import type { RuleAlertData } from '../../../common';
+import type { GetAlertsQueryParams, GetQueryByScopedQueriesParams, GetMaintenanceWindowAlertsQueryParams, SearchResult } from '../types';
+import type { SummarizedAlertsChunk } from '../..';
+import type { FormatAlert } from '../../types';
+export declare const RUNTIME_MAINTENANCE_WINDOW_ID_FIELD = "runtime_maintenance_window_id";
+export declare const getQueryByScopedQueries: ({ executionUuid, ruleId, action, maintenanceWindows, maxAlertLimit, }: GetQueryByScopedQueriesParams) => MsearchRequestItem[];
+declare const getHitsWithCount: <AlertData extends RuleAlertData>(response: SearchResult<AlertData>, formatAlert?: FormatAlert<AlertData>) => SummarizedAlertsChunk;
+declare const getLifecycleAlertsQueries: ({ executionUuid, start, end, ruleId, excludedAlertInstanceIds, alertsFilter, maxAlertLimit, }: GetAlertsQueryParams) => SearchRequest[];
+declare const getContinualAlertsQuery: ({ executionUuid, start, end, ruleId, excludedAlertInstanceIds, alertsFilter, maxAlertLimit, }: GetAlertsQueryParams) => SearchRequest;
+declare const getMaintenanceWindowAlertsQuery: ({ executionUuid, ruleId, action, maintenanceWindows, maxAlertLimit, }: GetMaintenanceWindowAlertsQueryParams) => MsearchRequestItem[];
+export { getHitsWithCount, getLifecycleAlertsQueries, getContinualAlertsQuery, getMaintenanceWindowAlertsQuery, };

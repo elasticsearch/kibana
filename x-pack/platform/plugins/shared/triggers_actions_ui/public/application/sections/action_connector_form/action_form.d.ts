@@ -1,0 +1,37 @@
+import type { RuleActionAlertsFilterProperty, RuleActionFrequency, RuleActionParam } from '@kbn/alerting-plugin/common';
+import type { ActionGroupWithMessageVariables } from '@kbn/triggers-actions-ui-types';
+import React from 'react';
+import type { ActionConnector, ActionTypeRegistryContract, ActionVariables, NotifyWhenSelectOptions, RuleUiAction } from '../../../types';
+export interface ActionAccordionFormProps {
+    actions: RuleUiAction[];
+    defaultActionGroupId: string;
+    actionGroups?: ActionGroupWithMessageVariables[];
+    defaultActionMessage?: string;
+    setActionIdByIndex: (id: string, index: number, connector?: ActionConnector) => void;
+    setActionGroupIdByIndex?: (group: string, index: number) => void;
+    setActionUseAlertDataForTemplate?: (enabled: boolean, index: number) => void;
+    setActions: (actions: RuleUiAction[]) => void;
+    setActionParamsProperty: (key: string, value: RuleActionParam, index: number) => void;
+    setActionFrequencyProperty: (key: string, value: RuleActionParam, index: number) => void;
+    setActionAlertsFilterProperty: (key: string, value: RuleActionAlertsFilterProperty, index: number) => void;
+    featureId: string;
+    producerId: string;
+    ruleTypeId?: string;
+    messageVariables?: ActionVariables;
+    summaryMessageVariables?: ActionVariables;
+    setHasActionsDisabled?: (value: boolean) => void;
+    setHasActionsWithBrokenConnector?: (value: boolean) => void;
+    actionTypeRegistry: ActionTypeRegistryContract;
+    recoveryActionGroup?: string;
+    isActionGroupDisabledForActionType?: (actionGroupId: string, actionTypeId: string) => boolean;
+    hideActionHeader?: boolean;
+    hideNotifyWhen?: boolean;
+    defaultSummaryMessage?: string;
+    hasAlertsMappings?: boolean;
+    minimumThrottleInterval?: [number | undefined, string];
+    notifyWhenSelectOptions?: NotifyWhenSelectOptions[];
+    defaultRuleFrequency?: RuleActionFrequency;
+    disableErrorMessages?: boolean;
+}
+export declare const ActionForm: ({ actions, defaultActionGroupId, setActionIdByIndex, setActionGroupIdByIndex, setActionUseAlertDataForTemplate, setActions, setActionParamsProperty, setActionFrequencyProperty, setActionAlertsFilterProperty, featureId, messageVariables, summaryMessageVariables, actionGroups, defaultActionMessage, setHasActionsDisabled, setHasActionsWithBrokenConnector, actionTypeRegistry, recoveryActionGroup, isActionGroupDisabledForActionType, hideActionHeader, hideNotifyWhen, defaultSummaryMessage, hasAlertsMappings, minimumThrottleInterval, notifyWhenSelectOptions, defaultRuleFrequency, ruleTypeId, producerId, disableErrorMessages, }: ActionAccordionFormProps) => React.JSX.Element;
+export { ActionForm as default };

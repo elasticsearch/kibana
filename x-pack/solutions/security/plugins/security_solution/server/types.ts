@@ -34,6 +34,7 @@ import type {
   IDetectionEngineHealthClient,
   IRuleExecutionLogForRoutes,
 } from './lib/detection_engine/rule_monitoring';
+import type { IRuleExecutionLogV2ForRoutes } from './lib/detection_engine/rule_monitoring/logic/rule_execution_log/client_for_routes/v2_client';
 import type { FrameworkRequest } from './lib/framework';
 import type { EndpointAuthz } from '../common/endpoint/types/authz';
 import type { EndpointInternalFleetServicesInterface } from './endpoint/services/fleet';
@@ -70,6 +71,7 @@ export interface SecuritySolutionApiRequestHandlerContext {
   getDetectionRulesClient: () => IDetectionRulesClient;
   getDetectionEngineHealthClient: () => IDetectionEngineHealthClient;
   getRuleExecutionLog: () => IRuleExecutionLogForRoutes;
+  getRuleExecutionLogV2: () => IRuleExecutionLogV2ForRoutes;
   getRacClient: (req: KibanaRequest) => Promise<AlertsClient>;
   getAuditLogger: () => AuditLogger | undefined;
   getLogger: () => Logger;

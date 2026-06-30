@@ -755,6 +755,13 @@ export const DELETE_RULE = i18n.translate(
   }
 );
 
+export const CONVERT_TO_V2 = i18n.translate(
+  'xpack.securitySolution.detectionEngine.rules.allRules.actions.convertToV2Description',
+  {
+    defaultMessage: 'Convert to v2',
+  }
+);
+
 export const MANUAL_RULE_RUN = i18n.translate(
   'xpack.securitySolution.detectionEngine.rules.allRules.actions.manualRuleRunDescription',
   {

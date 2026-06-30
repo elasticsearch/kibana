@@ -10,11 +10,11 @@ import { euid } from '@kbn/entity-store/common/euid_helpers';
 import type { EntityStoreCRUDClient } from '@kbn/entity-store/server';
 import type { DetectionAlertLatest } from '../../../../../../common/api/detection_engine/model/alerts';
 import type {
+  AlertEnrichmentLogger,
   CreateV2EnrichmentFunction,
   EventsForEnrichment,
   EventsMapByEnrichments,
 } from './types';
-import type { IRuleExecutionLogForExecutors } from '../../../rule_monitoring';
 
 const CHUNK_SIZE = 1000;
 
@@ -63,7 +63,7 @@ export const createEntityStoreEnrichment = async <T extends DetectionAlertLatest
   name: string;
   entityType: 'host' | 'user' | 'service';
   entityStoreCrudClient: EntityStoreCRUDClient;
-  logger: IRuleExecutionLogForExecutors;
+  logger: AlertEnrichmentLogger;
   events: Array<EventsForEnrichment<T>>;
   enrichmentFields: string[];
   createEnrichmentFunction: CreateV2EnrichmentFunction;

@@ -38,6 +38,7 @@
     "@kbn/actions-plugin",
     "@kbn/alerting-plugin",
     "@kbn/change-history",
+    "@kbn/alerting-v2-plugin",
     "@kbn/cases-plugin",
     "@kbn/cloud-security-posture-plugin",
     "@kbn/encrypted-saved-objects-plugin",

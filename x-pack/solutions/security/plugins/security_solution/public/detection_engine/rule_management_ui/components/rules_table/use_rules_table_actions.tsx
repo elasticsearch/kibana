@@ -32,10 +32,12 @@ export const useRulesTableActions = ({
   showExceptionsDuplicateConfirmation,
   showManualRuleRunConfirmation,
   confirmDeletion,
+  onConvertToV2,
 }: {
   showExceptionsDuplicateConfirmation: () => Promise<string | null>;
   showManualRuleRunConfirmation: () => Promise<TimeRange | null>;
   confirmDeletion: () => Promise<boolean>;
+  onConvertToV2?: (rule: Rule) => void;
 }): Array<DefaultItemAction<Rule>> => {
   const {
     application: { navigateToApp },
@@ -53,6 +55,17 @@ export const useRulesTableActions = ({
   const { bulkExport } = useBulkExport();
   const downloadExportedRules = useDownloadExportedRules();
   const { scheduleRuleRun } = useScheduleRuleRun();
+
+  const convertToV2Action: DefaultItemAction<Rule> = {
+    type: 'icon',
+    'data-test-subj': 'convertToV2Action',
+    description: i18n.CONVERT_TO_V2,
+    icon: 'push',
+    name: i18n.CONVERT_TO_V2,
+    available: (rule: Rule) => rule.type === 'esql' || rule.type === 'threshold',
+    enabled: () => canEditRules,
+    onClick: (rule: Rule) => onConvertToV2?.(rule),
+  };
 
   return [
     {
@@ -151,6 +164,7 @@ export const useRulesTableActions = ({
       },
       enabled: (rule: Rule) => canManualRunRules && rule.enabled,
     },
+    ...(onConvertToV2 ? [convertToV2Action] : []),
     {
       type: 'icon',
       'data-test-subj': 'deleteRuleAction',

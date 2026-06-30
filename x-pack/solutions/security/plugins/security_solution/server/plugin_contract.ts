@@ -47,6 +47,11 @@ import type { ElasticAssistantPluginStart } from '@kbn/elastic-assistant-plugin/
 import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 import type { AnonymizationPluginStart } from '@kbn/anonymization-plugin/server';
 import type { AgentBuilderPluginSetup, AgentBuilderPluginStart } from '@kbn/agent-builder-server';
+// TODO(alerting-v2 migration): the redesigned alerting_v2 plugin no longer exposes a
+// server setup contract (`AlertingServerSetup` is internal/void). The security
+// row-enricher and pre-query-filter integration is deferred; this local alias keeps
+// the optional dependency slot until the platform plugin re-exposes extension points.
+type AlertingV2ServerSetup = void;
 import type { LlmTasksPluginStart } from '@kbn/llm-tasks-plugin/server';
 import type {
   WorkflowsServerPluginSetup,
@@ -87,6 +92,7 @@ export interface SecuritySolutionPluginSetupDependencies {
   workflowsExtensions?: WorkflowsExtensionsServerPluginSetup;
   entityStore?: EntityStoreSetupContract;
   searchInferenceEndpoints?: SearchInferenceEndpointsPluginSetup;
+  alertingVTwo?: AlertingV2ServerSetup;
 }
 
 export interface SecuritySolutionPluginStartDependencies {

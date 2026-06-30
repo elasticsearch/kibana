@@ -1,0 +1,13 @@
+export declare const EDITED_ALERTS: (totalAlerts: number) => string;
+export declare const SELECTED_ALERTS: (totalAlerts: number) => string;
+export declare const SAVE_SELECTION: string;
+export declare const SEARCH_PLACEHOLDER: string;
+export declare const CANCEL: string;
+export declare const ADD_TAG_CUSTOM_OPTION_LABEL: (searchValue: string) => string;
+export declare const EDIT_TAGS: string;
+export declare const TOTAL_TAGS: (totalTags: number) => string;
+export declare const SELECT_ALL: string;
+export declare const SELECT_NONE: string;
+export declare const SELECTED_TAGS: (selectedTags: number) => string;
+export declare const NO_TAGS_AVAILABLE: string;
+export declare const NO_SEARCH_MATCH: string;

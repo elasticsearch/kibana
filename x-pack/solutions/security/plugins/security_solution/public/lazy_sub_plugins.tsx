@@ -10,6 +10,8 @@
  * By loading these later we can reduce the initial bundle size and allow users to delay loading these dependencies until they are needed.
  */
 
+import { AlertsV2 } from './alerts_v2';
+import { RulesV2 } from './rules_v2';
 import { AssetInventory } from './asset_inventory';
 import { AttackDiscovery } from './attack_discovery';
 import { Cases } from './cases';
@@ -36,6 +38,8 @@ import { Configurations } from './configurations';
  * The classes used to instantiate the sub plugins. These are grouped into a single object for the sake of bundling them in a single dynamic import.
  */
 const subPluginClasses = {
+  AlertsV2,
+  RulesV2,
   AssetInventory,
   AttackDiscovery,
   Detections,

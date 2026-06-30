@@ -14,7 +14,7 @@ import {
   EuiSpacer,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader } from '../../../../common/components/loader';
 import { useBoolState } from '../../../../common/hooks/use_bool_state';
 import { PrePackagedRulesPrompt } from '../pre_packaged_rules/load_empty_prompt';
@@ -51,6 +51,10 @@ import { BulkFillRuleGapsRuleLimitErrorModal } from './bulk_actions/bulk_schedul
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { RulesWithGapsOverviewPanel } from '../../../rule_gaps/components/rules_with_gaps_overview_panel';
 import { RulesTableWarnings } from './rules_table_warnings';
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
+import { ConvertToV2Confirmation } from './convert_to_v2_confirmation';
+import { useConvertToV2 } from '../../../../rules_v2/hooks/use_convert_to_v2';
+import { useBuildV2Payload } from '../../../../rules_v2/hooks/use_build_v2_payload';
 
 const INITIAL_SORT_FIELD = 'enabled';
 
@@ -169,6 +173,34 @@ export const RulesTables = React.memo<RulesTableProps>(({ selectedTab }) => {
     completeBulkEditForm,
   } = useBulkEditFormFlyout();
 
+  const isAlertingV2Enabled = useIsExperimentalFeatureEnabled('alertingV2RuleCreationEnabled');
+  const [ruleToConvert, setRuleToConvert] = useState<Rule | null>(null);
+  const { convertRule, isConverting } = useConvertToV2();
+  const {
+    payload: v2Payload,
+    isLoading: isPayloadLoading,
+    error: payloadError,
+    buildPayload,
+  } = useBuildV2Payload(ruleToConvert);
+
+  const handleConvertToV2 = useCallback((rule: Rule) => setRuleToConvert(rule), []);
+
+  const handleConvertConfirm = useCallback(
+    async (disableOriginal: boolean) => {
+      if (ruleToConvert) {
+        const resolvedPayload = v2Payload ?? (await buildPayload());
+        await convertRule(ruleToConvert, disableOriginal, resolvedPayload);
+        setRuleToConvert(null);
+        rulesTableContext.actions.reFetchRules();
+      }
+    },
+    [ruleToConvert, v2Payload, buildPayload, convertRule, rulesTableContext.actions]
+  );
+
+  const handleConvertCancel = useCallback(() => {
+    setRuleToConvert(null);
+  }, []);
+
   const { isBulkActionsDryRunLoading, executeBulkActionsDryRun } = useBulkActionsDryRun();
 
   const getBulkItemsPopoverContent = useBulkActions({
@@ -213,6 +245,7 @@ export const RulesTables = React.memo<RulesTableProps>(({ selectedTab }) => {
     showExceptionsDuplicateConfirmation: showBulkDuplicateConfirmation,
     showManualRuleRunConfirmation,
     confirmDeletion,
+    onConvertToV2: isAlertingV2Enabled ? handleConvertToV2 : undefined,
   });
 
   const monitoringColumns = useMonitoringColumns({
@@ -374,6 +407,19 @@ export const RulesTables = React.memo<RulesTableProps>(({ selectedTab }) => {
             onConfirm={handleBulkEditFormConfirm}
           />
         ))}
+
+      {ruleToConvert && (
+        <ConvertToV2Confirmation
+          rule={ruleToConvert}
+          onConfirm={handleConvertConfirm}
+          onCancel={handleConvertCancel}
+          isLoading={isConverting}
+          v2Payload={v2Payload}
+          isPayloadLoading={isPayloadLoading}
+          payloadError={payloadError}
+          onBuildPayload={buildPayload}
+        />
+      )}
 
       {shouldShowRulesTable && (
         <>

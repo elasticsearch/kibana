@@ -37,6 +37,8 @@ export const getNavCategories = (
         enableAlertsAndAttacksAlignment
           ? SecurityPageName.alertDetections
           : SecurityPageName.alerts,
+        SecurityPageName.alertsV2,
+        SecurityPageName.rulesV2,
         ...(securityClassicNavExternalLinks
           ? [
               // Agent builder for AI agent chat and not classic AI experience

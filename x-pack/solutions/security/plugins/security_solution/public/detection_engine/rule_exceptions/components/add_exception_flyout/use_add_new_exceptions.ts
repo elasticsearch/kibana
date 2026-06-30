@@ -25,6 +25,8 @@ import { useAppToasts } from '../../../../common/hooks/use_app_toasts';
 import type { Rule } from '../../../rule_management/logic/types';
 import { useCreateOrUpdateException } from '../../logic/use_create_update_exception';
 import { useAddRuleDefaultException } from '../../logic/use_add_rule_exception';
+import { useAddV2RuleDefaultException } from '../../logic/use_add_v2_rule_exception';
+import { isV2AdaptedRule } from '../../../../rules_v2/utils/v2_rule_to_v1_shape';
 import { getSuccessToastText, getSuccessToastTitle } from './helpers';
 
 export interface AddNewExceptionItemHookProps {
@@ -49,6 +51,7 @@ export type ReturnUseAddNewExceptionItems = [boolean, AddNewExceptionItemHookFun
 export const useAddNewExceptionItems = (): ReturnUseAddNewExceptionItems => {
   const { addSuccess, addError, addWarning } = useAppToasts();
   const [isAddRuleExceptionLoading, addRuleExceptions] = useAddRuleDefaultException();
+  const [isAddV2RuleExceptionLoading, addV2RuleExceptions] = useAddV2RuleDefaultException();
   const [isAddingExceptions, addSharedExceptions] = useCreateOrUpdateException();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -91,11 +94,21 @@ export const useAddNewExceptionItems = (): ReturnUseAddNewExceptionItems => {
 
         if (
           addToRules &&
-          addRuleExceptions != null &&
           listType !== ExceptionListTypeEnum.ENDPOINT &&
           areRuleDefaultItems(itemsToAdd)
         ) {
-          result = await addRuleExceptions(itemsToAdd, selectedRulesToAddTo);
+          const v2Rules = selectedRulesToAddTo.filter(isV2AdaptedRule);
+          const v1Rules = selectedRulesToAddTo.filter((r) => !isV2AdaptedRule(r));
+
+          if (v2Rules.length > 0 && addV2RuleExceptions != null) {
+            const v2Result = await addV2RuleExceptions(itemsToAdd, v2Rules);
+            result.push(...v2Result);
+          }
+
+          if (v1Rules.length > 0 && addRuleExceptions != null) {
+            const v1Result = await addRuleExceptions(itemsToAdd, v1Rules);
+            result.push(...v1Result);
+          }
 
           const ruleNames = selectedRulesToAddTo.map(({ name }) => name).join(', ');
 
@@ -139,13 +152,14 @@ export const useAddNewExceptionItems = (): ReturnUseAddNewExceptionItems => {
     addError,
     addWarning,
     addRuleExceptions,
+    addV2RuleExceptions,
     addSharedExceptions,
     areRuleDefaultItems,
     areSharedListItems,
   ]);
 
   return [
-    isLoading || isAddingExceptions || isAddRuleExceptionLoading,
+    isLoading || isAddingExceptions || isAddRuleExceptionLoading || isAddV2RuleExceptionLoading,
     addNewExceptionsRef.current,
   ];
 };

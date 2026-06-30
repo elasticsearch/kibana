@@ -337,6 +337,32 @@ export const EventSchema = schema.maybe(
                 ),
               })
             ),
+            rule_executor: schema.maybe(
+              schema.object({
+                execution: schema.maybe(
+                  schema.object({
+                    uuid: ecsString(),
+                    status: ecsString(),
+                    metrics: schema.maybe(
+                      schema.object({
+                        query: schema.maybe(
+                          schema.object({
+                            total_search_duration_ms: ecsStringOrNumber(),
+                            number_of_rows_returned: ecsStringOrNumber(),
+                          })
+                        ),
+                        events_written: schema.maybe(
+                          schema.object({
+                            breached: ecsStringOrNumber(),
+                            recovered: ecsStringOrNumber(),
+                          })
+                        ),
+                      })
+                    ),
+                  })
+                ),
+              })
+            ),
           })
         ),
       })

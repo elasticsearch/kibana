@@ -26,8 +26,8 @@ import { useUserData } from '../../../../detections/components/user_info';
 import { useListsConfig } from '../../../../detections/containers/detection_engine/lists/use_lists_config';
 import { redirectToDetections } from '../../../common/helpers';
 import * as i18n from '../../../common/translations';
-import { AllRules } from '../../components/rules_table';
 import { RulesTableContextProvider } from '../../components/rules_table/rules_table/rules_table_context';
+import { GroupedRulesSections } from '../../components/grouped_rules_sections/grouped_rules_sections';
 import { HeaderPage } from '../../../../common/components/header_page';
 import { RuleUpdateCallouts } from '../../components/rule_update_callouts/rule_update_callouts';
 import { useDeprecatedRulesTableCallout } from '../../../rule_management/components/rule_deprecation';
@@ -76,6 +76,7 @@ const RulesPageContent = () => {
   const { isEsqlRuleTypeEnabled } = useEsqlAvailability();
   const isAiRuleCreationAvailable =
     aiRuleCreationEnabled && isAgentBuilderEnabled && isEsqlRuleTypeEnabled;
+  const isAlertingV2Enabled = useIsExperimentalFeatureEnabled('alertingV2RuleCreationEnabled');
   const deprecatedRulesCallout = useDeprecatedRulesTableCallout();
 
   if (
@@ -173,7 +174,7 @@ const RulesPageContent = () => {
             kibanaServices={kibanaServices}
             categories={[DEFAULT_APP_CATEGORIES.security.id]}
           />
-          <AllRules data-test-subj="all-rules" />
+          <GroupedRulesSections isAlertingV2Enabled={isAlertingV2Enabled} />
         </SecuritySolutionPageWrapper>
       </RulesTableContextProvider>
 

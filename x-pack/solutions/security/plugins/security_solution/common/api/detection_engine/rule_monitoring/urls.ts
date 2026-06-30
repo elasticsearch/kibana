@@ -35,3 +35,11 @@ export const READ_RULE_EXECUTION_RESULTS_URL =
   `${INTERNAL_URL}/rules/{ruleId}/execution/results` as const;
 export const readRuleExecutionResultsUrl = (ruleId: string) =>
   `${INTERNAL_URL}/rules/${ruleId}/execution/results` as const;
+
+// -------------------------------------------------------------------------------------------------
+// Rule execution logs API (v2 — RnA / Alerting v2)
+
+export const READ_V2_RULE_EXECUTION_RESULTS_URL =
+  `${INTERNAL_URL}/rules_v2/{ruleId}/execution/results` as const;
+export const readV2RuleExecutionResultsUrl = (ruleId: string) =>
+  `${INTERNAL_URL}/rules_v2/${ruleId}/execution/results` as const;

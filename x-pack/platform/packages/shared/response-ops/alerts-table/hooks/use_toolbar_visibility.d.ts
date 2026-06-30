@@ -1,0 +1,27 @@
+import type { EuiDataGridToolBarVisibilityOptions } from '@elastic/eui';
+import type { ReactNode } from 'react';
+import type { Alert, EsQuerySnapshot } from '@kbn/alerting-types';
+import type { FieldBrowserOptions } from '@kbn/response-ops-alerts-fields-browser';
+import type { SettingsStart } from '@kbn/core-ui-settings-browser';
+import type { BulkActionsPanelConfig, RowSelection } from '../types';
+export declare const useGetToolbarVisibility: ({ bulkActions, alertsCount, rowSelection, alerts, isLoading, columnIds, onToggleColumn, onResetColumns, browserFields, setIsBulkActionsLoading, clearSelection, additionalToolbarControls, refresh, fieldsBrowserOptions, alertsQuerySnapshot, showInspectButton, showCsvExportButton, toolbarVisibilityProp, settings, }: {
+    bulkActions: BulkActionsPanelConfig[];
+    alertsCount: number;
+    rowSelection: RowSelection;
+    alerts: Alert[];
+    isLoading: boolean;
+    columnIds: string[];
+    onToggleColumn: (columnId: string) => void;
+    onResetColumns: () => void;
+    browserFields: any;
+    setIsBulkActionsLoading: (isLoading: boolean) => void;
+    clearSelection: () => void;
+    additionalToolbarControls?: ReactNode;
+    refresh: () => void;
+    fieldsBrowserOptions?: FieldBrowserOptions;
+    alertsQuerySnapshot?: EsQuerySnapshot;
+    showInspectButton: boolean;
+    showCsvExportButton: boolean;
+    toolbarVisibilityProp?: EuiDataGridToolBarVisibilityOptions;
+    settings: SettingsStart;
+}) => EuiDataGridToolBarVisibilityOptions;

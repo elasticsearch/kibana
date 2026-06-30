@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { EuiTourStepProps } from '@elastic/eui';
 import {
+  EuiBadge,
   EuiButton,
   EuiPopover,
   EuiContextMenuItem,
@@ -90,7 +91,8 @@ export const CreateRuleMenu: React.FC<CreateRuleContextMenuProps> = ({ loading, 
     prefix: 'createRuleContextMenuLinks',
   });
   const { services } = useKibana();
-  const { agentBuilder, storage, notifications, telemetry, aiRuleCreation } = services;
+  const { agentBuilder, storage, notifications, telemetry, aiRuleCreation, http, application } =
+    services;
   const isTourEnabled = notifications.tours.isEnabled();
 
   const [aiRuleCreationMenuTourState, setAiRuleCreationMenuTourState] =
@@ -124,6 +126,12 @@ export const CreateRuleMenu: React.FC<CreateRuleContextMenuProps> = ({ loading, 
   const closePopover = useCallback(() => {
     setIsPopoverOpen(false);
   }, []);
+
+  const handleV2RuleCreation = useCallback(() => {
+    closePopover();
+    const url = http.basePath.prepend('/app/security/rules_v2/create?returnTo=rules');
+    application.navigateToUrl(url);
+  }, [closePopover, http.basePath, application]);
 
   const handleAiRuleCreation = useCallback(() => {
     closePopover();
@@ -256,6 +264,18 @@ export const CreateRuleMenu: React.FC<CreateRuleContextMenuProps> = ({ loading, 
                 defaultMessage="Manual rule creation"
               />
             </SecuritySolutionLinkAnchor>
+          </EuiContextMenuItem>
+          <EuiContextMenuItem
+            key="v2-rule-creation"
+            onClick={handleV2RuleCreation}
+            data-test-subj="v2-rule-creation"
+            icon="beaker"
+          >
+            <FormattedMessage
+              id="xpack.securitySolution.detectionEngine.createRule.contextMenu.v2RuleCreation"
+              defaultMessage="Create v2 rule"
+            />{' '}
+            <EuiBadge color="primary">{'New'}</EuiBadge>
           </EuiContextMenuItem>
         </EuiContextMenuPanel>
       </EuiPopover>

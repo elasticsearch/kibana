@@ -27,6 +27,7 @@ import type { DataViewBase } from '@kbn/es-query';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { SetRuleQuery } from '../../../../detections/hooks/use_rule_from_timeline';
 import { useRuleFromTimeline } from '../../../../detections/hooks/use_rule_from_timeline';
+import { useKibana } from '../../../../common/lib/kibana';
 import { isMlRule } from '../../../../../common/machine_learning/helpers';
 import { filterRuleFieldsForType, getStepDataDataSource } from '../../pages/rule_creation/helpers';
 import type { DefineStepRule, RuleStepProps } from '../../../common/types';
@@ -523,14 +524,27 @@ const StepDefineRuleComponent: FC<StepDefineRuleProps> = ({
     ]
   );
 
+  const { http, application } = useKibana().services;
+
+  const handleNavigateToV2 = useCallback(
+    (v2Type: 'esql' | 'threshold') => {
+      const url = http.basePath.prepend(
+        `/app/security/rules_v2/create?type=${v2Type}&returnTo=rules`
+      );
+      application.navigateToUrl(url);
+    },
+    [http.basePath, application]
+  );
+
   const selectRuleTypeProps = useMemo(
     () => ({
       describedByIds: ['detectionEngineStepDefineRuleType'],
       isUpdateView,
       hasValidLicense: hasMlLicense,
       isMlAdmin: hasMlAdminPermissions,
+      onNavigateToV2: handleNavigateToV2,
     }),
-    [hasMlAdminPermissions, hasMlLicense, isUpdateView]
+    [hasMlAdminPermissions, hasMlLicense, isUpdateView, handleNavigateToV2]
   );
 
   return (

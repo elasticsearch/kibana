@@ -1,0 +1,37 @@
+import type { HttpSetup } from '@kbn/core/public';
+import type { ChildWorkflowExecutionItem, CreateWorkflowCommand, EsWorkflowStepExecution, GetAvailableConnectorsResponse, RunStepCommand, RunWorkflowResponseDto, TestWorkflowResponseDto, UpdatedWorkflowResponseDto, ValidateWorkflowResponseDto, WorkflowAggsDto, WorkflowDetailDto, WorkflowExecutionDto, WorkflowExecutionListDto, WorkflowListDto, WorkflowMgetResponseDto, WorkflowsSearchParams, WorkflowStatsDto, WorkflowStepExecutionListDto } from '@kbn/workflows';
+import type { z } from '@kbn/zod/v4';
+import type { BulkCreateWorkflowsParams, BulkCreateWorkflowsResponse, ExportWorkflowsParams, ExportWorkflowsResponse, GetAggsParams, GetExecutionLogsParams, GetExecutionParams, GetSchemaParams, GetWorkflowExecutionsParams, GetWorkflowStepExecutionsParams, MgetWorkflowsParams, ResumeExecutionParams, RunWorkflowOptions, SearchTriggerEventLogParams, SearchTriggerEventLogResult, TestWorkflowParams, UpdateWorkflowParams, ValidateWorkflowParams, WorkflowExecutionLogsResponse, WorkflowsConfig } from './types';
+export declare class WorkflowApi {
+    private readonly http;
+    constructor(http: HttpSetup);
+    getWorkflows(params?: WorkflowsSearchParams): Promise<WorkflowListDto>;
+    getWorkflow(id: string): Promise<WorkflowDetailDto>;
+    createWorkflow(params: CreateWorkflowCommand): Promise<WorkflowDetailDto>;
+    updateWorkflow(id: string, params: UpdateWorkflowParams): Promise<UpdatedWorkflowResponseDto>;
+    deleteWorkflow(id: string): Promise<void>;
+    bulkCreateWorkflows({ workflows, overwrite, }: BulkCreateWorkflowsParams): Promise<BulkCreateWorkflowsResponse>;
+    bulkDeleteWorkflows(ids: string[]): Promise<void>;
+    mgetWorkflows({ ids, source }: MgetWorkflowsParams): Promise<WorkflowMgetResponseDto>;
+    cloneWorkflow(id: string): Promise<WorkflowDetailDto>;
+    validateWorkflow({ yaml }: ValidateWorkflowParams): Promise<ValidateWorkflowResponseDto>;
+    exportWorkflows({ ids }: ExportWorkflowsParams): Promise<ExportWorkflowsResponse>;
+    getStats(): Promise<WorkflowStatsDto>;
+    getAggs({ fields, managed }: GetAggsParams): Promise<WorkflowAggsDto>;
+    getConnectors(): Promise<GetAvailableConnectorsResponse>;
+    getSchema({ loose }: GetSchemaParams): Promise<z.core.JSONSchema.JSONSchema | null>;
+    runWorkflow(id: string, { inputs, metadata }: RunWorkflowOptions): Promise<RunWorkflowResponseDto>;
+    testWorkflow(params: TestWorkflowParams): Promise<TestWorkflowResponseDto>;
+    testStep(params: RunStepCommand): Promise<TestWorkflowResponseDto>;
+    getWorkflowExecutions(workflowId: string, params?: GetWorkflowExecutionsParams): Promise<WorkflowExecutionListDto>;
+    getWorkflowStepExecutions(workflowId: string, params?: GetWorkflowStepExecutionsParams): Promise<WorkflowStepExecutionListDto>;
+    getExecution(executionId: string, params?: GetExecutionParams): Promise<WorkflowExecutionDto>;
+    cancelExecution(executionId: string): Promise<void>;
+    cancelAllWorkflowExecutions(workflowId: string): Promise<void>;
+    getStepExecution(executionId: string, stepExecutionId: string): Promise<EsWorkflowStepExecution>;
+    resumeExecution(executionId: string, { input }: ResumeExecutionParams): Promise<void>;
+    getExecutionLogs(executionId: string, params?: GetExecutionLogsParams): Promise<WorkflowExecutionLogsResponse>;
+    getChildrenExecutions(executionId: string): Promise<ChildWorkflowExecutionItem[]>;
+    getConfig(): Promise<WorkflowsConfig>;
+    searchTriggerEvents(params: SearchTriggerEventLogParams): Promise<SearchTriggerEventLogResult>;
+}

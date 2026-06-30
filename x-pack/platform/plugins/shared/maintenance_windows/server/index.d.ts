@@ -1,0 +1,10 @@
+import type { PluginConfigDescriptor, PluginInitializerContext } from '@kbn/core/server';
+import type { PublicMethodsOf } from '@kbn/utility-types';
+import type { MaintenanceWindowClient as MaintenanceWindowClientClass } from './client';
+import type { MaintenanceWindowsConfig } from './config';
+export declare const plugin: (initContext: PluginInitializerContext) => Promise<import("./plugin").MaintenanceWindowsPlugin>;
+export declare const config: PluginConfigDescriptor<MaintenanceWindowsConfig>;
+export type { MaintenanceWindowsServerStart, MaintenanceWindowsServerSetupDependencies, MaintenanceWindowsServerStartDependencies, } from './types';
+export type MaintenanceWindowClient = PublicMethodsOf<MaintenanceWindowClientClass>;
+export type { MaintenanceWindowsConfig } from './config';
+export { maintenanceWindowCategoryIdTypes } from './application/constants';

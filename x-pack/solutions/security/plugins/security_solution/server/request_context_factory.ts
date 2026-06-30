@@ -21,6 +21,7 @@ import type { ConfigType } from './config';
 import type { EndpointAppContextService } from './endpoint/endpoint_app_context_services';
 import { createDetectionRulesClient } from './lib/detection_engine/rule_management/logic/detection_rules_client/detection_rules_client';
 import type { IRuleMonitoringService } from './lib/detection_engine/rule_monitoring';
+import { createRuleExecutionLogV2ClientForRoutes } from './lib/detection_engine/rule_monitoring/logic/rule_execution_log/client_for_routes/v2_client';
 import { AssetCriticalityDataClient } from './lib/entity_analytics/asset_criticality';
 import { EntityStoreDataClient } from './lib/entity_analytics/entity_store/entity_store_data_client';
 import { RiskEngineDataClient } from './lib/entity_analytics/risk_engine/risk_engine_data_client';
@@ -268,6 +269,13 @@ export class RequestContextFactory implements IRequestContextFactory {
           savedObjectsClient: coreContext.savedObjects.client,
           eventLogClient: startPlugins.eventLog.getClient(request),
         })
+      ),
+
+      getRuleExecutionLogV2: memoize(() =>
+        createRuleExecutionLogV2ClientForRoutes(
+          startPlugins.eventLog.getClient(request),
+          options.logger
+        )
       ),
 
       siemMigrations: getSiemMigrationClients(siemMigrationsService, {
